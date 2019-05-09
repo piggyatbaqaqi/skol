@@ -22,7 +22,7 @@ class TestParagraph(unittest.TestCase):
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
-        self.assertEqual(self.pp.successor, 'rabbit')
+        self.assertEqual(self.pp.next_line, 'rabbit')
 
     def test_is_header(self):
         self.pp.append('headline')
@@ -58,9 +58,9 @@ class TestParagraph(unittest.TestCase):
         self.pp.append_ahead('gerbil')
         self.pp.append_ahead('rabbit')
 
-        self.assertEqual(self.pp.last_line(), 'gerbil')
+        self.assertEqual(self.pp.last_line, 'gerbil')
         self.pp.close()
-        self.assertEqual(self.pp.last_line(), 'rabbit')
+        self.assertEqual(self.pp.last_line, 'rabbit')
         
 
 class TestParser(unittest.TestCase):
@@ -190,7 +190,7 @@ class TestParser(unittest.TestCase):
 
 class TestLabeling(unittest.TestCase):
 
-    def test_simple_lable(self):
+    def test_simple_label(self):
         test_data = textwrap.dedent("""\
         [@Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
         Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
@@ -224,9 +224,9 @@ class TestLabeling(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertEqual(paragraphs[0].lable, 'Abstract')
+        self.assertEqual(paragraphs[0].labels, [finder.Label('Abstract')])
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertEqual(paragraphs[0].lable, 'Key-words')
+        self.assertEqual(paragraphs[1].labels, [finder.Label('Key-words')])
 
 
 
