@@ -5,29 +5,62 @@ import re
 import sys
 from typing import Iterable, List, Optional
 
+class Label(object):
+    _label_value = ...  # type: Optional[str]
+    
+    def __init__(self, label_value: Optional[str] = None):
+        self._label_value = label_value
+
+    def __eq__(self, other: 'Label') -> bool:
+        return self._label_value == other._label_value
+
+    def __repr__(self):
+        return 'Label(%r)' % self._label_value
+
+    def set_label(self, label_value: str):
+        if self._label_value is not None:
+            raise ValueError('Label already has value: %s' % self._label_value)
+        self._label_value = label_value
+
+
 class Paragraph(object):
     short_line = ...  # type: int
     lines = ...  # type: Iterable[str]
-    successor = ...  # type: Optional[str]
+    next_line = ...  # type: Optional[str]
+    next_label = ...  # type: Optional[Label]
+    _labels = ...  # type: List[Label]
 
-    def __init__(self, short_line=40):
+    def __init__(self, short_line=40, labels=None):
         self.short_line = short_line
         self.lines = []
-        self.successor = None
+        self.next_line = None
+        if labels:
+            self._labels = labels[:]
+        else:
+            self._labels = []
 
-    def append(self, line: str):
-        self.lines.append(line)
+    def append(self, line: str, label: Optional[Label] = None) -> None:
+       self.lines.append(line)
+       if label is not None:
+           self._labels.append(label)
 
-    def append_ahead(self, line: str):
-        if self.successor is not None:
-            self.lines.append(self.successor)
-        self.successor = line
+    def append_ahead(self, line: str, label: Optional[Label] = None) -> None:
+        if self.next_line is not None:
+            self.append(self.next_line, self.next_label)
+            self.next_label = None
+        self.next_line = line
+        self.next_label = label
+
+    def next_paragraph(self, labels: List[Label]) -> ('Paragraph', 'Paragraph'):
+        pp = Paragraph(labels=labels)
+        pp.append(self.next_line, self.next_label)
+        return (self, pp)
 
     def __str__(self) -> str:
         return '\n'.join(self.lines) + '\n'
 
     def __repr__(self) -> str:
-        return 'Paragraph(%s)\n' % repr(str(self))
+        return 'Labels(%s), Paragraph(%r)\n' % (self._labels, str(self))
 
     def is_header(self) -> bool:
         return self.lines and self.lines[0].startswith('')
@@ -41,46 +74,83 @@ class Paragraph(object):
         first_token = tokenized[0].lower()
         return first_token in tokens
 
-    def is_figure(self):
+    def is_figure(self) -> bool:
         return self.startswith([
             'fig', 'fig.', 'figs', 'figure', 'figures', 'plate', 'plates',
         ])
 
-    def is_table(self):
+    def is_table(self) -> bool:
         return self.startswith([
             'table', 'tbl.', 'tbl'
         ])
 
-    def is_blank(self):
+    def is_blank(self) -> bool:
         return self.lines and all(not line for line in self.lines)
 
-    def last_line(self):
+    @property
+    def last_line(self) -> str:
         if not self.lines:
             return None
         return self.lines[-1]
 
-    def close(self):
-        if self.successor:
-            self.lines.append(self.successor)
-            self.successor = None
+    def close(self) -> None:
+        if self.next_line:
+            self.append(self.next_line, self.next_label)
+            self.next_line = None
+            self.next_label = None
 
-    def endswith(self, s: str):
-        last_line = self.last_line()
+    def endswith(self, s: str) -> bool:
+        last_line = self.last_line
         return last_line and last_line.endswith(s)
 
+    @property
+    def labels(self) -> List[str]:
+        return self._labels[:]
 
-def parse_paragraphs(contents: Iterable[str]):
-    pp = Paragraph()
+    def add_label(self, label: Optional[Label] = None) -> Label:
+        if label is None:
+            label = Label()
+        self._labels.append(label)
+        return label
+
+
+def strip_label_start(line: str) -> (bool, str):
+    if line.startswith('[@'):
+        return (True, line[2:])
+    else:
+        return (False, line)
+
+
+def strip_label_end(line: str) -> (Optional[str], str):
+    match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]$', line)
+    if not match:
+        return (None, line)
+    return (match.group('label_value'), match.group('line'))
+
+
+def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
+    label_stack = []
+    label = None
+    pp = Paragraph(labels=label_stack)
     for line in contents:
-        line = line.rstrip('\n')
-        pp.append_ahead(line)
+        (starts, line) = strip_label_start(line)
+        if starts:
+            label = Label()
+            label_stack.append(label)
+        else:
+            label = None
+
+        (label_value, line) = strip_label_end(line)
+        if label_value:
+            label_stack.pop().set_label(label_value)
+
+        pp.append_ahead(line, label)
+
         # Tables continue to grow as long as we have short lines.
         if pp.is_table():
             if len(line) < pp.short_line:
                 continue
-            retval = pp
-            pp = Paragraph()
-            pp.append(retval.successor)
+            (retval, pp) = pp.next_paragraph(labels=label_stack)
             yield retval
             continue
 
@@ -89,8 +159,7 @@ def parse_paragraphs(contents: Iterable[str]):
             if not line:
                 continue
             retval = pp
-            pp = Paragraph()
-            pp.append(retval.successor)
+            (retval, pp) = pp.next_paragraph(labels=label_stack)
             yield retval
             continue
 
@@ -99,25 +168,19 @@ def parse_paragraphs(contents: Iterable[str]):
         if pp.is_figure():
             if line and not pp.endswith('.'):
                continue
-            retval = pp
-            pp = Paragraph()
-            pp.append(retval.successor)
+            (retval, pp) = pp.next_paragraph(labels=label_stack)
             yield retval
             continue
 
         # A period before a newline marks the end of a paragraph.
         if pp.endswith('.'):
-            retval = pp
-            pp = Paragraph()
-            pp.append(retval.successor)
+            (retval, pp) = pp.next_paragraph(labels=label_stack)
             yield retval
             continue
 
         # A blank line ends a paragraph.
         if line == '':
-            retval = pp
-            pp = Paragraph()
-            pp.append(retval.successor)
+            (retval, pp) = pp.next_paragraph(labels=label_stack)
             yield retval
             continue
 
