@@ -188,5 +188,47 @@ class TestParser(unittest.TestCase):
         self.assertTrue(paragraphs[2].is_table())
     
 
+class TestLabeling(unittest.TestCase):
+
+    def test_simple_lable(self):
+        test_data = textwrap.dedent("""\
+        [@Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
+        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
+        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
+        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
+        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
+        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
+        and L. sect. Albati with four newly combined species plus two species previously combined
+        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
+        proposed.#Abstract*]
+        [@Key words — milkcaps, nomenclature#Key-words*]
+        """).split('\n')
+
+        expected0 = textwrap.dedent("""\
+        Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
+        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
+        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
+        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
+        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
+        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
+        and L. sect. Albati with four newly combined species plus two species previously combined
+        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
+        proposed.
+        """)
+                                    
+        expected1 = textwrap.dedent("""\
+        Key words — milkcaps, nomenclature
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+
+        self.maxDiff = None
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(paragraphs[0].lable, 'Abstract')
+        self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(paragraphs[0].lable, 'Key-words')
+
+
+
 if __name__ == '__main__':
     unittest.main()
