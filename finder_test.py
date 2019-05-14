@@ -111,6 +111,23 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
 
+    def test_middle_start(self):
+        test_data = textwrap.dedent("""\
+        multiformibus ornata. [@Habitat in herbidis locis.#Habitat-distribution*]
+        """).split('\n')
+        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: line [0-9]+:'):
+            for p in finder.parse_paragraphs(test_data):
+                pass
+
+    def test_middle_end(self):
+        test_data = textwrap.dedent("""\
+        multiformibus ornata.#Description*] Habitat in herbidis locis
+        """).split('\n')
+
+        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: line [0-9]+:'):
+            for p in finder.parse_paragraphs(test_data):
+                pass
+
     def test_figure(self):
         test_data = textwrap.dedent("""\
           Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
@@ -121,6 +138,8 @@ class TestParser(unittest.TestCase):
         in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 
         Figure 2. Excepteur sint occaecat cupidatat non proident,
+
+        Photo 1. culpa qui officia deserunt mollit anim id est laborum.
         """).split('\n')
 
         expected0 = textwrap.dedent("""\
@@ -138,6 +157,10 @@ class TestParser(unittest.TestCase):
         Figure 2. Excepteur sint occaecat cupidatat non proident,
         """)
 
+        expected6 = textwrap.dedent("""\
+        Photo 1. culpa qui officia deserunt mollit anim id est laborum.
+        """)
+
         paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
@@ -145,11 +168,13 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(paragraphs[1]), '\n')
         self.assertEqual(str(paragraphs[2]), expected2)
         self.assertFalse(paragraphs[2].is_figure())
-        self.assertEqual(str(paragraphs[1]), '\n')
+        self.assertEqual(str(paragraphs[3]), '\n')
         self.assertEqual(str(paragraphs[4]), expected4)
         self.assertTrue(paragraphs[4].is_figure())
-        self.assertEqual(str(paragraphs[1]), '\n')
-        self.assertFalse(paragraphs[5].is_figure())
+        self.assertEqual(str(paragraphs[5]), '\n')
+        self.assertEqual(str(paragraphs[6]), expected6)
+        self.assertTrue(paragraphs[6].is_figure())
+        self.assertEqual(str(paragraphs[7]), '\n')
 
     def test_table(self):
         test_data = textwrap.dedent("""\

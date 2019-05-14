@@ -9,15 +9,19 @@ class Line(object):
     _value = ...  # type: str
     _label_start = ...  # type: bool
     _label_end = ...  # type: Optional[str]
+    _line_number = ...  # type: int
+    _count = 0
 
     def __init__(self, line: str):
+        self.__class__._count += 1
         self._value = line.strip(' \n')
+        self._line_number = self._count
         self.strip_label_start()
         self.strip_label_end()
 
     def __repr__(self) -> str:
-        return 'start: %s end: %s value: %r' % (
-            self._label_start, self._label_end, self._value)
+        return 'line %d: start: %s end: %s value: %r' % (
+            self._line_number, self._label_start, self._label_end, self._value)
 
     def line(self):
         return self._value
@@ -28,13 +32,18 @@ class Line(object):
             self._value = self._value[2:]
         else:
             self._label_start = False
+        if '[@' in self._value:
+            raise ValueError('Label open not at start of line: %s' % self)
 
     def strip_label_end(self) -> None:
         match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]$', self._value)
         if not match:
             self._label_end = None
-            return
-        (self._value, self._label_end) = match.groups()
+        else:
+            (self._value, self._label_end) = match.groups()
+        match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]', self._value)
+        if match:
+            raise ValueError('Label close not at end of line: %r' % self)
 
     def startswith(self, *args, **kwargs) -> bool:
         return self._value.startswith(*args, **kwargs)
@@ -90,11 +99,16 @@ class Paragraph(object):
         else:
             self._labels = []
 
-    def append(self, line: str) -> None:
+    def append(self, line: Line) -> None:
         if line.contains_start():
             self.push_label()
         if line.end_label():
-            self.top_label().set_label(line.end_label())
+            if self.top_label() is None:
+                raise ValueError('label close without open: %r' % line)
+            try:
+                self.top_label().set_label(line.end_label())
+            except ValueError as e:
+                raise ValueError('%s: %r' % (e, line))
         self.lines.append(line)
 
     def top_label(self) -> Optional[Label]:
@@ -144,7 +158,7 @@ class Paragraph(object):
 
     def is_figure(self) -> bool:
         return self.startswith([
-            'fig', 'fig.', 'figs', 'figure', 'figures', 'plate', 'plates',
+            'fig', 'fig.', 'figure', 'photo', 'plate',
         ])
 
     def is_table(self) -> bool:
@@ -187,7 +201,6 @@ def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
             continue
 
         pp.append_ahead(line)
-
 
         # Tables continue to grow as long as we have short lines.
         if pp.is_table():
