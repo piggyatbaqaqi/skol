@@ -26,18 +26,14 @@ class Line(object):
         if self.startswith('[@'):
             self._label_start = True
             self._value = self._value[2:]
-            print("DEBUG: strip_label_start", self._value)
         else:
             self._label_start = False
-            print("DEBUG: no label to start")
 
     def strip_label_end(self) -> None:
         match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]$', self._value)
         if not match:
             self._label_end = None
-            print("DEBUG: no label end: %r" % self)
             return
-        print("DEBUG: strip_label_end, match.groups:", match.groups())
         (self._value, self._label_end) = match.groups()
 
     def startswith(self, *args, **kwargs) -> bool:
@@ -95,12 +91,9 @@ class Paragraph(object):
             self._labels = []
 
     def append(self, line: str) -> None:
-        print("DEBUG: append(line: %r)" % line)
         if line.contains_start():
-            print("DEBUG: pushing label")
             self.push_label()
         if line.end_label():
-            print("DEBUG: labeling top label: ", line.end_label())
             self.top_label().set_label(line.end_label())
         self.lines.append(line)
 
@@ -111,8 +104,6 @@ class Paragraph(object):
             return None
 
     def append_ahead(self, line: Line) -> None:
-        print("DEBUG: append_ahead(line: %r)" % line)
-        print("DEBUG: self._next_line: %r" % self._next_line)
         if self._next_line is not None:
             self.append(self._next_line)
         self._next_line = line
@@ -122,22 +113,18 @@ class Paragraph(object):
 
     def pop_label(self) -> Label:
         retval = self._labels.pop()
-        print("DEBUG: popping label: ", retval)
         return retval
 
     def next_line(self) -> Line:
         return self._next_line
 
     def next_paragraph(self) -> ('Paragraph', 'Paragraph'):
-        print("DEBUG: next_paragraph")
         pp = Paragraph(labels=self._labels)
         # Remove labels which ended with the previous line.
         while pp.top_label() and pp.top_label().assigned():
             pp.pop_label()
         pp.append_ahead(self._next_line)
         self._next_line = None
-        print("DEBUG:     current pp: %r" % self)
-        print("DEBUG:     next pp: %r" % pp)
         return (self, pp)
 
     def __str__(self) -> str:
@@ -195,20 +182,15 @@ def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
     pp = Paragraph()
     for line_value in contents:
         line = Line(line_value)
-        print("DEBUG: line: %r" % line)
-        print("DEBUG: line.is_blank()=%r" % line.is_blank())
         # Strip page headers.
         if line.startswith(''):
-            print("DEBUG: skipping page header: %r" % line)
             continue
 
         pp.append_ahead(line)
 
-        print("DEBUG: pp: %r" % pp)
 
         # Tables continue to grow as long as we have short lines.
         if pp.is_table():
-            print("DEBUG: table")
             if line.is_short(pp.short_line):
                 continue
             (retval, pp) = pp.next_paragraph()
@@ -217,7 +199,6 @@ def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
 
         # Blocks of blank lines are a paragraph.
         if pp.is_blank():
-            print("DEBUG: blanks")
             if line.is_blank():
                 continue
             retval = pp
@@ -228,7 +209,6 @@ def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
         # Figures end with a blank line, or a period at the end of a
         # line.
         if pp.is_figure():
-            print("DEBUG: figure")
             if not line.is_blank() and not pp.endswith('.'):
                continue
             (retval, pp) = pp.next_paragraph()
@@ -237,21 +217,18 @@ def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
 
         # A period before a newline marks the end of a paragraph.
         if pp.endswith('.'):
-            print("DEBUG: period")
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
 
         # A short line ends a paragraph.
         if pp.last_line and pp.last_line.is_short(pp.short_line):
-            print("DEBUG: short line")
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
 
         # A blank line ends a paragraph.
         if line.is_blank():
-            print("DEBUG: ending blank")
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
