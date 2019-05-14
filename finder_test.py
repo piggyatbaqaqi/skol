@@ -243,8 +243,6 @@ class TestLabeling(unittest.TestCase):
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        print("DEBUG: paragraphs: %r" % paragraphs)
-
         self.assertEqual(len(paragraphs), 7)
         self.assertEqual(paragraphs[0].labels, [finder.Label('Title')])
         self.assertEqual(paragraphs[1].labels, [finder.Label('Author')])
