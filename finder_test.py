@@ -9,59 +9,61 @@ class TestParagraph(unittest.TestCase):
         self.pp2 = finder.Paragraph()
 
     def test_append(self):
-        self.pp.append('hamster')
-        self.pp.append('gerbil')
+        self.pp.append(finder.Line('hamster'))
+        self.pp.append(finder.Line('gerbil'))
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
 
     def test_append_ahead(self):
-        self.pp.append_ahead('hamster')
-        self.pp.append_ahead('gerbil')
-        self.pp.append_ahead('rabbit')
+        self.pp.append_ahead(finder.Line('hamster'))
+        self.pp.append_ahead(finder.Line('gerbil'))
+        self.pp.append_ahead(finder.Line('rabbit'))
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
-        self.assertEqual(self.pp.next_line, 'rabbit')
-
-    def test_is_header(self):
-        self.pp.append('headline')
-        self.pp.append('hamster')
-
-        self.assertTrue(self.pp.is_header())
-        self.assertFalse(self.pp2.is_header())
-
-        self.pp2.append('rabbit')
-        self.assertFalse(self.pp2.is_header())
+        self.assertEqual(self.pp.next_line().line(), 'rabbit')
 
     def test_is_figure(self):
-        self.pp.append('  Fig. 2.7  ')
-        self.pp.append('hamster')
+        self.pp.append(finder.Line('  Fig. 2.7  '))
+        self.pp.append(finder.Line('hamster'))
         self.assertTrue(self.pp.is_figure())
         self.assertFalse(self.pp2.is_figure())
 
-        self.pp2.append('rabbit')
+        self.pp2.append(finder.Line('rabbit'))
         self.assertFalse(self.pp2.is_figure())
 
     def test_is_table(self):
-        self.pp.append('  Table 1 ')
-        self.pp.append('hamster')
+        self.pp.append(finder.Line('  Table 1 '))
+        self.pp.append(finder.Line('hamster'))
         self.assertTrue(self.pp.is_table())
         self.assertFalse(self.pp2.is_table())
 
-        self.pp2.append('rabbit')
+        self.pp2.append(finder.Line('rabbit'))
         self.assertFalse(self.pp2.is_table())
-        
-    def test_last_line(self):
-        self.pp.append_ahead('hamster')
-        self.assertEqual(str(self.pp), '\n')
-        self.pp.append_ahead('gerbil')
-        self.pp.append_ahead('rabbit')
 
-        self.assertEqual(self.pp.last_line, 'gerbil')
+    def test_last_line(self):
+        self.pp.append_ahead(finder.Line('hamster'))
+        self.assertEqual(str(self.pp), '\n')
+        self.pp.append_ahead(finder.Line('gerbil'))
+        self.pp.append_ahead(finder.Line('rabbit'))
+
+        self.assertEqual(self.pp.last_line.line(), 'gerbil')
         self.pp.close()
-        self.assertEqual(self.pp.last_line, 'rabbit')
-        
+        self.assertEqual(self.pp.last_line.line(), 'rabbit')
+
+
+class TestLine(unittest.TestCase):
+    def test_line(self):
+        data = '[@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]'
+        line = finder.Line(data)
+
+        self.assertEqual(line.line(), 'New records of smut fungi. 4. Microbotryum coronariae comb. nov.')
+        self.assertTrue(line.contains_start())
+        self.assertEqual(line.end_label(), 'Title')
+        self.assertFalse(line.is_short(50))
+        self.assertFalse(line.is_blank())
+
 
 class TestParser(unittest.TestCase):
 
@@ -78,8 +80,8 @@ class TestParser(unittest.TestCase):
 
         http://dx.doi.org/10.5248/118.273""").split('\n')
 
-        paragraphs = list(finder.parse_paragraphs(test_data))        
-        self.assertEqual(len(paragraphs), 9)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(len(paragraphs), 10)
 
     def test_table(self):
         test_data = textwrap.dedent("""\
@@ -108,30 +110,28 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
-        
+
     def test_figure(self):
         test_data = textwrap.dedent("""\
-          Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit, sed do eiusmod tempor incididunt ut labore et dolore
+          Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+        tempor incididunt ut labore et dolore
 
-        magna aliqua. Ut enim ad minim veniam, quis nostrud
-        exercitation ullamco laboris nisi ut aliquip ex ea commodo
-        consequat. Duis aute irure dolor in reprehenderit in voluptate
-        velit esse cillum dolore eu fugiat nulla pariatur.
+        magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+        nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
+        in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 
         Figure 2. Excepteur sint occaecat cupidatat non proident,
         """).split('\n')
 
         expected0 = textwrap.dedent("""\
-          Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit, sed do eiusmod tempor incididunt ut labore et dolore
+        Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+        tempor incididunt ut labore et dolore
         """)
 
         expected2 = textwrap.dedent("""\
-        magna aliqua. Ut enim ad minim veniam, quis nostrud
-        exercitation ullamco laboris nisi ut aliquip ex ea commodo
-        consequat. Duis aute irure dolor in reprehenderit in voluptate
-        velit esse cillum dolore eu fugiat nulla pariatur.
+        magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+        nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
+        in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         """)
 
         expected4 = textwrap.dedent("""\
@@ -150,32 +150,32 @@ class TestParser(unittest.TestCase):
         self.assertTrue(paragraphs[4].is_figure())
         self.assertEqual(str(paragraphs[1]), '\n')
         self.assertFalse(paragraphs[5].is_figure())
-        
+
     def test_table(self):
         test_data = textwrap.dedent("""\
           Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor
         incididunt ut labore et dolore
-        magna aliqua. Ut enim ad minim veniam, quis nostrud
-        exercitation ullamco laboris nisi ut aliquip ex ea commodo
-        consequat. Duis aute irure dolor in reprehenderit in voluptate
-        velit esse cillum dolore eu fugiat nulla pariatur.
+        magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+        nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
+        in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
         """).split('\n')
 
         expected0 = textwrap.dedent("""\
-          Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
+        Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor
         incididunt ut labore et dolore
         """)
         expected1 = textwrap.dedent("""\
-        magna aliqua. Ut enim ad minim veniam, quis nostrud
-        exercitation ullamco laboris nisi ut aliquip ex ea commodo
-        consequat. Duis aute irure dolor in reprehenderit in voluptate
-        velit esse cillum dolore eu fugiat nulla pariatur.
+        magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+        nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
+        in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         """)
+        # Final table ends with two newlines.
         expected2 = textwrap.dedent("""\
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
+
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
@@ -186,7 +186,7 @@ class TestParser(unittest.TestCase):
         self.assertFalse(paragraphs[1].is_table())
         self.assertEqual(str(paragraphs[2]), expected2)
         self.assertTrue(paragraphs[2].is_table())
-    
+
 
 class TestLabeling(unittest.TestCase):
 
@@ -215,7 +215,7 @@ class TestLabeling(unittest.TestCase):
         in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
         proposed.
         """)
-                                    
+
         expected1 = textwrap.dedent("""\
         Key words — milkcaps, nomenclature
         """)
@@ -228,6 +228,31 @@ class TestLabeling(unittest.TestCase):
         self.assertEqual(str(paragraphs[1]), expected1)
         self.assertEqual(paragraphs[1].labels, [finder.Label('Key-words')])
 
+    def test_doubled_abstract(self):
+
+        test_data = textwrap.dedent("""\
+        [@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]
+        [@Cvetomir M. Denchev & Teodor T. Denchev#Author*]
+        [@Institute of Biodiversity and Ecosystem Research, Bulgarian Academy of Sciences,
+        2 Gagarin St., 1113 Soﬁa, Bulgaria#Institution*]
+        * Correspondence to: cmdenchev@yahoo.co.uk
+        [@Abstract — For Ustilago coronariae on Lychnis ﬂos-cuculi, a new combination in
+        Microbotryum, M. coronariae, is proposed. It is reported as new to Bulgaria.#Abstract*]
+        [@Key words — Microbotryaceae, taxonomy#Key-words*]
+        """).split('\n')
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+
+        print("DEBUG: paragraphs: %r" % paragraphs)
+
+        self.assertEqual(len(paragraphs), 7)
+        self.assertEqual(paragraphs[0].labels, [finder.Label('Title')])
+        self.assertEqual(paragraphs[1].labels, [finder.Label('Author')])
+        self.assertEqual(paragraphs[2].labels, [finder.Label('Institution')])
+        self.assertEqual(paragraphs[3].labels, [])  # correspondence
+        self.assertEqual(paragraphs[4].labels, [finder.Label('Abstract')])
+        self.assertEqual(paragraphs[5].labels, [finder.Label('Key-words')])
+        self.assertEqual(paragraphs[6].labels, []) # Paragraph('\n')
 
 
 if __name__ == '__main__':
