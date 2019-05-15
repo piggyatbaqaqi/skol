@@ -80,7 +80,7 @@ class TestParser(unittest.TestCase):
 
         http://dx.doi.org/10.5248/118.273""").split('\n')
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
+        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
         self.assertEqual(len(paragraphs), 10)
 
     def test_table(self):
@@ -106,7 +106,7 @@ class TestParser(unittest.TestCase):
         expected1 = textwrap.dedent("""\
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""")
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
+        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
@@ -115,8 +115,8 @@ class TestParser(unittest.TestCase):
         test_data = textwrap.dedent("""\
         multiformibus ornata. [@Habitat in herbidis locis.#Habitat-distribution*]
         """).split('\n')
-        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: line [0-9]+:'):
-            for p in finder.parse_paragraphs(test_data):
+        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: [^:]+:[0-9]+:'):
+            for p in finder.parse_paragraphs(finder.Line(l) for l in test_data):
                 pass
 
     def test_middle_end(self):
@@ -124,8 +124,8 @@ class TestParser(unittest.TestCase):
         multiformibus ornata.#Description*] Habitat in herbidis locis
         """).split('\n')
 
-        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: line [0-9]+:'):
-            for p in finder.parse_paragraphs(test_data):
+        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: [^:]+:[0-9]+:'):
+            for p in finder.parse_paragraphs(finder.Line(l) for l in test_data):
                 pass
 
     def test_figure(self):
@@ -161,7 +161,7 @@ class TestParser(unittest.TestCase):
         Photo 1. culpa qui officia deserunt mollit anim id est laborum.
         """)
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
+        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertTrue(paragraphs[0].is_figure())
@@ -203,7 +203,7 @@ class TestParser(unittest.TestCase):
 
         """)
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
+        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertTrue(paragraphs[0].is_table())
@@ -245,7 +245,7 @@ class TestLabeling(unittest.TestCase):
         Key words — milkcaps, nomenclature
         """)
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
+        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
 
         self.maxDiff = None
         self.assertEqual(str(paragraphs[0]), expected0)
@@ -266,7 +266,7 @@ class TestLabeling(unittest.TestCase):
         [@Key words — Microbotryaceae, taxonomy#Key-words*]
         """).split('\n')
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
+        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
 
         self.assertEqual(len(paragraphs), 7)
         self.assertEqual(paragraphs[0].labels, [finder.Label('Title')])
