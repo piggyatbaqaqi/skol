@@ -6,22 +6,24 @@ import sys
 from typing import Iterable, List, Optional
 
 class Line(object):
-    _value = ...  # type: str
+    _value = ...  # type: Optional[str]
+    _filename = ...  # type: str
     _label_start = ...  # type: bool
     _label_end = ...  # type: Optional[str]
     _line_number = ...  # type: int
     _count = 0
 
-    def __init__(self, line: str):
+    def __init__(self, line: str, filename: Optional[str] = None):
         self.__class__._count += 1
         self._value = line.strip(' \n')
+        self._filename = filename
         self._line_number = self._count
         self.strip_label_start()
         self.strip_label_end()
 
     def __repr__(self) -> str:
-        return 'line %d: start: %s end: %s value: %r' % (
-            self._line_number, self._label_start, self._label_end, self._value)
+        return '%s:%d: start: %s end: %s value: %r' % (
+            self._filename, self._line_number, self._label_start, self._label_end, self._value)
 
     def line(self):
         return self._value
@@ -92,12 +94,18 @@ class Paragraph(object):
 
     def __init__(self, short_line=60, labels: Optional[List[Label]] = None):
         self.short_line = short_line
-        self.lines = []
+        self._lines = []
         self._next_line = None
         if labels:
             self._labels = labels[:]
         else:
             self._labels = []
+
+    def __str__(self) -> str:
+        return '\n'.join([l.line() for l in self._lines]) + '\n'
+
+    def __repr__(self) -> str:
+        return 'Labels(%s), Paragraph(%r), Pending(%r)\n' % (self._labels, str(self), self._next_line)
 
     def append(self, line: Line) -> None:
         if line.contains_start():
@@ -109,18 +117,18 @@ class Paragraph(object):
                 self.top_label().set_label(line.end_label())
             except ValueError as e:
                 raise ValueError('%s: %r' % (e, line))
-        self.lines.append(line)
+        self._lines.append(line)
+
+    def append_ahead(self, line: Line) -> None:
+        if self._next_line is not None:
+            self.append(self._next_line)
+        self._next_line = line
 
     def top_label(self) -> Optional[Label]:
         if self._labels:
             return self._labels[-1]
         else:
             return None
-
-    def append_ahead(self, line: Line) -> None:
-        if self._next_line is not None:
-            self.append(self._next_line)
-        self._next_line = line
 
     def push_label(self) -> None:
         self._labels.append(Label())
@@ -141,16 +149,10 @@ class Paragraph(object):
         self._next_line = None
         return (self, pp)
 
-    def __str__(self) -> str:
-        return '\n'.join([l.line() for l in self.lines]) + '\n'
-
-    def __repr__(self) -> str:
-        return 'Labels(%s), Paragraph(%r), Pending(%r)\n' % (self._labels, str(self), self._next_line)
-
     def startswith(self, tokens: List[str]) -> bool:
-        if not self.lines:
+        if not self._lines:
             return False
-        tokenized = self.lines[0].line().strip().split()
+        tokenized = self._lines[0].line().strip().split()
         if not tokenized:
             return False
         first_token = tokenized[0].lower()
@@ -158,7 +160,7 @@ class Paragraph(object):
 
     def is_figure(self) -> bool:
         return self.startswith([
-            'fig', 'fig.', 'figure', 'photo', 'plate',
+            'fig', 'fig.', 'figs', 'figs.', 'figure', 'photo', 'plate',
         ])
 
     def is_table(self) -> bool:
@@ -167,15 +169,15 @@ class Paragraph(object):
         ])
 
     def is_blank(self) -> bool:
-        if self.lines:
-            return all(line.is_blank() for line in self.lines)
+        if self._lines:
+            return all(line.is_blank() for line in self._lines)
         return False  # Empty paragraph is not blank yet.
 
     @property
     def last_line(self) -> str:
-        if not self.lines:
+        if not self._lines:
             return None
-        return self.lines[-1]
+        return self._lines[-1]
 
     def close(self) -> None:
         if self._next_line:
@@ -191,11 +193,10 @@ class Paragraph(object):
         return self._labels[:]
 
 
-def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
+def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     label = None
     pp = Paragraph()
-    for line_value in contents:
-        line = Line(line_value)
+    for line in contents:
         # Strip page headers.
         if line.startswith(''):
             continue
@@ -250,32 +251,68 @@ def parse_paragraphs(contents: Iterable[str]) -> Iterable[Paragraph]:
     yield pp
 
 
+def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterable[Paragraph]:
+    for pp in paragraphs:
+        if (pp.is_figure() or
+            pp.is_table() or
+            pp.is_blank()):
+            continue
+        yield(pp)
+
+
+def target_classes(paragraphs: Iterable[Paragraph],
+                   default: str,
+                   keep: List[str]) -> Iterable[Paragraph]:
+    for pp in paragraphs:
+        yield pp  # STUB
+
+
+def read_files(files: List[str]) -> Iterable[str]:
+    for f in files:
+        for line in open(f, 'r'):
+            yield Line(line, filename=f)
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="the file to search for descriptions")
-    parser.add_argument("--dump_phase1", help="Dump the output of phase 1 and exit.", action="store_true")
-    parser.add_argument("--dump_phase2", help="Dump the output of phase 2 and exit.", action="store_true")
+    parser.add_argument("file", help="the file to search for descriptions", action="append")
+    parser.add_argument("--dump_phase", help="Dump the output of these phases and exit.", type=int, action="append")
     args = parser.parse_args()
     print(args.file)
+    print(args.dump_phase)
 
-    contents = open(args.file, 'r')
+    contents = read_files(args.file)
 
-    output = []
+    phase1 = parse_paragraphs(contents)
 
-    for paragraph in parse_paragraphs(contents):
-        if (paragraph.is_figure() or
-            paragraph.is_table()):
-            continue
+    if 1 in args.dump_phase:
+        print('Phase 1')
+        print('=======')
+        print(repr(list(phase1)))
+        if 1 == max(args.dump_phase):
+            sys.exit(0)
 
-        output.append(paragraph)
+    phase2 = remove_interstitials(list(phase1))
 
-    if args.dump_phase1:
-        print(repr(list(output)))
-        sys.exit(0)
+    if 2 in args.dump_phase:
+        print('Phase 2')
+        print('=======')
+        print(repr(list(phase2)))
+        if 2 == max(args.dump_phase):
+            sys.exit(0)
 
-    if args.dump_phase2:
-        print(repr(list(output)))
-        sys.exit(0)
+    phase3 = target_classes(
+        phase2,
+        default='Misc-exposition',
+        keep=['Taxonomy', 'Description']
+    )
+
+    if 3 in args.dump_phase:
+        print('Phase 3')
+        print('=======')
+        print(repr(list(phase3)))
+        if 3 == max(args.dump_phase):
+            sys.exit(0)
 
 
 if __name__ == '__main__':
