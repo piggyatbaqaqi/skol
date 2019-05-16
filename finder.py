@@ -5,15 +5,33 @@ import re
 import sys
 from typing import Iterable, List, Optional
 
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier, GradientBoostingClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import HashingVectorizer
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV, SGDClassifier, LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import *
+import pandas
+
 class Line(object):
     _value = ...  # type: Optional[str]
     _filename = ...  # type: str
     _label_start = ...  # type: bool
     _label_end = ...  # type: Optional[str]
     _line_number = ...  # type: int
+    _file = None
     _count = 0
 
     def __init__(self, line: str, filename: Optional[str] = None):
+        if self.__class__._file != filename:
+            self.__class__._file = filename
+            self.__class__._count = 0
         self.__class__._count += 1
         self._value = line.strip(' \n')
         self._filename = filename
@@ -80,6 +98,9 @@ class Label(object):
     def __repr__(self):
         return 'Label(%r)' % self._value
 
+    def __str__(self) -> str:
+        return self._value
+    
     def set_label(self, label_value: str):
         if self.assigned():
             raise ValueError('Label already has value: %s' % self._value)
@@ -202,6 +223,11 @@ class Paragraph(object):
     def labels(self) -> List[str]:
         return self._labels[:]
 
+def paragraphs_to_dataframe(paragraphs: List[Paragraph]):
+    return pandas.DataFrame(data={
+            'v1': [str(pp.top_label()) for pp in paragraphs],
+            'v2': [str(pp) for pp in paragraphs]
+        })
 
 def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     label = None
@@ -286,13 +312,29 @@ def read_files(files: List[str]) -> Iterable[str]:
             yield Line(line, filename=f)
 
 
+def perform(classifiers, vectorizers, train_data, test_data):
+    for classifier in classifiers:
+      for vectorizer in vectorizers:
+        string = ''
+        string += classifier.__class__.__name__ + ' with ' + vectorizer.__class__.__name__
+
+        # train
+        vectorize_text = vectorizer.fit_transform(train_data.v2)
+        classifier.fit(vectorize_text, train_data.v1)
+
+        # score
+        vectorize_text = vectorizer.transform(test_data.v2)
+        score = classifier.score(vectorize_text, test_data.v1)
+        string += '. Has score: ' + str(score)
+        print(string)
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="the file to search for descriptions", action="append")
-    parser.add_argument("--dump_phase", help="Dump the output of these phases and exit.", type=int, action="append")
+    parser.add_argument("file", type=str, nargs='+', help="the file to search for descriptions")
+    parser.add_argument("--dump_phase", help="Dump the output of these phases and exit.", default=[], type=int, action="append")
     args = parser.parse_args()
     print(args.file)
-    print(args.dump_phase)
 
     contents = read_files(args.file)
 
@@ -301,21 +343,25 @@ def main():
     if 1 in args.dump_phase:
         print('Phase 1')
         print('=======')
-        print(repr(list(phase1)))
+        phase1 = list(phase1)
+        print(repr(phase1))
         if 1 == max(args.dump_phase):
             sys.exit(0)
 
-    phase2 = remove_interstitials(list(phase1))
+    phase2 = remove_interstitials(phase1)
 
     if 2 in args.dump_phase:
         print('Phase 2')
         print('=======')
-        print(repr(list(phase2)))
+        phase2 = list(phase2)
+        print(repr(phase2))
         if 2 == max(args.dump_phase):
             sys.exit(0)
 
+    # All labels need to be resolved for this phase. The easiest way
+    # to assure this is to convert to list.
     phase3 = target_classes(
-        phase2,
+        list(phase2),
         default=Label('Misc-exposition'),
         keep=[Label('Taxonomy'), Label('Description')]
     )
@@ -323,9 +369,45 @@ def main():
     if 3 in args.dump_phase:
         print('Phase 3')
         print('=======')
-        print(repr(list(phase3)))
+        phase3 = list(phase3)
+        print(repr(phase3))
         if 3 == max(args.dump_phase):
             sys.exit(0)
+
+    phase3 = list(phase3)
+    sample_size = len(phase3)
+
+    cutoff = int(sample_size * 0.70)
+    learn = paragraphs_to_dataframe(phase3[:cutoff])
+    test = paragraphs_to_dataframe(phase3[cutoff:])
+
+    perform(
+        [
+            BernoulliNB(),
+            RandomForestClassifier(n_estimators=100, n_jobs=-1),
+            AdaBoostClassifier(),
+            BaggingClassifier(),
+            ExtraTreesClassifier(),
+            GradientBoostingClassifier(),
+            DecisionTreeClassifier(),
+            CalibratedClassifierCV(),
+            DummyClassifier(),
+            PassiveAggressiveClassifier(),
+            RidgeClassifier(),
+            RidgeClassifierCV(),
+            SGDClassifier(),
+            OneVsRestClassifier(SVC(kernel='linear')),
+            OneVsRestClassifier(LogisticRegression()),
+            KNeighborsClassifier()
+        ],
+        [
+            CountVectorizer(),
+            TfidfVectorizer(),
+            HashingVectorizer()
+        ],
+        learn,
+        test
+    )
 
 
 if __name__ == '__main__':
