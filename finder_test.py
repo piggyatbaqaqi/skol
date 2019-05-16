@@ -1,6 +1,10 @@
 import finder
 import textwrap
+from typing import List
 import unittest
+
+def lineify(lines: List[str]) -> List[finder.Line]:
+    return [finder.Line(l) for l in lines]
 
 class TestParagraph(unittest.TestCase):
 
@@ -65,10 +69,26 @@ class TestLine(unittest.TestCase):
         self.assertFalse(line.is_blank())
 
 
+    def test_middle_start(self):
+        test_data = textwrap.dedent("""\
+        multiformibus ornata. [@Habitat in herbidis locis.#Habitat-distribution*]
+        """).split('\n')
+        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: [^:]+:[0-9]+:'):
+            lineify(test_data)
+
+    def test_middle_end(self):
+        test_data = textwrap.dedent("""\
+        multiformibus ornata.#Description*] Habitat in herbidis locis
+        """).split('\n')
+
+        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: [^:]+:[0-9]+:'):
+            lineify(test_data)
+
+
 class TestParser(unittest.TestCase):
 
     def test_regression1(self):
-        test_data = textwrap.dedent("""\
+        test_data = lineify(textwrap.dedent("""\
         ISSN (print) 0093-4666
 
         © 2011. Mycotaxon, Ltd.
@@ -78,13 +98,13 @@ class TestParser(unittest.TestCase):
         MYCOTAXON
         Volume 118, pp. 273–282
 
-        http://dx.doi.org/10.5248/118.273""").split('\n')
+        http://dx.doi.org/10.5248/118.273""").split('\n'))
 
-        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
+        paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(len(paragraphs), 10)
 
     def test_table(self):
-        test_data = textwrap.dedent("""\
+        test_data = lineify(textwrap.dedent("""\
         Table 1.
 
         short
@@ -92,7 +112,7 @@ class TestParser(unittest.TestCase):
         long
         longer
 
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""").split('\n')
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""").split('\n'))
 
         expected0 = textwrap.dedent("""\
         Table 1.
@@ -106,30 +126,13 @@ class TestParser(unittest.TestCase):
         expected1 = textwrap.dedent("""\
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""")
 
-        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
+        paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
 
-    def test_middle_start(self):
-        test_data = textwrap.dedent("""\
-        multiformibus ornata. [@Habitat in herbidis locis.#Habitat-distribution*]
-        """).split('\n')
-        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: [^:]+:[0-9]+:'):
-            for p in finder.parse_paragraphs(finder.Line(l) for l in test_data):
-                pass
-
-    def test_middle_end(self):
-        test_data = textwrap.dedent("""\
-        multiformibus ornata.#Description*] Habitat in herbidis locis
-        """).split('\n')
-
-        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: [^:]+:[0-9]+:'):
-            for p in finder.parse_paragraphs(finder.Line(l) for l in test_data):
-                pass
-
     def test_figure(self):
-        test_data = textwrap.dedent("""\
+        test_data = lineify(textwrap.dedent("""\
           Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
         tempor incididunt ut labore et dolore
 
@@ -140,7 +143,7 @@ class TestParser(unittest.TestCase):
         Figure 2. Excepteur sint occaecat cupidatat non proident,
 
         Photo 1. culpa qui officia deserunt mollit anim id est laborum.
-        """).split('\n')
+        """).split('\n'))
 
         expected0 = textwrap.dedent("""\
         Fig 1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
@@ -161,7 +164,7 @@ class TestParser(unittest.TestCase):
         Photo 1. culpa qui officia deserunt mollit anim id est laborum.
         """)
 
-        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
+        paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertTrue(paragraphs[0].is_figure())
@@ -177,7 +180,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(paragraphs[7]), '\n')
 
     def test_table(self):
-        test_data = textwrap.dedent("""\
+        test_data = lineify(textwrap.dedent("""\
           Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor
         incididunt ut labore et dolore
@@ -185,7 +188,7 @@ class TestParser(unittest.TestCase):
         nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
         in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
-        """).split('\n')
+        """).split('\n'))
 
         expected0 = textwrap.dedent("""\
         Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
@@ -203,7 +206,7 @@ class TestParser(unittest.TestCase):
 
         """)
 
-        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
+        paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertTrue(paragraphs[0].is_table())
@@ -216,7 +219,7 @@ class TestParser(unittest.TestCase):
 class TestLabeling(unittest.TestCase):
 
     def test_simple_label(self):
-        test_data = textwrap.dedent("""\
+        test_data = lineify(textwrap.dedent("""\
         [@Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
         Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
         (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
@@ -227,7 +230,7 @@ class TestLabeling(unittest.TestCase):
         in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
         proposed.#Abstract*]
         [@Key words — milkcaps, nomenclature#Key-words*]
-        """).split('\n')
+        """).split('\n'))
 
         expected0 = textwrap.dedent("""\
         Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
@@ -245,7 +248,7 @@ class TestLabeling(unittest.TestCase):
         Key words — milkcaps, nomenclature
         """)
 
-        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
+        paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.maxDiff = None
         self.assertEqual(str(paragraphs[0]), expected0)
@@ -255,7 +258,7 @@ class TestLabeling(unittest.TestCase):
 
     def test_doubled_abstract(self):
 
-        test_data = textwrap.dedent("""\
+        test_data = lineify(textwrap.dedent("""\
         [@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]
         [@Cvetomir M. Denchev & Teodor T. Denchev#Author*]
         [@Institute of Biodiversity and Ecosystem Research, Bulgarian Academy of Sciences,
@@ -264,9 +267,9 @@ class TestLabeling(unittest.TestCase):
         [@Abstract — For Ustilago coronariae on Lychnis ﬂos-cuculi, a new combination in
         Microbotryum, M. coronariae, is proposed. It is reported as new to Bulgaria.#Abstract*]
         [@Key words — Microbotryaceae, taxonomy#Key-words*]
-        """).split('\n')
+        """).split('\n'))
 
-        paragraphs = list(finder.parse_paragraphs(finder.Line(l) for l in test_data))
+        paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.assertEqual(len(paragraphs), 7)
         self.assertEqual(paragraphs[0].labels, [finder.Label('Title')])
