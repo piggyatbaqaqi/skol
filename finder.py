@@ -72,7 +72,9 @@ class Label(object):
     def __init__(self, value: Optional[str] = None):
         self._value = value
 
-    def __eq__(self, other: 'Label') -> bool:
+    def __eq__(self, other: Optional['Label']) -> bool:
+        if other is None:
+            return self is None
         return self._value == other._value
 
     def __repr__(self):
@@ -92,9 +94,13 @@ class Paragraph(object):
     _next_line = ...  # type: Optional[Line]
     _labels = ...  # type: List[Label]
 
-    def __init__(self, short_line=60, labels: Optional[List[Label]] = None):
+    def __init__(self, short_line=60, labels: Optional[List[Label]] = None,
+                 lines: Optional[List[Line]] = None):
         self.short_line = short_line
-        self._lines = []
+        if lines:
+            self._lines = lines[:]
+        else:
+            self._lines = []
         self._next_line = None
         if labels:
             self._labels = labels[:]
@@ -148,6 +154,10 @@ class Paragraph(object):
         pp.append_ahead(self._next_line)
         self._next_line = None
         return (self, pp)
+
+    def replace_labels(self, labels: List[Label]) -> 'Paragraph':
+        pp = Paragraph(labels=labels, lines=self._lines)
+        return pp
 
     def startswith(self, tokens: List[str]) -> bool:
         if not self._lines:
@@ -261,10 +271,13 @@ def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterable[Paragraph]
 
 
 def target_classes(paragraphs: Iterable[Paragraph],
-                   default: str,
-                   keep: List[str]) -> Iterable[Paragraph]:
+                   default: Label,
+                   keep: List[Label]) -> Iterable[Paragraph]:
     for pp in paragraphs:
-        yield pp  # STUB
+        if pp.top_label() in keep:
+            yield pp
+            continue
+        yield pp.replace_labels([default])
 
 
 def read_files(files: List[str]) -> Iterable[str]:
@@ -303,8 +316,8 @@ def main():
 
     phase3 = target_classes(
         phase2,
-        default='Misc-exposition',
-        keep=['Taxonomy', 'Description']
+        default=Label('Misc-exposition'),
+        keep=[Label('Taxonomy'), Label('Description')]
     )
 
     if 3 in args.dump_phase:

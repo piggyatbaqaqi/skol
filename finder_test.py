@@ -1,56 +1,57 @@
 import finder
+from finder import Label, Line, Paragraph
 import textwrap
 from typing import List
 import unittest
 
-def lineify(lines: List[str]) -> List[finder.Line]:
-    return [finder.Line(l) for l in lines]
+def lineify(lines: List[str]) -> List[Line]:
+    return [Line(l) for l in lines]
 
 class TestParagraph(unittest.TestCase):
 
     def setUp(self):
-        self.pp = finder.Paragraph()
-        self.pp2 = finder.Paragraph()
+        self.pp = Paragraph()
+        self.pp2 = Paragraph()
 
     def test_append(self):
-        self.pp.append(finder.Line('hamster'))
-        self.pp.append(finder.Line('gerbil'))
+        self.pp.append(Line('hamster'))
+        self.pp.append(Line('gerbil'))
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
 
     def test_append_ahead(self):
-        self.pp.append_ahead(finder.Line('hamster'))
-        self.pp.append_ahead(finder.Line('gerbil'))
-        self.pp.append_ahead(finder.Line('rabbit'))
+        self.pp.append_ahead(Line('hamster'))
+        self.pp.append_ahead(Line('gerbil'))
+        self.pp.append_ahead(Line('rabbit'))
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
         self.assertEqual(self.pp.next_line().line(), 'rabbit')
 
     def test_is_figure(self):
-        self.pp.append(finder.Line('  Fig. 2.7  '))
-        self.pp.append(finder.Line('hamster'))
+        self.pp.append(Line('  Fig. 2.7  '))
+        self.pp.append(Line('hamster'))
         self.assertTrue(self.pp.is_figure())
         self.assertFalse(self.pp2.is_figure())
 
-        self.pp2.append(finder.Line('rabbit'))
+        self.pp2.append(Line('rabbit'))
         self.assertFalse(self.pp2.is_figure())
 
     def test_is_table(self):
-        self.pp.append(finder.Line('  Table 1 '))
-        self.pp.append(finder.Line('hamster'))
+        self.pp.append(Line('  Table 1 '))
+        self.pp.append(Line('hamster'))
         self.assertTrue(self.pp.is_table())
         self.assertFalse(self.pp2.is_table())
 
-        self.pp2.append(finder.Line('rabbit'))
+        self.pp2.append(Line('rabbit'))
         self.assertFalse(self.pp2.is_table())
 
     def test_last_line(self):
-        self.pp.append_ahead(finder.Line('hamster'))
+        self.pp.append_ahead(Line('hamster'))
         self.assertEqual(str(self.pp), '\n')
-        self.pp.append_ahead(finder.Line('gerbil'))
-        self.pp.append_ahead(finder.Line('rabbit'))
+        self.pp.append_ahead(Line('gerbil'))
+        self.pp.append_ahead(Line('rabbit'))
 
         self.assertEqual(self.pp.last_line.line(), 'gerbil')
         self.pp.close()
@@ -60,7 +61,7 @@ class TestParagraph(unittest.TestCase):
 class TestLine(unittest.TestCase):
     def test_line(self):
         data = '[@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]'
-        line = finder.Line(data)
+        line = Line(data)
 
         self.assertEqual(line.line(), 'New records of smut fungi. 4. Microbotryum coronariae comb. nov.')
         self.assertTrue(line.contains_start())
@@ -252,9 +253,9 @@ class TestLabeling(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertEqual(paragraphs[0].labels, [finder.Label('Abstract')])
+        self.assertEqual(paragraphs[0].labels, [Label('Abstract')])
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertEqual(paragraphs[1].labels, [finder.Label('Key-words')])
+        self.assertEqual(paragraphs[1].labels, [Label('Key-words')])
 
     def test_doubled_abstract(self):
 
@@ -272,13 +273,80 @@ class TestLabeling(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
 
         self.assertEqual(len(paragraphs), 7)
-        self.assertEqual(paragraphs[0].labels, [finder.Label('Title')])
-        self.assertEqual(paragraphs[1].labels, [finder.Label('Author')])
-        self.assertEqual(paragraphs[2].labels, [finder.Label('Institution')])
+        self.assertEqual(paragraphs[0].labels, [Label('Title')])
+        self.assertEqual(paragraphs[1].labels, [Label('Author')])
+        self.assertEqual(paragraphs[2].labels, [Label('Institution')])
         self.assertEqual(paragraphs[3].labels, [])  # correspondence
-        self.assertEqual(paragraphs[4].labels, [finder.Label('Abstract')])
-        self.assertEqual(paragraphs[5].labels, [finder.Label('Key-words')])
+        self.assertEqual(paragraphs[4].labels, [Label('Abstract')])
+        self.assertEqual(paragraphs[5].labels, [Label('Key-words')])
         self.assertEqual(paragraphs[6].labels, []) # Paragraph('\n')
+
+
+class TestTargetClasses(unittest.TestCase):
+
+    def test_target_classes(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]
+        [@Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
+        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
+        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
+        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
+        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
+        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
+        and L. sect. Albati with four newly combined species plus two species previously combined
+        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
+        proposed.#Abstract*]
+        [@Key words — milkcaps, nomenclature#Key-words*]
+
+        [@Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362. 1837.#Taxonomy*]
+        [@Basidiomata 1.1–7.0 cm high. Spore sac globose to depressed-globose,
+        0.6–0.8 cm high × 1.8–2.2 cm broad. Exoperidium spiny, light brown (5E7),
+        peeling oﬀ at maturity. Endoperidium reticulate, papery, yellowish white (2A2)
+        to pale yellow (4A3); peristome conical, slightly lighter than endoperidium,
+        ﬁbrillose, delimited. Gleba dull yellow (3B3). Stipe 0.9–6.1 cm high × 0.2–0.25
+        cm diam., light brown (5E7), with longitudinally arranged scales.
+
+        [@Gasteroids from the Amazon (Brazil) ... 279#Page-header*]
+
+        [@Fig. 3. Gasteroid species from the Brazilian Amazon rainforest.
+        A. Geastrum lageniforme. B. Tulostoma exasperatum. C. Mutinus caninus.#Figure*]
+
+        Basidiospores globose to subglobose, 6–7.5 μm diam., yellowish in KOH,
+        with a columnar-reticulate ornamentation. Capillitial hyphae straight to
+        tortuous, thick-walled, swollen at the septa, branched, light yellow in KOH,
+        4–7 μm diam.#Description*]
+
+        We thank the people of Paiter; ‘Associação Metareilá do Povo Indígena Suruí’; ‘Equipe
+        de Conservação da Amazônia – ACT Brasil’; ‘Associação de Defesa Etnoambiental
+        Kanindé’ and ‘Fundação Nacional do Índio (FUNAI)’. The United States Agency for
+        International Development (USAID) is acknowledged for ﬁnancial support. We
+        also would like to thank the curators of SP, ICN and MBM for specimen loans
+        """).split('\n'))
+
+        labels_before = [
+            Label('Title'), Label('Abstract'), Label('Key-words'),
+            None, Label('Taxonomy'), Label('Description'), Label('Description'),
+            Label('Figure'), Label('Figure'),
+            Label('Description'), Label('Description'), None, None, None,
+        ]
+        labels_after = [
+            Label('Misc-exposition'), Label('Misc-exposition'),
+            Label('Misc-exposition'), Label('Taxonomy'), Label('Description'),
+            Label('Misc-exposition'), Label('Description'), Label('Misc-exposition'),
+        ]
+
+        phase1 = list(finder.parse_paragraphs(test_data))
+        self.assertListEqual([pp.top_label() for pp in phase1], labels_before)
+
+        phase2 = list(finder.remove_interstitials(phase1))
+        self.assertEqual(len(phase2), 8)
+
+        phase3 = list(finder.target_classes(
+            phase2,
+            default=Label('Misc-exposition'),
+            keep=[Label('Taxonomy'), Label('Description')]
+        ))
+        self.assertListEqual([pp.top_label() for pp in phase3], labels_after)
 
 
 if __name__ == '__main__':
