@@ -104,6 +104,116 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(len(paragraphs), 10)
 
+    def test_page_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@GERMANY: Freiburg, on Betula, 21 IV 1916, Lettau s. n. (B); Westfalen,
+        Wolbeck, on Betula, Bellebaum s. n. (B, 2 specimens); Frankfurt, on Betula,
+        6#Misc-exposition*]
+
+        [@Metzler s. n. (B); Bonn, on Betula, Dreesen s. n. (B); Heidelberg, on Betula,
+        Zwackh s. n. (B); 'Rubbia', on Quercus, Stricker s. n., distributed in Koerber,
+        Lichenes selecti Germaniae 410 (B).#Misc-exposition*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        GERMANY: Freiburg, on Betula, 21 IV 1916, Lettau s. n. (B); Westfalen,
+        Wolbeck, on Betula, Bellebaum s. n. (B, 2 specimens); Frankfurt, on Betula,
+        """)
+        expected1 = textwrap.dedent("""\
+        6
+        """)
+        expected3 = textwrap.dedent("""\
+        Metzler s. n. (B); Bonn, on Betula, Dreesen s. n. (B); Heidelberg, on Betula,
+        Zwackh s. n. (B); 'Rubbia', on Quercus, Stricker s. n., distributed in Koerber,
+        Lichenes selecti Germaniae 410 (B).
+        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(str(paragraphs[2]), '\n')
+        self.assertEqual(str(paragraphs[3]), expected3)
+
+    def test_year_in_parens_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@Pertusaria persulphurata Müll.Arg., Nuovo Giorn. Bot. Ital. 23: 391 (1891)#Taxonomy*]
+        [@Type: AUSTRALIA, Queensland, Brisbane, F.M. Bailey s.n.; holo: G.#Misc-exposition*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        Pertusaria persulphurata Müll.Arg., Nuovo Giorn. Bot. Ital. 23: 391 (1891)
+        """)
+        expected1 = textwrap.dedent("""\
+        Type: AUSTRALIA, Queensland, Brisbane, F.M. Bailey s.n.; holo: G.
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_syn_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@Arthonia apatetica (A. Massal.) Th. Fr. (Syn. A. exilis auct.)#Taxonomy*]
+        [@GRAHAM ISLAND: 2 mi. W of Tow Hill (Yakan Point) on north shore,
+        54°04’N 131°50’W, 15 June 1967, Brodo 9896R.#Misc-exposition*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        Arthonia apatetica (A. Massal.) Th. Fr. (Syn. A. exilis auct.)
+        """)
+
+        expected1 = textwrap.dedent("""\
+        GRAHAM ISLAND: 2 mi. W of Tow Hill (Yakan Point) on north shore,
+        54°04’N 131°50’W, 15 June 1967, Brodo 9896R.
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+
+    def test_abbrev_non_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@As most of the species considered have previously been described in detail in
+        other revisional treatments, including those of SHEARD (1967), MAYRHOFER &
+        POELT (1979), MAYRHOFER (1984), Fox & Purvis (1992), MAYRHOFER et al.#Misc-exposition*]
+        [@(1993) and MARZER et al. (1994), the descriptions given here simply
+        emphasize characters of value for species identification and do not repeat
+        features common to all species.#Misc-exposition*]
+        [@48#Misc-exposition*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        As most of the species considered have previously been described in detail in
+        other revisional treatments, including those of SHEARD (1967), MAYRHOFER &
+        POELT (1979), MAYRHOFER (1984), Fox & Purvis (1992), MAYRHOFER et al.
+        (1993) and MARZER et al. (1994), the descriptions given here simply
+        emphasize characters of value for species identification and do not repeat
+        features common to all species.
+        """)
+        expected1 = textwrap.dedent("""\
+        48
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_single_character_non_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@MEXICO: Baja California, Cerro Kenton, on Euphorbia, 4 | 1989, A. & M.#Misc-exposition*]
+        [@Aptroot 24428 (Herb. Aptroot); Same locality, on shrub, 4 I 1989, A. & M. Aptroot
+        24455 (Herb. Aptroot).#Misc-exposition*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        MEXICO: Baja California, Cerro Kenton, on Euphorbia, 4 | 1989, A. & M.
+        Aptroot 24428 (Herb. Aptroot); Same locality, on shrub, 4 I 1989, A. & M. Aptroot
+        24455 (Herb. Aptroot).
+        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+
+
     def test_table(self):
         test_data = lineify(textwrap.dedent("""\
         Table 1.
@@ -326,20 +436,22 @@ class TestTargetClasses(unittest.TestCase):
         labels_before = [
             Label('Title'), Label('Abstract'), Label('Key-words'),
             None, Label('Taxonomy'), Label('Description'), Label('Description'),
+            Label('Page-header'), Label('Description'),
             Label('Figure'), Label('Figure'),
             Label('Description'), Label('Description'), None, None, None,
         ]
         labels_after = [
             Label('Misc-exposition'), Label('Misc-exposition'),
             Label('Misc-exposition'), Label('Taxonomy'), Label('Description'),
-            Label('Misc-exposition'), Label('Description'), Label('Misc-exposition'),
+            Label('Misc-exposition'), Label('Misc-exposition'),
+            Label('Description'), Label('Misc-exposition'),
         ]
 
         phase1 = list(finder.parse_paragraphs(test_data))
         self.assertListEqual([pp.top_label() for pp in phase1], labels_before)
 
         phase2 = list(finder.remove_interstitials(phase1))
-        self.assertEqual(len(phase2), 8)
+        self.assertEqual(len(phase2), 9)
 
         phase3 = list(finder.target_classes(
             phase2,

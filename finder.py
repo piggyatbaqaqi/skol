@@ -3,7 +3,7 @@
 import argparse
 import re
 import sys
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Union
 
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.dummy import DummyClassifier
@@ -43,6 +43,10 @@ class Line(object):
         return '%s:%d: start: %s end: %s value: %r' % (
             self._filename, self._line_number, self._label_start, self._label_end, self._value)
 
+    @property
+    def filename(self):
+        return self._filename
+
     def line(self):
         return self._value
 
@@ -70,6 +74,9 @@ class Line(object):
 
     def endswith(self, *args, **kwargs) -> bool:
         return self._value.endswith(*args, **kwargs)
+
+    def search(self, *args, **kwargs):
+        return re.search(*args, **kwargs, string=self._value)
 
     def is_short(self, short_line: int) -> bool:
         return len(self._value) < short_line
@@ -100,7 +107,7 @@ class Label(object):
 
     def __str__(self) -> str:
         return self._value
-    
+
     def set_label(self, label_value: str):
         if self.assigned():
             raise ValueError('Label already has value: %s' % self._value)
@@ -115,7 +122,28 @@ class Paragraph(object):
     _next_line = ...  # type: Optional[Line]
     _labels = ...  # type: List[Label]
 
-    def __init__(self, short_line=60, labels: Optional[List[Label]] = None,
+    # These are abbreviations which should not end a taxon paragraph.
+    _KNOWN_ABBREVS = [
+        'al.', 'alt.', 'amer.', 'am.', 'ann.', 'apr.', 'arg.',
+        'auct.', 'aug.', 'ave.', 'beauv.', 'bihar.', 'biol.', 'bot.',
+        'br.', 'bull.', 'burds.', 'ca.', 'can.', 'ce.', 'cf.', 'cfr.',
+        'cit.', 'cm.', 'co.', 'cunn.', 'del.', 'dept.', 'det.',
+        'diam.', 'disc.', 'dis.', 'dr.', 'ed.', 'ekman.', 'elev.',
+        'etc.', 'exp.', 'far.', 'feb.', 'fenn.', 'fig.', 'fi.', 'fn.',
+        'fn.', 'fr.', 'hb.', 'hedw.', 'henn.', 'herb.', 'holme.',
+        'ibid.', 'ica.', 'jan.', 'jul.', 'jum.', 'jun.', 'junci.',
+        'karst.', 'kauffm.', 'kérb.', 'kll.', 'kl.', 'kon.', 'later.',
+        'lat.', 'leg.', 'lett.', 'hiver.', 'li.', 'linn.', 'magn.',
+        'mar', 'mass.', 'mat.', 'mi.', 'mr.', 'ms.', 'mt.', 'mucor.',
+        'mu.', 'mycol.', 'not.', 'dec.', 'nsw.', 'nyl.', 'oct.',
+        'par.', 'pers.', 'pl.', 'pls.', 'lt.', 'pp.', 'proc.',
+        'prof.', 'prov.', 'publ.', 'res.', 'rim.', 'roxb.', 'rupr.',
+        'sac.', 'schw.', 'sep.', 'snp.', 'soc.', 'sp.', 'spp.', 'st.',
+        'syn.', 'syst.', 'taxa.', 'trab.', 'tracts.', 'trans.', 'tr.',
+        'var.', 'vary.', 'veg.', 'vic.', 'yum.', 'zool.',
+    ]
+
+    def __init__(self, short_line=50, labels: Optional[List[Label]] = None,
                  lines: Optional[List[Line]] = None):
         self.short_line = short_line
         if lines:
@@ -130,6 +158,13 @@ class Paragraph(object):
 
     def __str__(self) -> str:
         return '\n'.join([l.line() for l in self._lines]) + '\n'
+
+    def as_annotated(self) -> str:
+        label = self.top_label()
+        retval = str(self)[:-1]
+        if label is not None and not self.is_blank():
+            retval = '[@' + retval + '#' + str(label) + '*]'
+        return retval
 
     def __repr__(self) -> str:
         return 'Labels(%s), Paragraph(%r), Pending(%r)\n' % (self._labels, str(self), self._next_line)
@@ -180,9 +215,11 @@ class Paragraph(object):
         pp = Paragraph(labels=labels, lines=self._lines)
         return pp
 
-    def startswith(self, tokens: List[str]) -> bool:
+    def startswith(self, tokens: Union[str, List[str]]) -> bool:
         if not self._lines:
             return False
+        if isinstance(tokens, str):
+            return self._lines[0].line().startswith(tokens)
         tokenized = self._lines[0].line().strip().split()
         if not tokenized:
             return False
@@ -196,13 +233,16 @@ class Paragraph(object):
 
     def is_table(self) -> bool:
         return self.startswith([
-            'table', 'tbl.', 'tbl'
+            'table', 'tab.', 'tab', 'tbl.', 'tbl'
         ])
 
     def is_blank(self) -> bool:
         if self._lines:
             return all(line.is_blank() for line in self._lines)
         return False  # Empty paragraph is not blank yet.
+
+    def is_page_header(self):
+        return self.startswith('')
 
     @property
     def last_line(self) -> str:
@@ -219,9 +259,25 @@ class Paragraph(object):
         last_line = self.last_line
         return last_line and last_line.endswith(s)
 
+    def detect_period(self) -> bool:
+        last_line = self.last_line
+        if last_line is None:
+            return False
+        if not last_line.endswith('.'):
+            return False
+        match = re.search(r'\b\w\.$', last_line.line())
+        if match:
+            return False
+        match = re.search(r'\b(?P<abbrev>\w+\.)$', last_line.line())
+        if match:
+            if match.group('abbrev').lower() in self._KNOWN_ABBREVS:
+                return False
+        return True
+
     @property
     def labels(self) -> List[str]:
         return self._labels[:]
+
 
 def paragraphs_to_dataframe(paragraphs: List[Paragraph]):
     return pandas.DataFrame(data={
@@ -229,15 +285,30 @@ def paragraphs_to_dataframe(paragraphs: List[Paragraph]):
             'v2': [str(pp) for pp in paragraphs]
         })
 
+
 def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     label = None
     pp = Paragraph()
     for line in contents:
-        # Strip page headers.
-        if line.startswith(''):
+        pp.append_ahead(line)
+
+        # New document triggers a new paragraph.
+        if pp.last_line and pp.last_line.filename != line.filename:
+            (retval, pp) = pp.next_paragraph()
+            yield retval
             continue
 
-        pp.append_ahead(line)
+        # Page break triggers a new paragraph.
+        if line.startswith(''):
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+        # Page break line is a whole paragraph.
+        if pp.is_page_header():
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
 
         # Tables continue to grow as long as we have short lines.
         if pp.is_table():
@@ -251,7 +322,6 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
         if pp.is_blank():
             if line.is_blank():
                 continue
-            retval = pp
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
@@ -259,14 +329,26 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
         # Figures end with a blank line, or a period at the end of a
         # line.
         if pp.is_figure():
-            if not line.is_blank() and not pp.endswith('.'):
+            if not line.is_blank() and not pp.detect_period():
                continue
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
 
         # A period before a newline marks the end of a paragraph.
-        if pp.endswith('.'):
+        if pp.detect_period():
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+        # Synonymy reference ends a taxon.
+        if pp.last_line and pp.last_line.search(r'\([Ss]yn.*\)$'):
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+        # Year in parens ends a taxon.
+        if pp.last_line and pp.last_line.search(r'\(\d\d\d\d\)$'):
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
@@ -331,12 +413,87 @@ def perform(classifiers, vectorizers, train_data, test_data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", type=str, nargs='+', help="the file to search for descriptions")
-    parser.add_argument("--dump_phase", help="Dump the output of these phases and exit.", default=[], type=int, action="append")
-    args = parser.parse_args()
-    print(args.file)
+    parser.add_argument('file', type=str, nargs='+', help='the file to search for descriptions')
+    parser.add_argument(
+        '--dump_phase',
+        help='Dump the output of these phases and exit.',
+        default=[], type=int, action='append')
+    parser.add_argument(
+        '--dump_files',
+        help='Dump lists of files to process.',
+        action='store_true')
+    parser.add_argument(
+        '--test_classifiers',
+        help='Test a set of classifiers against the input files.',
+        action='store_true')
+    parser.add_argument(
+        '--classifier',
+        help='Which classifier should we use for actual runs?',
+        type=str, default='SGDClassifier')
+    parser.add_argument(
+        '--vectorizer',
+        help='Which vectorizer should we use for actual runs?',
+        type=str, default='CountVectorizer')
+    parser.add_argument(
+        '--keep_interstitials',
+        help='Keep figures, tables, and blanks.',
+        action='store_true')
+    parser.add_argument(
+        '--output_annotated',
+        help='Output YEDDA-annotated file.',
+        action='store_true')
 
-    contents = read_files(args.file)
+    args = parser.parse_args()
+
+    try:
+        i = args.file.index('evaluate')
+        training_files = args.file[:i]
+        evaluate_files = args.file[i+1:]
+    except ValueError:
+        training_files = args.file
+        evaluate_files = []
+
+    if args.dump_files:
+        print('\ntraining_files:', training_files)
+        print('\nevaluate_files:', evaluate_files)
+
+    classifiers = [
+        BernoulliNB(),
+        RandomForestClassifier(n_estimators=100, n_jobs=-1),
+        AdaBoostClassifier(),
+        BaggingClassifier(),
+        ExtraTreesClassifier(),
+        GradientBoostingClassifier(),
+        DecisionTreeClassifier(),
+        CalibratedClassifierCV(),
+        DummyClassifier(),
+        PassiveAggressiveClassifier(),
+        RidgeClassifier(),
+        RidgeClassifierCV(),
+        SGDClassifier(),
+        OneVsRestClassifier(SVC(kernel='linear')),
+        OneVsRestClassifier(LogisticRegression()),
+        KNeighborsClassifier()
+    ]
+    vectorizers = [
+        CountVectorizer(),
+        TfidfVectorizer(),
+        HashingVectorizer()
+    ]
+
+    try:
+        i = [c.__class__.__name__ for c in classifiers].index(args.classifier)
+    except ValueError:
+        raise ValueError('Unknown classifier %s' % args.classifier)
+    classifier = classifiers[i]
+
+    try:
+        i = [v.__class__.__name__ for v in vectorizers].index(args.vectorizer)
+    except ValueError:
+        raise ValueError('Unknown vectorizer %s' % args.vectorizer)
+    vectorizer = vectorizers[i]
+
+    contents = read_files(training_files)
 
     phase1 = parse_paragraphs(contents)
 
@@ -381,33 +538,42 @@ def main():
     learn = paragraphs_to_dataframe(phase3[:cutoff])
     test = paragraphs_to_dataframe(phase3[cutoff:])
 
-    perform(
-        [
-            BernoulliNB(),
-            RandomForestClassifier(n_estimators=100, n_jobs=-1),
-            AdaBoostClassifier(),
-            BaggingClassifier(),
-            ExtraTreesClassifier(),
-            GradientBoostingClassifier(),
-            DecisionTreeClassifier(),
-            CalibratedClassifierCV(),
-            DummyClassifier(),
-            PassiveAggressiveClassifier(),
-            RidgeClassifier(),
-            RidgeClassifierCV(),
-            SGDClassifier(),
-            OneVsRestClassifier(SVC(kernel='linear')),
-            OneVsRestClassifier(LogisticRegression()),
-            KNeighborsClassifier()
-        ],
-        [
-            CountVectorizer(),
-            TfidfVectorizer(),
-            HashingVectorizer()
-        ],
-        learn,
-        test
-    )
+    if args.test_classifiers:
+        perform(
+            classifiers,
+            vectorizers,
+            learn,
+            test
+        )
+        sys.exit(0)
+
+    phase4 = []
+    if evaluate_files:
+        # train
+        vectorize_text = vectorizer.fit_transform(learn.v2)
+        classifier.fit(vectorize_text, learn.v1)
+
+        # predict
+        if args.keep_interstitials:
+            evaluated = parse_paragraphs(read_files(evaluate_files))
+        else:
+            evaluated = remove_interstitials(parse_paragraphs(read_files(evaluate_files)))
+        for pp in evaluated:
+            text = str(pp)
+            vectorize_text = vectorizer.transform([text])
+            predict = classifier.predict(vectorize_text)[0]
+            phase4.append(pp.replace_labels(labels=[Label(predict)]))
+
+        if args.output_annotated:
+            print('\n'.join([pp.as_annotated() for pp in phase4]))
+
+    if 4 in args.dump_phase:
+        print('Phase 4')
+        print('=======')
+        print(repr(phase4))
+        if 4 == max(args.dump_phase):
+            sys.exit(0)
+
 
 
 if __name__ == '__main__':
