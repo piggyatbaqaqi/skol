@@ -1,8 +1,10 @@
 """Find species descriptions."""
 
 import argparse
+import numpy
 import re
 import sys
+import time
 from typing import Iterable, List, Optional, Union
 
 from sklearn.naive_bayes import BernoulliNB
@@ -18,6 +20,8 @@ from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, R
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import *
 import pandas
+
+SEED=12345
 
 class Line(object):
     _value = ...  # type: Optional[str]
@@ -121,6 +125,7 @@ class Paragraph(object):
     _lines = ...  # type: Iterable[Line]
     _next_line = ...  # type: Optional[Line]
     _labels = ...  # type: List[Label]
+    _reinterpret = ...  # type: List[str]
 
     # These are abbreviations which should not end a taxon paragraph.
     _KNOWN_ABBREVS = [
@@ -142,6 +147,22 @@ class Paragraph(object):
         'syn.', 'syst.', 'taxa.', 'trab.', 'tracts.', 'trans.', 'tr.',
         'var.', 'vary.', 'veg.', 'vic.', 'yum.', 'zool.',
     ]
+
+    _SUFFIX_RE = r'(ae|ana|ata|ca|ella|ense|es|i|ia|ii|is|ix|oda|ola|oma|sis|um|us)\b'
+    _PUNCTUATION_RE = r'[().;:,≡=&]'
+    _PUNCTUATION = {
+        '(': 'PLPAREN',
+        ')': 'PRPAREN',
+        '.': 'PDOT',
+        ';': 'PSEMI',
+        ':': 'PCOLON',
+        ',': 'PCOMMA',
+        '≡': 'PEQUIV',
+        '=': 'PEQUAL',
+        '&': 'PAMPERSAND',
+    }
+    _YEAR_RE = r'\b[12]\d\d\d\b'
+    _ABBREV_RE = '\b\w{1,5}\.'
 
     def __init__(self, short_line=50, labels: Optional[List[Label]] = None,
                  lines: Optional[List[Line]] = None):
@@ -168,6 +189,49 @@ class Paragraph(object):
 
     def __repr__(self) -> str:
         return 'Labels(%s), Paragraph(%r), Pending(%r)\n' % (self._labels, str(self), self._next_line)
+
+    @classmethod
+    def set_reinterpretations(self, reinterpret: List[str]) -> None:
+        self._reinterpret = reinterpret
+
+    def suffixes(self) -> str:
+        return ' ' + ' '.join(re.findall(self._SUFFIX_RE, str(self)))
+
+    def punctuation(self) -> str:
+        return ' ' + ' '.join([
+            self._PUNCTUATION[p]
+            for p in re.findall(self._PUNCTUATION_RE, str(self))
+        ])
+
+    def years(self) -> str:
+        return ' ' + ' '.join(['PYEAR' for y in re.findall(self._YEAR_RE, str(self))])
+
+    def abbrevs(self) -> str:
+        return ' ' + ' '.join(['PABBREV' for y in re.findall(self._ABBREV_RE, str(self))])
+
+    def reinterpret(self) -> str:
+        def replace(m) -> str:
+            retval = []
+            if m.group('suffix'):
+                if 'latinate' in self._reinterpret:
+                    retval.append('PLATINATE')
+                if 'suffix' in self._reinterpret:
+                    retval.append(m.group('suffix'))
+            if m.group('punctuation') and 'punctuation' in self._reinterpret:
+                retval.append(self._PUNCTUATION[m.group('punctuation')])
+            if m.group('year') and 'year' in self._reinterpret:
+                retval.append('PYEAR')
+            if m.group('abbrev') and 'abbrev' in self._reinterpret:
+                retval.append('PABBREV')
+            return ' ' + ' '.join(retval)
+        r = (
+            r'(?P<suffix>' + self._SUFFIX_RE + ')'
+            r'|(?P<punctuation>' + self._PUNCTUATION_RE + ')'
+            r'|(?P<year>' + self._YEAR_RE + ')'
+            r'|(?P<abbrev>' + self._ABBREV_RE + ')'
+        )
+
+        return re.sub(r, replace, str(self))
 
     def append(self, line: Line) -> None:
         if line.contains_start():
@@ -279,10 +343,16 @@ class Paragraph(object):
         return self._labels[:]
 
 
-def paragraphs_to_dataframe(paragraphs: List[Paragraph]):
+def paragraphs_to_dataframe(paragraphs: List[Paragraph], suppress_text=False):
+    if suppress_text:
+        v2 = [pp.reinterpret() for pp in paragraphs]
+    else:
+        v2 = [str(pp) + ' ' + pp.reinterpret() for pp in paragraphs]
     return pandas.DataFrame(data={
-            'v1': [str(pp.top_label()) for pp in paragraphs],
-            'v2': [str(pp) for pp in paragraphs]
+        'v1': [str(pp.top_label()) for pp in paragraphs],
+        # 'v2': [str(pp) + pp.suffixes() + pp.punctuation() + pp.years() + pp.abbrevs()
+        #        for pp in paragraphs]
+        'v2': v2,
         })
 
 
@@ -400,6 +470,9 @@ def perform(classifiers, vectorizers, train_data, test_data):
         string = ''
         string += classifier.__class__.__name__ + ' with ' + vectorizer.__class__.__name__
 
+        numpy.random.seed(SEED)
+
+        start = time.time()
         # train
         vectorize_text = vectorizer.fit_transform(train_data.v2)
         classifier.fit(vectorize_text, train_data.v1)
@@ -408,6 +481,8 @@ def perform(classifiers, vectorizers, train_data, test_data):
         vectorize_text = vectorizer.transform(test_data.v2)
         score = classifier.score(vectorize_text, test_data.v1)
         string += '. Has score: ' + str(score)
+        end = time.time()
+        string += ' elapsed time ' + str(end - start)
         print(string)
 
 
@@ -418,6 +493,10 @@ def main():
         '--dump_phase',
         help='Dump the output of these phases and exit.',
         default=[], type=int, action='append')
+    parser.add_argument(
+        '--reinterpret',
+        help='Append reinterpretations of various elements. Values={suffix, latinate, punctuation, year, abbrev}.',
+        default=[], type=str, action='append')
     parser.add_argument(
         '--dump_files',
         help='Dump lists of files to process.',
@@ -442,8 +521,28 @@ def main():
         '--output_annotated',
         help='Output YEDDA-annotated file.',
         action='store_true')
-
+    parser.add_argument(
+        '--fast',
+        help='Skip slower vectorizers and classifiers.',
+        action='store_true')
+    parser.add_argument(
+        '--suppress_text',
+        help='Suppress raw text. Evaluate only reinterpreted text.',
+        action='store_true')
+    parser.add_argument(
+        '--label',
+        default=[],
+        help='Labels to retain for training purposes.',
+        type=str,
+        action='append')
     args = parser.parse_args()
+
+    Paragraph.set_reinterpretations(args.reinterpret)
+
+    if not args.label:
+        labels = ['Taxonomy', 'Description']
+    else:
+        labels = args.label
 
     try:
         i = args.file.index('evaluate')
@@ -452,6 +551,7 @@ def main():
     except ValueError:
         training_files = args.file
         evaluate_files = []
+
 
     if args.dump_files:
         print('\ntraining_files:', training_files)
@@ -481,6 +581,33 @@ def main():
         HashingVectorizer()
     ]
 
+    fast_classifiers = [
+        BernoulliNB(),
+        RandomForestClassifier(n_estimators=100, n_jobs=-1),
+        AdaBoostClassifier(),
+        BaggingClassifier(),
+        ExtraTreesClassifier(),
+        GradientBoostingClassifier(),
+        DecisionTreeClassifier(),
+        CalibratedClassifierCV(),
+        DummyClassifier(),
+        PassiveAggressiveClassifier(),
+        RidgeClassifier(),
+        # RidgeClassifierCV(),
+        SGDClassifier(),
+        OneVsRestClassifier(SVC(kernel='linear')),
+        OneVsRestClassifier(LogisticRegression()),
+        KNeighborsClassifier()
+    ]
+    fast_vectorizers = [
+        CountVectorizer(),
+        TfidfVectorizer(),
+        # HashingVectorizer()
+    ]
+
+    if args.fast:
+        classifiers = fast_classifiers
+        vectorizers = fast_vectorizers
     try:
         i = [c.__class__.__name__ for c in classifiers].index(args.classifier)
     except ValueError:
@@ -520,7 +647,7 @@ def main():
     phase3 = target_classes(
         list(phase2),
         default=Label('Misc-exposition'),
-        keep=[Label('Taxonomy'), Label('Description')]
+        keep=[Label(l) for l in labels]
     )
 
     if 3 in args.dump_phase:
@@ -534,9 +661,11 @@ def main():
     phase3 = list(phase3)
     sample_size = len(phase3)
 
+    numpy.random.seed(SEED)
     cutoff = int(sample_size * 0.70)
-    learn = paragraphs_to_dataframe(phase3[:cutoff])
-    test = paragraphs_to_dataframe(phase3[cutoff:])
+    permutation = numpy.random.permutation(phase3)
+    learn = paragraphs_to_dataframe(permutation[:cutoff], args.suppress_text)
+    test = paragraphs_to_dataframe(permutation[cutoff:], args.suppress_text)
 
     if args.test_classifiers:
         perform(
