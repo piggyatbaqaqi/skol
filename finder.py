@@ -120,6 +120,7 @@ class Label(object):
     def assigned(self):
         return self._value is not None
 
+
 class Paragraph(object):
     short_line = ...  # type: int
     _lines = ...  # type: Iterable[Line]
@@ -486,7 +487,9 @@ def perform(classifiers, vectorizers, train_data, test_data):
         print(string)
 
 
-def main():
+def define_args():
+
+
     parser = argparse.ArgumentParser()
     parser.add_argument('file', type=str, nargs='+', help='the file to search for descriptions')
     parser.add_argument(
@@ -535,7 +538,10 @@ def main():
         help='Labels to retain for training purposes.',
         type=str,
         action='append')
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    args = define_args()
 
     Paragraph.set_reinterpretations(args.reinterpret)
 
