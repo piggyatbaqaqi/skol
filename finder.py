@@ -129,26 +129,29 @@ class Paragraph(object):
     _reinterpret = ...  # type: List[str]
 
     # These are abbreviations which should not end a taxon paragraph.
-    # Note that 'nov.' can end a taxon paragraph.
+    # Note that  'illeg.', 'inval.' and 'nov.' can end a taxon paragraph.
     _KNOWN_ABBREVS = [
-        'al.', 'alt.', 'am.', 'amer.', 'ann.', 'apr.', 'arg.', 'auct.',
-        'aug.', 'ave.', 'beauv.', 'bihar.', 'biol.', 'bot.', 'br.', 'bull.',
-        'burds.', 'ca.', 'can.', 'ce.', 'cf.', 'cfr.', 'cit.', 'cm.', 'co.',
-        'comb.', 'fung.', 'rept.', 'gard.', 'sci.', 'inst.', 'ser.', 'repub.', 
-        'cunn.', 'dec.', 'del.', 'dept.', 'det.', 'diam.', 'dis.', 'disc.', 'hist.',
-        'ned.', 'mus.',
+        'akad.', 'al.', 'alt.', 'am.', 'amer.', 'ann.', 'apr.', 'arg.',
+        'atk.', 'auct.', 'aug.', 'ave.', 'beauv.', 'beitr.', 'bihar.',
+        'biol.', 'bot.', 'br.', 'bull.', 'burds.', 'ca.', 'can.', 'carol.',
+        'ce.', 'cf.', 'cfr.', 'cit.', 'cm.', 'co.', 'comb.', 'crittog.',
+        'cunn.', 'dec.', 'del.', 'dept.', 'det.', 'diam.', 'dis.', 'disc.',
         'dr.', 'ed.', 'ekman.', 'elev.', 'etc.', 'exp.', 'far.', 'feb.',
-        'fenn.', 'fi.', 'fig.', 'figs.', 'fn.', 'fn.', 'fr.', 'hb.', 'hedw.', 'henn.',
-        'herb.', 'hiver.', 'holme.', 'ibid.', 'ica.', 'jan.', 'jul.', 'jum.',
-        'jun.', 'junci.', 'karst.', 'kauffm.', 'kl.', 'kll.', 'kon.', 'kérb.',
-        'lat.', 'later.', 'leg.', 'lett.', 'li.', 'linn.', 'loc.', 'lt.',
-        'magn.', 'mar', 'mass.', 'mat.', 'mi.', 'mikol.', 'mr.', 'ms.', 'mt.',
-        'mu.', 'mucor.', 'mycol.', 'nat.', 'ned', 'ned.', 'no.', 'nom.',
-        'not.', 'nsw.', 'nyl.', 'oct.', 'pap.', 'par.', 'pers.', 'pl.', 'pls.', 'pp.',
-        'proc.', 'prof.', 'prov.', 'publ.', 'res.', 'rim.', 'roxb.', 'rupr.',
-        'sac.', 'schw.', 'sep.', 'snp.', 'soc.', 'sp.', 'spor.', 'spp.',
-        'st.', 'syn.', 'syst.', 'taxa.', 'tr.', 'trab.', 'tracts.', 'trans.',
-        'univ.', 'var.', 'vary.', 'veg.', 'vic.', 'wiss.', 'yum.', 'zool.',
+        'fenn.', 'fi.', 'fig.', 'figs.', 'fl.', 'fn.', 'fn.', 'fr.', 'fung.',
+        'gard.', 'hb.', 'hedw.', 'henn.', 'herb.', 'hist.', 'hiver.',
+        'holme.', 'hym.', 'ibid.', 'ica.', 'ined.', 'inst.', 'jan.',
+        'jul.', 'jum.', 'jun.', 'junci.', 'karst.', 'kauffm.', 'kauffm.',
+        'kl.', 'kll.', 'kon.', 'kérb.', 'lat.', 'later.', 'leg.', 'lett.',
+        'li.', 'linn.', 'loc.', 'lt.', 'magn.', 'mar.', 'mass.', 'mat.',
+        'math.-naturwiss.', 'mi.', 'mikol.', 'mr.', 'ms.', 'mt.', 'mu.',
+        'mucor.', 'mus.', 'mycol.', 'mycol.', 'nat.', 'ned', 'ned.', 'ned.',
+        'no.', 'nom.', 'not.', 'not.', 'nsw.', 'nyl.', 'oct.', 'pap.', 'par.',
+        'pers.', 'pl.', 'pls.', 'pp.', 'proc.', 'prof.', 'prov.', 'publ.',
+        'rept.', 'repub.', 'res.', 'rim.', 'roxb.', 'rupr.', 'sac.', 'sacc.',
+        'schw.', 'schwein.', 'sci.', 'sep.', 'ser.', 'sist.', 'snp.', 'soc.',
+        'sp.', 'speg.', 'spor.', 'spp.', 'st.', 'surv.', 'syn.', 'syst.',
+        'taxa.', 'tr.', 'trab.', 'tracts.', 'trans.', 'univ.', 'var.',
+        'vary.', 'veg.', 'vic.', 'wiss.', 'yum.', 'zool.',
     ]
 
     _SUFFIX_RE = r'(ae|ana|ata|ca|ella|ense|es|i|ia|ii|is|ix|oda|ola|oma|sis|um|us)\b'
@@ -332,13 +335,23 @@ class Paragraph(object):
             return False
         if not last_line.endswith('.'):
             return False
+        # A single initial.
         match = re.search(r'\b\w\.$', last_line.line())
+        if match:
+            return False
+        # : xxx.
+        match = re.search(r'\b: \d+\.$', last_line.line())
+        if match:
+            return False
+        # p. xxx.
+        match = re.search(r'\bp\. \d+\.$', last_line.line())
         if match:
             return False
         match = re.search(r'\b(?P<abbrev>\w+\.)$', last_line.line())
         if match:
             if match.group('abbrev').lower() in self._KNOWN_ABBREVS:
                 return False
+            
         return True
 
     @property
