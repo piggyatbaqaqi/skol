@@ -104,6 +104,25 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(len(paragraphs), 10)
 
+    def test_initial_no_break(self):
+        """A single initial (letter followed by .) prevents a paragraph break."""
+        test_data = lineify(textwrap.dedent("""\
+        Stenellopsis nepalensis is the fourth species of the genus to be
+        discovered. Stenellopsis was established to accommodate a single species, S.
+        fagraeae Huguenin, occurring on leaves of Fagraea schlechteri Gilg & Benedict
+        in New Caledonia (Huguenin, 1966). A second species was added to the genus
+        when Singh (1979) described S. shoreae S.M. Singh[as S. shorae], found on
+        """).split('\n'))
+        expected0 = textwrap.dedent("""\
+        Stenellopsis nepalensis is the fourth species of the genus to be
+        discovered. Stenellopsis was established to accommodate a single species, S.
+        fagraeae Huguenin, occurring on leaves of Fagraea schlechteri Gilg & Benedict
+        in New Caledonia (Huguenin, 1966). A second species was added to the genus
+        when Singh (1979) described S. shoreae S.M. Singh[as S. shorae], found on
+        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        
     def test_page_break(self):
         test_data = lineify(textwrap.dedent("""\
         [@GERMANY: Freiburg, on Betula, 21 IV 1916, Lettau s. n. (B); Westfalen,
@@ -170,6 +189,18 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
 
+    def test_hyphen_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@*Marasmius ferrugineus (Berkeley*)Berkeley & Curtis
+        -Leprieur 1025 ; cited in Montagne 1854#Misc-exposition*]
+        """).split('\n'))
+
+        expected0 = "*Marasmius ferrugineus (Berkeley*)Berkeley & Curtis\n"
+        expected1 = "-Leprieur 1025 ; cited in Montagne 1854\n"
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
 
     def test_abbrev_non_break(self):
         test_data = lineify(textwrap.dedent("""\

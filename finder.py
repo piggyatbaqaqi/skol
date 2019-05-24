@@ -129,24 +129,26 @@ class Paragraph(object):
     _reinterpret = ...  # type: List[str]
 
     # These are abbreviations which should not end a taxon paragraph.
+    # Note that 'nov.' can end a taxon paragraph.
     _KNOWN_ABBREVS = [
-        'al.', 'alt.', 'amer.', 'am.', 'ann.', 'apr.', 'arg.',
-        'auct.', 'aug.', 'ave.', 'beauv.', 'bihar.', 'biol.', 'bot.',
-        'br.', 'bull.', 'burds.', 'ca.', 'can.', 'ce.', 'cf.', 'cfr.',
-        'cit.', 'cm.', 'co.', 'cunn.', 'del.', 'dept.', 'det.',
-        'diam.', 'disc.', 'dis.', 'dr.', 'ed.', 'ekman.', 'elev.',
-        'etc.', 'exp.', 'far.', 'feb.', 'fenn.', 'fig.', 'fi.', 'fn.',
-        'fn.', 'fr.', 'hb.', 'hedw.', 'henn.', 'herb.', 'holme.',
-        'ibid.', 'ica.', 'jan.', 'jul.', 'jum.', 'jun.', 'junci.',
-        'karst.', 'kauffm.', 'kérb.', 'kll.', 'kl.', 'kon.', 'later.',
-        'lat.', 'leg.', 'lett.', 'hiver.', 'li.', 'linn.', 'magn.',
-        'mar', 'mass.', 'mat.', 'mi.', 'mr.', 'ms.', 'mt.', 'mucor.',
-        'mu.', 'mycol.', 'not.', 'dec.', 'nsw.', 'nyl.', 'oct.',
-        'par.', 'pers.', 'pl.', 'pls.', 'lt.', 'pp.', 'proc.',
-        'prof.', 'prov.', 'publ.', 'res.', 'rim.', 'roxb.', 'rupr.',
-        'sac.', 'schw.', 'sep.', 'snp.', 'soc.', 'sp.', 'spp.', 'st.',
-        'syn.', 'syst.', 'taxa.', 'trab.', 'tracts.', 'trans.', 'tr.',
-        'var.', 'vary.', 'veg.', 'vic.', 'yum.', 'zool.',
+        'al.', 'alt.', 'am.', 'amer.', 'ann.', 'apr.', 'arg.', 'auct.',
+        'aug.', 'ave.', 'beauv.', 'bihar.', 'biol.', 'bot.', 'br.', 'bull.',
+        'burds.', 'ca.', 'can.', 'ce.', 'cf.', 'cfr.', 'cit.', 'cm.', 'co.',
+        'comb.', 'fung.', 'rept.', 'gard.', 'sci.', 'inst.', 'ser.', 'repub.', 
+        'cunn.', 'dec.', 'del.', 'dept.', 'det.', 'diam.', 'dis.', 'disc.', 'hist.',
+        'ned.', 'mus.',
+        'dr.', 'ed.', 'ekman.', 'elev.', 'etc.', 'exp.', 'far.', 'feb.',
+        'fenn.', 'fi.', 'fig.', 'figs.', 'fn.', 'fn.', 'fr.', 'hb.', 'hedw.', 'henn.',
+        'herb.', 'hiver.', 'holme.', 'ibid.', 'ica.', 'jan.', 'jul.', 'jum.',
+        'jun.', 'junci.', 'karst.', 'kauffm.', 'kl.', 'kll.', 'kon.', 'kérb.',
+        'lat.', 'later.', 'leg.', 'lett.', 'li.', 'linn.', 'loc.', 'lt.',
+        'magn.', 'mar', 'mass.', 'mat.', 'mi.', 'mikol.', 'mr.', 'ms.', 'mt.',
+        'mu.', 'mucor.', 'mycol.', 'nat.', 'ned', 'ned.', 'no.', 'nom.',
+        'not.', 'nsw.', 'nyl.', 'oct.', 'pap.', 'par.', 'pers.', 'pl.', 'pls.', 'pp.',
+        'proc.', 'prof.', 'prov.', 'publ.', 'res.', 'rim.', 'roxb.', 'rupr.',
+        'sac.', 'schw.', 'sep.', 'snp.', 'soc.', 'sp.', 'spor.', 'spp.',
+        'st.', 'syn.', 'syst.', 'taxa.', 'tr.', 'trab.', 'tracts.', 'trans.',
+        'univ.', 'var.', 'vary.', 'veg.', 'vic.', 'wiss.', 'yum.', 'zool.',
     ]
 
     _SUFFIX_RE = r'(ae|ana|ata|ca|ella|ense|es|i|ia|ii|is|ix|oda|ola|oma|sis|um|us)\b'
@@ -293,7 +295,7 @@ class Paragraph(object):
 
     def is_figure(self) -> bool:
         return self.startswith([
-            'fig', 'fig.', 'figs', 'figs.', 'figure', 'photo', 'plate',
+            'fig', 'fig.', 'figs', 'figs.', 'figure', 'photo', 'plate', 'plates',
         ])
 
     def is_table(self) -> bool:
@@ -402,6 +404,12 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
         if pp.is_figure():
             if not line.is_blank() and not pp.detect_period():
                continue
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+        # Leading hyphen triggers a new paragraph.
+        if line.startswith('-'):
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
@@ -515,7 +523,7 @@ def define_args():
     parser.add_argument(
         '--vectorizer',
         help='Which vectorizer should we use for actual runs?',
-        type=str, default='CountVectorizer')
+        type=str, default='TfidfVectorizer')
     parser.add_argument(
         '--keep_interstitials',
         help='Keep figures, tables, and blanks.',
