@@ -123,6 +123,28 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(str(paragraphs[0]), expected0)
         
+    def test_page_number_no_break(self):
+        """An apparent page number prevents a paragraph break."""
+        test_data = lineify(textwrap.dedent("""\
+        [@= Pseudovalsa nigrofacta (Cooke & Ellis) Cooke, Grevillea 14: 55.
+        1885; as "nigrifacta".#Taxonomy*]
+        [@= Valsaria clethraecola (Cooke & Ellis) Sacc., Syll. Fung. |, p. 748.
+        1882.#Taxonomy*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        = Pseudovalsa nigrofacta (Cooke & Ellis) Cooke, Grevillea 14: 55.
+        1885; as "nigrifacta".
+        """)
+        expected1 = textwrap.dedent("""\
+        = Valsaria clethraecola (Cooke & Ellis) Sacc., Syll. Fung. |, p. 748.
+        1882.
+        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+
     def test_page_break(self):
         test_data = lineify(textwrap.dedent("""\
         [@GERMANY: Freiburg, on Betula, 21 IV 1916, Lettau s. n. (B); Westfalen,
