@@ -129,29 +129,33 @@ class Paragraph(object):
     _reinterpret = ...  # type: List[str]
 
     # These are abbreviations which should not end a taxon paragraph.
-    # Note that  'illeg.', 'inval.' and 'nov.' can end a taxon paragraph.
+
+    # Note that 'illeg.', 'illegit.', 'ined.', 'inval.', 'nov.',
+    # 'nud.', 'press.' (in press), 'sp.', 'str.' can end a taxon paragraph.
     _KNOWN_ABBREVS = [
-        'akad.', 'al.', 'alt.', 'am.', 'amer.', 'ann.', 'apr.', 'arg.',
-        'atk.', 'auct.', 'aug.', 'ave.', 'beauv.', 'beitr.', 'bihar.',
-        'biol.', 'bot.', 'br.', 'bull.', 'burds.', 'ca.', 'can.', 'carol.',
-        'ce.', 'cf.', 'cfr.', 'cit.', 'cm.', 'co.', 'comb.', 'crittog.',
-        'cunn.', 'dec.', 'del.', 'dept.', 'det.', 'diam.', 'dis.', 'disc.',
-        'dr.', 'ed.', 'ekman.', 'elev.', 'etc.', 'exp.', 'far.', 'feb.',
-        'fenn.', 'fi.', 'fig.', 'figs.', 'fl.', 'fn.', 'fn.', 'fr.', 'fung.',
-        'gard.', 'hb.', 'hedw.', 'henn.', 'herb.', 'hist.', 'hiver.',
-        'holme.', 'hym.', 'ibid.', 'ica.', 'ined.', 'inst.', 'jan.',
-        'jul.', 'jum.', 'jun.', 'junci.', 'karst.', 'kauffm.', 'kauffm.',
-        'kl.', 'kll.', 'kon.', 'kérb.', 'lat.', 'later.', 'leg.', 'lett.',
-        'li.', 'linn.', 'loc.', 'lt.', 'magn.', 'mar.', 'mass.', 'mat.',
-        'math.-naturwiss.', 'mi.', 'mikol.', 'mr.', 'ms.', 'mt.', 'mu.',
-        'mucor.', 'mus.', 'mycol.', 'mycol.', 'nat.', 'ned', 'ned.', 'ned.',
-        'no.', 'nom.', 'not.', 'not.', 'nsw.', 'nyl.', 'oct.', 'pap.', 'par.',
-        'pers.', 'pl.', 'pls.', 'pp.', 'proc.', 'prof.', 'prov.', 'publ.',
-        'rept.', 'repub.', 'res.', 'rim.', 'roxb.', 'rupr.', 'sac.', 'sacc.',
-        'schw.', 'schwein.', 'sci.', 'sep.', 'ser.', 'sist.', 'snp.', 'soc.',
-        'sp.', 'speg.', 'spor.', 'spp.', 'st.', 'surv.', 'syn.', 'syst.',
-        'taxa.', 'tr.', 'trab.', 'tracts.', 'trans.', 'univ.', 'var.',
-        'vary.', 'veg.', 'vic.', 'wiss.', 'yum.', 'zool.',
+        'acad.', 'agric.', 'akad.', 'al.', 'alt.', 'am.', 'amer.', 'ann.',
+        'apr.', 'arg.', 'arkiv.', 'atk.', 'auct.', 'aug.', 'ave.', 'beauv.',
+        'beitr.', 'bihar.', 'biol.', 'bot.', 'br.', 'bull.', 'burds.', 'ca.',
+        'can.', 'carol.', 'ce.', 'cf.', 'cfr.', 'cienc.', 'cit.', 'cm.',
+        'co.', 'comb.', 'crittog.', 'cunn.', 'dec.', 'del.', 'dept.', 'det.',
+        'diam.', 'dis.', 'disc.', 'doc.', 'dr.', 'econ.', 'ed.', 'elev.',
+        'entomol.', 'etc.', 'eur.', 'europ.', 'exot.', 'exp.', 'far.', 'feb.',
+        'fenn.', 'fi.', 'fig.', 'figs.', 'fl.', 'fn.', 'fr.', 'fung.',
+        'gard.', 'ges.', 'hb.', 'hedw.', 'henn.', 'herb.', 'hist.', 'hiver.',
+        'holme.', 'hym.', 'ibid.', 'ica.', 'ind.', 'ined.', 'inst.', 'ist.',
+        'ital.', 'jan.', 'jard.', 'jul.', 'jum.', 'jun.', 'kl.', 'kll.',
+        'kon.', 'kérb.', 'lat.', 'later.', 'leafl.', 'leg.', 'lett.', 'li.',
+        'linn.', 'loc.', 'lt.', 'magn.', 'mar.', 'mass.', 'mat.',
+        'math.-naturwiss.', 'medit.', 'mi.', 'mich.', 'micol.', 'mikol.',
+        'mr.', 'ms.', 'mt.', 'mu.', 'mucor.', 'mus.', 'mycol.', 'nat.',
+        'naturk.', 'ned', 'ned.', 'neotrop.', 'no.', 'nom.', 'nsw.', 'nyl.',
+        'oct.', 'pap.', 'par.', 'pers.', 'pg.', 'pl.', 'pls.', 'pp.', 'proc.',
+        'prof.', 'prov.', 'publ.', 'rept.', 'repub.', 'res.', 'rim.', 'roxb.',
+        'rupr.', 'sac.', 'schw.', 'sci.', 'sep.', 'ser.', 'sist.', 'snp.',
+        'soc.', 'sp.', 'spor.', 'spp.', 'st.', 'sta.', 'stat.', 'surv.',
+        'syn.', 'syst.', 'sér.', 'tax.', 'taxa.', 'tr.', 'trab.', 'tracts.',
+        'trans.', 'univ.', 'var.', 'vary.', 'veg.', 'ven.', 'ver.', 'vic.',
+        'wiss.', 'yum.', 'zool.',
     ]
 
     _SUFFIX_RE = r'(ae|ana|ata|ca|ella|ense|es|i|ia|ii|is|ix|oda|ola|oma|sis|um|us)\b'
@@ -335,8 +339,9 @@ class Paragraph(object):
             return False
         if not last_line.endswith('.'):
             return False
-        # A single initial.
-        match = re.search(r'\b\w\.$', last_line.line())
+        # A single initial except "'s" or similar.
+        # I really want \w without \d.
+        match = re.search(r"[^']\b\w\.$", last_line.line())
         if match:
             return False
         # : xxx.
