@@ -48,10 +48,10 @@ class Line(object):
             self._filename, self._line_number, self._label_start, self._label_end, self._value)
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         return self._filename
 
-    def line(self):
+    def line(self) -> str:
         return self._value
 
     def strip_label_start(self) -> None:
@@ -106,18 +106,18 @@ class Label(object):
             return self is None
         return self._value == other._value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Label(%r)' % self._value
 
     def __str__(self) -> str:
         return self._value
 
-    def set_label(self, label_value: str):
+    def set_label(self, label_value: str) -> None:
         if self.assigned():
             raise ValueError('Label already has value: %s' % self._value)
         self._value = label_value
 
-    def assigned(self):
+    def assigned(self) -> bool:
         return self._value is not None
 
 
@@ -356,7 +356,7 @@ class Paragraph(object):
         if match:
             if match.group('abbrev').lower() in self._KNOWN_ABBREVS:
                 return False
-            
+
         return True
 
     @property
@@ -417,10 +417,12 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
             yield retval
             continue
 
-        # Figures end with a blank line, or a period at the end of a
-        # line.
+        # Figures end with a blank line, or period or colon at the end
+        # of a line.
         if pp.is_figure():
-            if not line.is_blank() and not pp.detect_period():
+            if (not line.is_blank() and
+                not pp.detect_period() and
+                not pp.endswith(':')):
                continue
             (retval, pp) = pp.next_paragraph()
             yield retval
@@ -537,7 +539,7 @@ def define_args():
     parser.add_argument(
         '--classifier',
         help='Which classifier should we use for actual runs?',
-        type=str, default='SGDClassifier')
+        type=str, default='CalibratedClassifierCV')
     parser.add_argument(
         '--vectorizer',
         help='Which vectorizer should we use for actual runs?',
@@ -665,6 +667,7 @@ def main():
             sys.exit(0)
 
     phase2 = remove_interstitials(phase1)
+    phase1 = None  # Potentially recover memory.
 
     if 2 in args.dump_phase:
         print('Phase 2')
@@ -682,6 +685,8 @@ def main():
         keep=[Label(l) for l in labels]
     )
 
+    phase2 = None
+
     if 3 in args.dump_phase:
         print('Phase 3')
         print('=======')
@@ -696,6 +701,7 @@ def main():
     numpy.random.seed(SEED)
     cutoff = int(sample_size * 0.70)
     permutation = numpy.random.permutation(phase3)
+    phase3 = None
     learn = paragraphs_to_dataframe(permutation[:cutoff], args.suppress_text)
     test = paragraphs_to_dataframe(permutation[cutoff:], args.suppress_text)
 
