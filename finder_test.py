@@ -266,7 +266,116 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(str(paragraphs[0]), expected0)
 
+    def test_table_long(self):
+        test_data = lineify(textwrap.dedent("""\
+        Table 2. Comparison of diﬀering sequences and number of ﬁxed alleles in Ceratocystis
+        spp. from mango and the closely related species C. ﬁmbriatomima. Shaded cells
+        indicate variations within each species.
+        C. mangicola
+        
+        C. mangivora
+        
+        C. manginecans
+        
+        C. ﬁmbriatomima
+        
+        C. mangicola
+        C. mangivora
+        C. manginecans
+        C. ﬁmbriatomima
+    
+        4
+        16
+        6
+        10
+        
+        16
+        2
+        20
+        14
 
+        6
+        20
+        0
+        14
+        
+        10
+        14
+        14
+        1
+        
+        βt
+        C. mangicola
+        C. mangivora
+        C. manginecans
+        C. ﬁmbriatomima
+        
+        C. mangicola
+        1
+        0
+        5
+        8
+        
+        C. mangivora
+        0
+        3
+        4
+        7
+
+        C. manginecans
+        5
+        4
+        0
+        3
+    
+        C. ﬁmbriatomima
+        8
+        7
+        3
+        1
+        
+        EF-1α
+        C. mangicola
+        C. mangivora
+        C. manginecans
+        C. ﬁmbriatomima
+        
+        C. mangicola
+        1
+        0
+        1
+        0
+
+        C. mangivora
+        0
+        9
+        1
+        0
+
+        C. manginecans
+        1
+        1
+        0
+        1
+        
+        C. ﬁmbriatomima
+        0
+        0
+        1
+        0
+        
+        ITS
+        
+        Ceratocystis spp. nov. (Brazil) ... 391
+        """).split('\n'))
+                                            
+        expected1 = textwrap.dedent("""\
+        Ceratocystis spp. nov. (Brazil) ... 391
+        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        
+        self.assertEqual(str(paragraphs[1]), expected1)
+        
     def test_table(self):
         test_data = lineify(textwrap.dedent("""\
         Table 1.
