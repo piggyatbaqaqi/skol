@@ -552,14 +552,11 @@ def define_args():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('file', type=str, nargs='+', help='the file to search for descriptions')
+    # Actions
     parser.add_argument(
         '--dump_phase',
         help='Dump the output of these phases and exit.',
         default=[], type=int, action='append')
-    parser.add_argument(
-        '--reinterpret',
-        help='Append reinterpretations of various elements. Values={suffix, latinate, punctuation, year, abbrev}.',
-        default=[], type=str, action='append')
     parser.add_argument(
         '--dump_files',
         help='Dump lists of files to process.',
@@ -573,6 +570,15 @@ def define_args():
         help='Test a set of classifiers against the input files, reporting by label.',
         action='store_true')
     parser.add_argument(
+        '--output_annotated',
+        help='Output YEDDA-annotated file.',
+        action='store_true')
+    # Control options
+    parser.add_argument(
+        '--reinterpret',
+        help='Append reinterpretations of various elements. Values={suffix, latinate, punctuation, year, abbrev}.',
+        default=[], type=str, action='append')
+    parser.add_argument(
         '--classifier',
         help='Which classifier should we use for actual runs?',
         type=str, default='OneVsRestClassifier')
@@ -583,10 +589,6 @@ def define_args():
     parser.add_argument(
         '--keep_interstitials',
         help='Keep figures, tables, and blanks.',
-        action='store_true')
-    parser.add_argument(
-        '--output_annotated',
-        help='Output YEDDA-annotated file.',
         action='store_true')
     parser.add_argument(
         '--fast',
@@ -602,6 +604,13 @@ def define_args():
         help='Labels to retain for training purposes.',
         type=str,
         action='append')
+    parser.add_argument(
+        '--output_label',
+        default=[],
+        help='Labels to output.',
+        type=str,
+        action='append')
+
     return parser.parse_args()
 
 def main():
@@ -613,6 +622,8 @@ def main():
         labels = ['Taxonomy', 'Description']
     else:
         labels = args.label
+
+    output_labels = [Label(l) for l in args.output_label]
 
     try:
         i = args.file.index('evaluate')
@@ -777,7 +788,12 @@ def main():
             phase4.append(pp.replace_labels(labels=[Label(predict)]))
 
         if args.output_annotated:
-            print('\n'.join([pp.as_annotated() for pp in phase4]))
+            if not output_labels:
+                print('\n'.join([pp.as_annotated() for pp in phase4]))
+            else:
+                print('\n'.join([pp.as_annotated()
+                                 for pp in phase4
+                                 if pp.top_label() in output_labels]))
 
     if 4 in args.dump_phase:
         print('Phase 4')
