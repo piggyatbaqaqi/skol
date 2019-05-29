@@ -312,6 +312,9 @@ class Paragraph(object):
             'table', 'tab.', 'tab', 'tbl.', 'tbl'
         ])
 
+    def is_all_long(self) -> bool:
+        return all(not l.is_short(self.short_line) for l in self._lines)
+
     def is_blank(self) -> bool:
         if self._lines:
             return all(line.is_blank() for line in self._lines)
@@ -403,10 +406,14 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
             yield retval
             continue
 
-        # Tables continue to grow as long as we have short lines.
+        # Tables start with a few long lines and
+        # continue to grow as long as we have short lines.
         if pp.is_table():
             if line.is_short(pp.short_line):
                 continue
+            else:
+                if pp.is_all_long():
+                    continue
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
