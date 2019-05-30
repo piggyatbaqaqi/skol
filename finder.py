@@ -706,7 +706,7 @@ def main():
     Paragraph.set_reinterpretations(args.reinterpret)
 
     if not args.label:
-        labels = ['Taxonomy', 'Description']
+        labels = ['Nomenclature', 'Description']
     else:
         labels = args.label
 
