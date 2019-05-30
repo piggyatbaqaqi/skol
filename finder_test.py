@@ -202,9 +202,9 @@ class TestParser(unittest.TestCase):
         """An apparent page number prevents a paragraph break."""
         test_data = lineify(textwrap.dedent("""\
         [@= Pseudovalsa nigrofacta (Cooke & Ellis) Cooke, Grevillea 14: 55.
-        1885; as "nigrifacta".#Taxonomy*]
+        1885; as "nigrifacta".#Nomenclature*]
         [@= Valsaria clethraecola (Cooke & Ellis) Sacc., Syll. Fung. |, p. 748.
-        1882.#Taxonomy*]
+        1882.#Nomenclature*]
         """).split('\n'))
 
         expected0 = textwrap.dedent("""\
@@ -251,7 +251,7 @@ class TestParser(unittest.TestCase):
 
     def test_year_in_parens_break(self):
         test_data = lineify(textwrap.dedent("""\
-        [@Pertusaria persulphurata Müll.Arg., Nuovo Giorn. Bot. Ital. 23: 391 (1891)#Taxonomy*]
+        [@Pertusaria persulphurata Müll.Arg., Nuovo Giorn. Bot. Ital. 23: 391 (1891)#Nomenclature*]
         [@Type: AUSTRALIA, Queensland, Brisbane, F.M. Bailey s.n.; holo: G.#Misc-exposition*]
         """).split('\n'))
 
@@ -268,7 +268,7 @@ class TestParser(unittest.TestCase):
 
     def test_syn_break(self):
         test_data = lineify(textwrap.dedent("""\
-        [@Arthonia apatetica (A. Massal.) Th. Fr. (Syn. A. exilis auct.)#Taxonomy*]
+        [@Arthonia apatetica (A. Massal.) Th. Fr. (Syn. A. exilis auct.)#Nomenclature*]
         [@GRAHAM ISLAND: 2 mi. W of Tow Hill (Yakan Point) on north shore,
         54°04’N 131°50’W, 15 June 1967, Brodo 9896R.#Misc-exposition*]
         """).split('\n'))
@@ -614,7 +614,7 @@ class TestLabeling(unittest.TestCase):
         * Correspondence to: cmdenchev@yahoo.co.uk
         [@Abstract — For Ustilago coronariae on Lychnis ﬂos-cuculi, a new combination in
         Microbotryum, M. coronariae, is proposed. It is reported as new to Bulgaria.#Abstract*]
-        [@Key words — Microbotryaceae, taxonomy#Key-words*]
+        [@Key words — Microbotryaceae, nomenclature#Key-words*]
         """).split('\n'))
 
         paragraphs = list(finder.parse_paragraphs(test_data))
@@ -645,7 +645,7 @@ class TestTargetClasses(unittest.TestCase):
         proposed.#Abstract*]
         [@Key words — milkcaps, nomenclature#Key-words*]
 
-        [@Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362. 1837.#Taxonomy*]
+        [@Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362. 1837.#Nomenclature*]
         [@Basidiomata 1.1–7.0 cm high. Spore sac globose to depressed-globose,
         0.6–0.8 cm high × 1.8–2.2 cm broad. Exoperidium spiny, light brown (5E7),
         peeling oﬀ at maturity. Endoperidium reticulate, papery, yellowish white (2A2)
@@ -672,14 +672,14 @@ class TestTargetClasses(unittest.TestCase):
 
         labels_before = [
             Label('Title'), Label('Abstract'), Label('Key-words'),
-            None, Label('Taxonomy'), Label('Description'), Label('Description'),
+            None, Label('Nomenclature'), Label('Description'), Label('Description'),
             Label('Page-header'), Label('Description'),
             Label('Figure'), Label('Figure'),
             Label('Description'), Label('Description'), None, None, None,
         ]
         labels_after = [
             Label('Misc-exposition'), Label('Misc-exposition'),
-            Label('Misc-exposition'), Label('Taxonomy'), Label('Description'),
+            Label('Misc-exposition'), Label('Nomenclature'), Label('Description'),
             Label('Misc-exposition'), Label('Misc-exposition'),
             Label('Description'), Label('Misc-exposition'),
         ]
@@ -693,7 +693,7 @@ class TestTargetClasses(unittest.TestCase):
         phase3 = list(finder.target_classes(
             phase2,
             default=Label('Misc-exposition'),
-            keep=[Label('Taxonomy'), Label('Description')]
+            keep=[Label('Nomenclature'), Label('Description')]
         ))
         self.assertListEqual([pp.top_label() for pp in phase3], labels_after)
 
