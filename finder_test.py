@@ -4,11 +4,82 @@ import textwrap
 from typing import List
 import unittest
 
+
 def lineify(lines: List[str]) -> List[Line]:
     return [Line(l) for l in lines]
 
-class TestParagraph(unittest.TestCase):
 
+class TestFile(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_line_number(self):
+        test_data = textwrap.dedent("""\
+        one
+        two
+        three
+        """).split('\n')
+        f = finder.File(contents=test_data)
+        got = []
+        for l in f.read_line():
+            got.append(l)
+
+        self.assertEqual(got[0].line, 'one')
+        self.assertEqual(got[1].line, 'two')
+        self.assertEqual(got[2].line, 'three')
+        self.assertEqual(got[0].line_number, 1)
+        self.assertEqual(got[1].line_number, 2)
+        self.assertEqual(got[2].line_number, 3)
+
+
+    def test_page_number(self):
+        test_data = textwrap.dedent("""\
+        xi lorem ipsum
+        
+        page 1, line 3
+        page 1, line 4
+        dolor sit  xii
+
+        page 2, line 3
+        page 2, line 4
+
+        1 amet, consectetur
+
+        page 3, line 3
+        adipiscing elit  kn
+
+        page 4, line 3
+
+        3sed do eiusmod
+
+        page 5, line 3
+        """).split('\n')
+        f = finder.File(contents=test_data)
+        got = [l for l in f.read_line()]
+        self.assertEqual(got[0].empirical_page_number, 'xi')
+        self.assertEqual(got[0].line, 'xi lorem ipsum')
+        self.assertEqual(got[0].line_number, 1)
+        self.assertEqual(got[0].page_number, 1)
+        
+        self.assertEqual(got[3].line, 'page 1, line 4')
+        self.assertEqual(got[3].line_number, 4)
+        self.assertEqual(got[3].page_number, 1)
+        
+        self.assertEqual(got[6].empirical_page_number, 'xii')
+        self.assertEqual(got[6].line, 'page 2, line 3')
+        self.assertEqual(got[6].line_number, 3)
+        self.assertEqual(got[6].page_number, 2)
+
+        self.assertIsNone(got[14].empirical_page_number)
+        self.assertEqual(got[14].line, 'page 4, line 3')
+        self.assertEqual(got[14].line_number, 3)
+        self.assertEqual(got[14].page_number, 4)
+
+        self.assertEqual(got[18].empirical_page_number, '3')
+
+
+
+class TestParagraph(unittest.TestCase):
     def setUp(self):
         self.pp = Paragraph()
         self.pp2 = Paragraph()
@@ -27,7 +98,7 @@ class TestParagraph(unittest.TestCase):
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
-        self.assertEqual(self.pp.next_line().line(), 'rabbit')
+        self.assertEqual(self.pp.next_line().line, 'rabbit')
 
     def test_is_figure(self):
         self.pp.append(Line('  Fig. 2.7  '))
@@ -47,15 +118,19 @@ class TestParagraph(unittest.TestCase):
         self.pp2.append(Line('rabbit'))
         self.assertFalse(self.pp2.is_table())
 
+    def test_is_key(self):
+        self.pp.append(Line('Key to Ijuhya species with fasciculate hairs'))
+        self.assertTrue(self.pp.is_key())
+
     def test_last_line(self):
         self.pp.append_ahead(Line('hamster'))
         self.assertEqual(str(self.pp), '\n')
         self.pp.append_ahead(Line('gerbil'))
         self.pp.append_ahead(Line('rabbit'))
 
-        self.assertEqual(self.pp.last_line.line(), 'gerbil')
+        self.assertEqual(self.pp.last_line.line, 'gerbil')
         self.pp.close()
-        self.assertEqual(self.pp.last_line.line(), 'rabbit')
+        self.assertEqual(self.pp.last_line.line, 'rabbit')
 
 
 class TestLine(unittest.TestCase):
@@ -63,7 +138,7 @@ class TestLine(unittest.TestCase):
         data = '[@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]'
         line = Line(data)
 
-        self.assertEqual(line.line(), 'New records of smut fungi. 4. Microbotryum coronariae comb. nov.')
+        self.assertEqual(line.line, 'New records of smut fungi. 4. Microbotryum coronariae comb. nov.')
         self.assertTrue(line.contains_start())
         self.assertEqual(line.end_label(), 'Title')
         self.assertFalse(line.is_short(50))

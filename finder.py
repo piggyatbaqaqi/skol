@@ -24,23 +24,90 @@ import pandas
 
 SEED=12345
 
+class File(object):
+    _filename = ...  # type: str
+    _page_number = ...  # type: int
+    _line_number = ...  # type: int
+    _empirical_page_number = ...  # type: Optional[str]
+
+    def __init__(
+            self,
+            filename: Optional[str] = None,
+            contents: Optional[List[str]] = None):
+        self._filename = filename
+        self._page_number = 1
+        self._line_number = 0
+        if filename:
+            self._file = open(filename, 'r')
+            self._contents = None
+        else:
+            self._contents = contents
+            self._file = None
+        self._empirical_line_number = None
+
+    def _set_empirical_page(self, l: str, first: bool = False) -> None:
+        match = re.search(r'(^(?P<leading>[mclxvi\d]+))|(?P<trailing>[mclxvi\d]+$)', l)
+        if not match:
+            self._empirical_page_number = None
+        else:
+            self._empirical_page_number = (
+                match.group('leading') or match.group('trailing')
+            )
+
+    def contents(self):
+        return self._file or self._contents
+
+    def read_line(self):
+        for l_str in self.contents():
+            self._line_number += 1
+            # First line of first page does not have a form feed.
+            if self._line_number == 1 and self._page_number == 1:
+                self._set_empirical_page(l_str)
+            if l_str.startswith(''):
+                self._page_number += 1
+                self._line_number = 1
+                # Strip the form feed.
+                self._set_empirical_page(l_str[1:])
+            l = Line(l_str, self)
+            yield l
+
+    @property
+    def line_number(self) -> int:
+        return self._line_number
+
+    @property
+    def page_number(self) -> int:
+        return self._page_number
+
+    @property
+    def empirical_page_number(self) -> Optional[str]:
+        return self._empirical_page_number
+
+    @property
+    def filename(self):
+        return self._filename
+    
+
 class Line(object):
     _value = ...  # type: Optional[str]
-    _filename = ...  # type: str
+    _filename = ...  # type: Optional[str]
     _label_start = ...  # type: bool
     _label_end = ...  # type: Optional[str]
     _line_number = ...  # type: int
+    _empirical_page_number = ... # type: Optional[str]
     _file = None
-    _count = 0
 
-    def __init__(self, line: str, filename: Optional[str] = None):
-        if self.__class__._file != filename:
-            self.__class__._file = filename
-            self.__class__._count = 0
-        self.__class__._count += 1
+    def __init__(self, line: str, fileobj: Optional[File] = None):
         self._value = line.strip(' \n')
-        self._filename = filename
-        self._line_number = self._count
+        self._filename = None
+        self._page_number = None
+        self._empirical_page_number = None
+        self._line_number = 0
+        if fileobj:
+            self._filename = fileobj.filename
+            self._line_number = fileobj.line_number
+            self._page_number = fileobj.page_number
+            self._empirical_page_number = fileobj.empirical_page_number
         self.strip_label_start()
         self.strip_label_end()
 
@@ -52,6 +119,19 @@ class Line(object):
     def filename(self) -> str:
         return self._filename
 
+    @property
+    def line_number(self) -> int:
+        return self._line_number
+
+    @property
+    def page_number(self) -> int:
+        return self._page_number
+
+    @property
+    def empirical_page_number(self) -> int:
+        return self._empirical_page_number
+
+    @property
     def line(self) -> str:
         return self._value
 
@@ -190,7 +270,7 @@ class Paragraph(object):
             self._labels = []
 
     def __str__(self) -> str:
-        return '\n'.join([l.line() for l in self._lines]) + '\n'
+        return '\n'.join([l.line for l in self._lines]) + '\n'
 
     def as_annotated(self) -> str:
         label = self.top_label()
@@ -295,8 +375,8 @@ class Paragraph(object):
         if not self._lines:
             return False
         if isinstance(tokens, str):
-            return self._lines[0].line().startswith(tokens)
-        tokenized = self._lines[0].line().strip().split()
+            return self._lines[0].line.lower().startswith(tokens)
+        tokenized = self._lines[0].line.strip().split()
         if not tokenized:
             return False
         first_token = tokenized[0].lower()
@@ -311,6 +391,12 @@ class Paragraph(object):
         return self.startswith([
             'table', 'tab.', 'tab', 'tbl.', 'tbl'
         ])
+
+    def is_key(self) -> bool:
+        return self.startswith('key to')
+
+    def is_mycobank(self) -> bool:
+        return self.startswith('mycobank')
 
     def is_all_long(self) -> bool:
         return all(not l.is_short(self.short_line) for l in self._lines)
@@ -346,18 +432,18 @@ class Paragraph(object):
             return False
         # A single initial except "'s" or similar.
         # I really want \w without \d.
-        match = re.search(r"[^']\b\w\.$", last_line.line())
+        match = re.search(r"[^']\b\w\.$", last_line.line)
         if match:
             return False
         # : xxx.
-        match = re.search(r'\b: \d+\.$', last_line.line())
+        match = re.search(r'\b: \d+\.$', last_line.line)
         if match:
             return False
         # p. xxx.
-        match = re.search(r'\bp\. \d+\.$', last_line.line())
+        match = re.search(r'\bp\. \d+\.$', last_line.line)
         if match:
             return False
-        match = re.search(r'\b(?P<abbrev>\w+\.)$', last_line.line())
+        match = re.search(r'\b(?P<abbrev>\w+\.)$', last_line.line)
         if match:
             if match.group('abbrev').lower() in self._KNOWN_ABBREVS:
                 return False
@@ -498,8 +584,9 @@ def target_classes(paragraphs: Iterable[Paragraph],
 
 def read_files(files: List[str]) -> Iterable[str]:
     for f in files:
-        for line in open(f, 'r'):
-            yield Line(line, filename=f)
+        file_object = File(f)
+        for line in file_object.open('r'):
+            yield line
 
 
 def perform(classifiers, vectorizers, train_data, test_data):
