@@ -635,8 +635,6 @@ def perform_confusion_matrix(classifiers, vectorizers, train_data, test_data):
         print(string)
 
 def define_args():
-
-
     parser = argparse.ArgumentParser()
     parser.add_argument('file', type=str, nargs='+', help='the file to search for descriptions')
     # Actions
