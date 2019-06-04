@@ -46,7 +46,7 @@ class File(object):
         self._empirical_line_number = None
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
-        match = re.search(r'(^(?P<leading>[mclxvi\d]+))|(?P<trailing>[mclxvi\d]+$)', l)
+        match = re.search(r'(^(?P<leading>[mdclxvi\d]+))|(?P<trailing>[mdclxvi\d]+$)', l)
         if not match:
             self._empirical_page_number = None
         else:
@@ -240,7 +240,11 @@ class Paragraph(object):
         'wiss.', 'yum.', 'zool.',
     ]
 
-    _SUFFIX_RE = r'(ae|ana|ata|ca|ella|ense|es|i|ia|ii|is|ix|oda|ola|oma|sis|um|us)\b'
+
+    _SUFFIX_RE = (
+        r'(ae|ana|ata|ca|cota|cys|derma|ea|ella|ense|es|forma|ia|ii'
+        r'|ista|is|ix|i|oda|ola|oma|phora|sis|spora|tina|ula|um|us|zoa)\b'
+    )
     _PUNCTUATION_RE = r'[().;:,≡=&]'
     _PUNCTUATION = {
         '(': 'PLPAREN',
