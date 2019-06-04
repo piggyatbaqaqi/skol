@@ -26,7 +26,7 @@ class Eater(object):
 
         self._pattern = '|'.join(
             self._extra_regex + 
-            sorted([self.make_pattern(word) for word in self.read_records()], reverse=True))
+            sorted(set([self.make_pattern(word) for word in self.read_records()]), reverse=True))
 
         self._file.close()
 
