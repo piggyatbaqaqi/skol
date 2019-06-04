@@ -38,10 +38,10 @@ class Eater(object):
         """Generator that returns strings from self.contents()"""
         return []
 
-    @abc.abstractmethod
     def make_pattern(self, word: str) -> str:
         """Convert word into a pattern fragment."""
-        return ''
+        pattern = word.lower().replace('.', '\\.')
+        return pattern
 
     def match(self, word: str):
         return(re.match(self._pattern, word.lower()))

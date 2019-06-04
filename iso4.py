@@ -107,7 +107,7 @@ class LTWA(pattern_eater.Eater):
                     yield(record['ABBREVIATIONS'].replace(' ', '').replace('.', ''))
 
     def make_pattern(self, word: str) -> str:
-        pattern = word.lower().replace('.', '\\.')
+        pattern = super(LTWA, self).make_pattern(word)
         if pattern.startswith('-'):
             pattern = r'\w*' + pattern[1:]
         if pattern.endswith('-'):
