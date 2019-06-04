@@ -10,67 +10,146 @@ import csv
 import re
 from typing import Any, Iterable, List, Optional
 
-class LTWA(object):
+import pattern_eater
 
-    _file = ...  # type: Optional[str]
-    _data = ...  # type: Optional[Iterable[str]]
-    _pattern = ...  # type: re._pattern_type
+class LTWA(pattern_eater.Eater):
 
-    def __init__(self, filename: Optional[str] = 'data/LTWA_20160915.txt', data: Optional[Iterable[str]] = None):
-        if filename:
-            self._file = open(filename, 'r')
-        else:
-            self._file = None
-        self._data = data
-        
-        self._pattern = '|'.join([self.make_pattern(word) for word in self.read_records()])
-            
-        self._file.close()
+    _filename = 'data/LTWA_20160915.txt'
 
-    def contents(self):
-        return self._file or self._data
+    # These go at the beginning of the regex.
+    _extra_regex = [
+        r'\b[mdclxvi]+\b',  # Roman numerals.
+        r'[-(),&.]',        # Extra punctuation.
+        r'\d+',             # Numbers.
+    ]
+
+    # I'd like to infer these.
+    _places = [
+        'andaman',
+        'byochugaizashi',
+        'corboda',
+        'cornell',
+        'formosa',
+        'gifalnye',
+        'java',
+        'matsushima',
+        'oesterreich',
+        'rico',
+        'roma',
+        'sada',
+        'sappro.',
+        'siena',
+        'ssr',
+        'sssr',
+        'taihoku',
+        'tokyo',
+        'torrey',
+        'tottori',
+        'ussr',
+        'wien',
+        'wisc.',
+        'yamagata',
+        'yokohama',
+    ]
+
+    _small_words = [
+        'atti',
+        'aric.',
+        '-ales',
+        '-ana',
+        '-eae',
+        '-ia',
+        '-tax-',
+        '-um',
+        'algen',
+        'arts',
+        'griby',  # Russian 'mushrooms'
+        'biology',
+        'club',
+        'crittog.',
+        'crypt.',
+        'cryptog.',
+        'de',
+        'fl.'
+        'fungi',
+        'fung.',
+        'genus',
+        'in',
+        'microfung.',
+        'national',
+        'niz.',  # Russian
+        'nova',
+        'nuova',
+        'of',
+        'orto',  # Italian 'garden'
+        'para',
+        'pilz',  # German 'mushroom'
+        'sta',
+        'staz.',
+        'sti.',  # Romanian 'sci.'
+        'the',
+        'u.',
+        'u.s.d.a.',
+        'vereins',  # German "club's"
+    ]
 
     def read_records(self):
+        for word in self._places:
+            yield(word)
+        for word in self._small_words:
+            yield(word)
         for record in csv.DictReader(self.contents(), delimiter='\t'):
-            if record['ABBREVIATIONS'] == 'n.a.':
-                yield(record['WORD'])
-            else:
+            yield(record['WORD'])
+            if record['ABBREVIATIONS'] != 'n.a.':
                 yield(record['ABBREVIATIONS'])
+                # Allow abbreviations with spaces removed.
+                if ' ' in record['ABBREVIATIONS']:
+                    yield(record['ABBREVIATIONS'].replace(' ', ''))
+                    yield(record['ABBREVIATIONS'].replace(' ', '').replace('.', ''))
 
     def make_pattern(self, word: str):
-        pattern = word.replace('.', '\\.')
+        pattern = word.lower().replace('.', '\\.')
         if pattern.startswith('-'):
-            pattern = r'\w+' + pattern[1:]
+            pattern = r'\w*' + pattern[1:]
         if pattern.endswith('-'):
-            pattern = pattern[:-1] + '\w+'
+            pattern = pattern[:-1] + r'\w*'
         return pattern
-
-    def match(self, word: str):
-        return(re.match(self._pattern, word))
-
-    def eat_tokens(self, line: str) -> (Any, str):
-        match = self.match(line)
-        while line and match:
-            line = line[match.end():]
-            ws = re.match('\s+', line)
-            if ws:
-                line = line[ws.end():]
-            yield (match, line)
-            match = self.match(line)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('file', type=str, help='filename of the UTF-8 tab-delimited LTWA')
-    parser.add_argument('abbrevs', type=str, help='list of abbreviations to check')
+    parser.add_argument('file',
+                        type=str,
+                        help='filename of the UTF-8 tab-delimited LTWA')
+    parser.add_argument('abbrevs',
+                        nargs='*',
+                        type=str,
+                        help='list of abbreviations to check for --eat_tokens')
+    parser.add_argument('--eat_tokens',
+                        help='Process tokens from the command line.',
+                        action='store_true')
+    parser.add_argument('--grep_v_file',
+                        type=str,
+                        help='Figure out how much of each line can be recognized.',
+                        default=[],
+                        action='append')
     args = parser.parse_args()
 
     ltwa = LTWA(args.file)
-    for (m, l) in ltwa.eat_tokens(args.abbrevs):
-        if m:
-            print('m: %s line: %s' % (m, l))
-        else:
-            print('m: None line: %s' % l)
+    if args.eat_tokens:
+        for (m, l) in ltwa.eat_tokens(args.abbrevs):
+            if m:
+                print('m: %s line: %s' % (m, l))
+            else:
+                print('m: None line: %s' % l)
+    for filename in args.grep_v_file:
+        f = open(filename, 'r')
+        for line in f:
+            for (m, l) in ltwa.eat_tokens(line):
+                if m is None:
+                    break
+            print('%s -> %s' % (line.strip(), l))
+            l = ''
 
 
 if __name__ == '__main__':
