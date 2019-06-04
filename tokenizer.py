@@ -5,7 +5,7 @@ import csv
 import re
 from typing import Any, Iterable, List, Optional
 
-class Eater(object):
+class Tokenizer(object):
 
     _metaclass_ = abc.ABCMeta
     _file = ...  # type: Optional[Iterable[str]]
@@ -46,7 +46,7 @@ class Eater(object):
     def match(self, word: str):
         return(re.match(self._pattern, word.lower()))
 
-    def eat_tokens(self, line: str) -> (Any, str):
+    def tokenize(self, line: str) -> (Any, str):
         """Consume tokens that match the pattern.
 
         Also consumes whitespace.

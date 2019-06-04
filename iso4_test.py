@@ -3,7 +3,7 @@ import unittest
 
 class TestLTWA(unittest.TestCase):
 
-    def test_eat_tokens(self):
+    def test_tokenize(self):
         test_data = (
             'mykol. N. Am. j.'
             'Friesland Barl.'
@@ -33,7 +33,7 @@ class TestLTWA(unittest.TestCase):
         ]
         
         ltwa = iso4.LTWA()
-        for (m, l) in ltwa.eat_tokens(test_data):
+        for (m, l) in ltwa.tokenize(test_data):
             self.assertEqual(m.string[m.start():m.end()], expected.pop(0))
         self.assertEqual(l, 'NXXXX.')
 

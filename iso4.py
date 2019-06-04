@@ -9,9 +9,9 @@ import argparse
 import csv
 from typing import Iterator, Optional
 
-import pattern_eater
+import tokenizer
 
-class LTWA(pattern_eater.Eater):
+class LTWA(tokenizer.Tokenizer):
 
     _filename = 'data/LTWA_20160915.txt'
 
@@ -123,8 +123,8 @@ def main():
     parser.add_argument('abbrevs',
                         nargs='*',
                         type=str,
-                        help='list of abbreviations to check for --eat_tokens')
-    parser.add_argument('--eat_tokens',
+                        help='list of abbreviations to check for --tokenize')
+    parser.add_argument('--tokenize',
                         help='Process tokens from the command line.',
                         action='store_true')
     parser.add_argument('--grep_v_file',
@@ -135,8 +135,8 @@ def main():
     args = parser.parse_args()
 
     ltwa = LTWA(args.file)
-    if args.eat_tokens:
-        for (m, l) in ltwa.eat_tokens(args.abbrevs):
+    if args.tokenize:
+        for (m, l) in ltwa.tokenize(args.abbrevs):
             if m:
                 print('m: %s line: %s' % (m, l))
             else:
@@ -144,7 +144,7 @@ def main():
     for filename in args.grep_v_file:
         f = open(filename, 'r')
         for line in f:
-            for (m, l) in ltwa.eat_tokens(line):
+            for (m, l) in ltwa.tokenize(line):
                 if m is None:
                     break
             print('%s -> %s' % (line.strip(), l))
