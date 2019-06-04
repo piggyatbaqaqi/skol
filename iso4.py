@@ -7,8 +7,7 @@ $ cat LTWA_20160915.txt | iconv -f utf-16 -t utf-8 > LTWA_20160915.txt
 
 import argparse
 import csv
-import re
-from typing import Any, Iterable, List, Optional
+from typing import Iterator, Optional
 
 import pattern_eater
 
@@ -93,7 +92,7 @@ class LTWA(pattern_eater.Eater):
         'vereins',  # German "club's"
     ]
 
-    def read_records(self):
+    def read_records(self) -> Iterator[str]:
         for word in self._places:
             yield(word)
         for word in self._small_words:
@@ -107,7 +106,7 @@ class LTWA(pattern_eater.Eater):
                     yield(record['ABBREVIATIONS'].replace(' ', ''))
                     yield(record['ABBREVIATIONS'].replace(' ', '').replace('.', ''))
 
-    def make_pattern(self, word: str):
+    def make_pattern(self, word: str) -> str:
         pattern = word.lower().replace('.', '\\.')
         if pattern.startswith('-'):
             pattern = r'\w*' + pattern[1:]
