@@ -101,9 +101,9 @@ Aberdeen
 Aberdeen
 Aberdeen, V. (pub. 1984)        
 V. Aberdeen
-Åberg, Judith A. (pub. 1936)     
-Åberg
-Åberg
+Ã…berg, Judith A. (pub. 1936)     
+Ã…berg
+Ã…berg
 Abiko, Kazuo (pub. 1970)        
 Abiko
 Abiko
@@ -191,7 +191,7 @@ Adhikari
 Adlakha, K.L. (pub. 1958)       
 Adlakha
 Adlakha
-Adler, Mónica T. (pub. 1987)     
+Adler, MÃ³nica T. (pub. 1987)     
 Adler
 Adler
 Adzet, Jose-Maria (pub. 1958)   
@@ -235,11 +235,11 @@ S.C. Agarwal
 Agerer, Reinhard (1947) 
 Agerer
 Agerer
-Aggéry, Anna Berthe Emma (1892)  
-Aggéry
-Aggéry
-Aggéry, N. (pub. 1935)   
-N. Aggéry
+AggÃ©ry, Anna Berthe Emma (1892)  
+AggÃ©ry
+AggÃ©ry
+AggÃ©ry, N. (pub. 1935)   
+N. AggÃ©ry
 Agnihothrudu, V. (pub. 1956)    
 Agnihothr.
 Agnihothrudu
@@ -262,11 +262,11 @@ Agrios
 Aguiar, Izonete de Jesus Araujo (1947)  
 I.A. Aguiar
 Aguiar
-(Aguirre, (Maria) Begoña) see Aguirre-Hudson, (Maria) Begoña      
+(Aguirre, (Maria) BegoÃ±a) see Aguirre-Hudson, (Maria) BegoÃ±a      
 M.B. Aguirre
-(Aguirre Garcia, (Maria) Begoña) see Aguirre-Hudson, (Maria) Begoña       
+(Aguirre Garcia, (Maria) BegoÃ±a) see Aguirre-Hudson, (Maria) BegoÃ±a       
 M.B. Aguirre
-Aguirre-Hudson, (Maria) Begoña (1960)    
+Aguirre-Hudson, (Maria) BegoÃ±a (1960)    
 M.B. Aguirre
 Aguirre-Hudson
 Ahearn, Donald G. (pub. 1970)   
@@ -369,7 +369,7 @@ Albeq.
 Albers, M.A. (pub. 1986)        
 M.A. Albers
 Albers
-Albert, László (pub. 1985)        
+Albert, LÃ¡szlÃ³ (pub. 1985)        
 L. Albert
 Albert
 Alberti, Antonio (Florentino Rial) (1785-1861)  
@@ -380,9 +380,9 @@ S. Alberti
 Albertini, Johannes Baptista von (1769-1831)    
 Alb.
 Albertini
-Albertó, Edgardo (pub. 1998)     
-Albertó
-Albertó
+AlbertÃ³, Edgardo (pub. 1998)     
+AlbertÃ³
+AlbertÃ³
 Albuquerque, Fernando Carneiro de (1932)        
 F.C. Albuq.
 Albuquerque
@@ -405,9 +405,9 @@ Alderman
 Alderman
 Alderman, Stephen C. (pub. 2001)        
 S.C. Alderman
-Alé-Agha, Nosratollah (pub. 1971)        
-Alé-Agha
-Alé-Agha
+AlÃ©-Agha, Nosratollah (pub. 1971)        
+AlÃ©-Agha
+AlÃ©-Agha
 Alecrim, Ivan C. (pub. 1955)    
 Alecrim
 Alecrim
@@ -439,9 +439,9 @@ Alexopoulos
 Alfaro, Rita M. (pub. 1996)     
 Alfaro
 Alfaro
-Alfaro-García, A. ( -1996)       
-Alfaro-García
-Alfaro-García
+Alfaro-GarcÃ­a, A. ( -1996)       
+Alfaro-GarcÃ­a
+Alfaro-GarcÃ­a
 Alfenas, Acelino Couto (pub. 1987)      
 Alfenas
 Alfenas
@@ -500,7 +500,7 @@ Alm
 Almborn, Ove (1914-1992)        
 Almb.
 Almborn
-Almeida, Célio R. (pub. 1964)    
+Almeida, CÃ©lio R. (pub. 1964)    
 C.R. Almeida
 Almeida
 Almeida, Floriano Paulo de (pub. 1933)  
@@ -540,21 +540,21 @@ Alstrup
 Altera_, Ion (pub. 1959) 
 Altera_
 Altera_
-Altés, Alberto (pub. 1992)       
-Altés
-Altés
+AltÃ©s, Alberto (pub. 1992)       
+AltÃ©s
+AltÃ©s
 Altstatt, George E. (1905)      
 Altst.
 Altstatt
 Alvarez, Isabel F. (pub. 1993)  
 I.F. Alvarez
 Alvarez
-Alvarez García, Luis A. (pub. 1945)      
+Alvarez GarcÃ­a, Luis A. (pub. 1945)      
 Alvarez
-Alvarez García
-Álvarez García, Luis A. (1903)    
-Álv. García
-Álvarez García
+Alvarez GarcÃ­a
+Ãlvarez GarcÃ­a, Luis A. (1903)    
+Ãlv. GarcÃ­a
+Ãlvarez GarcÃ­a
 Alvin, K.L. (1927)      
 Alvin
 Alvin
@@ -608,13 +608,13 @@ Amo y Mora
 Amon, J.P. (pub. 1984)  
 Amon
 Amon
-(Amos, Irma Josefa Gamundí de) see Gamundí, Irma Josefa   
-Gamundí
+(Amos, Irma Josefa GamundÃ­ de) see GamundÃ­, Irma Josefa   
+GamundÃ­
 Amos, Raymond E. (pub. 1966)    
 Amos
 Amos
-(Ana Magán, F.J.) see Magán, F.J. Fernandez de Ana        
-Fern. Magán
+(Ana MagÃ¡n, F.J.) see MagÃ¡n, F.J. Fernandez de Ana        
+Fern. MagÃ¡n
 Anagnostakis, Sandra L. (1939)  
 Anagnost.
 Anagnostakis
@@ -689,9 +689,9 @@ K. Ando
 Ando
 Ando, Susumu (pub. 1997)        
 S. Ando
-André, L. (pub. 1955)    
-L. André
-André
+AndrÃ©, L. (pub. 1955)    
+L. AndrÃ©
+AndrÃ©
 Andreadis, Theodore G. (pub. 1991)      
 Andreadis
 Andreadis
@@ -703,9 +703,9 @@ R.V. Andrejeva
 Andres, Heinrich (1883-1970)    
 Andres
 Andres
-Andrés, Carmen (pub. 1999)       
-C. Andrés
-Andrés
+AndrÃ©s, Carmen (pub. 1999)       
+C. AndrÃ©s
+AndrÃ©s
 Andreucci, A. (pub. 1926)       
 Andreucci
 Andreucci
@@ -721,7 +721,7 @@ Andrianova
 Andrus, Charles Frederick (1906)        
 Andrus
 Andrus
-(Angeles Herrera-Campos, María de los) see Herrera-Campos, María Angeles  
+(Angeles Herrera-Campos, MarÃ­a de los) see Herrera-Campos, MarÃ­a Angeles  
 Herrera-Camp.
 Angels, Sherri A. (pub. 2000)   
 Angels
@@ -757,9 +757,9 @@ Antoine
 Antokolskaya, M.P. (pub. 1922)  
 Antok.
 Antokolskaya
-Antonín, Vladimír (1955)  
-Antonín
-Antonín
+AntonÃ­n, VladimÃ­r (1955)  
+AntonÃ­n
+AntonÃ­n
 Antonini, Yasmine (pub. 1999)   
 Antonini
 Antonini
@@ -808,7 +808,7 @@ K.R. Appel
 Apstein, Carl (1862-1950)       
 Apstein
 Apstein
-Aptroot, André (pub. 1988)       
+Aptroot, AndrÃ© (pub. 1988)       
 Aptroot
 Aptroot
 Ara, Rownak (pub. 1964) 
@@ -817,18 +817,18 @@ Ara
 Aragaki, Minoru (pub. 1979)     
 Aragaki
 Aragaki
-(Aragón, Gregorio) see Aragón Rubio, Gregorio     
-Aragón
-Aragón Rubio, Gregorio (pub. 1999)       
-Aragón
-Aragón Rubio
+(AragÃ³n, Gregorio) see AragÃ³n Rubio, Gregorio     
+AragÃ³n
+AragÃ³n Rubio, Gregorio (pub. 1999)       
+AragÃ³n
+AragÃ³n Rubio
 Arai, Kei (pub. 1995)   
 Arai
 Arai
 Araki, Takeo (pub. 1986)        
 T. Araki
 Araki
-Arambarri, Angélica M. (1945)    
+Arambarri, AngÃ©lica M. (1945)    
 Aramb.
 Arambarri
 Araujo, Izonete de Jesus (pub. 1963)    
@@ -860,17 +860,17 @@ Archibald
 Arde, Walker Robert (1902)      
 Arde
 Arde
-(Area Leão, A.E. de) see Leão, A.E. de Area       
-Leão
+(Area LeÃ£o, A.E. de) see LeÃ£o, A.E. de Area       
+LeÃ£o
 Areger, F.W. (pub. 1917)        
 Areger
 Areger
 Arenal, Francisco (pub. 1999)   
 Arenal
 Arenal
-(Arenal Yagüe, Francisco) see Arenal, Francisco  
+(Arenal YagÃ¼e, Francisco) see Arenal, Francisco  
 Arenal
-Arenas M., José (pub. 1996)      
+Arenas M., JosÃ© (pub. 1996)      
 Arenas
 Arenas M.
 Arenberg, Florence F. (pub. 1941)       
@@ -967,9 +967,9 @@ Arsenijevi
 Arshad, M. (pub. 1972)  
 Arshad
 Arshad
-Årsvoll, K. (pub. 1965)  
-Årsvoll
-Årsvoll
+Ã…rsvoll, K. (pub. 1965)  
+Ã…rsvoll
+Ã…rsvoll
 Artagaveytia-Allende, R.C. (pub. 1970)  
 Artag.-All.
 Artagaveytia-Allende
@@ -1037,7 +1037,7 @@ S. Arya
 Arzt, L. (pub. 1924)    
 Arzt
 Arzt
-(Arzù, Roberto Flores) see Flores Arzù, Roberto   
+(ArzÃ¹, Roberto Flores) see Flores ArzÃ¹, Roberto   
 R. Flores
 Asad, Fatima (pub. 1967)        
 Asad
@@ -1163,9 +1163,9 @@ Avell.
 Avellaneda
 (Avellar Brotero, Felix de (Silva)) see Brotero, Felix de (Silva) Avellar       
 Brot.
-Averna-Saccá, Rosario (1883-1951)        
-Av.-Saccá
-Averna-Saccá
+Averna-SaccÃ¡, Rosario (1883-1951)        
+Av.-SaccÃ¡
+Averna-SaccÃ¡
 Avetta, P. (pub. 1880s) 
 P. Avetta
 Avetta
@@ -1198,7 +1198,7 @@ Ayala
 Ayel, Antoine (pub. 1996)       
 Ayel
 Ayel
-Ayer, François (pub. 1974)       
+Ayer, FranÃ§ois (pub. 1974)       
 Ayer
 Ayer
 Ayers, G.W. (pub. 1954) 
@@ -1216,9 +1216,9 @@ Azbukina
 Azbukina, Z.M. (pub. 1956)      
 Azbukina
 Azbukina
-Azéma, René-Charles (pub. 1967)   
-Azéma
-Azéma
+AzÃ©ma, RenÃ©-Charles (pub. 1967)   
+AzÃ©ma
+AzÃ©ma
 Azevedo, Paulo Cordeiro de (pub. 1956)  
 P.C. Azevedo
 Azevedo
@@ -1230,9 +1230,9 @@ Azmatullah
 Baard, S.W. (pub. 1985) 
 Baard
 Baard
-Bååth, E. (pub. 1979)     
-Bååth
-Bååth
+BÃ¥Ã¥th, E. (pub. 1979)     
+BÃ¥Ã¥th
+BÃ¥Ã¥th
 Baba, H. (pub. 1998)    
 Baba
 Baba
@@ -1348,7 +1348,7 @@ Bahekar
 Bahl, N. (pub. 1976)    
 Bahl
 Bahl
-Bahnweg, Güther (pub. 1972)      
+Bahnweg, GÃ¼ther (pub. 1972)      
 Bahnweg
 Bahnweg
 Bai, C.K. (pub. 1984)   
@@ -1518,9 +1518,9 @@ Balfour-Browne
 Ballal, V.N. (pub. 1984)        
 Ballal
 Ballal
-Ballarà, Josep (pub. 1997)       
-Ballarà
-Ballarà
+BallarÃ , Josep (pub. 1997)       
+BallarÃ 
+BallarÃ 
 Ballen, Virginia Garland (pub. 1909)    
 V.G. Ballen
 Ballen
@@ -1548,19 +1548,19 @@ Balcatu
 Balzer, F. (pub. 1912)  
 Balzer
 Balzer
-(Bañares, Ángel) see Bañares Baudet, Ángel  
-Bañares
-Bañares Baudet, Ángel (pub. 1986) 
-Bañares
-Bañares Baudet
+(BaÃ±ares, Ãngel) see BaÃ±ares Baudet, Ãngel  
+BaÃ±ares
+BaÃ±ares Baudet, Ãngel (pub. 1986) 
+BaÃ±ares
+BaÃ±ares Baudet
 Bancroft, Claude Keith (1885-1919)      
 C.K. Bancr.
 Bancroft
-(Bandala, Victor M.) see Bandala-Muñoz, Victor M.        
-Band.-Muñoz
-Bandala-Muñoz, Victor M. (pub. 1988)     
-Band.-Muñoz
-Bandala-Muñoz
+(Bandala, Victor M.) see Bandala-MuÃ±oz, Victor M.        
+Band.-MuÃ±oz
+Bandala-MuÃ±oz, Victor M. (pub. 1988)     
+Band.-MuÃ±oz
+Bandala-MuÃ±oz
 Bandet, E.A.R.F. (pub. 1930)    
 Bandet
 Bandet
@@ -1580,15 +1580,15 @@ S. Banerjee
 Bang, H. (pub. 1910)    
 H. Bang
 Bang
-Bánhegi, J. (1911)       
-Bánhegi
-Bánhegi
-(Bánhegyi, J.) see Bánhegi, J.    
-Bánhegi
+BÃ¡nhegi, J. (1911)       
+BÃ¡nhegi
+BÃ¡nhegi
+(BÃ¡nhegyi, J.) see BÃ¡nhegi, J.    
+BÃ¡nhegi
 Banik, Mark T. (pub. 1998)      
 Banik
 Banik
-Banke, Søren (pub. 1997) 
+Banke, SÃ¸ren (pub. 1997) 
 Banke
 Banke
 Banker, Howard James (1866-1940)        
@@ -1689,9 +1689,9 @@ Barla
 Barlinge, S.G. (pub. 1979)      
 Barlinge
 Barlinge
-Bärlocher, Felix (pub. 1988)     
-Bärl.
-Bärlocher
+BÃ¤rlocher, Felix (pub. 1988)     
+BÃ¤rl.
+BÃ¤rlocher
 Barnard, E.L. (pub. 1986)       
 E.L. Barnard
 Barnard
@@ -1945,14 +1945,14 @@ Baumgartner
 Baumgartner
 Baumgartner, R. (pub. 1923)     
 R. Baumgartner
-Baumgärtner, Heinz (pub. 1979)   
-H. Baumgärtner
-Baumgärtner
-Baumgärtner, Hildegard (pub. 1979)       
-H. Baumgärtner
-Bäumler, Johann Andreas (1847-1926)      
-Bäumler
-Bäumler
+BaumgÃ¤rtner, Heinz (pub. 1979)   
+H. BaumgÃ¤rtner
+BaumgÃ¤rtner
+BaumgÃ¤rtner, Hildegard (pub. 1979)       
+H. BaumgÃ¤rtner
+BÃ¤umler, Johann Andreas (1847-1926)      
+BÃ¤umler
+BÃ¤umler
 Bausch, Wilhelm (1804-1873)     
 Bausch
 Bausch
@@ -2101,9 +2101,9 @@ Beguet
 Beguin, Hugues (pub. 1997)      
 Beguin
 Beguin
-Béguinot, Jean (pub. 1993)       
-J. Bég.
-Béguinot
+BÃ©guinot, Jean (pub. 1993)       
+J. BÃ©g.
+BÃ©guinot
 Begum, Rehana (pub. 1978)       
 R. Begum
 Begum
@@ -2133,13 +2133,13 @@ Beisenherz
 Bejlin, J. (pub. 1924)  
 Bejlin
 Bejlin
-Bélanger, C. (pub. 1983) 
-C. Bél.
-Bélanger
-Bélanger, C. (pub. 1983) 
-C. Bél.
-Bélanger, Charles Paulus (1805-1881)     
-Bél.
+BÃ©langer, C. (pub. 1983) 
+C. BÃ©l.
+BÃ©langer
+BÃ©langer, C. (pub. 1983) 
+C. BÃ©l.
+BÃ©langer, Charles Paulus (1805-1881)     
+BÃ©l.
 Belapurkar, U. (pub. 1994)      
 Belap.
 Belapurkar
@@ -2171,9 +2171,9 @@ Bellamy
 Bellardi, Carlo Antonio Lodovico (1741-1826)    
 Bellardi
 Bellardi
-Bellemère, André (pub. 1982)      
+BellemÃ¨re, AndrÃ© (pub. 1982)      
 Bellem.
-Bellemère
+BellemÃ¨re
 Beller, J. (pub. 1967)  
 Beller
 Beller
@@ -2194,9 +2194,9 @@ Montoya
 Belloch, Carmela (pub. 1999)    
 Belloch
 Belloch
-Bellù, Francesco (pub. 1988)     
-Bellù
-Bellù
+BellÃ¹, Francesco (pub. 1988)     
+BellÃ¹
+BellÃ¹
 Bellynck, Auguste Alexis Adolphe Alexandre (1814-1877)  
 Bellynck
 Bellynck
@@ -2209,17 +2209,17 @@ Belsky
 Beltramini de Casati, Francesco (1828-1903)     
 Beltr.
 Beltramini de Casati
-Beltrán, Francisco (1886-1962)   
-Beltrán
-Beltrán
-(Beltrán Bigorra, Francisco) see Beltrán, Francisco       
-Beltrán
+BeltrÃ¡n, Francisco (1886-1962)   
+BeltrÃ¡n
+BeltrÃ¡n
+(BeltrÃ¡n Bigorra, Francisco) see BeltrÃ¡n, Francisco       
+BeltrÃ¡n
 Beltrani, Vito (pub. 1874)      
 Beltrani
 Beltrani
-Beltrán-Tejera, Esperanza (1947) 
-Beltrán-Tej.
-Beltrán-Tejera
+BeltrÃ¡n-Tejera, Esperanza (1947) 
+BeltrÃ¡n-Tej.
+BeltrÃ¡n-Tejera
 Benatar, Rubens (1910)  
 Benatar
 Benatar
@@ -2274,8 +2274,8 @@ A.W. Benn.
 Bennett
 Bennett, Carlyle Wilson (1895)  
 C.W. Benn.
-Bennett, Désirée E. (pub. 1995)   
-Dés.E. Benn.
+Bennett, DÃ©sirÃ©e E. (pub. 1995)   
+DÃ©s.E. Benn.
 Bennett, Frederick Thomas (pub. 1928)   
 F.T. Benn.
 Bennett, J.E. (pub. 1978)       
@@ -2318,9 +2318,9 @@ Benzoni
 Beraha, Louis (pub. 1975)       
 Beraha
 Beraha
-Beránek, J. (pub. 1976)  
-Beránek
-Beránek
+BerÃ¡nek, J. (pub. 1976)  
+BerÃ¡nek
+BerÃ¡nek
 Berbee, Mary L. (pub. 1988)     
 Berbee
 Berbee
@@ -2388,7 +2388,7 @@ Bergey
 Bergius, Bengt [Benedictus] (1723-1784) 
 Bergius
 Bergius
-Berglund, Håkan (pub. 2000)      
+Berglund, HÃ¥kan (pub. 2000)      
 Berglund
 Berglund
 Bergman, Cindy R. (pub. 1994)   
@@ -2423,7 +2423,7 @@ Berl.
 Bernalier, Annick (pub. 1989)   
 Bernalier
 Bernalier
-Bernard, (P.) Noël (pub. 1909)   
+Bernard, (P.) NoÃ«l (pub. 1909)   
 N. Bernard
 Bernard
 Bernard, Charles Jean (1876-1967)       
@@ -2432,9 +2432,9 @@ Bernard, Ernest C. (pub. 1988)
 E.C. Bernard
 Bernard, Georges Eugene ( -1925)        
 G.E. Bernard
-Bernátsky, JenQ Emlékezete (1873-1945)     
-Bernátsky
-Bernátsky
+BernÃ¡tsky, JenQ EmlÃ©kezete (1873-1945)     
+BernÃ¡tsky
+BernÃ¡tsky
 Bernaux, P. (pub. 1949) 
 Bernaux
 Bernaux
@@ -2453,9 +2453,9 @@ Bernicchia
 Bernstein, Heinrich Agathon (1822-1865) 
 Bernstein
 Bernstein
-Beroqui de Martínez, Martha (pub. 1969)  
+Beroqui de MartÃ­nez, Martha (pub. 1969)  
 Beroqui
-Beroqui de Martínez
+Beroqui de MartÃ­nez
 Berry, C.S. (pub. 1983) 
 C.S. Berry
 Berry
@@ -2468,9 +2468,9 @@ L.A. Berry
 Bertault, R. (pub. 1955)        
 Bertault
 Bertault
-Bertéa, Paul (pub. 1988) 
-Bertéa
-Bertéa
+BertÃ©a, Paul (pub. 1988) 
+BertÃ©a
+BertÃ©a
 Bertel, R. (pub. 1904)  
 Bertel
 Bertel
@@ -2510,7 +2510,7 @@ Bertoni
 Bertram, L. (pub. 1937) 
 L. Bertram
 Bertram
-Bertrand, Charles Eugéne (1851-1917)     
+Bertrand, Charles EugÃ©ne (1851-1917)     
 C.E. Bertrand
 Bertrand
 Bertrand, G. (pub. 1913)        
@@ -2523,9 +2523,9 @@ Bertullo
 Bertus, A.L. (pub. 1971)        
 Bertus
 Bertus
-Bérubé, J.A. (pub. 1988)  
-Bérubé
-Bérubé
+BÃ©rubÃ©, J.A. (pub. 1988)  
+BÃ©rubÃ©
+BÃ©rubÃ©
 Besada, Waheeb H. (pub. 1969)   
 Besada
 Besada
@@ -2688,7 +2688,7 @@ Bian
 Bianchi, Giovanni (pub. 1907)   
 Bianchi
 Bianchi
-Bianchinotti, María Virginia (pub. 1990) 
+Bianchinotti, MarÃ­a Virginia (pub. 1990) 
 Bianchin.
 Bianchinotti
 Biasoletto, Bartolomeo (1793-1859)      
@@ -2700,15 +2700,15 @@ Bibby
 Bidan, P. (pub. 1955)   
 Bidan
 Bidan
-Bidaud, André (pub. 1991)        
+Bidaud, AndrÃ© (pub. 1991)        
 Bidaud
 Bidaud
 Bidaux (pub. 1996)      
 Bidaux
 Bidaux
-Bièvre, Claude de (pub. 1979)    
-Bièvre
-Bièvre
+BiÃ¨vre, Claude de (pub. 1979)    
+BiÃ¨vre
+BiÃ¨vre
 Bieberdorf, F.W. (pub. 1955)    
 Bieberd.
 Bieberdorf
@@ -2762,7 +2762,7 @@ Bilgram
 Bilgrami, K.S. (pub. 1973)      
 Bilgrami
 Bilgrami
-(Billardière, Jacques Julien Houtton de la) see Labillardière, Jacques Julien Houtton de  
+(BillardiÃ¨re, Jacques Julien Houtton de la) see LabillardiÃ¨re, Jacques Julien Houtton de  
 Labill.
 Billings, C. (pub. 1997)        
 C. Billings
@@ -2852,9 +2852,9 @@ Bjerkander
 Bjerke, Jarle W. (pub. 1999)    
 Bjerke
 Bjerke
-Björling, Karl (1910)    
-Björl.
-Björling
+BjÃ¶rling, Karl (1910)    
+BjÃ¶rl.
+BjÃ¶rling
 Blackburn, M.D. (pub. 1986)     
 M.D. Blackburn
 Blackburn
@@ -3038,18 +3038,18 @@ Bogliolo
 Bogoyavlensky, N. (pub. 1922)   
 Bogoyavl.
 Bogoyavlensky
-Bohàr, Gy. (pub. 1996)   
-Bohàr
-Bohàr
+BohÃ r, Gy. (pub. 1996)   
+BohÃ r
+BohÃ r
 Bohler, John (1797-1872)        
 Bohler
 Bohler
-Bøhler, H.C. (pub. 1986) 
-H.C. Bøhler
-Bøhler
-Böhme, Hannelore (pub. 1967)     
-H. Böhme
-Böhme
+BÃ¸hler, H.C. (pub. 1986) 
+H.C. BÃ¸hler
+BÃ¸hler
+BÃ¶hme, Hannelore (pub. 1967)     
+H. BÃ¶hme
+BÃ¶hme
 (Bohmer, Georg Rudolf) see Boehmer, Georg Rudolf        
 Boehm.
 Bohn, Michael (pub. 1993)       
@@ -3085,15 +3085,15 @@ Boisselier-Dubayle
 Boissier, Pierre Edmond (1810-1885)     
 Boiss.
 Boissier
-Boissière, J.-C. (pub. 1980)     
-Boissière
-Boissière
+BoissiÃ¨re, J.-C. (pub. 1980)     
+BoissiÃ¨re
+BoissiÃ¨re
 Boistel, Alphonse Barthele (1836-1908)  
 Boistel
 Boistel
-Bojanovská, A. (pub. 1966)       
+BojanovskÃ¡, A. (pub. 1966)       
 Bojan.
-Bojanovská
+BojanovskÃ¡
 Bokhjan, M.V. (pub. 1970)       
 Bokhjan
 Bokhjan
@@ -3193,9 +3193,9 @@ Bongard
 Bongini, V. (pub. 1932) 
 Bongini
 Bongini
-Böning, Karl (pub. 1933) 
-Böning
-Böning
+BÃ¶ning, Karl (pub. 1933) 
+BÃ¶ning
+BÃ¶ning
 Bonnard, J. (pub. 1987) 
 Bonnard
 Bonnard
@@ -3269,12 +3269,12 @@ Borlaza
 Born, Gerald L. (pub. 1972)     
 Born
 Born
-Bornet, Jean-Baptiste Édouard (1828-1911)        
+Bornet, Jean-Baptiste Ã‰douard (1828-1911)        
 Bornet
 Bornet
-Bornmüller, Joseph Friedrich Nicolaus (1862-1948)        
+BornmÃ¼ller, Joseph Friedrich Nicolaus (1862-1948)        
 Bornm.
-Bornmüller
+BornmÃ¼ller
 Borowska, Alicja (1940) 
 Borowska
 Borowska
@@ -3306,9 +3306,9 @@ Bory
 Bory
 (Borzczow, J.G.) see Borshchow, Ilya [Elia] Grigorievicz        
 I.G. Borshch.
-Borzí, Antonino (1852-1921)      
-Borzí
-Borzí
+BorzÃ­, Antonino (1852-1921)      
+BorzÃ­
+BorzÃ­
 (Bos, Jan Ritzema) see Ritzema Bos, Jan Ritzema 
 Ritz. Bos
 Bos, P. (pub. 1990)     
@@ -3523,9 +3523,9 @@ T. Brandt
 Brandt-Pedersen, T. (pub. 1984) 
 Brandt-Ped.
 Brandt-Pedersen
-Brândz, Marcel Alex (1868-1934)  
-Brândz
-Brândz
+BrÃ¢ndz, Marcel Alex (1868-1934)  
+BrÃ¢ndz
+BrÃ¢ndz
 Branth, Jakob Severin (1831-1917)       
 Branth
 Branth
@@ -3564,9 +3564,9 @@ Brayford
 Brayford
 Brayford, David (1957)  
 Brayford
-Brébisson, Louis Alphonse de (1798-1872) 
-Bréb.
-Brébisson
+BrÃ©bisson, Louis Alphonse de (1798-1872) 
+BrÃ©b.
+BrÃ©bisson
 Brebeck, C. (pub. 1894) 
 Brebeck
 Brebeck
@@ -3613,9 +3613,9 @@ Brenckle
 Brenner, Marten Magnus Widar (1843-1930)        
 Brenner
 Brenner
-Bresàdola, Giacopo (1847-1929)   
+BresÃ dola, Giacopo (1847-1929)   
 Bres.
-Bresàdola
+BresÃ dola
 Bresinsky, Andreas (1935)       
 Bresinsky
 Bresinsky
@@ -3630,7 +3630,7 @@ Breuil
 Breuil
 Breuil, Colette (pub. 2000)     
 C. Breuil
-(Breusß, Othmar) see Breuss, Othmar      
+(BreusÃŸ, Othmar) see Breuss, Othmar      
 Breuss
 Breuss, Othmar (pub. 1987)      
 Breuss
@@ -3658,9 +3658,9 @@ Briard
 Bricaud, Olivier (pub. 1993)    
 Bricaud
 Bricaud
-Briceño-Iragorry, L. (pub. 1938) 
+BriceÃ±o-Iragorry, L. (pub. 1938) 
 Bric.-Irag.
-Briceño-Iragorry
+BriceÃ±o-Iragorry
 Brick, Carl (1863-1924) 
 Brick
 Brick
@@ -3701,9 +3701,9 @@ Briot
 Brisson, Jacques D. (1945)      
 Brisson
 Brisson
-Brisson de Lenharrée, Théodore Polycarpe (1828-c.1891)    
+Brisson de LenharrÃ©e, ThÃ©odore Polycarpe (1828-c.1891)    
 T.P. Brisson
-Brisson de Lenharrée
+Brisson de LenharrÃ©e
 Brittlebank, Charles Clifton (1862-1945)        
 Brittleb.
 Brittlebank
@@ -3729,9 +3729,9 @@ Brockmann
 Brockmann-Jerosch, Heinrich (1879-1939) 
 Brockm.-Jer.
 Brockmann-Jerosch
-Brockmüller, Hans Joachim Heinrich (1821-1882)   
+BrockmÃ¼ller, Hans Joachim Heinrich (1821-1882)   
 Brockm.
-Brockmüller
+BrockmÃ¼ller
 Brocq-Rouss.    
 Brocq-Rouss.
 Brocq-Rouss.
@@ -3814,9 +3814,9 @@ Bruchet
 Bruckart, W.L. (pub. 2000)      
 Bruckart
 Bruckart
-Brückner, Thomas (pub. 1996)     
-T. Brückn.
-Brückner
+BrÃ¼ckner, Thomas (pub. 1996)     
+T. BrÃ¼ckn.
+BrÃ¼ckner
 Bruderlein, Jean (pub. 1916)    
 Bruderl.
 Bruderlein
@@ -3852,7 +3852,7 @@ Brunchorst
 Brunel, M. (pub. 1984)  
 M. Brunel
 Brunel
-Brunelli, François (pub. 1997)   
+Brunelli, FranÃ§ois (pub. 1997)   
 Brunelli
 Brunelli
 Bruner, Stephen Cole (1891-1953)        
@@ -3898,9 +3898,9 @@ Brygoo
 Brzezinski, Jozef (pub. 1906)   
 Brzez.
 Brzezinski
-Bubák, Frantisek (1865-1925)     
-Bubák
-Bubák
+BubÃ¡k, Frantisek (1865-1925)     
+BubÃ¡k
+BubÃ¡k
 Buben-Zurey, Mary Jo (pub. 1986)        
 Bub.-Zurey
 Buben-Zurey
@@ -3966,24 +3966,24 @@ Buddenhagen
 Buddin, Walter (1890-1962)      
 Buddin
 Buddin
-Büdel, Burkhard (pub. 1986)      
-Büdel
-Büdel
+BÃ¼del, Burkhard (pub. 1986)      
+BÃ¼del
+BÃ¼del
 Budington, A.B. (pub. 1970)     
 Budington
 Budington
 Budrina, E. (pub. 1926) 
 Budrina
 Budrina
-Buendía, A.G. (pub. 1985)        
-Buendía
-Buendía
+BuendÃ­a, A.G. (pub. 1985)        
+BuendÃ­a
+BuendÃ­a
 Buffin, N. (pub. 1984)  
 Buffin
 Buffin
-Bùggieri (pub. 1935)     
-Bùggieri
-Bùggieri
+BÃ¹ggieri (pub. 1935)     
+BÃ¹ggieri
+BÃ¹ggieri
 Bugnicourt, F. (pub. 1939)      
 Bugnic.
 Bugnicourt
@@ -4060,12 +4060,12 @@ Burds.
 Burdsall
 (Burdyukova, Ludmila I.) see Burdjukova, Ludmila I.     
 Burdjuk.
-Bureau, Louis Édouard (pub. 1893)        
+Bureau, Louis Ã‰douard (pub. 1893)        
 Bureau
 Bureau
-Büren, G. von (pub. 1922)        
-Büren
-Büren
+BÃ¼ren, G. von (pub. 1922)        
+BÃ¼ren
+BÃ¼ren
 Burgaz, Ana Rosa (pub. 1992)    
 Burgaz
 Burgaz
@@ -4095,9 +4095,9 @@ Burgwitz
 Burgyukova, A.I. (pub. 1987)    
 Burgyuk.
 Burgyukova
-Buriticá Cespedes, Pablo (1943)  
-Buriticá
-Buriticá Cespedes
+BuriticÃ¡ Cespedes, Pablo (1943)  
+BuriticÃ¡
+BuriticÃ¡ Cespedes
 Burk, William R. (pub. 1991)    
 Burk
 Burk
@@ -4151,9 +4151,9 @@ Busch
 Buschardt, Arthur (1935)        
 Buschardt
 Buschardt
-Büsgen, Moritz (1858-1921)       
-Büsgen
-Büsgen
+BÃ¼sgen, Moritz (1858-1921)       
+BÃ¼sgen
+BÃ¼sgen
 Bushnell, Welles (pub. 1997)    
 Bushnell
 Bushnell
@@ -4223,11 +4223,11 @@ Caballero, Arturo (1877-1950)
 Caball.
 (Caballero y Segares, Arturo) see Caballero, Arturo     
 Caball.
-Cabañes, Javier (pub. 1990)      
-J. Cabañes
-Cabañes
-(Cabañes (Saenz), [Francisco] Javier) see Cabañes, Javier 
-J. Cabañes
+CabaÃ±es, Javier (pub. 1990)      
+J. CabaÃ±es
+CabaÃ±es
+(CabaÃ±es (Saenz), [Francisco] Javier) see CabaÃ±es, Javier 
+J. CabaÃ±es
 Cabello, Marta N. (1953)        
 Cabello
 Cabello
@@ -4240,19 +4240,19 @@ Cabrini
 Cacciola, S.O. (pub. 1996)      
 Cacciola
 Cacciola
-Cáceres, Marcela E.S. (pub. 1999)        
-M. Cáceres
-Cáceres
+CÃ¡ceres, Marcela E.S. (pub. 1999)        
+M. CÃ¡ceres
+CÃ¡ceres
 Cacialli, Gabriele (pub. 1993)  
 Cacialli
 Cacialli
-Cadiñanos, Antonio (pub. 1994)   
-Cadiñanos
-Cadiñanos
-Cadiñanos Aguirre, J.A. (pub. 2000)      
-J.A. Cadiñanos
-Cadiñanos Aguirre
-Cafaro, Matías J. (pub. 1999)    
+CadiÃ±anos, Antonio (pub. 1994)   
+CadiÃ±anos
+CadiÃ±anos
+CadiÃ±anos Aguirre, J.A. (pub. 2000)      
+J.A. CadiÃ±anos
+CadiÃ±anos Aguirre
+Cafaro, MatÃ­as J. (pub. 1999)    
 Cafaro
 Cafaro
 Cai, Junpeng (pub. 1997)        
@@ -4336,20 +4336,20 @@ Calvino
 Calvo, Esperanza (pub. 2000)    
 E. Calvo
 Calvo
-Calvo, M. Ángeles ( -1988)       
+Calvo, M. Ãngeles ( -1988)       
 Calvo
-(Calvo Torras, M. Ángeles) see Calvo, M. Ángeles  
+(Calvo Torras, M. Ãngeles) see Calvo, M. Ãngeles  
 Calvo
 Camain, R. (pub. 1959)  
 Camain
 Camain
-(Câmara, Manuel Emmanuele) see Sousa da Câmara, Manuel Emmanuele de       
-Sousa da Câmara
-Câmara, Marcos P.S. (pub. 1993)  
-M.P.S. Câmara
-Câmara
-Câmara, Marcos P.S. (pub. 1993)  
-M.P.S. Câmara
+(CÃ¢mara, Manuel Emmanuele) see Sousa da CÃ¢mara, Manuel Emmanuele de       
+Sousa da CÃ¢mara
+CÃ¢mara, Marcos P.S. (pub. 1993)  
+M.P.S. CÃ¢mara
+CÃ¢mara
+CÃ¢mara, Marcos P.S. (pub. 1993)  
+M.P.S. CÃ¢mara
 Camboni, Mauro (pub. 2000)      
 Camboni
 Camboni
@@ -4359,9 +4359,9 @@ Cameron
 Camici, Leontina (pub. 1948)    
 Camici
 Camici
-Camino Vilaró, Mayra (1962)      
+Camino VilarÃ³, Mayra (1962)      
 Camino
-Camino Vilaró
+Camino VilarÃ³
 (Campanile, Giulia Rivera) see Rivera Campanile, Giulia 
 Campan.
 Campbell, Colin K. (pub. 1987)  
@@ -4397,19 +4397,19 @@ Canals
 Candolle, Augustin Pyramus de (1778-1841)       
 DC.
 Candolle
-Candoussau, Françoise (1934)     
+Candoussau, FranÃ§oise (1934)     
 Cand.
 Candoussau
-(Candoussau-Pichon, Françoise) see Candoussau, Françoise  
+(Candoussau-Pichon, FranÃ§oise) see Candoussau, FranÃ§oise  
 Cand.
 Candusso, Massimo (pub. 1982)   
 Candusso
 Candusso
-(Cañete Gibas, Connie Fe) see Cañete-Gibas, Connie Fe     
-Cañ.-Gib.
-Cañete-Gibas, Connie Fe (pub. 1998)      
-Cañ.-Gib.
-Cañete-Gibas
+(CaÃ±ete Gibas, Connie Fe) see CaÃ±ete-Gibas, Connie Fe     
+CaÃ±.-Gib.
+CaÃ±ete-Gibas, Connie Fe (pub. 1998)      
+CaÃ±.-Gib.
+CaÃ±ete-Gibas
 Caneva, Giulia (pub. 1981)      
 Caneva
 Caneva
@@ -4425,7 +4425,7 @@ Cannon
 Cannone, Jamie J. (pub. 2000)   
 Cannone
 Cannone
-Cano, Josep [José] (pub. 1987)   
+Cano, Josep [JosÃ©] (pub. 1987)   
 Cano
 Cano
 Canonaco, A. (pub. 1936)        
@@ -4437,9 +4437,9 @@ Canter
 Cantino, E.C. (pub. 1961)       
 Cantino
 Cantino
-Cantón, Eliseo (pub. 1898)       
-Cantón
-Cantón
+CantÃ³n, Eliseo (pub. 1898)       
+CantÃ³n
+CantÃ³n
 Cantoni, C. (pub. 1979) 
 Cantoni
 Cantoni
@@ -4487,7 +4487,7 @@ Carbajal
 Carbone, D. (pub. 1905) 
 Carbone
 Carbone
-(Carbonnière, Louis Francois Elisabeth Ramond de) see Ramond de Carbonnière, Louis Francois Elisabeth     
+(CarbonniÃ¨re, Louis Francois Elisabeth Ramond de) see Ramond de CarbonniÃ¨re, Louis Francois Elisabeth     
 Ramond
 (Cardona, Victor Manuel Pardo) see Pardo-Cardona, Victor Manuel 
 Pardo-Card.
@@ -4515,28 +4515,28 @@ Carleton
 Carlin, G. (pub. 1982)  
 Carlin
 Carlin
-Carlin-Silväng, U. (pub. 1982)   
+Carlin-SilvÃ¤ng, U. (pub. 1982)   
 Carl.-Silv.
-Carlin-Silväng
+Carlin-SilvÃ¤ng
 Carlos, Rodrigo M.E. (pub. 1999)        
 Carlos
 Carlos
 Carman, P.E. (pub. 1956)        
 Carman
 Carman
-Carmarán, C.C. (pub. 1996)       
-Carmarán
-Carmarán
-Carmarán, C.C. (pub. 1996)       
-Carmarán
-(Carmen Molina, María del) see Molina, María del Carmen   
+CarmarÃ¡n, C.C. (pub. 1996)       
+CarmarÃ¡n
+CarmarÃ¡n
+CarmarÃ¡n, C.C. (pub. 1996)       
+CarmarÃ¡n
+(Carmen Molina, MarÃ­a del) see Molina, MarÃ­a del Carmen   
 M.C. Molina
 Carmichael, Dugald (1772-1827)  
 Carmich.
 Carmichael
 Carmichael, John W. (pub. 1962) 
 J.W. Carmich.
-(Carmine Dianese, José) see Dianese, José Carmine 
+(Carmine Dianese, JosÃ©) see Dianese, JosÃ© Carmine 
 Dianese
 Carmo Souza, Lidia do (pub. 1957)       
 Carmo Souza
@@ -4612,11 +4612,11 @@ Carrington
 Carrion, A.L. (pub. 1952)       
 Carrion
 Carrion
-Carrión, Gloria (pub. 1993)      
-G. Carrión
-Carrión
-Carrión, Gloria (pub. 1993)      
-G. Carrión
+CarriÃ³n, Gloria (pub. 1993)      
+G. CarriÃ³n
+CarriÃ³n
+CarriÃ³n, Gloria (pub. 1993)      
+G. CarriÃ³n
 Carris, Lori M. (pub. 1987)     
 Carris
 Carris
@@ -4659,7 +4659,7 @@ Caruso
 Carvalho, A.O. (pub. 1989)      
 A.O. Carvalho
 Carvalho
-Carvalho, Aníbal A. de (pub. 2000)       
+Carvalho, AnÃ­bal A. de (pub. 2000)       
 A.A. Carvalho
 Carvalho, T. de (pub. 1953)     
 T. Carvalho
@@ -4703,20 +4703,20 @@ Castagnola
 Castan, P. (pub. 1924)  
 Castan
 Castan
-Castañeda, Rafael F. (pub. 1986) 
-R.F. Castañeda
-Castañeda
-(Castañeda-Ruíz, Rafael F.) see Castañeda, Rafael F.       
-R.F. Castañeda
+CastaÃ±eda, Rafael F. (pub. 1986) 
+R.F. CastaÃ±eda
+CastaÃ±eda
+(CastaÃ±eda-RuÃ­z, Rafael F.) see CastaÃ±eda, Rafael F.       
+R.F. CastaÃ±eda
 Castanei, A. (pub. 1927)        
 Castanei
 Castanei
 Castaner, David (1934)  
 Castaner
 Castaner
-Castañero, V. (pub. 1996)        
-Castañero
-Castañero
+CastaÃ±ero, V. (pub. 1996)        
+CastaÃ±ero
+CastaÃ±ero
 Castellani, Aldo (1877-1971)    
 Castell.
 Castellani
@@ -4814,31 +4814,31 @@ Cayrol
 Cazalbou, L. (pub. 1914)        
 Cazalbou
 Cazalbou
-Cázares, Efrén (pub. 1992)        
-Cázares
-Cázares
-Cázares, Efrén (pub. 1992)        
-Cázares
+CÃ¡zares, EfrÃ©n (pub. 1992)        
+CÃ¡zares
+CÃ¡zares
+CÃ¡zares, EfrÃ©n (pub. 1992)        
+CÃ¡zares
 Cazau, Maria Cecilia (pub. 1990)        
 Cazau
 Cazau
 Ceccarelli, A. (pub. 1935)      
 Ceccar.
 Ceccarelli
-Cedeño, Luis (pub. 1987) 
-Cedeño
-Cedeño
-(Cedeño M., Luis R.) see Cedeño, Luis     
-Cedeño
+CedeÃ±o, Luis (pub. 1987) 
+CedeÃ±o
+CedeÃ±o
+(CedeÃ±o M., Luis R.) see CedeÃ±o, Luis     
+CedeÃ±o
 Cejp, Karel (1900-1979) 
 Cejp
 Cejp
 Celafu, R. (1900-1979)  
 Celafu
 Celafu
-elakovskı, Ladislav Frantisek (1864-1916)        
+elakovskÃ½, Ladislav Frantisek (1864-1916)        
 L.F. elak.
-elakovskı
+elakovskÃ½
 Celino, M.S. (pub. 1931)        
 Celino
 Celino
@@ -4847,23 +4847,23 @@ Celotti
 Celotti
 (Cengia Sambo, Maria) see Sambo, Maria  
 Sambo
-Cépè      
-Cépè
-Cépè
-Cépède, C. (pub. 1907)    
-Cépède
-Cépède
-Cercós, A.P. (pub. 1954) 
-Cercós
-Cercós
+CÃ©pÃ¨      
+CÃ©pÃ¨
+CÃ©pÃ¨
+CÃ©pÃ¨de, C. (pub. 1907)    
+CÃ©pÃ¨de
+CÃ©pÃ¨de
+CercÃ³s, A.P. (pub. 1954) 
+CercÃ³s
+CercÃ³s
 (ernhorsky, Zdenek (T.)) see ernohorsky, Zdenek (T.)    
 ern.
 ernohorsky, Zdenek (T.) (1910)  
 ern.
 ernohorsky
-ernı, Alois (pub. 1963)  
-ernı
-ernı
+ernÃ½, Alois (pub. 1963)  
+ernÃ½
+ernÃ½
 Ceruta, A. (pub. 1960)  
 Ceruta
 Ceruta
@@ -4890,13 +4890,13 @@ Chaborski
 Chaborski
 (Chabounine, D.A.) see Shabunin, D.A.   
 Shabunin
-Chacón, Santiago (pub. 1996)     
-S. Chacón
-Chacón
-Chacón, Santiago (pub. 1996)     
-S. Chacón
-(Chacón-Jiménez, Santiago) see Chacón, Santiago    
-S. Chacón
+ChacÃ³n, Santiago (pub. 1996)     
+S. ChacÃ³n
+ChacÃ³n
+ChacÃ³n, Santiago (pub. 1996)     
+S. ChacÃ³n
+(ChacÃ³n-JimÃ©nez, Santiago) see ChacÃ³n, Santiago    
+S. ChacÃ³n
 Chadefaud, Marius (1900)        
 Chadef.
 Chadefaud
@@ -4917,7 +4917,7 @@ Chakravarty
 Chalabuda, T.V. (pub. 1967)     
 Chalab.
 Chalabuda
-Chalange, René (pub. 1999)       
+Chalange, RenÃ© (pub. 1999)       
 Chalange
 Chalange
 Chalmers, Albert John (1870-1920)       
@@ -5004,23 +5004,23 @@ S.W. Chapm.
 Charbonnel, J. (pub. 2000)      
 J. Charb.
 Charbonnel
-(Chardón Palacios, Carlos Eugenio) see Chardón, Carlos Eugenio    
-Chardón
-Chardón, Carlos Eugenio (1897-1965)      
-Chardón
-Chardón
+(ChardÃ³n Palacios, Carlos Eugenio) see ChardÃ³n, Carlos Eugenio    
+ChardÃ³n
+ChardÃ³n, Carlos Eugenio (1897-1965)      
+ChardÃ³n
+ChardÃ³n
 Charles, Vera Katherine (1877-1954)     
 Charles
 Charles
-Charpentié, M.-J. (pub. 1982)    
+CharpentiÃ©, M.-J. (pub. 1982)    
 Charp.
-Charpentié
+CharpentiÃ©
 Charudattan, Raghavan (pub. 1993)       
 Charud.
 Charudattan
-Charvát, I. (pub. 1961)  
-Charvát
-Charvát
+CharvÃ¡t, I. (pub. 1961)  
+CharvÃ¡t
+CharvÃ¡t
 Chary, S.J. (pub. 1975) 
 Chary
 Chary
@@ -5096,9 +5096,9 @@ P. Chaverri
 Chawla, G.C. (pub. 1987)        
 G.C. Chawla
 Chawla
-Chayé dAlbissin, M. (pub. 1984)  
+ChayÃ© dAlbissin, M. (pub. 1984)  
 dAlbissin
-Chayé dAlbissin
+ChayÃ© dAlbissin
 Chea, Chark Yen (pub. 1979)     
 Chea
 Chea
@@ -5248,7 +5248,7 @@ Chester
 Chesters, Charles G.C. ( -1993) 
 Chesters
 Chesters
-Chevalier, Gérard (pub. 1979)    
+Chevalier, GÃ©rard (pub. 1979)    
 G. Chev.
 Chevalier
 Chevallier, Francois Fulgis (1796-1840) 
@@ -5260,7 +5260,7 @@ Chevassut
 Chevaugeon, J. (pub. 1950)      
 Chevaug.
 Chevaugeon
-Chevtzoff, Béatrix (pub. 2000)   
+Chevtzoff, BÃ©atrix (pub. 2000)   
 Chevtzoff
 Chevtzoff
 Cheype, J.-L. (pub. 1983)       
@@ -5476,9 +5476,9 @@ Ciarrocchi
 Cibot, [Fr.] Pierre-Martial (1727-1784) 
 Cibot
 Cibot
-Cibrián, D. (pub. 1986)  
-Cibrián
-Cibrián
+CibriÃ¡n, D. (pub. 1986)  
+CibriÃ¡n
+CibriÃ¡n
 Cibula, William G. (pub. 1996)  
 Cibula
 Cibula
@@ -5498,7 +5498,7 @@ F. Cif.
 Ciferri
 Ciferri, Raffaele (1897-1964)   
 Cif.
-Cifuentes B., Joaquín (pub. 1984)        
+Cifuentes B., JoaquÃ­n (pub. 1984)        
 Cifuentes
 Cifuentes B.
 Cimerman, A. (pub. 1984)        
@@ -5507,17 +5507,17 @@ Cimerman
 Ciocan, Constantin (1904-1987)  
 Ciocan
 Ciocan
-Citérin, Michel (1941-1999)      
-Citérin
-Citérin
+CitÃ©rin, Michel (1941-1999)      
+CitÃ©rin
+CitÃ©rin
 Ciurchea, Maria (1931)  
 Ciurchea
 Ciurchea
-í~ek, Karel (pub. 1993)   
-í~ek
-í~ek
-í~ek, Karel (pub. 1993)   
-í~ek
+Ã­~ek, Karel (pub. 1993)   
+Ã­~ek
+Ã­~ek
+Ã­~ek, Karel (pub. 1993)   
+Ã­~ek
 Claessens, B. (pub. 1934)       
 Claess.
 Claessens
@@ -5530,9 +5530,9 @@ Clancy
 Clapp, Grace Lucretia (1881)    
 Clapp
 Clapp
-Claqué (pub. 1923)       
-Claqué
-Claqué
+ClaquÃ© (pub. 1923)       
+ClaquÃ©
+ClaquÃ©
 Clara, Feliciano Mercado (1896) 
 Clara
 Clara
@@ -5582,12 +5582,12 @@ Clegg
 Cleland, John Burton (1878-1971)        
 Cleland
 Cleland
-Clémencet, L. (pub. 1932)        
-Clémencet
-Clémencet
-Clémençon, Heinz (1935)   
-Clémençon
-Clémençon
+ClÃ©mencet, L. (pub. 1932)        
+ClÃ©mencet
+ClÃ©mencet
+ClÃ©menÃ§on, Heinz (1935)   
+ClÃ©menÃ§on
+ClÃ©menÃ§on
 Clemente y Rubio, Simon de Roxas [Rojas] (1777-1827)    
 Clemente
 Clemente y Rubio
@@ -5668,9 +5668,9 @@ Codreanu-Balcescu
 Coelho, Gilberto (pub. 1996)    
 G. Coelho
 Coelho
-Coêlho, R. Pessoa (pub. 1960)    
-Coêlho
-Coêlho
+CoÃªlho, R. Pessoa (pub. 1960)    
+CoÃªlho
+CoÃªlho
 Coemans, Henri Eugene Lucien Gaetan (1825-1871) 
 Coem.
 Coemans
@@ -5868,9 +5868,9 @@ Corbaz
 Corbetta, G. (pub. 1963)        
 Corbetta
 Corbetta
-Corbière, L. (pub. 1929) 
+CorbiÃ¨re, L. (pub. 1929) 
 L. Corb.
-Corbière
+CorbiÃ¨re
 Corbin, James B. (pub. 1979)    
 Corbin
 Corbin
@@ -5998,7 +5998,7 @@ Coursey
 Court, Arthur Bertram (1927)    
 Court
 Court
-Courtecuisse, Régis (1956)       
+Courtecuisse, RÃ©gis (1956)       
 Courtec.
 Courtecuisse
 Courtois, R.    
@@ -6009,9 +6009,9 @@ Courtois
 Coutelen, F. (pub. 1955)        
 Coutelen
 Coutelen
-Coutière, H. (pub. 1911) 
-Coutière
-Coutière
+CoutiÃ¨re, H. (pub. 1911) 
+CoutiÃ¨re
+CoutiÃ¨re
 Coutinho, Antonio Xavier Pereira (1851-1939)    
 Cout.
 Coutinho
@@ -6092,9 +6092,9 @@ J.W. Cribb
 Crichton, George A. (pub. 1960) 
 Crichton
 Crichton
-Crié, Louis Auguste (1850-1912)  
-Crié
-Crié
+CriÃ©, Louis Auguste (1850-1912)  
+CriÃ©
+CriÃ©
 Cripps, C.L. (pub. 1994)        
 C. Cripps
 Cripps
@@ -6283,8 +6283,8 @@ Czyz.
 Czyzewska
 
 
-(da Câmara, Manuel Emmanuele) see Sousa da Câmara, Manuel Emmanuele de    
-Sousa da Câmara
+(da CÃ¢mara, Manuel Emmanuele) see Sousa da CÃ¢mara, Manuel Emmanuele de    
+Sousa da CÃ¢mara
 (da Costa, Jose Porfirio) see Costa, Jose Porfirio      
 J.P. Costa
 (da Costa, Maria Eugenia Amorim Pereira) see Costa, Maria Eugenia Amorim Pereira da     
@@ -6302,8 +6302,8 @@ Da Matta
 Da Ponte, J. Julio da (pub. 1966)       
 Da Ponte
 Da Ponte
-(da Silva, Manuel Augusto Piraja) see Pirajá, Manuel Augusto (da)        
-Pirajá
+(da Silva, Manuel Augusto Piraja) see PirajÃ¡, Manuel Augusto (da)        
+PirajÃ¡
 (da Silva, Piraja) see Silva, Piraja da 
 P. da Silva
 (da Silva Lacaz, Carlos) see Lacaz, Carlos da Silva     
@@ -6344,7 +6344,7 @@ Dagron, Christian (pub. 1992)
 Dagron
 Dagron
 Dahl, A. Eilif (1916-1993)      
-Å.E. Dahl
+Ã….E. Dahl
 Dahl
 Dahlman, Mattias (pub. 2000)    
 Dahlman
@@ -6397,9 +6397,9 @@ Dalla Torre
 Dalla Torre
 (Dalla Torre von Thurnberg-Sternhoff, Karl [Carl] Wilhelm von) see Dalla Torre, Karl [Carl] Wilhelm von 
 Dalla Torre
-Dalpé, Yolande (1948)    
-Dalpé
-Dalpé
+DalpÃ©, Yolande (1948)    
+DalpÃ©
+DalpÃ©
 DAmatao, Richard F. (pub. 1977) 
 DAmatao
 DAmatao
@@ -6633,10 +6633,10 @@ F.C. Albuq.
 F.P. Almeida
 (de Almeida, Jose Verissimo) see Almeida, Jose Verissimo        
 J.V. Almeida
-(de Amos, Irma Josefa Gamundí) see Gamundí, Irma Josefa   
-Gamundí
-(de Ana Magán, F.J. Fernandez de) see Magán, F.J. Fernandez de Ana        
-Fern. Magán
+(de Amos, Irma Josefa GamundÃ­) see GamundÃ­, Irma Josefa   
+GamundÃ­
+(de Ana MagÃ¡n, F.J. Fernandez de) see MagÃ¡n, F.J. Fernandez de Ana        
+Fern. MagÃ¡n
 (de Azevedo, Paulo Cordeiro) see Azevedo, Paulo Cordeiro de     
 P.C. Azevedo
 De Barbieri, Esther de (pub. 1932)      
@@ -6662,12 +6662,12 @@ De Bert.
 De Bertoldi
 (de Beurmann, Charles Lucien) see Beurmann, Charles Lucien de   
 Beurm.
-(de Bièvre, Claude) see Bièvre, Claude de 
-Bièvre
+(de BiÃ¨vre, Claude) see BiÃ¨vre, Claude de 
+BiÃ¨vre
 (de Bivona-Bernardi, Antonius) see Bivona-Bernardi, Antonius de 
 Biv.
-(de Brébisson, Louis Alphonse) see Brébisson, Louis Alphonse de   
-Bréb.
+(de BrÃ©bisson, Louis Alphonse) see BrÃ©bisson, Louis Alphonse de   
+BrÃ©b.
 (de Brondeau, Louis) see Brondeau, Louis de     
 Brond.
 (de Bruijn, Ary Johannes) see Bruijn, Ary Johannes de   
@@ -6683,7 +6683,7 @@ De Bruyne
 Calonge
 (de Candolle, Augustin Pyramus) see Candolle, Augustin Pyramus de       
 DC.
-(de Carbonnière, Louis Francois Elisabeth Ramond) see Ramond de Carbonnière, Louis Francois Elisabeth     
+(de CarbonniÃ¨re, Louis Francois Elisabeth Ramond) see Ramond de CarbonniÃ¨re, Louis Francois Elisabeth     
 Ramond
 (de Carvalho, T.) see Carvalho, T. de   
 T. Carvalho
@@ -6711,9 +6711,9 @@ Gruyter
 de Guernisac, Compte    
 De Guern.
 de Guernisac
-(de Guzmán, Enriquito D.) see Guzmán, Enriquito D. de     
-E.D. Guzmán
-de Haan, André (pub. 1996)       
+(de GuzmÃ¡n, Enriquito D.) see GuzmÃ¡n, Enriquito D. de     
+E.D. GuzmÃ¡n
+de Haan, AndrÃ© (pub. 1996)       
 A. de Haan
 de Haan
 de Haan, W. (pub. 1900) 
@@ -6752,7 +6752,7 @@ De la Rue
 De la Rue
 (de la Torre, Margarita) see Torre, Margarita de la     
 M. Torre
-(de Labillardière, Jacques Julien Houtton) see Labillardière, Jacques Julien Houtton de   
+(de LabillardiÃ¨re, Jacques Julien Houtton) see LabillardiÃ¨re, Jacques Julien Houtton de   
 Labill.
 (de Lacroix, Louis-Sosthene Veyron) see Lacroix, Louis-Sosthene Veyron de       
 Lacroix
@@ -6760,7 +6760,7 @@ Lacroix
 Lam.
 (de Laplanche, Maurice Counjard) see Laplanche, Maurice Counjard de     
 Lapl.
-(de Lenharrée, Théodore Polycarpe Brisson) see Brisson de Lenharrée, Théodore Polycarpe     
+(de LenharrÃ©e, ThÃ©odore Polycarpe Brisson) see Brisson de LenharrÃ©e, ThÃ©odore Polycarpe     
 T.P. Brisson
 De Leo, F. (pub. 1999)  
 De Leo
@@ -6772,7 +6772,7 @@ de Lesd.
 de Lesdain
 (de Lima, Jose Americo) see Lima, Jose Americo de       
 J.A. Lima
-(de Magalhães, O.) see Magalhães, O. de   
+(de MagalhÃ£es, O.) see MagalhÃ£es, O. de   
 O. Magalh.
 (de Maisonneuve, Michel Charles Durieu) see Durieu de Maisonneuve, Michel Charles       
 Durieu
@@ -6786,7 +6786,7 @@ De Marbaix
 Martis
 (de Medeiros, Arnaldo Gomes) see Gomes de Medeiros, Arnaldo     
 A.G. Medeiros
-De Meijer, André A.R. (pub. 1990)        
+De Meijer, AndrÃ© A.R. (pub. 1990)        
 de Meijer
 De Meijer
 (de Mello, Alfredo Froilano Bachmann) see Mello, Alfredo Froilano Bachmann de   
@@ -6843,19 +6843,19 @@ M.A. de Sousa
 de Sousa
 (de St.-Amans, Jean Florimond Boudon) see Saint-Amans, Jean Florimond Boudon de 
 St.-Amans
-(de Toledo, Laura S. Dominguez) see Domínguez, Laura S. Dominguez        
-L.S. Domínguez
+(de Toledo, Laura S. Dominguez) see DomÃ­nguez, Laura S. Dominguez        
+L.S. DomÃ­nguez
 De Toni, Giovanni Batista De (1864-1924)        
 De Toni
 De Toni
-(de Urríes de Azara, Manuel Emmanuele) see Urríes y Azara, Manuel Emmanuele de    
+(de UrrÃ­es de Azara, Manuel Emmanuele) see UrrÃ­es y Azara, Manuel Emmanuele de    
 Urries
 (de Vasconcelos, Augusto Teixeira) see Vasconcelos, Augusto Teixeira de 
 A.T. Vasconc.
 (de Vasconcelos, C.T.) see Vasconcelos, C.T. de 
 C.T. Vasconc.
-(de Villafañe Lastra, T.) see Villafañe, T.       
-Villafañe
+(de VillafaÃ±e Lastra, T.) see VillafaÃ±e, T.       
+VillafaÃ±e
 De Villiers, J.J.R. (pub. 1989) 
 De Villiers
 De Villiers
@@ -6881,11 +6881,11 @@ Zigno
 Deacon, J.W. (pub. 1974)        
 Deacon
 Deacon
-Deák, Tibor (pub. 1997)  
-T. Deák
-Deák
-Deák, Tibor (pub. 1997)  
-T. Deák
+DeÃ¡k, Tibor (pub. 1997)  
+T. DeÃ¡k
+DeÃ¡k
+DeÃ¡k, Tibor (pub. 1997)  
+T. DeÃ¡k
 Deakin, Richard (1808-1873)     
 Deakin
 Deakin
@@ -6926,7 +6926,7 @@ K.N. Deckenb.
 Deckenbach
 Deckenbach, V. (pub. 1896)      
 Deckenb.
-Declerck, Stéphane (pub. 2000)   
+Declerck, StÃ©phane (pub. 2000)   
 Declerck
 Declerck
 Decock, Cony (pub. 1997)        
@@ -6935,9 +6935,9 @@ Decock
 Decuille, Charles (pub. 1893)   
 Decuille
 Decuille
-Défago, Genevieve (pub. 1968)    
-Défago
-Défago
+DÃ©fago, Genevieve (pub. 1968)    
+DÃ©fago
+DÃ©fago
 Deflandre, Georges [-Victor] (1897-1973)        
 Deflandre
 Deflandre
@@ -6976,7 +6976,7 @@ Dekhkan-Khodzhaeva
 Dekker, Johannes (1879) 
 Dekker
 Dekker
-Dekov, Vˆlcho Kostov (pub. 1979) 
+Dekov, VÂˆlcho Kostov (pub. 1979) 
 Dekov
 Dekov
 Del Corral, P. (pub. 1934)      
@@ -6993,11 +6993,11 @@ Delamare
 Delamare
 (Del-Amo y Mora, Mariano) see Amo y Mora, Mariano del   
 Amo
-Delanoë, Mme (pub. 1912) 
-Delanoë
-Delanoë
-Delanoë, P. (pub. 1912)  
-P. Delanoë
+DelanoÃ«, Mme (pub. 1912) 
+DelanoÃ«
+DelanoÃ«
+DelanoÃ«, P. (pub. 1912)  
+P. DelanoÃ«
 Delassus, M. (pub. 1954)        
 Delassus
 Delassus
@@ -7103,9 +7103,9 @@ Denison
 Denman, Sandra (pub. 1998)      
 Denman
 Denman
-Dennetière, B. (pub. 1993)       
+DennetiÃ¨re, B. (pub. 1993)       
 Dennet.
-Dennetière
+DennetiÃ¨re
 Dennhardt, Rudolf (pub. 1904)   
 Dennhardt
 Dennhardt
@@ -7153,9 +7153,9 @@ Desai, M.V. (pub. 1955)
 M.V. Desai
 Desai, S.H. (pub. 1978) 
 S.H. Desai
-Désaulniers, Nicole L. (pub. 1987)       
-Désauln.
-Désaulniers
+DÃ©saulniers, Nicole L. (pub. 1987)       
+DÃ©sauln.
+DÃ©saulniers
 Desberger, F.A. (pub. 1835)     
 Desberger
 Desberger
@@ -7181,9 +7181,9 @@ S.D. Deshp.
 Desjardin, Dennis E. (1950)     
 Desjardin
 Desjardin
-Desmazières, John Baptiste Henri Joseph (1786-1862)      
+DesmaziÃ¨res, John Baptiste Henri Joseph (1786-1862)      
 Desm.
-Desmazières
+DesmaziÃ¨res
 Desportes, F. (pub. 1807)       
 F. Desp.
 Desportes
@@ -7193,18 +7193,18 @@ Despreaux
 DesRochers, Pierre (pub. 1994)  
 DesRoch.
 DesRochers
-Dessì, Paolo (pub. 1998) 
-Dessì
-Dessì
+DessÃ¬, Paolo (pub. 1998) 
+DessÃ¬
+DessÃ¬
 Dessureault, M. (pub. 1988)     
 Dessur.
 Dessureault
 Destombes, P. (pub. 1961)       
 Destombes
 Destombes
-Destrée, Caroline E. (pub. 1895) 
-Destrée
-Destrée
+DestrÃ©e, Caroline E. (pub. 1895) 
+DestrÃ©e
+DestrÃ©e
 Desvaux, Nicaise Auguste (1784-1856)    
 Desv.
 Desvaux
@@ -7228,9 +7228,9 @@ De Vroey
 Dewel, Ruth Ann (pub. 1985)     
 Dewel
 Dewel
-Dewèvre, Alfred (1866-1897)      
-Dewèvre
-Dewèvre
+DewÃ¨vre, Alfred (1866-1897)      
+DewÃ¨vre
+DewÃ¨vre
 Dey, Jonathan Paul (1943)       
 J.P. Dey
 Dey
@@ -7259,9 +7259,9 @@ Dhawan
 Dhaware, A.S. (pub. 1980)       
 Dhaware
 Dhaware
-dHérelle, F.H. (pub. 1909)       
-dHérelle
-dHérelle
+dHÃ©relle, F.H. (pub. 1909)       
+dHÃ©relle
+dHÃ©relle
 Dhillon, S.S. (pub. 1980)       
 Dhillon
 Dhillon
@@ -7283,7 +7283,7 @@ Diamandis
 Dianese, A.C. (pub. 1993)       
 A.C. Dianese
 Dianese
-Dianese, José Carmine (pub. 1993)        
+Dianese, JosÃ© Carmine (pub. 1993)        
 Dianese
 Dias, Maria Rosalia de Sousa (pub. 1952)        
 Dias
@@ -7291,12 +7291,12 @@ Dias
 Diaz, Eric (pub. 1999)  
 E. Diaz
 Diaz
-Díaz, G. (pub. 1987)     
-G. Díaz
-Díaz
-Díaz Polanco, Carlos (pub. 1976) 
-Díaz Pol.
-Díaz Polanco
+DÃ­az, G. (pub. 1987)     
+G. DÃ­az
+DÃ­az
+DÃ­az Polanco, Carlos (pub. 1976) 
+DÃ­az Pol.
+DÃ­az Polanco
 Dibben, Martyn James (1943)     
 Dibben
 Dibben
@@ -7373,11 +7373,11 @@ Dietz
 Dietz
 Dietz, Sandor (pub. 1883)       
 S. Dietz
-Díez, Jesús (pub. 1997)   
-J. Díez
-Díez
-Díez, Jesús (pub. 1997)   
-J. Díez
+DÃ­ez, JesÃºs (pub. 1997)   
+J. DÃ­ez
+DÃ­ez
+DÃ­ez, JesÃºs (pub. 1997)   
+J. DÃ­ez
 Digby, Stephanie (pub. 1987)    
 Digby
 Digby
@@ -7460,9 +7460,9 @@ Carmo Souza
 Doassans, Jacques Emile (1852-1908)     
 Doass.
 Doassans
-Döbbeler, Peter (1946)   
-Döbbeler
-Döbbeler
+DÃ¶bbeler, Peter (1946)   
+DÃ¶bbeler
+DÃ¶bbeler
 Dobbs, C.G. (pub. 1954) 
 Dobbs
 Dobbs
@@ -7515,9 +7515,9 @@ Doi
 Doidge, Ethel Mary (1887-1965)  
 Doidge
 Doidge
-Dôke, G. (pub. 1947)     
-Dôke
-Dôke
+DÃ´ke, G. (pub. 1947)     
+DÃ´ke
+DÃ´ke
 Dokmetzian, Diana (pub. 1995)   
 Dokm.
 Dokmetzian
@@ -7536,8 +7536,8 @@ dOliveira
 Doll, Reinhard (1941)   
 R. Doll
 Doll
-(Dolores García, Maria) see García, Maria Dolores 
-M.D. García
+(Dolores GarcÃ­a, Maria) see GarcÃ­a, Maria Dolores 
+M.D. GarcÃ­a
 DomaDski, Stanislaw (1916-1993)  
 DomaDski
 DomaDski
@@ -7557,19 +7557,19 @@ Dombrowski
 Domercq, S. (pub. 1956) 
 Domercq
 Domercq
-Domínguez, Juan A. (pub. 1933)   
-Domínguez
-Domínguez
-Domínguez, Laura S. Dominguez (pub. 1985)        
-L.S. Domínguez
-(Domínguez de Toledo, Laura S.) see Domínguez, Laura S. Dominguez 
-L.S. Domínguez
+DomÃ­nguez, Juan A. (pub. 1933)   
+DomÃ­nguez
+DomÃ­nguez
+DomÃ­nguez, Laura S. Dominguez (pub. 1985)        
+L.S. DomÃ­nguez
+(DomÃ­nguez de Toledo, Laura S.) see DomÃ­nguez, Laura S. Dominguez 
+L.S. DomÃ­nguez
 Dominik, Tadeus (pub. 1934)     
 Dominik
 Dominik
-Domján, Anna (pub. 1936) 
-Domján
-Domján
+DomjÃ¡n, Anna (pub. 1936) 
+DomjÃ¡n
+DomjÃ¡n
 Dompmartin, D. (pub. 1976)      
 Dompm.
 Dompmartin
@@ -7579,7 +7579,7 @@ Domsch
 Don, David (1799-1841)  
 D. Don
 Don
-(Don Bresàdola, Giacomo) see Bresàdola, Giacopo   
+(Don BresÃ dola, Giacomo) see BresÃ dola, Giacopo   
 Bres.
 Donadini, Jean-Claud (1939-1987)        
 Donadini
@@ -7622,14 +7622,14 @@ Georgev.
 Dorenbosch, Maria M.J. (pub. 1968)      
 Dorenb.
 Dorenbosch
-Dörfelt, Heinrich (pub. 1973)    
-Dörfelt
-Dörfelt
-Döring, Heidi (pub. 1992)        
-Döring
-Döring
-Döring, Heidi (pub. 1992)        
-Döring
+DÃ¶rfelt, Heinrich (pub. 1973)    
+DÃ¶rfelt
+DÃ¶rfelt
+DÃ¶ring, Heidi (pub. 1992)        
+DÃ¶ring
+DÃ¶ring
+DÃ¶ring, Heidi (pub. 1992)        
+DÃ¶ring
 Dorman (pub. 1927)      
 Dorman
 Dorman
@@ -7649,22 +7649,22 @@ Dorworth
 A.C. Santos
 (dos Santos, Maria Amelia) see Santos, Maria Amelia dos 
 M.A. Santos
-Døssing, L. (pub. 1991)  
-Døssing
-Døssing
+DÃ¸ssing, L. (pub. 1991)  
+DÃ¸ssing
+DÃ¸ssing
 Doty, Maxwell Stanford (1916)   
 Doty
 Doty
 Doubinger, Jeanne (1951)        
 Doub.
 Doubinger
-Doublés, James C. (pub. 1992)    
-Doublés
-Doublés
+DoublÃ©s, James C. (pub. 1992)    
+DoublÃ©s
+DoublÃ©s
 Douglas, Mackenzie (pub. 1921)  
 M. Douglas
 Douglas
-Dougoud, René (pub. 1995)        
+Dougoud, RenÃ© (pub. 1995)        
 Dougoud
 Dougoud
 Dovaston, H.F. (pub. 1948)      
@@ -7804,9 +7804,9 @@ Duboscq
 Duby, Jean Etienne (1798-1885)  
 Duby
 Duby
-Duché, Jacques (pub. 1952)       
-Duché
-Duché
+DuchÃ©, Jacques (pub. 1952)       
+DuchÃ©
+DuchÃ©
 Duchemin, Th. (pub. 1975)       
 Duchemin
 Duchemin
@@ -7834,11 +7834,11 @@ Dudka
 Dudley, William Russel (1849-1911)      
 Dudley
 Dudley
-Dueñas, H.J. (pub. 1979) 
-Dueñas
-Dueñas
-Dueñas, Margarita (1959) 
-M. Dueñas
+DueÃ±as, H.J. (pub. 1979) 
+DueÃ±as
+DueÃ±as
+DueÃ±as, Margarita (1959) 
+M. DueÃ±as
 Dufft, Adolf (1803-1875)        
 Dufft
 Dufft
@@ -7882,9 +7882,9 @@ Dulieu
 Dulymamode, Rafic (pub. 1998)   
 Dulym.
 Dulymamode
-Dumée, Paul (1849-1930)  
-Dumée
-Dumée
+DumÃ©e, Paul (1849-1930)  
+DumÃ©e
+DumÃ©e
 Dumitra_, Lucretia (1928)        
 Dumitra_
 Dumitra_
@@ -7928,7 +7928,7 @@ Dupain
 Dupias, George (pub. 1951)      
 Dupias
 Dupias
-Dupont, Joëlle (pub. 2000)       
+Dupont, JoÃ«lle (pub. 2000)       
 J. Dupont
 Dupont
 Dupont, P.D. (pub. 1968)        
@@ -7942,9 +7942,9 @@ Dupuy
 Durairaj, P. (pub. 1971)        
 Durairaj
 Durairaj
-Durán, Ruben (pub. 1961) 
-Durán
-Durán
+DurÃ¡n, Ruben (pub. 1961) 
+DurÃ¡n
+DurÃ¡n
 Durand, Elias Judah (1870-1922) 
 E.J. Durand
 Durand
@@ -7992,12 +7992,12 @@ Duvigneaud
 Duyfjes, Hendrik Gerard Pieter  
 H.G.P. Duyfjes
 Duyfjes
-Dvoïnos, L.M. (pub. 1982)        
-Dvoïnos
-Dvoïnos
-DvoYák, R. (pub. 1930)    
-DvoYák
-DvoYák
+DvoÃ¯nos, L.M. (pub. 1982)        
+DvoÃ¯nos
+DvoÃ¯nos
+DvoYÃ¡k, R. (pub. 1930)    
+DvoYÃ¡k
+DvoYÃ¡k
 Dwidjoseputro, Dakimah (pub. 1970)      
 Dwidjos.
 Dwidjoseputro
@@ -8089,9 +8089,9 @@ Eckel
 Eckfeldt, John Wiegand (1851-1933)      
 Eckfeldt
 Eckfeldt
-Eddelbütel, H. (pub. 1912)       
+EddelbÃ¼tel, H. (pub. 1912)       
 Eddelb.
-Eddelbütel
+EddelbÃ¼tel
 Eddy, E.D. (1893)       
 E.D. Eddy
 Eddy
@@ -8129,9 +8129,9 @@ Egami
 Egan, Robert Shaw (1945)        
 Egan
 Egan
-Egea (Fernández), José María (1956)        
+Egea (FernÃ¡ndez), JosÃ© MarÃ­a (1956)        
 Egea
-Egea (Fernández)
+Egea (FernÃ¡ndez)
 Egeland, I. (pub. 1969) 
 I. Egeland
 Egeland
@@ -8149,9 +8149,9 @@ Eggerth
 Eggins, H.O.W. (pub. 1966)      
 Eggins
 Eggins
-Egües, A. (pub. 1930)    
-Egües
-Egües
+EgÃ¼es, A. (pub. 1930)    
+EgÃ¼es
+EgÃ¼es
 Egusa, S. (pub. 1977)   
 Egusa
 Egusa
@@ -8185,7 +8185,7 @@ Eidam
 Eijk, G.W. van (pub. 1989)      
 Eijk
 Eijk
-Eilenberg, Jørgen (pub. 1994)    
+Eilenberg, JÃ¸rgen (pub. 1994)    
 Eilenberg
 Eilenberg
 Einhellinger, Alfred E. (1913-1999)     
@@ -8498,9 +8498,9 @@ Espadaler
 Espinosa Bustos, Marcial Ramon (1874-1959)      
 Espinosa
 Espinosa Bustos
-(Esqueda [Valle], Martín) see Esqueda-Valle, Martín       
+(Esqueda [Valle], MartÃ­n) see Esqueda-Valle, MartÃ­n       
 Esqueda
-Esqueda-Valle, Martín (pub. 1999)        
+Esqueda-Valle, MartÃ­n (pub. 1999)        
 Esqueda
 Esqueda-Valle
 (Ess El-Din, E.K.) see Ezz-Eldin, E.K.  
@@ -8517,18 +8517,18 @@ Essette
 Esslinger, Theodore Lee (1944)  
 Essl.
 Esslinger
-Estadès, Alain (pub. 1988)       
-Estadès
-Estadès
+EstadÃ¨s, Alain (pub. 1988)       
+EstadÃ¨s
+EstadÃ¨s
 Estee, L.M. (pub. 1913) 
 Estee
 Estee
 Ester, A. (pub. 1985)   
 Ester
 Ester
-Esteve-Raventós, Fernando (pub. 1985)    
+Esteve-RaventÃ³s, Fernando (pub. 1985)    
 Esteve-Rav.
-Esteve-Raventós
+Esteve-RaventÃ³s
 Estey, R.H. (pub. 1977) 
 Estey
 Estey
@@ -8627,9 +8627,9 @@ Fabre
 Fabricatore, Jolande A. (pub. 1951)     
 Fabric.
 Fabricatore
-Fábry, H. (pub. 1971)    
-Fábry
-Fábry
+FÃ¡bry, H. (pub. 1971)    
+FÃ¡bry
+FÃ¡bry
 Fage, Louis (1883-1964 )        
 Fage
 Fage
@@ -8657,9 +8657,9 @@ Fakirova
 Fakutsu, R. (pub. 1962) 
 Fakutsu
 Fakutsu
-Falcão, Garnier S. (pub. 1967)   
-G.S. Falcão
-Falcão
+FalcÃ£o, Garnier S. (pub. 1967)   
+G.S. FalcÃ£o
+FalcÃ£o
 (Falcao de Morais, J.O.) see Morais, J.O. Falcao de     
 Morais
 Falck, Olga (pub. 1947) 
@@ -8745,9 +8745,9 @@ Farrow
 Fasolo-Bonfante, Paolo (pub. 1971)      
 Fas.-Bonf.
 Fasolo-Bonfante
-Fassatiová, Olga (pub. 1953)     
+FassatiovÃ¡, Olga (pub. 1953)     
 Fassat.
-Fassatiová
+FassatiovÃ¡
 Fatehi, Jamshid (pub. 1999)     
 Fatehi
 Fatehi
@@ -8811,9 +8811,9 @@ Federici
 Feduchy, E. (pub. 1943) 
 Feduchy
 Feduchy
-Fée, Antoine Laurent Apollinaire (1789-1874)     
-Fée
-Fée
+FÃ©e, Antoine Laurent Apollinaire (1789-1874)     
+FÃ©e
+FÃ©e
 Feest, A. (pub. 1982)   
 Feest
 Feest
@@ -8846,9 +8846,9 @@ Feldmann
 Feldmann-Mazoyer, Genevieve (pub. 1955) 
 Feldm.-Maz.
 Feldmann-Mazoyer
-Félix, Johannes Paul (1858-1941) 
-Félix
-Félix
+FÃ©lix, Johannes Paul (1858-1941) 
+FÃ©lix
+FÃ©lix
 Fell, Jack W. (pub. 1970)       
 Fell
 Fell
@@ -8891,26 +8891,26 @@ A.F. Vital
 Fernandes-Baquero, G. (pub. 1959)       
 Fern.-Baq.
 Fernandes-Baquero
-(Fernandez, Javier Gomez) see Gómez Fernández, Javier     
-J. Gómez
-Fernández, F.A. (pub. 1996)      
+(Fernandez, Javier Gomez) see GÃ³mez FernÃ¡ndez, Javier     
+J. GÃ³mez
+FernÃ¡ndez, F.A. (pub. 1996)      
 F.A. Fern.
-Fernández
-(Fernández, Javier Gómez) see Gómez Fernández, Javier       
-J. Gómez
-(Fernandez de Ana Magán, F.J.) see Magán, F.J. Fernandez de Ana   
-Fern. Magán
-(Fernandez Magán, F.J.) see Magán, F.J. Fernandez de Ana  
-Fern. Magán
-(Fernández Sasia, Roberto) see Fernández Sasia, Roberto   
+FernÃ¡ndez
+(FernÃ¡ndez, Javier GÃ³mez) see GÃ³mez FernÃ¡ndez, Javier       
+J. GÃ³mez
+(Fernandez de Ana MagÃ¡n, F.J.) see MagÃ¡n, F.J. Fernandez de Ana   
+Fern. MagÃ¡n
+(Fernandez MagÃ¡n, F.J.) see MagÃ¡n, F.J. Fernandez de Ana  
+Fern. MagÃ¡n
+(FernÃ¡ndez Sasia, Roberto) see FernÃ¡ndez Sasia, Roberto   
 Fern. Sas.
-Fernández-García, Elena (pub. 1990)       
-Fern.-García
-Fernández-García
+FernÃ¡ndez-GarcÃ­a, Elena (pub. 1990)       
+Fern.-GarcÃ­a
+FernÃ¡ndez-GarcÃ­a
 Fernier, H. (pub. 1954) 
 Fernier
 Fernier
-Ferrada, Luiz V. Ferrada Urzúa (pub. 1949)       
+Ferrada, Luiz V. Ferrada UrzÃºa (pub. 1949)       
 Ferrada
 Ferrada
 Ferrari, Erminio (pub. 1984)    
@@ -8987,12 +8987,12 @@ Field
 Fields, William G. (pub. 1963)  
 Fields
 Fields
-(Figueiras, Manuel) see López-Figueiras, Manuel  
-López-Fig.
+(Figueiras, Manuel) see LÃ³pez-Figueiras, Manuel  
+LÃ³pez-Fig.
 Figueiredo, Mario Barreto (pub. 1969)   
 Figueiredo
 Figueiredo
-Figueras, Mariá José (pub. 1986)  
+Figueras, MariÃ¡ JosÃ© (pub. 1986)  
 Figueras
 Figueras
 (Figueroa, Sara Herrera) see Herrera Figueroa, Sara     
@@ -9054,7 +9054,7 @@ Finocchio
 Fiol, J.B. (pub. 1976)  
 Fiol
 Fiol
-Fiol Mora, Lluís A. (pub. 1993)  
+Fiol Mora, LluÃ­s A. (pub. 1993)  
 L.A. Fiol
 Fiol Mora
 Fiore, Maria (pub. 1932)        
@@ -9156,8 +9156,8 @@ Flieger
 Flis, A.L. (pub. 1999)  
 Flis
 Flis
-(Floerke, Heinrich Gustav) see Flörke, Heinrich Gustav   
-Flörke
+(Floerke, Heinrich Gustav) see FlÃ¶rke, Heinrich Gustav   
+FlÃ¶rke
 Florence, E. Jacques Maria (1951)       
 Florence
 Florence
@@ -9166,15 +9166,15 @@ G. Florenz.
 Florenzano
 Florenzano, J. (pub. 1947)      
 Florenz.
-Flores Arzù, Roberto (pub. 2000) 
+Flores ArzÃ¹, Roberto (pub. 2000) 
 R. Flores
-Flores Arzù
-Flórián, E. (pub. 1964)   
-Flórián
-Flórián
-Flörke, Heinrich Gustav (1764-1835)      
-Flörke
-Flörke
+Flores ArzÃ¹
+FlÃ³riÃ¡n, E. (pub. 1964)   
+FlÃ³riÃ¡n
+FlÃ³riÃ¡n
+FlÃ¶rke, Heinrich Gustav (1764-1835)      
+FlÃ¶rke
+FlÃ¶rke
 Florovskaya, Elena Fedorowna (1902)     
 Florovsk.
 Florovskaya
@@ -9189,12 +9189,12 @@ Little Flower
 Flynn, Timothy W. (1958)        
 Flynn
 Flynn
-Foderé (pub. 1821)       
-Foderé
-Foderé
-Foëx, Etienne Edmond (1876-1944) 
-É.E. Foëx
-Foëx
+FoderÃ© (pub. 1821)       
+FoderÃ©
+FoderÃ©
+FoÃ«x, Etienne Edmond (1876-1944) 
+Ã‰.E. FoÃ«x
+FoÃ«x
 Fogel, Robert (1947)    
 Fogel
 Fogel
@@ -9230,14 +9230,14 @@ Follman
 Follmann, Gerhard (1930)        
 Follmann
 Follmann
-Fonseca, Álvaro (pub. 1991)      
-Á. Fonseca
+Fonseca, Ãlvaro (pub. 1991)      
+Ã. Fonseca
 Fonseca
 (Fonseca, Laura Zucconi Galli) see Zucconi, Laura       
 Zucconi
 Fonseca, Olympio Oliveira Ribeiro da (pub. 1922)        
 Fonseca
-Fonseca, Ozorio José de Menezes (pub. 1965)      
+Fonseca, Ozorio JosÃ© de Menezes (pub. 1965)      
 O.M. Fonseca
 (Font i Quer, Pio [Pius]) see Font Quer, Pio [Pius]     
 Font Quer
@@ -9267,9 +9267,9 @@ Ford
 Ford-Robertson, F.S. (pub. 1924)        
 Ford-Rob.
 Ford-Robertson
-Fóriss, Ferenc. (1892)   
-Fóriss
-Fóriss
+FÃ³riss, Ferenc. (1892)   
+FÃ³riss
+FÃ³riss
 Fornachon, J.C.M. (pub. 1964)   
 Forn.
 Fornachon
@@ -9293,7 +9293,7 @@ Forstner
 Fort, F. (pub. 1984)    
 Fort
 Fort
-Fortin, J. André (pub. 1999)     
+Fortin, J. AndrÃ© (pub. 1999)     
 Fortin
 Fortin
 Fortoul, R. (pub. 1976) 
@@ -9340,12 +9340,12 @@ Fox
 Fox
 Fox, W.T. (pub. 1973)   
 W.T. Fox
-Frágner, Peter (pub. 1956)       
-Frágner
-Frágner
-(Fragoso, Romualdo Gonzalez) see González Fragoso, Romualdo      
+FrÃ¡gner, Peter (pub. 1956)       
+FrÃ¡gner
+FrÃ¡gner
+(Fragoso, Romualdo Gonzalez) see GonzÃ¡lez Fragoso, Romualdo      
 Gonz. Frag.
-Fraiture, André (pub. 1998)      
+Fraiture, AndrÃ© (pub. 1998)      
 Fraiture
 Fraiture
 Franc, A. (pub. 1969)   
@@ -9430,9 +9430,9 @@ Frei
 Freiesleben, H. (pub. 1996)     
 Freiesl.
 Freiesleben
-Freïndling, M.V. (pub. 1949)     
-Freïndl.
-Freïndling
+FreÃ¯ndling, M.V. (pub. 1949)     
+FreÃ¯ndl.
+FreÃ¯ndling
 Freire, Domingos (pub. 1886)    
 Freire
 Freire
@@ -9514,17 +9514,17 @@ Fritel
 Fritsch, Karl (1864-1934)       
 Fritsch
 Fritsch
-Fröberg, Lars (1957)     
-Fröberg
-Fröberg
-Fröes, Heitor Prayuer (pub. 1931)        
-H.P. Fröes
-Fröes
-Fröhlich, Jane (pub. 1993)       
-J. Fröhl.
-Fröhlich
-Fröhlich, W. (pub. 1939) 
-W. Fröhl.
+FrÃ¶berg, Lars (1957)     
+FrÃ¶berg
+FrÃ¶berg
+FrÃ¶es, Heitor Prayuer (pub. 1931)        
+H.P. FrÃ¶es
+FrÃ¶es
+FrÃ¶hlich, Jane (pub. 1993)       
+J. FrÃ¶hl.
+FrÃ¶hlich
+FrÃ¶hlich, W. (pub. 1939) 
+W. FrÃ¶hl.
 Froidevaux, L. (pub. 1973)      
 Froid.
 Froidevaux
@@ -9561,9 +9561,9 @@ Z.S. Fu
 Fuchs, W.H. (pub. 1960) 
 W.H. Fuchs
 Fuchs
-Fuíkovskı, Leopold (pub. 1998)    
-Fuík.
-Fuíkovskı
+FuÃ­kovskÃ½, Leopold (pub. 1998)    
+FuÃ­k.
+FuÃ­kovskÃ½
 Fuckel, Karl Wilhelm Gottlieb Leopold (1821-1876)       
 Fuckel
 Fuckel
@@ -9572,14 +9572,14 @@ C.A. Fuentes
 Fuentes
 Fuentes, S.F. (pub. 1964)       
 S.F. Fuentes
-(Fuernrohr, August Emanuel) see Fürnrohr, August Emanuel 
-Fürnr.
+(Fuernrohr, August Emanuel) see FÃ¼rnrohr, August Emanuel 
+FÃ¼rnr.
 Fuhrer, Bruce (A.) (pub. 1994)  
 Fuhrer
 Fuhrer
-Füisting, Wilhelm (pub. 1860)    
-Füisting
-Füisting
+FÃ¼isting, Wilhelm (pub. 1860)    
+FÃ¼isting
+FÃ¼isting
 Fujii, H. (pub. 1931)   
 H. Fujii
 Fujii
@@ -9621,9 +9621,9 @@ Funk
 Furlanetto, Cleber (pub. 1995)  
 Furlan.
 Furlanetto
-Fürnrohr, August Emanuel (1804-1861)     
-Fürnr.
-Fürnrohr
+FÃ¼rnrohr, August Emanuel (1804-1861)     
+FÃ¼rnr.
+FÃ¼rnrohr
 Furrer-Ziogas, C. (pub. 1952)   
 Furrer-Ziogas
 Furrer-Ziogas
@@ -9655,8 +9655,8 @@ Fyles
 Gabler, J. (pub. 1995)  
 Gabler
 Gabler
-(Gábor, Peter) see Péter, Gábor    
-G. Péter
+(GÃ¡bor, Peter) see PÃ©ter, GÃ¡bor    
+G. PÃ©ter
 Gabriel, Madeleine (pub. 1965)  
 Gabriel
 Gabriel
@@ -9666,9 +9666,9 @@ Gachet
 Gadd, Caleb Herbert (pub. 1947) 
 Gadd
 Gadd
-Gadêlha, W. (pub. 1969)  
-Gadêlha
-Gadêlha
+GadÃªlha, W. (pub. 1969)  
+GadÃªlha
+GadÃªlha
 Gadgil, P.D. (pub. 1983)        
 Gadgil
 Gadgil
@@ -9712,13 +9712,13 @@ Gaither
 Gaja, L. (pub. 1911)    
 Gaja
 Gaja
-Galán, Marcella (pub. 1993)      
-M. Galán
-Galán
-Galán, Ricardo (pub. 1983)       
-R. Galán
-(Galán Marquez, Ricardo) see Galán, Ricardo       
-R. Galán
+GalÃ¡n, Marcella (pub. 1993)      
+M. GalÃ¡n
+GalÃ¡n
+GalÃ¡n, Ricardo (pub. 1983)       
+R. GalÃ¡n
+(GalÃ¡n Marquez, Ricardo) see GalÃ¡n, Ricardo       
+R. GalÃ¡n
 Galea, V.J. (pub. 1986) 
 Galea
 Galea
@@ -9750,9 +9750,9 @@ D. Galland
 Galland
 Galland, Marie Cecile (pub. 1971)       
 Galland
-Gallé, Laszlo (1908-1980)        
-Gallé
-Gallé
+GallÃ©, Laszlo (1908-1980)        
+GallÃ©
+GallÃ©
 Gallego (Arjona), Eduardo (pub. 1986)   
 E. Gallego
 Gallego (Arjona)
@@ -9764,9 +9764,9 @@ Zucconi
 Galli-Vallerio, B. (pub. 1898)  
 Galli-Vall.
 Galli-Vallerio
-Galløe, Olaf (1881-1965) 
-Galløe
-Galløe
+GallÃ¸e, Olaf (1881-1965) 
+GallÃ¸e
+GallÃ¸e
 Galloway, Beverly Thomas (1863-1938)    
 Galloway
 Galloway
@@ -9812,8 +9812,8 @@ W. Gams
 Gams
 Gams, Helmut (1893-1976)        
 Gams
-(Gamundí de Amos, Irma Josefa) see Gamundí, Irma Josefa   
-Gamundí
+(GamundÃ­ de Amos, Irma Josefa) see GamundÃ­, Irma Josefa   
+GamundÃ­
 Ganapathi, Alhagananthan (pub. 1978)    
 Ganap.
 Ganapathi
@@ -9883,48 +9883,48 @@ Garov.
 Garbowski, L. (pub. 1923)       
 Garb.
 Garbowski
-Garcés Orejuela, Carlos (1915)   
+GarcÃ©s Orejuela, Carlos (1915)   
 Orejuela
-Garcés Orejuela
-García, Maria Dolores (pub. 1999)        
-M.D. García
-García
-García, Carmen Elizabeth (pub. 1997)     
-C.E. García
-García, Gustavo (pub. 1994)      
-G. García
-García, Jesus (pub. 1981)        
-J. García
-García, Juventino (pub. 1995)    
-Juv. García
-García, L. (pub. 1988)   
-L. García
-(García Alvarado, Juventino) see García, Juventino        
-Juv. García
-García Aser, Concepcion (pub. 1972)      
-C. García
-García Aser
-García Monedero, Carlos (pub. 1995)      
-García Mon.
-García Monedero
-(García Sánchez, Dania) see Dania García, Dania    
-Dania García
-García-Jiménez, J. (pub. 1996)    
-García-Jim.
-García-Jiménez
-García-Montera, L.G. (pub. 1997) 
-García-Mont.
-García-Montera
-García-Rada, German (1902)       
-García-Rada
-García-Rada
-García-Zorrón, Noemi (pub. 1977)  
-García-Zorrón
-García-Zorrón
+GarcÃ©s Orejuela
+GarcÃ­a, Maria Dolores (pub. 1999)        
+M.D. GarcÃ­a
+GarcÃ­a
+GarcÃ­a, Carmen Elizabeth (pub. 1997)     
+C.E. GarcÃ­a
+GarcÃ­a, Gustavo (pub. 1994)      
+G. GarcÃ­a
+GarcÃ­a, Jesus (pub. 1981)        
+J. GarcÃ­a
+GarcÃ­a, Juventino (pub. 1995)    
+Juv. GarcÃ­a
+GarcÃ­a, L. (pub. 1988)   
+L. GarcÃ­a
+(GarcÃ­a Alvarado, Juventino) see GarcÃ­a, Juventino        
+Juv. GarcÃ­a
+GarcÃ­a Aser, Concepcion (pub. 1972)      
+C. GarcÃ­a
+GarcÃ­a Aser
+GarcÃ­a Monedero, Carlos (pub. 1995)      
+GarcÃ­a Mon.
+GarcÃ­a Monedero
+(GarcÃ­a SÃ¡nchez, Dania) see Dania GarcÃ­a, Dania    
+Dania GarcÃ­a
+GarcÃ­a-JimÃ©nez, J. (pub. 1996)    
+GarcÃ­a-Jim.
+GarcÃ­a-JimÃ©nez
+GarcÃ­a-Montera, L.G. (pub. 1997) 
+GarcÃ­a-Mont.
+GarcÃ­a-Montera
+GarcÃ­a-Rada, German (1902)       
+GarcÃ­a-Rada
+GarcÃ­a-Rada
+GarcÃ­a-ZorrÃ³n, Noemi (pub. 1977)  
+GarcÃ­a-ZorrÃ³n
+GarcÃ­a-ZorrÃ³n
 Garcin, R. (pub. 1984)  
 Garcin
 Garcin
-(Gardes, Anisochor) see Garcés Orejuela, Carlos  
+(Gardes, Anisochor) see GarcÃ©s Orejuela, Carlos  
 Orejuela
 Gardner, Donald E. (pub. 1985)  
 D.E. Gardner
@@ -10005,22 +10005,22 @@ Gassner
 Gatti, C. (pub. 1929)   
 Gatti
 Gatti
-(Gaudichaud, Charles) see Gaudichaud-Beaupré, Charles    
+(Gaudichaud, Charles) see Gaudichaud-BeauprÃ©, Charles    
 Gaudich.
-Gaudichaud-Beaupré, Charles (1789-1854)  
+Gaudichaud-BeauprÃ©, Charles (1789-1854)  
 Gaudich.
-Gaudichaud-Beaupré
-Gaudichaud-Beaupré, Charles (1789-1854)  
+Gaudichaud-BeauprÃ©
+Gaudichaud-BeauprÃ©, Charles (1789-1854)  
 Gaudich.
 Gaudin, L. (pub. 1919)  
 L. Gaudin
 Gaudin
-Gaugué, G. (pub. 1973)   
-Gaugué
-Gaugué
-Gäumann, Ernest [Ernst] Albert (1893-1963)       
-Gäum.
-Gäumann
+GauguÃ©, G. (pub. 1973)   
+GauguÃ©
+GauguÃ©
+GÃ¤umann, Ernest [Ernst] Albert (1893-1963)       
+GÃ¤um.
+GÃ¤umann
 Gaur, P.K. (pub. 1979)  
 P.K. Gaur
 Gaur
@@ -10039,9 +10039,9 @@ Gauthier
 Gay, Claude (1800-1873) 
 Gay
 Gay
-Gayão, Teresa de Jesus (pub. 1953)       
-Gayão
-Gayão
+GayÃ£o, Teresa de Jesus (pub. 1953)       
+GayÃ£o
+GayÃ£o
 Ge, Qi Xin (1911)       
 Q.X. Ge
 Ge
@@ -10086,12 +10086,12 @@ Gelyuta
 Gemma, Jane N. (1951)   
 Gemma
 Gemma
-Gené, Josepa [Josefina] (pub. 1992)      
-Gené
-Gené
-Géneau de Lamarliere, L. (pub. 1894)     
-Géneau
-Géneau de Lamarliere
+GenÃ©, Josepa [Josefina] (pub. 1992)      
+GenÃ©
+GenÃ©
+GÃ©neau de Lamarliere, L. (pub. 1894)     
+GÃ©neau
+GÃ©neau de Lamarliere
 Genestar Serra, Rafael (pub. 1956)      
 Genestar
 Genestar Serra
@@ -10204,9 +10204,9 @@ Ghatak
 Ghate, N. (pub. 1985)   
 Ghate
 Ghate
-Ghesquière, Jean H.P.A. (1888)   
+GhesquiÃ¨re, Jean H.P.A. (1888)   
 Ghesq.
-Ghesquière
+GhesquiÃ¨re
 (Ghobi, Khristophos [Christophos] Jacoblewitsch) see Gobi, Khristophos [Christophos] Jacoblewitsch      
 Gobi
 (Ghoryaninov, Paul [Paulus] Fedorowitsch) see Horaninow, Paul [Paulus] Fedorowitsch     
@@ -10223,7 +10223,7 @@ S.N. Ghosh
 Giachini, Admir J. (pub. 2000)  
 Giachini
 Giachini
-Giaiotti, Andreína (L.) (pub. 1977)      
+Giaiotti, AndreÃ­na (L.) (pub. 1977)      
 Giaiotti
 Giaiotti
 Giard, Alfred-Matheiu (1846-1908)       
@@ -10318,7 +10318,7 @@ Gill, H.S. (pub. 1961)
 H.S. Gill
 Gill, Lake Shore (1900) 
 L.S. Gill
-Gilles, Gérard (pub. 1970)       
+Gilles, GÃ©rard (pub. 1970)       
 Gilles
 Gilles
 Gillet, Abel (1857-1927)        
@@ -10347,9 +10347,9 @@ Gilmour
 Gilpin, R.H. (pub. 1954)        
 Gilpin
 Gilpin
-Giménez-Jurado, Gabriella (pub. 1990)    
+GimÃ©nez-Jurado, Gabriella (pub. 1990)    
 Gim.-Jurado
-Giménez-Jurado
+GimÃ©nez-Jurado
 Gimesi, M. (pub. 1924)  
 M. Gimesi
 Gimesi
@@ -10409,11 +10409,11 @@ Givulescu
 Gizhitskaya, Z.K. (pub. 1929)   
 Gizhitsk.
 Gizhitskaya
-(Gjærum, Halvor B.) see Gjærum, Halvor B. 
+(GjÃ¦rum, Halvor B.) see GjÃ¦rum, Halvor B. 
 Gjaerum
-Gjærum, Halvor B. (pub. 1961)    
+GjÃ¦rum, Halvor B. (pub. 1961)    
 Gjaerum
-Gjærum
+GjÃ¦rum
 Gjuraain, Stjepan (1867-1936)    
 Gjuraain
 Gjuraain
@@ -10471,9 +10471,9 @@ Glowinski
 Gloyer, Walter Oscar (1886)     
 Gloyer
 Gloyer
-Glück, Christian Maximilian Hugo (1868-1940)     
-Glück
-Glück
+GlÃ¼ck, Christian Maximilian Hugo (1868-1940)     
+GlÃ¼ck
+GlÃ¼ck
 Gluge, G. (pub. 1857)   
 Gluge
 Gluge
@@ -10483,12 +10483,12 @@ Gmelin
 Gminder, Andreas (pub. 1995)    
 Gminder
 Gminder
-Göbel, Karl Christian Traugott Friedmann (pub. 1827)     
-Göbel
-Göbel
-Göbelez, M. (pub. 1960)  
-Göbelez
-Göbelez
+GÃ¶bel, Karl Christian Traugott Friedmann (pub. 1827)     
+GÃ¶bel
+GÃ¶bel
+GÃ¶belez, M. (pub. 1960)  
+GÃ¶belez
+GÃ¶belez
 Gobi, Khristophos [Christophos] Jacoblewitsch (1847-1919)       
 Gobi
 Gobi
@@ -10513,13 +10513,13 @@ Godfrey
 Godkin, James (1891)    
 Godkin
 Godkin
-(Goebel, Karl Christian Traugott Friedmann) see Göbel, Karl Christian Traugott Friedmann 
-Göbel
+(Goebel, Karl Christian Traugott Friedmann) see GÃ¶bel, Karl Christian Traugott Friedmann 
+GÃ¶bel
 Goebel, Karl Immanuel Eberhard (1855-1932)      
 K.I. Goebel
 Goebel
-(Goeppert, Johann Heinrich Robert) see Göppert, Johann Heinrich Robert   
-Göpp.
+(Goeppert, Johann Heinrich Robert) see GÃ¶ppert, Johann Heinrich Robert   
+GÃ¶pp.
 Goettel, Mark (pub. 1996)       
 Goettel
 Goettel
@@ -10535,9 +10535,9 @@ Goh
 Goheen, Donald J. (pub. 1978)   
 Goheen
 Goheen
-Goidànich, Gabriel (1912)        
+GoidÃ nich, Gabriel (1912)        
 Goid.
-Goidànich
+GoidÃ nich
 (Gokale, V.P.) see Gokhale, V.P.        
 Gokhale
 Gokhale, V.P. (pub. 1951)       
@@ -10566,9 +10566,9 @@ Goldstein
 Golenia, A. (pub. 1962) 
 Golenia
 Golenia
-Göllner, J. (pub. 1931)  
-Göllner
-Göllner
+GÃ¶llner, J. (pub. 1931)  
+GÃ¶llner
+GÃ¶llner
 Golonkowa, J. (pub. 1970)       
 Golonk.
 Golonkowa
@@ -10598,32 +10598,32 @@ Gomes
 Gomes de Medeiros, Arnaldo (pub. 1962)  
 A.G. Medeiros
 Gomes de Medeiros
-Gómez, Calixto Leon (pub. 1976)  
-C.L. Gómez
-Gómez
-Gómez, Carlos E. (pub. 1976)     
-C.E. Gómez
-Gómez, H.D. (pub. 1983)  
-H.D. Gómez
-Gómez, Luis Diego (1944) 
-L.D. Gómez
-(Gómez Acosta, H.D.) see Gómez, H.D.      
-H.D. Gómez
-Gómez Fernández, Javier (pub. 1998)       
-J. Gómez
-Gómez Fernández
-(Gómez P[ignataro]., Luis Diego) see Gómez, Luis Diego    
-L.D. Gómez
-Gómez-Bolea, Antonio (pub. 1990) 
-Gómez-Bolea
-Gómez-Bolea
-Gómez-Bolea, Antonio (pub. 1990) 
-Gómez-Bolea
-Gönczöl, J. (1942)        
-J. Gönczöl
-Gönczöl
-Gönczöl, M. (pub. 1985)   
-M. Gönczöl
+GÃ³mez, Calixto Leon (pub. 1976)  
+C.L. GÃ³mez
+GÃ³mez
+GÃ³mez, Carlos E. (pub. 1976)     
+C.E. GÃ³mez
+GÃ³mez, H.D. (pub. 1983)  
+H.D. GÃ³mez
+GÃ³mez, Luis Diego (1944) 
+L.D. GÃ³mez
+(GÃ³mez Acosta, H.D.) see GÃ³mez, H.D.      
+H.D. GÃ³mez
+GÃ³mez FernÃ¡ndez, Javier (pub. 1998)       
+J. GÃ³mez
+GÃ³mez FernÃ¡ndez
+(GÃ³mez P[ignataro]., Luis Diego) see GÃ³mez, Luis Diego    
+L.D. GÃ³mez
+GÃ³mez-Bolea, Antonio (pub. 1990) 
+GÃ³mez-Bolea
+GÃ³mez-Bolea
+GÃ³mez-Bolea, Antonio (pub. 1990) 
+GÃ³mez-Bolea
+GÃ¶nczÃ¶l, J. (1942)        
+J. GÃ¶nczÃ¶l
+GÃ¶nczÃ¶l
+GÃ¶nczÃ¶l, M. (pub. 1985)   
+M. GÃ¶nczÃ¶l
 Gong, M.Q. (pub. 1993)  
 M.Q. Gong
 Gong
@@ -10632,28 +10632,28 @@ X.D. Gong
 Gonnermann, Gabriel (1806-1884) 
 Gonn.
 Gonnermann
-Gonzáles, Aldo E. (pub. 1972)    
-A.E. González
-Gonzáles
-Gonzáles, Carmen C. (pub. 1981)  
-C.C. González
-Gonzáles, María Suleima (pub. 1984)       
-M.S. Gonzáles
-Gonzáles-Velázquez, Alfredo (pub. 1992)   
-Gonz.-Velázq.
-Gonzáles-Velázquez
-González, F.S.M. (pub. 1989)     
-F.S.M. González
-González
-(González, Felipe San Martin) see San Martín (González), Felipe    
-F. San Martín
-González, María C. (pub. 2000)    
-M.C. González
-González, Vicente (pub. 1997)    
-V. González
-González Fragoso, Romualdo (1862-1928)   
+GonzÃ¡les, Aldo E. (pub. 1972)    
+A.E. GonzÃ¡lez
+GonzÃ¡les
+GonzÃ¡les, Carmen C. (pub. 1981)  
+C.C. GonzÃ¡lez
+GonzÃ¡les, MarÃ­a Suleima (pub. 1984)       
+M.S. GonzÃ¡les
+GonzÃ¡les-VelÃ¡zquez, Alfredo (pub. 1992)   
+Gonz.-VelÃ¡zq.
+GonzÃ¡les-VelÃ¡zquez
+GonzÃ¡lez, F.S.M. (pub. 1989)     
+F.S.M. GonzÃ¡lez
+GonzÃ¡lez
+(GonzÃ¡lez, Felipe San Martin) see San MartÃ­n (GonzÃ¡lez), Felipe    
+F. San MartÃ­n
+GonzÃ¡lez, MarÃ­a C. (pub. 2000)    
+M.C. GonzÃ¡lez
+GonzÃ¡lez, Vicente (pub. 1997)    
+V. GonzÃ¡lez
+GonzÃ¡lez Fragoso, Romualdo (1862-1928)   
 Gonz. Frag.
-González Fragoso
+GonzÃ¡lez Fragoso
 Gooch, F.S. (pub. 1938) 
 Gooch
 Gooch
@@ -10683,9 +10683,9 @@ Gopalakrishnakone
 Gopalkrishnan, K.S. (pub. 1947) 
 Gopalkr.
 Gopalkrishnan
-Göppert, Johann Heinrich Robert (1800-1884)      
-Göpp.
-Göppert
+GÃ¶ppert, Johann Heinrich Robert (1800-1884)      
+GÃ¶pp.
+GÃ¶ppert
 Gordenko, V.I. (pub. 1975)      
 Gordenko
 Gordenko
@@ -10736,9 +10736,9 @@ Gosklags
 Gossen, B.D. (pub. 1986)        
 Gossen
 Gossen
-Gösswald (pub. 1939)     
-Gösswald
-Gösswald
+GÃ¶sswald (pub. 1939)     
+GÃ¶sswald
+GÃ¶sswald
 Goswami, R.N. (pub. 1979)       
 R.N. Goswami
 Goswami
@@ -10754,9 +10754,9 @@ Kaps.-Gotsi
 Gott, Cora L. (pub. 1956)       
 Gott
 Gott
-Göttinger (pub. 1884)    
-Göttinger
-Göttinger
+GÃ¶ttinger (pub. 1884)    
+GÃ¶ttinger
+GÃ¶ttinger
 Gottsberger, Gerhard Karl (1940)        
 Gottsb.
 Gottsberger
@@ -10819,12 +10819,12 @@ Graaf
 GrabiHska-Loniewska, A. (pub. 1992)      
 Grab.-Lon.
 GrabiHska-Loniewska
-Gräbner, K.-E. (pub. 1954)       
-Gräbner
-Gräbner
-Gràcia, E. (1952)        
-Gràcia
-Gràcia
+GrÃ¤bner, K.-E. (pub. 1954)       
+GrÃ¤bner
+GrÃ¤bner
+GrÃ cia, E. (1952)        
+GrÃ cia
+GrÃ cia
 Graddon, William Douglas (1896-1989)    
 Graddon
 Graddon
@@ -10958,9 +10958,9 @@ Greis
 Greis-Dengler, Ida (pub. 1940)  
 Greis-Dengler
 Greis-Dengler
-Grélet, Louis-Joseph (1870-1945) 
-Grélet
-Grélet
+GrÃ©let, Louis-Joseph (1870-1945) 
+GrÃ©let
+GrÃ©let
 Gremmen, J. (pub. 1953) 
 Gremmen
 Gremmen
@@ -11033,8 +11033,8 @@ Grilli
 Grimaldi, David (pub. 1997)     
 D. Grimaldi
 Grimaldi
-(Grimaldi, Gastón Guzmán) see Guzmán, Gastón        
-Guzmán
+(Grimaldi, GastÃ³n GuzmÃ¡n) see GuzmÃ¡n, GastÃ³n        
+GuzmÃ¡n
 Grimes, M. (pub. 1933)  
 Grimes
 Grimes
@@ -11072,9 +11072,9 @@ Groenewege
 Groenhart, Pieter (1894-1965)   
 Groenh.
 Groenhart
-Gröger, Ferdinand (pub. 1967)    
-Gröger
-Gröger
+GrÃ¶ger, Ferdinand (pub. 1967)    
+GrÃ¶ger
+GrÃ¶ger
 Grognot, Camille (1792-1869)    
 Grognot
 Grognot
@@ -11084,12 +11084,12 @@ Gronchi
 Grondona, Isabel (pub. 1997)    
 I. Grondona
 Grondona
-Grønlund, Carl Christian Howitz (1825-1901)      
-Grønlund
-Grønlund
-Grosbüsch, J. (pub. 1914)        
+GrÃ¸nlund, Carl Christian Howitz (1825-1901)      
+GrÃ¸nlund
+GrÃ¸nlund
+GrosbÃ¼sch, J. (pub. 1914)        
 Grosb.
-Grosbüsch
+GrosbÃ¼sch
 Grose, Elizabeth S. (pub. 1968) 
 Grose
 Grose
@@ -11161,23 +11161,23 @@ Grund
 Gruner, Leopold F. (1839)       
 Gruner
 Gruner
-Grünert, Helmut (pub. 1996)      
-H. Grünert
-Grünert
-Grünert, Helmut (pub. 1996)      
-H. Grünert
-Grünert, Renate (pub. 1996)      
-R. Grünert
-Grünert, Renate (pub. 1996)      
-R. Grünert
-Grüss, G. (pub. 1927)    
-G. Grüss
-Grüss
-Grüss, Johannes (1860)   
-Grüss
-Grütz, O. (pub. 1925)    
-Grütz
-Grütz
+GrÃ¼nert, Helmut (pub. 1996)      
+H. GrÃ¼nert
+GrÃ¼nert
+GrÃ¼nert, Helmut (pub. 1996)      
+H. GrÃ¼nert
+GrÃ¼nert, Renate (pub. 1996)      
+R. GrÃ¼nert
+GrÃ¼nert, Renate (pub. 1996)      
+R. GrÃ¼nert
+GrÃ¼ss, G. (pub. 1927)    
+G. GrÃ¼ss
+GrÃ¼ss
+GrÃ¼ss, Johannes (1860)   
+GrÃ¼ss
+GrÃ¼tz, O. (pub. 1925)    
+GrÃ¼tz
+GrÃ¼tz
 Gruyter, J. de (pub. 1992)      
 Gruyter
 Gruyter
@@ -11213,15 +11213,15 @@ Heibel
 Guderley, Roland (pub. 1996)    
 Guderley
 Guderley
-Guéguen, Fernand Pierre Joseph (1872-1915)       
-Guég.
-Guéguen
-Guého, Eveline (pub. 1984)       
-E. Guého
-Guého
-Guépin, Jean Pierre (1779-1858)  
-Guépin
-Guépin
+GuÃ©guen, Fernand Pierre Joseph (1872-1915)       
+GuÃ©g.
+GuÃ©guen
+GuÃ©ho, Eveline (pub. 1984)       
+E. GuÃ©ho
+GuÃ©ho
+GuÃ©pin, Jean Pierre (1779-1858)  
+GuÃ©pin
+GuÃ©pin
 Guerber, John C. (pub. 2001)    
 Guerber
 Guerber
@@ -11281,7 +11281,7 @@ Guinberteau
 Guinea, Emilio (1907-1985)      
 Guinea
 Guinea
-Guinea, Jesús (pub. 1999)        
+Guinea, JesÃºs (pub. 1999)        
 J. Guinea
 (Guinea Lopez, Emilio) see Guinea, Emilio       
 Guinea
@@ -11378,12 +11378,12 @@ Gurzitska
 E.S. Husseinov
 (Guseinova, B.F.) see Husseinova, B.F.  
 Husseinova
-Gusmão, Luís Fernando Pascholati (pub. 2000)      
-Gusmão
-Gusmão
-Güssow, Hans Theodor (1879)      
-Güssow
-Güssow
+GusmÃ£o, LuÃ­s Fernando Pascholati (pub. 2000)      
+GusmÃ£o
+GusmÃ£o
+GÃ¼ssow, Hans Theodor (1879)      
+GÃ¼ssow
+GÃ¼ssow
 Gustafson, B.A. (pub. 1955)     
 Gustafson
 Gustafson
@@ -11402,9 +11402,9 @@ Guterman
 Guthrie, Ernest John (pub. 1959)        
 E.J. Guthrie
 Guthrie
-Gutiérrez, Carmen (pub. 1981)    
+GutiÃ©rrez, Carmen (pub. 1981)    
 C. Gut.
-Gutiérrez
+GutiÃ©rrez
 Gutner, L.S. (pub. 1933)        
 Gutner
 Gutner
@@ -11416,22 +11416,22 @@ Gutter
 Gutteridge, R.J. (pub. 1977)    
 Gutter.
 Gutteridge
-Guyénot, V.G. (pub. 1922)        
-Guyénot
-Guyénot
+GuyÃ©not, V.G. (pub. 1922)        
+GuyÃ©not
+GuyÃ©not
 Guyot, Alain Lucien (pub. 1932) 
 A.L. Guyot
 Guyot
 Guyot, H. (pub. 1917)   
 Guyot
-Guzmán, Enriquito D. de (pub. 1988)      
-E.D. Guzmán
-Guzmán
-(Guzmán [Grimaldi], Gastón) see Guzmán, Gastón      
-Guzmán
-Guzmán-Dávalos, Laura (1961)      
-Guzm.-Dáv.
-Guzmán-Dávalos
+GuzmÃ¡n, Enriquito D. de (pub. 1988)      
+E.D. GuzmÃ¡n
+GuzmÃ¡n
+(GuzmÃ¡n [Grimaldi], GastÃ³n) see GuzmÃ¡n, GastÃ³n      
+GuzmÃ¡n
+GuzmÃ¡n-DÃ¡valos, Laura (1961)      
+Guzm.-DÃ¡v.
+GuzmÃ¡n-DÃ¡valos
 Gvritischvili, M.N. (1950)      
 Gvrit.
 Gvritischvili
@@ -11448,7 +11448,7 @@ Haag
 Haajian, M. (pub. 1999) 
 Haajian
 Haajian
-(Haan, André de) see de Haan, André       
+(Haan, AndrÃ© de) see de Haan, AndrÃ©       
 A. de Haan
 (Haan, W. de) see de Haan, W.   
 W. de Haan
@@ -11495,9 +11495,9 @@ Haehn
 Hafellner, Joseph [Josef] (1951)        
 Hafellner
 Hafellner
-Häffner, Jürgen (pub. 1983)       
-Häffner
-Häffner
+HÃ¤ffner, JÃ¼rgen (pub. 1983)       
+HÃ¤ffner
+HÃ¤ffner
 (Hafiz, Mohammad Abdul) see Hafiz Khan, Mohammad Abdul Hafiz    
 Hafiz Khan
 Hafiz Khan, Mohammad Abdul Hafiz (pub. 1955)    
@@ -11535,9 +11535,9 @@ Hagler
 Haglund, Erik Emil (1877-1938)  
 Haglund
 Haglund
-Hagström, Elisabeth (pub. 1977)  
+HagstrÃ¶m, Elisabeth (pub. 1977)  
 E. Hagstr.
-Hagström
+HagstrÃ¶m
 Hahn, Christoph Johannes (pub. 1996)    
 C. Hahn
 Hahn
@@ -11704,9 +11704,9 @@ Hancock
 Handel-Mazzetti, Heinrich R.E. (1882-1940)      
 Hand.-Mazz.
 Handel-Mazzetti
-Hankó, Bela (pub. 1983)  
-Hankó
-Hankó
+HankÃ³, Bela (pub. 1983)  
+HankÃ³
+HankÃ³
 Hanlin, Richard Thomas (1931)   
 Hanlin
 Hanlin
@@ -11735,9 +11735,9 @@ L. Hansen
 Hansford, Clifford Gerald (1900-1966)   
 Hansf.
 Hansford
-Hänskä, H. (pub. 1986)    
-Hänskä
-Hänskä
+HÃ¤nskÃ¤, H. (pub. 1986)    
+HÃ¤nskÃ¤
+HÃ¤nskÃ¤
 Hanson, A.M. (pub. 1944)        
 A.M. Hanson
 Hanson
@@ -11801,9 +11801,9 @@ Harker
 Harkness, Harvey Wilson (1821-1901)     
 Harkn.
 Harkness
-Härkönen, Marja Elina (1939)      
-Härk.
-Härkönen
+HÃ¤rkÃ¶nen, Marja Elina (1939)      
+HÃ¤rk.
+HÃ¤rkÃ¶nen
 Harling, R. (pub. 1993) 
 R. Harling
 Harling
@@ -11870,9 +11870,9 @@ Hartig
 Harting, Pieter (1812-1885)     
 Harting
 Harting
-Härtl, Wilhelm (pub. 1996)       
-W. Härtl
-Härtl
+HÃ¤rtl, Wilhelm (pub. 1996)       
+W. HÃ¤rtl
+HÃ¤rtl
 Hartley, Carl Pierce (1887)     
 C.P. Hartley
 Hartley
@@ -11909,9 +11909,9 @@ Hasegawa, Masahisa (pub. 1927)
 Haseg.
 Hasegawa, Takezi (pub. 1960)    
 T. Haseg.
-Hásek, J. (pub. 1959)    
-Hásek
-Hásek
+HÃ¡sek, J. (pub. 1959)    
+HÃ¡sek
+HÃ¡sek
 Hashimoto, Tamotsu (1933)       
 T. Hashim.
 Hashimoto
@@ -12047,9 +12047,9 @@ Hayduck
 Haynes, Ken A. (pub. 1995)      
 K.A. Haynes
 Haynes
-Häyrén, Ernst Fredrik (1878-1957) 
-Häyrén
-Häyrén
+HÃ¤yrÃ©n, Ernst Fredrik (1878-1957) 
+HÃ¤yrÃ©n
+HÃ¤yrÃ©n
 Haythorn, J.M. (pub. 1980)      
 Haythorn
 Haythorn
@@ -12321,17 +12321,17 @@ Herd
 Heredia[-Abarca], Gabriela (pub. 1995)  
 Heredia
 Heredia[-Abarca]
-(Hérelle, F.H. d) see dHérelle, F.H.      
-dHérelle
+(HÃ©relle, F.H. d) see dHÃ©relle, F.H.      
+dHÃ©relle
 Heringer, Ezechias Paulo (pub. 1966)    
 Heringer
 Heringer
 Herink, Josef (pub. 1949)       
 Herink
 Herink
-Hériveau, P. (pub. 1995) 
-Hériveau
-Hériveau
+HÃ©riveau, P. (pub. 1995) 
+HÃ©riveau
+HÃ©riveau
 Herk, C.M. van (Kok) (pub. 1997)        
 Herk
 Herk
@@ -12352,20 +12352,20 @@ Hermosilla
 Hernandez, R. (pub. 1987)       
 R. Hern.
 Hernandez
-Hernández, José R. (pub. 2000)    
+HernÃ¡ndez, JosÃ© R. (pub. 2000)    
 J.R. Hern.
-Hernández
-(Hernández, Mateo Rodríguez) see Rodríguez, Mateo Rodriguez        
+HernÃ¡ndez
+(HernÃ¡ndez, Mateo RodrÃ­guez) see RodrÃ­guez, Mateo Rodriguez        
 M. Rodr.
-Hernández Gutiérrez, Antonio (pub. 1996)  
+HernÃ¡ndez GutiÃ©rrez, Antonio (pub. 1996)  
 A. Hern. Gut.
-Hernández Gutiérrez
-Hernández-Mariné, M. (pub. 1997)  
+HernÃ¡ndez GutiÃ©rrez
+HernÃ¡ndez-MarinÃ©, M. (pub. 1997)  
 Hern.-Mar.
-Hernández-Mariné
-Hernández-Padrón, C. (1953)       
+HernÃ¡ndez-MarinÃ©
+HernÃ¡ndez-PadrÃ³n, C. (1953)       
 Hern.-Padr.
-Hernández-Padrón
+HernÃ¡ndez-PadrÃ³n
 Heron, D.A. (pub. 1929) 
 Heron
 Heron
@@ -12388,7 +12388,7 @@ Herrera Figueroa
 Herrera Isla, Lidcay (pub. 1994)        
 L. Herrera
 Herrera Isla
-Herrera-Campos, María Angeles (pub. 1997)        
+Herrera-Campos, MarÃ­a Angeles (pub. 1997)        
 Herrera-Camp.
 Herrera-Campos
 Herrmann, Eugen Adolf (pub. 1920)       
@@ -12587,9 +12587,9 @@ Hirayama
 Hiremath, R.V. (pub. 1977)      
 Hiremath
 Hiremath
-Hiroë, Isamu Matsuura (1905)     
-Hiroë
-Hiroë
+HiroÃ«, Isamu Matsuura (1905)     
+HiroÃ«
+HiroÃ«
 Hirosawa, Noriko (pub. 1969)    
 Hirosawa
 Hirosawa
@@ -12617,15 +12617,15 @@ Hjort
 Hjortstam, Kurt (1933)  
 Hjortstam
 Hjortstam
-Hladun, Néstor Luis (1951)       
+Hladun, NÃ©stor Luis (1951)       
 Hladun
 Hladun
 Hlava, J. (pub. 1887)   
 Hlava
 Hlava
-Hlaváek, Jiri (pub. 1958)        
-Hlaváek
-Hlaváek
+HlavÃ¡ek, Jiri (pub. 1958)        
+HlavÃ¡ek
+HlavÃ¡ek
 Ho, H.H. (pub. 1986)    
 H.H. Ho
 Ho
@@ -12676,11 +12676,11 @@ Hodi_an
 Hodson, Elmer Reed (1875)       
 Hodson
 Hodson
-Høeg, Ove Arbo (1898)    
-Høeg
-Høeg
-(Hoehnel, Franz Xaver Rudolf von) see Höhnel, Franz Xaver Rudolf von     
-Höhn.
+HÃ¸eg, Ove Arbo (1898)    
+HÃ¸eg
+HÃ¸eg
+(Hoehnel, Franz Xaver Rudolf von) see HÃ¶hnel, Franz Xaver Rudolf von     
+HÃ¶hn.
 Hoekstra, E.S. (pub. 1982)      
 Hoekstra
 Hoekstra
@@ -12693,9 +12693,9 @@ Hoerner
 Hoes, J.A. (pub. 1965)  
 Hoes
 Hoes
-Hoëtte, Shirley (pub. 1935)      
-Hoëtte
-Hoëtte
+HoÃ«tte, Shirley (pub. 1935)      
+HoÃ«tte
+HoÃ«tte
 Hoeven, E.P. van der (pub. 1977)        
 E.P. Hoeven
 Hoeven
@@ -12714,9 +12714,9 @@ H. Hoffm.
 Hofsten, Angelica v. (pub. 1968)        
 Hofsten
 Hofsten
-Høgholen, E. (pub. 1980) 
-Høgholen
-Høgholen
+HÃ¸gholen, E. (pub. 1980) 
+HÃ¸gholen
+HÃ¸gholen
 (Hohenbuhel Heufler, Ludwig Samuel Joseph David Alexander von) see Heufler zu Rasen und Perdonneg, Ludwig Samuel Joseph David Alexander von     
 Heufl.
 Hohl, Hans Rudolph (pub. 1981)  
@@ -12727,18 +12727,18 @@ M. Hohl
 Hohmeyer, Helmuth H. (pub. 1984)        
 Hohmeyer
 Hohmeyer
-Höhnel, Franz Xaver Rudolf von (1852-1920)       
-Höhn.
-Höhnel
-Höhnk, Johann Willy Georg von (pub. 1932)        
-Höhnk
-Höhnk
-Høiland, Klaus (1948)    
-Høil.
-Høiland
-Hök, C.T. (pub. 1835)    
-Hök
-Hök
+HÃ¶hnel, Franz Xaver Rudolf von (1852-1920)       
+HÃ¶hn.
+HÃ¶hnel
+HÃ¶hnk, Johann Willy Georg von (pub. 1932)        
+HÃ¶hnk
+HÃ¶hnk
+HÃ¸iland, Klaus (1948)    
+HÃ¸il.
+HÃ¸iland
+HÃ¶k, C.T. (pub. 1835)    
+HÃ¶k
+HÃ¶k
 Holanda, M.W. (pub. 1963)       
 Holanda
 Holanda
@@ -12787,9 +12787,9 @@ Hollick
 Holliday, Paul Cyrus (1923-)    
 Holliday
 Holliday
-Hollós, Ladislaus [Laszlo] (1859-1940)   
-Hollós
-Hollós
+HollÃ³s, Ladislaus [Laszlo] (1859-1940)   
+HollÃ³s
+HollÃ³s
 Hollrung, Max Udo (1858-1937)   
 Hollrung
 Hollrung
@@ -12812,9 +12812,9 @@ Holmsk.
 Holmskjold, Theodor (1732-1794) 
 Holmsk.
 Holmskjold
-Holøs, Sverre (pub. 1989)        
-Holøs
-Holøs
+HolÃ¸s, Sverre (pub. 1989)        
+HolÃ¸s
+HolÃ¸s
 Holst, E.C. (pub. 1936) 
 Holst
 Holst
@@ -12832,9 +12832,9 @@ Holtermann
 Holton, Charles Stewart (pub. 1957)     
 Holton
 Holton
-Holubová-Jechová, Vera (1936-1993)        
+HolubovÃ¡-JechovÃ¡, Vera (1936-1993)        
 Hol.-Jech.
-Holubová-Jechová
+HolubovÃ¡-JechovÃ¡
 Holway, Edward Willet Dorland (1853-1923)       
 Holw.
 Holway
@@ -12875,14 +12875,14 @@ H. Zhang
 Hongo, Tsuguo (1923)    
 Hongo
 Hongo
-Hönig, Klara     
-Hönig
-Hönig
-Hönig, Klara     
-Hönig
-Honrubia García, Mario (1956)    
+HÃ¶nig, Klara     
+HÃ¶nig
+HÃ¶nig
+HÃ¶nig, Klara     
+HÃ¶nig
+Honrubia GarcÃ­a, Mario (1956)    
 Honrubia
-Honrubia García
+Honrubia GarcÃ­a
 Hood, I.A. (pub. 1988)  
 Hood
 Hood
@@ -12935,9 +12935,9 @@ Hora
 Horak, Egon (1937)      
 E. Horak
 Horak
-Horáková, Jana (pub. 1994)        
-Horáková
-Horáková
+HorÃ¡kovÃ¡, Jana (pub. 1994)        
+HorÃ¡kovÃ¡
+HorÃ¡kovÃ¡
 (Horaninov, Paul [Paulus] Fedorowitsch) see Horaninow, Paul [Paulus] Fedorowitsch       
 Horan.
 Horaninow, Paul [Paulus] Fedorowitsch (1796-1865)       
@@ -12999,9 +12999,9 @@ Horst
 Horta, Paul Parreiras (pub. 1924)       
 Horta
 Horta
-Hortobágyi, Tibor (1912) 
+HortobÃ¡gyi, Tibor (1912) 
 Hortob.
-Hortobágyi
+HortobÃ¡gyi
 Horton, Thomas R. (pub. 1999)   
 T.R. Horton
 Horton
@@ -13028,9 +13028,9 @@ Hosoya
 Hosseus, Carl Curt (1878-1950)  
 Hosseus
 Hosseus
-Höstermann, Gustav (1872)        
-Hösterm.
-Höstermann
+HÃ¶stermann, Gustav (1872)        
+HÃ¶sterm.
+HÃ¶stermann
 Hotson, Hugh Howison (1916)     
 H.H. Hotson
 Hotson
@@ -13082,9 +13082,9 @@ R. Howe
 Howeler, R.H. (pub. 1967)       
 R.H. Howeler
 Howeler
-Höweler, Louise H. (pub. 1967)   
-Höweler
-Höweler
+HÃ¶weler, Louise H. (pub. 1967)   
+HÃ¶weler
+HÃ¶weler
 Howell, Thomas Jefferson (1842-1912)    
 Howell
 Howell
@@ -13179,9 +13179,9 @@ Huang, Tseng Chieng (1931)
 T.C. Huang
 Huang, Yao Jian (pub. 1993)     
 Y.J. Huang
-Hubálek, Z. (pub. 1973)  
-Hubálek
-Hubálek
+HubÃ¡lek, Z. (pub. 1973)  
+HubÃ¡lek
+HubÃ¡lek
 Hubart, J.-M. (pub. 1987)       
 Hubart
 Hubart
@@ -13196,11 +13196,11 @@ J.C. Huber
 Hubert, Ernest Everett (1887)   
 Hubert
 Hubert
-Hübner, Hans-Joachim (pub. 1999) 
-H.-J. Hübner
-Hübner
-Hübner, Hans-Joachim (pub. 1999) 
-H.-J. Hübner
+HÃ¼bner, Hans-Joachim (pub. 1999) 
+H.-J. HÃ¼bner
+HÃ¼bner
+HÃ¼bner, Hans-Joachim (pub. 1999) 
+H.-J. HÃ¼bner
 Hudelo, L. (pub. 1920)  
 Hudelo
 Hudelo
@@ -13258,9 +13258,9 @@ Hulbary
 Hulbert, S.H. (pub. 1999)       
 Hulbert
 Hulbert
-Huldén, Larry (pub. 1983)        
-Huldén
-Huldén
+HuldÃ©n, Larry (pub. 1983)        
+HuldÃ©n
+HuldÃ©n
 Hulea, Ana (1915)       
 Hulea
 Hulea
@@ -13325,7 +13325,7 @@ Husain, S.S. (pub. 1963)
 S.S. Husain
 (Huseyinov, Elshad S.) see Husseinov, Elshad S. 
 E.S. Husseinov
-(Hüsey1nov, Elshad) see Husseinov, Elshad S.      
+(HÃ¼sey1nov, Elshad) see Husseinov, Elshad S.      
 E.S. Husseinov
 Husseinov, Elshad S. (pub. 1989)        
 E.S. Husseinov
@@ -13366,9 +13366,9 @@ L.J. Hutchison
 Huth, Karl (1902)       
 K. Huth
 Huth
-Hütter, Ralf (pub. 1962) 
-Hütter
-Hütter
+HÃ¼tter, Ralf (pub. 1962) 
+HÃ¼tter
+HÃ¼tter
 Hutton, William (1797-1860)     
 Hutton
 Hutton
@@ -13411,11 +13411,11 @@ Iaconis
 Ialongo, Marco T. (pub. 1992)   
 Ialongo
 Ialongo
-Ibáñez, C.G. (pub. 1996)  
-C.G. Ibáñez
-Ibáñez
-Ibáñez, Inés (pub. 1998)   
-I. Ibáñez
+IbÃ¡Ã±ez, C.G. (pub. 1996)  
+C.G. IbÃ¡Ã±ez
+IbÃ¡Ã±ez
+IbÃ¡Ã±ez, InÃ©s (pub. 1998)   
+I. IbÃ¡Ã±ez
 (Ibragimov, G.R.) see Ibrahimov, G.R.   
 Ibrah.
 Ibrahimov, G.R. (pub. 1955)     
@@ -13436,9 +13436,9 @@ Idzerda
 Igarashi, Tsuneo (pub. 1994)    
 Igarashi
 Igarashi
-Igmándy, Z. (pub. 1966)  
-Z. Igmándy
-Igmándy
+IgmÃ¡ndy, Z. (pub. 1966)  
+Z. IgmÃ¡ndy
+IgmÃ¡ndy
 Ignataviikt, M. (pub. 1962)      
 Ignat.
 Ignataviikt
@@ -13515,9 +13515,9 @@ Imshen.
 Imshenetskii
 (Imshenezkii, Aleksander Aleksandrovich) see Imshenetskii, Aleksander Aleksandrovich    
 Imshen.
-Inácio, Carlos António (pub. 1996)        
-Inácio
-Inácio
+InÃ¡cio, Carlos AntÃ³nio (pub. 1996)        
+InÃ¡cio
+InÃ¡cio
 Inagaki, Naoki (1929)   
 N. Inagaki
 Inagaki
@@ -13635,13 +13635,13 @@ I_men
 Issatschenko, Boris Laurentiewicz (1871)        
 Issatsch.
 Issatschenko
-(Istvanffi de Csík Madéfalva, Gyula von) see Istvanfy de Csík Madéfalva, Gyula von  
+(Istvanffi de CsÃ­k MadÃ©falva, Gyula von) see Istvanfy de CsÃ­k MadÃ©falva, Gyula von  
 Istv.
-(Istvanfy, Gyula von) see Istvanfy de Csík Madéfalva, Gyula von   
+(Istvanfy, Gyula von) see Istvanfy de CsÃ­k MadÃ©falva, Gyula von   
 Istv.
-Istvanfy de Csík Madéfalva, Gyula von (1860-1930) 
+Istvanfy de CsÃ­k MadÃ©falva, Gyula von (1860-1930) 
 Istv.
-Istvanfy de Csík Madéfalva
+Istvanfy de CsÃ­k MadÃ©falva
 (Itati Ferraro, Lidia) see Ferraro, Lidia Itati 
 L.I. Ferraro
 Ito, Seiya (1883-1962)  
@@ -13653,11 +13653,11 @@ Ito, Takanori (pub. 1929)
 Takan. Ito
 Ito, Yoko (pub. 2001)   
 Yoko Ito
-Itô, Kazuo (1915)        
-Kaz. Itô
-Itô
-Itô, Tokutarô (1868-1941) 
-T. Itô
+ItÃ´, Kazuo (1915)        
+Kaz. ItÃ´
+ItÃ´
+ItÃ´, TokutarÃ´ (1868-1941) 
+T. ItÃ´
 Itoh, Mutsumi (pub. 1987)       
 Itoh
 Itoh
@@ -13783,9 +13783,9 @@ Jacquenoud-Steinlin
 Jacques, Joseph Emile (1908)    
 J.E. Jacques
 Jacques
-Jacques-Félix, M. (pub. 1982)    
-M. Jacq.-Fél.
-Jacques-Félix
+Jacques-FÃ©lix, M. (pub. 1982)    
+M. Jacq.-FÃ©l.
+Jacques-FÃ©lix
 Jacquetant, E. (pub. 1984)      
 Jacquet.
 Jacquetant
@@ -13897,9 +13897,9 @@ Jandaik
 Jane, Frank William (1901-1963) 
 Jane
 Jane
-Janeková, V. (pub. 1977) 
-Janeková
-Janeková
+JanekovÃ¡, V. (pub. 1977) 
+JanekovÃ¡
+JanekovÃ¡
 Jane~i, F. (pub. 1957)   
 Jane~i
 Jane~i
@@ -13946,9 +13946,9 @@ Jansson
 Jaquenoud, M. (pub. 1976)       
 Jaq.
 Jaquenoud
-Jardiné, Serge M. (pub. 1965)    
-S. Jardiné
-Jardiné
+JardinÃ©, Serge M. (pub. 1965)    
+S. JardinÃ©
+JardinÃ©
 Jarosch, Margit (pub. 1999)     
 Jarosch
 Jarosch
@@ -13958,9 +13958,9 @@ Jarowaja
 Jarry, Denise T. (1936) 
 Jarry
 Jarry
-Järv, Helle (pub. 1995)  
-Järv
-Järv
+JÃ¤rv, Helle (pub. 1995)  
+JÃ¤rv
+JÃ¤rv
 Jarvis, William Robert (1927)   
 Jarvis
 Jarvis
@@ -13987,7 +13987,7 @@ Javoronokowa
 Jeaume, G. (pub. 1923)  
 Jeaume
 Jeaume
-(Jechová, Vera) see Holubová-Jechová, Vera 
+(JechovÃ¡, Vera) see HolubovÃ¡-JechovÃ¡, Vera 
 Hol.-Jech.
 Jee, Hyeong Jin (pub. 2000)     
 Jee
@@ -14058,7 +14058,7 @@ V.P.H. Jensen
 Jenssen, G.M. (pub. 1985)       
 G.M. Jenssen
 Jenssen
-Jenssen, Kolbjørn Mohn (pub. 1982)       
+Jenssen, KolbjÃ¸rn Mohn (pub. 1982)       
 K.M. Jenssen
 Jeppson, M. (pub. 1982) 
 Jeppson
@@ -14098,9 +14098,9 @@ Z.D. Jiang
 Jiao, Zong (pub. 1994)  
 Z. Jiao
 Jiao
-Jiménez, B. (pub. 1992)  
-B. Jiménez
-Jiménez
+JimÃ©nez, B. (pub. 1992)  
+B. JimÃ©nez
+JimÃ©nez
 Jin, H. (pub. 1985)     
 H. Jin
 Jin
@@ -14109,9 +14109,9 @@ Y. Jin
 Jing, Yi Xin (pub. 1980)        
 Y.X. Jing
 Jing
-Jírovec, O. (pub. 1939)  
-Jírovec
-Jírovec
+JÃ­rovec, O. (pub. 1939)  
+JÃ­rovec
+JÃ­rovec
 Joachim, Leon (1873-1945)       
 Joachim
 Joachim
@@ -14285,19 +14285,19 @@ W.P. Jord.
 Jordi, Ernst A. (1877-1933)     
 Jordi
 Jordi
-Jörgensen, A. (pub. 1898)        
-A. Jörg.
-Jörgensen
-Jørgensen, A. (pub. 1909)        
-A. Jørg.
-Jørgensen
-Jørgensen, Carl Adolph (1899)    
-C.A. Jørg.
-Jørgensen, Per Magnus (1944)     
-P.M. Jørg.
-Jørstad, Ivar (1887-1967)        
-Jørst.
-Jørstad
+JÃ¶rgensen, A. (pub. 1898)        
+A. JÃ¶rg.
+JÃ¶rgensen
+JÃ¸rgensen, A. (pub. 1909)        
+A. JÃ¸rg.
+JÃ¸rgensen
+JÃ¸rgensen, Carl Adolph (1899)    
+C.A. JÃ¸rg.
+JÃ¸rgensen, Per Magnus (1944)     
+P.M. JÃ¸rg.
+JÃ¸rstad, Ivar (1887-1967)        
+JÃ¸rst.
+JÃ¸rstad
 Joseph, A. Vijaya (pub. 1995)   
 A.V. Joseph
 Joseph
@@ -14338,15 +14338,15 @@ Ju
 Juel, Hans Oscar (1863-1931)    
 Juel
 Juel
-(Juergens, Georg Heinrich Bernhard) see Jürgens, Georg Heinrich Bernhard 
-Jürg.
+(Juergens, Georg Heinrich Bernhard) see JÃ¼rgens, Georg Heinrich Bernhard 
+JÃ¼rg.
 Juillard-Hartmann, G. (pub. 1919)       
 Juill.-Hartm.
 Juillard-Hartmann
-Jülich, Walter (1942)    
-Jülich
-Jülich
-Julliand, Véronique (pub. 1995)  
+JÃ¼lich, Walter (1942)    
+JÃ¼lich
+JÃ¼lich
+Julliand, VÃ©ronique (pub. 1995)  
 Julliand
 Julliand
 Jullien (pub. 1789)     
@@ -14384,9 +14384,9 @@ Junqueira
 Jurair, A.M.M. (pub. 1960)      
 Jurair
 Jurair
-Jürgens, Georg Heinrich Bernhard (1771-1846)     
-Jürg.
-Jürgens
+JÃ¼rgens, Georg Heinrich Bernhard (1771-1846)     
+JÃ¼rg.
+JÃ¼rgens
 Jurzitza, G. (pub. 1970)        
 Jurzitza
 Jurzitza
@@ -14395,18 +14395,18 @@ Juss.
 Jussieu
 
 
-Käärik, A. (pub. 1991)    
-Käärik
-Käärik
-Kabát, Josef Emanuel (1849-1925) 
-Kabát
-Kabát
+KÃ¤Ã¤rik, A. (pub. 1991)    
+KÃ¤Ã¤rik
+KÃ¤Ã¤rik
+KabÃ¡t, Josef Emanuel (1849-1925) 
+KabÃ¡t
+KabÃ¡t
 Kable, P.F. (pub. 1985) 
 Kable
 Kable
-Kablíková, Josephine [Josefina] (1787-1925)       
-Kablík.
-Kablíková
+KablÃ­kovÃ¡, Josephine [Josefina] (1787-1925)       
+KablÃ­k.
+KablÃ­kovÃ¡
 Kachroo, J.V. (pub. 1966)       
 J.V. Kachroo
 Kachroo
@@ -14488,9 +14488,9 @@ Kallenbach
 Kallio, Paavo Pauli     
 Kallio
 Kallio
-Källsten (pub. 1994)     
-Källsten
-Källsten
+KÃ¤llsten (pub. 1994)     
+KÃ¤llsten
+KÃ¤llsten
 Kalymbetov, B.K. (pub. 1952)    
 Kalymb.
 Kalymbetov
@@ -14631,18 +14631,18 @@ Karapapa
 Karatygin, I.V. (pub. 1989)     
 Karatygin
 Karatygin
-Kärcher, Reinhold (pub. 1987)    
-Kärcher
-Kärcher
-Kärcher, Reinhold (pub. 1987)    
-Kärcher
+KÃ¤rcher, Reinhold (pub. 1987)    
+KÃ¤rcher
+KÃ¤rcher
+KÃ¤rcher, Reinhold (pub. 1987)    
+KÃ¤rcher
 Karczewska, Helena (pub. 1961)  
 Karcz.
 Karczewska
 Karel, Gungor (pub. 1947)       
 Karel
 Karel
-Karhula, Päivi (pub. 1996)       
+Karhula, PÃ¤ivi (pub. 1996)       
 Karhula
 Karhula
 Kari, L.E. (pub. 1957)  
@@ -14657,11 +14657,11 @@ Karis
 Karling, John Sidney (1898)     
 Karling
 Karling
-Kärnefelt, (E.) Ingvar (1944)    
-Kärnefelt
-Kärnefelt
-Kärnefelt, (E.) Ingvar (1944)    
-Kärnefelt
+KÃ¤rnefelt, (E.) Ingvar (1944)    
+KÃ¤rnefelt
+KÃ¤rnefelt
+KÃ¤rnefelt, (E.) Ingvar (1944)    
+KÃ¤rnefelt
 Karpova-Benois, E.I. (pub. 1973)        
 Karp.-Benois
 Karpova-Benois
@@ -14699,9 +14699,9 @@ H. Katoa
 Kato
 Kato, Kijuro (pub. 1975)        
 K. Kato
-Katô, Y. (pub. 1926)     
-Y. Katô
-Katô
+KatÃ´, Y. (pub. 1926)     
+Y. KatÃ´
+KatÃ´
 Katsuki, Shigetaka (pub. 1952)  
 Katsuki
 Katsuki
@@ -14853,9 +14853,9 @@ Kehr
 Keilin, D. (pub. 1921)  
 Keilin
 Keilin
-Keiñl. (pub. 1925)       
-Keiñl.
-Keiñl.
+KeiÃ±l. (pub. 1925)       
+KeiÃ±l.
+KeiÃ±l.
 Keissler, Karl [Carl] von (1872-1965)   
 Keissl.
 Keissler
@@ -15263,27 +15263,27 @@ Kitunen
 Kitz, Dennis J. (pub. 1979)     
 Kitz
 Kitz
-Kivistö, Laura (pub. 1998)       
-Kivistö
-Kivistö
+KivistÃ¶, Laura (pub. 1998)       
+KivistÃ¶
+KivistÃ¶
 Kizikelashvili, O.G. (pub. 1985)        
 Kizik.
 Kizikelashvili
 Kizlik, Serge (pub. 1997)       
 Kizlik
 Kizlik
-Kjøller, Annelise (pub. 1960)    
-Kjøller
-Kjøller
+KjÃ¸ller, Annelise (pub. 1960)    
+KjÃ¸ller
+KjÃ¸ller
 Klaasen, Jeremy A. (pub. 1996)  
 Klaasen
 Klaasen
 Klamer, M. (pub. 1999)  
 Klamer
 Klamer
-Klán, J. (pub. 1979)     
-Klán
-Klán
+KlÃ¡n, J. (pub. 1979)     
+KlÃ¡n
+KlÃ¡n
 Klashorst, G. van de (pub. 1981)        
 Klashorst
 Klashorst
@@ -15331,18 +15331,18 @@ Klinge
 Klingman, A.M. (pub. 1945)      
 Klingman
 Klingman
-Klingström, A. (pub. 1965)       
-Klingström
-Klingström
+KlingstrÃ¶m, A. (pub. 1965)       
+KlingstrÃ¶m
+KlingstrÃ¶m
 Klisiewicz, John M. (pub. 1963) 
 Klis.
 Klisiewicz
 Klittich, C.J.R. (pub. 1997)    
 Klittich
 Klittich
-Klöcker, Albert (1862-1923)      
-Klöcker
-Klöcker
+KlÃ¶cker, Albert (1862-1923)      
+KlÃ¶cker
+KlÃ¶cker
 Klofac, Wolfgang (pub. 1996)    
 Klofac
 Klofac
@@ -15358,9 +15358,9 @@ Klotzsch
 Kluyver, Albert Jan (1888-1956) 
 Kluyver
 Kluyver
-Kluzák, Z. (pub. 1992)   
-Kluzák
-Kluzák
+KluzÃ¡k, Z. (pub. 1992)   
+KluzÃ¡k
+KluzÃ¡k
 Klyncheva, M.V. (pub. 1965)     
 Klyncheva
 Klyncheva
@@ -15391,7 +15391,7 @@ Knobloch
 Knokha, P. (pub. 1968)  
 Knokha
 Knokha
-Knoph, Johannes-Günther (pub. 1984)      
+Knoph, Johannes-GÃ¼nther (pub. 1984)      
 Knoph
 Knoph
 Knowles, Matilda Cullen (1864-1933)     
@@ -15413,9 +15413,9 @@ Knoyle
 Knudsen, Henning (1948) 
 Knudsen
 Knudsen
-Knüsel, F. (pub. 1957)   
-Knüsel
-Knüsel
+KnÃ¼sel, F. (pub. 1957)   
+KnÃ¼sel
+KnÃ¼sel
 Knuth, P. (pub. 1916)   
 P. Knuth
 Knuth
@@ -15459,8 +15459,8 @@ A. Koch
 Koch
 Koch, H.A. (pub. 1969)  
 H.A. Koch
-Koch, Jørgen (pub. 1993) 
-Jørg. Koch
+Koch, JÃ¸rgen (pub. 1993) 
+JÃ¸rg. Koch
 Koch, Joachim (1908-1981)       
 J. Koch
 Koch, Johann Friedrich Wilhelm (1759-1831)      
@@ -15476,13 +15476,13 @@ Kochman
 Kock, J.L.F. (pub. 1995)        
 Kock
 Kock
-Kocková-Kratochvílová, Anna (pub. 1973)    
+KockovÃ¡-KratochvÃ­lovÃ¡, Anna (pub. 1973)    
 Kock.-Krat.
-Kocková-Kratochvílová
-Kocourková, Jana (pub. 1999)     
+KockovÃ¡-KratochvÃ­lovÃ¡
+KocourkovÃ¡, Jana (pub. 1999)     
 Kocourk.
-Kocourková
-(Kocourková-Horáková, Jana) see Kocourková, Jana    
+KocourkovÃ¡
+(KocourkovÃ¡-HorÃ¡kovÃ¡, Jana) see KocourkovÃ¡, Jana    
 Kocourk.
 Kodama, Kenkichi (pub. 1962)    
 K. Kodama
@@ -15491,15 +15491,15 @@ Kodama, S. (pub. 1962)
 S. Kodama
 Kodama, Takashi (pub. 1986)     
 Tak. Kodama
-(Koenig, Johann Gerhard) see König, Johann Gerhard       
-J. König
+(Koenig, Johann Gerhard) see KÃ¶nig, Johann Gerhard       
+J. KÃ¶nig
 Koeniguer, J.-C. (pub. 1982)    
 Koeniguer
 Koeniguer
-(Koerber, Gustav Wilhelm) see Körber, Gustav Wilhelm     
-Körb.
-(Koernicke, Friedrich August) see Körnicke, Friedrich August     
-Körn.
+(Koerber, Gustav Wilhelm) see KÃ¶rber, Gustav Wilhelm     
+KÃ¶rb.
+(Koernicke, Friedrich August) see KÃ¶rnicke, Friedrich August     
+KÃ¶rn.
 Koeva, Jordanka (1935)  
 Koeva
 Koeva
@@ -15514,9 +15514,9 @@ Koganezawa
 Kohlbrugge, J.H.F. (pub. 1912)  
 Kohlbr.
 Kohlbrugge
-Köhler, Erich (pub. 1920)        
-Er. Köhler
-Köhler
+KÃ¶hler, Erich (pub. 1920)        
+Er. KÃ¶hler
+KÃ¶hler
 (Kohlmeyer, Brigitte Volkmann-) see Volkmann-Kohlmeyer, Brigitte        
 Volkm.-Kohlm.
 Kohlmeyer, Erika Ottilie (1930-1979)    
@@ -15563,11 +15563,11 @@ Kolfschoten
 Kolipinski, M.C. (pub. 1962)    
 Kolip.
 Kolipinski
-Kõljalg, Urmas (pub. 1995)       
-Kõljalg
-Kõljalg
-Kõljalg, Urmas (pub. 1995)       
-Kõljalg
+KÃµljalg, Urmas (pub. 1995)       
+KÃµljalg
+KÃµljalg
+KÃµljalg, Urmas (pub. 1995)       
+KÃµljalg
 Koloschina, L.M. (pub. 1951)    
 Kolosch.
 Koloschina
@@ -15616,9 +15616,9 @@ H.Z. Kong
 Kong
 Kong, Luz (pub. 1994)   
 L. Kong
-König, Johann Gerhard (1728-1785)        
-J. König
-König
+KÃ¶nig, Johann Gerhard (1728-1785)        
+J. KÃ¶nig
+KÃ¶nig
 Konno, Kaoru (pub. 1969)        
 K. Konno
 Konno
@@ -15642,9 +15642,9 @@ Kopachevskaya
 Korab, J.J. (pub. 1930) 
 Korab
 Korab
-Körber, Gustav Wilhelm (1817-1885)       
-Körb.
-Körber
+KÃ¶rber, Gustav Wilhelm (1817-1885)       
+KÃ¶rb.
+KÃ¶rber
 (Korbonshaja, Ya.I.) see Korbonskaja, Ya.I.     
 Korbonsk.
 Korbonskaja, Ya.I. (pub. 1956)  
@@ -15663,9 +15663,9 @@ M. Korhonen
 Kormilizina (pub. 1971) 
 Kormil.
 Kormilizina
-Körnicke, Friedrich August (1828-1908)   
-Körn.
-Körnicke
+KÃ¶rnicke, Friedrich August (1828-1908)   
+KÃ¶rn.
+KÃ¶rnicke
 Koroleva, O.V. (pub. 2000)      
 O.V. Korol.
 Koroleva
@@ -15717,7 +15717,7 @@ Kostin
 Kostka, G. (pub. 1927)  
 Kostka
 Kostka
-Kostov, Vˆlcho (pub. 1970)       
+Kostov, VÂˆlcho (pub. 1970)       
 V. Kostov
 Kostov
 Kothari, K.L. (pub. 1966)       
@@ -15765,15 +15765,15 @@ Koval
 Kovalenko, A.E. (pub. 1958)     
 Kovalenko
 Kovalenko
-Kovár, Napsal Filip (1863-1925)  
-Kovár
-Kovár
+KovÃ¡r, Napsal Filip (1863-1925)  
+KovÃ¡r
+KovÃ¡r
 Kovatschevski, Ivan Christow (1904)     
 Kovatsch.
 Kovatschevski
-Kövics, G.J. (pub. 1999) 
-Kövics
-Kövics
+KÃ¶vics, G.J. (pub. 1999) 
+KÃ¶vics
+KÃ¶vics
 Kowalski, Donald T. (1938)      
 Kowalski
 Kowalski
@@ -15813,11 +15813,11 @@ Krampe
 Kranz, Jurgen von (pub. 1966)   
 J. Kranz
 Kranz
-Kränzlin, Fred (pub. 1981)       
-F. Kränzl.
-Kränzlin
-Kränzlin, Fred (pub. 1981)       
-F. Kränzl.
+KrÃ¤nzlin, Fred (pub. 1981)       
+F. KrÃ¤nzl.
+KrÃ¤nzlin
+KrÃ¤nzlin, Fred (pub. 1981)       
+F. KrÃ¤nzl.
 Krapivina, I.G. (pub. 1975)     
 Krapiv.
 Krapivina
@@ -15850,9 +15850,9 @@ Krause, R.A. (pub. 1972)
 R.A. Krause
 Krause, W. (pub. 1962)  
 W. Krause
-Kräusel, Richard (1890-1966)     
-Kräusel
-Kräusel
+KrÃ¤usel, Richard (1890-1966)     
+KrÃ¤usel
+KrÃ¤usel
 Kravtzev, B.I. (pub. 1961)      
 Kravtzev
 Kravtzev
@@ -15881,11 +15881,11 @@ Kreh
 Kreisel, Hans (1931)    
 Kreisel
 Kreisel
-Krejzová, Rozena (pub. 1976)     
-Krejzová
-Krejzová
-Krejzová, Rozena (pub. 1976)     
-Krejzová
+KrejzovÃ¡, Rozena (pub. 1976)     
+KrejzovÃ¡
+KrejzovÃ¡
+KrejzovÃ¡, Rozena (pub. 1976)     
+KrejzovÃ¡
 Krempelhuber, August von (1813-1882)    
 Kremp.
 Krempelhuber
@@ -15927,7 +15927,7 @@ Kriss
 Krist, Vladimir (1905-1942)     
 Krist
 Krist
-Kristiansen, Jørgen (1931)       
+Kristiansen, JÃ¸rgen (1931)       
 Kristiansen
 Kristiansen
 Kristiansen, Roy (pub. 1987)    
@@ -15938,9 +15938,9 @@ Kristinsson
 KYivanec, K. (pub. 1977) 
 KYivanec
 KYivanec
-Kröber, H. (pub. 1981)   
-Kröber
-Kröber
+KrÃ¶ber, H. (pub. 1981)   
+KrÃ¶ber
+KrÃ¶ber
 Kroeger, Paul (pub. 1984)       
 Kroeger
 Kroeger
@@ -15974,9 +15974,9 @@ Krousheva
 Krug, John Christian (1938)     
 J.C. Krug
 Krug
-Krüger, Wilhelm (1857)   
-W. Krüger
-Krüger
+KrÃ¼ger, Wilhelm (1857)   
+W. KrÃ¼ger
+KrÃ¼ger
 Kruis, Karl (pub. 1891) 
 Kruis
 Kruis
@@ -16024,9 +16024,9 @@ Kubota
 Kuera, J. (pub. 1927)   
 Kuera
 Kuera
-Küchenmeister, Gottlob Friedrich Heinrich (1821-1890)    
-Küchenm.
-Küchenmeister
+KÃ¼chenmeister, Gottlob Friedrich Heinrich (1821-1890)    
+KÃ¼chenm.
+KÃ¼chenmeister
 Kudo, H. (pub. 1989)    
 H. Kudo
 Kudo
@@ -16047,8 +16047,8 @@ KudYna
 Kuehn, Harold H. (pub. 1956)    
 Kuehn
 Kuehn
-(Kuetzing, Friedrich Traugott) see Kützing, Friedrich Traugott   
-Kütz.
+(Kuetzing, Friedrich Traugott) see KÃ¼tzing, Friedrich Traugott   
+KÃ¼tz.
 Kufferath, Hubert (1882-1957)   
 Kuff.
 Kufferath
@@ -16058,20 +16058,20 @@ Kuhl
 Kuhlman, E.G. (pub. 1969)       
 Kuhlman
 Kuhlman
-Kühlwein, Hans (1911)    
-Kühlw.
-Kühlwein
+KÃ¼hlwein, Hans (1911)    
+KÃ¼hlw.
+KÃ¼hlwein
 Kuhn, Friedrich Adalbert Maximilian (Max) (1842-1894)   
 Kuhn
 Kuhn
-Kühn, Julius Gotthelf (1825-1910)        
-J.G. Kühn
-Kühn
-Kühner, Robert (1904-1997)       
-Kühner
-Kühner
-Kühner, Robert (1904-1997)       
-Kühner
+KÃ¼hn, Julius Gotthelf (1825-1910)        
+J.G. KÃ¼hn
+KÃ¼hn
+KÃ¼hner, Robert (1904-1997)       
+KÃ¼hner
+KÃ¼hner
+KÃ¼hner, Robert (1904-1997)       
+KÃ¼hner
 Kuhnholtz-Lordat, G. (pub. 1949)        
 Kuhnh.-Lord.
 Kuhnholtz-Lordat
@@ -16160,9 +16160,9 @@ Kumbhojkar
 Kummer, Paul (1834-1912)        
 P. Kumm.
 Kummer
-Kümmerling, H. (pub. 1995)       
-Kümmerl.
-Kümmerling
+KÃ¼mmerling, H. (pub. 1995)       
+KÃ¼mmerl.
+KÃ¼mmerling
 Kunc, K. (pub. 1962)    
 Kunc
 Kunc
@@ -16291,9 +16291,9 @@ Kutorga
 Kuttin, E.S. (pub. 1981)        
 Kuttin
 Kuttin
-Kützing, Friedrich Traugott (1807-1893)  
-Kütz.
-Kützing
+KÃ¼tzing, Friedrich Traugott (1807-1893)  
+KÃ¼tz.
+KÃ¼tzing
 Kuusinen, M. (pub. 1997)        
 Kuusinen
 Kuusinen
@@ -16303,9 +16303,9 @@ Kuwabara
 Kuyper, Thomas W. (pub. 1986)   
 Kuyper
 Kuyper
-Küyper, J. (pub. 1911)   
-J. Küyper
-Küyper
+KÃ¼yper, J. (pub. 1911)   
+J. KÃ¼yper
+KÃ¼yper
 Kuyumdzhieva, A. (pub. 1987)    
 Kuyumdzh.
 Kuyumdzhieva
@@ -16334,18 +16334,18 @@ Kyde
 Kyono, T. (pub. 1962)   
 Kyono
 Kyono
-Kytövuori, Ilkka (1941)  
-Kytöv.
-Kytövuori
+KytÃ¶vuori, Ilkka (1941)  
+KytÃ¶v.
+KytÃ¶vuori
 
 
 La, Yong Joon (pub. 1988)       
 Y.J. La
 La
-Labillardière, Jacques Julien Houtton de (1755-1834)     
+LabillardiÃ¨re, Jacques Julien Houtton de (1755-1834)     
 Labill.
-Labillardière
-(La Billardière, Jacques Julien Houtton de) see Labillardière, Jacques Julien Houtton de  
+LabillardiÃ¨re
+(La BillardiÃ¨re, Jacques Julien Houtton de) see LabillardiÃ¨re, Jacques Julien Houtton de  
 Labill.
 La Favre, J.S. (pub. 1981)      
 La Favre
@@ -16371,7 +16371,7 @@ Lacaz
 Lacey, John (1937)      
 J. Lacey
 Lacey
-Lachance, Marc-André (pub. 1981) 
+Lachance, Marc-AndrÃ© (pub. 1981) 
 Lachance
 Lachance
 Lacoste, Louis (1927)   
@@ -16380,29 +16380,29 @@ Lacoste
 Lacroix, Louis-Sosthene Veyron de (1818-1864)   
 Lacroix
 Lacroix
-Lacsmándi (pub. 1994)    
-Lacsmándi
-Lacsmándi
+LacsmÃ¡ndi (pub. 1994)    
+LacsmÃ¡ndi
+LacsmÃ¡ndi
 Lacy, R.C. (pub. 1949)  
 Lacy
 Lacy
 Ladd, Douglas (pub. 1987)       
 Ladd
 Ladd
-Ladó, Carlos (1955)      
-Ladó
-Ladó
+LadÃ³, Carlos (1955)      
+LadÃ³
+LadÃ³
 (Laer, H. Van) see Van Laer, H. 
 Van Laer
-Læssøe, Thomas (1958)     
-Laessøe
-Læssøe
+LÃ¦ssÃ¸e, Thomas (1958)     
+LaessÃ¸e
+LÃ¦ssÃ¸e
 Laestadius, Carl Petter (1835-1920)     
 C. Laest.
 Laestadius
-Laferrière, Joseph E. (pub. 1990)        
+LaferriÃ¨re, Joseph E. (pub. 1990)        
 Laferr.
-Laferrière
+LaferriÃ¨re
 Lafferty, Henry Aloysius (1891-1954)    
 Laff.
 Lafferty
@@ -16424,9 +16424,9 @@ Lagerheim
 Lagger, Franz Joseph (1802-1870)        
 Lagger
 Lagger
-Lagière, R. (pub. 1946)  
-Lagière
-Lagière
+LagiÃ¨re, R. (pub. 1946)  
+LagiÃ¨re
+LagiÃ¨re
 LaGreca, Scott (pub. 1999)      
 LaGreca
 LaGreca
@@ -16504,12 +16504,12 @@ Lambinon
 Lambley, P. (pub. 1997) 
 Lambley
 Lambley
-Lambotte, Jean Baptiste Émil (Ernest) (1832-1905)        
+Lambotte, Jean Baptiste Ã‰mil (Ernest) (1832-1905)        
 Lambotte
 Lambotte
-Lambourdière, J. (pub. 1996)     
+LambourdiÃ¨re, J. (pub. 1996)     
 Lambourd.
-Lambourdière
+LambourdiÃ¨re
 Lami, Luciano (pub. 1999)       
 L. Lami
 Lami
@@ -16551,9 +16551,9 @@ Landa
 Landrieu, M. (pub. 1912)        
 Landrieu
 Landrieu
-Landrón, C.I. (pub. 1993)        
-Landrón
-Landrón
+LandrÃ³n, C.I. (pub. 1993)        
+LandrÃ³n
+LandrÃ³n
 Landschoot, P.J. (pub. 1989)    
 Landsch.
 Landschoot
@@ -16566,9 +16566,9 @@ Lane
 Lang, William Henry (1874)      
 W.H. Lang
 Lang
-Lång, K. Gosta W. (1875-1912)    
-K.G.W. Lång
-Lång
+LÃ¥ng, K. Gosta W. (1875-1912)    
+K.G.W. LÃ¥ng
+LÃ¥ng
 Langdon, Raymond Forbes Newton (1916)   
 Langdon
 Langdon
@@ -16668,18 +16668,18 @@ K.H. Larss.
 Lasch, Wilhelm Gottfried (1787-1863)    
 Lasch
 Lasch
-Lasché, A. (pub. 1882)   
-Lasché
-Lasché
+LaschÃ©, A. (pub. 1882)   
+LaschÃ©
+LaschÃ©
 Laskaris, Thomas (pub. 1950)    
 Laskaris
 Laskaris
 Lasseur, Ph. (pub. 1922)        
 Lasseur
 Lasseur
-(Lastra, Claudia Lopez) see López-Lastra, Claudia Cristina       
-López-Lastra
-(Laszlo, Albert) see Albert, László       
+(Lastra, Claudia Lopez) see LÃ³pez-Lastra, Claudia Cristina       
+LÃ³pez-Lastra
+(Laszlo, Albert) see Albert, LÃ¡szlÃ³       
 L. Albert
 Lata, Kanchan (pub. 1979)       
 Lata
@@ -16687,9 +16687,9 @@ Lata
 Latch, G.C.M. (pub. 1965)       
 Latch
 Latch
-Latgé, Jean-Paul (pub. 1988)     
-Latgé
-Latgé
+LatgÃ©, Jean-Paul (pub. 1988)     
+LatgÃ©
+LatgÃ©
 Latham, Dennis Harold (pub. 1934)       
 Latham
 Latham
@@ -16748,9 +16748,9 @@ Lavie
 Lavier, Georges (pub. 1935)     
 Lavier
 Lavier
-Lavín, Pablo (Antonio) (pub. 1998)       
-P. Lavín
-Lavín
+LavÃ­n, Pablo (Antonio) (pub. 1998)       
+P. LavÃ­n
+LavÃ­n
 Laviola, C.     
 Laviola
 Laviola
@@ -16789,11 +16789,11 @@ Lazar
 Lazarev, E.C. (pub. 1941)       
 E.C. Lazar
 Lazarev
-Lázaro é Ibiza, Blas (1858-1921)  
-Lázaro Ibiza
-Lázaro é Ibiza
-(Lázaro Ibiza, Blas) see Lázaro é Ibiza, Blas      
-Lázaro Ibiza
+LÃ¡zaro Ã© Ibiza, Blas (1858-1921)  
+LÃ¡zaro Ibiza
+LÃ¡zaro Ã© Ibiza
+(LÃ¡zaro Ibiza, Blas) see LÃ¡zaro Ã© Ibiza, Blas      
+LÃ¡zaro Ibiza
 Lazo, Waldo (pub. 1972) 
 Lazo
 Lazo
@@ -16811,9 +16811,9 @@ Le Gal
 Le Monnier, (Alexandre Alexis) George (1843)    
 G. Le Monn.
 Le Monnier
-Le Prévost, Auguste (1787-1860)  
-Le Prévost
-Le Prévost
+Le PrÃ©vost, Auguste (1787-1860)  
+Le PrÃ©vost
+Le PrÃ©vost
 Lea, Thomas Gibson (1785-1844)  
 Lea
 Lea
@@ -16842,9 +16842,9 @@ Leander
 Leandri, Jacques Desire (1903-1982)     
 Leandri
 Leandri
-Leão, A.E. de Area (pub. 1927)   
-Leão
-Leão
+LeÃ£o, A.E. de Area (pub. 1927)   
+LeÃ£o
+LeÃ£o
 Leask, Barbara G.S. (pub. 1976) 
 Leask
 Leask
@@ -16960,13 +16960,13 @@ Legarde
 Legendre, J. (pub. 1911)        
 J. Legendre
 Legendre
-Léger, J.C. (pub. 1968)  
-J.C. Léger
-Léger
-Léger, L. (pub. 1908)    
-L. Léger
-Léger, Maurice (pub. 1895)       
-Léger
+LÃ©ger, J.C. (pub. 1968)  
+J.C. LÃ©ger
+LÃ©ger
+LÃ©ger, L. (pub. 1908)    
+L. LÃ©ger
+LÃ©ger, Maurice (pub. 1895)       
+LÃ©ger
 Leggett, M. (pub. 1981) 
 M. Legg.
 Leggett
@@ -17024,9 +17024,9 @@ J. Leitn.
 Leitner
 (Lemaire, M.) see Neveu-Lemaire, M.     
 Neveu-Lem.
-Léman, Dominique Sebastien (1781-1829)   
-Léman
-Léman
+LÃ©man, Dominique Sebastien (1781-1829)   
+LÃ©man
+LÃ©man
 Lemke, Paul Arenz ( -1995)      
 P.A. Lemke
 Lemke
@@ -17038,7 +17038,7 @@ Lenaerts
 Lendner, Alfred (1873-1948)     
 Lendn.
 Lendner
-(Lenharrée, Théodore Polycarpe Brisson de) see Brisson de Lenharrée, Théodore Polycarpe     
+(LenharrÃ©e, ThÃ©odore Polycarpe Brisson de) see Brisson de LenharrÃ©e, ThÃ©odore Polycarpe     
 T.P. Brisson
 Lennox, C.L. (pub. 1995)        
 C.L. Lennox
@@ -17048,7 +17048,7 @@ Lennox
 Lenoir, A. (pub. 1986)  
 Lenoir
 Lenoir
-Lenormand, (Sébastien-) René (1796-1871)  
+Lenormand, (SÃ©bastien-) RenÃ© (1796-1871)  
 Lenorm.
 Lenormand
 Lentz, Paul Lewis (1918)        
@@ -17063,20 +17063,20 @@ Lenz, M. von (pub. 1982)
 M. Lenz
 (Leo, F. de) see De Leo, F.     
 De Leo
-Léon, Joseph Sylvestre (Hermano) (1871-1955)     
-Léon
-Léon
-León Gallegos, Hector M. (pub. 1981)     
-León-Gall.
-León Gallegos
+LÃ©on, Joseph Sylvestre (Hermano) (1871-1955)     
+LÃ©on
+LÃ©on
+LeÃ³n Gallegos, Hector M. (pub. 1981)     
+LeÃ³n-Gall.
+LeÃ³n Gallegos
 Leonard, Kurt J. (pub. 1974)    
 K.J. Leonard
 Leonard
 Leong, W.F. (pub. 1990) 
 W.F. Leong
 Leong
-(León-Gallegos, Hector M.) see León Gallegos, Hector M.   
-León-Gall.
+(LeÃ³n-Gallegos, Hector M.) see LeÃ³n Gallegos, Hector M.   
+LeÃ³n-Gall.
 Leonian, Leon Hatchig (1888-1945)       
 Leonian
 Leonian
@@ -17100,9 +17100,9 @@ Leppik
 Leprieur, F.M.R. (1799-1869)    
 Lepr.
 Leprieur
-Léránth, J. (pub. 1974)   
-Léránth
-Léránth
+LÃ©rÃ¡nth, J. (pub. 1974)   
+LÃ©rÃ¡nth
+LÃ©rÃ¡nth
 Lerchenfeld, Josef Radnitzky von (1753-1812)    
 Lerchenf.
 Lerchenfeld
@@ -17129,9 +17129,9 @@ Letellier
 Letendre, Jean Baptiste Pierre (1828-1886)      
 Letendre
 Letendre
-Letgé, J.-P. (pub. 1988) 
-Letgé
-Letgé
+LetgÃ©, J.-P. (pub. 1988) 
+LetgÃ©
+LetgÃ©
 Letourneux, Aristide-Horace (1820-1890) 
 Letourn.
 Letourneux
@@ -17166,9 +17166,9 @@ Leus-Palo
 Leus-Palo, Simeona (pub. 1931)  
 Leus-Palo
 Leus-Palo
-Léveillé, Joseph-Henri (1796-1870)        
-Lév.
-Léveillé
+LÃ©veillÃ©, Joseph-Henri (1796-1870)        
+LÃ©v.
+LÃ©veillÃ©
 Levi, A. (pub. 1888)    
 Levi
 Levi
@@ -17354,9 +17354,9 @@ Liggieri
 Lightfoot, John (1735-1788)     
 Lightf.
 Lightfoot
-Lignières, J. (pub. 1903)        
-Lignières
-Lignières
+LigniÃ¨res, J. (pub. 1903)        
+LigniÃ¨res
+LigniÃ¨res
 Lihnell, D. (pub. 1939) 
 Lihnell
 Lihnell
@@ -17383,7 +17383,7 @@ Lima, Iracema Hollanda (pub. 1955)
 I.H. Lima
 Lima, Jose Americo de (pub. 1955)       
 J.A. Lima
-Lima, Oswaldo Gonçalves (pub. 1957)      
+Lima, Oswaldo GonÃ§alves (pub. 1957)      
 O.G. Lima
 Limber, Donald Philips (1894)   
 Limber
@@ -17480,10 +17480,10 @@ Lindsey
 Lindstedt, Karl (1846)  
 Lindst.
 Lindstedt
-Lindström, Håkan (pub. 1989)      
+LindstrÃ¶m, HÃ¥kan (pub. 1989)      
 H. Lindstr.
-Lindström
-Lindström, Marie (pub. 1993)     
+LindstrÃ¶m
+LindstrÃ¶m, Marie (pub. 1993)     
 M. Lindstr.
 Lindt, W. (pub. 1889)   
 Lindt
@@ -17519,12 +17519,12 @@ Linkola
 Linn, Manson Bruce (1908)       
 Linn
 Linn
-(Linné, Carl von) see Linnaeus, Carl von 
+(LinnÃ©, Carl von) see Linnaeus, Carl von 
 L.
 Linnaeus, Carl von (1707-1778)  
 L.
 Linnaeus
-(Linné fil., Carl) see Linnaeus fil., Carl von   
+(LinnÃ© fil., Carl) see Linnaeus fil., Carl von   
 L. f.
 Linnemann, Germaine (pub. 1936) 
 Linnem.
@@ -17662,11 +17662,11 @@ Livingston
 Livsey, Susan M.E. (pub. 1987)  
 Livsey
 Livsey
-Lizárraga, Marcos (pub. 1996)    
-Lizárraga
-Lizárraga
-Lizárraga, Marcos (pub. 1996)    
-Lizárraga
+LizÃ¡rraga, Marcos (pub. 1996)    
+LizÃ¡rraga
+LizÃ¡rraga
+LizÃ¡rraga, Marcos (pub. 1996)    
+LizÃ¡rraga
 LizoH, Pavel (pub. 1993) 
 LizoH
 LizoH
@@ -17678,15 +17678,15 @@ Ljub.
 Ljubarsky
 (Ljubitz, Lydia Ivanovna) see Savicz-Lubitskaya, Lydia Ivanovna 
 L.I. Savicz
-Llambías, J. (pub. 1930) 
-Llambías
-Llambías
+LlambÃ­as, J. (pub. 1930) 
+LlambÃ­as
+LlambÃ­as
 Llano, George Albert (1911)     
 Llano
 Llano
-Llenas y Fernández, Manuel (pub. 1900)   
+Llenas y FernÃ¡ndez, Manuel (pub. 1900)   
 Llenas
-Llenas y Fernández
+Llenas y FernÃ¡ndez
 Llimona, Xavier (pub. 1973)     
 Llimona
 Llimona
@@ -17714,11 +17714,11 @@ Lobata de Faria
 Lobik, Alexis Iulianovich (pub. 1928)   
 Lobik
 Lobik
-Lôbo, Jorge (pub. 1940)  
-Lôbo
-Lôbo
-Lôbo, M. (pub. 1986)     
-M. Lôbo
+LÃ´bo, Jorge (pub. 1940)  
+LÃ´bo
+LÃ´bo
+LÃ´bo, M. (pub. 1986)     
+M. LÃ´bo
 Lochhead, A.G. (pub. 1940)      
 A.G. Lochhead
 Lochhead
@@ -17728,9 +17728,9 @@ Locquin
 Locquin-Linard, Monique (pub. 1990)     
 Locq.-Lin.
 Locquin-Linard
-Locsmándi, Cs. (pub. 1994)       
-Locsmándi
-Locsmándi
+LocsmÃ¡ndi, Cs. (pub. 1994)       
+LocsmÃ¡ndi
+LocsmÃ¡ndi
 Lodder, Jacomina (1905-1987)    
 Lodder
 Lodder
@@ -17824,12 +17824,12 @@ Longis
 Longyear, Burton Orange (1868-1969)     
 Longyear
 Longyear
-Lönnegren, August Valfrid (1842-1904)    
-Lönn.
-Lönnegren
-Lönnroth, Knut Johan (1826-1885) 
-Lönnr.
-Lönnroth
+LÃ¶nnegren, August Valfrid (1842-1904)    
+LÃ¶nn.
+LÃ¶nnegren
+LÃ¶nnroth, Knut Johan (1826-1885) 
+LÃ¶nnr.
+LÃ¶nnroth
 Looman, Jan (1919)      
 Looman
 Looman
@@ -17843,34 +17843,34 @@ Lopandic
 Pinto-Lopes
 (Lopes Putzke, Marisa Terezinha) see Putzke, Marisa Terzinha Lopes      
 M. Putzke
-López, Armando (pub. 1979)       
-A. López
-López
-López, F. (pub. 1979)    
-F. López
-López, L.C. (pub. 1965)  
-L.C. López
-López, Silvia E. (1949)  
-S.E. López
-López, Silvia E. (1949)  
-S.E. López
+LÃ³pez, Armando (pub. 1979)       
+A. LÃ³pez
+LÃ³pez
+LÃ³pez, F. (pub. 1979)    
+F. LÃ³pez
+LÃ³pez, L.C. (pub. 1965)  
+L.C. LÃ³pez
+LÃ³pez, Silvia E. (1949)  
+S.E. LÃ³pez
+LÃ³pez, Silvia E. (1949)  
+S.E. LÃ³pez
 (Lopez Castrillon, A.) see Castrillon, A. Lopez 
 Castr.
-(López F., L.C.) see López, L.C.  
-L.C. López
-(López Figueiras, Manuel) see López-Figueiras, Manuel     
-López-Fig.
-López-Figueiras, Manuel (1915)   
-López-Fig.
-López-Figueiras
-(López R., Armando) see López, Armando    
-A. López
-López-Franco, Rosa Maria (pub. 1990)     
-López-Franco
-López-Franco
-López-Lastra, Claudia Cristina (pub. 1990)       
-López-Lastra
-López-Lastra
+(LÃ³pez F., L.C.) see LÃ³pez, L.C.  
+L.C. LÃ³pez
+(LÃ³pez Figueiras, Manuel) see LÃ³pez-Figueiras, Manuel     
+LÃ³pez-Fig.
+LÃ³pez-Figueiras, Manuel (1915)   
+LÃ³pez-Fig.
+LÃ³pez-Figueiras
+(LÃ³pez R., Armando) see LÃ³pez, Armando    
+A. LÃ³pez
+LÃ³pez-Franco, Rosa Maria (pub. 1990)     
+LÃ³pez-Franco
+LÃ³pez-Franco
+LÃ³pez-Lastra, Claudia Cristina (pub. 1990)       
+LÃ³pez-Lastra
+LÃ³pez-Lastra
 Lorentz, Paul [Pablo] Gunther (1835-1881)       
 Lorentz
 Lorentz
@@ -17883,9 +17883,9 @@ Lorenzini
 Lorenzo, Laura Emma (pub. 1989) 
 Lorenzo
 Lorenzo
-Lörinczi, Francisc (1924)        
-Lörinczi
-Lörinczi
+LÃ¶rinczi, Francisc (1924)        
+LÃ¶rinczi
+LÃ¶rinczi
 Lorinser, Friedrich Wilhelm (1817-1895) 
 F. Lorinser
 Lorinser
@@ -17900,9 +17900,9 @@ Losa
 Losa-Quintana, Jose Maria (pub. 1977)   
 J.M. Losa
 Losa-Quintana
-Lösecke, August Georg von (1837-1912)    
-Lösecke
-Lösecke
+LÃ¶secke, August Georg von (1837-1912)    
+LÃ¶secke
+LÃ¶secke
 Losi, Cristiano (pub. 1995)     
 Losi
 Losi
@@ -17915,15 +17915,15 @@ Lotte
 Lotus, S.S. (pub. 1936) 
 Lotus
 Lotus
-Loubière, M. Auguste (pub. 1923) 
-Loubière
-Loubière
+LoubiÃ¨re, M. Auguste (pub. 1923) 
+LoubiÃ¨re
+LoubiÃ¨re
 Louis, Edward J. (pub. 2000)    
 E.J. Louis
 Louis
 (Lourdes Abarca, Maria) see Abarca (Salat), Maria Lourdes       
 Abarca
-Loureiro, João de (1717-1791)    
+Loureiro, JoÃ£o de (1717-1791)    
 Lour.
 Loureiro
 Louw, A.J. (pub. 1941)  
@@ -17934,9 +17934,9 @@ C.D. Louw
 Louwhoff, Simone H.J.J. (pub. 1998)     
 Louwhoff
 Louwhoff
-Löve, Doris Benta Maria (1918)   
-D. Löve
-Löve
+LÃ¶ve, Doris Benta Maria (1918)   
+D. LÃ¶ve
+LÃ¶ve
 Lovejoy, Ruth Ellen Harrison (1882)     
 Lovejoy
 Lovejoy
@@ -17955,11 +17955,11 @@ Lowe
 Lowen, Rosalind (pub. 1986)     
 Lowen
 Lowen
-Löwenthal, W. (pub. 1904)        
-Löwenthal
-Löwenthal
-Löwenthal, W. (pub. 1904)        
-Löwenthal
+LÃ¶wenthal, W. (pub. 1904)        
+LÃ¶wenthal
+LÃ¶wenthal
+LÃ¶wenthal, W. (pub. 1904)        
+LÃ¶wenthal
 Lowy, Bernard (1916-1992)       
 Lowy
 Lowy
@@ -18015,14 +18015,14 @@ Lucien
 Luck-Allen, E. Robena (pub. 1960)       
 Luck-Allen
 Luck-Allen
-Lücking, Robert (pub. 1991)      
-Lücking
-Lücking
-Lücking, Robert (pub. 1991)      
-Lücking
-Lüdi, Werner (1888-1968) 
-Lüdi
-Lüdi
+LÃ¼cking, Robert (pub. 1991)      
+LÃ¼cking
+LÃ¼cking
+LÃ¼cking, Robert (pub. 1991)      
+LÃ¼cking
+LÃ¼di, Werner (1888-1968) 
+LÃ¼di
+LÃ¼di
 Ludwig, Clinton Albert (1886-1941)      
 C.A. Ludw.
 Ludwig
@@ -18040,9 +18040,9 @@ Lue
 Luhmann, Udo (pub. 1995)        
 Luhmann
 Luhmann
-Lühnemann, G.H. (pub. 1809)      
-Lühnem.
-Lühnemann
+LÃ¼hnemann, G.H. (pub. 1809)      
+LÃ¼hnem.
+LÃ¼hnemann
 Luijk, Abraham van (1874)       
 Luijk
 Luijk
@@ -18117,9 +18117,9 @@ Lurie
 Lusk, Demaris E. (pub. 1987)    
 Lusk
 Lusk
-Lüstner, G. (pub. 1935)  
-Lüstner
-Lüstner
+LÃ¼stner, G. (pub. 1935)  
+LÃ¼stner
+LÃ¼stner
 Lustrati, Gina (pub. 1980)      
 Lustrati
 Lustrati
@@ -18129,16 +18129,16 @@ Luteraan
 Luthi, R. (pub. 1967)   
 Luthi
 Luthi
-Lütjeharms, Wilhelm Jan (1907-1983)      
-Lütjeh.
-Lütjeharms
+LÃ¼tjeharms, Wilhelm Jan (1907-1983)      
+LÃ¼tjeh.
+LÃ¼tjeharms
 Luttrell, Everett Stanley (1916-1988)   
 Luttr.
 Luttrell
 Lutz, M.L.      
 M.L. Lutz
 Lutz
-Lutzoni, François M. (pub. 1994) 
+Lutzoni, FranÃ§ois M. (pub. 1994) 
 Lutzoni
 Lutzoni
 Luyken, Johann [Joannes] Albert (1785-1867)     
@@ -18342,18 +18342,18 @@ Maffucci
 Maffucci, A. (pub. 1895)        
 Maffucci
 Maffucci
-Magalhães, O. de (pub. 1959)     
+MagalhÃ£es, O. de (pub. 1959)     
 O. Magalh.
-Magalhães
-Magán, F.J. Fernandez de Ana (pub. 1983) 
-Fern. Magán
-Magán
+MagalhÃ£es
+MagÃ¡n, F.J. Fernandez de Ana (pub. 1983) 
+Fern. MagÃ¡n
+MagÃ¡n
 Magasi, Laszlo P. (1935)        
 Magasi
 Magasi
-Mägdefrau, Karl (1907)   
-Mägd.
-Mägdefrau
+MÃ¤gdefrau, Karl (1907)   
+MÃ¤gd.
+MÃ¤gdefrau
 Magdum, D.K. (pub. 1992)        
 Magdum
 Magdum
@@ -18393,9 +18393,9 @@ Magnusson
 Magrou, Joseph (1883)   
 Magrou
 Magrou
-Mahabalé, Tryambak Shankur (1909-1983)   
+MahabalÃ©, Tryambak Shankur (1909-1983)   
 Mahab.
-Mahabalé
+MahabalÃ©
 Mahamulkar, S.H. (pub. 1999)    
 Maham.
 Mahamulkar
@@ -18479,12 +18479,12 @@ Makiguchi
 Makin, J.G. (pub. 1974) 
 Makin
 Makin
-Mäkinen, Yrjo Lauri Antero (1931)        
-Y. Mäkinen
-Mäkinen
-Makryï, T.V. (pub. 1984) 
-Makryï
-Makryï
+MÃ¤kinen, Yrjo Lauri Antero (1931)        
+Y. MÃ¤kinen
+MÃ¤kinen
+MakryÃ¯, T.V. (pub. 1984) 
+MakryÃ¯
+MakryÃ¯
 Maksimova, I.A. (pub. 2000)     
 Maksim.
 Maksimova
@@ -18517,9 +18517,9 @@ Malcolm
 Malcolmson, Jean F. (pub. 1958) 
 Malc.
 Malcolmson
-Malençon, Georges Jean Louis (1898-1984) 
-Malençon
-Malençon
+MalenÃ§on, Georges Jean Louis (1898-1984) 
+MalenÃ§on
+MalenÃ§on
 Malevich, O.A. (pub. 1936)      
 Malevich
 Malevich
@@ -18535,9 +18535,9 @@ Malik
 Malkoff (pub. 1924)     
 Malkoff
 Malkoff
-Malkovskı, K.M. (pub. 1932)      
+MalkovskÃ½, K.M. (pub. 1932)      
 Malk.
-Malkovskı
+MalkovskÃ½
 Malla, Devindra S. (pub. 1971)  
 Malla
 Malla
@@ -18611,9 +18611,9 @@ Manimohan
 Maniotis, J. (pub. 1963)        
 Maniotis
 Maniotis
-Manjón, José Luis (G.) (pub. 1984)        
-Manjón
-Manjón
+ManjÃ³n, JosÃ© Luis (G.) (pub. 1984)        
+ManjÃ³n
+ManjÃ³n
 Manjula, B. (pub. 1981) 
 Manjula
 Manjula
@@ -18716,8 +18716,8 @@ P.D. Marchenko
 Marchal, Elie (1839-1923)       
 Marchal
 Marchal
-Marchal, Émile Jules Joseph (1871-1954)  
-É.J. Marchal
+Marchal, Ã‰mile Jules Joseph (1871-1954)  
+Ã‰.J. Marchal
 Marchand, Andre (pub. 1971)     
 A. Marchand
 Marchand
@@ -18785,13 +18785,13 @@ Mariotto
 Marklund, Hans (pub. 1989)      
 H. Markl.
 Marklund
-Marková, Jaroslava (pub. 1987)   
-J. Marková
-Marková
+MarkovÃ¡, Jaroslava (pub. 1987)   
+J. MarkovÃ¡
+MarkovÃ¡
 Markova-Letova, Marie Federovna (1901)  
 Mark.-Let.
 Markova-Letova
-Marmolejo, José G. (pub. 1990)   
+Marmolejo, JosÃ© G. (pub. 1990)   
 Marm.
 Marmolejo
 Marneffe, H. (pub. 1946)        
@@ -18808,10 +18808,10 @@ F. Marquart
 Marquart
 (Marques da Cunha, Aristides) see Cunha, Aristides Marques da   
 A.M. Cunha
-(Marquez, Ricardo Galán) see Galán, Ricardo       
-R. Galán
-(Márquez, Ricardo Galán) see Galán, Ricardo        
-R. Galán
+(Marquez, Ricardo GalÃ¡n) see GalÃ¡n, Ricardo       
+R. GalÃ¡n
+(MÃ¡rquez, Ricardo GalÃ¡n) see GalÃ¡n, Ricardo        
+R. GalÃ¡n
 Marr, C.D. (pub. 1973)  
 Marr
 Marr
@@ -18849,8 +18849,8 @@ Marti
 Martin, F.N. (pub. 1987)        
 F.N. Martin
 Martin
-(Martin, Felipe San) see San Martín (González), Felipe    
-F. San Martín
+(Martin, Felipe San) see San MartÃ­n (GonzÃ¡lez), Felipe    
+F. San MartÃ­n
 Martin, George (1827-1886)      
 G. Martin
 Martin, George Hamilton (1887)  
@@ -18873,13 +18873,13 @@ Martin, Weston Joseph (1917)
 W.J. Martin
 Martin, William (1886-1975)     
 W. Martin
-Martín, Charles-Édouard (1847-1937)       
-C. Martín
-Martín
-Martín, María Paz (pub. 1996)     
-M.P. Martín
-(Martín Esteban, María Paz) see Martín, María Paz   
-M.P. Martín
+MartÃ­n, Charles-Ã‰douard (1847-1937)       
+C. MartÃ­n
+MartÃ­n
+MartÃ­n, MarÃ­a Paz (pub. 1996)     
+M.P. MartÃ­n
+(MartÃ­n Esteban, MarÃ­a Paz) see MartÃ­n, MarÃ­a Paz   
+M.P. MartÃ­n
 Martindale, Issac Comly (1842-1893)     
 I.C. Martind.
 Martindale
@@ -18888,24 +18888,24 @@ J.A. Martind.
 Martinez, Alicia E. (pub. 1997) 
 A.E. Martinez
 Martinez
-Martínez, Angel T. (pub. 1957)   
-A.T. Martínez
-Martínez
-Martínez, Angel T. (pub. 1957)   
-A.T. Martínez
-Martínez, D. (pub. 1981) 
-D. Martínez
-Martínez, Isabel (pub. 1999)     
-I. Martínez
-Martínez, Jose Benito (pub. 1931)        
-J.B. Martínez
-Martínez-Peck, Lorena (pub. 1995)        
+MartÃ­nez, Angel T. (pub. 1957)   
+A.T. MartÃ­nez
+MartÃ­nez
+MartÃ­nez, Angel T. (pub. 1957)   
+A.T. MartÃ­nez
+MartÃ­nez, D. (pub. 1981) 
+D. MartÃ­nez
+MartÃ­nez, Isabel (pub. 1999)     
+I. MartÃ­nez
+MartÃ­nez, Jose Benito (pub. 1931)        
+J.B. MartÃ­nez
+MartÃ­nez-Peck, Lorena (pub. 1995)        
 Mart.-Peck
-Martínez-Peck
+MartÃ­nez-Peck
 Martins, C. (pub. 1928) 
 C. Martins
 Martins
-Martins, Rogério P. (pub. 1999)  
+Martins, RogÃ©rio P. (pub. 1999)  
 R.P. Martins
 Martin-Sans, E. (pub. 1929)     
 Martin-Sans
@@ -18938,18 +18938,18 @@ Marulli
 Marvan, Peter [Petr] (1929)     
 Marvan
 Marvan
-Marvanová, Ludmila (pub. 1963)   
-Marvanová
-Marvanová
+MarvanovÃ¡, Ludmila (pub. 1963)   
+MarvanovÃ¡
+MarvanovÃ¡
 Marwitz, Rainer (pub. 1993)     
 Marwitz
 Marwitz
 Marx, Heidi (pub. 2000) 
 H. Marx
 Marx
-Marxmüller, Hermann (1920-1988)  
+MarxmÃ¼ller, Hermann (1920-1988)  
 Marxm.
-Marxmüller
+MarxmÃ¼ller
 Marziano, F. (pub. 1988)        
 Marziano
 Marziano
@@ -18981,9 +18981,9 @@ C. Massal.
 Massart, Francis (pub. 1967)    
 F. Massart
 Massart
-Massé, Jean-Pierre (pub. 1805)   
-Massé
-Massé
+MassÃ©, Jean-Pierre (pub. 1805)   
+MassÃ©
+MassÃ©
 Massebo (pub. 2001)     
 Massebo
 Massebo
@@ -19020,9 +19020,9 @@ Masuya
 Mata, Juan L. (pub. 2000)       
 J.L. Mata
 Mata
-Mata García, Luis B. (pub. 1994) 
+Mata GarcÃ­a, Luis B. (pub. 1994) 
 Mata
-Mata García
+Mata GarcÃ­a
 Materassi, R. (pub. 1971)       
 Mater.
 Materassi
@@ -19038,9 +19038,9 @@ Mathey
 Mathiassen, Geir (1954) 
 Math.
 Mathiassen
-Mathiesen-Käärik, Aino (pub. 1954)        
-Math.-Käärik
-Mathiesen-Käärik
+Mathiesen-KÃ¤Ã¤rik, Aino (pub. 1954)        
+Math.-KÃ¤Ã¤rik
+Mathiesen-KÃ¤Ã¤rik
 Mathieson, Jean (pub. 1949)     
 Mathieson
 Mathieson
@@ -19195,9 +19195,9 @@ H. Mayrhofer
 Mayrhofer
 Mayrhofer, Michaela (1955)      
 M. Mayrhofer
-Mazé, P. (pub. 1910)     
-P. Mazé
-Mazé
+MazÃ©, P. (pub. 1910)     
+P. MazÃ©
+MazÃ©
 Mazen, M.B. (pub. 1979) 
 Mazen
 Mazen
@@ -19452,9 +19452,9 @@ Meerssche
 Mefferd, R.B. (pub. 1955)       
 Mefferd
 Mefferd
-Mégnin, P. (pub. 1881)   
-Mégnin
-Mégnin
+MÃ©gnin, P. (pub. 1881)   
+MÃ©gnin
+MÃ©gnin
 Mehlisch, K. (pub. 1935)        
 Mehlisch
 Mehlisch
@@ -19486,7 +19486,7 @@ Meier
 Meier, E.I. (pub. 1953)  
 E.I. Meier
 Meier
-(Meijer, André A.R. de) see De Meijer, André A.R. 
+(Meijer, AndrÃ© A.R. de) see De Meijer, AndrÃ© A.R. 
 de Meijer
 Meile, Leo (pub. 1999)  
 Meile
@@ -19512,12 +19512,12 @@ Mekht.
 Melan, M.A. (pub. 1984) 
 Melan
 Melan
-Mélard, L. (pub. 1910)   
-Mélard
-Mélard
-Meléndez-Howell, Leda-Maria (pub. 1990)  
+MÃ©lard, L. (pub. 1910)   
+MÃ©lard
+MÃ©lard
+MelÃ©ndez-Howell, Leda-Maria (pub. 1990)  
 Mel.-Howell
-Meléndez-Howell
+MelÃ©ndez-Howell
 Melhus, Irving E. (1881-1969)   
 Melhus
 Melhus
@@ -19563,25 +19563,25 @@ J. Mena
 Mena Portales
 (Mena-Portales, Julio) see Mena Portales, Julio 
 J. Mena
-Ménard, Thierry (pub. 1991)      
-Ménard
-Ménard
-Ménard, Thierry (pub. 1991)      
-Ménard
+MÃ©nard, Thierry (pub. 1991)      
+MÃ©nard
+MÃ©nard
+MÃ©nard, Thierry (pub. 1991)      
+MÃ©nard
 Mendes, O. (pub. 1953)  
 O. Mendes
 Mendes
-(Méndez, Antonio Morales) see Morales Méndez, Antonio     
+(MÃ©ndez, Antonio Morales) see Morales MÃ©ndez, Antonio     
 A. Morales
 Mendiola, Victoria B. (pub. 1931)       
 Mendiola
 Mendiola
-Mendonça, Amarílis Alberty de Varrennes e (pub. 1962)     
-A.A. Mendonça
-Mendonça
-Mendonça-Hagler, L.C. (pub. 1989)        
+MendonÃ§a, AmarÃ­lis Alberty de Varrennes e (pub. 1962)     
+A.A. MendonÃ§a
+MendonÃ§a
+MendonÃ§a-Hagler, L.C. (pub. 1989)        
 Mend.-Hagler
-Mendonça-Hagler
+MendonÃ§a-Hagler
 Mendoza, D.R. (pub. 1925)       
 Mend.
 Mendoza
@@ -19592,13 +19592,13 @@ L. Mend.
 Meneghini, Guiseppe Giovanni Antonio (1811-1889)        
 Menegh.
 Meneghini
-Menès, J.C. (pub. 1989)  
-Menès
-Menès
+MenÃ¨s, J.C. (pub. 1989)  
+MenÃ¨s
+MenÃ¨s
 Meney, K.A. (pub. 1994) 
 Meney
 Meney
-(Menezes Fonseca, Ozorio José de) see Fonseca, Ozorio José de Menezes     
+(Menezes Fonseca, Ozorio JosÃ© de) see Fonseca, Ozorio JosÃ© de Menezes     
 O.M. Fonseca
 Meng, You Ru (pub. 1989)        
 Y.R. Meng
@@ -19614,9 +19614,9 @@ J.A. Menge
 Menier, Charles (1913)  
 Menier
 Menier
-Menjívar, R. (pub. 1992) 
-Menjívar
-Menjívar
+MenjÃ­var, R. (pub. 1992) 
+MenjÃ­var
+MenjÃ­var
 Menon, Radha (pub. 1954)        
 R. Menon
 Menon
@@ -19631,14 +19631,14 @@ Mentzer
 Mer, G.S. (pub. 1983)   
 G.S. Mer
 Mer
-Mérat, Francois Victor (de Vaumartoise) (1780-1851)      
-Mérat
-Mérat
-(Mérat de Vaumartoise, Francois Victor) see Mérat, Francois Victor (de Vaumartoise)       
-Mérat
-(Mercado Sierra, Ángel) see Mercado-Sierra, Ángel 
+MÃ©rat, Francois Victor (de Vaumartoise) (1780-1851)      
+MÃ©rat
+MÃ©rat
+(MÃ©rat de Vaumartoise, Francois Victor) see MÃ©rat, Francois Victor (de Vaumartoise)       
+MÃ©rat
+(Mercado Sierra, Ãngel) see Mercado-Sierra, Ãngel 
 Mercado
-Mercado-Sierra, Ángel (1937)     
+Mercado-Sierra, Ãngel (1937)     
 Mercado
 Mercado-Sierra
 Mercer, C. (pub. 1957)  
@@ -19672,9 +19672,9 @@ Merlin
 Merlo, P.A. (pub. 1991) 
 Merlo
 Merlo
-Mermiér, F. (pub. 1963)  
-Mermiér
-Mermiér
+MermiÃ©r, F. (pub. 1963)  
+MermiÃ©r
+MermiÃ©r
 Merny, G. (pub. 1962)   
 Merny
 Merny
@@ -19690,7 +19690,7 @@ Merucci
 Merucci
 (Merwe, W.J.J. van der) see Van der Merwe, W.J.J.       
 W.J.J. van der Merwe
-(Merxmuller, Hermann) see Marxmüller, Hermann    
+(Merxmuller, Hermann) see MarxmÃ¼ller, Hermann    
 Marxm.
 Meschinelli, Aloysius (Luigi) (1865)    
 Mesch.
@@ -19698,9 +19698,9 @@ Meschinelli
 Mesnil, Felix (1868-1938)       
 Mesnil
 Mesnil
-Mesplède, V.H. (pub. 1980)       
-Mesplède
-Mesplède
+MesplÃ¨de, V.H. (pub. 1980)       
+MesplÃ¨de
+MesplÃ¨de
 Mesquita, J.B. (pub. 1997)      
 J.B. Mesquita
 Mesquita
@@ -19710,7 +19710,7 @@ Messiaen
 Messner, Kurt (pub. 1971)       
 Messner
 Messner
-Messuti, María Inés (pub. 1995)   
+Messuti, MarÃ­a InÃ©s (pub. 1995)   
 Messuti
 Messuti
 Metcalf, Haven (1875-1940)      
@@ -19725,9 +19725,9 @@ Methven
 Metianu, T. (pub. 1966) 
 Metianu
 Metianu
-Métrod, Georges (pub. 1938)      
-Métrod
-Métrod
+MÃ©trod, Georges (pub. 1938)      
+MÃ©trod
+MÃ©trod
 Metschnikoff, Ilya (1845-1916)  
 Metschn.
 Metschnikoff
@@ -20046,9 +20046,9 @@ Mishra, R.P. (pub. 1979)
 R.P. Mishra
 Mishra, R.R. (pub. 1962)        
 R.R. Mishra
-Miaík, Milan (pub. 1983)  
-Miaík
-Miaík
+MiaÃ­k, Milan (pub. 1983)  
+MiaÃ­k
+MiaÃ­k
 Misra, Ayodhya Prasad (1917-1999)       
 A.P. Misra
 Misra
@@ -20078,9 +20078,9 @@ Mitchell, Michael Edward (1934)
 M.E. Mitch.
 Mitchell, R.S.  
 R.S. Mitchell
-Mítítíuc, Mihai St. (1937) 
-Mítítíuc
-Mítítíuc
+MÃ­tÃ­tÃ­uc, Mihai St. (1937) 
+MÃ­tÃ­tÃ­uc
+MÃ­tÃ­tÃ­uc
 Mitra, Asim (pub. 1984) 
 A. Mitra
 Mitra
@@ -20171,9 +20171,9 @@ Modak
 Moe, Richard L. (pub. 1997)     
 R. Moe
 Moe
-Moënne-Loccoz, Pierre (pub. 1989)        
-Moënne-Locc.
-Moënne-Loccoz
+MoÃ«nne-Loccoz, Pierre (pub. 1989)        
+MoÃ«nne-Locc.
+MoÃ«nne-Loccoz
 Moesz, Gusztav [Gustav] von (1873-1946) 
 Moesz
 Moesz
@@ -20228,7 +20228,7 @@ Moldovan
 Molho (pub. 1981)       
 Molho
 Molho
-Molina, María del Carmen (pub. 2000)     
+Molina, MarÃ­a del Carmen (pub. 2000)     
 M.C. Molina
 Molina
 Molina-Valero, L.A. (pub. 1980) 
@@ -20246,18 +20246,18 @@ Molkenboer
 Moller, W.J. (pub. 1968)        
 W.J. Moller
 Moller
-(Möller, [Friedrich] Alfred Gustav Jobst) see Møller, Friedrich Alfred Gustav Jobst       
-A. Møller
-Möller, Christel (pub. 1993)     
-C. Möller
-Möller
-Möller, E.M. (pub. 1993) 
-E.M. Möller
-Møller, F.H. (1887)      
-F.H. Møller
-Møller
-Møller, Friedrich Alfred Gustav Jobst (1860-1922)        
-A. Møller
+(MÃ¶ller, [Friedrich] Alfred Gustav Jobst) see MÃ¸ller, Friedrich Alfred Gustav Jobst       
+A. MÃ¸ller
+MÃ¶ller, Christel (pub. 1993)     
+C. MÃ¶ller
+MÃ¶ller
+MÃ¶ller, E.M. (pub. 1993) 
+E.M. MÃ¶ller
+MÃ¸ller, F.H. (1887)      
+F.H. MÃ¸ller
+MÃ¸ller
+MÃ¸ller, Friedrich Alfred Gustav Jobst (1860-1922)        
+A. MÃ¸ller
 Molliard, (H.) Marin (1866-1944)        
 Molliard
 Molliard
@@ -20270,9 +20270,9 @@ Molot
 Moncalvo, Jean-Marc (pub. 1995) 
 Moncalvo
 Moncalvo
-Monedero García, Carlos (pub. 1995)      
+Monedero GarcÃ­a, Carlos (pub. 1995)      
 Monedero
-Monedero García
+Monedero GarcÃ­a
 Monguillon, Eugene Louis Honore (1865-1940)     
 Mong.
 Monguillon
@@ -20330,7 +20330,7 @@ A.M. Corte
 Montemayor, Lorenzo de (pub. 1949)      
 Montem.
 Montemayor
-Montes, Maria Jesús (pub. 1999)  
+Montes, Maria JesÃºs (pub. 1999)  
 M.J. Montes
 Montes
 Monthoux, Olivier (1932)        
@@ -20389,13 +20389,13 @@ P.B. Morais
 Morales, Maria I. (pub. 1973)   
 M.I. Morales
 Morales
-Morales Méndez, Antonio (pub. 1994)      
+Morales MÃ©ndez, Antonio (pub. 1994)      
 A. Morales
-Morales Méndez
+Morales MÃ©ndez
 Morariu, Iuliu (1905-1989)      
 Morariu
 Morariu
-Moravec, JiYí (pub. 1965) 
+Moravec, JiYÃ­ (pub. 1965) 
 J. Moravec
 Moravec
 Moravec, Zdenek (pub. 1954)     
@@ -20492,7 +20492,7 @@ Morochk.
 Morochkovsky
 (Moroczkovskii, S.F.) see Morochkovsky, S.F.    
 Morochk.
-Morot, Louis René Marie François (1854-1915)      
+Morot, Louis RenÃ© Marie FranÃ§ois (1854-1915)      
 Morot
 Morot
 (Morotschkowsky, S.F.) see Morochkovsky, S.F.   
@@ -20560,7 +20560,7 @@ Mosseray
 Motte, Jean (1897)      
 Motte
 Motte
-Motyka, Józef (1900-1984)        
+Motyka, JÃ³zef (1900-1984)        
 Motyka
 Motyka
 (Mou, Chuan Jing) see Mu, Chuan Jing    
@@ -20623,9 +20623,9 @@ J.J. Muchovej
 Muchovej
 Muchovej, R.M.C. (pub. 1991)    
 R.M.C. Muchovej
-Mücke, Deitriche (pub. 1959)     
-Mücke
-Mücke
+MÃ¼cke, Deitriche (pub. 1959)     
+MÃ¼cke
+MÃ¼cke
 Mudd, William A. (1830-1879)    
 Mudd
 Mudd
@@ -20641,27 +20641,27 @@ Mueller, Ferdinand Jacob Heinrich von (1825-1896)
 F. Muell.
 Mueller, Gregory M. (1953)      
 G.M. Muell.
-(Mueller, Jean Baptiste [Baptista]) see Müller, Jean Baptiste [Baptista] 
-J.B. Müll.
-(Mueller, Johann Karl [Carl] August (Friedrich Wilhelm)) see Müller, Johann Karl [Carl] August (Friedrich Wilhelm)       
-Müll. Hal.
-(Mueller, Johannes [Jean]) see Müller Argoviensis, Johannes [Jean]       
-Müll. Arg.
-(Mueller, Karl [Carl]) see Müller, Karl [Carl]   
-Müll. Berol.
-(Mueller, Otto Friedrich [Friderich, Fridrich, Frederik]) see Müller, Otto Friedrich [Friderich, Fridrich, Frederik]     
-O.F. Müll.
-(Mueller Argoviensis, Johannes [Jean]) see Müller Argoviensis, Johannes [Jean]   
-Müll. Arg.
-(Muench, Ernst) see Münch, Ernst 
-Münch
+(Mueller, Jean Baptiste [Baptista]) see MÃ¼ller, Jean Baptiste [Baptista] 
+J.B. MÃ¼ll.
+(Mueller, Johann Karl [Carl] August (Friedrich Wilhelm)) see MÃ¼ller, Johann Karl [Carl] August (Friedrich Wilhelm)       
+MÃ¼ll. Hal.
+(Mueller, Johannes [Jean]) see MÃ¼ller Argoviensis, Johannes [Jean]       
+MÃ¼ll. Arg.
+(Mueller, Karl [Carl]) see MÃ¼ller, Karl [Carl]   
+MÃ¼ll. Berol.
+(Mueller, Otto Friedrich [Friderich, Fridrich, Frederik]) see MÃ¼ller, Otto Friedrich [Friderich, Fridrich, Frederik]     
+O.F. MÃ¼ll.
+(Mueller Argoviensis, Johannes [Jean]) see MÃ¼ller Argoviensis, Johannes [Jean]   
+MÃ¼ll. Arg.
+(Muench, Ernst) see MÃ¼nch, Ernst 
+MÃ¼nch
 Muende, I. (pub. 1940)  
 Muende
 Muende
 Muftic, Mahmoud K.S. (pub. 1957)        
 Muftic
 Muftic
-(Müggenburg, Stephan V.M. Schulzer von) see Schulzer von Müggenburg, Stephan V.M. 
+(MÃ¼ggenburg, Stephan V.M. Schulzer von) see Schulzer von MÃ¼ggenburg, Stephan V.M. 
 Schulzer
 Mugnai, Laura (pub. 1996)       
 Mugnai
@@ -20672,9 +20672,9 @@ Mugnier
 Muhlenberg, Gotthilf Heinrich Ernest (1753-1815)        
 Muhl.
 Muhlenberg
-Mühlethaler, Fr. (pub. 1911)     
-Mühleth.
-Mühlethaler
+MÃ¼hlethaler, Fr. (pub. 1911)     
+MÃ¼hleth.
+MÃ¼hlethaler
 Muhr, Lars-Erik (pub. 1987)     
 Muhr
 Muhr
@@ -20717,9 +20717,9 @@ J.L. Mulder
 MuBenko, WiesBaw (pub. 1995)      
 MuBenko
 MuBenko
-Müll. (pub. 1902)        
-Müll. bis
-Müll.
+MÃ¼ll. (pub. 1902)        
+MÃ¼ll. bis
+MÃ¼ll.
 Mulleavy, Perry (pub. 1977)     
 Mulleavy
 Mulleavy
@@ -20734,59 +20734,59 @@ Muller, P.J. (pub. 1973)
 P.J. Mull. bis
 (Muller, Wilhelm) see Mueller, Wilhelm  
 W. Muell.
-Müller, Carl [Karl] (1820-1889)  
-Müll. Stuttg.
-Müller
-Müller, Dieter G.        
-D.G. Müll.
-Müller, Dieter G.        
-D.G. Müll.
-Müller, Emil (von) (1920)        
-E. Müll.
-Müller, Fritz (pub. 1901)        
-Fr. Müll.
-(Müller, Herman) see Müller Thurgau, Herman       
-Müll.-Thurg.
-Müller, Jean Baptiste [Baptista] (1806-1894)     
-J.B. Müll.
-Müller, JiYí (pub. 1991)   
-J. Müll.
-Müller, Johann Karl [Carl] August (Friedrich Wilhelm) (1818-1899)        
-Müll. Hal.
-Müller Argoviensis, Johannes [Jean] (1828-1896)  
-Müll. Arg.
-Müller Argoviensis
-(Müller, Johannes [Jean]) see Müller Argoviensis, Johannes [Jean] 
-Müll. Arg.
-Müller, Julius Heinrich Hans (pub. 1885) 
-Jul. Müll.
-Müller
-Müller, Justus (pub. 1981)       
-Justus Müll.
-Müller, Karl [Carl] (1817-1870)  
-Müll. Berol.
-Müller, Otto Friedrich [Friderich, Fridrich, Frederik] (1730-1784)       
-O.F. Müll.
-Müller, Theodor (1894-1969)      
-T. Müll.
+MÃ¼ller, Carl [Karl] (1820-1889)  
+MÃ¼ll. Stuttg.
+MÃ¼ller
+MÃ¼ller, Dieter G.        
+D.G. MÃ¼ll.
+MÃ¼ller, Dieter G.        
+D.G. MÃ¼ll.
+MÃ¼ller, Emil (von) (1920)        
+E. MÃ¼ll.
+MÃ¼ller, Fritz (pub. 1901)        
+Fr. MÃ¼ll.
+(MÃ¼ller, Herman) see MÃ¼ller Thurgau, Herman       
+MÃ¼ll.-Thurg.
+MÃ¼ller, Jean Baptiste [Baptista] (1806-1894)     
+J.B. MÃ¼ll.
+MÃ¼ller, JiYÃ­ (pub. 1991)   
+J. MÃ¼ll.
+MÃ¼ller, Johann Karl [Carl] August (Friedrich Wilhelm) (1818-1899)        
+MÃ¼ll. Hal.
+MÃ¼ller Argoviensis, Johannes [Jean] (1828-1896)  
+MÃ¼ll. Arg.
+MÃ¼ller Argoviensis
+(MÃ¼ller, Johannes [Jean]) see MÃ¼ller Argoviensis, Johannes [Jean] 
+MÃ¼ll. Arg.
+MÃ¼ller, Julius Heinrich Hans (pub. 1885) 
+Jul. MÃ¼ll.
+MÃ¼ller
+MÃ¼ller, Justus (pub. 1981)       
+Justus MÃ¼ll.
+MÃ¼ller, Karl [Carl] (1817-1870)  
+MÃ¼ll. Berol.
+MÃ¼ller, Otto Friedrich [Friderich, Fridrich, Frederik] (1730-1784)       
+O.F. MÃ¼ll.
+MÃ¼ller, Theodor (1894-1969)      
+T. MÃ¼ll.
 Mueller, Wilhelm (pub. 1898)    
 W. Muell.
 Mueller
-(Müller, Wilhelm) see Mueller, Wilhelm   
+(MÃ¼ller, Wilhelm) see Mueller, Wilhelm   
 W. Muell.
-(Müller (Halle), Johann Karl [Carl] August (Friedrich Wilhelm)) see Müller, Johann Karl [Carl] August (Friedrich Wilhelm) 
-Müll. Hal.
-(Muller Argoviensis, Johannes [Jean]) see Müller Argoviensis, Johannes [Jean]    
-Müll. Arg.
-Müller Thurgau, Herman (1850-1927)       
-Müll.-Thurg.
-Müller Thurgau
-Müller-Kögler, E. (pub. 1970)     
-Müll.-Kög.
-Müller-Kögler
-Müller-Uri, C. (pub. 1983)       
-Müll.-Uri
-Müller-Uri
+(MÃ¼ller (Halle), Johann Karl [Carl] August (Friedrich Wilhelm)) see MÃ¼ller, Johann Karl [Carl] August (Friedrich Wilhelm) 
+MÃ¼ll. Hal.
+(Muller Argoviensis, Johannes [Jean]) see MÃ¼ller Argoviensis, Johannes [Jean]    
+MÃ¼ll. Arg.
+MÃ¼ller Thurgau, Herman (1850-1927)       
+MÃ¼ll.-Thurg.
+MÃ¼ller Thurgau
+MÃ¼ller-KÃ¶gler, E. (pub. 1970)     
+MÃ¼ll.-KÃ¶g.
+MÃ¼ller-KÃ¶gler
+MÃ¼ller-Uri, C. (pub. 1983)       
+MÃ¼ll.-Uri
+MÃ¼ller-Uri
 Mullins, J.T. (pub. 1961)       
 Mullins
 Mullins
@@ -20799,9 +20799,9 @@ Muma
 Munasinghe, H.L. (pub. 1955)    
 Munas.
 Munasinghe
-Münch, Ernst (1876-1946) 
-Münch
-Münch
+MÃ¼nch, Ernst (1876-1946) 
+MÃ¼nch
+MÃ¼nch
 Mundkur, Bhalchendra Bhavanishankar (1896-1952) 
 Mundk.
 Mundkur
@@ -20822,15 +20822,15 @@ E.A. Munn
 Munn
 Munn, Mancel Thornton (1887-1956)       
 Munn
-Muñoz, José Antonio (pub. 1994)   
-J.A. Muñoz
-Muñoz
-Muntañola-Cvetkovi, Maria (pub. 1952)    
+MuÃ±oz, JosÃ© Antonio (pub. 1994)   
+J.A. MuÃ±oz
+MuÃ±oz
+MuntaÃ±ola-Cvetkovi, Maria (pub. 1952)    
 Munt.-Cvetk.
-Muntañola-Cvetkovi
-Münzmay, Th. (pub. 1997) 
-Münzmay
-Münzmay
+MuntaÃ±ola-Cvetkovi
+MÃ¼nzmay, Th. (pub. 1997) 
+MÃ¼nzmay
+MÃ¼nzmay
 Murakami, H. (pub. 1966)        
 Murak.
 Murakami
@@ -20933,11 +20933,11 @@ Nabel
 Nadson, Georgii Adamovich (1867)        
 Nadson
 Nadson
-Nádvorník, Joseph (1906-1977)     
-Nádv.
-Nádvorník
-(Naegeli, Carl Wilhelm von) see Nägeli, Carl Wilhelm von 
-Nägeli
+NÃ¡dvornÃ­k, Joseph (1906-1977)     
+NÃ¡dv.
+NÃ¡dvornÃ­k
+(Naegeli, Carl Wilhelm von) see NÃ¤geli, Carl Wilhelm von 
+NÃ¤geli
 Nag Raj, Tumkur R. (pub. 1960)  
 Nag Raj
 Nag Raj
@@ -20973,9 +20973,9 @@ Nagatomo
 Nagatsuka, Yuka (pub. 1999)     
 Nagats.
 Nagatsuka
-Nägeli, Carl Wilhelm von (1817-1891)     
-Nägeli
-Nägeli
+NÃ¤geli, Carl Wilhelm von (1817-1891)     
+NÃ¤geli
+NÃ¤geli
 Nagler, Apollonia (pub. 2001)   
 A. Nagler
 Nagler
@@ -21225,9 +21225,9 @@ P. Navarro
 Navarro
 Navarro, R. (pub. 1986) 
 R. Navarro
-Navarro-Rosinés, Père (pub. 1986) 
+Navarro-RosinÃ©s, PÃ¨re (pub. 1986) 
 Nav.-Ros.
-Navarro-Rosinés
+Navarro-RosinÃ©s
 Navas, Antonio J. (pub. 1978)   
 A.J. Navas
 Navas
@@ -21239,7 +21239,7 @@ Navashin
 Naveau, (Georges) Raymond (Leonard) (1889-1932) 
 Naveau
 Naveau
-Naveau, Françoise A. (pub. 1999) 
+Naveau, FranÃ§oise A. (pub. 1999) 
 F.A. Naveau
 Naville, A. (pub. 1922) 
 Naville
@@ -21260,9 +21260,9 @@ Nazarova
 Ndimande, B.N. (pub. 1979)      
 Ndimande
 Ndimande
-Neagu-bîrcovnicu, Marina (pub. 1961)      
-Neagu-bîrc.
-Neagu-bîrcovnicu
+Neagu-bÃ®rcovnicu, Marina (pub. 1961)      
+Neagu-bÃ®rc.
+Neagu-bÃ®rcovnicu
 Neal, David Carleton (1890)     
 Neal
 Neal
@@ -21390,7 +21390,7 @@ Neuhoff
 Neuman, Julius John (pub. 1914) 
 J. Neuman
 Neuman
-Neumann, Peterjürgen (pub. 1999) 
+Neumann, PeterjÃ¼rgen (pub. 1999) 
 P. Neumann
 Neumann
 Neuwirth, F. (pub. 1949)        
@@ -21491,9 +21491,9 @@ Nielsen, N. (pub. 1929)
 N. Nielsen
 Nielsen, Peter (1829-1897)      
 Nielsen
-Niemelä, Tuomo (1940)    
-Niemelä
-Niemelä
+NiemelÃ¤, Tuomo (1940)    
+NiemelÃ¤
+NiemelÃ¤
 (Niessel von Meyendorf, Gustav) see Niessl von Mayendorf, Gustav        
 Niessl
 Niessen, Joseph (1864)  
@@ -21560,9 +21560,9 @@ Nimis
 Nimura, Hiroyoshi (pub. 1962)   
 Nimura
 Nimura
-Niño, F.L. (pub. 1930)   
-Niño
-Niño
+NiÃ±o, F.L. (pub. 1930)   
+NiÃ±o
+NiÃ±o
 Niolle, P. (pub. 1944)  
 Niolle
 Niolle
@@ -21638,9 +21638,9 @@ Nocca
 Noehden, Heinrich Adolph (August) (1775-1804)   
 Noehd.
 Noehden
-Noël, Paul (pub. 1910)   
-P. Noël
-Noël
+NoÃ«l, Paul (pub. 1910)   
+P. NoÃ«l
+NoÃ«l
 Nogawa, Chizuko (pub. 1995)     
 Nogawa
 Nogawa
@@ -21650,9 +21650,9 @@ Nograsek
 Nogueira, Penido J.C. (pub. 1922)       
 Nogueira
 Nogueira
-Nöhden, H.A. (1775-1804) 
-Nöhden
-Nöhden
+NÃ¶hden, H.A. (1775-1804) 
+NÃ¶hden
+NÃ¶hden
 Noicszewski, K. (pub. 1890)     
 Noicsz.
 Noicszewski
@@ -21751,12 +21751,12 @@ Nour
 Novak, Robert O. (pub. 1965)    
 R.O. Novak
 Novak
-Novák, Elizabeth K. (pub. 1964)  
-E.K. Novák
-Novák
-Növgaard, V.A. (pub. 1901)       
-Növgaard
-Növgaard
+NovÃ¡k, Elizabeth K. (pub. 1964)  
+E.K. NovÃ¡k
+NovÃ¡k
+NÃ¶vgaard, V.A. (pub. 1901)       
+NÃ¶vgaard
+NÃ¶vgaard
 Noviello, Carmine (pub. 1988)   
 Noviello
 Noviello
@@ -21797,20 +21797,20 @@ Nowell
 Nowotny, Wolfgang (pub. 1989)   
 Nowotny
 Nowotny
-Nüesch, Emil (1877-1959) 
-Nüesch
-Nüesch
-Nüesch, Emil (1877-1959) 
-Nüesch
-Nüesch, Jakob (pub. 1960)        
-J. Nüesch
-Nüesch, Jakob (pub. 1960)        
-J. Nüesch
-Núñez, María (pub. 1994)   
-Núñez
-Núñez
-(Núñez García, María Paz) see Núñez, María     
-Núñez
+NÃ¼esch, Emil (1877-1959) 
+NÃ¼esch
+NÃ¼esch
+NÃ¼esch, Emil (1877-1959) 
+NÃ¼esch
+NÃ¼esch, Jakob (pub. 1960)        
+J. NÃ¼esch
+NÃ¼esch, Jakob (pub. 1960)        
+J. NÃ¼esch
+NÃºÃ±ez, MarÃ­a (pub. 1994)   
+NÃºÃ±ez
+NÃºÃ±ez
+(NÃºÃ±ez GarcÃ­a, MarÃ­a Paz) see NÃºÃ±ez, MarÃ­a     
+NÃºÃ±ez
 Nuno, Mariko (1932)     
 Nuno
 Nuno
@@ -21870,9 +21870,9 @@ Obermeyer
 Oberwinkler, Franz (1939)       
 Oberw.
 Oberwinkler
-Obregón-Botero, Rafael (1909)    
+ObregÃ³n-Botero, Rafael (1909)    
 Obreg.-Bot.
-Obregón-Botero
+ObregÃ³n-Botero
 OBrien, Muriel J. (pub. 1967)   
 M.J. OBrien
 OBrien
@@ -22033,9 +22033,9 @@ Okpala
 Oksner, Alfred Nikolaevich (1898-1973)  
 Oksner
 Oksner
-Ôkubo, Mariko (pub. 1953)        
-M. Ôkubo
-Ôkubo
+Ã”kubo, Mariko (pub. 1953)        
+M. Ã”kubo
+Ã”kubo
 Okuda, Toru (pub. 1977) 
 Okuda
 Okuda
@@ -22171,8 +22171,8 @@ Onuki
 Onuma, Fusaji (pub. 1934)       
 Onuma
 Onuma
-(Ookubo, Mariko) see Ôkubo, Mariko       
-M. Ôkubo
+(Ookubo, Mariko) see Ã”kubo, Mariko       
+M. Ã”kubo
 Oolbekkink, G.T. (pub. 1991)    
 Oolbekk.
 Oolbekkink
@@ -22206,7 +22206,7 @@ Orchen.
 Orchenashek, M. (pub. 1977)     
 Orchen.
 Orchenashek
-(Orejuela, Carlos Garcés) see Garcés Orejuela, Carlos     
+(Orejuela, Carlos GarcÃ©s) see GarcÃ©s Orejuela, Carlos     
 Orejuela
 Orellana, R.G. (pub. 1959)      
 Orellana
@@ -22223,21 +22223,21 @@ Orishimo
 Orlicz, Anna (1941)     
 Orlicz
 Orlicz
-Orlós, H. (pub. 1967)    
-Orlós
-Orlós
+OrlÃ³s, H. (pub. 1967)    
+OrlÃ³s
+OrlÃ³s
 Orlova, A. (pub. 1925)  
 Orlova
 Orlova
-Ormeno-Nuñez, J. (pub. 1988)     
-Ormeno-Nuñez
-Ormeno-Nuñez
-Ormières, Rene (pub. 1961)       
-Ormières
-Ormières
-Örösi-Pál, Z. (pub. 1936)  
-Örösi-Pál
-Örösi-Pál
+Ormeno-NuÃ±ez, J. (pub. 1988)     
+Ormeno-NuÃ±ez
+Ormeno-NuÃ±ez
+OrmiÃ¨res, Rene (pub. 1961)       
+OrmiÃ¨res
+OrmiÃ¨res
+Ã–rÃ¶si-PÃ¡l, Z. (pub. 1936)  
+Ã–rÃ¶si-PÃ¡l
+Ã–rÃ¶si-PÃ¡l
 ORourke, C.J. (pub. 1969)       
 ORourke
 ORourke
@@ -22264,17 +22264,17 @@ Orshanskaya
 Orskov  
 Orskov
 Orskov
-Örstadius, Leif (pub. 1984)      
-Örstadius
-Örstadius
+Ã–rstadius, Leif (pub. 1984)      
+Ã–rstadius
+Ã–rstadius
 (Orsted, Anders Sando) see Oersted, Anders Sando        
 Oerst.
 Ortega (Diaz), Antonio (1943)   
 A. Ortega
 Ortega (Diaz)
-Örtegren, R. (pub. 1916) 
-Örtegren
-Örtegren
+Ã–rtegren, R. (pub. 1916) 
+Ã–rtegren
+Ã–rtegren
 Orton, Clayton Roberts (1885-1955)      
 Orton
 Orton
@@ -22321,11 +22321,11 @@ Ostenfeld
 Osterwalder, Adolph [Adolf] (1872-1948) 
 Osterw.
 Osterwalder
-Østhagen, Haavard (pub. 1976)    
-Østh.
-Østhagen
-Østhagen, Haavard (pub. 1976)    
-Østh.
+Ã˜sthagen, Haavard (pub. 1976)    
+Ã˜sth.
+Ã˜sthagen
+Ã˜sthagen, Haavard (pub. 1976)    
+Ã˜sth.
 Oswald, T. (pub. 1979)  
 T. Oswald
 Oswald
@@ -22339,9 +22339,9 @@ Otani
 Otani
 Otani, Yoshio (pub. 1958)       
 Y. Otani
-Otenáaek, Miloa (pub. 1977)        
-Otenáaek
-Otenáaek
+OtenÃ¡aek, Miloa (pub. 1977)        
+OtenÃ¡aek
+OtenÃ¡aek
 Otieno, N.C. (pub. 1969)        
 Otieno
 Otieno
@@ -22385,15 +22385,15 @@ Overholts
 Ovrebo, Clark L. (pub. 1983)    
 Ovrebo
 Ovrebo
-Øvstedal, Dag Olav (1944)        
-Øvstedal
-Øvstedal
-Øvstedal, Dag Olav (1944)        
-Øvstedal
+Ã˜vstedal, Dag Olav (1944)        
+Ã˜vstedal
+Ã˜vstedal
+Ã˜vstedal, Dag Olav (1944)        
+Ã˜vstedal
 Owaki, K. (pub. 1966)    
 Owaki
 Owaki
-Owe-Larsson, Björn (pub. 1995)   
+Owe-Larsson, BjÃ¶rn (pub. 1995)   
 Owe-Larss.
 Owe-Larsson
 Owen, H.M. (pub. 1950)  
@@ -22419,11 +22419,11 @@ O~egovi
 Ozenda, Paul (1920)     
 Ozenda
 Ozenda
-Özkan, Hamdi (pub. 1947) 
-Özkan
-Özkan
-Özkan, Mediha (pub. 1947)        
-M. Özkan
+Ã–zkan, Hamdi (pub. 1947) 
+Ã–zkan
+Ã–zkan
+Ã–zkan, Mediha (pub. 1947)        
+M. Ã–zkan
 
 
 Pacaud, R. (pub. 1999)  
@@ -22479,9 +22479,9 @@ Paechnatz
 Paes, Antonio S. Ana (pub. 1918)        
 Paes
 Paes
-Paéz de Badillo, I. (pub. 1982)  
-Paéz
-Paéz de Badillo
+PaÃ©z de Badillo, I. (pub. 1982)  
+PaÃ©z
+PaÃ©z de Badillo
 Pagani, H.      
 Pagani
 Pagani
@@ -22513,12 +22513,12 @@ Pal, K.P. (pub. 1968)
 K.P. Pal
 Pal, Mahendra (pub. 1970)       
 M. Pal
-Palacios-Prü, Ernesto L. (pub. 2000)     
-Palacios-Prü
-Palacios-Prü
-Paláez, F. (pub. 1999)   
-Paláez
-Paláez
+Palacios-PrÃ¼, Ernesto L. (pub. 2000)     
+Palacios-PrÃ¼
+Palacios-PrÃ¼
+PalÃ¡ez, F. (pub. 1999)   
+PalÃ¡ez
+PalÃ¡ez
 Palagetti, Mario (pub. 1902)    
 Palag.
 Palagetti
@@ -22689,7 +22689,7 @@ Pardo-Schultheiss
 Parenti, F.     
 Parenti
 Parenti
-Parguey-Leduc, Agnès (pub. 1967) 
+Parguey-Leduc, AgnÃ¨s (pub. 1967) 
 Parg.-Leduc
 Parguey-Leduc
 Parisi, Rosa (pub. 1921)        
@@ -22718,9 +22718,9 @@ Parkinson
 Parks, Harold Ernest (1880-1967)        
 Parks
 Parks
-Parladé, Javier (pub. 1993)      
-Parladé
-Parladé
+ParladÃ©, Javier (pub. 1993)      
+ParladÃ©
+ParladÃ©
 Parmasto, Erast (1928)  
 Parmasto
 Parmasto
@@ -22737,7 +22737,7 @@ S.E. Parodi
 Parra, J. (pub. 1987)   
 Parra
 Parra
-(Parra Sánchez, Luis Alberto) see Parra, Luis Alberto    
+(Parra SÃ¡nchez, Luis Alberto) see Parra, Luis Alberto    
 L.A. Parra
 Parrettini, Gian Luigi (pub. 1991)      
 Parrett.
@@ -22760,8 +22760,8 @@ Pascalet
 Pascher, Adolf [Adolph] A. (1881-1945)  
 Pascher
 Pascher
-(Pascholati Gusmão, Luís Fernando Pascholati) see Gusmão, Luís Fernando Pascholati  
-Gusmão
+(Pascholati GusmÃ£o, LuÃ­s Fernando Pascholati) see GusmÃ£o, LuÃ­s Fernando Pascholati  
+GusmÃ£o
 Pascoe, Ian G. (1949)   
 Pascoe
 Pascoe
@@ -22888,9 +22888,9 @@ Paul, Hermann Karl Gustav (1876-1964)
 H.K.G. Paul
 Paul, Y.S. (pub. 1983)  
 Y.S. Paul
-Paúl (pub. 1915) 
-Paúl bis
-Paúl
+PaÃºl (pub. 1915) 
+PaÃºl bis
+PaÃºl
 Paulet, Jean Jacques (1740-1826)        
 Paulet
 Paulet
@@ -22905,9 +22905,9 @@ Paunero
 Paunero
 (Paunero Ruiz, Elena) see Paunero, Elena        
 Paunero
-Pauzé, J.F. (pub. 1975)  
-Pauzé
-Pauzé
+PauzÃ©, J.F. (pub. 1975)  
+PauzÃ©
+PauzÃ©
 Pavarino, Giovanni Luigi (1867-1937)    
 Pavar.
 Pavarino
@@ -22938,14 +22938,14 @@ M. Payne
 Payne
 Payne, R.W. (pub. 1983) 
 R.W. Payne
-(Paz Martín, María) see Martín, María Paz   
-M.P. Martín
-Pázmány, Denes (Dionisie) (1931)  
-Pázmány
-Pázmány
-Pa~outová, Sylvie (pub. 1998)     
-Pa~outová
-Pa~outová
+(Paz MartÃ­n, MarÃ­a) see MartÃ­n, MarÃ­a Paz   
+M.P. MartÃ­n
+PÃ¡zmÃ¡ny, Denes (Dionisie) (1931)  
+PÃ¡zmÃ¡ny
+PÃ¡zmÃ¡ny
+Pa~outovÃ¡, Sylvie (pub. 1998)     
+Pa~outovÃ¡
+Pa~outovÃ¡
 Pazschke, Franz Otto (1843-1922)        
 Pazschke
 Pazschke
@@ -22975,20 +22975,20 @@ Peck
 Peck
 Peck, Morton Eaton      
 M. Peck
-Pková, Milena (pub. 1990)        
-Pková
-Pková
+PkovÃ¡, Milena (pub. 1990)        
+PkovÃ¡
+PkovÃ¡
 Pedersen, O.A. (pub. 1989)      
 O.A. Pedersen
 Pedersen
 Pedersen, T.A. (pub. 1958)      
 T.A. Pedersen
-Pedersén, Marianne (pub. 1999)   
-M. Pedersén
-Pedersén
-Pedreño, J.G. (pub. 1986)        
-Pedreño
-Pedreño
+PedersÃ©n, Marianne (pub. 1999)   
+M. PedersÃ©n
+PedersÃ©n
+PedreÃ±o, J.G. (pub. 1986)        
+PedreÃ±o
+PedreÃ±o
 Pedrosa, M. Carlota (pub. 1965) 
 Pedrosa
 Pedrosa
@@ -23015,23 +23015,23 @@ K.Q. Pei
 Pei
 Pei, Ming Hao (pub. 1987)       
 M.H. Pei
-Peine, Jörg (pub. 1995)  
+Peine, JÃ¶rg (pub. 1995)  
 Peine
 Peine
 Peintner, Ursula (pub. 1999)    
 Peintner
 Peintner
-Péju, G. (pub. 1920)     
-Péju
-Péju
+PÃ©ju, G. (pub. 1920)     
+PÃ©ju
+PÃ©ju
 Pekelharing, C.A. (pub. 1885)   
 Pekelh.
 Pekelharing
-Peláez, Fernando (pub. 1994)     
-Peláez
-Peláez
-(Peláez [Campomanes], Fernando) see Peláez, Fernando      
-Peláez
+PelÃ¡ez, Fernando (pub. 1994)     
+PelÃ¡ez
+PelÃ¡ez
+(PelÃ¡ez [Campomanes], Fernando) see PelÃ¡ez, Fernando      
+PelÃ¡ez
 Pellandini, Wanda (pub. 1989)   
 Pelland.
 Pellandini
@@ -23041,9 +23041,9 @@ Pellicier
 Peltereau, E. (pub. 1931)       
 Pelt.
 Peltereau
-Peña, Nora I. (pub. 1997)        
-N.I. Peña
-Peña
+PeÃ±a, Nora I. (pub. 1997)        
+N.I. PeÃ±a
+PeÃ±a
 Pendergrass, William R. (pub. 1948)     
 Pend.
 Pendergrass
@@ -23070,12 +23070,12 @@ Pennington
 Pennycook, Shaun (R.) (pub. 1982)       
 Pennycook
 Pennycook
-Pentillä, Reijo (pub. 1992)      
-Pentillä
-Pentillä
-Pénzes, Antal (1895)     
-Pénzes
-Pénzes
+PentillÃ¤, Reijo (pub. 1992)      
+PentillÃ¤
+PentillÃ¤
+PÃ©nzes, Antal (1895)     
+PÃ©nzes
+PÃ©nzes
 Penzig, Albert Julius Otto [Albertus Giulio Ottone] (1856-1929) 
 Penz.
 Penzig
@@ -23106,7 +23106,7 @@ Peredo
 Peregrine, W.T.H. (pub. 1972)   
 Peregrine
 Peregrine
-Pereira, Antônio Batista (pub. 1998)     
+Pereira, AntÃ´nio Batista (pub. 1998)     
 A.B. Pereira
 Pereira
 Pereira, C.R. (pub. 1970)       
@@ -23122,9 +23122,9 @@ Pereiro
 Pereiro Miguens
 (Pereiro-Miguens, M.) see Pereiro Miguens, M.   
 Pereiro
-Perelló, Analía (pub. 1994)       
-Perelló
-Perelló
+PerellÃ³, AnalÃ­a (pub. 1994)       
+PerellÃ³
+PerellÃ³
 Perera, M.L. (pub. 1965)        
 Perera
 Perera
@@ -23136,30 +23136,30 @@ Peres
 Peresipkin, U.P. (pub. 1979)    
 Peresipkin
 Peresipkin
-Péresse, Madeleine (pub. 1971)   
-Péresse
-Péresse
-Pérez, C. (pub. 1907)    
-Pérez
-Pérez
-Pérez, C. (pub. 1907)    
-Pérez
-Pérez Reyes, Rodolfo (pub. 1964) 
-Pérez Reyes
-Pérez Reyes
-Pérez-de-Gregorio, Miquel Á. (pub. 1995)  
-Pérez-de-Greg.
-Pérez-de-Gregorio
-(Pérez-de-Gregorio Capella, Miquel Á.) see Pérez-de-Gregorio, Miquel Á.     
-Pérez-de-Greg.
-Pérez-Silva, Evangelina (1931)   
-Pérez-Silva
-Pérez-Silva
-Pérez-Silva, Evangelina (1931)   
-Pérez-Silva
-Péricouche, Albert (pub. 2000)   
-Péric.
-Péricouche
+PÃ©resse, Madeleine (pub. 1971)   
+PÃ©resse
+PÃ©resse
+PÃ©rez, C. (pub. 1907)    
+PÃ©rez
+PÃ©rez
+PÃ©rez, C. (pub. 1907)    
+PÃ©rez
+PÃ©rez Reyes, Rodolfo (pub. 1964) 
+PÃ©rez Reyes
+PÃ©rez Reyes
+PÃ©rez-de-Gregorio, Miquel Ã. (pub. 1995)  
+PÃ©rez-de-Greg.
+PÃ©rez-de-Gregorio
+(PÃ©rez-de-Gregorio Capella, Miquel Ã.) see PÃ©rez-de-Gregorio, Miquel Ã.     
+PÃ©rez-de-Greg.
+PÃ©rez-Silva, Evangelina (1931)   
+PÃ©rez-Silva
+PÃ©rez-Silva
+PÃ©rez-Silva, Evangelina (1931)   
+PÃ©rez-Silva
+PÃ©ricouche, Albert (pub. 2000)   
+PÃ©ric.
+PÃ©ricouche
 Perin, A. (pub. 1922)   
 Perin
 Perin
@@ -23241,9 +23241,9 @@ Pestinskaja
 Petch, Thomas (1870-1948)       
 Petch
 Petch
-Péter, Gábor (pub. 1997)  
-G. Péter
-Péter
+PÃ©ter, GÃ¡bor (pub. 1997)  
+G. PÃ©ter
+PÃ©ter
 Peters, Harriet Anne (1938)     
 H.A. Peters
 Peters
@@ -23267,7 +23267,7 @@ Peterson, Eric B. (pub. 2000)
 E.B. Peterson
 Peterson, J.L. (pub. 1986)      
 J.L. Peterson
-Peterson, Kristin René (1969)    
+Peterson, Kristin RenÃ© (1969)    
 K.R. Peterson
 Peterson, Roger S. (pub. 1963)  
 R.S. Peterson
@@ -23275,9 +23275,9 @@ Peterson, Ron A. (pub. 1999)
 R.A. Peterson
 Peterson, Stephen W. (pub. 1981)        
 S.W. Peterson
-Petgès, G. (pub. 1923)   
-Petgès
-Petgès
+PetgÃ¨s, G. (pub. 1923)   
+PetgÃ¨s
+PetgÃ¨s
 Pethybridge, George Herbert (1871-1948) 
 Pethybr.
 Pethybridge
@@ -23430,7 +23430,7 @@ Pic. Serm.
 Pichi Sermolli
 (Pichi-Sermolli, Rodolfo Emilio Giuseppe) see Pichi Sermolli, Rodolfo Emilio Giuseppe   
 Pic. Serm.
-(Pichon, Françoise) see Candoussau, Françoise     
+(Pichon, FranÃ§oise) see Candoussau, FranÃ§oise     
 Cand.
 Pickering, J. (pub. 1990)       
 J. Pickering
@@ -23441,11 +23441,11 @@ Pickhardt
 Pico (pub. 1823)        
 Pico
 Pico
-Picón, Rafael Maria (pub. 1998)  
-Picón
-Picón
-(Picón González, Rafael Maria) see Picón, Rafael Maria     
-Picón
+PicÃ³n, Rafael Maria (pub. 1998)  
+PicÃ³n
+PicÃ³n
+(PicÃ³n GonzÃ¡lez, Rafael Maria) see PicÃ³n, Rafael Maria     
+PicÃ³n
 Picquenard, Charles-Armand (1872-1940)  
 Picq.
 Picquenard
@@ -23504,9 +23504,9 @@ Sherwood
 Pikul, F.J. (pub. 1974) 
 Pikul
 Pikul
-Pilát, Albert (1903-1974)        
-Pilát
-Pilát
+PilÃ¡t, Albert (1903-1974)        
+PilÃ¡t
+PilÃ¡t
 Pillai, C. Madhusoodhanan (pub. 1996)   
 C.M. Pillai
 Pillai
@@ -23559,11 +23559,11 @@ Piontelli
 Piper, Charles Vancouver (1867-1926)    
 Piper
 Piper
-Pirajá, Manuel Augusto (da) (1873-1961)  
-Pirajá
-Pirajá
-(Pirajá da Silva, Manuel Augusto) see Pirajá, Manuel Augusto (da) 
-Pirajá
+PirajÃ¡, Manuel Augusto (da) (1873-1961)  
+PirajÃ¡
+PirajÃ¡
+(PirajÃ¡ da Silva, Manuel Augusto) see PirajÃ¡, Manuel Augusto (da) 
+PirajÃ¡
 Piringer, W. (pub. 1939)        
 Piringer
 Piringer
@@ -23584,9 +23584,9 @@ Pisareva
 Piapek, P.A. (pub. 1929) 
 Piapek
 Piapek
-Piaút, Ivan (1935)        
-Piaút
-Piaút
+PiaÃºt, Ivan (1935)        
+PiaÃºt
+PiaÃºt
 Pitard, Charles-Joseph Marie (1873-1927)        
 Pit.
 Pitard
@@ -23598,9 +23598,9 @@ Piton
 Pitt, John Ingram (pub. 1966)   
 Pitt
 Pitt
-Plaäts-Niterink, A.J. van der (pub. 1972)        
-Plaäts-Nit.
-Plaäts-Niterink
+PlaÃ¤ts-Niterink, A.J. van der (pub. 1972)        
+PlaÃ¤ts-Nit.
+PlaÃ¤ts-Niterink
 Plakidas, Antonios George (1895-1987)   
 Plakidas
 Plakidas
@@ -23622,9 +23622,9 @@ Platt
 Plaut, Hugo Carl (pub. 1887)    
 Plaut
 Plaut
-Plée, Auguste (1787-1825)        
-Plée
-Plée
+PlÃ©e, Auguste (1787-1825)        
+PlÃ©e
+PlÃ©e
 Plehn, Marianne (pub. 1912)     
 Plehn
 Plehn
@@ -23639,15 +23639,15 @@ Plitt
 Plomb, G. (pub. 1968)   
 Plomb
 Plomb
-Plöttner, Traugott (1853-1923)   
-Plöttn.
-Plöttner
+PlÃ¶ttner, Traugott (1853-1923)   
+PlÃ¶ttn.
+PlÃ¶ttner
 Plowright, Charles Bagge (1849-1910)    
 Plowr.
 Plowright
-Plümper, M. (pub. 1997)  
-Plümper
-Plümper
+PlÃ¼mper, M. (pub. 1997)  
+PlÃ¼mper
+PlÃ¼mper
 Plunkett, Orda Allen (1897)     
 Plunkett
 Plunkett
@@ -23663,17 +23663,17 @@ Poaletti
 Poche, Franz (pub. 1913)        
 Poche
 Poche
-Pöder, Reinhold (pub. 1983)      
-Pöder
-Pöder
-Pöder, Reinhold (pub. 1983)      
-Pöder
+PÃ¶der, Reinhold (pub. 1983)      
+PÃ¶der
+PÃ¶der
+PÃ¶der, Reinhold (pub. 1983)      
+PÃ¶der
 Podger, Francis Denis (pub. 1998)       
 Podger
 Podger
-Podlahová-Ruzena, R. (pub. 1970) 
+PodlahovÃ¡-Ruzena, R. (pub. 1970) 
 Podl.-Ruz.
-Podlahová-Ruzena
+PodlahovÃ¡-Ruzena
 Podzimek, Jan (pub. 1927)       
 J. Podzimek
 Podzimek
@@ -23718,19 +23718,19 @@ Poiteau
 Poitras, Adrian W. (pub. 1950)  
 Poitras
 Poitras
-Põldmaa, K. (pub. 1996)  
-K. Põldmaa
-Põldmaa
-Põldmaa, P. (pub. 1996)  
-Põldmaa
+PÃµldmaa, K. (pub. 1996)  
+K. PÃµldmaa
+PÃµldmaa
+PÃµldmaa, P. (pub. 1996)  
+PÃµldmaa
 Pole Evans, Illtyd [Iltyd] Buller (1879-1968)   
 Pole-Evans
 Pole Evans
 (Pole-Evans, Illtyd [Iltyd] Buller) see Pole Evans, Illtyd [Iltyd] Buller       
 Pole-Evans
-Polgár, Sandor (1876-1944)       
+PolgÃ¡r, Sandor (1876-1944)       
 Polg.
-Polgár
+PolgÃ¡r
 Poli, Ferruccio (pub. 1995)     
 Poli
 Poli
@@ -23798,11 +23798,11 @@ Pomerleau
 Pomina, C. (pub. 1963)  
 Pomina
 Pomina
-Ponce de León y Carrillo, Patricio (1915)        
-P. Ponce de León
-Ponce de León y Carrillo
-(Ponce de León, Patricio) see Ponce de León y Carrillo, Patricio  
-P. Ponce de León
+Ponce de LeÃ³n y Carrillo, Patricio (1915)        
+P. Ponce de LeÃ³n
+Ponce de LeÃ³n y Carrillo
+(Ponce de LeÃ³n, Patricio) see Ponce de LeÃ³n y Carrillo, Patricio  
+P. Ponce de LeÃ³n
 Ponchet, J. (pub. 1982) 
 Ponchet
 Ponchet
@@ -23922,9 +23922,9 @@ Potier
 Potlaichuk, V.I. (pub. 1952)     
 Potl.
 Potlaichuk
-Potonié, Robert Henri Hermann Ernst (1889-1974)  
-R. Potonié
-Potonié
+PotoniÃ©, Robert Henri Hermann Ernst (1889-1974)  
+R. PotoniÃ©
+PotoniÃ©
 Potron, M. (pub. 1911)  
 Potron
 Potron
@@ -24024,7 +24024,7 @@ O.A. Pratt
 Pratt
 Pratt, Robert G. (pub. 1973)    
 R.G. Pratt
-Prensier, Gérard (pub. 1991)     
+Prensier, GÃ©rard (pub. 1991)     
 Prensier
 Prensier
 Presl, Carl [Karl, Carel, Carolus] Borivoj [Boriwog, Boriwag] (1794-1852)       
@@ -24045,8 +24045,8 @@ Pretorius
 Preuss, Carl Gottlieb Traugott (1795-1855)      
 Preuss
 Preuss
-(Prévost, Auguste le) see Le Prévost, Auguste     
-Le Prévost
+(PrÃ©vost, Auguste le) see Le PrÃ©vost, Auguste     
+Le PrÃ©vost
 Preyer, Axel (pub. 1901)        
 Preyer
 Preyer
@@ -24069,13 +24069,13 @@ Priest
 Priestley, Henry (pub. 1914)    
 Priestley
 Priestley
-PYíhoda, Antonin (pub. 1954)      
-PYíhoda
-PYíhoda
+PYÃ­hoda, Antonin (pub. 1954)      
+PYÃ­hoda
+PYÃ­hoda
 Prillieux, Edouard Ernest (1829-1915)   
 Prill.
 Prillieux
-Prillinger, Hans Jörg (pub. 1991)        
+Prillinger, Hans JÃ¶rg (pub. 1991)        
 Prillinger
 Prillinger
 Pringle, Cyrus Guernsey (1838-1911)     
@@ -24118,12 +24118,12 @@ Proffer
 Prokhorov, V.P. (pub. 1990)     
 Prokhorov
 Prokhorov
-Prökschl, H. (pub. 1953) 
-Prökschl
-Prökschl
-Prône, Michele (pub. 1967)       
-Prône
-Prône
+PrÃ¶kschl, H. (pub. 1953) 
+PrÃ¶kschl
+PrÃ¶kschl
+PrÃ´ne, Michele (pub. 1967)       
+PrÃ´ne
+PrÃ´ne
 Prost, T.C. ( -1848)    
 Prost
 Prost
@@ -24285,11 +24285,11 @@ Queiroz
 Quekett, Edwin John (1808-1847) 
 E.J. Quekett
 Quekett
-Quélet, Lucien (1832-1899)       
-Quél.
-Quélet
-Quélet, Lucien (1832-1899)       
-Quél.
+QuÃ©let, Lucien (1832-1899)       
+QuÃ©l.
+QuÃ©let
+QuÃ©let, Lucien (1832-1899)       
+QuÃ©l.
 (Quer, Pio [Pius] Font) see Font Quer, Pio [Pius]       
 Font Quer
 Queyrat, Louis (pub. 1909)      
@@ -24579,23 +24579,23 @@ C. Ramesh
 Ramesh
 Ramesh, P. (pub. 1997)  
 P. Ramesh
-Ramírez, Carlos (pub. 1952)      
-C. Ramírez
-Ramírez
-(Ramírez Gomez, Carlos) see Ramírez, Carlos       
-C. Ramírez
-Ramírez-Guillén, Florencia J. (pub. 1999) 
+RamÃ­rez, Carlos (pub. 1952)      
+C. RamÃ­rez
+RamÃ­rez
+(RamÃ­rez Gomez, Carlos) see RamÃ­rez, Carlos       
+C. RamÃ­rez
+RamÃ­rez-GuillÃ©n, Florencia J. (pub. 1999) 
 Ram.-Guill.
-Ramírez-Guillén
+RamÃ­rez-GuillÃ©n
 Ramm, Etienne (pub. 1989)       
 Ramm
 Ramm
 Rammeloo, Jan (1946)    
 Rammeloo
 Rammeloo
-Ramond de Carbonnière, Louis Francois Elisabeth (1753-1827)      
+Ramond de CarbonniÃ¨re, Louis Francois Elisabeth (1753-1827)      
 Ramond
-Ramond de Carbonnière
+Ramond de CarbonniÃ¨re
 Ramos, T.       
 T. Ramos
 Ramos
@@ -24666,10 +24666,10 @@ Ranoj.
 Ranojevi
 (Ranojevitch, Nikola) see Ranojevi, Nikola      
 Ranoj.
-Rantio-Lehtimäki, A.H. (pub. 1985)       
+Rantio-LehtimÃ¤ki, A.H. (pub. 1985)       
 Rant.-Leht.
-Rantio-Lehtimäki
-Rantio-Lehtimäki, A.H. (pub. 1985)       
+Rantio-LehtimÃ¤ki
+Rantio-LehtimÃ¤ki, A.H. (pub. 1985)       
 Rant.-Leht.
 Ranzoni, Francis Verne (1916)   
 Ranzoni
@@ -24757,18 +24757,18 @@ Raper
 Rappaz, Francois (pub. 1987)    
 Rappaz
 Rappaz
-Räsänen, Veli Johannes Paavo Bartholomeus (1888-1953)     
-Räsänen
-Räsänen
+RÃ¤sÃ¤nen, Veli Johannes Paavo Bartholomeus (1888-1953)     
+RÃ¤sÃ¤nen
+RÃ¤sÃ¤nen
 Raschle, Paul (pub. 1977)       
 Raschle
 Raschle
 Rasheed, A. (pub. 1990) 
 Rasheed
 Rasheed
-Rsín, K. (pub. 1928)     
-Rsín
-Rsín
+RsÃ­n, K. (pub. 1928)     
+RsÃ­n
+RsÃ­n
 Raspail, Francois Vincent (1794-1878)   
 Raspail
 Raspail
@@ -24786,9 +24786,9 @@ F. Rath
 Rathaiah, Y. (pub. 1971)        
 Rathaiah
 Rathaiah
-Ráthay, Emerich (1845-1900)      
-Ráthay
-Ráthay
+RÃ¡thay, Emerich (1845-1900)      
+RÃ¡thay
+RÃ¡thay
 Rathod, M.M. (pub. 1986)        
 Rathod
 Rathod
@@ -24841,7 +24841,7 @@ K. Ravik.
 Ravinder, E. John (pub. 1987)   
 Ravinder
 Ravinder
-Ravn, Frederik Kølpin (1873-1920)        
+Ravn, Frederik KÃ¸lpin (1873-1920)        
 Ravn
 Ravn
 Rawal, R.D. (pub. 1984) 
@@ -24905,17 +24905,17 @@ Read
 Reade, John Moore (1876-1937)   
 J.M. Reade
 Reade
-Réaudin, D. (pub. 1994)  
-Réaudin
-Réaudin
+RÃ©audin, D. (pub. 1994)  
+RÃ©audin
+RÃ©audin
 Rebentisch, Johann Friedrich (1772-1810)        
 Rebent.
 Rebentisch
-Réblová, Martina (1971)   
-Réblová
-Réblová
-Réblová, Martina (1971)   
-Réblová
+RÃ©blovÃ¡, Martina (1971)   
+RÃ©blovÃ¡
+RÃ©blovÃ¡
+RÃ©blovÃ¡, Martina (1971)   
+RÃ©blovÃ¡
 Rebrikova, N.L. (pub. 1978)     
 Rebrik.
 Rebrikova
@@ -25008,11 +25008,11 @@ Redinger
 Redlin, Scott C. (1954) 
 Redlin
 Redlin
-Redón, Jorge (1936)      
-Redón
-Redón
-(Redón Figueroa, Jorge) see Redón, Jorge  
-Redón
+RedÃ³n, Jorge (1936)      
+RedÃ³n
+RedÃ³n
+(RedÃ³n Figueroa, Jorge) see RedÃ³n, Jorge  
+RedÃ³n
 Reed, George Matthew (1878-1956)        
 G.M. Reed
 Reed
@@ -25092,9 +25092,9 @@ D.A. Reid
 Reid
 Reid, James (pub. 1961) 
 J. Reid
-Reiersöl, Signy (pub. 1958)      
-Reiersöl
-Reiersöl
+ReiersÃ¶l, Signy (pub. 1958)      
+ReiersÃ¶l
+ReiersÃ¶l
 Reifschneider, Francisco J.B. (pub. 1979)       
 Reifschn.
 Reifschneider
@@ -25146,9 +25146,9 @@ Relhan
 Remak, Robert (pub. 1845)       
 Remak
 Remak
-Remaudière, G. (pub. 1980)       
+RemaudiÃ¨re, G. (pub. 1980)       
 Remaud.
-Remaudière
+RemaudiÃ¨re
 Remaux (pub. 1991)      
 Remaux
 Remaux
@@ -25224,11 +25224,11 @@ Reumaux
 Reusser, F.A. (pub. 1964)       
 Reusser
 Reusser
-Révay, Ágnes (1952)       
-Révay
-Révay
-Révay, Ágnes (1952)       
-Révay
+RÃ©vay, Ãgnes (1952)       
+RÃ©vay
+RÃ©vay
+RÃ©vay, Ãgnes (1952)       
+RÃ©vay
 Rewbridge, A.G. (pub. 1929)     
 Rewbr.
 Rewbridge
@@ -25318,10 +25318,10 @@ Ricken
 Ricker, Percy Leroy (1878-1973) 
 Ricker
 Ricker
-Rico, Víctor J. (pub. 1985)      
+Rico, VÃ­ctor J. (pub. 1985)      
 V.J. Rico
 Rico
-(Rico Gray, Víctor J.) see Rico, Víctor J.        
+(Rico Gray, VÃ­ctor J.) see Rico, VÃ­ctor J.        
 V.J. Rico
 Riddle, Lincoln Ware (1880-1921)        
 Riddle
@@ -25405,7 +25405,7 @@ Rinz
 Riofrio, B.F. (pub. 1923)       
 Riofrio
 Riofrio
-Riousset, Gisèle (pub. 1976)     
+Riousset, GisÃ¨le (pub. 1976)     
 G. Riousset
 Riousset
 Riousset, Louis (1920)  
@@ -25446,9 +25446,9 @@ Riva
 Rivalier, E. (pub. 1954)        
 Rivalier
 Rivalier
-Rivas Martínez, Salvador (1935)  
+Rivas MartÃ­nez, Salvador (1935)  
 Rivas Mart.
-Rivas Martínez
+Rivas MartÃ­nez
 Rivera, Vincenzo (1890-1967)    
 Rivera
 Rivera
@@ -25571,18 +25571,18 @@ Roche
 Rode, H.R. (pub. 1936)  
 H.R. Rode
 Rode
-Röder, K. (pub. 1937)    
-Röder
-Röder
+RÃ¶der, K. (pub. 1937)    
+RÃ¶der
+RÃ¶der
 Rodhain, F. (pub. 1985) 
 Rodhain
 Rodhain
 Rodig, Friedrich Weinhold (1770-1844)   
 Rodig
 Rodig
-Rödig, Th. (pub. 1993)   
-T. Rödig
-Rödig
+RÃ¶dig, Th. (pub. 1993)   
+T. RÃ¶dig
+RÃ¶dig
 Rodigin, Michail Nikolaevich (pub. 1928)        
 Rodigin
 Rodigin
@@ -25598,45 +25598,45 @@ Rodrigues
 Rodrigues de Miranda, Lennart (1925)    
 Rodr. Mir.
 Rodrigues de Miranda
-Rodríguez, A.E. (pub. 1964)      
+RodrÃ­guez, A.E. (pub. 1964)      
 A.E. Rodr.
-Rodríguez
-Rodríguez, Kendra (pub. 2001)    
+RodrÃ­guez
+RodrÃ­guez, Kendra (pub. 2001)    
 K. Rodr.
-Rodríguez, Kendra (pub. 2001)    
+RodrÃ­guez, Kendra (pub. 2001)    
 K. Rodr.
-Rodríguez, L.M. (pub. 1976)      
+RodrÃ­guez, L.M. (pub. 1976)      
 L.M. Rodr.
-Rodríguez, N.B. (pub. 1984)      
+RodrÃ­guez, N.B. (pub. 1984)      
 N.B. Rodr.
-Rodríguez, Paola A. (pub. 2000)  
+RodrÃ­guez, Paola A. (pub. 2000)  
 P.A. Rodr.
-Rodríguez, Paola A. (pub. 2000)  
+RodrÃ­guez, Paola A. (pub. 2000)  
 P.A. Rodr.
-Rodríguez Armas, L.      
+RodrÃ­guez Armas, L.      
 Rodr. Armas
-Rodríguez Armas
-Rodríguez de la Rosa, Nerci (pub. 1989)  
+RodrÃ­guez Armas
+RodrÃ­guez de la Rosa, Nerci (pub. 1989)  
 N. Rodr.
-Rodríguez de la Rosa
-(Rodríguez Hernández, Mateo) see Rodríguez, Mateo Rodriguez        
+RodrÃ­guez de la Rosa
+(RodrÃ­guez HernÃ¡ndez, Mateo) see RodrÃ­guez, Mateo Rodriguez        
 M. Rodr.
-Rodríguez Hernández, Miguel (pub. 1980)   
+RodrÃ­guez HernÃ¡ndez, Miguel (pub. 1980)   
 Mig. Rodr.
-Rodríguez Hernández
-Rodríguez Hernández, Miguel (pub. 1980)   
+RodrÃ­guez HernÃ¡ndez
+RodrÃ­guez HernÃ¡ndez, Miguel (pub. 1980)   
 Mig. Rodr.
-Rodríguez-Armas, J.L. (pub. 1994)        
+RodrÃ­guez-Armas, J.L. (pub. 1994)        
 Rodr.-Armas
-Rodríguez-Armas
+RodrÃ­guez-Armas
 Rodway, Leonard (1853-1936)     
 Rodway
 Rodway
-Røed, H. (pub. 1949)     
-Røed
-Røed
-(Roehling, Johann Christoph) see Röhling, Johann Christoph       
-Röhl.
+RÃ¸ed, H. (pub. 1949)     
+RÃ¸ed
+RÃ¸ed
+(Roehling, Johann Christoph) see RÃ¶hling, Johann Christoph       
+RÃ¶hl.
 Roeijmans, Henri J. (pub. 1989) 
 Roeijmans
 Roeijmans
@@ -25665,9 +25665,9 @@ Rogerson
 Rohde, Theo (pub. 1936) 
 T. Rohde
 Rohde
-Röhling, Johann Christoph (1757-1813)    
-Röhl.
-Röhling
+RÃ¶hling, Johann Christoph (1757-1813)    
+RÃ¶hl.
+RÃ¶hling
 Roivainen, Heikki (1900-1983)   
 Roiv.
 Roivainen
@@ -25682,9 +25682,9 @@ Rokde
 Roldan, Emiliano F. (pub. 1936) 
 Roldan
 Roldan
-Roldán, A. (pub. 1987)   
-A. Roldán
-Roldán
+RoldÃ¡n, A. (pub. 1987)   
+A. RoldÃ¡n
+RoldÃ¡n
 RoBed, H. (pub. 1949)    
 RoBed
 RoBed
@@ -25696,11 +25696,11 @@ Roll-Hansen
 Roll-Hansen
 Roll-Hansen, H. (pub. 1979)     
 H. Roll-Hansen
-Röllin, O. (pub. 1973)   
-Röllin
-Röllin
-Röllin, O. (pub. 1973)   
-Röllin
+RÃ¶llin, O. (pub. 1973)   
+RÃ¶llin
+RÃ¶llin
+RÃ¶llin, O. (pub. 1973)   
+RÃ¶llin
 Romagnesi, Henri Charles Louis [Lewis] (1912-1999)      
 Romagn.
 Romagnesi
@@ -25785,19 +25785,19 @@ Rosend.
 Rosendahl
 Rosendahl, F. (1881-1942)       
 F. Rosend.
-Rosendahl, Søren (pub. 1997)     
+Rosendahl, SÃ¸ren (pub. 1997)     
 S. Rosend.
 Rosentreter, Roger (pub. 1998)  
 Rosentr.
 Rosentreter
-(Rösönen, ) see Rösönen,    
-Rösönen
+(RÃ¶sÃ¶nen, ) see RÃ¶sÃ¶nen,    
+RÃ¶sÃ¶nen
 Ross, J. (pub. 1943)    
 J. Ross
 Ross
-Rosselló, M.A. (pub. 1993)       
-M.A. Rosselló
-Rosselló
+RossellÃ³, M.A. (pub. 1993)       
+M.A. RossellÃ³
+RossellÃ³
 Rossi, Albert E. (pub. 1984)    
 A.E. Rossi
 Rossi
@@ -25818,9 +25818,9 @@ Rossmann
 Rossy-Valderrama, Carmen (pub. 1958)    
 Rossy-Vald.
 Rossy-Valderrama
-(Rostafinski, Josef Thomas von) see RostafiDsky, Józef Thomasz [Josef Thomas von] 
+(Rostafinski, Josef Thomas von) see RostafiDsky, JÃ³zef Thomasz [Josef Thomas von] 
 Rostaf.
-RostafiDsky, Józef Thomasz [Josef Thomas von] (1850-1928) 
+RostafiDsky, JÃ³zef Thomasz [Josef Thomas von] (1850-1928) 
 Rostaf.
 RostafiDsky
 Rostam, Sorhab (pub. 1985)      
@@ -25879,9 +25879,9 @@ Roubos
 Rouch, Janine (pub. 1966)       
 Rouch
 Rouch
-Roumeguère, Casimir (1828-1892)  
+RoumeguÃ¨re, Casimir (1828-1892)  
 Roum.
-Roumeguère
+RoumeguÃ¨re
 Roure, L.A. (pub. 1963) 
 Roure
 Roure
@@ -25986,14 +25986,14 @@ F. Rudolphi
 Ruedl, Eric (pub. 1999) 
 Ruedl
 Ruedl
-(Ruehle, George Dewey) see Rühle, George Dewey   
-Rühle
+(Ruehle, George Dewey) see RÃ¼hle, George Dewey   
+RÃ¼hle
 Rugg, C.A. (pub. 1995)  
 C.A. Rugg
 Rugg
-Rüggeberg, Hermann Karl August (1886-1967)       
-Rüggeb.
-Rüggeberg
+RÃ¼ggeberg, Hermann Karl August (1886-1967)       
+RÃ¼ggeb.
+RÃ¼ggeberg
 Ruggero, A. (pub. 1998) 
 Ruggero
 Ruggero
@@ -26003,9 +26003,9 @@ Ruggieri
 Ruhland, Wilhelm Otto Eugen (Willy) (1878-1960) 
 Ruhland
 Ruhland
-Rühle, George Dewey (1898-1962)  
-Rühle
-Rühle
+RÃ¼hle, George Dewey (1898-1962)  
+RÃ¼hle
+RÃ¼hle
 (Ruhmwerth, Raumund Rapaics von) see Rapaics, Raumund von       
 Rapaics
 Ruinen, Jakoba (pub. 1964)      
@@ -26014,11 +26014,11 @@ Ruinen
 Ruini, Sergio (pub. 1990)       
 Ruini
 Ruini
-(Ruíz, Manuel) see Ruíz Oronoz, Manuel    
-Ruíz Oronoz
-Ruíz Oronoz, Manuel (1909)       
-Ruíz Oronoz
-Ruíz Oronoz
+(RuÃ­z, Manuel) see RuÃ­z Oronoz, Manuel    
+RuÃ­z Oronoz
+RuÃ­z Oronoz, Manuel (1909)       
+RuÃ­z Oronoz
+RuÃ­z Oronoz
 Ruiz-Belin, Fernando (pub. 1995)        
 Ruiz-Belin
 Ruiz-Belin
@@ -26083,15 +26083,15 @@ R.C. Russell
 Russo, A. (pub. 1974)   
 Russo
 Russo
-(Ruststroem, Carl Birger) see Rutström, Carl Birger      
+(Ruststroem, Carl Birger) see RutstrÃ¶m, Carl Birger      
 Rutstr.
 Rutgers, Abraham Arnold Loderwijk (1884)        
 Rutgers
 Rutgers
-Rutström, Carl Birger (1758-1826)        
+RutstrÃ¶m, Carl Birger (1758-1826)        
 Rutstr.
-Rutström
-Rutström, Carl Birger (1758-1826)        
+RutstrÃ¶m
+RutstrÃ¶m, Carl Birger (1758-1826)        
 Rutstr.
 Rutter, Gordon (pub. 1997)      
 Rutter
@@ -26112,9 +26112,9 @@ B.D. Ryan
 Ryan
 Ryan, Ruth Winifred (1899)      
 R.W. Ryan
-RybáYová, J. (pub. 1980)   
-RybáYová
-RybáYová
+RybÃ¡YovÃ¡, J. (pub. 1980)   
+RybÃ¡YovÃ¡
+RybÃ¡YovÃ¡
 Ryberg, A. (pub. 1997)  
 Ryberg
 Ryberg
@@ -26147,9 +26147,9 @@ Saag
 Saarenoksa, Reima (pub. 1993)   
 Saaren.
 Saarenoksa
-Saarimäki, Tiina (pub. 1994)     
+SaarimÃ¤ki, Tiina (pub. 1994)     
 Saarim.
-Saarimäki
+SaarimÃ¤ki
 Sabet, K.A. (pub. 1963) 
 Sabet
 Sabet
@@ -26159,9 +26159,9 @@ Sabo
 Sabouraud, Raymond (Jacques) (1864-1938)        
 Sabour.
 Sabouraud
-Sabrazès, J. (pub. 1913) 
-Sabrazès
-Sabrazès
+SabrazÃ¨s, J. (pub. 1913) 
+SabrazÃ¨s
+SabrazÃ¨s
 Sacamano, Charles M. (pub. 1967)        
 Sacamano
 Sacamano
@@ -26202,16 +26202,16 @@ Saebi
 Saenko (pub. 1947)      
 Saenko
 Saenko
-(Saenz, [Francisco] Javier Cabañes) see Cabañes, Javier   
-J. Cabañes
-Sáenz, Jose Alberto (1929)       
-J.A. Sáenz
-Sáenz
-Saëz, Henri (pub. 1960)  
-Saëz
-Saëz
-Saëz, Henri (pub. 1960)  
-Saëz
+(Saenz, [Francisco] Javier CabaÃ±es) see CabaÃ±es, Javier   
+J. CabaÃ±es
+SÃ¡enz, Jose Alberto (1929)       
+J.A. SÃ¡enz
+SÃ¡enz
+SaÃ«z, Henri (pub. 1960)  
+SaÃ«z
+SaÃ«z
+SaÃ«z, Henri (pub. 1960)  
+SaÃ«z
 Safeeulla, M. Kunigal (1924)    
 Safeeulla
 Safeeulla
@@ -26383,7 +26383,7 @@ Samoutsevitch
 Sampaio, Goncalo Antonio da Silva Ferreira (1865-1937)  
 Samp.
 Sampaio
-Sampaio, José Paulo (pub. 1991)  
+Sampaio, JosÃ© Paulo (pub. 1991)  
 J.P. Samp.
 Sampath, V. (pub. 1981) 
 Sampath
@@ -26418,42 +26418,42 @@ Samutsevitsch
 San Felice, Francesco (pub. 1895)       
 San Felice
 San Felice
-(San Martin, Felipe) see San Martín (González), Felipe    
-F. San Martín
-San Martín (González), Felipe     
-F. San Martín
-San Martín (González)
-(Sanchez, Dania Garcia) see Dania García, Dania  
-Dania García
+(San Martin, Felipe) see San MartÃ­n (GonzÃ¡lez), Felipe    
+F. San MartÃ­n
+San MartÃ­n (GonzÃ¡lez), Felipe     
+F. San MartÃ­n
+San MartÃ­n (GonzÃ¡lez)
+(Sanchez, Dania Garcia) see Dania GarcÃ­a, Dania  
+Dania GarcÃ­a
 (Sanchez, Luis Alberto Parra) see Parra, Luis Alberto   
 L.A. Parra
 Sanchez, Mariza (pub. 1993)     
 M. Sanchez
 Sanchez
-Sánchez, Apolinar (pub. 1966)    
-A. Sánchez
-Sánchez
-(Sánchez, Carlos) see Sánchez Nieto, Carlos       
-Sáenz Nieto
-(Sánchez, Dania García) see Dania García, Dania    
-Dania García
-Sánchez, Julián (pub. 1994)       
-Jul. Sánchez
-Sanz Sánchez, María José (pub. 1999)       
+SÃ¡nchez, Apolinar (pub. 1966)    
+A. SÃ¡nchez
+SÃ¡nchez
+(SÃ¡nchez, Carlos) see SÃ¡nchez Nieto, Carlos       
+SÃ¡enz Nieto
+(SÃ¡nchez, Dania GarcÃ­a) see Dania GarcÃ­a, Dania    
+Dania GarcÃ­a
+SÃ¡nchez, JuliÃ¡n (pub. 1994)       
+Jul. SÃ¡nchez
+Sanz SÃ¡nchez, MarÃ­a JosÃ© (pub. 1999)       
 Sanz
-Sanz Sánchez
-(Sánchez, María José Sanz) see Sanz Sánchez, María José       
+Sanz SÃ¡nchez
+(SÃ¡nchez, MarÃ­a JosÃ© Sanz) see Sanz SÃ¡nchez, MarÃ­a JosÃ©       
 Sanz
-Sánchez Nieto, Carlos (pub. 1997)        
-Sáenz Nieto
-Sánchez Nieto
-Sánchez-Pinto, C. (pub. 1970)    
-C. Sánchez-Pinto
-Sánchez-Pinto
-Sánchez-Pinto, I. (pub. 1980)    
-Sánchez-Pinto
-Sánchez-Pinto, Lazaro M. (1950)  
-L.M. Sánchez-Pinto
+SÃ¡nchez Nieto, Carlos (pub. 1997)        
+SÃ¡enz Nieto
+SÃ¡nchez Nieto
+SÃ¡nchez-Pinto, C. (pub. 1970)    
+C. SÃ¡nchez-Pinto
+SÃ¡nchez-Pinto
+SÃ¡nchez-Pinto, I. (pub. 1980)    
+SÃ¡nchez-Pinto
+SÃ¡nchez-Pinto, Lazaro M. (1950)  
+L.M. SÃ¡nchez-Pinto
 Sancho, Leopoldo G. (pub. 1980) 
 Sancho
 Sancho
@@ -26504,13 +26504,13 @@ Sankaran
 Sankhla, H.C. (pub. 1966)       
 Sankhla
 Sankhla
-Santa María, Juan (1915) 
-Santa María
-Santa María
-Santamaría, Sergio [Sergi] (pub. 1985)   
+Santa MarÃ­a, Juan (1915) 
+Santa MarÃ­a
+Santa MarÃ­a
+SantamarÃ­a, Sergio [Sergi] (pub. 1985)   
 Santam.
-Santamaría
-(Santamaría [i del Campo], Sergio [Sergi]) see Santamaría, Sergio [Sergi] 
+SantamarÃ­a
+(SantamarÃ­a [i del Campo], Sergio [Sergi]) see SantamarÃ­a, Sergio [Sergi] 
 Santam.
 Santesson, Carl Gustaf (1862-1939)      
 Sant.
@@ -26519,9 +26519,9 @@ Santesson, J. (pub. 1960s)
 J. Sant.
 Santesson, Rolf (1916)  
 R. Sant.
-Sántha, Laszlo [Ladislaus] (1886-1954)   
-Sántha
-Sántha
+SÃ¡ntha, Laszlo [Ladislaus] (1886-1954)   
+SÃ¡ntha
+SÃ¡ntha
 Santi, Giorgio (1746-1822)      
 Santi
 Santi
@@ -26557,9 +26557,9 @@ A. Sarbhoy
 Sarbhoy
 Sarbhoy, Ashok Kumar (1939)     
 A.K. Sarbhoy
-Sardiña, Juan Rodriguez (pub. 1929)      
-Sardiña
-Sardiña
+SardiÃ±a, Juan Rodriguez (pub. 1929)      
+SardiÃ±a
+SardiÃ±a
 Sarejanni, Jean Antoine (1898-1962)     
 Sarej.
 Sarejanni
@@ -26603,8 +26603,8 @@ Sarwal
 Sarwar, M. (pub. 1965)  
 Sarwar
 Sarwar
-(Sas, Elisabeta) see Szász, Elisabeta    
-Szász
+(Sas, Elisabeta) see SzÃ¡sz, Elisabeta    
+SzÃ¡sz
 Sasakawa, M. (pub. 1922)        
 Sasak.
 Sasakawa
@@ -26615,7 +26615,7 @@ Sasaki, Rintaro (pub. 1939)
 R. Sasaki
 Sasaki, Yoshiyuki (1926-1972)   
 Y. Sasaki
-(Sasia, Roberto Fernández) see Fernández Sasia, Roberto   
+(Sasia, Roberto FernÃ¡ndez) see FernÃ¡ndez Sasia, Roberto   
 Fern. Sas.
 Sass, Michael (pub. 1989)       
 M. Sass
@@ -26648,11 +26648,11 @@ Sato, Shoji (1927)
 S. Sato
 Sato, Taeko (1935)      
 T. Sato
-Satô, Kunihiko (1902)    
-K. Satô
-Satô
-Satô, Masami (1910-1984) 
-M. Satô
+SatÃ´, Kunihiko (1902)    
+K. SatÃ´
+SatÃ´
+SatÃ´, Masami (1910-1984) 
+M. SatÃ´
 Sattler, J. (pub. 1993) 
 Sattler
 Sattler
@@ -26665,10 +26665,10 @@ Satyanarayana
 Satyaprasad, K.S. (pub. 1981)   
 Satyapr.
 Satyaprasad
-(Sauget y Barbis, Joseph Sylvestre) see Léon, Joseph Sylvestre (Hermano) 
-Léon
-(Sauget-Barbier, Joseph Sylvestre) see Léon, Joseph Sylvestre (Hermano)  
-Léon
+(Sauget y Barbis, Joseph Sylvestre) see LÃ©on, Joseph Sylvestre (Hermano) 
+LÃ©on
+(Sauget-Barbier, Joseph Sylvestre) see LÃ©on, Joseph Sylvestre (Hermano)  
+LÃ©on
 Saunders, E.M. (pub. 1994)      
 E.M. Saunders
 Saunders
@@ -26715,9 +26715,9 @@ Savile
 Savinceva, Z.D. (pub. 1970)     
 Savinceva
 Savinceva
-Sävulescu, Alice (1905-1970)     
-A. Sävul.
-Sävulescu
+SÃ¤vulescu, Alice (1905-1970)     
+A. SÃ¤vul.
+SÃ¤vulescu
 Svulescu, Olga-Constanta (1914-1969)    
 O. Svul.
 Svulescu
@@ -26790,8 +26790,8 @@ Schaefer
 Schaeffer, Jacob Christian (H. von) (1718-1790) 
 Schaeff.
 Schaeffer
-(Schaeffer, Julius) see Schäffer, Julius 
-Jul. Schäff.
+(Schaeffer, Julius) see SchÃ¤ffer, Julius 
+Jul. SchÃ¤ff.
 Schaerer, E.A. (pub. 1900s)     
 E.A. Schaer.
 Schaerer
@@ -26802,9 +26802,9 @@ Schaeff.
 Schaffer, Robert L. (pub. 1965) 
 R.L. Schaffer
 Schaffer
-Schäffer, Julius (1882-1944)     
-Jul. Schäff.
-Schäffer
+SchÃ¤ffer, Julius (1882-1944)     
+Jul. SchÃ¤ff.
+SchÃ¤ffer
 Schaffnit, (Johannes Martin) Ernst (Christian Otto) (1878)      
 Schaffnit
 Schaffnit
@@ -26935,9 +26935,9 @@ Schimper
 Schinner, Franz (1947)  
 Schinner
 Schinner
-Schiønning, Holger Ludwig [Ludvig] (1868-1942)   
-Schiønning
-Schiønning
+SchiÃ¸nning, Holger Ludwig [Ludvig] (1868-1942)   
+SchiÃ¸nning
+SchiÃ¸nning
 Schipper, Margarita A.A. (1923) 
 Schipper
 Schipper
@@ -26949,9 +26949,9 @@ Shirn.-Grish.
 Schischkina, A.K. (pub. 1973)   
 Schischkina
 Schischkina
-Schiüpp, H. (pub. 1956)  
-Schiüpp
-Schiüpp
+SchiÃ¼pp, H. (pub. 1956)  
+SchiÃ¼pp
+SchiÃ¼pp
 Schkorbatow, Leonid Andrejewitsch (1884)        
 Schkorb.
 Schkorbatow
@@ -26961,11 +26961,11 @@ Schkurenko
 Schlag-Edler, Birgit (pub. 1999)        
 Schlag-Edl.
 Schlag-Edler
-(Schläpfer, Elizabeth) see Schläpfer-Bernhard, Elizabeth  
-Schläpf.-Bernh.
-Schläpfer-Bernhard, Elizabeth (pub. 1968)        
-Schläpf.-Bernh.
-Schläpfer-Bernhard
+(SchlÃ¤pfer, Elizabeth) see SchlÃ¤pfer-Bernhard, Elizabeth  
+SchlÃ¤pf.-Bernh.
+SchlÃ¤pfer-Bernhard, Elizabeth (pub. 1968)        
+SchlÃ¤pf.-Bernh.
+SchlÃ¤pfer-Bernhard
 Schlechtendal, Diederich Franz Leonhard von (1794-1866) 
 Schltdl.
 Schlechtendal
@@ -26975,9 +26975,9 @@ Schleicher
 Schlesner, H. (pub. 1986)       
 Schlesner
 Schlesner
-Schlösser, U. (pub. 1970)        
-U. Schlöss.
-Schlösser
+SchlÃ¶sser, U. (pub. 1970)        
+U. SchlÃ¶ss.
+SchlÃ¶sser
 Schmalz, Eduard (1801-1871)     
 Schmalz
 Schmalz
@@ -27142,7 +27142,7 @@ Schreber
 Schreiner, Edith (pub. 1992)    
 E. Schreiner
 Schreiner
-Schreiner, Jürgen (pub. 1996)    
+Schreiner, JÃ¼rgen (pub. 1996)    
 J. Schreiner
 Schrenk, Hermann von (1873-1953)        
 H. Schrenk
@@ -27150,20 +27150,20 @@ Schrenk
 Schreurs, J. (pub. 1978)        
 Schreurs
 Schreurs
-Schröder, Julius Ludwig Bruno (pub. 1898)        
-Schröd.
-Schröder
-(Schroeder, Julius Ludwig Bruno) see Schröder, Julius Ludwig Bruno       
-Schröd.
+SchrÃ¶der, Julius Ludwig Bruno (pub. 1898)        
+SchrÃ¶d.
+SchrÃ¶der
+(Schroeder, Julius Ludwig Bruno) see SchrÃ¶der, Julius Ludwig Bruno       
+SchrÃ¶d.
 Schroers, Hans-Josef (pub. 1997)        
 Schroers
 Schroers
 Schroeter, B. (pub. 1998)       
 B. Schroet.
 Schroeter
-Schröter, Joseph (1837-1894)     
-J. Schröt.
-Schröter
+SchrÃ¶ter, Joseph (1837-1894)     
+J. SchrÃ¶t.
+SchrÃ¶ter
 Schtigel        
 Schtigel
 Schtigel
@@ -27179,15 +27179,15 @@ Schubert, Rudolph (1927)
 R. Schub.
 Schubert, Tim S. (pub. 1989)    
 T.S. Schub.
-Schüepp, Hannes (pub. 1956)      
-Schüepp
-Schüepp
+SchÃ¼epp, Hannes (pub. 1956)      
+SchÃ¼epp
+SchÃ¼epp
 Schuler, Johann Alois Ernst (1853-1946) 
 Schuler
 Schuler
-Schüler, G. (pub. 1982)  
-G. Schüler
-Schüler
+SchÃ¼ler, G. (pub. 1982)  
+G. SchÃ¼ler
+SchÃ¼ler
 Schulmann, O. von (pub. 1955)   
 Schulm.
 Schulmann
@@ -27210,10 +27210,10 @@ R. Schulz
 Schulze, U. (pub. 1983) 
 U. Schulze
 Schulze
-Schulzer von Müggenburg, Stephan V.M. (1802-1892)        
+Schulzer von MÃ¼ggenburg, Stephan V.M. (1802-1892)        
 Schulzer
-Schulzer von Müggenburg
-Schulzer von Müggenburg, Stephan V.M. (1802-1892)        
+Schulzer von MÃ¼ggenburg
+Schulzer von MÃ¼ggenburg, Stephan V.M. (1802-1892)        
 Schulzer
 Schulz-Korth, Karl (1906-1931)  
 Schulz-Korth
@@ -27284,9 +27284,9 @@ Schwendener
 Schwinn, F.J. (pub. 1974)       
 Schwinn
 Schwinn
-Schwöbel, H. (pub. 1982) 
-Schwöbel
-Schwöbel
+SchwÃ¶bel, H. (pub. 1982) 
+SchwÃ¶bel
+SchwÃ¶bel
 Scopoli, Joannes Antonius [Giovanni Antonio] (1723-1788)        
 Scop.
 Scopoli
@@ -27336,11 +27336,11 @@ Seaver
 `ebek
 `ebek
 Sechet, M. (pub. 1953)  
-Séchet
+SÃ©chet
 Sechet
-Séchier, P. (pub. 1835)  
-Séchier
-Séchier
+SÃ©chier, P. (pub. 1835)  
+SÃ©chier
+SÃ©chier
 Secretan, (Gabriel-Abraam-Samuel-Jean) Louis (1758-1839)        
 Secr.
 Secretan
@@ -27372,9 +27372,9 @@ Seger
 Segretain, G. (pub. 1959)       
 Segretain
 Segretain
-Séguier, Jean Francois (1703-1784)       
-Ség.
-Séguier
+SÃ©guier, Jean Francois (1703-1784)       
+SÃ©g.
+SÃ©guier
 Sehgal, H.S. (pub. 1964)        
 H.S. Sehgal
 Sehgal
@@ -27447,13 +27447,13 @@ Semon
 Sen, Sunita (pub. 1996) 
 S. Sen
 Sen
-Senéz, A. (pub. 1913)    
-Senéz
-Senéz
+SenÃ©z, A. (pub. 1913)    
+SenÃ©z
+SenÃ©z
 Senft, (Philip) Emanuel (1870-1922)     
 E. Senft
 Senft
-Senn-Irlet, Béatrice (1954)      
+Senn-Irlet, BÃ©atrice (1954)      
 Senn-Irlet
 Senn-Irlet
 Seppelt, Rodney David (1945)    
@@ -27494,25 +27494,25 @@ Serrano
 Serrano
 (Serrone, P.) see Del Serrone, P.       
 Del Serrone
-Sérusiaux, Emmanuël (1953)        
-Sérus.
-Sérusiaux
+SÃ©rusiaux, EmmanuÃ«l (1953)        
+SÃ©rus.
+SÃ©rusiaux
 Servazzi, Ottone (pub. 1934)    
 Servazzi
 Servazzi
 Service, Michael William (pub. 1950)    
 Service
 Service
-Servít, Miroslav (1886-1959)     
-Servít
-Servít
+ServÃ­t, Miroslav (1886-1959)     
+ServÃ­t
+ServÃ­t
 Seshadri, V.S. (pub. 1965)      
 Seshadri
 Seshadri
 Seshita, K. (pub. 1969) 
 Seshita
 Seshita
-Sesma, Begoña (pub. 1978)        
+Sesma, BegoÃ±a (pub. 1978)        
 Sesma
 Sesma
 Setchell, William Albert (1864-1943)    
@@ -28016,8 +28016,8 @@ Silva, J.O. (pub. 1964)
 J.O. Silva
 Silva, Jose Nery da (pub. 1953) 
 J. Silva
-(Silva, Manuel Augusto Piraja da) see Pirajá, Manuel Augusto (da)        
-Pirajá
+(Silva, Manuel Augusto Piraja da) see PirajÃ¡, Manuel Augusto (da)        
+PirajÃ¡
 Silva, Margarita (pub. 1952)    
 Marg. Silva
 Silva, Piraja da        
@@ -28042,7 +28042,7 @@ Silveiro
 Silveiro Grillo
 (Silvio Campos, T.C.) see Campos, Silvio T.C.   
 Campos
-Simay, Endre István (pub. 1992)  
+Simay, Endre IstvÃ¡n (pub. 1992)  
 Simay
 Simay
 Simeria, G. (pub. 1983) 
@@ -28065,9 +28065,9 @@ Simms
 Simo, M. (pub. 1936)    
 Simo
 Simo
-Simões Barbosa, F.A. (pub. 1941) 
-Simões
-Simões Barbosa
+SimÃµes Barbosa, F.A. (pub. 1941) 
+SimÃµes
+SimÃµes Barbosa
 Simonian, Seda A. (1929)        
 Simonyan
 Simonian
@@ -28272,12 +28272,12 @@ Siwasin
 Sizova, T.P. (pub. 1962)        
 Sizova
 Sizova
-Skála, E. (pub. 1993)    
-Skála
-Skála
-Skalickı, Vladimir (1930)        
-Skalickı
-Skalickı
+SkÃ¡la, E. (pub. 1993)    
+SkÃ¡la
+SkÃ¡la
+SkalickÃ½, Vladimir (1930)        
+SkalickÃ½
+SkalickÃ½
 Skidmore, D.I. (pub. 1985)      
 Skidmore
 Skidmore
@@ -28332,9 +28332,9 @@ Slagg
 Slater, Daniel W. (pub. 1946)   
 D.W. Slater
 Slater
-Slavíková, Elena (pub. 1976)      
-E. Slavíková
-Slavíková
+SlavÃ­kovÃ¡, Elena (pub. 1976)      
+E. SlavÃ­kovÃ¡
+SlavÃ­kovÃ¡
 Zliwa, Lucyna (pub. 2000)        
 Zliwa
 Zliwa
@@ -28364,9 +28364,9 @@ Smarda
 Smarods, Julius (1884-1956)     
 Smarods
 Smarods
-Smedegård-Petersen, V. (1933)    
+SmedegÃ¥rd-Petersen, V. (1933)    
 Smed.-Pet.
-Smedegård-Petersen
+SmedegÃ¥rd-Petersen
 Smerlis, E. (pub. 1962) 
 Smerlis
 Smerlis
@@ -28497,24 +28497,24 @@ Sobolewski
 Sobotka, Jaroslav (pub. 1941)   
 Sobotka
 Sobotka
-Søchting, Ulrik (pub. 1987)      
-Søchting
-Søchting
-Søchting, Ulrik (pub. 1987)      
-Søchting
+SÃ¸chting, Ulrik (pub. 1987)      
+SÃ¸chting
+SÃ¸chting
+SÃ¸chting, Ulrik (pub. 1987)      
+SÃ¸chting
 Socias Amoros, A. (pub. 1954)   
 Socias
 Socias Amoros
-Söderholm, Unto (pub. 1997)      
-Söderh.
-Söderholm
-Söderholm, Unto (pub. 1997)      
-Söderh.
-Söderström, B.E. (pub. 1978)      
-B.E. Söderstr.
-Söderström
-Söderström, B.E. (pub. 1978)      
-B.E. Söderstr.
+SÃ¶derholm, Unto (pub. 1997)      
+SÃ¶derh.
+SÃ¶derholm
+SÃ¶derholm, Unto (pub. 1997)      
+SÃ¶derh.
+SÃ¶derstrÃ¶m, B.E. (pub. 1978)      
+B.E. SÃ¶derstr.
+SÃ¶derstrÃ¶m
+SÃ¶derstrÃ¶m, B.E. (pub. 1978)      
+B.E. SÃ¶derstr.
 Soehner, Ert (pub. 1921)        
 Soehner
 Soehner
@@ -28527,11 +28527,11 @@ Solacolu
 Solankure, R.T. (pub. 1970)     
 Solank.
 Solankure
-Soláns, Maria Jose (pub. 1985)   
-Soláns
-Soláns
-Soláns, Maria Jose (pub. 1985)   
-Soláns
+SolÃ¡ns, Maria Jose (pub. 1985)   
+SolÃ¡ns
+SolÃ¡ns
+SolÃ¡ns, Maria Jose (pub. 1985)   
+SolÃ¡ns
 Solel, Z. (pub. 1987)   
 Solel
 Solel
@@ -28627,33 +28627,33 @@ Sordi
 Sorenson, W.G. (pub. 1990)      
 Sorenson
 Sorenson
-Sörgel, G. (pub. 1961)   
-Sörgel
-Sörgel
+SÃ¶rgel, G. (pub. 1961)   
+SÃ¶rgel
+SÃ¶rgel
 Sorok+n, Nicolai Vasilevitch [Vasilevich] (1846-1909)    
 Sorok+n
 Sorok+n
 Sosin, Pavel Egrafovich (1895)  
 Sosin
 Sosin
-Sotão, Helen M.P. (pub. 1996)    
-Sotão
-Sotão
-Souché, Baptiste (1846-1915)     
-Souché
-Souché
-Souková-Tomková, Milada (pub. 1958)       
+SotÃ£o, Helen M.P. (pub. 1996)    
+SotÃ£o
+SotÃ£o
+SouchÃ©, Baptiste (1846-1915)     
+SouchÃ©
+SouchÃ©
+SoukovÃ¡-TomkovÃ¡, Milada (pub. 1958)       
 Souk.-Tomk.
-Souková-Tomková
+SoukovÃ¡-TomkovÃ¡
 Soumini, C.K. (pub. 1947)       
 Soumini
 Soumini
 Sousa, Octavio E. (pub. 1985)   
 O.E. Sousa
 Sousa
-Sousa da Câmara, Manuel Emmanuele de (1871-1955) 
-Sousa da Câmara
-Sousa da Câmara
+Sousa da CÃ¢mara, Manuel Emmanuele de (1871-1955) 
+Sousa da CÃ¢mara
+Sousa da CÃ¢mara
 (Sousa Dias, Maria Rosalia) see Dias, Maria Rosalia de Sousa    
 Dias
 (Sousa Dias, Maria Rosalia de) see Dias, Maria Rosalia de Sousa 
@@ -28779,16 +28779,16 @@ C. Sprague
 Sprague
 Sprague, Roderick (1901-1962)   
 R. Sprague
-Sprée, Th. (pub. 1864)   
-Sprée
-Sprée
+SprÃ©e, Th. (pub. 1864)   
+SprÃ©e
+SprÃ©e
 Sprengel, Curt [Kurt, Curtius] Polycarp Joachim (1766-1833)     
 Spreng.
 Sprengel
 Spribille, Toby (pub. 2001)     
 T. Sprib.
 Spribille
-Spring, Antoine Frédéric (pub. 1852)      
+Spring, Antoine FrÃ©dÃ©ric (pub. 1852)      
 Spring
 Spring
 Springael, R. (pub. 1977)       
@@ -28943,9 +28943,9 @@ Stansfield
 Stapp, Carl (1888)      
 Stapp
 Stapp
-Starbäck, Karl (1863-1931)       
-Starbäck
-Starbäck
+StarbÃ¤ck, Karl (1863-1931)       
+StarbÃ¤ck
+StarbÃ¤ck
 Staritz, Richard (1851-1922)    
 Staritz
 Staritz
@@ -29001,7 +29001,7 @@ Stegenga
 Steigbigel, Roy T. (pub. 1974)  
 Steigb.
 Steigbigel
-Steiman, Régine (pub. 1985)      
+Steiman, RÃ©gine (pub. 1985)      
 Steiman
 Steiman
 Stein, Berthold (1847-1899)     
@@ -29208,9 +29208,9 @@ Stoppel
 Storm, P.K. (pub. 1967) 
 P.K. Storm
 Storm
-Störmer, Fredrik Carl Mulerz (1874)      
-F.C.M. Störmer
-Störmer
+StÃ¶rmer, Fredrik Carl Mulerz (1874)      
+F.C.M. StÃ¶rmer
+StÃ¶rmer
 Stouffer, David James (1900)    
 Stouffer
 Stouffer
@@ -29243,9 +29243,9 @@ Straus
 Strauss, Friedrich Karl [Carl] Joseph von (1787-1855)   
 F. Strauss
 Strauss
-Streiblová, Eva (pub. 1963)      
+StreiblovÃ¡, Eva (pub. 1963)      
 Streibl.
-Streiblová
+StreiblovÃ¡
 (Streiman, Heinar) see Streimann, Heinar        
 Streimann
 Streimann, Heinar (1938)        
@@ -29257,8 +29257,8 @@ Strenz
 Stretton, Hellena M. (pub. 1967)        
 Stretton
 Stretton
-Strid, Åke (1932)        
-Å. Strid
+Strid, Ã…ke (1932)        
+Ã…. Strid
 Strid
 Striebich, B. (pub. 2000)       
 Striebich
@@ -29266,12 +29266,12 @@ Striebich
 Strobel, Gary A. (pub. 1990)    
 Strobel
 Strobel
-Strödel, R. (pub. 1985)  
-Strödel
-Strödel
-Strömbom, Nils Gustaf (1847-1897)        
-Strömbom
-Strömbom
+StrÃ¶del, R. (pub. 1985)  
+StrÃ¶del
+StrÃ¶del
+StrÃ¶mbom, Nils Gustaf (1847-1897)        
+StrÃ¶mbom
+StrÃ¶mbom
 Strongman, D.B. (pub. 1990)     
 Strongman
 Strongman
@@ -29287,15 +29287,15 @@ Strunk
 Stubblefield, S.P. (pub. 1983)  
 Stubblef.
 Stubblefield
-Stüben, H. (pub. 1939)   
-Stüben
-Stüben
+StÃ¼ben, H. (pub. 1939)   
+StÃ¼ben
+StÃ¼ben
 Stuckenberg, Elisabeth K. (1883)        
 Stuckenb.
 Stuckenberg
-Studer-Steinhäuslin, Bernhard (1847-1910)        
+Studer-SteinhÃ¤uslin, Bernhard (1847-1910)        
 Stud.-Steinh.
-Studer-Steinhäuslin
+Studer-SteinhÃ¤uslin
 Stuntz, Daniel Elliot (1909-1983)       
 D.E. Stuntz
 Stuntz
@@ -29308,9 +29308,9 @@ Sturhan
 Sturm, Jacob [Jakob] W. (1771-1848)     
 Sturm
 Sturm
-Stürmer, Sidney L. (pub. 1999)   
-Stürmer
-Stürmer
+StÃ¼rmer, Sidney L. (pub. 1999)   
+StÃ¼rmer
+StÃ¼rmer
 Stutz, Jean C. (pub. 1999)      
 J.C. Stutz
 Stutz
@@ -29325,9 +29325,9 @@ H.J. Su
 Suanjak, Michael (pub. 1993)    
 Suanjak
 Suanjak
-Suárez, Verónica L. (pub. 1990)   
-V.L. Suárez
-Suárez
+SuÃ¡rez, VerÃ³nica L. (pub. 1990)   
+V.L. SuÃ¡rez
+SuÃ¡rez
 Subbalakshmi, G. (pub. 1987)    
 Subbal.
 Subbalakshmi
@@ -29517,9 +29517,9 @@ Sw.
 Svilvinyi, A. von (pub. 1936)   
 Svilv.
 Svilvinyi
-(Svobodova, Yvonne) see Svobodová-Poláková, Yvonne 
+(Svobodova, Yvonne) see SvobodovÃ¡-PolÃ¡kovÃ¡, Yvonne 
 Svob.-Pol.
-(Svobodova-Polakova, Yvonne) see Svobodová-Poláková, Yvonne        
+(Svobodova-Polakova, Yvonne) see SvobodovÃ¡-PolÃ¡kovÃ¡, Yvonne        
 Svob.-Pol.
 Svrek, Mirko (1925)     
 Svrek
@@ -29575,21 +29575,21 @@ Syme
 Syrgij, P.G. (pub. 1964)        
 Syrgij
 Syrgij
-Szabó, Zoltan von (1882-1944)    
-Szabó
-Szabó
+SzabÃ³, Zoltan von (1882-1944)    
+SzabÃ³
+SzabÃ³
 Szakien, B. (pub. 1927) 
 Szakien
 Szakien
-Szász, Elisabeta (pub. 1959)     
-Szász
-Szász
+SzÃ¡sz, Elisabeta (pub. 1959)     
+SzÃ¡sz
+SzÃ¡sz
 Szatala, Odon (1889-1958)       
 Szatala
 Szatala
-Szathmáry, S. (pub. 1966)        
-Szathmáry
-Szathmáry
+SzathmÃ¡ry, S. (pub. 1966)        
+SzathmÃ¡ry
+SzathmÃ¡ry
 Szchieschang, G. (pub. 1984)    
 Szchiesch.
 Szchieschang
@@ -29602,9 +29602,9 @@ Szembelya
 Szemere, Laszlo (1884)  
 Szem.
 Szemere
-Szép, E. (pub. 1963)     
-E. Szép
-Szép
+SzÃ©p, E. (pub. 1963)     
+E. SzÃ©p
+SzÃ©p
 Szijarto, E. (pub. 1982)        
 Szijarto
 Szijarto
@@ -29613,9 +29613,9 @@ Szilagyi
 Szilagyi
 
 
-Tabarés, Manuel (pub. 1992)      
-Tabarés
-Tabarés
+TabarÃ©s, Manuel (pub. 1992)      
+TabarÃ©s
+TabarÃ©s
 Tabor, Richard John (1875-1958) 
 Tabor
 Tabor
@@ -29630,11 +29630,11 @@ Tada
 Tadych, Mariusz (pub. 1997)     
 Tadych
 Tadych
-Täglich, Ulla (pub. 1991)        
-Täglich
-Täglich
-Täglich, Ulla (pub. 1991)        
-Täglich
+TÃ¤glich, Ulla (pub. 1991)        
+TÃ¤glich
+TÃ¤glich
+TÃ¤glich, Ulla (pub. 1991)        
+TÃ¤glich
 Taguchi, Hideaki (pub. 1993)    
 Taguchi
 Taguchi
@@ -29831,9 +29831,9 @@ Tappan
 Tarasov, K.L. (pub. 1997)       
 Tarasov
 Tarasov
-Targé, A. (pub. 1965)    
-Targé
-Targé
+TargÃ©, A. (pub. 1965)    
+TargÃ©
+TargÃ©
 Tarjan, A.C. (pub. 1961)        
 Tarjan
 Tarjan
@@ -29856,7 +29856,7 @@ Taslakhchyan
 Tassi, Flaminio (1851)  
 Tassi
 Tassi
-Tassi, Gérard (pub. 1999)        
+Tassi, GÃ©rard (pub. 1999)        
 G. Tassi
 Tasugi, H. (pub. 1940)  
 Tasugi
@@ -29951,22 +29951,22 @@ Teixeira
 Teixeira
 Teixeira, Cyro Goncalves (1922) 
 C.G. Teixeira
-(Tejera, Esperanza Beltran) see Beltrán-Tejera, Esperanza        
-Beltrán-Tej.
+(Tejera, Esperanza Beltran) see BeltrÃ¡n-Tejera, Esperanza        
+BeltrÃ¡n-Tej.
 Tekunaga (pub. 1935)    
 Tekun.
 Tekunaga
-Tellería, Maria Teresa (1950)    
-Tellería
-Tellería
-Tellería, Maria Teresa (1950)    
-Tellería
+TellerÃ­a, Maria Teresa (1950)    
+TellerÃ­a
+TellerÃ­a
+TellerÃ­a, Maria Teresa (1950)    
+TellerÃ­a
 Temme, F. (pub. 1887)   
 Temme
 Temme
-Tempère, G. (pub. 1947)  
+TempÃ¨re, G. (pub. 1947)  
 G. Temp.
-Tempère
+TempÃ¨re
 Templeton, G.E. (pub. 1973)     
 G.E. Templeton
 Templeton
@@ -30167,9 +30167,9 @@ Thomas, Roy Curtis (1887)
 R.C. Thomas
 Thomas, William Sturgis (1871-1941)     
 W.S. Thomas
-Thomé, Otto Wilhelm (1840-1925)  
-Thomé
-Thomé
+ThomÃ©, Otto Wilhelm (1840-1925)  
+ThomÃ©
+ThomÃ©
 Thompson, Aldworth William (Tommy) (1900-1982)  
 A.W. Thomps.
 Thompson
@@ -30184,7 +30184,7 @@ G.E. Thomps.
 Thomson, John Walter (1913)     
 J.W. Thomson
 Thomson
-Thor, Göran (1953)       
+Thor, GÃ¶ran (1953)       
 G. Thor
 Thor
 Thor, Sig (pub. 1930)   
@@ -30207,11 +30207,11 @@ Thorold
 Thrower, L.B. (pub. 1954)       
 Thrower
 Thrower
-Thümen, Felix (Karl Albert Ernst Joachim) von (1839-1892)        
-Thüm.
-Thümen
-(Thümen[-Grafendorf], Felix (Karl Albert Ernst Joachim) von) see Thümen, Felix (Karl Albert Ernst Joachim) von    
-Thüm.
+ThÃ¼men, Felix (Karl Albert Ernst Joachim) von (1839-1892)        
+ThÃ¼m.
+ThÃ¼men
+(ThÃ¼men[-Grafendorf], Felix (Karl Albert Ernst Joachim) von) see ThÃ¼men, Felix (Karl Albert Ernst Joachim) von    
+ThÃ¼m.
 Thunberg, Carl Peter (1743-1828)        
 Thunb.
 Thunberg
@@ -30272,9 +30272,9 @@ Tim
 Timdal, Einar (1957)    
 Timdal
 Timdal
-Timkó, Gyorgy (1876-1945)        
-Timkó
-Timkó
+TimkÃ³, Gyorgy (1876-1945)        
+TimkÃ³
+TimkÃ³
 Timmer, L.W. (pub. 1970)        
 Timmer
 Timmer
@@ -30402,8 +30402,8 @@ Tokuoka
 Tokura, Ryoichi (pub. 1988)     
 Tokura
 Tokura
-(Toledo, Laura S. Dominguez de) see Domínguez, Laura S. Dominguez        
-L.S. Domínguez
+(Toledo, Laura S. Dominguez de) see DomÃ­nguez, Laura S. Dominguez        
+L.S. DomÃ­nguez
 Toma, Mihai T. (1934)   
 M.T. Toma
 Toma
@@ -30455,11 +30455,11 @@ De Toni
 Tonolo, A. (pub. 1967)  
 Tonolo
 Tonolo
-Tønsberg, Tor (1948)     
-Tønsberg
-Tønsberg
-Tønsberg, Tor (1948)     
-Tønsberg
+TÃ¸nsberg, Tor (1948)     
+TÃ¸nsberg
+TÃ¸nsberg
+TÃ¸nsberg, Tor (1948)     
+TÃ¸nsberg
 Toole, Eben Richard (1913)      
 Toole
 Toole
@@ -30494,9 +30494,9 @@ Toro, Silvia (pub. 1986)
 S. Toro
 (Toro T., Silvia) see Toro, Silvia      
 S. Toro
-Török, Katalin (1954)     
-Török
-Török
+TÃ¶rÃ¶k, Katalin (1954)     
+TÃ¶rÃ¶k
+TÃ¶rÃ¶k
 Torre, Margarita de la (1940)   
 M. Torre
 Torre
@@ -30511,9 +30511,9 @@ J. Torres
 Torres
 Torres, M.F. (pub. 1985)        
 M.F. Torres
-Torres-Rodríguez, Jose Maria (pub. 1999) 
+Torres-RodrÃ­guez, Jose Maria (pub. 1999) 
 Torr.-Rodr.
-Torres-Rodríguez
+Torres-RodrÃ­guez
 Torrey, John (1796-1873)        
 Torr.
 Torrey
@@ -30532,11 +30532,11 @@ Toscano
 Tosi, Solveig (pub. 1992)       
 S. Tosi
 Tosi
-Tóth, Sandor (pub. 1959) 
-Tóth
-Tóth
-Tóth, Sandor (pub. 1959) 
-Tóth
+TÃ³th, Sandor (pub. 1959) 
+TÃ³th
+TÃ³th
+TÃ³th, Sandor (pub. 1959) 
+TÃ³th
 Totten, Henry Roland (1892-1974)        
 Totten
 Totten
@@ -30660,16 +30660,16 @@ Trespalacios
 Tretiach, Mauro (pub. 1992)     
 Tretiach
 Tretiach
-Trevisan de Saint-Léon, Vittore Benedetto Antonio (1818-1897)    
+Trevisan de Saint-LÃ©on, Vittore Benedetto Antonio (1818-1897)    
 Trevis.
-Trevisan de Saint-Léon
+Trevisan de Saint-LÃ©on
 Tribe, H.T. (pub. 1977) 
 Tribe
 Tribe
 Tribondeau (pub. 1899)  
 Trib.
 Tribondeau
-Trichies, Gérard (pub. 1997)     
+Trichies, GÃ©rard (pub. 1997)     
 Trichies
 Trichies
 Triebel, Dagmar (1957)  
@@ -30737,9 +30737,9 @@ Truffi
 Trujillo, Eduardo E. (pub. 1963)        
 E.E. Trujillo
 Trujillo
-Trüper, E. (pub. 1928)   
-Trüper
-Trüper
+TrÃ¼per, E. (pub. 1928)   
+TrÃ¼per
+TrÃ¼per
 Truscott, John Henry Lloyd (1905)       
 Truscott
 Truscott
@@ -30898,9 +30898,9 @@ Turhan
 Turian, G. (pub. 1969)  
 Turian
 Turian
-Türk, Roman (pub. 2001)  
-Türk
-Türk
+TÃ¼rk, Roman (pub. 2001)  
+TÃ¼rk
+TÃ¼rk
 Turkensteen, L.J. (pub. 1986)   
 Turkenst.
 Turkensteen
@@ -31057,9 +31057,9 @@ Ulfig
 Uljanishchev, V.I. (pub. 1931)  
 Uljan.
 Uljanishchev
-Uljé, C.B. (Kees) (pub. 1985)    
-Uljé
-Uljé
+UljÃ©, C.B. (Kees) (pub. 1985)    
+UljÃ©
+UljÃ©
 Ulken, Annemarie (pub. 1965)    
 Ulken
 Ulken
@@ -31148,11 +31148,11 @@ Urcelay
 Uriburu, Julio Vincente (pub. 1909)     
 Uriburu
 Uriburu
-(Urríes de Azara, M.J. de) see Urríes y Azara, Manuel Emmanuele de        
+(UrrÃ­es de Azara, M.J. de) see UrrÃ­es y Azara, Manuel Emmanuele de        
 Urries
-Urzì, C. (pub. 1999)     
-Urzì
-Urzì
+UrzÃ¬, C. (pub. 1999)     
+UrzÃ¬
+UrzÃ¬
 Usharani, P.(U.) (pub. 1981)    
 Ushar.
 Usharani
@@ -31225,7 +31225,7 @@ Vaillant
 Vainio, Edvard [Edward] August (1853-1929)      
 Vain.
 Vainio
-Vajna, László (pub. 2000) 
+Vajna, LÃ¡szlÃ³ (pub. 2000) 
 Vajna
 Vajna
 Vakalounakis, Demetrios J. (pub. 2000)  
@@ -31270,9 +31270,9 @@ Valle
 Valleau, William Dorney (1891)  
 Valleau
 Valleau
-Vallée dAlfort, H. (pub. 1903)   
-Vallée Alf.
-Vallée dAlfort
+VallÃ©e dAlfort, H. (pub. 1903)   
+VallÃ©e Alf.
+VallÃ©e dAlfort
 Valleggi, M. (pub. 1933)        
 Valleggi
 Valleggi
@@ -31354,8 +31354,8 @@ Van der Meer
 Van der Merwe, W.J.J. (pub. 1990)       
 W.J.J. van der Merwe
 Van der Merwe
-(van der Plaäts-Niterink, A.J.) see Plaäts-Niterink, A.J. van der 
-Plaäts-Nit.
+(van der PlaÃ¤ts-Niterink, A.J.) see PlaÃ¤ts-Niterink, A.J. van der 
+PlaÃ¤ts-Nit.
 Van der Veken, Paul A.J.B. (1928)       
 Van der Veken
 Van der Veken
@@ -31482,27 +31482,27 @@ VaHha
 Vanin, Stephen Ivanovich (1890) 
 Vanin
 Vanin
-Vánky, C. (pub. 1995)    
-C. Vánky
-Vánky
-Vánky, Kálmán (1930)       
-Vánky
-Vánky, Lia (1930)        
-L. Vánky
-Vánky, T. (pub. 1993)    
-T. Vánky
+VÃ¡nky, C. (pub. 1995)    
+C. VÃ¡nky
+VÃ¡nky
+VÃ¡nky, KÃ¡lmÃ¡n (1930)       
+VÃ¡nky
+VÃ¡nky, Lia (1930)        
+L. VÃ¡nky
+VÃ¡nky, T. (pub. 1993)    
+T. VÃ¡nky
 Vannacci, G. (pub. 1975)        
 Vannacci
 Vannacci
-VáHová, Marie (pub. 1968)  
-VáHová
-VáHová
+VÃ¡HovÃ¡, Marie (pub. 1968)  
+VÃ¡HovÃ¡
+VÃ¡HovÃ¡
 Vanoye, Venancio (pub. 1998)    
 Vanoye
 Vanoye
-Vänskä, Heino (1943)      
-Vänskä
-Vänskä
+VÃ¤nskÃ¤, Heino (1943)      
+VÃ¤nskÃ¤
+VÃ¤nskÃ¤
 Vanterpool, Thomas Clifford (1898)      
 Vanterp.
 Vanterpool
@@ -31620,17 +31620,17 @@ Vaughan-Martini
 Vaughn, R.H. (pub. 1942)        
 Vaughn
 Vaughn
-(Vaumartoise, Francois Victor) see Mérat, Francois Victor (de Vaumartoise)       
-Mérat
+(Vaumartoise, Francois Victor) see MÃ©rat, Francois Victor (de Vaumartoise)       
+MÃ©rat
 Vauras, Jukka (1948)    
 Vauras
 Vauras
 Vavra, J. (pub. 1983)   
 Vavra
 Vavra
-Vázquez, V.M. (pub. 1982)        
-Vázquez
-Vázquez
+VÃ¡zquez, V.M. (pub. 1982)        
+VÃ¡zquez
+VÃ¡zquez
 Veenbaas-Rijks, Johanna W. (pub. 1970)  
 Veenb.-Rijks
 Veenbaas-Rijks
@@ -31656,17 +31656,17 @@ Da Veiga
 J.C. Wei
 (Veken, Paul A.J.B. van der) see Van der Veken, Paul A.J.B.     
 Van der Veken
-Velázquez, Luis-Fernando (pub. 1994)     
-L.-F. Velázquez
-Velázquez
+VelÃ¡zquez, Luis-Fernando (pub. 1994)     
+L.-F. VelÃ¡zquez
+VelÃ¡zquez
 (Veld, Willem A. Man in t) see Man in t Veld, Willem A. 
 Man in t Veld
 Veldeman, R. (pub. 1971)        
 Veldeman
 Veldeman
-Velenovskı, Josef [Joseph] (1858-1949)   
+VelenovskÃ½, Josef [Joseph] (1858-1949)   
 Velen.
-Velenovskı
+VelenovskÃ½
 Vellinga, Else C. (pub. 1986)   
 Vellinga
 Vellinga
@@ -31782,12 +31782,12 @@ Versluys
 Verwoerd, Len (pub. 1924)       
 Verwoerd
 Verwoerd
-Veselskı, J. (pub. 1975) 
-J. Veselskı
-Veselskı
-Veselı, R. (pub. 1933)   
-Veselı
-Veselı
+VeselskÃ½, J. (pub. 1975) 
+J. VeselskÃ½
+VeselskÃ½
+VeselÃ½, R. (pub. 1933)   
+VeselÃ½
+VeselÃ½
 Vesonder, R.F. (pub. 1974)      
 Vesonder
 Vesonder
@@ -31797,16 +31797,16 @@ Vestergren
 Vesterholt, Jan (pub. 1989)     
 Vesterh.
 Vesterholt
-Veszprémi, D. (pub. 1907)        
-Veszprémi
-Veszprémi
+VeszprÃ©mi, D. (pub. 1907)        
+VeszprÃ©mi
+VeszprÃ©mi
 Veulliot, Charles (1829-1890)   
 Veull.
 Veulliot
 Vey, A. (pub. 1965)     
 Vey
 Vey
-Vzda, Antonín (pub. 1963)        
+Vzda, AntonÃ­n (pub. 1963)        
 Vzda
 Vzda
 Viaene, Nicole M. (pub. 1997)   
@@ -31837,7 +31837,7 @@ D. Victor
 Vidal, Pilar (pub. 1996)        
 P. Vidal
 Vidal
-Vidal(-Frigola), Josep María (pub. 1995) 
+Vidal(-Frigola), Josep MarÃ­a (pub. 1995) 
 J.M. Vidal
 Vidal(-Frigola)
 Vidal-Leiria, Manuela (pub. 1966)       
@@ -31849,12 +31849,12 @@ Vidhyasekaran
 Vido, Aloysii (pub. 1879)       
 Vido
 Vido
-Viégas, Ahmes Pinto (1905-1986)  
-Viégas
-Viégas
-Viégas, Ahmes Pinto (1905-1986)  
-Viégas
-Vieira, José Rego (pub. 1959)    
+ViÃ©gas, Ahmes Pinto (1905-1986)  
+ViÃ©gas
+ViÃ©gas
+ViÃ©gas, Ahmes Pinto (1905-1986)  
+ViÃ©gas
+Vieira, JosÃ© Rego (pub. 1959)    
 Vieira
 Vieira
 Viennot-Bourgin, Georges (1906) 
@@ -31877,7 +31877,7 @@ Vijayanthi
 Vila, Jordi (pub. 1999) 
 Vila
 Vila
-(Vilaró, Mayra Camino) see Camino Vilaró, Mayra   
+(VilarÃ³, Mayra Camino) see Camino VilarÃ³, Mayra   
 Camino
 Vilgalys, Rytas (1958)  
 Vilgalys
@@ -31893,8 +31893,8 @@ Vill
 Villacarlos, N. 
 Villac.
 Villacarlos
-(Villafañe Lastra, T. de) see Villafañe, T.       
-Villafañe
+(VillafaÃ±e Lastra, T. de) see VillafaÃ±e, T.       
+VillafaÃ±e
 (Villar, Dominique) see Villars, Dominique      
 Vill.
 Villarreal, Manuel (pub. 1997)  
@@ -31945,14 +31945,14 @@ Viswanathan
 Vital, A. Fernandes (pub. 1953) 
 A.F. Vital
 Vital
-Vitányi, G.      
-Vitányi
-Vitányi
-Vitányi, G.      
-Vitányi
-Vitéz, I. (pub. 1964)    
-Vitéz
-Vitéz
+VitÃ¡nyi, G.      
+VitÃ¡nyi
+VitÃ¡nyi
+VitÃ¡nyi, G.      
+VitÃ¡nyi
+VitÃ©z, I. (pub. 1964)    
+VitÃ©z
+VitÃ©z
 Vitikainen, Orvo (1949) 
 Vitik.
 Vitikainen
@@ -31986,9 +31986,9 @@ Vlad
 Vldescu, Mihai (pub. 1888)      
 Vldescu
 Vldescu
-Vlasák, J. (pub. 1990)   
-Vlasák
-Vlasák
+VlasÃ¡k, J. (pub. 1990)   
+VlasÃ¡k
+VlasÃ¡k
 Vlasova, E. (pub. 1968) 
 Vlassova
 Vlasova
@@ -32062,12 +32062,12 @@ Voronin
 Voronin
 (Voronov, Georg Gjurij Nikolaewitch) see Woronow, Georg Gjurij Nikolaewitch     
 Woronow
-Vörös, J. (pub. 1956)     
-Vörös
-Vörös
-Vörös-Felkai, G. (pub. 1961)      
-Vörös-Felkai
-Vörös-Felkai
+VÃ¶rÃ¶s, J. (pub. 1956)     
+VÃ¶rÃ¶s
+VÃ¶rÃ¶s
+VÃ¶rÃ¶s-Felkai, G. (pub. 1961)      
+VÃ¶rÃ¶s-Felkai
+VÃ¶rÃ¶s-Felkai
 Voss, Wilhelm [Guglielmo] (1849-1895)   
 W. Voss
 Voss
@@ -32121,9 +32121,9 @@ Vyaw.
 Vyawahare
 
 
-Wächter, Wilhelm (1870-1928)     
-W. Wächt.
-Wächter
+WÃ¤chter, Wilhelm (1870-1928)     
+W. WÃ¤cht.
+WÃ¤chter
 Wada, Masahiko (pub. 1978)      
 M. Wada
 Wada
@@ -32144,11 +32144,11 @@ Wadkins
 Wadley, Bryce N. (pub. 1952)    
 Wadley
 Wadley
-Wäfler, W. (pub. 1996)   
-Wäfler
-Wäfler
-Wäfler, W. (pub. 1996)   
-Wäfler
+WÃ¤fler, W. (pub. 1996)   
+WÃ¤fler
+WÃ¤fler
+WÃ¤fler, W. (pub. 1996)   
+WÃ¤fler
 Wagener, Willis Westlake (1892-1969)    
 W.W. Wagener
 Wagener
@@ -32547,7 +32547,7 @@ Wehmer
 Wehmeyer, Lewis Edgar (1897-1971)       
 Wehm.
 Wehmeyer
-Weholt, Ø. (pub. 1983)   
+Weholt, Ã˜. (pub. 1983)   
 Weholt
 Weholt
 Wei, An Jing (pub. 1981)        
@@ -32584,7 +32584,7 @@ Weilbacher
 Weill, A. (pub. 1932)   
 A. Weill
 Weill
-Weill, P.-Émile (pub. 1919)      
+Weill, P.-Ã‰mile (pub. 1919)      
 Weill
 Weill, R. (pub. 1932)   
 R. Weill
@@ -32823,9 +32823,9 @@ Whitton
 Wibel, August Wilhelm Eberhard Christoph (1775-1814)    
 Wibel
 Wibel
-Wichanskı, Ev~en (pub. 1958)      
-Wichanskı
-Wichanskı
+WichanskÃ½, Ev~en (pub. 1958)      
+WichanskÃ½
+WichanskÃ½
 (Wichers, Friedrich Heinrich [Fridrich Hindrich]) see Wiggers, Friedrich Heinrich [Fridrich Hindrich]   
 F.H. Wigg.
 Wickerham, Lynford J. (pub. 1951)       
@@ -33073,9 +33073,9 @@ Wize
 Wize
 (Wohlbach, S.B.) see Wolbach, S.B.      
 Wolbach
-Wójciak, Hanna (pub. 1994)       
-Wójciak
-Wójciak
+WÃ³jciak, Hanna (pub. 1994)       
+WÃ³jciak
+WÃ³jciak
 Wojciechowski, E. (pub. 1948)   
 Wojc.
 Wojciechowski
@@ -33100,11 +33100,11 @@ F.T. Wolf
 Wolfe, Carl B. (1945)   
 Wolfe
 Wolfe
-Wölfel, Gerhardt (pub. 1982)     
-Wölfel
-Wölfel
-Wölfel, Gerhardt (pub. 1982)     
-Wölfel
+WÃ¶lfel, Gerhardt (pub. 1982)     
+WÃ¶lfel
+WÃ¶lfel
+WÃ¶lfel, Gerhardt (pub. 1982)     
+WÃ¶lfel
 Wolff, (Jacobus Otto) Reinhold (1845)   
 R. Wolff
 Wolff
@@ -33162,11 +33162,11 @@ Worley
 Wormald, Hugh (1879-1955)       
 Wormald
 Wormald
-(Wormskiold, Morten [Martin]) see Wormskjöld, Morten [Martin]    
+(Wormskiold, Morten [Martin]) see WormskjÃ¶ld, Morten [Martin]    
 Wormsk.
-Wormskjöld, Morten [Martin] (1783-1845)  
+WormskjÃ¶ld, Morten [Martin] (1783-1845)  
 Wormsk.
-Wormskjöld
+WormskjÃ¶ld
 Woronichin, Nikolai Nikolaevich (1882)  
 Woron.
 Woronichin
@@ -33201,9 +33201,9 @@ Wright, S. (pub. 1966)
 S. Wright
 Wright, V.      
 V. Wright
-Wróblewski, Anton [Antoni] ( -1944)      
-Wróbl.
-Wróblewski
+WrÃ³blewski, Anton [Antoni] ( -1944)      
+WrÃ³bl.
+WrÃ³blewski
 Wron[ka, B. (pub. 1986)  
 Wron[ka
 Wron[ka
@@ -33264,9 +33264,9 @@ Wunder
 Wundsch, H.H. (pub. 1929)       
 Wundsch
 Wundsch
-Wünsche, Friedrich Otto (1839-1905)      
-Wünsche
-Wünsche
+WÃ¼nsche, Friedrich Otto (1839-1905)      
+WÃ¼nsche
+WÃ¼nsche
 Wurth, Theophil (1875-1922)     
 Wurth
 Wurth
@@ -33705,9 +33705,9 @@ Zafran
 Zahlbruckner, Alexander (1860-1938)     
 Zahlbr.
 Zahlbruckner
-Zähner, H. (pub. 1957)   
-Zähner
-Zähner
+ZÃ¤hner, H. (pub. 1957)   
+ZÃ¤hner
+ZÃ¤hner
 Zaim, M. (pub. 1979)    
 Zaim
 Zaim
@@ -33717,11 +33717,11 @@ Zainal
 Zainuddin, Hardaniah (pub. 1988)        
 Zainuddin
 Zainuddin
-(Zájara Jimenez, J.) see Zájara, J.       
-Zájara
-Zájara, J. (pub. 1958)   
-Zájara
-Zájara
+(ZÃ¡jara Jimenez, J.) see ZÃ¡jara, J.       
+ZÃ¡jara
+ZÃ¡jara, J. (pub. 1958)   
+ZÃ¡jara
+ZÃ¡jara
 Zak, Bratislav (1919)   
 Zak
 Zak
@@ -34118,15 +34118,15 @@ Zundel
 Zurett, S. (pub. 1938)  
 Zurett
 Zurett
-Zürn, L. (pub. 1986)     
-Zürn
-Zürn
+ZÃ¼rn, L. (pub. 1986)     
+ZÃ¼rn
+ZÃ¼rn
 Zurzycka, A. (pub. 1963)        
 Zurzycka
 Zurzycka
-Zvára, Jaroslav I. (pub. 1922)   
-Zvára
-Zvára
+ZvÃ¡ra, Jaroslav I. (pub. 1922)   
+ZvÃ¡ra
+ZvÃ¡ra
 Zvetkov, S.G. (pub. 1970)       
 Zvetkov
 Zvetkov
