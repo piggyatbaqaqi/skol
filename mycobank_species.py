@@ -26,10 +26,6 @@ class MycoBankSpecies(tokenizer.HashTokenizer):
                 if name:
                     yield(name)
 
-    def make_pattern(self, word: str) -> str:
-        pattern = super(MycoBankSpecies, self).make_pattern(word)
-        return pattern.replace('(', r'\(').replace(')', r'\)')
-
 
 def main():
     parser = argparse.ArgumentParser()
