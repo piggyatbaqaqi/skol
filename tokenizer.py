@@ -89,7 +89,7 @@ class HashTokenizer(Tokenizer):
         """
         tokens = line.split()
         while tokens:
-            if tokens[0] in self._pattern:
+            if tokens[0].lower() in self._pattern:
                 retval = tokens.pop(0)
                 yield(retval, ' '.join(tokens))
             else:
