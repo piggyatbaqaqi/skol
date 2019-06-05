@@ -12,7 +12,7 @@ from typing import Iterator, Optional
 
 import tokenizer
 
-class MycoBankSpecies(tokenizer.Tokenizer):
+class MycoBankSpecies(tokenizer.HashTokenizer):
 
     _filename = 'data/species/Export.csv'
 
