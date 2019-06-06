@@ -1,0 +1,3787 @@
+ISSN O
+(print) O
+0093-4666 O
+
+
+© O
+2011. O
+Mycotaxon, O
+Ltd. O
+
+
+ISSN O
+(online) O
+2154-8889 O
+
+
+MYCOTAXON O
+
+Volume O
+118, O
+pp. O
+17–26 O
+
+
+http://dx.doi.org/10.5248/118.17 O
+
+
+October–December O
+2011 O
+
+
+[@Discrimination O
+of O
+Gigaspora O
+species O
+by O
+
+PCR O
+speciﬁc O
+primers O
+and O
+phylogenetic O
+analysis#Title*] O
+
+Gladstone B-Author
+Alves M-Author
+da M-Author
+Silva E-Author
+1*, O
+Erica B-Author
+Lumini E-Author
+2, O
+Valeria B-Author
+Bianciotto E-Author
+2, O
+
+Paola B-Author
+Bonfante E-Author
+2 O
+& O
+Leonor B-Author
+Costa M-Author
+Maia E-Author
+1 O
+
+[@Departamento O
+de O
+Micologia, O
+CCB, O
+Universidade O
+Federal O
+de O
+Pernambuco, O
+
+Av. O
+Prof. O
+Nelson O
+Chaves, O
+s/n. O
+50670-420 O
+Recife, O
+PE, O
+Brasil#Institution*] O
+
+
+[@Dipartimento O
+di O
+Biologia O
+Vegetale O
+dell’ O
+Università O
+and O
+Istituto O
+per O
+la O
+Protezione O
+delle O
+Piante, O
+
+(Sezione O
+di O
+Torino) O
+del O
+CNR O
+– O
+Viale O
+P.A. O
+Mattioli O
+25, O
+10125 O
+Torino, O
+Italy#Institution*] O
+
+*Correspondence O
+to: O
+gladstonesilva@yahoo.com O
+
+
+
+[@Abstract O
+— O
+Species O
+of O
+arbuscular O
+mycorrhizal O
+fungi O
+(AMF) O
+are O
+usually O
+identiﬁed O
+by O
+
+the O
+morphological O
+characteristics O
+of O
+their O
+spores. O
+However, O
+considering O
+the O
+diﬃculties O
+in O
+
+diagnosing O
+their O
+taxa, O
+the O
+construction O
+of O
+species-speciﬁc O
+primers O
+has O
+been O
+proposed O
+as O
+an O
+
+identiﬁcation O
+alternative. O
+In O
+this O
+paper O
+the O
+problem O
+of O
+distinguishing O
+diﬀerent O
+Gigaspora O
+
+species O
+with O
+slight O
+morphological O
+diﬀerences O
+was O
+solved O
+using O
+species-speciﬁc O
+primers O
+and O
+
+SSU O
+and O
+LSU O
+rDNA O
+sequence O
+analyses O
+of O
+18 O
+AM O
+fungal O
+isolates O
+comprising O
+seven O
+species. O
+
+Neighbor O
+joining, O
+maximum O
+parsimony, O
+and O
+maximum O
+likelihood O
+analyses O
+were O
+performed O
+
+to O
+evaluate O
+the O
+phylogenetic O
+aﬃliation O
+of O
+the O
+isolates, O
+and O
+a O
+new O
+reverse O
+PCR O
+primer O
+(ALB1) O
+
+speciﬁc O
+for O
+Gigaspora O
+albida O
+was O
+designed O
+and O
+tested O
+with O
+11 O
+Gigaspora O
+isolates O
+(four O
+species). O
+
+The O
+results O
+conﬁrmed O
+misidentiﬁcation O
+of O
+‘G. O
+albida’ O
+FL O
+927 O
+and O
+‘G. O
+margarita’ O
+BR O
+444 O
+and O
+
+supported O
+referring O
+FL O
+927 O
+to O
+G. O
+rosea O
+and O
+BR O
+444 O
+to O
+G. O
+albida. O
+
+Key O
+words O
+— O
+phylogeny, O
+ribosomal O
+sequences, O
+Glomeromycota#Abstract*] O
+
+
+Introduction S-Section-header
+
+
+[@There O
+are O
+approximately O
+220 O
+species O
+of O
+arbuscular O
+mycorrhizal O
+fungi O
+
+(AMF) O
+(Stockinger O
+et O
+al. O
+2010). O
+Morphological O
+diﬀerences O
+in O
+spore O
+structure O
+
+are O
+usually O
+used O
+to O
+distinguish O
+between O
+individual O
+species, O
+but O
+this O
+requires O
+
+a O
+great O
+deal O
+of O
+experience O
+(Morton O
+1993, O
+Bentivenga O
+& O
+Morton O
+1994). O
+More O
+
+practical O
+methods O
+are O
+needed, O
+so O
+that O
+AMF O
+can O
+be O
+identiﬁed O
+directly O
+not O
+
+only O
+in O
+the O
+rhizosphere, O
+but O
+also O
+after O
+host O
+root O
+colonization. O
+DNA O
+analytical O
+
+methods O
+involving O
+electrophoretic O
+proﬁles O
+(Wyss O
+& O
+Bonfante O
+1993), O
+sequence O
+
+comparisons O
+(Daniell O
+et O
+al. O
+2001, O
+Husband O
+et O
+al. O
+2002, O
+Mummey O
+& O
+Rillig O
+2007, O
+
+Stukenbrock O
+& O
+Rosendahl O
+2005), O
+PCR-DGGE O
+(Souza O
+et O
+al. O
+2004), O
+species- O
+
+
+18 B-Page-header
+... M-Page-header
+Silva M-Page-header
+& M-Page-header
+al. E-Page-header
+
+speciﬁc O
+primers O
+(Gamper O
+& O
+Leuchtmann O
+2007, O
+Geue O
+& O
+Hock O
+2004, O
+Lanfranco O
+
+et O
+al. O
+1995, O
+1999, O
+2001, O
+Millner O
+et O
+al. O
+1998, O
+2001a, O
+2001b, O
+Redecker O
+2000), O
+and O
+
+DNA O
+barcodes O
+(Stockinger O
+et O
+al. O
+2010) O
+are O
+being O
+developed O
+that O
+would O
+allow O
+
+identiﬁcation O
+of O
+individual O
+AMF O
+species O
+in O
+an O
+ecological O
+context. O
+For O
+example, O
+
+species-speciﬁc O
+PCR O
+primers O
+could O
+be O
+used O
+to O
+discriminate O
+morphologically O
+
+similar O
+species O
+or O
+even O
+to O
+identify O
+species O
+within O
+colonized O
+roots. O
+However, O
+to O
+
+date O
+only O
+a O
+small O
+number O
+of O
+species-speciﬁc O
+probes O
+has O
+been O
+developed. O
+
+After O
+Oehl O
+et O
+al. O
+(2008) O
+divided O
+the O
+Gigasporaceae O
+into O
+four O
+families O
+and O
+
+six O
+genera, O
+Morton O
+& O
+Msiska O
+(2010) O
+proposed O
+dividing O
+Gigasporaceae O
+into O
+just O
+
+three O
+genera O
+—Gigaspora, O
+Racocetra, O
+Scutellospora. O
+Gigaspora O
+has O
+ﬁve O
+species O
+
+(Bentivenga O
+& O
+Morton O
+1995) O
+in O
+which O
+the O
+morphological O
+variation O
+is O
+low O
+
+(Bago O
+et O
+al. O
+1998, O
+Souza O
+et O
+al. O
+2004, O
+Lanfranco O
+et O
+al. O
+2001), O
+and O
+only O
+diameter, O
+
+color O
+and O
+spore O
+wall O
+thickness O
+of O
+glomerospores O
+have O
+been O
+used O
+for O
+species O
+
+identiﬁcation O
+(Bentivenga O
+& O
+Morton O
+1995). O
+Species-speciﬁc O
+primers O
+designed O
+
+for O
+G. O
+margarita O
+(Lanfranco O
+et O
+al. O
+1999) O
+and O
+G. O
+rosea O
+(Lanfranco O
+et O
+al. O
+2001) O
+
+have O
+shown O
+to O
+be O
+eﬀective O
+in O
+solving O
+such O
+morphological O
+conﬂicts. O
+In O
+this O
+study O
+
+we O
+show O
+how O
+a O
+species-speciﬁc O
+PCR O
+primer O
+constructed O
+for O
+G. O
+albida O
+helps O
+
+solve O
+problems O
+associated O
+with O
+discriminating O
+Gigaspora O
+species O
+and O
+evaluate O
+
+Gigaspora O
+phylogenetically O
+through O
+SSU O
+and O
+LSU O
+rDNA O
+analyses.#Misc-exposition*] O
+
+[@Materials O
+& O
+methods O
+
+AM O
+fungi O
+
+
+Eleven O
+reference O
+isolates O
+(Table O
+1) O
+representing O
+Gigaspora O
+propagated O
+in O
+pot O
+cultures O
+
+were O
+selected. O
+
+Intracellular B-Section-header
+bacteria E-Section-header
+
+
+Presence O
+of O
+intracellular O
+bacteria O
+was O
+assessed O
+with O
+the O
+Live/Dead O
+Bac-Light O
+
+bacterial O
+viability O
+kit O
+(Molecular O
+Probes, O
+Inc., O
+Eugene, O
+OR, O
+USA) O
+following O
+Bianciotto O
+
+et O
+al. O
+(1996). O
+
+DNA B-Section-header
+extraction E-Section-header
+
+
+Ten O
+to O
+50 O
+spores O
+were O
+washed O
+in O
+distilled O
+water, O
+sonicated O
+3–4 O
+times, O
+crushed O
+in O
+
+50–100 O
+µl O
+of O
+1x O
+REDTaq O
+PCR O
+Reaction O
+Buﬀer O
+(10 O
+mM O
+Tris-HCl O
+pH O
+8.3, O
+50 O
+mM O
+KCl, O
+1.1 O
+
+mM O
+MgCl2 O
+and O
+0.01% O
+gelatin) O
+(Sigma-Aldrich, O
+Milan, O
+Italy), O
+and O
+centrifuged O
+at O
+1000 O
+
+RPM O
+for O
+2 O
+min. O
+The O
+supernatant O
+containing O
+the O
+DNA O
+was O
+incubated O
+at O
+95°C O
+for O
+13 O
+min. O
+
+After O
+extraction, O
+the O
+DNA O
+was O
+stored O
+at O
+–20°C. O
+
+Design O
+of O
+PCR O
+primers, O
+ampliﬁcation O
+and O
+sequencing O
+
+
+A O
+new O
+species-speciﬁc O
+reverse O
+PCR O
+primer O
+ALB1 O
+(5’-cccaactaaaaatacttcagtc3’) O
+was O
+designed O
+for O
+G. O
+albida O
+based O
+on O
+the O
+GenBank O
+ITS O
+sequence O
+AJ239118 O
+and O
+
+combined O
+with O
+GiITS1 O
+(Lanfranco O
+et O
+al. O
+1999) O
+to O
+create O
+a O
+385 O
+bp O
+fragment. O
+For O
+
+G. O
+margarita O
+and O
+G. O
+rosea, O
+combinations O
+of O
+primers O
+GiITS1+GiITS2 O
+(Lanfranco O
+et O
+al. O
+
+1999) O
+and O
+GiITS1-GiR3 O
+(Lanfranco O
+et O
+al. O
+2001) O
+were O
+used, O
+respectively. O
+
+#Materials-methods*] O
+
+Discrimination B-Page-header
+of M-Page-header
+Gigaspora M-Page-header
+spp. M-Page-header
+... M-Page-header
+19 E-Page-header
+
+
+[@Table O
+1. O
+Glomeromycota O
+isolates O
+used O
+in O
+PCR O
+ampliﬁcation O
+tests O
+with O
+
+species-speciﬁc O
+primers O
+and O
+phylogenetic O
+analysis. O
+
+Speciesa O
+
+
+Isolate O
+
+
+Origin O
+
+
+Gigaspora O
+albida O
+N.C. O
+Schenck O
+& O
+G.S. O
+Sm. O
+
+
+BR O
+601 O
+
+
+Brazil O
+
+
+invam O
+
+
+G. O
+albida O
+
+
+FL O
+927 O
+
+
+USA O
+
+
+ufpe O
+
+
+G.decipiens O
+I.R. O
+Hall O
+& O
+L.K. O
+Abbott O
+
+
+BEG O
+45 O
+
+
+Australia O
+
+
+beg O
+
+
+G. O
+gigantea O
+(T.H. O
+Nicolson O
+& O
+Gerd.) O
+Gerd. O
+& O
+Trappe O
+
+
+MN O
+414D O
+
+
+USA O
+
+
+invam O
+
+
+G. O
+gigantea O
+
+
+NC O
+150 O
+
+
+USA O
+
+
+invam O
+
+
+G. O
+gigantea O
+
+
+WV O
+932 O
+
+
+USA O
+
+
+invam O
+
+
+G. O
+gigantea O
+
+
+NC O
+199A O
+
+
+USA O
+
+
+invam O
+
+
+G. O
+margarita O
+W.N. O
+Becker O
+& O
+I.R. O
+Hall O
+
+
+MAFF O
+52 O
+
+
+Japan O
+
+
+maff O
+
+
+G. O
+margarita O
+
+
+MAFF O
+54 O
+
+
+Japan O
+
+
+maff O
+
+
+G. O
+margarita O
+
+
+BEG O
+34 O
+
+
+New O
+Zealand O
+
+
+beg/unito O
+
+
+G. O
+margarita O
+
+
+BR O
+444 O
+
+
+Brazil O
+
+
+invam O
+
+
+G. O
+rosea O
+T.H. O
+Nicolson O
+& O
+N.C. O
+Schenck O
+
+
+UT O
+102 O
+
+
+USA O
+
+
+invam O
+
+
+G. O
+rosea O
+
+
+MAFF O
+62 O
+
+
+Japan O
+
+
+maff O
+
+
+G. O
+rosea O
+
+
+BR O
+151 O
+A O
+
+
+Brazil O
+
+
+invam O
+
+
+G. O
+rosea O
+
+
+DAOM O
+194757 O
+
+BEG O
+32 O
+
+
+NA O
+
+UK O
+
+
+na O
+
+beg O
+
+
+S. O
+calospora O
+
+
+HDAM-3 O
+
+
+na O
+
+
+na O
+
+
+Scutellospora O
+sp. O
+
+
+W O
+3485 O
+
+
+UK O
+
+
+C. O
+Walker O
+
+
+Scutellospora O
+calospora O
+(T.H. O
+Nicolson O
+& O
+Gerd.) O
+
+C. O
+Walker O
+& O
+F.E. O
+Sanders O
+
+#Figure*] O
+
+
+
+Sourceb S-Section-header
+
+
+[@Species O
+used O
+in O
+the O
+test O
+with O
+species-speciﬁc O
+primers O
+(in O
+bold). O
+bINVAM: O
+International O
+Culture O
+Collection O
+
+of O
+Arbuscular O
+and O
+Vesicular-Arbuscular O
+Mycorrhizal O
+Fungi, O
+USA; O
+UFPE: O
+Universidade O
+Federal O
+de O
+
+Pernambuco, O
+Departamento O
+de O
+Micologia, O
+Brasil; O
+MAFF: O
+Ministry O
+of O
+Agriculture, O
+Forest O
+and O
+Fisheries, O
+
+Japan; O
+BEG O
+European O
+Bank O
+of O
+Glomales, O
+France; O
+UNITO: O
+Università O
+di O
+Torino, O
+Dipartimento O
+di O
+Biologia O
+
+Vegetale, O
+Italy; O
+na: O
+information O
+not O
+available.#Misc-exposition*] O
+
+
+[@The O
+28G1 O
+and O
+28G2 O
+primers O
+(Silva O
+et O
+al. O
+2006) O
+were O
+used O
+to O
+amplify O
+the O
+partial O
+LSU O
+
+rDNA O
+region. O
+NS1, O
+NS2, O
+NS3, O
+NS4, O
+NS5 O
+and O
+NS8 O
+were O
+used O
+to O
+obtain O
+the O
+SSU O
+rDNA O
+
+amplicons O
+(White O
+et O
+al. O
+1990). O
+
+PCR O
+reactions O
+were O
+carried O
+out O
+in O
+a O
+volume O
+of O
+50 O
+µl, O
+containing O
+10 O
+mM O
+Tris-HCl O
+
+pH O
+8.3, O
+50 O
+mM O
+KCl, O
+1.1 O
+mM O
+MgCl2, O
+0.01% O
+gelatin, O
+200 O
+µM O
+each O
+dNTPs, O
+1 O
+µM O
+of O
+each O
+
+primer O
+and O
+2 O
+units O
+of O
+REDTaqTM O
+DNA O
+polymerase O
+(SIGMA) O
+(Sigma-Aldrich, O
+Milan, O
+
+Italy). O
+Cycling O
+parameters O
+were O
+45 O
+s O
+at O
+94°C, O
+1 O
+min O
+at O
+55°C, O
+1 O
+min O
+at O
+72°C O
+for O
+40 O
+cycles, O
+
+with O
+a O
+ﬁnal O
+elongation O
+of O
+7 O
+min O
+at O
+72°C O
+followed O
+the O
+last O
+cycle. O
+The O
+amplicons O
+were O
+
+visualized O
+on O
+1.5% O
+agarose O
+gel O
+with O
+ethidium O
+bromide. O
+The O
+ampliﬁed O
+products O
+for O
+
+SSU O
+and O
+LSU O
+rDNA O
+were O
+puriﬁed O
+with O
+a O
+QIAquick O
+kit O
+(Qiagen O
+S.p.A., O
+Milan, O
+Italy) O
+
+following O
+the O
+manufacturer’s O
+instruction O
+and O
+sequenced O
+(accession O
+numbers O
+are O
+listed O
+
+in O
+Table O
+1). O
+Sequencing O
+was O
+made O
+by O
+GeneLab O
+(Roma, O
+Italy).#Misc-exposition*] O
+
+Sequence O
+alignment O
+and O
+phylogenetic O
+analysis O
+
+
+[@Prior O
+to O
+phylogenetic O
+analysis, O
+a O
+BLASTn O
+query O
+of O
+the O
+National O
+Center O
+for O
+
+Biotechnology O
+information O
+databases O
+demonstrated O
+that O
+sequences O
+obtained O
+from O
+AMF O
+
+species O
+were O
+aﬃliated O
+with O
+the O
+genus O
+Gigaspora.#Misc-exposition*] O
+
+
+20 B-Page-header
+... M-Page-header
+Silva M-Page-header
+& M-Page-header
+al. E-Page-header
+
+[@Sequences O
+of O
+15 O
+Gigaspora O
+and O
+11 O
+Scutellospora O
+isolates O
+(some O
+obtained O
+from O
+
+GenBank) O
+were O
+selected O
+to O
+align O
+SSU O
+and O
+LSU O
+rDNA O
+(Table O
+1) O
+using O
+Clustal O
+X O
+(Larkin O
+
+et O
+al. O
+2007) O
+and O
+edited O
+with O
+BioEdit O
+(Hall O
+1999). O
+
+For O
+phylogenetic O
+analyses O
+and O
+tree O
+construction, O
+neighbor O
+joining O
+(NJ), O
+maximum O
+
+parsimony O
+(MP), O
+and O
+maximum O
+likelihood O
+(ML) O
+analysis O
+with O
+1,000 O
+bootstrap O
+
+replications O
+were O
+performed O
+using O
+PAUP4 O
+(Phylogenetic O
+Analysis O
+Using O
+Parsimony O
+
+vers. O
+4, O
+Swoﬀord O
+2003). O
+NJ O
+and O
+ML O
+analyses O
+were O
+performed O
+using O
+parameters O
+obtained O
+
+from O
+ModelTest O
+3.7 O
+(Posada O
+& O
+Crandall O
+1998). O
+Scutellospora O
+calospora O
+and O
+Scutellospora O
+
+sp. O
+were O
+used O
+as O
+outgroup.#Misc-exposition*] O
+
+Results S-Section-header
+
+Morphological B-Section-header
+observations M-Section-header
+of M-Section-header
+isolates M-Section-header
+FL M-Section-header
+927 M-Section-header
+and M-Section-header
+BR M-Section-header
+444 E-Section-header
+
+
+[@Isolates O
+FL O
+927 O
+(‘G. O
+albida’) O
+and O
+BR O
+444 O
+(‘G. O
+margarita’) O
+had O
+morphological O
+
+characters O
+similar O
+to O
+other O
+Gigaspora O
+species: O
+spore O
+wall O
+thickness O
+[9.6–(12.2)– O
+
+14.4 O
+µm O
+and O
+12–(13.9)–16.8 O
+µm, O
+respectively] O
+and O
+spore O
+diameter O
+[230–(282)– O
+
+360 O
+µm O
+and O
+250–(320)–384 O
+µm, O
+respectively]. O
+However, O
+the O
+‘G. O
+margarita’ O
+
+BR O
+444 O
+spores O
+were O
+hyaline/white O
+to O
+yellow O
+and O
+lacked O
+the O
+characteristic O
+green O
+
+(G. O
+albida) O
+or O
+pink O
+(G. O
+rosea) O
+coloration O
+observed O
+in O
+reference O
+isolates O
+G. O
+albida O
+
+BR O
+601 O
+and O
+G. O
+rosea O
+UT O
+102. O
+All O
+isolates O
+of O
+‘G. O
+margarita’ O
+BR O
+444 O
+and O
+G. O
+albida O
+
+BR O
+601 O
+contained O
+endobacteria, O
+which O
+were O
+absent O
+in O
+all O
+isolates O
+of O
+G. O
+rosea O
+
+and O
+‘G. O
+albida’ O
+FL O
+927.#Misc-exposition*] O
+
+Testing B-Section-header
+species-speciﬁc M-Section-header
+primers M-Section-header
+for M-Section-header
+taxa M-Section-header
+of M-Section-header
+Gigaspora E-Section-header
+
+
+[@Eleven O
+Gigaspora O
+isolates O
+were O
+screened O
+for O
+PCR O
+ampliﬁcation O
+of O
+a O
+short O
+
+partial O
+nuclear O
+ITS O
+rDNA O
+fragment O
+(385bp) O
+with O
+species-speciﬁc O
+primers O
+
+(Table O
+1). O
+The O
+primers O
+GiITS1+GiITS2 O
+ampliﬁed O
+only O
+the O
+G. O
+margarita O
+species, O
+
+excluding O
+isolate O
+‘G. O
+margarita’ O
+BR O
+444, O
+which O
+did O
+not O
+amplify O
+at O
+all O
+(Fig. O
+1A). O
+
+The O
+combination O
+of O
+the O
+species-speciﬁc O
+primer O
+constructed O
+for O
+G. O
+rosea O
+(GiR3) O
+
+with O
+GiITS1 O
+ampliﬁed O
+not O
+only O
+the O
+isolates O
+of O
+G. O
+rosea, O
+but O
+also O
+‘G. O
+albida’ O
+
+FL O
+927 O
+and O
+showed O
+a O
+slight O
+reaction O
+to O
+the O
+DNA O
+from O
+spores O
+of O
+G. O
+albida O
+BR O
+
+601 O
+and O
+‘G. O
+margarita’ O
+BR O
+444 O
+(Fig. O
+1B), O
+while O
+the O
+GiITS1+ALB1 O
+primer O
+pair O
+
+ampliﬁed O
+only O
+G. O
+albida O
+BR O
+601 O
+and O
+‘G. O
+margarita’ O
+BR O
+444 O
+(Fig. O
+1C). O
+These O
+
+results O
+support O
+a O
+misidentiﬁcation O
+for O
+‘G. O
+albida’ O
+FL O
+927 O
+and O
+‘G. O
+margarita’ O
+
+BR O
+444.#Misc-exposition*] O
+
+Phylogenetic B-Section-header
+analysis M-Section-header
+of M-Section-header
+Gigaspora M-Section-header
+from M-Section-header
+SSU M-Section-header
+and M-Section-header
+LSU M-Section-header
+rDNA E-Section-header
+
+
+[@In O
+the O
+SSU O
+rDNA O
+phylogenetic O
+analyses O
+(NJ, O
+MP O
+and O
+ML), O
+the O
+genus O
+
+Gigaspora O
+was O
+supported O
+as O
+a O
+monophyletic O
+group O
+with O
+100% O
+of O
+the O
+bootstrap O
+
+value O
+(Fig. O
+2). O
+Three O
+subclades O
+were O
+observed O
+in O
+the O
+genus, O
+the O
+ﬁrst O
+grouping O
+
+‘G. O
+margarita’ O
+BR O
+444 O
+with O
+all O
+isolates O
+of O
+G. O
+albida O
+and O
+G. O
+rosea. O
+In O
+the O
+
+second O
+cluster O
+just O
+G. O
+gigantea O
+was O
+present O
+and O
+in O
+the O
+last O
+group O
+all O
+isolates O
+of O
+
+G. O
+margarita O
+(except O
+‘G. O
+margarita’ O
+BR O
+444) O
+appeared O
+together O
+with O
+G. O
+decipiens. O
+
+In O
+the O
+tree O
+constructed O
+with O
+the O
+LSU O
+rDNA, O
+Gigaspora O
+was O
+monophyletic O
+
+with O
+high O
+bootstrap O
+support O
+(Fig. O
+3). O
+All O
+isolates O
+of O
+G. O
+margarita O
+(except O
+
+
+Discrimination B-Page-header
+of M-Page-header
+Gigaspora M-Page-header
+spp. M-Page-header
+... M-Page-header
+21 E-Page-header
+
+
+[@Fig. O
+1. O
+Agarose O
+gels O
+(1.5%) O
+with O
+PCR O
+products O
+of O
+the O
+Gigaspora O
+spp. O
+Diﬀerent O
+combinations O
+of O
+
+primers O
+were O
+used: O
+A) O
+GiITS1-GiITS2; O
+B) O
+GiITS1-GiR3; O
+C) O
+GiITS1-ALB1. O
+M O
+= O
+pUC O
+18 O
+digested O
+
+with O
+Hae O
+III. O
+NTC O
+= O
+no O
+template O
+control.#Figure*] O
+
+
+‘G. O
+margarita’ O
+BR O
+444) O
+clustered O
+together. O
+Two O
+isolates O
+of O
+Gigaspora O
+gigantea O
+
+grouped O
+in O
+the O
+same O
+clade, O
+Gigaspora O
+albida O
+BR O
+601 O
+and O
+‘Gigaspora O
+margarita’ O
+
+BR O
+444 O
+clustered O
+together O
+and O
+Gigaspora O
+rosea O
+UT O
+102 O
+was O
+close O
+to O
+‘Gigaspora O
+
+albida’ O
+FL O
+927. O
+Based O
+on O
+SSU O
+and O
+LSU O
+rDNA O
+analyses O
+‘Gigaspora O
+margarita’ O
+BR O
+
+444 O
+has O
+been O
+misidentiﬁed.#Misc-exposition*] O
+
+Discussion S-Section-header
+
+
+[@Due O
+to O
+the O
+low O
+morphological O
+variation O
+amongst O
+Gigaspora O
+species O
+
+(Bentivenga O
+& O
+Morton O
+1995), O
+some O
+papers O
+have O
+reported O
+species O
+misidentiﬁcation O
+(Bago O
+et O
+al. O
+1998, O
+Souza O
+et O
+al. O
+2004, O
+Lanfranco O
+et O
+al. O
+2001). O
+These O
+
+studies O
+also O
+report O
+the O
+usefulness O
+of O
+molecular O
+approach O
+as O
+an O
+identiﬁcation O
+
+tool. O
+Based O
+on O
+sequences O
+of O
+SSU O
+rDNA O
+and O
+isozyme O
+analysis, O
+Bago O
+et O
+al. O
+(1998) O
+
+divided O
+Gigaspora O
+into O
+three O
+subgeneric O
+groups: O
+the O
+ﬁrst O
+with O
+G. O
+margarita O
+and O
+
+G. O
+decipiens, O
+the O
+second O
+with O
+G. O
+albida O
+and O
+G. O
+rosea, O
+and O
+the O
+third O
+with O
+G. O
+gigantea. O
+
+In O
+this O
+paper O
+these O
+same O
+groups O
+were O
+observed O
+in O
+the O
+phylogeny O
+generated O
+by O
+
+
+22 B-Page-header
+... M-Page-header
+Silva M-Page-header
+& M-Page-header
+al. E-Page-header
+
+
+[@Fig. O
+2. O
+Phylogenetic O
+reconstruction O
+of O
+the O
+Gigaspora O
+obtained O
+from O
+SSU O
+rDNA O
+sequences O
+(~1700 O
+
+bp). O
+The O
+NJ O
+and O
+ML O
+analyses O
+were O
+performed O
+with O
+HKY85 O
++ O
+I O
+substitution O
+model. O
+Bootstrap O
+values O
+
+(in O
+%) O
+are O
+from O
+neighbor O
+joining O
+(NJ), O
+maximum O
+parsimony O
+(MP) O
+and O
+maximum O
+likelihood O
+(ML) O
+
+analyses O
+(1000 O
+bootstraps), O
+respectively. O
+Only O
+topologies O
+with O
+bootstrap O
+values O
+of O
+at O
+least O
+50% O
+are O
+
+shown. O
+(Consistency O
+Index O
+= O
+0.88; O
+Retention O
+Index O
+= O
+0.93).#Figure*] O
+
+
+SSU O
+rDNA, O
+and O
+just O
+‘G. O
+margarita’ O
+BR O
+444 O
+was O
+out O
+of O
+the O
+correct O
+clade. O
+In O
+the O
+
+LSU O
+rDNA O
+tree, O
+the O
+isolate O
+BR O
+444 O
+also O
+grouped O
+together O
+with O
+G. O
+albida O
+BR O
+
+601, O
+whereas O
+the O
+isolate O
+FL O
+927 O
+(identiﬁed O
+as O
+G. O
+albida) O
+was O
+clustered O
+with O
+
+G. O
+rosea. O
+Bago O
+et O
+al. O
+(1998) O
+observed O
+that O
+the O
+isolates O
+BR O
+444, O
+identiﬁed O
+initially O
+
+as O
+G. O
+margarita, O
+and O
+FL O
+927 O
+(described O
+as O
+G. O
+albida), O
+should O
+instead O
+be O
+ascribed O
+
+to O
+G. O
+albida O
+and O
+G. O
+rosea, O
+respectively. O
+The O
+PCR O
+ampliﬁcation O
+tests O
+with O
+speciesspeciﬁc O
+primers O
+in O
+this O
+study O
+also O
+indicated O
+that O
+these O
+two O
+isolates O
+should O
+be O
+
+reclassiﬁed O
+as O
+G. O
+albida O
+and O
+G. O
+rosea. O
+Nevertheless O
+recently O
+Msiska O
+& O
+Morton O
+
+
+Discrimination B-Page-header
+of M-Page-header
+Gigaspora M-Page-header
+spp. M-Page-header
+... M-Page-header
+23 E-Page-header
+
+
+[@Fig. O
+3. O
+Phylogenetic O
+reconstruction O
+of O
+the O
+Gigaspora O
+obtained O
+from O
+LSU O
+rDNA O
+sequences O
+(~ O
+450 O
+
+bp). O
+The O
+NJ O
+and O
+ML O
+analyses O
+were O
+performed O
+with O
+GTR O
+substitution O
+model. O
+Bootstrap O
+values O
+(in O
+
+%) O
+are O
+from O
+neighbor O
+joining O
+(NJ), O
+maximum O
+parsimony O
+(MP) O
+and O
+maximum O
+likelihood O
+(ML) O
+
+analyses O
+(1000 O
+bootstraps), O
+respectively. O
+Only O
+topologies O
+with O
+bootstrap O
+values O
+of O
+at O
+least O
+50% O
+are O
+
+shown. O
+(Consistency O
+Index O
+= O
+0.93; O
+Retention O
+Index O
+= O
+0.93).#Figure*] O
+
+
+(2009), O
+based O
+on O
+β-tubulin O
+gene, O
+reported O
+that O
+‘G. O
+margarita’ O
+BR O
+444 O
+did O
+not O
+
+group O
+with O
+G. O
+albida O
+or O
+G. O
+rosea, O
+but O
+with O
+G. O
+decipiens. O
+
+Using O
+PCR-DGGE O
+analysis, O
+Souza O
+et O
+al. O
+(2004) O
+already O
+observed, O
+as O
+we O
+
+conﬁrmed O
+here, O
+that O
+the O
+FL O
+927 O
+isolate, O
+originally O
+identiﬁed O
+as O
+G. O
+albida, O
+should O
+
+be O
+ascribed O
+to O
+G. O
+rosea, O
+indicating O
+identiﬁcation O
+problems. O
+Endobacteria O
+are O
+
+usually O
+observed O
+in O
+glomerospores O
+of O
+Gigaspora O
+species, O
+with O
+the O
+exception O
+of O
+
+
+24 B-Page-header
+... M-Page-header
+Silva M-Page-header
+& M-Page-header
+al. E-Page-header
+
+G. O
+rosea O
+isolates. O
+Bacteria O
+were O
+not O
+found O
+in O
+‘Gigaspora O
+albida’ O
+FL O
+927, O
+further O
+
+substantiating O
+the O
+need O
+for O
+reclassiﬁcation.#Misc-exposition*] O
+
+[@Van O
+Tuinen O
+et O
+al. O
+(1998) O
+were O
+the O
+ﬁrst O
+to O
+design O
+speciﬁc O
+primers O
+for O
+Gigaspora O
+
+species O
+(G. O
+rosea) O
+that O
+amplify O
+a O
+region O
+of O
+the O
+LSU O
+rDNA. O
+Because O
+these O
+
+authors O
+tested O
+cross-ampliﬁcation O
+only O
+with O
+species O
+of O
+other O
+AMF O
+genera, O
+it O
+is O
+
+not O
+possible O
+to O
+establish O
+whether O
+the O
+primers O
+amplify O
+other O
+Gigaspora O
+species. O
+
+Currently O
+there O
+are O
+primers O
+speciﬁc O
+for O
+two O
+Gigaspora O
+species O
+(G. O
+margarita O
+
+and O
+G. O
+rosea); O
+nevertheless, O
+we O
+report O
+that O
+the O
+reverse O
+primer O
+GiR3 O
+(Lanfranco O
+
+et O
+al. O
+2001) O
+also O
+ampliﬁes O
+G. O
+albida O
+isolates. O
+As O
+Lanfranco O
+et O
+al. O
+(2001) O
+did O
+not O
+
+use O
+G. O
+albida O
+and O
+G. O
+decipiens O
+in O
+their O
+analyses O
+with O
+species-speciﬁc O
+primers, O
+
+it O
+was O
+not O
+possible O
+to O
+establish O
+how O
+speciﬁc O
+the O
+primers O
+are O
+to O
+G. O
+rosea O
+and O
+
+G. O
+margarita. O
+Of O
+the O
+ﬁve O
+known O
+Gigaspora O
+species O
+(Bentivenga O
+& O
+Morton O
+
+1995), O
+only O
+G. O
+decipiens O
+was O
+not O
+used O
+in O
+this O
+work.#Misc-exposition*] O
+
+[@In O
+summary, O
+our O
+results O
+show O
+that O
+diﬀerent O
+speciﬁc O
+PCR O
+primer O
+pairs O
+
+and O
+phylogenetic O
+studies O
+can O
+help O
+discriminate O
+among O
+Gigaspora O
+species O
+
+with O
+similar O
+spore O
+morphologies O
+and O
+support O
+the O
+utility O
+of O
+these O
+primers O
+and O
+
+phylogenetic O
+analysis O
+for O
+solving O
+problems O
+in O
+identifying O
+groups O
+of O
+species O
+in O
+
+Gigasporaceae O
+with O
+a O
+low O
+morphological O
+variation.#Misc-exposition*] O
+
+[@Acknowledgements O
+
+
+We O
+are O
+grateful O
+to O
+Dr. O
+Fritz O
+Oehl O
+and O
+Dr. O
+Renata O
+Gomes O
+de O
+Souza O
+for O
+the O
+valuable O
+
+comments O
+on O
+the O
+manuscript. O
+L.C. O
+Maia O
+acknowledges O
+the O
+Conselho O
+Nacional O
+de O
+
+Desenvolvimento O
+Cientíﬁco O
+e O
+Tecnológico O
+(CNPq) O
+for O
+a O
+research O
+grant. O
+The O
+authors O
+
+wish O
+to O
+thank O
+Dr. O
+J. O
+Morton O
+and O
+Dr. O
+M. O
+Saito O
+for O
+providing O
+fungal O
+isolates. O
+We O
+are O
+
+grateful O
+to O
+Dr. O
+David O
+Bousﬁeld O
+for O
+the O
+critical O
+reading O
+of O
+the O
+manuscript O
+and O
+appreciate O
+
+the O
+corrections O
+by O
+Shaun O
+Pennycook, O
+Nomenclatural O
+Editor, O
+and O
+suggestions O
+by O
+Lorelei O
+
+L. O
+Norvell, O
+Editor-in-Chief. O
+This O
+research O
+was O
+funded O
+by O
+the O
+Italian O
+National O
+Council O
+
+of O
+Research O
+(CNR), O
+Cassa O
+di O
+Risparmio O
+di O
+Torino O
+and O
+Centro O
+di O
+Eccellenza O
+per O
+la O
+
+Biosensoristica O
+Vegetale O
+e O
+Microbica.#Acknowledgements*] O
+
+[@Literature O
+cited O
+
+Bago O
+B, O
+Bentivenga O
+S, O
+Brenac O
+V, O
+Dodd O
+JC, O
+Piché O
+Y, O
+Simon O
+L. O
+1998. O
+Molecular O
+analysis O
+of O
+Gigaspora O
+
+(Glomales, O
+Gigasporaceae). O
+New O
+Phytol. O
+139: O
+581–588. O
+
+http://dx.doi.org/10.1046/j.1469-8137.1998.00212.x O
+
+Bentivenga O
+SP, O
+Morton O
+JB. O
+1994. O
+Systematics O
+of O
+glomalean O
+endomycorrhizal O
+fungi: O
+current O
+views O
+
+and O
+future O
+directions. O
+In: O
+Pﬂeger O
+FL, O
+Linderman O
+RG. O
+(eds). O
+Mycorrhizae O
+and O
+Plant O
+Health: O
+
+283–308. O
+APS O
+Press, O
+St. O
+Paul. O
+
+Bentivenga O
+SP, O
+Morton O
+JB. O
+1995. O
+A O
+monograph O
+of O
+the O
+genus O
+Gigaspora, O
+incorporating O
+developmental O
+
+patterns O
+of O
+morphological O
+characters. O
+Mycologia O
+87: O
+719–731. O
+
+http://dx.doi.org/10.2307/3760818 O
+
+Bianciotto O
+V, O
+Bandi O
+C, O
+Minerdi O
+D, O
+Sironi O
+M, O
+Tichy O
+HV, O
+Bonfante O
+P. O
+1996. O
+An O
+obligately O
+endosymbiotic O
+
+mycorrhizal O
+fungus O
+itself O
+harbors O
+obligately O
+intracellular O
+bacteria. O
+Appl. O
+Environ. O
+Microbiol. O
+62: O
+
+3005–3010. O
+
+
+Discrimination B-Page-header
+of M-Page-header
+Gigaspora M-Page-header
+spp. M-Page-header
+... M-Page-header
+25 E-Page-header
+
+Daniell O
+TJ, O
+Husband O
+R, O
+Fitter O
+AH, O
+Young O
+JPW. O
+2001. O
+Molecular O
+diversity O
+of O
+arbuscular O
+mycorrhizal O
+
+fungi O
+colonizing O
+arable O
+crops. O
+FEMS O
+Microbiol. O
+Ecol. O
+36: O
+203–209. O
+
+http://dx.doi.org/10.1111/j.1574-6941.2001.tb00841.x O
+
+Gamper O
+H, O
+Leuchtmann O
+A. O
+2007. O
+Taxon-speciﬁc O
+PCR O
+primers O
+to O
+detect O
+two O
+inconspicuous O
+
+arbuscular O
+mycorrhizal O
+fungi O
+from O
+temperate O
+agricultural O
+grassland. O
+Mycorrhiza O
+17: O
+145–152. O
+
+http://dx.doi.org/10.1007/s00572-006-0092-3 O
+
+Geue O
+H, O
+Hock O
+B. O
+2004. O
+Determination O
+of O
+Acaulospora O
+longula O
+and O
+Glomus O
+subgroup O
+Aa O
+in O
+plant O
+
+roots O
+from O
+grassland O
+using O
+new O
+primers O
+against O
+the O
+large O
+subunit O
+ribosomal O
+DNA. O
+Mycol. O
+Res. O
+
+108: O
+76–83. O
+http://dx.doi.org/10.1017/S0953756203009080 O
+
+Hall O
+TA. O
+1999. O
+BioEdit: O
+a O
+user-friendly O
+biological O
+sequence O
+alignment O
+editor O
+and O
+analysis O
+program O
+
+for O
+Windows O
+95/98/NT. O
+Nucl. O
+Acids O
+Symp. O
+Ser. O
+41: O
+95–98. O
+
+Husband O
+R, O
+Herre O
+EA, O
+Young O
+JPW. O
+2002. O
+Temporal O
+variation O
+in O
+the O
+arbuscular O
+mycorrhizal O
+
+communities O
+colonizing O
+seedlings O
+in O
+a O
+tropical O
+forest. O
+FEMS O
+Microbiol. O
+Ecol. O
+42: O
+131–136. O
+
+http://dx.doi.org/10.1111/j.1574-6941.2002.tb01002.x O
+
+Lanfranco O
+L, O
+Wyss O
+P, O
+Marzachi O
+C O
+Bonfante O
+P. O
+1995. O
+Generation O
+of O
+RAPD-PCR O
+primers O
+for O
+the O
+
+identiﬁcation O
+of O
+isolates O
+of O
+Glomus O
+mosseae, O
+an O
+arbuscular O
+mycorrhizal O
+fungus. O
+Mol. O
+Ecol. O
+4: O
+
+61–68. O
+http://dx.doi.org/10.1111/j.1365-294X.1995.tb00192.x O
+
+Lanfranco O
+L, O
+Delpero O
+M, O
+Bonfante O
+P. O
+1999. O
+Intrasporal O
+variability O
+of O
+ribosomal O
+
+sequences O
+in O
+the O
+endomycorrhizal O
+fungus O
+Gigaspora O
+margarita. O
+Mol. O
+Ecol. O
+8: O
+37–45. O
+
+http://dx.doi.org/10.1046/j.1365-294X.1999.00535.x O
+
+Lanfranco O
+L, O
+Bianciotto O
+V, O
+Lumini O
+E, O
+Souza O
+M, O
+Morton O
+JB, O
+Bonfante O
+P. O
+2001. O
+A O
+combined O
+
+morphological O
+and O
+molecular O
+approach O
+to O
+characterize O
+isolates O
+of O
+arbuscular O
+mycorrhizal O
+fungi O
+
+in O
+Gigaspora O
+(Glomales). O
+New O
+Phytol. O
+152: O
+169–179. O
+
+http://dx.doi.org/10.1046/j.0028-646x.2001.00233.x O
+
+Larkin O
+MA, O
+Blackshields O
+G, O
+Brown O
+NP, O
+Chenna O
+R, O
+McGettigan O
+PA, O
+McWilliam O
+H, O
+Valentin O
+F, O
+
+Wallace O
+IM, O
+Wilm O
+A, O
+Lopez O
+R, O
+Thompson O
+JD, O
+Gibson O
+TJ, O
+Higgins O
+DG. O
+2007. O
+Clustal O
+W O
+and O
+
+Clustal O
+X O
+version O
+2.0. O
+Bioinformatics O
+23: O
+2947–2948. O
+
+http://dx.doi.org/10.1093/bioinformatics/btm404 O
+
+Millner O
+PD, O
+Mulbry O
+WW, O
+Reynolds O
+SL, O
+Patterson O
+CA. O
+1998. O
+A O
+taxon-speciﬁc O
+oligonucleotide O
+probe O
+
+for O
+temperate O
+zone O
+soil O
+isolates O
+of O
+Glomus O
+mosseae. O
+Mycorrhiza O
+8: O
+19–27. O
+
+http://dx.doi.org/10.1007/s005720050206 O
+
+Millner O
+PD, O
+Mulbry O
+WW, O
+Reynolds O
+SL. O
+2001a. O
+Taxon-speciﬁc O
+oligonucleotide O
+primers O
+for O
+detection O
+
+of O
+Glomus O
+etunicatum. O
+Mycorrhiza O
+10: O
+259–265. O
+http://dx.doi.org/10.1007/s005720000085 O
+
+Millner O
+PD, O
+Mulbry O
+WW, O
+Reynolds O
+SL. O
+2001b. O
+Taxon-speciﬁc O
+oligonucleotide O
+primers O
+for O
+detection O
+
+of O
+two O
+ancient O
+endomycorrhizal O
+fungi, O
+Glomus O
+occultum O
+and O
+Glomus O
+brasilianum. O
+FEMS O
+
+Microbiol. O
+Letts. O
+196: O
+165–170. O
+http://dx.doi.org/10.1111/j.1574-6968.2001.tb10559.x O
+
+Morton O
+JB. O
+1993. O
+Problems O
+and O
+solutions O
+for O
+the O
+integration O
+of O
+glomalean O
+taxonomy, O
+systematic O
+
+biology, O
+and O
+the O
+study O
+of O
+endomycorrhizal O
+phenomena. O
+Mycorrhiza O
+2: O
+97–109. O
+
+http://dx.doi.org/10.1007/BF00203855 O
+
+Morton O
+JB, O
+Msiska O
+Z. O
+2010. O
+Phylogenies O
+from O
+genetic O
+and O
+morphological O
+characters O
+do O
+not O
+support O
+
+a O
+revision O
+of O
+Gigasporaceae O
+(Glomeromycota) O
+into O
+four O
+families O
+and O
+ﬁve O
+genera. O
+Mycorrhiza O
+20: O
+
+483–496. O
+http://dx.doi.org/ O
+10.1007/s00572-010-0303-9 O
+
+Msiska O
+Z, O
+Morton O
+JB. O
+2009. O
+Phylogenetic O
+analysis O
+of O
+the O
+Glomeromycota O
+by O
+partial O
+β-tubulin O
+gene O
+
+sequences. O
+Mycorrhiza O
+19: O
+247–254. O
+http://dx.doi.org/10.1007/s00572-008-0216-z O
+
+Mummey O
+DL, O
+Rillig O
+MC. O
+2007. O
+Evaluation O
+of O
+LSU O
+rRNA-gene O
+PCR O
+primers O
+for O
+analysis O
+of O
+arbuscular O
+
+mycorrhizal O
+fungal O
+communities O
+via O
+terminal O
+restriction O
+fragment O
+length O
+polymorphism O
+
+analysis. O
+J. O
+Microbiol. O
+Methods O
+70: O
+200–204. O
+http://dx.doi.org/10.1016/j.mimet.2007.04.002 O
+
+
+26 B-Page-header
+... M-Page-header
+Silva M-Page-header
+& M-Page-header
+al. E-Page-header
+
+Oehl O
+F, O
+de O
+Souza O
+FA, O
+Sieverding O
+E. O
+2008. O
+Revision O
+of O
+Scutellospora O
+and O
+description O
+of O
+ﬁve O
+new O
+genera O
+
+and O
+three O
+new O
+families O
+in O
+the O
+arbuscular O
+mycorrhiza-forming O
+Glomeromycetes. O
+Mycotaxon O
+106: O
+
+311–360. O
+
+Posada O
+D, O
+Crandall O
+KA. O
+1998. O
+Modeltest: O
+testing O
+the O
+model O
+of O
+DNA O
+substitution. O
+Bioinformatics O
+
+14: O
+817–818. O
+http://dx.doi.org/10.1093/bioinformatics/14.9.817 O
+
+Redecker O
+D. O
+2000. O
+Speciﬁc O
+PCR O
+primers O
+to O
+identify O
+arbuscular O
+mycorrhizal O
+fungi O
+within O
+colonized O
+
+roots. O
+Mycorrhiza O
+10: O
+73–80. O
+http://dx.doi.org/10.1007/s005720000061 O
+
+Silva O
+GA O
+da, O
+Lumini O
+E, O
+Maia O
+LC, O
+Bonfante O
+P, O
+Bianciotto O
+V. O
+2006. O
+Phylogenetic O
+analysis O
+of O
+
+Glomeromycota O
+by O
+partial O
+LSU O
+rDNA O
+sequences. O
+Mycorrhiza O
+16: O
+183–189. O
+
+http://dx.doi.org/10.1007/s00572-005-0030-9 O
+
+Souza O
+FA O
+de, O
+Kowalchuk O
+GA, O
+Leeﬂang O
+P, O
+van O
+Veen O
+JA, O
+Smit O
+E. O
+2004. O
+PCR-denaturing O
+Gradient O
+gel O
+
+electrophoresis O
+proﬁling O
+of O
+inter- O
+and O
+intraspecies O
+18S O
+rRNA O
+gene O
+sequence O
+heterogeneity O
+is O
+an O
+
+accurate O
+and O
+sensitive O
+method O
+to O
+assess O
+species O
+diversity O
+of O
+arbuscular O
+mycorrhizal O
+fungi O
+of O
+the O
+
+genus O
+Gigaspora. O
+Appl. O
+Environ. O
+Microbiol. O
+70: O
+1413–1424. O
+
+http://dx.doi.org/10.1128/AEM.70.3.1413-1424.2004 O
+
+Stockinger O
+H, O
+Krüger O
+M, O
+Schüβler O
+A. O
+2010. O
+DNA O
+barcoding O
+of O
+arbuscular O
+mycorrhizal O
+fungi. O
+New O
+
+Phytol. O
+187: O
+461–474. O
+http://dx.doi.org/10.1111/j.1469-8137.2010.03262.x O
+
+Stukenbrock O
+EH, O
+Rosendahl O
+S. O
+2005. O
+Distribution O
+of O
+dominant O
+arbuscular O
+mycorrhizal O
+fungi O
+
+among O
+ﬁve O
+plant O
+species O
+in O
+undisturbed O
+vegetation O
+of O
+a O
+coastal O
+grassland. O
+Mycorrhiza O
+15: O
+
+497–503. O
+http://dx.doi.org/10.1007/s00572-005-0357-2 O
+
+Swoﬀord O
+DL. O
+2003. O
+PAUP*. O
+Phylogenetic O
+Analysis O
+Using O
+Parsimony O
+*(and O
+Other O
+Methods), O
+Version O
+
+4. O
+Sinauer O
+Associates, O
+Sunderland. O
+
+van O
+Tuinen O
+D, O
+Jacquot O
+E, O
+Zhao O
+B, O
+Gollotte O
+A, O
+Gianinazzi-Pearson O
+V. O
+1998. O
+Characterization O
+of O
+root O
+
+colonization O
+proﬁles O
+by O
+a O
+microcosm O
+community O
+of O
+arbuscular O
+mycorrhizal O
+fungi O
+using O
+25S O
+
+rDNA-targeted O
+nested O
+PCR. O
+Mol. O
+Ecol. O
+7: O
+879–887. O
+
+http://dx.doi.org/10.1046/j.1365-294x.1998.00410.x O
+
+White O
+TJ, O
+Bruns O
+T, O
+Lee O
+S, O
+Taylor O
+J. O
+1990. O
+Ampliﬁcation O
+and O
+direct O
+sequencing O
+of O
+fungal O
+ribosomal O
+
+RNA O
+genes O
+for O
+phylogenetics. O
+315–322, O
+in: O
+MA O
+Innis O
+et O
+al. O
+(eds.). O
+PCR O
+protocols: O
+a O
+guide O
+to O
+
+methods O
+and O
+applications. O
+Academic O
+Press, O
+San O
+Diego. O
+
+Wyss O
+P, O
+Bonfante O
+P. O
+1993. O
+Ampliﬁcation O
+of O
+genomic O
+DNA O
+of O
+arbuscular-mycorrhizal O
+(AM) O
+fungi O
+by O
+
+PCR O
+using O
+short O
+arbitrary O
+primers. O
+Mycol. O
+Res. O
+97: O
+1351–1357. O
+
+http://dx.doi.org/10.1016/S0953-7562(09)80169-X#Bibliography*] O
+
+
+

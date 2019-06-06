@@ -1,0 +1,264 @@
+ISSN (print) 0093-4666
+
+© 2011. Mycotaxon, Ltd.
+
+ISSN (online) 2154-8889
+
+MYCOTAXON
+Volume 118, pp. 433–440
+
+http://dx.doi.org/10.5248/118.433
+
+October–December 2011
+
+[@Homolaphlyctis polyrhiza gen. et sp. nov.,
+a species in the Rhizophydiales (Chytridiomycetes)
+with multiple rhizoidal axes#Title*]
+[@Joyce E. Longcore1*, Peter M. Letcher2 & Timothy Y. James3#Author*]
+[@School of Biology & Ecology, University of Maine
+5722 Deering Hall, Orono, ME 04469-5722, USA#Institution*]
+2
+[@Department of Biological Sciences, The University of Alabama
+Box 870344, Tuscaloosa, AL 35487 USA#Institution*]
+3
+[@Department of Ecology & Evolutionary Biology, University of Michigan
+830 North University, Ann Arbor, MI 48109-1048 USA#Institution*]
+* Correspondence to: longcore@maine.edu
+1
+
+[@Abstract — An undescribed cellulosic chytrid with multiple rhizoidal axes, JEL142,
+has grouped in molecular hypotheses with Batrachochytrium dendrobatidis, the chytrid
+pathogen of amphibians, and thus is of interest for genetic and physiological comparisons.
+To describe this member of the Rhizophydiales, we examined its zoospore ultrastructure and
+developmental morphology. Based on a reanalysis of rDNA data plus ultrastructural and
+morphological characters, we name this fungus Homolaphlyctis polyrhiza gen. et sp. nov.#Abstract*]
+[@Key words — Chytridiomycota, phylogeny, Rhizophlyctis, TEM#Key-words*]
+
+[@Introduction#Section-header*]
+
+[@A chytrid referred to by its isolate number, JEL142, has been in phylogenies
+since the ﬁrst molecular hypotheses of the Chytridiomycota (James et al.
+2000, 2006; Letcher et al. 2008b) but has not been identiﬁed to species or
+received a formal name. This isolate is of interest because it groups as sister
+to Batrachochytrium dendrobatidis Longcore et al. (Longcore et al. 1999), the
+pathogen of amphibians, and because it is one of the few members of the
+Rhizophydiales Letcher (Letcher et al. 2006) that have thalli with multiple
+rhizoidal axes. Although the phylogenetic distance based on branch lengths
+in phylograms is large and support values for the relationship have been low
+(James et al. 2006; Letcher et al. 2008b), JEL142 seems to be the closest relative
+to B. dendrobatidis now in culture. In an eﬀort to identify genes that enable
+
+[@434 ... Longcore, Letcher & James#Page-header*]
+B. dendrobatidis to be pathogenic, the genome of JEL142 has been sequenced
+for comparison (Joneson et al. 2011). In this paper, we reanalyze the phylogenetic
+placement of JEL142 and provide a description of the ultrastructure of its
+zoospore and its developmental morphology. These analyses place isolate JEL142
+in the Rhizophydiales, but outside of described families or genera. Therefore we
+describe a new genus and species to accommodate isolate JEL142.#Misc-exposition*]
+[@Materials & methods
+We ﬁrst observed this chytrid on onionskin bait (outer, dry bulb scales of white
+onions) placed in a gross culture containing the aquatic plant Eriocaulon aquaticum,
+associated debris and lake water in a deep Petri dish. The collection site was Mud Pond, a
+small (1.7 ha), acidic (pH 4.6), oligotrophic and ﬁshless lake in Hancock County, Maine
+(Davis et al. 1994, Rhodes & Davis 1995). With standard methods (Barr 1986) we isolated
+JEL142 into pure culture on modiﬁed PmTG nutrient agar (Longcore 1992). Since initial
+isolation in 1994 this chytrid has grown on nutrient agar slants with transfers at threemonth intervals and storage at ~4 °C after growth. We collected zoospores from growth
+on 20 mPmTG plates and ﬁxed them for TEM with s-collidine buﬀered glutaraldehyde
+followed by osmium tetroxide. Zoospores were rinsed, added to agar and en bloc stained
+with uranyl acetate before embedment in epon araldite plastic (Barr 1981, Longcore
+1992). Sections were examined at 60 kV. We photographed developmental morphology
+of thalli grown on mPmTG nutrient agar with a Spot RT digital camera. Phylogenetic
+analysis of Rhizophydiales was conducted using the initial alignments of 18S, 28S, and
+5.8S rRNA subunits produced by James et al. (2006). Additional sequences were added
+from Letcher et al. (2004, 2008b), and the alignment manually adjusted in MacClade
+4.08 (Maddison & Maddison 1992). The phylogeny was estimated using maximum
+likelihood in RAxML-7.0.4 (Stamatakis 2006) with 100 heuristic searches beginning
+from random trees. Support for nodes was established by bootstrapping in RAxML (1000
+pseudo-replicates) and Bayesian posterior probabilities in MrBayes v3.1.2 (Huelsenbeck
+& Ronquist 2001).#Materials-methods*]
+[@Results#Section-header*]
+
+[@The phylogenetic analysis of Rhizophydiales based on combined 18S, 28S,
+and 5.8S subunits provides strong support, 77 bootstrap percentage and
+0.99 posterior probability, for a sister relationship between H. polyrhiza and
+B. dendrobatidis (Fig. 1). These two species group with a strain identiﬁed as
+Entophlyctis helioformis (JEL326), and this clade is sister to the other members
+of the Rhizophydiales. As seen in previous studies, the phylogenetic distance
+between H. polyrhiza and B. dendrobatidis is rather large as suggested by
+branch lengths, and the percentage diﬀerence between rRNA sequences of the
+two species is ~10%.#Misc-exposition*]
+
+[@Homolaphlyctis polyrhiza gen. et sp. nov. ... 435#Page-header*]
+
+[@Figure 1. Phylogeny of Rhizophydiales showing sister relationship between Homolaphlyctis
+polyrhiza and Batrachochytrium dendrobatidis. The phylogeny was based on a combined
+analysis of 18S, 28S and 5.8S ribosomal RNA subunits and was estimated using maximum
+likelihood under a GTR+I+Γ model of evolution with RAxML-7.0.4 (Stamatakis 2006). Values
+at nodes indicate support as estimated by maximum likelihood from 1,000 bootstrap pseudoreplicates followed by Bayesian posterior probabilities. Only nodes receiving >60% bootstrap
+support are labeled. Further strain details and GenBank accession numbers can be found in
+James et al. (2006) and Letcher et al. (2004, 2008b).#Figure*]
+
+[@Taxonomy#Section-header*]
+
+[@Homolaphlyctis Longcore, Letcher & T.Y. James, gen. nov.#Nomenclature*]
+[@MycoBank MB561579#MB*]
+[@Zoosporarum ultrastructura Rhizophydialium characteristica, constans ex microtubulis
+separatis duo vel tres e kinetosomate ad rumposoma in globulo solitario extensorum;
+microcorpus in latere interiore globuli lipoidei. Calcar kinetosomale et zona vesiculata
+
+[@436 ... Longcore, Letcher & James#Page-header*]
+circum kinetosoma absunt. Mitochondrion lobatum. Vesiculae corde denso per cytoplasma
+dispersae.#Description*]
+[@Type species: Homolaphlyctis. polyrhiza Longcore, Letcher & T.Y. James#Type-collection*]
+[@Etymology: Named for R.L. Homola in whose laboratory this work began, and A.D.
+Homola, who helped collect the sample.#Etymology*]
+
+[@Zoospore ultrastructure typical for members of the Rhizophydiales, consisting
+of stack of 2–3 separate microtubules leading from the kinetosome to a
+rumposome on a single lipid globule; microbody on inner side of lipid.
+Lacking kinetosome-associated spur and vesiculated area around kinetosome.
+Mitochondrion lobed. Dense-cored vesicles throughout cytoplasm.#Description*]
+[@Homolaphlyctis polyrhiza Longcore, Letcher & T.Y. James, sp. nov.#Nomenclature*]
+
+Figs. 2, 3
+
+[@MycoBank MB561580#MB*]
+[@Thallus axibus rhizoidalibus tres vel pluris extense dispersis. Papillae evacuationis
+tubulosae numerosae, breves usque ad longae.#Description*]
+[@Type: Fig. 2a–h (holotype) photographed from pure culture JEL142 isolated from
+cellulosic substrate placed with a collection of Eriocaulon aquaticum collected from
+Mud Pond, (44°38ʹ00.26ʺN 68°05ʹ15.81ʺW) Hancock County, Maine on 15 April 1994.
+[GenBank DNA sequences: AH009051 (SSU rDNA); EF634247 (LSU rDNA); EF634249
+(ITS1-5.8S-ITS2).]#Type-collection*]
+[@Etymology: The epithet refers to the multiple rhizoidal axes.#Etymology*]
+
+[@Thallus with three or more widely distributed rhizoidal axes. Multiple, short to
+long tubular discharge papillae.
+Expanded Description — The generation time for H. polyrhiza on
+mPmTG nutrient agar is 2–3 days at 23 °C. In motion, zoospores are spherical
+(Fig. 2h, arrowhead) and contain a single lipid globule near the base of the
+ﬂagellum (Fig. 2a). They encyst and within 24 h form a thallus with multiple
+rhizoidal axes (Fig. 2b). At maturity rhizoids can extend to more than twice
+the diameter of the zoosporangium (Fig. 2c); distally rhizoids are ﬁne (<0.5
+µm) and isodiametric, but near the thallus they are slightly swollen (Fig. 2d).
+Zoosporangia form discharge papillae (Figs. 2e, f) within 52 hr, with the
+number of papillae increasing with size of the zoosporangia. Papillae may be
+barely raised (Fig. 2f), short tubes (Fig. 2e) or, in crowded conditions, long
+tubes (Fig. 2g). Zoospores are elongate when discharged (arrows, Fig. 2h) but
+soon become spherical (dia 3.5–4.5 µm with ﬂagellum up to 28 µm).
+Ultrastructural characters — The ultrastructure (Figs 3a–e) of
+the H. polyrhiza zoospore is nearly identical to Barr’s illustration of a typical
+Rhizophydium zoospore (Barr & Hadland-Hartmann 1978). A membranebound aggregation of ribosomes is in the center of the zoospore, outside of
+which are the nucleus, a single lobed mitochondrion, and a single lipid globule
+(Figs. 3a, b). A lobe of a mitochondrion is often anterior to the kinetosome
+
+[@Homolaphlyctis polyrhiza gen. et sp. nov. ... 437#Page-header*]
+
+[@Figure 2. Developmental morphology of Homolaphlyctis polyrhiza in pure culture on mPmTG
+nutrient agar. a. Zoospores with single lipid globule, aggregated ribosomes and single posteriorly
+directed ﬂagellum. b. Young thallus with multiple rhizoidal axes (arrows). c. Nearly mature thallus
+showing the extent of rhizoids. d. Rhizoidal bases (arrow) are enlarged. e. Papilla (arrowhead) on
+nearly mature zoosporangium. f. Short, evenly spaced discharge papillae (arrowheads). g. Long
+discharge papilla, nearly ready to release zoospores. Note breakdown of apical, hyaline papillar
+material. h. Zoospores (arrows) elongate during discharge through papillar opening (arrowheads)
+but become spherical shortly after release (large arrowhead). Scale bar in a, for all ﬁgures except c.#Figure*]
+
+(Fig. 3a). The microbody is appressed to the side of the lipid globule toward the
+center of the zoospore (Fig. 3b), and a rumposome (= fenestrated cisterna of
+Letcher et al. 2004) is appressed to the lipid near the surface of the cell (Fig. 3b).
+The non-ﬂagellated centriole is parallel to the kinetosome and joined to it by a
+bridge of partly overlapping ﬁbers centrally located between the two structures
+(Figs. 3c, d; arrow); the ﬁbrils form a wide (>0.075 µm) zone of convergence. The
+non-ﬂagellated centriole is shorter than its width (Figs. 3c, e). A microtubular
+root, composed of separate, parallel microtubules, extends from the side of the
+kinetosome to the rumposome (Fig. 3e). A terminal plate is in the lumen of
+
+[@438 ... Longcore, Letcher & James#Page-header*]
+
+[@Figure 3. Ultrastructural features of Homolaphlyctis polyrhiza zoospores. a. Longitudinal section
+of zoospore with nucleus (N); aggregated ribosomes (R); lobed mitochondrion (M); kinetosome
+(K); non-ﬂagellated centriole (nfc). b. Transverse section with lipid globule (L); microbody (mb);
+rumposome (Ru); vacuole (Va); and vesicles (arrowheads). c. Longitudinal section of kinetosomal
+region with kinetosomal props (P) and terminal plate (T). d. Cross section of kinetosome and
+non-ﬂagellated centriole with ﬁbrillar connection and wide zone of convergence (arrow) between
+the two structures. Microtubule root (mt) extends from the kinetosome. e. Longitudinal section
+through the kinetosome and non-ﬂagellated centriole; microtubules extend from the kinetosome
+to the rumposome, shown in face view. Scale bar in b also for a; scale bar in c also for d–e.#Figure*]
+
+the axoneme (Fig. 3c). Typical for members of the Rhizophydiales (Letcher et
+al. 2006), a ﬂagellar plug is absent from the transition region of the ﬂagellum.
+In the peripheral cytoplasm outside the central core are numerous, large
+
+[@Homolaphlyctis polyrhiza gen. et sp. nov. ... 439#Page-header*]
+
+[@Figure 4. Summary diagram of zoospore ultrastructure of Homolaphlyctis polyrhiza.
+Kinetosome (K); lipid globule (L); mitochondrion (M); microbody (mb); microtubule root
+(mt); nucleus (N); nonﬂagellated centriole (nfc); prop (P); vacuole (Va); vesicle (Ve).#Figure*]
+
+(~200 nm diameter) cored vesicles (Fig. 3b; arrowheads); a large vacuole is
+often present. Ultrastructural features are summarized in Fig. 4.#Description*]
+[@Comments — We found this saprobic organism only once, from an oligotrophic,
+acidic lake. Based on descriptions of genera of the Chytridiales sensu Sparrow
+(1960), it would have been placed in the genus Rhizophlyctis A. Fisch. because
+it develops endogenously and has multiple rhizoidal axes. Molecular and
+TEM evidence have altered our concept of the importance of morphological
+characters (e.g., James et al. 2000, 2006; Mozley-Standridge et al. 2009) and
+chytrids with endogenous development and multiple rhizoidal axes occur not
+only in the Rhizophlyctidales (Letcher et al. 2008a) but also other orders of the
+Chytridiomycetes, now including the Rhizophydiales.#Comments*]
+[@Acknowledgments
+
+This work was supported by NSF: PEET grant DEB-0529694, AFTOL grant DEB0732599 and REVSYS grant DEB-0516173. We thank Dr. James Pringle of the Royal
+Botanical Garden, Ontario for translating the Latin description.#Acknowledgements*]
+
+[@440 ... Longcore, Letcher & James#Page-header*]
+[@Literature cited
+Barr DJS. 1981. Ultrastructure of the Gaertneriomyces zoospore (Spizellomycetales, Chytridiomycetes).
+Can J Bot 59: 83–90. http://dx.doi.org/10.1139/b81-014
+Barr DJS. 1986. Allochytridium expandens rediscovered: morphology, physiology and zoospore
+ultrastructure. Mycologia 78: 439–448. http://dx.doi.org/10.2307/3793048
+Barr DJS, Hadland-Hartmann VE. 1978. Zoospore ultrastructure in the genus Rhizophydium
+(Chytridiales). Can J Bot 56: 2380–2404. http://dx.doi.org/10.1139/b78-290
+Davis RB, Anderson DS, Norton SA, Whiting MC. 1994. Acidity of twelve northern New England
+Lakes. J Paleolimn 12: 103–154. http://dx.doi.org/10.1007/BF00678090
+Huelsenbeck JP, Ronquist F. 2001. MrBayes: Bayesian inference of phylogenetic trees. Bioinformatics
+17: 754–755. http://dx.doi.org/10.1093/bioinformatics/17.8.754
+James TY, Porter D, Leander CA, Vilgalys R, Longcore JE. 2000. Molecular phylogenetics of the
+Chytridiomycota supports the utility of ultrastructural data in chytrid systematics. Can J Bot 78:
+336–350. http://dx.doi.org/10.1139/cjb-78-3-336
+James TY, Letcher PM, Longcore JE, Mozley-Standridge SE, Porter D, Powell MJ, Griﬃth GW,
+Vilgalys R. 2006. A molecular phylogeny of the ﬂagellated fungi (Chytridiomycota) and
+description of a new phylum (Blastocladiomycota). Mycologia 98: 860–871.
+http://dx.doi.org/10.3852/mycologia.98.6.860
+Joneson S, Stajich JE, Shiu S-H, Rosenblum EB. 2011. Genomic transition to pathogenicity in
+chytrid fungi. PLoS Pathog 7(11): e1002338. http://dx.doi.org/ 10.1371/journal.ppat.1002338
+Letcher PM, Powell MJ, Chambers JG, Holznagel WE. 2004. Phylogenetic relationships among
+Rhizophydium isolates from North America and Australia. Mycologia 96: 1339–1351.
+http://dx.doi.org/10.2307/3762150
+Letcher PM, Powell MJ, Churchill PF, Chambers JG. 2006. Ultrastructural and molecular
+phylogenetic delineation of a new order, the Rhizophydiales (Chytridiomycota). Mycol Res 110:
+898–915. http://dx.doi.org/10.1016/j.mycres.2006.06.011
+Letcher PM, Powell MJ, Barr DJS, Churchill PF, Wakeﬁeld WS, Picard KT. 2008a. Rhizophlyctidales
+— a new order in Chytridiomycota. Mycol Res 112: 1031–1048.
+http://dx.doi.org/10.1016/j.mycres.2008.03.007
+Letcher PM, Powell MJ, Viusent MC. 2008b. Rediscovery of an unusual chytridiaceous fungus new
+to the order Rhizophydiales. Mycologia 100: 325–334.
+http://dx.doi.org/10.3852/mycologia.100.2.325
+Longcore JE. 1992. Morphology, occurrence, and zoospore ultrastructure of Podochytrium
+dentatum sp. nov. (Chytridiales). Mycologia 84: 183–192. http://dx.doi.org/10.2307/3760249
+Longcore JE, Pessier AP, Nichols DK. 1999. Batrachochytrium dendrobatidis gen. et sp. nov., a
+chytrid pathogenic to amphibians. Mycologia 91: 219–227. http://dx.doi.org/10.2307/3761366
+Maddison WP, Maddison DR. 1992. MacClade: analysis of phylogeny and character evolution.
+Sinauer, Sunderland, Mass.
+Mozley-Standridge SE, Letcher PM, Longcore JE, Porter D, Simmons DR. 2009. Cladochytriales
+— a new order in Chytridiomycota. Mycol Res 113: 498–507.
+http://dx.doi.org/10.1016/j.mycres.2008.12.004
+Rhodes TE, Davis RB. 1995. Eﬀects of late Holocene forest disturbance and vegetation change on
+acidic Mud Pond, Maine, USA. Ecology 76: 734–746. http://dx.doi.org/10.2307/1939340
+Sparrow FK. 1960. Aquatic Phycomycetes (2nd ed.). Ann Arbor, Michigan: The University of
+Michigan Press.
+Stamatakis A. 2006. RAxML-VI-HPC: Maximum likelihood-based phylogenetic analyses with
+thousands of taxa and mixed models. Bioinformatics 22: 2688–2690.
+http://dx.doi.org/10.1093/bioinformatics/btl446#Bibliography*]
+
+[@#Page-header*]

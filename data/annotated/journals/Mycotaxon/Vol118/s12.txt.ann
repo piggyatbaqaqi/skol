@@ -1,0 +1,289 @@
+ISSN (print) 0093-4666
+
+© 2011. Mycotaxon, Ltd.
+
+ISSN (online) 2154-8889
+
+MYCOTAXON
+Volume 118, pp. 103–111
+
+http://dx.doi.org/10.5248/118.103
+
+October–December 2011
+
+[@Eremiomyces magnisporus (Pezizales), a new species
+from central Spain#Title*]
+[@Pablo Alvarado1*, Gabriel Moreno1, Jose L. Manjón1 & Miguel A. Sánz#Author*]
+[@Departamento de Biología Vegetal - Universidad de Alcalá, 28871, Alcalá de Henares, Spain#Institution*]
+*Correspondence to: pablo.alvarado@gmail.com
+1
+
+[@Abstract — A new species of Eremiomyces is described from central Spain. Eremiomyces
+magnisporus is proposed to accommodate a single collection found in July 2010 in a marlgypsicolous soil at Mount Gurugú, Alcalá de Henares (Spain). The habitat and macro-/
+micromorphology of the fresh material are described. Molecular analyses of ITS and nLSU
+DNA support the new species as closely related to but distinct from Eremiomyces echinulatus
+from the Kalahari desert.#Abstract*]
+[@Key words — Kalahari truﬄes, Mediterranean, hypogeous fungi#Key-words*]
+
+[@Introduction#Section-header*]
+
+[@The genus Eremiomyces Trappe & Kagan-Zur must be considered as a
+member of the Pezizaceae Dumort. (Pezizales J. Schröt.) since it was proposed
+by Ferdman et al. (2005) to accommodate the molecularly deviant species
+Choiromyces echinulatus Trappe & Marasas [≡ E. echinulatus (Trappe & Marasas)
+Trappe & Kagan-Zur]. Eremiomyces echinulatus is a truﬄe of the African
+Kalahari, collected in South Africa, Botswana, and Namibia (Trappe et al. 2008,
+2010) and, until now, the only known species in this genus.
+In the present work, a second Eremiomyces species is described from the
+steppe-like semi-arid hills around Alcalá de Henares, central Spain. These
+low hills present a marl-gypsum soil covered by introduced Pinus halepensis
+as well as indigenous xerophilous shrubs such as Macrochloa tenacissima,
+a Mediterranean poaceous plant with an Iberian and northern African
+distribution (Figs. 1–2). Other fungi previously collected in this region
+include Battarrea phalloides (Dicks.) Pers., Dictyocephalos attenuatus (Peck)
+Long & Plunkett, Galeropsis desertorum var. bispora (Vassilkov) G. Moreno
+et al., Gastrosporium simplex Mattir., Tulostoma spp., and Phaeomyces ibericus
+(G. Moreno & Esteve-Rav.) E. Horak.#Misc-exposition*]
+
+[@104 ... Alvarado & al.#Page-header*]
+
+[@Figs. 1. Habitat under Pinus halepensis with Macrochloa tenacissima. 2. Sample collection site.#Figure*]
+
+[@Materials & methods
+[@Morphology#Section-header*]
+
+The type material is preserved in the herbarium of the Dept. of Plant Biology,
+University of Alcalá de Madrid (AH). Microscopical observations were recorded
+from tissues mounted in KOH 5%, lactophenol cotton blue, and congo red. Spore
+measurements do not include superﬁcial structures. Scanning electron microscopy
+(SEM) images were taken at the University of Alcalá de Henares, using a Zeiss DSM-950
+instrument.
+[@DNA extraction, PCR ampliﬁcation, and DNA sequencing#Section-header*]
+
+DNA extraction, PCR ampliﬁcation, and amplicon puriﬁcation from type collection
+AH 38981 was performed as described previously (Alvarado et al. 2010). PCR primers
+ITS1F and ITS4 (Gardes & Bruns 1993), and ITS4 (White et al. 1990) for the ITS region,
+and LR1 and LR7 (van Tuinen et al. 1998, Vilgalys & Hester 1990) for the nLSU rDNA
+region were employed for PCR ampliﬁcation and sequencing purposes. Sequences were
+visually inspected for reading errors in MEGA4 (Tamura et al. 2007).
+Sequence alignment and phylogenetic analysis
+
+The obtained sequences were aligned with the closest matches from BLAST searches
+in the public databases. ITS and nLSU sequences came mainly from Læssøe & Hansen
+(2007) and Perry et al. (2007). Sequences were aligned in MEGA4.0 software using
+its ClustalW application. The ﬁnal alignment was assembled manually. Neighbourjoining phylogenetic inference was performed in MEGA4 (pairwise deletion of gaps,
+2000 bootstrap replicates). The aligned loci were loaded in PAUP* 4.0b10 (Swoﬀord
+2001) and a maximum parsimony phylogenetic tree reconstruction was performed
+(2000 bootstrap replicates, TBR swapping algorithm, 50 sequence additions per
+replicate, MULTrees not in eﬀect). Aligned loci were also subjected to MrModeltest 2.3
+(Nylander 2004) in PAUP* 4.0b10 to search for the evolutionary models that best ﬁt
+the data. These models were simulated during the analysis of each locus in MrBayes 3.1
+(Ronquist & Huelsenbeck 2003). A Bayesian maximum likelihood (BML) analysis using
+4 metropolis-coupled Monte Carlo Markov Chains (MCMC) was performed setting the
+temperature of the chains to 0.2 and sampling once each 100 generations. The analysis
+was run until convergence parameters were met in two simultaneous runs, after about
+2M generations. A full search for the highest scoring ML trees was also performed in
+RAxML (Stamatakis 2006) using the standard search algorithm, a thousand bootstrap
+replications, and allowing an independent evolutionary model for each locus.
+
+[@Eremiomyces magnisporus sp. nov. (Spain) ... 105#Page-header*]
+
+[@Molecular results#Section-header*]
+
+The ﬁnal alignment of the ITS region included 327 of 658 variable sites,
+288 of which were also parsimony-informative. In turn, nLSU alignment
+included 114 parsimony-informative among 151 variable sites from a total 592
+bases. Both ITS and nLSU data were best described by the evolutionary model
+GTR+G+I.#Materials-methods*]
+[@Taxonomy#Section-header*]
+
+[@Eremiomyces magnisporus G. Moreno, P. Alvarado, Manjón & Sanz sp. nov.#Nomenclature*]
+[@MycoBank MB561665#MB*]
+
+Figs. 3–11
+
+[@Ascomata subglobosa, 5 cm longa, peridio pallide brunneo passim atrorufo. Colores iuvenum
+speciminum permanent post siccationem. Peridium 0.1–0.3 mm crassum, angularis
+structura, magnis cellulis 25–45 × 5–20 µm composita, praeditum. Gleba griseobrunnea
+vel griseostraminea numerosis albidis venis incomposite distributis, formantibus varium
+reticulum. Sporae 14–17 µm sine ornamentis, globosae, hyalinis vel pallide luteolis vacuolis
+praeditae. Sporarum ornamenta ex obtusis bacillis vel conis dense distributis, in mente
+revocantibus ornamenta Terfeziae arenariae, sed perspicue breviora (1.5–2 µm longa,
+1 µm lata) et magis dense disposita, eﬀormata. Asci cylindrici diﬃciles inventu aetate
+provecta speciminis, videntur una serie dispositi. Paraphyses haud observatae. Odor fortis
+revocans caseum domesticum.#Description*]
+[@Type — Spain, Madrid, Alcalá de Henares, Mount San Juan del Viso, 750 m a.s.l.,
+10.VII.2010, leg. M.A. Sanz (Holotype AH 38981). [GenBank JN032128 (ITS), JN032129
+(28S nLSU)].#Type-collection*]
+[@Etymology — Latin, magni- (big) + -sporus (spores), referring to the larger size relative
+to those in E. echinulatus.#Etymology*]
+
+[@Ascoma subglobose 5 cm diam., without an obvious attachment point to the
+substrate, peridium smooth, pale brown with reddish to reddish-black areas
+where damaged, fresh colours retained after drying. Peridium 0.1–0.3 mm
+thick, with an angular structure formed by entangled cylindrical hyphae; cells
+25–45 × 5–20 µm, becoming more globose toward the interior; cell walls ≤ 1.5
+µm, hyaline to slightly yellowish; outermost cell layer 10–40 µm thick, redbrownish vacuolar pigments present; external layer of amorphous debris ≤ 25
+µm thick. Gleba beige to dun straw with abundant 0.05–0.4 mm broad whitish
+veins irregularly distributed forming a variable reticulated mesh with multiple
+attachment points to the peridium, colour appearing darker where bitten by
+animals; once dried, small [0.5–1.5 mm diam.] (sub)globose or subglobose
+spore-containing pockets protrude. Ascospores globose, 14–17 µm (average
+15.875, SD 0.545) without ornamentation, hyaline to slightly yellowish,
+vacuolate; ornamented by densely arranged 1.5–2 × 1 µm blunt-edged rods
+and cones reminiscent of Terfezia arenaria (Moris) Trappe, but clearly shorter
+and more densely arranged. Asci and paraphyses could not be found due to
+the advanced maturity of the sample, but spores remained linearly arranged,
+commonly in groups of 4(–5) spores. Odour strong, similar to cottage cheese.#Description*]
+
+[@106 ... Alvarado & al.#Page-header*]
+
+[@Figs 3–11. Eremiomyces magnisporus (Holotype: AH 38981). 3. Ascoma peridium and gleba.
+4. Peridium. 5. Detail of angular peridial cells. 6–7. Spores under LM. 8. Linearly arranged spores.
+9–10. Spores under SEM. 11. Detail of spore ornamentation under SEM.
+Scale bars: 3 = 1 cm, 4 = 100 m, 5 = 25 µm, 6–7 = 10 µm, 8 = 20 µm, 9–10 = 5 µm, 11 = 2 µm.#Figure*]
+
+[@Ecology & distribution. Eremiomyces magnisporus is a rare species
+fruiting in steppe-like areas of the marl-gypsum hills surrounding Alcalá de
+Henares (central Spain).#Habitat-distribution*]
+[@Comments. A single ascoma was located by the truﬄe-hunting dog of Miguel
+Ángel Sanz under Macrochloa tenacissima and Pinus halepensis in July 2010.#Comments*]
+
+[@Eremiomyces magnisporus sp. nov. (Spain) ... 107#Page-header*]
+
+[@Figure 2 shows the exact point of collection under M. tenacissima, without any
+sign of the typical ‘burn’ associated with other hypogeous fungi. It cannot be
+concluded which plant species was host of this presumably mycorrhizal fungus.
+Kalahari truﬄes have been said to fruit under poaceous species: Enneapogon
+cenchroides (Licht.) C.E. Hubb., Eragrostis rigidior Pilg., and Stipagrostis
+uniplumis (Licht.) De Winter (Trappe et al. 2008). Interestingly, E. echinulatus
+was collected in June during the austral winter (Trappe et al. 2010), while
+E. magnisporus appeared in northern hemisphere during the summer.
+Eremiomyces magnisporus is characterized by its pale brown peridium with
+reddish areas that do not blacken after drying, large-sized spores (14–17 µm
+without ornamentation), and a spore ornamentation formed by very densely
+arranged blunt-edged hyaline to pale yellow cones. Eremiomyces echinulatus
+is distinguished by a peridium that turns black after drying, dark brown glebal
+veins, and smaller spores (10–14 µm without ornamentation).#Figure*]
+[@Discussion#Section-header*]
+
+[@Phylogenetic similarities between South African and Mediterranean
+fungi have been reported before. The recently proposed inocybeoid genus
+Tubariomyces Esteve-Rav. & Matheny is represented in both Spain and Italy
+and Zambia (Alvarado et al. 2010). Tubariomyces species apparently associate
+with Cistaceae Juss. in the Mediterranean and with Phyllanthaceae Martinov
+and Fabaceae Lindl. in Zambia.
+Macrochloa tenacissima, the putative host plant of E. magnisporus, is
+commonly found in semiarid basic soils of the Mediterranean basin in Turkey,
+Italy, Spain, Morocco, Algeria, Tunisia, and Libya. In the western Mediterranean,
+it reaches central Spain and several more scattered spots of northeastern Spain,
+yet it is not found beyond the high plateaus preceding the Sahara desert to the
+south and southwest of Morocco. Up to now, M. tenacissima has been regarded
+as an exclusively endomycorrhizal plant, hosting glomalean species such
+as Glomus aggregatum N.C. Schenck & G.S. Sm. and Funneliformis mosseae
+(T.H. Nicolson & Gerd.) C. Walker & A. Schüssler (Roldán-Fajardo 1994).
+Interestingly, the hypogeous fungus Gastrosporium simplex has also been found
+in association with poaceous species of the Arrhenathero-Stipetum tenacissimae
+association in the hills around Alcalá de Henares (Moreno et al. 1991) as well as
+with Festuca ovina L. (Montecchi & Sarasini 2000).
+Of the poaceous genera indicated by Trappe et al. (2010) as the most
+probable hosts of the Kalahari truﬄes, those most closely related to Macrochloa
+are Stipagrostis Nees, Eragrostis Wolf and Enneapogon Desv. ex P. Beauv.
+Although widely distributed, Eragrostis is considered typical of subtropical
+and xerophilous habitats and is common in Spain. Likewise, Enneapogon has
+a split Australian–African distribution, with only E. desvauxii P. Beauv. being
+
+[@108 ... Alvarado & al.#Page-header*]
+
+[@Fig. 12. Eremiomyces magnisporus and its closest relatives in the Pezizaceae. Highest scoring ITS tree
+(maximum parsimony, PAUP*). Only nodes supported by three or more of the inference methods
+are annotated. Values represent (from upper left to lower right): MEGA4 neighbour-joining, PAUP
+maximum parsimony, RAxML bootstrap proportions, and MrBayes posterior probabilities.#Figure*]
+
+[@Eremiomyces magnisporus sp. nov. (Spain) ... 109#Page-header*]
+
+[@Fig. 13. Eremiomyces magnisporus and its closest relatives in the Pezizaceae. Highest scoring
+nLSU rDNA tree (maximum parsimony, PAUP*). Only nodes supported by three or more of
+the inference methods are annotated. Values represent (from upper left to lower right): MEGA4
+neighbour-joining, PAUP maximum parsimony, RAxML bootstrap proportions, and MrBayes
+posterior probabilities.#Figure*]
+
+[@110 ... Alvarado & al.#Page-header*]
+widespread. Most African Enneapogon species range from south to northeastern
+Africa, often reaching Arabia and India (Peterson et al. 2010). Only E. persicus
+Boiss. reaches western Mediterranean to southeastern Spain. In turn, Stipagrostis
+is found from southern Africa to Middle East and northwestern India, reaching
+the western Mediterranean up to Morocco (Le Houérou 2001). It would be
+interesting to search for this and other hypogeous genera in the distribution
+areas of the poaceous species mentioned above. More research on Eremiomyces
+and its unexpected plant hosts is clearly needed to shed light on its disjunct
+geographical distribution#Misc-exposition*]
+[@Acknowledgements
+
+This work was ﬁnanced by the Spanish Ministry of Education and Culture for FPU
+grant AP2006-00890 and the “Subprograma AGR del Ministerio de Ciencia y Innovación
+(Plan Nacional I+D+I)” for the Research Project AGL2009-12884-C03-03. We express
+our gratitude to Dr. G. Pacioni and Dr. M. Castellano for reviewing the manuscript
+and adding a number of useful comments and to Mr. D.W. Mitchell for reviewing the
+manuscript. We express gratitude to Mr. A. Priego and Mr. J.A. Pérez of the Electron
+Microscopy Service of the University of Alcalá de Henares for their invaluable help
+with the SEM. We also thank L. Monje and A. Puebla of the Department of Drawing
+and Scientiﬁc Photography at the Alcalá University for their help in the preparation
+of the digital images, Dr. J. Rejos, curator of the AH herbarium for his assistance with
+the specimens examined in the present study, Dr. J. Álvarez and Dr. C. Bartolomé for
+their comments on the phanerogamic aspects of the discussion section, and ﬁnally
+Dr. G. Consiglio for his help with the Latin diagnosis.#Acknowledgements*]
+[@Literature cited
+Alvarado P, Manjón JL, Matheny PB, Esteve-Raventós F. 2010. Tubariomyces, a new genus of
+Inocybaceae from the Mediterranean region. Mycologia 102(6): 1389–1397.
+http://dx.doi.org/ 10.3852/10-041
+Ferdman Y, Aviram S, Roth-Bejerano N, Trappe JM, Kagan-Zur V. 2005. Phylogenetic studies of
+Terfezia pfeilii and Choiromyces echinulatus (Pezizales) support new genera for southern African
+truﬄes: Kalaharituber and Eremiomyces. Mycol Res 109: 237–245.
+http://dx.doi.org/10.1017/S0953756204001789
+Gardes M, Bruns TD. 1993. ITS primers with enhanced speciﬁcity for basidiomycetes—application
+to the identiﬁcation of mycorrhizae and rusts. Mol Ecol 2: 113–118.
+Læssøe T, Hansen K. 2007. Truﬄe trouble: what happened to the Tuberales? Mycol Res 111:
+1075–1099. http://dx.doi.org/10.1016/j.mycres.2007.08.004
+Le Houérou HN. 2001. Biogeography of the arid steppeland north of the Sahara. J Arid Environm
+48: 103–128. http://dx.doi.org/10.1006/jare.2000.0679
+Montecchi A, Sarasini M. 2000. Funghi ipogei d’Europa. AMB Fondazione Centro Studi Micologici,
+Trento. 714 p.
+Moreno G, Galán R, Montecchi A. 1991. Hypogeous fungi from peninsular Spain. II. Mycotaxon
+42: 201–238.
+Nylander JAA. 2004. MrModeltest v2. Evolutionary Biology Centre, Uppsala University.
+
+[@Eremiomyces magnisporus sp. nov. (Spain) ... 111#Page-header*]
+Perry B, Hansen K, Pﬁster DH. 2007. A phylogenetic overview of the family Pyronemataceae
+(Ascomycota, Pezizales). Mycol Res 111: 549–571. http://dx.doi.org/10.1016/j.mycres.2007.03.014
+Peterson PM, Romaschenko K, Johnson G. 2010. A classiﬁcation of the Chloridoideae (Poaceae)
+based on multi-gene phylogenetic trees. Mol Phylogenet Evol 55: 580–598.
+http://dx.doi.org/10.1016/j.ympev.2010.01.018
+Roldán-Fajardo BE. 1994. Eﬀect of indigenous arbuscular mycorrhizal endophytes on the
+development of six wild plants colonizing a semi-arid area in south-east Spain. New Phytol
+127: 115–121. http://dx.doi.org/10.1111/j.1469-8137.1994.tb04265.x
+Ronquist F, Huelsenbeck JP. 2003. MRBAYES 3: Bayesian phylogenetic inference under mixed
+models. Bioinformatics 19: 1572–1574. http://dx.doi.org/10.1093/bioinformatics/btg180
+Stamatakis A. 2006. RAxML-VI-HPC: maximum likelihood-based phylogenetic analyses with
+thousands of taxa and mixed models. Bioinformatics 22(21): 2688–2690.
+http://dx.doi.org/ 10.1093/bioinformatics/btl446
+Swoﬀord DL. 2001. PAUP*: phylogenetic analysis using parsimony (and other methods). Version
+4.0b10. Sinauer, Sunderland, Mass.
+Tamura K, Dudley J, Nei M, Kumar S. 2007. MEGA4: Molecular Evolutionary Genetics Analysis
+(MEGA) software version 4.0. Mol Biol Evol 24: 1596–1599.
+http://dx.doi.org/ 10.1093/molbev/msm092
+Trappe JM, Claridge AW, Arora D, Smit WA. 2008. Desert truﬄes of the African Kalahari: ecology,
+ethnomycology, and taxonomy. Econ Bot 62(3): 521–529.
+http://dx.doi.org/ 10.1007/s12231-008-9027-6
+Trappe JM, Kovács GM, Claridge AW. 2010. Comparative taxonomy of desert truﬄes of the
+Australian outback and the African Kalahari. Mycol Progress 9: 131–143.
+http://dx.doi.org/ 10.1007/s11557-009-0612-6
+van Tuinen D, Zhao B, Gianinazzi-Pearson V. 1998. PCR studies of AM fungi, from studies to
+application. Springer, Berlin.
+Vilgalys R, Hester M. 1990. Rapid genetic identiﬁcation and mapping of enzymatically ampliﬁed
+ribosomal DNA from several Cryptococcus species. J Bacteriol. 172: 4238–4246.
+White TJ, Bruns T, Lee S, Taylor JW. 1990. Ampliﬁcation and direct sequencing of fungal ribosomal
+RNA genes for phylogenetics. pp. 315–322, in: MA Innis et al. (eds). PCR Protocols: A Guide to
+Methods and Applications. Academic Press Inc., New York.#Bibliography*]
+
+[@#Page-header*]

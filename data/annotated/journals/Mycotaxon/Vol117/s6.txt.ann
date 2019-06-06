@@ -1,0 +1,389 @@
+[@ISSN (print) 0093-4666#Misc-exposition*]
+
+[@© 2011. Mycotaxon, Ltd.#Misc-exposition*]
+
+[@ISSN (online) 2154-8889#Misc-exposition*]
+
+[@MYCOTAXON#Misc-exposition*]
+[@Volume 117, pp. 37–43#Misc-exposition*]
+
+[@http://dx.doi.org/10.5248/117.37#Misc-exposition*]
+
+[@July–September 2011#Misc-exposition*]
+
+[@Additional records of Volvariella dunensis#Misc-exposition*]
+[@(Basidiomycota, Agaricales):#Misc-exposition*]
+[@morphological and molecular characterization#Misc-exposition*]
+[@Alfredo Vizzini1*, Marco Contu2 & Alfredo Justo3#Misc-exposition*]
+[@Dipartimento di Biologia Vegetale – Università degli Studi di Torino,
+Viale Mattioli 25, I-10125, Torino, Italy#Misc-exposition*]
+[@2#Misc-exposition*]
+[@Via Marmilla, 12 (I Gioielli 2), I-07026 Olbia (OT), Italy
+3#Misc-exposition*]
+[@Biology Department, Clark University, 950 Main St., Worcester, MA 01610 USA
+*Correspondence to: alfredo.vizzini@unito.it#Misc-exposition*]
+[@1#Misc-exposition*]
+
+[@Abstract — Collections morphologically assignable to Volvariella dunensis from Sardinia
+and the Atlantic coast of Spain were revised and compared with the original collections.#Misc-exposition*]
+[@Molecular data supporting all examined collections as V. dunensis expand its known
+geographic distribution. A revised morphological characterization and a phylogenetic
+analysis of all Volvariella species sequenced to date are provided.#Misc-exposition*]
+[@Key words — Agaricomycetes, ITS, phylogeny, Volvariella volvacea#Misc-exposition*]
+
+[@Introduction#Misc-exposition*]
+
+[@The genus Volvariella Speg., which is composed of saprotrophic or
+mycotrophic agarics, has been historically considered a member of the
+family Pluteaceae Kotl. & Pouzar (Singer 1986). The genus is characterized
+macroscopically by a pink spore-print, free lamellae, and a universal veil
+that forms a saccate volva at the base of the stipe and microscopically by the
+inverse hymenophoral trama (Singer 1986). Results from earlier molecular
+studies (Moncalvo et al. 2002, Matheny et al. 2006) led to questions about
+its monophyly and phylogenetic position in the Pluteaceae. More recent
+research focused on the Pluteaceae (Justo et al. 2011) showed that Volvariella is
+polyphyletic with two major clades. The large-spored, viscid species belonging
+to the V. gloiocephala complex were resolved as the sister group of Pluteus
+Fr. and accommodated under the new generic name Volvopluteus Vizzini et
+al. Volvariella, the remaining clade, is therefore restricted to the dry, smallspored species. Volvariella falls outside the pluteoid clade and based on data
+from ribosomal loci (nSSU, 5.8S, nLSU) shows aﬃnities to some hygrophoroid#Misc-exposition*]
+
+[@38 ... Vizzini, Contu & Justo#Misc-exposition*]
+[@genera (Cuphophyllus (Donk) Bon, Cantharocybe H.E. Bigelow & A.H. Sm.),
+but its phylogenetic position within the Agaricales is still unclear.#Misc-exposition*]
+[@Volvariella dunensis has been the subject of a detailed taxonomic study
+based on the re-examination of the original collections from the Mediterranean
+coast of Spain (Justo & Castro 2010). Very recently, a collection assignable to
+V. dunensis was reported from the Atlantic coast of Spain (Fernández-Sasia 2010
+as “Volvariella nigrovolvacea var. dunensis”). Also, the identity of the Sardinian
+collection reported by Contu & La Rocca (1999) as Volvariella nigrovolvacea
+Kosina was recently questioned (Justo & Castro 2010), and it comes close to the
+morphological concept of V. dunensis.#Misc-exposition*]
+[@The purpose of this study was to determine whether the collections reported
+by Fernández-Sasia (2010) and Contu & La Rocca (1999) represent V. dunensis
+using both morphological and molecular characters (ITS region).#Misc-exposition*]
+[@Materials & methods#Misc-exposition*]
+[@Morphology#Misc-exposition*]
+
+[@Descriptive terminology follows Vellinga (1988) and Boekhout (1990). Microscopical
+preparations from dried material were mounted in Congo Red and 5% KOH. The
+following abbreviations are used in text: avl for average length, avw for average width,
+Q for quotient of length and width and avQ for average quotient. Extreme measurements
+are indicated within parentheses. Herbarium acronyms follow Thiers (2011) except that
+“SCM” is used for the “Societat Catalana de Micologia” herbarium and RFS refers to the
+personal herbarium of Roberto Fernández-Sasia.#Misc-exposition*]
+[@Molecular analysis#Misc-exposition*]
+
+[@Standard methods for DNA extraction, PCR ampliﬁcation and DNA sequencing
+were applied (e.g. Justo et al. 2011). Primer pairs ITS1F and ITS4 (Gardes & Bruns 1993)
+were used for both PCR and sequencing. Complete information about the collections
+of Volvariella that were sequenced is given in Tab. 1. The remaining sequences used
+in the analysis were retrieved from GenBank and come from the studies of Menolli &
+Capelari (2008), Li et al. (2009) and Justo et al. (2011). GenBank accession numbers are
+given in Fig. 2. No suitable outgroup for Volvariella was found using BLAST searches
+(http://blast.ncbi.nlm.nih.gov/Blast.cgi). Therefore, after running a preliminary analysis
+using Coprinus comatus (O.F. Müll.) Pers. as an outgroup for all Volvariella sequences
+and taking into consideration the results from the combined nLSU-5.8S-nSSU analyses
+of Justo et al. (2011), V. bombycina (Schaeﬀ.) Singer and V. volvacea (Bull.) Singer were
+used as outgroup taxa in the ﬁnal dataset. These two species appear to be the sistergroup to all other species of Volvariella sequenced to date. Sequences were aligned with
+MAFFT (Katoh et al. 2002) using the Q-INS-i strategy. The alignment was examined
+and manually corrected in MacClade 4.05 (Maddison & Maddison 2002). It has been
+deposited in TreeBASE (http://purl.org/phylo/treebase/phylows/study/TB2:S11441).#Misc-exposition*]
+[@Pairwise similarities were calculated using Jalview (Waterhouse et al. 2009). A Maximum
+Likelihood analysis was run in RAxML servers (Stamatakis et al. 2008) with 100 rapid
+bootstrap replicates.#Misc-exposition*]
+
+[@Volvariella dunensis ... 39#Misc-exposition*]
+
+[@Table 1. Volvariella samples newly sequenced in this study.
+Habitat
+
+Species
+
+Country—
+location
+
+Collector;
+sampling date
+[herb. number]
+
+V. dunensis
+(Vila et al. 1999,
+Justo & Castro 2010)
+
+Spain—
+Barcelona, El Prat de
+Llobregat, El Pinar
+
+F. Àngel;
+08.II.1997
+[SCM 3513]
+
+Open dunes
+
+V. dunensis
+(Fernández-Sasia
+2010)
+
+Spain—
+Bizkaia,
+Muskiz
+
+R. Fernández-Sasia;
+10.III.2007
+[RFS 070310-03]
+
+Dunes with Tamarix gallica
+& Carpobrotus edulis
+
+V. dunensis
+(Contu & La Rocca 1999
+as V. nigrovolvacea)
+
+Italy—
+Sardinia,
+prov. Cagliari, Chia
+
+M. Contu;
+26.XII.1997
+[TO-AV140]
+
+Sand dune in Juniperus
+phoenicea debris;
+among Pistacia lentiscus,
+J. phoenicea, J. oxycedrus
+
+V. hypopithys
+(Fr.) Shaﬀer
+
+Italy—
+Stazzo Montesu,
+Olbia-Tempio
+
+M. Contu;
+26.XI.2002
+[TO-AV137]
+
+Under Quercus suber
+
+V. pusilla
+(Pers.) Singer
+
+Spain—
+Asturias,
+Endriga
+
+R. Picón;
+5.X.2005
+[AJ51 (LOU)]
+
+Among grasses
+
+V. pusilla
+
+Italy—
+Oschiri,
+Olbia-Tempio
+
+M. Contu;
+11.XI.2000
+[TO-AV139]
+
+Among grasses
+
+V. strangulata (Romagn.)
+Vizzini & Contu
+
+Italy—
+Emilia Romagna
+
+L. Setti;
+—
+[TO-AV141]
+
+Not recorded
+
+V. terrea
+
+France—
+Rixheim
+
+E. Musumeci;
+01.X.2005
+[LUG 11010,
+holotypus]
+
+Under Carpinus
+betulus near Agaricus
+xanthodermus
+
+Volvariella sp.
+
+Spain—
+Madrid,
+Parque del Oeste
+
+L.A. Parra;
+6.VIII.2005
+[LOU 18294]
+
+Among Cedrus
+atlantica remnants
+
+Volvariella sp.
+
+Slovenia—
+Tolminski,
+Tolmin
+
+J. Kavcic;
+12.VII.2007
+[TO-AV143]
+
+Under Fagus sylvatica
+and Fraxinus sp.
+
+Taxonomy
+#Misc-exposition*]
+[@ITS sequences from the collections TO-AV140 (Sardinia) and RFS 07031003 (Atlantic coast of Spain) are 99.5% and 100% identical to the ITS of SCM
+3513 (Mediterranean coast of Spain), respectively. All collections are therefore
+considered to represent V. dunensis.#Misc-exposition*]
+[@Macromorphological diﬀerences between the Sardinian and Atlantic
+collections with respect to the original collections of V. dunensis are subtle, but
+they concern characters commonly used to delimitate species in Volvariella such
+as pileus diameter, stipe colour and volva morphology and colour. Variation in#Misc-exposition*]
+
+[@40 ... Vizzini, Contu & Justo#Misc-exposition*]
+
+[@Figure 1. Volvariella dunensis. Basidiomes (Sardinia, Italy, TO AV140). Bar = 50 mm.#Misc-exposition*]
+
+[@microscopical characters is also subtle and mainly concerns size and shape of
+basidiospores and cystidia. Here we provide a revised description of V. dunensis
+based on all the collections known so far, highlighting only those characters
+that diﬀer from the description provided in Justo & Castro (2010).#Misc-exposition*]
+[@Volvariella dunensis (Vila, Àngel & Llimona) Justo & M.L. Castro,
+Mycotaxon 112: 262. 2010.#Nomenclature*]
+
+[@Fig. 1#Misc-exposition*]
+
+[@≡ Volvariella nigrovolvacea var. dunensis Vila, Àngel & Llimona,
+Revista Catalana de Micologia 22: 131. 1999.#Nomenclature*]
+
+[@Pileus diameter 15–100 mm. Stipe surface white to grey (similar to pileus
+colour). Volva white to externally dark sepia to brownish-black, entire or
+lobate. Basidiospores (6–)6.5–9.0 × 4.5–6(–6.7) μm, avl × avw = 7.5–7.9 ×
+5.1–5.5 μm, Q = (1.15–)1.3–1.7(–1.8), avQ = 1.4–1.55, ellipsoid to oblong,
+rarely broadly ellipsoid. Pleurocystidia (34–)40–95(–112) × 13.5–45(–50)
+μm, clavate, (narrowly) utriform, obovoid, more rarely broadly lageniform or
+fusiform; colourless; with thin, smooth walls, a few with a slightly thickened
+wall (up to 0.8 μm thick). Cheilocystidia 20–80(–120) × 15–60 μm, clavate,
+utriform, fusiform or lanceolate, without apical appendages, colourless; with
+thin, smooth walls, a few with a slightly thickened wall (up to 0.8 μm thick).#Description*]
+[@Caulocystidia only observed in the original collections, absent in TO-AV140
+and RFS 070310-03.#Description*]
+[@Habit, habitat and distribution — Gregarious, usually with most of the
+basidiomes growing deeply buried in the sand. In coastal dunes. Known from
+the Mediterranean basin (NE Spain, Sardinia) and the Atlantic coast of Spain.#Description*]
+
+[@Volvariella dunensis ... 41#Misc-exposition*]
+
+[@Figure 2. Best tree from the Maximum Likelihood analysis of ITS sequences of Volvariella.#Misc-exposition*]
+[@Bootstrap values above 70% are indicated on the branches. The root length has been reduced to
+facilitate graphical representation. Scale bar value indicates nucleotide substitutions/site.#Misc-exposition*]
+
+[@42 ... Vizzini, Contu & Justo#Misc-exposition*]
+[@Phenology — Volvariella dunensis seems to have a relatively narrow and
+particular time of fructiﬁcation during the winter, spanning from the last days
+of December (Sardinia) to early March (Atlantic coast of Spain).#Description*]
+[@Comments—The arenicolous habitat, winter fructiﬁcation, and cystidial size
+and morphology are the key characters for separating V. dunensis from other
+species with grey-ﬁbrillose pilei, especially V. volvacea. Courtecuisse (1984)#Misc-exposition*]
+[@reports that V. volvacea could be collected “au niveau des dunes” in the Atlantic
+coast of France, and Bon & Gehu (1973) signal this species as typical of the
+Ammophiletea communities. In the UK (Orton 1986), Netherlands (Boekhout
+1990), and Spain (Justo & Castro 2010), V. volvacea has been consistently
+reported as growing inside greenhouses or outside on organic rich substrates
+(leaves, compost, sawdust). Given the external resemblance of both species it is
+very likely, in our opinion, that at least some coastal records of V. volvacea from
+France may, in fact, represent V. dunensis.#Misc-exposition*]
+[@In the phylogenetic analysis, V. dunensis appears as sister to the clade
+containing V. terrea Musumeci & A. Riva and the V. pusilla group (Fig. 2).#Misc-exposition*]
+[@Apart from this relationship, the internal nodes of the tree receive generally low
+support and many species appear on relatively long branches. This is probably a
+consequence of the high level of divergence in the ITS sequences of Volvariella.#Misc-exposition*]
+[@For instance, the relatively low 62% pairwise similarity between V. bombycina
+and V. nivea T.H. Li & Xiang L. Chen could indicate either a high rate of
+molecular change in the genus or a relatively ancient speciation event.#Misc-exposition*]
+[@The number of Volvariella taxa and collections sampled for molecular analyses
+is still insuﬃcient to make broad generalizations about the morphological
+species-rank taxonomy. However, it seems that many characters traditionally
+used for grouping species in the genus such as pileus colour (grey-brown vs.#Misc-exposition*]
+[@white) or trophic strategy (litter saprotroph, lignicolous, mycotrophic) have
+undergone many transitions during the evolution of Volvariella species (see
+character states on Fig. 2). Additional research using both morphological and
+molecular data is badly needed to gain further insights in the taxonomy and
+evolution of the genus.#Misc-exposition*]
+[@Acknowledgements#Misc-exposition*]
+
+[@We would like to thank Dr. A.M. Minnis (Beltsville, USA) and Prof. M. Capelari
+(São Paulo, Brazil) for their pre-submission reviews. Our sincere thanks also to Roberto
+Fernández-Sasia (RFS), Antoni Sánchez (SCM), and Enzo Musumeci for sending
+collections of V. dunensis and V. terrea.#Misc-exposition*]
+[@Literature cited#Misc-exposition*]
+[@Boekhout T. 1990. Volvariella. Pp. 56–64, in C Bas, ThW Kuyper, ME Noordeloos, EC Vellinga
+(eds.).Flora Agaricina Neerlandica 2. A.A. Balkema, Rotterdam.#Misc-exposition*]
+[@Bon M, Gehu JM. 1973. Unités supérieurs de végétation et récoltes mycologiques. Doc. Mycol.
+2(6): 1–40.#Misc-exposition*]
+
+[@Volvariella dunensis ... 43#Misc-exposition*]
+[@Contu M, La Rocca S. 1999. Funghi della zona mediterranea insulare italiana (Entità micologiche
+rare o interessanti dalla zona mediterranea insulare italiana). Fungi Non Delineati 9: 1–48.#Misc-exposition*]
+[@Courtecuisse R. 1984. Notes de reconnaissance macroscopique des principales espèces de
+champignons du Nord de la France, IV: le genere Volvariella Spegazzini. Bull. Soc. Mycol. Nord
+34: 14–25.#Misc-exposition*]
+[@Fernández-Sasia R. 2010. Volvariella nigrovolvacea var. dunensis, primera recolecta en el litoral de
+Bizkaia. Errotari 7: 44–47.#Misc-exposition*]
+[@Gardes M, Bruns TD. 1993. ITS primers with enhanced speciﬁcity for basidiomycetes—application
+to the identiﬁcation of mycorrhizae and rusts. Mol. Ecol. 2: 113–118. http://dx.doi.org/10.1111/
+j.1365-294X.1993.tb00005.x#Misc-exposition*]
+[@Justo A, Castro ML. 2010. The genus Volvariella in Spain: V. dunensis comb. & stat. nov. and
+observations on V. earlei. Mycotaxon 112: 261–270. http://dx.doi.org/10.5248/112.261
+Justo A, Vizzini A, Minnis AM, Menolli Jr N, Capelari M, Rodriguez O, Malysheva E, Contu M,
+Ghingnone S, Hibbett DS. 2011. Phylogeny of the Pluteaceae (Agaricales, Basidiomycota):
+taxonomy and character evolution. Fungal Biology 115: 1–20.#Misc-exposition*]
+[@http://dx.doi.org/10.1016/j.funbio.2010.09.012#Misc-exposition*]
+[@Katoh K, Misawa K, Kuma K, Miyata T. 2002. MAFFT: a novel method for rapid multiple sequence
+alignment based on fast Fourier transform. Nucleic Acid Res. 30: 3059–3066.#Misc-exposition*]
+[@http://dx.doi.org/10.1093/nar/gkf436#Misc-exposition*]
+[@Li TH, Chen XL, Shen YH, Li T. 2009. A white species of Volvariella (Basidiomycota, Agaricales)
+from southern China. Mycotaxon 109: 255–262. http://dx.doi.org/10.5248/109.255
+Maddison DR, Maddison WP. 2002. MacClade4: analysis of phylogeny and character evolution.#Misc-exposition*]
+[@Sinauer Associates, Sunderland, Massachusetts.#Misc-exposition*]
+[@Matheny PB, Curtis JC, Hofstter V, Aime MC, Moncalvo JM, Ge ZW, Yang ZL, Slot JC, Ammirati
+JF, Baroni TJ, Bougher NL, Hughes KW, Lodge DJ, Kerrigan RW, Seidl MT, Aanen DK, DeNitis
+M, Daniele GM, Desjarden DE, Kropp BR, Norvell LL, Parker A, Vellinga EC, Vilgalys R,
+Hibbett DS. 2006. Major clades of Agaricales: a multi-locus phylogenetic overview. Mycologia
+98: 982–995. http://dx.doi.org/10.3852/mycologia.98.6.982
+Menolli Jr N, Capelari M. 2008. Records and two new species of Volvariella (Pluteaceae, Agaricales)
+from Brazil. Mycotaxon 106: 385–398.#Misc-exposition*]
+[@Moncalvo JM, Vilgalys R, Redhead SA, Johnson JE, James TY, Aime MC, Hofstetter V, Verduin SJW,
+Larsson E, Baroni TJ, Thorn RG, Jacobsson S, Clémençon H, Miller OK. 2002. One hundred
+and seventeen clades of euagarics. Mol. Phylogenet. Evol. 23: 357–400.#Misc-exposition*]
+[@http://dx.doi.org/10.1016/S1055-7903(02)00027-1#Misc-exposition*]
+[@Orton PD. 1986. British fungus ﬂora, agarics and boleti 4: Pluteaceae: Pluteus and Volvariella. Royal
+Botanic Garden, Edinburgh.#Misc-exposition*]
+[@Singer R. 1986. The Agaricales in modern taxonomy. 4th ed. Koeltz Scientiﬁc Books, Koenigstein.#Misc-exposition*]
+[@Thiers B. 2011. (continuously updated) Index Herbariorum: A global directory of public herbaria
+and associated staﬀ. New York Botanical Garden’s Virtual Herbarium. http://sweetgum.nybg.#Misc-exposition*]
+[@org/ih/#Misc-exposition*]
+[@Stamatakis A, Hoover P, Rougemont J. 2008. A rapid bootstrap algorithm for the RAxML Web
+servers. Syst. Biol. 75: 758–771. http://dx.doi.org/10.1080/10635150802429642
+Vellinga EC. 1988. Glossary. Pp. 54–64, in C Bas, ThW Kuyper, ME Noordeloos, EC Vellinga (eds.).#Misc-exposition*]
+[@Flora Agaricina Neerlandica 1. A.A. Balkema, Rotterdam.#Misc-exposition*]
+[@Vila J, Angel F, Llimona X. 1999. Volvariella nigrovolvacea var. dunensis Vila, Angel et Limona var.
+nov. Rev. Catal. Micol. 22: 131–134.#Misc-exposition*]
+[@Waterhouse AM, Procter JB, Martin DMA, Clamp M, Barton GJ. 2009. Jalview Version 2 – a
+multiple sequence alignment editor and analysis workbench. Bioinformatics 25(9): 1189–1191.#Misc-exposition*]
+[@http://dx.doi.org/10.1093/bioinformatics/btp033#Misc-exposition*]
+
+[@#Misc-exposition*]

@@ -1,0 +1,568 @@
+[@ISSN (print) 0093-4666#Misc-exposition*]
+
+[@© 2012. Mycotaxon, Ltd.#Misc-exposition*]
+
+[@ISSN (online) 2154-8889#Misc-exposition*]
+
+[@MYCOTAXON#Misc-exposition*]
+[@Volume 119, pp. 495–507#Misc-exposition*]
+
+[@http://dx.doi.org/10.5248/119.495#Misc-exposition*]
+
+[@January–March 2012#Misc-exposition*]
+
+[@Minimizing the chaos following the loss of Article 59:
+Suggestions for a discussion#Misc-exposition*]
+[@Walter Gams1, Richard A. Humber2, Walter Jaklitsch3,
+Roland Kirschner4 & Marc Stadler5^#Misc-exposition*]
+[@Molenweg 15, 3743CK Baarn, Netherlands#Misc-exposition*]
+[@USDA-ARS BioIPM Research, RW Holley Center for Agriculture & Health,
+538 Tower Road, Ithaca, N. Y. 14853-2901, USA#Misc-exposition*]
+[@3#Misc-exposition*]
+[@Department of Systematic and Evolutionary Botany, University of Vienna,
+Rennweg 14, A-1030 Vienna, Austria#Misc-exposition*]
+[@4#Misc-exposition*]
+[@Department of Life Sciences, National Central University,
+No. 300, Jhongda Rd., Jhongli City, Taoyuan County 32001, Taiwan (R.O.C.)
+5#Misc-exposition*]
+[@Helmholtz Institute of Infection Research (HZI), Dept Microbial Drugs, Braunschweig, Germany
+* Correspondence to: walter.gams@online.nl#Misc-exposition*]
+[@^ (authors in alphabetic sequence)#Misc-exposition*]
+[@1#Misc-exposition*]
+[@2#Misc-exposition*]
+
+[@Abstract — We assert that the suppression at the 2011 Melbourne Botanical Congress of
+the dual nomenclature for pleomorphic fungi was premature since most fungal genera still
+remain inadequately typiﬁed and need molecularly based revisions. The new system turns a
+rule-determined nomenclature into a system of names to be decided by committees. The new
+system cannot be implemented until experts publish well-documented rationales about the
+generic names to be accepted or suppressed among alternative morphs and the responsible
+committees act oﬃcially. Prioritization vs. suppression is not the same as conservation vs.#Misc-exposition*]
+[@rejection. If a teleomorphic generic name is suppressed, it still remains valid and legitimate
+and can still serve as a basis for names of higher-rank taxa. In most cases the teleomorph genus
+name should be prioritized unless convincing arguments favor preference of the anamorph
+name. Paraphyletic genera must be recognized. Unless the phylogenetic positions of all type
+species for possible morphs are conﬁrmed, no prioritization can be ﬁxed. When a binomial
+in a prioritized genus has a younger epithet than the corresponding name in the suppressed
+genus, only priority of extant names in the prioritized genus should count.#Misc-exposition*]
+[@Key words — anamorph-teleomorph connection, competing morph names#Misc-exposition*]
+
+[@Uniﬁcation of fungal nomenclature (one name, whether teleomorphic or
+anamorphic, is allowed for each taxon) had to come eventually (Hawksworth
+et al. 2011, Norvell et al. 2011), but the move is being enforced much too early
+while only a minority of fungal taxa has been examined phylogenetically#Misc-exposition*]
+
+[@496 ... Gams & al.#Misc-exposition*]
+[@(Hibbett et al. 2007). As currently circumscribed, too many fungal genera
+are unconﬁrmed as homogeneous and monophyletic (such proofs may not be
+possible for some genera), and knowledge of correlations between anamorph
+and teleomorph genera is far from comprehensive (Gams et al. 2011); however,
+Hawksworth et al. (2011) cited the ability to link anamorphs and their
+teleomorphs by molecular means as a key reason for the rapid adoption of the
+new rules. Names of lichenized fungi have always been excluded from dual
+nomenclature and are little aﬀected by the issues discussed here (Lendemer
+2011). While the previous Article 59 might not be reinstated (and cannot
+even be considered until the 2017 International Botanical Congress), we must
+ﬁnd solutions to minimize the disruptive eﬀects of this decision for fungal
+nomenclature and systematics. That the new procedures will depend on
+committee decisions listed in databases rather than on adherence to clear-cut
+rules of a Code will obviously be a source of conﬂicts.#Misc-exposition*]
+[@A key sentence in Paragraph 1 of the Preamble in the ICBN (McNeill et al.
+2006) is crucial to our argument: “This Code aims at the provision of a stable
+method of naming taxonomic groups, avoiding and rejecting the use of names
+which may cause error or ambiguity or throw science into confusion.” This
+fundamental principle seems to be ignored by what has happened: Previous
+editions of the Code established democratically accepted rules subject to
+adjustment every six years by general voting in the Nomenclature Sessions.#Misc-exposition*]
+[@The newly prescribed rules and processes for determining the correct names
+for pleomorphic fungi reject these long understood, fair rules in favor of nonappealable decisions rendered by a series of Committees. It is still unknown
+how these newly adopted processes will be put into practice. Language adopted
+in Melbourne requests “consultation with” but does not actually mandate the
+involvement of non-IAPT committees (that have no legal standing vis-à-vis
+the Code). Nomenclatural stability, a principle long stated in the Code,
+seems to have been abandoned in favor of committee-based decisions governing
+the choices and applications of names for exactly those fungi whose complex
+biologies and multiple reproductive forms need governance by clear rules, not
+by consensus in committees.#Misc-exposition*]
+[@Gene-based data can never be the sole basis for meaningful, informative
+classiﬁcations of any organism without also incorporating the essential
+foundations of morphology and other traditional characters. Imperfectly
+known taxa (new or old) need to be recollected for more study of their genes
+and morphologies before being reclassiﬁed. Fieldwork and ecological and
+morphological studies will be indispensible to the additions into GenBank of
+genetic data for innumerable neglected taxa. Deposits of accurate gene sequence
+data from incorrectly identiﬁed source organisms is a widespread problem that
+can confuse and seriously damage later analyses based on false assumptions.#Misc-exposition*]
+
+[@Minimizing nomenclatural chaos after Art. 59 ... 497#Misc-exposition*]
+
+[@While environmental DNA sampling might indicate that fungi are present, it
+reveals nothing about the appearance and biology of the fungi from which that
+DNA came, how to recognize them, or whether and how these fungi interact
+with any other organisms.#Misc-exposition*]
+[@Some supporters of the one-fungus one-name (1F=1N) concept seem
+to assume that all fungi will readily yield good DNA and clean sequences.#Misc-exposition*]
+[@However, many entomophthoraleans resist repeated attempts by skilled
+technicians to obtain clean DNA and useful ampliﬁcations of genes now
+widely accepted (and expected) to provide phylogenetically informative data.#Misc-exposition*]
+[@Some taxa in the Xylariaceae yield either no cultures from too-scanty available
+materials or no useful PCR products from even freshly collected stromata.#Misc-exposition*]
+[@Further, some xylarioid stromata have at times provided contaminant DNA
+that was later shown to represent diﬀerent taxa of the same or closely related
+xylariaceous genus (Stadler et al. 2010, Stadler 2011). Although Xylariaceae
+harbors few known endophytic species, some do grow hyperparasitically on
+xylarioid taxa; consequently, DNA extraction from stromata should be strongly
+discouraged, given that which organism provides the DNA sequence within a
+xylarioid stroma may remain uncertain. Endolichenic fungi may cause even
+more confusion (Arnold et al. 2009). As fungi generally grow in complex
+aggregations in nature, often only a skilled morphologist can ascertain that a
+culture actually represents what was thought to be the original inoculum. Some
+fungi may never be culturable unless new techniques are developed for isolation
+and growth, while special methods may also be needed to purify and to amplify
+their DNA. Anamorph-teleomorph relationships can hardly be proven in such
+cases, and phenotype-based taxonomic concepts must be maintained for the
+time being.#Misc-exposition*]
+[@Implementation of the new rules#Misc-exposition*]
+[@New paragraph approved in Melbourne:#Misc-exposition*]
+
+[@Art. 57.2 (new) In pleomorphic fungi (including lichenicolous fungi, but
+excluding lichen-forming fungi and those fungi traditionally associated with
+them taxonomically, e.g. Mycocaliciaceae), in cases where, prior to 1 January
+2013, both teleomorph-typiﬁed and anamorph-typiﬁed names were widely used
+for a taxon, an anamorph-typiﬁed name that has priority is not to be taken
+up until retention of the teleomorph-typiﬁed name has been considered by the
+General Committee and rejected [our emphasis].#Misc-exposition*]
+
+[@This rule implies that the duality of names should not be suppressed until the
+responsible committees have rendered and publicized their decision about
+the preferential use of a particular name. Thus, mycological editors should
+be patient and tolerant with authors who may still prefer to use teleomorphtypiﬁed generic names, even if the corresponding anamorph name is older.#Misc-exposition*]
+
+[@498 ... Gams & al.#Misc-exposition*]
+[@Prioritization—choosing between competing morph names for an individual
+pleomorphic fungus—vs. conservation.#Misc-exposition*]
+
+[@New text passed in Melbourne to appear in the ICN:
+Art. 14.13 (new) In the interest of nomenclatural stability, for organisms
+treated as fungi (including lichenicolous fungi, but excluding lichen-forming
+fungi and those fungi traditionally associated with them taxonomically, e.g.
+Mycocaliciaceae), lists of names may be submitted to the General Committee,
+which will refer them to the Nomenclature Committee for Fungi (see Div. III) for
+examination by subcommittees established by that Committee in consultation
+with the General Committee and appropriate international bodies. Accepted
+names on these lists, which become Appendices of this Code once reviewed
+and approved by the Nomenclature Committee for Fungi and the General
+Committee, are to be listed with their types together with those competing
+synonyms (including sanctioned names) against which they are treated as
+conserved (see also Art. 56.3).#Misc-exposition*]
+
+[@Prioritization. We strongly suggest referring to the choice among competing
+morph names as prioritization, an action that is not equivalent to conservation.#Misc-exposition*]
+[@While Art. 14.13 requires such choices to be “treated as conserved,” such status
+would confer permanent validity to frequently misapplied names.#Misc-exposition*]
+[@To clarify this, Art. 14.13 should be amended to deal with suppressed
+names. Among competing anamorphic (occasionally synanamorphic) and
+teleomorphic names for the same taxon, one of the “name pair” will be given
+preference while the use of the other(s) is suppressed. Although suppressed
+names are not available for use, however, they remain nomenclaturally valid
+and legitimate. This condition diﬀers fundamentally from the status of a nomen
+rejiciendum. In contrast to conservation, an act of prioritization need not be
+irreversibly ﬁxed if convincing arguments support a change.#Misc-exposition*]
+[@Consequently, names of teleomorphic genera that may be suppressed in
+favor of associated anamorphic generic names remain available as bases for
+higher-rank names and would not disrupt the current general systematics of
+Ascomycota that would be severely aﬀected by the issues discussed here.#Misc-exposition*]
+[@Until July 31, 2011, teleomorph-typiﬁed names had precedence over
+anamorph-typiﬁed names irrespective of temporal priorities. Under the new
+rules, priority of publication should generally determine the choice. It is,
+however, true that the great majority of names for fungal families (and higher
+ranks) are based on teleomorph-typiﬁed genera. Because all teleotypiﬁed
+generic names remain legitimate and available as a basis for higher-rank taxon
+names, there is no objection to this (Art. 18.3 ICBN), and no changes at higherrank names will become necessary for purely nomenclatural reasons. Basing
+any higher-rank names on anamorph-typiﬁed generic names might be desirable
+in some cases, but it must be discussed. If, for example, the name Trichoderma#Misc-exposition*]
+
+[@Minimizing nomenclatural chaos after Art. 59 ... 499#Misc-exposition*]
+
+[@were prioritized over Hypocrea, should this require introducing the names
+‘Trichodermataceae,’ ‘Trichodermatales,’ etc.? Because family names adhere to
+the rule of priority, would the name ‘Trichodermataceae’ have precedence over
+Hypocreaceae simply because of the priority of the genus name?
+The new rule abandoning the preference of teleomorph-names for higher
+ranks of fungi may encourage the description of many higher taxa (families,
+orders, etc.) for clades of exclusively anamorphic Ascomycota. This would be a
+new — and undesirable — situation. Certain anamorph names have later been
+correlated with symplesiomorphic characters that have little or no use in formal
+taxonomy but do serve as descriptive terms.#Misc-exposition*]
+[@For the prioritization of single or listed fungal names well-documented
+proposals must be submitted and published, e.g. in Taxon, as well as posted
+on an appropriate website. It might be helpful to ﬁrst propose a preliminary
+prioritization that would become deﬁnitive only after a certain period of
+testing (e.g., after 2 years).#Misc-exposition*]
+[@Decisions about prioritization will be made by authorities comprising a)
+a committee of experts (the largest, most diverse group reasonably possible),
+b) the International Committee for the Taxonomy of Fungi (ICTF), and c) the
+IBC Permanent Nomenclature Committee for Fungi (NCF). The NCF then will
+report to the General Committee. A majority of at least 60% of the votes (the
+NCF present practice—including abstentions, but suggested for (a) excluding
+abstentions) should be required for a decision. Art. 14.13 alludes to committees
+a) and b) as “appropriate international bodies.” A primary concern is, who will
+bear the responsibility of establishing individual committees of experts?
+The size and scope of any expert committee must vary according to the
+fungi under consideration to assure diverse points of view and geography; the
+constitution of these committees should and must be debated — and consensus
+reached — before they are established. The greatest problem will be ﬁnding
+mycologists competent in all fungal groups to be tackled. If enough experts are
+not found for a particular group or if no molecular analyses are available, then
+no prioritization of names should be decided. It will be a task of each expert
+committee’s members to draft proposals of preferred names and vote on them.#Misc-exposition*]
+[@For example, Hypocrea vs. Trichoderma is being debated within the International
+Subcommission on Trichoderma and Hypocrea Taxonomy (ISTH); its outcome
+will be reported to the ICTF and NCF, who may (or may not) conﬁrm it and
+publish their decision. In this case, the cellulase producer Trichoderma reesei and
+some other biocontrol strains of Trichoderma spp. are commercially important.#Misc-exposition*]
+[@Although the name of the T. reesei correlated teleomorph, Hypocrea jecorina, is
+also becoming widely used, preference would be given to Trichoderma, which
+is the older name anyhow. Does a preference for Trichoderma then force species#Misc-exposition*]
+
+[@500 ... Gams & al.#Misc-exposition*]
+[@like H. pulvinata (in the anamorphically little-diﬀerentiated Trichoderma sect.#Misc-exposition*]
+[@Hypocreanum) and H. danica, H. peltata, H. rhododendri, H. spinulosa, etc. (no
+anamorphs) (Jaklitsch 2011) into Trichoderma?#Misc-exposition*]
+[@The problem is that there are a) several groups of fungal taxa on which
+nobody is really working and b) other groups that are being well studied but
+by diﬀerent authors with entirely incompatible concepts. How can a committee
+scenario work in these cases?#Misc-exposition*]
+[@The implication that “expert groups” shall join in committees to treat their
+respective ﬁelds of specialty may pose serious problems. Taxonomic concepts
+in the Eumycota have always been highly variable (including even the name
+for all fungi). The introduction of molecular phylogenies raised the hope that
+such controversies might be resolved, but we now know this will not be the
+case. In fact, progress with molecular phylogenetic studies for diverse higher
+fungal taxa has been highly variable and depends on the variably patchy
+funding available to taxonomic specialists in diﬀerent fungal groups. Sound
+molecular phylogenies are very diﬃcult to achieve for innumerable fungal
+taxa for which most constituent species are neither epitypiﬁed nor available
+in cultures. Many who supported implementation of the 1F=1N concept seem
+not to have realized that morphological and other phenotypic data still provide
+more information on which to base classiﬁcations, especially where a limited
+number of sequenced genes fails to provide convincing proof of relatedness.#Misc-exposition*]
+[@It is gravely worrying that too many new layers of authorities whose opinions
+may diﬀer (and, indeed, be mutable) are injected into what was previously a
+process with universally recognized rules based on priority and an established
+line of authority to achieve stable, enduring nomenclatural decisions. The
+new system of committees adjudicating names en masse means that research
+ﬁndings not favored by a committee can simply (and dangerously) be “voted
+out” of oﬃcial recognition.#Misc-exposition*]
+[@Suggested general working rules for committees#Misc-exposition*]
+[@Names of genera#Misc-exposition*]
+
+[@Anamorph and teleomorph genera were hitherto based on anamorph and
+teleomorph traits, respectively. Adoption of unitary nomenclature necessitates
+emending all pleomorphic generic diagnoses to recognize both anamorphic
+and teleomorphic characters, whether present or not. All mycologists should
+welcome such improvements because separating information about alternate
+morphs into multiple descriptions fails to communicate vital and complete
+information about the whole organism. Although we have often recognized
+some degree of polyphyly in many important anamorphic genera, we have until
+now preferred that teleomorphic genera be (as far as possible) monophyletic.#Misc-exposition*]
+[@The inverse situation may arise, however, when a more narrowly deﬁned#Misc-exposition*]
+
+[@Minimizing nomenclatural chaos after Art. 59 ... 501#Misc-exposition*]
+
+[@anamorphic genus takes precedence over a teleomorphic one. In that case, the
+teleomorph genus may continue to be used as an artiﬁcial “dustbin” of teleomorph
+species with or without known anamorphs. For example, many Mycosphaerella
+anamorphs may be submerged into some morphologically and phylogenetically
+well-deﬁned anamorphic genera such as Cercospora and Ramularia (Crous
+et al. 2009, Crous 2010), thus forcing Mycosphaerella to become a “dustbin”
+for species without known anamorphs. An equally undesirable alternative
+would be combining many hundreds of species from several anamorph genera
+into Mycosphaerella, which already contains ca. 2000 species. Morphological
+comparisons among species would become impossible in such a huge genus
+unless anamorph characters were correlated with phylogenetic ones. To avoid
+such problems, will we be forced to accept gigantic genera characterized only
+by statistics based on (minimal) DNA data?#Misc-exposition*]
+[@If Puccinia were prioritized over Uredo s.str., the synonym ‘Uredo’ would
+not be available for species with diﬀerent teleomorphs, thus requiring the
+proposal of new generic names to accommodate them. Art. 14.13 may need to
+be amended in order to repair this undesirable situation.#Misc-exposition*]
+[@Serious problems will arise for teleomorph genera such as Cordyceps and its
+recent segregates, each of which is associated with multiple distinct anamorph
+genera — many of which may form distinct clades and have names with
+nomenclatural priority over their linked teleomorph genus. Further splitting of
+(teleomorphic) genera may become advisable in such cases rather than lumping
+multiple disparate anamorphs within one teleomorphic genus.#Misc-exposition*]
+[@This situation is exempliﬁed by the relatively rare Asian teleomorphic genus
+Metacordyceps G.H. Sung et al. (Hypocreales: Clavicipitaceae) (Sung et al. 2007;
+also see Kepler et al. 2012) whose anamorphs include the globally distributed,
+commercially important entomopathogenic genera Metarhizium Sorokīn
+1883 and Nomuraea Maubl. 1903, as well as Pochonia Bat. & O.M. Fonseca
+1965 (including species used for biocontrol of nematodes) and other species
+not placed in any anamorphic genus after the phylogenetic reclassiﬁcation of
+Paecilomyces sect. Isarioidea Samson 1974 (Luangsa-ard et al. 2005, Sung et
+al. 2007). That these anamorph genera are phylogenetically and ecologically
+distinct may justify the preferential use of the anamorph names. Nevertheless,
+the younger teleomorph name Metacordyceps also carries relevant information.#Misc-exposition*]
+[@Although we generally prefer to retain precedence for the teleomorphtypiﬁed generic name over its correlated anamorphic name, we must accept
+exceptions.#Misc-exposition*]
+[@Exceptions to the precedence of teleomorph-generic names#Misc-exposition*]
+
+[@Exceptions from this rule are allowed, although objective criteria are not
+yet clearly worded in the new Art. 57.2. To the Trichoderma-Hypocrea and
+Metarhizium-Metacordyceps examples noted above, we add the so-called#Misc-exposition*]
+
+[@502 ... Gams & al.#Misc-exposition*]
+[@“macromycete” groups (those forming conspicuous stromata) in Ascomycota
+for possible exception.#Misc-exposition*]
+[@Some Hypocreales (as in other ascomycete groups with economically
+important species, such as plant parasites or industrially cultivated fungi) have
+already been studied thoroughly by molecular methods. Taxonomic authorities
+familiar with these fungi will tend to follow the molecular results to adjudicate
+the status of the core taxa. However, their anamorph names for some of these
+fungi may prevail in future nomenclature, because the anamorphic stages
+that cause the conspicuous disease symptoms were described long before
+their corresponding teleomorphs. Nonetheless, nearly all xylarialean experts
+will admit that the number of taxa whose molecular characters have already
+been thoroughly evaluated is wholly insuﬃcient to make ﬁnal nomenclatural
+determinations, since the phylogenies based on housekeeping genes vs. rDNA
+present wholly divergent results about relationships among these fungi. The
+numerous experts (all also signatories of Gams et al. 2011) will surely agree
+that there is no need to change the current taxonomic system. Anamorphs
+of Xylariales are widely known but treated as synapomorphies, so that dual
+nomenclature was abandoned for these genera decades ago, whereas such
+well-known and conserved generic names as Xylaria, Hypoxylon, and Daldinia
+continue to take preference. Their anamorphic names are actually used as
+features that characterize subfamilies (or, in the future, perhaps, families or
+orders). The so far prevailing preference for teleomorph names could or should
+be adapted for all Ascomycota unless very serious reasons (including priority)
+make it more practical to adopt the anamorph name (as for Penicillium and
+anamorphs of Metacordyceps).#Misc-exposition*]
+[@The latest revision of Penicillium (Samson et al. 2011) provides more
+examples: the teleomorphic name Eupenicillium has had little application
+or relevance, with Penicillium already treated as holomorphic by Raper &
+Thom (1948); however, for species of the more distantly related teleomorphic
+Talaromyces (whose anamorphs in Penicillium sect. Biverticillium still needed
+a new generic name), the teleomorph name was chosen to replace the better
+known anamorphic names in Penicillium. Must all these cases be decided again
+in the newly prescribed High Courts of Mycology by jurors yet to be selected?
+In the future, teachers of mycology may be hard pressed to explain to their
+students why some genera of the Xylariaceae have nodulisporium-like or
+geniculosporium-like anamorphs but those of the “Trichodermataceae” (or
+“Trichodermatales”) have Hypocrea-like teleomorphs. Recruitment of young
+fungal taxonomists is already very diﬃcult; those who led the 1F=1N movement
+and championed the decisions adopted in Melbourne even used this diﬃculty
+as a major argument in their favor. Teaching of mycology might become more
+complex if suprageneric taxonomic ranks were often based on anamorphic#Misc-exposition*]
+
+[@Minimizing nomenclatural chaos after Art. 59 ... 503#Misc-exposition*]
+
+[@names, but such an argument seems to give little credit to the ability of students
+to understand these complications.#Misc-exposition*]
+[@A further consequence of complex connections between anamorph and
+teleomorph genera is the necessary recognition of paraphyletic genera, such
+as Lecanicillium, which Gams & Zare (2001) described, at the same time
+recognizing its paraphyly. The current PCR-driven, monophyletic world view
+also seems to reject the perfectly valid, widely held position that paraphyletic
+taxa are not only acceptable, but that recognizing them as such is natural and
+appropriate. Zoologists, who have long accepted the reptiles as a transitional
+group from which the birds have arisen, do not deny Reptilia its own taxonomic
+status, even where both molecular and comparative anatomic studies prove
+that birds + reptiles are a paraphyletic class. It is hard to grasp why some
+mycologists fervently want to impose strict monophyly on all fungal taxa even
+where gene-based data supporting such a conclusion are unavailable or may be
+unobtainable) (Hörandl & Stuessy 2010).#Misc-exposition*]
+[@When a new teleomorph is discovered for a known anamorph, it will no
+longer be possible to describe it in a new genus unless that species is proven
+phylogenetically not to be congeneric with the type of the anamorph genus.#Misc-exposition*]
+[@If the type species of a genus has not been studied by gene-based methods,
+the genetic homogeneity of the genus cannot be proven. Similarly, no uniﬁcation
+of anamorphs and teleomorphs can be forced if the type species of both the
+anamorph and teleomorph genera have not been analysed.#Misc-exposition*]
+[@Names of species#Misc-exposition*]
+
+[@If the rule of priority were strictly applied to epithets in both teleomorphic
+and anamorphic genera, many name changes would ensue unless a particular,
+well-established name is ‘rescued’ by formal conservation. To avoid this, we
+suggest a procedural rule for the committees (probably eventually for a new
+article in the Code) that binomials established before July 31, 2011 for either
+morph type must not be replaced by combining older epithets available in the
+‘opposite’ morph (e.g., Trichoderma reesei should not become ‘T. jecorinum’ and
+T. citrinoviride should not become ‘T. schweinitzii’ despite the older available
+name Hypocrea schweinitzii). If Pleospora were retained over Stemphylium,
+would the new combination ‘Pleospora botryosa’ then have to replace the
+established but younger P. tarda? In parallel with the ICBN Art. 11.2, such a
+rule would stipulate that priority applies only to names of the same rank or the
+same prioritized genus.#Misc-exposition*]
+[@Another problem concerns species for which no sequence data are available.#Misc-exposition*]
+[@Can they be recombined into the alternative morph’s genus or not? Would
+they remain in limbo? After proving the linkage of the type species of both
+anamorph and teleomorph genera, it would be better to combine all other
+names from the suppressed genus into the prioritized genus to keep them#Misc-exposition*]
+
+[@504 ... Gams & al.#Misc-exposition*]
+[@visible and usable, even if those types were never restudied by any means. If not,
+they will be forgotten, any further revisions of them would halt, and homonyms
+or synonyms might be created in the prioritized genus.#Misc-exposition*]
+[@Such issues are further complicated because innumerable older (and many
+highly important) species were not typiﬁed when described or their type
+specimens are lost; these taxa would require lecto-, neo-, and/or epitypiﬁcations
+before drawing any gene-based taxonomic conclusions about their status. The
+problems raised by so many fungi that were described from single collections
+and that may be extremely rare or diﬃcult to re-collect again for DNA-based
+studies are nothing less than a daunting impediment for the establishment of a
+workable 1F=1N taxonomy.#Misc-exposition*]
+[@Conclusions#Misc-exposition*]
+
+[@A major aim of the one-fungus one-name policy was to simplify fungal
+nomenclature. The question, however, remains: simpliﬁcation for whom? For
+the convenience of present-day mycologists, it would be desirable not to change
+the names of higher taxa. When in extreme cases an anamorph-generic name
+replaces the type genus of teleomorph-based higher taxa (e.g., Hypocreales,
+Hypocreaceae), we still remember the meaning of the higher taxon because
+we are used to it. The situation becomes complicated for future generations,
+however, who must deal with many previously teleomorph-based higher taxa
+when the teleomorph genus is no longer in use; mycologists must then learn
+that these names were based on a now-rejected nomenclatural practice and try
+to understand the superseded taxonomies before they can apply the systematic
+concepts that led to the current use of a name. The intended “simpliﬁcation”
+imposed by the 1F=1N standard will thus not be achieved in a long-term
+vision, and future mycologists will still need to understand the suppressed dual
+nomenclature to deal with the historical literature. Moreover, many recently
+introduced teleomorph-generic names do reﬂect improved phylogenetic
+knowledge, although they will not successfully compete with the correlated
+anamorph names; these names undoubtedly will retain their informative value
+in naming clades and should not, therefore, be completely eliminated.#Misc-exposition*]
+[@In a carefully balanced system of prioritization, future mycologists may
+appreciate having the choice between either continuing to use the present
+higher-rank taxon names or creating new anamorph-based names.#Misc-exposition*]
+[@An essential, permanent remnant of the dual nomenclature will be the
+need for listing all teleomorphic and anamorphic synonyms of a fungus in any
+monographic treatment together with the typiﬁcations of all these names. It
+will often be the case that more species were described under the suppressed
+morph-generic name than in the oﬃcially recognized morph genus. In any case,
+all these suppressed species will have to be re-studied before any new species can#Misc-exposition*]
+
+[@Minimizing nomenclatural chaos after Art. 59 ... 505#Misc-exposition*]
+
+[@be described. This does not simplify future taxonomic work. Re-examination of
+types must be possible any time, and this will involve morphological (including
+ultrastructural), biochemical, and molecular approaches equally, all still subject
+to improvement. Curiously, it is often more valuable to preserve teleomorphic
+material of most ascomycetes in a herbarium than their anamorph which, if the
+type is a dried agar culture, can display its properties only when reactivated in
+culture.#Misc-exposition*]
+[@In a uniﬁed nomenclature, fungi will continue to have complicated life
+cycles displaying a teleomorph and one or more anamorphs, each with its
+distinctive gene expression and biological and ecological role. Future students
+of mycology will have to understand the concept of anamorph and teleomorph
+to understand the biology of the fungus, even if all stages are encompassed
+under a single name.#Misc-exposition*]
+[@The ﬁrst paragraph of the Preamble of the ICBN contains an odd and
+ominously predictive stipulation immediately before the sentence quoted
+above: “The purpose of giving a name to a taxonomic group is not to indicate its
+characters or history [our emphasis added], but to supply a means of referring
+to it and to indicate its taxonomic rank.” It seems probable that few mycologists
+who deal with pleomorphic fungi would appreciate the strict application
+of such a stipulation. The nomenclaturally required consolidation of many
+morphologically disparate teleomorphic and anamorphic forms and even genera
+into single genera now required by the newly adopted standard of 1F=1N may
+satisfy both the new Code and advocates of strict monophyleticism but this
+process will create many signiﬁcantly large and diverse — but nomenclaturally
+supported! — genera that will also be self-accreting mycological ‘black holes’.#Misc-exposition*]
+[@The names of such ‘megataxa’ will bear no useful biological information
+about their species. While this result will conform with the newly redeﬁned
+(if artiﬁcial) sense of nomenclatural stability, it cannot be hailed as progress
+toward biological or even taxonomic sensibility.#Misc-exposition*]
+[@We should also note that the availability of cultures of hitherto unknown
+fungal organisms is an absolute prerequisite for their future exploitation in
+biotechnological applications. Fungi have historically been used for many
+beneﬁcial purposes; curiously, the roots for the new concepts and changes
+adopted in Melbourne seem to have been elaborated mainly for organisms that
+were studied intensively for their diverse beneﬁcial or detrimental properties
+— e.g., pathogenicity, production of mycotoxins or other primary or secondary
+gene products, uses as biological control agents, or many other potential
+concerns. We should realize that in view of future applications, we have so far
+only dealt with the low-hanging fruits. Large-scale bioprospecting programs
+are now under way, and potential uses for fungi are by no means restricted to
+the traditional search for novel, badly needed antibiotics and other compounds#Misc-exposition*]
+
+[@506 ... Gams & al.#Misc-exposition*]
+[@with potential utility in pharmaceutical or agrochemical indications. The search
+for industrial enzymes and commodity chemicals for “White Biotechnology”,
+as well as renewable resources (biofuel production), bioremediation, etc., will
+almost certainly become more important in the future. Innovative methods of
+genomics research will allow for the exploitation of slow-growing organisms,
+e.g., by transfer of their genes into heterologous hosts where biotechnological
+applications appear feasible.#Misc-exposition*]
+[@Acknowledgments#Misc-exposition*]
+
+[@We are grateful to John McNeill for communicating and explaining the new texts
+of Articles 14.13 and 57.2. Sincere thanks also to Keith A. Seifert, James Lendemer and
+Scott Redhead for helpful pre-submission reviews. Lorelei L. Norvell and Shaun R.
+Pennycook also contributed signiﬁcantly to improving the text.#Misc-exposition*]
+[@Literature cited#Misc-exposition*]
+[@Arnold AE, Miadlikowska J, Higgins KL, Sarvate SWD, Gugger P, Way A, Hofstetter V, Kauﬀ F,
+Lutzoni F. 2009. A phylogenetic estimation of trophic transition networks for ascomycetous
+fungi: Are lichens cradles of symbiotrophic fungal diversiﬁcation? Syst. Biol. 58: 283–297.#Misc-exposition*]
+[@Crous PW, Summerell BA, Carnegie AJ, Wingﬁeld MJ, Hunter GC, Burgess TI, Andjic V, Barber
+PA, Groenewald JZ. 2009. Unravelling Mycosphaerella: do you believe in genera? Persoonia
+23: 99–118.#Misc-exposition*]
+[@Crous PW. 2010. Taxonomy and phylogeny of the genus Mycosphaerella and its anamorphs. Fungal
+Divers. 38: 1–24.#Misc-exposition*]
+[@Gams W, Zare R. 2001. A revision of Verticillium sect. Prostrata. III. Generic classiﬁcation. Nova
+Hedwigia 72: 329–337.#Misc-exposition*]
+[@Gams W, Jaklitsch WM, and 77 others. 2011. 3. A critical response to the ‘Amsterdam Declaration’.#Misc-exposition*]
+[@Mycotaxon 116: 501–512. http://dx.doi.org/10.5248/116.501
+Hawksworth DL, Crous PW, Redhead SA, Reynolds DR, Samson RA, Seifert KA, Taylor JW,
+Wingﬁeld MJ, and 80 others. 2011. The Amsterdam Declaration on Fungal Nomenclature.#Misc-exposition*]
+[@Mycotaxon 116: 491–500. http://dx.doi.org/10.5248/116.491
+Hibbett DS, Binder M, Bischoﬀ JF, Blackwell M, Cannon PF, Eriksson OE, Huhndorf S, James T,
+Kirk PM, Lucking R, Lumbsch HT, Lutzoni F, Matheny PB, McLaughlin DJ, Powell MJ, Redhead
+S, Schoch CL, Spatafora JW, Stalpers JA, Vilgalys R, Aime MC, Aptroot A, Bauer R, Begerow
+D, Benny GL, Castlebury LA, Crous PW, Dai YC, Gams W, Geiser DM, Griﬃth GW, Gueidan
+C, Hawksworth DL, Hestmark G, Hosaka K, Humber RA, Hyde KD, Ironside JE, Koljalg U,
+Kurtzman CP, Larsson KH, Lichtwardt R, Longcore J, Miadlikowska J, Miller A, Moncalvo
+JM, Mozley-Standridge S, Oberwinkler F, Parmasto E, Reeb V, Rogers JD, Roux C, Ryvarden
+L, Sampaio JP, Schussler A, Sugiyama J, Thorn RG, Tibell L, Untereiner WA, Walker C, Wang
+Z, Weir A, Weiss M, White MM, Winka K, Yao YJ, Zhang N. 2007. A higher-level phylogenetic
+classiﬁcation of the Fungi. Mycol Res 111: 509-547.#Misc-exposition*]
+[@Hibbett DS, Ohman A, Glotzer D, Nuhn M, Kirk P, Nilsson RH. 2011. Progress in molecular and
+morphological taxon discovery in Fungi and options for formal classiﬁcation of environmental
+sequences. Fungal Biol Rev 25: 38–47. http://dx.doi.org/10.1016/j.fbr.2011.01.001
+Hörandl E, Stuessy TF. 2010. Paraphyletic groups as natural units of biological classiﬁcation. Taxon
+59: 1641-1653.#Misc-exposition*]
+
+[@Minimizing nomenclatural chaos after Art. 59 ... 507#Misc-exposition*]
+[@Jaklitsch WM. 2011. European species of Hypocrea part II. Species with hyaline ascospores. Fungal
+Divers. 48: 1–250. Doi: 10.1007/s13225-011-0088-y#Misc-exposition*]
+[@Kepler RM, Sung GH, Ban S, Nakagiri A, Chan MJ, Huang B, Li Z, Spatafora JW. 2012.#Misc-exposition*]
+[@New teleomorph combinations in the genus Metacordyceps. Mycologia 104: 182–197.#Misc-exposition*]
+[@http://dx.doi.org/10.3852/11-070.#Misc-exposition*]
+[@Lendemer JC. 2011. Changes to the International Code for Botanical Nomenclature
+passed in Melbourne: a lichenological explainer. Opuscula Philolichenum, 10: 6-13.#Misc-exposition*]
+[@Luangsa-Ard JJ, Hywel-Jones NL, Manoch L, Samson RA. 2005. On the relationships of Paecilomyces
+sect. Isarioidea species. Mycol. Res. 109: 581–589.#Misc-exposition*]
+[@McNeill J, Barrie FR, Burdet HM, Demoulin V, Hawksworth DL, Marhold K, Nicolson DH,
+Prado J, Silva PC, Skog JE, Wiersema JH, Turland NJ. 2006. International Code of Botanical
+Nomenclature (Vienna Code). Regnum Vegetabile 146. Ruggell, Liechtenstein: A.R.G. Gantner
+Verlag. 568 p.#Misc-exposition*]
+[@Norvell LL. 2011. Melbourne approves a new Code. Mycotaxon 116: 481–490.#Misc-exposition*]
+[@http://dx.doi.org/10.5248/116.481#Misc-exposition*]
+[@Raper KB, Thom C. 1948. A manual of the Penicillia. Williams & Wilkins, Baltimore.#Misc-exposition*]
+[@Samson RA. 1974. Paecilomyces and some allied hyphomycetes. Stud. Mycol. 6: 1–119.#Misc-exposition*]
+[@Samson RA, Yilmaz N, Houbraken J, Spierenburg H, Seifert KA, Peterson SW, Varga J, Frisvad
+JC. 2011. Phylogeny and nomenclature of the genus Talaromyces and taxa accommodated in
+Penicillium subgenus Biverticillium. Stud. Mycol. 70: 159–184.#Misc-exposition*]
+[@http://dx.doi.org/10.3114/sim.2011.70.04#Misc-exposition*]
+[@Stadler M (2011) Importance of secondary metabolites in the Xylariaceae as parameters for
+assessment of their taxonomy, phylogeny, and functional biodiversity. Current Research in
+Environmental & Applied Mycology 1: 75–133. http://dx.doi.org/10.5943/cream/1/2/1
+Stadler M, Fournier J, Gardt S, Peršoh D (2010) The phylogenetic position of Rhopalostroma as
+inferred from a polythetic approach. Persoonia 25: 11–21.#Misc-exposition*]
+[@http://dx.doi.org/10.3767/003158510X524231#Misc-exposition*]
+[@Sung G-H, Hywel-Jones NL, Sung J-M, Luangsa-Ard JJ, Shrestha B, Spatafora JW. 2007. Phylogenetic
+classiﬁcation of Cordyceps and the clavicipitaceous fungi. Stud. Mycol. 57: 1–63.#Misc-exposition*]
+[@http://dx.doi.org/10.3114/sim.2007.57.01#Misc-exposition*]
+
+[@#Misc-exposition*]
