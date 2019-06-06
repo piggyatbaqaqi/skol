@@ -1,7 +1,7 @@
 import finder
 from finder import Label, Line, Paragraph
 import textwrap
-from typing import List
+from typing import Iterable, List
 import unittest
 
 
@@ -451,7 +451,7 @@ class TestParser(unittest.TestCase):
         
         self.assertEqual(str(paragraphs[1]), expected1)
         
-    def test_table(self):
+    def test_table_short(self):
         test_data = lineify(textwrap.dedent("""\
         Table 1.
 
@@ -527,7 +527,7 @@ class TestParser(unittest.TestCase):
         self.assertTrue(paragraphs[6].is_figure())
         self.assertEqual(str(paragraphs[7]), '\n')
 
-    def test_table(self):
+    def test_table_long_line_break(self):
         test_data = lineify(textwrap.dedent("""\
           Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor

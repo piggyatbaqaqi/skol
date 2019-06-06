@@ -1,39 +1,39 @@
 """Find species descriptions."""
 
 import argparse
-import numpy
+import numpy  # type: ignore
 import re
 import sys
 import time
-from typing import Iterable, List, Optional, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
-from sklearn.naive_bayes import BernoulliNB
-from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier, GradientBoostingClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.calibration import CalibratedClassifierCV
-from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV, SGDClassifier, LogisticRegression
-from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.svm import *
-import pandas
+from sklearn.naive_bayes import BernoulliNB  # type: ignore
+from sklearn.dummy import DummyClassifier  # type: ignore
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier, GradientBoostingClassifier  # type: ignore
+from sklearn.neighbors import KNeighborsClassifier  # type: ignore
+from sklearn.tree import DecisionTreeClassifier  # type: ignore
+from sklearn.feature_extraction.text import CountVectorizer  # type: ignore
+from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
+from sklearn.feature_extraction.text import HashingVectorizer  # type: ignore
+from sklearn.calibration import CalibratedClassifierCV  # type: ignore
+from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV, SGDClassifier, LogisticRegression  # type: ignore
+from sklearn.metrics import confusion_matrix, classification_report  # type: ignore
+from sklearn.multiclass import OneVsRestClassifier  # type: ignore
+from sklearn.svm import *  # type: ignore
+import pandas  # type: ignore
 
 SEED=12345
 
 class File(object):
-    _filename = ...  # type: str
-    _page_number = ...  # type: int
-    _line_number = ...  # type: int
-    _empirical_page_number = ...  # type: Optional[str]
+    _filename: str
+    _page_number: int
+    _line_number: int
+    _empirical_page_number: Optional[str]
 
     def __init__(
             self,
             filename: Optional[str] = None,
-            contents: Optional[List[str]] = None):
+            contents: Optional[List[str]] = None) -> None:
         self._filename = filename
         self._page_number = 1
         self._line_number = 0
@@ -92,15 +92,15 @@ class File(object):
         return self._filename
     
 class Line(object):
-    _value = ...  # type: Optional[str]
-    _filename = ...  # type: Optional[str]
-    _label_start = ...  # type: bool
-    _label_end = ...  # type: Optional[str]
-    _line_number = ...  # type: int
-    _empirical_page_number = ... # type: Optional[str]
+    _value: Optional[str]
+    _filename: Optional[str]
+    _label_start: bool
+    _label_end: Optional[str]
+    _line_number: int
+    _empirical_page_number: Optional[str]
     _file = None
 
-    def __init__(self, line: str, fileobj: Optional[File] = None):
+    def __init__(self, line: str, fileobj: Optional[File] = None) -> None:
         self._value = line.strip(' \n')
         self._filename = None
         self._page_number = None
@@ -131,7 +131,7 @@ class Line(object):
         return self._page_number
 
     @property
-    def empirical_page_number(self) -> int:
+    def empirical_page_number(self) -> Optional[str]:
         return self._empirical_page_number
 
     @property
@@ -180,15 +180,16 @@ class Line(object):
 
 
 class Label(object):
-    _value = ...  # type: Optional[str]
+    _value: Optional[str]
 
-    def __init__(self, value: Optional[str] = None):
+    def __init__(self, value: Optional[str] = None) -> None:
         self._value = value
 
-    def __eq__(self, other: Optional['Label']) -> bool:
-        if other is None:
-            return self is None
-        return self._value == other._value
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Label):
+            return self._value == other._value
+        else:
+            return False
 
     def __repr__(self) -> str:
         return 'Label(%r)' % self._value
@@ -206,11 +207,11 @@ class Label(object):
 
 
 class Paragraph(object):
-    short_line = ...  # type: int
-    _lines = ...  # type: Iterable[Line]
-    _next_line = ...  # type: Optional[Line]
-    _labels = ...  # type: List[Label]
-    _reinterpret = ...  # type: List[str]
+    short_line: int
+    _lines: List[Line]
+    _next_line: Optional[Line]
+    _labels: List[Label]
+    _reinterpret: List[str]
 
     # These are abbreviations which should not end a taxon paragraph.
 
@@ -264,7 +265,7 @@ class Paragraph(object):
     _ABBREV_RE = '\b\w{1,5}\.'
 
     def __init__(self, short_line=50, labels: Optional[List[Label]] = None,
-                 lines: Optional[List[Line]] = None):
+                 lines: Optional[List[Line]] = None) -> None:
         self.short_line = short_line
         if lines:
             self._lines = lines[:]
@@ -365,7 +366,7 @@ class Paragraph(object):
     def next_line(self) -> Line:
         return self._next_line
 
-    def next_paragraph(self) -> ('Paragraph', 'Paragraph'):
+    def next_paragraph(self) -> Tuple['Paragraph', 'Paragraph']:
         pp = Paragraph(labels=self._labels)
         # Remove labels which ended with the previous line.
         while pp.top_label() and pp.top_label().assigned():
@@ -417,7 +418,7 @@ class Paragraph(object):
         return self.startswith('')
 
     @property
-    def last_line(self) -> str:
+    def last_line(self) -> Line:
         if not self._lines:
             return None
         return self._lines[-1]
@@ -425,11 +426,11 @@ class Paragraph(object):
     def close(self) -> None:
         if self._next_line:
             self.append(self._next_line)
-            self.next_line = None
+            self._next_line = None
 
     def endswith(self, s: str) -> bool:
         last_line = self.last_line
-        return last_line and last_line.endswith(s)
+        return bool(last_line) and last_line.endswith(s)
 
     def detect_period(self) -> bool:
         last_line = self.last_line
@@ -458,7 +459,7 @@ class Paragraph(object):
         return True
 
     @property
-    def labels(self) -> List[str]:
+    def labels(self) -> List[Label]:
         return self._labels[:]
 
 
@@ -479,6 +480,7 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     label = None
     pp = Paragraph()
     for line in contents:
+        print("DEBUG: type(line)", type(line))
         pp.append_ahead(line)
 
         # New document triggers a new paragraph.
