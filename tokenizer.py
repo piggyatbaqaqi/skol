@@ -78,6 +78,9 @@ class HashTokenizer(Tokenizer):
         """Convert word into a pattern fragment."""
         return word
 
+    def split(self, line: str) -> List[str]:
+        return line.split()
+
     def tokenize(self, line: str) -> (Any, str):
         """Consume tokens that match the pattern.
 
@@ -87,7 +90,7 @@ class HashTokenizer(Tokenizer):
         Returns:
           (matched token (str), unmatched remainder)
         """
-        tokens = line.split()
+        tokens = self.split(line)
         while tokens:
             if tokens[0].lower() in self._pattern:
                 retval = tokens.pop(0)
