@@ -1,4 +1,4 @@
-"""Process the species list from MycoBank.
+"""Process the author list from MycoBank.
 
 $ wget https://www.mycobank.org/localfiles/MBList.zip
 # Unzip and convert to csv with soffice.
