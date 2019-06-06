@@ -50,7 +50,7 @@ class TestFile(unittest.TestCase):
 
         page 4, line 3
 
-        3sed do eiusmod
+        3 sed do eiusmod
 
         page 5, line 3
         """).split('\n')

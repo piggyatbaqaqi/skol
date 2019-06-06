@@ -46,7 +46,7 @@ class File(object):
         self._empirical_line_number = None
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
-        match = re.search(r'(^(?P<leading>[mdclxvi\d]+))|(?P<trailing>[mdclxvi\d]+$)', l)
+        match = re.search(r'(^(?P<leading>[mdclxvi\d]+\b))|(?P<trailing>\b[mdclxvi\d]+$)', l)
         if not match:
             self._empirical_page_number = None
         else:
@@ -72,6 +72,10 @@ class File(object):
             yield l
 
     @property
+    def file(self) -> Iterable[str]:
+        return self._file
+
+    @property
     def line_number(self) -> int:
         return self._line_number
 
@@ -87,7 +91,6 @@ class File(object):
     def filename(self):
         return self._filename
     
-
 class Line(object):
     _value = ...  # type: Optional[str]
     _filename = ...  # type: Optional[str]
@@ -589,7 +592,7 @@ def target_classes(paragraphs: Iterable[Paragraph],
 def read_files(files: List[str]) -> Iterable[str]:
     for f in files:
         file_object = File(f)
-        for line in file_object.open('r'):
+        for line in file_object.file:
             yield line
 
 
