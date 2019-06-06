@@ -19,7 +19,6 @@ class TestLTWA(unittest.TestCase):
         ifa = indexfungorum_authors.IndexFungorumAuthors()
         
         for (m, l) in ifa.tokenize(test_data):
-            print("DEBUG: m, l", m, l)
             self.assertEqual(m, expected.pop(0))
 
 if __name__ == '__main__':

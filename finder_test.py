@@ -98,7 +98,7 @@ class TestParagraph(unittest.TestCase):
         got = str(self.pp)
         expected = 'hamster\ngerbil\n'
         self.assertEqual(got, expected)
-        self.assertEqual(self.pp.next_line().line, 'rabbit')
+        self.assertEqual(self.pp.next_line.line, 'rabbit')
 
     def test_is_figure(self):
         self.pp.append(Line('  Fig. 2.7  '))
@@ -469,10 +469,12 @@ class TestParser(unittest.TestCase):
         shorter
         long
         longer
+
         """)
 
         expected1 = textwrap.dedent("""\
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""")
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
