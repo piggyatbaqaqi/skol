@@ -5,7 +5,7 @@ import numpy  # type: ignore
 import re
 import sys
 import time
-from typing import Any, Iterable, List, Optional, Tuple, Union
+from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
 
 from sklearn.naive_bayes import BernoulliNB  # type: ignore
 from sklearn.dummy import DummyClassifier  # type: ignore
@@ -57,7 +57,7 @@ class File(object):
     def contents(self):
         return self._file or self._contents
 
-    def read_line(self):
+    def read_line(self) -> Iterator['Line']:
         for l_str in self.contents():
             self._line_number += 1
             # First line of first page does not have a form feed.
@@ -102,6 +102,8 @@ class Line(object):
         self._page_number = None
         self._empirical_page_number = None
         self._line_number = 0
+        self._label_start = False
+        self._label_end = None
         if fileobj:
             self._filename = fileobj.filename
             self._line_number = fileobj.line_number
@@ -411,7 +413,11 @@ class Paragraph(object):
         return self.startswith('')
 
     @property
-    def last_line(self) -> Line:
+    def next_line(self) -> Line:
+        return self._next_line
+
+    @property
+    def last_line(self) -> Optional[Line]:
         if not self._lines:
             return None
         return self._lines[-1]

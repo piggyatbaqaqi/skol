@@ -27,7 +27,8 @@ class Tokenizer(object):
 
         self._pattern = self.build_pattern()
 
-        self._file.close()
+        if self._file is not None:
+            self._file.close()
 
     def build_pattern(self) -> Union[Any, Set[str]]:
         return '|'.join(
@@ -81,6 +82,11 @@ class HashTokenizer(Tokenizer):
 
     def split(self, line: str) -> List[str]:
         return line.split()
+
+    @abc.abstractmethod
+    def read_records(self) -> Iterable[str]:
+        """Generator that returns strings from self.contents()"""
+        return []
 
     def tokenize(self, line: str) -> Iterator[Tuple[Any, str]]:
         """Consume tokens that match the pattern.
