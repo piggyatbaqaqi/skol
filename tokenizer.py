@@ -74,11 +74,11 @@ class Tokenizer(object):
 class HashTokenizer(Tokenizer):
 
     def build_pattern(self):
-        return set(self.read_records())
+        return set(self.make_pattern(r) for r in self.read_records())
 
     def make_pattern(self, word: str) -> str:
         """Convert word into a pattern fragment."""
-        return word
+        return word.lower()
 
     def split(self, line: str) -> List[str]:
         return line.split()
