@@ -15,8 +15,13 @@ class Tokenizer(object):
 
     _filename: Optional[str]
     _data: Optional[Iterable[str]]
+    _name: Optional[str]
 
-    def __init__(self, filename: Optional[str] = None, data: Optional[Iterable[str]] = None) -> None:
+    def __init__(self,
+                 filename: Optional[str] = None,
+                 data: Optional[Iterable[str]] = None,
+                 name: Optional[str] = None) -> None:
+        self._name = name
         if filename is None:
             filename = self._filename
         if filename:
@@ -29,6 +34,10 @@ class Tokenizer(object):
 
         if self._file is not None:
             self._file.close()
+
+    @property
+    def name(self):
+        return self._name
 
     def build_pattern(self) -> Union[Any, Set[str]]:
         return '|'.join(
@@ -50,7 +59,7 @@ class Tokenizer(object):
         return pattern
 
     def match(self, word: str):
-        return(re.match(self._pattern, word.lower()))
+        return re.match(self._pattern, word.lower(), flags=re.DOTALL)
 
     def tokenize(self, line: str) -> Iterator[Tuple[Any, str]]:
         """Consume tokens that match the pattern.
@@ -64,7 +73,7 @@ class Tokenizer(object):
         match = self.match(line)
         while line and match:
             line = line[match.end():]
-            ws = re.match('[\s]+', line)
+            ws = re.match('[\s]+', line, flags=re.DOTALL)
             if ws:
                 line = line[ws.end():]
             yield (match, line)
@@ -101,7 +110,7 @@ class HashTokenizer(Tokenizer):
         while tokens:
             if tokens[0].lower() in self._pattern:
                 retval = tokens.pop(0)
-                yield(retval, ' '.join(tokens))
+                yield (retval, ' '.join(tokens))
             else:
-                yield(None, ' '.join(tokens))
+                yield (None, ' '.join(tokens))
                 break

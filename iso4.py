@@ -18,8 +18,9 @@ class LTWA(tokenizer.Tokenizer):
     # These go at the beginning of the regex.
     _extra_regex = [
         r'\b[mdclxvi]+\b',  # Roman numerals.
-        r'[-(),&.]',        # Extra punctuation.
+        r'[-(),&.:\']',     # Extra punctuation.
         r'\d+',             # Numbers.
+        r'\w+ea',
     ]
 
     # I'd like to infer these.
@@ -69,7 +70,8 @@ class LTWA(tokenizer.Tokenizer):
         'crypt.',
         'cryptog.',
         'de',
-        'fl.'
+        'fl.',
+        'fór',
         'fungi',
         'fung.',
         'genus',
@@ -112,7 +114,9 @@ class LTWA(tokenizer.Tokenizer):
             pattern = r'\w*' + pattern[1:]
         if pattern.endswith('-'):
             pattern = pattern[:-1] + r'\w*'
-        return pattern
+        if not pattern.endswith('.'):
+            pattern = pattern + r'\b'
+        return r'\b' + pattern
 
 
 def main():
@@ -136,11 +140,10 @@ def main():
 
     ltwa = LTWA(args.file)
     if args.tokenize:
-        for (m, l) in ltwa.tokenize(args.abbrevs):
-            if m:
+        for abbrev in args.abbrevs:
+            for (m, l) in ltwa.tokenize(abbrev):
                 print('m: %s line: %s' % (m, l))
-            else:
-                print('m: None line: %s' % l)
+
     for filename in args.grep_v_file:
         f = open(filename, 'r')
         for line in f:
