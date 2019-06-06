@@ -17,19 +17,25 @@ class TestLTWA(unittest.TestCase):
             'Agric. Handbook U.S. Dep. Agric. '
             'Ann. IV Congr. Soc. Bot. Brazil '
             'Mem. NY Bot. Gard. '
+            'Arkiv. fór Botanik '
+            'Ann. Mycol. '
+            'Grevillea '
             'NXXXX.')
         expected = [
             'mykol.', 'n. am.', 'j.', 'friesland', 'barl.',
             'n. y.', 'st.', 'mus.', 'sci.', 'surv.',
             'bot.', 'jahrb.', 'syst.',
             'annals', 'of', 'natural', 'history',
-            'sydowia', 'persoon', 'ia',
+            'sydowia', 'persoonia',
             'mycotaxon',
             'nova', 'hedwigia', 'beihefte',
             'ann.', 'cryptog.', 'exot.',
             'agric.', 'handbook', 'u.s.', 'dep.', 'agric.',
             'ann.', 'iv', 'congr.', 'soc.', 'bot.', 'brazil',
             'mem.', 'ny', 'bot.', 'gard.',
+            'arkiv', '.', 'fór', 'botanik',
+            'ann.', 'mycol.',
+            'grevillea',
         ]
         
         ltwa = iso4.LTWA()

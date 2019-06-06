@@ -9,12 +9,14 @@ class TestLTWA(unittest.TestCase):
             '(Stizenberger ex Arnold) R.C. Harris in Egan\n'
             'Nees & T. Nees ex Link, Willdenow\n'
             'Guzmán, Ram.-Guill.,\n'
+            '(Pers. : Fr.) W. Phillips'
         )
         expected = [
             'Goossens', 'Fontana', 'J.A.A.',
             'Stizenberger', 'ex', 'Arnold', 'R.C.', 'Harris', 'in', 'Egan',
             'Nees', '&', 'T.', 'Nees', 'ex', 'Link', 'Willdenow',
             'Guzmán', 'Ram.', 'Guill.',
+            'Pers.', ':', 'Fr.', 'W.', 'Phillips',
         ]
         ifa = indexfungorum_authors.IndexFungorumAuthors()
         
