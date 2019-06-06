@@ -72,10 +72,6 @@ class File(object):
             yield l
 
     @property
-    def file(self) -> Iterable[str]:
-        return self._file
-
-    @property
     def line_number(self) -> int:
         return self._line_number
 
@@ -363,9 +359,6 @@ class Paragraph(object):
         retval = self._labels.pop()
         return retval
 
-    def next_line(self) -> Line:
-        return self._next_line
-
     def next_paragraph(self) -> Tuple['Paragraph', 'Paragraph']:
         pp = Paragraph(labels=self._labels)
         # Remove labels which ended with the previous line.
@@ -480,7 +473,6 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     label = None
     pp = Paragraph()
     for line in contents:
-        print("DEBUG: type(line)", type(line))
         pp.append_ahead(line)
 
         # New document triggers a new paragraph.
@@ -591,10 +583,10 @@ def target_classes(paragraphs: Iterable[Paragraph],
         yield pp.replace_labels([default])
 
 
-def read_files(files: List[str]) -> Iterable[str]:
+def read_files(files: List[str]) -> Iterable[Line]:
     for f in files:
         file_object = File(f)
-        for line in file_object.file:
+        for line in file_object.read_line():
             yield line
 
 
