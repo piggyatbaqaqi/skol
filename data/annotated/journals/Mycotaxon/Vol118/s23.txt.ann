@@ -1,0 +1,431 @@
+ISSN (print) 0093-4666
+
+© 2011. Mycotaxon, Ltd.
+
+ISSN (online) 2154-8889
+
+MYCOTAXON
+Volume 118, pp. 203–211
+
+http://dx.doi.org/10.5248/118.203
+
+October–December 2011
+
+[@Epitypiﬁcation, morphology, and phylogeny of Tothia fuscella#Nomenclature*]
+[@Haixia Wu1, Walter M. Jaklitsch2,#Author*]
+[@Hermann Voglmayr2 & Kevin D. Hyde1, 3, 4*#Author*]
+[@International Fungal Research and Development Centre, Key Laboratory of Resource
+Insect Cultivation & Utilization, State Forestry Administration, The Research Institute
+of Resource Insects, Chinese Academy of Forestry, Kunming, 650224, PR China#Institution*]
+2
+[@Department of Systematic and Evolutionary Botany, Faculty Centre of Biodiversity,
+University of Vienna, Rennweg 14, A-1030 Wien, Austria#Institution*]
+3
+[@School of Science, Mae Fah Luang University, Tasud, Muang, Chiang Rai 57100, Thailand#Institution*]
+4
+[@Botany and Microbiology Department, College of Science, King Saud University,
+Riyadh, 11442, Saudi Arabia#Institution*]
+*Correspondence to: kdhyde3@gmail.com
+1
+
+[@Abstract — The holotype of Tothia fuscella has been re-examined and is re-described and
+illustrated. An identical fresh specimen from Austria is used to designate an epitype with
+herbarium material and a living culture. Sequence analyses show T. fuscella to be most closely
+related to Venturiaceae and not Microthyriaceae, to which it was previously referred.#Abstract*]
+[@Key words — Dothideomycetes, molecular phylogeny, taxonomy#Key-words*]
+
+[@Introduction#Section-header*]
+
+[@We have been re-describing and illustrating the generic types of
+Dothideomycetes (Zhang et al. 2008, 2009, Wu et al. 2010, 2011, Li et al. 2011)
+and have tried where possible to obtain fresh specimens for epitypiﬁcation and
+use molecular analyses to provide a natural classiﬁcation.
+Our previous studies of genera in the Microthyriaceae, a poorly known
+family within the Dothideomycetes, have resulted in several advances (Wu et
+al. 2010, 2011). The Microthyriaceae are characterized by superﬁcial, ﬂattened,
+dimidiate ascomata with cells of the upper wall that radiate and open by an
+ostiole. Asci are bitunicate and ﬁssitunicate and ascospores are hyaline to brown
+(Hawksworth et al. 1995, Kirk et al. 2008).#Misc-exposition*]
+[@Tothia is a poorly known monotypic genus forming thyriothecia currently
+classiﬁed in the Microthyriaceae (Lumbsch & Huhndorf 2010). To reassess the
+morphology of T. fuscella, we examined its holotype and re-collected the species
+
+[@204 ... Wu & al.#Page-header*]
+from stalks of Teucrium chamaedrys in two diﬀerent regions of Austria. Cultures
+of these fresh collections were prepared to extract DNA and to sequence LSU
+and ITS rDNA in order to establish the phylogenetic position of this fungus. In
+this paper, we provide a detailed description and illustrations of T. fuscella and
+establish its familial placement through nuLSU rDNA sequence analyses.#Misc-exposition*]
+[@Materials & methods
+Type material of Tothia fuscella was borrowed from URM. Ascomata were rehydrated
+in 3% KOH prior to examination and sectioning. Specimens were examined under
+a Leica MZ16A stereomicroscope, and ﬁne forceps were used to remove one or two
+ascomata, which were mounted in water, Melzer’s, Congo red, or cotton blue reagents.
+Observations and photographs were made under a Nikon E800 or Nikon 80i light
+microscope. For some hyaline structures diﬀerential interference contrast microscopy
+was used. Sections were cut by hand with a sharp razor blade or into 8-μm thick slices
+using a Leica CM1100 freezing microtome and then were transferred to a drop of water
+or cotton blue for examination and photography. Measurement ranges cover a minimum
+of 30 ascospores, 25 asci, or 10 ascomata. Microtome sections were made from one or
+two ascomata, and ten measurements were made from whole ascoma and peridia.
+Fresh specimens were collected in Austria and herbarium material is deposited in
+IFRD and WU. Single ascospore isolates were obtained following Choi et al. (1999) and
+grown on 2% malt extract agar (MEA). Cultures are deposited at the CBS.
+Total DNA was extracted from liquid cultures according to Voglmayr & Jaklitsch
+(2011). A ca. 1600 bp fragment containing partial SSU, ITS1, 5.8S, ITS2 and partial
+LSU rDNA was ampliﬁed with primers V9G (de Hoog & Gerrits van den Ende 1998)
+and LR5 (Vilgalys & Hester 1990). PCR products were puriﬁed by an enzymatic PCR
+cleanup as described in Voglmayr & Jaklitsch (2008). DNA was cycle-sequenced using
+the ABI PRISM Big Dye Terminator Cycle Sequencing Ready Reaction Kit v. 3.1
+(Applied Biosystems, Warrington) with primers V9G, LR3 (Vilgalys & Hester 1990) and
+LR5, and an automated DNA sequencer (ABI 377 or 3130xl Genetic Analyzer, Applied
+Biosystems). The GenBank accession numbers of the sequences obtained in the present
+study are listed in Table 1.
+One Tothia fuscella sequence was aligned with 12 sequences downloaded from
+GenBank (Table 1). Preliminary multiple alignments were generated using BioEdit
+(Hall 1999) and ClustalX v. 1.83 (Thompson et al. 1997) and then checked visually and
+manually optimized.
+The alignment was analyzed using PAUP* 4.0b10 (Swoﬀord 2002) and MrBayes v.
+3.0b4 (Ronquist & Huelsenbeck 2003). Schismatomma decolorans (Arthoniomycetes),
+which is basal to other ascomycetes in a recent study (Schoch et al. 2009), was selected
+as outgroup.
+A Maximum Parsimony (MP) tree was inferred with PAUP* using the heuristic search
+option with 10000 random taxa addition and tree bisection and reconnection (TBR) as
+the branch-swapping algorithm. All characters were unordered and of equal weight;
+gaps were treated as missing data. Maxtrees were unlimited, zero-length branches were
+collapsed, and all most parsimonious trees were saved. Maximum parsimony bootstrap
+
+[@Tothia fuscella, epitypiﬁed ... 205#Page-header*]
+
+[@Table 1. Dothideomycetes and Arthoniomycetes specimens analysed
+(Newly deposited sequences shown in bold).
+Culture
+
+Family
+(Schoch et al. 2009)
+
+GenBank accession
+nuLSU rDNA
+
+Apiosporina collinsii
+(Schwein.) Höhn.
+
+CBS118973
+
+Venturiaceae
+
+GU301798
+
+Apiosporina morbosa
+(Schwein.) Arx.
+
+dimosp
+
+Venturiaceae
+
+EF114694
+
+Dothidea insculpta
+Wallr.
+
+CBS189.58
+
+Dothideacae
+
+DQ247802
+
+Dothidea sambuci
+(Pers.) Fr.
+
+DAOM231303
+
+Dothideacae
+
+AY544681
+
+Microthyrium microscopicum
+Desm.
+
+CBS115976
+
+Microthyriaceae
+
+GU301846
+
+Myriangium duriaei
+Mont. & Berk.
+
+CBS260.36
+
+Myriangiaceae
+
+DQ678059
+
+Myriangium hispanicum
+J.B. Martínez
+
+CBS247.33
+
+Myriangiaceae
+
+GU301854
+
+DUKE0047570
+
+Roccellaceae
+
+AY548815
+
+Tothia fuscella
+
+(TE)CBS130266
+
+–
+
+JE927786
+
+Tothia fuscella
+
+(TF1)CBS130267
+
+-
+
+JE927787
+
+Trichodelitschia bisporula
+(P. Crouan & H. Crouan) Munk
+
+CBS262.69
+
+Phaeotrichaceae
+
+GU348996
+
+Trichodelitschia munkii
+N. Lundq.
+
+Kruys201
+
+Phaeotrichaceae
+
+DQ384096
+
+Venturia inaequalis
+(Cooke) G. Winter
+
+CBS594.70
+
+Venturiaceae
+
+GU301879
+
+Venturia populina
+(Vuill.) Fabric.
+
+CBS256.38
+
+Venturiaceae
+
+GU323212
+
+Species
+
+Schismatomma decolorans
+(Turner & Borrer ex Sm.)
+Clauzade & Vězda#Table*]
+
+analyses were done with the same settings, with ten rounds of random sequence addition
+(Hillis & Bull 1993).
+The consistency index (CI; Kluge & Farris 1969), retention index (RI; Farris 1989),
+and rescaled consistency index (RC; Farris 1989) were obtained from PAUP*.
+For Bayesian analyses, evolution was estimated by using MrModeltest 2.2 (Nylander
+2004). Posterior probabilities (Rannala & Yang 1996, Zhaxybayeva & Gogarten 2002)
+were determined by Markov Chain Monte Carlo sampling (BMCMC) in MrBayes v.
+3.0b4 (Huelsenbeck & Ronquist 2001). Six simultaneous Markov chains were run for
+1 million generations; trees were sampled every 100th generation, resulting in 10 001
+saved trees.
+
+[@206 ... Wu & al.#Page-header*]
+The ﬁrst 2000 trees were discarded and the remaining 8001 trees were used for
+calculating posterior probabilities in the majority rule consensus tree (Cai et al. 2006,
+2008, Liu et al. 2010). The phylogenetic tree was visualized with TREE-VIEW (Page
+1996).#Materials-methods*]
+[@Results#Section-header*]
+
+[@Because the ssu-its-lsu rDNA sequences obtained for the two Tothia
+fuscella isolates are identical, only one (1535 bp) was included in the analyses.
+Of the 735 nucleotides analyzed, 478 were constant and 182 variable characters
+were parsimony informative. Maximum parsimony analysis produced a single
+
+[@Fig. 1. Phylogram showing the single MP tree of 487 steps, inferred from a heuristic parsimony
+analysis of the nuLSU rDNA using PAUP*. MP bootstrap support values ≥ 50 % and Bayesian
+values ≥ 90 % are shown above and below branches, respectively.#Figure*]
+
+[@Tothia fuscella, epitypiﬁed ... 207#Page-header*]
+
+MP tree of 487 steps (Fig. 1), with CI = 0.729, RI = 0.735, RC = 0.536 and
+HI = 0.271. The overall topology of trees sampled in the Bayesian analysis
+was compatible with the MP tree. MP bootstrap support values and posterior
+probabilities are shown in Fig. 1.#Misc-exposition*]
+[@In the phylogenetic analyses (Fig. 1), Tothia fuscella was remote from the
+Microthyriaceae clade but clustered near the Venturiaceae clade with 97%
+bootstrap support and 1.0 posterior probability.#Misc-exposition*]
+[@Taxonomy#Section-header*]
+
+[@Tothia Bat., in Toth, Annls hist.-nat. Mus. natn. hung. 52: 105 (1960).#Nomenclature*]
+[@Saprobic on stems. Ascomata, superﬁcial, thyriothecial; in section conical,
+relatively small, opening with a minute ﬂat or slightly papillate ostiole. Asci 8spored, bitunicate, ﬁssitunicate, cylindrical or obclavate. Ascospores, 1-septate,
+light brown.
+Anamorphs: None reported for the genus (Hyde et al. 2011).#Description*]
+[@Tothia fuscella (Sacc.) Bat., in Toth, Annls hist.-nat. Mus. natn. hung.
+52: 106 (1960).#Nomenclature*]
+
+[@Fig. 2#Figure*]
+
+[@≡ Microthyrium fuscellum Sacc., Michelia 2(6): 57 (1880).#Nomenclature*]
+
+[@Saprobic on stems of Teucrium chamaedrys. Superﬁcial mycelium absent.
+Ascomata, solitary or gregarious, superﬁcial, appearing as small black dots on
+the host surface, thyriothecial; in section 130–270 μm diam, 60–122 μm high,
+dome-shaped or ﬂat-conical, dark brown, membranaceous, opening by a short
+papillate ostiole. Peridium 7–15 μm wide above, dark brown, comprising a
+single upper layer of cells of textura angularis; ascoma base, comprising hyaline
+ellipsoidal cells. Hamathecium of pseudoparaphyses 1.5–3 μm wide, longer
+than asci. Asci 57–71 × 9–13 μm (mean = 64 × 10.5 μm, n = 25), 8-spored,
+bitunicate, ﬁssitunicate, obclavate, with a knob-like short pedicel about 4–6 ×
+5–7 μm, lacking an ocular chamber. Ascospores 24–28 × 4–6 μm (mean = 25.7
+× 4.7 μm, n = 30), 2–3 seriate, fusiform or oblong-ellipsoid, light brown, oneseptate, slightly constricted at the septum, upper cell slightly wider than the
+lower, with four guttules, smooth-walled.
+After critical morphological comparisons showed that the fresh collections
+were identical with the holotype, we designated one specimen as the epitype
+for T. fuscella.#Description*]
+[@Materials examined: AUSTRIA, Kärnten, St. Margareten im Rosental, Aussicht,
+grid square 9452/3, on stalks of Teucrium chamaedrys (Lamiaceae), soc. Ophiobolus
+erythrosporus, 3 July 2010, W. Jaklitsch (epitype designated here, WU31396; exepitype culture TF1; LSU-ITS sequence JF927787; iso-epitype IFRD8982); 12 Sep
+2010, W. Jaklitsch & O. Sükösd (WU 31397). Niederösterreich, Krems, Egelsee, on
+stems of Teucrium chamaedrys, soc. Ophiobolus sp., 15 Sep 2010, H. Voglmayr (WU
+31398; culture TE; ITS-LSU sequence JF927786). HUNGARY, on stems of Teucrium
+chamaedrys, further data not given (holotype, URM 8210).#Specimens*]
+
+[@208 ... Wu & al.#Page-header*]
+
+[@Fig. 2. Tothia fuscella (A, D–E, H, N from epitype; B–C, F–G, I–M, O–P, from holotype).
+A. Appearance of ascomata on the host surface. B, C, D. Squash mount of ascoma. E–G. Ascomata
+in Section. H–J, L. Asci. K. Hamathecium. M–P. Ascospores. Scale bars: A = 500µm, B = 40 µm,
+C–L = 10 µm. M–P = 5 µm.#Figure*]
+
+[@Comments—In this paper we redescribe the type of Tothia fuscella and
+designate an epitype with dried material and an associated living ex-type culture.
+Ascomata of T. fuscella are morphologically indistinguishable from typical
+representatives of Microthyriaceae. Its ascospores resemble Microthyrium in
+being one-septate, guttulate, and slightly asymmetrical but diﬀer in their dilute
+brown color. Phylogenetic analyses indicate that T. fuscella is most closely
+related to the Venturiaceae, to which it should be assigned.
+
+[@Tothia fuscella, epitypiﬁed ... 209#Page-header*]
+
+Thyriothecial ascomata are unusual for the Venturiaceae, which illustrates
+that this ascoma type has evolved independently several times within
+Dothideomycetes. Genera in Venturiaceae usually have yellowish, greenish
+brown to brown, one-septate ascospores and obclavate asci (Barr 1968, 1989),
+which agrees well with Tothia.#Comments*]
+[@Acknowledgments
+
+The Research Institute of Resource Insects, Chinese Academy of Forestry provided
+ﬁnancial support for the PhD study of Haixia Wu. Funds for research were provided
+by the Grant for Essential Scientiﬁc Research of National Non–proﬁt Institute (no.
+CAFYBB2007002). The curators of herbarium URM are thanked for providing
+material on loan for this study. The authors also thank Professor Xiaoming Chen and
+Hang Chen (The Research Institute of Resource Insects, Chinese Academy of Forestry,
+China), Jiankui Liu; Putarak Chomnunti (Mae Fah Luang University, Thailand, MFU)
+and Cai Lei (Institute of Microbiology, Chinese Academy of Sciences, Beijing, China)
+for their valuable help. Our deep thanks to Drs Eric McKenzie and Wen-Ying Zhuang
+for reviewing the manuscript. K.D. Hyde acknowledges a research grant from the
+Biodiversity Research and Training Program (BRT R253012) and Training Program
+Grant (BRTR251181) and partial support from the Global Research Network for Fungal
+Biology and King Saud University.#Acknowledgements*]
+[@Literature cited
+Barr ME. 1968. The Venturiaceae in North America. Canadian Journal of Botany 46: 799–864.
+http://dx.doi.org/10.1139/b68-111
+Barr ME. 1989. The Venturiaceae in North America: revisions and additions. Sydowia 41: 25–40.
+Cai L, Jeewon R, Hyde KD. 2006. Phylogenetic investigations of Sordariaceae based on multiple
+gene sequences and morphology. Mycological Research 110: 137–150.
+http://dx.doi.org/10.1016/j.mycres.2005.09.014
+Cai L, Guo XY, Hyde KD. 2008. Morphological and molecular characterisation of a new anamorphic
+genus Cheirosporium, from freshwater in China. Persoonia 20: 53–58.
+http://dx.doi.org/10.3767/003158508X314732
+Choi YW, Hyde KD, Ho WH. 1999. Single spore isolation of fungi. Fungal Diversity 3: 29–38.
+de Hoog GS, Gerrits van den Ende AHG. 1998. Molecular diagnostics of clinical strains of
+ﬁlamentous basidiomycetes. Mycoses 41: 183–189.
+http://dx.doi.org/10.1111/j.1439-0507.1998.tb00321.x
+Farris JS. 1989. The retention index and the rescaled consistency index. Cladistics 5: 417–419.
+http://dx.doi.org/10.1111/j.1096-0031.1989.tb00573.x
+Hall TA. 1999. BioEdit: a user-friendly biological sequence alignment editor and analysis program
+for Windows 95/98/NT. Nucleic Acids Symposium Series 41: 95–98.
+Hawksworth DL, Kirk PM, Sutton BC, Pegler DN. 1995. Ainsworth & Bisby´s dictionary of the
+fungi. 8th edn. CAB International, Wallingford, UK. 616p.
+Hillis DM, Bull JJ. 1993. An empirical test of bootstrapping as a method for assessing conﬁdence in
+phylogenetic analysis. Systematic Biology 42: 182–192. http://dx.doi.org/10.2307/2992540
+Huelsenbeck JP, Ronquist F. 2001. MRBAYES: Bayesian inference of phylogenetic trees.
+Bioinformatics 17: 754–755. http://dx.doi.org/10.1093/bioinformatics/17.8.754
+
+[@210 ... Wu & al.#Page-header*]
+Hyde KD, McKenzie EHC, KoKo TW. 2011. Towards incorporating anamorphic fungi in a natural
+classiﬁcation – checklist and notes for 2010. Mycosphere 2: 1–88.
+Kirk PM, Cannon PF, Minter DW, Stalpers JA. 2008. Ainsworth & Bisby´s dictionary of the fungi.
+10th edn. CAB International, Wallingford, UK. 771 p.
+Kluge AC, Farris JS. 1969. Quantitative phyletics and the evolution of anurans. Systematic Zoology
+18: 1–32. http://dx.doi.org/10.2307/2412407
+Li YM, Wu HX, Chen H, Hyde KD. 2011. Morphological studies in Dothideomycetes: Elsinoe
+(Elsinoaceae), Butleria and three excluded genera. Mycotaxon 115:507–520.
+http://dx.doi.org/10.5248/115.507
+Liu JK, Chomnunti P, Cai L, Phookamsak R, Chukeatirote R, Jones EBG, Moslem M, Hyde KD.
+2010. Phylogeny and morphology of Neodeightonia palmicola sp. nov. from palms. Sydowia 62:
+261–276.
+Lumbsch HT, Huhndorf SM. 2010. Life and Earth Sciences. Myconet 14: 1–64.
+Nylander JAA. 2004. MrModeltest 2.0. Program distributed by the author. Evolutionary Biology
+Centre, Uppsala University.
+Page RDM. 1996. TreeView: an application to display phylogenetic trees on personal computers.
+Computer Applications in the Biosciences 12: 357–358.
+Rannala B, Yang Z. 1996. Probability distribution of molecular evolutionary trees: a new method of
+phylogenetic inference. Journal of Molecular Evolution 43: 304–311.
+http://dx.doi.org/10.1007/BF02338839
+Ronquist F, Huelsenbeck JP. 2003. MrBayes 3: Bayesian phylogenetic inference under mixed
+models. Bioinformatics 19: 1572. http://dx.doi.org/10.1093/bioinformatics/btg180
+Schoch CL, Crous PW, Groenewald JZ, Boehm EWA, Burgess TI, de Gruyter J, de Hoog GS, Dixon
+LJ, Grube M, Gueidan C, Harada Y, Hatakeyama S, Hirayama K, Hosoya T, Huhndorf SM,
+Hyde KD, Jones EBG, Kohlmeyer J, Kruys A, Li YM, Lücking R, Lumbsch HT, Marvanova L,
+Mbatchou JS, McVay AH, Miller AN, Mugambi GK, Muggia L, Nelsen MP, Nelson P, Owensby
+CA, Phillips AJL, Phongpaichit S, Pointing SB, Pujade-Renaud V, Raja HA, Rivas Plata E,
+Robbertse B, Ruibal C, Sakayaroj J, Sano T, Selbmann L, Shearer CA, Shirouzu T, Slippers
+B, Suetrong S, Tanaka K, Volkmann-Kohlmeyer B, Wingﬁeld MJ, Wood AR, Woudenberg
+JHC, Yonezawa H, Zhang Y, Spatafora JW. 2009. A class–wide phylogenetic assessment of
+Dothideomycetes. Studies in Mycology 64: 1–15. http://dx.doi.org/10.3114/sim.2009.64.01
+Swoﬀord DL. 2002. PAUP*. Phylogenetic analysis using parsimony (* and other methods). Version
+4.0 b10. Sinauer Associates, Sunderland, MA: U.S.A.
+Thompson JD, Gibson TJ, Plewniak F, Jeanmougin F, Higgins DG. 1997. The CLUSTAL_X windows
+interface: ﬂexible strategies for multiple sequence alignment aided by quality analysis tools.
+Nucleic Acids Research 25: 4876. http://dx.doi.org/0.1093/nar/25.24.4876
+Vilgalys R, Hester M. 1990. Rapid genetic identiﬁcation and mapping of enzymatically ampliﬁed
+ribosomal DNA from several Cryptococcus species. Journal of Bacteriology 172: 4238–4246.
+Voglmayr H, Jaklitsch WM. 2008. Prosthecium species with Stegonsporium anamorphs on Acer.
+Mycological Research 112: 885–905. http://dx.doi.org/10.1016/j.mycres.2008.01.020
+Voglmayr H, Jaklitsch WM. 2011. Molecular data reveal high host speciﬁcity in the phylogenetically
+isolated genus Massaria (Ascomycota, Massariaceae). Fungal Diversity 46: 133–170.
+http://dx.doi.org/10.1007/s13225-010-0078-5
+Wu HX, Li YM, Chen H, Hyde KD. 2010. Studies on Microthyriaceae: some excluded genera.
+Mycotaxon 113: 147–156. http://dx.doi.org/10.5248/113.147
+Wu HX, Hyde KD, Chen H. 2011. Studies on Microthyriaceae: placement of Actinomyxa, Asteritea,
+Cirsosina, Polystomellina and Stegothyrium. Cryptogamie Mycologie 32: 3–12.
+
+[@Tothia fuscella, epitypiﬁed ... 211#Page-header*]
+Zhang Y, Fournier J, Pointing SB, Hyde KD. 2008. Are Melanomma pulvis–pyrius and
+Trematosphaeria pertusa congeneric? Fungal Diversity 33: 47–60.
+Zhang Y, Wang HK, Fournier J, Crous PW, Jeewon R, Pointing SB, Hyde KD. 2009. Towards a
+phylogenetic clariﬁcation of Lophiostoma/Massarina and morphologically similar genera in the
+Pleosporales. Fungal Diversity 38: 225–251.
+Zhaxybayeva O, Gogarten JP. 2002. Bootstrap, Bayesian probability and maximum likelihood
+mapping: exploring new tools for comparative genome analyses. BMC Genomics 3: 4.
+http://dx.doi.org/10.1186/1471-2164-3-4#Bibliography*]
+
+[@#Page-header*]

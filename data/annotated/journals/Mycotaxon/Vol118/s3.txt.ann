@@ -1,0 +1,500 @@
+ISSN (print) 0093-4666
+
+© 2011. Mycotaxon, Ltd.
+
+ISSN (online) 2154-8889
+
+MYCOTAXON
+Volume 118, pp. 17–26
+
+http://dx.doi.org/10.5248/118.17
+
+October–December 2011
+
+[@Discrimination of Gigaspora species by
+PCR speciﬁc primers and phylogenetic analysis#Title*]
+[@Gladstone Alves da Silva1*, Erica Lumini2, Valeria Bianciotto2,#Author*]
+[@Paola Bonfante2 & Leonor Costa Maia1#Author*]
+[@Departamento de Micologia, CCB, Universidade Federal de Pernambuco,
+Av. Prof. Nelson Chaves, s/n. 50670-420 Recife, PE, Brasil#Institution*]
+2
+[@Dipartimento di Biologia Vegetale dell’ Università and Istituto per la Protezione delle Piante,
+(Sezione di Torino) del CNR – Viale P.A. Mattioli 25, 10125 Torino, Italy#Institution*]
+*Correspondence to: gladstonesilva@yahoo.com
+1
+
+[@Abstract — Species of arbuscular mycorrhizal fungi (AMF) are usually identiﬁed by
+the morphological characteristics of their spores. However, considering the diﬃculties in
+diagnosing their taxa, the construction of species-speciﬁc primers has been proposed as an
+identiﬁcation alternative. In this paper the problem of distinguishing diﬀerent Gigaspora
+species with slight morphological diﬀerences was solved using species-speciﬁc primers and
+SSU and LSU rDNA sequence analyses of 18 AM fungal isolates comprising seven species.
+Neighbor joining, maximum parsimony, and maximum likelihood analyses were performed
+to evaluate the phylogenetic aﬃliation of the isolates, and a new reverse PCR primer (ALB1)
+speciﬁc for Gigaspora albida was designed and tested with 11 Gigaspora isolates (four species).
+The results conﬁrmed misidentiﬁcation of ‘G. albida’ FL 927 and ‘G. margarita’ BR 444 and
+supported referring FL 927 to G. rosea and BR 444 to G. albida.
+Key words — phylogeny, ribosomal sequences, Glomeromycota#Abstract*]
+
+[@Introduction#Section-header*]
+
+[@There are approximately 220 species of arbuscular mycorrhizal fungi
+(AMF) (Stockinger et al. 2010). Morphological diﬀerences in spore structure
+are usually used to distinguish between individual species, but this requires
+a great deal of experience (Morton 1993, Bentivenga & Morton 1994). More
+practical methods are needed, so that AMF can be identiﬁed directly not
+only in the rhizosphere, but also after host root colonization. DNA analytical
+methods involving electrophoretic proﬁles (Wyss & Bonfante 1993), sequence
+comparisons (Daniell et al. 2001, Husband et al. 2002, Mummey & Rillig 2007,
+Stukenbrock & Rosendahl 2005), PCR-DGGE (Souza et al. 2004), species-
+
+[@18 ... Silva & al.#Page-header*]
+speciﬁc primers (Gamper & Leuchtmann 2007, Geue & Hock 2004, Lanfranco
+et al. 1995, 1999, 2001, Millner et al. 1998, 2001a, 2001b, Redecker 2000), and
+DNA barcodes (Stockinger et al. 2010) are being developed that would allow
+identiﬁcation of individual AMF species in an ecological context. For example,
+species-speciﬁc PCR primers could be used to discriminate morphologically
+similar species or even to identify species within colonized roots. However, to
+date only a small number of species-speciﬁc probes has been developed.
+After Oehl et al. (2008) divided the Gigasporaceae into four families and
+six genera, Morton & Msiska (2010) proposed dividing Gigasporaceae into just
+three genera —Gigaspora, Racocetra, Scutellospora. Gigaspora has ﬁve species
+(Bentivenga & Morton 1995) in which the morphological variation is low
+(Bago et al. 1998, Souza et al. 2004, Lanfranco et al. 2001), and only diameter,
+color and spore wall thickness of glomerospores have been used for species
+identiﬁcation (Bentivenga & Morton 1995). Species-speciﬁc primers designed
+for G. margarita (Lanfranco et al. 1999) and G. rosea (Lanfranco et al. 2001)
+have shown to be eﬀective in solving such morphological conﬂicts. In this study
+we show how a species-speciﬁc PCR primer constructed for G. albida helps
+solve problems associated with discriminating Gigaspora species and evaluate
+Gigaspora phylogenetically through SSU and LSU rDNA analyses.#Misc-exposition*]
+[@Materials & methods
+AM fungi
+
+Eleven reference isolates (Table 1) representing Gigaspora propagated in pot cultures
+were selected.
+[@Intracellular bacteria#Section-header*]
+
+Presence of intracellular bacteria was assessed with the Live/Dead Bac-Light
+bacterial viability kit (Molecular Probes, Inc., Eugene, OR, USA) following Bianciotto
+et al. (1996).
+[@DNA extraction#Section-header*]
+
+Ten to 50 spores were washed in distilled water, sonicated 3–4 times, crushed in
+50–100 µl of 1x REDTaq PCR Reaction Buﬀer (10 mM Tris-HCl pH 8.3, 50 mM KCl, 1.1
+mM MgCl2 and 0.01% gelatin) (Sigma-Aldrich, Milan, Italy), and centrifuged at 1000
+RPM for 2 min. The supernatant containing the DNA was incubated at 95°C for 13 min.
+After extraction, the DNA was stored at –20°C.
+Design of PCR primers, ampliﬁcation and sequencing
+
+A new species-speciﬁc reverse PCR primer ALB1 (5’-cccaactaaaaatacttcagtc3’) was designed for G. albida based on the GenBank ITS sequence AJ239118 and
+combined with GiITS1 (Lanfranco et al. 1999) to create a 385 bp fragment. For
+G. margarita and G. rosea, combinations of primers GiITS1+GiITS2 (Lanfranco et al.
+1999) and GiITS1-GiR3 (Lanfranco et al. 2001) were used, respectively.
+#Materials-methods*]
+[@Discrimination of Gigaspora spp. ... 19#Page-header*]
+
+[@Table 1. Glomeromycota isolates used in PCR ampliﬁcation tests with
+species-speciﬁc primers and phylogenetic analysis.
+Speciesa
+
+Isolate
+
+Origin
+
+Gigaspora albida N.C. Schenck & G.S. Sm.
+
+BR 601
+
+Brazil
+
+invam
+
+G. albida
+
+FL 927
+
+USA
+
+ufpe
+
+G.decipiens I.R. Hall & L.K. Abbott
+
+BEG 45
+
+Australia
+
+beg
+
+G. gigantea (T.H. Nicolson & Gerd.) Gerd. & Trappe
+
+MN 414D
+
+USA
+
+invam
+
+G. gigantea
+
+NC 150
+
+USA
+
+invam
+
+G. gigantea
+
+WV 932
+
+USA
+
+invam
+
+G. gigantea
+
+NC 199A
+
+USA
+
+invam
+
+G. margarita W.N. Becker & I.R. Hall
+
+MAFF 52
+
+Japan
+
+maff
+
+G. margarita
+
+MAFF 54
+
+Japan
+
+maff
+
+G. margarita
+
+BEG 34
+
+New Zealand
+
+beg/unito
+
+G. margarita
+
+BR 444
+
+Brazil
+
+invam
+
+G. rosea T.H. Nicolson & N.C. Schenck
+
+UT 102
+
+USA
+
+invam
+
+G. rosea
+
+MAFF 62
+
+Japan
+
+maff
+
+G. rosea
+
+BR 151 A
+
+Brazil
+
+invam
+
+G. rosea
+
+DAOM 194757
+BEG 32
+
+NA
+UK
+
+na
+beg
+
+S. calospora
+
+HDAM-3
+
+na
+
+na
+
+Scutellospora sp.
+
+W 3485
+
+UK
+
+C. Walker
+
+Scutellospora calospora (T.H. Nicolson & Gerd.)
+C. Walker & F.E. Sanders
+#Table*]
+a
+
+[@Sourceb#Section-header*]
+
+[@Species used in the test with species-speciﬁc primers (in bold). bINVAM: International Culture Collection
+of Arbuscular and Vesicular-Arbuscular Mycorrhizal Fungi, USA; UFPE: Universidade Federal de
+Pernambuco, Departamento de Micologia, Brasil; MAFF: Ministry of Agriculture, Forest and Fisheries,
+Japan; BEG European Bank of Glomales, France; UNITO: Università di Torino, Dipartimento di Biologia
+Vegetale, Italy; na: information not available.#Misc-exposition*]
+
+[@The 28G1 and 28G2 primers (Silva et al. 2006) were used to amplify the partial LSU
+rDNA region. NS1, NS2, NS3, NS4, NS5 and NS8 were used to obtain the SSU rDNA
+amplicons (White et al. 1990).
+PCR reactions were carried out in a volume of 50 µl, containing 10 mM Tris-HCl
+pH 8.3, 50 mM KCl, 1.1 mM MgCl2, 0.01% gelatin, 200 µM each dNTPs, 1 µM of each
+primer and 2 units of REDTaqTM DNA polymerase (SIGMA) (Sigma-Aldrich, Milan,
+Italy). Cycling parameters were 45 s at 94°C, 1 min at 55°C, 1 min at 72°C for 40 cycles,
+with a ﬁnal elongation of 7 min at 72°C followed the last cycle. The amplicons were
+visualized on 1.5% agarose gel with ethidium bromide. The ampliﬁed products for
+SSU and LSU rDNA were puriﬁed with a QIAquick kit (Qiagen S.p.A., Milan, Italy)
+following the manufacturer’s instruction and sequenced (accession numbers are listed
+in Table 1). Sequencing was made by GeneLab (Roma, Italy).#Misc-exposition*]
+Sequence alignment and phylogenetic analysis
+
+[@Prior to phylogenetic analysis, a BLASTn query of the National Center for
+Biotechnology information databases demonstrated that sequences obtained from AMF
+species were aﬃliated with the genus Gigaspora.#Misc-exposition*]
+
+[@20 ... Silva & al.#Page-header*]
+[@Sequences of 15 Gigaspora and 11 Scutellospora isolates (some obtained from
+GenBank) were selected to align SSU and LSU rDNA (Table 1) using Clustal X (Larkin
+et al. 2007) and edited with BioEdit (Hall 1999).
+For phylogenetic analyses and tree construction, neighbor joining (NJ), maximum
+parsimony (MP), and maximum likelihood (ML) analysis with 1,000 bootstrap
+replications were performed using PAUP4 (Phylogenetic Analysis Using Parsimony
+vers. 4, Swoﬀord 2003). NJ and ML analyses were performed using parameters obtained
+from ModelTest 3.7 (Posada & Crandall 1998). Scutellospora calospora and Scutellospora
+sp. were used as outgroup.#Misc-exposition*]
+[@Results#Section-header*]
+[@Morphological observations of isolates FL 927 and BR 444#Section-header*]
+
+[@Isolates FL 927 (‘G. albida’) and BR 444 (‘G. margarita’) had morphological
+characters similar to other Gigaspora species: spore wall thickness [9.6–(12.2)–
+14.4 µm and 12–(13.9)–16.8 µm, respectively] and spore diameter [230–(282)–
+360 µm and 250–(320)–384 µm, respectively]. However, the ‘G. margarita’
+BR 444 spores were hyaline/white to yellow and lacked the characteristic green
+(G. albida) or pink (G. rosea) coloration observed in reference isolates G. albida
+BR 601 and G. rosea UT 102. All isolates of ‘G. margarita’ BR 444 and G. albida
+BR 601 contained endobacteria, which were absent in all isolates of G. rosea
+and ‘G. albida’ FL 927.#Misc-exposition*]
+[@Testing species-speciﬁc primers for taxa of Gigaspora#Section-header*]
+
+[@Eleven Gigaspora isolates were screened for PCR ampliﬁcation of a short
+partial nuclear ITS rDNA fragment (385bp) with species-speciﬁc primers
+(Table 1). The primers GiITS1+GiITS2 ampliﬁed only the G. margarita species,
+excluding isolate ‘G. margarita’ BR 444, which did not amplify at all (Fig. 1A).
+The combination of the species-speciﬁc primer constructed for G. rosea (GiR3)
+with GiITS1 ampliﬁed not only the isolates of G. rosea, but also ‘G. albida’
+FL 927 and showed a slight reaction to the DNA from spores of G. albida BR
+601 and ‘G. margarita’ BR 444 (Fig. 1B), while the GiITS1+ALB1 primer pair
+ampliﬁed only G. albida BR 601 and ‘G. margarita’ BR 444 (Fig. 1C). These
+results support a misidentiﬁcation for ‘G. albida’ FL 927 and ‘G. margarita’
+BR 444.#Misc-exposition*]
+[@Phylogenetic analysis of Gigaspora from SSU and LSU rDNA#Section-header*]
+
+[@In the SSU rDNA phylogenetic analyses (NJ, MP and ML), the genus
+Gigaspora was supported as a monophyletic group with 100% of the bootstrap
+value (Fig. 2). Three subclades were observed in the genus, the ﬁrst grouping
+‘G. margarita’ BR 444 with all isolates of G. albida and G. rosea. In the
+second cluster just G. gigantea was present and in the last group all isolates of
+G. margarita (except ‘G. margarita’ BR 444) appeared together with G. decipiens.
+In the tree constructed with the LSU rDNA, Gigaspora was monophyletic
+with high bootstrap support (Fig. 3). All isolates of G. margarita (except
+
+[@Discrimination of Gigaspora spp. ... 21#Page-header*]
+
+[@Fig. 1. Agarose gels (1.5%) with PCR products of the Gigaspora spp. Diﬀerent combinations of
+primers were used: A) GiITS1-GiITS2; B) GiITS1-GiR3; C) GiITS1-ALB1. M = pUC 18 digested
+with Hae III. NTC = no template control.#Figure*]
+
+‘G. margarita’ BR 444) clustered together. Two isolates of Gigaspora gigantea
+grouped in the same clade, Gigaspora albida BR 601 and ‘Gigaspora margarita’
+BR 444 clustered together and Gigaspora rosea UT 102 was close to ‘Gigaspora
+albida’ FL 927. Based on SSU and LSU rDNA analyses ‘Gigaspora margarita’ BR
+444 has been misidentiﬁed.#Misc-exposition*]
+[@Discussion#Section-header*]
+
+[@Due to the low morphological variation amongst Gigaspora species
+(Bentivenga & Morton 1995), some papers have reported species misidentiﬁcation (Bago et al. 1998, Souza et al. 2004, Lanfranco et al. 2001). These
+studies also report the usefulness of molecular approach as an identiﬁcation
+tool. Based on sequences of SSU rDNA and isozyme analysis, Bago et al. (1998)
+divided Gigaspora into three subgeneric groups: the ﬁrst with G. margarita and
+G. decipiens, the second with G. albida and G. rosea, and the third with G. gigantea.
+In this paper these same groups were observed in the phylogeny generated by
+
+[@22 ... Silva & al.#Page-header*]
+
+[@Fig. 2. Phylogenetic reconstruction of the Gigaspora obtained from SSU rDNA sequences (~1700
+bp). The NJ and ML analyses were performed with HKY85 + I substitution model. Bootstrap values
+(in %) are from neighbor joining (NJ), maximum parsimony (MP) and maximum likelihood (ML)
+analyses (1000 bootstraps), respectively. Only topologies with bootstrap values of at least 50% are
+shown. (Consistency Index = 0.88; Retention Index = 0.93).#Figure*]
+
+SSU rDNA, and just ‘G. margarita’ BR 444 was out of the correct clade. In the
+LSU rDNA tree, the isolate BR 444 also grouped together with G. albida BR
+601, whereas the isolate FL 927 (identiﬁed as G. albida) was clustered with
+G. rosea. Bago et al. (1998) observed that the isolates BR 444, identiﬁed initially
+as G. margarita, and FL 927 (described as G. albida), should instead be ascribed
+to G. albida and G. rosea, respectively. The PCR ampliﬁcation tests with speciesspeciﬁc primers in this study also indicated that these two isolates should be
+reclassiﬁed as G. albida and G. rosea. Nevertheless recently Msiska & Morton
+
+[@Discrimination of Gigaspora spp. ... 23#Page-header*]
+
+[@Fig. 3. Phylogenetic reconstruction of the Gigaspora obtained from LSU rDNA sequences (~ 450
+bp). The NJ and ML analyses were performed with GTR substitution model. Bootstrap values (in
+%) are from neighbor joining (NJ), maximum parsimony (MP) and maximum likelihood (ML)
+analyses (1000 bootstraps), respectively. Only topologies with bootstrap values of at least 50% are
+shown. (Consistency Index = 0.93; Retention Index = 0.93).#Figure*]
+
+(2009), based on β-tubulin gene, reported that ‘G. margarita’ BR 444 did not
+group with G. albida or G. rosea, but with G. decipiens.
+Using PCR-DGGE analysis, Souza et al. (2004) already observed, as we
+conﬁrmed here, that the FL 927 isolate, originally identiﬁed as G. albida, should
+be ascribed to G. rosea, indicating identiﬁcation problems. Endobacteria are
+usually observed in glomerospores of Gigaspora species, with the exception of
+
+[@24 ... Silva & al.#Page-header*]
+G. rosea isolates. Bacteria were not found in ‘Gigaspora albida’ FL 927, further
+substantiating the need for reclassiﬁcation.#Misc-exposition*]
+[@Van Tuinen et al. (1998) were the ﬁrst to design speciﬁc primers for Gigaspora
+species (G. rosea) that amplify a region of the LSU rDNA. Because these
+authors tested cross-ampliﬁcation only with species of other AMF genera, it is
+not possible to establish whether the primers amplify other Gigaspora species.
+Currently there are primers speciﬁc for two Gigaspora species (G. margarita
+and G. rosea); nevertheless, we report that the reverse primer GiR3 (Lanfranco
+et al. 2001) also ampliﬁes G. albida isolates. As Lanfranco et al. (2001) did not
+use G. albida and G. decipiens in their analyses with species-speciﬁc primers,
+it was not possible to establish how speciﬁc the primers are to G. rosea and
+G. margarita. Of the ﬁve known Gigaspora species (Bentivenga & Morton
+1995), only G. decipiens was not used in this work.#Misc-exposition*]
+[@In summary, our results show that diﬀerent speciﬁc PCR primer pairs
+and phylogenetic studies can help discriminate among Gigaspora species
+with similar spore morphologies and support the utility of these primers and
+phylogenetic analysis for solving problems in identifying groups of species in
+Gigasporaceae with a low morphological variation.#Misc-exposition*]
+[@Acknowledgements
+
+We are grateful to Dr. Fritz Oehl and Dr. Renata Gomes de Souza for the valuable
+comments on the manuscript. L.C. Maia acknowledges the Conselho Nacional de
+Desenvolvimento Cientíﬁco e Tecnológico (CNPq) for a research grant. The authors
+wish to thank Dr. J. Morton and Dr. M. Saito for providing fungal isolates. We are
+grateful to Dr. David Bousﬁeld for the critical reading of the manuscript and appreciate
+the corrections by Shaun Pennycook, Nomenclatural Editor, and suggestions by Lorelei
+L. Norvell, Editor-in-Chief. This research was funded by the Italian National Council
+of Research (CNR), Cassa di Risparmio di Torino and Centro di Eccellenza per la
+Biosensoristica Vegetale e Microbica.#Acknowledgements*]
+[@Literature cited
+Bago B, Bentivenga S, Brenac V, Dodd JC, Piché Y, Simon L. 1998. Molecular analysis of Gigaspora
+(Glomales, Gigasporaceae). New Phytol. 139: 581–588.
+http://dx.doi.org/10.1046/j.1469-8137.1998.00212.x
+Bentivenga SP, Morton JB. 1994. Systematics of glomalean endomycorrhizal fungi: current views
+and future directions. In: Pﬂeger FL, Linderman RG. (eds). Mycorrhizae and Plant Health:
+283–308. APS Press, St. Paul.
+Bentivenga SP, Morton JB. 1995. A monograph of the genus Gigaspora, incorporating developmental
+patterns of morphological characters. Mycologia 87: 719–731.
+http://dx.doi.org/10.2307/3760818
+Bianciotto V, Bandi C, Minerdi D, Sironi M, Tichy HV, Bonfante P. 1996. An obligately endosymbiotic
+mycorrhizal fungus itself harbors obligately intracellular bacteria. Appl. Environ. Microbiol. 62:
+3005–3010.
+
+[@Discrimination of Gigaspora spp. ... 25#Page-header*]
+Daniell TJ, Husband R, Fitter AH, Young JPW. 2001. Molecular diversity of arbuscular mycorrhizal
+fungi colonizing arable crops. FEMS Microbiol. Ecol. 36: 203–209.
+http://dx.doi.org/10.1111/j.1574-6941.2001.tb00841.x
+Gamper H, Leuchtmann A. 2007. Taxon-speciﬁc PCR primers to detect two inconspicuous
+arbuscular mycorrhizal fungi from temperate agricultural grassland. Mycorrhiza 17: 145–152.
+http://dx.doi.org/10.1007/s00572-006-0092-3
+Geue H, Hock B. 2004. Determination of Acaulospora longula and Glomus subgroup Aa in plant
+roots from grassland using new primers against the large subunit ribosomal DNA. Mycol. Res.
+108: 76–83. http://dx.doi.org/10.1017/S0953756203009080
+Hall TA. 1999. BioEdit: a user-friendly biological sequence alignment editor and analysis program
+for Windows 95/98/NT. Nucl. Acids Symp. Ser. 41: 95–98.
+Husband R, Herre EA, Young JPW. 2002. Temporal variation in the arbuscular mycorrhizal
+communities colonizing seedlings in a tropical forest. FEMS Microbiol. Ecol. 42: 131–136.
+http://dx.doi.org/10.1111/j.1574-6941.2002.tb01002.x
+Lanfranco L, Wyss P, Marzachi C Bonfante P. 1995. Generation of RAPD-PCR primers for the
+identiﬁcation of isolates of Glomus mosseae, an arbuscular mycorrhizal fungus. Mol. Ecol. 4:
+61–68. http://dx.doi.org/10.1111/j.1365-294X.1995.tb00192.x
+Lanfranco L, Delpero M, Bonfante P. 1999. Intrasporal variability of ribosomal
+sequences in the endomycorrhizal fungus Gigaspora margarita. Mol. Ecol. 8: 37–45.
+http://dx.doi.org/10.1046/j.1365-294X.1999.00535.x
+Lanfranco L, Bianciotto V, Lumini E, Souza M, Morton JB, Bonfante P. 2001. A combined
+morphological and molecular approach to characterize isolates of arbuscular mycorrhizal fungi
+in Gigaspora (Glomales). New Phytol. 152: 169–179.
+http://dx.doi.org/10.1046/j.0028-646x.2001.00233.x
+Larkin MA, Blackshields G, Brown NP, Chenna R, McGettigan PA, McWilliam H, Valentin F,
+Wallace IM, Wilm A, Lopez R, Thompson JD, Gibson TJ, Higgins DG. 2007. Clustal W and
+Clustal X version 2.0. Bioinformatics 23: 2947–2948.
+http://dx.doi.org/10.1093/bioinformatics/btm404
+Millner PD, Mulbry WW, Reynolds SL, Patterson CA. 1998. A taxon-speciﬁc oligonucleotide probe
+for temperate zone soil isolates of Glomus mosseae. Mycorrhiza 8: 19–27.
+http://dx.doi.org/10.1007/s005720050206
+Millner PD, Mulbry WW, Reynolds SL. 2001a. Taxon-speciﬁc oligonucleotide primers for detection
+of Glomus etunicatum. Mycorrhiza 10: 259–265. http://dx.doi.org/10.1007/s005720000085
+Millner PD, Mulbry WW, Reynolds SL. 2001b. Taxon-speciﬁc oligonucleotide primers for detection
+of two ancient endomycorrhizal fungi, Glomus occultum and Glomus brasilianum. FEMS
+Microbiol. Letts. 196: 165–170. http://dx.doi.org/10.1111/j.1574-6968.2001.tb10559.x
+Morton JB. 1993. Problems and solutions for the integration of glomalean taxonomy, systematic
+biology, and the study of endomycorrhizal phenomena. Mycorrhiza 2: 97–109.
+http://dx.doi.org/10.1007/BF00203855
+Morton JB, Msiska Z. 2010. Phylogenies from genetic and morphological characters do not support
+a revision of Gigasporaceae (Glomeromycota) into four families and ﬁve genera. Mycorrhiza 20:
+483–496. http://dx.doi.org/ 10.1007/s00572-010-0303-9
+Msiska Z, Morton JB. 2009. Phylogenetic analysis of the Glomeromycota by partial β-tubulin gene
+sequences. Mycorrhiza 19: 247–254. http://dx.doi.org/10.1007/s00572-008-0216-z
+Mummey DL, Rillig MC. 2007. Evaluation of LSU rRNA-gene PCR primers for analysis of arbuscular
+mycorrhizal fungal communities via terminal restriction fragment length polymorphism
+analysis. J. Microbiol. Methods 70: 200–204. http://dx.doi.org/10.1016/j.mimet.2007.04.002
+
+[@26 ... Silva & al.#Page-header*]
+Oehl F, de Souza FA, Sieverding E. 2008. Revision of Scutellospora and description of ﬁve new genera
+and three new families in the arbuscular mycorrhiza-forming Glomeromycetes. Mycotaxon 106:
+311–360.
+Posada D, Crandall KA. 1998. Modeltest: testing the model of DNA substitution. Bioinformatics
+14: 817–818. http://dx.doi.org/10.1093/bioinformatics/14.9.817
+Redecker D. 2000. Speciﬁc PCR primers to identify arbuscular mycorrhizal fungi within colonized
+roots. Mycorrhiza 10: 73–80. http://dx.doi.org/10.1007/s005720000061
+Silva GA da, Lumini E, Maia LC, Bonfante P, Bianciotto V. 2006. Phylogenetic analysis of
+Glomeromycota by partial LSU rDNA sequences. Mycorrhiza 16: 183–189.
+http://dx.doi.org/10.1007/s00572-005-0030-9
+Souza FA de, Kowalchuk GA, Leeﬂang P, van Veen JA, Smit E. 2004. PCR-denaturing Gradient gel
+electrophoresis proﬁling of inter- and intraspecies 18S rRNA gene sequence heterogeneity is an
+accurate and sensitive method to assess species diversity of arbuscular mycorrhizal fungi of the
+genus Gigaspora. Appl. Environ. Microbiol. 70: 1413–1424.
+http://dx.doi.org/10.1128/AEM.70.3.1413-1424.2004
+Stockinger H, Krüger M, Schüβler A. 2010. DNA barcoding of arbuscular mycorrhizal fungi. New
+Phytol. 187: 461–474. http://dx.doi.org/10.1111/j.1469-8137.2010.03262.x
+Stukenbrock EH, Rosendahl S. 2005. Distribution of dominant arbuscular mycorrhizal fungi
+among ﬁve plant species in undisturbed vegetation of a coastal grassland. Mycorrhiza 15:
+497–503. http://dx.doi.org/10.1007/s00572-005-0357-2
+Swoﬀord DL. 2003. PAUP*. Phylogenetic Analysis Using Parsimony *(and Other Methods), Version
+4. Sinauer Associates, Sunderland.
+van Tuinen D, Jacquot E, Zhao B, Gollotte A, Gianinazzi-Pearson V. 1998. Characterization of root
+colonization proﬁles by a microcosm community of arbuscular mycorrhizal fungi using 25S
+rDNA-targeted nested PCR. Mol. Ecol. 7: 879–887.
+http://dx.doi.org/10.1046/j.1365-294x.1998.00410.x
+White TJ, Bruns T, Lee S, Taylor J. 1990. Ampliﬁcation and direct sequencing of fungal ribosomal
+RNA genes for phylogenetics. 315–322, in: MA Innis et al. (eds.). PCR protocols: a guide to
+methods and applications. Academic Press, San Diego.
+Wyss P, Bonfante P. 1993. Ampliﬁcation of genomic DNA of arbuscular-mycorrhizal (AM) fungi by
+PCR using short arbitrary primers. Mycol. Res. 97: 1351–1357.
+http://dx.doi.org/10.1016/S0953-7562(09)80169-X#Bibliography*]
+
+[@#Section-header*]

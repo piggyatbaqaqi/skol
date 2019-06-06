@@ -1,0 +1,391 @@
+ISSN (print) 0093-4666
+
+© 2011. Mycotaxon, Ltd.
+
+ISSN (online) 2154-8889
+
+MYCOTAXON
+Volume 118, pp. 393–401
+
+http://dx.doi.org/10.5248/118.393
+
+October–December 2011
+
+[@Hypoderma siculum sp. nov. from Italy#Title*]
+[@Angela lantieri1*, Peter R. Johnston2, Duckchul Park2,#Author*]
+[@Henrik Lantz3 & Gianfranco Medardi4#Author*]
+[@Dipartimento di Biologia “Marcello La Greca”, Università di Catania,
+Via Antonino Longo 19, I-95125 Catania, Italy#Institution*]
+2
+[@Landcare Research, Private Bag 92170, Auckland 1142, New Zealand#Institution*]
+3
+[@Swedish University of Agricultural Sciences, Department of Microbiology,
+Box 7025, SE-75007, Uppsala, Sweden#Institution*]
+3
+[@Via Giuseppe Mazzini 21, I-25086 Rezzato (Brescia), Italy#Institution*]
+Correspondence to *: angelalantieri@gmail.com
+1
+
+[@Abstract — Hypoderma siculum is described and illustrated as a new species from
+southeast Sicily (Italy) that occurs on remnants of Ferula communis (Apiaceae). Its ecology
+and taxonomic and phylogenetic relationships are discussed.#Abstract*]
+[@Key words — morphology, taxonomy, ITS phylogeny#Key-words*]
+
+[@Introduction#Section-header*]
+
+[@Field investigation of the Ascomycetes of Sicily occurring on decaying
+remnants of Ferula communis (Lantieri 2009) revealed a new Hypoderma
+species, described here as Hypoderma siculum.#Misc-exposition*]
+[@Materials & methods
+Collections of the new species were made between 2007 and 2010 at an elevation
+of 700 m a.s.l. in southeast Sicily. Morphological and microscopic examinations were
+carried out on fresh material and on dried specimens rehydrated in water. Observations
+and measurements were made in water and Melzer’s reagent. Ascus and ascospore size
+ranges from the holotype were based on 50 measurements, using an Optika optical
+microscope (model BK 1301), with 40× or 100× (oil immersion) objectives. All voucher
+specimens were deposited in the fungarium of the Royal Botanic Gardens, Kew K(M)
+and in the fungal reference collection of Landcare Research in New Zealand (PDD).
+DNA was extracted separately from two sets of four fruiting bodies taken from
+each of two separate blackened areas on leaf pieces within the isotype specimen (PDD
+99894), using REDExtract-N-Amp Plant PCR Kits (Sigma, USA). The perithecia were
+
+[@394 ... Lantieri & al.#Page-header*]
+[@Table 1. Specimens used in phylogenetic analysis
+Species
+Coccomyces
+australis
+Hypoderma
+commune
+H. cordylines
+
+H. hederae
+H. rubi
+
+H. siculum
+H. stephanandrae
+H. vincetoxici
+Lophodermium
+agathidis
+
+L. eucalypti
+L. gamundiae
+
+Country of origin,
+host
+Argentina,
+Desfontainia spinosa
+Sweden,
+?Euphorbia sp.
+New Zealand,
+Cordyline australis
+New Zealand, Phormium sp.
+Scotland, Hedera helix
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+China, host unknown
+New Zealand, Coprosma sp.
+New Zealand,
+Melicytus ramiﬂorus
+New Zealand, Pseudopanax sp.
+New Zealand, Rubus cissoides
+Sweden, Rubus lindebergii
+Italy, Ferula communis
+China, Stephanandra chinensis
+Sweden,
+Vincetoxicum hirundinaria
+New Zealand,
+Agathis australis
+New Zealand,
+Metrosideros fulgens
+New Zealand,
+Leptospermum scoparium
+Argentina,
+Nothofagus dombeyi
+
+Collection
+voucher
+
+Genbank
+acc. no.
+
+ICMP 16772
+
+EF191241
+
+Hanson 2006-451 (UPS)
+
+JF690769 *
+
+ICMP 17344
+(ex-holotype culture)
+ICMP 17359
+Lantz & Minter 421 (UPS)
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+unknown
+ICMP 18768
+ICMP 18325
+
+JF683421 *
+
+ICMP 17349
+ICMP 17339
+Hanson 2002-230 (UPS)
+PDD 99894 (isotype)
+unknown
+Lantz 405 (UPS)
+
+JF683416 *
+JF 683419 *
+JF690771 *
+JF683424 *
+GU138753
+JF690772 *
+
+ICMP 18327
+
+JF683423 *
+
+ICMP 17345
+
+JF683422 *
+
+ICMP 16796
+
+EF191235
+
+ICMP 16797
+
+EF191239
+
+JF683420 *
+JF690770 *
+GU138735
+GU138736
+GU138738
+GU138739
+GU138741
+GU138743
+GU138745
+GU138746
+GU138750
+GU138751
+GU367895
+GU367898
+JF683417 *
+JF 683418 *
+
+* = newly generated for this study).
+UPS = Uppsala University; ICMP = International Collection of Microorganisms
+from Plants (maintained by Landcare Research)#Table*]
+
+ground in extraction buﬀer with a plastic pestle in the Eppendorf tube. Following this,
+DNA extraction and PCR were carried out following manufacturer’s instructions. ITS
+sequences were obtained from each extract following the methods of Johnston & Park
+(2005).
+
+[@Hypoderma siculum sp. nov. (Italy) ... 395#Page-header*]
+
+Using ClustalW (Thompson et al. 1994), our newly generated sequences were
+aligned with sequences deposited in Genbank as Hypoderma rubi or those that closely
+matched H. rubi. Because of the paucity of available data, ITS sequences were generated
+from several additional Hypoderma spp. from New Zealand, with DNA extracted from
+cultures grown from germinating ascospores. Other taxa included in the analysis were
+members Lophodermium eucalypti/Coccomyces tumidus clade recognized by Lantz et al.
+(2011) that formed a sister relationship to the core Hypoderma clade, and Lophodermium
+agathidis as the outgroup.
+The taxa included are listed in Table 1, along with the Genbank accession numbers
+of our newly generated sequences. A Bayesian phylogenetic analysis was performed
+using MrBayes 3.1.2 (Huelsenbeck & Ronquist 2001; Ronquist & Huelsenbeck 2003)
+with gaps treated as missing data, using the K80+I+G model which was selected using
+the AIC method in MrModelTest 2.3 (Nylander 2004). The data set was run with 2 chains
+for 10 million generations, trees sampled every 1000 generations with a burn-in of 25%.
+Bayesian posterior probabilities were obtained from 50% majority rule consensus trees.#Materials-methods*]
+
+[@Taxonomy#Section-header*]
+[@Hypoderma siculum Lantieri, P.R. Johnst. & Medardi sp. nov.#Nomenclature*]
+
+[@Plates 1–2#Figure*]
+
+[@MycoBank MB 563145#MB*]
+[@Ascomata erumpentia inter amplas variiformes nigras areas, haud compositas, supra plantae
+superﬁciem, haud consociata cum zonae lineis. Partes nigrae ex 1−2 stratis hypharum
+parietibus obscuris et inﬂatis, formantibus amplum stratum, 5−8 µm latum sub plantae
+cuticula, constitutae. Aspectus in superﬁcie: ascomata 1−1.5 × 0.5−0.8 mm, ellipsoidea
+vel leviter fusiformia vel navicularia si secta, extremitatibus repente rotundatis vel acutis,
+paene mersa in contextu plantae. Ascomata clausa parietibus nigrescentibus, sed plus
+minusve obscure griseis ad margines prominentes ﬁssurae. Ascomata aperta per ﬁssuram
+longitudinalem, se extendentem in totam longitudinem. Labra dilute griseola adsunt.
+Hymenium griseum caesio colore suﬀusum. Labri cellulae hyalinae ex hyphis inconstanter
+cylindricis, inﬂatis in nonnullis partibus, pariete crassa, cellulis 1 (raro 2) −septatis, 20−25
+× 2 µm, mersis in involucro gelatino, constitutae. In recta media parte stroma tegens
+crassum usque ad 50 µm prope ascomatum centrum, sed tenuior ad margines atque tenens
+stroma basis ex strato inferiore et obscure brunneo texturae epidermoideae constitutum.
+Externa pars parietum cellularum stromatis tegentis obtecta materia densa, nigra, plus
+minusve granosa, ex particulis sine structura cellularum manifesta, sed nonnullis cellulis
+obscure polygonalibus, eﬀormata. Excipulum abest. Subhymenium 20−40 µm crassum,
+ex textura intricata, hyphis 3−4 µm latis, parietibus tenuibus et hyalinis constitutum.
+Stroma basis 5−15 µm crassum, cum 3−4 stratis hypharum hyalinarum, 3−4 µm
+latarum, parietibus obscure brunneis et leviter inﬂatis, formantibus texturam intricatam.
+Ascosporae fusiformes vel cylindrico-fusiformes, nonnullae leviter curvae, 27−30 × 3−3.5
+µm, laeves, hyalinae, haud septatae, guttulis haud compositis praeditae, saepe absentibus
+prope centrum, cinctae involucro gelatino, laxo, circiter 3 µm crasso. Asci clavato-stipitati,
+(85−)90−100 × 9−10 µm, apice rotundato, haud amyloidei, 8−sporigeri; sporae dispositae
+in parte superiore. Paraphyses numerosae, ﬁliformes, 1−2 µm latae, emergentes usque ad
+30 µm supra ascos, curvae, crispatae vel valde plicatae ad apicem, nonnullis parvis guttulis
+sparsis per totam longitudinem, sine septis. Specimina cum conidiis haud notata. Habitat:
+supra reliqua putrescentia Ferulae communis; inventum solum hieme.#Description*]
+
+[@396 ... Lantieri & al.#Page-header*]
+[@Type: Italy. Sicily, vic. Vittoria (Ragusa), Riserva Naturale Orientata “Pino d’Aleppo”,
+on decaying remnants of Ferula communis, 30/12/2007, Leg. Angela Lantieri (holotype,
+K(M) 167515; isotype, PDD 99894, GenBank JF683424).#Type-collection*]
+
+[@Conidiomata not observed. Ascomata develop among large, irregularly
+shaped blackened areas on the plant surface, not associated with zone lines. The
+blackened areas have 1−2 layers of hyphae with walls dark and thick forming a
+5−8 µm wide layer beneath the plant cuticle. In surface view ascomata 1−1.5 ×
+0.5−0.8 mm, elliptical to slightly fusiform or navicular in outline, with sharply
+rounded to acute ends, semi-immersed in the plant tissues. Closed ascomata
+with blackish walls, but more or less dark greyish near the prominent edges of
+the slit. Ascomata opening by a longitudinal slit, which extends along the whole
+length. Lips present, pale greyish. Hymenium grey with bluish reﬂexes. Lip
+cells hyaline, composed of irregularly cylindrical, in some points enlarged,
+thick-walled, 1 (rarely 2) −septate, cells, 20−25 × 2 µm embedded in a gelatinous
+sheath. In median vertical, covering stroma up to 50 µm thick near the
+centre of the ascomata, becoming thinner towards the edges, extending to the
+basal stroma, consisting of a inner layer of dark brown textura epidermoidea.
+Outer part of the walls of the cells in the covering stroma with dense, more
+or less granulose black matter, composed of small particles with no visible
+cellular structure, but some of them obscurely polygonal. Excipulum absent.
+Subhymenium 20−40 µm thick, composed of textura intricata, hyphae 1.5−2
+µm diam. with hyaline, thin walls. Basal stroma 5−15 µm thick, comprises
+3–4 layers of hyphae 3−4 µm diam. with walls dark brown and slightly
+thickened, forming a textura intricata. Ascospores fusiform or cylindricalfusiform, some slightly curved, 27−30 × 3−3.5 µm, smooth, hyaline, aseptate,
+containing irregular oil drops often lacking near the middle, surrounded by
+loose gelatinous sheath about 3 µm thick. Asci clavate-stipitate, (85−)90−100 ×
+9−10 µm, apex rounded, not bluing in iodine, 8-spored, spores conﬁned to the
+upper part. Paraphyses abundant, ﬁliform, 1−2 µm diam., protruding up to 30
+µm beyond the asci, curved, curled or remarkably bent at the apex, with some
+small oil-drops scattered along the length, without septa.#Description*]
+[@Habitat: On decaying remnants of Ferula communis, found only in winter.#Habitat-distribution*]
+[@Additional specimens examined: ITALY. Sicily, vic. Vittoria (Ragusa), Riserva
+Naturale Orientata “Pino d’Aleppo”, 13/03/2008, [Leg. A. Lantieri] (K(M) 167516);
+06/02/2009, [Leg. A. Lantieri] (K(M) 167517); 13/02/2010, [Leg. A. Lantieri] (K(M)
+167518).#Specimens*]
+
+[@Discussion#Section-header*]
+[@Hypoderma siculum falls within the Hypoderma sensu stricto clade of Lantz
+et al. (2011). Genetic relations within this clade are poorly resolved in the ITS
+gene tree (Fig. 3). Despite this, H. siculum is genetically distinct from other
+named isolates within the clade, and this genetic isolation and its distinct
+
+[@Hypoderma siculum sp. nov. (Italy) ... 397#Page-header*]
+
+[@Plate 1. Hypoderma siculum (Holotype, K(M) 167515). A. fresh ascomata in situ; B. stromatic
+tissue surrounding ascomata, vertical section; C. upper wall of ascoma, vertical section; D. detail
+of lip cells, vertical section; E. detail of lower wall of ascoma, vertical section; F. detail of lower
+wall of ascoma, squash mount; G. asci and ascospores; H. ascospores in KOH; I. ascospores in
+water showing gelatinous sheath. Scale bars: A = 1 mm; B, D–H = 20 µm; C = 50 µm.#Figure*]
+
+[@398 ... Lantieri & al.#Page-header*]
+
+[@Plate 2. Hypoderma siculum (Holotype, K(M) 167515).
+A. margin of ascoma in vertical section; B. stromatal cells; C. section of stroma;
+D. granulose matter; E. asci and ascospores; F. ascospores.#Figure*]
+
+biology supports recognizing the fungus as an independent species. Other
+morphologically distinct taxa within this clade, such as Hypoderma cordylines,
+are also poorly resolved. More intensive, multi-gene phylogenies of Australasian
+species have shown that ITS alone does not adequately resolve relationships
+within this clade (unpublished data). The weak quality of the DNA extracted
+from the H. siculum dried specimens did not permit reliable sequencing of
+single copy genes.#Misc-exposition*]
+
+[@Hypoderma siculum sp. nov. (Italy) ... 399#Page-header*]
+
+[@Figure 3. 50% majority-rule consensus phylogenetic tree based on Bayesian analysis of Hypoderma
+siculum and related taxa derived from ITS gene sequences. Bayesian posterior probabilities greater
+than 90% are shown above the edges. Sclerotinia sclerotiorum was selected as the outgroup.#Figure*]
+
+[@Ferula communis L. (Apiaceae), a typical herbaceous plant of the
+Mediterranean area, is commonly associated with two Hypoderma species,
+H. ferulae Lantieri (Lantieri 2009) and H. siculum. Early reports of Hypoderma
+rubi (Pers.) DC. and H. commune (Fr.) Duby on F. communis (Duby 1862;
+Petrak 1943) are diﬃcult to assess, as neither report is supported by specimens.
+It is uncertain in what sense the authors were using these names and impossible
+to check whether the specimens they reported match our Ferula-specialised
+species.#Misc-exposition*]
+
+[@400 ... Lantieri & al.#Page-header*]
+[@Extensive collecting in Sicily revealed only H. ferulae and H. siculum on
+Ferula. Scalia (1900: 37) reported H. commune from Sicily on a species in another
+genus of Apiaceae, Thapsia garganica L.; the report included no description of
+the fungus, and again there is no material available to verify the record. There
+is no evidence from collections made in Sicily that H. siculum occurs on other
+genera of Apiaceae (unpubl. data).#Comments*]
+[@Hypoderma siculum is distinguished from H. ferulae by ascospore size and
+septation (21–24 × 2.5−3 µm and often 1−septate in H. ferulae), by the presence
+of an extended area of stromatic subcuticular tissue surrounding the ascomata,
+the colour of the hymenium when fresh (yellow-honey with greenish tinges in
+H. ferulae), and the lack of an excipular layer.#Comments*]
+[@Hypoderma siculum resembles H. rubi morphologically, but as noted in
+the phylogenetic section, the application of this name by diﬀerent authors is
+uncertain, and genetic relationships amongst specimens identiﬁed as H. rubi
+are poorly resolved. Hypoderma rubi sensu Powell (1974), Johnston (1990), and
+Medardi (2006) diﬀers slightly from H. siculum in its ascospore size (20−25(−26.5)
+× 3−4 µm) and the fusiform-navicular ascospore shape. Hypoderma commune
+diﬀers in having ascomata with yellow-greenish hymenium and smaller, nonseptate spores (17−20 × 3−4 µm; Ellis & Ellis 1988).#Comments*]
+[@Acknowledgments
+
+The authors sincerely thank to Prof. G. Consiglio for the Latin diagnosis, Prof. D. Minter
+(UK), and Dott. C. Losi (Italy) for critically reviewing the manuscript and G. Cacialli for
+signiﬁcant contributions to the bibliography.#Acknowledgements*]
+[@Literature cited
+Ellis MB, Ellis JP. 1988. Microfungi on miscellaneous substrates. Croom Helm, London & Sydney.
+Huelsenbeck JP, Ronquist F. 2001. MRBAYES: Bayesian inference of phylogeny. Bioinformatics 17:
+754–755. http://dx.doi.org/10.1093/bioinformatics/17.8.754
+Johnston PR. 1990. Rhytismataceae in New Zealand 3. The genus Hypoderma. New Zealand J. Bot.
+28: 159–283.
+Johnston PR, Park D. 2005. Chlorociboria (Fungi, Helotiales) in New Zealand. New Zealand Journal
+of Botany 43: 679–719. http://dx.doi.org/10.1080/0028825X.2005.9512985
+Lantieri A. 2009. A new species of Hypoderma (Ascomycota) from Italy. Sydowia 61(2): 267–272.
+Lantz H, Johnston PR, Park D, Minter DW. 2011. Molecular phylogeny reveals a core clade of
+Rhytismatales. Mycologia 103: 57–74. http://dx.doi.org/10.3852/10-060
+Medardi G. 2006. Atlante fotograﬁco degli Ascomiceti d’Italia. A.M.B. Centro Studi Micologici,
+Vicenza (Italy).
+Nylander JAA. 2004. MrModeltest v2. Program distributed by the author. Evolutionary Biology
+Centre, Uppsala University.
+Petrak F. 1943. Fungi. Denkschriften der Akademie der Wissenschaften MathematischeNaturwissenschaftliche Klasse 105(2): 9–26.
+Powell PE. 1974. Taxonomic studies in the genus Hypoderma (Rhytismataceae). Unpublished PhD
+thesis, Cornell University.
+
+[@Hypoderma siculum sp. nov. (Italy) ... 401#Page-header*]
+Ronquist F, Huelsenbeck JP. 2003. MRBAYES 3: Bayesian phylogenetic inference under mixed
+models. Bioinformatics 19: 1572–1574. http://dx.doi.org/10.1093/bioinformatics/btg180
+Scalia G. 1900. I funghi della Sicilia orientale e principalmente della regione Etnea (Prima serie).
+Atti dell’ Accademia Gioenia di Scienze Naturali di Catania, 4. ser., 13: 1-55.
+Thompson JD, Higgins DG, Gibson TJ. 1994. CLUSTAL W: improving the sensitivity of progressive
+multiple sequence alignment through sequence weighting, position-speciﬁc gap penalties and
+weight matrix choice. Nucleic Acids Res. 22: 4673–4680.
+http://dx.doi.org/10.1093/nar/22.22.4673#Bibliography*]
+
+[@#Page-header*]

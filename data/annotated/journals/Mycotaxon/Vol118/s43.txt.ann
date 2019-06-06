@@ -1,0 +1,1397 @@
+ISSN (print) 0093-4666
+
+© 2011. Mycotaxon, Ltd.
+
+ISSN (online) 2154-8889
+
+MYCOTAXON
+Volume 118, pp. 361–381
+
+http://dx.doi.org/10.5248/118.361
+
+October–December 2011
+
+[@A preliminary ITS phylogeny of Melanoleuca (Agaricales),
+with special reference to European taxa#Title*]
+[@Alfredo Vizzini1*, Roberto Para2, Roberto Fontenla3,#Author*]
+[@Stefano Ghignone4, Enrico Ercole1#Author*]
+[@Dipartimento di Biologia Vegetale - Università degli Studi di Torino
+Viale Mattioli 25, I-10125, Torino, Italy#Institution*]
+2
+[@Via Martiri di Via Fani 22, I-61024, Mombaroccio (PU), Italy#Institution*]
+3
+[@Via Monte Marino 26, I-60125 Ancona, Italy#Institution*]
+4
+[@Istituto per la Protezione delle Piante, CNR Sezione di Torino,
+Viale Mattioli 25, I-10125, Torino, Italy#Institution*]
+Correspondence to *: alfredo.vizzini@unito.it
+1
+
+[@Abstract — Ninety-one Melanoleuca collections were chosen to test the agreement of
+current and traditional infrageneric tripartite classiﬁcations of Melanoleuca (subgenera
+Acystis without cystidia, Urticocystis with urticiform cystidia, and Melanoleuca with
+macrocystidia) with molecular phylogenetic data (ITS sequences analysis) and to evaluate
+the systematic signiﬁcance of relevant morphological characters. Melanoleuca is found to be
+monophyletic, and only two emended subgenera, Urticocystis and Melanoleuca, are supported.
+Subg. Urticocystis comprises all taxa with urticoid cystidia plus the macrocystidiate M. cognata
+complex. The artiﬁcial subg. Acystis is shown to be polyphyletic and no longer tenable. The
+entire genus comprises at least 10 clades with 13 subclades. Melanoleuca sublanipes sp. nov.
+and new combinations M. exscissa f. iris, M. exscissa f. sarcophylla, M. exscissa f. diverticulata,
+and M. paedida f. electropoda are introduced.#Abstract*]
+[@Key words — Basidiomycota, Agaricomycetes, Kinia, pluteoid clade, taxonomy#Key-words*]
+
+[@Introduction#Section-header*]
+
+[@Kirk et al. (2008) state that the basidiomycete genus Melanoleuca Pat., typiﬁed
+by M. vulgaris (Pat.) Pat. [= M. melaleuca (Pers.) Murrill] and traditionally
+placed in subtribe Leucopaxillineae Singer (Tricholomataceae R. Heim ex
+Pouzar, Agaricales Underw.) (Singer 1986), comprises approximately 50 saprobic
+species worldwide. However, Index Fungorum (http://www.indexfungorum.
+org/, accessed 28 June 2011), lists 332 validly published Melanoleuca names
+representing 126 European and 206 extra-European taxa (pers. obs.). Of the 164
+names that actually represent the genus as presently circumscribed (cf. Pﬁster
+
+[@362 ... Vizzini & al.#Page-header*]
+1984), many are now known as synonyms with others yet to be listed as such.
+New taxa are, however, continuously being described, even from well-studied
+areas such as Europe (e.g., Bresinsky 2006, this paper). Melanoleuca species
+are cosmopolitan and characterised by the following characters: collybioid to
+tricholomatoid basidiomata; convex to slightly depressed (often with a shallow
+umbo) pilei; emarginated to adnate to shortly decurrent lamellae; absence of
+veils; white to pale-yellowish spore print; cutis to trichoderm pileipellis; hyaline
+spores with amyloid ornamentations; cheilocystidia (mostly present) of two
+types either urticoid, septate, thin-walled or fusiform to lageniform, mostly
+aseptate, slightly thick-walled, sometimes with encrusting crystals at apex;
+pleurocystidia similar to cheilocystidia; no clamp connections (Pegler & Young
+1973, Gillman & Miller 1977, Kühner 1978, Singer 1986, Boekhout 1988, 1999;
+Bon 1991, Vesterholt 2008, Watling & Turnbull 2008). Leucopaxillus Boursier,
+a morphologically allied genus, diﬀers from Melanoleuca mainly in abundant
+clamp connections and (usually) lacking well-developed hymenial cystidia
+(Singer 1986, Bon 1991). But, according to recent molecular analyses (Moncalvo
+et al. 2002, Matheny et al. 2006), Melanoleuca and Leucopaxillus are not closely
+related: Melanoleuca species cluster within the Pluteoid clade (Pluteaceae
+Kotl. & Pouzar), whereas Leucopaxillus belongs to the Tricholomatoid clade,
+close to Tricholoma (Fr.) Staude. Sequence analyses by Moncalvo et al. (2000,
+2002) place Melanoleuca and Pluteus Fr. as sister to Amanitaceae R. Heim ex
+Pouzar, while others place the minute uniloculate gasteromycete, Limnoperdon
+incarnatum G.A. Escobar, sister to Melanoleuca and Pluteus (Bodensteiner
+et al. 2004; Binder et al. 2006; Vizzini et al. 2010) or to Melanoleuca, Pluteus
+and Volvariella Speg. (Matheny et al. 2006). Justo et al. (2011) recently place
+Melanoleuca as sister to a monophyletic group formed by Pluteus species and
+Volvopluteus Vizzini et al. Finally, Vizzini et al. (2010) reduced the puzzling
+genus Kinia Consiglio et al. to a subgenus of Melanoleuca with non-amyloid
+spores.#Misc-exposition*]
+[@Melanoleuca is one of the less appealing fungal genera, whose members
+are mostly tedious and drab in appearance and dull in pileus colours. It is a
+character-poor genus with many species macroscopically very similar and
+diﬀering only in very subtle features (e.g., basidioma colour, odour, stipe
+ornamentation) and a morphology strongly inﬂuenced by environmental
+factors (Bon 1991, Boekhout 1999). Thus far, infrageneric classiﬁcations and
+species circumscriptions have relied on morphological characters. Identiﬁcation
+especially depends on microscopic observations of a rather limited set of
+characters, such as presence/absence of cheilocystidia, cystidial shape, spore size
+and ornamentation, and pileipellis structure. Interpretation of some characters
+may rely on personal experience (e.g. shape of cystidia); in some cases the
+value ranges overlap (e.g. spore size), in others pileipellis structure and spore
+
+ITS sequence analysis of Melanoleuca ... 363
+
+size show great intra-basidiome variability. From a traditional morphological
+perspective, this often makes species identiﬁcation diﬃcult or even daunting.
+The paucity of Melanoleuca characters has been detrimental to establishing a
+natural taxonomic framework for rationalizing infrageneric relationships.
+The lack of a modern Melanoleuca monograph and the existence of
+many short, taxonomically and geographically limited publications further
+complicate the situation. In addition, there are many controversies concerning
+the interpretations of old descriptions and names (Boekhout 1988).
+Several diﬀerent infrageneric classiﬁcations of Melanoleuca have been
+published. Singer (1935, 1943, 1986), Métrod (1942, 1948), Kühner (1978), and
+Moser (1983) proposed schemes based mainly on macromorphological features
+(see Boekhout 1988 for an historical review). Singer (1986), for example,
+divided Melanoleuca into four sections —Alboﬂavidae Singer, Humiles Singer,
+Oreinae Singer, Melanoleuca— circumscribed only by pileus colour and stipe
+ornamentation.#Misc-exposition*]
+[@Bon (1978), the ﬁrst to present an infrageneric classiﬁcation based equally on
+macro- and micro-morphological characters, divided Melanoleuca into seven
+sections. Boekhout (1988), focusing mainly on microscopic features, stressed
+the importance of absence/presence and shape of cystidia (ﬁrst noted by Metrod
+1948) and divided the genus into three subgenera (Tab. 1): subg. Melanoleuca—
+no cystidia; subg. Urticocystis Boekhout—with urticiform cheilocystidia and no
+(or very rare) pleurocystidia; subg. Macrocystis Boekhout—with long fusiform
+to lageniform cheilocystidia (macrocystidia) and similar pleurocystidia.
+Boekhout recognized two urticiform types: the brevipes-type (with narrow
+cylindrical upper part, Fig. 1a) and the exscissa-type (with rather wide upper
+part attenuating towards the apex, Fig. 1b).#Misc-exposition*]
+[@Bon (1991) proposed a slightly diﬀerent infrageneric classiﬁcation (Tab. 1)
+by introducing the spore Q value (the ratio of length to width of the spores in
+side view) and stressing the importance of fusiform versus lageniform cystidia
+(Fig. 1c–d) as important key characters for delimiting subsections.
+Finally, Boekhout (1999) reintroduced a simpliﬁed classiﬁcation practically
+identical to the 1988 scheme except that sect. Grammopodiae was no longer
+subdivided into subsects. Grammopodiae and Exscissae (Tab. 1).
+There are only two major monographic treatments of Melanoleuca: Bon
+(1991) covers over 80 taxa, most reported only from Europe, and Boekhout
+(1999), covers only Dutch taxa and unites species into large complexes thereby
+recognizing only 14 species and several forms and varieties.
+Bon (1991), who covered a larger number of taxa, was used both for selecting
+which species to sample and for testing the eﬀectiveness of Bon’s classiﬁcation
+method. Due to the limitation of morphological characters used, several of his
+taxonomical units remain controversial.#Misc-exposition*]
+
+[@364 ... Vizzini & al.#Page-header*]
+[@Table 1. The tripartite infrageneric classiﬁcations of Melanoleuca
+by Bon and Boekhout.
+Boekhout’s classification (1988, 1999)
+Subg. Melanoleuca – without cystidia.
+Subg. Urticocystis – cheilocystidia urticiform and pleurocystidia absent or very rare.
+Sect. Humiles – stipe squamulose or verrucose throughout; stipe
+usually much longer than diameter of the pileus.
+Sect. Grammopodiae – stipe smooth or somewhat ﬁbrillose; stipe much
+shorter than or equally large as diameter of pileus.
+*Subsect. Grammopodiae – urticiform cystidia of the brevipes-type.
+*Subsect. Exscissae – urticiform cystidia of the exscissa-type.
+Subg. Macrocystis – cheilocystidia fusiform to lageniform and pleurocystidia similar.
+Sect. Cognatae – with a bright coloured pileus.
+Sect. Alboﬂavidae – with a white to cream-whitish pileus.
+Sect. Strictipedes – with a grey-brown pileus.
+Bon’ s classification (1991)
+Subg. Acystis – species without cystidia.
+Sect. Acystis – spores with a Q<1.4(–1.5).
+Sect. Decembres – spores with a Q>(1.5–) 1.6.
+Subg. Urticocystis – cheilocystidia urticiform to strictly lageniform, septate,
+up to 50(–60) µm long.
+Sect. Humiles – stipe squamulose to dark-dotted.
+Sect. Grammopodiae – stipe smooth or striate, sometimes pruinose or ﬂocky.
+Subsect. Rasilinae – spores with a Q<1.4(–1.5), with isolated warts,
+cystidia typically urticiform.
+Subsect. Grammopodiae – spores with a Q>(1.5–)1.6, cystidia typically urticiform.
+Subsect. Exscissae – spores with a Q>(1.5–)1.6, urticiform cystidia of the exscissa-type.
+Subg. Melanoleuca – macrocystidia fusiform to lageniform, non-septate,
+up to (40–)50–90(–110) µm long.
+Sect. Alboﬂavidae – basidiomes white to whitish.
+Sect. Cognatae – basidiomes with bright colours, pileus and lamellae concolorous.
+Sect. Oreinae – basidiomes small (<4(–6) cm), collybioid, often dark coloured.
+Sect. Melanoleuca – basidiomes small to medium-sized (>(5–)
+6 cm), with variable colourations.
+Subsect. Strictipedinae – cystidia mainly lageniform.
+Subsect. Vulgarinae – cystidia mainly fusiform.
+* = subsections present in the 1988 classiﬁcation scheme only.#Table*]
+
+[@The present study is based on a large ITS sequence dataset and is the ﬁrst
+to examine Melanoleuca extensively. Our aims were to 1) check whether
+Melanoleuca is monophyletic as traditionally circumscribed; 2) test Bon’s
+(1991) morphologically based taxonomy against molecular phylogenetic data;
+3) evaluate whether traditional or other morphological features (e.g., pileus
+colour, spore and cheilocystidia shape) reﬂect phylogenetic relationships.#Misc-exposition*]
+[@Materials & methods
+[@Taxon sampling#Section-header*]
+
+Samples from 91 Melanoleuca collections (41 taxa, 18 unidentiﬁed Melanoleuca sp.;
+Tab. 2) were tested. Specimens were collected fresh, dried, and deposited in ANC (Erbario
+
+[@ITS sequence analysis of Melanoleuca ... 365#Page-header*]
+
+[@Figure 1. Types of cystidia in Melanoleuca.
+a–b. Urticiform cystidia (a = brevipes-type; b = exscissa-type).
+c–d. Macrocystidia (c = fusiform; d = lageniform).
+Bar = 20 µm.#Figure*]
+
+[@366 ... Vizzini & al.#Page-header*]
+[@Table 2. Melanoleuca collections examined (species with multiple collections
+numbered consecutively; see also Fig. 2).
+Collections
+
+Coll. ID./Origin
+
+Subgenera / Sections
+(Bon 1991)
+
+ITS
+Acc. No.
+
+* Melanoleuca albifolia 1
+
+ANC M0182/Spain
+
+Melanoleuca / Oreinae
+
+JN616418
+
+* M. albifolia 2
+* M. angelesiana 1
+* M. angelesiana 2
+* M. arcuata
+* M. atripes
+* M. bataillei
+M. brevipes 1
+M. brevipes 2
+M. cinereifolia 1
+M. cinereifolia 2
+M. cinereifolia 3
+M. cognata 1
+* M. cognata 2
+* M. decembris 1
+* M. decembris 2
+* M. decembris 3
+M. decembris 4
+* M. diverticulata
+* M. electropoda
+M. evenosa
+* M. exscissa 1
+* M. exscissa 2
+* M. exscissa 3
+* M. exscissa 4
+* M. exscissa 5
+* M. exscissa 6
+* M. friesii
+* M. graminicola
+* M. grammopodia 1
+* M. grammopodia 2
+* M. grammopodia 3
+* M. grammopodia
+f. macrocarpa 1
+* M. grammopodia
+f. macrocarpa 2
+M. grammopodia
+f. macrocarpa 3
+* M. heterocystidiosa 1
+* M. heterocystidiosa 2
+* M. iris
+* M. “lanipes”
+* M. melaleuca
+* M. microcephala
+* M. nivea 1
+
+ANC M0184/Italy
+ANC M0203/Italy
+ANC M0204/Italy
+ANC M0167/Italy
+ANC M0180/Italy
+ANC M0185/Italy
+MCVE 04574/Italy
+MCVE 04505/Italy
+MCVE 01471/Italy
+MCVE 11243/Italy
+MCVE 20748/Italy
+MCVE 13939/Italy
+ANC M0170/Italy
+ANC M0197/Italy
+ANC M0199/Italy
+ANC M0200/Italy
+MCVE 01573/Italy
+ANC M0206/Italy
+ANC M0187/Italy
+MCVE 14576/Italy
+ANC M0207/Italy
+ANC M0208/Italy
+ANC M0210/Italy
+ANC M0210B/Italy
+ANC M0212/Italy
+ANC M0213/Italy
+ANC M0186/Italy
+ANC M0201/Italy
+ANC M0217/Italy
+ANC M0218/Italy
+ANC M0219/Slovenia
+ANC M0215/Italy
+
+Melanoleuca / Oreinae
+Acystis / Acystis
+Acystis / Acystis
+Melanoleuca / Cognatae
+Melanoleuca / Oreinae
+Melanoleuca / Melanoleuca
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Cognatae
+Melanoleuca / Cognatae
+Acystis / Decembres
+Acystis / Decembres
+Acystis / Decembres
+Acystis / Decembres
+Urticocystis /Grammopodiae
+Melanoleuca / Oreinae
+Melanoleuca / Alboﬂavidae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Melanoleuca / Melanoleuca
+Acystis / Acystis
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+
+JN616419
+JN616420
+JN616421
+JN616422
+JN616423
+JN616424
+JF908352
+JF908351
+JN052138
+JF908356
+JN052137
+JF908360
+JN616425
+JN616426
+JN616427
+JN616428
+JF908346
+JN616429
+JN616430
+JN052142
+JN616431
+JN616432
+JN616433
+JN616434
+JN616435
+JN616436
+JN616437
+JN616438
+JN616439
+JN616440
+JN616441
+JN616442
+
+ANC M0216/Italy
+
+Urticocystis /Grammopodiae
+
+JN616443
+
+MCVE 04410/Italy
+
+Urticocystis /Grammopodiae
+
+JF908350
+
+ANC M0174/Italy
+ANC M0175/Italy
+ANC M0211/Italy
+ANC M0166/Italy
+ANC M0176/Italy
+ANC M0196/Italy
+ANC M0177/Italy
+
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Urticocystis /Grammopodiae
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Urticocystis /Grammopodiae
+Melanoleuca / Alboﬂavidae
+
+JN616444
+JN616445
+JN616446
+JN616447
+JN616448
+JN616449
+JN616450
+
+* M. nivea 2
+M. nivea 3
+
+ANC M0183/Italy
+MCVE 09578/Italy
+
+Melanoleuca / Alboﬂavidae
+Melanoleuca / Alboﬂavidae
+
+JN616451
+JN392452
+
+* = collections newly sequenced in this study.#Nomenclature*]
+
+[@ITS sequence analysis of Melanoleuca ... 367#Page-header*]
+[@Table 2, concluded
+Collections
+
+Coll. ID./Origin
+
+M. oreina
+* M. paedida 1
+* M. paedida 2
+M. “paratristis”
+* M. privernensis
+
+MCVE 07839/Italy
+ANC M0189/Italy
+ANC M0190/Italy
+MCVE 12645/Italy
+GC 08310 holotype/Italy
+
+* M. pseudoluscina 1
+* M. pseudoluscina 2
+* M. pseudoluscina 3
+* M. pseudoluscina 4
+* M. pseudoluscina 5
+* M. pseudopaedida
+* M. rasilis
+* M. robertiana
+* M. robusta
+* M. strictipes 1
+* M. strictipes 2
+* M. strictipes 3
+* M. stridula
+* M. striimarginata
+M. subalpina
+* M. sublanipes 1
+
+ANC M0191/Italy
+ANC M0192/Italy
+ANC M0193/Italy
+ANC M0194/Italy
+ANC M0195/Italy
+ANC M0198/Italy
+ANC M0220/Italy
+ANC M0205/Italy
+ANC M0179/Italy
+ANC M0171/Italy
+ANC M0172/Italy
+ANC M0173/Italy
+ANC M0007/Italy
+ANC M0202/Italy
+MCVE 04112/Italy
+ANC M0221/Italy
+ANC M0222
+holotype/Italy
+ANC M0223/France
+ANC M0004/Italy
+ANC M0178/Italy
+ANC M0214/Italy
+MCVE 13934/Italy
+ANC M0209/Italy
+MCVE 09962Switzerland
+ANC M0181/Italy
+ANC M0188/Italy
+ANC M0224/Italy
+MCVE 12248/Italy
+MCVE 13410/Italy
+MCVE 09821/Italy
+MCVE 01687/Italy
+MCVE 01683/Italy
+MCVE 19223/Italy
+MCVE 08389/Italy
+MCVE 08432/Italy
+MCVE 14221/Italy
+MCVE 08384/Italy
+MCVE 03316/Italy
+MCVE 19627/Italy
+MCVE 24095/Italy
+MCVE 01681/Italy
+MCVE 14273/Italy
+
+Urticocystis / Humiles
+Acystis / Acystis
+Acystis / Acystis
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Melanoleuca / Cognatae
+Melanoleuca / Melanoleuca
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Acystis / Decembres
+
+JF908354
+JN616476
+JN616477
+JN616478
+JN052141
+JF908358
+JN392453
+JN392449
+JN392448
+JN392446
+JF908353
+JN052140
+JN392454
+JN392451
+JF908349
+JF908344
+JN616479
+JN392447
+JF908362
+
+* M. sublanipes 2
+* M. sublanipes 3
+* M. subpulverulenta 1
+* M. subpulverulenta 2
+* M. substrictipes 1
+M. substrictipes 2
+* M. substrictipes
+var. sarcophylla
+M. verrucipes
+* Melanoleuca sp. 1
+* M. sp. 2
+* M. sp. 3
+M. sp. 4
+M. sp. 5
+M. sp. 6
+M. sp. 7
+M. sp. 8
+M. sp. 9
+M. sp. 10
+M. sp. 11
+M. sp. 12
+M. sp. 13
+M. sp. 14
+M. sp. 15
+* M. sp. 16
+M. sp. 17
+M. sp. 18
+
+Subgenera / Sections
+(Bon 1991)
+Melanoleuca / Oreinae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Acystis / Acystis
+Subgen. Kinia (Vizzini
+et al. 2010)
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Acystis / Acystis
+Urticocystis /Grammopodiae
+Acystis / Acystis
+Melanoleuca / Melanoleuca
+Melanoleuca / Alboﬂavidae
+Melanoleuca / Alboﬂavidae
+Melanoleuca / Alboﬂavidae
+Acystis / Acystis
+Acystis / Acystis
+Melanoleuca / Alboﬂavidae
+Urticocystis /Grammopodiae
+
+ITS
+Acc. No.
+JN392450
+JN616452
+JN616453
+JF908357
+JN616454
+
+Urticocystis /Grammopodiae
+
+JN616470
+
+Urticocystis /Grammopodiae
+Melanoleuca / Melanoleuca
+Melanoleuca / Melanoleuca
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+Urticocystis /Grammopodiae
+
+JN616471
+JN616472
+JN616473
+JN616474
+JF908359
+JN616475
+
+JN616455
+JN616456
+JN616457
+JN616458
+JN616459
+JN616460
+JN616461
+JN616462
+JN616463
+JN616464
+JN616465
+JN616466
+JN616467
+JN616468
+JN052139
+JN616469#Nomenclature*]
+
+[@368 ... Vizzini & al.#Page-header*]
+dell’Università di Ancona, Italy) or acquired from MCVE (the Museo di Storia Naturale
+di Venezia Herbarium, Italy) (Tab. 2). MCVE collections were chosen, even where
+often misdetermined, because DNA had already been bar-coded by Dr. M. Garbelotto
+(University of California, Berkeley). All Melanoleuca collections were identiﬁed or
+redetermined using i) an unpublished key based on the protologues or referenced to
+original collections (Fontenla & Para, ined.) and ii) existing monographs (Bon 1991,
+Boekhout 1999, Fontenla et al. 2003). Watling & Turnbull (1983), Horak (2005), and
+Vesterholt (2008) were also consulted. When not identiﬁable, collections are cited in
+Tab. 2 and Fig. 2 as Melanoleuca sp. Melanoleuca species were selected to represent
+subgenera and sections in Bon (1991; Tab. 1). Each section was represented by at least
+two species except for sect. Humiles (represented only by M. verrucipes). Melanoleuca
+privernensis (Consiglio et al.) Consiglio et al. [≡ Kinia privernensis] was also included
+in the dataset in accordance with Vizzini et al. (2010). In the species descriptions Q =
+quotient of length and width of the spores in side view and Qm = average quotient. The
+spore Qm value and cystidia shape are reported for each collection in Fig. 2. Herbarium
+abbreviations follow Thiers (2011). Author citations follow the Index FungorumAuthors of Fungal Names (http://www.indexfungorum.org/authorsoﬀungalnames.
+htm) and the names of new taxa are deposited in MycoBank (http://www.mycobank.
+org/DefaultPage.aspx).
+[@DNA extraction, PCR ampliﬁcation, DNA sequencing#Section-header*]
+
+Genomic DNA was isolated, extracted from 62 dried herbarium specimens (Tab. 2)
+using the DNeasy Plant Mini Kit (QIAGEN, Milan, Italy). Universal primers ITS1F/
+ITS4 were used for ITS region ampliﬁcation (White et al. 1990, Gardes & Bruns 1993).
+Ampliﬁcation reactions were performed in a PE9700 thermal cycler (Perkin-Elmer,
+Applied Biosystems) in 25 mL reaction mixtures with these ﬁnal concentrations or total
+amounts: 5 ng DNA, 13 PCR buﬀer (20 mM Tris/HCl pH 8.4, 50 mM KCl), 1 mM each
+primer, 2.5mM MgCl2, 0.25mM each dNTP, 0.5 unit Taq polymerase (Promega). The
+PCR program was 3 min at 95 C for one cycle, 30 s at 94 C, 45 s at 50 C, 2 min at 72 C
+for 35 cycles, 10 min at 72 C for one cycle. PCR products were resolved on a 1.0%agarose
+gel and visualized by staining with ethidium bromide. PCR products were puriﬁed with
+the AMPure XP kit (Beckman) and sequenced by DiNAMYCODE srl (Turin, Italy).
+Sequences were assembled and edited with the phred/phrap/consed software suite and
+submitted to GenBank (Tab. 2).
+[@Sequence alignment and phylogenetic analysis#Section-header*]
+
+Sequences included in the phylogenetic analyses were generated in this study
+(Tab. 2) or retrieved from GenBank. GenBank sequences were selected based on other
+phylogenetic studies on Agaricales (Moncalvo et al. 2002; Matheny et al. 2006; Justo et al.
+2011). Limnoperdon incarnatum (DQ097363) was used as outgroup taxon. Other taxa
+belonging to the Pluteoid clade were included in the analysis for testing the monophyly
+of Melanoleuca.
+Sequences obtained in this study were checked and assembled using Geneious v5.3
+(Drummond et al. 2010). Alignment of the ITS dataset was generated using MAFFT
+v6.814b (Katoh et al. 2002) with default conditions for gap openings and gap extension
+penalties. The alignment was then imported into MEGA 5.0 (Tamura et al. 2011) for
+
+[@ITS sequence analysis of Melanoleuca ... 369#Page-header*]
+
+manual adjustment. Best-ﬁt models were estimated by both the Akaike Information
+Criterion (AIC) and the Bayesian Information Criterion (BIC) using jModelTest 0.1.1
+(Posada 2008) to provide a substitution model for each single alignment. TPM2uf+I+G
+model was chosen. Phylogenetic hypotheses were constructed under Bayesian Inference
+(BI) and Maximum Likelihood (ML) criteria.
+BI of phylogeny using Monte Carlo Markov Chains (MCMC) was carried out with
+MrBayes 3.1.2 (Huelsenbeck & Ronquist 2001). Four incrementally heated simultaneous
+MCMC were run over 10.000.000 generations, under model assumption. Trees were
+sampled every 1.000 generations resulting in an overall sampling of 10.001 trees. The
+“burn-in” value was evaluated using Tracer 1.5 (Rambaut & Drummond 2007). The
+ﬁrst 15% of trees was discarded as “burn-in”. For the remaining trees, a majority rule
+consensus tree showing all compatible partitions was computed to obtain estimates for
+Bayesian Posterior Probabilities (BPP). Branch lengths were estimated as mean values
+over the sampled trees. Only BPP values over 50% are reported in the resulting trees.
+This Bayesian analysis was repeated three times, always using random starting trees and
+random starting values for model parameters to test the independence of the results
+from the revisiting of the prior topologies during chain growth (Huelsenbeck et al.
+2002).
+ML estimation was performed through RAxML v.7.0.4 (Stamatakis 2006) with 1,000
+bootstrap replicates (Felsenstein 1985) using the GTRGAMMAI algorithm to perform
+a tree inference and search for a good topology. Support values from bootstrapping runs
+(MLB) were mapped on the globally best tree using the “-f a” option of RAxML and
+“-x 12345” as a random seed to invoke the novel rapid bootstrapping algorithm. Support
+values for major clades that are supported by either BI and ML analyses are visualized
+in the resulting tree.
+Analysis of the pairwise % identity values (hereafter shortened as P%IV) for the
+Melanoleuca sequences were calculated using MEGA 5.0 (Tamura et al. 2011).#Materials-methods*]
+[@Results#Section-header*]
+
+[@Our phylogenetic results are presented in Fig. 2. The general ITS data matrix
+comprises a total of 105 sequences (including 14 from GenBank). This 898 bp
+dataset contains 621 (69.2%) variable sites, of which 525 (58.4%) are parsimonyinformative. The Bayesian and ML tree topologies are congruent. Our analyses
+show that Melanoleuca is clearly monophyletic (1.0 BPP and 89% MLB). Two
+major clades, A and B, were distinguished within Melanoleuca. Clade A is
+supported by only BI tree with 0.79 BPP, while clade B is well supported with
+1.0 BPP and 99% MLB. Clade A consists of 5 clades (A1–A5, with 10 subclades)
+and clade B of 5 clades (B1–B5, with 3 subclades).#Misc-exposition*]
+[@Discussion#Section-header*]
+[@Melanoleuca and infrageneric classiﬁcation#Section-header*]
+
+[@The Bayesian (1.0 BPP) and ML (89% MLB) analyses strongly support
+Melanoleuca as monophyletic and distributed throughout the ingroup within
+
+[@370 ... Vizzini & al.#Page-header*]
+2 major clades (A and B) with 10 smaller clades (A1–A5 and B1–B5) (Fig. 2).
+The two sequences of M. subsejuncta (Peck) Murrill from GenBank (FJ596898;
+FJ596898) cluster outside Melanoleuca, sister to Amanitaceae; Pﬁster (1984),
+who examined its type, referred the collection to Tricholoma. Results of
+our phylogenetic analyses and the current morphology-based infrageneric
+classiﬁcation of Melanoleuca are not congruent. In particular, our data (Fig.
+2) are incompatible with the tripartite infrageneric Melanoleuca classiﬁcation
+of Bon (1991) and Boekhout (1988, 1999) (Tab. 1). Based on molecular data,
+species traditionally ascribed to subgenus Acystis Bon (= subgenus Melanoleuca
+sensu Boekhout 1988, 1999) do not form a monophyletic assemblage and are
+distributed over the Melanoleuca clade (clade A and B, Fig. 2).
+The fact that acystidiate taxa are not phylogenetically related implies that
+cystidial acquisition and loss have taken place independently during the
+evolution of Melanoleuca and also that this character is homoplastic and
+unsuitable for a natural classiﬁcation of these fungi. Subgenus Acystis should
+therefore be considered an artiﬁcial superﬂuous taxon that is no longer tenable.
+In addition, in some cases (e.g. subclades A4.1 & A4.2; clade B2, Fig. 2),
+cystidiate and non-cystidiate taxa are conspeciﬁc (syntaxic): the acystidiate
+M. sp. 18, M. sp. 2, and M. sp. 1 represent only forms of the cystidiate taxa
+M. pseudoluscina Bon, M. paedida (Fr.) Kühner & Maire, and M. atripes
+Boekhout/M. albifolia Boekhout, respectively. It is conceivable that the shift
+from cystidiate to non-cystidiate basidiomata and vice versa within a single
+species is controlled by a limited number of genes that are switched oﬀ by so far
+unknown environmental factors.#Misc-exposition*]
+[@Most macrocystidiate taxa in subg. Melanoleuca (= Macrocystis Boekhout)
+form clade B (Fig. 2), while the M. cognata complex (A5 clade, = sect. Cognatae)
+nests with all species in subg. Urticocystis to form clade A (Fig. 2). Therefore,
+subg. Melanoleuca as traditionally circumscribed (Bon 1991) is polyphyletic
+and subg. Urticocystis is paraphyletic when sect. Cognatae is excluded. It would
+appear that even cystidial shape is not a reliable character for tracing higher
+phylogenetic relationships.#Misc-exposition*]
+[@Our analysis therefore implies that only two subgenera (clades A and B)
+should be recognized in Melanoleuca:#Misc-exposition*]
+[@Melanoleuca Pat. subg. Melanoleuca, emend. Fontenla, Para & Vizzini#Nomenclature*]
+[@Clade B (the autonymous subgenus, including M. melaleuca), characterized by
+basidiomata with non-septate macrocystidia, or rarely without cystidia.#Description*]
+
+[@Melanoleuca subg. Urticocystis Boekhout, Persoonia 13(4): 400 (1988),
+emend. Fontenla, Para & Vizzini#Nomenclature*]
+
+[@Clade A (type species: M. grammopodia (Bull.) Murrill), comprising taxa mainly with
+urticocystidia but also with macrocystidia and brightly coloured pilei (sect. Cognatae),
+or lacking cystidia.#Description*]
+
+[@ITS sequence analysis of Melanoleuca ... 371#Page-header*]
+[@MCVE 08384 M. sp. 13 A–S3
+ANC M0217 M. grammopodia 1 U2-S3
+ANC M0218 M. grammopodia 2 U1U2-S2
+ANC M0219 M. grammopodia 3 U1-S2
+1/100 ANC M0216 M. grammopodia f. macrocarpa 2 U1-S3
+GC 08310 M. privernensis A-S3
+ANC M0215 M. grammopodia f. macrocarpa 1 U1U2-S3
+0.84/50
+MCVE 04410 M. grammopodia f. macrocarpa 3 U1-S3
+MCVE 04574 M. brevipes 1 U1-S2
+1/100
+1/99
+MCVE 04505 M. brevipes 2 U1-S2
+MCVE 03316 M. sp. 14 U1-S2
+ANC M0220 M. rasilis U1-S3
+1/99
+0.57/- 0.62/MCVE 19627 M. sp. 15 U1-S2
+MCVE 24095 M. sp. 16 U1-S2
+1/95
+0.77/ANC M0223 M. sublanipes 3 U1-S2
+0.67/57
+ANC M0222 M. sublanipes 2 U1-S1
+1/96
+MCVE 01681 M. sp. 17 U1-S1
+ANC M0221 M. sublanipes 1 U1-S1
+ANC M0212 M. exscissa 5 U2-S3
+ANC M0213 M. exscissa 6 U2-S2
+0.95/54
+0.72/ANC M0210 M. exscissa 3 U1U2-S3
+0.99/61
+ANC M0211 M. iris U2-S2
+ANC M0210B M. exscissa 4 U1U2-S3
+0.54/ANC M0209 M. substrictipes var. sarcophylla U2-S2
+ANC M0207 M. exscissa 1 U2-S1
+0.85/
+76
+ANC M0206 M. diverticulata U2-S2
+0.98/85
+1/78
+ANC M0208 M. exscissa 2 U2-S2
+ANC M0214 M. substrictipes 1 U2-S3
+1/96
+0.95/
+MCVE 13934 M. substrictipes 2 U1U2-S3
+77
+1/100 M. verrucipes DQ490642 (U)
+MCVE 09962 M. verrucipes U2-S3
+0.55/ANC M0202 M. striimarginata A-S2
+0.87/70
+MCVE 12645 M. paratristis A-S1
+0.66/ANC M0201 M. graminicola A-S1
+ANC
+M0203
+M.
+angelesiana
+1 A-S1
+1/99
+0.79/ANC M0204 M. angelesiana 2 A-S1
+0.51/ANC M0198 M. pseudopaedida U1-S1
+1/99
+ANC M0197 M. decembris 1 U1-S1
+0.53/MCVE 01573 M. decembris 4 U1-S1
+0.99/
+ANC M0199 M. decembris 2 U1-S1
+89
+0.53/1/99
+ANC M0200 M. decembris 3 U1-S2
+ANC M0007 M. stridula A-S1
+ANC M0205 M. robertiana A-S1
+ANC M0191 M. pseudoluscina 1 U1-S1
+1/98
+0.98/68
+MCVE 14221 M. sp.12 U2-S2
+ANC M0193 M. pseudoluscina 3 U1-S2
+0.65/0.61/66 ANC M0192 M. pseudoluscina 2 U1-S2
+MCVE 14273 M. sp. 18 A-S2
+1/99
+ANC M0195 M. pseudoluscina 5 U2-S1
+ANC M0194 M. pseudoluscina 4 U2-S1
+ANC M0188 M. sp. 2 A-S2
+ANC M0190 M. paedida 2 U1-S1
+0.83/- 0.54/ANC M0189 M. paedida 1 U1-S2
+0.98/ANC M0187 M. electropoda U1U2-S1
+ANC M0196 M. microcephala A-S1
+ANC M0170 M. cognata 2 M2-S2
+1/100
+MCVE 13939 M. cognata 1 M1-S3
+1/99
+ANC M0167 M. arcuata M1M2-S2
+1/89
+0.99/97 MCVE 08389 M. sp. 10 M1M2-S1
+ANC M0178 M. subpulverulenta 2 M1M2-S2
+0.97/72
+ANC M0004 M. subpulverulenta 1 M1M2-S3
+0.79/75
+ANC M0176 M. melaleuca M1M2-S3
+ANC M0177 M. nivea 1 M1-S3
+1/97 MCVE 09821 M. sp. 6 M1-S3
+MCVE 09578 M. nivea 3 M1M2-S3
+0.56/54
+ANC M0179 M. robusta M2-S3
+ANC M0166 M. lanipes M1M2-S2
+0.62/73
+ANC M0175 M. heterocystidiosa 2 M1-S3
+1/95
+ANC M0174 M. heterocystidiosa 1 M1-S3
+ANC M0224 M. sp. 3 M1M2-S2
+MCVE 13410 M. sp. 5 M1-S2
+MCVE 12248 M. sp. 4 M1-S2
+MCVE 08432 M. sp. 11 M2-S3
+ANC M0182 M. albifolia 1 M2-S2
+0.8/ANC M0183 M. nivea 2 M2-S1
+MCVE 01683 M. sp. 8 M2-S3
+0.52/ANC M0181 M. sp. 1 A-S1
+ANC M0180 M. atripes M2-S1
+ANC M0184 M. albifolia 2 M1M2-S3
+ANC M0173 M. strictipes 3 M1-S3
+1/89
+ANC M0172 M. strictipes 2 M1M2-S3
+1/92
+ANC M0171 M. strictipes 1 M1-S3
+1/99
+MCVE 14576 M. evenosa M1-S3
+MCVE 04112 M. subalpina M1-S3
+MCVE 07839 M. oreina M1-S3
+0.74/0.77/MCVE 01687 M. sp. 7 M2-S3
+0.52/MCVE 19223 M. sp. 9 M1-S2
+ANC M0185 M. bataillei M1M2-S2
+MCVE 11243 M. cinereifolia 2 M2-S2
+0.84/54
+MCVE 01471 M. cinereifolia 1 M2-S3
+MCVE 20748 M. cinereifolia 3 M2-S2
+ANC M0186 M. friesii M1-S2
+0.84/56
+
+0.56/-
+
+0.83/-
+
+0.91/80
+0.7/0.88/-
+
+0.62/-
+
+A1.1
+
+A1.2
+
+A1
+
+A1.3
+
+A2.1
+
+A2
+
+clade A
+subgenus Urticocystis
+
+A2.2
+A2.3
+A3.1
+A3.2
+
+A4.1
+
+A3
+
+A4
+
+A4.2
+
+A5
+B1.1
+B1.2
+
+B1
+
+B1.3
+
+B2
+
+clade B
+subgenus Melanoleuca
+
+B3
+B4
+B5
+
+Limacella glioderma AY176451
+Amanita phalloides GQ221842
+Amanita muscaria var. muscaria AB080790
+Macrocystidia cucumis DQ490640
+Melanoleuca
+subsejuncta
+FJ596899
+1/100
+Melanoleuca subsejuncta FJ596898
+Volvopluteus gloiocephalus HM562209
+1/100
+Volvopluteus earlei HM562205
+Pluteus salicinus HM562174
+1/100
+Pluteus cervinus var. cervinus EU486448
+Pluteus romellii HM562183
+1/100
+Pluteus aurantiorugosus HM562121
+Limnoperdon incarnatum DQ097363
+0.08#Table*]
+
+[@Figure 2. Bayesian phylogram obtained from the ITS rDNA sequences of Melanoleuca and other
+taxa of the Pluteoid clade. Limnoperdon incarnatum was used as outgroup taxon. Support values
+(BPP in bold >0.5; MLB >50%) are given above branches. Minor supported clades discussed in the
+text are numbered A1–A5 and B1–B5. Numbers refer to the collections cited in Tab. 2.
+Characters: 1) presence/absence of cheilocystidia and type of cheilocystidia — A = taxa
+without cheilocystidia, U1 = taxa with brevipes-type urticiform cystidia, U2 = taxa with exscissatype urticiform cystidia, U1-U2 = taxa with both types of urticiform cystidia, M1 = taxa with
+fusiform macrocystidia, M2 = taxa with lageniform macrocystidia, M1-M2 = taxa with both type
+of macrocystidia [cystidial types are coded in red (A), blue (U), and green (M)]; 2) spore shape
+(Qm range) – S1 = Qm < 1.40; S2 = 1.40≤ Qm ≤1.60; S3 = Qm > 1.60..#Figure*]
+
+[@372 ... Vizzini & al.#Page-header*]
+[@Basidiospore shape (Qm value) seems to be homoplastic, too variable to use for
+circumscribing sections and subsections as proposed by Bon (1991). For example,
+in subclade A2.1, collections otherwise assignable to M. exscissa (Fr.) Singer show
+a great Qm range, as do M. grammopodia (A1.1) and M. pseudoluscina (A4.1)
+collections (Fig. 2).#Misc-exposition*]
+[@On the contrary, cystidial subtypes may have some value for delimiting small
+clades (Fig. 2). Clades A1 and A3 are formed mainly by taxa with brevipestype urticocystidia and clade A2 by taxa by mainly exscissa-type urticocystidia.#Misc-exposition*]
+[@Clade B1 comprises taxa with mainly fusiform macrocystidia.
+Pileus colour is not a reliable phylogenetic marker at any taxonomic level:
+three collections (ANC M0177, MCVE 09578, ANC M0183) determined
+as M. nivea Métrod ex Boekhout, a species traditionally included in sect.
+Alboﬂavidae based on whitish colouration and presence of macrocystidia (Bon
+1991, Boekhout 1988, 1999; Deschuyteneer 2008), are not placed with other
+species of that section (clade B3) but distributed throughout clade B. The ﬁrst
+collection represents an albinic form of M. melaleuca (B1.1), the second a taxon
+close to M. robusta (Bres.) Fontenla et al. (B1.2), and the third probably an
+albinic form of M. albifolia (B2).#Misc-exposition*]
+[@In conclusion, taxonomically important morphological characters in
+Melanoleuca show a high degree of homoplasy. Although these characters
+are useful for species delimitation, and in some cases for the circumscription
+of sections or groups, they appear insuﬃcient for a phylogenetically correct
+infrageneric concept. A clearer picture will emerge as more Melanoleuca
+diversity is included in future analyses.#Misc-exposition*]
+[@Groupings and species limits#Section-header*]
+
+[@More extensive sampling of Melanoleuca is needed for a revision of the
+whole genus. Additional ITS sequencing is necessary to clarify species limits
+and names for taxa occurring in both Europe and North America. For the time
+being we only make minor comments on some of the infrageneric clades that
+were recovered. These numbered clades and subclades are marked in Fig. 2.
+Subgenus Urticocystis (Clade A): clades A1-A5
+Clade A1 (0.57 BPP, / MLB), cheilocystidia mainly of the brevipes-type or
+rarely absent. Stipe striate longitudinally or not.
+Subclade A1.1 (1.0 BPP, 100% MLB) (= M. grammopodia complex = subsect.
+Grammopodiae). This well supported subclade comprises M. grammopodia
+and M. grammopodia f. macrocarpa Boekhout, all with urticocystidia, and
+M. privernensis and M. sp. 13 without cystidia. All taxa have a distinctly
+longitudinally striate stipe with a pruinose apex. The eight sequences display
+a 96.8 P%IV. Melanoleuca grammopodia f. macrocarpa diﬀers from the type
+
+[@ITS sequence analysis of Melanoleuca ... 373#Page-header*]
+
+only by a stipe that is much shorter than pileus diameter (P%IV = 99.4) and
+so should be considered only a growth form of M. grammopodia. Melanoleuca
+privernensis is diagnosed by non-amyloid spores, unique in Melanoleuca
+(Vizzini et al. 2010). The molecular analysis suggests it might represent an
+aberrant neotenic form of M. grammopodia lacking cystidia with non-amyloid
+spores.#Misc-exposition*]
+[@Subclade A1.2 (0.62 BPP, / MLB) includes M. brevipes (Bull.) Pat., M. rasilis
+(Fr.) Singer, and two unidentiﬁed species (M. sp. 14, M. sp. 15). Melanoleuca
+rasilis is related to M. brevipes based on similar cystidia, grey pileus and stipe
+colours, and a non-longitudinally striate stipe but diﬀers by smaller basidiomes,
+a stipe length equal to the pileus diameter, and broadly ellipsoid coarsely
+ornamented spores (Boekhout 1988, 1999). We also observed that M. rasilis
+has a uniformly white context while M. brevipes has a white pileus context and
+brown stipe context. Molecularly, the two species are clearly diﬀerent (P%IV =
+94.5; Fig. 2).#Misc-exposition*]
+[@Subclade A1.3 (1.0 BPP, 96% MLB) comprises M. sublanipes, M. sp. 16, and
+M. sp. 17. Melanoleuca sublanipes (formally described below) is characterized
+by a tomentose-woolly pileus margin and stipe base. The two M. sp. could be
+conspeciﬁc with M. sublanipes, but their collections lack of macromorphological
+data and descriptions. We here propose the following new diagnosis:#Misc-exposition*]
+[@Melanoleuca sublanipes Fontenla, Para & Vizzini, sp. nov.#Nomenclature*]
+[@MycoBank MB 563140#MB*]
+[@Pileus -10 cm latus, velutinus, obscure griseo-brunneus, ochraceo-brunneus, griseobrunneus, a margine pallescens. Lamellae albae, albidae vel pallide griseo-brunneae. Stipes
+1.5–7 × 0.3–1.1 cm, lanatus deinde solum inferne lanato-ﬂocculosus, in senectute omnino
+pruinoso-ﬂocculosus, argenteus, a basi griseo-brunneus, cum ripercussis cyaneis. Caro in
+pileo albida, in stipite brunnea; odor herbaceus; sapor mitis. Sporae 6.2–9.6 × 3.8–6.6
+µm; in medio 7.56 × 5.54 µm; Q = 1.04–1.70; Qm = 1.36, ellipsoideae, conspicuis verrucis
+singulis, globulosis et amyloideis exornatae. Basidia tetraspora. Cheilocystidia numerosa,
+31–55 × 5–8 µm, pili urticae revocantibus, raro fusoidea. Pilei cutis ad marginem ex
+hyphis erectis, 7–8 µm latis ad instar trichodermatis eﬀormata; hyphae terminales
+cylindricae, usque ad 100 µm longae. Stipitis cutis pilis clavatis aggregatis et caulocystidiis
+multiformibus ornata. Habitat in herbidis locis.#Description*]
+[@Type: Italy, Veneto, Padova, Montegrotto Terme, 07.XI.2008, leg. G. Zecchin (holotype
+ANC M0222).#Type-collection*]
+[@Etymology: the speciﬁc epithet refers to the tomentose-woolly surface of the stipe
+base.#Etymology*]
+
+[@Clade A2 (1.0 BPP, 96% MLB), cheilocystidia mainly of the exscissa-type:
+subclades A2.1, A2.2 and A2.3.#Misc-exposition*]
+[@Subclade A2.1 (0.54 BPP, / MLB) (M. exscissa complex) comprises M. exscissa,
+M. diverticulata, M. iris, and M. substrictipes var. sarcophylla. The nine sequences
+display a 98.5 P%IV. This clade reﬂects an overemphasis on basidiome colour
+
+[@374 ... Vizzini & al.#Page-header*]
+and smell, with some anatomical traits having led to the establishment of
+some superﬂuous species. Melanoleuca iris diﬀers from M. exscissa only in
+the strong and sweet smell recalling Lepista irina (Fr.) H.E. Bigelow (Kühner
+1956, Klán 1983, Bon 1991, Boekhout 1988, 1999; Krieglsteiner 2001, Fontenla
+et al. 2003). Boekhout (1988, 1999) considered it a variety of M. exscissa and
+Krieglsteiner (2001) cited it as only an accidental M. exscissa phenotype; our
+molecular data (P%IV between M. iris and M. exscissa sequences = 98.7) clearly
+support Krieglsteiner. With an intraspeciﬁc variability lower than 3% (Nilsson
+et al. 2008), M. iris should be considered a form of M. exscissa. Melanoleuca
+diverticulata diﬀers from M. exscissa mainly by the presence of elements with
+small outgrowths in the pileipellis (Moreno & Bon 1980). The P%IV between
+M. diverticulata and M. exscissa ANC M0207 and ANC M0208 equals 97.9.
+Our data show that M. substrictipes var. sarcophylla, which Kühner (1978)
+distinguished from the typical variety based on its pinkish lamellae (Kühner
+1978, Bon 1991), is more closely related to M. exscissa than to M. substrictipes
+Kühner (Fig. 2) and should be considered a form of M. exscissa with coloured
+lamellae (P%IV = 98.5).#Misc-exposition*]
+[@Therefore, we propose the following new combinations:#Misc-exposition*]
+[@Melanoleuca exscissa f. iris (Kühner) Fontenla, Para & Vizzini,
+comb. nov., stat. nov.#Nomenclature*]
+
+[@MycoBank MB 563141#MB*]
+[@≡ Melanoleuca iris Kühner, Bull. Soc. Linn. Lyon 25(7): 181 (1956).#Nomenclature*]
+[@The holotype of M. iris apparently missing from G (herbarium where Kühner’s collections
+of Melanoleuca are kept; Fontenla & Para, unpublished data).#Type-collection*]
+
+[@Melanoleuca exscissa f. sarcophylla (Kühner) Fontenla, Para & Vizzini,
+comb. nov., stat. nov.#Nomenclature*]
+
+[@MycoBank MB 563142#MB*]
+[@≡ Melanoleuca substrictipes var. sarcophylla Kühner,
+Bull. Soc. Linn. Lyon 47(1): 52 (1978).#Nomenclature*]
+[@Holotype (G - K 65-24), with morphological features coincident with those of our
+sequenced collection (ANC M0209; Fontenla & Para, unpublished data).#Type-collection*]
+
+[@Melanoleuca exscissa f. diverticulata (G. Moreno & Bon) Fontenla, Para & Vizzini,
+comb. nov., stat. nov.#Nomenclature*]
+
+[@MycoBank MB 563143#MB*]
+[@≡ Melanoleuca diverticulata G. Moreno & Bon, Docum. Mycol. 11(41): 35 (1980).#Nomenclature*]
+[@Holotype (MA - 3662), with morphological features coincident with those of our
+sequenced collection (ANC M0206; Fontenla & Para 2007).#Type-collection*]
+
+[@Subclade A2.2 (0.95 BPP, 77% MLB) The two M. substrictipes collections
+are very similar (P%IV = 99.1). The ﬁrst (ANC M0214) has only urticoid
+exscissa-type cheilocystidia, whereas the second (MCVE 13934) possesses
+
+[@ITS sequence analysis of Melanoleuca ... 375#Page-header*]
+
+both brevipes- and exscissa-type cheilocystidia. Following Bon (1991) the two
+molecularly clearly conspeciﬁc collections would be referred to two diﬀerent
+subsections: the ﬁrst in the subsect. Exscissae (as M. pseudoevenosa Bon ex Bon
+& G. Moreno) and the second in subsect. Grammopodiae. The holotype (G-K
+66-13) is characterized by both types of urticiform cheilocystidia (Fontenla &
+Para 2011).#Misc-exposition*]
+[@Subclade A2.3 (1.0 BPP, 100 % MLB) The two M. verrucipes (Fr.) Singer
+sequences (GenBank DQ490642 and MCVE 09962) are almost identical
+(P%IV = 99.8). The black dotted stipe readily diagnoses the species (Bon 1991,
+Boekhout 1999, Gasparini 2001, Fontenla et al. 2003).#Misc-exposition*]
+[@Clade A3 (0.53 BPP, / MLB), cheilocystidia absent or urticocystidia mainly of
+the brevipes-type. Both pileus and stipe usually (except for M. robertiana)
+dark coloured and lamellae white to whitish. This clade encompasses the
+two acystidiate species, M. robertiana Bon and M. stridula (Fr.) Singer, and
+subclades A3.1 and A3.2.#Misc-exposition*]
+[@Subclade A3.1 (0.66 BPP, / MLB) comprises four acystidiate taxa, M. striimarginata Métrod ex Bon, M. “paratristis,” M. graminicola (Velen.) Kühner
+& Maire, and M. angelesiana A.H. Sm. The ﬁrst three taxa (subg. Acystis sect.
+Acystis in Bon 1991) are morphologically and molecularly (P%IV = 98.2)
+closely related: they share a collybioid habit, white lamellae, and a whitish stipe,
+diﬀering mainly in pileus colour and could probably be reduced to only one
+species, M. graminicola (which would have nomenclatural priority). Melanoleuca
+angelesiana (the 2 sequences with a P%IV = 99.9) is an independent species
+(P%IV = 94.3), distinguished by a tricholomatoid habit, grey lamellae, and
+greenish-brown stipe. The two Italian collections (ANC M0203, ANC M0204)
+show features consistent with the protologue (Smith 1944) and holotype (MICH
+14633) of this North American species (Fontenla & Para, unpub. data).#Misc-exposition*]
+[@Subclade A3.2 (0.99 BPP, 89 % MLB) encompasses M. decembris Métrod
+ex Bon and M. pseudopaedida Bon. Bon (1991) classiﬁed these species as
+acystidiate (subg. Acystis, sect. Decembres), but Fontenla & Para (2008) found
+numerous urticiform cheilocystidia when they studied the type collections.
+Both taxa are characterized by a dark (dark brown-grey to blackish) pileus and
+grey lamellae (Bon 1991). Molecular analysis supports M. pseudopaedida as
+conspeciﬁc with M. decembris (P%IV = 98.1).#Misc-exposition*]
+[@Clade A4 (0.54 BPP, / MLB), cheilocystidia absent or both brevipes- and
+exscissa-type urticocystidia, comprising the acystidiate M. microcephala
+(P. Karst.) Singer and A4.1 and A4.2 subclades. Bon (1991) described
+M. microcephala as having urticiform cystidia, but Fontenla and Para
+(unpub. data) found Karsten’s type collection (H 1604) to be acystidiate.#Misc-exposition*]
+
+[@376 ... Vizzini & al.#Page-header*]
+[@Subclade A4.1 (1.0 BPP, 99 % MLB) contains M. pseudoluscina, M. sp. 12,
+and M. sp. 18. The seven sequences show a P%IV of 97.1. The P%IV (98.6)
+between M. sp. 18 and M. pseudoluscina sequences indicates that M. sp. 18 is an
+acystidiate form of M. pseudoluscina. Our analysis support M. pseudoluscina as
+an independent species and not a variety of M. rasilis (subclade A1.2) as stated
+by Boekhout (1988, 1999).#Page-header*]
+[@Subclade A4.2 (1.0 BPP, 99 % MLB) encompasses M. paedida, M. sp. 2,
+and M. electropoda. The two M. paedida collections are consistent with the
+protologue and the observations by Fontenla et al. (2003). Melanoleuca sp. 2
+is an acystidiate form of M. paedida. Melanoleuca electropoda was reported by
+Bon (1991) as a macrocystidiate species (subg. Melanoleuca, sect. Oreineae);
+after ﬁnding typical urticoid cheilocystidia in the type collection, Fontenla
+et al. (2009) considered M. ruﬁpes Bon a later synonym. As M. electropoda
+diﬀers from M. paedida only in an orange red (instead of brown) stipe base
+and context, we reduce it to a form of M. paedida based on molecular data
+(P%IV = 98.9).#Page-header*]
+[@Melanoleuca paedida f. electropoda (Maire & Malençon) Fontenla, Para & Vizzini,
+comb. nov., stat. nov.#Nomenclature*]
+
+[@MycoBank MB 563144#MB*]
+[@≡ Melanoleuca electropoda Maire & Malençon, Fl. Champ. sup. Maroc 2: 77 (1975).#Nomenclature*]
+
+[@Clade A5 (1.0 BPP, 99% MLB) (= sect. Cognatae), macrocystidiate taxa with
+bright coloured pilei.#Description*]
+[@Melanoleuca cognata (Fr.) Konrad & Maubl. and M. arcuata (Bull.) Singer are
+two independent species (P%IV = 95.4). Melanoleuca arcuata diﬀers by having
+a brown pileus and yellow-ochre lamellae only at maturity. The collection
+named M. sp. 10 is probably referable to a new species (P%IV = 93.1), but its
+macromorphological data are lacking.#Misc-exposition*]
+[@Subgenus Melanoleuca (Clade B): clades B1-B5 + M. friesii (Fr.) Singer (a
+species characterized by a dark-brown blackish, slate-grey pileus, whitish
+lamellae and mainly lageniform cystidia).#Misc-exposition*]
+[@Clade B1 (1.0 BPP, 95% MLB), macrocystidia both fusiform and lageniform,
+pileus mainly grey-brown and lamellae white to grey. It encompasses the
+subclades B1.1, B1.2, B1.3 + 4 M. sp. (M. sp. 3, M. sp. 4, M. sp. 5 and M.
+sp. 11).#Misc-exposition*]
+[@Subclade B1.1 (0.79 BPP, 75 % MLB) comprises M. subpulverulenta
+(Pers.) Singer, M. melaleuca and M. nivea 1. The four collections are closely
+related (P%IV = 98.6) despite their morphological diﬀerences. Melanoleuca
+subpulverulenta is characterized by a pruinose matte grey pileus, pruinose stipe,
+
+[@ITS sequence analysis of Melanoleuca ... 377#Page-header*]
+
+and dark context; M. melaleuca has a grey-brown non-pruinose pileus, nonpruinose stipe, and whitish context sometimes darkening towards the stipe
+base. The M. nivea 1 collection (ANC M0177) we originally referred to M. nivea
+due to its whitish colours (sect. Alboﬂavidae) and <5 cm pileus represents only
+an albinic form of the M. subpulverulenta/M. melaleuca complex; its features
+nonetheless match those of the M. nivea holotype (PC–2434) (Fontenla & Para,
+unpublished data).#Misc-exposition*]
+[@Subclade B1.2 (0.56 BPP, 45 % MLB) comprises M. sp. 6, M. nivea 3, and
+M. robusta, with the latter distinguished by a grey-brown pileus, grey lamellae,
+brown context, caespitose growth, and mainly fusiform macrocystidia.
+Melanoleuca nivea 3 is very close to an unidentiﬁed collection (M. sp. 6)
+characterized by a grey pileus.#Misc-exposition*]
+[@Subclade B1.3 (0.62 BPP, 73 % MLB) consists of two molecularly closely
+related taxa (P%IV = 98.8), M. “lanipes” and M. heterocystidiosa (Beller &
+Bon) Bon that have both lageniform and fusiform macrocystidia. Melanoleuca
+lanipes, which has dark grey-brown lamellae, strongly longitudinally striate
+dark grey stipe covered with woolly ﬂocci, and blackish stipe base, resembles
+M. cognata but with a tomentose-wooly stipe.#Misc-exposition*]
+[@Clade B2 (0.52 BPP, / MLB), mainly lageniform cystidia, longitudinally striate
+and brown to dark brown stipe.#Misc-exposition*]
+[@Clade B2 is formed by M. albifolia, M. atripes, M. nivea 2, M. sp. 1 and
+M. sp. 8. All six sequences are closely related (P%IV = 97.6). Morphologically,
+M. albifolia is well characterized by a rather small size (2.5-5 cm diam), dark
+sepia-brown pileus, white lamellae, grey-brown stipe, and lageniform cystidia
+(Boekhout 1988, 1999; Bon 1991); M. atripes has a hygrophanous blackish
+brown pileus, dark brown stipe, yellowish beige lamellae, and mainly fusiform
+cystidia (Boekhout 1988, 1999; Bon 1991). In contrast, our M. atripes collection
+(ANC M0180) shows mainly lageniform cystidia.#Misc-exposition*]
+[@The sequence analysis did not support any independent species in the
+clade. M. nivea 2 is probably an albinic form of the M. albifolia/M. atripes
+complex while M. sp. 1 is the only acystidiate collection nested within subgen.
+Melanoleuca (clade B).#Misc-exposition*]
+[@Clade B3 (1.0 BPP, 92% MLB), macrocystidia mainly fusiform, basidiome
+white to cream-whitish (sect. Alboﬂavidae).#Misc-exposition*]
+[@Clade B3 comprises M. strictipes (P. Karst.) Jul. Schäﬀ., M. evenosa (Sacc.)
+Konrad, and M. subalpina (Britzelm.) Bresinsky & Stangl. The ﬁve samples are
+very closely related (P%IV = 98.4) and have characters consistent with those of the
+original collections. Bon (1991) circumscribed the species in sect. Alboﬂavidae
+mainly based on Qm value, odour, pileus size, and stipe ornamentation. We
+
+[@378 ... Vizzini & al.#Page-header*]
+have now examined morphologically the holotype of M. strictipes (H 2432,
+Fontenla & Para, unpubl.), lectotype of M. subalpina (Fontenla & Para 2008),
+and eight original Tricholoma cnista sensu Bresadola (= M. evenosa) collections
+(TR, BPI). This, combined with our thorough study of the original diagnoses
+and phylogenetic analysis, lead us to conclude that M. strictipes, M. evenosa,
+and M. subalpina are conspeciﬁc, with the name M. strictipes having priority.
+Clade B4 (0.52 BPP, / MLB), cystidia fusiform or lageniform, pileus small (up
+to 5 cm broad) and not dark-coloured, lamellae whitish-cream, context
+white.#Misc-exposition*]
+[@Clade B4 comprises M. oreina (Fr.) Kühner & Maire, M. bataillei Malençon,
+M. sp. 7, and M. sp. 9. The ﬁrst two species, which are phenetically very similar,
+diﬀer mainly on cystidial shape. Bon (1991) placed M. oreina (with fusiform
+cystidia) into sect. Oreinae and M. bataillei (with mainly lageniform cystidia)
+into sect. Melanoleuca. Molecularly, they are quite distinct (P%IV = 92.5).#Misc-exposition*]
+[@Clade B5 (0.84 BPP, 54% MLB) consists of the three M. cinereifolia (Bon) Bon
+sequences (P%IV = 100).#Misc-exposition*]
+[@Melanoleuca cinereifolia is distinguished by a habit reminiscent of Clitocybe
+nebularis (Batsch) P. Kumm., always grey lamellae, short stipe, strictly
+lageniform (M2) cystidia, and growth in sand dunes.#Misc-exposition*]
+[@Acknowledgements
+
+We are grateful to G. Robich (Venice) for having sent us the Melanoleuca samples
+from MCVE DNA bar-coded by Dr. M. Garbelotto (University of California, Berkeley).
+Dr. Matteo Garbelotto and Dr. Todd Osmundson (University of California, Berkeley)
+kindly provided us with pre-submission Melanoleuca sequences. We also thank Dr.
+Vladimír Antonín (Brno, Czech Republic) and Dr. Marco Contu (Olbia, Italy) for their
+pre-submission reviews and Dr. Shaun Pennycook (Auckland, New Zealand) for the
+nomenclatural review.#Acknowledgements*]
+[@Literature cited
+Binder M, Hibbett DS, Wang Z, Farnham W. 2006. Evolutionary relationships of Mycaureola dilseae
+(Agaricales), a basidiomycete pathogen of a subtidal rhodophyte. Am. J. Bot. 93: 547–556.
+http://dx.doi.org/10.3732/ajb.93.4.547
+Bodensteiner P, Binder M, Moncalvo JM, Agerer R, Hibbett DS. 2004. Phylogenetic relationships of
+cyphelloid homobasidiomycetes. Mol. Phylogenet. Evol. 33: 501–515.
+http://dx.doi.org/10.1016/j.ympev.2004.06.007
+Boekhout T. 1988. Notulae ad ﬂoram agaricinam neerlandicam, XVI – New taxa, new combinations
+in Melanoleuca Pat. and notes on rare species in the Netherlands. Persoonia 13(4): 397–431.
+Boekhout T. 1999. Melanoleuca. 153–165, in: C Bas et al. (eds). Flora Agaricina Neerlandica 4.
+A.A. Balkema, Rotterdam.
+Bon M. 1978. Tricholomataceae de France et d’Europe occidentale (Leucopaxilloideae). Doc. Mycol.
+9(33): 1–79.
+
+[@ITS sequence analysis of Melanoleuca ... 379#Page-header*]
+Bon M. 1991. Flore mycologique d’Europe, 2 – Les Tricholomes et ressemblants. Doc. Mycol.,
+Mém. hors-Sér. 2: ii, 163 p.
+Bresinsky A. 2006. Observations on Mycobiota in Estonia. Folia Cryptogamica Estonica 42: 1–9.
+Deschuyteneer D. 2008. Contribution à l’étude de Melanoleuca nivea. Revue du Cercle de Mycologie
+de Bruxelles 8: 57–64.
+Drummond AJ, Ashton B, Cheung M, Heled J, Kearse M, Moir R, Stones-Havas S, Thierer T, Wilson
+A. 2010. Geneious v5.3. [Available from http://www.geneious.com].
+Felsenstein J. 1985. Conﬁdence limits on phylogenies: an approach using the bootstrap. Evolution
+39: 783–791. http://dx.doi.org/10.2307/2408678
+Fontenla R, Para R. 2007. Osservazioni sul genere Melanoleuca. Studio dei tipi I. Rivista di
+Micologia 50(3): 221–236.
+Fontenla R, Para R. 2008. Osservazioni sul genere Melanoleuca. Studio dei tipi II. Rivista di
+Micologia 51(2): 147–162.
+Fontenla R, Para R. 2011. Observations on Melanoleuca. Type studies – 3. Mycotaxon 115: 215–226.
+http://dx.doi.org/10.5248/115.215
+Fontenla R, Gottardi M, Para R. 2003. Osservazioni sul genere Melanoleuca. Fungi non delineati.
+Pars XXV. Ed. Candusso. Alassio.
+Fontenla R, Gottardi M, Para R. 2009. Il genere Melanoleuca. 399–405, in: J-C Maire et al. (eds).
+Compléments à la Flore des champignons supérieurs du Maroc de G. Malençon et R. Bertault.
+Confédération Européenne de Mycologie Méditerranéenne, Nice.
+Gardes M, Bruns TD. 1993. ITS primers with enhanced speciﬁcity for basidiomycetes – application
+to the identiﬁcation of mycorrhizae and rusts. Mol. Ecol. 2(2): 113–118. http://dx.doi.
+org/10.1111/j.1365-294X.1993.tb00005.x
+Gasparini G. 2001. Melanoleuca verrucipes: una rara specie segnalata anche in Italia. Rivista di
+Micologia 44(2): 171–174.
+Gillman LS, Miller OK. 1977. A study of the boreal, alpine, and arctic species of Melanoleuca.
+Mycologia 69: 927–951. http://dx.doi.org/10.2307/3758777
+Horak E. 2005. Röhrlinge und Blätterpilze in Europa. Spektrum, Elsevier, Heidelberg.
+Huelsenbeck JP, Larget B, Miller RE, Ronquist F. 2002. Potential applications and pitfalls of Bayesian
+inference of phylogeny. Syst. Biol. 5: 673–688.
+Huelsenbeck JP, Ronquist F. 2001. MrBayes: Bayesian inference of phylogenetic trees. Bioinformatics
+17: 754–755. http://dx.doi.org/10.1093/bioinformatics/17.8.754
+Justo A, Vizzini A, Minnis AM, Menolli Jr N, Capelari M, Rodriguez O, Malysheva E, Contu M,
+Ghingnone S, Hibbett DS. 2011. Phylogeny of the Pluteaceae (Agaricales, Basidiomycota):
+taxonomy and character evolution. Fungal Biology 115: 1–20.
+http://dx.doi.org/10.1016/j.funbio.2010.09.012
+Katoh K, Misawa K, Kuma K, Miyata T. 2002. MAFFT: a novel method for rapid multiple sequence
+alignment based on fast Fourier transform. Nucleic Acids Res. 30: 3059–3066.
+http://dx.doi.org/10.1093/nar/gkf436
+Kirk PM, Cannon PF, Minter DW, Stalpers JA. 2008. Ainsworth and Bisby’s dictionary of the fungi.
+10th ed. CABI, Wallingford.
+Klán J. 1983. Melanoleuca iris in Czechoslovakia (Agaricales, Tricholomataceae). Česká Mykologie
+37(1): 52–55.
+Krieglsteiner GJ. 2001. Die Grosspilze Baden-Würtembergs vol. 3. Stuttgart.
+Kühner R. 1956. Un Melanoleuca parfumé: M. iris sp. nov. et l’espèce voisine: M. excissa (Fr.) Bull.
+Soc. Linn. Lyon 25: 176–181.
+Kühner R. 1978. Agaricales de la zone alpine. Genre Melanoleuca. Bull. Soc. Linn. Lyon 47: 12–52.
+
+[@380 ... Vizzini & al.#Page-header*]
+Matheny PB, Curtis JC, Hofstetter V, Aime MC, Moncalvo JM, Ge ZW, Yang ZL, Slot JC, Ammirati
+JF, Baroni TJ, Bougher NL, Hughes KW, Lodge DJ, Kerrigan RW, Seidl MT, Aanen DK, DeNitis
+M, Daniele GM, Desjardin DE, Kropp BR, Norvell LL, Parker A, Vellinga EC, Vilgalys R,
+Hibbett DS. 2006. Major clades of Agaricales: a multi-locus phylogenetic overview. Mycologia
+98: 982–995. http://dx.doi.org/10.3852/mycologia.98.6.982
+Métrod G. 1942. Sur le genre Melanoleuca. Revue Mycol. 7(2–4): 89–96.
+Métrod G. 1948. Essai sur le Genre Melanoleuca Patouillard emend. Bull. Soc. Mycol. France 64:
+141–165.
+Moncalvo JM, Lutzoni FM, Rehner SA, Johnson J, Vilgalys R. 2000. Phylogenetic relationships of
+agaric fungi based on nuclear large subunit ribosomal DNA sequences. Syst. Biol. 49: 278–305.
+http://dx.doi.org/10.1093/sysbio/49.2.278
+Moncalvo JM, Vilgalys R, Redhead SA, Johnson JE, James TY, Aime MC, Hofstetter V, Verduin
+SJW, Larsson E, Baroni TJ, Thorn RG, Jacobsson S, Clémençon H, Miller OK. 2002.
+One hundred and seventeen clades of euagarics. Mol. Phylogenet. Evol. 23: 357–400.
+http://dx.doi.org/10.1016/S1055-7903(02)00027-1
+Moreno G, Bon M. 1980. Quelques espèces intéressantes ou nouvelles du genre Melanoleuca
+récoltées en Espagne. Doc. Mycol. 11(41): 35–46.
+Moser M. 1983. Die Röhrlinge und Blätterpilze. 5th ed. Kleine Kryptogamenﬂora, Band II b/2.
+G. Fischer, Stuttgart, New York.
+Nilsson RH, Kristiansson E, Ryberg M, Hallenberg N, Larsson K-H. 2008. Intraspeciﬁc ITS
+variability in the Kingdom Fungi as expressed in the International Sequence Databases and its
+implications for molecular species identiﬁcation. Evol. Bioinf. 4: 193–201.
+Pegler DN, Young TWK. 1973. Basidiospore form in the British Leucopaxilleae. Kew Bulletin 28(3):
+365–379. http://dx.doi.org/10.2307/4108880
+Pﬁster J. 1984. Études des types de Peck et de Murrill appartenant ou ayant appartenu au genre
+Melanoleuca. Mycotaxon 19: 101–132.
+Posada D. 2008. jModeltest: phylogenetic model averaging. Mol. Biol. Evol. 25: 1253–1256.
+http://dx.doi.org/10.1093/molbev/msn083
+Rambaut A, Drummond AJ. 2007. Tracer v1.4. [Available from http://beast.bio.ed.ac.uk/Tracer].
+Singer R. 1935. Étude systématique sur les Melanoleuca d’Europe et clé des espèces observées en
+Catalogne. Cavanillesia 7: 122–132.
+Singer R. 1943. Das system der Agaricales III. Annales Mycologici 41: 1–189.
+Singer R. 1986. The Agaricales in modern taxonomy, 4th edn. Koeltz Scientiﬁc Books,
+Koenigstein.
+Smith AH. 1944. New North American agarics. Mycologia 36(3): 242–262.
+http://dx.doi.org/10.2307/3754821
+Stamatakis A. 2006. RAxML-VI-HPC: Maximum Likelihood-based phylogenetic analyses with
+thousands of taxa and mixed models. Bioinformatics 22: 2688–2690.
+http://dx.doi.org/10.1093/bioinformatics/btl446
+Tamura K, Peterson D, Peterson N, Stecher G, Nei M, Kumar S. 2011. MEGA5: Molecular
+Evolutionary Genetics Analysis using Maximum Likelihood, Evolutionary Distance, and
+Maximum Parsimony Methods. Mol. Biol. Evol. (in press).
+http://dx.doi.org/10.1093/molbev/msr121
+Thiers B. 2011. (continuously updated). Index Herbariorum: A global directory of public herbaria
+and associated staﬀ. – New York Botanical Garden’s Virtual Herbarium. http://sweetgum.nybg.
+org/ih/
+Vesterholt J. 2008. Melanoleuca Pat. 347–352, in: H Knudsen, J. Vesterholt (eds). Funga Nordica
+– Agaricoid, boletoid and cyphelloid genera. Nordsvamp, Copenhagen.
+
+[@ITS sequence analysis of Melanoleuca ... 381#Page-header*]
+Vizzini A, Consiglio G, Setti L, Murat C. 2010. The agaricoid genus Kinia is a new member of the
+Pluteoid clade subordinate to Melanoleuca. Mycosphere 1(2): 141–145.
+Watling R, Turnbull E. 1998. Cantharellaceae, Gomphaceae and amyloid-spored and xeruloid
+members of Tricholomataceae (excl. Mycena). British Fungus Flora, Agarics and Boleti 8. Royal
+Botanic Gardens Edinburgh.
+White TJ, Bruns TD, Lee S, Taylor J. 1990. Ampliﬁcation and direct sequencing of fungal ribosomal
+RNA genes for phylogenetics. 315–322, in: MA Innis et al. (eds). PCR Protocols. Academic
+Press, London.#Bibliography*]
+
+[@#Page-header*]
