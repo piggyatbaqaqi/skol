@@ -8,7 +8,7 @@ import argparse
 import csv
 import re
 import sys
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 import tokenizer
 
@@ -16,7 +16,7 @@ class MycoBankAuthors(tokenizer.HashTokenizer):
 
     _filename = 'data/species/Export.csv'
 
-    _extra_regex = []
+    _extra_regex: List[str] = []
 
     def read_records(self) -> Iterator[str]:
         for record in csv.DictReader(self.contents()):

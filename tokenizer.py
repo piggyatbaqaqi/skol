@@ -3,19 +3,20 @@
 import abc
 import csv
 import re
-from typing import Any, Iterable, List, Optional, Set, Union
+from typing import Any, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 class Tokenizer(object):
 
     _metaclass_ = abc.ABCMeta
-    _file = ...  # type: Optional[Iterable[str]]
-    _data = ...  # type: Optional[Iterable[str]]
-    _pattern = ...  # type: Union[re._pattern_type, Set[str]]:
+    _file: Optional[Iterable[str]]
+    _pattern: Union[Any, Set[str]]
     # These go at the beginning of the regex.
-    _extra_regex = ...  # type: List[str]
-    _filename = ...  # type: Optional[str]
+    _extra_regex: List[str]
 
-    def __init__(self, filename: Optional[str] = None, data: Optional[Iterable[str]] = None):
+    _filename: Optional[str]
+    _data: Optional[Iterable[str]]
+
+    def __init__(self, filename: Optional[str] = None, data: Optional[Iterable[str]] = None) -> None:
         if filename is None:
             filename = self._filename
         if filename:
@@ -28,7 +29,7 @@ class Tokenizer(object):
 
         self._file.close()
 
-    def build_pattern(self) -> Union[re._pattern_type, Set[str]]:
+    def build_pattern(self) -> Union[Any, Set[str]]:
         return '|'.join(
             self._extra_regex +
             sorted(set([self.make_pattern(word) for word in self.read_records()]),
@@ -50,7 +51,7 @@ class Tokenizer(object):
     def match(self, word: str):
         return(re.match(self._pattern, word.lower()))
 
-    def tokenize(self, line: str) -> (Any, str):
+    def tokenize(self, line: str) -> Iterator[Tuple[Any, str]]:
         """Consume tokens that match the pattern.
 
         Also consumes whitespace.
@@ -81,7 +82,7 @@ class HashTokenizer(Tokenizer):
     def split(self, line: str) -> List[str]:
         return line.split()
 
-    def tokenize(self, line: str) -> (Any, str):
+    def tokenize(self, line: str) -> Iterator[Tuple[Any, str]]:
         """Consume tokens that match the pattern.
 
         Also consumes whitespace.
