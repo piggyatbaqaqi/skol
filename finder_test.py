@@ -444,12 +444,15 @@ class TestParser(unittest.TestCase):
         Ceratocystis spp. nov. (Brazil) ... 391
         """).split('\n'))
                                             
-        expected1 = textwrap.dedent("""\
+        expected0 = '\n'
+
+        expected2 = textwrap.dedent("""\
         Ceratocystis spp. nov. (Brazil) ... 391
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
         
-        self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[2]), expected2)
         
     def test_table_short(self):
         test_data = lineify(textwrap.dedent("""\
@@ -462,7 +465,7 @@ class TestParser(unittest.TestCase):
 
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""").split('\n'))
 
-        expected0 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         Table 1.
 
         short
@@ -472,14 +475,14 @@ class TestParser(unittest.TestCase):
 
         """)
 
-        expected1 = textwrap.dedent("""\
+        expected2 = textwrap.dedent("""\
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(str(paragraphs[2]), expected2)
 
     def test_figure(self):
         test_data = lineify(textwrap.dedent("""\
@@ -540,30 +543,30 @@ class TestParser(unittest.TestCase):
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
         """).split('\n'))
 
-        expected0 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor
         incididunt ut labore et dolore
         """)
-        expected1 = textwrap.dedent("""\
+        expected2 = textwrap.dedent("""\
         magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
         nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
         in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         """)
         # Final table ends with two newlines.
-        expected2 = textwrap.dedent("""\
+        expected3 = textwrap.dedent("""\
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
 
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertTrue(paragraphs[0].is_table())
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertFalse(paragraphs[1].is_table())
+        self.assertTrue(paragraphs[1].is_table())
         self.assertEqual(str(paragraphs[2]), expected2)
-        self.assertTrue(paragraphs[2].is_table())
+        self.assertFalse(paragraphs[2].is_table())
+        self.assertEqual(str(paragraphs[3]), expected3)
+        self.assertTrue(paragraphs[3].is_table())
 
 
 class TestLabeling(unittest.TestCase):
@@ -621,14 +624,13 @@ class TestLabeling(unittest.TestCase):
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        self.assertEqual(len(paragraphs), 7)
+        self.assertEqual(len(paragraphs), 6)
         self.assertEqual(paragraphs[0].labels, [Label('Title')])
         self.assertEqual(paragraphs[1].labels, [Label('Author')])
         self.assertEqual(paragraphs[2].labels, [Label('Institution')])
         self.assertEqual(paragraphs[3].labels, [])  # correspondence
-        self.assertEqual(paragraphs[4].labels, [Label('Abstract')])
-        self.assertEqual(paragraphs[5].labels, [Label('Key-words')])
-        self.assertEqual(paragraphs[6].labels, []) # Paragraph('\n')
+        self.assertEqual(paragraphs[4].labels, [Label('Abstract'), Label('Key-words')])
+        self.assertEqual(paragraphs[5].labels, []) # Paragraph('\n')
 
 
 class TestTargetClasses(unittest.TestCase):
