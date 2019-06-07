@@ -96,6 +96,10 @@ class Line(object):
     _empirical_page_number: Optional[str]
     _file = None
 
+    _TABLE = [
+        'table', 'tab.', 'tab', 'tbl.', 'tbl',
+    ]
+
     def __init__(self, line: str, fileobj: Optional[File] = None) -> None:
         self._value = line.strip(' \n')
         self._filename = None
@@ -155,8 +159,16 @@ class Line(object):
         if match:
             raise ValueError('Label close not at end of line: %r' % self)
 
-    def startswith(self, *args, **kwargs) -> bool:
-        return self._value.startswith(*args, **kwargs)
+    def startswith(self, tokens: Union[str, List[str]]) -> bool:
+        if not self._value:
+            return False
+        if isinstance(tokens, str):
+            return self._value.startswith(tokens)
+        tokenized = self._value.strip().split()
+        if not tokenized:
+            return False
+        first_token = tokenized[0].lower()
+        return first_token in tokens
 
     def endswith(self, *args, **kwargs) -> bool:
         return self._value.endswith(*args, **kwargs)
@@ -169,6 +181,9 @@ class Line(object):
 
     def is_blank(self) -> bool:
         return self._value == ''
+
+    def is_table(self) -> bool:
+        return self.startswith(self._TABLE)
 
     def contains_start(self) -> bool:
         return self._label_start
@@ -391,9 +406,9 @@ class Paragraph(object):
         ])
 
     def is_table(self) -> bool:
-        return self.startswith([
-            'table', 'tab.', 'tab', 'tbl.', 'tbl'
-        ])
+        if not self._lines:
+            return False
+        return self._lines[0].is_table()
 
     def is_key(self) -> bool:
         return self.startswith('key to')
@@ -493,7 +508,7 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
             yield retval
             continue
 
-        # Page break line is a whole paragraph.
+        # Page break is a whole paragraph.
         if pp.is_page_header():
             (retval, pp) = pp.next_paragraph()
             yield retval
@@ -536,8 +551,8 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
             yield retval
             continue
 
-        # A period before a newline marks the end of a paragraph.
-        if pp.detect_period():
+        # A table starts a new paragraph.
+        if pp.next_line.is_table():
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
@@ -548,8 +563,12 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
             yield retval
             continue
 
-        # Year in parens ends a taxon.
-        if pp.last_line and pp.last_line.search(r'\(\d\d\d\d\)$'):
+        # A taxon ends in nov., nov. comb., or a year within 3
+        # characters of the end followed by an optional figure
+        # specifier.
+        if pp.last_line and pp.last_line.search(
+                r'(nov\.|nov\.\s?comb\.|\b[12]\d{3}\b.{0,3})'
+                r'\s*([[(]Fig[^])]*[])]?)?$'):
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
