@@ -26,6 +26,7 @@ class LTWA(tokenizer.Tokenizer):
     # I'd like to infer these.
     _places = [
         'andaman',
+        'brésil',
         'byochugaizashi',
         'corboda',
         'cornell',

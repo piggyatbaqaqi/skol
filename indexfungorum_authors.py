@@ -18,7 +18,7 @@ class IndexFungorumAuthors(tokenizer.HashTokenizer):
 
     _filename = 'data/authors/FungalNameAuthors.txt'
 
-    _extra_words: List[str] = ['ex', 'in', ':']
+    _extra_words: List[str] = ['apud', 'ex', 'in', ':']
 
     def split(self, line: str) -> List[str]:
         return line.translate(str.maketrans(',[]()-', '      ')).split()
