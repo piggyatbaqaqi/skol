@@ -18,7 +18,7 @@ class LTWA(tokenizer.Tokenizer):
     # These go at the beginning of the regex.
     _extra_regex = [
         r'\b[mdclxvi]+\b',  # Roman numerals.
-        r'[-(),&.:\']',     # Extra punctuation.
+        r'[-(),&.:\'|]',     # Extra punctuation.
         r'\d+',             # Numbers.
         r'\w+ea',
     ]
@@ -35,6 +35,8 @@ class LTWA(tokenizer.Tokenizer):
         'java',
         'matsushima',
         'oesterreich',
+        'padova',
+        'parma',
         'rico',
         'roma',
         'sada',
@@ -47,6 +49,7 @@ class LTWA(tokenizer.Tokenizer):
         'torrey',
         'tottori',
         'ussr',
+        'verona',
         'wien',
         'wisc.',
         'yamagata',
@@ -82,6 +85,7 @@ class LTWA(tokenizer.Tokenizer):
         'niz.',  # Russian
         'nova',
         'nuova',
+        'nuovo',
         'of',
         'orto',  # Italian 'garden'
         'para',
