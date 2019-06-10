@@ -1,0 +1,343 @@
+$ python3 finder.py --test_classifiers_by_label --fast data/annotated/journals/Mycotaxon/Vol*/*.ann
+BernoulliNB with CountVectorizer elapsed time 1.236246109008789
+                 precision    recall  f1-score   support
+
+    Description       0.57      0.60      0.58       627
+Misc-exposition       0.92      0.97      0.95     11332
+   Nomenclature       0.77      0.17      0.27       793
+
+    avg / total       0.90      0.90      0.89     12752
+
+Confusion matrix
+[[  374   251     2]
+ [  273 11022    37]
+ [    6   655   132]]
+BernoulliNB with TfidfVectorizer elapsed time 1.2670068740844727
+                 precision    recall  f1-score   support
+
+    Description       0.57      0.60      0.58       627
+Misc-exposition       0.92      0.97      0.95     11332
+   Nomenclature       0.77      0.17      0.27       793
+
+    avg / total       0.90      0.90      0.89     12752
+
+Confusion matrix
+[[  374   251     2]
+ [  273 11022    37]
+ [    6   655   132]]
+RandomForestClassifier with CountVectorizer elapsed time 14.797060012817383
+                 precision    recall  f1-score   support
+
+    Description       0.85      0.63      0.72       627
+Misc-exposition       0.96      0.99      0.97     11332
+   Nomenclature       0.89      0.67      0.76       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  395   232     0]
+ [   69 11200    63]
+ [    2   261   530]]
+RandomForestClassifier with TfidfVectorizer elapsed time 12.438579082489014
+                 precision    recall  f1-score   support
+
+    Description       0.88      0.61      0.72       627
+Misc-exposition       0.96      0.99      0.98     11332
+   Nomenclature       0.91      0.73      0.81       793
+
+    avg / total       0.95      0.96      0.95     12752
+
+Confusion matrix
+[[  385   242     0]
+ [   50 11225    57]
+ [    2   209   582]]
+AdaBoostClassifier with CountVectorizer elapsed time 4.218286752700806
+                 precision    recall  f1-score   support
+
+    Description       0.57      0.60      0.59       627
+Misc-exposition       0.95      0.95      0.95     11332
+   Nomenclature       0.63      0.52      0.57       793
+
+    avg / total       0.91      0.91      0.91     12752
+
+Confusion matrix
+[[  378   247     2]
+ [  287 10803   242]
+ [    0   378   415]]
+AdaBoostClassifier with TfidfVectorizer elapsed time 5.628904581069946
+                 precision    recall  f1-score   support
+
+    Description       0.62      0.56      0.59       627
+Misc-exposition       0.94      0.96      0.95     11332
+   Nomenclature       0.65      0.50      0.57       793
+
+    avg / total       0.91      0.91      0.91     12752
+
+Confusion matrix
+[[  354   273     0]
+ [  216 10906   210]
+ [    2   393   398]]
+ExtraTreesClassifier with CountVectorizer elapsed time 8.764100551605225
+                 precision    recall  f1-score   support
+
+    Description       0.75      0.68      0.71       627
+Misc-exposition       0.96      0.98      0.97     11332
+   Nomenclature       0.83      0.64      0.73       793
+
+    avg / total       0.94      0.94      0.94     12752
+
+Confusion matrix
+[[  424   203     0]
+ [  136 11093   103]
+ [    2   280   511]]
+ExtraTreesClassifier with TfidfVectorizer elapsed time 8.045442581176758
+                 precision    recall  f1-score   support
+
+    Description       0.81      0.67      0.73       627
+Misc-exposition       0.96      0.98      0.97     11332
+   Nomenclature       0.85      0.66      0.74       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  422   205     0]
+ [   98 11144    90]
+ [    2   267   524]]
+GradientBoostingClassifier with CountVectorizer elapsed time 25.600780248641968
+                 precision    recall  f1-score   support
+
+    Description       0.86      0.56      0.68       627
+Misc-exposition       0.94      0.99      0.97     11332
+   Nomenclature       0.90      0.47      0.62       793
+
+    avg / total       0.93      0.94      0.93     12752
+
+Confusion matrix
+[[  351   275     1]
+ [   57 11232    43]
+ [    2   415   376]]
+GradientBoostingClassifier with TfidfVectorizer elapsed time 45.3174729347229
+                 precision    recall  f1-score   support
+
+    Description       0.87      0.57      0.69       627
+Misc-exposition       0.95      0.99      0.97     11332
+   Nomenclature       0.92      0.54      0.68       793
+
+    avg / total       0.94      0.94      0.94     12752
+
+Confusion matrix
+[[  358   269     0]
+ [   52 11243    37]
+ [    2   365   426]]
+DecisionTreeClassifier with CountVectorizer elapsed time 13.789082765579224
+                 precision    recall  f1-score   support
+
+    Description       0.67      0.69      0.68       627
+Misc-exposition       0.97      0.96      0.96     11332
+   Nomenclature       0.73      0.74      0.73       793
+
+    avg / total       0.94      0.94      0.94     12752
+
+Confusion matrix
+[[  435   189     3]
+ [  214 10905   213]
+ [    1   206   586]]
+DecisionTreeClassifier with TfidfVectorizer elapsed time 22.01736044883728
+                 precision    recall  f1-score   support
+
+    Description       0.73      0.66      0.69       627
+Misc-exposition       0.97      0.97      0.97     11332
+   Nomenclature       0.73      0.79      0.76       793
+
+    avg / total       0.94      0.94      0.94     12752
+
+Confusion matrix
+[[  413   213     1]
+ [  144 10957   231]
+ [    5   161   627]]
+CalibratedClassifierCV with CountVectorizer elapsed time 4.532188415527344
+                 precision    recall  f1-score   support
+
+    Description       0.86      0.55      0.67       627
+Misc-exposition       0.95      0.99      0.97     11332
+   Nomenclature       0.88      0.65      0.75       793
+
+    avg / total       0.94      0.95      0.94     12752
+
+Confusion matrix
+[[  346   276     5]
+ [   55 11215    62]
+ [    2   277   514]]
+CalibratedClassifierCV with TfidfVectorizer elapsed time 1.9942734241485596
+                 precision    recall  f1-score   support
+
+    Description       0.86      0.74      0.80       627
+Misc-exposition       0.97      0.99      0.98     11332
+   Nomenclature       0.87      0.77      0.82       793
+
+    avg / total       0.96      0.96      0.96     12752
+
+Confusion matrix
+[[  466   161     0]
+ [   77 11166    89]
+ [    2   181   610]]
+DummyClassifier with CountVectorizer elapsed time 1.2443537712097168
+                 precision    recall  f1-score   support
+
+    Description       0.05      0.05      0.05       627
+Misc-exposition       0.89      0.88      0.89     11332
+   Nomenclature       0.06      0.07      0.07       793
+
+    avg / total       0.80      0.79      0.79     12752
+
+Confusion matrix
+[[   34   558    35]
+ [  589 10004   739]
+ [   30   710    53]]
+DummyClassifier with TfidfVectorizer elapsed time 1.2714323997497559
+                 precision    recall  f1-score   support
+
+    Description       0.05      0.05      0.05       627
+Misc-exposition       0.89      0.88      0.89     11332
+   Nomenclature       0.06      0.07      0.07       793
+
+    avg / total       0.80      0.79      0.79     12752
+
+Confusion matrix
+[[   34   558    35]
+ [  589 10004   739]
+ [   30   710    53]]
+/usr/lib/python3/dist-packages/sklearn/linear_model/stochastic_gradient.py:128: FutureWarning: max_iter and tol parameters have been added in <class 'sklearn.linear_model.passive_aggressive.PassiveAggressiveClassifier'> in 0.19. If both are left unset, they default to max_iter=5 and tol=None. If tol is not None, max_iter defaults to max_iter=1000. From 0.21, default max_iter will be 1000, and default tol will be 1e-3.
+  "and default tol will be 1e-3." % type(self), FutureWarning)
+PassiveAggressiveClassifier with CountVectorizer elapsed time 1.2678143978118896
+                 precision    recall  f1-score   support
+
+    Description       0.79      0.75      0.77       627
+Misc-exposition       0.97      0.98      0.97     11332
+   Nomenclature       0.83      0.79      0.80       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  473   150     4]
+ [  127 11077   128]
+ [    2   168   623]]
+PassiveAggressiveClassifier with TfidfVectorizer elapsed time 1.3009283542633057
+                 precision    recall  f1-score   support
+
+    Description       0.82      0.75      0.78       627
+Misc-exposition       0.97      0.98      0.98     11332
+   Nomenclature       0.84      0.79      0.82       793
+
+    avg / total       0.96      0.96      0.96     12752
+
+Confusion matrix
+[[  470   156     1]
+ [   98 11118   116]
+ [    3   163   627]]
+RidgeClassifier with CountVectorizer elapsed time 16.622386932373047
+                 precision    recall  f1-score   support
+
+    Description       0.76      0.55      0.64       627
+Misc-exposition       0.95      0.98      0.97     11332
+   Nomenclature       0.79      0.63      0.70       793
+
+    avg / total       0.93      0.94      0.93     12752
+
+Confusion matrix
+[[  346   273     8]
+ [  103 11103   126]
+ [    4   288   501]]
+RidgeClassifier with TfidfVectorizer elapsed time 2.163783073425293
+                 precision    recall  f1-score   support
+
+    Description       0.85      0.72      0.78       627
+Misc-exposition       0.97      0.99      0.98     11332
+   Nomenclature       0.88      0.71      0.79       793
+
+    avg / total       0.95      0.96      0.95     12752
+
+Confusion matrix
+[[  450   177     0]
+ [   79 11177    76]
+ [    2   228   563]]
+/usr/lib/python3/dist-packages/sklearn/linear_model/stochastic_gradient.py:128: FutureWarning: max_iter and tol parameters have been added in <class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'> in 0.19. If both are left unset, they default to max_iter=5 and tol=None. If tol is not None, max_iter defaults to max_iter=1000. From 0.21, default max_iter will be 1000, and default tol will be 1e-3.
+  "and default tol will be 1e-3." % type(self), FutureWarning)
+SGDClassifier with CountVectorizer elapsed time 1.258516550064087
+                 precision    recall  f1-score   support
+
+    Description       0.82      0.73      0.77       627
+Misc-exposition       0.97      0.98      0.97     11332
+   Nomenclature       0.84      0.74      0.78       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  457   169     1]
+ [   99 11123   110]
+ [    3   206   584]]
+SGDClassifier with TfidfVectorizer elapsed time 1.297928810119629
+                 precision    recall  f1-score   support
+
+    Description       0.86      0.68      0.76       627
+Misc-exposition       0.96      0.99      0.97     11332
+   Nomenclature       0.92      0.63      0.74       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  425   202     0]
+ [   68 11220    44]
+ [    2   295   496]]
+OneVsRestClassifier with CountVectorizer elapsed time 128.44693779945374
+                 precision    recall  f1-score   support
+
+    Description       0.79      0.72      0.75       627
+Misc-exposition       0.97      0.98      0.97     11332
+   Nomenclature       0.81      0.80      0.80       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  449   173     5]
+ [  115 11072   145]
+ [    5   155   633]]
+OneVsRestClassifier with TfidfVectorizer elapsed time 91.19589066505432
+                 precision    recall  f1-score   support
+
+    Description       0.85      0.75      0.80       627
+Misc-exposition       0.97      0.99      0.98     11332
+   Nomenclature       0.88      0.76      0.81       793
+
+    avg / total       0.96      0.96      0.96     12752
+
+Confusion matrix
+[[  471   156     0]
+ [   78 11169    85]
+ [    2   191   600]]
+OneVsRestClassifier with CountVectorizer elapsed time 4.53785514831543
+                 precision    recall  f1-score   support
+
+    Description       0.83      0.69      0.75       627
+Misc-exposition       0.97      0.98      0.97     11332
+   Nomenclature       0.84      0.76      0.80       793
+
+    avg / total       0.95      0.95      0.95     12752
+
+Confusion matrix
+[[  430   193     4]
+ [   86 11133   113]
+ [    2   187   604]]
+OneVsRestClassifier with TfidfVectorizer elapsed time 1.8738696575164795
+                 precision    recall  f1-score   support
+
+    Description       0.86      0.60      0.71       627
+Misc-exposition       0.95      0.99      0.97     11332
+   Nomenclature       0.92      0.56      0.70       793
+
+    avg / total       0.94      0.95      0.94     12752
+
+Confusion matrix
+[[  379   248     0]
+ [   61 11231    40]
+ [    2   346   445]]
