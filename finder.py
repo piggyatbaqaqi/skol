@@ -692,11 +692,11 @@ def define_args():
     parser.add_argument(
         '--classifier',
         help='Which classifier should we use for actual runs?',
-        type=str, default='OneVsRestClassifier')
+        type=str, default='CalibratedClassifierCV')
     parser.add_argument(
         '--vectorizer',
         help='Which vectorizer should we use for actual runs?',
-        type=str, default='CountVectorizer')
+        type=str, default='TfidfVectorizer')
     parser.add_argument(
         '--keep_interstitials',
         help='Keep figures, tables, and blanks.',
