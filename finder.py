@@ -563,11 +563,11 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
             yield retval
             continue
 
-        # A taxon ends in nov., nov. comb., or a year within 3
-        # characters of the end followed by an optional figure
-        # specifier.
+        # A taxon ends in nov., nov. comb., nov. sp., ined. or a year
+        # within 3 characters of the end followed by an optional
+        # figure specifier.
         if pp.last_line and pp.last_line.search(
-                r'(nov\.|nov\.\s?comb\.|\b[12]\d{3}\b.{0,3})'
+                r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|\b[12]\d{3}\b.{0,3})'
                 r'\s*([[(]Fig[^])]*[])]?)?$'):
             (retval, pp) = pp.next_paragraph()
             yield retval
