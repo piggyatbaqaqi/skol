@@ -179,6 +179,55 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(len(paragraphs), 10)
 
+    def test_first_line(self):
+        """The first line of many paragraphs is shorter than other lines.
+
+        Confirm that these are included in the paragraph.
+        """
+
+        test_data = lineify(textwrap.dedent("""\
+        [@Conidia of A. japonica, like those of other members
+        of the A. cheiranthi species-group, are essentially beak-
+        less. Field specimens give evidence of production of short
+        chains of probably 2, at most 3 spores in addition to the
+        mostly solitary conidia.#Misc-exposition*]
+        
+        [@Field conidia are broadly ellipsoid or ovoid to
+        obclavate, with a bluntly rounded apical cell that may
+        develop through an abrupt transition into a broad, short l-
+        2-celled secondary conidiophore. Largest field conidia
+        reach a range of ca. 80-100 x 20-30um, initially are smooth
+        but may become evenly pitted or punctate-rough at maturity,
+        are a medium translucent tawny brown in color, and have 7-
+        10 transverse septa and 1-3 longisepta in several of the
+        transverse segments.#Description*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        Conidia of A. japonica, like those of other members
+        of the A. cheiranthi species-group, are essentially beak-
+        less. Field specimens give evidence of production of short
+        chains of probably 2, at most 3 spores in addition to the
+        mostly solitary conidia.
+        """)
+        # This second paragraph was having its first line split off.
+        expected2 = textwrap.dedent("""\
+        Field conidia are broadly ellipsoid or ovoid to
+        obclavate, with a bluntly rounded apical cell that may
+        develop through an abrupt transition into a broad, short l-
+        2-celled secondary conidiophore. Largest field conidia
+        reach a range of ca. 80-100 x 20-30um, initially are smooth
+        but may become evenly pitted or punctate-rough at maturity,
+        are a medium translucent tawny brown in color, and have 7-
+        10 transverse septa and 1-3 longisepta in several of the
+        transverse segments.
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[2]), expected2)
+
+
     def test_initial_no_break(self):
         """A single initial (letter followed by .) prevents a paragraph break."""
         test_data = lineify(textwrap.dedent("""\
