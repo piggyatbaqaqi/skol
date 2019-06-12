@@ -1,0 +1,35 @@
+In summary, better paragraph marking leads to visibly better
+results. I conclude that it worth-while to fix labeling to show proper
+paragraph boundaries.
+
+>>> import pandas as pd
+>>> input_file = "annotated.csv"
+>>> df = pd.read_csv(input_file)
+>>> df.groupby(['Annotated', 'label']).mean()
+                               time  precision    recall        f1  support 
+Annotated label                                                             
+annotated Description      0.646568   0.798400  0.699200  0.741200        57
+          Misc-exposition  0.646568   0.924800  0.963200  0.942400       667
+          Nomenclature     0.646568   0.712800  0.505600  0.581200        75
+not       Description      0.744419   0.638462  0.501154  0.550000        54
+          Misc-exposition  0.744419   0.951154  0.975000  0.960769      1184
+          Nomenclature     0.744419   0.648077  0.456923  0.521923        62
+>>> df.groupby(['Annotated', 'label']).max()
+                              Classifier       Vectorizer      time  \
+Annotated label                                                       
+annotated Description      SGDClassifier  TfidfVectorizer  5.256933   
+          Misc-exposition  SGDClassifier  TfidfVectorizer  5.256933   
+          Nomenclature     SGDClassifier  TfidfVectorizer  5.256933   
+not       Description      SGDClassifier  TfidfVectorizer  5.972466   
+          Misc-exposition  SGDClassifier  TfidfVectorizer  5.972466   
+          Nomenclature     SGDClassifier  TfidfVectorizer  5.972466   
+
+                           precision  recall    f1  support   
+Annotated label                                               
+annotated Description           1.00    0.88  0.92        57  
+          Misc-exposition       0.97    1.00  0.97       667  
+          Nomenclature          1.00    0.83  0.83        75  
+not       Description           0.83    0.74  0.77        54  
+          Misc-exposition       0.97    1.00  0.97      1184  
+          Nomenclature          1.00    0.73  0.71        62  
+>>> 
