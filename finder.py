@@ -177,6 +177,7 @@ class Line(object):
         return re.search(*args, **kwargs, string=self._value)
 
     def is_short(self, short_line: int) -> bool:
+        print("DEBUG: len(self._value): %s, %s, short_line: %s" % (len(self._value), self._value[:10], short_line))
         return len(self._value) < short_line
 
     def is_blank(self) -> bool:
@@ -277,7 +278,7 @@ class Paragraph(object):
     _YEAR_RE = r'\b[12]\d\d\d\b'
     _ABBREV_RE = '\b\w{1,5}\.'
 
-    def __init__(self, short_line=50, labels: Optional[List[Label]] = None,
+    def __init__(self, short_line=45, labels: Optional[List[Label]] = None,
                  lines: Optional[List[Line]] = None) -> None:
         self.short_line = short_line
         if lines:
@@ -491,7 +492,6 @@ def paragraphs_to_dataframe(paragraphs: List[Paragraph], suppress_text=False):
 
 
 def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
-    label = None
     pp = Paragraph()
     for line in contents:
         pp.append_ahead(line)
