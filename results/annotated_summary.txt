@@ -32,4 +32,12 @@ annotated Description           1.00    0.88  0.92        57
 not       Description           0.83    0.74  0.77        54  
           Misc-exposition       0.97    1.00  0.97      1184  
           Nomenclature          1.00    0.73  0.71        62  
->>> 
+>>>
+
+Thu Jun 13 15:35:09 EDT 2019
+
+Working with three corrected volumes is giving uniformly better f1
+results for Nomenclature and acceptable dips in the Description f1
+scores. At last, adding more data is producing better results.
+
+I will continue the reannotation project.

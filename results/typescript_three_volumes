@@ -1,0 +1,341 @@
+piggy@bilius:~/lab/mycology/skol/src/github.com/piggyatbaqaqi/skol$ python3 finder.py --annotated_paragraphs --test_classifiers_by_label --fast data/annotated/journals/Mycotaxon/Vool05[567]/*.ann
+BernoulliNB with CountVectorizer elapsed time 0.6808631420135498
+                 precision    recall  f1-score   support
+
+    Description       0.63      0.68      0.65       398
+Misc-exposition       0.92      0.97      0.94      6486
+   Nomenclature       0.72      0.16      0.26       537
+
+    avg / total       0.89      0.90      0.88      7421
+
+Confusion matrix
+[[ 269  127    2]
+ [ 160 6295   31]
+ [   0  451   86]]
+BernoulliNB with TfidfVectorizer elapsed time 0.6880402565002441
+                 precision    recall  f1-score   support
+
+    Description       0.63      0.68      0.65       398
+Misc-exposition       0.92      0.97      0.94      6486
+   Nomenclature       0.72      0.16      0.26       537
+
+    avg / total       0.89      0.90      0.88      7421
+
+Confusion matrix
+[[ 269  127    2]
+ [ 160 6295   31]
+ [   0  451   86]]
+RandomForestClassifier with CountVectorizer elapsed time 5.329380989074707
+                 precision    recall  f1-score   support
+
+    Description       0.93      0.81      0.87       398
+Misc-exposition       0.96      0.99      0.98      6486
+   Nomenclature       0.90      0.68      0.77       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 324   74    0]
+ [  24 6422   40]
+ [   0  173  364]]
+RandomForestClassifier with TfidfVectorizer elapsed time 4.474649667739868
+                 precision    recall  f1-score   support
+
+    Description       0.92      0.80      0.86       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.91      0.74      0.82       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 319   79    0]
+ [  28 6421   37]
+ [   0  140  397]]
+AdaBoostClassifier with CountVectorizer elapsed time 2.3749403953552246
+                 precision    recall  f1-score   support
+
+    Description       0.46      0.75      0.57       398
+Misc-exposition       0.94      0.94      0.94      6486
+   Nomenclature       0.80      0.51      0.62       537
+
+    avg / total       0.91      0.90      0.90      7421
+
+Confusion matrix
+[[ 297   99    2]
+ [ 343 6076   67]
+ [   0  264  273]]
+AdaBoostClassifier with TfidfVectorizer elapsed time 3.086338758468628
+                 precision    recall  f1-score   support
+
+    Description       0.63      0.74      0.68       398
+Misc-exposition       0.95      0.96      0.95      6486
+   Nomenclature       0.75      0.53      0.62       537
+
+    avg / total       0.91      0.92      0.91      7421
+
+Confusion matrix
+[[ 294  103    1]
+ [ 170 6221   95]
+ [   0  252  285]]
+ExtraTreesClassifier with CountVectorizer elapsed time 3.1576807498931885
+                 precision    recall  f1-score   support
+
+    Description       0.83      0.85      0.84       398
+Misc-exposition       0.96      0.98      0.97      6486
+   Nomenclature       0.84      0.66      0.74       537
+
+    avg / total       0.95      0.95      0.95      7421
+
+Confusion matrix
+[[ 337   61    0]
+ [  71 6347   68]
+ [   0  182  355]]
+ExtraTreesClassifier with TfidfVectorizer elapsed time 2.7687559127807617
+                 precision    recall  f1-score   support
+
+    Description       0.87      0.84      0.86       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.89      0.72      0.79       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 335   62    1]
+ [  48 6390   48]
+ [   0  151  386]]
+GradientBoostingClassifier with CountVectorizer elapsed time 15.378116846084595
+                 precision    recall  f1-score   support
+
+    Description       0.92      0.70      0.80       398
+Misc-exposition       0.95      0.99      0.97      6486
+   Nomenclature       0.90      0.55      0.69       537
+
+    avg / total       0.94      0.94      0.94      7421
+
+Confusion matrix
+[[ 280  118    0]
+ [  25 6428   33]
+ [   0  240  297]]
+GradientBoostingClassifier with TfidfVectorizer elapsed time 24.837390184402466
+                 precision    recall  f1-score   support
+
+    Description       0.91      0.70      0.79       398
+Misc-exposition       0.95      0.99      0.97      6486
+   Nomenclature       0.89      0.63      0.74       537
+
+    avg / total       0.95      0.95      0.94      7421
+
+Confusion matrix
+[[ 278  120    0]
+ [  28 6415   43]
+ [   0  200  337]]
+DecisionTreeClassifier with CountVectorizer elapsed time 3.7709908485412598
+                 precision    recall  f1-score   support
+
+    Description       0.83      0.78      0.81       398
+Misc-exposition       0.97      0.97      0.97      6486
+   Nomenclature       0.77      0.80      0.78       537
+
+    avg / total       0.95      0.95      0.95      7421
+
+Confusion matrix
+[[ 311   86    1]
+ [  63 6296  127]
+ [   0  110  427]]
+DecisionTreeClassifier with TfidfVectorizer elapsed time 5.459720849990845
+                 precision    recall  f1-score   support
+
+    Description       0.78      0.80      0.79       398
+Misc-exposition       0.97      0.97      0.97      6486
+   Nomenclature       0.76      0.80      0.78       537
+
+    avg / total       0.95      0.94      0.95      7421
+
+Confusion matrix
+[[ 318   80    0]
+ [  88 6263  135]
+ [   0  106  431]]
+CalibratedClassifierCV with CountVectorizer elapsed time 2.166989326477051
+                 precision    recall  f1-score   support
+
+    Description       0.93      0.65      0.77       398
+Misc-exposition       0.96      0.99      0.97      6486
+   Nomenclature       0.89      0.72      0.80       537
+
+    avg / total       0.95      0.95      0.95      7421
+
+Confusion matrix
+[[ 260  138    0]
+ [  21 6418   47]
+ [   0  149  388]]
+CalibratedClassifierCV with TfidfVectorizer elapsed time 1.052229881286621
+                 precision    recall  f1-score   support
+
+    Description       0.92      0.82      0.87       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.88      0.77      0.82       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 327   71    0]
+ [  27 6402   57]
+ [   0  121  416]]
+DummyClassifier with CountVectorizer elapsed time 0.6504635810852051
+                 precision    recall  f1-score   support
+
+    Description       0.04      0.05      0.04       398
+Misc-exposition       0.87      0.87      0.87      6486
+   Nomenclature       0.08      0.09      0.09       537
+
+    avg / total       0.77      0.77      0.77      7421
+
+Confusion matrix
+[[  18  343   37]
+ [ 364 5615  507]
+ [  27  462   48]]
+DummyClassifier with TfidfVectorizer elapsed time 0.6673502922058105
+                 precision    recall  f1-score   support
+
+    Description       0.04      0.05      0.04       398
+Misc-exposition       0.87      0.87      0.87      6486
+   Nomenclature       0.08      0.09      0.09       537
+
+    avg / total       0.77      0.77      0.77      7421
+
+Confusion matrix
+[[  18  343   37]
+ [ 364 5615  507]
+ [  27  462   48]]
+PassiveAggressiveClassifier with CountVectorizer elapsed time 0.6842615604400635
+                 precision    recall  f1-score   support
+
+    Description       0.89      0.82      0.85       398
+Misc-exposition       0.98      0.98      0.98      6486
+   Nomenclature       0.87      0.83      0.85       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 328   70    0]
+ [  42 6376   68]
+ [   0   92  445]]
+PassiveAggressiveClassifier with TfidfVectorizer elapsed time 0.681227445602417
+                 precision    recall  f1-score   support
+
+    Description       0.92      0.84      0.88       398
+Misc-exposition       0.98      0.99      0.98      6486
+   Nomenclature       0.87      0.82      0.84       537
+
+    avg / total       0.97      0.97      0.97      7421
+
+Confusion matrix
+[[ 336   62    0]
+ [  28 6392   66]
+ [   0   97  440]]
+RidgeClassifier with CountVectorizer elapsed time 10.31803822517395
+                 precision    recall  f1-score   support
+
+    Description       0.90      0.67      0.77       398
+Misc-exposition       0.95      0.99      0.97      6486
+   Nomenclature       0.85      0.67      0.75       537
+
+    avg / total       0.94      0.95      0.94      7421
+
+Confusion matrix
+[[ 267  131    0]
+ [  29 6392   65]
+ [   0  177  360]]
+RidgeClassifier with TfidfVectorizer elapsed time 1.1569578647613525
+                 precision    recall  f1-score   support
+
+    Description       0.94      0.81      0.87       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.89      0.73      0.80       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 323   75    0]
+ [  22 6418   46]
+ [   0  147  390]]
+SGDClassifier with CountVectorizer elapsed time 0.6737668514251709
+                 precision    recall  f1-score   support
+
+    Description       0.89      0.82      0.85       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.90      0.78      0.83       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 325   73    0]
+ [  41 6396   49]
+ [   0  119  418]]
+SGDClassifier with TfidfVectorizer elapsed time 0.6948869228363037
+                 precision    recall  f1-score   support
+
+    Description       0.93      0.78      0.85       398
+Misc-exposition       0.96      0.99      0.98      6486
+   Nomenclature       0.89      0.68      0.77       537
+
+    avg / total       0.95      0.96      0.95      7421
+
+Confusion matrix
+[[ 312   86    0]
+ [  23 6419   44]
+ [   0  173  364]]
+OneVsRestClassifier with CountVectorizer elapsed time 16.136117935180664
+                 precision    recall  f1-score   support
+
+    Description       0.85      0.82      0.83       398
+Misc-exposition       0.98      0.98      0.98      6486
+   Nomenclature       0.84      0.83      0.84       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 325   73    0]
+ [  58 6345   83]
+ [   0   89  448]]
+OneVsRestClassifier with TfidfVectorizer elapsed time 19.67144775390625
+                 precision    recall  f1-score   support
+
+    Description       0.92      0.83      0.87       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.88      0.75      0.81       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 329   69    0]
+ [  29 6403   54]
+ [   0  136  401]]
+OneVsRestClassifier with CountVectorizer elapsed time 3.363584041595459
+                 precision    recall  f1-score   support
+
+    Description       0.89      0.79      0.83       398
+Misc-exposition       0.97      0.99      0.98      6486
+   Nomenclature       0.89      0.79      0.84       537
+
+    avg / total       0.96      0.96      0.96      7421
+
+Confusion matrix
+[[ 313   85    0]
+ [  39 6396   51]
+ [   0  113  424]]
+OneVsRestClassifier with TfidfVectorizer elapsed time 0.9813127517700195
+                 precision    recall  f1-score   support
+
+    Description       0.93      0.70      0.80       398
+Misc-exposition       0.95      0.99      0.97      6486
+   Nomenclature       0.92      0.53      0.68       537
+
+    avg / total       0.94      0.94      0.94      7421
+
+Confusion matrix
+[[ 278  120    0]
+ [  20 6442   24]
+ [   0  251  286]]
+
+Script done on 2019-06-13 15:29:17-0400
