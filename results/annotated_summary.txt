@@ -41,3 +41,13 @@ results for Nomenclature and acceptable dips in the Description f1
 scores. At last, adding more data is producing better results.
 
 I will continue the reannotation project.
+
+Thu Jun 13 15:55:21 EDT 2019
+
+Comparing typescript_three_volumes with typescript_all_labels we see a
+small uptick in Nomenclature f1 scores, so I conclude that adding the
+extra labels may have a small advantage, but the win is not large and
+unambiguous. I will continue annotating the added labels, but will
+stay with just 'Description', 'Nomenclature', and 'Misc-exposition'
+for now. I'll try this experiment when I have a lot more instances of
+the added labels.
