@@ -86,7 +86,7 @@ class File(object):
     @property
     def filename(self):
         return self._filename
-    
+
 class Line(object):
     _value: Optional[str]
     _filename: Optional[str]
@@ -177,7 +177,6 @@ class Line(object):
         return re.search(*args, **kwargs, string=self._value)
 
     def is_short(self, short_line: int) -> bool:
-        print("DEBUG: len(self._value): %s, %s, short_line: %s" % (len(self._value), self._value[:10], short_line))
         return len(self._value) < short_line
 
     def is_blank(self) -> bool:
@@ -491,6 +490,26 @@ def paragraphs_to_dataframe(paragraphs: List[Paragraph], suppress_text=False):
         })
 
 
+
+def parse_annotated(contents: Iterable[Line]) -> Iterable[Paragraph]:
+    """Return paragraphs in annotated block form.
+
+    Do not apply heuristic methods to divide paragraphs."""
+    pp = Paragraph()
+    for line in contents:
+        pp.append_ahead(line)
+
+        if line.contains_start():
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+        if pp.last_line and pp.last_line.end_label() is not None:
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+
 def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     pp = Paragraph()
     for line in contents:
@@ -723,6 +742,10 @@ def define_args():
         help='Labels to output.',
         type=str,
         action='append')
+    parser.add_argument(
+        '--annotated_paragraphs',
+        help='Use paragraph boundaries as annotated, not the heuristic boundaries.',
+        action='store_true')
 
     return parser.parse_args()
 
@@ -816,7 +839,10 @@ def main():
 
     contents = read_files(training_files)
 
-    phase1 = parse_paragraphs(contents)
+    if args.annotated_paragraphs:
+        phase1 = parse_annotated(contents)
+    else:
+        phase1 = parse_paragraphs(contents)
 
     if 1 in args.dump_phase:
         print('Phase 1')
