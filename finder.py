@@ -402,7 +402,7 @@ class Paragraph(object):
 
     def is_figure(self) -> bool:
         return self.startswith([
-            'fig', 'fig.', 'figs', 'figs.', 'figure', 'photo', 'plate', 'plates',
+            'fig', 'fig.', 'figg.', 'figs', 'figs.', 'figure', 'photo', 'plate', 'plates',
         ])
 
     def is_table(self) -> bool:
