@@ -51,3 +51,10 @@ unambiguous. I will continue annotating the added labels, but will
 stay with just 'Description', 'Nomenclature', and 'Misc-exposition'
 for now. I'll try this experiment when I have a lot more instances of
 the added labels.
+
+Fri Jun 14 16:04:40 EDT 2019
+
+Comparing typescript_three_volumes with typescript_four_volumes we see
+a consistent increase in Nomenclature f1 scores. There also seems to
+be a general uptick in Description scores, but that's not as uniformly
+obvious.
