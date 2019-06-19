@@ -17,7 +17,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
 from sklearn.feature_extraction.text import HashingVectorizer  # type: ignore
 from sklearn.calibration import CalibratedClassifierCV  # type: ignore
 from sklearn.linear_model import PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV, SGDClassifier, LogisticRegression  # type: ignore
-from sklearn.metrics import confusion_matrix, classification_report  # type: ignore
+from sklearn.metrics import confusion_matrix, classification_report, precision_score, recall_score, f1_score  # type: ignore
 from sklearn.multiclass import OneVsRestClassifier  # type: ignore
 from sklearn.svm import *  # type: ignore
 import pandas  # type: ignore
@@ -657,12 +657,13 @@ def perform(classifiers, vectorizers, train_data, test_data):
         string += ' elapsed time ' + str(end - start)
         print(string)
 
-def perform_confusion_matrix(classifiers, vectorizers, train_data, test_data):
+
+def perform_confusion_matrix(classifiers, vectorizers, train_data, test_data, emit_csv: bool):
+    if emit_csv:
+        print('classifier,vectorizer,time,label,precision,recall,f1,support')
+
     for classifier in classifiers:
       for vectorizer in vectorizers:
-        string = ''
-        string += classifier.__class__.__name__ + ' with ' + vectorizer.__class__.__name__
-
         numpy.random.seed(SEED)
 
         start = time.time()
@@ -671,15 +672,67 @@ def perform_confusion_matrix(classifiers, vectorizers, train_data, test_data):
         classifier.fit(vectorize_text, train_data.v1)
 
         # Build the confusion matrix.
-        vectorize_text = vectorizer.transform(test_data.v2)
-        predicted_labels = classifier.predict(vectorize_text)
-        cm = confusion_matrix(test_data.v1, predicted_labels)
-        cr = classification_report(test_data.v1, predicted_labels)
+        transformed_text = vectorizer.transform(test_data.v2)
+        predicted_labels = classifier.predict(transformed_text)
         end = time.time()
-        string += ' elapsed time ' + str(end - start)
-        string += '\n' + str(cr)
-        string += '\nConfusion matrix\n' + str(cm)
-        print(string)
+        elapsed_time = end - start
+        cm = confusion_matrix(test_data.v1, predicted_labels)
+        if emit_csv:
+            print(csv_report(test_data, elapsed_time, predicted_labels, cm,
+                             classifier.__class__.__name__,
+                             vectorizer.__class__.__name__)
+            )
+        else:
+            print(human_report(test_data, elapsed_time, predicted_labels, cm,
+                               classifier.__class__.__name__,
+                               vectorizer.__class__.__name__))
+
+
+def human_report(test_data: pandas.core.frame.DataFrame,
+                 elapsed_time: float,
+                 predicted_labels: numpy.ndarray,
+                 cm: numpy.ndarray,
+                 classifier_name: str,
+                 vectorizer_name: str) -> str:
+    string = ''
+    string += classifier_name + ' with ' + vectorizer_name
+
+    cr = classification_report(test_data.v1, predicted_labels)
+    string += ' elapsed time ' + str(elapsed_time)
+    string += '\n' + str(cr)
+    string += '\nConfusion matrix\n' + str(cm)
+    return string
+
+
+def csv_report(test_data: pandas.core.frame.DataFrame,
+               elapsed_time: float,
+               predicted_labels: numpy.ndarray,
+               cm: numpy.ndarray,
+               classifier_name: str,
+               vectorizer_name: str) -> str:
+    result = []
+    u = numpy.unique(test_data.v1,  return_counts=True)
+    labels = u[0]
+    support = u[1]
+    precision = precision_score(test_data.v1, predicted_labels, average = None)
+    recall = recall_score(test_data.v1, predicted_labels, average = None)
+    f1 = f1_score(test_data.v1, predicted_labels, average = None)
+
+    for i in range(len(labels)):
+        result.append(
+            '{classifier},{vectorizer},{time:f},'
+            '{label},{precision},{recall},{f1},{support}'.format(
+            classifier=classifier_name,
+            vectorizer=vectorizer_name,
+            time=elapsed_time,
+            label=labels[i],
+            precision=precision[i],
+            recall=recall[i],
+            f1=f1[i],
+            support=support[i]
+        ))
+    return '\n'.join(result)
+
 
 def define_args():
     parser = argparse.ArgumentParser()
@@ -746,8 +799,13 @@ def define_args():
         '--annotated_paragraphs',
         help='Use paragraph boundaries as annotated, not the heuristic boundaries.',
         action='store_true')
+    parser.add_argument(
+        '--csv',
+        help='In test_classifiers_by_label, emit a csv.',
+        action='store_true')
 
     return parser.parse_args()
+
 
 def main():
     args = define_args()
@@ -905,7 +963,8 @@ def main():
             classifiers,
             vectorizers,
             learn,
-            test
+            test,
+            emit_csv=args.csv
         )
         sys.exit(0)
 
