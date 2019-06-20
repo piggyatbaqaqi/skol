@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 117, pp. 109–113#Misc-exposition*]
+[@MYCOTAXON
+Volume 117, pp. 109–113#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/117.109#Misc-exposition*]
 
@@ -15,15 +15,15 @@
 new to Brazil and three new hosts#Misc-exposition*]
 [@Nadja Santos Vitoria1*, Maria Auxiliadora Q. Cavalcanti1,
 Edna Dora Martins Newman Luz 2 & José Luiz Bezerra3
+1
 Universidade Federal de Pernambuco, Departamento de Micologia,
 Av. Prof. Nelson Chaves, s/n°, 50670-901, Recife, PE, Brazil
-2#Misc-exposition*]
-[@CEPLAC/CEPEC, Km 22, Rod Ilhéus/Itabuna, 45600-970, Ilhéus, Bahia, Brazil
-3#Misc-exposition*]
-[@Universidade Estadual de Santa Cruz, Departamento de Ciências Agrárias,
+2
+CEPLAC/CEPEC, Km 22, Rod Ilhéus/Itabuna, 45600-970, Ilhéus, Bahia, Brazil
+3
+Universidade Estadual de Santa Cruz, Departamento de Ciências Agrárias,
 Rodovia Ilhéus-Itabuna, Km 16, 45662-900, Ilhéus, BA, Brazil
 * Correspondence to: nadjasv@hotmail.com#Misc-exposition*]
-[@1#Misc-exposition*]
 
 [@Abstract — Endocalyx melanoxanthus var. melanoxanthus was recovered during a
 survey of microfungi on palms in Atlantic Rainforest areas of Northeast Brazil. Three new
@@ -51,16 +51,16 @@ de Santo Agostinho, and Tamandaré in Pernambuco State and Uruçuca in Bahia#Mis
 
 [@110 ... Vitoria & al.#Misc-exposition*]
 
-[@Plate 1. Map of the northeastern Brazilian coast with the collecting sites indicated:#Misc-exposition*]
-[@1. Municipality of Igarassu: 07°48′56.7″S 34°57′17.3″W, 49 m; 2. Municipality of Recife:
+[@Plate 1. Map of the northeastern Brazilian coast with the collecting sites indicated:
+1. Municipality of Igarassu: 07°48′56.7″S 34°57′17.3″W, 49 m; 2. Municipality of Recife:
 08°00′36.9″S 34°56′57.2″W, 30 m; 3. Municipality of Cabo de Santo Agostinho: 08°14′01.0″S
 35°02′49.1″W, 54 m; 4. Municipality of Tamandaré: 08°43′22.8″S 35º10′40.5″W, 109 m;
-5. Municipality of Uruçuca: 14°56′132″S 39°16′601″W, 101 m.#Misc-exposition*]
+5. Municipality of Uruçuca: 14°56′132″S 39°16′601″W, 101 m.#Figure*]
 
 [@State (Plate 1). The collected specimens were incorporated into CEPEC Herbarium
 (Mycological Collection) in Itabuna, Bahia. Observations under the stereomicroscope
-preceded study of squash preparations and vertical, free hand sections of the conidiomata.#Misc-exposition*]
-[@Morphological features were described, measured and photographed using a Carl Zeiss
+preceded study of squash preparations and vertical, free hand sections of the conidiomata.
+Morphological features were described, measured and photographed using a Carl Zeiss
 microscope. All measurements were made in water preparations. In most cases, the
 samples were stained with lacto-glycerol cotton blue.#Misc-exposition*]
 [@Taxonomy#Misc-exposition*]
@@ -76,7 +76,7 @@ unicellular, hyaline, knob-like. Conidia 10.4–17 × 10–15 µm in face view, 
 
 [@Plates 2–8. Endocalyx melanoxanthus var. melanoxanthus: 2–3. Conidiomata on host surface;
 4. Section of conidioma; 5–8. Conidia (arrows indicate germ-slits). (Scale bars: 2 = 0.5 mm; 3 = 1 mm;
-4 = 100 µm; 5–8 = 10 µm).#Misc-exposition*]
+4 = 100 µm; 5–8 = 10 µm).#Figure*]
 
 [@7–9 µm in side view (mean = 13.5 × 11.5 × 7.3 µm, n = 50), 1-celled, smoothwalled, ﬂattened, round, oval or slightly polygonal in face view, at ﬁrst pale, dark
 brown at maturity, solitary, guttulate, with a longitudinal, straight germ slit.#Description*]
@@ -85,8 +85,8 @@ Charles Darwin, on dead leaf (rachis) of Acrocomia intumescens, 18.VI. 2009, col
 Vitoria, det. JL Bezerra (CEPEC 2169); Recife, Parque Estadual Dois Irmãos, on dead
 leaf (rachis) of Euterpe oleracea, 13. VI. 2009, coll. Nadja Vitoria, det. JL Bezerra (CEPEC
 2170); Cabo de Santo Agostinho, Reserva Ecológica de Gurjaú, on dead leaf (rachis)
-of E. oleracea, 09. VI. 2009, coll. Nadja Vitoria, det. JL Bezerra (CEPEC 2171); 16.XI.#Misc-exposition*]
-[@2009, coll. Nadja Vitoria, det. JL Bezerra (CEPEC 2172); Tamandaré, Reserva Biológica
+of E. oleracea, 09. VI. 2009, coll. Nadja Vitoria, det. JL Bezerra (CEPEC 2171); 16.XI.
+2009, coll. Nadja Vitoria, det. JL Bezerra (CEPEC 2172); Tamandaré, Reserva Biológica
 de Saltinho, on dead leaf (rachis) of E. oleracea, 03. IX. 2010, coll. Nadja Vitoria, det. JL
 Bezerra (CEPEC 2173). Bahia: Uruçuca, EMARC, on dead leaf (rachis) of E. edulis,
 18. III. 2010, coll. Nadja Vitoria, det. JL Bezerra (CEPEC 2174).#Misc-exposition*]
@@ -175,7 +175,7 @@ E. thwaitesii Berk. & Broome
 verrucose
 
 Okada & Tubaki 1984
-#Misc-exposition*]
+#Table*]
 [@Distribution — Australia, Brazil (this paper), China, Cuba, Ghana, Hong Kong, India,
 Jamaica, Japan, Malaya, New Zealand, Pakistan, Papua New Guinea, Philippines, Sabah,
 Sarawak, Seychelles, Sierra Leone, Singapore, Sri Lanka, Taiwan, USA.#Misc-exposition*]
@@ -190,36 +190,36 @@ species.#Misc-exposition*]
 
 [@The authors thank Dr. Michelline Silvério, Dr. Jadergudson Pereira and Alisson Neves
 for collaboration, CAPES-MEC Brazil, CNPq-Brazil for scholarships and CEPLAC for
-facilities and laboratories used to lead the research. Also sincere thanks are given to Drs.#Misc-exposition*]
-[@Carlos Inácio, Francisco Freire, and Dartanhã Soares for the pre-submission review of
+facilities and laboratories used to lead the research. Also sincere thanks are given to Drs.
+Carlos Inácio, Francisco Freire, and Dartanhã Soares for the pre-submission review of
 our manuscript.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Farr DF, Rossman AY. 2011. Fungal databases. Systematic Mycology and Microbiology Laboratory,
 ARS, USDA. htt:/nt.ars-grin.gov/fungaldatabases/fungushost.cfm/2011 (access20/jan/2011).#Misc-exposition*]
 [@Kapoor JN, Munjal RL. 1966. Indian species of Stilbaceae. Indian Phytopathology 19: 348–350.#Misc-exposition*]
-[@Leitman P, Henderson A, Noblick L. 2010. Arecaceae. In: Lista de Espécies da Flora do Brasil.#Misc-exposition*]
-[@Jardim Botânico do Rio de Janeiro. http://ﬂoradobrasil.jbrj.gov.br/2010/FB000053 (access30/
+[@Leitman P, Henderson A, Noblick L. 2010. Arecaceae. In: Lista de Espécies da Flora do Brasil.
+Jardim Botânico do Rio de Janeiro. http://ﬂoradobrasil.jbrj.gov.br/2010/FB000053 (access30/
 sep/ 2010).#Misc-exposition*]
 
 [@Endocalyx melanoxanthus new to Brazil ... 113#Misc-exposition*]
 [@Mena Portales J, Mercado Sierra A. 1984. Nuevas especies de Endocalyx y Stachylidium
 (Hyphomycetes, Deuteromycotina) de Cuba. Revista del Jardín Botánico Nacional 5(3): 53–60.#Misc-exposition*]
 [@Okada G, Tubai K. 1984. A new species and new variety of Endocalyx (Deuteromycotina) from
-Japan. Mycologia 76: 300–313. http://dx.doi.org/10.2307/3793106
-Patel US, Pandey AK, Rajak RC. 2002. Two new hyphomycetes. Journal of Mycology and Plant
+Japan. Mycologia 76: 300–313. http://dx.doi.org/10.2307/3793106#Misc-exposition*]
+[@Patel US, Pandey AK, Rajak RC. 2002. Two new hyphomycetes. Journal of Mycology and Plant
 Pathology 32(1): 70–71.#Misc-exposition*]
 [@Petch T. 1908. The genus Endocalyx Berkeley and Broome. Annals of Botany 22: 389–400.#Misc-exposition*]
 [@Silva MS, Minter DW. 1995. Fungi from Brazil recorded by Batista and co-workers. Mycological
 Papers 169. 585 p.#Misc-exposition*]
 [@Souza CAP, Vitoria NS, Bezerra JL, Luz EDMN, Inacio CA, Dianese JC. 2008. Camarotella
-brasiliensis sp. nov. (Phyllachoraceae) on Syagrus schizophylla (Arecaceae) from Brazil.#Misc-exposition*]
-[@Mycotaxon 103: 313–317.#Misc-exposition*]
+brasiliensis sp. nov. (Phyllachoraceae) on Syagrus schizophylla (Arecaceae) from Brazil.
+Mycotaxon 103: 313–317.#Misc-exposition*]
 [@Vitoria NS, Bezerra JL, Gramacho KP, Luz EDMN. 2008. Camaroetella torrendiella comb. nov. e
 C. acrocomiae: agents etiológicos das lixas do coqueiro. Tropical Plant Pathology 33(4):
-295–301. http://dx.doi.org/10.1590/S1982-56762008000400006
-Vitoria NS, Bezerra JL, Gramacho KP. 2010. A simpliﬁed DNA extraction method for PCR analysis
-of Camarotella spp. Brazilian Archives of Biology and Technology 53(2): 249–252.#Misc-exposition*]
-[@http://dx.doi.org/10.1590/S1516-89132010000200001#Misc-exposition*]
+295–301. http://dx.doi.org/10.1590/S1982-56762008000400006#Misc-exposition*]
+[@Vitoria NS, Bezerra JL, Gramacho KP. 2010. A simpliﬁed DNA extraction method for PCR analysis
+of Camarotella spp. Brazilian Archives of Biology and Technology 53(2): 249–252.
+http://dx.doi.org/10.1590/S1516-89132010000200001#Misc-exposition*]
 [@Vitoria NS, Cavalcanti MAQ, Hyde KD, Bezerra JL. 2011. Arecomyces new to Brazil, including
 A. attaleae sp. nov. Cryptogamie Mycologie 32(1): 103–108.#Misc-exposition*]
 

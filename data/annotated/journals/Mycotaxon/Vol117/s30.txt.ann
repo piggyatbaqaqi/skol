@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 117, pp. 297–316#Misc-exposition*]
+[@MYCOTAXON
+Volume 117, pp. 297–316#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/117.297#Misc-exposition*]
 
@@ -14,26 +14,26 @@
 [@Revision of Glomeromycetes with entrophosporoid and
 glomoid spore formation with three new genera#Misc-exposition*]
 [@Fritz Oehl1*, Gladstone Alves da Silva2, Iván Sánchez-Castro3,
-Bruno Tomio Goto4, Leonor Costa Maia2,#Misc-exposition*]
-[@Helder Elísio Evangelista Vieira2, José-Miguel Barea3,
+Bruno Tomio Goto4, Leonor Costa Maia2,
+Helder Elísio Evangelista Vieira2, José-Miguel Barea3,
 Ewald Sieverding5 & Javier Palenzuela3#Misc-exposition*]
 [@Federal Research Institute Agroscope Reckenholz-Tänikon ART, Organic Farming Systems,
 Reckenholzstrasse 191, CH-8046 Zürich, Switzerland
-2#Misc-exposition*]
-[@Departamento de Micologia, CCB, Universidade Federal de Pernambuco,
+2
+Departamento de Micologia, CCB, Universidade Federal de Pernambuco,
 Av. Prof. Nelson Chaves s/n, Cidade Universitária, 50670-420, Recife, PE, Brazil
-3#Misc-exposition*]
-[@Departamento de Microbiología del Suelo y Sistemas Simbióticos, Estación Experimental
+3
+Departamento de Microbiología del Suelo y Sistemas Simbióticos, Estación Experimental
 del Zaidín, CSIC, Profesor Albareda 1, 18008 Granada, Spain
-4#Misc-exposition*]
-[@Departamento de Botânica, Ecologia e Zoologia, CB, Universidade Federal
+4
+Departamento de Botânica, Ecologia e Zoologia, CB, Universidade Federal
 do Rio Grande do Norte, Campus Universitário, 59072-970, Natal, RN, Brazil
-5#Misc-exposition*]
-[@Institute for Plant Production and Agroecology in the Tropics and Subtropics,
+5
+Institute for Plant Production and Agroecology in the Tropics and Subtropics,
 University of Hohenheim, Garbenstrasse 13, D-70599 Stuttgart, Germany
-*#Misc-exposition*]
-[@Correspondence to: fritz.oehl@art.admin.ch#Misc-exposition*]
-[@1#Misc-exposition*]
+*
+Correspondence to: fritz.oehl@art.admin.ch
+1#Misc-exposition*]
 
 [@Abstract — New ribosomal gene analyses reveal that Entrophospora is non-monophyletic
 and its type species E. infrequens closely related to Claroideoglomus species, which supports
@@ -77,8 +77,8 @@ saccules (Kaonongbua et al. 2010) but the illustrations rather indicate a mixtur
 of specimens of diﬀerent species, isolated directly from ﬁeld soil samples. Since
 no saccule was presented in the latter study, further observations are needed
 to conﬁrm the existence of this species, which is assumed to form pacisporoid
-spores instead of kuklosporoid spores as indicated by the images.#Misc-exposition*]
-[@Recent morphological and molecular analyses suggest that the genus
+spores instead of kuklosporoid spores as indicated by the images.
+Recent morphological and molecular analyses suggest that the genus
 Entrophospora, currently comprising three species, is not monophyletic, since
 E. infrequens and E. nevadensis phylogenetically belong to diﬀerent orders,
 according to the recently revised Glomeromycetes (Oehl et al. 2011d). This
@@ -275,7 +275,7 @@ Specimen at INVAM; specimen from Central
 Europe (Oehl & Sieverding; Oehl et al. 2003)
 
 Morphological analyses
-#Misc-exposition*]
+#Table*]
 [@Morphological observations of spores (including sporiferous saccules and subcellular
 structures), were based on freshly prepared specimens mounted in polyvinyl alcohollactic acid-glycerol (PVLG), in a mixture of PVLG and Melzer’s reagent (Brundrett
 et al. 1994), in a 1:1 (v/v) mixture of lactic acid and water, in Melzer’s reagent, or in
@@ -347,27 +347,27 @@ distal part of the hyphal neck and never forms a pore distally to the saccule#Mi
 
 [@302 ... Oehl & al.#Misc-exposition*]
 
-[@Fig. 1. A phylogeny of the Glomeromycota based on partial SSU rDNA sequences (~1800 bp).#Misc-exposition*]
-[@NJ (neighbor joining), ML (maximum likelihood), and Bayesian analyses were performed with
-GTR+G+I substitution model. Sequence labels correspond to their database accession numbers.#Misc-exposition*]
-[@Support values are from NJ, MP (maximum parsimony), ML, and Bayesian analyses. New
+[@Fig. 1. A phylogeny of the Glomeromycota based on partial SSU rDNA sequences (~1800 bp).
+NJ (neighbor joining), ML (maximum likelihood), and Bayesian analyses were performed with
+GTR+G+I substitution model. Sequence labels correspond to their database accession numbers.
+Support values are from NJ, MP (maximum parsimony), ML, and Bayesian analyses. New
 sequences obtained in this study are indicated in bold. Only topologies with bootstrap values
-≥ 50% are shown. Consistency Index = 0.47; Retention Index = 0.84.#Misc-exposition*]
+≥ 50% are shown. Consistency Index = 0.47; Retention Index = 0.84.#Figure*]
 
 [@(Figs 3–7). Thus, on the spores (particularly once the outer wall layers have
 become degraded) just one single opening/pore forming a ‘cicatrix’ is visible
 proximal to the saccules; the pore is closed by a plug-like wall material derived
 apparently from the structural wall layer (owl3; Figs 3–4). The structural
-wall layer extends into the saccule over 10–30 µm, with the spore wall layer#Description*]
+wall layer extends into the saccule over 10–30 µm, with the spore wall layer#Figure*]
 
 [@Albahypha, Sacculospora & Tricispora gen. nov. (Glomeromycetes) ... 303#Misc-exposition*]
 
-[@Fig. 2. A phylogeny of the Glomeromycota based on partial LSU rDNA sequences (~600 bp).#Misc-exposition*]
-[@NJ (neighbor joining), ML (maximum likelihood), and Bayesian analyses were performed with
-GTR + G substitution model. Sequence labels correspond to their database accession numbers.#Misc-exposition*]
-[@Support values are from NJ, MP (maximum parsimony), ML, and Bayesian analyses. New
+[@Fig. 2. A phylogeny of the Glomeromycota based on partial LSU rDNA sequences (~600 bp).
+NJ (neighbor joining), ML (maximum likelihood), and Bayesian analyses were performed with
+GTR + G substitution model. Sequence labels correspond to their database accession numbers.
+Support values are from NJ, MP (maximum parsimony), ML, and Bayesian analyses. New
 sequences obtained in this study are indicated in bold. Only topologies with bootstrap values
-≥ 50% are shown. Consistency Index = 0.41; Retention Index = 0.79.#Misc-exposition*]
+≥ 50% are shown. Consistency Index = 0.41; Retention Index = 0.79.#Figure*]
 
 [@ornamentation apparently continuing to the pore closure area, although not
 within the saccule.#Misc-exposition*]
@@ -420,11 +420,11 @@ wall, sh funnel-shaped, cylindrical, or constricted and concolorous with#Descrip
 
 [@Albahypha, Sacculospora & Tricispora gen. nov. (Glomeromycetes) ... 305#Misc-exposition*]
 
-[@Figs 3–16. Examples of intra-hyphal spore formation within the neck of a sporiferous saccule.#Misc-exposition*]
+[@Figs 3–16. Examples of intra-hyphal spore formation within the neck of a sporiferous saccule.#Figure*]
 [@Figs 3–7. Entrophospora infrequens: Spores have two walls (ow & iw); saccule generally larger than
 attached spore. ow is triple-layered (owl1–3) and has a characteristic ornamentation (‘orn’) on
-structural layer owl3. At spore bases two cicatrices are formed: proximal and distal to the saccule.#Misc-exposition*]
-[@The persistent proximal cicatrix (‘proci’) formed by the persistent owl3 (Figs 5–6) wall material
+structural layer owl3. At spore bases two cicatrices are formed: proximal and distal to the saccule.
+The persistent proximal cicatrix (‘proci’) formed by the persistent owl3 (Figs 5–6) wall material
 resembles a plug. The evanescent distal cicatrix (‘disci’) is formed by evanescent owl2 (Fig. 7)
 material. Figs 8–12. Sacculospora baltica: spores with two cicatrices; saccule (sac) substantially
 smaller than attached spore. The proximal cicatrix (proci) is persistent and formed by the structural
@@ -434,7 +434,7 @@ a plug. The distal cicatrix (‘dici’) is also persistent and formed by the sa
 substantially smaller than the attached spore. The proximal cicatrix (proci) is persistent and formed
 by the structural ow layer (Figs 14–15); the corresponding spore pore is closed by a septum that
 does not resemble a plug. The distal cicatrix (dici) is also persistent and formed by the same layer
-(Fig. 16).#Misc-exposition*]
+(Fig. 16).#Figure*]
 
 [@306 ... Oehl & al.#Misc-exposition*]
 
@@ -442,7 +442,7 @@ does not resemble a plug. The distal cicatrix (dici) is also persistent and form
 conspicuous proximal cicatrix (proxy), and warts on the outer wall (ow) surface; middle wall (mw)
 is 1(–2)-layered and inner wall is triple-layered (iwl1–3). The three iw layers generally tightly
 adhere, making iwl1 and iwl3 diﬃcult to observe (Fig. 18); the separation of the three layers in
-Fig. 19 is an artifact of cover-slip pressure.#Misc-exposition*]
+Fig. 19 is an artifact of cover-slip pressure.#Figure*]
 
 [@spore, slightly paler, or (sub-)hyaline. In entrophosporoid spores, structural
 pigmented outer wall layer discontinuous with the hyphal wall distal to the
@@ -478,14 +478,14 @@ Viscospora Sieverd. et al.#Misc-exposition*]
 [@Albahypha, Sacculospora & Tricispora gen. nov. (Glomeromycetes) ... 307#Misc-exposition*]
 
 [@Figs 20–31. Examples of terminal spore formation on subtending, hyaline to white hyphae (sh);
-spores with 2–4 layers (swl1–4); spore pores regularly closed by a septum (sp) at the spore base.#Description*]
-[@Figs 20–25. Claroideoglomus (Figs 20–22: C. etunicatum, Figs 23–24: C. claroideum, Fig. 25:#Misc-exposition*]
-[@C. lamellosum) — Claroideoglomus spores have a signiﬁcantly funnel-shaped hypha with structural
+spores with 2–4 layers (swl1–4); spore pores regularly closed by a septum (sp) at the spore base.#Figure*]
+[@Figs 20–25. Claroideoglomus (Figs 20–22: C. etunicatum, Figs 23–24: C. claroideum, Fig. 25:
+C. lamellosum) — Claroideoglomus spores have a signiﬁcantly funnel-shaped hypha with structural
 wall layer (generally swl2 or swl3) that is >2.5 times thicker at spore base than 10–25 µm distant
-at transition between SH and mycelia hypha. Figs 26–31. Albahypha (Figs 26–28: A. drummondii,
-Figs 29–31: A. walkeri) — Albahypha spores have a slightly funnel-shaped to cylindrical hypha
+at transition between SH and mycelia hypha. Figs 26–31. Albahypha (Figs 26–28: A. drummondii,#Figure*]
+[@Figs 29–31: A. walkeri) — Albahypha spores have a slightly funnel-shaped to cylindrical hypha
 with structural wall layer (generally swl2) that is <2.0 times thicker at spore base than 10–25 µm
-distant.#Misc-exposition*]
+distant.#Figure*]
 
 [@Entrophospora R.N. Ames & R.W. Schneid., emend. Oehl, Sieverd., Palenz. & G.A.
 Silva#Misc-exposition*]
@@ -530,8 +530,8 @@ structural layer, an adherent thin innermost layer, or both innermost layers.#De
 [@MycoBank MB 561639#Misc-exposition*]
 [@Sporae singulariter eﬀormatae; tunica sporarum cum tunica hypharum coniuncta; hyphae
 albae, tunica hyphae 1.2–2.0 maior ad basem sporarum quam in 10-20 µm distantia
-basae sporarum; porum sporarum occlusum septa tunicae sporarum, rarum apertum.#Description*]
-[@Mycorrhizas vesiculares-arbusculares formans caeruleas colorantes cum ‘trypan blue’.#Description*]
+basae sporarum; porum sporarum occlusum septa tunicae sporarum, rarum apertum.
+Mycorrhizas vesiculares-arbusculares formans caeruleas colorantes cum ‘trypan blue’.#Description*]
 [@Type species: Albahypha drummondii (Błaszk. & Renker) Sieverd. et al.#Misc-exposition*]
 
 [@Etymology: derived from the Latin: alba = white; hypha = hypha; referring to the
@@ -606,11 +606,11 @@ Oehl et al.#Misc-exposition*]
 
 [@MycoBank MB 561642#Misc-exposition*]
 [@Sporocarpia ignota. Sporae singulatim eﬀormatae subterminaliter vel intercalariter in
-hypha inﬂata anguste adiacetum ad sacculum sporiferum terminalem vel intercalarem.#Description*]
-[@Sacculus sporiferus frequenter minor quam sporae globosae vel subglobosae; sporae duabus
+hypha inﬂata anguste adiacetum ad sacculum sporiferum terminalem vel intercalarem.
+Sacculus sporiferus frequenter minor quam sporae globosae vel subglobosae; sporae duabus
 tunicis stratis pluribus. Stratum exterior tunicae exterioris coniunctum tunica hyphae et
-sacculi. Stratum interiorem tunicae exterioris laminatum, duas poras sporae occludens.#Description*]
-[@Stratum exterior tunicae interioris non granulatum. Formans mycorrhizas vesiculararbusculares. Structurae fungorum colorantes caeruleae cum ‘trypan blue’.#Description*]
+sacculi. Stratum interiorem tunicae exterioris laminatum, duas poras sporae occludens.
+Stratum exterior tunicae interioris non granulatum. Formans mycorrhizas vesiculararbusculares. Structurae fungorum colorantes caeruleae cum ‘trypan blue’.#Description*]
 [@Type species: Tricispora nevadensis (Palenz. et al.) Oehl et al.#Misc-exposition*]
 
 [@Etymology: derived from the Latin: (cica-)trix = cicatrix: and spora = spore; referring
@@ -653,8 +653,8 @@ wall structural layer) are continuous with the sporiferous saccule wall. After t
 [@Albahypha, Sacculospora & Tricispora gen. nov. (Glomeromycetes) ... 311#Misc-exposition*]
 
 [@hyphal neck connections break oﬀ, spores show two, often opposite, cicatrices
-that are closed by the permanent sublayers of the outer wall structural layer.#Description*]
-[@Middle and inner wall form de novo. Middle wall is 1–2-layered. Inner wall
+that are closed by the permanent sublayers of the outer wall structural layer.
+Middle and inner wall form de novo. Middle wall is 1–2-layered. Inner wall
 consists of several layers, none of which has a granular (‘beaded’) appearance,
 and does not stain in Melzer’s reagent.#Description*]
 [@Type genus: Sacculospora Oehl et al.#Misc-exposition*]
@@ -662,8 +662,8 @@ and does not stain in Melzer’s reagent.#Description*]
 [@Sacculospora Oehl, Sieverd., G.A. Silva, B.T. Goto, I.C. Sánchez & Palenz., gen. nov.#Nomenclature*]
 
 [@MycoBank MB 561646#Misc-exposition*]
-[@Figs 8–12, 17–19
-Sporocarpia ignota. Sporae singulatim eﬀormatae subterminaliter vel intercalariter in hypha
+[@Figs 8–12, 17–19#Misc-exposition*]
+[@Sporocarpia ignota. Sporae singulatim eﬀormatae subterminaliter vel intercalariter in hypha
 inﬂata anguste adiacetum ad sacculum sporiferum terminalem vel intercalarem. Sporae
 globosae vel subglobosae, tribus tunicis stratis pluribus. Stratum exterior tunicae exterioris
 coniunctum tunica hyphae et sacculi. Stratum interiorem tunicae exterioris laminatum,
@@ -697,8 +697,8 @@ phylogenetic and morphological congruencies within a group of species that
 have long been considered heterogeneous (e.g. Morton & Benny 1990, Sieverding
 & Oehl 2006). Species with entrophosporoid (sensu lato) spore formation
 are now found within Entrophosporaceae (E. infrequens), Acaulosporaceae
-(K. colombiana, K. kentinensis), Diversisporaceae (T. nevadensis), Sacculosporaceae (S. baltica), and Archaeosporaceae (Intraspora schenckii).#Misc-exposition*]
-[@Sequence analyses of E. infrequens, with a unique entrophosporoid spore
+(K. colombiana, K. kentinensis), Diversisporaceae (T. nevadensis), Sacculosporaceae (S. baltica), and Archaeosporaceae (Intraspora schenckii).
+Sequence analyses of E. infrequens, with a unique entrophosporoid spore
 formation, place this species so close to Claroideoglomus that we regard#Misc-exposition*]
 
 [@312 ... Oehl & al.#Misc-exposition*]
@@ -709,8 +709,8 @@ type genus Entrophospora, Claroideoglomus, and Viscospora within the revised
 Entrophosporaceae.#Misc-exposition*]
 [@The Diversisporaceae now comprise four genera: two with diversisporoid
 spore formation (Diversispora and Redeckera; Oehl et al. 2011b) and one each
-with otosporoid (Otospora) and tricisporoid (Tricispora) spore formation.#Misc-exposition*]
-[@There are now several phylogenetic clades that form spores terminally on
+with otosporoid (Otospora) and tricisporoid (Tricispora) spore formation.
+There are now several phylogenetic clades that form spores terminally on
 hyphae as well as on or within sporiferous saccules (spore formation type
 glomoid s.l., acaulosporoid s.l., entrophosporoid s.l.). These are represented
 in the Entrophosporaceae (Glomerales), Diversisporaceae (Diversisporales),
@@ -724,8 +724,8 @@ al. 2001, Palenzuela et al. 2008, 2010, Oehl et al. 2011d). Thus, we conclude th
 the synonymization of Kuklospora with Acaulospora (Kaonongbua et al. 2010)
 is not justiﬁed and needs to be substantiated (Oehl et al. 2011e). Moreover,
 a revision of the phylogenetically and morphologically heterogeneous
-Acaulosporaceae is urgently needed (Spain 1992, Oehl et al. 2011e).#Misc-exposition*]
-[@Our analyses supports Tricispora nevadensis (≡ E. nevadensis) and
+Acaulosporaceae is urgently needed (Spain 1992, Oehl et al. 2011e).
+Our analyses supports Tricispora nevadensis (≡ E. nevadensis) and
 Otospora bareae as sister taxa within the Diversisporaceae (Figs 1–2). Both
 Entrophospora and Otospora can readily be distinguished by spore formation
 type, distance between the saccule terminus and the diﬀerentiated spore within
@@ -735,8 +735,8 @@ in common with the type genus of their family, Diversispora, whose species
 form spores simply on subtending hyphae. We emphasize that there have
 never been genera in Glomeromycetes (sensu Oehl et al. 2011d) that encompass
 species with both glomoid and entrophosporoid or acaulosporoid spore
-formation. This strongly supports the proposition of Otospora and Tricispora.#Misc-exposition*]
-[@However, phylogenetically, both T. nevadensis and O. bareae render the genus
+formation. This strongly supports the proposition of Otospora and Tricispora.
+However, phylogenetically, both T. nevadensis and O. bareae render the genus
 Diversispora polyphyletic.#Misc-exposition*]
 [@We regard the Diversispora molecular database as still rudimentary, as the
 genus comprises several species that yet to be molecularly analyzed (Oehl et al.
@@ -746,8 +746,8 @@ reclassiﬁed, additional molecular and morphological studies are needed to#Misc
 
 [@Albahypha, Sacculospora & Tricispora gen. nov. (Glomeromycetes) ... 313#Misc-exposition*]
 
-[@determine relationships accurately within this heterogeneous family.#Misc-exposition*]
-[@Glomus hyderabadense Swarupa et al. also deserves mention, for it regularly
+[@determine relationships accurately within this heterogeneous family.
+Glomus hyderabadense Swarupa et al. also deserves mention, for it regularly
 forms a small terminal spore and an adjacent, subterminal large spore on
 subtending hyphae. Since the terminal spore is generally much smaller than
 the subterminal spore (Swarupa et al. 2004), its spore formation superﬁcially
@@ -786,8 +786,8 @@ and its surrounding ruderal and natural vegetation in Southern Arabia. Mycorrhiz
 [@Ames RN, Schneider RW. 1979. Entrophospora, a new genus in the Endogonaceae. Mycotaxon 2:
 347–352.#Misc-exposition*]
 [@Bashan Y, Khaosaad T, Salazar BG, Wiemken A, Oehl F, Vierheilig H. 2007. The mycorrhizal status
-of Idria columnaris, the boojum tree, an ancient plant from Baja California. Trees 21: 329–335.#Misc-exposition*]
-[@http://dx.doi.org/10.1007/s00468-007-0126-2#Misc-exposition*]
+of Idria columnaris, the boojum tree, an ancient plant from Baja California. Trees 21: 329–335.
+http://dx.doi.org/10.1007/s00468-007-0126-2#Misc-exposition*]
 [@Błaszkowski J, Madej T, Tadych M. 1998. Entrophospora baltica sp. nov. and Glomus fuegianum, two
 species in the Glomales from Poland. Mycotaxon 68: 165–184.#Misc-exposition*]
 
@@ -801,87 +801,87 @@ ecosystems of Southern Chile. Journal of Appl. Bot. Food Qual. 80: 40–47.#Misc
 group molecularly distinct from Zygomycota. Mycotaxon 96: 129–132.#Misc-exposition*]
 [@Goto BT, Silva GA, Maia LC, Souza RG, Coyne D, Tchabi A, Lawouin L, Hountondji F, Oehl F. 2011.#Misc-exposition*]
 [@Racocetra tropicana, a new species in the Glomeromycetes from tropical areas. Nova Hedwigia
-92: 69–82. http://dx.doi.org/10.1127/0029-5035/2011/0092-0069
-Guindon S, Gascuel O. 2003. A simple, fast, and accurate algorithm to estimate large phylogenies
-by maximum likelihood. System. Biol. 52(5): 696–704.#Misc-exposition*]
-[@http://dx.doi.org/10.1080/10635150390235520#Misc-exposition*]
+92: 69–82. http://dx.doi.org/10.1127/0029-5035/2011/0092-0069#Misc-exposition*]
+[@Guindon S, Gascuel O. 2003. A simple, fast, and accurate algorithm to estimate large phylogenies
+by maximum likelihood. System. Biol. 52(5): 696–704.
+http://dx.doi.org/10.1080/10635150390235520#Misc-exposition*]
 [@Hall IR. 1977. Species and mycorrhizal infections of New Zealand Endogonaceae. Trans. Br. Mycol.
-Soc. 68: 341–356. http://dx.doi.org/10.1016/S0007-1536(77)80186-1
-Hall TA. 1999. BioEdit: a user-friendly biological sequence alignment editor and analysis program
+Soc. 68: 341–356. http://dx.doi.org/10.1016/S0007-1536(77)80186-1#Misc-exposition*]
+[@Hall TA. 1999. BioEdit: a user-friendly biological sequence alignment editor and analysis program
 for Windows 95/98/NT. Nucl. Acids Symp. Ser. 41: 95–98.#Misc-exposition*]
 [@Kaonongbua W, Morton J, Bever JD. 2010. Taxonomic revision transferring species in Kuklospora
 to Acaulospora (Glomeromycota) and a description of Acaulospora colliculosa sp. nov. from ﬁeld
-collected spores. Mycologia 102(6): 1497–1509. http://dx.doi.org/10.3852/10-011
-Larkin MA, Blackshields G, Brown NP, Chenna R, McGettigan PA, McWilliam H, Valentin F,
+collected spores. Mycologia 102(6): 1497–1509. http://dx.doi.org/10.3852/10-011#Misc-exposition*]
+[@Larkin MA, Blackshields G, Brown NP, Chenna R, McGettigan PA, McWilliam H, Valentin F,
 Wallace IM, Wilm A, Lopez R, Thompson JD, Gibson TJ, Higgins DG. 2007. Clustal W and
-Clustal X version 2.0. Bioinformatics 23: 2947–2948.#Misc-exposition*]
-[@http://dx.doi.org/10.1093/bioinformatics/btm404#Misc-exposition*]
+Clustal X version 2.0. Bioinformatics 23: 2947–2948.
+http://dx.doi.org/10.1093/bioinformatics/btm404#Misc-exposition*]
 [@McGee PA, Trappe JM. 2002. The Australian zygomycetous mycorrhizal fungi. II. Further Australian
 sporocarpic Glomaceae. Aust. Syst. Bot. 15: 115–124.#Misc-exposition*]
 [@Millner PD, Mulbry WW, Reynolds SL. 2001. Taxon-speciﬁc oligonucleotide primers for detection
-of Glomus etunicatum. Mycorrhiza 10: 259–265. http://dx.doi.org/10.1007/s005720000085
-Milne I, Wright F, Rowe G, Marshal DF, Husmeier D, McGuire G. 2004. TOPALi: Software for
-automatic identiﬁcation of recombinant sequences within DNA Multiple Alignments.#Misc-exposition*]
-[@Bioinformatics 20: 1806–1807. http://dx.doi.org/10.1093/bioinformatics/bth155.#Misc-exposition*]
+of Glomus etunicatum. Mycorrhiza 10: 259–265. http://dx.doi.org/10.1007/s005720000085#Misc-exposition*]
+[@Milne I, Wright F, Rowe G, Marshal DF, Husmeier D, McGuire G. 2004. TOPALi: Software for
+automatic identiﬁcation of recombinant sequences within DNA Multiple Alignments.
+Bioinformatics 20: 1806–1807. http://dx.doi.org/10.1093/bioinformatics/bth155.#Misc-exposition*]
 [@Morton JB, Benny GL. 1990. Revised classiﬁcation of arbuscular mycorrhizal fungi (Zygomycetes):
 a new order, Glomales, two new suborders, Glomineae and Gigasporinae, and two families,
 Acaulosporaceae and Gigasporaceae, with an emendation of Glomaceae. Mycotaxon 37:
 471–491.#Misc-exposition*]
 [@Oehl F, Sieverding E, Ineichen K, Mäder P, Boller T, Wiemken A. 2003. Impact of land use intensity
-on the species diversity of arbuscular mycorrhizal fungi in agroecosystems of Central Europe.#Misc-exposition*]
-[@Appl. Environ. Microbiol. 69: 2816–2824.#Misc-exposition*]
-[@http://dx.doi.org/10.1128/AEM.69.5.2816–2824.2003#Misc-exposition*]
-[@Oehl F, Sieverding E, Mäder P, Dubois D, Ineichen K, Boller T, Wiemken A. 2004. Impact of longterm conventional and organic farming on the diversity of arbuscular mycorrhizal fungi.#Misc-exposition*]
-[@Oecologia 138: 574–583. http://dx.doi.org/10.1007/s00442-003-1458-2
-Oehl F, Sieverding E, Ineichen K, Ris E-A, Boller T, Wiemken A. 2005. Community structure of
+on the species diversity of arbuscular mycorrhizal fungi in agroecosystems of Central Europe.
+Appl. Environ. Microbiol. 69: 2816–2824.
+http://dx.doi.org/10.1128/AEM.69.5.2816–2824.2003#Misc-exposition*]
+[@Oehl F, Sieverding E, Mäder P, Dubois D, Ineichen K, Boller T, Wiemken A. 2004. Impact of longterm conventional and organic farming on the diversity of arbuscular mycorrhizal fungi.
+Oecologia 138: 574–583. http://dx.doi.org/10.1007/s00442-003-1458-2#Misc-exposition*]
+[@Oehl F, Sieverding E, Ineichen K, Ris E-A, Boller T, Wiemken A. 2005. Community structure of
 arbuscular mycorrhizal fungi at diﬀerent soil depths in extensively and intensively managed
-agroecosystems. New Phytol. 165: 273–283. http://dx.doi.org/10.1111/j.1469-8137.2004.01235.x
-Oehl F, Sýkorová Z, Redecker D, Wiemken A, Sieverding E. 2006. Acaulospora alpina, a new
+agroecosystems. New Phytol. 165: 273–283. http://dx.doi.org/10.1111/j.1469-8137.2004.01235.x#Misc-exposition*]
+[@Oehl F, Sýkorová Z, Redecker D, Wiemken A, Sieverding E. 2006. Acaulospora alpina, a new
 arbuscular mycorrhizal fungal species characteristic for high mountainous and alpine grasslands
 of the Swiss Alps. Mycologia 98: 286–294. http://dx.doi.org/10.3852/mycologia.98.2.286#Misc-exposition*]
 
 [@Albahypha, Sacculospora & Tricispora gen. nov. (Glomeromycetes) ... 315#Misc-exposition*]
 [@Oehl F, Sieverding E, Ineichen K, Mäder P, Wiemken A, Boller T. 2009. Distinct sporulation
 dynamics of arbuscular mycorrhizal fungal communities from diﬀerent agroecosystems in
-long-term microcosms. Agric. Ecosys. Environ. 134: 257–268.#Misc-exposition*]
-[@http://dx.doi.org/10.1016/j.agee.2009.07.008#Misc-exposition*]
+long-term microcosms. Agric. Ecosys. Environ. 134: 257–268.
+http://dx.doi.org/10.1016/j.agee.2009.07.008#Misc-exposition*]
 [@Oehl F, Jansa J, de Souza FA, Silva GA. 2010a. Cetraspora helvetica, a new ornamented species
-in the Glomeromycetes from Swiss agricultural ﬁelds. Mycotaxon 114: 71-84. http://dx.doi.#Misc-exposition*]
-[@org/10.5248/114.71#Misc-exposition*]
-[@Oehl F, Laczko E, Bogenrieder A, Stahr K, Bösch R, van der Heijden MGA, Sieverding E. 2010b.#Misc-exposition*]
-[@Soil type and land use intensity determine the composition of arbuscular mycorrhizal fungal
-communities. Soil Biol. Biochem. 42: 724–732. http://dx.doi.org/10.1016/j.soilbio.2010.01.006
-Oehl F, Schneider D, Sieverding E, Burga CA. 2011a. Succession of arbuscular mycorrhizal
-communities in the foreland of the retreating Morteratsch glacier in the Central Alps.#Misc-exposition*]
-[@Pedobiologia 54: 321–331, http://dx.doi.org/10.1016/j.pedobi.2011.07.006
-Oehl F, Silva GA, Goto BT, Sieverding E. 2011b. Glomeromycota: three new genera, and glomoid
-species reorganized. Mycotaxon 116: 75–120. http://dx.doi.org/10.5248/116.75
-Oehl F, Silva DKA, Maia LC, Ferreira NM, da Silva GA. 2011c. Orbispora gen. nov., ancestral in the
-Scutellosporaceae (Glomeromycetes). Mycotaxon 116: 161–169.#Misc-exposition*]
-[@http://dx.doi.org/10.5248/116.161.#Misc-exposition*]
+in the Glomeromycetes from Swiss agricultural ﬁelds. Mycotaxon 114: 71-84. http://dx.doi.
+org/10.5248/114.71#Misc-exposition*]
+[@Oehl F, Laczko E, Bogenrieder A, Stahr K, Bösch R, van der Heijden MGA, Sieverding E. 2010b.
+Soil type and land use intensity determine the composition of arbuscular mycorrhizal fungal
+communities. Soil Biol. Biochem. 42: 724–732. http://dx.doi.org/10.1016/j.soilbio.2010.01.006#Misc-exposition*]
+[@Oehl F, Schneider D, Sieverding E, Burga CA. 2011a. Succession of arbuscular mycorrhizal
+communities in the foreland of the retreating Morteratsch glacier in the Central Alps.
+Pedobiologia 54: 321–331, http://dx.doi.org/10.1016/j.pedobi.2011.07.006#Misc-exposition*]
+[@Oehl F, Silva GA, Goto BT, Sieverding E. 2011b. Glomeromycota: three new genera, and glomoid
+species reorganized. Mycotaxon 116: 75–120. http://dx.doi.org/10.5248/116.75#Misc-exposition*]
+[@Oehl F, Silva DKA, Maia LC, Ferreira NM, da Silva GA. 2011c. Orbispora gen. nov., ancestral in the
+Scutellosporaceae (Glomeromycetes). Mycotaxon 116: 161–169.
+http://dx.doi.org/10.5248/116.161.#Misc-exposition*]
 [@Oehl F, Silva GA, Goto BT, Maia LC, Sieverding E. 2011d. Glomeromycota: two new classes and a
 new order. Mycotaxon 116: 365–379. http://dx.doi.org/10.5248/116.365.#Misc-exposition*]
 [@Oehl F, Sýkorová Z, Błaszkowski J, Sánchez-Castro I, Coyne D, Tchabi A, Lawouin L, Hountondji
 FCC, Silva GA. 2011e. Acaulospora sieverdingii, an ecologically diverse new fungus in the
-Glomeromycota, described from lowland temperate Europe and tropical West Africa. J. Appl.#Misc-exposition*]
-[@Bot. Food Qual. 84: 47–53.#Misc-exposition*]
+Glomeromycota, described from lowland temperate Europe and tropical West Africa. J. Appl.
+Bot. Food Qual. 84: 47–53.#Misc-exposition*]
 [@Palenzuela J, Ferrol N, Boller T, Azcón-Aguilar C, Oehl F. 2008. Otospora bareai, a new fungal
 species in the Glomeromycetes from a dolomitic shrub-land in the Natural Park of Sierra de Baza
-(Granada, Spain). Mycologia 100(2): 296–305. http://dx.doi.org/10.3852/mycologia.100.2.296
-Palenzuela J, Barea JM, Ferrol N, Azcón-Aguilar C, Oehl F. 2010. Entrophospora nevadensis, a
-new arbuscular mycorrhizal fungus, from Sierra Nevada National Park (southeastern Spain).#Misc-exposition*]
-[@Mycologia 102(3): 624–632. http://dx.doi.org/10.3852/09-145
-Palenzuela J, Barea JM, Ferrol N, Oehl F. 2011. Ambispora granatensis, a new arbuscular mycorrhizal
-fungus, associated with Asparagus oﬃcinalis in Andalucía (Spain). Mycologia 103(2): 333–340.#Misc-exposition*]
-[@http://dx.doi.org/10.3852/09-146#Misc-exposition*]
+(Granada, Spain). Mycologia 100(2): 296–305. http://dx.doi.org/10.3852/mycologia.100.2.296#Misc-exposition*]
+[@Palenzuela J, Barea JM, Ferrol N, Azcón-Aguilar C, Oehl F. 2010. Entrophospora nevadensis, a
+new arbuscular mycorrhizal fungus, from Sierra Nevada National Park (southeastern Spain).
+Mycologia 102(3): 624–632. http://dx.doi.org/10.3852/09-145#Misc-exposition*]
+[@Palenzuela J, Barea JM, Ferrol N, Oehl F. 2011. Ambispora granatensis, a new arbuscular mycorrhizal
+fungus, associated with Asparagus oﬃcinalis in Andalucía (Spain). Mycologia 103(2): 333–340.
+http://dx.doi.org/10.3852/09-146#Misc-exposition*]
 [@Rodriguez A, Dougall T, Dodd JC, Clapp JP. 2001. The large subunit ribosomal RNA genes of
-Entrophospora infrequens comprise sequences related to two diﬀerent glomalean families.#Misc-exposition*]
-[@New Phytol. 152: 159–167. http://dx.doi.org/10.1046/j.0028-646X.2001.00237.x
-Ronquist F, Huelsenbeck JP. 2003. MrBayes 3: Bayesian phylogenetic inference under mixed
-models. Bioinformatics 19(12): 1572–1574. http://dx.doi.org/10.1093/bioinformatics/btg180
-Schenck NC, Spain JL, Sieverding E, Howeler RH. 1984. Several new and unreported vesiculararbuscular mycorrhizal fungi (Endogonaceae) from Colombia. Mycologia 76: 685–699.#Misc-exposition*]
-[@Schüßler A, Walker C. 2010. The Glomeromycota. A species list with new families and new genera.#Misc-exposition*]
-[@Gloucester, UK. 56 p.#Misc-exposition*]
+Entrophospora infrequens comprise sequences related to two diﬀerent glomalean families.
+New Phytol. 152: 159–167. http://dx.doi.org/10.1046/j.0028-646X.2001.00237.x#Misc-exposition*]
+[@Ronquist F, Huelsenbeck JP. 2003. MrBayes 3: Bayesian phylogenetic inference under mixed
+models. Bioinformatics 19(12): 1572–1574. http://dx.doi.org/10.1093/bioinformatics/btg180#Misc-exposition*]
+[@Schenck NC, Spain JL, Sieverding E, Howeler RH. 1984. Several new and unreported vesiculararbuscular mycorrhizal fungi (Endogonaceae) from Colombia. Mycologia 76: 685–699.#Misc-exposition*]
+[@Schüßler A, Walker C. 2010. The Glomeromycota. A species list with new families and new genera.
+Gloucester, UK. 56 p.#Misc-exposition*]
 [@Schüßler A, Schwarzott D, Walker C. 2001. A new fungal phylum, the Glomeromycota: phylogeny
 and evolution. Mycol. Res. 105: 1413–1421.#Misc-exposition*]
 [@Sieverding E, Oehl F. 2006. Revision of Entrophospora, and description of Kuklospora and
@@ -904,8 +904,8 @@ its taxonomy and phylogenetic comparison with related species. Mycotaxon 89: 245
 4. Sinauer Associates, Sunderland, Massachusetts.#Misc-exposition*]
 [@Tchabi A, Coyne D, Hountondji F, Lawouin L, Wiemken A, Oehl F. 2010. Eﬃcacy of indigenous
 arbuscular mycorrhizal fungi for promoting white yam (Dioscorea rotundata) growth in West
-Africa. Appl. Soil Ecol. 45: 92–100. http://dx.doi.org/10.1016/j.apsoil.2010.03.001
-Wu CG, Liu YS, Hung LL. 1995. Spore development of Entrophospora kentinensis in an aeroponic
+Africa. Appl. Soil Ecol. 45: 92–100. http://dx.doi.org/10.1016/j.apsoil.2010.03.001#Misc-exposition*]
+[@Wu CG, Liu YS, Hung LL. 1995. Spore development of Entrophospora kentinensis in an aeroponic
 system. Mycologia 87: 582–587.#Misc-exposition*]
 
 [@#Misc-exposition*]
