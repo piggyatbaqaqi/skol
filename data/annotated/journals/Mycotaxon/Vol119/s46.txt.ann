@@ -4,27 +4,27 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 397–403#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 397–403#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.397#Misc-exposition*]
 
 [@January–March 2012#Misc-exposition*]
 
-[@The ﬁrst report of Ceriporia lacerata#Misc-exposition*]
-[@(Phanerochaetaceae, Basidiomycota) in Korea#Misc-exposition*]
-[@Yeongseon Jang1, Ha Eun Choi1, Young Woon Lim2,#Misc-exposition*]
-[@Jin Sung Lee3 & Jae-Jin Kim1*#Misc-exposition*]
+[@The ﬁrst report of Ceriporia lacerata
+(Phanerochaetaceae, Basidiomycota) in Korea#Misc-exposition*]
+[@Yeongseon Jang1, Ha Eun Choi1, Young Woon Lim2,
+Jin Sung Lee3 & Jae-Jin Kim1*#Misc-exposition*]
 [@Division of Environmental Science & Ecological Engineering,
 College of Life Sciences & Biotechnology, Korea University
-5-1 Anam-dong, Seongbuk-gu, Seoul, 136-701, Korea#Misc-exposition*]
-[@2#Misc-exposition*]
-[@School of Biological Sciences, Seoul National University, Seoul, 151-747, Korea
-3#Misc-exposition*]
-[@National Institute of Biological Resources, Environmental Research Complex,
-Incheon, 404-708, Korea#Misc-exposition*]
-[@*Correspondence to: jae-jinkim@korea.ac.kr#Misc-exposition*]
-[@1#Misc-exposition*]
+5-1 Anam-dong, Seongbuk-gu, Seoul, 136-701, Korea
+2
+School of Biological Sciences, Seoul National University, Seoul, 151-747, Korea
+3
+National Institute of Biological Resources, Environmental Research Complex,
+Incheon, 404-708, Korea
+*Correspondence to: jae-jinkim@korea.ac.kr
+1#Misc-exposition*]
 
 [@Abstract— An unrecorded Ceriporia species was collected during the ﬁeld survey in Korea
 University Experimental Forests. Based on morphological characteristics and 28S, 18S, and
@@ -60,8 +60,8 @@ Experimental Forests located in Goesan-gun, Chungcheongbuk-do (36°46ʹ13ʺN
 deposited at the National Biological Resources Center (KB).#Misc-exposition*]
 [@Microscopic observation#Misc-exposition*]
 
-[@Macro- and microscopic basidiocarp features were noted from the collected specimens.#Misc-exposition*]
-[@Measurements and drawings were made from slide preparations mounted in 3% KOH
+[@Macro- and microscopic basidiocarp features were noted from the collected specimens.
+Measurements and drawings were made from slide preparations mounted in 3% KOH
 (Largent et al. 1977) using an Olympus BX51 light microscope. Average dimensions
 were determined from > 20 measurements of each character. The characteristics of the
 four Korean Ceriporia listed in Table 1 are based on our observations of C. lacerata
@@ -142,7 +142,7 @@ Basidiospores (μm)
 4–5 × 1.5–2
 
 Molecular analysis
-#Misc-exposition*]
+#Table*]
 [@Genomic DNAs were extracted from basidiocarp hymenophores using Accuprep
 Genomic DNA extraction kit (Bioneer, Korea). PCR reactions were performed using
 Accupower PCR premix kit for 28S, 18S, and ITS rDNA, using primers LR0R/LR3
@@ -161,7 +161,7 @@ neighbor joining (NJ) analyses of each region followed Jang et al. (2011).#Misc-
 [@Ceriporia lacerata new to Korea ... 399#Misc-exposition*]
 
 [@Fig. 1. Ceriporia lacerata. (A) Basidiocarp. (B) Microscopic features: a, basidiospores; b, basidia;
-c, generative hyphae. Scale bar = 10μm#Misc-exposition*]
+c, generative hyphae. Scale bar = 10μm#Figure*]
 
 [@Taxonomy#Misc-exposition*]
 
@@ -169,8 +169,8 @@ c, generative hyphae. Scale bar = 10μm#Misc-exposition*]
 
 [@Basidiocarp resupinate, eﬀused, conﬂuent, soft when fresh, then fragile,
 ﬁrmly attached to the substrate; hymenophore poroid, white, buﬀ to ochreous;
-dissepiments entire to lacerate; pores angular, 2–5 per mm; margin white.#Description*]
-[@Hyphal system monomitic; contextual hyphae 3–5.7 µm in diameter, smooth,
+dissepiments entire to lacerate; pores angular, 2–5 per mm; margin white.
+Hyphal system monomitic; contextual hyphae 3–5.7 µm in diameter, smooth,
 thin- to slightly thick-walled, simple-septate; tramal hyphae 2.3–4.6 µm in
 diameter, smooth, thin- to slightly thick-walled, simple-septate, cystidia
 lacking; basidia clavate, 11–16.5 × 3.5–5.5 µm, with 4 sterigmata; basidiospores
@@ -198,7 +198,7 @@ to conﬁrm the morphological identiﬁcation. The aligned dataset of 11 sequenc
 [@Fig. 2. 28S, 18S, and ITS rDNA region maximum parsimonious trees of Ceriporia lacerata and
 allied species. The trees were rooted by Ceriporiopsis species. Bootstrap values ≥ 50% are shown
 above branches (MP bootstrap proportions/NJ bootstrap proportions). Specimens found in this
-study are in bold. GenBank accession numbers in parentheses.#Misc-exposition*]
+study are in bold. GenBank accession numbers in parentheses.#Figure*]
 
 [@of 28S rDNA comprised 504 characters, of which 435 sites were constant, 24
 sites variable, and 45 sites parsimony informative; tree length was 90 steps
@@ -209,8 +209,8 @@ steps with CI = 0.8608 and RI = 0.8226. The ITS rDNA dataset of 9 sequences
 comprised 390 characters with 281 constant, 44 variable, and 65 parsimony
 informative sites; tree length was 138 steps with CI = 0.9855 and RI = 0.9802. The
 MP and NJ analyses of all three regions clustered our sequences with previously
-reported sequences of Ceriporia lacerata with high bootstrap supports (Fig. 2).#Misc-exposition*]
-[@The Korean C. lacerata (KB NIBRFG0000114705, KB NIBRFG0000114712)
+reported sequences of Ceriporia lacerata with high bootstrap supports (Fig. 2).
+The Korean C. lacerata (KB NIBRFG0000114705, KB NIBRFG0000114712)
 showed 100% sequence similarity to a Japanese specimen (GenBank
 AB084585) in 18S rDNA region according to a BLAST search of GenBank. ITS
 rDNA region also showed 99.8% similarity (one out of 560 positions showed
@@ -264,17 +264,17 @@ for synthetic dyes (Congo Red, Orange II, and Reactive Blue 4) among the#Misc-ex
 [@white rot fungal species tested in solid media. However, information regarding
 this species is still limited and the abilities of this species should be investigated
 further.#Misc-exposition*]
-[@Key to the species of Ceriporia in Korea#Key*]
-[@1. Pore surface pale to dark brownish purple;#Key*]
-[@(basidiospores allantoid, 5–7 µm long) . . . . . . . . . . . . . . . . . . . . . . . . . . C. purpurea
+[@Key to the species of Ceriporia in Korea
+1. Pore surface pale to dark brownish purple;
+(basidiospores allantoid, 5–7 µm long) . . . . . . . . . . . . . . . . . . . . . . . . . . C. purpurea
 1. Pore surface white to brown . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
-2. Pore surface cream to sordid pinkish-brown;#Key*]
-[@(basidiospores cylindric to allantoid, 4-5 µm long) . . . . . . . . . . . . . . . . . C. viridans
+2. Pore surface cream to sordid pinkish-brown;
+(basidiospores cylindric to allantoid, 4-5 µm long) . . . . . . . . . . . . . . . . . C. viridans
 2. Pore surface white to ochraceous . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .3
 3. Basidiospores allantoid, 6–8 × 2–3 µm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . C. reticulata
 3. Basidiospores oblong-ellipsoid to ellipsoid, 3.5–5 × 2–3 µm . . . . . . . . . . . . C. lacerata#Key*]
 
-Acknowledgements
+[@Acknowledgements#Misc-exposition*]
 
 [@This work was carried out with the support of ‘Forest Science & Technology Projects
 (Project No. S121010L110000) provided by Korea Forest Service. This work was also
@@ -285,47 +285,47 @@ for their valuable suggestions on the manuscript.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Cui B, Wei Y, Dai Y. 2006. Polypores from Zijin Mountain, Jiangsu province. Mycosystema
 25: 9–14.#Misc-exposition*]
-[@Dai YC. 2012. Polypore diversity in China with an annotated checklist of Chinese polypores.#Misc-exposition*]
-[@Mycoscience 53: 49–80. http:/dx.doi.org/10.1007/s10267-011-0134-3
-Dams E, Hendriks L, Van de Peer Y, Neefs JM, Smits G, Vandenbempt I, De Wachter R. 1988.#Misc-exposition*]
-[@Compilation of small ribosomal subunit RNA sequences. Nucleic. Acids. Res. 16: r87–r173.#Misc-exposition*]
+[@Dai YC. 2012. Polypore diversity in China with an annotated checklist of Chinese polypores.
+Mycoscience 53: 49–80. http:/dx.doi.org/10.1007/s10267-011-0134-3#Misc-exposition*]
+[@Dams E, Hendriks L, Van de Peer Y, Neefs JM, Smits G, Vandenbempt I, De Wachter R. 1988.
+Compilation of small ribosomal subunit RNA sequences. Nucleic. Acids. Res. 16: r87–r173.#Misc-exposition*]
 [@Gardes M, Bruns TD. 1993. ITS primers with enhanced speciﬁcity for basidiomycetes – application
-to the identiﬁcation of mycorrhizae and rusts. Mol. Ecol. 2: 113–118.#Misc-exposition*]
-[@http:/dx.doi.org/10.1111/j.1365-294X.1993.tb00005.x
-Gilbertson RL, Ryvarden L. 1986. North American polypores, Vol. 1. Fungiﬂora, Oslo.#Misc-exposition*]
+to the identiﬁcation of mycorrhizae and rusts. Mol. Ecol. 2: 113–118.
+http:/dx.doi.org/10.1111/j.1365-294X.1993.tb00005.x#Misc-exposition*]
+[@Gilbertson RL, Ryvarden L. 1986. North American polypores, Vol. 1. Fungiﬂora, Oslo.#Misc-exposition*]
 [@Jang YS, Choi HE, Lim YW, Lee JS, Kim J-J. 2011. The ﬁrst report of Antrodia sitchensis (Polyporaceae,
-Basidiomycota) in Korea. Mycobiology 39: 226-229.#Misc-exposition*]
-[@http:/dx.doi.org/10.5941/MYCO.2011.39.3.226#Misc-exposition*]
+Basidiomycota) in Korea. Mycobiology 39: 226-229.
+http:/dx.doi.org/10.5941/MYCO.2011.39.3.226#Misc-exposition*]
 [@Jung HS. 1994. Floral studies on Korean wood-rotting fungi (II) – on the ﬂora of the Aphyllophorales
 (Basidiomycotina). Kor. J. Mycol. 22: 62–99.#Misc-exposition*]
 [@Kim G-H, Lim YW, Song Y-S, Kim J-J. 2005. Decay fungi from playground wood products in
-service using LSU rDNA sequence analysis. Holzforschung 59: 459–466.#Misc-exposition*]
-[@http:/dx.doi.org/10.1515/HF.2005.076#Misc-exposition*]
+service using LSU rDNA sequence analysis. Holzforschung 59: 459–466.
+http:/dx.doi.org/10.1515/HF.2005.076#Misc-exposition*]
 [@Kim G-H, Lim YW, Choi Y-S, Kim M-J, Kim J-J. 2009. Primary and secondary decay fungi on
-exposed pine tree logs in the forest. Holzforschung 63: 633–638.#Misc-exposition*]
-[@http:/dx.doi.org/10.1515/HF.2009.099#Misc-exposition*]
+exposed pine tree logs in the forest. Holzforschung 63: 633–638.
+http:/dx.doi.org/10.1515/HF.2009.099#Misc-exposition*]
 
 [@Ceriporia lacerata new to Korea ... 403#Misc-exposition*]
 [@Kim J-J, Kang S-M, Choi Y-S, Kim G-H. 2007. Microfungi potentially disﬁguring CCA-treated
-wood. Int. Biodeter. Biodegr. 60: 197–201. http:/dx.doi.org/10.1016/j.ibiod.2007.05.002
-Kim J-J, Lee S-S, Ra J-B, Lee H, Huh N, Kim G-H. 2011. Fungi associated with bamboo and their
-decay capabilities. Holzforschung 61: 271–275. http:/dx.doi.org/10.1515/HF.2011.004
-Kondo R, Mori T, Yoshimitu M, Hirose M, Wakao K, Matufuji Y, Sakai K. 1999. 10th Haikibutugakkai
+wood. Int. Biodeter. Biodegr. 60: 197–201. http:/dx.doi.org/10.1016/j.ibiod.2007.05.002#Misc-exposition*]
+[@Kim J-J, Lee S-S, Ra J-B, Lee H, Huh N, Kim G-H. 2011. Fungi associated with bamboo and their
+decay capabilities. Holzforschung 61: 271–275. http:/dx.doi.org/10.1515/HF.2011.004#Misc-exposition*]
+[@Kondo R, Mori T, Yoshimitu M, Hirose M, Wakao K, Matufuji Y, Sakai K. 1999. 10th Haikibutugakkai
 Youshishuu: 877–879. [In Japanese]#Misc-exposition*]
 [@Largent DL, Johnson D, Watling R. 1977. How to identify mushrooms to genus, III. Microscopic
 features. Mad River Press, Eureka, CA, USA.#Misc-exposition*]
-[@Lee H, Choi Y-S, Kim M-J, Huh N-Y, Kim G-H, Lim YW, Kang S-M, Cho S-T, Kim J-J. 2010.#Misc-exposition*]
-[@Degrading ability of oligocyclic aromates by Phanerochaete sordida selected via screening of
-white rot fungi. Folia Microbiol. 55: 447–453. http:/dx.doi.org/10.1007/s12223-010-0075-9
-Lee JS, Jung HS. 2005. List of recorded Korean Aphyllophorales. Kor. J. Mycol. 33: 38–53.#Misc-exposition*]
-[@Lee JS, Kim KM, Jung HS. 2002. The Aphyllophorales of the Kyeryoungsan National Park.#Misc-exposition*]
-[@Mycobiology 30: 133–138.#Misc-exposition*]
+[@Lee H, Choi Y-S, Kim M-J, Huh N-Y, Kim G-H, Lim YW, Kang S-M, Cho S-T, Kim J-J. 2010.
+Degrading ability of oligocyclic aromates by Phanerochaete sordida selected via screening of
+white rot fungi. Folia Microbiol. 55: 447–453. http:/dx.doi.org/10.1007/s12223-010-0075-9#Misc-exposition*]
+[@Lee JS, Jung HS. 2005. List of recorded Korean Aphyllophorales. Kor. J. Mycol. 33: 38–53.#Misc-exposition*]
+[@Lee JS, Kim KM, Jung HS. 2002. The Aphyllophorales of the Kyeryoungsan National Park.
+Mycobiology 30: 133–138.#Misc-exposition*]
 [@Lee J-W, Gwak K-S, Park J-Y, Park M-J, Choi D-H, Kwon M, Choi I-G. 2007. Biological pretreatment
 of softwood Pinus densiﬂora by three white rot fungi. J. Microbiol. 45: 485–491.#Misc-exposition*]
 [@Lim YW, Kim YH, Jung HS. 2000. The Aphyllophorales of Mungyong Saejae. Mycobiology
 28: 142–148.#Misc-exposition*]
-[@Long Y, Kim M-J, Kim J-J, Kim G-H. 2010. Screening of white rot fungi to decolorize synthetic dyes.#Misc-exposition*]
-[@Abstr. B027, p. 194, in: Proc. International Meeting of the Federation of Korean Microbiological
+[@Long Y, Kim M-J, Kim J-J, Kim G-H. 2010. Screening of white rot fungi to decolorize synthetic dyes.
+Abstr. B027, p. 194, in: Proc. International Meeting of the Federation of Korean Microbiological
 Societies.#Misc-exposition*]
 [@Suhara H, Maekawa N, Kaneko S, Hattori T, Sakai K, Kondo R. 2003. A new species, Ceriporia
 lacerata, isolated from white-rotted wood, Mycotaxon 86: 335–347.#Misc-exposition*]

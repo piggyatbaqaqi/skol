@@ -4,23 +4,23 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 431–438#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 431–438#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.431#Misc-exposition*]
 
 [@January–March 2012#Misc-exposition*]
 
 [@Nomenclatural notes 13. An incorrect neotype designation
-and provision for a lectotype and an epitype for Helvella fusca
-Fidel Landeros 1,2 * & Richard P. Korf3#Misc-exposition*]
+and provision for a lectotype and an epitype for Helvella fusca#Misc-exposition*]
+[@Fidel Landeros 1,2 * & Richard P. Korf3#Misc-exposition*]
 [@Facultad de Ciencias Naturales, Universidad Autónoma de Querétaro,
 Avenida de las Ciencias s/n, Santiago de Querétaro, Qro., 76270, Mexico
-2#Misc-exposition*]
-[@Departamento de Botánica y Zoología, Universidad de Guadalajara,
+2
+Departamento de Botánica y Zoología, Universidad de Guadalajara,
 Apartado postal 1-139, Zapopan, Jal., 45101, Mexico
-3#Misc-exposition*]
-[@Plant Pathology Herbarium, Cornell University, Ithaca, NY 14853, USA
+3
+Plant Pathology Herbarium, Cornell University, Ithaca, NY 14853, USA
 Correspondence to *: *landeros@uaq.mx, 3info@mycotaxon.com
 1#Misc-exposition*]
 
@@ -28,8 +28,8 @@ Correspondence to *: *landeros@uaq.mx, 3info@mycotaxon.com
 erroneous because an illustration accompanying the original description was overlooked. Such
 illustrations normally have served as the lectotype when all known specimens of the author’s
 taxon have been lost. The authors of that neotype designation should instead have designated
-the illustration as a lectotype and a specimen as an epitype, which is done in this paper.#Misc-exposition*]
-[@The so-called neotype specimen is now selected as the epitype specimen. A full description,
+the illustration as a lectotype and a specimen as an epitype, which is done in this paper.
+The so-called neotype specimen is now selected as the epitype specimen. A full description,
 illustrations and remarks about synonyms and a non-synonym are also provided.#Misc-exposition*]
 [@Key words — International Code of Botanical Nomenclature#Misc-exposition*]
 
@@ -50,7 +50,7 @@ that such an illustration, if one upon which it can be shown that the descriptio
 [@432 ... Landeros & Korf#Misc-exposition*]
 
 [@Figs. 1–2. 1: Type of Helvella fusca, reproduced from Gillet (1879). 2: Part of Helvella fusca
-epitype (Bresadola’s specimen 05 21 1898, S). Scale bar = 1 cm.#Misc-exposition*]
+epitype (Bresadola’s specimen 05 21 1898, S). Scale bar = 1 cm.#Figure*]
 
 [@or diagnosis validating the name was based, is considered part of the original
 material (McNeill et al. 2006: Vienna Code Art. 9 Note 2) and becomes eligible
@@ -87,8 +87,8 @@ Naturhistorische Rijksmuseum in Stockholm, Norway —Al Deserto, [Italy],
 collected by Bresadola, 05 21 1898 (Fig. 2). This specimen is also illustrated by
 Dissing (1966b). Oddly, Abbott & Currah failed to cite (or were unaware of)
 Bresadola’s careful description, which clearly cited Gillet’s ﬁgure and provided
-a superb plate of his own collection (Bresadola 1900: 100, tab. CCXII) (Fig. 3).#Misc-exposition*]
-[@That plate and description was reissued (Bresadola 1933: 1174, pl. 1174) with the
+a superb plate of his own collection (Bresadola 1900: 100, tab. CCXII) (Fig. 3).
+That plate and description was reissued (Bresadola 1933: 1174, pl. 1174) with the
 headers and footers of the plate in diﬀerent typeface and numbering and with
 a number of emendations of the text —notably eliminating Bresadola’s 1900
 acknowledgement that Boudier had informed him that specimens Bresadola
@@ -115,8 +115,8 @@ species description), with the hyphal fascicles of the apothecium absent or ≤ 
 [@434 ... Landeros & Korf#Misc-exposition*]
 [@Inasmuch as the incorrect neotypiﬁcation appeared in Mycotaxon (Abbott
 & Currah 1997: 61), we have chosen that same journal in which to rectify their
-action and to propose both the new lectotype and new epitype for the name.#Misc-exposition*]
-[@The corrected typiﬁcations and full description#Misc-exposition*]
+action and to propose both the new lectotype and new epitype for the name.
+The corrected typiﬁcations and full description#Misc-exposition*]
 
 [@Helvella fusca Gillet, Champignons de France, Discom.: 9, pl. 4, 1879.#Nomenclature*]
 
@@ -138,8 +138,8 @@ the marginal zone of the excipular surface. Stipe 8–45 mm high, 3–15 mm
 broad, equal or slightly wider at the base, whitish or pale brown, glabrous to
 subpubescent, lacunose, internally chambered.#Description*]
 [@Asci 260–320 × 14–15.5 µm, pleurorhynchous. Ascospores young, smooth:
-(17–)18.5–21 × 11–13 µm; mature, verrucose: 15.5–18.5 × 11–12.5 µm.#Description*]
-[@Paraphyses clavate, 5–8 µm wide at the apex, simple or branched, septate, thinwalled, yellowish brown, pigmented deposits in the cytoplasm. Medullary
+(17–)18.5–21 × 11–13 µm; mature, verrucose: 15.5–18.5 × 11–12.5 µm.
+Paraphyses clavate, 5–8 µm wide at the apex, simple or branched, septate, thinwalled, yellowish brown, pigmented deposits in the cytoplasm. Medullary
 excipulum hyaline. Ectal excipulum yellowish brown, pigmented deposits
 usually in the cell wall and in a few cells in the cytoplasm. Inner layer of
 the stipe hyaline. Outer layer of the stipe yellowish brown, pigmented
@@ -164,7 +164,7 @@ eventually validly proposed H. fusca var. bresadolae (Fig. 4) based on apothecia
 [@Figs. 3–5. 3: Helvella fusca reproduced from Bresadola (1900, from Boudier’s book deposited in
 Cornell University Library). 4: Type of H. fusca var. bresadolae reproduced from Boudier (1910,
 Tome 2, pl. 230). 5: Helvella fusca (epitype), a: ascospores, b: ectal excipulum, c: paraphyses and
-asci. Scale bar: 5a = 8 µm; 5b, 5c = 20 µm.#Misc-exposition*]
+asci. Scale bar: 5a = 8 µm; 5b, 5c = 20 µm.#Figure*]
 
 [@436 ... Landeros & Korf#Misc-exposition*]
 [@that Bresadola sent him (but unfortunately not cited in the description), wrote
@@ -184,8 +184,8 @@ species. We do not consider H. fusca a synonym of H. sulcata α fusca, because
 Afzelius recognized H. sulcata with “sulcis regularibus,” i.e., only longitudinal
 ribs on stipe (Afzelius 1783, Tab. X, ﬁg.1; this ﬁgure is also in Dissing (1966b,
 ﬁg. 27c), while H. fusca and H. lacunosa have longitudinal and transverse ribs
-(lacunose stipe) [i.e., in the words of Afzelius: “lacunis sulcisque irregularibus”].#Misc-exposition*]
-[@DNA sequences support H. sulcata as a distinct species (unpublished data),
+(lacunose stipe) [i.e., in the words of Afzelius: “lacunis sulcisque irregularibus”].
+DNA sequences support H. sulcata as a distinct species (unpublished data),
 contrary to the opinions by Dissing (1966b) and Abbott & Currah (1997), who
 considered it a synonym of H. lacunosa. Persoon (1801) described H. sulcata
 α fusca with “pileo nigro.” Helvella fusca has more recently been reported from
@@ -202,8 +202,8 @@ distribution outside of Europe remains doubtful.#Misc-exposition*]
 [@The authors thank John McNeill and Walter Gams, who have served as pre-submission
 reviewers. We also wish to acknowledge the eﬀorts of the organizers of the July 2011 VII
 Congress of Latin American Mycology for providing an opportunity to meet each other
-and to begin a collaboration on studies of Helvella and other operculate discomycetes.#Misc-exposition*]
-[@The senior author thanks Laura Guzmán-Dávalos for her support and direction in his
+and to begin a collaboration on studies of Helvella and other operculate discomycetes.
+The senior author thanks Laura Guzmán-Dávalos for her support and direction in his
 Doctoral studies and for revision of a preliminary version of this paper, and thanks
 Anders Tehler, Curator of the Herbarium S, for the loan of Bresadola’s specimen. Virginia
 Ramírez Cruz (Universidad de Guadalajara, Mexico) is acknowledged for her valuable
@@ -219,14 +219,14 @@ taxonomists on their websites.#Misc-exposition*]
 northwestern North America. Mycotaxon 62: 1-125.#Misc-exposition*]
 [@Afzelius A. 1783. Svamp-Slägtet Helvella. K. Vetensk.-Acad. Handl. 4: 299–313.#Misc-exposition*]
 [@Boudier [JL]E. 1904. Liste préliminaire des noms des 600 espèces de champignons qui doivent être
-ﬁgurés dans les six séries de Boudier, Icones Mycologicæ. 4 pp.
-Boudier [JL]E. 1907. Histoire et classiﬁcation des Discomycètes d’Europe. Librairie des Sciences
+ﬁgurés dans les six séries de Boudier, Icones Mycologicæ. 4 pp.#Misc-exposition*]
+[@Boudier [JL]E. 1907. Histoire et classiﬁcation des Discomycètes d’Europe. Librairie des Sciences
 Naturelles. Paris. 223 pp.#Misc-exposition*]
 [@Boudier [JL]E. 1910. Icones mycologicæ ou iconographie des champignons de France. Tome II,
 planches 194–421. Librairie des Sciences Naturelles. Paris.#Misc-exposition*]
 [@Boudier [JL]E. 1911. Icones mycologicæ ou iconographie des champignons de France. Tome IV,
-texte descriptif. Librairie des Sciences Naturelles. Paris. 362 pp.
-Bresadola G[J]. 1900 [“1892”]. Fungi tridentini novi, vel nondum delineati, descripti, et iconibus
+texte descriptif. Librairie des Sciences Naturelles. Paris. 362 pp.#Misc-exposition*]
+[@Bresadola G[J]. 1900 [“1892”]. Fungi tridentini novi, vel nondum delineati, descripti, et iconibus
 illustrati, ser. 2, fasc. 14, pp. 83–118, plates 196–217. Tridentini.#Misc-exposition*]
 [@Bresadola G[J]. 1932. Icones Mycologicae et Supplementum, [eds. Traverso JB, Catoni G, Fenaroli
 L, Trener JB] vol. 24 (Tab. 1151–1200). Medeolani.#Misc-exposition*]
@@ -237,21 +237,21 @@ Boudier Herbarium. Rev. Myc. 31: 189–224.#Misc-exposition*]
 [@Dissing H. 1966b. The genus Helvella in Europe with special emphasis on the species found in
 Norden. Dansk Botanisk Arkiv 25(1): 1–172.#Misc-exposition*]
 [@Gillet CC. 1879. Champignons de France. Les discomycètes, livr. 1, pp. [1]–28. Alençon, Paris.#Misc-exposition*]
-[@Kaushal SC. 1991. Systematics of N.W. Himalayan species of Helvella (operculate discomycetes).#Misc-exposition*]
-[@In: Khullar SP, Sharma MP (eds.). Himalayan botanical researches. Ashish Publishing House,
+[@Kaushal SC. 1991. Systematics of N.W. Himalayan species of Helvella (operculate discomycetes).
+In: Khullar SP, Sharma MP (eds.). Himalayan botanical researches. Ashish Publishing House,
 New Delhi. Pp. 61–75, pl. I–VII.#Misc-exposition*]
 [@Kempton PE, Wells VL. 1970. Studies on the ﬂeshy fungi of Alaska IV. A preliminary account of the
-genus Helvella. Mycologia 62(5): 940–959. http://dx.doi.org/10.2307/3757607
-Korf RP. 1986. A compendium of acceptable names for species illustrated in volumes 2 and 3 of
+genus Helvella. Mycologia 62(5): 940–959. http://dx.doi.org/10.2307/3757607#Misc-exposition*]
+[@Korf RP. 1986. A compendium of acceptable names for species illustrated in volumes 2 and 3 of
 Boudier’s Icones Mycologicae [with French translation by Jean-Daniel Pellet], pp. 209–252, in:
-van Brummelen J, Korf RP, Clémençon H, Jülich W, Demoulin V. Icones Mycologicae par Emile
-Boudier, Tome V, Liste préliminaire & explication des planches [reprint edition]. Editions
+van Brummelen J, Korf RP, Clémençon H, Jülich W, Demoulin V. Icones Mycologicae par Emile#Misc-exposition*]
+[@Boudier, Tome V, Liste préliminaire & explication des planches [reprint edition]. Editions
 Piantanida, Lausanne.#Misc-exposition*]
 [@Korf RP. 1988. A compendium of acceptable names for species illustrated in volumes 2 and 3 of
 Boudier’s Icones Mycologicae, Annotated: errata, some necessary changes in citations, and
-suggested changes based on recent taxonomic information. Ithaca: Privately printed. 48 pp.
-McNeill J, Turland NJ. 2011. Synopsis of proposals on botanical nomenclature – Melbourne 2011.#Misc-exposition*]
-[@A review of the proposals concerning the International Code of Botanical Nomenclature
+suggested changes based on recent taxonomic information. Ithaca: Privately printed. 48 pp.#Misc-exposition*]
+[@McNeill J, Turland NJ. 2011. Synopsis of proposals on botanical nomenclature – Melbourne 2011.
+A review of the proposals concerning the International Code of Botanical Nomenclature
 submitted to the XVIII International Botanical Congress. Taxon 60: 243–286.#Misc-exposition*]
 [@McNeill J, Barrie FR, Burdet HM, Demoulin V, Hawksworth DL, Marhold K, Nicolson
 DH, Prado J, Silva PC, Skog JE, Wiersema JH, Turland NJ. 2006. International
@@ -267,7 +267,7 @@ Sci. Nat. Ouest., Sér. 4, 1: 71–115.#Misc-exposition*]
 [@Perry G. 2010. (215-222) Proposals on original material. Taxon 59: 1909–1910.#Misc-exposition*]
 [@Persoon CH. 1801. Synopsis methodica fungorum 2: i–ii, 241–706. Henricus Dieterich, Göttingen,
 Germany.#Misc-exposition*]
-[@Ross R. 2002. Which illustrations are original material? Taxon 51: 523–524.#Misc-exposition*]
-[@http://dx.doi.org/10.2307/1554867#Misc-exposition*]
+[@Ross R. 2002. Which illustrations are original material? Taxon 51: 523–524.
+http://dx.doi.org/10.2307/1554867#Misc-exposition*]
 
 [@#Misc-exposition*]

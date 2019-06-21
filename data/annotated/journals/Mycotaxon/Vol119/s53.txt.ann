@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 453–457#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 453–457#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.453#Misc-exposition*]
 
@@ -14,8 +14,8 @@
 [@Puccinia, Uromyces, and Xenodochus species new to Turkey
 Sanli Kabaktepe & Zeliha Bahcecioglu*#Misc-exposition*]
 [@Department of Biology, Faculty of Science and Art, Inonu University, TR 44280, Malatya, Turkey
-*Correspondence to: zeliha.bahcecioglu@inonu.edu.tr
-Abstract — The genus Xenodochus and nine rust taxa —Xenodochus carbonarius, Puccinia
+*Correspondence to: zeliha.bahcecioglu@inonu.edu.tr#Misc-exposition*]
+[@Abstract — The genus Xenodochus and nine rust taxa —Xenodochus carbonarius, Puccinia
 hysteriiformis, P. majoricensis, P. pedunculata, P. stachydis, P. tendae, Uromyces colchici,
 U. kochiae, U. veratri— are reported for the ﬁrst time from Turkey. The morphological and
 microscopical features of these fungi are described.#Misc-exposition*]
@@ -38,9 +38,9 @@ required on rust fungi in Turkey.#Misc-exposition*]
 [@This paper presents rust species collected from Kars and Ardahan provinces
 in northeast Turkey.#Misc-exposition*]
 [@Materials & methods#Misc-exposition*]
-[@Materials were collected during 2006–09 from Kars and Ardahan Provinces in Turkey.#Misc-exposition*]
-[@The host specimens were prepared according to established herbarium techniques.#Misc-exposition*]
-[@Spores were scraped from dried host specimens and mounted in lactophenol. The
+[@Materials were collected during 2006–09 from Kars and Ardahan Provinces in Turkey.
+The host specimens were prepared according to established herbarium techniques.
+Spores were scraped from dried host specimens and mounted in lactophenol. The
 preparations were examined with an Olympus CX31 light microscope and micrographs
 taken with a Olympus E–330 camera. Analysis LS Starterwas software used to measure#Misc-exposition*]
 
@@ -115,20 +115,20 @@ diﬀers from P. acetosae by not being constricted at the septum and lacking a
 papilla on the upper teliospore cell.#Misc-exposition*]
 [@Puccinia stachydis DC., Fl. franc. 2: 595 (1805)#Nomenclature*]
 [@Uredinia amphigenous, rounded, scattered, brown. Urediniospores ellipsoid,
-globoid, 25–28 × 24–26 µm, wall 2–3 µm thick, brown, aculeate with 2–3 pores.#Description*]
-[@Telia similar to uredinia but dark colored. Teliospores ellipsoid or oblong,
+globoid, 25–28 × 24–26 µm, wall 2–3 µm thick, brown, aculeate with 2–3 pores.
+Telia similar to uredinia but dark colored. Teliospores ellipsoid or oblong,
 37–47 × 19–23 µm, constricted at the septum, pore of upper cell apical, wall
 smooth, chestnut brown, ≤ 6–11 µm thick at the apex, pedicel as long as spores,
 persistent, hyaline.#Description*]
 [@Known from Europe, P. stachydis is a new rust species for Turkey.#Misc-exposition*]
 [@Specimens examined – On: Stachys annua L. (Lamiaceae). TURKEY: Ardahan,
-16–18 km Haskoy to Ardahan, 1850 m, 17.09.2008, Sanli Kabaktepe 6675 (INU 8541).#Misc-exposition*]
-[@Kars, Sarikamis, Catak village, 1750 m, 24.08.2009, Sanli Kabaktepe 6935 (INU 8542).;
+16–18 km Haskoy to Ardahan, 1850 m, 17.09.2008, Sanli Kabaktepe 6675 (INU 8541).
+Kars, Sarikamis, Catak village, 1750 m, 24.08.2009, Sanli Kabaktepe 6935 (INU 8542).;
 Sarikamis, 2100–2500 m, 25.08.2009, Sanli Kabaktepe 6996 (INU 8543).#Misc-exposition*]
 
 [@Remarks —Puccinia hariotii Lagerh. on Stachys spp. (Henderson 1957) and
-P. betonicae (Alb. & Schwein.) DC. on S. iberica M. Bieb. and S. citrina Boiss.#Misc-exposition*]
-[@& Heldr. (Bahcecioglu & Yildiz 2005; Bahcecioglu & et al. 2006) have been
+P. betonicae (Alb. & Schwein.) DC. on S. iberica M. Bieb. and S. citrina Boiss.
+& Heldr. (Bahcecioglu & Yildiz 2005; Bahcecioglu & et al. 2006) have been
 reported from Turkey. Puccinia stachydis diﬀers from P. hariotii by constriction
 at the septum and a persistent pedicel and from P. betonicae by pale colored
 teliospores and a persistent pedicel.#Misc-exposition*]
@@ -151,7 +151,7 @@ T. fedtschenkoi, and T. kotschyanus Boiss. & Hohen. (Henderson 1959, 1964;
 Bahcecioglu & Gjærum 2004; Bahcecioglu et al. 2006) has been reported
 from Turkey. Puccinia tendae diﬀers from P. serpylli by narrow, dark colored
 teliospores.#Misc-exposition*]
-[@Uromyces colchici Massee, Grevillea 21: 6 (1892)#Misc-exposition*]
+[@Uromyces colchici Massee, Grevillea 21: 6 (1892)#Nomenclature*]
 [@Telia amphigenous, scattered, rather large, elliptical, sometimes circinate,
 up to 2 mm long, covered for some time by the epidermis, brown. Teliospores
 subgloboid to ovoid, rounded above with a ﬂat hyaline papilla, 28–40 × 20–28
@@ -189,14 +189,14 @@ Posof, Ilgar mountain pass, 2540 m, 26.08.2009, Sanli Kabaktepe 7023 (INU 8548).
 [@We are indebted to TUBITAK (Project no. TBAG-106T260) for ﬁnancial support. We
 also thank Dr. Ahmet Asan and Dr. Sevda Kirbag for presubmission expert reviews.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
-[@Bahcecioglu Z, Gjærum HB. 2003. New and rare rust fungi (Uredinales) from Anatolia (Turkey).#Misc-exposition*]
-[@Mycotaxon 85: 165–173.#Misc-exposition*]
+[@Bahcecioglu Z, Gjærum HB. 2003. New and rare rust fungi (Uredinales) from Anatolia (Turkey).
+Mycotaxon 85: 165–173.#Misc-exposition*]
 [@Bahcecioglu Z, Gjærum HB. 2004. New and rare rust fungi (Uredinales) from Anatolia (Turkey)
 – 2. Mycotaxon 90(1): 55–68.#Misc-exposition*]
 [@Bahcecioglu Z, Yildiz B. 2005. A study on the microfungi of Sivas Province. Turkish J. Bot. 29:
 23–44.#Misc-exposition*]
-[@Bahcecioglu Z, Kabaktepe S, Yildiz B. 2005. Three new rust species (Uredinales) from Turkey.#Misc-exposition*]
-[@Mycotaxon 93: 327–331.#Misc-exposition*]
+[@Bahcecioglu Z, Kabaktepe S, Yildiz B. 2005. Three new rust species (Uredinales) from Turkey.
+Mycotaxon 93: 327–331.#Misc-exposition*]
 [@Bahcecioglu Z, Kabaktepe S, Yildiz B. 2006. Microfungi isolated from plants in Kahramanmaras
 Province, Turkey. Turkish J. Bot. 30: 419–434.#Misc-exposition*]
 [@Bahcecioglu Z, Berndt R, Kabaktepe S. 2009. Puccinia ardahanensis sp nov., a new rust fungus from
@@ -212,8 +212,8 @@ Henderson DM. 1964. Uredinales from S.W. Asia III. Notes Roy. Bot. Gard. Edinbur
 197–277.#Misc-exposition*]
 [@Kabaktepe S, Bahcecioglu Z. 2005. Seven rust species recorded as new to Turkey. Mycotaxon 91:
 393–396.#Misc-exposition*]
-[@Kabaktepe S, Bahcecioglu Z. 2006. Microfungi identiﬁed from the ﬂora of Ordu Province in Turkey.#Misc-exposition*]
-[@Turkish J. Bot. 30: 251–265.#Misc-exposition*]
+[@Kabaktepe S, Bahcecioglu Z. 2006. Microfungi identiﬁed from the ﬂora of Ordu Province in Turkey.
+Turkish J. Bot. 30: 251–265.#Misc-exposition*]
 [@Kirbag S. 2003. New records of microfungi for Turkey. Plant Dis. Res. 18(1): 94–95.#Misc-exposition*]
 [@Kirbag S. 2004. New records of microfungi from Turkey. Pakistan Journal of Botany 36(2):
 445–448.#Misc-exposition*]
