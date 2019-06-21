@@ -4,25 +4,25 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 467–476#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 467–476#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.467#Misc-exposition*]
 
 [@January–March 2012#Misc-exposition*]
 
 [@A new species of Volvariella from India#Misc-exposition*]
-[@Gunasekaran Senthilarasu1, Rahul Sharma2 & Sanjay K. Singh3
-National Facility for Culture Collection of Fungi, MACS’ Agharkar Research Institute,
-G. G. Agarkar road, Pune–411 004, India#Misc-exposition*]
-[@Correspondence to: 1 senthilarasug@rediﬀmail.com, 2 rahulxsharma@yahoo.co.in,
-3#Misc-exposition*]
-[@singhsksingh@rediﬀmail.com#Misc-exposition*]
+[@Gunasekaran Senthilarasu1, Rahul Sharma2 & Sanjay K. Singh3#Misc-exposition*]
+[@National Facility for Culture Collection of Fungi, MACS’ Agharkar Research Institute,
+G. G. Agarkar road, Pune–411 004, India
+Correspondence to: 1 senthilarasug@rediﬀmail.com, 2 rahulxsharma@yahoo.co.in,
+3
+singhsksingh@rediﬀmail.com#Misc-exposition*]
 [@Abstract—Volvariella sathei sp. nov., collected from Agharkar Research Institute Campus,
 Pune, is described, illustrated, and compared with morphologically closely related taxa of
 Volvariella and Volvopluteus. Diagnostic characters of the new species are the large white
-fruitbodies, relatively small basidiospores, and cylindric-clavate pleuro- and cheilocystidia.#Misc-exposition*]
-[@Neighbour-Joining analysis based on ITS sequences conﬁrmed that it is distinct from its
+fruitbodies, relatively small basidiospores, and cylindric-clavate pleuro- and cheilocystidia.
+Neighbour-Joining analysis based on ITS sequences conﬁrmed that it is distinct from its
 closest relative, V. nivea and other morphologically similar Volvariella species. A key to the
 Indian species of Volvariella and Volvopluteus is provided.#Misc-exposition*]
 [@Key words—Agaricales, Basidiomycetes, macrofungi, taxonomy#Misc-exposition*]
@@ -195,7 +195,7 @@ ifm 56967*
 ab566277.1
 
 *Strain no.
-#Misc-exposition*]
+#Table*]
 [@DNA isolation methodology followed Aljanabi & Martinez (1997) with slight
 modiﬁcations. ~300 mg of the holotype gills was washed thoroughly with 99% ethanol
 and water. DNA was extracted using high salt extraction buﬀer (NaCl, Tris. HCl and
@@ -204,15 +204,15 @@ and ﬁnally precipitated with isopropanol, washed with 70% ethanol, and suspend
 in Tris-EDTA buﬀer. The protocol outlined by White et al. (1990) was followed for
 polymerase chain reaction in Eppendorf Master cycler (Eppendorf, Germany) with
 universal primers ITS5 and ITS4. Sequencing was performed using BigDye Terminator
-Cycle Sequencing Kit (Applied Biosystem, UK) as per manufacturer’s instructions.#Misc-exposition*]
-[@The cleaned PCR product was run on ABI 3100 automated DNA sequencer. The raw
+Cycle Sequencing Kit (Applied Biosystem, UK) as per manufacturer’s instructions.
+The cleaned PCR product was run on ABI 3100 automated DNA sequencer. The raw
 sequences obtained from ABI sequencer were manually corrected for inconsistencies
 with the help of Chromas lite software. The DNA sequences obtained in Fasta format
 were subjected to BLASTn (http://www.ncbi.nlm.nih.gov) analysis.#Misc-exposition*]
 [@For phylogenetic analysis, additional related sequences obtained from NCBI DNA
 sequence database (Table 1) were aligned by CLUSTAL W to generate a phylogenetic
-tree using MEGA v.5.0 software (Neighbour-joining using Kimura-2 parameter model).#Misc-exposition*]
-[@The outgroup comprised Schizophyllum commune and Volvopluteus spp. (recently
+tree using MEGA v.5.0 software (Neighbour-joining using Kimura-2 parameter model).
+The outgroup comprised Schizophyllum commune and Volvopluteus spp. (recently
 transferred from Volvariella).#Misc-exposition*]
 
 [@Volvariella sathei sp. nov. (India) ... 469#Nomenclature*]
@@ -229,7 +229,7 @@ campus. a. Surface view of basidiome. b. Gill view of basidiome. Photo Senthilar
 
 [@Mycobank MB 561949#Misc-exposition*]
 [@Diﬀers from Volvariella nivea in smaller subglobose to ovoid basidiospores and smaller
-pleuro- and cheilocystidia.#Misc-exposition*]
+pleuro- and cheilocystidia.#Diagnosis*]
 [@Type: India, Maharashtra State, Pune, Agharkar Research Institute Campus (18°52ʹN
 73°83ʹE), on ground (soil), grass ﬁeld, 03.08.2009, coll. G. Senthilarasu (Holotype AMH
 9436; GenBank JN792550).#Misc-exposition*]
@@ -271,20 +271,20 @@ Volvariella gloiocephala, V. earlei, and V. acystidiata have been transferred to
 
 [@Volvariella sathei sp. nov. (India) ... 471#Nomenclature*]
 
-[@Plate 2. Volvariella sathei: a. Basidiospores. b. Basidia. c. Cheilocystidia. d. Pleurocystidia.#Misc-exposition*]
-[@e. Volval elements. f. Terminal elements of stipitipellis. Scale bar = 10 μm.#Misc-exposition*]
+[@Plate 2. Volvariella sathei: a. Basidiospores. b. Basidia. c. Cheilocystidia. d. Pleurocystidia.
+e. Volval elements. f. Terminal elements of stipitipellis. Scale bar = 10 μm.#Misc-exposition*]
 
 [@472 ... Senthilarasu, Sharma & Singh#Misc-exposition*]
 [@Volvopluteus. Volvariella acystidiata is considered now a form, as Volvopluteus
-earlei f. acystidiatus (N.C. Pathak) Vizzini & Contu (Justo et al. 2011).#Misc-exposition*]
-[@Of the 20 species described from India, two belong in Volvopluteus
+earlei f. acystidiatus (N.C. Pathak) Vizzini & Contu (Justo et al. 2011).
+Of the 20 species described from India, two belong in Volvopluteus
 (Vp. gloiocephalus (DC.) Vizzini et al. and Vp. earlei (Murrill) Vizzini et al.),
 and the remaining species belong in Volvariella. Volvariella sathei is compared
 here with morphologically similar taxa belonging to both genera.#Misc-exposition*]
 [@Volvopluteus earlei, which also produces white basidiomata, diﬀers in smaller
 (3–5 cm diam.) size and longer (>11 µm) spores (Justo & Castro 2010; Justo et al.
-2010). Volvopluteus earlei f. acystidiatus, originally described by Pathak (1975)#Misc-exposition*]
-[@and later by Vizzini & Contu (2010), also closely resembles V. sathei but clearly
+2010). Volvopluteus earlei f. acystidiatus, originally described by Pathak (1975)
+and later by Vizzini & Contu (2010), also closely resembles V. sathei but clearly
 diﬀers by its smaller (20–30 mm diam.) yellowish tinged pileus with pinkish
 margin, shorter more slender stipe (30–40 × 2–3 mm), larger spores (10.5–16.5
 × 7.5–10.5 µm) and basidia (45–70 × 10–13.5), and absence of hymenial cystidia
@@ -325,8 +325,8 @@ and Volvopluteus species. Bootstrap values > 50% are indicated.#Misc-exposition*
 [@The 5.8S region was almost perfectly aligned, but numerous gaps (indels) and
 misalignments among Volvariella species were observed in ITS1 and ITS2
 regions. All analysed Volvariella species were divided into two main clusters
-(I and II, Plate 3), with V. sathei, V. nivea, and V. taylorii together in subclade Ia.#Misc-exposition*]
-[@Although V. sathei and V. nivea, both characterized by pure white basidiocarps,
+(I and II, Plate 3), with V. sathei, V. nivea, and V. taylorii together in subclade Ia.
+Although V. sathei and V. nivea, both characterized by pure white basidiocarps,
 are placed together with a strong (96%) bootstrap support, the branch lengths
 show considerable sequence divergence between them. Our analysis places the
 two sequences of Volvariella volvacea (HM246500.1, TO AV143; HQ999973.1,
@@ -338,14 +338,14 @@ the ITS 1 and ITS 2 regions among Volvariella species, but the 5.8S region
 remained conserved with relatively few changes.#Misc-exposition*]
 
 [@474 ... Senthilarasu, Sharma & Singh#Misc-exposition*]
-[@Key to species of Volvopluteus (Vp.) and Volvariella (V.) in India:#Key*]
+[@Key to species of Volvopluteus (Vp.) and Volvariella (V.) in India:
 
-[@Two newly described species —Volvariella indica Pathak et al. (Manjula 1983) and
+Two newly described species —Volvariella indica Pathak et al. (Manjula 1983) and
 V. minuta Kumar et al. (Kumar et al. 2009–10)— and a new record of V. congolensis N.C.
 Pathak (Kumar et al. 2009–10) from India are poorly known and have been excluded
-from the key.#Misc-exposition*]
+from the key.
 
-[@1. Spores > 11 µm long, pileipellis is an ixocutis. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
+1. Spores > 11 µm long, pileipellis is an ixocutis. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
 1. Spores ≤ 10.5 µm long, pileipellis not an ixocutis. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .3
 2. Pileus 5–15 cm diam.; spores 11–18 × 6.5–9.5 µm (ivory white to
 light brownish grey, often darker on the disc) . . . . . . . . . . . . . . . .Vp. gloiocephalus
@@ -381,11 +381,11 @@ cracking into areolate squamules . . . . . . . . . . . . . . . . . . . . . . . .
 15. Basidiome large and ﬂeshy; pileus robust ≤ 12 cm diam., tawny brown to
 grayish brown; stipe 7–20 mm diam.; volva brown . . . . . . . . . . . . . . . . . . . . . . . . .16
 15. Basidioma small to medium ≤ 6.5 cm diam.; stipe 2–6 mm diam.;
-volva grey, white or brown. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .18#Key*]
+volva grey, white or brown. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .18
 
-[@Volvariella sathei sp. nov. (India) ... 475#Nomenclature*]
+[@Volvariella sathei sp. nov. (India) ... 475#Misc-exposition*]
 
-[@16. Spores frequently > 9 µm long (6–10.4 × 4.5–7 µm) . . . . . . . . . . . . . . . . . . V. volvacea
+16. Spores frequently > 9 µm long (6–10.4 × 4.5–7 µm) . . . . . . . . . . . . . . . . . . V. volvacea
 16. Spores not > 9 µm long. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .17
 17. Pileus light seal brown at the disc, paling to grayish vinaceous at the margin
 with ﬁne brown radial striae; spores 4.5–8.6 × 3–5.3 µm . . . . . . . . . . . . V. cubensis
@@ -399,7 +399,7 @@ deeply grooved . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 20. Pileus vinaceous brown at the disc, paler towards the margin; stipe very long,
 4–10 cm × 3–6 mm; volva fuliginous brown . . . . . . . . . . . . . . . . V. pseudovolvacea
 20. Pileus ash gray to grayish brown with blackish radial ﬁbrils; stipe short,
-4–4.5 cm × 2–4 mm, volva white . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .V. apalotricha#Misc-exposition*]
+4–4.5 cm × 2–4 mm, volva white . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .V. apalotricha#Key*]
 
 Acknowledgments
 
@@ -417,18 +417,18 @@ setting up state-of-the-art National Facility for Culture Collection of Fungi (N
 PS-55/2005) at Agharkar Research Institute, Pune, India.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Aljanabi SM, Martinez I. 1997. Universal and rapid salt extraction of high quality genomic DNA for
-PCR based techniques. Nucleic Acids Research 25: 4492–4693.#Misc-exposition*]
-[@http://dx.doi.org/10.1093/nar/25.22.4692#Misc-exposition*]
+PCR based techniques. Nucleic Acids Research 25: 4492–4693.
+http://dx.doi.org/10.1093/nar/25.22.4692#Misc-exposition*]
 [@Justo A, Castro ML. 2010. The genus Volvariella in Spain: V. dunensis comb. & stat nov. and
-observations in V. earlei. Mycotaxon 112: 261–270. http://dx.doi.org/10.5248/112.261
-Justo A, Minnis AM, Ghignone S, Menolli N Jr., Capelari M, Rodriguez O, Malysheva E,
-Contu M, Vizzini A. 2010. Species recognition in Pluteus and Volvopluteus (Pluteaceae,
-Agaricales): morphology, geography and phylogeny. Mycological Progress 10(4): 453 – 479.#Misc-exposition*]
-[@http://dx.doi.org/10.1007/s11557-010-0716-z#Misc-exposition*]
+observations in V. earlei. Mycotaxon 112: 261–270. http://dx.doi.org/10.5248/112.261#Misc-exposition*]
+[@Justo A, Minnis AM, Ghignone S, Menolli N Jr., Capelari M, Rodriguez O, Malysheva E,#Misc-exposition*]
+[@Contu M, Vizzini A. 2010. Species recognition in Pluteus and Volvopluteus (Pluteaceae,
+Agaricales): morphology, geography and phylogeny. Mycological Progress 10(4): 453 – 479.
+http://dx.doi.org/10.1007/s11557-010-0716-z#Misc-exposition*]
 [@Justo A, Vizzini A, Minnis AM, Menolli N Jr., Capelari M, Rodriguez O, Malysheva E,
 Contu M, Ghignone S, Hibbett DS. 2011. Phylogeny of the Pluteaceae (Agaricales,
-Basidiomycota): taxonomy and character evolution. Fungal Biology 115: 1–20.#Misc-exposition*]
-[@http://dx.doi.org/10.1016/j.funbio.2010.09.012#Misc-exposition*]
+Basidiomycota): taxonomy and character evolution. Fungal Biology 115: 1–20.
+http://dx.doi.org/10.1016/j.funbio.2010.09.012#Misc-exposition*]
 
 [@476 ... Senthilarasu, Sharma & Singh#Misc-exposition*]
 [@Kornerup A, Wanscher JH. 1978. Methuen handbook of color. 3rd edn. Methuen and Co., Ltd.,
@@ -436,22 +436,22 @@ London. 243 p.#Misc-exposition*]
 [@Kumar M, Jagadeesh R, Kaviyarasan V. 2009–10. A new species of Volvariella from Tamil Nadu,
 India. Kavaka 37–38: 21–23.#Misc-exposition*]
 [@Li TH, Chen XL, Shen YH, Li T. 2009. A white species of Volvariella (Basidiomycota, Agaricales)
-from southern China. Mycotaxon 109: 255–261. http://dx.doi.org/10.5248/109.255
-Manjula B. 1983. A revised list of the agaricoid and boletoid basidiomycetes from India and Nepal.#Misc-exposition*]
-[@Proceedings of Indian Academy of Sciences (Plant Science) 92: 81–213.#Misc-exposition*]
+from southern China. Mycotaxon 109: 255–261. http://dx.doi.org/10.5248/109.255#Misc-exposition*]
+[@Manjula B. 1983. A revised list of the agaricoid and boletoid basidiomycetes from India and Nepal.
+Proceedings of Indian Academy of Sciences (Plant Science) 92: 81–213.#Misc-exposition*]
 [@Natarajan K, Kumaresan V, Narayanan K. 2005. A checklist of Indian agarics and boletes
 (1984–2002). Kavaka 33: 61–128.#Misc-exposition*]
-[@Pathak NC. 1975. New species of Volvariella from Central Africa. Bull. Jard. Bot. Natl. Belg.#Misc-exposition*]
-[@45: 195–196. http://dx.doi.org/10.2307/3667598#Misc-exposition*]
+[@Pathak NC. 1975. New species of Volvariella from Central Africa. Bull. Jard. Bot. Natl. Belg.
+45: 195–196. http://dx.doi.org/10.2307/3667598#Misc-exposition*]
 [@Pathak NC, Ghosh R, Singh MS. 1978. The genus Volvariella Speg. in India. 295–303, in: CK Atal
 et al. (eds). Indian Mushroom Science–1. Indo-American Literature House.#Misc-exposition*]
-[@Pegler DN. 1977. A preliminary agaric ﬂora of East Africa. Kew Bull. Addit. Ser. 9: 615 p.
-Pegler DN. 1983. Agaric ﬂora of the Lesser Antilles. Kew Bull. Addit. Ser. 9. 668 p.
-Pradeep CK, Vrinda KB, Mathew S, Abraham TK. 1998. The genus Volvariella in Kerala state, India.#Misc-exposition*]
-[@Mushroom Research 7(2): 53–62.#Misc-exposition*]
+[@Pegler DN. 1977. A preliminary agaric ﬂora of East Africa. Kew Bull. Addit. Ser. 9: 615 p.#Misc-exposition*]
+[@Pegler DN. 1983. Agaric ﬂora of the Lesser Antilles. Kew Bull. Addit. Ser. 9. 668 p.#Misc-exposition*]
+[@Pradeep CK, Vrinda KB, Mathew S, Abraham TK. 1998. The genus Volvariella in Kerala state, India.
+Mushroom Research 7(2): 53–62.#Misc-exposition*]
 [@Vizzini A, Contu M. 2010. Volvariella acystidiata (Agaricomycetes, Pluteaceae), an African
-species new to Europe, with two new combinations in Volvariella. Mycotaxon 112: 25–29.#Misc-exposition*]
-[@http://dx.doi.org/10.5248/112.24#Misc-exposition*]
+species new to Europe, with two new combinations in Volvariella. Mycotaxon 112: 25–29.
+http://dx.doi.org/10.5248/112.24#Misc-exposition*]
 [@White TJ, Bruns T, Lee S, Taylor J. 1990. Ampliﬁcation and direct sequencing of fungal ribosomal
 RNA genes for phylogenetics. 315-322, in: MA Innis et al. (eds) PCR protocols: a guide to
 methods and applications. Academic Press, San Diego California.#Misc-exposition*]
