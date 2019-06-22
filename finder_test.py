@@ -35,7 +35,7 @@ class TestFile(unittest.TestCase):
     def test_page_number(self):
         test_data = textwrap.dedent("""\
         xi lorem ipsum
-        
+
         page 1, line 3
         page 1, line 4
         dolor sit  xii
@@ -60,11 +60,11 @@ class TestFile(unittest.TestCase):
         self.assertEqual(got[0].line, 'xi lorem ipsum')
         self.assertEqual(got[0].line_number, 1)
         self.assertEqual(got[0].page_number, 1)
-        
+
         self.assertEqual(got[3].line, 'page 1, line 4')
         self.assertEqual(got[3].line_number, 4)
         self.assertEqual(got[3].page_number, 1)
-        
+
         self.assertEqual(got[6].empirical_page_number, 'xii')
         self.assertEqual(got[6].line, 'page 2, line 3')
         self.assertEqual(got[6].line_number, 3)
@@ -191,7 +191,7 @@ class TestParser(unittest.TestCase):
         less. Field specimens give evidence of production of short
         chains of probably 2, at most 3 spores in addition to the
         mostly solitary conidia.#Misc-exposition*]
-        
+
         [@Field conidia are broadly ellipsoid or ovoid to
         obclavate, with a bluntly rounded apical cell that may
         develop through an abrupt transition into a broad, short l-
@@ -246,7 +246,7 @@ class TestParser(unittest.TestCase):
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(str(paragraphs[0]), expected0)
-        
+
     def test_page_number_no_break(self):
         """An apparent page number prevents a paragraph break."""
         test_data = lineify(textwrap.dedent("""\
@@ -314,6 +314,25 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_nomenclature_plate(self):
+        test_data = lineify(textwrap.dedent("""\
+        Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
+                 Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
+        """).split('\n'))
+        expected0 = textwrap.dedent("""\
+        Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
+        """)
+        expected1 = textwrap.dedent("""\
+                 Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
 
     def test_syn_break(self):
         test_data = lineify(textwrap.dedent("""\
@@ -396,23 +415,23 @@ class TestParser(unittest.TestCase):
         spp. from mango and the closely related species C. ﬁmbriatomima. Shaded cells
         indicate variations within each species.
         C. mangicola
-        
+
         C. mangivora
-        
+
         C. manginecans
-        
+
         C. ﬁmbriatomima
-        
+
         C. mangicola
         C. mangivora
         C. manginecans
         C. ﬁmbriatomima
-    
+
         4
         16
         6
         10
-        
+
         16
         2
         20
@@ -422,24 +441,24 @@ class TestParser(unittest.TestCase):
         20
         0
         14
-        
+
         10
         14
         14
         1
-        
+
         βt
         C. mangicola
         C. mangivora
         C. manginecans
         C. ﬁmbriatomima
-        
+
         C. mangicola
         1
         0
         5
         8
-        
+
         C. mangivora
         0
         3
@@ -451,19 +470,19 @@ class TestParser(unittest.TestCase):
         4
         0
         3
-    
+
         C. ﬁmbriatomima
         8
         7
         3
         1
-        
+
         EF-1α
         C. mangicola
         C. mangivora
         C. manginecans
         C. ﬁmbriatomima
-        
+
         C. mangicola
         1
         0
@@ -481,28 +500,28 @@ class TestParser(unittest.TestCase):
         1
         0
         1
-        
+
         C. ﬁmbriatomima
         0
         0
         1
         0
-        
+
         ITS
-        
+
         Ceratocystis spp. nov. (Brazil) ... 391
         """).split('\n'))
-                                            
+
         expected0 = '\n'
 
         expected2 = textwrap.dedent("""\
         Ceratocystis spp. nov. (Brazil) ... 391
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
-        
+
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[2]), expected2)
-        
+
     def test_table_short(self):
         test_data = lineify(textwrap.dedent("""\
         Table 1.
