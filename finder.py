@@ -589,7 +589,7 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
         if pp.last_line and pp.last_line.search(
                 r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
                 r'[(]?nom\.\s?sanct\.[)]?|emend\..*|\b[12]\d{3}\b.{0,3})'
-                r'\s*([[(]Fig[^])]*[])]?)?$'):
+                r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$'):
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
