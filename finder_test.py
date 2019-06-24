@@ -325,7 +325,7 @@ class TestParser(unittest.TestCase):
         Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
         """)
         expected1 = textwrap.dedent("""\
-                 Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
         substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
         """)
 
