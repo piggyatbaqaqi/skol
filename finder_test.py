@@ -132,6 +132,17 @@ class TestParagraph(unittest.TestCase):
         self.pp.close()
         self.assertEqual(self.pp.last_line.line, 'rabbit')
 
+    def test_next_paragraph(self):
+        self.pp.append_ahead(Line('hamster'))
+        self.pp.append_ahead(Line('gerbil'))
+        self.pp.append_ahead(Line('rabbit'))
+        pp, pp2 = self.pp.next_paragraph()
+        pp2.close()
+        self.assertEqual(str(pp), 'hamster\ngerbil\n')
+        self.assertEqual(pp.paragraph_number, 0)
+        self.assertEqual(str(pp2), 'rabbit\n')
+        self.assertEqual(pp2.paragraph_number, 1)
+
 
 class TestLine(unittest.TestCase):
     def test_line(self):

@@ -225,6 +225,7 @@ class Paragraph(object):
     _next_line: Optional[Line]
     _labels: List[Label]
     _reinterpret: List[str]
+    _paragraph_number: int
 
     # These are abbreviations which should not end a taxon paragraph.
 
@@ -278,7 +279,8 @@ class Paragraph(object):
     _ABBREV_RE = '\b\w{1,5}\.'
 
     def __init__(self, short_line=45, labels: Optional[List[Label]] = None,
-                 lines: Optional[List[Line]] = None) -> None:
+                 lines: Optional[List[Line]] = None,
+                 paragraph_number: int = 0) -> None:
         self.short_line = short_line
         if lines:
             self._lines = lines[:]
@@ -289,6 +291,7 @@ class Paragraph(object):
             self._labels = labels[:]
         else:
             self._labels = []
+        self._paragraph_number = paragraph_number
 
     def __str__(self) -> str:
         return '\n'.join([l.line for l in self._lines]) + '\n'
@@ -377,7 +380,8 @@ class Paragraph(object):
         return retval
 
     def next_paragraph(self) -> Tuple['Paragraph', 'Paragraph']:
-        pp = Paragraph(labels=self._labels)
+        pp = Paragraph(labels=self._labels,
+                       paragraph_number=self.paragraph_number + 1)
         # Remove labels which ended with the previous line.
         while pp.top_label() and pp.top_label().assigned():
             pp.pop_label()
@@ -386,7 +390,8 @@ class Paragraph(object):
         return (self, pp)
 
     def replace_labels(self, labels: List[Label]) -> 'Paragraph':
-        pp = Paragraph(labels=labels, lines=self._lines)
+        pp = Paragraph(labels=labels, lines=self._lines,
+                       paragraph_number=self.paragraph_number)
         return pp
 
     def startswith(self, tokens: Union[str, List[str]]) -> bool:
@@ -436,6 +441,10 @@ class Paragraph(object):
         if not self._lines:
             return None
         return self._lines[-1]
+
+    @property
+    def paragraph_number(self) -> int:
+        return self._paragraph_number
 
     def close(self) -> None:
         if self._next_line:
