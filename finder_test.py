@@ -318,14 +318,14 @@ class TestParser(unittest.TestCase):
     def test_nomenclature_plate(self):
         test_data = lineify(textwrap.dedent("""\
         Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
-                 Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        \t Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
         substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
         """).split('\n'))
         expected0 = textwrap.dedent("""\
         Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
         """)
         expected1 = textwrap.dedent("""\
-        Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        \t Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
         substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
         """)
 
