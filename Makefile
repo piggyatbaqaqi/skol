@@ -1,7 +1,19 @@
-test: typecheck finder_test mycobank_species_test iso4_test indexfungorum_authors_test
+test: typecheck label_test file_test line_test paragraph_test finder_test mycobank_species_test iso4_test indexfungorum_authors_test
 
 typecheck:
 	mypy *.py
+
+label_test:
+	python3 label_test.py
+
+file_test:
+	python3 file_test.py
+
+line_test:
+	python3 label_test.py
+
+paragraph_test:
+	python3 label_test.py
 
 finder_test:
 	python3 finder_test.py

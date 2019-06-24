@@ -1,5 +1,7 @@
 import finder
-from finder import Label, Line, Paragraph
+from finder import Label
+from line import Line
+from paragraph import Paragraph
 import textwrap
 from typing import Iterable, List
 import unittest
@@ -7,169 +9,6 @@ import unittest
 
 def lineify(lines: List[str]) -> List[Line]:
     return [Line(l) for l in lines]
-
-
-class TestFile(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def test_line_number(self):
-        test_data = textwrap.dedent("""\
-        one
-        two
-        three
-        """).split('\n')
-        f = finder.File(contents=test_data)
-        got = []
-        for l in f.read_line():
-            got.append(l)
-
-        self.assertEqual(got[0].line, 'one')
-        self.assertEqual(got[1].line, 'two')
-        self.assertEqual(got[2].line, 'three')
-        self.assertEqual(got[0].line_number, 1)
-        self.assertEqual(got[1].line_number, 2)
-        self.assertEqual(got[2].line_number, 3)
-
-
-    def test_page_number(self):
-        test_data = textwrap.dedent("""\
-        xi lorem ipsum
-
-        page 1, line 3
-        page 1, line 4
-        dolor sit  xii
-
-        page 2, line 3
-        page 2, line 4
-
-        1 amet, consectetur
-
-        page 3, line 3
-        adipiscing elit  kn
-
-        page 4, line 3
-
-        3 sed do eiusmod
-
-        page 5, line 3
-        """).split('\n')
-        f = finder.File(contents=test_data)
-        got = [l for l in f.read_line()]
-        self.assertEqual(got[0].empirical_page_number, 'xi')
-        self.assertEqual(got[0].line, 'xi lorem ipsum')
-        self.assertEqual(got[0].line_number, 1)
-        self.assertEqual(got[0].page_number, 1)
-
-        self.assertEqual(got[3].line, 'page 1, line 4')
-        self.assertEqual(got[3].line_number, 4)
-        self.assertEqual(got[3].page_number, 1)
-
-        self.assertEqual(got[6].empirical_page_number, 'xii')
-        self.assertEqual(got[6].line, 'page 2, line 3')
-        self.assertEqual(got[6].line_number, 3)
-        self.assertEqual(got[6].page_number, 2)
-
-        self.assertIsNone(got[14].empirical_page_number)
-        self.assertEqual(got[14].line, 'page 4, line 3')
-        self.assertEqual(got[14].line_number, 3)
-        self.assertEqual(got[14].page_number, 4)
-
-        self.assertEqual(got[18].empirical_page_number, '3')
-
-
-
-class TestParagraph(unittest.TestCase):
-    def setUp(self):
-        self.pp = Paragraph()
-        self.pp2 = Paragraph()
-
-    def test_append(self):
-        self.pp.append(Line('hamster'))
-        self.pp.append(Line('gerbil'))
-        got = str(self.pp)
-        expected = 'hamster\ngerbil\n'
-        self.assertEqual(got, expected)
-
-    def test_append_ahead(self):
-        self.pp.append_ahead(Line('hamster'))
-        self.pp.append_ahead(Line('gerbil'))
-        self.pp.append_ahead(Line('rabbit'))
-        got = str(self.pp)
-        expected = 'hamster\ngerbil\n'
-        self.assertEqual(got, expected)
-        self.assertEqual(self.pp.next_line.line, 'rabbit')
-
-    def test_is_figure(self):
-        self.pp.append(Line('  Fig. 2.7  '))
-        self.pp.append(Line('hamster'))
-        self.assertTrue(self.pp.is_figure())
-        self.assertFalse(self.pp2.is_figure())
-
-        self.pp2.append(Line('rabbit'))
-        self.assertFalse(self.pp2.is_figure())
-
-    def test_is_table(self):
-        self.pp.append(Line('  Table 1 '))
-        self.pp.append(Line('hamster'))
-        self.assertTrue(self.pp.is_table())
-        self.assertFalse(self.pp2.is_table())
-
-        self.pp2.append(Line('rabbit'))
-        self.assertFalse(self.pp2.is_table())
-
-    def test_is_key(self):
-        self.pp.append(Line('Key to Ijuhya species with fasciculate hairs'))
-        self.assertTrue(self.pp.is_key())
-
-    def test_last_line(self):
-        self.pp.append_ahead(Line('hamster'))
-        self.assertEqual(str(self.pp), '\n')
-        self.pp.append_ahead(Line('gerbil'))
-        self.pp.append_ahead(Line('rabbit'))
-
-        self.assertEqual(self.pp.last_line.line, 'gerbil')
-        self.pp.close()
-        self.assertEqual(self.pp.last_line.line, 'rabbit')
-
-    def test_next_paragraph(self):
-        self.pp.append_ahead(Line('hamster'))
-        self.pp.append_ahead(Line('gerbil'))
-        self.pp.append_ahead(Line('rabbit'))
-        pp, pp2 = self.pp.next_paragraph()
-        pp2.close()
-        self.assertEqual(str(pp), 'hamster\ngerbil\n')
-        self.assertEqual(pp.paragraph_number, 0)
-        self.assertEqual(str(pp2), 'rabbit\n')
-        self.assertEqual(pp2.paragraph_number, 1)
-
-
-class TestLine(unittest.TestCase):
-    def test_line(self):
-        data = '[@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]'
-        line = Line(data)
-
-        self.assertEqual(line.line, 'New records of smut fungi. 4. Microbotryum coronariae comb. nov.')
-        self.assertTrue(line.contains_start())
-        self.assertEqual(line.end_label(), 'Title')
-        self.assertFalse(line.is_short(50))
-        self.assertFalse(line.is_blank())
-
-
-    def test_middle_start(self):
-        test_data = textwrap.dedent("""\
-        multiformibus ornata. [@Habitat in herbidis locis.#Habitat-distribution*]
-        """).split('\n')
-        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: [^:]+:[0-9]+:'):
-            lineify(test_data)
-
-    def test_middle_end(self):
-        test_data = textwrap.dedent("""\
-        multiformibus ornata.#Description*] Habitat in herbidis locis
-        """).split('\n')
-
-        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: [^:]+:[0-9]+:'):
-            lineify(test_data)
 
 
 class TestParser(unittest.TestCase):
@@ -646,70 +485,6 @@ class TestParser(unittest.TestCase):
         self.assertFalse(paragraphs[2].is_table())
         self.assertEqual(str(paragraphs[3]), expected3)
         self.assertTrue(paragraphs[3].is_table())
-
-
-class TestLabeling(unittest.TestCase):
-
-    def test_simple_label(self):
-        test_data = lineify(textwrap.dedent("""\
-        [@Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
-        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
-        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
-        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
-        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
-        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
-        and L. sect. Albati with four newly combined species plus two species previously combined
-        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
-        proposed.#Abstract*]
-        [@Key words — milkcaps, nomenclature#Key-words*]
-        """).split('\n'))
-
-        expected0 = textwrap.dedent("""\
-        Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
-        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
-        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
-        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
-        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
-        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
-        and L. sect. Albati with four newly combined species plus two species previously combined
-        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
-        proposed.
-        """)
-
-        expected1 = textwrap.dedent("""\
-        Key words — milkcaps, nomenclature
-        """)
-
-        paragraphs = list(finder.parse_paragraphs(test_data))
-
-        self.maxDiff = None
-        self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertEqual(paragraphs[0].labels, [Label('Abstract')])
-        self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertEqual(paragraphs[1].labels, [Label('Key-words')])
-
-    def test_doubled_abstract(self):
-
-        test_data = lineify(textwrap.dedent("""\
-        [@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]
-        [@Cvetomir M. Denchev & Teodor T. Denchev#Author*]
-        [@Institute of Biodiversity and Ecosystem Research, Bulgarian Academy of Sciences,
-        2 Gagarin St., 1113 Soﬁa, Bulgaria#Institution*]
-        * Correspondence to: cmdenchev@yahoo.co.uk
-        [@Abstract — For Ustilago coronariae on Lychnis ﬂos-cuculi, a new combination in
-        Microbotryum, M. coronariae, is proposed. It is reported as new to Bulgaria.#Abstract*]
-        [@Key words — Microbotryaceae, nomenclature#Key-words*]
-        """).split('\n'))
-
-        paragraphs = list(finder.parse_paragraphs(test_data))
-
-        self.assertEqual(len(paragraphs), 6)
-        self.assertEqual(paragraphs[0].labels, [Label('Title')])
-        self.assertEqual(paragraphs[1].labels, [Label('Author')])
-        self.assertEqual(paragraphs[2].labels, [Label('Institution')])
-        self.assertEqual(paragraphs[3].labels, [])  # correspondence
-        self.assertEqual(paragraphs[4].labels, [Label('Abstract'), Label('Key-words')])
-        self.assertEqual(paragraphs[5].labels, []) # Paragraph('\n')
 
 
 class TestTargetClasses(unittest.TestCase):
