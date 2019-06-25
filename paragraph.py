@@ -236,6 +236,18 @@ class Paragraph(object):
     def paragraph_number(self) -> int:
         return self._paragraph_number
 
+    @property
+    def filename(self) -> Optional[str]:
+        return self.last_line.filename
+
+    @property
+    def page_number(self) -> int:
+        return self.last_line.page_number
+
+    @property
+    def empirical_page_number(self) -> Optional[str]:
+        return self.last_line.empirical_page_number
+
     def close(self) -> None:
         if self._next_line:
             self.append(self._next_line)
