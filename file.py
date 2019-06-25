@@ -67,3 +67,10 @@ class File(FileObject):
     @property
     def filename(self):
         return self._filename
+
+
+def read_files(files: List[str]) -> Iterator[Line]:
+    for f in files:
+        file_object = File(f)
+        for line in file_object.read_line():
+            yield line

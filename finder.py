@@ -1,11 +1,13 @@
 """Find species descriptions."""
 
 import argparse
+import csv
+import itertools
 import numpy  # type: ignore
 import re
 import sys
 import time
-from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from sklearn.naive_bayes import BernoulliNB  # type: ignore
 from sklearn.dummy import DummyClassifier  # type: ignore
@@ -25,12 +27,13 @@ import pandas  # type: ignore
 import paragraph
 from paragraph import Paragraph
 from line import Line
-from file import File
+from file import read_files
 from label import Label
+from taxon import Taxon, group_paragraphs
 
 SEED=12345
 
-def parse_annotated(contents: Iterable[Line]) -> Iterable[Paragraph]:
+def parse_annotated(contents: Iterable[Line]) -> Iterator[Paragraph]:
     """Return paragraphs in annotated block form.
 
     Do not apply heuristic methods to divide paragraphs."""
@@ -49,7 +52,7 @@ def parse_annotated(contents: Iterable[Line]) -> Iterable[Paragraph]:
             continue
 
 
-def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
+def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
     pp = Paragraph()
     for line in contents:
         pp.append_ahead(line)
@@ -149,7 +152,7 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterable[Paragraph]:
     yield pp
 
 
-def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterable[Paragraph]:
+def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterator[Paragraph]:
     for pp in paragraphs:
         if (pp.is_figure() or
             pp.is_table() or
@@ -160,19 +163,12 @@ def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterable[Paragraph]
 
 def target_classes(paragraphs: Iterable[Paragraph],
                    default: Label,
-                   keep: List[Label]) -> Iterable[Paragraph]:
+                   keep: List[Label]) -> Iterator[Paragraph]:
     for pp in paragraphs:
         if pp.top_label() in keep:
             yield pp
             continue
         yield pp.replace_labels([default])
-
-
-def read_files(files: List[str]) -> Iterable[Line]:
-    for f in files:
-        file_object = File(f)
-        for line in file_object.read_line():
-            yield line
 
 
 def perform(classifiers, vectorizers, train_data, test_data):
@@ -297,6 +293,10 @@ def define_args():
         '--output_annotated',
         help='Output YEDDA-annotated file.',
         action='store_true')
+    parser.add_argument(
+        '--group_paragraphs',
+        help='Group Nomenclature paragraphs with matching Description paragraphs.',
+        action='store_true')
     # Control options
     parser.add_argument(
         '--reinterpret',
@@ -365,8 +365,6 @@ def main():
     args = define_args()
 
     Paragraph.set_reinterpretations(args.reinterpret)
-
-
 
     if args.dump_files:
         print('\ntraining_files:', args.training_files)
@@ -450,7 +448,10 @@ def main():
         if 1 == max(args.dump_phase):
             sys.exit(0)
 
-    phase2 = remove_interstitials(phase1)
+    if args.keep_interstitials:
+        phase2 = phase1
+    else:
+        phase2 = remove_interstitials(phase1)
     phase1 = None  # Potentially recover memory.
 
     if 2 in args.dump_phase:
@@ -481,6 +482,14 @@ def main():
 
     phase3 = list(phase3)
     sample_size = len(phase3)
+
+    if args.group_paragraphs:
+        writer = csv.DictWriter(sys.stdout, fieldnames=Taxon.FIELDNAMES)
+        writer.writeheader()
+        for taxon in group_paragraphs(phase3):
+            for d in taxon.dictionaries():
+                writer.writerow(d)
+        sys.exit(0)
 
     numpy.random.seed(SEED)
     cutoff = int(sample_size * 0.70)

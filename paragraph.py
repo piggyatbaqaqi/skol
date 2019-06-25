@@ -4,7 +4,7 @@ This is the primary classified unit.
 """
 import pandas  # type: ignore
 import re
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from label import Label
 from line import Line
@@ -92,6 +92,16 @@ class Paragraph(object):
         if label is not None and not self.is_blank():
             retval = '[@' + retval + '#' + str(label) + '*]'
         return retval
+
+    def as_dict(self) -> Dict[str, str]:
+        return {
+            'filename': self.filename,
+            'label': str(self.top_label()),
+            'paragraph_number': str(self.paragraph_number),
+            'page_number': str(self.page_number),
+            'empirical_page_number': str(self.empirical_page_number),
+            'body': str(self)
+        }
 
     def __repr__(self) -> str:
         return 'Labels(%s), Paragraph(%r), Pending(%r)\n' % (self._labels, str(self), self._next_line)
