@@ -343,7 +343,22 @@ def define_args():
         help='In test_classifiers_by_label, emit a csv.',
         action='store_true')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if not args.label:
+        args.labels = ['Nomenclature', 'Description']
+
+    args.output_labels = [Label(l) for l in args.output_label]
+
+    try:
+        i = args.file.index('evaluate')
+        args.training_files = args.file[:i]
+        args.evaluate_files = args.file[i+1:]
+    except ValueError:
+        args.training_files = args.file
+        args.evaluate_files = []
+
+    return args
 
 
 def main():
@@ -351,25 +366,11 @@ def main():
 
     Paragraph.set_reinterpretations(args.reinterpret)
 
-    if not args.label:
-        labels = ['Nomenclature', 'Description']
-    else:
-        labels = args.label
-
-    output_labels = [Label(l) for l in args.output_label]
-
-    try:
-        i = args.file.index('evaluate')
-        training_files = args.file[:i]
-        evaluate_files = args.file[i+1:]
-    except ValueError:
-        training_files = args.file
-        evaluate_files = []
 
 
     if args.dump_files:
-        print('\ntraining_files:', training_files)
-        print('\nevaluate_files:', evaluate_files)
+        print('\ntraining_files:', args.training_files)
+        print('\nevaluate_files:', args.evaluate_files)
 
     classifiers = [
         BernoulliNB(),
@@ -434,7 +435,7 @@ def main():
         raise ValueError('Unknown vectorizer %s' % args.vectorizer)
     vectorizer = vectorizers[i]
 
-    contents = read_files(training_files)
+    contents = read_files(args.training_files)
 
     if args.annotated_paragraphs:
         phase1 = parse_annotated(contents)
@@ -465,7 +466,7 @@ def main():
     phase3 = target_classes(
         list(phase2),
         default=Label('Misc-exposition'),
-        keep=[Label(l) for l in labels]
+        keep=[Label(l) for l in args.labels]
     )
 
     phase2 = None
@@ -508,16 +509,18 @@ def main():
         sys.exit(0)
 
     phase4 = []
-    if evaluate_files:
+    if args.evaluate_files:
         # train
         vectorize_text = vectorizer.fit_transform(learn.v2)
         classifier.fit(vectorize_text, learn.v1)
 
         # predict
         if args.keep_interstitials:
-            evaluated = parse_paragraphs(read_files(evaluate_files))
+            evaluated = (
+                parse_paragraphs(read_files(args.evaluate_files)))
         else:
-            evaluated = remove_interstitials(parse_paragraphs(read_files(evaluate_files)))
+            evaluated = remove_interstitials(
+                parse_paragraphs(read_files(args.evaluate_files)))
         for pp in evaluated:
             text = str(pp)
             vectorize_text = vectorizer.transform([text])
@@ -525,12 +528,12 @@ def main():
             phase4.append(pp.replace_labels(labels=[Label(predict)]))
 
         if args.output_annotated:
-            if not output_labels:
+            if not args.output_labels:
                 print('\n'.join([pp.as_annotated() for pp in phase4]))
             else:
                 print('\n'.join([pp.as_annotated()
                                  for pp in phase4
-                                 if pp.top_label() in output_labels]))
+                                 if pp.top_label() in args.output_labels]))
 
     if 4 in args.dump_phase:
         print('Phase 4')
