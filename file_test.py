@@ -33,7 +33,7 @@ class TestFile(unittest.TestCase):
 
         page 1, line 3
         page 1, line 4
-        dolor sit  xii
+        [@dolor sit  xii#Header*]
 
         page 2, line 3
         page 2, line 4
