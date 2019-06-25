@@ -26,4 +26,6 @@ class Label(object):
     def assigned(self) -> bool:
         return self._value is not None
 
-
+    @property
+    def label(self) -> Optional[str]:
+        return self._value

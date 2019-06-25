@@ -244,14 +244,20 @@ class Paragraph(object):
 
     @property
     def filename(self) -> Optional[str]:
+        if self.last_line is None:
+            return None
         return self.last_line.filename
 
     @property
     def page_number(self) -> int:
+        if self.last_line is None:
+            return 0
         return self.last_line.page_number
 
     @property
     def empirical_page_number(self) -> Optional[str]:
+        if self.last_line is None:
+            return None
         return self.last_line.empirical_page_number
 
     def close(self) -> None:
