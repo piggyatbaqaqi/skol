@@ -227,6 +227,12 @@ class Paragraph(object):
         return self._next_line
 
     @property
+    def first_line(self) -> Optional[Line]:
+        if not self._lines:
+            return None
+        return self._lines[0]
+
+    @property
     def last_line(self) -> Optional[Line]:
         if not self._lines:
             return None
