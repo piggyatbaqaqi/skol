@@ -6,8 +6,8 @@ from fileobj import FileObject
 
 class File(FileObject):
     _filename: Optional[str]
-    _page_number: int
     _line_number: int
+    _page_number: int
     _empirical_page_number: Optional[str]
 
     def __init__(
@@ -15,15 +15,15 @@ class File(FileObject):
             filename: Optional[str] = None,
             contents: Optional[List[str]] = None) -> None:
         self._filename = filename
-        self._page_number = 1
         self._line_number = 0
+        self._page_number = 1
+        self._empirical_page_number = None
         if filename:
             self._file = open(filename, 'r')
             self._contents = None
         else:
             self._contents = contents
             self._file = None
-        self._empirical_line_number = None
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
         match = re.search(r'(^(?P<leading>[mdclxvi\d]+\b))|(?P<trailing>\b[mdclxvi\d]+$)', l)
@@ -39,15 +39,16 @@ class File(FileObject):
 
     def read_line(self) -> Iterator['Line']:
         for l_str in self.contents():
+            l = Line(l_str, self)
             self._line_number += 1
             # First line of first page does not have a form feed.
             if self._line_number == 1 and self._page_number == 1:
-                self._set_empirical_page(l_str)
-            if l_str.startswith(''):
+                self._set_empirical_page(l.line)
+            if l.startswith(''):
                 self._page_number += 1
                 self._line_number = 1
                 # Strip the form feed.
-                self._set_empirical_page(l_str[1:])
+                self._set_empirical_page(l.line[1:])
             l = Line(l_str, self)
             yield l
 
