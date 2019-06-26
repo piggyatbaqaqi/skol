@@ -15,8 +15,7 @@ def lineify(lines: List[str]) -> List[Line]:
 class TestTaxon(unittest.TestCase):
 
     def setUp(self):
-        self.taxon = Taxon()
-        self.taxon.LONG_GAP = 5  # Give up faster than in real conditions.
+        Taxon.LONG_GAP = 3  # Give up faster than in real conditions.
 
     def test_sunny(self):
         test_data = lineify(textwrap.dedent("""\
@@ -68,6 +67,65 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dict7['body'], 'paragraph15\n')
         self.assertEqual(dict7['label'], 'Description')
 
+
+    def test_too_long(self):
+        test_data = lineify(textwrap.dedent("""\
+        [@ignored1#Nomenclature*]
+        [@filler1#Misc-exposition*]
+        [@filler2#Misc-exposition*]
+        [@filler3#Misc-exposition*]
+        [@filler4#Misc-exposition*]
+        [@paragraph1#Nomenclature*]
+        [@paragraph3#Nomenclature*]
+        [@paragraph4#Description*]
+        [@paragraph6#Description*]
+        [@filler5#Misc-exposition*]
+        [@filler6#Misc-exposition*]
+        [@filler7#Misc-exposition*]
+        [@filler8#Misc-exposition*]
+        [@ignored2#Description*]
+        [@filler7#Misc-exposition*]
+        [@filler8#Misc-exposition*]
+        [@paragraph9#Nomenclature*]
+        [@paragraph10#Misc-exposition*]
+        [@paragraph12#Description*]
+        [@paragraph13#Misc-exposition*]
+        [@paragraph14#Description*]
+        [@paragraph15#Description*]
+        """).split('\n'))
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 2)
+
+        dictionaries1 = list(taxa[0].dictionaries())
+        dictionaries2 = list(taxa[1].dictionaries())
+        sn1 = dictionaries1[0]['serial_number']
+        sn2 = dictionaries2[0]['serial_number']
+        self.assertNotEqual(sn1, sn2)
+
+        self.assertEqual(len(dictionaries1), 4)
+        self.assertTrue(all([d['serial_number'] == sn1 for d in dictionaries1]))
+        self.assertListEqual([d['paragraph_number'] for d in dictionaries1],
+                             ['6', '7', '8', '9'])
+
+        self.assertEqual(len(dictionaries2), 4)
+        self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
+        self.assertListEqual([d['paragraph_number'] for d in dictionaries2],
+                             ['17', '19', '21', '22'])
+
+        dict0 = dictionaries1[0]
+        dict2 = dictionaries1[2]
+        self.assertEqual(dict0['body'], 'paragraph1\n')
+        self.assertEqual(dict0['label'], 'Nomenclature')
+        self.assertEqual(dict2['body'], 'paragraph4\n')
+        self.assertEqual(dict2['label'], 'Description')
+
+        dict4 = dictionaries2[0]
+        dict7 = dictionaries2[3]
+        self.assertEqual(dict4['body'], 'paragraph9\n')
+        self.assertEqual(dict4['label'], 'Nomenclature')
+        self.assertEqual(dict7['body'], 'paragraph15\n')
+        self.assertEqual(dict7['label'], 'Description')
 
 if __name__ == '__main__':
     unittest.main()
