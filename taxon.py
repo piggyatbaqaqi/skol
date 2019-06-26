@@ -5,14 +5,14 @@ from typing import Dict, Iterable, Iterator, List
 from paragraph import Paragraph
 from label import Label
 
-LONG_GAP = 20  # 20 Paragraphs is long enough to give up.
-
 class Taxon(object):
     FIELDNAMES = [
         'serial_number',
         'filename', 'label', 'paragraph_number', 'page_number',
         'empirical_page_number', 'body'
     ]
+    LONG_GAP = 20  # 20 Paragraphs is long enough to give up.
+
 
     _nomenclatures: List[Paragraph]
     _descriptions: List[Paragraph]
@@ -20,7 +20,11 @@ class Taxon(object):
 
     def __init__(self):
         self.__class__._serial += 1
+        self._serial = self.__class__._serial
         self.reset()
+
+    def __repr__(self) -> str:
+        return repr(list(self.dictionaries()))
 
     def reset(self):
         self._nomenclatures = []
@@ -39,7 +43,7 @@ class Taxon(object):
             pp_num = self._nomenclatures[-1].paragraph_number
         else:
             return False
-        return pp.paragraph_number - pp_num > LONG_GAP
+        return pp.paragraph_number - pp_num > self.LONG_GAP
 
     def has_nomenclature(self) -> bool:
         return bool(self._nomenclatures)
