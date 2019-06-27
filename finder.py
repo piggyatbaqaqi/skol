@@ -154,9 +154,11 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
 
 def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterator[Paragraph]:
     for pp in paragraphs:
-        if (pp.is_figure() or
-            pp.is_table() or
-            pp.is_blank()):
+        if (pp.is_blank() or
+            pp.is_figure() or
+            pp.is_page_header() or
+            pp.is_table()
+        ):
             continue
         yield(pp)
 
