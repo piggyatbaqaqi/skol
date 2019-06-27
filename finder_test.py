@@ -387,15 +387,12 @@ class TestParser(unittest.TestCase):
         Ceratocystis spp. nov. (Brazil) ... 391
         """).split('\n'))
 
-        expected0 = '\n'
-
-        expected2 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         Ceratocystis spp. nov. (Brazil) ... 391
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertEqual(str(paragraphs[2]), expected2)
+        self.assertEqual(str(paragraphs[1]), expected1)
 
     def test_table_short(self):
         test_data = lineify(textwrap.dedent("""\
@@ -408,7 +405,7 @@ class TestParser(unittest.TestCase):
 
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""").split('\n'))
 
-        expected1 = textwrap.dedent("""\
+        expected0 = textwrap.dedent("""\
         Table 1.
 
         short
@@ -418,14 +415,14 @@ class TestParser(unittest.TestCase):
 
         """)
 
-        expected2 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
+        self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertEqual(str(paragraphs[2]), expected2)
 
     def test_figure(self):
         test_data = lineify(textwrap.dedent("""\
@@ -486,30 +483,30 @@ class TestParser(unittest.TestCase):
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
         """).split('\n'))
 
-        expected1 = textwrap.dedent("""\
+        expected0 = textwrap.dedent("""\
         Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor
         incididunt ut labore et dolore
         """)
-        expected2 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
         nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
         in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         """)
         # Final table ends with two newlines.
-        expected3 = textwrap.dedent("""\
+        expected2 = textwrap.dedent("""\
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
 
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertTrue(paragraphs[0].is_table())
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertTrue(paragraphs[1].is_table())
+        self.assertFalse(paragraphs[1].is_table())
         self.assertEqual(str(paragraphs[2]), expected2)
-        self.assertFalse(paragraphs[2].is_table())
-        self.assertEqual(str(paragraphs[3]), expected3)
-        self.assertTrue(paragraphs[3].is_table())
+        self.assertTrue(paragraphs[2].is_table())
 
     def test_nomenclature(self):
         test_data = lineify(textwrap.dedent("""\
@@ -526,6 +523,29 @@ class TestParser(unittest.TestCase):
         expected1 = textwrap.dedent("""\
         Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362.
         1837.
+        """)
+
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_nomenclature2(self):
+        test_data = lineify(textwrap.dedent("""\
+        \t Microscopic features are described from material mounted in Melzer’s reagent and in
+        Cotton blue. For the basidiospores the following factors are used: E (quotient of length
+        and width in any one spore) and Q (mean of E‑values). Colour abbreviations follow
+        Kornerup & Wanscher (1983), and herbarium abbreviations follow Holmgren (2003).
+        Gymnopus beltraniae Bañares, Antonín & G. Moreno, spec. nov. — Figs. 1, 2
+        \t Pileo 10–25 mm lato, convexo vel plano-convexo, rubro-brunneo, centro obscuriore. Lamellis medio confertis. Stipite 50 – 80 × 3 – 5 mm, cylindraceo, dense tomentoso, rubro-brunneo, ad
+        basim obscuriore. Basidiosporis (7.0 –)8.0 – 9.5 × 3.5 – 4.5(– 5.0) µm, (late) ellipsoideis, elipsoidfusiformibus, hyalinis, inamyloideis. Cheilocystidiis 28 – 45 × 7.0 –11 µm, clavatis, cylindraceis,
+        sublageniformibus, subutriformibus, irregularibus. Pileipellis ex hyphis cylindraceis, usque 12 µm
+        latis, projectionibus irregularibus, tenuiparietalis. Caulocystidiis 18 – 35 × 4.5 – 8.0 µm, cylindraceis
+        vel clavatis, nunquam irregularibus, tenuiparietalis vel leviter crassiparietalis. Hyphis ﬁbulatis, in
+        stipite et medulla indextrinoideis.
+        """).split('\n'))
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+
+        expected1 = textwrap.dedent("""\
+        Gymnopus beltraniae Bañares, Antonín & G. Moreno, spec. nov. — Figs. 1, 2
         """)
 
         self.assertEqual(str(paragraphs[1]), expected1)

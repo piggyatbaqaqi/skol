@@ -57,28 +57,40 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
     for line in contents:
         pp.append_ahead(line)
 
+        next_pp = pp.split_at_nomenclature()
+        if next_pp:
+            if not pp.is_empty():
+                yield pp
+            (retval, pp) = next_pp.next_paragraph()
+            yield retval
+            continue
+
         # New document triggers a new paragraph.
         if pp.last_line and pp.last_line.filename != line.filename:
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Page break triggers a new paragraph.
         if line.startswith(''):
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Page break is a whole paragraph.
         if pp.is_page_header():
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Leading tab triggers a new paragraph.
         if line.startswith('\t'):
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Tables start with a few long lines and
@@ -90,7 +102,8 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
                 if pp.is_all_long():
                     continue
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Blocks of blank lines are a paragraph.
@@ -98,7 +111,8 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
             if line.is_blank():
                 continue
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Figures end with a blank line, or period or colon at the end
@@ -109,33 +123,29 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
                 not pp.endswith(':')):
                 continue
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Leading hyphen triggers a new paragraph.
         if line.startswith('-'):
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # A table starts a new paragraph.
         if pp.next_line.is_table():
             (retval, pp) = pp.next_paragraph()
-            yield retval
-            continue
-
-        next_pp = pp.split_at_nomenclature()
-        if next_pp:
-            if not pp.is_empty():
-                yield pp
-            (retval, pp) = next_pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # Synonymy reference ends a taxon.
         if pp.last_line and pp.last_line.search(r'\([Ss]yn.*\)$'):
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # A taxon ends in nov., nov. comb., nov. sp., ined.,
@@ -145,23 +155,27 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
                 r'[(]?nom\.\s?sanct\.[)]?|emend\..*)$'
         ):
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # A short line ends a paragraph.
         if pp.last_line and pp.last_line.is_short(pp.short_line):
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
         # A blank line ends a paragraph.
         if line.is_blank():
             (retval, pp) = pp.next_paragraph()
-            yield retval
+            if not retval.is_empty():
+                yield retval
             continue
 
     pp.close()
-    yield pp
+    if not pp.is_empty():
+        yield pp
 
 
 def remove_interstitials(paragraphs: Iterable[Paragraph]) -> Iterator[Paragraph]:
