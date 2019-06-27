@@ -206,20 +206,20 @@ class Paragraph(object):
         return first_token in tokens
 
     def is_figure(self) -> bool:
-        return self.startswith([
+        return self.top_label() == Label('Figure') or self.startswith([
             'fig', 'fig.', 'figg.', 'figs', 'figs.', 'figure', 'photo', 'plate', 'plates',
         ])
 
     def is_table(self) -> bool:
         if not self._lines:
             return False
-        return self._lines[0].is_table()
+        return self.top_label() == Label('Table') or self._lines[0].is_table()
 
     def is_key(self) -> bool:
-        return self.startswith('key to')
+        return self.top_label() == Label('Key') or self.startswith('key to')
 
     def is_mycobank(self) -> bool:
-        return self.startswith('mycobank')
+        return self.top_label() == Label('MB') or self.startswith('mycobank')
 
     def is_all_long(self) -> bool:
         return all(not l.is_short(self.short_line) for l in self._lines)
@@ -278,6 +278,19 @@ class Paragraph(object):
     def endswith(self, s: str) -> bool:
         last_line = self.last_line
         return bool(last_line) and last_line.endswith(s)
+
+    # This is probably a Nomenclature line.
+    def next_line_nomenclature(self):
+        return (self.next_line and self.next_line.search(
+            r'^([\w≡=.*]*\s)?' +  # Optional first word.
+            r'[A-Z]\w*' + self._SUFFIX_RE +  # Genus
+            r'\s\w+' + self._SUFFIX_RE +  # species
+            r'.*'
+            r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
+            r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
+            r'\b[12]\d{3}\b.{0,3})' +  # Publication year
+            r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$'  # Figure or Plate
+        ))
 
     def detect_period(self) -> bool:
         last_line = self.last_line
