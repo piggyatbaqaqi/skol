@@ -539,13 +539,13 @@ class TestTargetClasses(unittest.TestCase):
         # With interstitials removed:
         labels_mid = [
             Label('Title'), Label('Abstract'), Label('Key-words'),
-            Label('Nomenclature'), Label('Description'),
+            Label('Nomenclature'), Label('Description'), Label('Figure'),
             Label('Description'), None,
         ]
         # With labels reduced to basic set:
         labels_after = [
             Label('Misc-exposition'), Label('Misc-exposition'), Label('Misc-exposition'),
-            Label('Nomenclature'), Label('Description'),
+            Label('Nomenclature'), Label('Description'), Label('Misc-exposition'),
             Label('Description'), Label('Misc-exposition'),
         ]
 
