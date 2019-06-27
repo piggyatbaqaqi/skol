@@ -101,7 +101,7 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
             if (not line.is_blank() and
                 not pp.detect_period() and
                 not pp.endswith(':')):
-               continue
+                continue
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
@@ -115,6 +115,14 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
         # A table starts a new paragraph.
         if pp.next_line.is_table():
             (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
+        next_pp = pp.split_at_nomenclature()
+        if next_pp:
+            if not pp.is_empty():
+                yield pp
+            (retval, pp) = next_pp.next_paragraph()
             yield retval
             continue
 

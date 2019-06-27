@@ -86,13 +86,6 @@ class Paragraph(object):
     def __str__(self) -> str:
         return '\n'.join([l.line for l in self._lines]) + '\n'
 
-    def str_with_next_line(self) -> str:
-        if self._next_line:
-            return ('\n'.join([l.line for l in self._lines]) +
-                    '\n' + self._next_line.line + '\n')
-        else:
-            return '\n'.join([l.line for l in self._lines]) + '\n'
-
     def as_annotated(self) -> str:
         label = self.top_label()
         retval = str(self)[:-1]
@@ -239,6 +232,9 @@ class Paragraph(object):
             return all(line.is_blank() for line in self._lines)
         return False  # Empty paragraph is not blank yet.
 
+    def is_empty(self) -> bool:
+        return not self._lines
+
     def is_page_header(self):
         return self.startswith('')
 
@@ -300,7 +296,7 @@ class Paragraph(object):
             r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
             r'\b[12]\d{3}\b.{0,3})' +  # Publication year
             r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$',  # Figure or Plate
-            self.str_with_next_line(),
+            str(self),
             re.MULTILINE | re.DOTALL
         ))
 
@@ -308,12 +304,15 @@ class Paragraph(object):
         """Pull off a trailing nomenclature."""
         if not self.contains_nomenclature():
             return None
-        pp = Paragraph(
-            labels=self._labels,
-            paragraph_number=self.paragraph_number + 1)
-        self.close()
+        pp = Paragraph(labels=self._labels,
+                       paragraph_number=self.paragraph_number + 1)
+        if self._next_line:
+            pp.append_ahead(self._next_line)
+            self._next_line = None
         while not pp.contains_nomenclature():
-            pp.prepend(self._lines.pop())
+            l = self._lines.pop()
+            pp.prepend(l)
+
         return pp
 
     def detect_period(self) -> bool:

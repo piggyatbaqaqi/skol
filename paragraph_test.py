@@ -74,6 +74,7 @@ class TestParagraph(unittest.TestCase):
         self.pp.append_ahead(
             Line('≡ Polyporus mori (Pollini) Fr., Systema Mycologicum 1:'))
         self.pp.append_ahead(Line('344 (1821)'))
+        self.pp.close()
         self.assertTrue(self.pp.contains_nomenclature())
 
     def test_split_at_nomenclature(self):
@@ -81,12 +82,14 @@ class TestParagraph(unittest.TestCase):
         self.pp.append_ahead(
             Line('≡ Polyporus mori (Pollini) Fr., Systema Mycologicum 1:'))
         self.pp.append_ahead(Line('344 (1821)'))
+        self.pp.append_ahead(Line('gerbil'))
         result = self.pp.split_at_nomenclature()
         self.assertEqual(str(self.pp), 'hamster\n')
         self.assertEqual(
             str(result),
             '≡ Polyporus mori (Pollini) Fr., Systema Mycologicum 1:\n'
             '344 (1821)\n')
+        self.assertEqual(result.next_line.line, 'gerbil')
 
     def test_split_at_nomenclature_rainy_day(self):
         result = self.pp.split_at_nomenclature()
@@ -95,6 +98,6 @@ class TestParagraph(unittest.TestCase):
         self.pp.append_ahead(Line('rabbit'))
         self.assertFalse(self.pp.split_at_nomenclature())
 
-        
+
 if __name__ == '__main__':
     unittest.main()
