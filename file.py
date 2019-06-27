@@ -26,7 +26,7 @@ class File(FileObject):
             self._file = None
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
-        match = re.search(r'(^(?P<leading>[mdclxvi\d]+\b))|(?P<trailing>\b[mdclxvi\d]+$)', l)
+        match = re.search(r'(^\s*(?P<leading>[mdclxvi\d]+\b))|((?P<trailing>\b[mdclxvi\d]+)\s*$)', l)
         if not match:
             self._empirical_page_number = None
         else:
