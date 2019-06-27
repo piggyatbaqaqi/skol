@@ -206,20 +206,20 @@ class Paragraph(object):
         return first_token in tokens
 
     def is_figure(self) -> bool:
-        return self.top_label() == Label('Figure') or self.startswith([
+        return self.startswith([
             'fig', 'fig.', 'figg.', 'figs', 'figs.', 'figure', 'photo', 'plate', 'plates',
         ])
 
     def is_table(self) -> bool:
         if not self._lines:
             return False
-        return self.top_label() == Label('Table') or self._lines[0].is_table()
+        return self._lines[0].is_table()
 
     def is_key(self) -> bool:
-        return self.top_label() == Label('Key') or self.startswith('key to')
+        return self.startswith('key to')
 
     def is_mycobank(self) -> bool:
-        return self.top_label() == Label('MB') or self.startswith('mycobank')
+        return self.startswith('mycobank')
 
     def is_all_long(self) -> bool:
         return all(not l.is_short(self.short_line) for l in self._lines)
