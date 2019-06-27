@@ -528,6 +528,7 @@ class TestTargetClasses(unittest.TestCase):
         also would like to thank the curators of SP, ICN and MBM for specimen loans
         """).split('\n'))
 
+        # As hand-labeled:
         labels_before = [
             Label('Title'), Label('Abstract'), Label('Key-words'),
             None, Label('Nomenclature'), Label('Description'), Label('Description'),
@@ -535,10 +536,16 @@ class TestTargetClasses(unittest.TestCase):
             Label('Figure'), Label('Figure'),
             Label('Description'), Label('Description'), None, None, None,
         ]
+        # With interstitials removed:
+        labels_mid = [
+            Label('Title'), Label('Abstract'), Label('Key-words'),
+            Label('Nomenclature'), Label('Description'),
+            Label('Description'), None,
+        ]
+        # With labels reduced to basic set:
         labels_after = [
-            Label('Misc-exposition'), Label('Misc-exposition'),
-            Label('Misc-exposition'), Label('Nomenclature'), Label('Description'),
-            Label('Misc-exposition'), Label('Misc-exposition'),
+            Label('Misc-exposition'), Label('Misc-exposition'), Label('Misc-exposition'),
+            Label('Nomenclature'), Label('Description'),
             Label('Description'), Label('Misc-exposition'),
         ]
 
@@ -546,7 +553,7 @@ class TestTargetClasses(unittest.TestCase):
         self.assertListEqual([pp.top_label() for pp in phase1], labels_before)
 
         phase2 = list(finder.remove_interstitials(phase1))
-        self.assertEqual(len(phase2), 9)
+        self.assertListEqual([pp.top_label() for pp in phase2], labels_mid)
 
         phase3 = list(finder.target_classes(
             phase2,
