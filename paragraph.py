@@ -86,6 +86,13 @@ class Paragraph(object):
     def __str__(self) -> str:
         return '\n'.join([l.line for l in self._lines]) + '\n'
 
+    def str_with_next_line(self) -> str:
+        if self._next_line:
+            return ('\n'.join([l.line for l in self._lines]) +
+                    '\n' + self._next_line.line + '\n')
+        else:
+            return '\n'.join([l.line for l in self._lines]) + '\n'
+
     def as_annotated(self) -> str:
         label = self.top_label()
         retval = str(self)[:-1]
@@ -160,6 +167,9 @@ class Paragraph(object):
             except ValueError as e:
                 raise ValueError('%s: %r' % (e, line))
         self._lines.append(line)
+
+    def prepend(self, line: Line) -> None:
+        self._lines.insert(0, line)
 
     def append_ahead(self, line: Line) -> None:
         if self._next_line is not None:
@@ -279,9 +289,9 @@ class Paragraph(object):
         last_line = self.last_line
         return bool(last_line) and last_line.endswith(s)
 
-    # This is probably a Nomenclature line.
-    def next_line_nomenclature(self):
-        return (self.next_line and self.next_line.search(
+    # Have we accumulated a nomenclature?
+    def contains_nomenclature(self) -> bool:
+        return bool(re.search(
             r'^([\w≡=.*]*\s)?' +  # Optional first word.
             r'[A-Z]\w*' + self._SUFFIX_RE +  # Genus
             r'\s\w+' + self._SUFFIX_RE +  # species
@@ -289,8 +299,22 @@ class Paragraph(object):
             r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
             r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
             r'\b[12]\d{3}\b.{0,3})' +  # Publication year
-            r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$'  # Figure or Plate
+            r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$',  # Figure or Plate
+            self.str_with_next_line(),
+            re.MULTILINE | re.DOTALL
         ))
+
+    def split_at_nomenclature(self) -> Optional['Paragraph']:
+        """Pull off a trailing nomenclature."""
+        if not self.contains_nomenclature():
+            return None
+        pp = Paragraph(
+            labels=self._labels,
+            paragraph_number=self.paragraph_number + 1)
+        self.close()
+        while not pp.contains_nomenclature():
+            pp.prepend(self._lines.pop())
+        return pp
 
     def detect_period(self) -> bool:
         last_line = self.last_line
