@@ -33,12 +33,12 @@ class TestFile(unittest.TestCase):
 
         page 1, line 3
         page 1, line 4
-        [@dolor sit  xii#Header*]
+        [@dolor sit  xii  #Header*]
 
         page 2, line 3
         page 2, line 4
 
-        1 amet, consectetur
+        \t1 amet, consectetur
 
         page 3, line 3
         adipiscing elit  kn
@@ -64,6 +64,11 @@ class TestFile(unittest.TestCase):
         self.assertEqual(got[6].line, 'page 2, line 3')
         self.assertEqual(got[6].line_number, 3)
         self.assertEqual(got[6].page_number, 2)
+
+        self.assertEqual(got[11].empirical_page_number, '1')
+        self.assertEqual(got[11].line, 'page 3, line 3')
+        self.assertEqual(got[11].line_number, 3)
+        self.assertEqual(got[11].page_number, 3)
 
         self.assertIsNone(got[14].empirical_page_number)
         self.assertEqual(got[14].line, 'page 4, line 3')
