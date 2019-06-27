@@ -53,6 +53,16 @@ class Paragraph(object):
         r'(ae|ana|ata|ca|cota|cys|derma|ea|ella|ense|es|forma|ia|ii'
         r'|ista|is|ix|i|oda|ola|oma|phora|sis|spora|tina|ula|um|us|zoa)\b'
     )
+    _NOMENCLATURE_RE = (
+        r'^([\w≡=.*]*\s)?' +  # Optional first word.
+        r'[A-Z]\w*' + _SUFFIX_RE +  # Genus
+        r'\s\w+' + _SUFFIX_RE +  # species
+        r'.*'
+        r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
+        r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
+        r'\b[12]\d{3}\b.{0,3})' +  # Publication year
+        r'[-\s—]*([[(]?(Fig|Plate)[^])\n]*[])]?)?$'  # Figure or Plate
+    )
     _PUNCTUATION_RE = r'[().;:,≡=&]'
     _PUNCTUATION = {
         '(': 'PLPAREN',
@@ -288,14 +298,7 @@ class Paragraph(object):
     # Have we accumulated a nomenclature?
     def contains_nomenclature(self) -> bool:
         return bool(re.search(
-            r'^([\w≡=.*]*\s)?' +  # Optional first word.
-            r'[A-Z]\w*' + self._SUFFIX_RE +  # Genus
-            r'\s\w+' + self._SUFFIX_RE +  # species
-            r'.*'
-            r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
-            r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
-            r'\b[12]\d{3}\b.{0,3})' +  # Publication year
-            r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$',  # Figure or Plate
+            self._NOMENCLATURE_RE,
             str(self),
             re.MULTILINE | re.DOTALL
         ))
