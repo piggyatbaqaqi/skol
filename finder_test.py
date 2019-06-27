@@ -183,6 +183,31 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
 
+    def test_tab_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        Collybia-like habit, often depressed, distinctly squamulose pileus; and Omphalinoid,
+        with a depressed pileus and decurrent lamellae.
+        \t The current infrageneric taxonomy of Entoloma (Romagnesi & Gilles, 1979; Noorde­
+        loos, 1992, 2005; Largent, 1994) is primarily based on European, North American, and
+        Berkeley (1859), Cleland (1934, 1935), Stevenson (1962), Horak (1973, 1976, 1977,
+        1980, 1982) and Grgurinovic (1997), no attempt has been made so far to place them
+        into an infrageneric context.
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        Collybia-like habit, often depressed, distinctly squamulose pileus; and Omphalinoid,
+        with a depressed pileus and decurrent lamellae.
+        """)
+        expected1 = textwrap.dedent("""\
+        \t The current infrageneric taxonomy of Entoloma (Romagnesi & Gilles, 1979; Noorde­
+        loos, 1992, 2005; Largent, 1994) is primarily based on European, North American, and
+        Berkeley (1859), Cleland (1934, 1935), Stevenson (1962), Horak (1973, 1976, 1977,
+        1980, 1982) and Grgurinovic (1997), no attempt has been made so far to place them
+        into an infrageneric context.
+        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
 
     def test_syn_break(self):
         test_data = lineify(textwrap.dedent("""\
