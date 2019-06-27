@@ -486,6 +486,25 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(paragraphs[3]), expected3)
         self.assertTrue(paragraphs[3].is_table())
 
+    def test_nomenclature(self):
+        test_data = lineify(textwrap.dedent("""\
+        Key words — milkcaps, nomenclature Lorem ipsum dolor sit amet,
+        Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362.
+        1837.
+        Basidiomata 1.1–7.0 cm high. Spore sac globose to depressed-globose,
+        0.6–0.8 cm high × 1.8–2.2 cm broad. Exoperidium spiny, light brown (5E7),
+        peeling oﬀ at maturity. Endoperidium reticulate, papery, yellowish white (2A2)
+        """).split('\n'))
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+
+        expected1 = textwrap.dedent("""\
+        Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362.
+        1837.
+        """)
+
+        self.assertEqual(str(paragraphs[1]), expected1)
+
 
 class TestTargetClasses(unittest.TestCase):
 
