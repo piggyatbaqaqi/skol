@@ -69,6 +69,12 @@ class TestParagraph(unittest.TestCase):
         self.assertEqual(str(pp2), 'rabbit\n')
         self.assertEqual(pp2.paragraph_number, 1)
 
+    def test_next_line_nomenclature(self):
+        self.pp.append_ahead(Line('hamster'))
+        self.pp.append_ahead(
+            Line('≡ Polyporus mori (Pollini) Fr., Systema Mycologicum 1: 344 (1821)'))
+        self.assertTrue(self.pp.next_line_nomenclature())
+
 
 if __name__ == '__main__':
     unittest.main()
