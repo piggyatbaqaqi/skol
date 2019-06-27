@@ -75,6 +75,12 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
             yield retval
             continue
 
+        # Leading tab triggers a new paragraph.
+        if line.startswith('\t'):
+            (retval, pp) = pp.next_paragraph()
+            yield retval
+            continue
+
         # Tables start with a few long lines and
         # continue to grow as long as we have short lines.
         if pp.is_table():
@@ -133,13 +139,11 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
             continue
 
         # A taxon ends in nov., nov. comb., nov. sp., ined.,
-        # emend. (followed by emender), nom. sanct. or a year within 3
-        # characters of the end followed by an optional figure
-        # specifier.
+        # emend. (followed by emender), or nom. sanct.
         if pp.last_line and pp.last_line.search(
                 r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
-                r'[(]?nom\.\s?sanct\.[)]?|emend\..*|\b[12]\d{3}\b.{0,3})'
-                r'[-\s—]*([[(]?(Fig|Plate)[^])]*[])]?)?$'):
+                r'[(]?nom\.\s?sanct\.[)]?|emend\..*)$'
+        ):
             (retval, pp) = pp.next_paragraph()
             yield retval
             continue
