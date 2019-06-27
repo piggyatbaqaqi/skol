@@ -550,6 +550,21 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(str(paragraphs[1]), expected1)
 
+    def test_nomenclature3(self):
+        test_data = lineify(textwrap.dedent("""\
+        ces cheilo- et pleurocystides en moyenne moins volumineuses, ses pleurocystides lagéniformes à col cylindrique bien différencié, et peut-être par des spores en moyenne plus
+        petites, mais ce caractère n’est pas net en comparaison de nos récoltes pyrénéennes.
+        Chamaeota xanthogramma (Ces.) Earle, Bull. New York Bot. Gard. 5 (1909) 446
+        \t Basionym: Agaricus xanthogrammus Ces., Comment. Soc. Crittog. Ital. 2 (1861) 58.
+        """).split('\n'))
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+
+        expected1 = textwrap.dedent("""\
+        Chamaeota xanthogramma (Ces.) Earle, Bull. New York Bot. Gard. 5 (1909) 446
+        """)
+
+        self.assertEqual(str(paragraphs[1]), expected1)
 
 class TestTargetClasses(unittest.TestCase):
 
