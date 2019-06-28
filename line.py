@@ -1,6 +1,6 @@
 """Handle individual text lines."""
 
-import re
+import regex as re  # type: ignore
 from typing import List, Optional, Union
 
 from fileobj import FileObject

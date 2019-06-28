@@ -6,7 +6,7 @@ $ wget https://www.mycobank.org/localfiles/MBList.zip
 
 import argparse
 import csv
-import re
+import regex as re  # type: ignore
 import sys
 from typing import Iterator, List, Optional
 
