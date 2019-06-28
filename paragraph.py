@@ -51,7 +51,7 @@ class Paragraph(object):
 
     _SUFFIX_RE = (
         r'(ae|amma|ana|ata|ca|cys|derma|ea|ella|ense|es|forma|ia|ii'
-        r'|ista|is|ix|i|oda|ola|oma|ota|phora|sis|spora|tina|ula|um|us|zoa)\b'
+        r'|ista|is|ix|i|oda|ola|oma|osa|ota|phora|sis|spora|tina|ula|um|us|zoa)\b'
     )
     _NOMENCLATURE_RE = (
         r'^([\w≡=.*]*\s)?' +  # Optional first word.
