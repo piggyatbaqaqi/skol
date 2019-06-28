@@ -3,6 +3,7 @@
 import argparse
 import csv
 import itertools
+import joblib
 import numpy  # type: ignore
 import regex as re  # type: ignore
 import sys
@@ -327,6 +328,23 @@ def define_args():
         action='store_true')
     # Control options
     parser.add_argument(
+        '--load_vectorizer',
+        help='A file to load the vectorizer from instead of training it.',
+        type=str, default=None)
+    parser.add_argument(
+        '--load_classifier',
+        help='A file to load the classifier from instead of training it.',
+        type=str, default=None)
+    parser.add_argument(
+        '--dump_vectorizer',
+        help='A file to dump the vectorizer to after training it.',
+        type=str, default=None)
+    parser.add_argument(
+        '--dump_classifier',
+        help='A file to dump the classifier to after training it.',
+        type=str, default=None)
+
+    parser.add_argument(
         '--reinterpret',
         help='Append reinterpretations of various elements. Values={suffix, latinate, punctuation, year, abbrev}.',
         default=[], type=str, action='append')
@@ -470,96 +488,107 @@ def main():
         raise ValueError('Unknown vectorizer %s' % args.vectorizer)
     vectorizer = vectorizers[i]
 
-    contents = read_files(args.training_files)
+    if args.training_files:
+        contents = read_files(args.training_files)
 
-    if args.annotated_paragraphs:
-        phase1 = parse_annotated(contents)
-    else:
-        phase1 = parse_paragraphs(contents)
+        if args.annotated_paragraphs:
+            phase1 = parse_annotated(contents)
+        else:
+            phase1 = parse_paragraphs(contents)
 
-    if 1 in args.dump_phase:
-        print('Phase 1')
-        print('=======')
-        phase1 = list(phase1)
-        print(repr(phase1))
-        if 1 == max(args.dump_phase):
-            sys.exit(0)
+        if 1 in args.dump_phase:
+            print('Phase 1')
+            print('=======')
+            phase1 = list(phase1)
+            print(repr(phase1))
+            if 1 == max(args.dump_phase):
+                sys.exit(0)
 
-    if args.keep_interstitials:
-        phase2 = phase1
-    else:
-        phase2 = remove_interstitials(phase1)
-    phase1 = None  # Potentially recover memory.
+        if args.keep_interstitials:
+            phase2 = phase1
+        else:
+            phase2 = remove_interstitials(phase1)
+        phase1 = None  # Potentially recover memory.
 
-    if 2 in args.dump_phase:
-        print('Phase 2')
-        print('=======')
-        phase2 = list(phase2)
-        print(repr(phase2))
-        if 2 == max(args.dump_phase):
-            sys.exit(0)
+        if 2 in args.dump_phase:
+            print('Phase 2')
+            print('=======')
+            phase2 = list(phase2)
+            print(repr(phase2))
+            if 2 == max(args.dump_phase):
+                sys.exit(0)
 
-    # All labels need to be resolved for this phase. The easiest way
-    # to assure this is to convert to list.
-    phase3 = target_classes(
-        list(phase2),
-        default=Label('Misc-exposition'),
-        keep=[Label(l) for l in args.labels]
-    )
+        # All labels need to be resolved for this phase. The easiest way
+        # to assure this is to convert to list.
+        phase3 = target_classes(
+            list(phase2),
+            default=Label('Misc-exposition'),
+            keep=[Label(l) for l in args.labels]
+        )
 
-    phase2 = None
+        phase2 = None
 
-    if 3 in args.dump_phase:
-        print('Phase 3')
-        print('=======')
+        if 3 in args.dump_phase:
+            print('Phase 3')
+            print('=======')
+            phase3 = list(phase3)
+            print(repr(phase3))
+            if 3 == max(args.dump_phase):
+                sys.exit(0)
+
         phase3 = list(phase3)
-        print(repr(phase3))
-        if 3 == max(args.dump_phase):
+        sample_size = len(phase3)
+
+        if args.group_paragraphs:
+            writer = csv.DictWriter(sys.stdout, fieldnames=Taxon.FIELDNAMES)
+            writer.writeheader()
+            for taxon in group_paragraphs(phase3):
+                for d in taxon.dictionaries():
+                    writer.writerow(d)
             sys.exit(0)
 
-    phase3 = list(phase3)
-    sample_size = len(phase3)
+        numpy.random.seed(SEED)
+        cutoff = int(sample_size * 0.70)
+        permutation = numpy.random.permutation(phase3)
+        phase3 = None
+        learn = paragraph.to_dataframe(permutation[:cutoff], args.suppress_text)
+        test = paragraph.to_dataframe(permutation[cutoff:], args.suppress_text)
 
-    if args.group_paragraphs:
-        writer = csv.DictWriter(sys.stdout, fieldnames=Taxon.FIELDNAMES)
-        writer.writeheader()
-        for taxon in group_paragraphs(phase3):
-            for d in taxon.dictionaries():
-                writer.writerow(d)
-        sys.exit(0)
+        if args.test_classifiers:
+            perform(
+                classifiers,
+                vectorizers,
+                learn,
+                test
+            )
+            sys.exit(0)
 
-    numpy.random.seed(SEED)
-    cutoff = int(sample_size * 0.70)
-    permutation = numpy.random.permutation(phase3)
-    phase3 = None
-    learn = paragraph.to_dataframe(permutation[:cutoff], args.suppress_text)
-    test = paragraph.to_dataframe(permutation[cutoff:], args.suppress_text)
+        if args.test_classifiers_by_label:
+            perform_confusion_matrix(
+                classifiers,
+                vectorizers,
+                learn,
+                test,
+                emit_csv=args.csv
+            )
+            sys.exit(0)
 
-    if args.test_classifiers:
-        perform(
-            classifiers,
-            vectorizers,
-            learn,
-            test
-        )
-        sys.exit(0)
-
-    if args.test_classifiers_by_label:
-        perform_confusion_matrix(
-            classifiers,
-            vectorizers,
-            learn,
-            test,
-            emit_csv=args.csv
-        )
-        sys.exit(0)
-
-    phase4 = []
-    if args.evaluate_files:
-        # train
+    # train or load models
+    if args.load_vectorizer:
+        vectorizer = joblib.load(args.load_vectorizer)
+        classifier = joblib.load(args.load_classifier)
+    else:
         vectorize_text = vectorizer.fit_transform(learn.v2)
         classifier.fit(vectorize_text, learn.v1)
 
+    # Dump trained models.
+    if args.dump_vectorizer:
+        joblib.dump(vectorizer, args.dump_vectorizer)
+    if args.dump_classifier:
+        joblib.dump(classifier, args.dump_classifier)
+
+    if args.evaluate_files:
+        phase4 = []
         # predict
         if args.keep_interstitials:
             evaluated = (
