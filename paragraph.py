@@ -50,18 +50,23 @@ class Paragraph(object):
 
 
     _SUFFIX_RE = (
-        r'(ae|amma|ana|ata|ca|cys|derma|ea|ella|ense|es|forma|ia|ii'
-        r'|ista|is|ix|i|oda|ola|oma|osa|ota|phora|sis|spora|tina|ula|um|us|zoa)\b'
+        r'('
+        r'ae|amma|ana|ans|ata|ax|ca|cybe|cys|derma'
+        r'|ea|eda|ella|ens|ense|es|escens|forma'
+        r'|ia|ii|illa|ista|is|ix|i|ma'
+        r'|oda|ola|olor|oma|osa|ota|phora'
+        r'|sis|spora|thele|tina|ula|um|us|yx|zoa'
+        r')\b'
     )
     _NOMENCLATURE_RE = (
-        r'^([\w≡=.*]*\s)?' +  # Optional first word.
+        r'^([\w≡=.*]*\s+)?' +  # Optional first word.
         r'[A-Z]\w*' + _SUFFIX_RE +  # Genus
         r'\s\w+' + _SUFFIX_RE +  # species
         r'.*'
         r'('
         r'nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
         r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
-        r'[[(]?\b[12]\d{3}\b[])]?[^\n]{0,5}' +  # Publication year
+        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?[^\n]{0,5}' +  # Publication year
         ')' +
         r'[-\s—]*([[(]?(Fig|Plate)[^])\n]*[])]?)?$'  # Figure or Plate
     )

@@ -1,10 +1,14 @@
 """Tests for paragraph.py."""
 
 import textwrap
+from typing import List
 import unittest
 
 from line import Line
 from paragraph import Paragraph
+
+def lineify(lines: List[str]) -> List[Line]:
+    return [Line(l) for l in lines]
 
 class TestParagraph(unittest.TestCase):
     def setUp(self):
@@ -95,6 +99,59 @@ class TestParagraph(unittest.TestCase):
             '≡ Polyporus mori (Pollini) Fr., Systema Mycologicum 1:\n'
             '344 (1821)\n')
         self.assertEqual(result.next_line.line, 'gerbil')
+
+    def test_contains_nomenclature_bulk(self):
+        test_data = [
+            '    Bovista hyalothrix Cooke & Massee, Grevillea 16 (1888) 73.\n',
+
+            '    Catastoma hyalothrix (Cooke & Massee) Lloyd, The Lycoperdaceae of Australia, New Zealand\n'
+            ' and Neighbouring Islands (1905) 27.\n',
+
+            '    Disciseda pedicellata (Morgan) Hollós, Természetrajzi Füz. 25 (1902) 103.\n',
+
+            '4.  Entoloma indigoticoumbrinum G. Gates & Noordel., spec. nov. — Fig. 4, Plate 4\n',
+
+            '8. Entoloma contrastans G. Gates & Noordel., spec. nov. — Fig. 8, Plate 8\n',
+
+            '11. Entoloma obscureotenax G. Gates & Noordel., spec. nov. — Fig. 11, Plate 11\n',
+
+            '15.	Entoloma fuligineopallescens G. Gates & Noordel., spec. nov. — Fig. 15,\n',
+
+            '19. Entoloma austroprunicolor G. Gates & Noordel., spec. nov. — Fig. 19, Plate 19\n',
+
+            '21. Entoloma carminicolor G. Gates & Noordel., spec. nov. — Fig. 21, Plate 21\n',
+
+            '22. Entoloma obscureovirens G. Gates & Noordel., spec. nov. — Fig. 22, Plate 22\n',
+
+            '23. Entoloma albidosimulans G. Gates & Noordeloos, spec. nov. — Fig. 23, Plate 23\n',
+
+            '.	Entoloma stramineopallescens G. Gates & Noordel., spec. nov. — Fig. 27,\n',
+
+            '29.         Entoloma tomentosolilacinum G. Gates & Noordel., spec. nov. — Fig. 29,\n',
+
+            '31. Entoloma austrorhodocalyx G. Gates & Noordel., spec. nov. — Fig. 31, Plate 31\n',
+
+            '≡ Xenasma macrosporum Liberta, Mycologia 52 (6) (1962 ‘1960’) 899.\n',
+
+            '≡ Epithele macrospora (Liberta) Boquiren, Mycologia 63 (5) (1971) 949.\n',
+
+            'Chamaeota pusilla (Pat. & Gaillard) Beardslee, Mycologia 26 (1934) 254\n',
+
+            'Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3\n',
+        ]
+
+        # Build paragraphs.
+        test_pp = []
+        for text in test_data:
+            pp = Paragraph()
+            for l in lineify(text.split('\n')):
+                pp.append(l)
+            test_pp.append(pp)
+
+        for pp in test_pp:
+            if not pp.contains_nomenclature():
+                print('Failed paragraph:', str(pp))
+            self.assertTrue(pp.contains_nomenclature())
 
     def test_split_at_nomenclature_rainy_day(self):
         result = self.pp.split_at_nomenclature()
