@@ -78,6 +78,10 @@ class TestParagraph(unittest.TestCase):
         self.pp.close()
         self.assertTrue(self.pp.contains_nomenclature())
 
+        pp2 = Paragraph()
+        pp2.append(Line('Araneosa columellata Long, Mycologia 33 (1941) 353.'))
+        self.assertTrue(pp2.contains_nomenclature())
+
     def test_split_at_nomenclature(self):
         self.pp.append_ahead(Line('hamster'))
         self.pp.append_ahead(
