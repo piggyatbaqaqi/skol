@@ -1,5 +1,6 @@
 """Tests for paragraph.py."""
 
+import textwrap
 import unittest
 
 from line import Line
@@ -97,6 +98,72 @@ class TestParagraph(unittest.TestCase):
         self.pp.append_ahead(Line('gerbil'))
         self.pp.append_ahead(Line('rabbit'))
         self.assertFalse(self.pp.split_at_nomenclature())
+
+class TestReinterpret(unittest.TestCase):
+
+    def setUp(self):
+        self.pp = Paragraph()
+        self.pp.append_ahead(Line('Julella sublactea (Nylander) R.C. Harris in Egan, Bryologist 90: 163. 1987;\n'))
+        self.pp.append_ahead(Line('Verrucaria sublactea Nylander, Flora 69: 464. 1886. syn. nov.\n'))
+        self.pp.close()
+
+    def test_latinate(self):
+        self.pp.set_reinterpretations(['latinate'])
+        got = self.pp.reinterpret()
+        expected = (
+            ' PLATINATE   PLATINATE  (Nylander) R.C.  PLATINATE  in Egan, Bryologist 90: 163. 1987;\n'
+            ' PLATINATE   PLATINATE  Nylander, Flora 69: 464. 1886. syn. nov.\n'
+        )
+        self.assertEqual(got, expected)
+
+    def test_suffix(self):
+        self.pp.set_reinterpretations(['suffix'])
+        got = self.pp.reinterpret()
+        expected = (
+            ' ella   ea  (Nylander) R.C.  is  in Egan, Bryologist 90: 163. 1987;\n'
+            ' ia   ea  Nylander, Flora 69: 464. 1886. syn. nov.\n'
+        )
+        self.assertEqual(got, expected)
+
+    def test_latinate_suffix(self):
+        self.pp.set_reinterpretations(['latinate', 'suffix'])
+        got = self.pp.reinterpret()
+        expected = (
+            ' PLATINATE ella   PLATINATE ea  (Nylander) R.C.  PLATINATE is  in Egan, Bryologist 90: 163. 1987;\n'
+            ' PLATINATE ia   PLATINATE ea  Nylander, Flora 69: 464. 1886. syn. nov.\n'
+        )
+        self.assertEqual(got, expected)
+
+    def test_punctuation(self):
+        self.pp.set_reinterpretations(['punctuation'])
+        got = self.pp.reinterpret()
+        expected = textwrap.dedent("""\
+        Julella sublactea  PLPAREN Nylander PRPAREN  R PDOT C PDOT  Harris in Egan PCOMMA  Bryologist 90 PCOLON  163 PDOT  1987 PSEMI\x20
+        Verrucaria sublactea Nylander PCOMMA  Flora 69 PCOLON  464 PDOT  1886 PDOT  syn PDOT  nov PDOT\x20
+        """)
+
+        self.assertEqual(got, expected)
+
+    def test_year(self):
+        self.pp.set_reinterpretations(['year'])
+        got = self.pp.reinterpret()
+        expected = textwrap.dedent("""\
+        Julella sublactea (Nylander) R.C. Harris in Egan, Bryologist 90: 163.  PYEAR ;
+        Verrucaria sublactea Nylander, Flora 69: 464.  PYEAR . syn. nov.
+        """)
+
+        self.assertEqual(got, expected)
+
+    def test_abbrev(self):
+        self.pp.set_reinterpretations(['abbrev'])
+        got = self.pp.reinterpret()
+        expected = textwrap.dedent("""\
+        Julella sublactea (Nylander)  PABBREV  PABBREV  Harris in Egan, Bryologist 90: 163. 1987;
+        Verrucaria sublactea Nylander, Flora 69: 464. 1886.  PABBREV   PABBREV\x20
+        """)
+
+        self.assertEqual(got, expected)
+
 
 
 if __name__ == '__main__':

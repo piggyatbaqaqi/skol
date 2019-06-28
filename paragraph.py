@@ -3,7 +3,7 @@
 This is the primary classified unit.
 """
 import pandas  # type: ignore
-import re
+import regex as re  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
 
 from label import Label
@@ -78,7 +78,7 @@ class Paragraph(object):
         '&': 'PAMPERSAND',
     }
     _YEAR_RE = r'\b[12]\d\d\d\b'
-    _ABBREV_RE = '\b\w{1,5}\.'
+    _ABBREV_RE = r'\b[[:alpha:]]{1,5}\.'
 
     def __init__(self, short_line=45, labels: Optional[List[Label]] = None,
                  lines: Optional[List[Line]] = None,
@@ -138,28 +138,46 @@ class Paragraph(object):
         return ' ' + ' '.join(['PABBREV' for y in re.findall(self._ABBREV_RE, str(self))])
 
     def reinterpret(self) -> str:
-        def replace(m) -> str:
-            retval = []
-            if m.group('suffix'):
-                if 'latinate' in self._reinterpret:
-                    retval.append('PLATINATE')
-                if 'suffix' in self._reinterpret:
-                    retval.append(m.group('suffix'))
-            if m.group('punctuation') and 'punctuation' in self._reinterpret:
-                retval.append(self._PUNCTUATION[m.group('punctuation')])
-            if m.group('year') and 'year' in self._reinterpret:
-                retval.append('PYEAR')
-            if m.group('abbrev') and 'abbrev' in self._reinterpret:
-                retval.append('PABBREV')
-            return ' ' + ' '.join(retval)
-        r = (
-            r'(?P<suffix>' + self._SUFFIX_RE + ')'
-            r'|(?P<punctuation>' + self._PUNCTUATION_RE + ')'
-            r'|(?P<year>' + self._YEAR_RE + ')'
-            r'|(?P<abbrev>' + self._ABBREV_RE + ')'
-        )
+        def t(m, kind: str) -> bool:
+            return kind in self._reinterpret and m.group(kind)
 
-        return re.sub(r, replace, str(self))
+        def replace(m) -> str:
+            if 'latinate' in self._reinterpret:
+                if m.group('latinate'):
+                    if 'suffix' in self._reinterpret:
+                        return ' PLATINATE ' + m.group('suffix') + ' '
+                    return ' PLATINATE '
+                else:
+                    if 'suffix' in self._reinterpret:
+                        return ' ' + m.group('suffix') + ' '
+            # Handle the case with just the suffix.
+            if t(m, 'suffix'):
+                return ' ' + m.group('suffix') + ' '
+            if t(m, 'punctuation'):
+                return ' ' + self._PUNCTUATION[m.group('punctuation')] + ' '
+            if t(m, 'year'):
+                return ' PYEAR '
+            if t(m, 'abbrev'):
+                return ' PABBREV '
+            return m.captures()[0]
+
+        def append_pat(r: str, kind: str, pattern: str) -> str:
+            if kind in self._reinterpret:
+                if r:
+                    return r + '|' + pattern
+                else:
+                    return pattern
+            else:
+                return r
+
+        r = ''
+        r = append_pat(r, 'latinate', r'(?P<latinate>\w+(?P<suffix>' + self._SUFFIX_RE + '))')
+        r = append_pat(r, 'suffix', r'(?P<latinate>\w+(?P<suffix>' + self._SUFFIX_RE + '))')
+        r = append_pat(r, 'punctuation', r'(?P<punctuation>' + self._PUNCTUATION_RE + ')')
+        r = append_pat(r, 'year', r'(?P<year>' + self._YEAR_RE + ')')
+        r = append_pat(r, 'abbrev', r'(?P<abbrev>' + self._ABBREV_RE + ')')
+
+        return re.sub(r, replace, str(self), re.MULTILINE | re.DOTALL)
 
     def append(self, line: Line) -> None:
         if line.contains_start():

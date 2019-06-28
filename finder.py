@@ -4,7 +4,7 @@ import argparse
 import csv
 import itertools
 import numpy  # type: ignore
-import re
+import regex as re  # type: ignore
 import sys
 import time
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
