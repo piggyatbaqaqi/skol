@@ -333,7 +333,7 @@ def define_args():
     parser.add_argument(
         '--classifier',
         help='Which classifier should we use for actual runs?',
-        type=str, default='CalibratedClassifierCV')
+        type=str, default='RandomForestClassifier')
     parser.add_argument(
         '--vectorizer',
         help='Which vectorizer should we use for actual runs?',
@@ -381,6 +381,11 @@ def define_args():
         args.labels = ['Nomenclature', 'Description']
 
     args.output_labels = [Label(l) for l in args.output_label]
+
+    # This makes for a significant increase in Nomenclature scores.
+    # Specifically, with RandomForestClassifier and TfidfVectorizer,
+    # we see +3% over the best previous classifier.
+    args.reinterpret.append('punctuation')
 
     try:
         i = args.file.index('evaluate')
