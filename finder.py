@@ -4,7 +4,7 @@ import argparse
 import csv
 import itertools
 import joblib
-import numpy  # type: ignore
+import numpy as np  # type: ignore
 import regex as re  # type: ignore
 import sys
 import time
@@ -206,7 +206,7 @@ def perform(classifiers, vectorizers, train_data, test_data):
         string = ''
         string += classifier.__class__.__name__ + ' with ' + vectorizer.__class__.__name__
 
-        numpy.random.seed(SEED)
+        np.random.seed(SEED)
 
         start = time.time()
         # train
@@ -228,7 +228,7 @@ def perform_confusion_matrix(classifiers, vectorizers, train_data, test_data, em
 
     for classifier in classifiers:
       for vectorizer in vectorizers:
-        numpy.random.seed(SEED)
+        np.random.seed(SEED)
 
         start = time.time()
         # train
@@ -254,8 +254,8 @@ def perform_confusion_matrix(classifiers, vectorizers, train_data, test_data, em
 
 def human_report(test_data: pandas.core.frame.DataFrame,
                  elapsed_time: float,
-                 predicted_labels: numpy.ndarray,
-                 cm: numpy.ndarray,
+                 predicted_labels: np.ndarray,
+                 cm: np.ndarray,
                  classifier_name: str,
                  vectorizer_name: str) -> str:
     string = ''
@@ -270,12 +270,12 @@ def human_report(test_data: pandas.core.frame.DataFrame,
 
 def csv_report(test_data: pandas.core.frame.DataFrame,
                elapsed_time: float,
-               predicted_labels: numpy.ndarray,
-               cm: numpy.ndarray,
+               predicted_labels: np.ndarray,
+               cm: np.ndarray,
                classifier_name: str,
                vectorizer_name: str) -> str:
     result = []
-    u = numpy.unique(test_data.v1,  return_counts=True)
+    u = np.unique(test_data.v1,  return_counts=True)
     labels = u[0]
     support = u[1]
     precision = precision_score(test_data.v1, predicted_labels, average = None)
@@ -438,7 +438,7 @@ def main():
         PassiveAggressiveClassifier(),
         RidgeClassifier(),
         RidgeClassifierCV(),
-        SGDClassifier(),
+        SGDClassifier(max_iter=5, tol=-np.infty),
         OneVsRestClassifier(SVC(kernel='linear')),
         OneVsRestClassifier(LogisticRegression()),
         KNeighborsClassifier()
@@ -462,7 +462,7 @@ def main():
         PassiveAggressiveClassifier(),
         RidgeClassifier(),
         # RidgeClassifierCV(),
-        SGDClassifier(),
+        SGDClassifier(max_iter=5, tol=-np.infty),
         OneVsRestClassifier(SVC(kernel='linear')),
         OneVsRestClassifier(LogisticRegression()),
         # KNeighborsClassifier()  # Actually not slow, but we run out of memory.
@@ -547,9 +547,9 @@ def main():
                     writer.writerow(d)
             sys.exit(0)
 
-        numpy.random.seed(SEED)
+        np.random.seed(SEED)
         cutoff = int(sample_size * 0.70)
-        permutation = numpy.random.permutation(phase3)
+        permutation = np.random.permutation(phase3)
         phase3 = None
         learn = paragraph.to_dataframe(permutation[:cutoff], args.suppress_text)
         test = paragraph.to_dataframe(permutation[cutoff:], args.suppress_text)
