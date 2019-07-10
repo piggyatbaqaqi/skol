@@ -49,24 +49,33 @@ class Paragraph(object):
     ]
 
 
+    _PREFIX_RE = (
+        r'\b('
+        r'[cC]on'
+        r')'
+    )
+
     _SUFFIX_RE = (
         r'('
         r'ae|amma|ana|ans|ata|ax|ca|cybe|cys|derma'
-        r'|ea|eda|ella|ens|ense|es|escens|forma'
-        r'|ia|ii|illa|ista|is|ix|i|ma'
-        r'|oda|ola|olor|oma|osa|ota|phora'
-        r'|sis|spora|thele|tina|ula|um|us|yx|zoa'
+        r'|dyna'
+        r'|ea|eda|ella|ens|ense|era|es|escens|forma'
+        r'|ia|ici|icta|ida|ii|illa|ina|ista|is|ix|i|ma'
+        r'|male'
+        r'|oa|oda|ola|oma|or|ora|orme|osa|ota|phe|phila|phora|phylla'
+        r'|rys'
+        r'|sis|spora|thele|tit|tre|tricha|ula|um|us|uta|yx|zoa'
         r')\b'
     )
     _NOMENCLATURE_RE = (
-        r'^([\w≡=.*]*\s+)?' +  # Optional first word.
-        r'[A-Z]\w*' + _SUFFIX_RE +  # Genus
-        r'\s\w+' + _SUFFIX_RE +  # species
+        r'^([-\w≡=.*|:]*\s+)?' +  # Optional first word.
+        r'(([A-Z]\w*' + _SUFFIX_RE + ')|(' + _PREFIX_RE + '\w*))' # Genus
+        r'\s((\w+' + _SUFFIX_RE + ')|(' + _PREFIX_RE + '\w*))' # species
         r'.*'
         r'('
         r'nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
-        r'[(]?nom\.\s?sanct\.[)]?|emend\..*|' +  # Indications of changes.
-        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?[^\n]{0,5}' +  # Publication year
+        r'[(]?nom\.\s?(prov\.|sanct\.)[)]?|emend\..*|' +  # Indications of changes.
+        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?[^\n]{0,9}' +  # Publication year
         ')' +
         r'[-\s—]*([[(]?(Fig|Plate)[^])\n]*[])]?)?$'  # Figure or Plate
     )
