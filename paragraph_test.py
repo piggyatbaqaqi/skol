@@ -138,6 +138,64 @@ class TestParagraph(unittest.TestCase):
             'Chamaeota pusilla (Pat. & Gaillard) Beardslee, Mycologia 26 (1934) 254\n',
 
             'Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3\n',
+
+            'Diplodina lycopersici Hollós, Annls hist.-nat. Mus. natn. hung. 5 (1907) 461.\n',
+
+            'Phyllosticta lycii Ellis & Kellerm., Am. Nat. 17 (1883) 1166.\n'
+
+            'Pleurotus djamor (Rumph. apud Fr.) Boedijn, in: H.C.D. de Wit (ed.), Rumphius\n'
+            'Memorial Vol. (1959) 292.\n',
+
+            'Comatricha nigricapillitium (Nann.-Bremek. & Bozonnet) A. Castillo, G. Moreno & Illana,\n'
+            'Mycol. Res. 101 (1997) 1331.\n',
+
+            '= Collaria chionophila Lado, Anales Jard. Bot. Madrid 50 (1992) 9 & 11.\n',
+
+            '= Lepidoderma chailletit Rostaf., Sluzowce Monogr. (1874) 189\n',
+
+            'Physarum alpestre Mitchel, S.W, Chapm. & M.L. Farr, Mycologia 78 (1986) 68.\n',
+
+            'Trichia sordida var. sordida Johannesen, Mycotaxon 20 (1984) 81-82.\n',
+
+            '- Trichia bicolor S.L. Stephenson & M.L. Farr, Mycologia 82 (1990) 513.\n',
+
+            'z Trichia contorta var. engadinensis Meyl., Bull. Soc. Vaud. Sci. Nat. 53 (1921) 460.\n',
+
+            'Pseudobaeospora dichroa forma cystidiata Bas, forma nov.\n',
+
+            'Pseudobaeospora oligophylla! (Singer) Singer, Lilloa 22 (*1949") (1951) 438 ; Baeo-\n'
+            'spora oligophylla Singer, Rev. Mycol. 3 (1938) 194.\n',
+
+            '|. Clasterosporium cyperacearum Hosag., spec. nov. — Fig.1\n',
+
+            'Balladyna uncinata Syd., Ann. Mycol. 12 (1914) 546.\n',
+
+            'Kusanobotrys bambusae Hino & Katum., Bull. Yamaguti Univ. 5 (1954) 218.\n',
+
+            'Erysiphe hellebori Rankovic, spec. nov.\n',
+
+            '13. Pseudobaeospora subglobispora, nom. prov. — Fig. 13\n',
+
+            'Catastoma pedicellatum Morgan, J. Cincinn. Soc. Nat. Hist. 14 (1892) 143-144.\n',
+
+            'Disciseda arida Nelen., Novit. Mycol. (1939) 169.\n',
+
+            'Basionym: Galera rickenii Schaeff., Z. Pilzk. 6 (1930) 171.\n',
+
+            'Comatricha alpina Kowalski, Madrono 22 (1973) 152.\n',
+
+            '7 Comatricha suksdorfii Elis & Everh. var. aggregata Meyl., Bull. Soc. Vaud. Sci. Nat. 53 (1921)\n'
+            '455.\n',
+
+            'Comatricha anastomosans Kowalski, Mycologia 64 (1972) 362.\n',
+
+            'Comatricha filamentosa Meyl., Bull. Soc. Vaud. Sci. Nat. 53 (1921) 456.\n',
+
+            'Hebeloma hiemale Bres., Fung. trident. 2 (1892) 52.\n',
+
+            'Hebeloma crustuliniforme var. tiliae Bresinsky, Z. Mykol. 53 (1987) 294.\n',
+
+            'Galerina acuta Barkman nom. prov., Coolia 14 (1969) 62 — Fig. 1\n',
         ]
 
         # Build paragraphs.
