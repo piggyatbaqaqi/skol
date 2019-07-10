@@ -385,6 +385,10 @@ def define_args():
         help='Use paragraph boundaries as annotated, not the heuristic boundaries.',
         action='store_true')
     parser.add_argument(
+        '--insert_nomenclature',
+        help='Use regex to convert some paragraphs to Nomenclature.',
+        action='store_true')
+    parser.add_argument(
         '--csv',
         help='In test_classifiers_by_label, emit a csv.',
         action='store_true')
@@ -600,6 +604,8 @@ def main():
             text = str(pp)
             vectorize_text = vectorizer.transform([text])
             predict = classifier.predict(vectorize_text)[0]
+            if args.insert_nomenclature and pp.contains_nomenclature():
+                predict = 'Nomenclature'
             phase4.append(pp.replace_labels(labels=[Label(predict)]))
 
 
