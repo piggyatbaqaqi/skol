@@ -182,7 +182,10 @@ class Paragraph(object):
         r = append_pat(r, 'year', r'(?P<year>' + self._YEAR_RE + ')')
         r = append_pat(r, 'abbrev', r'(?P<abbrev>' + self._ABBREV_RE + ')')
 
-        return re.sub(r, replace, str(self), re.MULTILINE | re.DOTALL)
+        retval = ''
+        if 'nomenclature' in self._reinterpret and self.contains_nomenclature():
+            retval += ' PNOMENCLATURE '
+        return retval + re.sub(r, replace, str(self), re.MULTILINE | re.DOTALL)
 
     def append(self, line: Line) -> None:
         if line.contains_start():

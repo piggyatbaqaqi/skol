@@ -346,7 +346,7 @@ def define_args():
 
     parser.add_argument(
         '--reinterpret',
-        help='Append reinterpretations of various elements. Values={suffix, latinate, punctuation, year, abbrev}.',
+        help='Append reinterpretations of various elements. Values={suffix, latinate, punctuation, year, abbrev, nomenclature}.',
         default=[], type=str, action='append')
     parser.add_argument(
         '--classifier',
@@ -405,6 +405,10 @@ def define_args():
     # we see +3% over the best previous classifier.
     args.reinterpret.append('punctuation')
 
+    # This makes a significant increase in Nomenclature scores.  Max
+    # precision goes up about 1%, max recall 3%, and max f1 3%.
+    args.reinterpret.append('nomenclature')
+
     try:
         i = args.file.index('evaluate')
         args.training_files = args.file[:i]
@@ -435,7 +439,7 @@ def main():
         DecisionTreeClassifier(),
         CalibratedClassifierCV(),
         DummyClassifier(),
-        PassiveAggressiveClassifier(),
+        PassiveAggressiveClassifier(max_iter=5, tol=None),
         RidgeClassifier(),
         RidgeClassifierCV(),
         SGDClassifier(max_iter=5, tol=-np.infty),
@@ -459,7 +463,7 @@ def main():
         DecisionTreeClassifier(),
         CalibratedClassifierCV(),
         DummyClassifier(),
-        PassiveAggressiveClassifier(),
+        PassiveAggressiveClassifier(max_iter=5, tol=None),
         RidgeClassifier(),
         # RidgeClassifierCV(),
         SGDClassifier(max_iter=5, tol=-np.infty),
