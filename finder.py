@@ -355,7 +355,7 @@ def define_args():
     parser.add_argument(
         '--vectorizer',
         help='Which vectorizer should we use for actual runs?',
-        type=str, default='TfidfVectorizer')
+        type=str, default='CountVectorizer')
     parser.add_argument(
         '--keep_interstitials',
         help='Keep figures, tables, and blanks.',
