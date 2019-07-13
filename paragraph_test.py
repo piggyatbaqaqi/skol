@@ -196,6 +196,10 @@ class TestParagraph(unittest.TestCase):
             'Hebeloma crustuliniforme var. tiliae Bresinsky, Z. Mykol. 53 (1987) 294.\n',
 
             'Galerina acuta Barkman nom. prov., Coolia 14 (1969) 62 — Fig. 1\n',
+
+            'Galerina inversa Barkman nom. prov., Coolia 14 (1969) 58 — Figs. 16,17\n',
+
+            'Mycena fuliginea Maas G. & de Meijer, spec. nov. — Fig. 3',
         ]
 
         # Build paragraphs.
@@ -231,7 +235,7 @@ class TestReinterpret(unittest.TestCase):
         got = self.pp.reinterpret()
         expected = (
             ' PLATINATE   PLATINATE  (Nylander) R.C.  PLATINATE  in Egan, Bryologist 90: 163. 1987;\n'
-            ' PLATINATE   PLATINATE  Nylander, Flora 69: 464. 1886. syn. nov.\n'
+            ' PLATINATE   PLATINATE  Nylander,  PLATINATE  69: 464. 1886. syn. nov.\n'
         )
         self.assertEqual(got, expected)
 
@@ -240,7 +244,7 @@ class TestReinterpret(unittest.TestCase):
         got = self.pp.reinterpret()
         expected = (
             ' ella   ea  (Nylander) R.C.  is  in Egan, Bryologist 90: 163. 1987;\n'
-            ' ia   ea  Nylander, Flora 69: 464. 1886. syn. nov.\n'
+            ' ia   ea  Nylander,  ora  69: 464. 1886. syn. nov.\n'
         )
         self.assertEqual(got, expected)
 
@@ -249,7 +253,7 @@ class TestReinterpret(unittest.TestCase):
         got = self.pp.reinterpret()
         expected = (
             ' PLATINATE ella   PLATINATE ea  (Nylander) R.C.  PLATINATE is  in Egan, Bryologist 90: 163. 1987;\n'
-            ' PLATINATE ia   PLATINATE ea  Nylander, Flora 69: 464. 1886. syn. nov.\n'
+            ' PLATINATE ia   PLATINATE ea  Nylander,  PLATINATE ora  69: 464. 1886. syn. nov.\n'
         )
         self.assertEqual(got, expected)
 
@@ -283,6 +287,15 @@ class TestReinterpret(unittest.TestCase):
 
         self.assertEqual(got, expected)
 
+    def test_nomenclature(self):
+        self.pp.set_reinterpretations(['nomenclature'])
+        got = self.pp.reinterpret()
+        expected = textwrap.dedent("""\
+         PNOMENCLATURE Julella sublactea (Nylander) R.C. Harris in Egan, Bryologist 90: 163. 1987;
+        Verrucaria sublactea Nylander, Flora 69: 464. 1886. syn. nov.
+        """)
+
+        self.assertEqual(got, expected)
 
 
 if __name__ == '__main__':

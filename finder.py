@@ -3,7 +3,7 @@
 import argparse
 import csv
 import itertools
-import joblib
+import joblib  # type: ignore
 import numpy as np  # type: ignore
 import regex as re  # type: ignore
 import sys
@@ -351,11 +351,11 @@ def define_args():
     parser.add_argument(
         '--classifier',
         help='Which classifier should we use for actual runs?',
-        type=str, default='RandomForestClassifier')
+        type=str, default='SGDClassifier')
     parser.add_argument(
         '--vectorizer',
         help='Which vectorizer should we use for actual runs?',
-        type=str, default='CountVectorizer')
+        type=str, default='TfidfVectorizer')
     parser.add_argument(
         '--keep_interstitials',
         help='Keep figures, tables, and blanks.',
@@ -407,7 +407,7 @@ def define_args():
 
     # This makes a significant increase in Nomenclature scores.  Max
     # precision goes up about 1%, max recall 3%, and max f1 3%.
-    args.reinterpret.append('nomenclature')
+    # args.reinterpret.append('nomenclature')
 
     try:
         i = args.file.index('evaluate')
