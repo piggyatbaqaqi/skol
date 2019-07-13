@@ -59,7 +59,7 @@ class Paragraph(object):
         r'('
         r'ae|amma|ana|ans|ata|ax|ca|cybe|cys|derma'
         r'|dyna'
-        r'|ea|eda|ella|ens|ense|era|es|escens|forma'
+        r'|ea|eda|ella|ena|ens|ense|era|ersa|es|escens|forma'
         r'|ia|ici|icta|ida|ii|illa|ina|ista|is|ix|i|ma'
         r'|male'
         r'|oa|oda|ola|oma|or|ora|orme|osa|ota|phe|phila|phora|phylla'
