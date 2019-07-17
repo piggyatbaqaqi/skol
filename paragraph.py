@@ -62,9 +62,9 @@ class Paragraph(object):
         r'|ea|eda|ella|ena|ens|ense|era|ersa|es|escens|forma'
         r'|ia|ici|icta|ida|ii|illa|ina|ista|is|ix|i|ma'
         r'|male'
-        r'|oa|oda|ola|oma|or|ora|orme|osa|ota|phe|phila|phora|phylla'
+        r'|oa|oda|ola|ole|oma|or|ora|orme|osa|ota|phe|phila|phora|phylla'
         r'|rys'
-        r'|sis|spora|thele|tit|tre|tricha|ula|um|us|uta|yx|zoa'
+        r'|sis|spora|thele|tit|tre|tricha|ula|ule|um|us|uta|yx|zoa'
         r')\b'
     )
     _NOMENCLATURE_RE = (
