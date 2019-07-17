@@ -396,7 +396,16 @@ def define_args():
     args = parser.parse_args()
 
     if not args.label:
-        args.labels = ['Nomenclature', 'Description']
+        args.labels = ['Bibliography', 'Description', 'Nomenclature']
+
+    for l in args.label:
+        if l not in [
+                'Abstract', 'Author', 'Bibliography', 'Contents',
+                'Description', 'Diagnosis', 'Figure', 'Habitat-distribution',
+                'Header', 'Institution', 'Key', 'Misc-exposition', 'Nomenclature', 'Table'
+        ]:
+            raise ValueError('Label "%s" not valid' % l)
+
 
     args.output_labels = [Label(l) for l in args.output_label]
 
@@ -407,6 +416,8 @@ def define_args():
 
     # This makes a significant increase in Nomenclature scores.  Max
     # precision goes up about 1%, max recall 3%, and max f1 3%.
+    # However, this seems to tank Nomenclature findings on fresh
+    # journal articles.
     # args.reinterpret.append('nomenclature')
 
     try:
