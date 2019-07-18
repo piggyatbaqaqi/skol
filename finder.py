@@ -326,6 +326,10 @@ def define_args():
         '--group_paragraphs',
         help='Group Nomenclature paragraphs with matching Description paragraphs.',
         action='store_true')
+    parser.add_argument(
+        '--dump_input',
+        help='Dump the contents of the input files.',
+        action='store_true')
     # Control options
     parser.add_argument(
         '--load_vectorizer',
@@ -540,6 +544,18 @@ def main():
             default=Label('Misc-exposition'),
             keep=[Label(l) for l in args.labels]
         )
+
+        if args.dump_input:
+            phase3 = list(phase3)
+            if args.output_annotated:
+                if not args.output_labels:
+                    print('\n'.join([pp.as_annotated() for pp in phase3]))
+                else:
+                    print('\n'.join([pp.as_annotated()
+                                     for pp in phase3
+                                     if pp.top_label() in args.output_labels]))
+            else:
+                print('\n'.join([str(pp) for pp in phase3]))
 
         phase2 = None
 
