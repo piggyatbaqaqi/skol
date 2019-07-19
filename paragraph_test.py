@@ -297,6 +297,23 @@ class TestReinterpret(unittest.TestCase):
 
         self.assertEqual(got, expected)
 
+    def test_punctuation_regression(self):
+        self.maxDiff = None
+        pp = Paragraph()
+        pp.set_reinterpretations(['punctuation'])
+        pp.append_ahead(Line('hederacea Pet., Sydowia 11 (1957) 348. 2 Asteromella hederae (Sacc. & Roum.) Petr.,\n'))
+        pp.append_ahead(Line('Sydowia 10 (1956) 303, non A. /iederae C. Massal. — Basionym: Phyllosticta hederae\n'))
+        pp.append_ahead(Line('Sacc. & Roum., Michelia 2 (1882) 620.\n'))
+        pp.close()
+        got = pp.reinterpret()
+        expected = textwrap.dedent("""\
+        hederacea Pet PDOT  PCOMMA  Sydowia 11  PLPAREN 1957 PRPAREN  348 PDOT  2 Asteromella hederae  PLPAREN Sacc PDOT   PAMPERSAND  Roum PDOT  PRPAREN  Petr PDOT  PCOMMA\x20
+        Sydowia 10  PLPAREN 1956 PRPAREN  303 PCOMMA  non A PDOT  /iederae C PDOT  Massal PDOT  — Basionym PCOLON  Phyllosticta hederae
+        Sacc PDOT   PAMPERSAND  Roum PDOT  PCOMMA  Michelia 2  PLPAREN 1882 PRPAREN  620 PDOT\x20
+        """)
+
+        self.assertEqual(got, expected)
+
 
 if __name__ == '__main__':
     unittest.main()
