@@ -79,17 +79,18 @@ class Paragraph(object):
         ')' +
         r'[-\s—]*([[(]?(Fig|Plate)[^])\n]*[])]?)?$'  # Figure or Plate
     )
-    _PUNCTUATION_RE = r'[().;:,≡=&]'
+    _PUNCTUATION_RE = r'[)(.;:,≡=&×]'
     _PUNCTUATION = {
+        '&': 'PAMPERSAND',
         '(': 'PLPAREN',
         ')': 'PRPAREN',
-        '.': 'PDOT',
-        ';': 'PSEMI',
-        ':': 'PCOLON',
         ',': 'PCOMMA',
-        '≡': 'PEQUIV',
+        '.': 'PDOT',
+        ':': 'PCOLON',
+        ';': 'PSEMI',
         '=': 'PEQUAL',
-        '&': 'PAMPERSAND',
+        '×': 'PTIMES',
+        '≡': 'PEQUIV',
     }
     _YEAR_RE = r'\b[12]\d\d\d\b'
     _ABBREV_RE = r'\b[[:alpha:]]{1,5}\.'
@@ -194,7 +195,7 @@ class Paragraph(object):
         retval = ''
         if 'nomenclature' in self._reinterpret and self.contains_nomenclature():
             retval += ' PNOMENCLATURE '
-        return retval + re.sub(r, replace, str(self), re.MULTILINE | re.DOTALL)
+        return retval + re.sub(r, replace, str(self), flags=re.MULTILINE | re.DOTALL)
 
     def append(self, line: Line) -> None:
         if line.contains_start():
@@ -337,7 +338,7 @@ class Paragraph(object):
         return bool(re.search(
             self._NOMENCLATURE_RE,
             str(self),
-            re.MULTILINE | re.DOTALL
+            flags=re.MULTILINE | re.DOTALL
         ))
 
     def split_at_nomenclature(self) -> Optional['Paragraph']:
