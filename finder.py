@@ -482,7 +482,7 @@ def main():
         RidgeClassifier(),
         # RidgeClassifierCV(),
         SGDClassifier(max_iter=5, tol=-np.infty),
-        OneVsRestClassifier(SVC(kernel='linear')),
+        # OneVsRestClassifier(SVC(kernel='linear')),
         OneVsRestClassifier(LogisticRegression()),
         # KNeighborsClassifier()  # Actually not slow, but we run out of memory.
     ]
