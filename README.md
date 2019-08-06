@@ -11,4 +11,4 @@ with it and know where to find a lot of it.
 
 This is a project of the [Western Pennsylvania Mushroom
 Club](http://wpamushroomclub.org) as a contribution to the [North
-American Mycoflora Project](http://namp.org).
+American Mycoflora Project](http://mycoflora.org).
