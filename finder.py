@@ -149,12 +149,13 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
                 yield retval
             continue
 
-        # A taxon ends in nov., nov. comb., nov. sp., ined.,
-        # emend. (followed by emender), or nom. sanct.
+        # A taxon ends in nov., nov. comb., nov. sp., ined. or a year
+        # within 3 characters of the end followed by an optional
+        # figure specifier.
         if pp.last_line and pp.last_line.search(
                 r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
-                r'[(]?nom\.\s?sanct\.[)]?|emend\..*)$'
-        ):
+                r'[(]?nom\.\s?sanct\.[)]?|emend\..*)|'
+                r'\b[12]\d{3}\b.{0,3})\s*([[(]Fig[^])]*[])]?)?$'):
             (retval, pp) = pp.next_paragraph()
             if not retval.is_empty():
                 yield retval
