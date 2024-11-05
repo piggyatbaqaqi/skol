@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 483–485#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 483–485#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.483#Misc-exposition*]
 
@@ -13,15 +13,15 @@
 
 [@New combinations in Lactiﬂuus. 2. L. subg. Gerardii
 D. Stubbe1, 2, X.-H. Wang3 & A. Verbeken1*#Misc-exposition*]
-[@1#Misc-exposition*]
+[@1
 
-[@Ghent University, Department of Biology, Research Group Mycology,
-K.L. Ledeganckstraat 35, B-9000 Gent, Belgium#Misc-exposition*]
-[@2#Misc-exposition*]
-[@Section Mycology and Aerobiology, Scientiﬁc Institute of Public Health,
-Juliette Wytsmanstraat 14, 1050 Brussels, Belgium#Misc-exposition*]
-[@3#Misc-exposition*]
-[@Key Laboratory of Biodiversity and Biogeography, Kunming Institute of Botany,
+Ghent University, Department of Biology, Research Group Mycology,
+K.L. Ledeganckstraat 35, B-9000 Gent, Belgium
+2
+Section Mycology and Aerobiology, Scientiﬁc Institute of Public Health,
+Juliette Wytsmanstraat 14, 1050 Brussels, Belgium
+3
+Key Laboratory of Biodiversity and Biogeography, Kunming Institute of Botany,
 Chinese Academy of Sciences, Kunming 650204, P. R. China
 * Correspondence to: mieke.verbeken@ugent.be#Misc-exposition*]
 [@Abstract — In this second of a series of three papers, new combinations in the genus
@@ -35,24 +35,24 @@ combination in Lactiﬂuus). In this subgenus 17 combinations at species level a
 subgenera Edules, Lactariopsis, and Russulopsis were discussed in the ﬁrst article
 (Verbeken et al. 2012).#Misc-exposition*]
 [@Taxonomy#Misc-exposition*]
-[@Lactiﬂuus subg. Gerardii#Nomenclature*]
+[@Lactiﬂuus subg. Gerardii#Misc-exposition*]
 
 [@This recently established subgenus in Lactarius represents a group of milkcaps that is well deﬁned both molecularly and morphologically. Species are
 agaricoid with brown pileus and stipe, contrasting pale lamellae, and a white
 spore print. Three deviant species —all three remarkably small, pleurotoid,
 and white (Lactarius uyedae, L. conchatulus, L. genevievae)— also belong to
 this subgenus. Their alliance with Lactiﬂuus subg. Gerardii is conﬁrmed by a
-multi-gene phylogeny but is also substantiated by their microscopic features.#Misc-exposition*]
-[@The ornamentation of the basidiospores in this subgenus is always reticulate
+multi-gene phylogeny but is also substantiated by their microscopic features.
+The ornamentation of the basidiospores in this subgenus is always reticulate
 and composed of interconnecting ridges, usually between 0.5 and 1.5 µm
 high. The pileipellis is typically a palisade with a strongly developed cellular
 subpellis. True pleurocystidia are rare. As of this writing, L. subg. Gerardii#Misc-exposition*]
 
-[@484 ... Stubbe, Wang & Verbeken#Misc-exposition*]
+[@484 ... Stubbe, Wang & Verbeken#Page-header*]
 [@contains 18 described species, all from North America, Asia, and the Australian
-region (Stubbe et al. 2012), and the group is absent from Africa and Europe.#Misc-exposition*]
-[@The type species, Lactarius gerardii, has already been recombined in Lactiﬂuus.#Misc-exposition*]
-[@Stubbe et al. (2010) has demonstrated the existence of several cryptic species
+region (Stubbe et al. 2012), and the group is absent from Africa and Europe.
+The type species, Lactarius gerardii, has already been recombined in Lactiﬂuus.
+Stubbe et al. (2010) has demonstrated the existence of several cryptic species
 and species complexes in this subgenus, and the total number of species will
 likely increase after more data are gathered on several North-American milkcaps like Lactarius atro-olivaceus, L. pseudogerardii, L. louisii, L. subtomentosus,
 L. subisabellinus var. murrillianus, and L. xanthydrorheus.#Misc-exposition*]
@@ -60,7 +60,7 @@ L. subisabellinus var. murrillianus, and L. xanthydrorheus.#Misc-exposition*]
 [@MycoBank MB 564016#Misc-exposition*]
 [@≡ Lactarius ser. Gerardii A.H. Sm. & Hesler, Brittonia 14: 378. 1962
 ≡ Lactarius subg. Gerardii (A.H. Sm. & Hesler) Stubbe, Fungal Biology 114: 280. 2010.#Nomenclature*]
-[@Type: Lactarius gerardii Peck#Nomenclature*]
+[@Type: Lactarius gerardii Peck#Misc-exposition*]
 
 [@Lactiﬂuus atrovelutinus (J.Z. Ying) X.H. Wang, comb. nov.#Nomenclature*]
 [@MycoBank MB 564017#Misc-exposition*]
@@ -97,7 +97,7 @@ L. subisabellinus var. murrillianus, and L. xanthydrorheus.#Misc-exposition*]
 [@MycoBank MB 564025#Misc-exposition*]
 [@≡ Lactarius leonardii Stubbe & Verbeken, Fungal Diversity 52: 156. 2012.#Nomenclature*]
 
-[@Lactiﬂuus subg. Gerardii combs. nov. ... 485#Misc-exposition*]
+[@Lactiﬂuus subg. Gerardii combs. nov. ... 485#Page-header*]
 
 [@Lactiﬂuus limbatus (Stubbe & Verbeken) Stubbe, comb. nov.#Nomenclature*]
 [@MycoBank MB 564026#Misc-exposition*]
@@ -141,12 +141,12 @@ L. subisabellinus var. murrillianus, and L. xanthydrorheus.#Misc-exposition*]
 comments and for reviewing the manuscript.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Stubbe D, Nuytinck J, Verbeken A. 2010. Critical assessment of the Lactarius gerardii species complex
-(Russulales). Fungal Biology 114: 271–283. http://dx.doi.org/10.1016/j.funbio.2010.01.008
-Stubbe D., Le H.T., Wang X.-H., Nuytinck J., Van de Putte K., Verbeken A. 2012. The Australasian
-species of Lactarius subgenus Gerardii (Russulales). Fungal Diversity 52: 141–167.#Misc-exposition*]
-[@http://dx.doi.org/10.1007/s13225-011-0111-3#Misc-exposition*]
+(Russulales). Fungal Biology 114: 271–283. http://dx.doi.org/10.1016/j.funbio.2010.01.008#Bibliography*]
+[@Stubbe D., Le H.T., Wang X.-H., Nuytinck J., Van de Putte K., Verbeken A. 2012. The Australasian
+species of Lactarius subgenus Gerardii (Russulales). Fungal Diversity 52: 141–167.
+http://dx.doi.org/10.1007/s13225-011-0111-3#Bibliography*]
 [@Verbeken A, Nuytinck J, Buyck B. 2012 [“2011”]. New combinations in Lactiﬂuus. 1. L. subgenera
-Edules, Lactariopsis, and Russulopsis. Mycotaxon 118: 455–458.#Misc-exposition*]
-[@http://dx.doi.org/10.5248/118.447#Misc-exposition*]
+Edules, Lactariopsis, and Russulopsis. Mycotaxon 118: 455–458.
+http://dx.doi.org/10.5248/118.447#Bibliography*]
 
-[@#Misc-exposition*]
+[@#Page-header*]

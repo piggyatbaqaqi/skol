@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 117, pp. 115–122#Misc-exposition*]
+[@MYCOTAXON
+Volume 117, pp. 115–122#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/117.115#Misc-exposition*]
 
@@ -28,14 +28,14 @@ and C. divulsa are newly reported hosts for rust fungi in Pakistan.#Misc-exposit
 [@The Cyperaceae is a cosmopolitan family with 106 genera and ca. 5400
 species (Govaerts et al. 2007) worldwide with 22 genera and 179 species known
 in Pakistan (Kukkonen 2001). Members of the Cyperaceae commonly called
-sedges are primarily grass-like herbs with linear leaves and parallel venation.#Misc-exposition*]
-[@The most important cyperaceous weeds in terms of their adverse eﬀect on
+sedges are primarily grass-like herbs with linear leaves and parallel venation.
+The most important cyperaceous weeds in terms of their adverse eﬀect on
 agriculture include Cyperus diﬀormis, C. esculentus, C. iria, C. rotundus, and
 Fimbristylis miliacea (Bryson & Carter 2008). Among the important fungal
 pathogens of sedges are rust fungi (Basidiomycota: Uredinales). Previously,
 thirteen species of Cyperaceae have been reported as hosts for rust fungi from
-Pakistan (Ahmad et al. 1997; Afshan & Khalid 2008, 2009; Afshan et al. 2009).#Misc-exposition*]
-[@In the present study, four Puccinia taxa, three of them new records for Pakistan,
+Pakistan (Ahmad et al. 1997; Afshan & Khalid 2008, 2009; Afshan et al. 2009).
+In the present study, four Puccinia taxa, three of them new records for Pakistan,
 are recorded on four cyperaceous hosts.#Misc-exposition*]
 [@Materials & methods#Misc-exposition*]
 [@During the survey of rust fungi from Pakistan, infected plants were collected from
@@ -44,29 +44,29 @@ fruits for accurate identiﬁcation. Host plants were identiﬁed by comparing t
 specimens in the herbarium of the Department of Botany, University of the Punjab,
 Lahore (LAH).#Misc-exposition*]
 
-[@116 ... Saba & Khalid#Misc-exposition*]
+[@116 ... Saba & Khalid#Page-header*]
 [@Free hand sections of infected portions of material and spores were mounted in
 lactophenol. Semi-permanent slides were prepared by cementing cover slips with nail
 lacquer (Dade & Gunnell 1969). Preparations were observed under a NIKON YS 100
 microscope. Drawings of spores were made by using a Camera Lucida (Ernst Leitz,
 Wetzlar, Germany). Spores were measured using an ocular micrometer (Zeiss, St Albans,
-Hertfordshire, England). At least twenty-ﬁve spores were measured for each spore stage.#Misc-exposition*]
-[@Measurements include the usual range and the arithmetic means; extremes are given in
+Hertfordshire, England). At least twenty-ﬁve spores were measured for each spore stage.
+Measurements include the usual range and the arithmetic means; extremes are given in
 parentheses.#Misc-exposition*]
 [@Enumeration of Taxa#Misc-exposition*]
 
-[@Fig. 1. Lucida drawings of 1–2 celled teliospores of Puccinia caricis-kouriyamensis.#Misc-exposition*]
-[@Scale bar = 15 µm.#Misc-exposition*]
+[@Fig. 1. Lucida drawings of 1–2 celled teliospores of Puccinia caricis-kouriyamensis.
+Scale bar = 15 µm.#Figure*]
 
 [@Puccinia caricis-kouriyamensis Morim., J. Jap. Bot. 47(4): 117 (1972).#Nomenclature*]
-[@Fig. 1
-Spermogonia, aecia and uredinia not seen. Telia amphigenous,
+[@Fig. 1#Misc-exposition*]
+[@Spermogonia, aecia and uredinia not seen. Telia amphigenous,
 naked, black, scattered, compact, rounded, erumpent, pulverulent, 140–280 ×
 240–440 µm. Teliospores ellipsoid or oblong, pale brown to chestnut brown,
 constricted at septum, attenuate or rounded at base, 19–27 × 39–59(–63) µm
 (mean 22 × 50.8 µm); wall smooth, two-layered, pale brown to chestnut brown,#Description*]
 
-[@Sedge rusts new to Pakistan ... 117#Misc-exposition*]
+[@Sedge rusts new to Pakistan ... 117#Page-header*]
 
 [@1.8–4.7 µm; germ pores two, one per cell, apical in upper cell, obscure in lower
 cell, most probably adjacent to septum; apex rounded or conical, dark brown
@@ -83,13 +83,13 @@ persistent, up to 73 µm long.#Description*]
 caricina DC. and P. caricis-ﬁlicinae Barclay on Carex ﬁlicina Nees, P. dioicae
 Magnus and P. pakistani S. Ahmad on Carex nubigena D. Don, P. bolleyana
 Sacc. on Carex ﬂacca Schreb., and P. subepidermalis Afshan et al. on Carex curta
-Gooden. (Ahmad et al. 1997, Afshan & Khalid 2009, Afshan et al. 2009).#Misc-exposition*]
-[@Puccinia caricis-kouriyamensis, ﬁrst reported on Carex brunnea Thunb.#Misc-exposition*]
-[@(kogome-suge) from Japan (Hiratsuka et al. 1992), is a new record for Pakistan.#Misc-exposition*]
-[@Carex karoi is a newly recorded host.#Misc-exposition*]
+Gooden. (Ahmad et al. 1997, Afshan & Khalid 2009, Afshan et al. 2009).
+Puccinia caricis-kouriyamensis, ﬁrst reported on Carex brunnea Thunb.
+(kogome-suge) from Japan (Hiratsuka et al. 1992), is a new record for Pakistan.
+Carex karoi is a newly recorded host.#Misc-exposition*]
 
-[@Fig. 2. Lucida drawings of teliospores of Puccinia caricis-pocilliformis.#Misc-exposition*]
-[@Scale bar = 10 µm.#Misc-exposition*]
+[@Fig. 2. Lucida drawings of teliospores of Puccinia caricis-pocilliformis.
+Scale bar = 10 µm.#Misc-exposition*]
 
 [@Puccinia caricis-pocilliformis Morim., J. Jap. Bot. 49(8): 228 (1974).#Nomenclature*]
 [@Fig. 2
@@ -98,23 +98,23 @@ black, erumpent, scattered, ﬁrst covered by epidermis, soon naked, compact,
 80–200 × 100–600 µm. Teliospores clavate, obovate-clavate or oblong-clavate,
 yellowish brown to dark brown, constricted at septum, attenuated below,#Description*]
 
-[@118 ... Saba & Khalid#Misc-exposition*]
+[@118 ... Saba & Khalid#Page-header*]
 [@(15–)18–24(–28) × (32–)37–60(–74) µm (mean 21.2 × 48.4 µm); wall smooth,
 yellowish brown or paler, two-layered, 1.5–2 µm; apex rounded, conical or
 obliquely conical, rarely truncate, dark brown, 6–17 µm thick; pedicel long,
 persistent, hyaline to pale yellow, 4–9.4 × (4–)7–71 µm. Mesospores present,
 clavate, pale brown, attenuated below, 13–15 × 36–47 µm (mean 13.6 × 39 µm);
 apex conical, 2–9 µm thick; pedicel short, up to 12 µm long.#Description*]
-[@Material examined: PAKISTAN, Gilgit Baltistan, on Carex L., 26 July 2010, coll.#Misc-exposition*]
-[@& det. Malka Saba 02, with III stage (LAH 1141).#Misc-exposition*]
+[@Material examined: PAKISTAN, Gilgit Baltistan, on Carex L., 26 July 2010, coll.
+& det. Malka Saba 02, with III stage (LAH 1141).#Misc-exposition*]
 
 [@Puccinia caricis-pocilliformis, ﬁrst reported on Carex tristachya var. pocilliformis
 (Boott) Kük. (kotsubu-moegisuge) from Japan (Hiratsuka et al. 1992) , is a new
 record for Pakistan.#Misc-exposition*]
 
 [@Fig. 3. Lucida drawings of urediniospores of Puccinia conclusa,
-showing echinulate ornamentation.#Misc-exposition*]
-[@Scale bar = 10 µm.#Misc-exposition*]
+showing echinulate ornamentation.
+Scale bar = 10 µm.#Misc-exposition*]
 
 [@Puccinia conclusa Thüm., J. Sci. math. phys. nat. Lisboa, 1 Ser. 6(24): 237 (1878).#Nomenclature*]
 
@@ -125,8 +125,8 @@ abaxial side, brown, scattered, somewhat aggregated, erumpent, naked, 100–250
 × 100–400 µm. Urediniospores subglobose, ellipsoid or obovoid, pale brown,
 18–26 × 21–35 µm (mean 20.9 × 27 µm); wall pale brown, echinulate, 1–2(2.5–)
 µm; germ pores 2, equatorial; paraphyses absent. Telia amphigenous, black,
-loculate, covered with epidermis, aggregated, in groups, 90–110 × 90–170 µm.#Description*]
-[@Teliospores cinnamon brown, clavate or fusiform, constricted at septum,
+loculate, covered with epidermis, aggregated, in groups, 90–110 × 90–170 µm.
+Teliospores cinnamon brown, clavate or fusiform, constricted at septum,
 attenuated below, 16–21 × 43–61 µm (mean 18.3 × 50 µm); wall cinnamon
 brown, smooth, 1–1.4 µm; apex rounded or conical, cinnamon brown to dark
 brown, 3–6 µm thick; pedicel persistent, pale brown, 6–9 × 8–41 µm.#Description*]
@@ -138,10 +138,10 @@ S. Ahmad and P. philippinensis Syd. & P. Syd. on C. rotundus L., P. conclusa
 [including misdeterminations as P. romagnoliana Maire & Sacc.] on C. diﬀormis
 and C. rotundus from Chuharkana (Sheikhupura) and Karachi and on C. iria L.#Misc-exposition*]
 
-[@Sedge rusts new to Pakistan ... 119#Misc-exposition*]
+[@Sedge rusts new to Pakistan ... 119#Page-header*]
 
-[@Fig. 4. Lucida drawings of teliospores of Puccinia conclusa.#Misc-exposition*]
-[@Scale bar = 10 µm.#Misc-exposition*]
+[@Fig. 4. Lucida drawings of teliospores of Puccinia conclusa.
+Scale bar = 10 µm.#Misc-exposition*]
 
 [@from Lahore, and P. cyperi-laevigati Afshan & Khalid on C. laevigatus L. from
 Khanspur (NWFP) (Ahmad 1956a,b; Ghaﬀar & Kaﬁ 1968, Hasnain et al. 1959,
@@ -155,8 +155,8 @@ a new host.#Misc-exposition*]
 [@F ig. 5#Misc-exposition*]
 
 [@Spermogonia and aecia not seen. Uredinia amphigenous, scattered in
-rows, golden brown, naked, covered with epidermis, 70–100 × 100–300 µm.#Description*]
-[@Urediniospores sub-globose, ovoid or ellipsoid, pale brown, 16–24 × 20–27
+rows, golden brown, naked, covered with epidermis, 70–100 × 100–300 µm.
+Urediniospores sub-globose, ovoid or ellipsoid, pale brown, 16–24 × 20–27
 µm (mean 20.5 × 23.4 µm); wall pale brown, echinulate, 1–2(–2.5) µm; germ
 pores 2, supraequatorial; pedicel hyaline, deciduous, 6–18 × 18–29 µm. Telia
 on abaxial side, dark brown to blackish brown, scattered in rows, naked,
@@ -169,27 +169,27 @@ persistent, 5–13 × 15–41 µm.#Description*]
 3300 m a. s. l., Carex divulsa Stokes, 16 August 2009, coll. & det. Malka Saba 04, with II
 + III stages (LAH 1143).#Misc-exposition*]
 
-[@120 ... Saba & Khalid#Misc-exposition*]
+[@120 ... Saba & Khalid#Page-header*]
 
-[@Fig. 5. Lucida drawings of Puccinia extensicola var. linosyridis-caricis.#Misc-exposition*]
-[@(A) Urediniospores showing echinulate ornamentation and supraequatorial germ pores.#Misc-exposition*]
-[@(B) Teliospores. Scale bar = 10 µm.#Misc-exposition*]
+[@Fig. 5. Lucida drawings of Puccinia extensicola var. linosyridis-caricis.
+(A) Urediniospores showing echinulate ornamentation and supraequatorial germ pores.
+(B) Teliospores. Scale bar = 10 µm.#Misc-exposition*]
 
 [@Puccinia extensicola var. linosyridis-caricis, ﬁrst reported on Carex humilis
 Leyss. from Japan (Hiratsuka et al. 1992), is a new record for Pakistan, and
 Carex divulsa is a newly recorded host.#Misc-exposition*]
-[@Key to the rust fungi on Cyperaceae in Pakistan#Key*]
-[@On Carex#Key*]
+[@Key to the rust fungi on Cyperaceae in Pakistan
+On Carex
 
-[@1. Telia amphigenous . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
+1. Telia amphigenous . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
 1. Telia hypophyllous, rarely amphigenous . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .4
 2. Largest teliospore <50 µm long, oblong or oblong to clavate;
 teliospore apex 8–14 µm thick . . . . . . . . . . . . . . . . . . . . . . . Puccinia caricis-ﬁlicinae
-2. Largest teliospore >50 µm long . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .3#Key*]
+2. Largest teliospore >50 µm long . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .3
 
-[@Sedge rusts new to Pakistan ... 121#Key*]
+[@Sedge rusts new to Pakistan ... 121@Page-header*]
 
-[@3. Teliospore pedicel short, <10 µm; teliospore apex 4–6 µm thick;
+3. Teliospore pedicel short, <10 µm; teliospore apex 4–6 µm thick;
 uredinial paraphyses clavate to capitate. . . . . . . . . . . . . . . . . . . . . . P. subepidermalis
 3. Teliospore pedicel long, >10 µm; teliospore apex 4–9 µm thick;
 uredinial paraphyses absent . . . . . . . . . . . . . . . . . . . . . . . . . P. caricis-kouriyamensis
@@ -206,9 +206,9 @@ supraequatorial . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 ≤17 µm thick . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. caricis-pocilliformis
 8. Urediniospore germ pores 3–4, equatorial . . . . . . . . . . . . . . . . . . . . . . . . . . . . P.caricina
 8. Urediniospore germ pores 2, supraequatorial. . . . P. extensicola var. linosyridis-caricis
-On Cyperus#Key*]
+On Cyperus
 
-[@1. Urediniospore germ pores two, equatorial . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
+1. Urediniospore germ pores two, equatorial . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .2
 1. Urediniospore germ pores >two, scattered; paraphyses clavate;
 teliospores 10–18 × (31–) 34–45 µm . . . . . . . . . . . . . . . . . . . . . . . P. cyperi-laevigati
 2. Largest teliospore >50 µm long . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .3
@@ -216,14 +216,14 @@ teliospores 10–18 × (31–) 34–45 µm . . . . . . . . . . . . . . . . . . .
 urediniospores 14–18 × 14–19 µm . . . . . . . . . . . . . . . . . . . . . . . . . . P. philippinensis
 3. Teliospore apex <10 µm thick; urediniospores 18–26 × 21–35 µm . . . . . . . P. conclusa
 3. Teliospore apex >10 µm thick; urediniospores 15–20 × 20–25 µm . . . . . . P. cypericola
-On Fimbristylis#Key*]
+On Fimbristylis
 
-[@Urediniospores 11–18 × 18–23 µm, germ pores 3, supraequatorial; teliospores
-long ellipsoid or fusoid, 10–18 × 35–55 µm . . . . . . . . . . . . P. ﬂavipes Syd. & P. Syd.#Key*]
-[@On Scirpus#Key*]
+Urediniospores 11–18 × 18–23 µm, germ pores 3, supraequatorial; teliospores
+long ellipsoid or fusoid, 10–18 × 35–55 µm . . . . . . . . . . . . P. ﬂavipes Syd. & P. Syd.
+On Scirpus
 
-[@1. Teliospores two–celled; urediniospores 12–24 × 19–32 µm . . . . . . . . . . . .P. scirpi DC.#Key*]
-[@1. Teliospores one-celled; urediniospores 18–24 × 24–34 µm
+1. Teliospores two–celled; urediniospores 12–24 × 19–32 µm . . . . . . . . . . . .P. scirpi DC.
+1. Teliospores one-celled; urediniospores 18–24 × 24–34 µm
 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . Uromyces lineolatus (Desm.) J. Schröt.#Key*]
 [@Acknowledgments#Misc-exposition*]
 
@@ -233,34 +233,34 @@ Polish Academy of Sciences, Poland for their valuable suggestions to improve the
 manuscript and acting as presubmission reviewers. We are cordially thankful to Dr.
 Shaun Pennycook, nomenclature editor, for reviewing the manuscript critically. We are#Misc-exposition*]
 
-[@122 ... Saba & Khalid#Misc-exposition*]
+[@122 ... Saba & Khalid#Page-header*]
 [@highly obliged to the Pakistan Science Foundation, Islamabad for funding this research
 work. We are also thankful to Dr. Najam-ul-Sehar Afshan and Dr. Abdul Rehman Khan
 Niazi for accompanying the ﬁrst author on ﬁeld trips and assistance in the ﬁeld.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
-[@Afs han NS, Khalid AN. 2008. New rust fungi on noxious weeds from Pakistan. Pak. J. Phytopathol.#Misc-exposition*]
-[@20(1): 82–87.#Misc-exposition*]
+[@Afs han NS, Khalid AN. 2008. New rust fungi on noxious weeds from Pakistan. Pak. J. Phytopathol.
+20(1): 82–87.#Bibliography*]
 [@Afshan NS, Khalid AN. 2009. New records of Puccinia and Pucciniastrum from Pakistan. Mycotaxon
-108: 137–146. http://dx.doi.org/10.5248/108.137#Misc-exposition*]
-[@Afshan NS, Khalid AN, Niazi AR. 2008. New records and distribution of rust fungi from Pakistan.#Misc-exposition*]
-[@Mycotaxon 105: 257–267.#Misc-exposition*]
+108: 137–146. http://dx.doi.org/10.5248/108.137#Bibliography*]
+[@Afshan NS, Khalid AN, Niazi AR. 2008. New records and distribution of rust fungi from Pakistan.
+Mycotaxon 105: 257–267.#Bibliography*]
 [@Afshan NS, Khalid AN, Iqbal SH, Niazi AR, Sultan A. 2009. Puccinia subepidermalis sp. nov. and
-new records of rust fungi from Fairy Meadows, Northern Pakistan. Mycotaxon 110: 173–182.#Misc-exposition*]
-[@http://dx.doi.org/10.5248/110.173#Misc-exposition*]
-[@Ahmad S. 1956a. Uredinales of West Pakistan. Biologia 2(1): 29–101.#Misc-exposition*]
-[@Ahmad S. 1956b. Fungi of Pakistan. Biological Society of Pakistan, Lahore Monograph 1: 1–126.#Misc-exposition*]
-[@Ahmad S, Iqbal SH, Khalid AN. 1997. Fungi of Pakistan. Nabiza Printing Press, Karachi, Pakistan.#Misc-exposition*]
+new records of rust fungi from Fairy Meadows, Northern Pakistan. Mycotaxon 110: 173–182.
+http://dx.doi.org/10.5248/110.173#Bibliography*]
+[@Ahmad S. 1956a. Uredinales of West Pakistan. Biologia 2(1): 29–101.#Bibliography*]
+[@Ahmad S. 1956b. Fungi of Pakistan. Biological Society of Pakistan, Lahore Monograph 1: 1–126.#Bibliography*]
+[@Ahmad S, Iqbal SH, Khalid AN. 1997. Fungi of Pakistan. Nabiza Printing Press, Karachi, Pakistan.#Bibliography*]
 [@Bryson CT, Carter R. 2008. Sedges: uses, diversity and systematic of the Cyperaceae. Monographs
-in Systematic Botany, Missouri Botanical Garden 108: 15–101.#Misc-exposition*]
-[@Dade HA, Gunnell J. 1969. Class work with fungi. Commonwealth Mycological Institute Kew.#Misc-exposition*]
-[@Ghaﬀar A, Kaﬁ A. 1968. Fungi of Karachi. Pak. J. Sci. 20: 5–10.#Misc-exposition*]
+in Systematic Botany, Missouri Botanical Garden 108: 15–101.#Bibliography*]
+[@Dade HA, Gunnell J. 1969. Class work with fungi. Commonwealth Mycological Institute Kew.#Bibliography*]
+[@Ghaﬀar A, Kaﬁ A. 1968. Fungi of Karachi. Pak. J. Sci. 20: 5–10.#Bibliography*]
 [@Govaerts R, Simpson DA, Bruhl J, Egorova T, Goetghebeur P, Wilson K. 2007. World checklist of
-Cyperaceae sedges. Royal Botanic Gardens, Kew.#Misc-exposition*]
-[@Hasnain SZ, Khan A, Zaidi AJ. 1959. Rusts and smuts of Karachi. Bot. Dept. Karachi Univ. Mont.#Misc-exposition*]
-[@2. 36 p.#Misc-exposition*]
+Cyperaceae sedges. Royal Botanic Gardens, Kew.#Bibliography*]
+[@Hasnain SZ, Khan A, Zaidi AJ. 1959. Rusts and smuts of Karachi. Bot. Dept. Karachi Univ. Mont.
+2. 36 p.#Bibliography*]
 [@Hiratsuka N, Sato S, Katsuya K, Kakishima M, Hiratsuka Y, Kaneko S, Ono Y, Sato T, Harada Y,
-Hiratsuka T, Nakayama K. 1992. The rust ﬂora of Japan. Tsukuba Shuppankai, Ibaraki.#Misc-exposition*]
+Hiratsuka T, Nakayama K. 1992. The rust ﬂora of Japan. Tsukuba Shuppankai, Ibaraki.#Bibliography*]
 [@Kukkonen I. 2001. Cyperaceae. Flora of Pakistan, vol. 206. University of Karachi and Missouri
-Botanical Press, Karachi and St. Louis. 277 p.#Misc-exposition*]
+Botanical Press, Karachi and St. Louis. 277 p.#Bibliography*]
 
-[@#Misc-exposition*]
+[@#Page-header*]

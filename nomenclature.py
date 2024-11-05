@@ -2,7 +2,7 @@
 
 import argparse
 import numpy  # type: ignore
-import re
+import regex as re  # type: ignore
 import sys
 import time
 from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union
@@ -49,7 +49,7 @@ class Nomenclature(object):
             else:
                 return None
         return l
-        
+
 
     def name(self, s: str, to_raise: bool = False) -> Optional[str]:
         return self._tokenize(self._species, s, to_raise)
@@ -149,9 +149,9 @@ def define_args():
 
 def main():
     args = define_args()
-    
+
     n = Nomenclature()
-    
+
     for s in sample(args.file):
         print(s.strip())
         try:

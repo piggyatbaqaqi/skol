@@ -1,5 +1,7 @@
 import finder
-from finder import Label, Line, Paragraph
+from finder import Label
+from line import Line
+from paragraph import Paragraph
 import textwrap
 from typing import Iterable, List
 import unittest
@@ -7,158 +9,6 @@ import unittest
 
 def lineify(lines: List[str]) -> List[Line]:
     return [Line(l) for l in lines]
-
-
-class TestFile(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def test_line_number(self):
-        test_data = textwrap.dedent("""\
-        one
-        two
-        three
-        """).split('\n')
-        f = finder.File(contents=test_data)
-        got = []
-        for l in f.read_line():
-            got.append(l)
-
-        self.assertEqual(got[0].line, 'one')
-        self.assertEqual(got[1].line, 'two')
-        self.assertEqual(got[2].line, 'three')
-        self.assertEqual(got[0].line_number, 1)
-        self.assertEqual(got[1].line_number, 2)
-        self.assertEqual(got[2].line_number, 3)
-
-
-    def test_page_number(self):
-        test_data = textwrap.dedent("""\
-        xi lorem ipsum
-        
-        page 1, line 3
-        page 1, line 4
-        dolor sit  xii
-
-        page 2, line 3
-        page 2, line 4
-
-        1 amet, consectetur
-
-        page 3, line 3
-        adipiscing elit  kn
-
-        page 4, line 3
-
-        3 sed do eiusmod
-
-        page 5, line 3
-        """).split('\n')
-        f = finder.File(contents=test_data)
-        got = [l for l in f.read_line()]
-        self.assertEqual(got[0].empirical_page_number, 'xi')
-        self.assertEqual(got[0].line, 'xi lorem ipsum')
-        self.assertEqual(got[0].line_number, 1)
-        self.assertEqual(got[0].page_number, 1)
-        
-        self.assertEqual(got[3].line, 'page 1, line 4')
-        self.assertEqual(got[3].line_number, 4)
-        self.assertEqual(got[3].page_number, 1)
-        
-        self.assertEqual(got[6].empirical_page_number, 'xii')
-        self.assertEqual(got[6].line, 'page 2, line 3')
-        self.assertEqual(got[6].line_number, 3)
-        self.assertEqual(got[6].page_number, 2)
-
-        self.assertIsNone(got[14].empirical_page_number)
-        self.assertEqual(got[14].line, 'page 4, line 3')
-        self.assertEqual(got[14].line_number, 3)
-        self.assertEqual(got[14].page_number, 4)
-
-        self.assertEqual(got[18].empirical_page_number, '3')
-
-
-
-class TestParagraph(unittest.TestCase):
-    def setUp(self):
-        self.pp = Paragraph()
-        self.pp2 = Paragraph()
-
-    def test_append(self):
-        self.pp.append(Line('hamster'))
-        self.pp.append(Line('gerbil'))
-        got = str(self.pp)
-        expected = 'hamster\ngerbil\n'
-        self.assertEqual(got, expected)
-
-    def test_append_ahead(self):
-        self.pp.append_ahead(Line('hamster'))
-        self.pp.append_ahead(Line('gerbil'))
-        self.pp.append_ahead(Line('rabbit'))
-        got = str(self.pp)
-        expected = 'hamster\ngerbil\n'
-        self.assertEqual(got, expected)
-        self.assertEqual(self.pp.next_line.line, 'rabbit')
-
-    def test_is_figure(self):
-        self.pp.append(Line('  Fig. 2.7  '))
-        self.pp.append(Line('hamster'))
-        self.assertTrue(self.pp.is_figure())
-        self.assertFalse(self.pp2.is_figure())
-
-        self.pp2.append(Line('rabbit'))
-        self.assertFalse(self.pp2.is_figure())
-
-    def test_is_table(self):
-        self.pp.append(Line('  Table 1 '))
-        self.pp.append(Line('hamster'))
-        self.assertTrue(self.pp.is_table())
-        self.assertFalse(self.pp2.is_table())
-
-        self.pp2.append(Line('rabbit'))
-        self.assertFalse(self.pp2.is_table())
-
-    def test_is_key(self):
-        self.pp.append(Line('Key to Ijuhya species with fasciculate hairs'))
-        self.assertTrue(self.pp.is_key())
-
-    def test_last_line(self):
-        self.pp.append_ahead(Line('hamster'))
-        self.assertEqual(str(self.pp), '\n')
-        self.pp.append_ahead(Line('gerbil'))
-        self.pp.append_ahead(Line('rabbit'))
-
-        self.assertEqual(self.pp.last_line.line, 'gerbil')
-        self.pp.close()
-        self.assertEqual(self.pp.last_line.line, 'rabbit')
-
-
-class TestLine(unittest.TestCase):
-    def test_line(self):
-        data = '[@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]'
-        line = Line(data)
-
-        self.assertEqual(line.line, 'New records of smut fungi. 4. Microbotryum coronariae comb. nov.')
-        self.assertTrue(line.contains_start())
-        self.assertEqual(line.end_label(), 'Title')
-        self.assertFalse(line.is_short(50))
-        self.assertFalse(line.is_blank())
-
-
-    def test_middle_start(self):
-        test_data = textwrap.dedent("""\
-        multiformibus ornata. [@Habitat in herbidis locis.#Habitat-distribution*]
-        """).split('\n')
-        with self.assertRaisesRegex(ValueError, r'Label open not at start of line: [^:]+:[0-9]+:'):
-            lineify(test_data)
-
-    def test_middle_end(self):
-        test_data = textwrap.dedent("""\
-        multiformibus ornata.#Description*] Habitat in herbidis locis
-        """).split('\n')
-
-        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: [^:]+:[0-9]+:'):
-            lineify(test_data)
 
 
 class TestParser(unittest.TestCase):
@@ -179,6 +29,55 @@ class TestParser(unittest.TestCase):
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(len(paragraphs), 10)
 
+    def test_first_line(self):
+        """The first line of many paragraphs is shorter than other lines.
+
+        Confirm that these are included in the paragraph.
+        """
+
+        test_data = lineify(textwrap.dedent("""\
+        [@Conidia of A. japonica, like those of other members
+        of the A. cheiranthi species-group, are essentially beak-
+        less. Field specimens give evidence of production of short
+        chains of probably 2, at most 3 spores in addition to the
+        mostly solitary conidia.#Misc-exposition*]
+
+        [@Field conidia are broadly ellipsoid or ovoid to
+        obclavate, with a bluntly rounded apical cell that may
+        develop through an abrupt transition into a broad, short l-
+        2-celled secondary conidiophore. Largest field conidia
+        reach a range of ca. 80-100 x 20-30um, initially are smooth
+        but may become evenly pitted or punctate-rough at maturity,
+        are a medium translucent tawny brown in color, and have 7-
+        10 transverse septa and 1-3 longisepta in several of the
+        transverse segments.#Description*]
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        Conidia of A. japonica, like those of other members
+        of the A. cheiranthi species-group, are essentially beak-
+        less. Field specimens give evidence of production of short
+        chains of probably 2, at most 3 spores in addition to the
+        mostly solitary conidia.
+        """)
+        # This second paragraph was having its first line split off.
+        expected2 = textwrap.dedent("""\
+        Field conidia are broadly ellipsoid or ovoid to
+        obclavate, with a bluntly rounded apical cell that may
+        develop through an abrupt transition into a broad, short l-
+        2-celled secondary conidiophore. Largest field conidia
+        reach a range of ca. 80-100 x 20-30um, initially are smooth
+        but may become evenly pitted or punctate-rough at maturity,
+        are a medium translucent tawny brown in color, and have 7-
+        10 transverse septa and 1-3 longisepta in several of the
+        transverse segments.
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[2]), expected2)
+
+
     def test_initial_no_break(self):
         """A single initial (letter followed by .) prevents a paragraph break."""
         test_data = lineify(textwrap.dedent("""\
@@ -197,7 +96,7 @@ class TestParser(unittest.TestCase):
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(str(paragraphs[0]), expected0)
-        
+
     def test_page_number_no_break(self):
         """An apparent page number prevents a paragraph break."""
         test_data = lineify(textwrap.dedent("""\
@@ -262,6 +161,50 @@ class TestParser(unittest.TestCase):
         Type: AUSTRALIA, Queensland, Brisbane, F.M. Bailey s.n.; holo: G.
         """)
 
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_nomenclature_plate(self):
+        test_data = lineify(textwrap.dedent("""\
+        Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
+        \t Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
+        """).split('\n'))
+        expected0 = textwrap.dedent("""\
+        Hygrocybe comosa Bas & Arnolds, spec. nov. — Plate 1, Figs. 1–3
+        """)
+        expected1 = textwrap.dedent("""\
+        \t Pileus 9–19 mm latus, conico-convexus, dein plano-convexus vel depressus, papilla centralis munitus, subhygrophanus, obscure purpureo-griseo-brunneus vel brunneus, dein violaceo-griseo-brunneus,
+        substriatus, in sicco pallide brunneo-griseus, superﬁcie sicca, subﬁbrillosa, centro squamulis conicis
+        """)
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_tab_break(self):
+        test_data = lineify(textwrap.dedent("""\
+        Collybia-like habit, often depressed, distinctly squamulose pileus; and Omphalinoid,
+        with a depressed pileus and decurrent lamellae.
+        \t The current infrageneric taxonomy of Entoloma (Romagnesi & Gilles, 1979; Noorde­
+        loos, 1992, 2005; Largent, 1994) is primarily based on European, North American, and
+        Berkeley (1859), Cleland (1934, 1935), Stevenson (1962), Horak (1973, 1976, 1977,
+        1980, 1982) and Grgurinovic (1997), no attempt has been made so far to place them
+        into an infrageneric context.
+        """).split('\n'))
+
+        expected0 = textwrap.dedent("""\
+        Collybia-like habit, often depressed, distinctly squamulose pileus; and Omphalinoid,
+        with a depressed pileus and decurrent lamellae.
+        """)
+        expected1 = textwrap.dedent("""\
+        \t The current infrageneric taxonomy of Entoloma (Romagnesi & Gilles, 1979; Noorde­
+        loos, 1992, 2005; Largent, 1994) is primarily based on European, North American, and
+        Berkeley (1859), Cleland (1934, 1935), Stevenson (1962), Horak (1973, 1976, 1977,
+        1980, 1982) and Grgurinovic (1997), no attempt has been made so far to place them
+        into an infrageneric context.
+        """)
         paragraphs = list(finder.parse_paragraphs(test_data))
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
@@ -347,23 +290,23 @@ class TestParser(unittest.TestCase):
         spp. from mango and the closely related species C. ﬁmbriatomima. Shaded cells
         indicate variations within each species.
         C. mangicola
-        
+
         C. mangivora
-        
+
         C. manginecans
-        
+
         C. ﬁmbriatomima
-        
+
         C. mangicola
         C. mangivora
         C. manginecans
         C. ﬁmbriatomima
-    
+
         4
         16
         6
         10
-        
+
         16
         2
         20
@@ -373,24 +316,24 @@ class TestParser(unittest.TestCase):
         20
         0
         14
-        
+
         10
         14
         14
         1
-        
+
         βt
         C. mangicola
         C. mangivora
         C. manginecans
         C. ﬁmbriatomima
-        
+
         C. mangicola
         1
         0
         5
         8
-        
+
         C. mangivora
         0
         3
@@ -402,19 +345,19 @@ class TestParser(unittest.TestCase):
         4
         0
         3
-    
+
         C. ﬁmbriatomima
         8
         7
         3
         1
-        
+
         EF-1α
         C. mangicola
         C. mangivora
         C. manginecans
         C. ﬁmbriatomima
-        
+
         C. mangicola
         1
         0
@@ -432,28 +375,25 @@ class TestParser(unittest.TestCase):
         1
         0
         1
-        
+
         C. ﬁmbriatomima
         0
         0
         1
         0
-        
+
         ITS
-        
+
         Ceratocystis spp. nov. (Brazil) ... 391
         """).split('\n'))
-                                            
-        expected0 = '\n'
 
-        expected2 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         Ceratocystis spp. nov. (Brazil) ... 391
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
-        
-        self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertEqual(str(paragraphs[2]), expected2)
-        
+
+        self.assertEqual(str(paragraphs[1]), expected1)
+
     def test_table_short(self):
         test_data = lineify(textwrap.dedent("""\
         Table 1.
@@ -465,7 +405,7 @@ class TestParser(unittest.TestCase):
 
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore""").split('\n'))
 
-        expected1 = textwrap.dedent("""\
+        expected0 = textwrap.dedent("""\
         Table 1.
 
         short
@@ -475,14 +415,14 @@ class TestParser(unittest.TestCase):
 
         """)
 
-        expected2 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
+        self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertEqual(str(paragraphs[2]), expected2)
 
     def test_figure(self):
         test_data = lineify(textwrap.dedent("""\
@@ -543,95 +483,88 @@ class TestParser(unittest.TestCase):
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
         """).split('\n'))
 
-        expected1 = textwrap.dedent("""\
+        expected0 = textwrap.dedent("""\
         Table 1. Lorem ipsum dolor sit amet, consectetur adipiscing
         elit, sed do eiusmod tempor
         incididunt ut labore et dolore
         """)
-        expected2 = textwrap.dedent("""\
+        expected1 = textwrap.dedent("""\
         magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
         nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
         in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         """)
         # Final table ends with two newlines.
-        expected3 = textwrap.dedent("""\
+        expected2 = textwrap.dedent("""\
         Tbl. 2. Excepteur sint occaecat cupidatat non proident,
 
         """)
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
+        self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertTrue(paragraphs[0].is_table())
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertTrue(paragraphs[1].is_table())
+        self.assertFalse(paragraphs[1].is_table())
         self.assertEqual(str(paragraphs[2]), expected2)
-        self.assertFalse(paragraphs[2].is_table())
-        self.assertEqual(str(paragraphs[3]), expected3)
-        self.assertTrue(paragraphs[3].is_table())
+        self.assertTrue(paragraphs[2].is_table())
 
-
-class TestLabeling(unittest.TestCase):
-
-    def test_simple_label(self):
+    def test_nomenclature(self):
         test_data = lineify(textwrap.dedent("""\
-        [@Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
-        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
-        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
-        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
-        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
-        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
-        and L. sect. Albati with four newly combined species plus two species previously combined
-        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
-        proposed.#Abstract*]
-        [@Key words — milkcaps, nomenclature#Key-words*]
+        Key words — milkcaps, nomenclature Lorem ipsum dolor sit amet,
+        Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362.
+        1837.
+        Basidiomata 1.1–7.0 cm high. Spore sac globose to depressed-globose,
+        0.6–0.8 cm high × 1.8–2.2 cm broad. Exoperidium spiny, light brown (5E7),
+        peeling oﬀ at maturity. Endoperidium reticulate, papery, yellowish white (2A2)
         """).split('\n'))
 
-        expected0 = textwrap.dedent("""\
-        Abstract — In this ﬁrst of a series of three papers, new combinations in the genus
-        Lactiﬂuus are proposed. This paper treats the subgenera Edules, Lactariopsis, and Russulopsis
-        (all proposed here as new combinations in Lactiﬂuus). In Lactiﬂuus subg. Edules, eight
-        combinations at species level are proposed. In Lactiﬂuus subg. Lactariopsis, the following
-        three new combinations are proposed at sectional level: Lactiﬂuus sect. Lactariopsis with
-        seven newly combined species, L. sect. Chamaeleontini with eight newly combined species,
-        and L. sect. Albati with four newly combined species plus two species previously combined
-        in Lactiﬂuus. Finally, in L. subg. Russulopsis, eight new combinations at species level are
-        proposed.
-        """)
+        paragraphs = list(finder.parse_paragraphs(test_data))
 
         expected1 = textwrap.dedent("""\
-        Key words — milkcaps, nomenclature
+        Tulostoma exasperatum Mont., Ann. Sci. Nat., Bot., Sér. 2, 8: 362.
+        1837.
         """)
 
-        paragraphs = list(finder.parse_paragraphs(test_data))
-
-        self.maxDiff = None
-        self.assertEqual(str(paragraphs[0]), expected0)
-        self.assertEqual(paragraphs[0].labels, [Label('Abstract')])
         self.assertEqual(str(paragraphs[1]), expected1)
-        self.assertEqual(paragraphs[1].labels, [Label('Key-words')])
 
-    def test_doubled_abstract(self):
-
+    def test_nomenclature2(self):
         test_data = lineify(textwrap.dedent("""\
-        [@New records of smut fungi. 4. Microbotryum coronariae comb. nov.#Title*]
-        [@Cvetomir M. Denchev & Teodor T. Denchev#Author*]
-        [@Institute of Biodiversity and Ecosystem Research, Bulgarian Academy of Sciences,
-        2 Gagarin St., 1113 Soﬁa, Bulgaria#Institution*]
-        * Correspondence to: cmdenchev@yahoo.co.uk
-        [@Abstract — For Ustilago coronariae on Lychnis ﬂos-cuculi, a new combination in
-        Microbotryum, M. coronariae, is proposed. It is reported as new to Bulgaria.#Abstract*]
-        [@Key words — Microbotryaceae, nomenclature#Key-words*]
+        \t Microscopic features are described from material mounted in Melzer’s reagent and in
+        Cotton blue. For the basidiospores the following factors are used: E (quotient of length
+        and width in any one spore) and Q (mean of E‑values). Colour abbreviations follow
+        Kornerup & Wanscher (1983), and herbarium abbreviations follow Holmgren (2003).
+        Gymnopus beltraniae Bañares, Antonín & G. Moreno, spec. nov. — Figs. 1, 2
+        \t Pileo 10–25 mm lato, convexo vel plano-convexo, rubro-brunneo, centro obscuriore. Lamellis medio confertis. Stipite 50 – 80 × 3 – 5 mm, cylindraceo, dense tomentoso, rubro-brunneo, ad
+        basim obscuriore. Basidiosporis (7.0 –)8.0 – 9.5 × 3.5 – 4.5(– 5.0) µm, (late) ellipsoideis, elipsoidfusiformibus, hyalinis, inamyloideis. Cheilocystidiis 28 – 45 × 7.0 –11 µm, clavatis, cylindraceis,
+        sublageniformibus, subutriformibus, irregularibus. Pileipellis ex hyphis cylindraceis, usque 12 µm
+        latis, projectionibus irregularibus, tenuiparietalis. Caulocystidiis 18 – 35 × 4.5 – 8.0 µm, cylindraceis
+        vel clavatis, nunquam irregularibus, tenuiparietalis vel leviter crassiparietalis. Hyphis ﬁbulatis, in
+        stipite et medulla indextrinoideis.
         """).split('\n'))
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        self.assertEqual(len(paragraphs), 6)
-        self.assertEqual(paragraphs[0].labels, [Label('Title')])
-        self.assertEqual(paragraphs[1].labels, [Label('Author')])
-        self.assertEqual(paragraphs[2].labels, [Label('Institution')])
-        self.assertEqual(paragraphs[3].labels, [])  # correspondence
-        self.assertEqual(paragraphs[4].labels, [Label('Abstract'), Label('Key-words')])
-        self.assertEqual(paragraphs[5].labels, []) # Paragraph('\n')
+        expected1 = textwrap.dedent("""\
+        Gymnopus beltraniae Bañares, Antonín & G. Moreno, spec. nov. — Figs. 1, 2
+        """)
 
+        self.assertEqual(str(paragraphs[1]), expected1)
+
+    def test_nomenclature3(self):
+        test_data = lineify(textwrap.dedent("""\
+        ces cheilo- et pleurocystides en moyenne moins volumineuses, ses pleurocystides lagéniformes à col cylindrique bien différencié, et peut-être par des spores en moyenne plus
+        petites, mais ce caractère n’est pas net en comparaison de nos récoltes pyrénéennes.
+        Chamaeota xanthogramma (Ces.) Earle, Bull. New York Bot. Gard. 5 (1909) 446
+        \t Basionym: Agaricus xanthogrammus Ces., Comment. Soc. Crittog. Ital. 2 (1861) 58.
+        """).split('\n'))
+
+        paragraphs = list(finder.parse_paragraphs(test_data))
+
+        expected1 = textwrap.dedent("""\
+        Chamaeota xanthogramma (Ces.) Earle, Bull. New York Bot. Gard. 5 (1909) 446
+        """)
+
+        self.assertEqual(str(paragraphs[1]), expected1)
 
 class TestTargetClasses(unittest.TestCase):
 
@@ -674,6 +607,7 @@ class TestTargetClasses(unittest.TestCase):
         also would like to thank the curators of SP, ICN and MBM for specimen loans
         """).split('\n'))
 
+        # As hand-labeled:
         labels_before = [
             Label('Title'), Label('Abstract'), Label('Key-words'),
             None, Label('Nomenclature'), Label('Description'), Label('Description'),
@@ -681,10 +615,16 @@ class TestTargetClasses(unittest.TestCase):
             Label('Figure'), Label('Figure'),
             Label('Description'), Label('Description'), None, None, None,
         ]
+        # With interstitials removed:
+        labels_mid = [
+            Label('Title'), Label('Abstract'), Label('Key-words'),
+            Label('Nomenclature'), Label('Description'), Label('Figure'),
+            Label('Description'), None,
+        ]
+        # With labels reduced to basic set:
         labels_after = [
-            Label('Misc-exposition'), Label('Misc-exposition'),
-            Label('Misc-exposition'), Label('Nomenclature'), Label('Description'),
-            Label('Misc-exposition'), Label('Misc-exposition'),
+            Label('Misc-exposition'), Label('Misc-exposition'), Label('Misc-exposition'),
+            Label('Nomenclature'), Label('Description'), Label('Misc-exposition'),
             Label('Description'), Label('Misc-exposition'),
         ]
 
@@ -692,7 +632,7 @@ class TestTargetClasses(unittest.TestCase):
         self.assertListEqual([pp.top_label() for pp in phase1], labels_before)
 
         phase2 = list(finder.remove_interstitials(phase1))
-        self.assertEqual(len(phase2), 9)
+        self.assertListEqual([pp.top_label() for pp in phase2], labels_mid)
 
         phase3 = list(finder.target_classes(
             phase2,
