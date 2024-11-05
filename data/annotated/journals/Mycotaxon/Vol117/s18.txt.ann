@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 117, pp. 149–164#Misc-exposition*]
+[@MYCOTAXON
+Volume 117, pp. 149–164#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/117.149#Misc-exposition*]
 
@@ -16,24 +16,24 @@ from Italy, with observations on the M. procera complex
 Alfredo Vizzini1*, Marco Contu2, Stefano Ghignone3,
 & Else Vellinga4#Misc-exposition*]
 [@Dipartimento di Biologia Vegetale - Università degli Studi di Torino,
-Viale Mattioli 25, I-10125, Torino, Italy#Misc-exposition*]
-[@2#Misc-exposition*]
-[@Via Marmilla, 12 (I Gioielli 2), I-07026 Olbia (OT), Italy
-3#Misc-exposition*]
-[@Istituto per la Protezione delle Piante, CNR Sezione di Torino,
-Viale Mattioli 25, I-10125 Torino, Italy#Misc-exposition*]
-[@4#Misc-exposition*]
-[@Department of Plant and Microbial Biology, 111 Koshland Hall #3102,
-UC Berkeley, Berkeley CA 94720-3102, U.S.A.#Misc-exposition*]
-[@* Correspondence to: alfredo.vizzini@unito.it#Misc-exposition*]
-[@1#Misc-exposition*]
+Viale Mattioli 25, I-10125, Torino, Italy
+2
+Via Marmilla, 12 (I Gioielli 2), I-07026 Olbia (OT), Italy
+3
+Istituto per la Protezione delle Piante, CNR Sezione di Torino,
+Viale Mattioli 25, I-10125 Torino, Italy
+4
+Department of Plant and Microbial Biology, 111 Koshland Hall #3102,
+UC Berkeley, Berkeley CA 94720-3102, U.S.A.
+* Correspondence to: alfredo.vizzini@unito.it
+1#Misc-exposition*]
 
 [@Abstract — A new Macrolepiota taxon from Italy, M. rhodosperma var. velicopia, is
 described and illustrated based on morphological and ITS rDNA data. It is characterized
 by a well-developed volva and abundant, evident velar remnants on the pileus, a stipe with a
 minutely squamulose covering, and very thick-walled elements in the pileipellis. A discussion
-on its taxonomic position within Macrolepiota and notes on closely related taxa are provided.#Misc-exposition*]
-[@DNA sequence analyses support the new taxon within the variability of M. fuliginosa sensu
+on its taxonomic position within Macrolepiota and notes on closely related taxa are provided.
+DNA sequence analyses support the new taxon within the variability of M. fuliginosa sensu
 Vellinga, a non-volvate taxon that diﬀers from Barla’s original sense of M. fuliginosa. As Barla
 did not indicate a holotype in his protologue of Lepiota procera var. fuliginosa and there are no
 extant original herbarium specimens, Barla’s Fig. 5/PL. 9 (from Les champignons des Alpes
@@ -51,9 +51,9 @@ hyaline cap (Singer 1986). Species with a distinct volva were accommodated
 in the genus Volvolepiota Singer, proposed in 1959 to replace the illegitimate
 Lepiotella Rick (Rick 1938), a later homonym of Lepiotella (E.-J. Gilbert) Konrad.#Misc-exposition*]
 
-[@150 ... Vizzini & al.#Misc-exposition*]
-[@The type of Volvolepiota is the Argentinean species Lepiotella brunnea Rick.#Misc-exposition*]
-[@Singer (1959) added a second species, V. albida Singer. In their monograph
+[@150 ... Vizzini & al.#Page-header*]
+[@The type of Volvolepiota is the Argentinean species Lepiotella brunnea Rick.
+Singer (1959) added a second species, V. albida Singer. In their monograph
 on Volvolepiota Heinemann & de Meijer (1996) argued that the presence of
 a well developed universal veil in this taxon was not suﬃcient to warrant a
 genus separate from Macrolepiota but did not propose new combinations in
@@ -63,8 +63,8 @@ and Ge et al. (2010) place Volvolepiota species nested in the Macrolepiota clade
 but in a basal position. Vellinga & Yang (2003), who considered Volvolepiota
 a synonym of Macrolepiota, proposed new Macrolepiota combinations and
 described M. velosa, a new volvate species from China. Ge et al. (2010) proposed
-Macrolepiota sect. Volvatae Z.W. Ge et al. to accommodate the volvate species.#Misc-exposition*]
-[@Four Macrolepiota taxa with a volva thus far known (from Australia, East Asia
+Macrolepiota sect. Volvatae Z.W. Ge et al. to accommodate the volvate species.
+Four Macrolepiota taxa with a volva thus far known (from Australia, East Asia
 and South America; Vellinga & Yang 2003) all have a tropical distribution and
 relatively small spores.#Misc-exposition*]
 [@Here we discuss our research on an Italian taxon with a copious universal
@@ -82,9 +82,9 @@ from two collections stained in Melzer’s reagent. Basidia were measured where 
 and from apex (sterigmata excluded) to basal septum. Author citations follow Index
 Fungorum (http://www.indexfungorum.org/authorsoﬀungalnames.htm). Herbarium
 abbreviations follow Thiers (2011). All examined material is housed at TO (Herbarium
-generale del Dipartimento di Biologia Vegetale, Università degli Studi di Torino, Italy).#Misc-exposition*]
-[@The new Latin description is deposited in MycoBank (http://www.mycobank.org/).#Misc-exposition*]
-[@The following abbreviations are used: Q = quotient of length and width of spores in
+generale del Dipartimento di Biologia Vegetale, Università degli Studi di Torino, Italy).
+The new Latin description is deposited in MycoBank (http://www.mycobank.org/).
+The following abbreviations are used: Q = quotient of length and width of spores in
 side view; Qm = average quotient; L = number of entire lamellae; l = number of lamellulae
 between each pair of entire lamellae; (Se) = Séguy (1936).#Misc-exposition*]
 [@DNA extraction, PCR ampliﬁcation, and DNA sequencing#Misc-exposition*]
@@ -96,7 +96,7 @@ were used to amplify the ITS1+5.8S+ITS2 rDNA region between the small (18S gene)
 and large (28S gene) subunits. Ampliﬁcations were performed in PE9700 thermal
 cycler (Perkin-Elmer, Applied Biosystems) in a 25 µl reaction mixtures containing 5 ng#Misc-exposition*]
 
-[@The Macrolepiota procera complex ... 151#Misc-exposition*]
+[@The Macrolepiota procera complex ... 151#Page-header*]
 
 [@Table 1. Macrolepiota samples newly sequenced in this study.
 Species
@@ -237,7 +237,7 @@ no.
 A. Vizzini
 16/VIII/2008
 [TO AFM13]
-#Misc-exposition*]
+#Table*]
 [@DNA, 1x PCR buﬀer (20 mM Tris/HCl pH 8.4, 50 mM KCl), 1 µM of each primer, 2.5
 mM MgCl2, 0.25 mM of each dNTP, and 0.5 unit of Taq polymerase (Promega). PCR
 run times were 3 min at 95°C (1 cycle), 30 s at 94°C, 45 s at 50°C, 2 min at 72 °C (35
@@ -245,8 +245,8 @@ cycles), and 10 min at 72°C for 1 cycle. PCR products were resolved on a 1.0% a
 gel and visualized by staining with ethidium bromide. PCR products were puriﬁed with
 the AMPure XP kit (Beckman) and sequenced by DiNAMYCODE srl (Turin, Italy).#Misc-exposition*]
 [@Sequences were assembled and edited with the phred/phrap/consed software suite
-(Gordon et al. 1998). The sequences have been deposited in GenBank (http://www.ncbi.#Misc-exposition*]
-[@nlm.nih.gov/genbank/).#Misc-exposition*]
+(Gordon et al. 1998). The sequences have been deposited in GenBank (http://www.ncbi.
+nlm.nih.gov/genbank/).#Misc-exposition*]
 [@Sequence alignment and phylogenetic analysis#Misc-exposition*]
 
 [@A representative set of the ITS1-5.8S-ITS2 regions of Eurasian and Australian
@@ -260,7 +260,7 @@ conducted with MrBayes 3.1.2 (Huelsenbeck & Ronquist 2001). The model of nucleot
 substitution for the BI analysis was selected using ModelTest v. 3.7 (Posada & Crandall
 1998). The transversional substitution model with gamma correction (TVM + G)#Misc-exposition*]
 
-[@152 ... Vizzini & al.#Misc-exposition*]
+[@152 ... Vizzini & al.#Page-header*]
 [@was chosen as the best-ﬁt model based on hierarchical likelihood tests, following the
 Akaike Information Criterion (AIC). The general structure (lset) of the substitution
 model was deﬁned using nst=6 rates=gamma ngammacat=4; TVM + G model
@@ -270,8 +270,8 @@ the six diﬀerent nucleotide substitution rates (revmatpr=ﬁxed(1.7916, 5.3304
 0.7366, 5.3304, 1.00)), the proportion of invariable sites (pinvarpr=ﬁxed(0.00)), and the
 shape (shapepr=ﬁxed(0.3944)). Markov chains were run for 106 generations, with the
 sampling frequency set every 100th generation; all other parameters were used at the
-default settings. The outgroup Leucoagaricus nympharum was selected to root the tree.#Misc-exposition*]
-[@A burnin value set to 25% of sampled trees was used to calculate the parameters and the
+default settings. The outgroup Leucoagaricus nympharum was selected to root the tree.
+A burnin value set to 25% of sampled trees was used to calculate the parameters and the
 consensus tree.#Misc-exposition*]
 [@The data set was also analyzed by a maximum likelihood (ML) method using
 RAxML version 7.2.3 (Stamatakis et al. 2008). One hundred rapid ML bootstraps were
@@ -305,13 +305,13 @@ complex is needed.#Misc-exposition*]
 [@All three sections, sect. Macrolepiota, sect. Macrosporae (Singer) Bon, and
 sect. Volvatae are recovered in the phylogenies, and well supported.#Misc-exposition*]
 
-[@The Macrolepiota procera complex ... 153#Misc-exposition*]
+[@The Macrolepiota procera complex ... 153#Page-header*]
 
 [@Figure 1. Macrolepiota rhodosperma var. velicopia. Macroscopic features (a–c from the holotype;
-d–f from TO HG2003). a. Mature basidiomes. b. Pileus surface with evident velar patches.#Misc-exposition*]
-[@c. Flattened bulb and ornamented stipe. d. Young basidiomes covered with universal veil patches
-and with well developed basal rhizomorphs. e–f. Submarginate bulb with free velar limbs (volva).#Misc-exposition*]
-[@Scale bars: a–c = 5 cm; d–f = 2 cm.#Misc-exposition*]
+d–f from TO HG2003). a. Mature basidiomes. b. Pileus surface with evident velar patches.
+c. Flattened bulb and ornamented stipe. d. Young basidiomes covered with universal veil patches
+and with well developed basal rhizomorphs. e–f. Submarginate bulb with free velar limbs (volva).
+Scale bars: a–c = 5 cm; d–f = 2 cm.#Figure*]
 [@Taxonomy#Misc-exposition*]
 
 [@Macrolepiota rhodosperma var. velicopia Vizzini & Contu, var. nov.#Nomenclature*]
@@ -325,7 +325,7 @@ fraequentibus.#Description*]
 [@Holotypus — Italia, in regione Piemonte dicta, ad locum dictum Parco Regionale La
 Mandria (Venaria Reale, Torino), 15.X.2008, leg. L. Latino (TO HG2004).#Misc-exposition*]
 
-[@154 ... Vizzini & al.#Misc-exposition*]
+[@154 ... Vizzini & al.#Page-header*]
 [@Etymology — the varietal epithet, derived from the Latin words velum, veli = veil,
 velum; and copiă, copiae = abundance, emphasizes the copious veil.#Misc-exposition*]
 
@@ -348,10 +348,10 @@ bulb, (2–)2.5–3.2(–3.5) × 3–4 cm, often with long white rhizomorphs; wi
 adnate minute cream-hazel zigzagging bands over the whole length, on a white
 background; bulb white tomentose with evident and membranous white velar
 remnants on the margin. Annulus movable with age, complex, thickened with
-a relatively broad edge, upperside creamy and fringed and underside hazel.#Description*]
-[@Context white, unchanging, both on handling and in ammonia vapour, up to
-13 mm thick in the pileus; smell indistinct, and taste indistinct to mild. Sporeprint whitish-cream.#Description*]
-[@Spores (13–)13.5–15(–16.5) × 9–10.5(–11.2) µm, on average 14.55 × 9.93 µm,
+a relatively broad edge, upperside creamy and fringed and underside hazel.
+Context white, unchanging, both on handling and in ammonia vapour, up to
+13 mm thick in the pileus; smell indistinct, and taste indistinct to mild. Sporeprint whitish-cream.
+Spores (13–)13.5–15(–16.5) × 9–10.5(–11.2) µm, on average 14.55 × 9.93 µm,
 Q = 1.4–1.6, Qm = 1.46, ellipsoid to oblong, ovoid, hyaline, smooth, thick-walled,
 with walls easily swelling in 5% KOH, with an apical and central germ-pore
 (1–1.5 µm wide) and hyaline cap (callus) on it, with a small apiculus, dextrinoid,
@@ -368,13 +368,13 @@ with a small capitulum, rarely with an apical excrescence, often catenulate
 (4.5–)6–12 µm wide hyphae ending in a subfusiform (gradually tapering
 toward the apex) terminal element with several secondary septa (pseudosepta),#Description*]
 
-[@The Macrolepiota procera complex ... 155#Misc-exposition*]
+[@The Macrolepiota procera complex ... 155#Page-header*]
 
-[@Figure 2. Macrolepiota rhodosperma var. velicopia. Microscopic features (from the holotype).#Misc-exposition*]
-[@a. Spores. b. Basidia. c. Cheilocystidia. d. Pileus covering. d*. Pileus covering underlying elements.#Misc-exposition*]
-[@e. Annulus elements. f. Velar elements. Scale bar: a–c = 20 µm; d–f = 30 µm.#Misc-exposition*]
+[@Figure 2. Macrolepiota rhodosperma var. velicopia. Microscopic features (from the holotype).
+a. Spores. b. Basidia. c. Cheilocystidia. d. Pileus covering. d*. Pileus covering underlying elements.
+e. Annulus elements. f. Velar elements. Scale bar: a–c = 20 µm; d–f = 30 µm.#Figure*]
 
-[@156 ... Vizzini & al.#Misc-exposition*]
+[@156 ... Vizzini & al.#Page-header*]
 [@some very thick-walled (1.5–2 µm thick), up to 250 µm long, with a narrow
 lumen, and then resembling the setiform terminal elements in the pileipellis
 of Crinipellis species, other thin-walled and shorter (Fig. 2d); at the base of the
@@ -383,8 +383,8 @@ cylindrical to subcapitulate elements (Fig. 2d*). Pigmentation in the form
 of brownish pigment, parietal and cytoplasmatic in the thick-walled hyphae,
 parietal and minutely encrusting in the thin-walled hyphae, especially towards
 their base. Annulus consisting of tightly packed, catenulate, articulate, and short
-cylindroid hyphae, 4.5–9 µm wide, with rare subglobular elements (Fig. 2e).#Description*]
-[@Velar patches made up of elongate, cylindrical hyphae, thin-walled, septate,
+cylindroid hyphae, 4.5–9 µm wide, with rare subglobular elements (Fig. 2e).
+Velar patches made up of elongate, cylindrical hyphae, thin-walled, septate,
 3–11 µm wide, sometimes branched or nodulose, with scattered pseudoclamp
 connections (proliferating clamps), intermixed with thick-walled hyphae (cell
 wall up to 1.5 µm thick), up to 10.5 µm wide, with internal lumen, looking like
@@ -392,8 +392,8 @@ the crinipelloid elements present in the pileus covering, probably derived from
 the underlying pileipellis (Fig. 2f). Clamp connections rare, small, observed
 at the base of the cheilocystidia; thromboplerous hyphae absent.#Description*]
 [@Habitat and distribution solitary, terrestrial, on litter of broad-leaved
-trees, especially Fagaceae (Fagus and Quercus). So far known only from Italy.#Misc-exposition*]
-[@Additional material studied: Macrolepiota rhodosperma var. velicopia –ITALY,
+trees, especially Fagaceae (Fagus and Quercus). So far known only from Italy.
+Additional material studied: Macrolepiota rhodosperma var. velicopia –ITALY,
 Piedmont, Turin, Giaveno, loc. Colletto del Forno, 7 Oct 2008, litter of Fagus sylvatica
 L., 1000 m asl, leg. A. Vizzini (TO HG2003); M. rhodosperma var. rhodosperma – ITALY,
 Piedmont, Turin, Venaria Reale, Parco Regionale La Mandria, 20 Oct 2008, litter of
@@ -407,8 +407,8 @@ infections are very rare in the Agaricaceae.#Misc-exposition*]
 other volvate Macrolepiota species because of such peculiar features as an
 obviously decorated stipe, spores easily reaching 14–15 µm in length, not strictly
 cylindrical cheilocystidia, and long very thick-walled elements in the pileus
-covering. This taxon is the ﬁrst volvate Macrolepiota reported in Europe.#Misc-exposition*]
-[@The South American M. pulchella de Meijer & Vellinga [≡ Volvolepiota
+covering. This taxon is the ﬁrst volvate Macrolepiota reported in Europe.
+The South American M. pulchella de Meijer & Vellinga [≡ Volvolepiota
 brunnea (Rick) Singer] and M. brunnescens Vellinga [≡ V. albida Singer]
 diﬀer in smaller spores that rarely reach 11 µm in length, a stipe lacking any
 decoration, and a less complex annulus; furthermore M. brunnescens has a
@@ -419,17 +419,17 @@ tiny black scales, a simple ascending annulus that is white on both sides, a
 uniformly ﬁbrillose dark brown stipe, narrower spores, narrower cylindrical
 cheilocystidia, and no clamp connections (Vellinga 2003).#Misc-exposition*]
 
-[@The Macrolepiota procera complex ... 157#Misc-exposition*]
+[@The Macrolepiota procera complex ... 157#Page-header*]
 
 [@Figure 3. ITS-rDNA phylogeny inferred by Bayesian analysis. Bayesian posterior probability
 values greater than 95%, derived from 10.000 Markov chain Monte Carlo sampled trees, are given
 above branches; thick branches indicate ≥75% ML bootstrap values from the RAxML analysis. The
-tree is rooted using Leucoagaricus nympharum as outgroup. Volvate Macrolepiota taxa are in bold.#Misc-exposition*]
-[@* indicates samples sequenced in this work and reported in Table 1. Names appear as in GenBank
+tree is rooted using Leucoagaricus nympharum as outgroup. Volvate Macrolepiota taxa are in bold.
+* indicates samples sequenced in this work and reported in Table 1. Names appear as in GenBank
 except for two recently described species from China (Ge et al. 2010). The bar indicates number of
-substitutions per site.#Misc-exposition*]
+substitutions per site.#Figure*]
 
-[@158 ... Vizzini & al.#Misc-exposition*]
+[@158 ... Vizzini & al.#Page-header*]
 [@Macrolepiota velosa Vellinga & Zhu L. Yang, from south-western China and
 northern Thailand, is characterized by a 7–9 cm wide pileus with dark brown to
 purple scales, a ﬁnely ﬁbrillose or squamulose stipe, a less complex annulus, very
@@ -472,9 +472,9 @@ disrupted stipe covering, and the browning context. These authors describe
 the pileipellis of M. fuliginosa as a trichoderm made up of thin-walled to
 only slightly thick-walled hyphae due to the presence of a parietal pigment.#Description*]
 
-[@The Macrolepiota procera complex ... 159#Misc-exposition*]
+[@The Macrolepiota procera complex ... 159#Page-header*]
 
-[@Figure 4. Lepiota procera var. fuliginosa (lectotype, Barla 1888: pl. 9 ﬁg. 5).#Misc-exposition*]
+[@Figure 4. Lepiota procera var. fuliginosa (lectotype, Barla 1888: pl. 9 ﬁg. 5).#Figure*]
 
 [@Other authors, including Vellinga (2001), Lange & Vellinga (2004), and Lange
 (2008), described under the name “Macrolepiota fuliginosa” a diﬀerent agaric,
@@ -483,17 +483,17 @@ scales and a pileipellis comprising very thick-walled elements with brown
 intracellular and encrusting pigments. This latter taxon is widespread and
 known from Denmark southwards into Spain (see Fig. 3).#Misc-exposition*]
 
-[@160 ... Vizzini & al.#Misc-exposition*]
+[@160 ... Vizzini & al.#Page-header*]
 
-[@Figure 5. a. Macrolepiota procera f. fuliginosa (epitype, TO AFM11).#Misc-exposition*]
-[@b. M. procera f. permixta (epitype, TO AFM12). Bars = 5 cm.#Misc-exposition*]
+[@Figure 5. a. Macrolepiota procera f. fuliginosa (epitype, TO AFM11).
+b. M. procera f. permixta (epitype, TO AFM12). Bars = 5 cm.#Figure*]
 
 [@Our ITS sequence analysis, which includes two Mediterranean collections
 (from Sardinia and Liguria, Italy; Tab. 1), shows that M. fuliginosa sensu
 Vellinga diﬀers from M. fuliginosa sensu auct. pl. (Fig. 3). We regard Lepiota
 procera var. fuliginosa as a predominantly Mediterranean, xerophilous taxon
-that is correctly delimited only when based upon Mediterranean records.#Misc-exposition*]
-[@Consequently, we designate the original Figure 5/Pl. 9 included by Barla
+that is correctly delimited only when based upon Mediterranean records.
+Consequently, we designate the original Figure 5/Pl. 9 included by Barla
 (1888) in the protologue (Fig. 4) as its lectotype (iconotype) and select a recent
 collection from Liguria – where the Mediterranean taxon is rather widespread
 – as epitype. The basidiomata of the epitypical collection here selected are
@@ -512,9 +512,9 @@ Vellinga et al. (2003). A good picture is provided by Breitenbach & Kränzlin
 which lacks the copious velar remnants of var. velicopia, also has longer spores
 and a context that changes brown-red.#Misc-exposition*]
 
-[@The Macrolepiota procera complex ... 161#Misc-exposition*]
+[@The Macrolepiota procera complex ... 161#Page-header*]
 
-[@Figure 6. Lepiota permixta (Barla 1888: pl. 11 ﬁgs 1–4).#Nomenclature*]
+[@Figure 6. Lepiota permixta (Barla 1888: pl. 11 ﬁgs 1–4).#Figure*]
 
 [@Macrolepiota procera f. permixta (Barla) Vizzini & Contu, comb. nov.#Nomenclature*]
 [@MycoBank MB518709#Misc-exposition*]
@@ -522,7 +522,7 @@ and a context that changes brown-red.#Misc-exposition*]
 [@≡ Leucocoprinus permixtus (Barla) Locq., Bull. Soc. Linn. Lyon 14: 92, 1945.#Nomenclature*]
 [@≡ Macrolepiota permixta (Barla) Pacioni, Micol. Ital. 8(3):13, 1979.#Nomenclature*]
 
-[@162 ... Vizzini & al.#Misc-exposition*]
+[@162 ... Vizzini & al.#Page-header*]
 [@≡ Macrolepiota procera var. permixta (Barla) Quadr., in Quadraccia
 & Lunghini, Quad. Acc. Naz. Lincei 264: 110, 1990.#Nomenclature*]
 [@Type: FRANCE, Alpes-Maritimes, Bendejeun, 7/12/1893, Barla Myc.283 (NICE,
@@ -556,7 +556,7 @@ the great macromorphological variability of M. procera by describing eight
 infraspeciﬁc taxa. Since our selected L. permixta epitype and other collections
 identiﬁed as M. permixta share nearly or completely identical ITS sequences
 with M. procera and M. fuliginosa, we reduce M. permixta to a morphological
-form of M. procera and propose a new taxonomic combination.#Description*]
+form of M. procera and propose a new taxonomic combination.#Misc-exposition*]
 [@Acknowledgements#Misc-exposition*]
 
 [@We would like to thank Prof. E. Grilli (Popoli, Italy) for improving the English text
@@ -567,75 +567,75 @@ grant. Dr. Todd Osmundson and Lavinia Latino kindly provided us with pre-submiss
 Macrolepiota sequences and with M. rhodosperma var. velicopia pictures, respectively,
 and ECV acknowledges funding from NSF grant DEB 0618293.#Misc-exposition*]
 
-[@The Macrolepiota procera complex ... 163#Misc-exposition*]
+[@The Macrolepiota procera complex ... 163#Page-header*]
 [@Literature cited#Misc-exposition*]
 [@Barla JB. 1886. Liste des champignons observés dans le Département des Alpes Maritimes. Bull.
-Soc. Mycol. France 2(3): 112–119.#Misc-exposition*]
+Soc. Mycol. France 2(3): 112–119.#Bibliography*]
 [@Barla JB. 1888. Flore mycologique illustrée. Les champignons des Alpes maritimes avec l’indication
-de leur propriétés utiles ou nuisibles. A. Gilletta, Nice. 80 p., 69 pl.
-Bellù F, Lanzoni G. 1987. Betrachtungen über die Gattung Macrolepiota Singer in Europa. Beiträge
-zur Kenntnis der Pilze Mitteleuropas 3: 189–204.#Misc-exposition*]
+de leur propriétés utiles ou nuisibles. A. Gilletta, Nice. 80 p., 69 pl.#Bibliography*]
+[@Bellù F, Lanzoni G. 1987. Betrachtungen über die Gattung Macrolepiota Singer in Europa. Beiträge
+zur Kenntnis der Pilze Mitteleuropas 3: 189–204.#Bibliography*]
 [@Bon M. 1993. Flore mycologique d’Europe 3. Les Lépiotes. Docum. Mycol. Mém. Hors-Série
-3: 1–153.#Misc-exposition*]
+3: 1–153.#Bibliography*]
 [@Breitenbach J, Kränzlin F. 1995. Champignons de Suisse, Tome 4: Champignons à lames, 2ème
 partie: Entolomataceae, Pluteaceae, Amanitaceae, Agaricaceae, Coprinaceae, Bolbitiaceae,
-Strophariaceae. Ed. Mykologia, Luzern.#Misc-exposition*]
-[@Candusso M, Lanzoni G. 1990. Lepiota s.l. Fungi Europaei 4. Giovanna Biella, Saronno.#Misc-exposition*]
+Strophariaceae. Ed. Mykologia, Luzern.#Bibliography*]
+[@Candusso M, Lanzoni G. 1990. Lepiota s.l. Fungi Europaei 4. Giovanna Biella, Saronno.#Bibliography*]
 [@Gardes M, Bruns TD. 1993. ITS primers with enhanced speciﬁcity for basidiomycetes – application
-to the identiﬁcation of mycorrhizae and rusts. Mol. Ecol. 2(2): 113–118.#Misc-exposition*]
-[@http://dx.doi.org/10.1111/j.1365-294X.1993.tb00005.x
-Ge ZW, Yang ZL, Vellinga EC. 2010. The genus Macrolepiota (Agaricaceae, Basidiomycota) in
+to the identiﬁcation of mycorrhizae and rusts. Mol. Ecol. 2(2): 113–118.
+http://dx.doi.org/10.1111/j.1365-294X.1993.tb00005.x#Bibliography*]
+[@Ge ZW, Yang ZL, Vellinga EC. 2010. The genus Macrolepiota (Agaricaceae, Basidiomycota) in
 China. Fungal Diversity 45: 81–98. http://dx.doi.org/10.1007/s13225-010-0062-0
 Gordon D, Abajian C, Green P. 1998. Consed: a graphical tool for sequence ﬁnishing. Genome Res.
-8: 195–202.#Misc-exposition*]
+8: 195–202.#Bibliography*]
 [@Heinemann P, Meijer AAR de 1996. The status of Volvolepiota Sing. Bull. Jard. Bot. Natl. Belg. 65:
-405–412. http://dx.doi.org/10.2307/3668462#Misc-exposition*]
+405–412. http://dx.doi.org/10.2307/3668462#Bibliography*]
 [@Huelsenbeck JP, Ronquist F. 2001. MrBayes: Bayesian inference of phylogeny. Bioinformatics 17:
 754–755. http://dx.doi.org/10.1093/bioinformatics/17.8.754
 Katoh K, Misawa K, Kuma K, Miyata T. 2002. MAFFT: a novel method for rapid multiple sequence
-alignment based on fast Fourier transform. Nucl. Acids Res. 30: 3059–3066.#Misc-exposition*]
-[@http://dx.doi.org/10.1093/nar/gkf436#Misc-exposition*]
-[@Katoh K, Toh H. 2008. Recent developments in the MAFFT multiple sequence alignment program.#Misc-exposition*]
-[@Brieﬁngs in Bioinformatics 9: 286–298. http://dx.doi.org/10.1093/bib/bbn013
-Lange C. 2008. Macrolepiota Singer. 554–557, in: H. Knudsen, J Vesterholt (eds). Funga Nordica
-– Agaricoid, boletoid and cyphelloid genera. Nordsvamp, Copenhagen, Denmark.#Misc-exposition*]
+alignment based on fast Fourier transform. Nucl. Acids Res. 30: 3059–3066.
+http://dx.doi.org/10.1093/nar/gkf436#Bibliography*]
+[@Katoh K, Toh H. 2008. Recent developments in the MAFFT multiple sequence alignment program.
+Brieﬁngs in Bioinformatics 9: 286–298. http://dx.doi.org/10.1093/bib/bbn013#Bibliography*]
+[@Lange C. 2008. Macrolepiota Singer. 554–557, in: H. Knudsen, J Vesterholt (eds). Funga Nordica
+– Agaricoid, boletoid and cyphelloid genera. Nordsvamp, Copenhagen, Denmark.#Bibliography*]
 [@Lange C, Vellinga EC. 2004. Rabarber-parasolhat holder ﬂyttedag – molekylær-genetiske studier
-omkring slægten Macrolepiota. Svampe 50: 23–42.#Misc-exposition*]
-[@Migliozzi V. 1995. Un genere alla volta. Introduzione allo studio del genere Macrolepiota Singer.#Misc-exposition*]
-[@Boll. Gr. Micol. G. Bresadola 38(5–6): 131–148.#Misc-exposition*]
-[@Migliozzi V. 1997. Note introduttive allo studio delle Lepiotaceae. Pagine di Micologia 8: 1–64.#Misc-exposition*]
-[@Pacioni G. 1979. Flora micologica della Sardegna: un contributo. Micol. Ital. 8(3): 11–16.#Misc-exposition*]
-[@Pázmány D. 1985. A Macrolepiota nemzetség euròpai fajainak hatàrozòkulcsa. Mikol. Közlem.#Misc-exposition*]
-[@3: 115–136.#Misc-exposition*]
+omkring slægten Macrolepiota. Svampe 50: 23–42.#Bibliography*]
+[@Migliozzi V. 1995. Un genere alla volta. Introduzione allo studio del genere Macrolepiota Singer.
+Boll. Gr. Micol. G. Bresadola 38(5–6): 131–148.#Bibliography*]
+[@Migliozzi V. 1997. Note introduttive allo studio delle Lepiotaceae. Pagine di Micologia 8: 1–64.#Bibliography*]
+[@Pacioni G. 1979. Flora micologica della Sardegna: un contributo. Micol. Ital. 8(3): 11–16.#Bibliography*]
+[@Pázmány D. 1985. A Macrolepiota nemzetség euròpai fajainak hatàrozòkulcsa. Mikol. Közlem.
+3: 115–136.#Bibliography*]
 [@Pázmány D. 1989 (“1988”). Über den Formenkreis der Macrolepiota procera. Art. Not. Bot. Horti
-Agrobot. Cluj-Napoca 18–19: 5–22.#Misc-exposition*]
+Agrobot. Cluj-Napoca 18–19: 5–22.#Bibliography*]
 [@Posada D, Crandall KA. 1998. Modeltest: testing the model of DNA substitution. Bioinformatics
-14(9): 817–818. http://dx.doi.org/10.1093/bioinformatics/14.9.817
-Quadraccia L, Lunghini D. 1990. Contributo alla conoscenza dei macromiceti della Tenuta
-Presidenziale di Castelporziano (micoﬂora del Lazio II). Quad. Acc. Naz. Lincei 264: 49–120.#Misc-exposition*]
-[@Rick J. 1938. Agarici Riograndenses II. Lilloa 2: 251–316.#Misc-exposition*]
+14(9): 817–818. http://dx.doi.org/10.1093/bioinformatics/14.9.817#Bibliography*]
+[@Quadraccia L, Lunghini D. 1990. Contributo alla conoscenza dei macromiceti della Tenuta
+Presidenziale di Castelporziano (micoﬂora del Lazio II). Quad. Acc. Naz. Lincei 264: 49–120.#Bibliography*]
+[@Rick J. 1938. Agarici Riograndenses II. Lilloa 2: 251–316.#Bibliography*]
 
-[@164 ... Vizzini & al.#Misc-exposition*]
-[@Séguy E. 1936. Code universel des couleurs. Paul Chevalier, Paris.#Misc-exposition*]
-[@Singer R. 1959. Dos géneros de hongos nuevos para Argentina. Bol. Soc. Argent. Bot. 8: 9–13.#Misc-exposition*]
-[@Singer R. 1986. The Agaricales in modern taxonomy. 4th ed. Koeltz Scientiﬁc Books, Koenigstein.#Misc-exposition*]
-[@Stamatakis A, Hoover P, Rougemont J. 2008. A rapid bootstrap algorithm for the RAxML webservers. Syst. Biol. 75: 758–771. http://dx.doi.org/10.1080/10635150802429642
-Thiers B. 2011. (continuously updated). Index Herbariorum: A global directory of public herbaria
-and associated staﬀ. New York Botanical Garden’s Virtual Herbarium.#Misc-exposition*]
-[@http://sweetgum.nybg.org/ih/#Misc-exposition*]
+[@164 ... Vizzini & al.#Page-header*]
+[@Séguy E. 1936. Code universel des couleurs. Paul Chevalier, Paris.#Bibliography*]
+[@Singer R. 1959. Dos géneros de hongos nuevos para Argentina. Bol. Soc. Argent. Bot. 8: 9–13.#Bibliography*]
+[@Singer R. 1986. The Agaricales in modern taxonomy. 4th ed. Koeltz Scientiﬁc Books, Koenigstein.#Bibliography*]
+[@Stamatakis A, Hoover P, Rougemont J. 2008. A rapid bootstrap algorithm for the RAxML webservers. Syst. Biol. 75: 758–771. http://dx.doi.org/10.1080/10635150802429642#Bibliography*]
+[@Thiers B. 2011. (continuously updated). Index Herbariorum: A global directory of public herbaria
+and associated staﬀ. New York Botanical Garden’s Virtual Herbarium.
+http://sweetgum.nybg.org/ih/#Bibliography*]
 [@Trimbach J. 1996. Barla et la Mycologie. 179–256, in: G Thomel (ed.). Jean-Baptiste Barla
 1817–1896. Volume publié à l’occasion du centenaire de sa mort. Annales du Museum d’Histoire
-Naturelle de Nice Tome 11.#Misc-exposition*]
+Naturelle de Nice Tome 11.#Bibliography*]
 [@Vellinga EC. 2001. Macrolepiota. 64–73, in: ME Noordeloos et al. (eds). Flora Agaricina Neerlandica
-5. A.A. Balkema Publishers, Lisse, Abingdon, Exton (PA), Tokyo.#Misc-exposition*]
+5. A.A. Balkema Publishers, Lisse, Abingdon, Exton (PA), Tokyo.#Bibliography*]
 [@Vellinga EC. 2003. Chlorophyllum and Macrolepiota (Agaricaceae) in Australia. Aust. Syst. Bot. 16:
-361–370. http://dx.doi.org/10.1071/SB02013#Misc-exposition*]
+361–370. http://dx.doi.org/10.1071/SB02013#Bibliography*]
 [@Vellinga EC, Yang ZL. 2003. Volvolepiota and Macrolepiota – Macrolepiota velosa, a new species
-from China. Mycotaxon 85: 183–186.#Misc-exposition*]
-[@Vellinga EC, de Kok RPJ, Bruns TD. 2003. Phylogeny and taxonomy of Macrolepiota (Agaricaceae).#Misc-exposition*]
-[@Mycologia 95: 442–456. http://dx.doi.org/10.2307/3761886
-White TJ, Bruns TD, Lee S, Taylor J. 1990. Ampliﬁcation and direct sequencing of fungal ribosomal
+from China. Mycotaxon 85: 183–186.#Bibliography*]
+[@Vellinga EC, de Kok RPJ, Bruns TD. 2003. Phylogeny and taxonomy of Macrolepiota (Agaricaceae).
+Mycologia 95: 442–456. http://dx.doi.org/10.2307/3761886#Bibliography*]
+[@White TJ, Bruns TD, Lee S, Taylor J. 1990. Ampliﬁcation and direct sequencing of fungal ribosomal
 RNA genes for phylogenetics. 315–322, in: MA Innis et al. (eds). PCR Protocols. Academic
-Press, London.#Misc-exposition*]
+Press, London.#Bibliography*]
 
-[@#Misc-exposition*]
+[@#Page-header*]

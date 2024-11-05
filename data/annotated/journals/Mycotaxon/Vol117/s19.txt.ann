@@ -6,8 +6,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@DOl: 10.5248/117.165#Misc-exposition*]
+[@MYCOTAXON
+DOl: 10.5248/117.165#Misc-exposition*]
 
 [@Volume 117,pp. 165-205#Misc-exposition*]
 
@@ -27,11 +27,11 @@ b The New York Botanical#Misc-exposition*]
 [@Garden, Bronx, New York 10458, USA#Misc-exposition*]
 
 [@Chicago Botanic Garden, 1000 Lake Cook Road, Glencoe, Illinois 60022, USA
-CORRESPONDENCE#Misc-exposition*]
-[@TO: ret@eticomm.net, rhalling@nybg.org,&gmueller@chicagobotanic.org#Misc-exposition*]
+CORRESPONDENCE
+TO: ret@eticomm.net, rhalling@nybg.org,&gmueller@chicagobotanic.org#Misc-exposition*]
 
-[@ABSTRACT-Amanita#Misc-exposition*]
-[@conara, A. costaricensis, and A. garabitoana are proposed as new
+[@ABSTRACT-Amanita
+conara, A. costaricensis, and A. garabitoana are proposed as new
 species. These taxa are added to twelve previously described species known from, or
 reported here for the first time from, the region of study: A. advena, A. arocheae, A.
 brunneolocularis, A. colombiana, A. ebumea, A. farinosa, A. flavoconia var. inquinata,
@@ -40,9 +40,9 @@ xylinivolva. Amanita flavoconia var. sinapicolor is proposed to be a taxonomic s
 of A. flavoconia var. inquinata. An unusual species of Amanita subsection Vittadiniae is
 given the code Amanita sp. HONI and treated only in a key to regional species of Amanita section Lepidella. A gazetteer is provided for Costa Rican sites at which Amanita
 species have been collected.#Misc-exposition*]
-[@KEY WORDS-Area#Misc-exposition*]
-[@de Conservaci6n#Misc-exposition*]
-[@Andean Colombia, taxonomy#Misc-exposition*]
+[@KEY WORDS-Area
+de Conservaci6n
+Andean Colombia, taxonomy#Misc-exposition*]
 
 [@Introduction#Misc-exposition*]
 
@@ -57,8 +57,8 @@ species have been collected.#Misc-exposition*]
 [@and overview#Misc-exposition*]
 
 [@This paper addresses the genus Amanita Pers. as a part of the extensive
-study of macromycetes undertaken by Halling, Mueller, and numerous colleagues in Costa Rica.#Misc-exposition*]
-[@The history of work investigating the diversity of Costa Rican macrofungi
+study of macromycetes undertaken by Halling, Mueller, and numerous colleagues in Costa Rica.
+The history of work investigating the diversity of Costa Rican macrofungi
 [see discussions in (Halling & Franco-M. 1996; Halling & Mueller 1999,
 2005; Baroni and Halling 2000; Ammirati et al. 2007)] has been long, but
 intermittent. Currently there is an emphasis on obtaining additional data on
@@ -68,10 +68,10 @@ the fungi of Costa Rica through the Costa Rican National Biodiversity Inven-#Mis
 
 [@Research Associate (hons.), New York Botanical Garden, Bronx, NY.#Misc-exposition*]
 
-[@166...Tulloss, Halling & Mueller#Misc-exposition*]
+[@166...Tulloss, Halling & Mueller#Page-header*]
 
 [@Fig. 1. Amanita garabitoana. a. Habit (Halling 8198) (x0.25±). b. Habit (holotype)
-(x0.27). Photos by R.E. Halling (a) and R.E. Tulloss (b).#Misc-exposition*]
+(x0.27). Photos by R.E. Halling (a) and R.E. Tulloss (b).#Figure*]
 
 [@tory-a multinational project coordinated by the Costa Rican National Biodiversity Institute (INBio) (Mueller & Mata 2001). Work to date has
 documented a highly diverse macrofungal community (Mueller & Halling
@@ -94,13 +94,13 @@ U.S. National Bureau of Standards were translated to Munsell notation using (Kel
 are from Ridgway (1912), and conversions from Ridgway's names to Munsell color
 codes is based on the work ofHarnly (1949).#Misc-exposition*]
 
-[@New Central American amanitas ... 167#Misc-exposition*]
+[@New Central American amanitas ... 167#Page-header*]
 
-[@The form of author citations follows Kirk & Ansell (1992, 2010).#Misc-exposition*]
-[@"P. N." stands for "Parque Nacional." The nonitalicized abbreviation "std." stands
+[@The form of author citations follows Kirk & Ansell (1992, 2010).
+"P. N." stands for "Parque Nacional." The nonitalicized abbreviation "std." stands
 for "standard deviation." With two exceptions ("HKAS"-Kunrning Institute of Botany, Academia Sinica, China; and "RET"- Tulloss' personal herbarium), codes for
-herbaria follow Index Herbariorum (Holmgren et al. 1990; Thiers 2010).#Misc-exposition*]
-[@In the lists of collections examined, locality names in Costa Rica are provided in
+herbaria follow Index Herbariorum (Holmgren et al. 1990; Thiers 2010).
+In the lists of collections examined, locality names in Costa Rica are provided in
 abbreviated form. Known site data for these abbreviated names are provided in the
 appendix to this paper.#Misc-exposition*]
 [@Taxonomic#Misc-exposition*]
@@ -109,12 +109,12 @@ appendix to this paper.#Misc-exposition*]
 
 [@Extensive collecting in Costa Rica in the last fifteen years has much
 improved understanding of the genus Amanita in that country. We estimate
-the number of species in the genus present in Costa Rica alone to be 35 to 40.#Misc-exposition*]
-[@To date, 12 previously described taxa of Amanita have been collected and
+the number of species in the genus present in Costa Rica alone to be 35 to 40.
+To date, 12 previously described taxa of Amanita have been collected and
 determined or described as new from Costa Rica and Honduras. Previously
 described taxa are provided in the following list-organized
-by section of the#Misc-exposition*]
-[@genus. When range data in a list entry includes Colombia, the source is Tulloss et al. (1992).#Misc-exposition*]
+by section of the
+genus. When range data in a list entry includes Colombia, the source is Tulloss et al. (1992).#Misc-exposition*]
 [@Amanita sect. Amanita (three taxa):#Misc-exposition*]
 [@• A. farinosa Schwein. - Costa Rica is the known southern limit of distribution. It was described from North Carolina, USA; the range of this
 mushroom extends northward into Provo Quebec, Canada (Pomerleau
@@ -126,15 +126,15 @@ Canada and the northern United States to Newfoundland in the north
 and extending southward at least to Costa Rica. In the southeastern
 U.S. its distribution is unclear due to confusion with A. muscaria var.
 persicina Dav. T. Jenkins (Jenkins 1977, 1986), which is endemic in
-that region. In North America, a yellow-capped color-variant of subsp.#Misc-exposition*]
-[@flavivolvata dominates in most of that part of the region of distribution
+that region. In North America, a yellow-capped color-variant of subsp.
+flavivolvata dominates in most of that part of the region of distribution
 north and east of the Great Plains. The typical, red-capped color-variant dominates throughout the remainder of the range. In the neovolcanic region of Mexico, the subspecies is relatively common in mixed
 montane forest; and is associated with Quercus in Costa Rica. If not
 native in Colombia, it has been introduced there with Pinus or Quercus
 from more northerly latitudes. The taxon is often misreported throughout its range as the type subspecies or type variety of A. muscaria (L. :
 Fr.) Lam.(Tulloss 2009c; Geml et al. 2008).#Misc-exposition*]
 
-[@168...Tulloss, Halling & Mueller#Misc-exposition*]
+[@168...Tulloss, Halling & Mueller#Page-header*]
 
 [@• A. xylinivolva Tulloss, Ovrebo & Halling - This species was described
 from Andean Colombia. Cochise Co., Arizona, is the known northern
@@ -142,35 +142,35 @@ distribution limit (Tulloss 20 11b).#Misc-exposition*]
 [@Amanita sect. Caesareae Singer: no previously described taxa known.#Misc-exposition*]
 [@Amanita sect. Vaginatae sensu Zhu L. Yang (Yang 1997) (three taxa):
 • A. colombiana Tulloss, Ovrebo & Halling - Costa Rica is the known
-northern limit of distribution. The southern limit is in Andean Colombia.#Misc-exposition*]
-[@• A. fuligineodisca Tulloss, Ovrebo & Halling - Honduras is the known
-northern limit of distribution. The southern limit is in Andean Colombia.#Misc-exposition*]
-[@• A. sororcula Tulloss, Ovrebo & Halling - Costa Rica is the known
+northern limit of distribution. The southern limit is in Andean Colombia.
+• A. fuligineodisca Tulloss, Ovrebo & Halling - Honduras is the known
+northern limit of distribution. The southern limit is in Andean Colombia.
+• A. sororcula Tulloss, Ovrebo & Halling - Costa Rica is the known
 northern limit of distribution. The southern limit is in Andean Colombia.#Misc-exposition*]
 [@Amanita sect. Lepidella sensu Bas (1969) (two taxa):
-• A. advena Tulloss, Ovrebo & Halling - Costa Rica is the known northern limit of distribution. The southern limit is in Andean Colombia.#Misc-exposition*]
-[@Previous to our work in Costa Rica, the only known collection of this
-species was the Colombian holotype.#Misc-exposition*]
-[@• A. polypyramis (Berk. & M. A. Curtis) Sacco - Costa Rica is the southern limit of known distribution. The known northern limit is in the
+• A. advena Tulloss, Ovrebo & Halling - Costa Rica is the known northern limit of distribution. The southern limit is in Andean Colombia.
+Previous to our work in Costa Rica, the only known collection of this
+species was the Colombian holotype.
+• A. polypyramis (Berk. & M. A. Curtis) Sacco - Costa Rica is the southern limit of known distribution. The known northern limit is in the
 sandy Atlantic coastal plane of Cape Cod, Massachusetts (Tulloss
 2009b). The species was described from North Carolina.#Misc-exposition*]
 [@Amanita sect. Amidella (E.-J. Gilbert) Konrad & Maubl.: no previously
 described taxa known.#Misc-exposition*]
-[@Amanita sect. Phalloideae (Fr.) Quel. (two taxa):#Misc-exposition*]
-[@• A. arocheae Tulloss, Ovrebo & Halling - No change in known range
-(central Mexico to Andean Colombia).#Misc-exposition*]
-[@• A. eburnea Tulloss (Tulloss 1989) - No change in known range (Belize
+[@Amanita sect. Phalloideae (Fr.) Quel. (two taxa):
+• A. arocheae Tulloss, Ovrebo & Halling - No change in known range
+(central Mexico to Andean Colombia).
+• A. eburnea Tulloss (Tulloss 1989) - No change in known range (Belize
 and Honduras).#Misc-exposition*]
-[@Amanita sect. Validae (Fr.) Quel. (two taxa):#Misc-exposition*]
-[@• A. brunneolocularis Tulloss, Ovrebo & Halling - This species was
+[@Amanita sect. Validae (Fr.) Quel. (two taxa):
+• A. brunneolocularis Tulloss, Ovrebo & Halling - This species was
 originally described from Costa Rica and Colombia. It has now been
-found under Pinus in North Carolina, USA, along a well-traveled highway (Tulloss 2009d).#Misc-exposition*]
-[@• A. jlavoconia var. inquinata Tulloss, Ovrebo & Halling - The known
+found under Pinus in North Carolina, USA, along a well-traveled highway (Tulloss 2009d).
+• A. jlavoconia var. inquinata Tulloss, Ovrebo & Halling - The known
 northern limit of the range of this taxon is in the neovolcanic zone of
 central Mexico. Field observation in Costa Rica has led us to conclude
 that A. jlavoconia var. sinapicolor Tulloss, Ovrebo & Halling comprises material of var. inquinata that has been exposed to direct sun-#Misc-exposition*]
 
-[@New Central American amanitas ... 169#Misc-exposition*]
+[@New Central American amanitas ... 169#Page-header*]
 
 [@light at higher altitudes resulting in some desiccation and alteration of
 pigment. As has been observed in other taxa of Amanita (e.g., Tulloss
@@ -181,8 +181,8 @@ pale variety. Therefore, we propose reducingA.jlavoconia
 var. sinapicolor to synonymy with var. inquinata.#Misc-exposition*]
 [@1. Section Caesareae#Misc-exposition*]
 
-[@At present we believe that there are as many as 3 taxa of Amanita sect.#Misc-exposition*]
-[@Caesareae in Costa Rica (Tulloss 200ge). These include no taxa known previously from Andean Colombia (Tulloss et al. 1992). In this paper we propose a new species easily distinguishable in the field, in Amanita stirps
+[@At present we believe that there are as many as 3 taxa of Amanita sect.
+Caesareae in Costa Rica (Tulloss 200ge). These include no taxa known previously from Andean Colombia (Tulloss et al. 1992). In this paper we propose a new species easily distinguishable in the field, in Amanita stirps
 Hemibapha (Tulloss 1998a, Tulloss 2009a}--A. garabitoana.#Misc-exposition*]
 [@Amanita garabitoana Tulloss, Halling & G.M. Muell. sp. nov.#Nomenclature*]
 
@@ -193,18 +193,18 @@ Hemibapha (Tulloss 1998a, Tulloss 2009a}--A. garabitoana.#Misc-exposition*]
 [@MvcoBANKMB 518295#Misc-exposition*]
 
 [@Fig. 2. Amanita garabitoana. Habit (Tu1loss 6-16-95-D), (a. xO.38. b. xO.31.). Photos
-by R.E. Tulloss.#Misc-exposition*]
+by R.E. Tulloss.#Figure*]
 
-[@170...Tulloss, Halling & Mueller#Misc-exposition*]
+[@170...Tulloss, Halling & Mueller#Page-header*]
 
 [@Pileus 60-212 mm latus, aurantiobrunneus vel olivaceojlavus veljlavobrunnea
-vel#Description*]
-[@aurantiojlava, disco olivaceobrunneo vel aurantiobrunneo vel rubrobrunneo, saepe
+vel
+aurantiojlava, disco olivaceobrunneo vel aurantiobrunneo vel rubrobrunneo, saepe
 zona brunnea circa ad extremum intimum striae marginalium, margine longistriato,
 nonappendiculato.#Description*]
 [@Lamellae subadnatae velliberae, confertae, subroseocremeae vel
-subaurantiocremeae#Description*]
-[@vel pallidocremeae vel subalbae vel albae; lamellulae subtruncatae vel truncatae.#Description*]
+subaurantiocremeae
+vel pallidocremeae vel subalbae vel albae; lamellulae subtruncatae vel truncatae.#Description*]
 
 [@Stipes 95-258 x 15-24 mm, subaurantiojlavus vel pallidobuba-
 linus vel subcremeus, bulbo nullo, annulatus, frustris coactis jlavis vel sordidojlavis
@@ -244,16 +244,16 @@ at stipe, thinning evenly for 75-85% of radius, then membranous to margin;
 margin strongly striate to plicate-striate [(O.15R-) O.5R-O.75R], incurved at
 first, remaining at least somewhat decurved, rounded serrate to eroded, nonappendiculate; universal veil absent.#Description*]
 
-[@New Central American amanitas... 171#Misc-exposition*]
+[@New Central American amanitas... 171#Page-header*]
 
 [@Fig. 3. Amanita garabitoana habit. a. Tulloss 6-16-95-D (xO.33). b. Tulloss 6-15-95-H
-p.p. (x0.57). c. Tu1loss 6-15-95-H p.p. (xO.39).#Misc-exposition*]
+p.p. (x0.57). c. Tu1loss 6-15-95-H p.p. (xO.39).#Figure*]
 
 [@LAMELLAE: adnate to narrowly adnate to free, sometimes with short decurrent
 line (rarely extending to partial veil, sometimes requiring 1Ox lens) on stipe,#Description*]
 
 
-[@172...Tulloss, Halling & Mueller#Misc-exposition*]
+[@172...Tulloss, Halling & Mueller#Page-header*]
 
 [@close to crowded, faintly pinkish cream to pale orangish cream to pale yellowish cream to light cream to pale yellow to dull white to off-white in mass,
 white to off-white to pale yellowish white in side view, 4.5-23 mm broad,
@@ -289,31 +289,31 @@ stipe-decorating squamules and patches)].#Description*]
 
 [@MACROCHEMICAL TESTS: Laccase test (syringaldazine): in material just maturing, negative throughout basidiome. Tyrosinase test (paracresol): in material#Description*]
 
-[@New Central American amanitas... 173#Misc-exposition*]
+[@New Central American amanitas... 173#Page-header*]
 
-[@,,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
-[@,#Misc-exposition*]
+[@,,
+,
+,
+,
+,
+,
+,
+,
+,
 
-[@\~~#Misc-exposition*]
+\~~
 
-[@_ ..• '#Misc-exposition*]
+_ ..• '
 
-[@Fig. 4. Amanita garabitoana. a-d.Variation of stipe base attachment to universal veil and
+Fig. 4. Amanita garabitoana. a-d.Variation of stipe base attachment to universal veil and
 variation oflimbus intemus (a. Tu1loss 6-l6-95-C. b. Tu1loss 6-l6-95-K. c. holotype. d.
 Tulloss 6-l5-95-H). e. Elements ofhymenium and subhymenial tree (isotype). f. Elements of partial veil interior (Schmit 475). g. Elements of partial veil viewed from
-underside (isotype). h. Basidium with clamp (Tulloss 6-l6-95-C). Scale bars = 10 !lm.#Misc-exposition*]
+underside (isotype). h. Basidium with clamp (Tulloss 6-l6-95-C). Scale bars = 10 µm.#Figure*]
 
 [@just maturing, positive in cap context, pileipellis, lower half of stipe context,
 universal veil except for very base of vol va, partial veil, and on edges (including breaks and cuts) oflamellae. Test voucher: Tulloss 6-21-95-G.#Description*]
 
-[@174...Tulloss, Halling & Mueller#Misc-exposition*]
+[@174...Tulloss, Halling & Mueller#Page-header*]
 
 [@PILEIPELLIS: 75-100 ~m thick; subpellis yellow-orange, 65-90 ~m thick;
 suprapellis minimal, pallidly concolorous to colorless, extensively gelatinized, 1()±~m thick, intimately connected to collapsed hyphal detritus ofuniversal veil (see below); filamentous undifferentiated hyphae 1.0-5.0 ~m wide,
@@ -338,15 +338,15 @@ clamps common in central stratum. SUBHYMENIUM: Wst-near = 105-130 ~m
 (crushed?); Wst-near = 95-105 (very good rehydration, estimated from measurement and partially schematic drawing); wst-far = 150 ~m (crushed?);
 wst-far = 100-115 ~m (very good rehydration, estimated from measured data
 and schematic drawing); cellular (pseudoparenchymatous)
-or dominated by#Description*]
-[@inflated cells, with cells in 2 to 3 layers (1 to 2 layers below longest basidia),
+or dominated by
+inflated cells, with cells in 2 to 3 layers (1 to 2 layers below longest basidia),
 with some uninflated branched or unbranched elements arising from inflated
 cells of subhymenium and giving rise in turn to basidia/-oles, otherwise with
 basidia arising from inflated cells up to 12.0 x 10.0 ~m. BASIDIA: 29-56 (-59)
 x (8.1-) 8.5-13.0 ~m, dominantly 4-sterigmate, rarely 5-sterigmate in immature material, with sterigmata up to 5.5 x 2.0 ~m; clamps and proliferated
 clamps plentiful, prominent. UNIVERSAL VEIL: On pileus: at least in moist conditions persisting to maturity in thin layer (25- 45 ~m thick) and sometimes#Description*]
 
-[@New Central American amanitas ... 175#Misc-exposition*]
+[@New Central American amanitas ... 175#Page-header*]
 
 [@giving hoary appearance to pileus, at 1250x in cross-section giving appearance of somewhat sparse "curly hair"; filamentous undifferentiated hyphae
 dominant, collapsed, partially gelatinized, mostly under 2.0 ~m wide, curling
@@ -371,25 +371,25 @@ wide, branching, dominant in interior, dominantly subradially oriented, dominant
 interior common, clavate, to elongate ellipsoid, thin-walled, up to 28 x 17.5
 ~m, terminal, solitary, often with subradial orientation of longer axis,
 unevenly distributed, occasionally in small clusters; vascular hyphae not
-observed. LAMELLA EDGE TISSUE: sterile.#Description*]
-[@[558/27/16] (7.5-) 8.0-11.0 (-13.6) x (5.7-) 6.5-8.4 (-9.9)
+observed. LAMELLA EDGE TISSUE: sterile.
+[558/27/16] (7.5-) 8.0-11.0 (-13.6) x (5.7-) 6.5-8.4 (-9.9)
 ~m, (L = (8.3-) 8.7-10.0 (-10.3) ~m; L' = 9.4 ~m; W = (6.6-) 6.9-7.7 (-7.8)
 ~m; W' = 7.3 ~m; Q = (1.06-) 1.15-1.43 (-1.73); Q = (1.22-) 1.24-1.37
 (-1.40); Q' = 1.29), hyaline, colorless, thin-walled, smooth, inamyloid,
 broadly ellipsoid to ellipsoid, rarely elongate, usually at least somewhat adaxially flattened, wand-like or very narrowly clavate in early development;
 BASIDIOSPORES:#Description*]
 
-[@176 ...Tulloss, Halling & Mueller#Misc-exposition*]
+[@176 ...Tulloss, Halling & Mueller#Page-header*]
 [@apiculus sub lateral (or rarely lateral in immature material), cylindric; contents
 monoguttulate to multiguttulate, with or without small additional granules;
 white in deposit.#Description*]
 [@ECOLOGY: Costa Rica: Solitary to subgregarious, at 1000-2500 m elev. In
 mixed forest with, and sometimes dominated by, Quercus (including Q. brenesii, Q. copeyensis, Q. oocarpa, and Q. seemannii), with or without substantial understory. Honduras: In undisturbed Quercus forest.#Misc-exposition*]
-[@MATERIAL EXAMINED: COSTA RICA:ALAJUELA-Bosque del Nino, 31.v.1996#Misc-exposition*]
-[@RE. Halling & J.L. Mata [Halling 7591] (NY; USJ). CARTAGO-Estrella,
+[@MATERIAL EXAMINED: COSTA RICA:ALAJUELA-Bosque del Nino, 31.v.1996
+RE. Halling & J.L. Mata [Halling 7591] (NY; USJ). CARTAGO-Estrella,
 28.vii.1992 B.A. Strack & G.M. Mueller [Mueller 4433] (F 1102486), 4.vi.1996
-RE. Halling & J. Ammirati [Halling 7603] (NY; USJ); Tapanti, 20.vi.2001 RE.#Misc-exposition*]
-[@Halling & J. Carranza [Halling 8198] (NY; USJ). GUANACAsTE-Cacao no. 2,
+RE. Halling & J. Ammirati [Halling 7603] (NY; USJ); Tapanti, 20.vi.2001 RE.
+Halling & J. Carranza [Halling 8198] (NY; USJ). GUANACAsTE-Cacao no. 2,
 4.vi.1994 J.P. Schmit 475 (F; USJ). SAN JosE-La Chonta, 11.vii.1982 L.D.
 Gomez 18172 (F 1100529), 7.vi.1994 RE. Halling & TJ. Baroni [Halling 7237]
 (NY; USJ), 16.vi.1995K. Shanks, RE. Halling, RE. Tulloss & RH. Petersen [Tulloss 6-16-95-C] (RET 333-6; USJ), R.E. Tulloss 6-16-95-D (RET 332-7; USJ),
@@ -405,24 +405,24 @@ Tigre, Sendero Bosque Nuhlado, 4.vii.1991 G.M. Mueller, B.A. Strack, R & M.
 Singer & R Andino [Mueller4119] (F 1098650).#Misc-exposition*]
 [@COMMENTS- The (a) relatively shallow subhymenium; (b) subhymenial base
 dominated by elongate, curved, intercalary cells; (c) plentiful clamps at bases
-of basidia; (d) habit; (e) proportionately#Misc-exposition*]
-[@long marginal striations; (f) strongly#Misc-exposition*]
-[@pigmented pileus and stipe decoration; and (g) broadly ellipsoid to ellipsoid
+of basidia; (d) habit; (e) proportionately
+long marginal striations; (f) strongly
+pigmented pileus and stipe decoration; and (g) broadly ellipsoid to ellipsoid
 spores indicate that this entity has strong affmity to the group of taxa phenetically similar to A. hemibapha (Berk. & Broome) Sacco (Saccardo 1887), A.
 jacksonii Pomerl. (Pomerleau 1984), A. arkansana H.R. Rosen (Rosen 1926),
 A. hayalyuy Arora & Shepard (Shepard et al. 2008), etc.-taxa
-of Amanita#Misc-exposition*]
-[@stirps Hemibapha (Tulloss 1998a, 2009a).#Misc-exposition*]
+of Amanita
+stirps Hemibapha (Tulloss 1998a, 2009a).#Misc-exposition*]
 [@The species of the above cited group that is most similar to A. garabitoana in
 habit and in size and shape of spores is A. arkansana the known range of
 which lies within the southeastern United States (Arkansas to the Gulf Coast
-states-from#Misc-exposition*]
-[@Texas to Florida). The present taxon differs from A. arkansana
-in at least the following:#Misc-exposition*]
-[@• Pigmentation: The North American species lacks olivaceous tints in the
+states-from
+Texas to Florida). The present taxon differs from A. arkansana
+in at least the following:
+• Pigmentation: The North American species lacks olivaceous tints in the
 pileus at all stages of development and is not as deeply pigmented as is#Misc-exposition*]
 
-[@New Central American amanitas... 177#Misc-exposition*]
+[@New Central American amanitas... 177#Page-header*]
 
 [@•#Misc-exposition*]
 
@@ -440,8 +440,8 @@ deeper yellow or more orange from handling; they are never olivaceous
 or sordid yellow.#Misc-exposition*]
 [@Fragile outer part of pileus: The basidiome of A. arkansana is notoriously fragile and difficult to collect without breaking, which is not the
 case for A. garabitoana.#Misc-exposition*]
-[@The portion of pileus context with greater#Misc-exposition*]
-[@thickness than a membrane extends half or less of the radius toward the
+[@The portion of pileus context with greater
+thickness than a membrane extends half or less of the radius toward the
 margin in examined material of A. arkansana, but 75% to 85% of the
 radius in A. garabitoana.#Misc-exposition*]
 [@Fragility of the stipe: The ratio of the diameter of the central cylinder to
@@ -462,18 +462,18 @@ A. garabitoana: [290/13/7] (7.0-) 7.7-10.5 (-15.0) x (5.6--) 6.0-8.0
 (-10.2) ~m, (L = (8.0-) 8.3-9.9 ~m; L' = 9.0 ~m; W = (6.3-) 6.5-7.3
 ~m; W' = 6.9 ~m; Q = (1.10-) 1.19-1.43 (-1.70); Q = (1.22-) 1.241.38; Q' = 1.30).#Misc-exposition*]
 [@MATERIAL EXAMINED#Misc-exposition*]
-[@(Amanita arkansana): U. S. A.: ARKANSAS-Pulaski#Misc-exposition*]
-[@Co.#Misc-exposition*]
-[@- Little Rock, Arkansas Dept. of Pollution Control & Ecology, 14.vi.1994 1. Justice
+[@(Amanita arkansana): U. S. A.: ARKANSAS-Pulaski
+Co.
+- Little Rock, Arkansas Dept. of Pollution Control & Ecology, 14.vi.1994 1. Justice
 s.n. (RET 136-6). Washington[?] Co. - E of Fayetteville, E of Mt. Sequoia,
 13.x.1925 [packet marked "13.x.1926" (sic)] H.R. Rosen s.n. (holotype1, BPI; isotypes TENN 21294 & 21299). FLORIDA-Alachua Co. - Gainesville, across
 from Florida St. Mus., 11.viii.1985A. Norarevian s.n. [Tulloss 8-11-85-ANI] (RET
-137-5). MISSISsIPPI-Jackson#Misc-exposition*]
-[@Co. - Pascagoula R. Wildlife Mgt. Area,#Misc-exposition*]
-[@16.viii.1987 D.C. & R.E. Tulloss 7-16-87-C (in herb. David T. Jenkins, Univ. Ala.,
+137-5). MISSISsIPPI-Jackson
+Co. - Pascagoula R. Wildlife Mgt. Area,
+16.viii.1987 D.C. & R.E. Tulloss 7-16-87-C (in herb. David T. Jenkins, Univ. Ala.,
 Birmingham; RET 149-5). MISSOURI-Stoddard Co. - Mingo Nat. Wildlife#Misc-exposition*]
 
-[@178...Tulloss, Halling & Mueller#Misc-exposition*]
+[@178...Tulloss, Halling & Mueller#Page-header*]
 [@Refuge,19.ix.20081.Justices.n. (RET450-8). TExAs-Hardin or TylerCo.Big ThicketNat.Preserve,TurkeyCrk.Unit,26.x.1985A.Norarevian& 1.Justice
 s.n. [Tulloss10-26-85-A](RET 139-10);TylerCo. - 8 km E of Spurger,Forest
 Lake Exp. For., off rd. FMI013,ca. plots 39 & 41, 26.vi.1994D.P. Lewis5302
@@ -486,73 +486,73 @@ undifferentiated hyphae (Tulloss unpub. data), it may be the case that they are
 produced in response to damage or in areas of mechanical stress (such as the
 stipe-pileus convergence region). One hypothesis might be that the (partially?) insoluble material often seen when a vascular hypha is cut or broken
 during sectioning may include an antibiotic or some other aid to maintaining
-the integrity of the basidiome and, hence, reproduction of the species.#Misc-exposition*]
-[@We also wish to make it clear that we make no claim for novelty with regard to
+the integrity of the basidiome and, hence, reproduction of the species.
+We also wish to make it clear that we make no claim for novelty with regard to
 the arrangement of acrophysalides in the center of the pileus. However, it
 does seem of interest to examine (in the future) the mechanical structure(s) by
-which the joining of the stipe and cap takes place in Amanita.#Misc-exposition*]
-[@Mueller 4501 was immature when dried; in measuring spores from a single
+which the joining of the stipe and cap takes place in Amanita.
+Mueller 4501 was immature when dried; in measuring spores from a single
 mount, three 5-sterigmate basidia were noted with the sterigmata bearing content-less, wand-like or very narrowly clavate spores. The single basidiome of
-this collection is considered by us to be bearing abnormal spores.#Misc-exposition*]
-[@Mueller 4119 was immature when dried.#Misc-exposition*]
+this collection is considered by us to be bearing abnormal spores.
+Mueller 4119 was immature when dried.#Misc-exposition*]
 [@2. Section Lepidella#Misc-exposition*]
 
 [@2.1. Key to section Lepidella in Costa Rica and Honduras - This key treats only
-those subsections of section Lepidella represented in the region of study. Species marked by an asterisk (*) are not treated at length in this paper.#Key*]
-[@1. Pileus pinkish buff; universal veil on pileus in tightly appressed patches, white to
+those subsections of section Lepidella represented in the region of study. Species marked by an asterisk (*) are not treated at length in this paper.
+1. Pileus pinkish buff; universal veil on pileus in tightly appressed patches, white to
 concolorous, comprising outer layer of interwoven filamentous undifferentiated
 hyphae and interior dominated by chains of narrow, relatively large, inflated cells
-with periclinal orientation, pileipellis poorly developed; spores (7.8-) 8.2-10.0#Key*]
+with periclinal orientation, pileipellis poorly developed; spores (7.8-) 8.2-10.0
 
-[@1. While there are three collections representing parts of the original collection, none is marked
+1. While there are three collections representing parts of the original collection, none is marked
 as the holotype. The place of deposit of the holotype was not provided in the protolog. BPI was
 indicated as the location of the "type" by Gilbert(1940-41:98,captionforTab.IX, fig.2). This
 is fortunate because the portion of the type in BPI has the most thorough and abundant representation of all parts of the included basidiomes of any of the three duplicates of the original collection.#Misc-exposition*]
 
-[@New Central American amanitas ... 179#Misc-exposition*]
+[@New Central American amanitas ... 179#Page-header*]
 
-[@(-10.5) x (5.5-) 6.0-7.0 (-8.0) !lm, with Q = 1.34-1.39 (Amanita subsect. Vittadiniae Bas)
-.#Key*]
-[@A. species HON 1*.#Key*]
-[@1. Universal veil as warts or irregular patches or as pyramidal warts; elements comprising these warts disordered or having more or less anticlinal orientation, never as
-chains of relatively large, narrow, inflated cells with strong periclinal orientation.#Key*]
-[@2. Outer layer of vol va consisting mainly of hyphae; consequently, often with small,
+[@(-10.5) x (5.5-) 6.0-7.0 (-8.0) µm, with Q = 1.34-1.39 (Amanita subsect. Vittadiniae Bas)
+.
+A. species HON 1*.
+1. Universal veil as warts or irregular patches or as pyramidal warts; elements comprising these warts disordered or having more or less anticlinal orientation, never as
+chains of relatively large, narrow, inflated cells with strong periclinal orientation.
+2. Outer layer of vol va consisting mainly of hyphae; consequently, often with small,
 incomplete volvallimb on stipe's basal bulb; lamellae ochraceous to yellow to pale
-orange. (Amanita subsect. Gymnopodae Bas)#Key*]
-[@.#Key*]
-[@3. Spores (7.8-) 8.1-10.0 (-11.5) x (5.3-) 6.0-7.5 (-8.7) !lm, with Q = 1.33-1.41
+orange. (Amanita subsect. Gymnopodae Bas)
+.
+3. Spores (7.8-) 8.1-10.0 (-11.5) x (5.3-) 6.0-7.5 (-8.7) µm, with Q = 1.33-1.41
 (-1.44); found at 1600-1720 m elev. in Provo Cartago with Quercus oocarpa and
-Q. seemannii#Key*]
-[@.#Key*]
-[@A. conara.#Key*]
-[@3. Spores (6.1-) 7.0-9.5 (-11.6) x (5.1-) 6.9-7.9 (-9.5) !lm, with Q = (1.11-)
+Q. seemannii
+.
+A. conara.
+3. Spores (6.1-) 7.0-9.5 (-11.6) x (5.1-) 6.9-7.9 (-9.5) µm, with Q = (1.11-)
 1.15-1.23; found at 1350-1500 m elev. in Provo Puntarenas with Q. corrugata
-and Q. seemannii#Key*]
-[@.#Key*]
-[@A. species CRI8*.#Key*]
-[@2. Volva never submembranous, never forming limb at base of stipe; lamellae never
-ochraceous (Amanita subsect. Solitariae Bas).#Key*]
-[@4. Pileus rat gray to brown, micaceous gray to pallid in age or after rains wash
+and Q. seemannii
+.
+A. species CRI8*.
+2. Volva never submembranous, never forming limb at base of stipe; lamellae never
+ochraceous (Amanita subsect. Solitariae Bas).
+4. Pileus rat gray to brown, micaceous gray to pallid in age or after rains wash
 away pigment, with brownish gray pulverulent universal veil remains in pyramidal warts or irregular patches, often darker than pileipellis; bulb of stipe napiform to radicating, often markedly radicating; spores (7.5-) 8.5-13.2 (-16.0) x
-(5.1-) 6.0-8.5 (-12.6) !lm, with Q = 1.35-1.68 (-1.70)
-.#Description*]
-[@A. costaricensis.#Key*]
-[@4. Pileus and universal veil white, at least at first.#Key*]
-[@5. Much ofbasidiome staining ochraceous buff to rust colored to chestnut brown
+(5.1-) 6.0-8.5 (-12.6) µm, with Q = 1.35-1.68 (-1.70)
+.
+A. costaricensis.
+4. Pileus and universal veil white, at least at first.
+5. Much ofbasidiome staining ochraceous buff to rust colored to chestnut brown
 or yellow to cinnamon; universal veil on pileus as flattened to slightly erumpent large warts or small patches; all parts ofbasidiome liable to staining pale
 yellowish and, eventually, cinnamon; bulb of stipe napiform, never abrupt or
 subabrupt, decorated with narrow rings of volval tissue beginning on lower
 stipe above bulb and continuing to approximately broadest part of bulb; spores
-(8.5-) 9.0-12.5 (-14.0) x (6.5-) 7.0-9.5 (-10.2) !lm, with Q = 1.29-1.32
-.#Key*]
-[@A. advena*.#Key*]
-[@5. Pileus not staining, often covered rather densely by minute pyramidal warts;
+(8.5-) 9.0-12.5 (-14.0) x (6.5-) 7.0-9.5 (-10.2) µm, with Q = 1.29-1.32
+.
+A. advena*.
+5. Pileus not staining, often covered rather densely by minute pyramidal warts;
 bulb slenderly subnapiform to napiform, subradicating, with either rings of
-flocculence or minute pyramidal warts around top of bulb; spores (7.0-) 9.113.0 (-17.5) x (5.2-) 5.9-7.8 (-9.5) !lm, with Q = (1.35-) 1.50-1.81
-.#Key*]
-[@A. polypyramis*.#Key*]
+flocculence or minute pyramidal warts around top of bulb; spores (7.0-) 9.113.0 (-17.5) x (5.2-) 5.9-7.8 (-9.5) µm, with Q = (1.35-) 1.50-1.81
+.
+A. polypyramis*.#Key*]
 
-[@180...Tulloss, Halling & Mueller#Misc-exposition*]
+[@180...Tulloss, Halling & Mueller#Page-header*]
 
 2.2. Descriptions of taxa
 
@@ -572,8 +572,8 @@ bulbum. Basidiosporae (7.8-) 8.1-10.0 (-11.5) x (5.3-) 6.0-7.5 (-8.7) µm, (L =
 vel ellipsoideae. Basidiae 30-58 x 9.1-13 µm. Fibulae relative communis. In quercetis tropicalibus montanis costaricensibus habitat. Species Amanitae subsectionis
 Gymnopodae simulanissima. Species nova ob distributionem geographicam, magnitudinem et formam sporarum, consortionem Querco, colorem et formam et anatomiam microscopicam veli universalis et limbi intemi, et absentiam rhizoidei bulbo
 stipitis.#Description*]
-[@HOLOTYPE - Costa Rica, Prov. Cartago, Estrella,#Misc-exposition*]
-[@Ammirati [Halling 7686] (USJ).#Misc-exposition*]
+[@HOLOTYPE - Costa Rica, Prov. Cartago, Estrella,
+Ammirati [Halling 7686] (USJ).#Misc-exposition*]
 
 [@14.vi.1996#Misc-exposition*]
 
@@ -600,9 +600,9 @@ upper surface of partial veil, close to subcrowded to crowded, pale cream
 
 [@LAMELLAE:#Description*]
 
-[@New Central American amanitas... 181#Misc-exposition*]
+[@New Central American amanitas... 181#Page-header*]
 
-[@Fig. 5. Amanita conara. Habit (Halling 7272) (x0.45). Photo by R E. Halling.#Misc-exposition*]
+[@Fig. 5. Amanita conara. Habit (Halling 7272) (x0.45). Photo by R E. Halling.#Figure*]
 
 [@side view [light cream in immature material, then more yellow than 2.5Y 7/6
 or more brown than 2.5Y 8/6 or more orange than 4B6 or more brown than
@@ -623,9 +623,9 @@ in pileus context, with larval tunnels yellowish in center of stipe and reddish
 brown elsewhere; partial veil apical, submembranous, shredding, sometimes
 deciduous at least in part, pale orangish white (5A2), with underside bearing#Description*]
 
-[@182...Tulloss, Halling & Mueller#Misc-exposition*]
+[@182...Tulloss, Halling & Mueller#Page-header*]
 
-[@Fig. 6. Amanita conara. Habit (Tulloss 6-13-95-C) (xO.74). Photo by R.E. Tulloss.#Misc-exposition*]
+[@Fig. 6. Amanita conara. Habit (Tulloss 6-13-95-C) (xO.74). Photo by R.E. Tulloss.#Figure*]
 
 [@warts and flocculence, with upper side striate, sometimes thickened at edge;
 universal veil often present as short thin limb and/or in incomplete and sometimes slightly overlapping rows of triangular flaps (minute, weakly structured,
@@ -633,9 +633,9 @@ upward-pointing) O.5± mm high on (or appressed to) upper part of bulb, with
 edges of such structures sometimes appearing frayed and darkening with age
 (viewed at 6-12x), often with nearly complete limbus intemus partially encircling (about half-circumference) base of stipe and in other small fragments on
 lower stipe above bulb, 1-2 mm thick, nearly white to pale orangish white
-(5A2).#Description*]
-[@Odor "earthy" in immature specimen; rich, strong, like "old ham" (but sometimes not unpleasantly) or like "unwashed athletic socks" in mature material.#Description*]
-[@Taste not recorded.#Description*]
+(5A2).
+Odor "earthy" in immature specimen; rich, strong, like "old ham" (but sometimes not unpleasantly) or like "unwashed athletic socks" in mature material.
+Taste not recorded.#Description*]
 [@MACROCHEMICAL TESTS: Spot test for laccase (syringaldazine): negative
 throughout basidiome. Spot test for tyrosinase (paracresol): positive in stipe
 (excluding bulb) and pileipellis and often in large areas oflamellae and pileus
@@ -644,40 +644,40 @@ parts of lamellae.#Description*]
 [@Test vouchers: Halling 7272, Mueller 4643, Tulloss
 6-13-95-C.#Misc-exposition*]
 
-[@New Central American amanitas ... 183#Misc-exposition*]
+[@New Central American amanitas ... 183#Page-header*]
 
-[@........#Misc-exposition*]
+[@........
 
-[@/#Misc-exposition*]
+/
 
-[@-------.~~~---(L#Misc-exposition*]
+-------.~~~---(L
 
-[@- -",#Misc-exposition*]
+- -",
 
-[@•.•..•..#Misc-exposition*]
+•.•..•..
 
-[@I#Misc-exposition*]
+I
 
-[@"' ....#Misc-exposition*]
+"' ....
 
-[@""#Misc-exposition*]
+""
 
-[@•#Misc-exposition*]
+•
 
-[@--~/#Misc-exposition*]
+--~/
 
-[@~#Misc-exposition*]
+~
 
-[@-.I'#Misc-exposition*]
+-.I'
 
-[@/#Misc-exposition*]
+/
 
-[@---~~,.---....' -#Misc-exposition*]
+---~~,.---....' -
 
-[@- -#Misc-exposition*]
+- -
 
-[@Fig. 7. Amanita conara (holotype). Elements ofhymenimn and subhymenial tree (gray lines
-of subhymenial base are semischematic). Scale bars = 20 11m.#Misc-exposition*]
+Fig. 7. Amanita conara (holotype). Elements ofhymenimn and subhymenial tree (gray lines
+of subhymenial base are semischematic). Scale bars = 20 11m.#Figure*]
 
 [@PILEIPELLIS: narrow and with pronounced boundaries, bounded above by
 densely placed anticlinally oriented hyphae binding upper surface to remains
@@ -697,7 +697,7 @@ shaped and smaller at mid-radius, commonly with inflated subterminal cell, in
 disc dominating and disordered, at mid-radius plentiful and with tendency to#Description*]
 
 
-[@184...Tulloss, Halling & Mueller#Misc-exposition*]
+[@184...Tulloss, Halling & Mueller#Page-header*]
 
 [@subradial orientation; vascular hyphae 2.8-17.8 ~m wide, sinuate to hypersinuate, rarely branching, common in region immediately below pileipellis,
 rather common elsewhere, scattered in all mounts. LAMELLA TRAMA: bilateral,
@@ -732,12 +732,12 @@ and sometimees connected with three or more hyphae via separate septa in
 upper third of wart; vascular hyphae not observed except in upper part of wart
 and there very infrequent and (e.g.) 2.2--4.9 µm wide. On pileus, basal part:#Description*]
 
-[@New Central American amanitas... 185#Misc-exposition*]
+[@New Central American amanitas... 185#Page-header*]
 
 [@Fig. 8. Amanita conara. a. Cross-section of fragments of limbus intemus on bulb and
 lower stipe (Tu1loss 6-13-95-C) (xO.82). b. Elements of universal veil (limbus internus)
 viewed through-from above-remains of partial veil (not shown) (holotype). c. Elements of universal veil, just below gelatinized hyphallayer on top of pileal wart (Halling 7272). d. Elements of universal veil near base of pileal wart (Halling 7272). Scale
-bars = 20 µm.#Misc-exposition*]
+bars = 20 µm.#Figure*]
 
 [@densely packed, anticlinally aligned hyphae connecting intimately with
 pileipellis. On underside of partial veil (i.e., limbus intemus): filamentous
@@ -745,7 +745,7 @@ undifferentiated hyphae 2.2-10.8 µm wide, occasionally branching, common;
 inflated cells dominating, terminal singly or as concatenated pairs, globose to
 subglobose to pyriform to broadly ellipsoid to ellipsoid to elongate to broadly#Description*]
 
-[@186...Tulloss, Halling & Mueller#Misc-exposition*]
+[@186...Tulloss, Halling & Mueller#Page-header*]
 [@clavate to clavate to narrowly clavate (up to 60 x 33 µm), dominantly thinwalled, occasionally with wall up to 0.8 µm thick; vascular hyphae not
 observed. On stipe base: with structure very like that of surface layers of universal veil on pileus; filamentous undifferentiated hyphae dominating, thinwalled, slightly gelatinized at surface, hyaline and colorless or (occasionally)
 with walls yellowish and subrefractive, 2.5-1 0.0 µm wide, commonly branching, fasciculate, densely packed, with predominantly vertical orientation (i.e.,
@@ -759,8 +759,8 @@ inflated cells of limbus intemus attached to underside of hyphal framework;
 filamentous undifferentiated hyphae 1.5-3.8 µm wide, occasionally branching, in narrow fascicles, rapidly gelatinizing prior to maturity of basidiome;
 inflated cells not observed; vascular hyphae not observed. LAMELLAEDGE
 TISSUE:sterile.#Description*]
-[@BASIDIOSPORES:#Description*]
-[@[181/8/4] (7.8-) 8.1-10.0 (-11.5) x (5.3-) 6.0-7.5 (-8.7) µm,
+[@BASIDIOSPORES:
+[181/8/4] (7.8-) 8.1-10.0 (-11.5) x (5.3-) 6.0-7.5 (-8.7) µm,
 (L = (8.6-) 8.8-9.4 µm; L' = 9.1 µm; W = 6.5-6.8 (-7.0) µm; W' = 6.6 µm; Q
 = (1.17-) 1.23-1.51 (-1.70); Q = 1.33-1.41 (-1.44); Q' = 1.37), hyaline, colorless, thin-walled, smooth, amyloid, broadly ellipsoid to ellipsoid, sometimes
 swollen at one end, often at least somewhat adaxially flattened; apiculus sublateral, cylindric; contents multi- to monoguttulate; color in deposit unknown.#Description*]
@@ -777,11 +777,11 @@ world wide, but all can be easily distinguished from the present species. In
 addition to their general habit, three of these species have in common with A.
 conara a number of distinctive characters among which are rubescent or dark-#Misc-exposition*]
 
-[@New Central American amanitas ... 187#Misc-exposition*]
+[@New Central American amanitas ... 187#Page-header*]
 
 [@ening context, a distinctive odor, yellow or orange tints on the lamellae, and a
-submembranous surface layer of the universal veil.#Misc-exposition*]
-[@• Amanita gymnopus Comer & Bas (Comer & Bas 1962), described from
+submembranous surface layer of the universal veil.
+• Amanita gymnopus Comer & Bas (Comer & Bas 1962), described from
 Malaysian "jungle" and reported from southern China (Chen et al.
 2001, Yang 2005) and Japan (Hongo 1982), has small (5-7 x 5-6.5 µm
 per Comer and Bas), globose to subglobose spores; a universal veil that
@@ -791,15 +791,15 @@ reported spores of 6.0-7.5 (-8.0) x (5.0-) 5.5-6.5 µm from a single
 specimen. Yang reported spore data as follows in specimens from at
 least three localities: 6.0-8.5 x (5.0-) 5.5-7.5 µm, (Q = (1.03-) 1.071.24 (-1.42); Q = 1.14 ± 0.08).1
 • Amanita ochraceobulbosa A. E. Wood (Wood 1997) has subglobose to
-broadly ellipsoid spores 9.3-11.7 x (7.3-) 8.1-9.6 (-10.2) µm with est.#Misc-exposition*]
-[@Q = 1.2, a cap that is cream to cream-buff to yellow-orange-cream with
+broadly ellipsoid spores 9.3-11.7 x (7.3-) 8.1-9.6 (-10.2) µm with est.
+Q = 1.2, a cap that is cream to cream-buff to yellow-orange-cream with
 universal veil remains as (often large) pyramidal warts, gills that are
 white to cream, flesh that apparently is nonstaining when cut or
 bruised, and pyramidal warts sometimes present on the stipe's basal
 bulb. Absence of a submembranous outer volval layer, presence of
 warts on the bulb, and no mention of staining flesh or distinctive odor
-suggest that this taxon is not appropriately placed in subsect. Gymnopodae.#Description*]
-[@• Amanita ochrophylla (Cooke & Massee) Cleland (Cleland 1924),
+suggest that this taxon is not appropriately placed in subsect. Gymnopodae.
+• Amanita ochrophylla (Cooke & Massee) Cleland (Cleland 1924),
 described from edges of open forest in eastern and southeastern Australia (Bas 1969: 556), has larger, proportionately narrower spores (9-11 x
 5.5-7 µm) with Q = 1.3-2.0 and Q = 1.5-1.8; a limbus internus that is
 apparently more coherent than that of A. conara and is frequently left
@@ -807,8 +807,8 @@ as a "second annulus" on the stipe just below the partial veil (Bas 1969:
 fig. 374); flesh that becomes pink on exposure; etc. Wood (1997: 803)
 gives spore measurements as follows: 9.3-10.8 (-12.6) x 5.4-7.4
 (-8.4) µm, with Q = 1.43-1.72 (-1.88). We estimate Q' for Wood's
-material as 1.55-1.6.#Misc-exposition*]
-[@• Amanita ochrophylloides D. A. Reid (Reid 1978, 1980), described from
+material as 1.55-1.6.
+• Amanita ochrophylloides D. A. Reid (Reid 1978, 1980), described from
 "under Eucalyptus sp. (of peppermint group)" in the state of Victoria,
 Australia, has predominantly subglobose to broadly ellipsoid to ellipsoid spores (7.0-10.0 x 5.0-8.0 µm, with est. Q = 1.3); a pale brown
 pileus with dark, "strobiliform" warts; a tendency to darken from
@@ -818,10 +818,10 @@ handling; pale golden yellow lamellae; a slight volval limb on the#Misc-expositi
 
 [@Yang's Q corresponds to the Q of our notation; and his Q, to our Q'.#Misc-exposition*]
 
-[@188...Tulloss, Halling & Mueller#Misc-exposition*]
+[@188...Tulloss, Halling & Mueller#Page-header*]
 
-[@Fig. 9. Amanita costaricensis. a. Habit (holotype) with weathered cap on right (x0.55).#Misc-exposition*]
-[@b. Habit (Tulloss 6-23-95-M) (xO.37). Photos by R. E. Tulloss.#Misc-exposition*]
+[@Fig. 9. Amanita costaricensis. a. Habit (holotype) with weathered cap on right (x0.55).
+b. Habit (Tulloss 6-23-95-M) (xO.37). Photos by R. E. Tulloss.#Figure*]
 
 [@stipe's basal bulb; an odor that is faint and mealy; abundant, highly
 refractive hyphae in the universal veil on the pileus; etc.
@@ -830,18 +830,18 @@ macroscopic description fits A. conara rather well; and his measurements for
 spores are 9-11 x (5.5-) 6.0-7.5 µm. This is a relatively good match for our
 spore data fromA. conara. We estimate a Q' of approximately 1.5 for spores
 of Guzman's material. We have not yet reviewed the material Guzman cited,
-but it appears to us that A. conara may occur in Mexico.#Misc-exposition*]
-[@Mueller 4643 consists of a single, rather large, immature specimen of A.
+but it appears to us that A. conara may occur in Mexico.
+Mueller 4643 consists of a single, rather large, immature specimen of A.
 conara. It comes from the same habit as the other material cited and is easily
 recognizable because of excellent photographs and notes on fresh material
 that accompany the exsiccatum; moreover, the thin membranous outer layer of
 the universal veil can be seen on scalp sections of the universal veil remnants
 on the pileus.#Misc-exposition*]
-[@We have three collections of what appears to be a similar, but possibly distinguishable, taxon from Ctn. Coto Bros, Provo Puntarenas (La Amistad sites nos.#Misc-exposition*]
-[@1 and 2) in association with Q. corrugata, Q. seemannii, and other oaks and
+[@We have three collections of what appears to be a similar, but possibly distinguishable, taxon from Ctn. Coto Bros, Provo Puntarenas (La Amistad sites nos.
+1 and 2) in association with Q. corrugata, Q. seemannii, and other oaks and
 belonging in subsection Gymnopodae ("species CR18" in the above key).#Misc-exposition*]
 
-[@New Central American amanitas ... 189#Misc-exposition*]
+[@New Central American amanitas ... 189#Page-header*]
 
 [@These collections differ fromA. conara in colors of the basidiome (not all collections are fully annotated) and consistently have smaller subglobose to
 broadly ellipsoid spores: [160/8/3] (6.1-) 7.0--9.5 (-11.6) x (5.1-) 5.9-7.9
@@ -863,13 +863,13 @@ latae, lamellulis truncatis vel attenuatis. Stipes 52-124x 9-18 (-22) mm, subalb
 vel griseus, annulatus, pulverulentus vel flocculosus sub annulo; bulbo (30-) 57-
 112+ x 17-40 mm, napiformi vel dauciformi, radicanti; velo universali pulverulento
 vel verrucato, fuligineogriseo vel concoloro. Sporae amyloideae, (7.5-) 8.5-13.2
-(-16.0) x (5.1-) 6.0-8.5 (-12.6) pm, (L = (9.1-) 9.4-12.3 µm; L' = 10.8 pm; W =
+(-16.0) x (5.1-) 6.0-8.5 (-12.6) µm, (L = (9.1-) 9.4-12.3 µm; L' = 10.8 µm; W =
 6.4-7.7 (-8.3) µm; W' = 7.2 µm; Q = (1.10-) 1.27-1.83 (-2.15); Q = 1.35-1.68
-(-1.70); Q' = 1.51), late ellipsoideae vel ellipsoideae vel elongatae. Fibulae vulgaris. In quercetis tropicalibus montanis costaricensibus et hondurensibus habitat.#Description*]
-[@Amanita onusta et A. atkinsoniana Amanitae stirpis Microlepis simulanissimae. Species nova ob magnitudinem sporarum, magnitudinem basidiomae, lamellarum non
+(-1.70); Q' = 1.51), late ellipsoideae vel ellipsoideae vel elongatae. Fibulae vulgaris. In quercetis tropicalibus montanis costaricensibus et hondurensibus habitat.
+Amanita onusta et A. atkinsoniana Amanitae stirpis Microlepis simulanissimae. Species nova ob magnitudinem sporarum, magnitudinem basidiomae, lamellarum non
 flavescentem et non celeriter putrescentem, et ubi probata paracresolo non reagens.#Description*]
-[@HOLOTYPE - Costa Rica, Prov. San Jose, Ctn. Dota, 21.vi.1995 R.E. Halling s.n.#Misc-exposition*]
-[@[Tulloss 6-21-95-M] (USJ).#Misc-exposition*]
+[@HOLOTYPE - Costa Rica, Prov. San Jose, Ctn. Dota, 21.vi.1995 R.E. Halling s.n.
+[Tulloss 6-21-95-M] (USJ).#Misc-exposition*]
 
 [@ETYMOLOGY - In honor of the Republic of Costa Rica.#Misc-exposition*]
 
@@ -883,9 +883,9 @@ warts; context white, usually with pale brownish gray to gray to brown region
 under pileipellis, sometimes pale ochraceous when exposed, 3-10.5 mm thick
 over stipe, thinning evenly to margin; margin nonstriate, sometimes short sul-#Description*]
 
-[@190...Tulloss, Halling & Mueller#Misc-exposition*]
+[@190...Tulloss, Halling & Mueller#Page-header*]
 
-[@Fig. 10. Amanita costaricensis. Habit (Tulloss 6-23-95-M) (xO.63).#Misc-exposition*]
+[@Fig. 10. Amanita costaricensis. Habit (Tulloss 6-23-95-M) (xO.63).#Figure*]
 
 [@cate (0.05R) in age, incurved at fIrst, then decurved, occasionally uplifted in
 age, appendiculate with white and or gray floccose-felted shreds of partial
@@ -894,7 +894,7 @@ brownish gray to brown or dark grayish brown and darker than pileus
 (6D-E4-6 to 7E6 to 7F7 to 5.6YR 3.4/0.9), occasionally as flat pinkish brown
 (7B4) patches, pulverulent, darkening with age, verruculose (lOx lens), detersile.#Description*]
 
-[@New Central American amanitas ... 191#Misc-exposition*]
+[@New Central American amanitas ... 191#Page-header*]
 
 [@LAMELLAE: free to narrowly adnate, close to subcrowded to crowded, lacking
 decurrent lines on stipe apex, white to pale cream in mass, off-white to
@@ -932,17 +932,17 @@ thick, loosely attached, friable ring at stipe base (then concolorous with stipe
 [@Odor lacking or similar to nutmeg at fIrst; in age, "old ham" -type, but more
 penetrating and unpleasant. ["Musty" in Mueller 4368.] Taste not distinctive.#Description*]
 
-[@192...Tulloss, Halling & Mueller#Misc-exposition*]
+[@192...Tulloss, Halling & Mueller#Page-header*]
 
 [@d#Misc-exposition*]
 
 [@Fig. 11. Amanita costaricensis. a. Elements of universal veil from pileus wart (Tulloss
 6-23-95-M). b. Elements of universal veil from floccose material of stipe (isotype). c.
-Elements of weakly structured partial veil (isotype). d. Elements ofhymenium and subhymenial tree. Scale bars 20 !lm.#Misc-exposition*]
+Elements of weakly structured partial veil (isotype). d. Elements ofhymenium and subhymenial tree. Scale bars 20 µm.#Figure*]
 [@MACROCHEMICAL TESTS: Spot test for laccase (syringaldazine): negative
 throughout basidiome except for very few spots on margins of lamellae. Spot#Description*]
 
-[@NewCentralAmericanamanitas...193#Misc-exposition*]
+[@NewCentralAmericanamanitas...193#Page-header*]
 [@test for tyrosinase (paracresol): negative throughout basidiome.#Description*]
 [@Tulloss 6-20-95-A.#Misc-exposition*]
 
@@ -976,7 +976,7 @@ inflated elements and partially inflated (proportionately small) hyphal segments
 6.0 x 2.8 µm or larger; clamps common. UNIVERSALVEIL: On pileus: elements having strong vertical orientation except in base of wart; filamentous
 undifferentiated hyphae 1.0-13.6 µm wide, branching, common in upper part#Description*]
 
-[@194...Tulloss, Halling & Mueller#Misc-exposition*]
+[@194...Tulloss, Halling & Mueller#Page-header*]
 
 [@of wart, dominating in shallow interwoven layer at base of wart and there periclinally oriented and more often in fascicles, sometimes constricted at septa,
 colorless at first becoming orange-brown like inflated cells; inflated cells pale
@@ -1005,16 +1005,16 @@ colorless, smooth, thin-walled, amyloid, acyanophilous, dominantly ellipsoid
 to elongate, infrequently broadly ellipsoid or cylindric, often at least somewhat adaxially flattened, occasionally expanded at one end; apiculus sublateral, small, cylindric; contents mono- to multiguttulate to granular; white in
 deposit.#Description*]
 
-[@New Central American amanitas...195#Misc-exposition*]
-[@ECOLOGY: Solitary to subgregarious.#Misc-exposition*]
-[@Costa Rica: At 1715-2500 m elev. In#Misc-exposition*]
-[@Quercus-Magnolia forest or in mixed Quercus forest sometimes with Q.
+[@New Central American amanitas...195#Page-header*]
+[@ECOLOGY: Solitary to subgregarious.
+Costa Rica: At 1715-2500 m elev. In
+Quercus-Magnolia forest or in mixed Quercus forest sometimes with Q.
 oocarpa dominant. Honduras: At 190Q± m elev. In cloud forest with Quercus
 trichodonta and other hardwoods.#Misc-exposition*]
-[@MATERIAL#Misc-exposition*]
-[@EXAMINED:#Misc-exposition*]
-[@COSTA RICA: CARTAGO-San Cristobal, vii.1983 L.D.#Misc-exposition*]
-[@Gomez & R Alfaro 21222 (F 1100824). GUANACAsTE-Cacao no. I, sendero a
+[@MATERIAL
+EXAMINED:#Misc-exposition*]
+[@COSTA RICA: CARTAGO-San Cristobal, vii.1983 L.D.
+Gomez & R Alfaro 21222 (F 1100824). GUANACAsTE-Cacao no. I, sendero a
 derrumbe, 3.vi.1996 C. Cano 197 (INBio; RET 325-4). SAN JosE-La Chonta,
 v.1982 L.D. Gomez 18147 (F 1051869);Jaboncillo de Dota, 20.vi.1995 RE. HaIling & K. Shanks s.n. [Tu1loss6-20-95-Al (RET 330-3; USJ); EI Jardin de Dota,
 vii.1983L.D. Gomez & R Alfaro 20641 (F 1073283);San Gerardo de Dota no. I,
@@ -1022,37 +1022,37 @@ vii.1983L.D. Gomez & R Alfaro 20641 (F 1073283);San Gerardo de Dota no. I,
 (F 1102451), 21.vi.1995 R.E. Halling s.n. [Tulloss 6-21-95-Ml (holotype,USJ; isotype, RET 330-4), 23.vi.1995 Thomas O'Dell s.n. [Tu1loss 6-23-95-Ml (RET
 330-5; USJ); San Gerardo de Dota no. 4, 24.vii.1992 B.A. Strack, 1. Polishook,
 L.D. Gomez, G. Hewson & G.M. Mueller [Mueller 43681(F 1102421). HONDURAS:FRANCISCO MORAZAN-Mt. Uyuca, Valle Zamorano, 5.vii.1991 G.M.
-Mueller, B.A. Strack, R & M. Singer & R Andino [Mueller 41381 (F 1098682).#Misc-exposition*]
-[@OLANcHo---ca. Campamento,P.N. La Tigre, rd. to Finca Sapote, 9.vii.1991G.M.
-Mueller, B.A. Strack,R. & M. Singer & R Andino [Mueller41821(F 1098725).#Misc-exposition*]
-[@COMMENTS- This species was described in the notebooks ofthe late Dr. Rolf
-Singer under his herbarium name "costaricensis."#Misc-exposition*]
-[@Since he originated the#Misc-exposition*]
-[@name and had a clear concept of its application and since we utilize collections annotated by him, we have included Dr. Singer as an author of the species.#Misc-exposition*]
-[@According to the descriptions and keys of Bas (1969), A. costaricensis fits
-well within his stirps Microlepis of Amanita [sect. Lepidella] subsect. Solitariae Bas. Within this stirps, the present species is strikingly similar to A. atkinsoniana Coker (Coker 1917) andA. onusta (Howe) Sacco (Saccardo 1891).#Misc-exposition*]
-[@Amanita atkinsoniana (Tulloss 2011d) is moderately common in a range
+Mueller, B.A. Strack, R & M. Singer & R Andino [Mueller 41381 (F 1098682).
+OLANcHo---ca. Campamento,P.N. La Tigre, rd. to Finca Sapote, 9.vii.1991G.M.
+Mueller, B.A. Strack,R. & M. Singer & R Andino [Mueller41821(F 1098725).
+COMMENTS- This species was described in the notebooks ofthe late Dr. Rolf
+Singer under his herbarium name "costaricensis."
+Since he originated the
+name and had a clear concept of its application and since we utilize collections annotated by him, we have included Dr. Singer as an author of the species.
+According to the descriptions and keys of Bas (1969), A. costaricensis fits
+well within his stirps Microlepis of Amanita [sect. Lepidella] subsect. Solitariae Bas. Within this stirps, the present species is strikingly similar to A. atkinsoniana Coker (Coker 1917) andA. onusta (Howe) Sacco (Saccardo 1891).
+Amanita atkinsoniana (Tulloss 2011d) is moderately common in a range
 extending from southern Provo Quebec, Canada (Pomerleau 1980) to Michoacan edo., Mexico. Amanita atkinsoniana can be distinguished from the present species by
-• smaller spores-[230/1O/1O]#Misc-exposition*]
-[@(6.8-) 8.0-10.5 (-14.3) x (5.0-) 5.4-7.2#Misc-exposition*]
-[@(-8.5) µm, (L = (8.2-) 9.0-9.7 µm; L' = 9.2 µm; W = 5.7-6.6 (-6.9)
+• smaller spores-[230/1O/1O]
+(6.8-) 8.0-10.5 (-14.3) x (5.0-) 5.4-7.2
+(-8.5) µm, (L = (8.2-) 9.0-9.7 µm; L' = 9.2 µm; W = 5.7-6.6 (-6.9)
 µm; W' = 6.2 µm; Q = (1.17-) 1.27-1.71 (-1.95); Q = 1.36-1.57
-(-1.67); Q' = 1.50)#Misc-exposition*]
-[@• basidiome generally white or pallid except for universal veil, with universal veil in fine distinctly separated warts (grayish at first, then reddish brown) on pileus, with basal bulb usually napiform or turbinate,
+(-1.67); Q' = 1.50)
+• basidiome generally white or pallid except for universal veil, with universal veil in fine distinctly separated warts (grayish at first, then reddish brown) on pileus, with basal bulb usually napiform or turbinate,
 with universal veil brownish gray becoming reddish brown and distributed in rather fme warts in at least six (6) concentric rings around the
 stipe's bulb from its top to (often) well below mid-length of the bulb,#Misc-exposition*]
 
-[@196...Tulloss, Halling & Mueller#Misc-exposition*]
+[@196...Tulloss, Halling & Mueller#Page-header*]
 [@with fragile apical to subapical partial veil, which (when it persists)
 may become slimy and yellow while remaining in a superior position
-on the stipe#Misc-exposition*]
-[@• scattered, minimal, positive spot tests for tyrosinase--with L-tyrosine,
+on the stipe
+• scattered, minimal, positive spot tests for tyrosinase--with L-tyrosine,
 slowly positive on surfaces of lower stipe and upper bulb (possibly in
 association with universal veil material in those areas) and in pileipellis.#Misc-exposition*]
 [@MATERIAL EXAMINED#Misc-exposition*]
-[@(Amanita atkinsoniana):#Misc-exposition*]
-[@MEXICO: MICHOAcAN-Parq.#Misc-exposition*]
-[@Nac. "Insurgente Jose Ma. Morelos," Mpio. Charo, 19.viii.1983 Reza Araujo s.n.
+[@(Amanita atkinsoniana):
+MEXICO: MICHOAcAN-Parq.
+Nac. "Insurgente Jose Ma. Morelos," Mpio. Charo, 19.viii.1983 Reza Araujo s.n.
 (FCME). U. S. A.: CONNECTICUT-Middlesex Co.-E. Haddam, Devil's Hop
 Yard St. Pk., 25.ix.1999 Arnold s.n. [Tulloss 9-25-99-P] (RET 301-1); Meshomasic
 St. For., 19.ix.1998 Peter Kukle s.n. [Tulloss 9-19-98-A] (RET 288-2). MAINECumberland Co. - S. Windham, 25.viii.1984 S.S. Ristich s.n. [Tulloss 8-25-84SSR-A] (RET 235-6). MASSACHUSETTs-Berkshire Co. - Pittsfield St. For.,
@@ -1068,31 +1068,31 @@ Co. - Monongahela Nat. For., Lake Sherwood, 3 I.viii. 1982 R.E. Tulloss 8-31-82-
 America with a range extending from Provo Quebec (pomerleau 1980) and
 Provo Nova Scotia (Stewart & Grund 1974), Canada at least to Illinois and
 Mississippi, USA. (Tulloss unpub. data). Amanita onusta can be distinguished from the present species by
-• smaller spores-[215/12/12]#Misc-exposition*]
-[@(7.0-) 8.0-11.0 (-13.0) x (5.0-) 5.5-7.0#Misc-exposition*]
-[@(-8.3) µm, (L = 8.3-10.5 (-11.0) µm; L' = 9.4 µm; W = 5.7-6.5 (-7.1)
+• smaller spores-[215/12/12]
+(7.0-) 8.0-11.0 (-13.0) x (5.0-) 5.5-7.0
+(-8.3) µm, (L = 8.3-10.5 (-11.0) µm; L' = 9.4 µm; W = 5.7-6.5 (-7.1)
 µm; W' = 6.1 µm; Q = (1.14-) 1.28-1.85 (-2.21); Q = 1.35-1.65
-(-1.84); Q' = 1.52)#Misc-exposition*]
-[@• basidiomes paler and with little (if any) brown tint, frequently of
+(-1.84); Q' = 1.52)
+• basidiomes paler and with little (if any) brown tint, frequently of
 smaller size with pileus often less than 40 mm wide [13-76 mm wide in
 Tulloss' experience, although Bas (1969) reports at least one instance
 of a specimen with pileus over 100 mm wide], with lamellae that rather
 rapidly become yellowish and show signs of decay while the remainder
 of the basidiome shows none, and often without a persistent partial veil
-• positive spot tests for tyrosinase-with#Misc-exposition*]
-[@L-tyrosine, positive, throughout#Misc-exposition*]
-[@the basidiome and, with paracresol, positive in scattered spots in very#Misc-exposition*]
+• positive spot tests for tyrosinase-with
+L-tyrosine, positive, throughout
+the basidiome and, with paracresol, positive in scattered spots in very#Misc-exposition*]
 
-[@New Central American amanitas... 197#Misc-exposition*]
+[@New Central American amanitas... 197#Page-header*]
 
 [@young material, positive in pileus context and context of stipe above
 bulb in older material.#Misc-exposition*]
 [@MATERIAL EXAMINED#Misc-exposition*]
 [@(Amanita onusta): U. S. A.: CONNECTICUT-Litchfield
-Co. - Black Rock St. Pk., 10.viii.1983 D.C. & RE. Tulloss 8-1O-83-A(RET 1048). MAINE-Sagadahoc Co. - Woolwich, 7.x.1995 S.S. Ristich s.n. (RET 159-7).#Misc-exposition*]
-[@NEW JERSEy-Mercer Co. - Hightstown, 22.vii.1981 RE. Tulloss 7-22-81-B
-(RET 106-9). Monmouth Co. - Upper Freehold Twp., Assunpink Wildlife Mgt.#Misc-exposition*]
-[@Area, Roosevelt Rd., 21.vii.198I RE. Tulloss 7-21-81-E (RET 163-3), 4.viii.1981
+Co. - Black Rock St. Pk., 10.viii.1983 D.C. & RE. Tulloss 8-1O-83-A(RET 1048). MAINE-Sagadahoc Co. - Woolwich, 7.x.1995 S.S. Ristich s.n. (RET 159-7).
+NEW JERSEy-Mercer Co. - Hightstown, 22.vii.1981 RE. Tulloss 7-22-81-B
+(RET 106-9). Monmouth Co. - Upper Freehold Twp., Assunpink Wildlife Mgt.
+Area, Roosevelt Rd., 21.vii.198I RE. Tulloss 7-21-81-E (RET 163-3), 4.viii.1981
 RE. Tulloss 8-4-81-A (RET 109-6), 18.ix.1981 M.A. King & R.E. Tulloss
 9-18-81-E (RET 164-7), I l.vii. 1982 D.C., M.H., & RE. Tu1loss 7-11-82-B (RET
 340-10). Morris Co. - Morristown, 27.viii.1981 Al Northrup s.n. [Tulloss
@@ -1117,20 +1117,20 @@ that they represent a distinct species because (1) the spores of these two colle
 A. costaricensis [Compare values of L' and W'. Reduction in spore volume
 due to stress would have reduced both length and width.]; (2) both exhibited a
 membranous annulus; and (3) both apparently lack basidial clamps. Basidia
-predominantly less than 30 µm long, might support assignment to sect. Validae, but further study is required.#Misc-exposition*]
-[@In one case {Estrella, 14.vi.1996 RE. Halling & J. Ammirati [Halling 7684]
+predominantly less than 30 µm long, might support assignment to sect. Validae, but further study is required.
+In one case {Estrella, 14.vi.1996 RE. Halling & J. Ammirati [Halling 7684]
 (NY; USJ)}, all the specimens of a rather large collection apparently assignable to A. costaricensis had an odor like pig manure. In addition, some had
 rather distorted stipes; and the spores of all collections were uniformly smaller#Misc-exposition*]
 
-[@198...Tulloss, Halling & Mueller#Misc-exposition*]
+[@198...Tulloss, Halling & Mueller#Page-header*]
 
 [@than normal ([100/5/1] (7.2-) 7.6-9.5 (-11.0) x (5.3-) 5.5-7.3 (-8.0) µm, (L =
 8.3-9.0 µm; L' = 8.7 µm; W = 6.2-6.6 µm; W' = 6.4 µm; Q = (1.18-) 1.231.50 (-1.80); Q = 1.30-1.45; Q' = 1.37). Observed at 1250x, many of the
 spores were surrounded with small, hyaline, colorless, inamyloid spheres (1±3± µm diam.) connected to the spore walls by what appeared to be fme
-tubules-the#Misc-exposition*]
-[@whole having the appearance of a pincushion. We hypothesize
-that the noted alterations in morphology and odor are a result of "parasitization." The authors explicitly exclude Halling 7684 from the set of para types.#Misc-exposition*]
-[@In another case of apparent parasitization (San Gerardo de Dota no. 4,
+tubules-the
+whole having the appearance of a pincushion. We hypothesize
+that the noted alterations in morphology and odor are a result of "parasitization." The authors explicitly exclude Halling 7684 from the set of para types.
+In another case of apparent parasitization (San Gerardo de Dota no. 4,
 24.vii.1992 B.A. Strack, J. Polishook, L.D. Gomez, G. Hewson & G.M. Mueller [Mueller 4368] (F 1102421)), spores, basidia, and lamella trama were quite
 normal for the species; however, the context of both the pileus and stipe
 stained yellow when cut. Two other pigment-related characters were unusual
@@ -1160,13 +1160,13 @@ the species with yellowing context reaction in sect. Lepidella may be grouped
 together and the yellowing attributed to a single cause, or a set of common
 causes, then A. costaricensis becomes the first representative of this group in#Misc-exposition*]
 
-[@New Central American amanitas ... 199#Misc-exposition*]
+[@New Central American amanitas ... 199#Page-header*]
 
 [@Bas' stirps Microlepis. We have included Mueller 4368 as a paratype because
 microscopic examination produced observations completely consistent with
 "normal" material of A. costaricensis. In the macroscopic description of A.
-costaricensis, the unusual characters of Mueller 4368 are so labeled.#Misc-exposition*]
-[@Mueller 4398 consists of a single immature specimen with the partial veil covering the lamellae.#Misc-exposition*]
+costaricensis, the unusual characters of Mueller 4368 are so labeled.
+Mueller 4398 consists of a single immature specimen with the partial veil covering the lamellae.#Misc-exposition*]
 [@Acknowledgments#Misc-exposition*]
 [@We are grateful to Dr. Joseph Ammirati (University of Washington) and Dr. Zhuliang Yang (HKAS) for their prepublication reviews ofthe present paper. We particularly wish to thank Dr. Yang for his connnents on our observations of the anatomy of
 the pileus context in A. garabitoana and for his indicating that he has made similar
@@ -1174,167 +1174,167 @@ observations in other taxa of the "Hemibapha group" within section Caesareae. We
 are grateful to Dra. Julieta Carranza (USJ) for providing us with historical information
 concerning Garabito and to Dr. J.L. Mata (Univ. S. Alabama, Mobile) for his suggestion of honoring Garabito in the name ofthe first known species of "Slender Caesar's
 Mushroom" in the Americas south of Mexico. Mr. David C. Tulloss, Lambertville, NJ,
-is thanked for preparation of habit illustrations of two newly described arnanitas. Mrs.#Misc-exposition*]
-[@Mary A. Tulloss, Roosevelt, NJ, is thanked for assisting in final preparation of the
+is thanked for preparation of habit illustrations of two newly described arnanitas. Mrs.
+Mary A. Tulloss, Roosevelt, NJ, is thanked for assisting in final preparation of the
 paper for publication. The New York Botanical Garden and the Field Museum are
 thanked for their support of field work in Costa Rica. The second and third authors are
 grateful for financial support from the National Science Foundation in grants DEB9300798 (GMM, REH), DEB-9972018 (REH), and DEB-9972027 (GMM).#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Ammirati J, Garnica S, Halling RE, Mata M, Mueller GM, Carranza 1. 2007. New Cortinarius
-species associated with Quercus and Comarostaphylis in Costa Rica. Can. 1. Bot. 85: 794812. doi: 10.1 I 39/B07-067
-Anonymous. 1975. Munsell soil color charts. Baltimore. unpaginated.#Misc-exposition*]
+species associated with Quercus and Comarostaphylis in Costa Rica. Can. 1. Bot. 85: 794812. doi: 10.1 I 39/B07-067#Bibliography*]
+[@Anonymous. 1975. Munsell soil color charts. Baltimore. unpaginated.#Bibliography*]
 [@Baroni T, Halling RE. 2000. Some Entolomataceae (Agaricales) from Costa Rica. Brittonia 52:
-121-135. doi:1O.2307/2666502#Misc-exposition*]
-[@Bas C. 1969. Morphology and subdivision of Amanita and a monograph of its section Lepidella.#Misc-exposition*]
-[@Persoonia 5: 285-579.#Misc-exposition*]
-[@Carranza J, Mueller GM (eds.). 1996 [1997]. Fungi of Costa Rica: Selected studies on biodiversity and ecology. Rev. BioI. Trop. 44 (suppl. 4). 152 pp.
-Chen Z-H, Yang Z-L, Zhang Z-G. 2001. Three noteworthy Amanitae of subgenus Lepidella from
-China. Mycotaxon 79: 275-284.#Misc-exposition*]
+121-135. doi:1O.2307/2666502#Bibliography*]
+[@Bas C. 1969. Morphology and subdivision of Amanita and a monograph of its section Lepidella.
+Persoonia 5: 285-579.#Bibliography*]
+[@Carranza J, Mueller GM (eds.). 1996 [1997]. Fungi of Costa Rica: Selected studies on biodiversity and ecology. Rev. BioI. Trop. 44 (suppl. 4). 152 pp.#Bibliography*]
+[@Chen Z-H, Yang Z-L, Zhang Z-G. 2001. Three noteworthy Amanitae of subgenus Lepidella from
+China. Mycotaxon 79: 275-284.#Bibliography*]
 [@Cleland, m. 1924. Australian fungi: notes and descriptions-No.5.
-Trans. Roy. Soc. South Australia 48: 236-252.#Misc-exposition*]
-[@Coker WC. 1917. The amanitas of the eastern United States. 1. Elisha Mitchell Sci. Soc. 33: i, 188.#Misc-exposition*]
-[@Comer EJH, Bas C. 1962. The genus Amanita in Singapore and Malaya. Persoonia 2(3): 241304.#Misc-exposition*]
+Trans. Roy. Soc. South Australia 48: 236-252.#Bibliography*]
+[@Coker WC. 1917. The amanitas of the eastern United States. 1. Elisha Mitchell Sci. Soc. 33: i, 188.#Bibliography*]
+[@Comer EJH, Bas C. 1962. The genus Amanita in Singapore and Malaya. Persoonia 2(3): 241304.#Bibliography*]
 
-[@200 ...Tulloss, Halling & Mueller#Misc-exposition*]
+[@200 ...Tulloss, Halling & Mueller#Page-header*]
 
 [@Geml J, Tulloss RE, Laursen GA, Sazanova NA, Taylor DL. 2008. Evidence for strong inter- and
-intracontinental phylogeographic structure in Amanita muscaria, a wind-dispersed ectomycorrhizal basidiomycete. Molec. Phylog. Evol. 48: 694-701.#Misc-exposition*]
-[@doi: 10.1 016/j.ympev.2008.04.029#Misc-exposition*]
-[@Gilbert E-J. 1940-41. Amanitaceae. Iconogr. Mycol. (Milan) 27, suppl. (1-3): i-xx, 1--427,73 pI.#Misc-exposition*]
+intracontinental phylogeographic structure in Amanita muscaria, a wind-dispersed ectomycorrhizal basidiomycete. Molec. Phylog. Evol. 48: 694-701.
+doi: 10.1 016/j.ympev.2008.04.029#Bibliography*]
+[@Gilbert E-J. 1940-41. Amanitaceae. Iconogr. Mycol. (Milan) 27, suppl. (1-3): i-xx, 1--427,73 pI.#Bibliography*]
 [@Guzman G. 1975. New and interesting species of Agaric ales from Mexico. Bern. Nova Hedwigia
-51: 99-118, pI. 24-30.#Misc-exposition*]
+51: 99-118, pI. 24-30.#Bibliography*]
 [@Halling RE, Franco-M, AE. 1996. Agaricales from Costa Rica: New taxa with ornamented
-spores. Mycologia 88: 666-670. doi:IO.2307/3761165
-Halling RE, Mueller, GM. 1997. Macrofungi of Costa Rica. [http://www.nybg.org/bsci/res/hall
-]#Misc-exposition*]
-[@accessed 2 March 2009.#Misc-exposition*]
-[@Halling RE, Mueller GM. 1999. New boletes from Costa Rica. Mycologia 91: 893-899.#Misc-exposition*]
+spores. Mycologia 88: 666-670. doi:IO.2307/3761165#Bibliography*]
+[@Halling RE, Mueller, GM. 1997. Macrofungi of Costa Rica. [http://www.nybg.org/bsci/res/hall
+]
+accessed 2 March 2009.#Bibliography*]
+[@Halling RE, Mueller GM. 1999. New boletes from Costa Rica. Mycologia 91: 893-899.#Bibliography*]
 [@Halling RE, Mueller GM. 2002. Agarics and boletes of neotropical oakwoods in: R Watling et al.
-(eds.). Tropical Mycology. (CABI Publishing, UK): 1-10. doi:IO.2307/3761543
-Halling RE, Mueller GM. 2005. Common mushrooms of the Talamanca Mountains, Costa Rica.#Misc-exposition*]
-[@(New York Bot. Gard. Press, Bronx). 195 pp.#Misc-exposition*]
+(eds.). Tropical Mycology. (CABI Publishing, UK): 1-10. doi:IO.2307/3761543#Bibliography*]
+[@Halling RE, Mueller GM. 2005. Common mushrooms of the Talamanca Mountains, Costa Rica.
+(New York Bot. Gard. Press, Bronx). 195 pp.#Bibliography*]
 [@Hamly DH. 1949. The Ridgway color standards with a Munsell notation key. J. Optic. Soc. Amer.
-39: 592-599. doi:IO.1364/JOSA.39.000592#Misc-exposition*]
+39: 592-599. doi:IO.1364/JOSA.39.000592#Bibliography*]
 [@Holmgren PK, Holmgren NH, Barnett LC. 1990. Index herbariorum. Part I. The herbaria of the
-world, 8th ed. Regnum Veg. 120: 1-693.#Misc-exposition*]
-[@Hongo T. 1982. The amanitas ofJapan. Acta Phytotax. Geobot. 33: 116-126.#Misc-exposition*]
+world, 8th ed. Regnum Veg. 120: 1-693.#Bibliography*]
+[@Hongo T. 1982. The amanitas ofJapan. Acta Phytotax. Geobot. 33: 116-126.#Bibliography*]
 [@Jenkins DT. 1977. A taxonomic and nomenclatural study of the genus Amanita section Amanita
-for North America. Biblioth. Mycol. 57: 1-126.#Misc-exposition*]
+for North America. Biblioth. Mycol. 57: 1-126.#Bibliography*]
 [@Jenkins DT. 1986. Amanita of North America. (Mad River, Eureka). vi+ 197 pp.
 Kelly KL. 1965. ISCC-NBS Color-name charts illustrated with Centroid colors. Standard sample
-no. 2106. NBS Circular 553, suppl. unpaginated.#Misc-exposition*]
-[@Kirk PM, Ansell AE. 1992. Authors of fungal names. Index Fung. Supp1.: viii+95 pp.
-Kirk PM, Ansell AE. 2010. Authors offungal names. in Index Fungorum, [http://www.indexfungorum.org/FungalNameAuthors.pdf]
-accessed 28 June 2010.#Misc-exposition*]
+no. 2106. NBS Circular 553, suppl. unpaginated.#Bibliography*]
+[@Kirk PM, Ansell AE. 1992. Authors of fungal names. Index Fung. Supp1.: viii+95 pp.#Bibliography*]
+[@Kirk PM, Ansell AE. 2010. Authors offungal names. in Index Fungorum, [http://www.indexfungorum.org/FungalNameAuthors.pdf]
+accessed 28 June 2010.#Bibliography*]
 [@Kornerup A, Wanscher JH. 1978. Methuen handbook of colour. London. 252 pp.
-McKnightKH.#Misc-exposition*]
-[@1977. A note on the ISCC-NBS Centroid color charts. McIlvainea 3: 4-11.#Misc-exposition*]
+McKnightKH.
+1977. A note on the ISCC-NBS Centroid color charts. McIlvainea 3: 4-11.#Bibliography*]
 [@Mueller GM, Halling RE. 1995. Evidence for high biodiversity of Agaric ales (Fungi) in neotropical montane Quercus forests. in: S Churchill et al. (eds.). Biodiversity and Conservation of
-Neotropical Montane Forests. (New York Bot. Gard. Press, Bronx): 303-312.#Misc-exposition*]
+Neotropical Montane Forests. (New York Bot. Gard. Press, Bronx): 303-312.#Bibliography*]
 [@Mueller GM, Halling RE, Carranza J, Mata M, Schmit JP. 2006. Saprotrophic and ectomycorrhizal macrofungi of Costa Rican oak forests. in M. Kappelle, ed. Ecology and conservation of
-neotropical montane oak forests. Ecological series 51. (Springer. Heidelberg): 55-68.#Misc-exposition*]
-[@doi: 10.1007/3-540-28909-7_5#Misc-exposition*]
-[@Mueller GM, Mata M. 2001. The Costa Rican national fungal inventory: a large-scale collaborative project. Inoculum 52(5): 1--4.
-Pomerleau R. 1980. Flore des champignons au Quebec. (Les Editions La Presse, Montreal).#Misc-exposition*]
-[@xvi+653 pp.#Misc-exposition*]
-[@Pomerleau R. 1984. A propos du nom scientifique de I'orange americaine. Naturaliste Canad.#Misc-exposition*]
-[@111: 329-330.#Misc-exposition*]
-[@Reid DA. 1978. New species ofAmanita (fungi) from Australia. Victorian Naturalist 95: 47--49.#Misc-exposition*]
-[@Reid DA. 1980. A monograph of the Australian species of Amanita Persoon ex Hooker (Fungi).#Misc-exposition*]
-[@Austral. J. Bot. Suppl. Ser. 8: 1-96.#Misc-exposition*]
+neotropical montane oak forests. Ecological series 51. (Springer. Heidelberg): 55-68.
+doi: 10.1007/3-540-28909-7_5#Bibliography*]
+[@Mueller GM, Mata M. 2001. The Costa Rican national fungal inventory: a large-scale collaborative project. Inoculum 52(5): 1--4.#Bibliography*]
+[@Pomerleau R. 1980. Flore des champignons au Quebec. (Les Editions La Presse, Montreal).
+xvi+653 pp.#Bibliography*]
+[@Pomerleau R. 1984. A propos du nom scientifique de I'orange americaine. Naturaliste Canad.
+111: 329-330.#Bibliography*]
+[@Reid DA. 1978. New species ofAmanita (fungi) from Australia. Victorian Naturalist 95: 47--49.#Bibliography*]
+[@Reid DA. 1980. A monograph of the Australian species of Amanita Persoon ex Hooker (Fungi).
+Austral. J. Bot. Suppl. Ser. 8: 1-96.#Bibliography*]
 
-[@New Central American amanitas .. .20#Misc-exposition*]
+[@New Central American amanitas .. .20#Page-header*]
 
-[@1#Misc-exposition*]
+[@1#Bibliography*]
 
 [@Ridgway R. 1912. Color standards and nomenclature. (privately published, Washington, D.C.). 44
-pp., 53 p!.#Misc-exposition*]
-[@Rosen, HR. 1926. A new Amanita from Arkansas. Mycologia 18: 97-99. doi: 10.2307/3753952
-Rossman AY, Tulloss RE, O'Dell TE, Thorn RG. 1998. Protocols for an all taxa biodiversity
-inventory of fungi in a Costa Rican conservation area. (parkway Pub!., Boone, NC).#Misc-exposition*]
-[@xviii+ 195 pp.#Misc-exposition*]
-[@Saccardo PA. 1887. Sylloge hymenomycetum, vo!.1. Agaricineae. Syll. Fung. 5: 1-1146.#Misc-exposition*]
-[@Saccardo PA. 1891. Supplementum universale, pars I. Agaricaceae-Laboulbeniaceae.#Misc-exposition*]
-[@Syll Fung.#Misc-exposition*]
-[@9: 1-1141.#Misc-exposition*]
+pp., 53 p!.#Bibliography*]
+[@Rosen, HR. 1926. A new Amanita from Arkansas. Mycologia 18: 97-99. doi: 10.2307/3753952#Bibliography*]
+[@Rossman AY, Tulloss RE, O'Dell TE, Thorn RG. 1998. Protocols for an all taxa biodiversity
+inventory of fungi in a Costa Rican conservation area. (parkway Pub!., Boone, NC).
+xviii+ 195 pp.#Bibliography*]
+[@Saccardo PA. 1887. Sylloge hymenomycetum, vo!.1. Agaricineae. Syll. Fung. 5: 1-1146.#Bibliography*]
+[@Saccardo PA. 1891. Supplementum universale, pars I. Agaricaceae-Laboulbeniaceae.
+Syll Fung.
+9: 1-1141.#Bibliography*]
 [@Shepard GH, Arora D, Lampman A. 2008. The grace of the flood: Classification and use of wild
-mushrooms among the highland Maya ofChiapas. Econom. Bot. 62(3): 437--470.#Misc-exposition*]
-[@doi: 10.1007 /s1223 1-008-9044-5#Misc-exposition*]
+mushrooms among the highland Maya ofChiapas. Econom. Bot. 62(3): 437--470.
+doi: 10.1007 /s1223 1-008-9044-5#Bibliography*]
 [@Stewart HL, Grund DW. 1974. Nova Scotian fungi. New species and records of amanitas for the
-province. Canad. 1. Bot. 52: 331-339. doi:10.1139/b74-044
-Tanghe LJ, Hillhouse E. 1973. Dependence of spore shape on maturity of carpophore in the Phalloideae section of Amanita. McIlvainea 1(2): 1-8.
-Thiers, BM. 2010. Index herbariorum. [http://sciweb.nybg.org/science2/IndexHerbariorum.asp
-].#Misc-exposition*]
-[@accessed I July 2010.#Misc-exposition*]
-[@Tulloss RE. 1989. Amanita ebumea-a#Misc-exposition*]
-[@new species from Central America. Mycotaxon 36: 1-7.
-Tulloss RE. 1993. Amanita pachysperma, Amanita subvirginiana, and Amanita virginiana (taxonomy and distribution) with notes on description of the lamella trama in Amanita. Mycotaxon 49: 449--475.#Misc-exposition*]
-[@Tulloss RE. 1994. Type studies in Amanita section Vaginatae I: Some taxa described in this Century (studies 1-23) with notes on description of spores and refractive hyphae in Amanita.#Misc-exposition*]
-[@Mycotaxon 52: 305-396.#Misc-exposition*]
+province. Canad. 1. Bot. 52: 331-339. doi:10.1139/b74-044#Bibliography*]
+[@Tanghe LJ, Hillhouse E. 1973. Dependence of spore shape on maturity of carpophore in the Phalloideae section of Amanita. McIlvainea 1(2): 1-8.
+[@Thiers, BM. 2010. Index herbariorum. [http://sciweb.nybg.org/science2/IndexHerbariorum.asp
+].
+accessed I July 2010.#Bibliography*]
+[@Tulloss RE. 1989. Amanita ebumea-a
+new species from Central America. Mycotaxon 36: 1-7.#Bibliography*]
+[@Tulloss RE. 1993. Amanita pachysperma, Amanita subvirginiana, and Amanita virginiana (taxonomy and distribution) with notes on description of the lamella trama in Amanita. Mycotaxon 49: 449--475.#Bibliography*]
+[@Tulloss RE. 1994. Type studies in Amanita section Vaginatae I: Some taxa described in this Century (studies 1-23) with notes on description of spores and refractive hyphae in Amanita.
+Mycotaxon 52: 305-396.#Bibliography*]
 [@Tulloss RE. 1998a ["1997"]. Provisional world key to species closely related to Amanita hemibapha with notes on the slender Caesar's mushrooms of eastern North America. McIlvainea
-13(1): 46-53.#Misc-exposition*]
+13(1): 46-53.#Bibliography*]
 [@Tulloss RE. 1998b. Syllabus for a Seminar on Amanita. N. Amer. Myco!. Assoc. & Myco!. Soc.
-San Francisco. vi+ I 84+ii pp.#Misc-exposition*]
+San Francisco. vi+ I 84+ii pp.#Bibliography*]
 [@Tulloss RE. 2000. Le Amanita nel mondo: bellezza, pericolo e diversiti. Boll. Gruppo Micol G.
-Bresadola 43(2): 13-21.#Misc-exposition*]
-[@Tulloss RE. 2000a. Note sulla metodologia per 10 studio del genere Amanita (Agaricales). Boll.#Misc-exposition*]
-[@Gruppo Mico!. G. Bresadola 43(2): 41-59. Available on-line in English: [http://www.amanitaceae.org/content/uploaded/pdf/methodsb.pdf
-]. accessed 6 January 2011.#Misc-exposition*]
+Bresadola 43(2): 13-21.#Bibliography*]
+[@Tulloss RE. 2000a. Note sulla metodologia per 10 studio del genere Amanita (Agaricales). Boll.
+Gruppo Mico!. G. Bresadola 43(2): 41-59. Available on-line in English: [http://www.amanitaceae.org/content/uploaded/pdf/methodsb.pdf
+]. accessed 6 January 2011.#Bibliography*]
 [@Tulloss RE. 2009a. Notes on Amanita section Caesareae, Torrendia, andAmarrendia (Agaricales,
 Amanitaceae) with provisional division into stirpes and annotated world key to species of
 the section. in: RE Tulloss, ZL Yang (eds.) Studies in the Amanitaceae. [http://www.amanitaceae.org/content/uploaded/pdf/hemibkey.pdf]
-accessed 20 November 2009.#Misc-exposition*]
+accessed 20 November 2009.#Bibliography*]
 [@Tulloss RE. 2009b. Amanita polypyramis (Berk. & M. A. Curtis) Sacco in: RE Tulloss, ZL Yang
 (eds.) Studies in the Amanitaceae. [http://www.amanitaceae.orgI?Amanita+polypyramis
-]#Misc-exposition*]
-[@accessed 20 November 2009.#Misc-exposition*]
+]
+accessed 20 November 2009.#Bibliography*]
 [@Tulloss RE. 2009c. Amanita muscaria subsp.flavivolvata
-Singer. in: RE Tulloss, ZL Yang (eds.)#Misc-exposition*]
-[@Studies in the Amanitaceae. [ http://www.amanitaceae.orgl?
-Amanita+muscaria+subsp.+flavivolvata] accessed 20 November 2009.#Misc-exposition*]
+Singer. in: RE Tulloss, ZL Yang (eds.)
+Studies in the Amanitaceae. [ http://www.amanitaceae.orgl?
+Amanita+muscaria+subsp.+flavivolvata] accessed 20 November 2009.#Bibliography*]
 [@Tulloss RE. 2009d. Amanita brunneolocularis Tulloss, Ovrebo & Halling. in: RE Tulloss, ZL
-Yang (eds.) Studies in the Amanitaceae. [http://www.amanitaceae.orgI?Amanita+brunneolocularis] accessed 20 November 2009.#Misc-exposition*]
+Yang (eds.) Studies in the Amanitaceae. [http://www.amanitaceae.orgI?Amanita+brunneolocularis] accessed 20 November 2009.#Bibliography*]
 
-[@202 ...Tulloss, Halling & Mueller#Misc-exposition*]
+[@202 ...Tulloss, Halling & Mueller#Page-header*]
 
 [@Tulloss RE. 200ge. Draft Key to Amanitaceae of Costa Rica & Neighboring Regions (with
 Emphasis on Species from Forests Including Quercus). in: RE Tulloss, ZL Yang (eds.)
 Amanita studies. [ http://eticomm.net/~ret/amanitalkey.dir/costaric.pdf
-] accessed 2 March#Misc-exposition*]
-[@2009.#Misc-exposition*]
+] accessed 2 March
+2009.#Bibliography*]
 [@Tulloss RE. 20 IIa. Meaning of biometric variables. in: RE Tulloss, ZL Yang (eds.) Studies in the
-Amanitaceae.#Misc-exposition*]
-[@[http://www.tullabs.com/amanita/?How%20To%27s&howto=8].#Misc-exposition*]
-[@accessed#Misc-exposition*]
-[@17 JApril2011.#Misc-exposition*]
+Amanitaceae.
+[http://www.tullabs.com/amanita/?How%20To%27s&howto=8].
+accessed
+17 JApril2011.#Bibliography*]
 [@Tulloss RE. 2011b. Amanita xylinivolva Tulloss, Ovrebo & Halling. in: RE Tulloss, ZL Yang
 (eds.) Studies in the Amanitaceae. [ http://www.amanitaceae.orgI?Amanita+xylinivolva
-].#Misc-exposition*]
-[@accessed 6 January 20 II.#Misc-exposition*]
+].
+accessed 6 January 20 II.#Bibliography*]
 [@Tulloss RE. 20 Ilc. Amanita subsolitaria (Murrill) Murrill. in: RE Tulloss, ZL Yang (eds.) Studies
 in the Amanitaceae. [ http://www.amanitaceae.org/?Amanita+subsolitaria
-]. accessed 12#Misc-exposition*]
-[@January 2011.#Misc-exposition*]
+]. accessed 12
+January 2011.#Bibliography*]
 [@Tulloss RE. 2011d. Amanita atkinsoniana Coker. in: RE Tulloss, ZL Yang (eds.) Studies in the
-Amanitaceae. [http://www.amanitaceae.org/?Amanita+atkinsoniana].#Misc-exposition*]
-[@accessed I February#Misc-exposition*]
-[@2011.#Misc-exposition*]
+Amanitaceae. [http://www.amanitaceae.org/?Amanita+atkinsoniana].
+accessed I February
+2011.#Bibliography*]
 [@Tulloss RE. 2011e. Amanita onusta (Howe) Sacco in: RE Tulloss, ZL Yang (eds.) Studies in the
-Amanitaceae. [ http://www.amanitaceae.orgl?#Misc-exposition*]
-[@Amanita+onusta].#Misc-exposition*]
-[@accessed I February 2011.#Misc-exposition*]
-[@Tulloss RE, Borgen T. 1996. Amanita mortenii-a#Misc-exposition*]
-[@correction. Emendation was inappropriate.#Misc-exposition*]
-[@Mycotaxon 59: 419-425.#Misc-exposition*]
-[@Tulloss RE, Lindgren JE. 2005. Amanita aprica-a new toxic species from western North America. Mycotaxon 91: 193-205.#Misc-exposition*]
+Amanitaceae. [ http://www.amanitaceae.orgl?
+Amanita+onusta].
+accessed I February 2011.#Bibliography*]
+[@Tulloss RE, Borgen T. 1996. Amanita mortenii-a
+correction. Emendation was inappropriate.
+Mycotaxon 59: 419-425.#Bibliography*]
+[@Tulloss RE, Lindgren JE. 2005. Amanita aprica-a new toxic species from western North America. Mycotaxon 91: 193-205.#Bibliography*]
 [@Tulloss RE, Ovrebo CL, Halling RE. 1992. Studies on Amanita (Amanitaceae) from Andean
-Colombia. Mem. New York Bot. Gard. 66: 1-46.#Misc-exposition*]
+Colombia. Mem. New York Bot. Gard. 66: 1-46.#Bibliography*]
 [@Wood AE. 1997. Studies in the genus Amanita (Agaricales) in Australia. Aust. Syst. Bot. 10:
-723-854.#Misc-exposition*]
-[@Yang ZL. 1997. Die Amanita-Arten von Siidwestchina. Biblioth. Mycol. 170: i-ii, 1-240.#Misc-exposition*]
-[@Yang ZL. 2005. Amanitaceae. Flora Fungorum Sinicorum 27: i-xviii, 1-258. [In Chinese.]#Misc-exposition*]
+723-854.#Bibliography*]
+[@Yang ZL. 1997. Die Amanita-Arten von Siidwestchina. Biblioth. Mycol. 170: i-ii, 1-240.#Bibliography*]
+[@Yang ZL. 2005. Amanitaceae. Flora Fungorum Sinicorum 27: i-xviii, 1-258. [In Chinese.]#Bibliography*]
 
-[@New Central American amanitas .. .203#Misc-exposition*]
+[@New Central American amanitas .. .203#Page-header*]
 
 [@Appendix: Gazetteer of collecting sites in Costa Rica referenced in this
 and planned future studies on Amanita#Misc-exposition*]
@@ -1344,338 +1344,338 @@ this paper. Full site descriptions with latitude, longitude, elevation, and the
 species of Quercus present at the site (where data is available) are provided in
 the following table. Full data was sometimes not available because of the difficulty of interpreting herbarium labels on collections made prior to the current projects. Most of our data comes from the latter. Also, milestones along
 the Interamerican Hwy. have been moved over time, and the mention of a
-milestone in an old locality description may be less accurate than the apparently less precise or more informal part of the description.#Misc-exposition*]
-[@The issue of#Misc-exposition*]
-[@incompletely documented sites arises largely because of the number of good
+milestone in an old locality description may be less accurate than the apparently less precise or more informal part of the description.
+The issue of
+incompletely documented sites arises largely because of the number of good
 quality "historic" collections in F. Latitude, longitude, and elevation for
 recently explored sites were determined by use of a Garmin (GPS75) device.#Misc-exposition*]
 
-[@Site Name#Misc-exposition*]
-[@PROVoALAJUELA#Misc-exposition*]
-[@1. Bosque del Nifio#Misc-exposition*]
+[@Site Name
+PROVoALAJUELA
+1. Bosque del Nifio
 
-[@Site Description#Misc-exposition*]
-[@(including Oaks Present)#Misc-exposition*]
+Site Description
+(including Oaks Present)
 
-[@Lat./Long.,#Misc-exposition*]
-[@Eleyation#Misc-exposition*]
+Lat./Long.,
+Eleyation
 
-[@- Q. seemannii (dominant)#Misc-exposition*]
+- Q. seemannii (dominant)
 
-[@1009'4"N/84°14'42"W,#Misc-exposition*]
-[@1900 m eley.#Misc-exposition*]
+1009'4"N/84°14'42"W,
+1900 m eley.
 
-[@?#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+?
+- no data on oaks
 
-[@ca. 10° 12'N/84 °23 'W,#Misc-exposition*]
-[@no data on eley.#Misc-exposition*]
+ca. 10° 12'N/84 °23 'W,
+no data on eley.
 
-[@ca. Canon, E ofInteram. Hwy., at#Misc-exposition*]
-[@La Esperanza del Guarco#Misc-exposition*]
-[@- Q. copeyensis (dominant)#Misc-exposition*]
+ca. Canon, E ofInteram. Hwy., at
+La Esperanza del Guarco
+- Q. copeyensis (dominant)
 
-[@9°41'1 ''N/83°52'43''W,#Misc-exposition*]
-[@2505 m eley.#Misc-exposition*]
+9°41'1 ''N/83°52'43''W,
+2505 m eley.
 
-[@4. Estrella#Misc-exposition*]
+4. Estrella
 
-[@5 Ian E oflan 31 ofInteram.#Misc-exposition*]
-[@ca. Estrella#Misc-exposition*]
-[@- Q. oocarpa, Q. seemannii#Misc-exposition*]
+5 Ian E oflan 31 ofInteram.
+ca. Estrella
+- Q. oocarpa, Q. seemannii
 
-[@9°46' 4''N/83 °57' 19"W,#Misc-exposition*]
-[@1685-1717 m eley.#Misc-exposition*]
+9°46' 4''N/83 °57' 19"W,
+1685-1717 m eley.
 
-[@5. Palo Verde#Misc-exposition*]
+5. Palo Verde
 
-[@4±lanEoflan3IofInteram.Hwy.,#Misc-exposition*]
-[@ca. Palo Verde#Misc-exposition*]
-[@- Q. oocarpa#Misc-exposition*]
+4±lanEoflan3IofInteram.Hwy.,
+ca. Palo Verde
+- Q. oocarpa
 
-[@9°46'34''N/83°56'#Misc-exposition*]
-[@1600 m eley.#Misc-exposition*]
+9°46'34''N/83°56'
+1600 m eley.
 
-[@6. [unnamedl#Misc-exposition*]
+6. [unnamedl
 
-[@offInteramerican#Misc-exposition*]
-[@Hwy., 6 Ian S of Cartago at rd. to Palo Verde#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+offInteramerican
+Hwy., 6 Ian S of Cartago at rd. to Palo Verde
+- no data on oaks
 
-[@?,#Misc-exposition*]
+?,
 
-[@Parque Prusia, W slope ofVolclin Irazu#Misc-exposition*]
+Parque Prusia, W slope ofVolclin Irazu
 
-[@9°57'56''N/83°52'15#Misc-exposition*]
-[@2900m eley.#Misc-exposition*]
+9°57'56''N/83°52'15
+2900m eley.
 
-[@2. Palmira#Misc-exposition*]
-[@PROVoCARTAGO#Misc-exposition*]
-[@3. Canon#Misc-exposition*]
+2. Palmira
+PROVoCARTAGO
+3. Canon
 
-[@7. Prusia#Misc-exposition*]
+7. Prusia
 
-[@Ctn. Grecia, Grecia, Bosque del Nino#Misc-exposition*]
+Ctn. Grecia, Grecia, Bosque del Nino
 
-[@Hwy.,#Misc-exposition*]
+Hwy.,
 
-[@- Q. costaricensis#Misc-exposition*]
+- Q. costaricensis
 
-[@42''W,#Misc-exposition*]
+42''W,
 
-[@?m eley.#Misc-exposition*]
+?m eley.
 
-[@8. San Cristobal#Misc-exposition*]
+8. San Cristobal
 
-[@unknown site along Interam. Hwy.#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+unknown site along Interam. Hwy.
+- no data on oaks
 
-[@?,#Misc-exposition*]
+?,
 
-[@9. Sanatorio#Misc-exposition*]
+9. Sanatorio
 
-[@?#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+?
+- no data on oaks
 
-[@?,#Misc-exposition*]
+?,
 
-[@2000m#Misc-exposition*]
+2000m
 
-[@eley.#Misc-exposition*]
+eley.
 
-[@?m eley.#Misc-exposition*]
+?m eley.
 
-[@''W,#Misc-exposition*]
+''W,
+#Table*]
+[@204 ...Tulloss, Halling & Mueller@Page-header*]
+[@
+Site Name
+10. Tapanti
 
-[@204 ...Tulloss, Halling & Mueller#Misc-exposition*]
+Site Description
+(including Oaks Present)
 
-[@Site Name#Misc-exposition*]
-[@10. Tapanti#Misc-exposition*]
+Lat./Long.,
+Eleyation
 
-[@Site Description#Misc-exposition*]
-[@(including Oaks Present)#Misc-exposition*]
+Guarco, Tapanti, P. N. Tapanti,
+Macizo de la Muerte,
+Area de Conservaci6n La Amistad
+Pacifico
+- Q. copeyensis
 
-[@Lat./Long.,#Misc-exposition*]
-[@Eleyation#Misc-exposition*]
+9°4'6"N/83°52'30"W,
+2600m eley.
 
-[@Guarco, Tapanti, P. N. Tapanti,#Misc-exposition*]
-[@Macizo de la Muerte,#Misc-exposition*]
-[@Area de Conservaci6n La Amistad#Misc-exposition*]
-[@Pacifico#Misc-exposition*]
-[@- Q. copeyensis#Misc-exposition*]
+Cerro Pedregal,
+Estaci6n Biologia Cacao,
+Area de Conservaci6n Guanacaste
+- Q. brenesii
 
-[@9°4'6"N/83°52'30"W,#Misc-exposition*]
-[@2600m eley.#Misc-exposition*]
+10°55' 45"N/85°28'37"W,
+1100 m eley.
 
-[@Cerro Pedregal,#Misc-exposition*]
-[@Estaci6n Biologia Cacao,#Misc-exposition*]
-[@Area de Conservaci6n Guanacaste#Misc-exposition*]
-[@- Q. brenesii#Misc-exposition*]
+Cerro Cacao, Estaci6n Biologia Cacao,
+Area de Conservaci6n Guanacaste
+- Q. brenesii
 
-[@10°55' 45"N/85°28'37"W,#Misc-exposition*]
-[@1100 m eley.#Misc-exposition*]
+10056'8"N/85°27'14"W,
+1000m eley.
 
-[@Cerro Cacao, Estaci6n Biologia Cacao,#Misc-exposition*]
-[@Area de Conservaci6n Guanacaste#Misc-exposition*]
-[@- Q. brenesii#Misc-exposition*]
+Volcan Barva, Paso Llano, San Jose de la
+Montaiia
+- no data on oaks
 
-[@10056'8"N/85°27'14"W,#Misc-exposition*]
-[@1000m eley.#Misc-exposition*]
+ca. 1003'N/84°7'W,
+2100m eley.
 
-[@Volcan Barva, Paso Llano, San Jose de la#Misc-exposition*]
-[@Montaiia#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+Ctn. Coto Brus, Finca Las Alturas,
+Standford BioI. Field Stn.,
+tr. to Cerro Echandi
+- no data on oaks
 
-[@ca. 1003'N/84°7'W,#Misc-exposition*]
-[@2100m eley.#Misc-exposition*]
+?,
 
-[@Ctn. Coto Brus, Finca Las Alturas,#Misc-exposition*]
-[@Standford BioI. Field Stn.,#Misc-exposition*]
-[@tr. to Cerro Echandi#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+Ctn. Coto Brus, La Amistad, Zona
+Protectora Las Tablas, Finca La
+Cafrosa, Camino EI Portones por EI
+Tajo
+- Q. corrugata & Q. seemannii
 
-[@?,#Misc-exposition*]
+8°55'34''N/82°46'0''W,
 
-[@Ctn. Coto Brus, La Amistad, Zona#Misc-exposition*]
-[@Protectora Las Tablas, Finca La#Misc-exposition*]
-[@Cafrosa, Camino EI Portones por EI#Misc-exposition*]
-[@Tajo#Misc-exposition*]
-[@- Q. corrugata & Q. seemannii#Misc-exposition*]
+16. La Amistad no. 2
 
-[@8°55'34''N/82°46'0''W,#Misc-exposition*]
+Ctn. Coto Brus, Las Mellizas,
+La Amistad Lodge,
+ca. P. N. La Amistad
+- Q. corrugata & Q. seemannii
 
-[@16. La Amistad no. 2#Misc-exposition*]
+8°54'52''N/82° 46'50"W,
+1380 m eley.
 
-[@Ctn. Coto Brus, Las Mellizas,#Misc-exposition*]
-[@La Amistad Lodge,#Misc-exposition*]
-[@ca. P. N. La Amistad#Misc-exposition*]
-[@- Q. corrugata & Q. seemannii#Misc-exposition*]
+17. San Vito
 
-[@8°54'52''N/82° 46'50"W,#Misc-exposition*]
-[@1380 m eley.#Misc-exposition*]
+Ctn. Coto Brus, San Vito de Coto Brus,
+5 Ian W of Jardin Botlinico Las Cruces
+- no data on oaks
 
-[@17. San Vito#Misc-exposition*]
+ca. 8°49'N/83°0'W,
+1500 m eley.
 
-[@Ctn. Coto Brus, San Vito de Coto Brus,#Misc-exposition*]
-[@5 Ian W of Jardin Botlinico Las Cruces#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+Ctn. Guadalupe, Alto de la Palma, ?
+- no data on oaks
 
-[@ca. 8°49'N/83°0'W,#Misc-exposition*]
-[@1500 m eley.#Misc-exposition*]
+?,
 
-[@Ctn. Guadalupe, Alto de la Palma, ?#Misc-exposition*]
-[@- no data on oaks#Misc-exposition*]
+Ctn. Perez Zeled6n, Villa Mills,
+C.A. T.lE. Exp. For. of Villa Mills
+- Q. costaricensis
 
-[@?,#Misc-exposition*]
+9°33 '3 ''N/83 °40'55 "W,
+2880m eley.
 
-[@Ctn. Perez Zeled6n, Villa Mills,#Misc-exposition*]
-[@C.A. T.lE. Exp. For. of Villa Mills#Misc-exposition*]
-[@- Q. costaricensis#Misc-exposition*]
+PROVoGUANACASTE
+II. Cacao no. I
 
-[@9°33 '3 ''N/83 °40'55 "W,#Misc-exposition*]
-[@2880m eley.#Misc-exposition*]
+12. Cacao no. 2
 
-[@PROVoGUANACASTE#Misc-exposition*]
-[@II. Cacao no. I#Misc-exposition*]
+PROVoHEREDIA
+13. San Jose de la
+Montana
 
-[@12. Cacao no. 2#Misc-exposition*]
+PROV.PUNTARENAS
+14. Finca Las Alturas
 
-[@PROVoHEREDIA#Misc-exposition*]
-[@13. San Jose de la#Misc-exposition*]
-[@Montana#Misc-exposition*]
+15. La Amistad no. I
 
-[@PROV.PUNTARENAS#Misc-exposition*]
-[@14. Finca Las Alturas#Misc-exposition*]
+PROVoSANJOSE
+18. Alto de la Palma
+19. C.A.T.I.E. For.
 
-[@15. La Amistad no. I#Misc-exposition*]
+1700 m eley.
 
-[@PROVoSANJOSE#Misc-exposition*]
-[@18. Alto de la Palma#Misc-exposition*]
-[@19. C.A.T.I.E. For.#Misc-exposition*]
+1350-1500
 
-[@1700 m eley.#Misc-exposition*]
+m eley.
 
-[@1350-1500#Misc-exposition*]
+?m eley.
+#Table*]
+[@New Central American amanitas .. .205#Page-header*]
+[@
+Site Name
 
-[@m eley.#Misc-exposition*]
+Site Description
+(including Oaks Present)
 
-[@?m eley.#Misc-exposition*]
+Lat./Long.,
+Eleyation
 
-[@New Central American amanitas .. .205#Misc-exposition*]
+20. Copey de Dota
 
-[@Site Name#Misc-exposition*]
+Ctn. Dota, Copey de Dota 12 Ian S of
+Copey on rd. to Providencia
+- Q. copeyensis
 
-[@Site Description#Misc-exposition*]
-[@(including Oaks Present)#Misc-exposition*]
+9°35'19"N/83°53'3"W,
+2800m eley.
 
-[@Lat./Long.,#Misc-exposition*]
-[@Eleyation#Misc-exposition*]
+21. EI Empalme
 
-[@20. Copey de Dota#Misc-exposition*]
+Ctn. Dota, 200± m W ofInteram. Hwy. at
+EI Empalme, La Guaria [Note: Site
+has been completely logged.]
+- Q. copeyensis
 
-[@Ctn. Dota, Copey de Dota 12 Ian S of#Misc-exposition*]
-[@Copey on rd. to Providencia#Misc-exposition*]
-[@- Q. copeyensis#Misc-exposition*]
+9°43'8"N/83°57'4"W,
+2250m eley.
 
-[@9°35'19"N/83°53'3"W,#Misc-exposition*]
-[@2800m eley.#Misc-exposition*]
+22. Finca Alejandrina
 
-[@21. EI Empalme#Misc-exposition*]
+Ctn. Perez Zeledon, Villa Mills, Finca
+Alejandrina, Interam. Hwy. Ian 95, ca.
+Hotel La Georgina
+- Q. costaricensis
 
-[@Ctn. Dota, 200± m W ofInteram. Hwy. at#Misc-exposition*]
-[@EI Empalme, La Guaria [Note: Site#Misc-exposition*]
-[@has been completely logged.]#Misc-exposition*]
-[@- Q. copeyensis#Misc-exposition*]
+9°33'43 "N/83° 44'22"W,
+3000m eley.
 
-[@9°43'8"N/83°57'4"W,#Misc-exposition*]
-[@2250m eley.#Misc-exposition*]
+23. Jaboncillo de Dota
 
-[@22. Finca Alejandrina#Misc-exposition*]
+Ctn. Dota, Jaboncillo de Dota, 3.2 Ian
+from Interam. Hwy on rd. to San
+Gerardo de Dota
+- Q. copeyensis
 
-[@Ctn. Perez Zeledon, Villa Mills, Finca#Misc-exposition*]
-[@Alejandrina, Interam. Hwy. Ian 95, ca.#Misc-exposition*]
-[@Hotel La Georgina#Misc-exposition*]
-[@- Q. costaricensis#Misc-exposition*]
+9°35'21 "N/83°47'58"W,
+2740m eley.
 
-[@9°33'43 "N/83° 44'22"W,#Misc-exposition*]
-[@3000m eley.#Misc-exposition*]
+24. Jardin de Dota
 
-[@23. Jaboncillo de Dota#Misc-exposition*]
+Ctn. Dota, 3.5 Ian W ofInteram.
+Hwy. at EI Empalme
+- Q. copeyensis, Q. seemannii (occas.)
 
-[@Ctn. Dota, Jaboncillo de Dota, 3.2 Ian#Misc-exposition*]
-[@from Interam. Hwy on rd. to San#Misc-exposition*]
-[@Gerardo de Dota#Misc-exposition*]
-[@- Q. copeyensis#Misc-exposition*]
+9°42'52"N/83°58'28"W,
+2220m eley.
 
-[@9°35'21 "N/83°47'58"W,#Misc-exposition*]
-[@2740m eley.#Misc-exposition*]
+25. La Chonta
 
-[@24. Jardin de Dota#Misc-exposition*]
+Ctn. Dota, S ofInteram.
+Hwy. twd. Cerro Chonta
+-Q. copeyensis, Q. seemannii, Q.
+rapurahuensis
 
-[@Ctn. Dota, 3.5 Ian W ofInteram.#Misc-exposition*]
-[@Hwy. at EI Empalme#Misc-exposition*]
-[@- Q. copeyensis, Q. seemannii (occas.)#Misc-exposition*]
+9°41'58"N/83°56'31
+2400m eley.
 
-[@9°42'52"N/83°58'28"W,#Misc-exposition*]
-[@2220m eley.#Misc-exposition*]
+26. San Gerardo de
+Dotano. I
 
-[@25. La Chonta#Misc-exposition*]
+Ctn. Dota, San Gerardo de Dota,
 
-[@Ctn. Dota, S ofInteram.#Misc-exposition*]
-[@Hwy. twd. Cerro Chonta#Misc-exposition*]
-[@-Q. copeyensis, Q. seemannii, Q.#Misc-exposition*]
-[@rapurahuensis#Misc-exposition*]
+9°33'2"N/83°48'27"W,
+2200 to ca. 2350 m eley.
 
-[@9°41'58"N/83°56'31#Misc-exposition*]
-[@2400m eley.#Misc-exposition*]
+5± Ian SW of Cerro de la Muerte,
+Albergue de Montana Sayegre (Cabinas Chacon)
+- Q. copeyensis, Q. seemannii, Q.
+rapurahuensis
 
-[@26. San Gerardo de#Misc-exposition*]
-[@Dotano. I#Misc-exposition*]
+"W,
 
-[@Ctn. Dota, San Gerardo de Dota,#Misc-exposition*]
+27. San Gerardo de
+Dotano.2
 
-[@9°33'2"N/83°48'27"W,#Misc-exposition*]
-[@2200 to ca. 2350 m eley.#Misc-exposition*]
+Ctn. Dota, 500 m from Interam. Hwy. on
+rd. to San Gerardo de Dota
+- Q. costaricensis
 
-[@5± Ian SW of Cerro de la Muerte,#Misc-exposition*]
-[@Albergue de Montana Sayegre (Cabinas Chacon)#Misc-exposition*]
-[@- Q. copeyensis, Q. seemannii, Q.#Misc-exposition*]
-[@rapurahuensis#Misc-exposition*]
+9°36'13 "N/83° 47'26"W,
+3000m eley.
 
-[@"W,#Misc-exposition*]
+28. San Gerardo
+de Dotano. 3
 
-[@27. San Gerardo de#Misc-exposition*]
-[@Dotano.2#Misc-exposition*]
+Ctn. Dota, 1.5 Ian from Interam. Hwy.
+on rd. to San. Gerardo de Dota
+- Q. copeyensis, Q. costaricensis
 
-[@Ctn. Dota, 500 m from Interam. Hwy. on#Misc-exposition*]
-[@rd. to San Gerardo de Dota#Misc-exposition*]
-[@- Q. costaricensis#Misc-exposition*]
+9°35'4 7"N/83° 47'55 "W,
+2860m eley.
 
-[@9°36'13 "N/83° 47'26"W,#Misc-exposition*]
-[@3000m eley.#Misc-exposition*]
+29. San Gerardo
+de Dotano. 4
 
-[@28. San Gerardo#Misc-exposition*]
-[@de Dotano. 3#Misc-exposition*]
+Ctn. Dota, offInteram. Hwy., 2-3 Ian S
+of Cerro de la Muerte, rd. to San
+Gerardo de Dota
+- no field data on oaks; Q. copeyensis and
+Q. rapurahuensis likely, Q. seemannii
+possible
 
-[@Ctn. Dota, 1.5 Ian from Interam. Hwy.#Misc-exposition*]
-[@on rd. to San. Gerardo de Dota#Misc-exposition*]
-[@- Q. copeyensis, Q. costaricensis#Misc-exposition*]
+?,
+btwn. 2200 to 2860 m
+eley.#Table*]
 
-[@9°35'4 7"N/83° 47'55 "W,#Misc-exposition*]
-[@2860m eley.#Misc-exposition*]
-
-[@29. San Gerardo#Misc-exposition*]
-[@de Dotano. 4#Misc-exposition*]
-
-[@Ctn. Dota, offInteram. Hwy., 2-3 Ian S#Misc-exposition*]
-[@of Cerro de la Muerte, rd. to San#Misc-exposition*]
-[@Gerardo de Dota#Misc-exposition*]
-[@- no field data on oaks; Q. copeyensis and#Misc-exposition*]
-[@Q. rapurahuensis likely, Q. seemannii#Misc-exposition*]
-[@possible#Misc-exposition*]
-
-[@?,#Misc-exposition*]
-[@btwn. 2200 to 2860 m#Misc-exposition*]
-[@eley.#Misc-exposition*]
-
-[@#Misc-exposition*]
+[@#Page-header*]

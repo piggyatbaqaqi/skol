@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 117, pp. 45–51#Misc-exposition*]
+[@MYCOTAXON
+Volume 117, pp. 45–51#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/117.45#Misc-exposition*]
 
@@ -13,15 +13,15 @@
 
 [@Moelleriella pumatensis, a new entomogenous species
 from Vietnam#Misc-exposition*]
-[@Suchada Mongkolsamrit1*, Tai Toan Nguyen2,#Misc-exposition*]
-[@Ngoc Lan Tran2 & J. Jennifer Luangsa-ard1#Misc-exposition*]
-[@BIOTEC, NSTDA Science Park, 113 Paholyothin Road,#Misc-exposition*]
-[@Klong 1, Klong Luang, Pathum Thani, Thailand#Misc-exposition*]
-[@2#Misc-exposition*]
-[@Faculty of Agriculture, Forestry and Fisheries, Vinh University,
-182 Le Duan Street, Vinh, Nghe An, Vietnam#Misc-exposition*]
-[@*Correspondence to: suchada@biotec.or.th#Misc-exposition*]
-[@1#Misc-exposition*]
+[@Suchada Mongkolsamrit1*, Tai Toan Nguyen2,
+Ngoc Lan Tran2 & J. Jennifer Luangsa-ard1#Misc-exposition*]
+[@BIOTEC, NSTDA Science Park, 113 Paholyothin Road,
+Klong 1, Klong Luang, Pathum Thani, Thailand
+2
+Faculty of Agriculture, Forestry and Fisheries, Vinh University,
+182 Le Duan Street, Vinh, Nghe An, Vietnam
+*Correspondence to: suchada@biotec.or.th
+1#Misc-exposition*]
 
 [@Abstract — Moelleriella pumatensis, a fungal pathogen infecting scale insect nymphs
 (Hemiptera), is described and illustrated as a new species from Pu Mat National Park in
@@ -44,12 +44,12 @@ Hypocrella sensu lato; Chaverri et al. 2008). Aschersonia sensu lato species
 are diﬀerentiated mostly on the shape and color of the stromata that cover
 the hosts, pycnidium-like conidiomata, phialides, and presence or absence
 of paraphyses. These characters have been useful in distinguishing between
-subgenera of Aschersonia (Petch 1921, 1925, Mains 1959, Chaverri et al. 2008).#Misc-exposition*]
-[@All species of Hypocrella, Moelleriella, and Samuelsia are pathogenic to scale
+subgenera of Aschersonia (Petch 1921, 1925, Mains 1959, Chaverri et al. 2008).
+All species of Hypocrella, Moelleriella, and Samuelsia are pathogenic to scale
 insects (Coccidae) or white ﬂies (Aleyrodidae) that feed on living leaves and
 branches of monocotyledonous and dicotyledonous plants.#Misc-exposition*]
 
-[@46 ... Mongkolsamrit & al.#Misc-exposition*]
+[@46 ... Mongkolsamrit & al.#Page-header*]
 [@Exploration of entomopathogenic fungi in Vietnam was initiated under
 the program of biodiversity studies in Southeast Asia, a collaborative project
 between the Faculty of Agriculture, Forestry and Fisheries, Vinh University,
@@ -58,8 +58,8 @@ Vietnam, and the National Center for Genetic Engineering and Biotechnology
 southwest of Nghe An Province, an area known to have a high diversity of
 plants and mammal species. During the surveys in October 2009, an interesting
 Aschersonia-like specimen that produced a yellow mass of conidia covering the
-stroma was collected from the underside of a leaf of a dicotyledonous plant.#Misc-exposition*]
-[@The objectives of this study were to 1) evaluate the taxonomic position of the
+stroma was collected from the underside of a leaf of a dicotyledonous plant.
+The objectives of this study were to 1) evaluate the taxonomic position of the
 isolates derived from the anamorph state, using the sequences of translation
 elongation factor 1-α (tef1), and 2) describe this specimen as a new species
 from Vietnam.#Misc-exposition*]
@@ -93,7 +93,7 @@ products were puriﬁed using a QIAquick PCR Puriﬁcation Kit (Qiagen GmbH, Hil
 Germany), following the manufacturer’s instructions. Puriﬁed PCR products were sent
 to Macrogen Inc. Korea for sequencing.#Misc-exposition*]
 
-[@Moelleriella pumatensis sp. nov. (Vietnam) ... 47#Nomenclature*]
+[@Moelleriella pumatensis sp. nov. (Vietnam) ... 47#Page-header*]
 
 [@Table 1. List of fungi used in this study.
 Species
@@ -212,7 +212,7 @@ AY986944
 *sequences generated in this study.
 
 Phylogenetic analysis
-#Misc-exposition*]
+#Table*]
 [@Sequences were proofed manually, assembled using BioEdit v. 6.0.7 (Hall 2004), and
 submitted to Genbank (Table 1). Sequences were aligned using ClustalW incorporated
 in BioEdit and alignments were reﬁned manually by direct examination. Maximum
@@ -226,18 +226,18 @@ parsimony criterion in 1000 replication samples.#Misc-exposition*]
 two unidentiﬁed Aschersonia-like specimens. Fourteen selected closely related
 taxa were obtained from GenBank for this study. Sequences of Epichloe elymi
 and Balansia henningsiana were used as outgroup taxa. Of the 899-character
-alignment in the tef1 data set, 188 characters were parsimony informative.#Misc-exposition*]
-[@Maximum parsimony analyses of this data set yielded one parsimonious tree
+alignment in the tef1 data set, 188 characters were parsimony informative.
+Maximum parsimony analyses of this data set yielded one parsimonious tree
 (tree length 436; CI = 0.651, RI = 0.795, RC = 0.518, HI = 0.349) as shown in
 Fig 1. The phylogenic tree suggests that the two anamorphic isolates with yellow
 conidial masses (BCC41004 and BCC41006) belong to the genus Moelleriella
 with a strong bootstrap support of 99%.#Misc-exposition*]
 
-[@48 ... Mongkolsamrit & al.#Misc-exposition*]
+[@48 ... Mongkolsamrit & al.#Page-header*]
 
 [@Fig. 1. Phylogenetic relationship of Moelleriella pumatensis and related species based on maximum
 parsimony analysis of the tef1 gene. Numbers above each branch represent bootstrap support
-from 1000 replicates.#Misc-exposition*]
+from 1000 replicates.#Figure*]
 
 [@Taxonomy#Misc-exposition*]
 
@@ -258,23 +258,23 @@ holotype; ex-type culture BCC41006).#Misc-exposition*]
 [@Etymology — referring to Pu Mat National Park, the collection location.#Misc-exposition*]
 [@Anamorph: Aschersonia-like#Description*]
 
-[@Moelleriella pumatensis sp. nov. (Vietnam) ... 49#Nomenclature*]
+[@Moelleriella pumatensis sp. nov. (Vietnam) ... 49#Page-header*]
 
 [@Fig. 2. Moelleriella pumatensis A, B, stroma on host showing conidia mass (white arrow);
 C, pycnidium and sporulating structure; D, E, conidiogenous cells and paraphyses; F, conidia;
 G, colony on PDA at 20°C after 4 wk (sporulation present). Scale bars: A, B, G = 1 mm; C = 100
-μm; D, E, F = 20 μm.#Description*]
+μm; D, E, F = 20 μm.#Figure*]
 
 [@Stromata discoid to pulvinate up to 2.5 mm diam and 1 mm high, upper
 surface round, golden yellow (Kornerup & Wanscher 1962: 5B7). Conidiomata
 pycnidial, embedded, scattered in stroma, ovoid, 250–280 μm high, 90–100 μm
 diam. Conidiogenous cells phialidic, cylindrical, up to 25 μm long. Pycnidial
-paraphyses present, linear, ﬁliform, ﬂexuous, up to 180 μm long, 1.5 μm wide.#Description*]
-[@Conidia narrowly fusiform, with acute ends, 12–15 × 2–2.5 μm.#Description*]
+paraphyses present, linear, ﬁliform, ﬂexuous, up to 180 μm long, 1.5 μm wide.
+Conidia narrowly fusiform, with acute ends, 12–15 × 2–2.5 μm.#Description*]
 
-[@50 ... Mongkolsamrit & al.#Misc-exposition*]
-[@Cultural characteristics: Conidia germinating within 24 h on PDA.#Description*]
-[@Colonies on PDA slow-growing, attaining 5 mm diam in 4 wk. Optimal
+[@50 ... Mongkolsamrit & al.#Page-header*]
+[@Cultural characteristics: Conidia germinating within 24 h on PDA.
+Colonies on PDA slow-growing, attaining 5 mm diam in 4 wk. Optimal
 temperature 20–25°C, with no growth at <5°C and >35°C. Stromatic colonies
 yellow, forming moderately compact stromata. Conidial masses golden yellow
 (Kornerup & Wanscher 1962: 5B7), appearing as abundant slimy masses from
@@ -282,15 +282,15 @@ immersed pycnidia scattered over the surface.#Description*]
 [@Comments: A teleomorphic state of this species was not found in the ﬁeld
 although several attempts to ﬁnd it were made throughout the year. However,
 the teleomorph name is used for this new species because both phylogenetic
-analysis and morphology support the placement of this species in Moelleriella.#Misc-exposition*]
-[@In this case, as well as for Moelleriella madidiensis from Bolivia also with only
-an anamorphic state, the teleomorphic name is used (Chaverri et al. 2008).#Misc-exposition*]
-[@The anamorphic state of M. pumatensis is similar to Aschersonia aleyrodis
+analysis and morphology support the placement of this species in Moelleriella.
+In this case, as well as for Moelleriella madidiensis from Bolivia also with only
+an anamorphic state, the teleomorphic name is used (Chaverri et al. 2008).
+The anamorphic state of M. pumatensis is similar to Aschersonia aleyrodis
 (teleomorph: M. libera) reported from Brazil, Florida, and Venezuela by
 Petch (1921) based on pulvinate stroma, yellow mass of extruded spores, and
 fusiform conidia. The conidia and paraphyses of M. pumatensis are somewhat
-longer; the conidia are 12–15 × 2–2.5 μm and paraphyses up to 180 μm long.#Misc-exposition*]
-[@In contrast, A. aleyrodis has conidia 8–14 × 1.5–2 μm, paraphyses 50–110 μm
+longer; the conidia are 12–15 × 2–2.5 μm and paraphyses up to 180 μm long.
+In contrast, A. aleyrodis has conidia 8–14 × 1.5–2 μm, paraphyses 50–110 μm
 long. In addition, M. pumatensis was compared morphologically with several
 species collected from the Neotropics (Chaverri et al. 2008), China (Qiu et al.
 2009, Qiu & Guan 2010), and Thailand (Luangsa-ard et al. 2007, 2008, 2010,
@@ -316,43 +316,43 @@ Vinh University, Vietnam, number: 04/2009/HĐ-NĐT. We also would like to thank
 Prof. Ngoc Hoi Nguyen, Prof. Morakot Tanticharoen, and Dr. Kanyawim Kirtikara
 for their support of the program ‘Biodiversity studies of entomopathogenic fungi in#Misc-exposition*]
 
-[@Moelleriella pumatensis sp. nov. (Vietnam) ... 51#Nomenclature*]
+[@Moelleriella pumatensis sp. nov. (Vietnam) ... 51#Page-header*]
 
 [@Southeast Asia’.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Carbone I, Kohn LM, 1999. A method for designing primer sets for speciation studies in ﬁlamentous
-ascomycetes. Mycologia 91: 553–556. http://dx.doi.org/10.2307/3761358
-Chaverri P, Liu M, Hodge KT. 2008. A monograph of entomopathogenic genera Hypocrella,
+ascomycetes. Mycologia 91: 553–556. http://dx.doi.org/10.2307/3761358Misc-exposition
+[@Chaverri P, Liu M, Hodge KT. 2008. A monograph of entomopathogenic genera Hypocrella,
 Moelleriella and Samuelsia gen nov. (Ascomycota, Hypocreales, Clavicipitaceae) and their
-anamorphs in the Neotropics. Studies in Mycology 60: 1–66.#Misc-exposition*]
-[@http://dx.doi.org/10.3114/sim.2008.60.01#Misc-exposition*]
-[@Hall T. 2004. BioEdit, version 6.0.7. Department of Microbiology, North Carolina State University.#Misc-exposition*]
-[@http://www.mbio.ncsu.edu/BioEdit/bioedit.html#Misc-exposition*]
+anamorphs in the Neotropics. Studies in Mycology 60: 1–66.
+http://dx.doi.org/10.3114/sim.2008.60.01#Bibliography*]
+[@Hall T. 2004. BioEdit, version 6.0.7. Department of Microbiology, North Carolina State University.
+http://www.mbio.ncsu.edu/BioEdit/bioedit.html#Bibliography*]
 [@Heritage J, Evans EGV, Killington RA. 1996. Introductory microbiology. Cambridge University
-Press. Cambridge.#Misc-exposition*]
+Press. Cambridge.#Bibliography*]
 [@Kornerup A, Wanscher JH. 1962. Reinhold color atlas. Reinhold Publishing Corporation, New
-York. 224 p.#Misc-exposition*]
-[@Luangsa-ard JJ, Tasanathai K, Mongkolsamrit S, Hywel-Jones NL. 2007. Atlas of invertebratepathogenic fungi of Thailand. Vol. 1. BIOTEC, NSTDA, Thailand.#Misc-exposition*]
-[@Luangsa-ard JJ, Tasanathai K, Mongkolsamrit S, Hywel-Jones NL. 2008. Atlas of invertebratepathogenic fungi of Thailand. Vol. 2. BIOTEC, NSTDA, Thailand.#Misc-exposition*]
-[@Luangsa-ard JJ, Tasanathai K, Mongkolsamrit S, Hywel-Jones NL. 2010. Atlas of invertebratepathogenic fungi of Thailand. Vol. 3. BIOTEC, NSTDA, Thailand.#Misc-exposition*]
+York. 224 p.#Bibliography*]
+[@Luangsa-ard JJ, Tasanathai K, Mongkolsamrit S, Hywel-Jones NL. 2007. Atlas of invertebratepathogenic fungi of Thailand. Vol. 1. BIOTEC, NSTDA, Thailand.#Bibliography*]
+[@Luangsa-ard JJ, Tasanathai K, Mongkolsamrit S, Hywel-Jones NL. 2008. Atlas of invertebratepathogenic fungi of Thailand. Vol. 2. BIOTEC, NSTDA, Thailand.#Bibliography*]
+[@Luangsa-ard JJ, Tasanathai K, Mongkolsamrit S, Hywel-Jones NL. 2010. Atlas of invertebratepathogenic fungi of Thailand. Vol. 3. BIOTEC, NSTDA, Thailand.#Bibliography*]
 [@Mackill DJ, Bonman JM, 1995. Classifying japonica rice cultivars with RAPD markers. Crop
-Science 35: 889–894. http://dx.doi.org/10.2135/cropsci1995.0011183X003500030043x
-Mains EB. 1959. Species of Aschersonia (Sphaeropsidales). Lloydia 22(3):215–221.#Misc-exposition*]
+Science 35: 889–894. http://dx.doi.org/10.2135/cropsci1995.0011183X003500030043#Bibliography*]
+[@Mains EB. 1959. Species of Aschersonia (Sphaeropsidales). Lloydia 22(3):215–221.#Bibliography*]
 [@Mongkolsamrit S, Luangsa-ard JJ, Spatafora JW, Sung GH, Hywel-Jones NL. 2009. A combined ITS
-rDNA and beta-tubulin phylogeny of Thai species of Hypocrella with non-fragmenting ascospores.#Misc-exposition*]
-[@Mycological Research 113: 684–699. http://dx.doi.org/10.1016/j.mycres.2009.02.004
-Petch T. 1921. Studies in entomogenous fungi. II. The genera of Hypocrella and Aschersonia. Annals
-of the Royal Botanic Gardens Peradeniya 7: 167–278.#Misc-exposition*]
+rDNA and beta-tubulin phylogeny of Thai species of Hypocrella with non-fragmenting ascospores.
+Mycological Research 113: 684–699. http://dx.doi.org/10.1016/j.mycres.2009.02.004#Bibliography*]
+[@Petch T. 1921. Studies in entomogenous fungi. II. The genera of Hypocrella and Aschersonia. Annals
+of the Royal Botanic Gardens Peradeniya 7: 167–278.#Bibliography*]
 [@Petch T. 1925. Entomogenous fungi: additions and corrections Transactions of the British
-Mycological Society 10: 190–201. http://dx.doi.org/10.1016/S0007–1536(25)80006–8
-Qiu JZ, Guan X. 2010, A new species of Aschersonia (Clavicipitaceae, Hypocreales) from China.#Misc-exposition*]
-[@Mycotaxon 111: 471–475. http://dx.doi.org/10.5248/111.471
-Qiu JZ, Ma HF, Wang YY, Guan X. 2009, Two Aschersonia species from Fujian new to China.#Misc-exposition*]
-[@Mycosystema 28(1): 60–63.#Misc-exposition*]
+Mycological Society 10: 190–201. http://dx.doi.org/10.1016/S0007–1536(25)80006–8#Bibliography*]
+[@Qiu JZ, Guan X. 2010, A new species of Aschersonia (Clavicipitaceae, Hypocreales) from China.
+Mycotaxon 111: 471–475. http://dx.doi.org/10.5248/111.471#Bibliography*]
+[@Qiu JZ, Ma HF, Wang YY, Guan X. 2009, Two Aschersonia species from Fujian new to China.
+Mycosystema 28(1): 60–63.#Bibliography*]
 [@Rehner SA. 2001. Primers for Elongation Factor 1-alpha (EF1-alpha). Available from:
-http://ocid.nacse.org/research/deephyphae/EF1primer.pdf.#Misc-exposition*]
-[@Sung G-H, Spatafora JW, Zare R, Hodge KT, Gams W. 2001. A revision of Verticillium sect.#Misc-exposition*]
-[@Prostrata. II. Phylogenetic analyses of SSU and LSU nuclear rDNA sequences from anamorphs
-and teleomorphs of the Clavicipitaceae. Nova Hedwigia 72: 311–328.#Misc-exposition*]
+http://ocid.nacse.org/research/deephyphae/EF1primer.pdf.#Bibliography*]
+[@Sung G-H, Spatafora JW, Zare R, Hodge KT, Gams W. 2001. A revision of Verticillium sect.
+Prostrata. II. Phylogenetic analyses of SSU and LSU nuclear rDNA sequences from anamorphs
+and teleomorphs of the Clavicipitaceae. Nova Hedwigia 72: 311–328.#Bibliography*]
 
-[@#Misc-exposition*]
+[@#Page-header*]

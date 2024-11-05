@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 477–482#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 477–482#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.477#Misc-exposition*]
 
@@ -15,11 +15,11 @@
 [@Maria A. D’Souza 1* & D.J. Bhat 2#Misc-exposition*]
 [@Department of Botany, Dhempe College of Arts & Science, Miramar, Goa-403 002, India
 Department of Botany, Goa University, Goa-403 206, India
-*Correspondence to: majorina1@rediﬀmail.com#Misc-exposition*]
+*Correspondence to: majorina1@rediﬀmail.com
 
-[@1*#Misc-exposition*]
+1*
 
-[@2#Misc-exposition*]
+2#Misc-exposition*]
 
 [@Abstract — A new anamorphic species, Pleurophragmium indicum (Ascomycota), is
 described from India and illustrated. This litter-inhabiting fungus was collected from dead
@@ -40,8 +40,8 @@ bamboo, Dendrocalamus strictus.#Misc-exposition*]
 distilled water and incubated in a sterile moist chamber for one to several days at room
 temp (22–25°C). The leaves were examined at 2-day intervals under a stereoscope ﬁtted
 with incidental light. Grey-brown colonies with erect to slightly ﬂexuous conidiophores
-with a crown of conidia appeared on the surface of the leaves after 5–7 days of incubation.#Misc-exposition*]
-[@The fungus was mounted on a slide with lactophenol and examined under a bright ﬁeld
+with a crown of conidia appeared on the surface of the leaves after 5–7 days of incubation.
+The fungus was mounted on a slide with lactophenol and examined under a bright ﬁeld
 light microscope.#Misc-exposition*]
 [@Taxonomy#Misc-exposition*]
 
@@ -51,12 +51,12 @@ light microscope.#Misc-exposition*]
 
 [@MycoBank MB563115#Misc-exposition*]
 [@Diﬀers from P. bitunicatum in conidia that lack a distinct outer covering and from P.
-parvisporum in its larger conidia and varied colouration.#Misc-exposition*]
+parvisporum in its larger conidia and varied colouration.#Diagnosis*]
 
-[@478 ... D’Souza & Bhat#Misc-exposition*]
+[@478 ... D’Souza & Bhat#Page-header*]
 
-[@Figs. 1–3. Pleurophragmium indicum.#Misc-exposition*]
-[@1. Habit. 2. Magniﬁed view of conidiophores with conidia. 3. Conidia.#Misc-exposition*]
+[@Figs. 1–3. Pleurophragmium indicum.
+1. Habit. 2. Magniﬁed view of conidiophores with conidia. 3. Conidia.#Figure*]
 [@Type: India, Molem Wildlife Sanctuary, Goa, on fallen dead and decaying leaves of
 Dendrocalamus strictus (Roxb.) Nees (Poaceae), 11 March 1999, leg. Maria A. D’Souza,
 (Holotype, GUBH 367).#Misc-exposition*]
@@ -66,9 +66,9 @@ Dendrocalamus strictus (Roxb.) Nees (Poaceae), 11 March 1999, leg. Maria A. D’
 partly immersed and partly superﬁcial. Conidiophores mononematous,
 scattered, erect, straight to slightly ﬂexuous, swollen and rhizome-like at the#Description*]
 
-[@Pleurophragmium indicum sp. nov. (India) ... 479#Misc-exposition*]
+[@Pleurophragmium indicum sp. nov. (India) ... 479#Page-header*]
 
-[@Fig. 4. Pleurophragmium indicum. Conidiophores and conidia, 600×.#Misc-exposition*]
+[@Fig. 4. Pleurophragmium indicum. Conidiophores and conidia, 600×.#Figure*]
 
 [@base, smooth, 4–6-septate, dark brown below, pale brown in the middle and
 above, thick-walled, 100–160 μm long, 7–22 μm wide at base, 4.5–6.5 μm wide
@@ -79,7 +79,7 @@ ellipsoidal to obovoid, rounded at the apex, narrower at the base, straight to
 slightly curved, smooth, transversely 3-septate, middle cells dark brown, end
 cells pale brown, 20–30 × 4.5–11 μm, 3–5 μm wide at the ends.#Description*]
 
-[@480 ... D’Souza & Bhat#Misc-exposition*]
+[@480 ... D’Souza & Bhat#Page-header*]
 [@Discussion#Misc-exposition*]
 
 [@The genus Pleurophragmium, with P. bicolor Costantin [= P. simplex (Berk. &
@@ -244,15 +244,15 @@ P. verruculosum D.P. Tiwari 1970
 Rhizosphere soil of Piper betle
 
 India
-#Misc-exposition*]
-[@Pleurophragmium indicum sp. nov. (India) ... 481#Misc-exposition*]
+#Table*]
+[@Pleurophragmium indicum sp. nov. (India) ... 481#Page-header*]
 
 [@produces similarly shaped conidia but diﬀers in the uniformly pale ochraceous
 conidia that also are markedly smaller (14.5–25 × 4.5–6.5 μm).#Misc-exposition*]
 [@Twenty-three accepted taxa of Pleurophragmium are compared (Table 1)
 and keyed out below.#Misc-exposition*]
-[@Key to accepted taxa of Pleurophragmium#Key*]
-[@1. Conidia with 2 tunicae . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. bitunicatum
+[@Key to accepted taxa of Pleurophragmium
+1. Conidia with 2 tunicae . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. bitunicatum
 1a. Conidia without a tunica . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
 2. Conidia smooth or indistinctly granular, 12–18 × 5–7μm . . . . . . . . . . . P. harunganae
 2a. Conidia verrucose, ﬁnely verruculose or minutely echinulate . . . . . . . . . . . . . . . . . 3
@@ -275,21 +275,21 @@ and keyed out below.#Misc-exposition*]
 9. Conidia usually 3-septate . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
 9a. Conidia 2– or 1–4-septate . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
 10. Conidia pale to moderately brown, (15–) 20–28 × 2.8–4 μm
-. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. bicolor Matsush., nom. illegit.#Key*]
-[@10a. Conidia central cells brown, terminal cells pale brown, 25–40 × 5–6 μm
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. bicolor Matsush., nom. illegit.
+10a. Conidia central cells brown, terminal cells pale brown, 25–40 × 5–6 μm
 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. cylindrosporum
 11. Conidia varicolored with a pale brown central cell and subhyaline terminal cells,
 2-septate, 18–30 × 4–6 μm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. peruamazonicum
 11a. Conidia pale olive, 1–4-septate, 8–22 × 3–5 μm . . . . . . . . . . . . . . . P. varieseptatum
 12. Conidia 1–2-septate . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
 12a. Conidia 3 or more septate . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
-13. Conidia obpyriform to turbinate, 1–2-septate, 11.5–15.5 × 5–6.5 μm . . . . . . . . . . . . .#Key*]
-[@. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. obcampanuloides
+13. Conidia obpyriform to turbinate, 1–2-septate, 11.5–15.5 × 5–6.5 μm . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. obcampanuloides
 13a. Conidia ovoid, (1–) 2-septate, 17–28 × 8–1.5 μm
-. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. peruamazonicum var. inﬂatum#Key*]
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. peruamazonicum var. inﬂatum
 
-[@482 ... D’Souza & Bhat#Misc-exposition*]
-[@14. Conidia 5-septate, fusiform, slightly curved or straight,
+[@482 ... D’Souza & Bhat#Page-header*]
+14. Conidia 5-septate, fusiform, slightly curved or straight,
 24.5–40 × 5–7 μm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . P. angamosense
 14a. Conidia 3-septate, ellipsoidal to obovoid or fusiform to clavate . . . . . . . . . . . . . . 15
 14b. Conidia 3–4-septate, obovoid, oblong, ellipsoidal to subclavate . . . . . . . . . . . . . . 16
@@ -312,26 +312,26 @@ and suggestions and Dr. Rafael F. Castañeda-Ruiz (Cuba) and Dr. Eric McKenzie (
 Zealand), for reviewing the manuscript.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Ellis MB. 1971. Dematiaceous hyphomycetes. Commonwealth Mycological Institute, Kew, Surrey,
-England.#Misc-exposition*]
+England.#Bibliography*]
 [@Ellis MB. 1976. More dematiaceous hyphomycetes. Commonwealth Mycological Institute, Kew,
-Surrey, England.#Misc-exposition*]
+Surrey, England.#Bibliography*]
 [@Hansford CG. 1946. The foliicolous Ascomycetes, their parasites and associated fungi Mycological
-Papers 15: 240 p.#Misc-exposition*]
+Papers 15: 240 p.#Bibliography*]
 [@Heredia Abarca G, Castañeda Ruiz RF, Arias RM, Saikawa M, Stadler M. 2007. Anamorphic fungi
 from submerged plant material: Acumispora verruculosa sp. nov., Pleurophragmium aquaticum
-sp. nov. and Pleurophragmium miniumbonatum comb. nov. Mycotaxon 101: 89–97.#Misc-exposition*]
+sp. nov. and Pleurophragmium miniumbonatum comb. nov. Mycotaxon 101: 89–97.#Bibliography*]
 [@Holubová-Jechová V. 1972. A note on Pleurophragmium simplex (hyphomycetes). Česká Mykologie
-26: 223–225.#Misc-exposition*]
-[@Hughes SJ. 1958. Revisiones Hyphomycetum aliquot cum appendice de nominibus rejiciendis.#Misc-exposition*]
-[@Canadian Journal of Botany 36: 727–836. http://dx.doi.org/10.1139/b58-067
-Kirk, PM, Cannon PF, Minter DW, Stalpers JA. 2008. Ainsworth & Bisby’s dictionary of the fungi.#Misc-exposition*]
-[@10th edition. CAB International Wallingford, U.K.#Misc-exposition*]
-[@Matsushima T. 1975. Icones microfungorum a Matsushima lectorum. Matsushima, Kobe, Japan.#Misc-exposition*]
-[@Matsushima T. 1987. Matsushima Mycological Memoirs 5: 1–100.#Misc-exposition*]
-[@Matsushima T. 1993. Matsushima Mycological Memoirs 7: 1–141.#Misc-exposition*]
-[@Matsushima T. 1995. Matsushima Mycological Memoirs 8: 1–44.#Misc-exposition*]
-[@Matsushima T. 1996. Matsushima Mycological Memoirs 9: 1–30.#Misc-exposition*]
-[@Tiwari DP. 1970 [‘‘1969’’]. A new species of Pleurophragmium from rhizosphere of Piper betle.#Misc-exposition*]
-[@Indian Phytopathology 22: 513–515.#Misc-exposition*]
+26: 223–225.#Bibliography*]
+[@Hughes SJ. 1958. Revisiones Hyphomycetum aliquot cum appendice de nominibus rejiciendis.
+Canadian Journal of Botany 36: 727–836. http://dx.doi.org/10.1139/b58-067#Bibliography*]
+[@Kirk, PM, Cannon PF, Minter DW, Stalpers JA. 2008. Ainsworth & Bisby’s dictionary of the fungi.
+10th edition. CAB International Wallingford, U.K.#Bibliography*]
+[@Matsushima T. 1975. Icones microfungorum a Matsushima lectorum. Matsushima, Kobe, Japan.#Bibliography*]
+[@Matsushima T. 1987. Matsushima Mycological Memoirs 5: 1–100.#Bibliography*]
+[@Matsushima T. 1993. Matsushima Mycological Memoirs 7: 1–141.#Bibliography*]
+[@Matsushima T. 1995. Matsushima Mycological Memoirs 8: 1–44.#Bibliography*]
+[@Matsushima T. 1996. Matsushima Mycological Memoirs 9: 1–30.#Bibliography*]
+[@Tiwari DP. 1970 [‘‘1969’’]. A new species of Pleurophragmium from rhizosphere of Piper betle.
+Indian Phytopathology 22: 513–515.#Bibliography*]
 
-[@#Misc-exposition*]
+[@#Page-header*]

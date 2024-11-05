@@ -2,7 +2,7 @@
 
 import abc
 import csv
-import re
+import regex as re  # type: ignore
 from typing import Any, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 class Tokenizer(object):

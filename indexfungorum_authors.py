@@ -8,7 +8,7 @@ $ unrtf --text FungalNameAuthors.rtf | iconv -f ISO-8859-15 -t utf-8 > FungalNam
 
 import argparse
 import csv
-import re
+import regex as re  # type: ignore
 import sys
 from typing import Iterator, List, Optional
 

@@ -4,8 +4,8 @@
 
 [@ISSN (online) 2154-8889#Misc-exposition*]
 
-[@MYCOTAXON#Misc-exposition*]
-[@Volume 119, pp. 391–395#Misc-exposition*]
+[@MYCOTAXON
+Volume 119, pp. 391–395#Misc-exposition*]
 
 [@http://dx.doi.org/10.5248/119.391#Misc-exposition*]
 
@@ -15,8 +15,8 @@
 [@Li Fan1*, Jin-Zhong Cao2, Zhao-Hui Zheng1, & Yu Li2*
 College of Life Science, Capital Normal University,
 Xisanhuanbeilu 105, Haidian, Beijing 100048, China
-2#Misc-exposition*]
-[@Institute of Mycology, Jilin Agricultural University, Changchun 130118, China
+2
+Institute of Mycology, Jilin Agricultural University, Changchun 130118, China
 Correspondence to *: 1 fanli@mail.cnu.edu.cn & 2 yuli966@126.com
 1#Misc-exposition*]
 
@@ -37,8 +37,8 @@ underground, it can be very diﬃcult to ﬁnd specimens. Therefore, the number
 of species in China is inevitably underestimated. After continuing investigation
 of the genus in China, we describe and illustrate two additional new species.#Misc-exposition*]
 [@Materials & methods#Misc-exposition*]
-[@The materials were collected from the local mushroom market in Kunming, China.#Misc-exposition*]
-[@The specimens are deposited in BJTC (Herbarium Biology Department, Capital Normal
+[@The materials were collected from the local mushroom market in Kunming, China.
+The specimens are deposited in BJTC (Herbarium Biology Department, Capital Normal
 University). Macroscopic characters were described from fresh specimens. Microscopic
 characters were described from razor-blade sections of fresh specimens mounted in 3%
 KOH; sections were stained with Melzer’s reagent, rinsed, and mounted in polyvinyl
@@ -47,7 +47,7 @@ scanning electron microscopy (SEM), ascospores were scraped from the dried gleba
 onto doubled-sided tape, which was mounted directly on an SEM stub, coated with
 gold-palladium, and examined and photographed with a HITACHI S-4800 SEM.#Misc-exposition*]
 
-[@392 ... Fan & al.#Misc-exposition*]
+[@392 ... Fan & al.#Page-header*]
 [@Taxonomy#Misc-exposition*]
 
 [@Tuber microspermum L. Fan & J.Z. Cao, sp. nov.#Nomenclature*]
@@ -56,14 +56,14 @@ gold-palladium, and examined and photographed with a HITACHI S-4800 SEM.#Misc-ex
 
 [@MycoBank MB 561881#Misc-exposition*]
 [@A yellow brown truﬄe with small asci and small spinoreticulate ascospores that diﬀers
-from Tuber pseudoexcavatum in an ascoma that lacks an excavated base.#Misc-exposition*]
+from Tuber pseudoexcavatum in an ascoma that lacks an excavated base.#Diagnosis*]
 [@Type: China. Yunnan Province, Kunming, from the local mushroom market. 20 Dec.
 2010, Jin-zhong Cao 112 (Holotype, BJTC FAN149).#Misc-exposition*]
 [@Etymology: microspermum (Lat.), referring to the small ascospores.#Misc-exposition*]
 
 [@Ascomata 1.5 cm diam., subglobose or slightly lobed, ﬁrm, solid, surface
-smooth to partially minutely verrucose, glabrous, yellow brown at maturity.#Description*]
-[@Odor slight. Peridium 200–300 µm thick, two layers; outer layer 80–120 µm
+smooth to partially minutely verrucose, glabrous, yellow brown at maturity.
+Odor slight. Peridium 200–300 µm thick, two layers; outer layer 80–120 µm
 thick, pseudoparenchymatous, composed of small subangular or subglobose
 cells mostly 7.5–12.5 µm in diam., with thickened and brown walls, darker
 towards the outer surface; inner layer composed of intricately interwoven
@@ -87,7 +87,7 @@ and asci.#Misc-exposition*]
 
 [@MycoBank MB 561882#Misc-exposition*]
 [@Diﬀers from all other Tuber species with spinoreticulate ascospores by an ornamentation
-of numerous minute narrow spine-like meshes.#Misc-exposition*]
+of numerous minute narrow spine-like meshes.#Diagnosis*]
 [@Type: China. Kunming, Yunnan Province, from the local mushroom market. 20 Dec.
 2010, Jin-zhong Cao 101 (Holotype, BJTC FAN138).#Misc-exposition*]
 [@Etymology: microspiculatum (Lat.), referring to the numerous minute meshes of the
@@ -96,16 +96,16 @@ spinoreticulate spore ornamentation.#Misc-exposition*]
 [@Ascomata 2–2.5 cm in diam., globose or subglobose, ﬁrm, solid, with or
 without distinct umbilicate depression at the base, surface smooth and#Description*]
 
-[@Tuber spp. nov. (China) ... 393#Misc-exposition*]
+[@Tuber spp. nov. (China) ... 393#Page-header*]
 
 [@Figs 1–8. Tuber microspermum (BJTC FAN149, holotype): 1. Ascocarp; 2–3. Asci and ascospores
 observed under light microscope; 4. Ascospore observed under SEM. Tuber microspiculatum
 (BJTC FAN138, holotype): 5. Ascocarps; 6–7. Asci and ascospores observed under light
-microscope; 8. Ascospore observed under SEM.#Misc-exposition*]
+microscope; 8. Ascospore observed under SEM.#Figure*]
 
-[@394 ... Fan & al.#Misc-exposition*]
-[@glabrous, white yellow, pale yellow or light brown, reddish brown at maturity.#Description*]
-[@Odor slight, not pungent. Peridium 200–250 µm thick, two layers; outer
+[@394 ... Fan & al.#Page-header*]
+[@glabrous, white yellow, pale yellow or light brown, reddish brown at maturity.
+Odor slight, not pungent. Peridium 200–250 µm thick, two layers; outer
 layer 50–100 µm, pseudoparenchymatous, composed of small subangular
 or subglobose cells, mostly 7.5–15 µm in diam., with slightly thickened and
 yellowish-brown walls, darker towards the outer surface; inner layer composed
@@ -135,25 +135,25 @@ Whalley for reviewing the pre-submitted manuscript. We also thank Dr. Cheng-Lin
 Hou for critically correcting the manuscript.#Misc-exposition*]
 [@Literature cited#Misc-exposition*]
 [@Chen J, Liu PG. 2007. Tuber latisporum sp. nov. and related taxa, based on morphology and DNA
-sequence data. Mycologia 99: 475–481. http://dx.doi.org/10.3852/mycologia.99.3.475
-Chen J, Liu PG, Wang Y. 2005. Tuber umbilicatum, a new species from China, with a key to the
-spinose-reticulate spored Tuber species. Mycotaxon 94: 1–6.
-Fan L, Cao JZ, Liu YY, Li Y. 2011. Two new species of the genus Tuber from China. Mycotaxon 116:
-349–354. http://dx.doi.org/10.5248/116.349#Misc-exposition*]
+sequence data. Mycologia 99: 475–481. http://dx.doi.org/10.3852/mycologia.99.3.475#Bibliography*]
+[@Chen J, Liu PG, Wang Y. 2005. Tuber umbilicatum, a new species from China, with a key to the
+spinose-reticulate spored Tuber species. Mycotaxon 94: 1–6.#Bibliography*]
+[@Fan L, Cao JZ, Liu YY, Li Y. 2011. Two new species of the genus Tuber from China. Mycotaxon 116:
+349–354. http://dx.doi.org/10.5248/116.349#Bibliography*]
 [@Liu B. 1985. New species and new records of hypogeous fungi from China (I). Acta Mycologica
-Sinica 4(2): 84–89.#Misc-exposition*]
+Sinica 4(2): 84–89.#Bibliography*]
 [@Tao K, Liu B, Zhang DC. 1989. A new species of the genus Tuber from China. Journal of Shanxi
-University (Nat. Sci. Ed.) 12: 215–218.#Misc-exposition*]
+University (Nat. Sci. Ed.) 12: 215–218.#Bibliography*]
 
-[@Tuber spp. nov. (China) ... 395#Misc-exposition*]
+[@Tuber spp. nov. (China) ... 395#Page-header*]
 [@Wang Y. 1988. First report of study on Tuber species from China. Atti del II Congresso Internazionale
-sul Tartufo. Spoleto, Nov 24–27: 45–50.#Misc-exposition*]
-[@Wang Y, He XY. 2002. Tuber huidongense sp. nov. from China. Mycotaxon 83:191–194.#Misc-exposition*]
+sul Tartufo. Spoleto, Nov 24–27: 45–50.#Bibliography*]
+[@Wang Y, He XY. 2002. Tuber huidongense sp. nov. from China. Mycotaxon 83:191–194.#Bibliography*]
 [@Wang Y, Li ZP. 1991. A new species of Tuber from China. Acta Mycologica Sinica 10: 263–265. (in
-Chinese).#Misc-exposition*]
+Chinese).#Bibliography*]
 [@Wang Y, Moreno G. Riousset LJ, Manjon JL, Riousset G, Fourre G, Di Massimo G, Garcia-Montero
 LG, Diez J. 1998. Tuber pseudoexcavatum sp. nov. a new species from China commercialised in
 Spain, France and Italy with additional comments on Chinese truﬄes. Cryptogamie Mycologie
-19: 113–120.#Misc-exposition*]
+19: 113–120.#Bibliography*]
 
-[@#Misc-exposition*]
+[@#Page-header*]
