@@ -69,8 +69,8 @@ class Paragraph(object):
     )
     _NOMENCLATURE_RE = (
         r'^([-\w≡=.*|:]*\s+)?' +  # Optional first word.
-        r'(([A-Z]\w*' + _SUFFIX_RE + ')|(' + _PREFIX_RE + '\w*))' # Genus
-        r'\s((\w+' + _SUFFIX_RE + ')|(' + _PREFIX_RE + '\w*))' # species
+        r'(([A-Z]\w*' + _SUFFIX_RE + r')|(' + _PREFIX_RE + r'\w*))' # Genus
+        r'\s((\w+' + _SUFFIX_RE + r')|(' + _PREFIX_RE + r'\w*))' # species
         r'.*'
         r'('
         r'nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
