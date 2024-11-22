@@ -11,7 +11,7 @@ class Taxon(object):
         'filename', 'label', 'paragraph_number', 'page_number',
         'empirical_page_number', 'body'
     ]
-    LONG_GAP = 20  # 20 Paragraphs is long enough to give up.
+    LONG_GAP = 6  # 6 Paragraphs is long enough to give up.
 
 
     _nomenclatures: List[Paragraph]
@@ -47,10 +47,10 @@ class Taxon(object):
 
     def has_nomenclature(self) -> bool:
         return bool(self._nomenclatures)
-    
+
     def has_description(self) -> bool:
         return bool(self._descriptions)
-    
+
     def dictionaries(self) -> Iterator[Dict[str, str]]:
         for pp in itertools.chain(self._nomenclatures, self._descriptions):
             d = pp.as_dict()
