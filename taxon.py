@@ -61,6 +61,11 @@ class Taxon(object):
         retval = {}
         retval['taxon'] = "\n".join(str(pp) for pp in self._nomenclatures)
         retval['description'] = "\n".join(str(pp) for pp in self._descriptions)
+        # Pull other fields from self._nomenclatures[0]
+        pp = self._nomenclatures[0]
+        retval['paragraph_number'] = pp.paragraph_number
+        retval['page_number'] = pp.page_number
+        retval['empirical_page_number'] = pp.empirical_page_number
         return retval
 
 
