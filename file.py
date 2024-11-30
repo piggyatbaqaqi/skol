@@ -19,7 +19,7 @@ class File(FileObject):
         self._page_number = 1
         self._empirical_page_number = None
         if filename:
-            self._file = open(filename, 'r')
+            self._file = open(filename, 'r', encoding='utf-8')
             self._contents = None
         else:
             self._contents = contents
