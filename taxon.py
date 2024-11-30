@@ -57,6 +57,12 @@ class Taxon(object):
             d['serial_number'] = str(self._serial)
             yield d
 
+    def as_row(self) -> Dict[str, str]:
+        retval = {}
+        retval['taxon'] = "\n".join(str(pp) for pp in self._nomenclatures)
+        retval['description'] = "\n".join(str(pp) for pp in self._descriptions)
+        return retval
+
 
 def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
     nomenclature = Label('Nomenclature')
