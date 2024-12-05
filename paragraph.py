@@ -202,7 +202,8 @@ class Paragraph(object):
             self.push_label()
         if line.end_label():
             if self.top_label() is None:
-                raise ValueError('label close without open: %r' % line)
+                return
+                # raise ValueError('label close without open: %r' % line)
             try:
                 self.top_label().set_label(line.end_label())
             except ValueError as e:
