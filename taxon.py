@@ -91,18 +91,19 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                 taxon.add_description(pp)
                 continue
             if pp.top_label() == nomenclature:
-                yield taxon
+                if taxon and taxon.has_description() and taxon.has_nomenclature():
+                    yield taxon
                 taxon = Taxon()
                 taxon.add_nomenclature(pp)
                 state = 'Look for Nomenclatures'
                 continue
 
             if taxon.been_too_long(pp):
-                if taxon and taxon.has_description():
+                if taxon and taxon.has_description() and taxon.has_nomenclature():
                     yield taxon
                 taxon = Taxon()
                 state = 'Look for Nomenclatures'
                 continue
 
-    if taxon and taxon.has_description():
+    if taxon and taxon.has_description() and taxon.has_nomenclature():
         yield taxon
