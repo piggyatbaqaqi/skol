@@ -1,0 +1,47 @@
+Can you extract any attributes and their measurements from the following description of an organism?
+
+Mycelium on the substrate is medium orange-brown,
+septate, 3-4 µm diam., often distinctly and coarsely rough;
+hyphae often run parallel to the long axis of cells in
+substrate tissue but usually branch on the exterior and
+appear as a non-patterned network. Sporulation units are
+produced as enlarging tips of short branches, at first
+concolorous with surface mycelium but soon dark orange-
+brown and finally black-brown and opaque. In type material
+an occasional enlarging branch can be seen attached to the
+hypha from which it developed; in most instances, however,
+the enlarged branch elements have broken loose from the
+mycelium or are so densely crowded on the substrate and so
+nearly opaque that points of attachment cannot be traced
+ChatGPT said:
+{
+  "mycelium": {
+    "location": "on substrate",
+    "color": "medium orange-brown"
+  },
+  "hyphae": {
+    "septate": true,
+    "diameter_um": {
+      "min": 3,
+      "max": 4
+    },
+    "surface": "distinctly and coarsely rough",
+    "orientation": "parallel to long axis of substrate tissue cells",
+    "branching": {
+      "location": "on exterior",
+      "pattern": "non-patterned network"
+    }
+  },
+  "sporulation_units": {
+    "origin": "enlarging tips of short branches",
+    "color_progression": [
+      "concolorous with surface mycelium",
+      "dark orange-brown",
+      "black-brown and opaque"
+    ],
+    "attachment": {
+      "occasional": "attached to hypha",
+      "typical": "broken loose or obscured by crowding and opacity"
+    }
+  }
+}
