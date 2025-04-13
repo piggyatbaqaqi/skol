@@ -1,0 +1,45 @@
+Can you extract the attributes, subattributes, and their values from the following description of an organism? Present the result as a json data structure. Structure any ranges of values as {"from": value, "to": value, "unit": value}.
+
+Mycelium on the substrate is medium orange-brown,
+septate, 3-4 µm diam., often distinctly and coarsely rough;
+hyphae often run parallel to the long axis of cells in
+substrate tissue but usually branch on the exterior and
+appear as a non-patterned network. Sporulation units are
+produced as enlarging tips of short branches, at first
+concolorous with surface mycelium but soon dark orange-
+brown and finally black-brown and opaque. In type material
+an occasional enlarging branch can be seen attached to the
+hypha from which it developed; in most instances, however,
+the enlarged branch elements have broken loose from the
+mycelium or are so densely crowded on the substrate and so
+nearly opaque that points of attachment cannot be traced
+
+
+```json
+{
+  "organism": {
+    "mycelium": {
+      "color": "medium orange-brown",
+      "structure": "septate",
+      "diameter": {
+        "from": 3,
+        "to": 4,
+        "unit": "µm"
+      },
+      "texture": "distinctly and coarsely rough",
+      "growth_pattern": "runs parallel to long axis of cells in substrate tissue, branches on exterior",
+      "network_pattern": "non-patterned"
+    },
+    "sporulation_units": {
+      "location": "enlarging tips of short branches",
+      "initial_color": "concolorous with surface mycelium",
+      "color_development": [
+        "dark orange-brown",
+        "black-brown"
+      ],
+      "opacity": "opaque",
+      "attachment": "occasionally attached to hypha; often broken loose or densely crowded and points of attachment 
+untraceable"
+    }
+  }
+}
