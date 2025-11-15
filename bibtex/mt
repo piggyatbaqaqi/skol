@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <rdf:RDF
+ xmlns="http://purl.org/rss/1.0/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:dcterms="http://purl.org/dc/terms/"
+ xmlns:admin="http://webns.net/mvcb/"
+ xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+ xmlns:prism="http://prismstandard.org/namespaces/2.0/basic/"
+ xmlns:foaf="http://xmlns.com/foaf/0.1/">
+ <channel rdf:about="http://api.ingentaconnect.com/content/mtax/mt?format=rss">
+ <title>Recent Issues of MYCOTAXON</title>
+ <link>https://www.ingentaconnect.com/content/mtax/mt</link>
+ <description>RSS feed of the 10 most recently published issues of MYCOTAXON</description>
+ <image rdf:resource="https://www.ingentaconnect.com/journal-logos/mtax/mt.png"/>
+ <dc:description>RSS feed of the 10 most recently published issues of MYCOTAXON</dc:description>
+ <dc:title>Recent Issues of MYCOTAXON RSS Feed</dc:title>
+ <dc:date>2025-05-23T02:37:30Z</dc:date>
+ <admin:generatorAgent rdf:resource="https://www.ingentaconnect.com"/>
+ <admin:errorReportsTo rdf:resource="mailto:help@ingentaconnect.com"/>
+ <sy:updatePeriod>daily</sy:updatePeriod>
+ <sy:updateFrequency>2</sy:updateFrequency>
+ <sy:updateBase>2004-01-01T07:00+00:00</sy:updateBase>
+ <items>
+ <rdf:Seq>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2023/00000137/00000004"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000003"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000002"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/a00104s1"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2022/00000136/00000004"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000003"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000002"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/mtax/mt/2020/00000135/00000004"/>
+ </rdf:Seq>
+ </items>
+ <dc:identifier rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <prism:distributor>Ingenta Connect</prism:distributor>
+ <dc:publisher>Mycotaxon</dc:publisher>
+ <dc:rights>(copyright) 2025 Mycotaxon</dc:rights>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ </channel>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2023/00000137/00000004">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2023/00000137/00000004</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 137, Number 4, November 2023</title>
+ <description>MYCOTAXON, Volume 137, Number 4, November 2023.
+ Loaded on 2023-11-22
+ </description>
+ <prism:coverDisplayDate>November 2023</prism:coverDisplayDate>
+ <prism:volume>137</prism:volume>
+ <prism:number>4</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000003">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000003</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 137, Number 3, 27 March 2022</title>
+ <description>MYCOTAXON, Volume 137, Number 3, 27 March 2022.
+ Loaded on 2023-04-06
+ </description>
+ <prism:coverDisplayDate>27 March 2022</prism:coverDisplayDate>
+ <prism:volume>137</prism:volume>
+ <prism:number>3</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000002">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000002</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 137, Number 2, 18 July 2022</title>
+ <description>MYCOTAXON, Volume 137, Number 2, 18 July 2022.
+ Loaded on 2022-07-28
+ </description>
+ <prism:coverDisplayDate>18 July 2022</prism:coverDisplayDate>
+ <prism:volume>137</prism:volume>
+ <prism:number>2</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000001">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/00000001</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 137, Number 1, 28 April 2022</title>
+ <description>MYCOTAXON, Volume 137, Number 1, 28 April 2022.
+ Loaded on 2022-05-06
+ </description>
+ <prism:coverDisplayDate>28 April 2022</prism:coverDisplayDate>
+ <prism:volume>137</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/a00104s1">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2022/00000137/a00104s1</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 137, Number 4, 30 June 2024</title>
+ <description>MYCOTAXON, Volume 137, Number 4, 30 June 2024.
+ Loaded on 2024-07-18
+ </description>
+ <prism:coverDisplayDate>30 June 2024</prism:coverDisplayDate>
+ <prism:volume>137</prism:volume>
+ <prism:number>4</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2022/00000136/00000004">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2022/00000136/00000004</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 136, Number 4, 8 February 2022</title>
+ <description>MYCOTAXON, Volume 136, Number 4, 8 February 2022.
+ Loaded on 2022-02-16
+ </description>
+ <prism:coverDisplayDate>8 February 2022</prism:coverDisplayDate>
+ <prism:volume>136</prism:volume>
+ <prism:number>4</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000003">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000003</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 136, Number 3, 4 November 2021</title>
+ <description>MYCOTAXON, Volume 136, Number 3, 4 November 2021.
+ Loaded on 2021-11-04
+ </description>
+ <prism:coverDisplayDate>4 November 2021</prism:coverDisplayDate>
+ <prism:volume>136</prism:volume>
+ <prism:number>3</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000002">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000002</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 136, Number 2, 23 July 2021</title>
+ <description>MYCOTAXON, Volume 136, Number 2, 23 July 2021.
+ Loaded on 2021-07-31
+ </description>
+ <prism:coverDisplayDate>23 July 2021</prism:coverDisplayDate>
+ <prism:volume>136</prism:volume>
+ <prism:number>2</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000001">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2021/00000136/00000001</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 136, Number 1, 16 April 2021</title>
+ <description>MYCOTAXON, Volume 136, Number 1, 16 April 2021.
+ Loaded on 2021-04-20
+ </description>
+ <prism:coverDisplayDate>16 April 2021</prism:coverDisplayDate>
+ <prism:volume>136</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/mtax/mt/2020/00000135/00000004">
+ <link>https://www.ingentaconnect.com/content/mtax/mt/2020/00000135/00000004</link>
+ <prism:copyright>(copyright) 2025 Mycotaxon</prism:copyright>
+ <prism:publicationName>MYCOTAXON</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0093-4666"/>
+ <prism:issn>0093-4666</prism:issn>
+ <title>Volume 135, Number 4, October 2020</title>
+ <description>MYCOTAXON, Volume 135, Number 4, October 2020.
+ Loaded on 2021-01-13
+ </description>
+ <prism:coverDisplayDate>October 2020</prism:coverDisplayDate>
+ <prism:volume>135</prism:volume>
+ <prism:number>4</prism:number>
+ </item>
+ </rdf:RDF>

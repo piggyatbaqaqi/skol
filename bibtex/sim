@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <rdf:RDF
+ xmlns="http://purl.org/rss/1.0/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:dcterms="http://purl.org/dc/terms/"
+ xmlns:admin="http://webns.net/mvcb/"
+ xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+ xmlns:prism="http://prismstandard.org/namespaces/2.0/basic/"
+ xmlns:foaf="http://xmlns.com/foaf/0.1/">
+ <channel rdf:about="http://api.ingentaconnect.com/content/wfbi/sim?format=rss">
+ <title>Recent Issues of STUDIES IN MYCOLOGY</title>
+ <link>https://www.ingentaconnect.com/content/wfbi/sim</link>
+ <description>RSS feed of the 10 most recently published issues of STUDIES IN MYCOLOGY</description>
+ <image rdf:resource="https://www.ingentaconnect.com/journal-logos/wfbi/sim.png"/>
+ <dc:description>RSS feed of the 10 most recently published issues of STUDIES IN MYCOLOGY</dc:description>
+ <dc:title>Recent Issues of STUDIES IN MYCOLOGY RSS Feed</dc:title>
+ <dc:date>2025-05-23T03:27:41Z</dc:date>
+ <admin:generatorAgent rdf:resource="https://www.ingentaconnect.com"/>
+ <admin:errorReportsTo rdf:resource="mailto:help@ingentaconnect.com"/>
+ <sy:updatePeriod>daily</sy:updatePeriod>
+ <sy:updateFrequency>2</sy:updateFrequency>
+ <sy:updateBase>2004-01-01T07:00+00:00</sy:updateBase>
+ <items>
+ <rdf:Seq>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2025/00000111/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2025/00000110/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2024/00000109/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2024/00000108/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2024/00000107/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2023/00000106/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2023/00000105/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2023/00000104/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2022/00000103/00000001"/>
+ <rdf:li rdf:resource="https://www.ingentaconnect.com/content/wfbi/sim/2022/00000102/00000001"/>
+ </rdf:Seq>
+ </items>
+ <dc:identifier rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <prism:distributor>Ingenta Connect</prism:distributor>
+ <dc:publisher>Westerdijk Fungal Biodiversity Institute</dc:publisher>
+ <dc:rights>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</dc:rights>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ </channel>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2025/00000111/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2025/00000111/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 111, Number 1, June 2025</title>
+ <description>STUDIES IN MYCOLOGY, Volume 111, Number 1, June 2025.
+ Loaded on 2025-05-10
+ </description>
+ <prism:coverDisplayDate>June 2025</prism:coverDisplayDate>
+ <prism:volume>111</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2025/00000110/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2025/00000110/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 110, Number 1, March 2025</title>
+ <description>STUDIES IN MYCOLOGY, Volume 110, Number 1, March 2025.
+ Loaded on 2025-02-12
+ </description>
+ <prism:coverDisplayDate>March 2025</prism:coverDisplayDate>
+ <prism:volume>110</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2024/00000109/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2024/00000109/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 109, Number 1, December 2024</title>
+ <description>STUDIES IN MYCOLOGY, Volume 109, Number 1, December 2024.
+ Loaded on 2024-12-19
+ </description>
+ <prism:coverDisplayDate>December 2024</prism:coverDisplayDate>
+ <prism:volume>109</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2024/00000108/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2024/00000108/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 108, Number 1, June 2024</title>
+ <description>STUDIES IN MYCOLOGY, Volume 108, Number 1, June 2024.
+ Loaded on 2024-07-28
+ </description>
+ <prism:coverDisplayDate>June 2024</prism:coverDisplayDate>
+ <prism:volume>108</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2024/00000107/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2024/00000107/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 107, Number 1, March 2024</title>
+ <description>STUDIES IN MYCOLOGY, Volume 107, Number 1, March 2024.
+ Loaded on 2024-03-21
+ </description>
+ <prism:coverDisplayDate>March 2024</prism:coverDisplayDate>
+ <prism:volume>107</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2023/00000106/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2023/00000106/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 106, Number 1, December 2023</title>
+ <description>STUDIES IN MYCOLOGY, Volume 106, Number 1, December 2023.
+ Loaded on 2024-01-20
+ </description>
+ <prism:coverDisplayDate>December 2023</prism:coverDisplayDate>
+ <prism:volume>106</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2023/00000105/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2023/00000105/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 105, Number 1, June 2023</title>
+ <description>STUDIES IN MYCOLOGY, Volume 105, Number 1, June 2023.
+ Loaded on 2023-06-28
+ </description>
+ <prism:coverDisplayDate>June 2023</prism:coverDisplayDate>
+ <prism:volume>105</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2023/00000104/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2023/00000104/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 104, Number 1, March 2023</title>
+ <description>STUDIES IN MYCOLOGY, Volume 104, Number 1, March 2023.
+ Loaded on 2023-05-25
+ </description>
+ <prism:coverDisplayDate>March 2023</prism:coverDisplayDate>
+ <prism:volume>104</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2022/00000103/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2022/00000103/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 103, Number 1, December 2022</title>
+ <description>STUDIES IN MYCOLOGY, Volume 103, Number 1, December 2022.
+ Loaded on 2023-01-10
+ </description>
+ <prism:coverDisplayDate>December 2022</prism:coverDisplayDate>
+ <prism:volume>103</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ <item rdf:about="https://www.ingentaconnect.com/content/wfbi/sim/2022/00000102/00000001">
+ <link>https://www.ingentaconnect.com/content/wfbi/sim/2022/00000102/00000001</link>
+ <prism:copyright>(copyright) 2025 Westerdijk Fungal Biodiversity Institute</prism:copyright>
+ <prism:publicationName>STUDIES IN MYCOLOGY</prism:publicationName>
+ <prism:isPartOf rdf:resource="urn:issn:0166-0616"/>
+ <prism:issn>0166-0616</prism:issn>
+ <title>Volume 102, Number 1, June 2022</title>
+ <description>STUDIES IN MYCOLOGY, Volume 102, Number 1, June 2022.
+ Loaded on 2023-01-07
+ </description>
+ <prism:coverDisplayDate>June 2022</prism:coverDisplayDate>
+ <prism:volume>102</prism:volume>
+ <prism:number>1</prism:number>
+ </item>
+ </rdf:RDF>
