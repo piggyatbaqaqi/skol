@@ -10,6 +10,7 @@ Created by: Christopher Murphy, La Monte Yarroll, David Caspers
 - **Advanced Feature Engineering**: TF-IDF with optional word suffix features (2-4 characters)
 - **Automated Paragraph Detection**: Heuristic-based paragraph extraction from raw text
 - **Scalable Processing**: Built on Apache Spark for handling large document collections
+- **Model Persistence**: Save and load models to/from Redis or disk
 - **Easy-to-use API**: Simple interface for training and prediction
 
 ## Installation
@@ -79,9 +80,11 @@ Main classifier class for training and prediction.
 
 #### Methods
 
-**`__init__(spark=None)`**
+**`__init__(spark=None, redis_client=None, redis_key='skol_classifier_model')`**
 - Initialize the classifier
 - `spark`: Optional SparkSession (creates one if not provided)
+- `redis_client`: Optional Redis client connection for model persistence
+- `redis_key`: Key name to use in Redis for storing the model
 
 **`fit(annotated_file_paths, model_type='logistic', use_suffixes=True, test_size=0.2, **model_params)`**
 - Complete training pipeline
