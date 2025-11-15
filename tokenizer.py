@@ -73,7 +73,7 @@ class Tokenizer(object):
         match = self.match(line)
         while line and match:
             line = line[match.end():]
-            ws = re.match('[\s]+', line, flags=re.DOTALL)
+            ws = re.match(r`'[\s]+', line, flags=re.DOTALL)
             if ws:
                 line = line[ws.end():]
             yield (match, line)
