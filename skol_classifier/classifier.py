@@ -669,3 +669,159 @@ class SkolClassifier:
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
                 self.labels = metadata.get("labels")
+
+    def load_from_couchdb(
+        self,
+        couchdb_url: str,
+        database: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        pattern: str = "*.txt"
+    ) -> DataFrame:
+        """
+        Load raw text from CouchDB attachments.
+
+        Args:
+            couchdb_url: CouchDB server URL (e.g., "http://localhost:5984")
+            database: Database name
+            username: Optional username for authentication
+            password: Optional password for authentication
+            pattern: Pattern for attachment names (default: "*.txt")
+
+        Returns:
+            DataFrame with columns: doc_id, attachment_name, value
+        """
+        from .couchdb_io import CouchDBReader
+
+        reader = CouchDBReader(couchdb_url, database, username, password)
+        return reader.to_spark_dataframe(self.spark, pattern)
+
+    def predict_from_couchdb(
+        self,
+        couchdb_url: str,
+        database: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        pattern: str = "*.txt",
+        output_format: str = "annotated"
+    ) -> DataFrame:
+        """
+        Load text from CouchDB, predict labels, and return predictions.
+
+        Args:
+            couchdb_url: CouchDB server URL
+            database: Database name
+            username: Optional username
+            password: Optional password
+            pattern: Pattern for attachment names
+            output_format: Output format ('annotated' or 'simple')
+
+        Returns:
+            DataFrame with predictions, including doc_id and attachment_name
+        """
+        if self.pipeline_model is None or self.classifier_model is None:
+            raise ValueError(
+                "Models not trained. Call fit_features() and train_classifier() first."
+            )
+
+        # Load data from CouchDB
+        df = self.load_from_couchdb(
+            couchdb_url, database, username, password, pattern
+        )
+
+        # Process paragraphs
+        from .preprocessing import ParagraphExtractor
+        from pyspark.sql.types import ArrayType, StringType
+        from pyspark.sql.window import Window
+
+        heuristic_udf = udf(
+            ParagraphExtractor.extract_heuristic_paragraphs,
+            ArrayType(StringType())
+        )
+
+        # Window specification for ordering
+        window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
+
+        # Group and extract paragraphs
+        grouped_df = (
+            df.groupBy("doc_id", "attachment_name")
+            .agg(
+                collect_list("value").alias("lines"),
+                min(lit(0)).alias("start_idx")
+            )
+            .withColumn("value", explode(heuristic_udf(col("lines"))))
+            .drop("lines")
+            .filter(trim(col("value")) != "")
+            .withColumn("row_number", row_number().over(window_spec))
+        )
+
+        # Extract features
+        features = self.pipeline_model.transform(grouped_df)
+
+        # Predict
+        predictions = self.classifier_model.transform(features)
+
+        # Convert label indices to strings
+        from pyspark.ml.feature import IndexToString
+
+        converter = IndexToString(
+            inputCol="prediction",
+            outputCol="predicted_label",
+            labels=self.labels
+        )
+        labeled_predictions = converter.transform(predictions)
+
+        # Format output
+        if output_format == "annotated":
+            labeled_predictions = labeled_predictions.withColumn(
+                "annotated_pg",
+                concat(
+                    lit("[@ "),
+                    col("value"),
+                    lit("#"),
+                    col("predicted_label"),
+                    lit("]")
+                )
+            )
+
+        return labeled_predictions
+
+    def save_to_couchdb(
+        self,
+        predictions: DataFrame,
+        couchdb_url: str,
+        database: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        suffix: str = ".ann"
+    ) -> List[Dict[str, Any]]:
+        """
+        Save annotated predictions back to CouchDB as attachments.
+
+        Args:
+            predictions: DataFrame with predictions (must include annotated_pg column)
+            couchdb_url: CouchDB server URL
+            database: Database name
+            username: Optional username
+            password: Optional password
+            suffix: Suffix to append to attachment names (default: ".ann")
+
+        Returns:
+            List of results from CouchDB operations
+        """
+        from .couchdb_io import CouchDBWriter
+
+        # Aggregate paragraphs by document and attachment
+        aggregated_df = (
+            predictions.groupBy("doc_id", "attachment_name")
+            .agg(
+                expr("sort_array(collect_list(struct(row_number, annotated_pg))) AS sorted_list")
+            )
+            .withColumn("annotated_pg_ordered", expr("transform(sorted_list, x -> x.annotated_pg)"))
+            .withColumn("final_aggregated_pg", expr("array_join(annotated_pg_ordered, '\n')"))
+            .select("doc_id", "attachment_name", "final_aggregated_pg")
+        )
+
+        # Save to CouchDB
+        writer = CouchDBWriter(couchdb_url, database, username, password)
+        return writer.save_from_dataframe(aggregated_df, suffix)

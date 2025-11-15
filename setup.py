@@ -32,6 +32,7 @@ setup(
         "spark-nlp",
         "regex>=2021.0.0",
         "redis>=4.0.0",
+        "requests>=2.25.0",
     ],
     extras_require={
         "dev": [

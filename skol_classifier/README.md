@@ -11,6 +11,7 @@ Created by: Christopher Murphy, La Monte Yarroll, David Caspers
 - **Automated Paragraph Detection**: Heuristic-based paragraph extraction from raw text
 - **Scalable Processing**: Built on Apache Spark for handling large document collections
 - **Model Persistence**: Save and load models to/from Redis or disk
+- **CouchDB Integration**: Read from and write to CouchDB attachments
 - **Easy-to-use API**: Simple interface for training and prediction
 
 ## Installation
