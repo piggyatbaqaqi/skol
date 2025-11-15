@@ -9,6 +9,7 @@ from .classifier import SkolClassifier
 from .preprocessing import ParagraphExtractor, SuffixTransformer
 from .utils import get_file_list, create_evaluators, calculate_stats
 from .couchdb_io import (
+    CouchDBConnection,
     CouchDBReader,
     CouchDBWriter,
     create_couchdb_reader,
@@ -23,6 +24,7 @@ __all__ = [
     "get_file_list",
     "create_evaluators",
     "calculate_stats",
+    "CouchDBConnection",
     "CouchDBReader",
     "CouchDBWriter",
     "create_couchdb_reader",
