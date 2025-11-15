@@ -23,7 +23,9 @@ def get_document_list(
     Get a list of documents with text attachments from CouchDB.
 
     This only fetches document metadata (not content) to create a DataFrame
-    that can be processed in parallel.
+    that can be processed in parallel. Creates ONE ROW per attachment, so if
+    a document has multiple attachments matching the pattern, it will have
+    multiple rows in the resulting DataFrame.
 
     Args:
         spark: SparkSession
@@ -31,10 +33,11 @@ def get_document_list(
         database: Database name
         username: Optional username
         password: Optional password
-        pattern: Pattern for attachment names
+        pattern: Pattern for attachment names (e.g., "*.txt")
 
     Returns:
         DataFrame with columns: doc_id, attachment_name
+        One row per (doc_id, attachment_name) pair
     """
     # Connect to CouchDB (driver only)
     if username and password:
@@ -52,9 +55,17 @@ def get_document_list(
             doc = db[doc_id]
             attachments = doc.get('_attachments', {})
 
+            # Loop through ALL attachments in the document
             for att_name in attachments.keys():
                 # Check if attachment matches pattern
+                # Pattern matching: "*.txt" matches files ending with .txt
                 if pattern == "*.txt" and att_name.endswith('.txt'):
+                    doc_list.append((doc_id, att_name))
+                elif pattern == "*.*" or pattern == "*":
+                    # Match all attachments
+                    doc_list.append((doc_id, att_name))
+                elif pattern.startswith("*.") and att_name.endswith(pattern[1:]):
+                    # Generic pattern matching for *.ext
                     doc_list.append((doc_id, att_name))
         except Exception:
             # Skip documents we can't read
@@ -103,11 +114,13 @@ def fetch_partition_from_couchdb(
         db = server[database]
 
         # Process all rows in partition with same connection
+        # Note: Each row represents one (doc_id, attachment_name) pair
+        # If a document has multiple .txt attachments, there will be multiple rows
         for row in partition:
             try:
                 doc = db[row.doc_id]
 
-                # Get attachment
+                # Get the specific attachment for this row
                 if row.attachment_name in doc.get('_attachments', {}):
                     attachment = db.get_attachment(doc, row.attachment_name)
                     if attachment:
@@ -163,15 +176,18 @@ def save_partition_to_couchdb(
         db = server[database]
 
         # Process all rows in partition with same connection
+        # Note: Each row represents one (doc_id, attachment_name) pair
+        # If a document had multiple .txt files, we save multiple .ann files
         for row in partition:
             success = False
             try:
                 doc = db[row.doc_id]
 
-                # Create new attachment name
+                # Create new attachment name by appending suffix
+                # e.g., "article.txt" becomes "article.txt.ann"
                 new_attachment_name = f"{row.attachment_name}{suffix}"
 
-                # Save attachment
+                # Save the annotated content as a new attachment
                 db.put_attachment(
                     doc,
                     row.final_aggregated_pg.encode('utf-8'),
