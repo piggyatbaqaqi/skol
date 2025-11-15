@@ -31,6 +31,7 @@ setup(
         "pyspark>=3.0.0",
         "spark-nlp",
         "regex>=2021.0.0",
+        "redis>=4.0.0",
     ],
     extras_require={
         "dev": [

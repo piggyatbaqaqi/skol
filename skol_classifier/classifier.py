@@ -2,6 +2,11 @@
 Main classifier module for SKOL text classification
 """
 
+import pickle
+import tempfile
+import shutil
+import json
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
@@ -28,12 +33,19 @@ class SkolClassifier:
     and feature types (word TF-IDF, suffix TF-IDF, combined).
     """
 
-    def __init__(self, spark: Optional[SparkSession] = None):
+    def __init__(
+        self,
+        spark: Optional[SparkSession] = None,
+        redis_client: Optional[Any] = None,
+        redis_key: str = "skol_classifier_model"
+    ):
         """
         Initialize the SKOL classifier.
 
         Args:
             spark: SparkSession (creates one if not provided)
+            redis_client: Redis client connection (optional, for model persistence)
+            redis_key: Key name to use in Redis for storing the model
         """
         if spark is None:
             import sparknlp
@@ -44,6 +56,8 @@ class SkolClassifier:
         self.pipeline_model: Optional[PipelineModel] = None
         self.classifier_model: Optional[PipelineModel] = None
         self.labels: Optional[List[str]] = None
+        self.redis_client = redis_client
+        self.redis_key = redis_key
 
     def load_annotated_data(
         self,
@@ -419,3 +433,225 @@ class SkolClassifier:
             "features_col": features_col,
             **stats
         }
+
+    def save_to_redis(
+        self,
+        redis_client: Optional[Any] = None,
+        redis_key: Optional[str] = None
+    ) -> bool:
+        """
+        Save the trained models to Redis.
+
+        The models are saved to a temporary directory, then packaged and stored in Redis
+        as a compressed binary blob along with metadata.
+
+        Args:
+            redis_client: Redis client (uses self.redis_client if not provided)
+            redis_key: Redis key name (uses self.redis_key if not provided)
+
+        Returns:
+            True if successful, False otherwise
+
+        Raises:
+            ValueError: If no models are trained or Redis client is not available
+        """
+        if self.pipeline_model is None or self.classifier_model is None:
+            raise ValueError(
+                "No models to save. Train models using fit() or train_classifier() first."
+            )
+
+        client = redis_client or self.redis_client
+        key = redis_key or self.redis_key
+
+        if client is None:
+            raise ValueError(
+                "No Redis client available. Provide redis_client argument or "
+                "initialize classifier with redis_client."
+            )
+
+        temp_dir = None
+        try:
+            # Create temporary directory for model files
+            temp_dir = tempfile.mkdtemp(prefix="skol_model_")
+            temp_path = Path(temp_dir)
+
+            # Save pipeline model
+            pipeline_path = temp_path / "pipeline_model"
+            self.pipeline_model.save(str(pipeline_path))
+
+            # Save classifier model
+            classifier_path = temp_path / "classifier_model"
+            self.classifier_model.save(str(classifier_path))
+
+            # Save metadata (labels and model info)
+            metadata = {
+                "labels": self.labels,
+                "version": "0.0.1"
+            }
+            metadata_path = temp_path / "metadata.json"
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f)
+
+            # Create archive in memory
+            import io
+            import tarfile
+
+            archive_buffer = io.BytesIO()
+            with tarfile.open(fileobj=archive_buffer, mode='w:gz') as tar:
+                tar.add(temp_path, arcname='.')
+
+            # Get compressed data
+            archive_data = archive_buffer.getvalue()
+
+            # Save to Redis
+            client.set(key, archive_data)
+
+            return True
+
+        except Exception as e:
+            print(f"Error saving to Redis: {e}")
+            return False
+
+        finally:
+            # Clean up temporary directory
+            if temp_dir and Path(temp_dir).exists():
+                shutil.rmtree(temp_dir)
+
+    def load_from_redis(
+        self,
+        redis_client: Optional[Any] = None,
+        redis_key: Optional[str] = None
+    ) -> bool:
+        """
+        Load trained models from Redis.
+
+        Args:
+            redis_client: Redis client (uses self.redis_client if not provided)
+            redis_key: Redis key name (uses self.redis_key if not provided)
+
+        Returns:
+            True if successful, False otherwise
+
+        Raises:
+            ValueError: If Redis client is not available or key doesn't exist
+        """
+        client = redis_client or self.redis_client
+        key = redis_key or self.redis_key
+
+        if client is None:
+            raise ValueError(
+                "No Redis client available. Provide redis_client argument or "
+                "initialize classifier with redis_client."
+            )
+
+        temp_dir = None
+        try:
+            # Retrieve from Redis
+            archive_data = client.get(key)
+            if archive_data is None:
+                raise ValueError(f"No model found in Redis with key: {key}")
+
+            # Create temporary directory for extraction
+            temp_dir = tempfile.mkdtemp(prefix="skol_model_load_")
+            temp_path = Path(temp_dir)
+
+            # Extract archive
+            import io
+            import tarfile
+
+            archive_buffer = io.BytesIO(archive_data)
+            with tarfile.open(fileobj=archive_buffer, mode='r:gz') as tar:
+                tar.extractall(temp_path)
+
+            # Load pipeline model
+            pipeline_path = temp_path / "pipeline_model"
+            self.pipeline_model = PipelineModel.load(str(pipeline_path))
+
+            # Load classifier model
+            classifier_path = temp_path / "classifier_model"
+            self.classifier_model = PipelineModel.load(str(classifier_path))
+
+            # Load metadata
+            metadata_path = temp_path / "metadata.json"
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+                self.labels = metadata.get("labels")
+
+            return True
+
+        except Exception as e:
+            print(f"Error loading from Redis: {e}")
+            return False
+
+        finally:
+            # Clean up temporary directory
+            if temp_dir and Path(temp_dir).exists():
+                shutil.rmtree(temp_dir)
+
+    def save_to_disk(self, path: str) -> None:
+        """
+        Save the trained models to disk.
+
+        Args:
+            path: Directory path to save the models
+
+        Raises:
+            ValueError: If no models are trained
+        """
+        if self.pipeline_model is None or self.classifier_model is None:
+            raise ValueError(
+                "No models to save. Train models using fit() or train_classifier() first."
+            )
+
+        save_path = Path(path)
+        save_path.mkdir(parents=True, exist_ok=True)
+
+        # Save pipeline model
+        pipeline_path = save_path / "pipeline_model"
+        self.pipeline_model.save(str(pipeline_path))
+
+        # Save classifier model
+        classifier_path = save_path / "classifier_model"
+        self.classifier_model.save(str(classifier_path))
+
+        # Save metadata
+        metadata = {
+            "labels": self.labels,
+            "version": "0.0.1"
+        }
+        metadata_path = save_path / "metadata.json"
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f)
+
+    def load_from_disk(self, path: str) -> None:
+        """
+        Load trained models from disk.
+
+        Args:
+            path: Directory path containing the saved models
+
+        Raises:
+            ValueError: If path doesn't exist or models are not found
+        """
+        load_path = Path(path)
+        if not load_path.exists():
+            raise ValueError(f"Path does not exist: {path}")
+
+        # Load pipeline model
+        pipeline_path = load_path / "pipeline_model"
+        if not pipeline_path.exists():
+            raise ValueError(f"Pipeline model not found at: {pipeline_path}")
+        self.pipeline_model = PipelineModel.load(str(pipeline_path))
+
+        # Load classifier model
+        classifier_path = load_path / "classifier_model"
+        if not classifier_path.exists():
+            raise ValueError(f"Classifier model not found at: {classifier_path}")
+        self.classifier_model = PipelineModel.load(str(classifier_path))
+
+        # Load metadata
+        metadata_path = load_path / "metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+                self.labels = metadata.get("labels")
