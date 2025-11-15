@@ -1,18 +1,333 @@
 """
-CouchDB I/O utilities for SKOL classifier
+CouchDB I/O utilities for SKOL classifier using distributed UDFs
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import udf, col, lit
-from pyspark.sql.types import StringType, StructType, StructField, ArrayType
-import requests
-from requests.auth import HTTPBasicAuth
+from pyspark.sql.functions import udf, col, lit, struct
+from pyspark.sql.types import (
+    StringType, StructType, StructField, ArrayType, BooleanType
+)
+import couchdb
 
 
+def create_fetch_attachment_udf(
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    pattern: str = "*.txt"
+):
+    """
+    Create a UDF that fetches attachment content from CouchDB.
+
+    This UDF runs distributed across Spark workers, each connecting to CouchDB
+    independently to fetch their assigned documents.
+
+    Args:
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        pattern: Pattern for attachment names
+
+    Returns:
+        UDF function that takes (doc_id, attachment_name) and returns content
+    """
+    def fetch_attachment(doc_id: str, attachment_name: str) -> Optional[str]:
+        """Fetch a single attachment from CouchDB."""
+        try:
+            # Connect to CouchDB (each worker creates its own connection)
+            if username and password:
+                server = couchdb.Server(f"{couchdb_url}")
+                server.resource.credentials = (username, password)
+            else:
+                server = couchdb.Server(couchdb_url)
+
+            db = server[database]
+            doc = db[doc_id]
+
+            # Get attachment
+            if attachment_name in doc.get('_attachments', {}):
+                attachment = db.get_attachment(doc, attachment_name)
+                if attachment:
+                    return attachment.read().decode('utf-8', errors='ignore')
+
+            return None
+        except Exception as e:
+            # Return error message instead of None for debugging
+            return f"ERROR: {str(e)}"
+
+    return udf(fetch_attachment, StringType())
+
+
+def create_save_attachment_udf(
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    suffix: str = ".ann"
+):
+    """
+    Create a UDF that saves annotated content back to CouchDB.
+
+    This UDF runs distributed across Spark workers, each saving their
+    assigned documents independently.
+
+    Args:
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        suffix: Suffix to append to attachment names
+
+    Returns:
+        UDF function that takes (doc_id, attachment_name, content) and returns success status
+    """
+    def save_attachment(doc_id: str, attachment_name: str, content: str) -> bool:
+        """Save annotated content as a new attachment."""
+        try:
+            # Connect to CouchDB
+            if username and password:
+                server = couchdb.Server(couchdb_url)
+                server.resource.credentials = (username, password)
+            else:
+                server = couchdb.Server(couchdb_url)
+
+            db = server[database]
+            doc = db[doc_id]
+
+            # Create new attachment name
+            new_attachment_name = f"{attachment_name}{suffix}"
+
+            # Save attachment
+            db.put_attachment(
+                doc,
+                content.encode('utf-8'),
+                filename=new_attachment_name,
+                content_type='text/plain'
+            )
+
+            return True
+        except Exception as e:
+            print(f"Error saving {doc_id}/{attachment_name}: {e}")
+            return False
+
+    return udf(save_attachment, BooleanType())
+
+
+def get_document_list(
+    spark: SparkSession,
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    pattern: str = "*.txt"
+) -> DataFrame:
+    """
+    Get a list of documents with text attachments from CouchDB.
+
+    This only fetches document metadata (not content) to create a DataFrame
+    that can be processed in parallel.
+
+    Args:
+        spark: SparkSession
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        pattern: Pattern for attachment names
+
+    Returns:
+        DataFrame with columns: doc_id, attachment_name
+    """
+    # Connect to CouchDB (driver only)
+    if username and password:
+        server = couchdb.Server(couchdb_url)
+        server.resource.credentials = (username, password)
+    else:
+        server = couchdb.Server(couchdb_url)
+
+    db = server[database]
+
+    # Get all documents with attachments matching pattern
+    doc_list = []
+    for doc_id in db:
+        try:
+            doc = db[doc_id]
+            attachments = doc.get('_attachments', {})
+
+            for att_name in attachments.keys():
+                # Check if attachment matches pattern
+                if pattern == "*.txt" and att_name.endswith('.txt'):
+                    doc_list.append((doc_id, att_name))
+        except Exception:
+            # Skip documents we can't read
+            continue
+
+    # Create DataFrame with document IDs and attachment names
+    schema = StructType([
+        StructField("doc_id", StringType(), False),
+        StructField("attachment_name", StringType(), False)
+    ])
+
+    return spark.createDataFrame(doc_list, schema)
+
+
+def load_from_couchdb_distributed(
+    spark: SparkSession,
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    pattern: str = "*.txt"
+) -> DataFrame:
+    """
+    Load text attachments from CouchDB using distributed UDFs.
+
+    This function:
+    1. Gets list of documents (on driver)
+    2. Creates a DataFrame with doc IDs
+    3. Uses UDF to fetch content in parallel across workers
+
+    Args:
+        spark: SparkSession
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        pattern: Pattern for attachment names
+
+    Returns:
+        DataFrame with columns: doc_id, attachment_name, value
+    """
+    # Get document list
+    doc_df = get_document_list(
+        spark, couchdb_url, database, username, password, pattern
+    )
+
+    # Create UDF to fetch content
+    fetch_udf = create_fetch_attachment_udf(
+        couchdb_url, database, username, password, pattern
+    )
+
+    # Apply UDF to fetch content in parallel
+    result_df = doc_df.withColumn(
+        "value",
+        fetch_udf(col("doc_id"), col("attachment_name"))
+    )
+
+    # Filter out failed fetches
+    result_df = result_df.filter(
+        (col("value").isNotNull()) &
+        (~col("value").startswith("ERROR:"))
+    )
+
+    return result_df
+
+
+def save_to_couchdb_distributed(
+    df: DataFrame,
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    suffix: str = ".ann"
+) -> DataFrame:
+    """
+    Save annotated predictions to CouchDB using distributed UDFs.
+
+    This function uses a UDF that runs on each worker to save attachments
+    in parallel.
+
+    Args:
+        df: DataFrame with columns: doc_id, attachment_name, final_aggregated_pg
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        suffix: Suffix to append to attachment names
+
+    Returns:
+        DataFrame with additional 'success' column indicating save status
+    """
+    # Create UDF to save content
+    save_udf = create_save_attachment_udf(
+        couchdb_url, database, username, password, suffix
+    )
+
+    # Apply UDF to save content in parallel
+    result_df = df.withColumn(
+        "success",
+        save_udf(
+            col("doc_id"),
+            col("attachment_name"),
+            col("final_aggregated_pg")
+        )
+    )
+
+    return result_df
+
+
+def create_process_and_save_udf(
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    suffix: str = ".ann"
+):
+    """
+    Create a UDF that both reads and writes in a single operation.
+
+    This is useful when you want to process and save in one step,
+    avoiding the need to pass large content through Spark.
+
+    Args:
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        suffix: Suffix for new attachment
+
+    Returns:
+        UDF that takes (doc_id, attachment_name, processed_content) and returns success
+    """
+    def process_and_save(doc_id: str, attachment_name: str, processed_content: str) -> bool:
+        """Read original, combine with processed, and save."""
+        try:
+            # Connect to CouchDB
+            if username and password:
+                server = couchdb.Server(couchdb_url)
+                server.resource.credentials = (username, password)
+            else:
+                server = couchdb.Server(couchdb_url)
+
+            db = server[database]
+            doc = db[doc_id]
+
+            # Create new attachment name
+            new_attachment_name = f"{attachment_name}{suffix}"
+
+            # Save processed content as new attachment
+            db.put_attachment(
+                doc,
+                processed_content.encode('utf-8'),
+                filename=new_attachment_name,
+                content_type='text/plain'
+            )
+
+            return True
+        except Exception as e:
+            print(f"Error processing {doc_id}/{attachment_name}: {e}")
+            return False
+
+    return udf(process_and_save, BooleanType())
+
+
+# Convenience class for backward compatibility
 class CouchDBReader:
     """
-    Reader for extracting text attachments from CouchDB documents.
+    Reader for CouchDB using distributed UDFs.
     """
 
     def __init__(
@@ -22,133 +337,31 @@ class CouchDBReader:
         username: Optional[str] = None,
         password: Optional[str] = None
     ):
-        """
-        Initialize CouchDB reader.
-
-        Args:
-            url: CouchDB server URL (e.g., "http://localhost:5984")
-            database: Database name
-            username: Optional username for authentication
-            password: Optional password for authentication
-        """
-        self.url = url.rstrip('/')
+        """Initialize CouchDB reader."""
+        self.url = url
         self.database = database
-        self.auth = HTTPBasicAuth(username, password) if username else None
-        self.db_url = f"{self.url}/{self.database}"
-
-    def get_all_docs(self, include_attachments: bool = True) -> List[Dict[str, Any]]:
-        """
-        Get all documents from the database.
-
-        Args:
-            include_attachments: Include attachment metadata
-
-        Returns:
-            List of document dictionaries
-        """
-        params = {
-            'include_docs': 'true',
-            'attachments': 'true' if include_attachments else 'false'
-        }
-
-        response = requests.get(
-            f"{self.db_url}/_all_docs",
-            params=params,
-            auth=self.auth
-        )
-        response.raise_for_status()
-
-        data = response.json()
-        return [row['doc'] for row in data.get('rows', [])]
-
-    def get_attachment(
-        self,
-        doc_id: str,
-        attachment_name: str
-    ) -> bytes:
-        """
-        Get attachment content from a document.
-
-        Args:
-            doc_id: Document ID
-            attachment_name: Name of the attachment
-
-        Returns:
-            Attachment content as bytes
-        """
-        url = f"{self.db_url}/{doc_id}/{attachment_name}"
-        response = requests.get(url, auth=self.auth)
-        response.raise_for_status()
-        return response.content
-
-    def get_text_attachments(
-        self,
-        pattern: str = "*.txt"
-    ) -> List[Dict[str, Any]]:
-        """
-        Get all .txt attachments from all documents.
-
-        Args:
-            pattern: Pattern for attachment names (default: "*.txt")
-
-        Returns:
-            List of dictionaries with doc_id, attachment_name, and content
-        """
-        docs = self.get_all_docs()
-        attachments = []
-
-        for doc in docs:
-            doc_id = doc.get('_id', '')
-            doc_attachments = doc.get('_attachments', {})
-
-            for att_name, att_meta in doc_attachments.items():
-                # Check if attachment matches pattern
-                if pattern == "*.txt" and att_name.endswith('.txt'):
-                    # Get attachment content
-                    content = self.get_attachment(doc_id, att_name)
-
-                    attachments.append({
-                        'doc_id': doc_id,
-                        'attachment_name': att_name,
-                        'content': content.decode('utf-8', errors='ignore')
-                    })
-
-        return attachments
+        self.username = username
+        self.password = password
 
     def to_spark_dataframe(
         self,
         spark: SparkSession,
         pattern: str = "*.txt"
     ) -> DataFrame:
-        """
-        Load text attachments as a Spark DataFrame.
-
-        Args:
-            spark: SparkSession
-            pattern: Pattern for attachment names
-
-        Returns:
-            DataFrame with columns: doc_id, attachment_name, value
-        """
-        attachments = self.get_text_attachments(pattern)
-
-        # Convert to DataFrame
-        schema = StructType([
-            StructField("doc_id", StringType(), False),
-            StructField("attachment_name", StringType(), False),
-            StructField("value", StringType(), False)
-        ])
-
-        # Create list of rows
-        rows = [(att['doc_id'], att['attachment_name'], att['content'])
-                for att in attachments]
-
-        return spark.createDataFrame(rows, schema)
+        """Load attachments as Spark DataFrame using distributed UDFs."""
+        return load_from_couchdb_distributed(
+            spark,
+            self.url,
+            self.database,
+            self.username,
+            self.password,
+            pattern
+        )
 
 
 class CouchDBWriter:
     """
-    Writer for saving annotated text back to CouchDB as attachments.
+    Writer for CouchDB using distributed UDFs.
     """
 
     def __init__(
@@ -158,113 +371,11 @@ class CouchDBWriter:
         username: Optional[str] = None,
         password: Optional[str] = None
     ):
-        """
-        Initialize CouchDB writer.
-
-        Args:
-            url: CouchDB server URL (e.g., "http://localhost:5984")
-            database: Database name
-            username: Optional username for authentication
-            password: Optional password for authentication
-        """
-        self.url = url.rstrip('/')
+        """Initialize CouchDB writer."""
+        self.url = url
         self.database = database
-        self.auth = HTTPBasicAuth(username, password) if username else None
-        self.db_url = f"{self.url}/{self.database}"
-
-    def get_document(self, doc_id: str) -> Dict[str, Any]:
-        """
-        Get a document by ID.
-
-        Args:
-            doc_id: Document ID
-
-        Returns:
-            Document dictionary
-        """
-        response = requests.get(f"{self.db_url}/{doc_id}", auth=self.auth)
-        response.raise_for_status()
-        return response.json()
-
-    def put_attachment(
-        self,
-        doc_id: str,
-        attachment_name: str,
-        content: str,
-        content_type: str = "text/plain"
-    ) -> Dict[str, Any]:
-        """
-        Add or update an attachment to a document.
-
-        Args:
-            doc_id: Document ID
-            attachment_name: Name for the attachment
-            content: Attachment content (string)
-            content_type: MIME type (default: "text/plain")
-
-        Returns:
-            Response dictionary from CouchDB
-        """
-        # Get current document to get _rev
-        doc = self.get_document(doc_id)
-        rev = doc['_rev']
-
-        # Upload attachment
-        url = f"{self.db_url}/{doc_id}/{attachment_name}"
-        headers = {'Content-Type': content_type}
-
-        response = requests.put(
-            url,
-            data=content.encode('utf-8'),
-            headers=headers,
-            params={'rev': rev},
-            auth=self.auth
-        )
-        response.raise_for_status()
-        return response.json()
-
-    def save_annotated_predictions(
-        self,
-        predictions: List[Tuple[str, str, str]],
-        suffix: str = ".ann"
-    ) -> List[Dict[str, Any]]:
-        """
-        Save annotated predictions back to CouchDB.
-
-        Args:
-            predictions: List of (doc_id, attachment_name, annotated_content) tuples
-            suffix: Suffix to append to attachment names (default: ".ann")
-
-        Returns:
-            List of response dictionaries from CouchDB
-        """
-        results = []
-
-        for doc_id, attachment_name, content in predictions:
-            # Create new attachment name
-            new_attachment_name = f"{attachment_name}{suffix}"
-
-            try:
-                result = self.put_attachment(
-                    doc_id,
-                    new_attachment_name,
-                    content
-                )
-                results.append({
-                    'doc_id': doc_id,
-                    'attachment_name': new_attachment_name,
-                    'success': True,
-                    'result': result
-                })
-            except Exception as e:
-                results.append({
-                    'doc_id': doc_id,
-                    'attachment_name': new_attachment_name,
-                    'success': False,
-                    'error': str(e)
-                })
-
-        return results
+        self.username = username
+        self.password = password
 
     def save_from_dataframe(
         self,
@@ -272,25 +383,29 @@ class CouchDBWriter:
         suffix: str = ".ann"
     ) -> List[Dict[str, Any]]:
         """
-        Save annotated predictions from a Spark DataFrame to CouchDB.
+        Save from DataFrame using distributed UDFs.
 
-        Args:
-            df: DataFrame with columns: doc_id, attachment_name, final_aggregated_pg
-            suffix: Suffix to append to attachment names
-
-        Returns:
-            List of results
+        Returns list of results (for compatibility).
         """
-        # Collect DataFrame to driver
-        rows = df.select("doc_id", "attachment_name", "final_aggregated_pg").collect()
+        result_df = save_to_couchdb_distributed(
+            df,
+            self.url,
+            self.database,
+            self.username,
+            self.password,
+            suffix
+        )
 
-        # Convert to list of tuples
-        predictions = [
-            (row.doc_id, row.attachment_name, row.final_aggregated_pg)
-            for row in rows
-        ]
+        # Collect results
+        results = []
+        for row in result_df.collect():
+            results.append({
+                'doc_id': row.doc_id,
+                'attachment_name': f"{row.attachment_name}{suffix}",
+                'success': row.success
+            })
 
-        return self.save_annotated_predictions(predictions, suffix)
+        return results
 
 
 def create_couchdb_reader(
@@ -299,18 +414,7 @@ def create_couchdb_reader(
     username: Optional[str] = None,
     password: Optional[str] = None
 ) -> CouchDBReader:
-    """
-    Factory function to create a CouchDB reader.
-
-    Args:
-        url: CouchDB server URL
-        database: Database name
-        username: Optional username
-        password: Optional password
-
-    Returns:
-        CouchDBReader instance
-    """
+    """Factory function to create a CouchDB reader."""
     return CouchDBReader(url, database, username, password)
 
 
@@ -320,16 +424,5 @@ def create_couchdb_writer(
     username: Optional[str] = None,
     password: Optional[str] = None
 ) -> CouchDBWriter:
-    """
-    Factory function to create a CouchDB writer.
-
-    Args:
-        url: CouchDB server URL
-        database: Database name
-        username: Optional username
-        password: Optional password
-
-    Returns:
-        CouchDBWriter instance
-    """
+    """Factory function to create a CouchDB writer."""
     return CouchDBWriter(url, database, username, password)

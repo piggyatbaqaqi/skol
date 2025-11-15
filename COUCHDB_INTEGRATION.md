@@ -10,10 +10,10 @@ The SKOL Classifier now supports reading raw text from CouchDB attachments and w
 
 ## Installation
 
-CouchDB support requires the `requests` library:
+CouchDB support requires the `CouchDB` package (version 1.2 or later):
 
 ```bash
-pip install requests>=2.25.0
+pip install CouchDB>=1.2
 ```
 
 Or install with updated requirements:
@@ -24,10 +24,14 @@ pip install -e .
 
 ## Features
 
-1. **Read from CouchDB**: Load `.txt` attachments from CouchDB documents
-2. **Automatic Processing**: Maintains document ID and attachment name through the pipeline
-3. **Write to CouchDB**: Save annotated results as new attachments (e.g., `article.txt.ann`)
-4. **Integration with Redis**: Combine CouchDB I/O with Redis model storage
+1. **Distributed Processing**: Uses PySpark UDFs to process documents in parallel across cluster
+2. **Read from CouchDB**: Load `.txt` attachments using distributed workers
+3. **Automatic Processing**: Maintains document ID and attachment name through the pipeline
+4. **Write to CouchDB**: Save annotated results in parallel using distributed UDFs
+5. **Integration with Redis**: Combine CouchDB I/O with Redis model storage
+6. **Scalability**: Handles large datasets by distributing I/O across Spark workers
+
+> **Note**: This implementation uses **distributed UDFs** where each Spark worker connects to CouchDB independently. This avoids loading all data on the driver and enables horizontal scaling. See [DISTRIBUTED_COUCHDB.md](DISTRIBUTED_COUCHDB.md) for details.
 
 ## Quick Start
 
