@@ -57,7 +57,7 @@ class Nomenclature(object):
     def optional_not_name(self, s: str, to_raise: bool = False) -> Optional[str]:
         if self.name(s):
             return s
-        m = re.match('\S+\s(.*)$', s, flags=re.DOTALL)
+        m = re.match(r'\S+\s(.*)$', s, flags=re.DOTALL)
         if m:
             return m.group(1)
         else:
