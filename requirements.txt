@@ -1,5 +1,5 @@
 pyspark>=3.0.0
 spark-nlp
-regex>=2021.0.0
+regex>=2.021.0.0
 redis>=4.0.0
-requests>=2.25.0
+CouchDB>=1.2

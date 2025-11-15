@@ -679,7 +679,10 @@ class SkolClassifier:
         pattern: str = "*.txt"
     ) -> DataFrame:
         """
-        Load raw text from CouchDB attachments.
+        Load raw text from CouchDB attachments using distributed UDFs.
+
+        This method uses Spark UDFs to fetch attachments in parallel across workers,
+        rather than loading all data on the driver.
 
         Args:
             couchdb_url: CouchDB server URL (e.g., "http://localhost:5984")
@@ -691,10 +694,16 @@ class SkolClassifier:
         Returns:
             DataFrame with columns: doc_id, attachment_name, value
         """
-        from .couchdb_io import CouchDBReader
+        from .couchdb_io import load_from_couchdb_distributed
 
-        reader = CouchDBReader(couchdb_url, database, username, password)
-        return reader.to_spark_dataframe(self.spark, pattern)
+        return load_from_couchdb_distributed(
+            self.spark,
+            couchdb_url,
+            database,
+            username,
+            password,
+            pattern
+        )
 
     def predict_from_couchdb(
         self,
@@ -796,7 +805,10 @@ class SkolClassifier:
         suffix: str = ".ann"
     ) -> List[Dict[str, Any]]:
         """
-        Save annotated predictions back to CouchDB as attachments.
+        Save annotated predictions back to CouchDB using distributed UDFs.
+
+        This method uses Spark UDFs to save attachments in parallel across workers,
+        distributing the write operations.
 
         Args:
             predictions: DataFrame with predictions (must include annotated_pg column)
@@ -809,7 +821,7 @@ class SkolClassifier:
         Returns:
             List of results from CouchDB operations
         """
-        from .couchdb_io import CouchDBWriter
+        from .couchdb_io import save_to_couchdb_distributed
 
         # Aggregate paragraphs by document and attachment
         aggregated_df = (
@@ -822,6 +834,23 @@ class SkolClassifier:
             .select("doc_id", "attachment_name", "final_aggregated_pg")
         )
 
-        # Save to CouchDB
-        writer = CouchDBWriter(couchdb_url, database, username, password)
-        return writer.save_from_dataframe(aggregated_df, suffix)
+        # Save to CouchDB using distributed UDF
+        result_df = save_to_couchdb_distributed(
+            aggregated_df,
+            couchdb_url,
+            database,
+            username,
+            password,
+            suffix
+        )
+
+        # Collect results
+        results = []
+        for row in result_df.collect():
+            results.append({
+                'doc_id': row.doc_id,
+                'attachment_name': f"{row.attachment_name}{suffix}",
+                'success': row.success
+            })
+
+        return results
