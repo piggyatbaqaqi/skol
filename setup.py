@@ -9,7 +9,7 @@ with open("skol_classifier/README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="skol-classifier",
-    version="0.1.0",
+    version="0.0.1",
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     description="PySpark-based text classification pipeline for taxonomic literature",
     long_description=long_description,
@@ -29,7 +29,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "pyspark>=3.0.0",
-        "sparknlp>=3.0.0",
+        "spark-nlp",
         "regex>=2021.0.0",
     ],
     extras_require={
