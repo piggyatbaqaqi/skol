@@ -26,15 +26,16 @@ Problem: Driver becomes bottleneck and may run out of memory
 ```
 Driver Node:
   1. Connect to CouchDB
-  2. Get list of document IDs only (lightweight)
-  3. Create DataFrame with IDs
-  4. Distribute IDs to workers
+  2. Get list of (doc_id, attachment_name) pairs (lightweight metadata only)
+  3. Create DataFrame with one row per attachment
+     - If doc has multiple .txt files, creates multiple rows
+  4. Distribute rows to workers
 
 Worker Nodes (parallel):
   1. Each worker connects to CouchDB
-  2. Each fetches only its assigned documents
+  2. Each fetches only its assigned attachments
   3. Processing happens in parallel
-  4. Results written back in parallel
+  4. Results written back in parallel (one .ann per .txt)
 
 Benefit: Work distributed across cluster, no bottleneck
 ```
@@ -57,18 +58,21 @@ df = classifier.load_from_couchdb(
 )
 
 # df is a Spark DataFrame where:
-# - Document IDs were collected on driver
+# - (doc_id, attachment_name) pairs were collected on driver
+# - If a document has multiple .txt attachments, it has multiple rows
 # - Content is fetched lazily by workers when needed
 # - Each worker connects to CouchDB independently
 ```
 
 **What happens:**
-1. Driver gets list of document IDs from CouchDB
-2. Driver creates DataFrame with (doc_id, attachment_name) columns
-3. When the DataFrame is processed:
+1. Driver iterates through all documents in CouchDB
+2. For each document, loops through ALL attachments
+3. Creates one row per attachment matching pattern (e.g., "*.txt")
+4. Driver creates DataFrame with (doc_id, attachment_name) columns
+5. When the DataFrame is processed:
    - Spark distributes rows to workers
-   - Each worker runs a UDF that connects to CouchDB
-   - Worker fetches its assigned documents
+   - Each worker partition connects to CouchDB ONCE
+   - Worker fetches all its assigned attachments using same connection
    - Processing happens in parallel
 
 ### Writing to CouchDB
@@ -143,6 +147,59 @@ result_df = content_df.withColumn(
 # - Each worker saves its assigned documents
 # - All writes happen in parallel
 ```
+
+## Multiple Attachments Per Document
+
+The system is designed to handle documents with multiple text attachments:
+
+### Example Scenario
+
+```json
+{
+  "_id": "article_001",
+  "_attachments": {
+    "abstract.txt": {...},
+    "methods.txt": {...},
+    "results.txt": {...}
+  }
+}
+```
+
+### How It's Processed
+
+1. **Driver Phase**: Creates 3 rows in DataFrame:
+   ```
+   (article_001, abstract.txt)
+   (article_001, methods.txt)
+   (article_001, results.txt)
+   ```
+
+2. **Worker Phase**: Each attachment processed independently:
+   - Fetches content for each .txt file
+   - Classifies each independently
+   - Saves as separate .ann files
+
+3. **Result**: Document has 6 attachments:
+   ```json
+   {
+     "_id": "article_001",
+     "_attachments": {
+       "abstract.txt": {...},
+       "abstract.txt.ann": {...},    // NEW
+       "methods.txt": {...},
+       "methods.txt.ann": {...},     // NEW
+       "results.txt": {...},
+       "results.txt.ann": {...}      // NEW
+     }
+   }
+   ```
+
+### Benefits
+
+- **Independent processing**: Each text file classified separately
+- **Parallel processing**: Different .txt files can be on different workers
+- **Scalability**: Documents with many attachments automatically parallelized
+- **Flexibility**: Pattern matching allows selective processing
 
 ## Performance Considerations
 

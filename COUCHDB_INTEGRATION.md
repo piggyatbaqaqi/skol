@@ -249,6 +249,42 @@ The classifier adds new attachments with `.ann` suffix:
 }
 ```
 
+### Multiple Attachments Per Document
+
+**Important**: Documents can have multiple `.txt` attachments, and each will be processed independently:
+
+```json
+{
+  "_id": "article_001",
+  "_attachments": {
+    "abstract.txt": {...},
+    "methods.txt": {...},
+    "results.txt": {...}
+  }
+}
+```
+
+After processing, each `.txt` file gets a corresponding `.ann` file:
+
+```json
+{
+  "_id": "article_001",
+  "_attachments": {
+    "abstract.txt": {...},
+    "abstract.txt.ann": {...},
+    "methods.txt": {...},
+    "methods.txt.ann": {...},
+    "results.txt": {...},
+    "results.txt.ann": {...}
+  }
+}
+```
+
+The system automatically:
+- Finds ALL `.txt` attachments in each document
+- Processes each one independently (in parallel)
+- Saves each result as a separate `.ann` attachment
+
 ## Usage Patterns
 
 ### Pattern 1: Complete Pipeline
