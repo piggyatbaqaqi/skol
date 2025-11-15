@@ -1,0 +1,8 @@
+pyspark>=3.0.0
+spark-nlp
+regex>=2021.0.0
+
+[dev]
+pytest>=6.0
+black>=21.0
+flake8>=3.9
