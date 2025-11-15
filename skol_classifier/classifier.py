@@ -20,7 +20,9 @@ from pyspark.ml.feature import (
     Tokenizer, CountVectorizer, IDF, StringIndexer, VectorAssembler, IndexToString
 )
 from pyspark.ml.classification import LogisticRegression, RandomForestClassifier
+import sparknlp  # typing: ignore[import-untyped]
 
+from .couchdb_io import CouchDBConnection
 from .preprocessing import SuffixTransformer, ParagraphExtractor
 from .utils import calculate_stats
 
@@ -51,7 +53,6 @@ class SkolClassifier:
                       model from Redis if the key exists (default: True)
         """
         if spark is None:
-            import sparknlp
             self.spark = sparknlp.start()
         else:
             self.spark = spark
@@ -694,16 +695,9 @@ class SkolClassifier:
         Returns:
             DataFrame with columns: doc_id, attachment_name, value
         """
-        from .couchdb_io import load_from_couchdb_distributed
-
-        return load_from_couchdb_distributed(
-            self.spark,
-            couchdb_url,
-            database,
-            username,
-            password,
-            pattern
-        )
+        conn = CouchDBConnection(couchdb_url, database, username, password)
+        return conn.fetch_partition(self.spark, pattern)
+    
 
     def predict_from_couchdb(
         self,
@@ -821,7 +815,7 @@ class SkolClassifier:
         Returns:
             List of results from CouchDB operations
         """
-        from .couchdb_io import save_to_couchdb_distributed
+        conn = CouchDBConnection(couchdb_url, database, username, password)
 
         # Aggregate paragraphs by document and attachment
         aggregated_df = (
@@ -835,14 +829,7 @@ class SkolClassifier:
         )
 
         # Save to CouchDB using distributed UDF
-        result_df = save_to_couchdb_distributed(
-            aggregated_df,
-            couchdb_url,
-            database,
-            username,
-            password,
-            suffix
-        )
+        result_df = conn.save_distributed(aggregated_df, suffix)
 
         # Collect results
         results = []

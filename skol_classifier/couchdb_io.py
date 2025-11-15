@@ -386,85 +386,6 @@ class CouchDBConnection:
                 )
 
 
-# Standalone functions for backward compatibility
-def get_document_list(
-    spark: SparkSession,
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    pattern: str = "*.txt"
-) -> DataFrame:
-    """Standalone function - creates CouchDBConnection internally."""
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-    return conn.get_document_list(spark, pattern)
-
-
-def fetch_partition_from_couchdb(
-    partition: Iterator[Row],
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None
-) -> Iterator[Row]:
-    """Standalone function - creates CouchDBConnection internally."""
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-    return conn.fetch_partition(partition)
-
-
-def save_partition_to_couchdb(
-    partition: Iterator[Row],
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    suffix: str = ".ann"
-) -> Iterator[Row]:
-    """Standalone function - creates CouchDBConnection internally."""
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-    return conn.save_partition(partition, suffix)
-
-
-def load_from_couchdb_distributed(
-    spark: SparkSession,
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    pattern: str = "*.txt"
-) -> DataFrame:
-    """Standalone function - creates CouchDBConnection internally."""
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-    return conn.load_distributed(spark, pattern)
-
-
-def save_to_couchdb_distributed(
-    df: DataFrame,
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    suffix: str = ".ann"
-) -> DataFrame:
-    """Standalone function - creates CouchDBConnection internally."""
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-    return conn.save_distributed(df, suffix)
-
-
-def process_partition_with_couchdb(
-    partition: Iterator[Row],
-    couchdb_url: str,
-    database: str,
-    processor_func,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    suffix: str = ".ann"
-) -> Iterator[Row]:
-    """Standalone function - creates CouchDBConnection internally."""
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-    return conn.process_partition_with_func(partition, processor_func, suffix)
-
-
 # Convenience classes for backward compatibility
 class CouchDBReader:
     """
@@ -527,23 +448,3 @@ class CouchDBWriter:
             })
 
         return results
-
-
-def create_couchdb_reader(
-    url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None
-) -> CouchDBReader:
-    """Factory function to create a CouchDB reader."""
-    return CouchDBReader(url, database, username, password)
-
-
-def create_couchdb_writer(
-    url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None
-) -> CouchDBWriter:
-    """Factory function to create a CouchDB writer."""
-    return CouchDBWriter(url, database, username, password)

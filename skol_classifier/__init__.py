@@ -2,7 +2,7 @@
 SKOL II Text Classifier Module
 
 A PySpark-based text classification pipeline for taxonomic literature.
-Created by: Christopher Murphy, La Monte Yarroll, David Caspers
+Created by: Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers
 """
 
 from .classifier import SkolClassifier
@@ -12,8 +12,6 @@ from .couchdb_io import (
     CouchDBConnection,
     CouchDBReader,
     CouchDBWriter,
-    create_couchdb_reader,
-    create_couchdb_writer
 )
 
 __version__ = "0.1.0"
