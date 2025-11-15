@@ -1,119 +1,14 @@
 """
-CouchDB I/O utilities for SKOL classifier using distributed UDFs
+CouchDB I/O utilities for SKOL classifier using distributed foreachPartition
 """
 
-from typing import Optional, List, Dict, Any
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import udf, col, lit, struct
+from typing import Optional, List, Dict, Any, Iterator
+from pyspark.sql import SparkSession, DataFrame, Row
+from pyspark.sql.functions import col, lit
 from pyspark.sql.types import (
-    StringType, StructType, StructField, ArrayType, BooleanType
+    StringType, StructType, StructField, BooleanType
 )
 import couchdb
-
-
-def create_fetch_attachment_udf(
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    pattern: str = "*.txt"
-):
-    """
-    Create a UDF that fetches attachment content from CouchDB.
-
-    This UDF runs distributed across Spark workers, each connecting to CouchDB
-    independently to fetch their assigned documents.
-
-    Args:
-        couchdb_url: CouchDB server URL
-        database: Database name
-        username: Optional username
-        password: Optional password
-        pattern: Pattern for attachment names
-
-    Returns:
-        UDF function that takes (doc_id, attachment_name) and returns content
-    """
-    def fetch_attachment(doc_id: str, attachment_name: str) -> Optional[str]:
-        """Fetch a single attachment from CouchDB."""
-        try:
-            # Connect to CouchDB (each worker creates its own connection)
-            if username and password:
-                server = couchdb.Server(f"{couchdb_url}")
-                server.resource.credentials = (username, password)
-            else:
-                server = couchdb.Server(couchdb_url)
-
-            db = server[database]
-            doc = db[doc_id]
-
-            # Get attachment
-            if attachment_name in doc.get('_attachments', {}):
-                attachment = db.get_attachment(doc, attachment_name)
-                if attachment:
-                    return attachment.read().decode('utf-8', errors='ignore')
-
-            return None
-        except Exception as e:
-            # Return error message instead of None for debugging
-            return f"ERROR: {str(e)}"
-
-    return udf(fetch_attachment, StringType())
-
-
-def create_save_attachment_udf(
-    couchdb_url: str,
-    database: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    suffix: str = ".ann"
-):
-    """
-    Create a UDF that saves annotated content back to CouchDB.
-
-    This UDF runs distributed across Spark workers, each saving their
-    assigned documents independently.
-
-    Args:
-        couchdb_url: CouchDB server URL
-        database: Database name
-        username: Optional username
-        password: Optional password
-        suffix: Suffix to append to attachment names
-
-    Returns:
-        UDF function that takes (doc_id, attachment_name, content) and returns success status
-    """
-    def save_attachment(doc_id: str, attachment_name: str, content: str) -> bool:
-        """Save annotated content as a new attachment."""
-        try:
-            # Connect to CouchDB
-            if username and password:
-                server = couchdb.Server(couchdb_url)
-                server.resource.credentials = (username, password)
-            else:
-                server = couchdb.Server(couchdb_url)
-
-            db = server[database]
-            doc = db[doc_id]
-
-            # Create new attachment name
-            new_attachment_name = f"{attachment_name}{suffix}"
-
-            # Save attachment
-            db.put_attachment(
-                doc,
-                content.encode('utf-8'),
-                filename=new_attachment_name,
-                content_type='text/plain'
-            )
-
-            return True
-        except Exception as e:
-            print(f"Error saving {doc_id}/{attachment_name}: {e}")
-            return False
-
-    return udf(save_attachment, BooleanType())
 
 
 def get_document_list(
@@ -174,6 +69,138 @@ def get_document_list(
     return spark.createDataFrame(doc_list, schema)
 
 
+def fetch_partition_from_couchdb(
+    partition: Iterator[Row],
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None
+) -> Iterator[Row]:
+    """
+    Fetch CouchDB attachments for an entire partition.
+
+    This function is designed to be used with foreachPartition or mapPartitions.
+    It creates a single CouchDB connection per partition and reuses it for all rows.
+
+    Args:
+        partition: Iterator of Rows with doc_id and attachment_name
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+
+    Yields:
+        Rows with doc_id, attachment_name, and value (content)
+    """
+    # Connect to CouchDB once per partition
+    try:
+        if username and password:
+            server = couchdb.Server(couchdb_url)
+            server.resource.credentials = (username, password)
+        else:
+            server = couchdb.Server(couchdb_url)
+
+        db = server[database]
+
+        # Process all rows in partition with same connection
+        for row in partition:
+            try:
+                doc = db[row.doc_id]
+
+                # Get attachment
+                if row.attachment_name in doc.get('_attachments', {}):
+                    attachment = db.get_attachment(doc, row.attachment_name)
+                    if attachment:
+                        content = attachment.read().decode('utf-8', errors='ignore')
+                        yield Row(
+                            doc_id=row.doc_id,
+                            attachment_name=row.attachment_name,
+                            value=content
+                        )
+            except Exception as e:
+                # Log error but continue processing
+                print(f"Error fetching {row.doc_id}/{row.attachment_name}: {e}")
+                continue
+
+    except Exception as e:
+        print(f"Error connecting to CouchDB: {e}")
+        return
+
+
+def save_partition_to_couchdb(
+    partition: Iterator[Row],
+    couchdb_url: str,
+    database: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    suffix: str = ".ann"
+) -> Iterator[Row]:
+    """
+    Save annotated content to CouchDB for an entire partition.
+
+    This function is designed to be used with foreachPartition or mapPartitions.
+    It creates a single CouchDB connection per partition and reuses it for all rows.
+
+    Args:
+        partition: Iterator of Rows with doc_id, attachment_name, final_aggregated_pg
+        couchdb_url: CouchDB server URL
+        database: Database name
+        username: Optional username
+        password: Optional password
+        suffix: Suffix to append to attachment names
+
+    Yields:
+        Rows with doc_id, attachment_name, and success status
+    """
+    # Connect to CouchDB once per partition
+    try:
+        if username and password:
+            server = couchdb.Server(couchdb_url)
+            server.resource.credentials = (username, password)
+        else:
+            server = couchdb.Server(couchdb_url)
+
+        db = server[database]
+
+        # Process all rows in partition with same connection
+        for row in partition:
+            success = False
+            try:
+                doc = db[row.doc_id]
+
+                # Create new attachment name
+                new_attachment_name = f"{row.attachment_name}{suffix}"
+
+                # Save attachment
+                db.put_attachment(
+                    doc,
+                    row.final_aggregated_pg.encode('utf-8'),
+                    filename=new_attachment_name,
+                    content_type='text/plain'
+                )
+
+                success = True
+
+            except Exception as e:
+                print(f"Error saving {row.doc_id}/{row.attachment_name}: {e}")
+
+            yield Row(
+                doc_id=row.doc_id,
+                attachment_name=row.attachment_name,
+                success=success
+            )
+
+    except Exception as e:
+        print(f"Error connecting to CouchDB: {e}")
+        # Yield failures for all rows
+        for row in partition:
+            yield Row(
+                doc_id=row.doc_id,
+                attachment_name=row.attachment_name,
+                success=False
+            )
+
+
 def load_from_couchdb_distributed(
     spark: SparkSession,
     couchdb_url: str,
@@ -183,12 +210,12 @@ def load_from_couchdb_distributed(
     pattern: str = "*.txt"
 ) -> DataFrame:
     """
-    Load text attachments from CouchDB using distributed UDFs.
+    Load text attachments from CouchDB using foreachPartition.
 
     This function:
     1. Gets list of documents (on driver)
     2. Creates a DataFrame with doc IDs
-    3. Uses UDF to fetch content in parallel across workers
+    3. Uses mapPartitions to fetch content efficiently (one connection per partition)
 
     Args:
         spark: SparkSession
@@ -206,22 +233,21 @@ def load_from_couchdb_distributed(
         spark, couchdb_url, database, username, password, pattern
     )
 
-    # Create UDF to fetch content
-    fetch_udf = create_fetch_attachment_udf(
-        couchdb_url, database, username, password, pattern
-    )
+    # Use mapPartitions for efficient batch fetching
+    def fetch_partition(partition):
+        return fetch_partition_from_couchdb(
+            partition, couchdb_url, database, username, password
+        )
 
-    # Apply UDF to fetch content in parallel
-    result_df = doc_df.withColumn(
-        "value",
-        fetch_udf(col("doc_id"), col("attachment_name"))
-    )
+    # Define output schema
+    schema = StructType([
+        StructField("doc_id", StringType(), False),
+        StructField("attachment_name", StringType(), False),
+        StructField("value", StringType(), False)
+    ])
 
-    # Filter out failed fetches
-    result_df = result_df.filter(
-        (col("value").isNotNull()) &
-        (~col("value").startswith("ERROR:"))
-    )
+    # Apply mapPartitions
+    result_df = doc_df.rdd.mapPartitions(fetch_partition).toDF(schema)
 
     return result_df
 
@@ -235,10 +261,10 @@ def save_to_couchdb_distributed(
     suffix: str = ".ann"
 ) -> DataFrame:
     """
-    Save annotated predictions to CouchDB using distributed UDFs.
+    Save annotated predictions to CouchDB using foreachPartition.
 
-    This function uses a UDF that runs on each worker to save attachments
-    in parallel.
+    This function uses mapPartitions where each partition creates a single
+    CouchDB connection and reuses it for all rows.
 
     Args:
         df: DataFrame with columns: doc_id, attachment_name, final_aggregated_pg
@@ -249,85 +275,114 @@ def save_to_couchdb_distributed(
         suffix: Suffix to append to attachment names
 
     Returns:
-        DataFrame with additional 'success' column indicating save status
+        DataFrame with doc_id, attachment_name, and success columns
     """
-    # Create UDF to save content
-    save_udf = create_save_attachment_udf(
-        couchdb_url, database, username, password, suffix
-    )
-
-    # Apply UDF to save content in parallel
-    result_df = df.withColumn(
-        "success",
-        save_udf(
-            col("doc_id"),
-            col("attachment_name"),
-            col("final_aggregated_pg")
+    # Use mapPartitions for efficient batch saving
+    def save_partition(partition):
+        return save_partition_to_couchdb(
+            partition, couchdb_url, database, username, password, suffix
         )
-    )
+
+    # Define output schema
+    schema = StructType([
+        StructField("doc_id", StringType(), False),
+        StructField("attachment_name", StringType(), False),
+        StructField("success", BooleanType(), False)
+    ])
+
+    # Apply mapPartitions
+    result_df = df.rdd.mapPartitions(save_partition).toDF(schema)
 
     return result_df
 
 
-def create_process_and_save_udf(
+def process_partition_with_couchdb(
+    partition: Iterator[Row],
     couchdb_url: str,
     database: str,
+    processor_func,
     username: Optional[str] = None,
     password: Optional[str] = None,
     suffix: str = ".ann"
-):
+) -> Iterator[Row]:
     """
-    Create a UDF that both reads and writes in a single operation.
+    Generic function to read, process, and save in one partition operation.
 
-    This is useful when you want to process and save in one step,
-    avoiding the need to pass large content through Spark.
+    This allows custom processing logic while maintaining single connection per partition.
 
     Args:
+        partition: Iterator of Rows
         couchdb_url: CouchDB server URL
         database: Database name
+        processor_func: Function to process content (takes content string, returns processed string)
         username: Optional username
         password: Optional password
-        suffix: Suffix for new attachment
+        suffix: Suffix for output attachment
 
-    Returns:
-        UDF that takes (doc_id, attachment_name, processed_content) and returns success
+    Yields:
+        Rows with processing results
     """
-    def process_and_save(doc_id: str, attachment_name: str, processed_content: str) -> bool:
-        """Read original, combine with processed, and save."""
-        try:
-            # Connect to CouchDB
-            if username and password:
-                server = couchdb.Server(couchdb_url)
-                server.resource.credentials = (username, password)
-            else:
-                server = couchdb.Server(couchdb_url)
+    try:
+        if username and password:
+            server = couchdb.Server(couchdb_url)
+            server.resource.credentials = (username, password)
+        else:
+            server = couchdb.Server(couchdb_url)
 
-            db = server[database]
-            doc = db[doc_id]
+        db = server[database]
 
-            # Create new attachment name
-            new_attachment_name = f"{attachment_name}{suffix}"
+        for row in partition:
+            try:
+                doc = db[row.doc_id]
 
-            # Save processed content as new attachment
-            db.put_attachment(
-                doc,
-                processed_content.encode('utf-8'),
-                filename=new_attachment_name,
-                content_type='text/plain'
+                # Fetch
+                if row.attachment_name in doc.get('_attachments', {}):
+                    attachment = db.get_attachment(doc, row.attachment_name)
+                    if attachment:
+                        content = attachment.read().decode('utf-8', errors='ignore')
+
+                        # Process
+                        processed = processor_func(content)
+
+                        # Save
+                        new_attachment_name = f"{row.attachment_name}{suffix}"
+                        db.put_attachment(
+                            doc,
+                            processed.encode('utf-8'),
+                            filename=new_attachment_name,
+                            content_type='text/plain'
+                        )
+
+                        yield Row(
+                            doc_id=row.doc_id,
+                            attachment_name=row.attachment_name,
+                            success=True
+                        )
+                        continue
+
+            except Exception as e:
+                print(f"Error processing {row.doc_id}/{row.attachment_name}: {e}")
+
+            yield Row(
+                doc_id=row.doc_id,
+                attachment_name=row.attachment_name,
+                success=False
             )
 
-            return True
-        except Exception as e:
-            print(f"Error processing {doc_id}/{attachment_name}: {e}")
-            return False
+    except Exception as e:
+        print(f"Error connecting to CouchDB: {e}")
+        for row in partition:
+            yield Row(
+                doc_id=row.doc_id,
+                attachment_name=row.attachment_name,
+                success=False
+            )
 
-    return udf(process_and_save, BooleanType())
 
-
-# Convenience class for backward compatibility
+# Convenience classes for backward compatibility
 class CouchDBReader:
     """
-    Reader for CouchDB using distributed UDFs.
+    Reader for CouchDB using distributed foreachPartition.
     """
 
     def __init__(
@@ -348,7 +403,7 @@ class CouchDBReader:
         spark: SparkSession,
         pattern: str = "*.txt"
     ) -> DataFrame:
-        """Load attachments as Spark DataFrame using distributed UDFs."""
+        """Load attachments as Spark DataFrame using foreachPartition."""
         return load_from_couchdb_distributed(
             spark,
             self.url,
@@ -361,7 +416,7 @@ class CouchDBReader:
 
 class CouchDBWriter:
     """
-    Writer for CouchDB using distributed UDFs.
+    Writer for CouchDB using distributed foreachPartition.
     """
 
     def __init__(
@@ -383,7 +438,7 @@ class CouchDBWriter:
         suffix: str = ".ann"
     ) -> List[Dict[str, Any]]:
         """
-        Save from DataFrame using distributed UDFs.
+        Save from DataFrame using foreachPartition.
 
         Returns list of results (for compatibility).
         """
