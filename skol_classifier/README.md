@@ -80,11 +80,12 @@ Main classifier class for training and prediction.
 
 #### Methods
 
-**`__init__(spark=None, redis_client=None, redis_key='skol_classifier_model')`**
+**`__init__(spark=None, redis_client=None, redis_key='skol_classifier_model', auto_load=True)`**
 - Initialize the classifier
 - `spark`: Optional SparkSession (creates one if not provided)
 - `redis_client`: Optional Redis client connection for model persistence
 - `redis_key`: Key name to use in Redis for storing the model
+- `auto_load`: If True, automatically loads model from Redis if key exists (default: True)
 
 **`fit(annotated_file_paths, model_type='logistic', use_suffixes=True, test_size=0.2, **model_params)`**
 - Complete training pipeline
@@ -121,6 +122,22 @@ Main classifier class for training and prediction.
 **`evaluate(predictions, verbose=True)`**
 - Evaluate model performance
 - Returns: Dictionary with metrics (accuracy, precision, recall, F1)
+
+**`save_to_redis(redis_client=None, redis_key=None)`**
+- Save trained models to Redis
+- Returns: True if successful, False otherwise
+
+**`load_from_redis(redis_client=None, redis_key=None)`**
+- Load trained models from Redis
+- Returns: True if successful, False otherwise
+
+**`save_to_disk(path)`**
+- Save trained models to disk
+- `path`: Directory path to save the models
+
+**`load_from_disk(path)`**
+- Load trained models from disk
+- `path`: Directory path containing the saved models
 
 ### Utility Functions
 
@@ -197,7 +214,70 @@ predictions = classifier.predict(test)
 stats = classifier.evaluate(predictions)
 ```
 
-### Example 3: Process Raw Documents
+### Example 3: Save and Load Models with Redis
+
+```python
+import redis
+from skol_classifier import SkolClassifier, get_file_list
+
+# Connect to Redis
+redis_client = redis.Redis(
+    host='localhost',
+    port=6379,
+    db=0,
+    decode_responses=False  # Important for binary data
+)
+
+# Train and save to Redis
+classifier = SkolClassifier(
+    redis_client=redis_client,
+    redis_key="skol_model_v1"
+)
+
+annotated_files = get_file_list("/data/annotated")
+classifier.fit(annotated_files)
+
+# Save to Redis
+classifier.save_to_redis()
+print("Model saved to Redis!")
+
+# Later, load from Redis (auto-loads if key exists)
+new_classifier = SkolClassifier(
+    redis_client=redis_client,
+    redis_key="skol_model_v1"
+)
+# Model is automatically loaded! Check if loaded:
+if new_classifier.labels is not None:
+    print(f"Model loaded with labels: {new_classifier.labels}")
+
+# Use loaded model
+raw_files = get_file_list("/data/raw")
+predictions = new_classifier.predict_raw_text(raw_files)
+```
+
+### Example 4: Save and Load Models from Disk
+
+```python
+from skol_classifier import SkolClassifier, get_file_list
+
+# Train model
+classifier = SkolClassifier()
+annotated_files = get_file_list("/data/annotated")
+classifier.fit(annotated_files)
+
+# Save to disk
+classifier.save_to_disk("/models/skol_classifier")
+
+# Later, load from disk
+new_classifier = SkolClassifier()
+new_classifier.load_from_disk("/models/skol_classifier")
+
+# Use loaded model
+raw_files = get_file_list("/data/raw")
+predictions = new_classifier.predict_raw_text(raw_files)
+```
+
+### Example 5: Process Raw Documents
 
 ```python
 from skol_classifier import SkolClassifier, get_file_list
