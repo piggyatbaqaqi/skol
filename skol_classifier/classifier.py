@@ -37,7 +37,8 @@ class SkolClassifier:
         self,
         spark: Optional[SparkSession] = None,
         redis_client: Optional[Any] = None,
-        redis_key: str = "skol_classifier_model"
+        redis_key: str = "skol_classifier_model",
+        auto_load: bool = True
     ):
         """
         Initialize the SKOL classifier.
@@ -46,6 +47,8 @@ class SkolClassifier:
             spark: SparkSession (creates one if not provided)
             redis_client: Redis client connection (optional, for model persistence)
             redis_key: Key name to use in Redis for storing the model
+            auto_load: If True and redis_client is provided, automatically load
+                      model from Redis if the key exists (default: True)
         """
         if spark is None:
             import sparknlp
@@ -58,6 +61,17 @@ class SkolClassifier:
         self.labels: Optional[List[str]] = None
         self.redis_client = redis_client
         self.redis_key = redis_key
+
+        # Automatically load from Redis if key exists
+        if auto_load and redis_client is not None:
+            try:
+                # Check if key exists in Redis
+                if redis_client.exists(redis_key):
+                    self.load_from_redis()
+            except Exception:
+                # Silently fail if loading doesn't work
+                # Model will remain uninitialized
+                pass
 
     def load_annotated_data(
         self,

@@ -60,18 +60,16 @@ def example_load_from_redis():
         decode_responses=False
     )
 
-    # Initialize classifier
+    # Initialize classifier - model auto-loads if key exists!
+    print("Initializing classifier (auto-loading from Redis if key exists)...")
     classifier = SkolClassifier(
         redis_client=redis_client,
         redis_key="skol_model_v1"
     )
 
-    # Load model from Redis
-    print("Loading model from Redis...")
-    success = classifier.load_from_redis()
-
-    if not success:
-        print("Failed to load model from Redis")
+    # Check if model was loaded
+    if classifier.labels is None:
+        print("No model found in Redis")
         return
 
     print("Model loaded successfully!")
@@ -145,6 +143,38 @@ def example_save_to_disk():
     # Use loaded model
     raw_files = get_file_list("/path/to/raw/data")
     predictions = new_classifier.predict_raw_text(raw_files)
+
+
+def example_train_or_load():
+    """Example: Train if model doesn't exist, otherwise load from Redis."""
+
+    redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
+
+    # Initialize - auto-loads if exists
+    classifier = SkolClassifier(
+        redis_client=redis_client,
+        redis_key="my_production_model"
+    )
+
+    # Check if we need to train
+    if classifier.labels is None:
+        print("No model found in Redis. Training new model...")
+
+        # Train
+        annotated_files = get_file_list("/path/to/annotated/data")
+        results = classifier.fit(annotated_files)
+        print(f"Training complete! F1: {results['f1_score']:.4f}")
+
+        # Save to Redis for next time
+        classifier.save_to_redis()
+        print("Model saved to Redis")
+    else:
+        print(f"Model loaded from Redis with labels: {classifier.labels}")
+
+    # Now use the model (either freshly trained or loaded)
+    raw_files = get_file_list("/path/to/raw/data")
+    predictions = classifier.predict_raw_text(raw_files)
+    print(f"Predictions made on {predictions.count()} paragraphs")
 
 
 def example_multiple_models():
