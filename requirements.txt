@@ -3,3 +3,4 @@ spark-nlp
 regex>=2.021.0.0
 redis>=4.0.0
 CouchDB>=1.2
+pymupdf4llm>=0.2.0
