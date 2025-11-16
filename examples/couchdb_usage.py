@@ -35,7 +35,7 @@ See DISTRIBUTED_COUCHDB.md for detailed architecture documentation.
 """
 
 import redis
-from skol_classifier import SkolClassifier, CouchDBReader, CouchDBWriter
+from skol_classifier import SkolClassifier, CouchDBConnection
 
 
 def example_read_from_couchdb():
@@ -206,10 +206,10 @@ def example_complete_pipeline():
 
 def example_manual_couchdb_workflow():
     """
-    Manual workflow using CouchDB Reader/Writer directly.
+    Manual workflow using CouchDBConnection directly.
 
-    The CouchDBReader and CouchDBWriter convenience classes use the
-    same distributed foreachPartition approach internally.
+    This demonstrates direct use of CouchDBConnection class which provides
+    the distributed foreachPartition approach for efficient I/O.
     """
 
     # CouchDB settings
@@ -222,15 +222,13 @@ def example_manual_couchdb_workflow():
     classifier = SkolClassifier()
     # ... assume model is trained or loaded ...
 
-    # Step 1: Read from CouchDB using distributed reader
+    # Create CouchDB connection
+    conn = CouchDBConnection(couchdb_url, database, username, password)
+
+    # Step 1: Read from CouchDB using distributed approach
     print("Reading documents from CouchDB...")
-    print("(Using foreachPartition for distributed reads)")
-    df = classifier.load_from_couchdb(
-        couchdb_url=couchdb_url,
-        database=database,
-        username=username,
-        password=password
-    )
+    print("(Using mapPartitions for distributed reads)")
+    df = conn.load_distributed(classifier.spark, pattern="*.txt")
 
     print(f"Loaded {df.count()} documents")
     df.show(5, truncate=50)
@@ -238,9 +236,9 @@ def example_manual_couchdb_workflow():
     # Step 2: Process with classifier
     # (Use standard prediction methods on the distributed DataFrame)
 
-    # Step 3: Write back using writer
-    # The writer also uses foreachPartition for distributed writes
-    writer = CouchDBWriter(couchdb_url, database, username, password)
+    # Step 3: Write back using CouchDBConnection
+    # The connection uses mapPartitions for distributed writes
+    print("\nSaving results back to CouchDB...")
 
     # Create a sample predictions DataFrame
     sample_predictions = classifier.spark.createDataFrame([
@@ -248,9 +246,16 @@ def example_manual_couchdb_workflow():
     ], ["doc_id", "attachment_name", "final_aggregated_pg"])
 
     # Save using distributed approach
-    results = writer.save_from_dataframe(sample_predictions, suffix=".ann")
+    result_df = conn.save_distributed(sample_predictions, suffix=".ann")
 
-    print(f"Saved {len(results)} documents using distributed writes")
+    # Collect results to verify success
+    results = result_df.collect()
+    successful = sum(1 for r in results if r.success)
+    failed = len(results) - successful
+
+    print(f"Saved {successful} documents using distributed writes")
+    if failed > 0:
+        print(f"Failed to save {failed} documents")
 
 
 def example_batch_processing():
