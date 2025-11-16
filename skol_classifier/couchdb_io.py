@@ -2,7 +2,7 @@
 CouchDB I/O utilities for SKOL classifier using distributed foreachPartition
 """
 
-from typing import Optional, List, Dict, Any, Iterator
+from typing import Optional, Iterator
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.functions import col, lit
 from pyspark.sql.types import (
