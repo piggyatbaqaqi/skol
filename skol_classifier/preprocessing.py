@@ -64,8 +64,7 @@ class SuffixTransformer(Transformer, HasInputCol, HasOutputCol, DefaultParamsRea
         """
         super(SuffixTransformer, self).__init__()
         self._setDefault(inputCol="words", outputCol="suffixes")
-        kwargs = self._input_kwargs
-        self.setParams(**kwargs)
+        self.setParams(inputCol=inputCol, outputCol=outputCol)
 
     def setParams(self, inputCol: str = "words", outputCol: str = "suffixes"):
         """
@@ -78,8 +77,7 @@ class SuffixTransformer(Transformer, HasInputCol, HasOutputCol, DefaultParamsRea
         Returns:
             self
         """
-        kwargs = self._input_kwargs
-        return self._set(**kwargs)
+        return self._set(inputCol=inputCol, outputCol=outputCol)
 
     @staticmethod
     def extract_suffixes(words: List[str]) -> List[str]:
