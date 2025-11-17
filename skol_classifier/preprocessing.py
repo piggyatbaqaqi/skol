@@ -5,6 +5,8 @@ Text preprocessing utilities for SKOL classifier
 import regex as re
 from typing import List
 from pyspark.ml import Transformer
+from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param, Params
+from pyspark.ml.util import DefaultParamsReadable, DefaultParamsWritable
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import udf, col, explode, collect_list, regexp_extract
 from pyspark.sql.types import ArrayType, StringType
@@ -44,9 +46,12 @@ TAXON_PATTERN = (
 )
 
 
-class SuffixTransformer(Transformer):
+class SuffixTransformer(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
     """
     Custom PySpark Transformer that extracts word suffixes (2-4 characters).
+
+    This transformer is MLWritable and MLReadable, so it can be saved and loaded
+    as part of PySpark ML pipelines.
     """
 
     def __init__(self, inputCol: str = "words", outputCol: str = "suffixes"):
@@ -57,9 +62,24 @@ class SuffixTransformer(Transformer):
             inputCol: Column name containing tokenized words
             outputCol: Column name for output suffixes
         """
-        super().__init__()
-        self.input_col = inputCol
-        self.output_col = outputCol
+        super(SuffixTransformer, self).__init__()
+        self._setDefault(inputCol="words", outputCol="suffixes")
+        kwargs = self._input_kwargs
+        self.setParams(**kwargs)
+
+    def setParams(self, inputCol: str = "words", outputCol: str = "suffixes"):
+        """
+        Set parameters for the transformer.
+
+        Args:
+            inputCol: Column name containing tokenized words
+            outputCol: Column name for output suffixes
+
+        Returns:
+            self
+        """
+        kwargs = self._input_kwargs
+        return self._set(**kwargs)
 
     @staticmethod
     def extract_suffixes(words: List[str]) -> List[str]:
@@ -89,12 +109,15 @@ class SuffixTransformer(Transformer):
         """
         suffixes_udf = udf(self.extract_suffixes, ArrayType(StringType()))
 
-        if isinstance(df.schema[self.input_col].dataType, ArrayType):
-            return df.withColumn(self.output_col, suffixes_udf(df[self.input_col]))
+        input_col = self.getInputCol()
+        output_col = self.getOutputCol()
+
+        if isinstance(df.schema[input_col].dataType, ArrayType):
+            return df.withColumn(output_col, suffixes_udf(df[input_col]))
         else:
             raise ValueError(
-                f"Column '{self.input_col}' is not an array type but a "
-                f"{type(self.input_col)}."
+                f"Column '{input_col}' is not an array type but a "
+                f"{type(df.schema[input_col].dataType)}."
             )
 
 
