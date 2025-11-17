@@ -55,17 +55,16 @@ def example_read_from_couchdb():
     username = "admin"
     password = "password"
 
-    # Create classifier to get Spark session
-    classifier = SkolClassifier()
-
-    # Load documents using distributed approach
-    df = classifier.load_from_couchdb(
+    # Create classifier with CouchDB configuration
+    classifier = SkolClassifier(
         couchdb_url=couchdb_url,
         database=database,
         username=username,
-        password=password,
-        pattern="*.txt"
+        password=password
     )
+
+    # Load documents using distributed approach
+    df = classifier.load_from_couchdb(pattern="*.txt")
 
     print(f"Found {df.count()} text attachments")
     print("\nSample documents:")
@@ -97,11 +96,15 @@ def example_classify_couchdb_data():
     # Redis settings
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-    # Initialize classifier - auto-loads model from Redis
+    # Initialize classifier with both Redis and CouchDB configuration
     print("Loading classifier from Redis...")
     classifier = SkolClassifier(
         redis_client=redis_client,
-        redis_key="production_model"
+        redis_key="production_model",
+        couchdb_url=couchdb_url,
+        database=database,
+        username=username,
+        password=password
     )
 
     if classifier.labels is None:
@@ -113,13 +116,7 @@ def example_classify_couchdb_data():
     # Process CouchDB data using distributed approach
     print("\nLoading and classifying documents from CouchDB...")
     print("(Documents fetched in parallel using foreachPartition)")
-    predictions = classifier.predict_from_couchdb(
-        couchdb_url=couchdb_url,
-        database=database,
-        username=username,
-        password=password,
-        pattern="*.txt"
-    )
+    predictions = classifier.predict_from_couchdb(pattern="*.txt")
 
     # Show sample predictions
     print("\nSample predictions:")
@@ -130,14 +127,7 @@ def example_classify_couchdb_data():
     # Save results back to CouchDB using distributed writes
     print("\nSaving predictions back to CouchDB...")
     print("(Each partition writes its documents using a single connection)")
-    results = classifier.save_to_couchdb(
-        predictions=predictions,
-        couchdb_url=couchdb_url,
-        database=database,
-        username=username,
-        password=password,
-        suffix=".ann"
-    )
+    results = classifier.save_to_couchdb(predictions=predictions, suffix=".ann")
 
     # Report results
     successful = sum(1 for r in results if r['success'])
@@ -167,7 +157,11 @@ def example_complete_pipeline():
     # Step 1: Train model (or load from Redis)
     classifier = SkolClassifier(
         redis_client=redis_client,
-        redis_key="skol_production_model"
+        redis_key="skol_production_model",
+        couchdb_url=couchdb_url,
+        database=database,
+        username=db_username,
+        password=db_password
     )
 
     if classifier.labels is None:
@@ -184,22 +178,11 @@ def example_complete_pipeline():
 
     # Step 2: Process CouchDB documents
     print("\nProcessing CouchDB documents...")
-    predictions = classifier.predict_from_couchdb(
-        couchdb_url=couchdb_url,
-        database=database,
-        username=db_username,
-        password=db_password
-    )
+    predictions = classifier.predict_from_couchdb()
 
     # Step 3: Save back to CouchDB
     print("Saving annotated results...")
-    results = classifier.save_to_couchdb(
-        predictions=predictions,
-        couchdb_url=couchdb_url,
-        database=database,
-        username=db_username,
-        password=db_password
-    )
+    results = classifier.save_to_couchdb(predictions=predictions)
 
     print(f"Complete! Processed {len(results)} documents")
 
@@ -272,10 +255,14 @@ def example_batch_processing():
     database = "skol_documents"
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-    # Load classifier
+    # Load classifier with both Redis and CouchDB configuration
     classifier = SkolClassifier(
         redis_client=redis_client,
-        redis_key="production_model"
+        redis_key="production_model",
+        couchdb_url=couchdb_url,
+        database=database,
+        username="admin",
+        password="password"
     )
 
     if classifier.labels is None:
@@ -283,12 +270,7 @@ def example_batch_processing():
         return
 
     # Load all documents using distributed approach
-    df = classifier.load_from_couchdb(
-        couchdb_url=couchdb_url,
-        database=database,
-        username="admin",
-        password="password"
-    )
+    df = classifier.load_from_couchdb()
 
     total_docs = df.count()
     print(f"Found {total_docs} documents to process")
@@ -309,13 +291,7 @@ def example_batch_processing():
         predictions = classifier.predict_raw_text(batch_df)
 
         # Save batch (distributed writes)
-        results = classifier.save_to_couchdb(
-            predictions=predictions,
-            couchdb_url=couchdb_url,
-            database=database,
-            username="admin",
-            password="password"
-        )
+        results = classifier.save_to_couchdb(predictions=predictions)
 
         print(f"Batch {batch_num + 1} complete: {len(results)} documents saved")
 
@@ -336,16 +312,15 @@ def example_partitioning_and_parallelism():
 
     classifier = SkolClassifier(
         redis_client=redis_client,
-        redis_key="production_model"
-    )
-
-    # Load documents
-    df = classifier.load_from_couchdb(
+        redis_key="production_model",
         couchdb_url=couchdb_url,
         database=database,
         username="admin",
         password="password"
     )
+
+    # Load documents
+    df = classifier.load_from_couchdb()
 
     print(f"Loaded {df.count()} documents")
     print(f"Default partitions: {df.rdd.getNumPartitions()}")
@@ -364,13 +339,7 @@ def example_partitioning_and_parallelism():
 
     # Save with same partitioning
     # Each partition will reuse its connection for all saves
-    results = classifier.save_to_couchdb(
-        predictions=predictions,
-        couchdb_url=couchdb_url,
-        database=database,
-        username="admin",
-        password="password"
-    )
+    results = classifier.save_to_couchdb(predictions=predictions)
 
     print(f"\nProcessed {len(results)} documents using {num_partitions} parallel connections")
 
@@ -389,18 +358,18 @@ def example_monitoring_progress():
     couchdb_url = "http://localhost:5984"
     database = "skol_documents"
 
-    classifier = SkolClassifier()
-
-    print("Starting distributed CouchDB processing...")
-    print("Monitor progress at: http://localhost:4040 (Spark UI)")
-
-    # Load documents - watch Spark UI for task progress
-    df = classifier.load_from_couchdb(
+    classifier = SkolClassifier(
         couchdb_url=couchdb_url,
         database=database,
         username="admin",
         password="password"
     )
+
+    print("Starting distributed CouchDB processing...")
+    print("Monitor progress at: http://localhost:4040 (Spark UI)")
+
+    # Load documents - watch Spark UI for task progress
+    df = classifier.load_from_couchdb()
 
     # Cache for multiple operations
     df.cache()

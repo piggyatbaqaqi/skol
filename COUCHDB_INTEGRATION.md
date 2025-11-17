@@ -41,32 +41,24 @@ pip install -e .
 import redis
 from skol_classifier import SkolClassifier
 
-# Connect to Redis and CouchDB
+# Connect to Redis
 redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-# Initialize classifier (auto-loads from Redis)
+# Initialize classifier with Redis and CouchDB configuration
 classifier = SkolClassifier(
     redis_client=redis_client,
-    redis_key="production_model"
-)
-
-# Process CouchDB documents
-predictions = classifier.predict_from_couchdb(
+    redis_key="production_model",
     couchdb_url="http://localhost:5984",
     database="my_documents",
     username="admin",
     password="password"
 )
 
+# Process CouchDB documents
+predictions = classifier.predict_from_couchdb()
+
 # Save back to CouchDB as .ann attachments
-results = classifier.save_to_couchdb(
-    predictions=predictions,
-    couchdb_url="http://localhost:5984",
-    database="my_documents",
-    username="admin",
-    password="password",
-    suffix=".ann"
-)
+results = classifier.save_to_couchdb(predictions=predictions, suffix=".ann")
 
 print(f"Processed {len(results)} documents")
 ```
@@ -75,39 +67,38 @@ print(f"Processed {len(results)} documents")
 
 ### SkolClassifier Methods
 
-#### `load_from_couchdb(couchdb_url, database, username=None, password=None, pattern="*.txt")`
+#### `load_from_couchdb(pattern="*.txt")`
 
 Load raw text from CouchDB attachments.
 
+Uses the CouchDB configuration set in the constructor.
+
 **Args:**
-- `couchdb_url`: CouchDB server URL (e.g., "http://localhost:5984")
-- `database`: Database name
-- `username`: Optional username for authentication
-- `password`: Optional password for authentication
 - `pattern`: Pattern for attachment names (default: "*.txt")
 
 **Returns:** DataFrame with columns: `doc_id`, `attachment_name`, `value`
 
 **Example:**
 ```python
-df = classifier.load_from_couchdb(
+# Initialize with CouchDB configuration
+classifier = SkolClassifier(
     couchdb_url="http://localhost:5984",
     database="documents",
     username="admin",
     password="password"
 )
+
+df = classifier.load_from_couchdb(pattern="*.txt")
 print(f"Loaded {df.count()} documents")
 ```
 
-#### `predict_from_couchdb(couchdb_url, database, username=None, password=None, pattern="*.txt", output_format="annotated")`
+#### `predict_from_couchdb(pattern="*.txt", output_format="annotated")`
 
 Load text from CouchDB, predict labels, and return predictions.
 
+Uses the CouchDB configuration set in the constructor.
+
 **Args:**
-- `couchdb_url`: CouchDB server URL
-- `database`: Database name
-- `username`: Optional username
-- `password`: Optional password
 - `pattern`: Pattern for attachment names
 - `output_format`: Output format ('annotated' or 'simple')
 
@@ -115,48 +106,52 @@ Load text from CouchDB, predict labels, and return predictions.
 
 **Example:**
 ```python
-predictions = classifier.predict_from_couchdb(
+# Initialize with CouchDB configuration
+classifier = SkolClassifier(
+    redis_client=redis_client,
     couchdb_url="http://localhost:5984",
     database="documents",
     username="admin",
     password="password"
 )
 
+predictions = classifier.predict_from_couchdb()
+
 # View predictions
 predictions.select("doc_id", "attachment_name", "predicted_label").show()
 ```
 
-#### `save_to_couchdb(predictions, couchdb_url, database, username=None, password=None, suffix=".ann")`
+#### `save_to_couchdb(predictions, suffix=".ann")`
 
 Save annotated predictions back to CouchDB as attachments.
 
+Uses the CouchDB configuration set in the constructor.
+
 **Args:**
 - `predictions`: DataFrame with predictions (must include `annotated_pg` column)
-- `couchdb_url`: CouchDB server URL
-- `database`: Database name
-- `username`: Optional username
-- `password`: Optional password
 - `suffix`: Suffix to append to attachment names (default: ".ann")
 
 **Returns:** List of results from CouchDB operations
 
 **Example:**
 ```python
-results = classifier.save_to_couchdb(
-    predictions=predictions,
+# Initialize with CouchDB configuration
+classifier = SkolClassifier(
+    redis_client=redis_client,
     couchdb_url="http://localhost:5984",
     database="documents",
     username="admin",
-    password="password",
-    suffix=".ann"
+    password="password"
 )
+
+results = classifier.save_to_couchdb(predictions=predictions, suffix=".ann")
 
 # Check results
 for r in results:
     if r['success']:
         print(f"Saved: {r['doc_id']}/{r['attachment_name']}")
     else:
-        print(f"Failed: {r['doc_id']} - {r['error']}")
+        print(f"Failed: {r['doc_id']}")
 ```
 
 ### CouchDBReader Class
@@ -300,10 +295,14 @@ redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 couchdb_url = "http://localhost:5984"
 database = "documents"
 
-# Initialize classifier (auto-loads from Redis)
+# Initialize classifier with both Redis and CouchDB configuration
 classifier = SkolClassifier(
     redis_client=redis_client,
-    redis_key="production_model"
+    redis_key="production_model",
+    couchdb_url=couchdb_url,
+    database=database,
+    username="admin",
+    password="password"
 )
 
 # Train if needed
@@ -316,21 +315,10 @@ else:
     print(f"Model loaded: {classifier.labels}")
 
 # Process CouchDB
-predictions = classifier.predict_from_couchdb(
-    couchdb_url=couchdb_url,
-    database=database,
-    username="admin",
-    password="password"
-)
+predictions = classifier.predict_from_couchdb()
 
 # Save results
-results = classifier.save_to_couchdb(
-    predictions=predictions,
-    couchdb_url=couchdb_url,
-    database=database,
-    username="admin",
-    password="password"
-)
+results = classifier.save_to_couchdb(predictions=predictions)
 
 print(f"Processed {len(results)} documents")
 ```
