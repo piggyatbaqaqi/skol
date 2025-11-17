@@ -12,16 +12,19 @@ from pyspark.sql.functions import udf, col, explode, collect_list, regexp_extrac
 from pyspark.sql.types import ArrayType, StringType
 
 
+SUFFIXES=r'(ae}al|am|an|ar|ba|be|bi|ca|ch|ci|ck|da|di|ea|ed|ei|en|er|es|ev|gi|ha|he|ia|ic|id|ii|is|ix|íz|la|le|li|ll|ma|me|na|nd|ni|ns|o|oa|oé|of|oi|on|or|os|ox|pa|ph|ps|ra|re|ri|rt|sa|se|si|ta|te|ti|ts|ty|ua|ud|um|up|us|va|vá|xa|ya|yi|ys|za|zi)'
+
+
 # Regex patterns for nomenclature detection
 NOMENCLATURE_RE = re.compile(
     r'^([-\w≡=.*|:]*\s+)?'
     r'('
-        r'([A-Z]\w*(aceae|idae|iformes|ales|ineae|inae)?)'
+        r'([A-Z]\w*' + SUFFIXES + r'?)'
         r'|(\w+\b)'
     r')'
     r'\s'
     r'('
-        r'(\w+(aceae|idae|iformes|ales|ineae|inae)?)'
+        r'(\w+' + SUFFIXES + r'?)'
         r'|(\w+\b)'
     r')'
     r'.*'

@@ -40,7 +40,11 @@ class SkolClassifier:
         spark: Optional[SparkSession] = None,
         redis_client: Optional[Any] = None,
         redis_key: str = "skol_classifier_model",
-        auto_load: bool = True
+        auto_load: bool = True,
+        couchdb_url: Optional[str] = None,
+        database: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None
     ):
         """
         Initialize the SKOL classifier.
@@ -51,6 +55,10 @@ class SkolClassifier:
             redis_key: Key name to use in Redis for storing the model
             auto_load: If True and redis_client is provided, automatically load
                       model from Redis if the key exists (default: True)
+            couchdb_url: CouchDB server URL (e.g., "http://localhost:5984")
+            database: CouchDB database name
+            username: CouchDB username (optional)
+            password: CouchDB password (optional)
         """
         if spark is None:
             self.spark = sparknlp.start()
@@ -60,8 +68,16 @@ class SkolClassifier:
         self.pipeline_model: Optional[PipelineModel] = None
         self.classifier_model: Optional[PipelineModel] = None
         self.labels: Optional[List[str]] = None
+
+        # Redis configuration
         self.redis_client = redis_client
         self.redis_key = redis_key
+
+        # CouchDB configuration
+        self.couchdb_url = couchdb_url
+        self.database = database
+        self.username = username
+        self.password = password
 
         # Automatically load from Redis if key exists
         if auto_load and redis_client is not None:
@@ -449,39 +465,29 @@ class SkolClassifier:
             **stats
         }
 
-    def save_to_redis(
-        self,
-        redis_client: Optional[Any] = None,
-        redis_key: Optional[str] = None
-    ) -> bool:
+    def save_to_redis(self) -> bool:
         """
         Save the trained models to Redis.
 
         The models are saved to a temporary directory, then packaged and stored in Redis
         as a compressed binary blob along with metadata.
 
-        Args:
-            redis_client: Redis client (uses self.redis_client if not provided)
-            redis_key: Redis key name (uses self.redis_key if not provided)
+        Uses the Redis client and key configured in the constructor.
 
         Returns:
             True if successful, False otherwise
 
         Raises:
-            ValueError: If no models are trained or Redis client is not available
+            ValueError: If no models are trained or Redis client is not configured
         """
         if self.pipeline_model is None or self.classifier_model is None:
             raise ValueError(
                 "No models to save. Train models using fit() or train_classifier() first."
             )
 
-        client = redis_client or self.redis_client
-        key = redis_key or self.redis_key
-
-        if client is None:
+        if self.redis_client is None:
             raise ValueError(
-                "No Redis client available. Provide redis_client argument or "
-                "initialize classifier with redis_client."
+                "No Redis client configured. Initialize classifier with redis_client."
             )
 
         temp_dir = None
@@ -519,7 +525,7 @@ class SkolClassifier:
             archive_data = archive_buffer.getvalue()
 
             # Save to Redis
-            client.set(key, archive_data)
+            self.redis_client.set(self.redis_key, archive_data)
 
             return True
 
@@ -532,39 +538,29 @@ class SkolClassifier:
             if temp_dir and Path(temp_dir).exists():
                 shutil.rmtree(temp_dir)
 
-    def load_from_redis(
-        self,
-        redis_client: Optional[Any] = None,
-        redis_key: Optional[str] = None
-    ) -> bool:
+    def load_from_redis(self) -> bool:
         """
         Load trained models from Redis.
 
-        Args:
-            redis_client: Redis client (uses self.redis_client if not provided)
-            redis_key: Redis key name (uses self.redis_key if not provided)
+        Uses the Redis client and key configured in the constructor.
 
         Returns:
             True if successful, False otherwise
 
         Raises:
-            ValueError: If Redis client is not available or key doesn't exist
+            ValueError: If Redis client is not configured or key doesn't exist
         """
-        client = redis_client or self.redis_client
-        key = redis_key or self.redis_key
-
-        if client is None:
+        if self.redis_client is None:
             raise ValueError(
-                "No Redis client available. Provide redis_client argument or "
-                "initialize classifier with redis_client."
+                "No Redis client configured. Initialize classifier with redis_client."
             )
 
         temp_dir = None
         try:
             # Retrieve from Redis
-            archive_data = client.get(key)
+            archive_data = self.redis_client.get(self.redis_key)
             if archive_data is None:
-                raise ValueError(f"No model found in Redis with key: {key}")
+                raise ValueError(f"No model found in Redis with key: {self.redis_key}")
 
             # Create temporary directory for extraction
             temp_dir = tempfile.mkdtemp(prefix="skol_model_load_")
@@ -671,56 +667,54 @@ class SkolClassifier:
                 metadata = json.load(f)
                 self.labels = metadata.get("labels")
 
-    def load_from_couchdb(
-        self,
-        couchdb_url: str,
-        database: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        pattern: str = "*.txt"
-    ) -> DataFrame:
+    def load_from_couchdb(self, pattern: str = "*.txt") -> DataFrame:
         """
         Load raw text from CouchDB attachments using distributed UDFs.
 
         This method uses Spark UDFs to fetch attachments in parallel across workers,
         rather than loading all data on the driver.
 
+        Uses the CouchDB configuration from the constructor.
+
         Args:
-            couchdb_url: CouchDB server URL (e.g., "http://localhost:5984")
-            database: Database name
-            username: Optional username for authentication
-            password: Optional password for authentication
             pattern: Pattern for attachment names (default: "*.txt")
 
         Returns:
             DataFrame with columns: doc_id, attachment_name, value
+
+        Raises:
+            ValueError: If CouchDB is not configured
         """
-        conn = CouchDBConnection(couchdb_url, database, username, password)
-        return conn.fetch_partition(self.spark, pattern)
+        if self.couchdb_url is None or self.database is None:
+            raise ValueError(
+                "CouchDB not configured. Initialize classifier with couchdb_url and database."
+            )
+
+        conn = CouchDBConnection(
+            self.couchdb_url, self.database, self.username, self.password
+        )
+        return conn.load_distributed(self.spark, pattern)
     
 
     def predict_from_couchdb(
         self,
-        couchdb_url: str,
-        database: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
         pattern: str = "*.txt",
         output_format: str = "annotated"
     ) -> DataFrame:
         """
         Load text from CouchDB, predict labels, and return predictions.
 
+        Uses the CouchDB configuration from the constructor.
+
         Args:
-            couchdb_url: CouchDB server URL
-            database: Database name
-            username: Optional username
-            password: Optional password
             pattern: Pattern for attachment names
             output_format: Output format ('annotated' or 'simple')
 
         Returns:
             DataFrame with predictions, including doc_id and attachment_name
+
+        Raises:
+            ValueError: If models are not trained or CouchDB is not configured
         """
         if self.pipeline_model is None or self.classifier_model is None:
             raise ValueError(
@@ -728,9 +722,7 @@ class SkolClassifier:
             )
 
         # Load data from CouchDB
-        df = self.load_from_couchdb(
-            couchdb_url, database, username, password, pattern
-        )
+        df = self.load_from_couchdb(pattern)
 
         # Process paragraphs
         from .preprocessing import ParagraphExtractor
@@ -792,10 +784,6 @@ class SkolClassifier:
     def save_to_couchdb(
         self,
         predictions: DataFrame,
-        couchdb_url: str,
-        database: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
         suffix: str = ".ann"
     ) -> List[Dict[str, Any]]:
         """
@@ -804,18 +792,26 @@ class SkolClassifier:
         This method uses Spark UDFs to save attachments in parallel across workers,
         distributing the write operations.
 
+        Uses the CouchDB configuration from the constructor.
+
         Args:
             predictions: DataFrame with predictions (must include annotated_pg column)
-            couchdb_url: CouchDB server URL
-            database: Database name
-            username: Optional username
-            password: Optional password
             suffix: Suffix to append to attachment names (default: ".ann")
 
         Returns:
             List of results from CouchDB operations
+
+        Raises:
+            ValueError: If CouchDB is not configured
         """
-        conn = CouchDBConnection(couchdb_url, database, username, password)
+        if self.couchdb_url is None or self.database is None:
+            raise ValueError(
+                "CouchDB not configured. Initialize classifier with couchdb_url and database."
+            )
+
+        conn = CouchDBConnection(
+            self.couchdb_url, self.database, self.username, self.password
+        )
 
         # Aggregate paragraphs by document and attachment
         aggregated_df = (
