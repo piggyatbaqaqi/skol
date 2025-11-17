@@ -1,3 +1,4 @@
 *~
 *.pyc
 *checkpoint.ipynb
+.mypy_cache
