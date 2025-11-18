@@ -120,9 +120,10 @@ class Paragraph(object):
             retval = '[@' + retval + '#' + str(label) + '*]'
         return retval
 
-    def as_dict(self) -> Dict[str, str]:
+    def as_dict(self) -> Dict[str, Optional[str]]:
         return {
             'filename': self.filename,
+            'url': self.url,
             'label': str(self.top_label()),
             'paragraph_number': str(self.paragraph_number),
             'page_number': str(self.page_number),
@@ -324,6 +325,12 @@ class Paragraph(object):
         if self.last_line is None:
             return None
         return self.last_line.empirical_page_number
+
+    @property
+    def url(self) -> Optional[str]:
+        if self.last_line is None:
+            return None
+        return self.last_line.url
 
     def close(self) -> None:
         if self._next_line:
