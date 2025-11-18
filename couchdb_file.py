@@ -1,6 +1,5 @@
 """CouchDB-aware file reading for annotated documents in PySpark."""
 
-import regex as re  # type: ignore
 from typing import Iterator, List, Optional
 from pyspark.sql import Row
 
@@ -21,9 +20,6 @@ class CouchDBFile(FileObject):
     _attachment_name: str
     _db_name: str
     _url: Optional[str]
-    _line_number: int
-    _page_number: int
-    _empirical_page_number: Optional[str]
     _content_lines: List[str]
 
     def __init__(
@@ -55,59 +51,9 @@ class CouchDBFile(FileObject):
         # Split content into lines
         self._content_lines = content.split('\n')
 
-    def _set_empirical_page(self, l: str, first: bool = False) -> None:
-        """Extract empirical page number from line content."""
-        match = re.search(
-            r'(^\s*(?P<leading>[mdclxvi\d]+\b))|((?P<trailing>\b[mdclxvi\d]+)\s*$)',
-            l
-        )
-        if not match:
-            self._empirical_page_number = None
-        else:
-            self._empirical_page_number = (
-                match.group('leading') or match.group('trailing')
-            )
-
-    def read_line(self) -> Iterator[Line]:
-        """
-        Iterate through content lines, yielding Line objects with CouchDB metadata.
-
-        Yields:
-            Line objects with content and CouchDB metadata
-        """
-        for l_str in self._content_lines:
-            self._line_number += 1
-
-            # First line of first page does not have a form feed
-            if self._line_number == 1 and self._page_number == 1:
-                self._set_empirical_page(l_str)
-
-            # Check for page break (form feed character)
-            if l_str.startswith('\f'):
-                self._page_number += 1
-                self._line_number = 1
-                # Strip the form feed
-                self._set_empirical_page(l_str[1:])
-
-            # Create line with CouchDB metadata
-            # Line will automatically extract CouchDB metadata from CouchDBFile
-            l = Line(l_str, self)
-            yield l
-
-    @property
-    def line_number(self) -> int:
-        """Current line number."""
-        return self._line_number
-
-    @property
-    def page_number(self) -> int:
-        """Current page number."""
-        return self._page_number
-
-    @property
-    def empirical_page_number(self) -> Optional[str]:
-        """Empirical page number from document."""
-        return self._empirical_page_number
+    def _get_content_iterator(self) -> Iterator[str]:
+        """Get iterator over content lines."""
+        return iter(self._content_lines)
 
     @property
     def filename(self) -> str:
