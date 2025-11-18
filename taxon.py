@@ -57,16 +57,33 @@ class Taxon(object):
             d['serial_number'] = str(self._serial)
             yield d
 
-    def as_row(self) -> Dict[str, str]:
-        retval = {}
-        retval['taxon'] = "\n".join(str(pp) for pp in self._nomenclatures)
-        retval['description'] = "\n".join(str(pp) for pp in self._descriptions)
+    def as_row(self) -> Dict[str, None | str | int | Dict[str, None | str | int]]:
+        '''Convert this Taxon to a dictionary suitable for output.'''
+
         # Pull other fields from self._nomenclatures[0]
         pp = self._nomenclatures[0]
-        retval['paragraph_number'] = pp.paragraph_number
-        retval['page_number'] = pp.page_number
-        retval['empirical_page_number'] = pp.empirical_page_number
+        first_line = pp.first_line
+        assert first_line is not None, "Nomenclature paragraph must have at least one line"
+        source_doc_id = first_line.doc_id or "unknown"
+        source_url = first_line.url
+        source_db_name = first_line.db_name or "unknown"
+        line_number = first_line.line_number
+
+        retval: Dict[str, None | str | int | Dict[str, None | str | int]] = {
+            'taxon': "\n".join((str(pp) for pp in self._nomenclatures)),
+            'description': "\n".join((str(pp) for pp in self._descriptions)),
+            'source': {
+                'doc_id': source_doc_id,
+                'url': source_url,
+                'db_name': source_db_name,
+            },
+            'line_number': line_number,
+            'paragraph_number': pp.paragraph_number,
+            'page_number': pp.page_number,
+            'empirical_page_number': pp.empirical_page_number,
+        }
         return retval
+
 
 
 def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
