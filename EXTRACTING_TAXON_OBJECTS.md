@@ -10,12 +10,19 @@ The extraction process follows a pipeline architecture:
 *.txt.ann files → Lines → Paragraphs → Taxon objects
 ```
 
+For CouchDB-backed data:
+
+```
+CouchDB attachments → Line objects (with metadata) → Paragraphs → Taxon objects
+```
+
 The modules work together as follows:
 
 1. **file.py**: Reads text files and produces `Line` objects
-2. **paragraph.py**: Groups `Line` objects into `Paragraph` objects
-3. **finder.py**: Orchestrates the pipeline and provides parsing functions
-4. **taxon.py**: Groups `Paragraph` objects into `Taxon` objects (Nomenclature + Description)
+2. **couchdb_file.py**: Reads CouchDB attachments and produces `Line` objects with populated CouchDB metadata fields (doc_id, attachment_name, db_name)
+3. **paragraph.py**: Groups `Line` objects into `Paragraph` objects
+4. **finder.py**: Orchestrates the pipeline and provides parsing functions
+5. **taxon.py**: Groups `Paragraph` objects into `Taxon` objects (Nomenclature + Description)
 
 ## Annotated File Format
 
@@ -392,9 +399,164 @@ The parser is robust but watch for these issues:
 3. **Empty files**: No paragraphs or labels found
 4. **Encoding issues**: Use UTF-8 encoding for all files
 
+## Extracting from CouchDB (PySpark Distributed)
+
+For large-scale processing of annotated files stored in CouchDB, use the distributed PySpark approach.
+
+### Using couchdb_file.py
+
+The `couchdb_file.py` module provides a UDF alternative to `read_files()` that:
+
+- Reads attachments from CouchDB in PySpark partitions
+- Preserves database metadata (doc_id, attachment_name, db_name)
+- Works with `CouchDBConnection` for efficient distributed I/O
+- Produces `Line` objects compatible with existing parsers
+
+**Key Classes:**
+
+- `CouchDBFile`: File-like object for CouchDB attachment content
+- `Line`: Line class with optional CouchDB metadata fields (doc_id, attachment_name, db_name)
+- `read_couchdb_partition()`: Process CouchDB rows in a partition, returns Line objects with metadata
+
+**Example: Distributed Processing**
+
+```python
+from pyspark.sql import SparkSession
+from skol_classifier.couchdb_io import CouchDBConnection
+from couchdb_file import read_couchdb_partition
+from finder import parse_annotated, remove_interstitials
+from taxon import group_paragraphs
+
+def process_partition_to_taxa(partition, db_name):
+    """Process partition of CouchDB rows into taxa."""
+    # Read CouchDB rows into Line objects
+    lines = read_couchdb_partition(partition, db_name)
+
+    # Parse into paragraphs
+    paragraphs = parse_annotated(lines)
+
+    # Filter and group
+    filtered = remove_interstitials(paragraphs)
+    taxa = group_paragraphs(filtered)
+
+    # Convert to dictionaries
+    for taxon in taxa:
+        for para_dict in taxon.dictionaries():
+            # Extract CouchDB metadata from composite filename
+            parts = para_dict['filename'].split('/', 2)
+            if len(parts) == 3:
+                para_dict['db_name'] = parts[0]
+                para_dict['doc_id'] = parts[1]
+                para_dict['attachment_name'] = parts[2]
+            yield para_dict
+
+# Create Spark session
+spark = SparkSession.builder.appName("TaxonExtractor").getOrCreate()
+
+# Load from CouchDB
+conn = CouchDBConnection("http://localhost:5984", "mycobank", "user", "pass")
+df = conn.load_distributed(spark, "*.txt.ann")
+
+# Process in parallel
+taxa_rdd = df.rdd.mapPartitions(
+    lambda part: process_partition_to_taxa(part, "mycobank")
+)
+
+# Convert to DataFrame and save
+from pyspark.sql.types import StructType, StructField, StringType
+
+schema = StructType([
+    StructField("serial_number", StringType(), False),
+    StructField("db_name", StringType(), True),
+    StructField("doc_id", StringType(), True),
+    StructField("attachment_name", StringType(), True),
+    StructField("label", StringType(), False),
+    StructField("body", StringType(), False),
+    # ... other fields
+])
+
+taxa_df = taxa_rdd.toDF(schema)
+taxa_df.write.parquet("output/taxa.parquet")
+```
+
+**Example: Local Processing from CouchDB**
+
+```python
+from couchdb_file import read_couchdb_files_from_connection
+from skol_classifier.couchdb_io import CouchDBConnection
+
+# Connect to CouchDB
+conn = CouchDBConnection("http://localhost:5984", "mycobank")
+
+# Read files with metadata
+lines = read_couchdb_files_from_connection(
+    conn, spark, db_name="mycobank", pattern="*.txt.ann"
+)
+
+# Parse and extract
+paragraphs = parse_annotated(lines)
+taxa = list(group_paragraphs(paragraphs))
+
+# Access CouchDB metadata from lines
+for taxon in taxa:
+    for para_dict in taxon.dictionaries():
+        # filename format: "db_name/doc_id/attachment_name"
+        print(f"From: {para_dict['filename']}")
+```
+
+### Line Metadata for CouchDB
+
+When `Line` objects are created from `CouchDBFile`, they include these optional CouchDB properties:
+
+- `doc_id`: CouchDB document ID (Optional[str])
+- `attachment_name`: Attachment filename, e.g., "article.txt.ann" (Optional[str])
+- `db_name`: Database name - ingest_db_name for tracking data source (Optional[str])
+- `filename`: Composite identifier in format "db_name/doc_id/attachment_name"
+
+This metadata is preserved through the entire pipeline and appears in the final `Taxon` output. For regular file-based Line objects, these fields are `None`.
+
+### Complete CouchDB Example
+
+See [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.py) for a complete working example with:
+
+- Distributed Spark processing
+- Local processing for small datasets
+- Filtering and analysis examples
+- Command-line interface
+
+**Usage:**
+
+```bash
+# Distributed processing
+python examples/extract_taxa_from_couchdb.py \
+    --mode distributed \
+    --database mycobank_annotations \
+    --db-name mycobank \
+    --username admin \
+    --password secret
+
+# Local processing (for testing)
+python examples/extract_taxa_from_couchdb.py \
+    --mode local \
+    --database mycobank_annotations \
+    --db-name mycobank
+```
+
+### Why Use CouchDB Integration?
+
+Benefits of the CouchDB-aware approach:
+
+1. **Scalability**: Process millions of documents in parallel using Spark
+2. **Metadata Preservation**: Track which database/document each taxon came from
+3. **Efficient I/O**: One connection per partition, not per document
+4. **Traceability**: Full lineage from database to extracted taxa
+5. **Flexibility**: Works with existing `parse_annotated()` and `group_paragraphs()` functions
+
 ## Summary
 
 To extract `Taxon` objects from *.txt.ann files:
+
+### From Local Files:
 
 1. Import the necessary modules
 2. Use `read_files()` to load the files into `Line` objects
@@ -403,5 +565,14 @@ To extract `Taxon` objects from *.txt.ann files:
 5. Process each `Taxon` using its methods:
    - `dictionaries()` for row-per-paragraph output
    - `as_row()` for single-row output with combined text
+
+### From CouchDB (Distributed):
+
+1. Create `CouchDBConnection` instance
+2. Use `conn.load_distributed()` to load attachments into DataFrame
+3. Use `read_couchdb_partition()` in `mapPartitions()` to create `Line` objects with CouchDB metadata
+4. Use `parse_annotated()` to group lines into `Paragraph` objects
+5. Use `group_paragraphs()` to group paragraphs into `Taxon` objects
+6. Extract CouchDB metadata from composite filenames in output
 
 The pipeline is designed to be flexible and composable, allowing you to insert filtering or transformation steps at any stage.

@@ -14,6 +14,10 @@ class Line(object):
     _line_number: int
     _empirical_page_number: Optional[str]
     _file = None
+    # CouchDB metadata (optional)
+    _doc_id: Optional[str]
+    _attachment_name: Optional[str]
+    _db_name: Optional[str]
 
     _TABLE = [
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
@@ -27,11 +31,25 @@ class Line(object):
         self._line_number = 0
         self._label_start = False
         self._label_end = None
+        # Initialize optional CouchDB metadata
+        self._doc_id = None
+        self._attachment_name = None
+        self._db_name = None
+
         if fileobj:
             self._filename = fileobj.filename
             self._line_number = fileobj.line_number
             self._page_number = fileobj.page_number
             self._empirical_page_number = fileobj.empirical_page_number
+
+            # Check if fileobj has CouchDB metadata (duck typing)
+            if hasattr(fileobj, 'doc_id'):
+                self._doc_id = fileobj.doc_id
+            if hasattr(fileobj, 'attachment_name'):
+                self._attachment_name = fileobj.attachment_name
+            if hasattr(fileobj, 'db_name'):
+                self._db_name = fileobj.db_name
+
         self.strip_label_start()
         self.strip_label_end()
 
@@ -109,3 +127,18 @@ class Line(object):
 
     def end_label(self) -> Optional[str]:
         return self._label_end
+
+    @property
+    def doc_id(self) -> Optional[str]:
+        """CouchDB document ID (optional)."""
+        return self._doc_id
+
+    @property
+    def attachment_name(self) -> Optional[str]:
+        """CouchDB attachment filename (optional)."""
+        return self._attachment_name
+
+    @property
+    def db_name(self) -> Optional[str]:
+        """Database name - ingest_db_name (optional)."""
+        return self._db_name
