@@ -8,12 +8,12 @@ This module provides a UDF-based PySpark pipeline that:
 4. Ensures idempotent operations using composite keys: (doc_id, url, line_number)
 """
 
-import json
 import hashlib
-from typing import Iterator, Optional, Dict, Any, List
+from typing import Iterator, Optional, Dict, Any
+
+import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.types import StructType, StructField, StringType, BooleanType
-import couchdb
 
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
@@ -50,60 +50,6 @@ def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> 
     return f"taxon_{doc_hash}"
 
 
-def taxon_to_json_doc(
-    taxon: Taxon,
-    first_nomenclature_para
-) -> Optional[Dict[str, Any]]:
-    """
-    Convert a Taxon object to a JSON document for CouchDB storage.
-
-    The document includes:
-    - All paragraph dictionaries from the taxon
-    - Source metadata extracted from first nomenclature paragraph
-    - Composite key for idempotency (doc_id, url, line_number)
-
-    Args:
-        taxon: Taxon object to convert
-        first_nomenclature_para: First nomenclature Paragraph object (for metadata)
-
-    Returns:
-        Dictionary ready for JSON serialization and CouchDB storage
-    """
-    # Collect all paragraph dictionaries
-    paragraphs = list(taxon.dictionaries())
-
-    if not paragraphs:
-        return None
-
-    # Extract metadata from first nomenclature paragraph's first line
-    first_line = first_nomenclature_para.first_line
-    if not first_line:
-        return None
-
-    source_doc_id = first_line.doc_id if first_line.doc_id else "unknown"
-    source_url = first_line.url
-    source_db_name = first_line.db_name if first_line.db_name else "unknown"
-    line_number = first_line.line_number
-
-    # Build the document
-    doc = {
-        "type": "taxon",
-        "serial_number": paragraphs[0].get('serial_number', '0'),
-        "source": {
-            "doc_id": source_doc_id,
-            "url": source_url,
-            "db_name": source_db_name,
-            "line_number": line_number
-        },
-        "paragraphs": paragraphs,
-        # Denormalized fields for easy querying
-        "nomenclature_count": sum(1 for p in paragraphs if p.get('label') == 'Nomenclature'),
-        "description_count": sum(1 for p in paragraphs if p.get('label') == 'Description'),
-    }
-
-    return doc
-
-
 def extract_taxa_from_partition(
     partition: Iterator[Row],
     ingest_db_name: str
@@ -123,12 +69,14 @@ def extract_taxa_from_partition(
         ingest_db_name: Database name for metadata tracking
 
     Yields:
-        Dictionaries with:
-            - source_doc_id: Original document ID
-            - source_url: Original URL
-            - source_db_name: Original database name
-            - taxon_json: JSON string of taxon document
-            - first_line_number: Line number for idempotency key
+        Dictionary from Taxon.as_row() with keys:
+            - taxon: String of concatenated nomenclature paragraphs
+            - description: String of concatenated description paragraphs
+            - source: Dict with keys doc_id, url, db_name, line_number
+            - line_number: Line number of first nomenclature paragraph
+            - paragraph_number: Paragraph number of first nomenclature paragraph
+            - page_number: Page number of first nomenclature paragraph
+            - empirical_page_number: Empirical page number of first nomenclature paragraph
     """
     # Read lines from partition
     lines = read_couchdb_partition(partition, ingest_db_name)
@@ -148,27 +96,12 @@ def extract_taxa_from_partition(
     # Convert each taxon to JSON
     for taxon in taxa:
         # Get first nomenclature paragraph for metadata
-        if not taxon._nomenclatures:
+        if not taxon.has_nomenclature():
             continue
 
-        first_nomenclature = taxon._nomenclatures[0]
-
-        taxon_doc = taxon_to_json_doc(taxon, first_nomenclature)
-
-        if taxon_doc:
+        if taxon_doc := taxon.as_row():
             # Extract keys from document
-            source_doc_id = taxon_doc['source']['doc_id']
-            source_url = taxon_doc['source']['url']
-            source_db_name = taxon_doc['source']['db_name']
-            first_line_num = taxon_doc['source']['line_number']
-
-            yield {
-                'source_doc_id': source_doc_id,
-                'source_url': source_url if source_url else '',
-                'source_db_name': source_db_name,
-                'taxon_json': json.dumps(taxon_doc),
-                'first_line_number': first_line_num
-            }
+            yield taxon_doc
 
 
 def save_taxa_to_couchdb_partition(
@@ -186,12 +119,7 @@ def save_taxa_to_couchdb_partition(
     idempotent writes.
 
     Args:
-        partition: Iterator of Rows with columns:
-            - source_doc_id: Original document ID
-            - source_url: Original URL
-            - source_db_name: Original database name
-            - taxon_json: JSON string of taxon document
-            - first_line_number: Line number for key
+        partition: Iterator of Rows
         couchdb_url: CouchDB server URL
         taxon_db_name: Target database name
         username: Optional username
@@ -210,7 +138,7 @@ def save_taxa_to_couchdb_partition(
         if taxon_db_name in server:
             db = server[taxon_db_name]
         else:
-            db = server.create(taxon_db_name)
+            db = server.create(taxon_db_name)  # pyright: ignore[reportUnknownMemberType]
 
         # Process each taxon in the partition
         for row in partition:
@@ -221,12 +149,11 @@ def save_taxa_to_couchdb_partition(
                 # Generate deterministic document ID
                 doc_id = generate_taxon_doc_id(
                     row.source_doc_id,
-                    row.source_url if row.source_url else None,
+                    row.source_url or "unknown_url",
                     row.first_line_number
                 )
 
-                # Parse JSON
-                taxon_doc = json.loads(row.taxon_json)
+                taxon_doc = row.asDict()
 
                 # Check if document already exists (idempotent)
                 if doc_id in db:
@@ -234,15 +161,13 @@ def save_taxa_to_couchdb_partition(
                     existing_doc = db[doc_id]
                     taxon_doc['_id'] = doc_id
                     taxon_doc['_rev'] = existing_doc['_rev']
-                    db.save(taxon_doc)
                 else:
                     # New document - create it
                     taxon_doc['_id'] = doc_id
-                    db.save(taxon_doc)
-
+                db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
                 success = True
 
-            except Exception as e:
+            except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
                 error_msg = str(e)
                 print(f"Error saving taxon {doc_id}: {e}")
 
@@ -256,14 +181,14 @@ def save_taxa_to_couchdb_partition(
                 error_message=error_msg
             )
 
-    except Exception as e:
+    except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
         print(f"Error connecting to CouchDB: {e}")
         # Yield failures for all rows
         for row in partition:
             yield Row(
                 doc_id=generate_taxon_doc_id(
                     row.source_doc_id,
-                    row.source_url if row.source_url else None,
+                    row.source_url or None,
                     row.first_line_number
                 ),
                 success=False,
