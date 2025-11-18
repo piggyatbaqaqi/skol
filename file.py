@@ -68,6 +68,10 @@ class File(FileObject):
     def filename(self):
         return self._filename
 
+    @property
+    def url(self) -> Optional[str]:
+        return self._filename
+
 
 def read_files(files: List[str]) -> Iterator[Line]:
     for f in files:

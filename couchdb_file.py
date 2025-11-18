@@ -20,6 +20,7 @@ class CouchDBFile(FileObject):
     _doc_id: str
     _attachment_name: str
     _db_name: str
+    _url: Optional[str]
     _line_number: int
     _page_number: int
     _empirical_page_number: Optional[str]
@@ -30,7 +31,8 @@ class CouchDBFile(FileObject):
         content: str,
         doc_id: str,
         attachment_name: str,
-        db_name: str
+        db_name: str,
+        url: Optional[str] = None
     ) -> None:
         """
         Initialize CouchDBFile from attachment content.
@@ -40,10 +42,12 @@ class CouchDBFile(FileObject):
             doc_id: CouchDB document ID
             attachment_name: Name of the attachment (e.g., "article.txt.ann")
             db_name: Database name where document is stored (ingest_db_name)
+            url: Optional URL from the CouchDB row
         """
         self._doc_id = doc_id
         self._attachment_name = attachment_name
         self._db_name = db_name
+        self._url = url
         self._line_number = 0
         self._page_number = 1
         self._empirical_page_number = None
@@ -130,6 +134,11 @@ class CouchDBFile(FileObject):
         """Database name (ingest_db_name)."""
         return self._db_name
 
+    @property
+    def url(self) -> Optional[str]:
+        """URL from the CouchDB row."""
+        return self._url
+
 
 def read_couchdb_partition(
     partition: Iterator[Row],
@@ -166,12 +175,16 @@ def read_couchdb_partition(
         >>> result = df.rdd.mapPartitions(process_partition)
     """
     for row in partition:
+        # Extract url from row if available
+        url = getattr(row, 'url', None)
+
         # Create CouchDBFile object from row data
         file_obj = CouchDBFile(
             content=row.value,
             doc_id=row.doc_id,
             attachment_name=row.attachment_name,
-            db_name=db_name
+            db_name=db_name,
+            url=url
         )
 
         # Yield all lines from this file
