@@ -19,6 +19,19 @@ class CouchDBConnection:
     connection method that can be safely called multiple times.
     """
 
+    # Shared schema definitions (DRY principle)
+    LOAD_SCHEMA = StructType([
+        StructField("doc_id", StringType(), False),
+        StructField("attachment_name", StringType(), False),
+        StructField("value", StringType(), False),
+    ])
+
+    SAVE_SCHEMA = StructType([
+        StructField("doc_id", StringType(), False),
+        StructField("attachment_name", StringType(), False),
+        StructField("success", BooleanType(), False),
+    ])
+
     def __init__(
         self,
         couchdb_url: str,
@@ -138,7 +151,7 @@ class CouchDBConnection:
             partition: Iterator of Rows with doc_id and attachment_name
 
         Yields:
-            Rows with doc_id, attachment_name, and value (content)
+            Rows with doc_id, attachment_name, and value (content).
         """
         # Connect to CouchDB once per partition
         try:
@@ -156,6 +169,7 @@ class CouchDBConnection:
                         attachment = db.get_attachment(doc, row.attachment_name)
                         if attachment:
                             content = attachment.read().decode('utf-8', errors='ignore')
+
                             yield Row(
                                 doc_id=row.doc_id,
                                 attachment_name=row.attachment_name,
@@ -186,7 +200,7 @@ class CouchDBConnection:
             suffix: Suffix to append to attachment names
 
         Yields:
-            Rows with doc_id, attachment_name, and success status
+            Rows with doc_id, attachment_name, and success status.
         """
         # Connect to CouchDB once per partition
         try:
@@ -251,7 +265,7 @@ class CouchDBConnection:
             pattern: Pattern for attachment names
 
         Returns:
-            DataFrame with columns: doc_id, attachment_name, value
+            DataFrame with columns: doc_id, attachment_name, and value.
         """
         # Get document list
         doc_df = self.get_document_list(spark, pattern)
@@ -265,15 +279,8 @@ class CouchDBConnection:
             conn = CouchDBConnection(*conn_params)
             return conn.fetch_partition(partition)
 
-        # Define output schema
-        schema = StructType([
-            StructField("doc_id", StringType(), False),
-            StructField("attachment_name", StringType(), False),
-            StructField("value", StringType(), False)
-        ])
-
-        # Apply mapPartitions
-        result_df = doc_df.rdd.mapPartitions(fetch_partition).toDF(schema)
+        # Apply mapPartitions using shared schema
+        result_df = doc_df.rdd.mapPartitions(fetch_partition).toDF(self.LOAD_SCHEMA)
 
         return result_df
 
@@ -304,15 +311,8 @@ class CouchDBConnection:
             conn = CouchDBConnection(*conn_params)
             return conn.save_partition(partition, suffix)
 
-        # Define output schema
-        schema = StructType([
-            StructField("doc_id", StringType(), False),
-            StructField("attachment_name", StringType(), False),
-            StructField("success", BooleanType(), False)
-        ])
-
-        # Apply mapPartitions
-        result_df = df.rdd.mapPartitions(save_partition).toDF(schema)
+        # Apply mapPartitions using shared schema
+        result_df = df.rdd.mapPartitions(save_partition).toDF(self.SAVE_SCHEMA)
 
         return result_df
 
@@ -333,7 +333,7 @@ class CouchDBConnection:
             suffix: Suffix for output attachment
 
         Yields:
-            Rows with processing results
+            Rows with processing results, including success status for logging.
         """
         try:
             db = self.db
@@ -384,4 +384,3 @@ class CouchDBConnection:
                     attachment_name=row.attachment_name,
                     success=False
                 )
-
