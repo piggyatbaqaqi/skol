@@ -13,7 +13,7 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from typing import Iterator, List, Dict, Any
 
 from skol_classifier.couchdb_io import CouchDBConnection
-from couchdb_file import read_couchdb_partition, CouchDBLine
+from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
 from taxon import group_paragraphs, Taxon
 from paragraph import Paragraph
