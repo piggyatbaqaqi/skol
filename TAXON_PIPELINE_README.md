@@ -61,6 +61,7 @@ Each taxon document in the taxon database contains:
     {
       "serial_number": "123",
       "filename": "mycobank/article_2023_001/fulltext.txt.ann",
+      "url": "http://example.com/article",
       "label": "Nomenclature",
       "paragraph_number": "5",
       "page_number": "10",
@@ -70,6 +71,7 @@ Each taxon document in the taxon database contains:
     {
       "serial_number": "123",
       "filename": "mycobank/article_2023_001/fulltext.txt.ann",
+      "url": "http://example.com/article",
       "label": "Description",
       "paragraph_number": "6",
       "page_number": "10",

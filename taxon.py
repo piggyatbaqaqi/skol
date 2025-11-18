@@ -8,7 +8,7 @@ from label import Label
 class Taxon(object):
     FIELDNAMES = [
         'serial_number',
-        'filename', 'label', 'paragraph_number', 'page_number',
+        'filename', 'url', 'label', 'paragraph_number', 'page_number',
         'empirical_page_number', 'body'
     ]
     LONG_GAP = 6  # 6 Paragraphs is long enough to give up.
