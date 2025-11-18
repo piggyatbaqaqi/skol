@@ -15,9 +15,11 @@ import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 
+from skol_classifier.couchdb_io import CouchDBConnection
+
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
-from taxon import group_paragraphs, Taxon
+from taxon import group_paragraphs
 
 
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
@@ -258,7 +260,6 @@ def extract_and_save_taxa_pipeline(
         >>> results.filter("success = true").count()
         >>> results.filter("success = false").show()
     """
-    from skol_classifier.couchdb_io import CouchDBConnection
 
     # Load annotated files from ingest database
     ingest_conn = CouchDBConnection(
