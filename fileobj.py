@@ -22,3 +22,8 @@ class FileObject(ABC):
     @abstractmethod
     def filename(self) -> Optional[str]:
         return None
+
+    @property
+    @abstractmethod
+    def url(self) -> Optional[str]:
+        return None

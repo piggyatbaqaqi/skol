@@ -18,6 +18,7 @@ class Line(object):
     _doc_id: Optional[str]
     _attachment_name: Optional[str]
     _db_name: Optional[str]
+    _url: Optional[str]
 
     _TABLE = [
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
@@ -35,6 +36,7 @@ class Line(object):
         self._doc_id = None
         self._attachment_name = None
         self._db_name = None
+        self._url = None
 
         if fileobj:
             self._filename = fileobj.filename
@@ -49,6 +51,8 @@ class Line(object):
                 self._attachment_name = fileobj.attachment_name
             if hasattr(fileobj, 'db_name'):
                 self._db_name = fileobj.db_name
+            if hasattr(fileobj, 'url'):
+                self._url = fileobj.url
 
         self.strip_label_start()
         self.strip_label_end()
@@ -142,3 +146,8 @@ class Line(object):
     def db_name(self) -> Optional[str]:
         """Database name - ingest_db_name (optional)."""
         return self._db_name
+
+    @property
+    def url(self) -> Optional[str]:
+        """URL from the source (optional)."""
+        return self._url
