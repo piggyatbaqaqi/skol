@@ -115,11 +115,16 @@ def save_taxa_to_couchdb_partition(
     Save taxa to CouchDB for an entire partition (idempotent).
 
     This function creates deterministic document IDs based on
-    (source_doc_id, source_url, first_line_number) to ensure
+    (source.doc_id, source.url, line_number) to ensure
     idempotent writes.
 
     Args:
-        partition: Iterator of Rows
+        partition: Iterator of Rows with columns from Taxon.as_row():
+            - taxon: Nomenclature text
+            - description: Description text
+            - source: Dict with doc_id, url, db_name
+            - line_number: Line number
+            - paragraph_number, page_number, empirical_page_number
         couchdb_url: CouchDB server URL
         taxon_db_name: Target database name
         username: Optional username
@@ -144,15 +149,24 @@ def save_taxa_to_couchdb_partition(
         for row in partition:
             success = False
             error_msg = ""
+            doc_id = "unknown"
 
             try:
+                # Extract source metadata from row
+                source_dict = row.source if hasattr(row, 'source') else {}  # type: ignore[reportUnknownMemberType]
+                source: Dict[str, Any] = dict(source_dict) if isinstance(source_dict, dict) else {}  # type: ignore[reportUnknownArgumentType]
+                source_doc_id: str = str(source.get('doc_id', 'unknown'))
+                source_url: Optional[str] = source.get('url')  # type: ignore[reportUnknownArgumentType]
+                line_number: Any = row.line_number if hasattr(row, 'line_number') else 0  # type: ignore[reportUnknownMemberType]
+
                 # Generate deterministic document ID
                 doc_id = generate_taxon_doc_id(
-                    row.source_doc_id,
-                    row.source_url or "unknown_url",
-                    row.first_line_number
+                    source_doc_id,
+                    source_url if isinstance(source_url, str) else None,
+                    int(line_number) if line_number else 0
                 )
 
+                # Convert row to dict for CouchDB storage
                 taxon_doc = row.asDict()
 
                 # Check if document already exists (idempotent)
@@ -164,6 +178,7 @@ def save_taxa_to_couchdb_partition(
                 else:
                     # New document - create it
                     taxon_doc['_id'] = doc_id
+
                 db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
                 success = True
 
@@ -172,11 +187,7 @@ def save_taxa_to_couchdb_partition(
                 print(f"Error saving taxon {doc_id}: {e}")
 
             yield Row(
-                doc_id=generate_taxon_doc_id(
-                    row.source_doc_id,
-                    row.source_url if row.source_url else None,
-                    row.first_line_number
-                ),
+                doc_id=doc_id,
                 success=success,
                 error_message=error_msg
             )
@@ -186,11 +197,7 @@ def save_taxa_to_couchdb_partition(
         # Yield failures for all rows
         for row in partition:
             yield Row(
-                doc_id=generate_taxon_doc_id(
-                    row.source_doc_id,
-                    row.source_url or None,
-                    row.first_line_number
-                ),
+                doc_id="unknown_connection_error",
                 success=False,
                 error_message=str(e)
             )
@@ -264,12 +271,17 @@ def extract_and_save_taxa_pipeline(
     df = ingest_conn.load_distributed(spark, pattern)
 
     # Extract taxa from each partition
+    # Schema matches Taxon.as_row() output format
+    from pyspark.sql.types import MapType
+
     extract_schema = StructType([
-        StructField("source_doc_id", StringType(), False),
-        StructField("source_url", StringType(), False),
-        StructField("source_db_name", StringType(), False),
-        StructField("taxon_json", StringType(), False),
-        StructField("first_line_number", StringType(), False),
+        StructField("taxon", StringType(), False),
+        StructField("description", StringType(), False),
+        StructField("source", MapType(StringType(), StringType()), False),
+        StructField("line_number", StringType(), False),
+        StructField("paragraph_number", StringType(), False),
+        StructField("page_number", StringType(), False),
+        StructField("empirical_page_number", StringType(), True),
     ])
 
     def extract_partition(partition):
