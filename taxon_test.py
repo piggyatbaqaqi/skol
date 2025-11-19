@@ -127,5 +127,59 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dict7['body'], 'paragraph15\n')
         self.assertEqual(dict7['label'], 'Description')
 
+    def test_fall_through_first_description(self):
+        """Test fall-through case: first Description after Nomenclature is immediately added.
+
+        When in 'Look for Nomenclatures' state and we encounter a Description paragraph
+        after having collected at least one Nomenclature, the state switches to
+        'Look for Descriptions' and falls through to immediately add that Description.
+        """
+        test_data = lineify(textwrap.dedent("""\
+        [@nom1#Nomenclature*]
+        [@desc1#Description*]
+        [@desc2#Description*]
+        """).split('\n'))
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1, "Should generate exactly one taxon")
+
+        dictionaries = list(taxa[0].dictionaries())
+        self.assertEqual(len(dictionaries), 3, "Should have 1 nomenclature + 2 descriptions")
+
+        # Verify the first description was captured (fall-through worked)
+        self.assertListEqual([d['paragraph_number'] for d in dictionaries],
+                             ['1', '2', '3'])
+        self.assertEqual(dictionaries[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries[1]['label'], 'Description')
+        self.assertEqual(dictionaries[1]['body'], 'desc1\n')
+
+    def test_fall_through_gap_reset(self):
+        """Test fall-through case: been_too_long() causes reset in 'Look for Nomenclatures'.
+
+        When in 'Look for Nomenclatures' state and the gap becomes too long,
+        the taxon is reset and we continue looking for nomenclatures.
+        This prevents incomplete taxa from being yielded.
+        """
+        test_data = lineify(textwrap.dedent("""\
+        [@nom1#Nomenclature*]
+        [@filler1#Misc-exposition*]
+        [@filler2#Misc-exposition*]
+        [@filler3#Misc-exposition*]
+        [@filler4#Misc-exposition*]
+        [@nom2#Nomenclature*]
+        [@desc1#Description*]
+        """).split('\n'))
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1, "Should generate exactly one taxon")
+
+        dictionaries = list(taxa[0].dictionaries())
+        # Should only have nom2 and desc1, not nom1 (it was reset due to gap)
+        self.assertEqual(len(dictionaries), 2, "Should have 1 nomenclature + 1 description")
+        self.assertListEqual([d['paragraph_number'] for d in dictionaries],
+                             ['6', '7'])
+        self.assertEqual(dictionaries[0]['body'], 'nom2\n')
+        self.assertEqual(dictionaries[1]['body'], 'desc1\n')
+
 if __name__ == '__main__':
     unittest.main()

@@ -100,14 +100,17 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
             if pp.top_label() == description:
                 if taxon.has_nomenclature():
                     state = 'Look for Descriptions'
+                    # Fall through to the description handling below.
             if taxon.been_too_long(pp):
                 taxon.reset()
                 continue
+            # Fall through in case we just found a description.
         if state == 'Look for Descriptions':
             if pp.top_label() == description:
                 taxon.add_description(pp)
                 continue
             if pp.top_label() == nomenclature:
+                print("DEBUG: Taxon %d switching to new nomenclature." % taxon._serial)
                 if taxon and taxon.has_description() and taxon.has_nomenclature():
                     yield taxon
                 taxon = Taxon()
@@ -116,6 +119,7 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                 continue
 
             if taxon.been_too_long(pp):
+                print("DEBUG: Taxon %d has been too long, resetting." % taxon._serial)
                 if taxon and taxon.has_description() and taxon.has_nomenclature():
                     yield taxon
                 taxon = Taxon()
