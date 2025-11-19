@@ -62,8 +62,7 @@ class FileObject(ABC):
         Returns:
             Iterator yielding Line objects
         """
-        from line import Line
-
+        from line  import Line # Import here to avoid circular imports
         for l_str in self._get_content_iterator():
             self._line_number += 1
 
@@ -77,6 +76,8 @@ class FileObject(ABC):
                 self._line_number = 1
                 # Strip the form feed
                 self._set_empirical_page(l_str[1:])
+
+            # TODO(piggy): Implement pdf_page_number extraction logic here if needed
 
             # Create Line object with file metadata
             l = Line(l_str, self)
@@ -103,8 +104,6 @@ class FileObject(ABC):
         """Filename or identifier for this file object."""
         return None
 
-    @property
-    @abstractmethod
     def url(self) -> Optional[str]:
         """URL or source location for this file object."""
-        return None
+        return self.filename
