@@ -642,5 +642,67 @@ class TestTargetClasses(unittest.TestCase):
         self.assertListEqual([pp.top_label() for pp in phase3], labels_after)
 
 
+class TestParseAnnotated(unittest.TestCase):
+
+    def test_parse_annotated_real_file(self):
+        """Test parse_annotated on a real annotated journal file.
+
+        This test uses data/annotated/journals/Mycotaxon/Vol056/n1.txt.ann
+        to verify that parse_annotated correctly parses annotated paragraphs
+        and assigns the correct labels from the annotation markers.
+        """
+        from file import File
+
+        # Read the annotated file
+        file_path = 'data/annotated/journals/Mycotaxon/Vol056/n1.txt.ann'
+        file_obj = File(file_path)
+        lines = list(file_obj.read_line())
+
+        # Parse paragraphs
+        paragraphs = list(finder.parse_annotated(lines))
+
+        # Verify total paragraph count
+        self.assertEqual(len(paragraphs), 11317,
+                         "Should parse 11317 paragraphs from the file")
+
+        # Count labels
+        label_counts = {}
+        for pp in paragraphs:
+            label = pp.top_label()
+            if label is None:
+                label_str = 'None'
+            else:
+                label_str = label.label or 'None'
+            label_counts[label_str] = label_counts.get(label_str, 0) + 1
+
+        # Verify label distribution
+        expected_counts = {
+            'Misc-exposition': 4802,
+            'None': 4440,
+            'Nomenclature': 641,
+            'Description': 498,
+            'Page-header': 487,
+            'Bibliography': 271,
+            'Figure': 116,
+            'Key': 36,
+            'Table': 13,
+            'Habitat-distribution': 11,
+            'Diagnosis': 1,
+            'Comment': 1,
+        }
+
+        self.assertEqual(label_counts, expected_counts,
+                         "Label distribution should match expected counts")
+
+        # Verify specific paragraph labels (sample from different sections)
+        self.assertEqual(paragraphs[1].top_label(), Label('Misc-exposition'))
+        self.assertEqual(paragraphs[3].top_label(), Label('Misc-exposition'))
+        self.assertEqual(paragraphs[25].top_label(), Label('Page-header'))
+
+        # Verify that None labels are for blank/empty paragraphs
+        self.assertIsNone(paragraphs[0].top_label())
+        self.assertTrue(paragraphs[0].is_blank() or paragraphs[0].is_empty())
+
+
 if __name__ == '__main__':
     unittest.main()
