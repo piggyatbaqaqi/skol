@@ -134,8 +134,7 @@ def read_couchdb_partition(
         )
 
         # Yield all lines from this file
-        for line in file_obj.read_line():
-            yield line
+        yield from file_obj.read_line()
 
 
 def read_couchdb_rows(
