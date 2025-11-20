@@ -379,7 +379,7 @@ class SkolClassifier:
                     col("value"),
                     lit("#"),
                     col("predicted_label"),
-                    lit("]")
+                    lit("*]")
                 )
             )
 
@@ -774,7 +774,7 @@ class SkolClassifier:
                     col("value"),
                     lit("#"),
                     col("predicted_label"),
-                    lit("]")
+                    lit("*]")
                 )
             )
 
