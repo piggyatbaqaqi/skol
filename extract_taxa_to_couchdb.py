@@ -19,7 +19,7 @@ from skol_classifier.couchdb_io import CouchDBConnection
 
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
-from taxon import group_paragraphs
+from taxon import group_paragraphs, Taxon
 
 
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
@@ -55,12 +55,12 @@ def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> 
 def extract_taxa_from_partition(
     partition: Iterator[Row],
     ingest_db_name: str
-) -> Iterator[Dict[str, Any]]:
+) -> Iterator[Taxon]:
     """
     Extract Taxa from a partition of CouchDB rows.
 
     This function processes annotated files from CouchDB and yields
-    dictionaries containing taxon data ready for saving.
+    Taxon objects for further processing.
 
     Args:
         partition: Iterator of Rows with columns:
@@ -71,14 +71,7 @@ def extract_taxa_from_partition(
         ingest_db_name: Database name for metadata tracking
 
     Yields:
-        Dictionary from Taxon.as_row() with keys:
-            - taxon: String of concatenated nomenclature paragraphs
-            - description: String of concatenated description paragraphs
-            - source: Dict with keys doc_id, url, db_name, line_number
-            - line_number: Line number of first nomenclature paragraph
-            - paragraph_number: Paragraph number of first nomenclature paragraph
-            - page_number: Page number of first nomenclature paragraph
-            - empirical_page_number: Empirical page number of first nomenclature paragraph
+        Taxon objects with nomenclature and description paragraphs
     """
     # Read lines from partition
     lines = read_couchdb_partition(partition, ingest_db_name)
@@ -95,15 +88,34 @@ def extract_taxa_from_partition(
     # Group into taxa (returns Taxon objects with references to paragraphs)
     taxa = group_paragraphs(iter(filtered_list))
 
-    # Convert each taxon to JSON
+    # Yield Taxon objects directly
     for taxon in taxa:
-        # Get first nomenclature paragraph for metadata
-        if not taxon.has_nomenclature():
-            continue
+        # Only yield taxa that have nomenclature
+        if taxon.has_nomenclature():
+            yield taxon
 
-        if taxon_doc := taxon.as_row():
-            # Extract keys from document
-            yield taxon_doc
+
+def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
+    """
+    Convert Taxon objects to PySpark Rows suitable for DataFrame creation.
+
+    Args:
+        partition: Iterator of Taxon objects
+
+    Yields:
+        PySpark Row objects with fields:
+            - taxon: String of concatenated nomenclature paragraphs
+            - description: String of concatenated description paragraphs
+            - source: Dict with keys doc_id, url, db_name
+            - line_number: Line number of first nomenclature paragraph
+            - paragraph_number: Paragraph number of first nomenclature paragraph
+            - page_number: Page number of first nomenclature paragraph
+            - empirical_page_number: Empirical page number of first nomenclature paragraph
+    """
+    for taxon in partition:
+        taxon_dict = taxon.as_row()
+        # Convert dict to Row
+        yield Row(**taxon_dict)
 
 
 def save_taxa_to_couchdb_partition(
@@ -271,7 +283,7 @@ def extract_and_save_taxa_pipeline(
 
     df = ingest_conn.load_distributed(spark, pattern)
 
-    # Extract taxa from each partition
+    # Extract taxa from each partition as Taxon objects, then convert to dicts
     # Schema matches Taxon.as_row() output format
     from pyspark.sql.types import MapType
 
@@ -286,9 +298,13 @@ def extract_and_save_taxa_pipeline(
     ])
 
     def extract_partition(partition):
-        return extract_taxa_from_partition(partition, ingest_db_name)
+        # Extract Taxon objects
+        taxa = extract_taxa_from_partition(partition, ingest_db_name)
+        # Convert to Rows for DataFrame
+        return convert_taxa_to_rows(taxa)
 
-    taxa_df = df.rdd.mapPartitions(extract_partition).toDF(extract_schema)
+    taxa_rdd = df.rdd.mapPartitions(extract_partition)
+    taxa_df = spark.createDataFrame(taxa_rdd, extract_schema)
 
     # Save taxa to taxon database
     save_schema = StructType([

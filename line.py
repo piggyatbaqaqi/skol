@@ -150,4 +150,4 @@ class Line(object):
     @property
     def url(self) -> Optional[str]:
         """URL from the source (optional)."""
-        return self._url
+        return self._url or self._filename

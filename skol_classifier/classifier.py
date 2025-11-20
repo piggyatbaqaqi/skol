@@ -2,7 +2,6 @@
 Main classifier module for SKOL text classification
 """
 
-import pickle
 import tempfile
 import shutil
 import json
@@ -694,7 +693,7 @@ class SkolClassifier:
             self.couchdb_url, self.database, self.username, self.password
         )
         return conn.load_distributed(self.spark, pattern)
-    
+
 
     def predict_from_couchdb(
         self,
