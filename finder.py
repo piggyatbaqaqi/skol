@@ -34,23 +34,56 @@ from taxon import Taxon, group_paragraphs
 
 SEED=12345
 
+
+def _count_the_labels(pp: Paragraph, label_counts: Dict[str, int]) -> None:
+    """Count all labels in a paragraph and update label_counts dictionary.
+
+    Args:
+        pp: Paragraph whose labels to count
+        label_counts: Dictionary mapping label strings to counts
+    """
+    labels = pp.labels
+    if not labels:
+        # No labels means None
+        label_counts['None'] = label_counts.get('None', 0) + 1
+    else:
+        # Count all labels on the paragraph
+        for label in labels:
+            label_str = label.label if label and label.label else 'None'
+            label_counts[label_str] = label_counts.get(label_str, 0) + 1
+
+
 def parse_annotated(contents: Iterable[Line]) -> Iterator[Paragraph]:
     """Return paragraphs in annotated block form.
 
     Do not apply heuristic methods to divide paragraphs."""
     pp = Paragraph()
+    label_counts: Dict[str, int] = {}
+
     for line in contents:
         pp.append_ahead(line)
 
         if line.contains_start():
             (retval, pp) = pp.next_paragraph()
+            _count_the_labels(retval, label_counts)
             yield retval
             continue
 
         if pp.last_line and pp.last_line.end_label() is not None:
             (retval, pp) = pp.next_paragraph()
+            _count_the_labels(retval, label_counts)
             yield retval
             continue
+
+    # Print label summary
+    print("\n=== parse_annotated Label Summary ===")
+    total_labels = sum(label_counts.values())
+    print(f"Total labels counted: {total_labels}")
+    print("\nLabel distribution:")
+    for label_str, count in sorted(label_counts.items(), key=lambda x: -x[1]):
+        percentage = (count / total_labels * 100) if total_labels > 0 else 0
+        print(f"  {label_str:25s} {count:6d} ({percentage:5.1f}%)")
+    print("=" * 40)
 
 
 def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
