@@ -13,8 +13,7 @@ def compare_models():
 
     # Load annotated data
     annotated_files = get_file_list(
-        "/path/to/annotated/data",
-        pattern="**/*.txt.ann"
+        "data/annotated", pattern="**/*.txt.ann"
     )
 
     # Configurations to test

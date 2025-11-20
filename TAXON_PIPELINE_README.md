@@ -19,9 +19,11 @@ Ingest CouchDB Database (annotated files)
   ↓
 CouchDBConnection.load_distributed() → DataFrame[doc_id, attachment_name, value, url]
   ↓
-mapPartitions(extract_taxa_from_partition) → Parse & Extract Taxa
+mapPartitions(extract_taxa_from_partition) → Parse & Extract Taxa → RDD[Taxon]
   ↓
-DataFrame[source_doc_id, source_url, taxon_json, first_line_number]
+mapPartitions(convert_taxa_to_rows) → Convert Taxon objects to Rows
+  ↓
+DataFrame[taxon, description, source, line_number, ...]
   ↓
 mapPartitions(save_taxa_to_couchdb_partition) → Save with idempotent keys
   ↓
@@ -149,14 +151,22 @@ python extract_taxa_to_couchdb.py \
 #### Extract Taxa from Partition
 
 ```python
-from extract_taxa_to_couchdb import extract_taxa_from_partition
+from extract_taxa_to_couchdb import extract_taxa_from_partition, convert_taxa_to_rows
 
 def process_partition(partition):
-    """Custom partition processing."""
-    return extract_taxa_from_partition(partition, "mycobank")
+    """Custom partition processing - returns Taxon objects."""
+    taxa = extract_taxa_from_partition(partition, "mycobank")
+    # Convert to Rows for DataFrame
+    return convert_taxa_to_rows(taxa)
 
 # Use with mapPartitions
 taxa_rdd = df.rdd.mapPartitions(process_partition)
+# Or to work directly with Taxon objects:
+def process_taxa(partition):
+    return extract_taxa_from_partition(partition, "mycobank")
+
+taxa_objects_rdd = df.rdd.mapPartitions(process_taxa)
+# Do something with Taxon objects...
 ```
 
 #### Save Taxa to CouchDB
@@ -221,7 +231,17 @@ UDF for extracting taxa from a partition of CouchDB rows.
 - `ingest_db_name` (str): Database name for metadata tracking
 
 **Yields:**
-- Dictionaries with: `source_doc_id`, `source_url`, `source_db_name`, `taxon_json`, `first_line_number`
+- Taxon objects with nomenclature and description paragraphs
+
+### `convert_taxa_to_rows()`
+
+Convert Taxon objects to PySpark Rows for DataFrame creation.
+
+**Parameters:**
+- `partition` (Iterator[Taxon]): Iterator of Taxon objects
+
+**Yields:**
+- PySpark Row objects with fields: taxon, description, source, line_number, paragraph_number, page_number, empirical_page_number
 
 ### `save_taxa_to_couchdb_partition()`
 
