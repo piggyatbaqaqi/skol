@@ -171,20 +171,17 @@ class SkolClassifier:
         # Window specification for ordering
         window_spec = Window.partitionBy("filename").orderBy("start_line_id")
 
-        # Group and extract paragraphs
-        grouped_df = (
-            df.groupBy("filename")
+        return (
+            df.groupBy("filename") # pyright: ignore[reportUnknownMemberType]
             .agg(
                 collect_list("value").alias("lines"),
-                min("filename").alias("start_line_id")
+                min("filename").alias("start_line_id"),
             )
             .withColumn("value", explode(heuristic_udf(col("lines"))))
             .drop("lines")
             .filter(trim(col("value")) != "")
             .withColumn("row_number", row_number().over(window_spec))
-        )
-
-        return grouped_df
+        ) # pyright: ignore[reportUnknownVariableType, reportUnknownVariableType]
 
     def build_feature_pipeline(
         self,
