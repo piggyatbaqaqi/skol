@@ -57,14 +57,10 @@ class Paragraph(object):
 
     _SUFFIX_RE = (
         r'('
-        r'ae|amma|ana|ans|ata|ax|ca|cybe|cys|derma'
-        r'|dyna'
-        r'|ea|eda|ella|ena|ens|ense|era|ersa|es|escens|forma'
-        r'|ia|ici|icta|ida|ii|illa|ina|ista|is|ix|i|ma'
-        r'|male'
-        r'|oa|oda|ola|ole|oma|or|ora|orme|osa|ota|phe|phila|phora|phylla'
-        r'|rys'
-        r'|sis|spora|thele|tit|tre|tricha|ula|ule|um|us|uta|yx|zoa'
+        r'ae|al|am|an|ar|ba|be|bi|ca|ch|ci|ck|da|di|ea|ed|ei|en|er|es|ev|gi'
+        r'|ha|he|ia|ic|id|ii|is|ix|íz|la|le|li|ll|ma|me|na|nd|ni|ns|o|oa|oé'
+        r'|of|oi|on|or|os|ox|pa|ph|ps|ra|re|ri|rt|sa|se|si|ta|te|ti|ts|ty'
+        r'|ua|ud|um|up|us|va|vá|xa|ya|yi|ys|za|zi'
         r')\b'
     )
     _NOMENCLATURE_RE = (

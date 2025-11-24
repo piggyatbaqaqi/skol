@@ -234,8 +234,8 @@ class TestReinterpret(unittest.TestCase):
         self.pp.set_reinterpretations(['latinate'])
         got = self.pp.reinterpret()
         expected = (
-            ' PLATINATE   PLATINATE  (Nylander) R.C.  PLATINATE  in Egan, Bryologist 90: 163. 1987;\n'
-            ' PLATINATE   PLATINATE  Nylander,  PLATINATE  69: 464. 1886. syn. nov.\n'
+            ' PLATINATE   PLATINATE  ( PLATINATE ) R.C.  PLATINATE  in  PLATINATE , Bryologist 90: 163. 1987;\n'
+            ' PLATINATE   PLATINATE   PLATINATE ,  PLATINATE  69: 464. 1886. syn. nov.\n'
         )
         self.assertEqual(got, expected)
 
@@ -243,8 +243,8 @@ class TestReinterpret(unittest.TestCase):
         self.pp.set_reinterpretations(['suffix'])
         got = self.pp.reinterpret()
         expected = (
-            ' ella   ea  (Nylander) R.C.  is  in Egan, Bryologist 90: 163. 1987;\n'
-            ' ia   ea  Nylander,  ora  69: 464. 1886. syn. nov.\n'
+            ' la   ea  ( er ) R.C.  is  in  an , Bryologist 90: 163. 1987;\n'
+            ' ia   ea   er ,  ra  69: 464. 1886. syn. nov.\n'
         )
         self.assertEqual(got, expected)
 
@@ -252,8 +252,8 @@ class TestReinterpret(unittest.TestCase):
         self.pp.set_reinterpretations(['latinate', 'suffix'])
         got = self.pp.reinterpret()
         expected = (
-            ' PLATINATE ella   PLATINATE ea  (Nylander) R.C.  PLATINATE is  in Egan, Bryologist 90: 163. 1987;\n'
-            ' PLATINATE ia   PLATINATE ea  Nylander,  PLATINATE ora  69: 464. 1886. syn. nov.\n'
+            ' PLATINATE la   PLATINATE ea  ( PLATINATE er ) R.C.  PLATINATE is  in  PLATINATE an , Bryologist 90: 163. 1987;\n'
+            ' PLATINATE ia   PLATINATE ea   PLATINATE er ,  PLATINATE ra  69: 464. 1886. syn. nov.\n'
         )
         self.assertEqual(got, expected)
 
