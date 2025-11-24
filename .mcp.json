@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "couchdb": {
+      "type": "stdio",
+      "command": "/home/piggy/miniconda3/envs/skol/bin/python",
+      "args": [
+        "/data/piggy/src/github.com/piggyatbaqaqi/couchdb_mcp_server.py"
+      ],
+      "env": {
+        "COUCHDB_URL": "${COUCHDB_URL:-http://localhost:5984}",
+        "COUCHDB_USER": "${COUCHDB_USER}",
+        "COUCHDB_PASSWORD": "${COUCHDB_PASSWORD}",
+        "COUCHDB_DATABASES": "${COUCHDB_DATABASES:-skol_dev,skol_taxa_dev}"
+      }
+    }
+  }
+}
