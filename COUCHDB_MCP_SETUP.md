@@ -42,7 +42,7 @@ The `.mcp.json` file configures the MCP server for Claude Code:
     "couchdb": {
       "type": "stdio",
       "command": "/usr/bin/python3",
-      "args": ["/data/piggy/src/github.com/piggyatbaqaqi/couchdb_mcp_server.py"],
+      "args": ["/data/piggy/src/github.com/piggyatbaqaqi/skol/couchdb_mcp_server.py"],
       "env": {
         "COUCHDB_URL": "${COUCHDB_URL:-http://localhost:5984}",
         "COUCHDB_USER": "${COUCHDB_USER}",

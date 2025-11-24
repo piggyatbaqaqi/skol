@@ -16,7 +16,7 @@ Your CouchDB MCP server is now fully configured and running!
 - **Status**: ✓ Connected
 - **Type**: stdio
 - **Python**: `/home/piggy/miniconda3/envs/skol/bin/python`
-- **Script**: `/data/piggy/src/github.com/piggyatbaqaqi/couchdb_mcp_server.py`
+- **Script**: `/data/piggy/src/github.com/piggyatbaqaqi/skol/couchdb_mcp_server.py`
 
 ### Connected Databases
 - `skol_dev`
@@ -136,7 +136,7 @@ If `claude mcp list` shows the server as disconnected:
 
 2. Verify credentials:
    ```bash
-   curl -u admin:SU2orange! http://localhost:5984/_all_dbs
+   curl -u username:password http://localhost:5984/_all_dbs
    ```
 
 3. Check Python path:
@@ -153,7 +153,7 @@ If `claude mcp list` shows the server as disconnected:
 
 Check that your databases exist:
 ```bash
-curl -u admin:SU2orange! http://localhost:5984/_all_dbs
+curl -u username:password http://localhost:5984/_all_dbs
 ```
 
 ### Permission Issues
