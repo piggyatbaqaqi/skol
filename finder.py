@@ -186,9 +186,16 @@ def parse_paragraphs(contents: Iterable[Line]) -> Iterator[Paragraph]:
         # within 3 characters of the end followed by an optional
         # figure specifier.
         if pp.last_line and pp.last_line.search(
-                r'(nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
-                r'[(]?nom\.\s?sanct\.[)]?|emend\..*)|'
-                r'\b[12]\d{3}\b.{0,3})\s*([[(]Fig[^])]*[])]?)?$'):
+                r'('
+                r'nov\.\s?|'
+                r'(comb\.|sp\.)|'
+                r'[(]?in\.?\s?ed\.[)]?|'
+                r'[(]?nom\.\s?sanct\.[)]?'
+                r'|emend\..*'
+                r')|'
+                r'\b[12]\d{3}\b.{0,3}\s*'
+                r'([\[(](Fig|Plate)[^\])]*[\])]?)?$'
+                ):
             (retval, pp) = pp.next_paragraph()
             if not retval.is_empty():
                 yield retval
