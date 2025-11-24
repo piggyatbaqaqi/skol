@@ -89,13 +89,20 @@ class TestParser(unittest.TestCase):
         """).split('\n'))
         expected0 = textwrap.dedent("""\
         Stenellopsis nepalensis is the fourth species of the genus to be
+        """)
+        expected1 = textwrap.dedent("""\
         discovered. Stenellopsis was established to accommodate a single species, S.
         fagraeae Huguenin, occurring on leaves of Fagraea schlechteri Gilg & Benedict
         in New Caledonia (Huguenin, 1966). A second species was added to the genus
+        """)
+        expected2 = textwrap.dedent("""\
         when Singh (1979) described S. shoreae S.M. Singh[as S. shorae], found on
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
+
         self.assertEqual(str(paragraphs[0]), expected0)
+        self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(str(paragraphs[2]), expected2)
 
     def test_page_number_no_break(self):
         """An apparent page number prevents a paragraph break."""
@@ -198,16 +205,24 @@ class TestParser(unittest.TestCase):
         Collybia-like habit, often depressed, distinctly squamulose pileus; and Omphalinoid,
         with a depressed pileus and decurrent lamellae.
         """)
-        expected1 = textwrap.dedent("""\
-        \t The current infrageneric taxonomy of Entoloma (Romagnesi & Gilles, 1979; Noorde­
+        expected1 = (
+        "\t The current infrageneric taxonomy of Entoloma (Romagnesi & Gilles, 1979; Noorde­\n"
+        )
+        expected2 = textwrap.dedent("""\
         loos, 1992, 2005; Largent, 1994) is primarily based on European, North American, and
         Berkeley (1859), Cleland (1934, 1935), Stevenson (1962), Horak (1973, 1976, 1977,
+        """)
+        expected3 = textwrap.dedent("""\
         1980, 1982) and Grgurinovic (1997), no attempt has been made so far to place them
         into an infrageneric context.
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
+        print("DEBUG: paragraphs:", repr(str(paragraphs)))
+
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(str(paragraphs[2]), expected2)
+        self.assertEqual(str(paragraphs[3]), expected3)
 
     def test_syn_break(self):
         test_data = lineify(textwrap.dedent("""\
@@ -544,11 +559,11 @@ class TestParser(unittest.TestCase):
 
         paragraphs = list(finder.parse_paragraphs(test_data))
 
-        expected1 = textwrap.dedent("""\
+        expected2 = textwrap.dedent("""\
         Gymnopus beltraniae Bañares, Antonín & G. Moreno, spec. nov. — Figs. 1, 2
         """)
 
-        self.assertEqual(str(paragraphs[1]), expected1)
+        self.assertEqual(str(paragraphs[2]), expected2)
 
     def test_nomenclature3(self):
         test_data = lineify(textwrap.dedent("""\
