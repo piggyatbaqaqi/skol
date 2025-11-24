@@ -64,15 +64,15 @@ class Paragraph(object):
         r')\b'
     )
     _NOMENCLATURE_RE = (
-        r'^([-\w≡=.*|:]*\s+)?' +  # Optional first word.
+        r'^([-\w≡=.*|:]*\s+)?'  # Optional first word.
         r'(([A-Z]\w*' + _SUFFIX_RE + r')|(' + _PREFIX_RE + r'\w*))' # Genus
-        r'\s((\w+' + _SUFFIX_RE + r')|(' + _PREFIX_RE + r'\w*))' # species
+        r'\s((\w+' + _SUFFIX_RE + r')|(' + _PREFIX_RE + r'\w*))?' # species
         r'.*'
         r'('
         r'nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
-        r'[(]?nom\.\s?(prov\.|sanct\.)[)]?|emend\..*|' +  # Indications of changes.
-        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?' +  # Publication year
-        ')' +
+        r'[(]?nom\.\s?(prov\.|sanct\.)[)]?|emend\..*|'  # Indications of changes.
+        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?'  # Publication year
+        r')'
         r'[^\n]*$'  # Any trailing content
     )
     _PUNCTUATION_RE = r'[)(.;:,≡=&×]'
