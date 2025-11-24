@@ -1,4 +1,28 @@
 *~
-*.pyc
 *checkpoint.ipynb
 .mypy_cache
+
+# Environment variables (contains sensitive credentials)
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
