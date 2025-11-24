@@ -57,10 +57,10 @@ class Paragraph(object):
 
     _SUFFIX_RE = (
         r'('
-        r'ae|al|am|an|ar|ba|be|bi|ca|ch|ci|ck|da|di|ea|ed|ei|en|er|es|ev|gi'
-        r'|ha|he|ia|ic|id|ii|is|ix|íz|la|le|li|ll|ma|me|na|nd|ni|ns|o|oa|oé'
+        r'ae|al|am|an|ar|ax|ba|be|bi|ca|ch|ci|ck|da|di|ea|ed|ei|en|er|es|ev|gi'
+        r'|ha|he|ia|ic|id|ii|is|it|ix|íz|la|le|li|ll|ma|me|na|nd|ni|ns|o|oa|oé'
         r'|of|oi|on|or|os|ox|pa|ph|ps|ra|re|ri|rt|sa|se|si|ta|te|ti|ts|ty'
-        r'|ua|ud|um|up|us|va|vá|xa|ya|yi|ys|za|zi'
+        r'|ua|ud|um|up|us|va|vá|xa|ya|yi|ys|yx|za|zi'
         r')\b'
     )
     _NOMENCLATURE_RE = (
@@ -71,9 +71,9 @@ class Paragraph(object):
         r'('
         r'nov\.|nov\.\s?(comb\.|sp\.)|[(]?in\.?\s?ed\.[)]?|'
         r'[(]?nom\.\s?(prov\.|sanct\.)[)]?|emend\..*|' +  # Indications of changes.
-        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?[^\n]{0,9}' +  # Publication year
+        r'[[(]?\b[12]\d{3}\b(\s+.[12]\d{3}\b.)?[])]?' +  # Publication year
         ')' +
-        r'[-\s—]*([[(]?(Fig|Plate)[^])\n]*[])]?)?$'  # Figure or Plate
+        r'[^\n]*$'  # Any trailing content
     )
     _PUNCTUATION_RE = r'[)(.;:,≡=&×]'
     _PUNCTUATION = {
