@@ -23,26 +23,60 @@ def compare_models():
             "model_type": "logistic",
             "use_suffixes": False,
             "maxIter": 10,
-            "regParam": 0.01
+            "regParam": 0.01,
+            "line_level": False
         },
         {
             "name": "Logistic Regression (words + suffixes)",
             "model_type": "logistic",
             "use_suffixes": True,
             "maxIter": 10,
-            "regParam": 0.01
+            "regParam": 0.01,
+            "line_level": False
         },
         {
             "name": "Random Forest (words only)",
             "model_type": "random_forest",
             "use_suffixes": False,
-            "numTrees": 100
+            "numTrees": 100,
+            "line_level": False
         },
         {
             "name": "Random Forest (words + suffixes)",
             "model_type": "random_forest",
             "use_suffixes": True,
-            "numTrees": 100
+            "numTrees": 100,
+            "line_level": False
+        },
+        {
+            "name": "Logistic Regression (line-level, words only)",
+            "model_type": "logistic",
+            "use_suffixes": False,
+            "maxIter": 10,
+            "regParam": 0.01,
+            "line_level": True
+        },
+        {
+            "name": "Logistic Regression (line-level, words + suffixes)",
+            "model_type": "logistic",
+            "use_suffixes": True,
+            "maxIter": 10,
+            "regParam": 0.01,
+            "line_level": True
+        },
+        {
+            "name": "Random Forest (line-level, words only)",
+            "model_type": "random_forest",
+            "use_suffixes": False,
+            "numTrees": 100,
+            "line_level": True
+        },
+        {
+            "name": "Random Forest (line-level, words + suffixes)",
+            "model_type": "random_forest",
+            "use_suffixes": True,
+            "numTrees": 100,
+            "line_level": True
         }
     ]
 
@@ -72,6 +106,9 @@ def compare_models():
             **stats
         })
 
+        print(f"  Mode:      {'Line-level' if stats.get('line_level', False) else 'Paragraph'}")
+        print(f"  Train:     {stats['train_size']} samples")
+        print(f"  Test:      {stats['test_size']} samples")
         print(f"  Accuracy:  {stats['accuracy']:.4f}")
         print(f"  Precision: {stats['precision']:.4f}")
         print(f"  Recall:    {stats['recall']:.4f}")
