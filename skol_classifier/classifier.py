@@ -833,3 +833,177 @@ class SkolClassifier:
             })
 
         return results
+
+    def load_raw_data_lines(self, file_paths: List[str]) -> DataFrame:
+        """
+        Load raw text data as individual lines (not paragraphs).
+
+        Args:
+            file_paths: List of paths to raw text files
+
+        Returns:
+            DataFrame with individual lines
+        """
+        # Read raw files line by line
+        df = self.spark.read.text(file_paths).withColumn(
+            "filename", input_file_name()
+        )
+
+        # Add line numbers within each file
+        window_spec = Window.partitionBy("filename").orderBy(lit(1))
+        return df.withColumn("line_number", row_number().over(window_spec) - 1)
+
+    def predict_lines(
+        self,
+        file_paths: List[str],
+        output_format: str = "yeda"
+    ) -> DataFrame:
+        """
+        Process and predict labels for individual lines in raw text files.
+
+        Args:
+            file_paths: List of paths to raw text files
+            output_format: Output format ('yeda', 'annotated', or 'simple')
+
+        Returns:
+            DataFrame with line-level predictions
+
+        Raises:
+            ValueError: If models are not trained
+        """
+        if self.pipeline_model is None or self.classifier_model is None:
+            raise ValueError(
+                "Models not trained. Call fit_features() and train_classifier() first."
+            )
+
+        # Load lines (not paragraphs)
+        raw_df = self.load_raw_data_lines(file_paths)
+
+        # Extract features
+        features = self.pipeline_model.transform(raw_df)
+
+        # Predict
+        predictions = self.classifier_model.transform(features)
+
+        # Convert label indices to strings
+        converter = IndexToString(
+            inputCol="prediction",
+            outputCol="predicted_label",
+            labels=self.labels
+        )
+        labeled_predictions = converter.transform(predictions)
+
+        # Format output based on requested format
+        if output_format == "yeda":
+            return labeled_predictions
+        elif output_format == "annotated":
+            labeled_predictions = labeled_predictions.withColumn(
+                "annotated_line",
+                concat(
+                    lit("[@ "),
+                    col("value"),
+                    lit("\n#"),
+                    col("predicted_label"),
+                    lit("*]")
+                )
+            )
+            return labeled_predictions
+        else:
+            return labeled_predictions
+
+    @staticmethod
+    def coalesce_consecutive_labels(lines_data: List[Dict[str, Any]]) -> str:
+        """
+        Coalesce consecutive lines with the same label into YEDA blocks.
+
+        Args:
+            lines_data: List of dicts with 'line' and 'label' keys,
+                       sorted by line_number
+
+        Returns:
+            String with YEDA-formatted blocks
+        """
+        if not lines_data:
+            return ""
+
+        blocks = []
+        current_label = None
+        current_lines = []
+
+        for item in lines_data:
+            line = item['line']
+            label = item['label']
+
+            if label == current_label:
+                # Same label, add to current block
+                current_lines.append(line)
+            else:
+                # Label changed, finish previous block
+                if current_lines and current_label:
+                    blocks.append(
+                        f"[@ {chr(10).join(current_lines)}\n#{current_label}*]"
+                    )
+                # Start new block
+                current_label = label
+                current_lines = [line]
+
+        # Don't forget the last block
+        if current_lines and current_label:
+            blocks.append(
+                f"[@ {chr(10).join(current_lines)}\n#{current_label}*]"
+            )
+
+        return "\n".join(blocks)
+
+    def save_yeda_output(
+        self,
+        predictions: DataFrame,
+        output_path: str
+    ) -> None:
+        """
+        Save YEDA-formatted predictions to disk.
+
+        Coalesces consecutive lines with the same label into YEDA blocks.
+
+        Args:
+            predictions: DataFrame with line-level predictions
+            output_path: Directory to save output files
+        """
+        from pyspark.sql.functions import struct, collect_list
+
+        # Create struct with line and label, collect by filename
+        aggregated_df = (
+            predictions
+            .select(
+                "filename",
+                "line_number",
+                col("value").alias("line"),
+                col("predicted_label").alias("label")
+            )
+            .groupBy("filename")
+            .agg(
+                expr(
+                    "sort_array(collect_list(struct(line_number, line, label))) AS sorted_lines"
+                )
+            )
+        )
+
+        # Define UDF to coalesce labels
+        from pyspark.sql.types import StructType, StructField
+        from pyspark.sql.functions import udf
+
+        coalesce_udf = udf(self.coalesce_consecutive_labels, StringType())
+
+        # Extract line/label pairs and coalesce
+        final_df = (
+            aggregated_df
+            .withColumn(
+                "lines_data",
+                expr("transform(sorted_lines, x -> struct(x.line as line, x.label as label))")
+            )
+            .withColumn("yeda_text", coalesce_udf(col("lines_data")))
+            .select("filename", "yeda_text")
+        )
+
+        # Write to disk
+        final_df.write.partitionBy("filename").mode("overwrite").text(output_path)
