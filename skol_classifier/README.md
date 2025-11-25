@@ -9,6 +9,7 @@ Created by: Christopher Murphy, La Monte Yarroll, David Caspers
 - **Multiple Classification Models**: Logistic Regression and Random Forest
 - **Advanced Feature Engineering**: TF-IDF with optional word suffix features (2-4 characters)
 - **Automated Paragraph Detection**: Heuristic-based paragraph extraction from raw text
+- **Line-by-Line Classification**: Optional line-level classification with YEDA format output
 - **Scalable Processing**: Built on Apache Spark for handling large document collections
 - **Model Persistence**: Save and load models to/from Redis or disk
 - **CouchDB Integration**: Read from and write to CouchDB attachments
@@ -393,6 +394,82 @@ classifier = SkolClassifier(spark=spark)
 ### Java Version Issues
 
 Ensure Java 8 or 11 is installed and `JAVA_HOME` is set correctly.
+
+## Line-by-Line Classification with YEDA Output
+
+In addition to paragraph-based classification, the classifier now supports line-by-line classification with YEDA (Yet Another Entity Detection and Annotation) format output.
+
+### Why Line-by-Line Classification?
+
+- More granular control over text segmentation
+- Better for documents where paragraph detection is unreliable
+- Produces YEDA-formatted output for use with the yeda_parser module
+- Consecutive lines with the same label are automatically coalesced into blocks
+
+### Usage
+
+```python
+from skol_classifier import SkolClassifier
+
+# Initialize and load model
+classifier = SkolClassifier()
+
+# Classify lines (not paragraphs)
+predictions = classifier.predict_lines(['path/to/file.txt'])
+
+# Save as YEDA format (coalesces consecutive same-label lines)
+classifier.save_yeda_output(predictions, 'output_dir')
+```
+
+### YEDA Format Output
+
+The output coalesces consecutive lines with the same label into YEDA blocks:
+
+```
+[@ Glomus mosseae Nicolson & Gerdemann, 1963.
+≡ Glomus mosseae (Nicolson & Gerdemann) C. Walker & A. Schüssler
+#Nomenclature*]
+[@ Key characters: Spores formed singly or in loose clusters.
+Spore wall structure: mono- to multiple-layered.
+#Description*]
+[@ This species is commonly found in temperate regions.
+It forms arbuscular mycorrhizal associations.
+#Misc-exposition*]
+```
+
+### API Methods
+
+#### `load_raw_data_lines(file_paths: List[str]) -> DataFrame`
+
+Load raw text as individual lines (not paragraphs).
+
+#### `predict_lines(file_paths: List[str], output_format: str = "yeda") -> DataFrame`
+
+Predict labels for individual lines. Returns DataFrame with line-level predictions.
+
+**Parameters:**
+- `file_paths`: List of paths to raw text files
+- `output_format`: 'yeda', 'annotated', or 'simple'
+
+#### `save_yeda_output(predictions: DataFrame, output_path: str) -> None`
+
+Save predictions in YEDA format with automatic label coalescence.
+
+**Parameters:**
+- `predictions`: DataFrame from `predict_lines()`
+- `output_path`: Directory to save output files
+
+#### `coalesce_consecutive_labels(lines_data: List[Dict[str, Any]]) -> str`
+
+Static method to coalesce consecutive lines with the same label into YEDA blocks.
+
+### Example
+
+See `example_line_classification.py` for a complete example.
+
+```bash
+python skol_classifier/example_line_classification.py
+```
 
 ## Contributing
 
