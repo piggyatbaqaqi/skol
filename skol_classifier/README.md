@@ -414,11 +414,22 @@ from skol_classifier import SkolClassifier
 # Initialize and load model
 classifier = SkolClassifier()
 
-# Classify lines (not paragraphs)
-predictions = classifier.predict_lines(['path/to/file.txt'])
+# Read raw text content
+with open('article.txt', 'r') as f:
+    text_content = f.read()
+
+# Classify lines (not paragraphs) - pass raw text strings
+predictions = classifier.predict_lines([text_content])
 
 # Save as YEDA format (coalesces consecutive same-label lines)
 classifier.save_yeda_output(predictions, 'output_dir')
+
+# Or save to CouchDB with coalescence
+results = classifier.save_to_couchdb(
+    predictions,
+    suffix='.ann',
+    coalesce_labels=True  # Enable YEDA block coalescence
+)
 ```
 
 ### YEDA Format Output
@@ -439,16 +450,19 @@ It forms arbuscular mycorrhizal associations.
 
 ### API Methods
 
-#### `load_raw_data_lines(file_paths: List[str]) -> DataFrame`
+#### `load_raw_data_lines(text_contents: List[str]) -> DataFrame`
 
-Load raw text as individual lines (not paragraphs).
+Load raw text strings as individual lines (not paragraphs).
 
-#### `predict_lines(file_paths: List[str], output_format: str = "yeda") -> DataFrame`
+**Parameters:**
+- `text_contents`: List of raw text strings
+
+#### `predict_lines(text_contents: List[str], output_format: str = "yeda") -> DataFrame`
 
 Predict labels for individual lines. Returns DataFrame with line-level predictions.
 
 **Parameters:**
-- `file_paths`: List of paths to raw text files
+- `text_contents`: List of raw text strings
 - `output_format`: 'yeda', 'annotated', or 'simple'
 
 #### `save_yeda_output(predictions: DataFrame, output_path: str) -> None`
@@ -458,6 +472,15 @@ Save predictions in YEDA format with automatic label coalescence.
 **Parameters:**
 - `predictions`: DataFrame from `predict_lines()`
 - `output_path`: Directory to save output files
+
+#### `save_to_couchdb(predictions: DataFrame, suffix: str = ".ann", coalesce_labels: bool = False) -> List[Dict[str, Any]]`
+
+Save predictions to CouchDB with optional label coalescence.
+
+**Parameters:**
+- `predictions`: DataFrame with predictions
+- `suffix`: Suffix to append to attachment names (default: ".ann")
+- `coalesce_labels`: If True, coalesce consecutive lines with same label into YEDA blocks
 
 #### `coalesce_consecutive_labels(lines_data: List[Dict[str, Any]]) -> str`
 

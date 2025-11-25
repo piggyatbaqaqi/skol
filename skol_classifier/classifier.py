@@ -6,7 +6,7 @@ import tempfile
 import shutil
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     input_file_name, collect_list, regexp_extract, col, udf,
@@ -92,7 +92,8 @@ class SkolClassifier:
     def load_annotated_data(
         self,
         file_paths: List[str],
-        collapse_labels: bool = True
+        collapse_labels: bool = True,
+        line_level: bool = False
     ) -> DataFrame:
         """
         Load and preprocess annotated data.
@@ -100,40 +101,91 @@ class SkolClassifier:
         Args:
             file_paths: List of paths to annotated files
             collapse_labels: Whether to collapse labels to 3 main categories
+            line_level: If True, extract individual lines instead of paragraphs
 
         Returns:
-            Preprocessed DataFrame with paragraphs and labels
+            Preprocessed DataFrame with paragraphs/lines and labels
         """
         # Read annotated files
         ann_df = self.spark.read.text(file_paths).withColumn(
             "filename", input_file_name()
         )
 
-        # Define UDF for paragraph extraction
-        extract_udf = udf(
-            ParagraphExtractor.extract_annotated_paragraphs,
-            ArrayType(StringType())
-        )
+        if line_level:
+            # Line-level extraction: parse each line from YEDA blocks
+            from pyspark.sql.types import (
+                StructType as LineStructType,
+                StructField as LineStructField,
+                IntegerType as LineIntegerType,
+                ArrayType as LineArrayType
+            )
 
-        # Group and extract paragraphs
-        grouped_df = (
-            ann_df.groupBy("filename")
-            .agg(collect_list("value").alias("lines"))
-            .withColumn("value", explode(extract_udf(col("lines"))))
-            .drop("lines")
-        )
+            def extract_yeda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
+                """Extract individual lines from YEDA annotation blocks."""
+                import re
+                results = []
+                pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
 
-        # Extract labels
-        label_pattern = r"#(\S+?)(?:\*)?]"
-        lead_pattern = r"^\[@"
-        trail_pattern = label_pattern + r"$"
-        clean_pattern = lead_pattern + r"(.*)" + trail_pattern
+                for match in re.finditer(pattern, '\n'.join(lines), re.DOTALL):
+                    content = match.group(1)
+                    label = match.group(2).strip()
 
-        grouped_df = grouped_df.withColumn(
-            "label", regexp_extract(col("value"), label_pattern, 1)
-        ).withColumn(
-            "value", regexp_extract(col("value"), clean_pattern, 1)
-        )
+                    # Split content into lines
+                    content_lines = content.split('\n')
+                    for line_num, line in enumerate(content_lines):
+                        if line or line_num < len(content_lines) - 1:
+                            results.append((label, line, line_num))
+
+                return results
+
+            # UDF to extract lines
+            extract_udf = udf(
+                extract_yeda_lines,
+                LineArrayType(LineStructType([
+                    LineStructField("label", StringType(), False),
+                    LineStructField("value", StringType(), False),
+                    LineStructField("line_number", LineIntegerType(), False)
+                ]))
+            )
+
+            # Extract lines
+            grouped_df = (
+                ann_df.groupBy("filename")
+                .agg(collect_list("value").alias("lines"))
+                .withColumn("line_data", explode(extract_udf(col("lines"))))
+                .select(
+                    "filename",
+                    col("line_data.label").alias("label"),
+                    col("line_data.value").alias("value"),
+                    col("line_data.line_number")
+                )
+            )
+        else:
+            # Paragraph-level extraction (original behavior)
+            extract_udf = udf(
+                ParagraphExtractor.extract_annotated_paragraphs,
+                ArrayType(StringType())
+            )
+
+            # Group and extract paragraphs
+            grouped_df = (
+                ann_df.groupBy("filename")
+                .agg(collect_list("value").alias("lines"))
+                .withColumn("value", explode(extract_udf(col("lines"))))
+                .drop("lines")
+            )
+
+            # Extract labels
+            label_pattern = r"#(\S+?)(?:\*)?]"
+            lead_pattern = r"^\[@"
+            trail_pattern = label_pattern + r"$"
+            clean_pattern = lead_pattern + r"(.*)" + trail_pattern
+
+            grouped_df = grouped_df.withColumn(
+                "label", regexp_extract(col("value"), label_pattern, 1)
+            ).withColumn(
+                "value", regexp_extract(col("value"), clean_pattern, 1)
+            )
 
         # Optionally collapse labels
         if collapse_labels:
@@ -414,6 +466,7 @@ class SkolClassifier:
         model_type: str = "logistic",
         use_suffixes: bool = True,
         test_size: float = 0.2,
+        line_level: bool = False,
         **model_params
     ) -> Dict[str, Any]:
         """
@@ -424,13 +477,17 @@ class SkolClassifier:
             model_type: Type of classifier
             use_suffixes: Whether to use suffix features
             test_size: Proportion of data for testing
+            line_level: If True, train on individual lines instead of paragraphs
             **model_params: Additional model parameters
 
         Returns:
             Dictionary with evaluation results
         """
         # Load annotated data
-        annotated_df = self.load_annotated_data(annotated_file_paths)
+        annotated_df = self.load_annotated_data(
+            annotated_file_paths,
+            line_level=line_level
+        )
 
         # Extract features
         features = self.fit_features(annotated_df, use_suffixes=use_suffixes)
@@ -458,6 +515,7 @@ class SkolClassifier:
             "test_size": test_data.count(),
             "model_type": model_type,
             "features_col": features_col,
+            "line_level": line_level,
             **stats
         }
 
@@ -780,7 +838,8 @@ class SkolClassifier:
     def save_to_couchdb(
         self,
         predictions: DataFrame,
-        suffix: str = ".ann"
+        suffix: str = ".ann",
+        coalesce_labels: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Save annotated predictions back to CouchDB using distributed UDFs.
@@ -791,8 +850,10 @@ class SkolClassifier:
         Uses the CouchDB configuration from the constructor.
 
         Args:
-            predictions: DataFrame with predictions (must include annotated_pg column)
+            predictions: DataFrame with predictions
             suffix: Suffix to append to attachment names (default: ".ann")
+            coalesce_labels: If True, coalesce consecutive lines with same label
+                           into YEDA blocks (for line-level predictions)
 
         Returns:
             List of results from CouchDB operations
@@ -809,19 +870,54 @@ class SkolClassifier:
             self.couchdb_url, self.database, self.username, self.password
         )
 
-        # Aggregate paragraphs by document and attachment
-        aggregated_df = (
-            predictions.groupBy("doc_id", "attachment_name")
-            .agg(
-                expr("sort_array(collect_list(struct(row_number, annotated_pg))) AS sorted_list")
+        if coalesce_labels:
+            # For line-level predictions with coalescence
+            # Create struct with line and label, collect by document
+            aggregated_df = (
+                predictions
+                .select(
+                    "doc_id",
+                    "attachment_name",
+                    col("line_number"),
+                    col("value").alias("line"),
+                    col("predicted_label").alias("label")
+                )
+                .groupBy("doc_id", "attachment_name")
+                .agg(
+                    expr(
+                        "sort_array(collect_list(struct(line_number, line, label))) AS sorted_lines"
+                    )
+                )
             )
-            .withColumn("annotated_pg_ordered", expr("transform(sorted_list, x -> x.annotated_pg)"))
-            .withColumn("final_aggregated_pg", expr("array_join(annotated_pg_ordered, '\n')"))
-            .select("doc_id", "attachment_name", "final_aggregated_pg")
-        )
+
+            # Define UDF to coalesce labels
+            coalesce_udf = udf(self.coalesce_consecutive_labels, StringType())
+
+            # Extract line/label pairs and coalesce
+            final_df = (
+                aggregated_df
+                .withColumn(
+                    "lines_data",
+                    expr("transform(sorted_lines, x -> struct(x.line as line, x.label as label))")
+                )
+                .withColumn("final_aggregated_pg", coalesce_udf(col("lines_data")))
+                .select("doc_id", "attachment_name", "final_aggregated_pg")
+            )
+        else:
+            # Original paragraph-based aggregation
+            aggregated_df = (
+                predictions.groupBy("doc_id", "attachment_name")
+                .agg(
+                    expr("sort_array(collect_list(struct(row_number, annotated_pg))) AS sorted_list")
+                )
+                .withColumn("annotated_pg_ordered", expr("transform(sorted_list, x -> x.annotated_pg)"))
+                .withColumn("final_aggregated_pg", expr("array_join(annotated_pg_ordered, '\n')"))
+                .select("doc_id", "attachment_name", "final_aggregated_pg")
+            )
+            final_df = aggregated_df
 
         # Save to CouchDB using distributed UDF
-        result_df = conn.save_distributed(aggregated_df, suffix)
+        result_df = conn.save_distributed(final_df, suffix)
 
         # Collect results
         results = []
@@ -834,35 +930,41 @@ class SkolClassifier:
 
         return results
 
-    def load_raw_data_lines(self, file_paths: List[str]) -> DataFrame:
+    def load_raw_data_lines(self, text_contents: List[str]) -> DataFrame:
         """
         Load raw text data as individual lines (not paragraphs).
 
         Args:
-            file_paths: List of paths to raw text files
+            text_contents: List of raw text strings
 
         Returns:
             DataFrame with individual lines
         """
-        # Read raw files line by line
-        df = self.spark.read.text(file_paths).withColumn(
-            "filename", input_file_name()
+        # Create DataFrame from raw text strings
+        # Each string in the list is treated as a separate document
+        data = []
+        for doc_id, text in enumerate(text_contents):
+            lines = text.split('\n')
+            for line_num, line in enumerate(lines):
+                data.append((f"doc_{doc_id}", line, line_num))
+
+        df = self.spark.createDataFrame(
+            data,
+            ["filename", "value", "line_number"]
         )
 
-        # Add line numbers within each file
-        window_spec = Window.partitionBy("filename").orderBy(lit(1))
-        return df.withColumn("line_number", row_number().over(window_spec) - 1)
+        return df
 
     def predict_lines(
         self,
-        file_paths: List[str],
+        text_contents: List[str],
         output_format: str = "yeda"
     ) -> DataFrame:
         """
-        Process and predict labels for individual lines in raw text files.
+        Process and predict labels for individual lines in raw text strings.
 
         Args:
-            file_paths: List of paths to raw text files
+            text_contents: List of raw text strings
             output_format: Output format ('yeda', 'annotated', or 'simple')
 
         Returns:
@@ -877,7 +979,7 @@ class SkolClassifier:
             )
 
         # Load lines (not paragraphs)
-        raw_df = self.load_raw_data_lines(file_paths)
+        raw_df = self.load_raw_data_lines(text_contents)
 
         # Extract features
         features = self.pipeline_model.transform(raw_df)
