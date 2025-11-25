@@ -165,16 +165,16 @@ See `example_yeda_to_spark.py` for a complete example that:
 - Runs example queries
 - Saves results
 
-Run it with:
+Run it with (from the skol root directory):
 ```bash
-python example_yeda_to_spark.py
+python yeda_parser/example_yeda_to_spark.py
 ```
 
 ## Testing
 
-Run the test suite:
+Run the test suite (from the skol root directory):
 ```bash
-python -m pytest yeda_parser_test.py -v
+python -m pytest yeda_parser/test_yeda_parser.py -v
 ```
 
 ## Labels in article_reference.txt
