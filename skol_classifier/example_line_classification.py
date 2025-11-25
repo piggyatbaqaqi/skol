@@ -76,16 +76,31 @@ def main():
             print("\n✓ Model loaded successfully!")
             print(f"  Labels: {classifier.labels}")
 
-            # Example: Process files line-by-line
-            print("\nTo process files line-by-line:")
-            print("  predictions = classifier.predict_lines(['path/to/file.txt'])")
+            # Example: Process raw text strings line-by-line
+            print("\nExample: Process raw text strings line-by-line:")
+
+            # Sample raw text
+            sample_text = """Glomus mosseae Nicolson & Gerdemann, 1963.
+≡ Glomus mosseae (Nicolson & Gerdemann) C. Walker
+
+Key characters: Spores formed singly.
+Spore wall: mono- to multiple-layered.
+
+This species is common in temperate regions."""
+
+            print("\n  # Classify raw text content (not files)")
+            print("  predictions = classifier.predict_lines([sample_text])")
             print("  classifier.save_yeda_output(predictions, 'output_dir')")
 
             print("\nKey differences from paragraph-based classification:")
-            print("  • Uses predict_lines() instead of predict_raw_text()")
+            print("  • Uses predict_lines() with raw text strings (not file paths)")
             print("  • Each line is classified independently")
             print("  • Consecutive lines with same label are coalesced into blocks")
             print("  • Output is in YEDA format with proper block structure")
+
+            print("\nCouchDB Integration:")
+            print("  • Use save_to_couchdb(predictions, suffix='.ann', coalesce_labels=True)")
+            print("  • coalesce_labels=True creates YEDA blocks from line-level predictions")
 
         print("\n" + "="*70)
         print("Example complete!")
