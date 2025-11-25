@@ -65,6 +65,24 @@ def test_line_classification():
         assert '[@ Single line\n#Nomenclature*]' in single_result
         print("✓ Single line test passed!")
 
+        # Test load_raw_data_lines with raw text
+        print("\nTesting load_raw_data_lines() with raw text...")
+        raw_texts = [
+            "Line 1\nLine 2\nLine 3",
+            "Another doc line 1\nAnother doc line 2"
+        ]
+        df = classifier.load_raw_data_lines(raw_texts)
+
+        # Check the DataFrame has expected structure
+        assert 'filename' in df.columns
+        assert 'value' in df.columns
+        assert 'line_number' in df.columns
+
+        # Check we have the right number of lines
+        count = df.count()
+        assert count == 5, f"Expected 5 lines total, got {count}"
+        print("✓ load_raw_data_lines test passed!")
+
         print("\n" + "="*50)
         print("All tests passed!")
         print("="*50)

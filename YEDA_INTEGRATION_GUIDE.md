@@ -24,11 +24,14 @@ spark = SparkSession.builder.appName("Classify").getOrCreate()
 # Initialize classifier with trained model
 classifier = SkolClassifier(spark=spark)
 
-# Classify text files line-by-line
-predictions = classifier.predict_lines([
-    'data/article1.txt',
-    'data/article2.txt'
-])
+# Read raw text content
+with open('data/article1.txt', 'r') as f:
+    text1 = f.read()
+with open('data/article2.txt', 'r') as f:
+    text2 = f.read()
+
+# Classify raw text strings line-by-line
+predictions = classifier.predict_lines([text1, text2])
 
 # Save as YEDA format (auto-coalesces consecutive same-label lines)
 classifier.save_yeda_output(predictions, 'output/yeda_annotations')
@@ -99,7 +102,12 @@ spark = SparkSession.builder \
 # Step 1: Classify
 print("Step 1: Classifying text...")
 classifier = SkolClassifier(spark=spark)
-predictions = classifier.predict_lines(['input/article.txt'])
+
+# Read text content
+with open('input/article.txt', 'r') as f:
+    text_content = f.read()
+
+predictions = classifier.predict_lines([text_content])
 classifier.save_yeda_output(predictions, 'output/yeda')
 
 # Step 2: Parse
@@ -136,12 +144,14 @@ spark.stop()
 Process multiple files and consolidate results:
 
 ```python
-# Classify multiple files
-predictions = classifier.predict_lines([
-    'corpus/file1.txt',
-    'corpus/file2.txt',
-    'corpus/file3.txt'
-])
+# Read multiple files
+text_contents = []
+for filepath in ['corpus/file1.txt', 'corpus/file2.txt', 'corpus/file3.txt']:
+    with open(filepath, 'r') as f:
+        text_contents.append(f.read())
+
+# Classify raw text strings
+predictions = classifier.predict_lines(text_contents)
 
 # Save all as YEDA
 classifier.save_yeda_output(predictions, 'output/yeda_batch')
@@ -165,8 +175,11 @@ get_label_statistics(combined_df).show()
 Review classification results:
 
 ```python
-# Classify
-predictions = classifier.predict_lines(['article.txt'])
+# Read and classify
+with open('article.txt', 'r') as f:
+    text = f.read()
+
+predictions = classifier.predict_lines([text])
 classifier.save_yeda_output(predictions, 'output/yeda')
 
 # Parse
