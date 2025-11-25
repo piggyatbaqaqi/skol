@@ -1,0 +1,1930 @@
+ISSN (print) 0093-4666 
+© 2011. Mycotaxon, Ltd. 
+ISSN (online) 2154-8889
+MYCOTAXON
+Volume 116, pp. 75–120 
+ 
+April–June 2011 
+ 
+doi: 10.5248/116.75
+Glomeromycota: three new genera  
+and glomoid species reorganized 
+Fritz Oehl1*, Gladstone Alves da Silva2,  
+Bruno Tomio Goto3 & Ewald Sieverding4*
+1Federal Research Institute Agroscope Reckenholz-Tänikon ART, Ecological Farming Systems, 
+Reckenholzstrasse 191, CH-8046 Zürich, Switzerland
+2Departamento de Micologia, CCB, Universidade Federal de Pernambuco,  
+Av. Prof. Nelson Chaves s/n, Cidade Universitária, 50670-420, Recife, PE, Brazil
+3Departamento de Botânica, Ecologia e Zoologia, CB, Universidade Federal do Rio Grande  
+do Norte, Campus Universitário, 59072-970, Natal, RN, Brazil
+4Institute for Plant Production and Agroecology in the Tropics and Subtropics,  
+University of Hohenheim, Garbenstrasse 13, D-70599 Stuttgart, Germany
+*Correspondence to: fritz.oehl@art.admin.ch & sieverdinge@aol.com
+Abstract —Species in the orders Glomerales and Diversisporales (Glomeromycetes) with 
+glomoid spore formation are reorganized based on combined ribosomal sequence and 
+morphological analyses. Within the Glomerales two genera in the Glomeraceae (Septoglomus, 
+Simiglomus) and one genus in the Claroideoglomeraceae (Viscospora) are proposed as new. 
+Paraglomerales species (thus far monogeneric) also form glomoid spores that may all germinate 
+directly through the spore wall instead through subtending hyphae as in Glomerales. 
+Key words — Glomus group A, Glomus group B, molecular phylogeny, rDNA 
+Introduction
+Molecular biological studies have dramatically improved the understanding 
+of phylogenetic relationships across a broad swathe of organisms. Arbuscular 
+mycorrhizal (AM) fungi are no exception, as molecular analyses have expanded 
+our knowledge of this group (e.g. Simon et al. 1992, Redecker et al. 2000a, b, 
+Morton & Redecker 2001, Schwarzott et al. 2001, Schüßler et al. 2001, Souza et 
+al. 2005, Palenzuela et al. 2008, 2010). This has led to taxonomic re-organization 
+and the description of several new genera and families (e.g. Morton & Redecker 
+2001, Walker et al. 2007, Oehl et al. 2008). Schüßler et al. (2001) established 
+the phylum Glomeromycota with four orders (Archaeosporales, Diversisporales, 
+Glomerales, Paraglomerales) within one class (Glomeromycetes) described 
+earlier by Cavalier-Smith (1998).
+76 ... Oehl & al.
+Within the Glomeromycota, species with glomoid spore formation represent 
+the largest group. These species had previously been included within the 
+Glomeraceae (Pirozynski & Dalpé 1989) of the suborder Glomerineae of the 
+Glomerales (Morton & Benny 1990). However, after this large group of Glomus 
+species was found to be polyphyletic (e.g. Redecker et al. 2000b, Schwarzott et al. 
+2001), several glomoid spore-forming species were separated from the Glomerales 
+sensu Morton & Benny. Based on DNA sequence analyses, Gl. occultum was 
+declared type species of the new genus Paraglomus (Paraglomeraceae; Morton & 
+Redecker 2001) in the new order Paraglomerales (Schüßler et al. 2001). Glomus 
+spurcum was moved as type species to a new genus Diversispora (Walker & 
+Schüßler 2004) in the Diversisporaceae (Diversisporales) (Schüßler et al. 2001). 
+More recently Oehl & Sieverding (2004) established Pacispora (Pacisporaceae, 
+Walker & Schüßler 2004) with Glomus scintillans S.L. Rose & Trappe (Rose 
+& Trappe 1980) as type species for all glomoid species possessing two spore 
+walls and specific germination characteristics. Moreover, some glomoid species 
+were recently transferred into the Ambisporaceae of the Archaeosporales (e.g. 
+Gl. callosum, Gl. fecundisporum, Gl. leptotichum; Walker et al. 2007, Walker 
+2008). However, the remaining large group of Glomus spp. is considered 
+particularly difficult to differentiate morphologically (Morton & Redecker 
+2001, Schwarzott et al. 2001, Walker & Schüßler 2004). 
+Phylogenetic reconstructions within AM fungi over the last 10 years indicate 
+that this large group of Glomus species likely originated from a single ancestor, 
+from which (according to Schwarzott et al. 2001) descend the Glomus groups 
+Aa (related to Gl. mosseae and Gl. geosporum), Ab (related to Gl. intraradices 
+and Gl. irregulare), Ac (related to Glomus sp. W3347, now Gl. hoi; see Daniell 
+et al. 2001, Öpik et al. 2006), and B (related to Gl. etunicatum). Schüßler et 
+al. (2001) also showed that the clades of groups Aa, Ab and B divide further. 
+Adapting and slightly modifying the numbering system of Schwarzott et al. 
+(2001), we differentiate the clades into group Aa1 (lead sp. Gl. mosseae), Aa2 
+(lead sp. Gl. hoi), Aa3 (lead sp. Gl. constrictum), Ab1 (lead spp. Gl. microcarpum, 
+Gl. macrocarpum), Ab2 (lead spp. Gl. intraradices, Gl. irregulare, Gl. aggregatum), 
+Ab3 (lead spp. Gl. sinuosum, Gl. coremioides), B1 (lead sp. Gl. etunicatum), and B2 
+(lead sp. Gl. viscosum). In the present study, “lead species” are those with typical 
+morphological characters and not necessarily type species. Under “Results & 
+discussion” we present the supporting phylogenetic clades and detail the major 
+morphological spore characteristics for each of our groups — Aa1, Aa2, Aa3, 
+Ab1, Ab2, Ab3, B1, B2. In those cases where morphological and molecular data 
+are congruent, species of the same group and number can be classified together 
+at the genus level (e.g., group Aa1 represents one genus, while Aa2 represents 
+another genus), while the major groups A and B are suggested to be family 
+levels. In the case of clades Ab1, Ab2, Ab3, however, the molecular database 
+Glomoid species reorganized ... 77
+remains under-represented with regard to the known species and the results 
+are contradictory, as some sequences are derived from species that have been 
+only poorly characterized. Although the morphological data indicate a division 
+of Ab into at least three subgroups (genera), we currently lack sufficient genetic 
+data to support new genera. Thus, clades Ab1, Ab2, Ab3 will be considered in 
+one single genus (group Ab) at this time. 
+Previous phylogenetic analyses indicated that several Glomus spp. (e.g. 
+Gl. versiforme) belong to clade ‘Glomus group’ ‘C’ (e.g. Schwarzott et al. 
+2001, Schüßler et al. 2001, Redecker et al. 2007), currently Diversispora 
+(Diversisporaceae). Only six glomoid spore-forming species have so far been 
+included in this genus (Walker & Schüßler 2004, Gamper et al. 2009, Schüßler 
+& Walker 2010). The morphology of Diversispora spores differs, however, from 
+spores of groups A and B. We call this group of species “group Ca” and will 
+transfer them to the genus Diversispora. 
+Recently, Redecker et al. (2007) identified another Glomus group (including 
+Gl. fulvum and Gl. pulvinatum) that was genetically related to group C 
+but phylogenetically and morphologically clearly distinct from group Ca 
+(Diversispora). The authors did not separate this group from the other 
+species of group C (Diversispora), possibly due to lack of recognition of the 
+morphologically distinct features of spores. Recently, Schüßler & Walker 
+(2010) erected the genus Redeckera (“group Cb”) with three species (Gl. fulvum, 
+Gl. megalocarpum, and Gl. pulvinatum) within the Diversisporaceae.
+When Schüßler et al. (2001) proposed a new phylum for the AM fungi, 
+although they initiated a principal re-organization of species with the four 
+orders, they did not propose families and genera that were clearly separated 
+genetically from each other. For example, Diversisporales and Diversisporaceae, 
+lacking either type genus or type species, were at that time invalidly described, 
+while the same authors mentioned only that some Glomus groups in the 
+Glomerales and Glomeraceae were clearly genetically different. This had the 
+unfortunate result that other taxonomists or ecological mycorrhizologists 
+continued to refer to Glomus group A, group B, and ‘the like’ as Schüßler et al. 
+(2001) had called them. Even new taxa were being justified on the basis of small 
+differences in partial rDNA sequences within such Glomus groups as A, B or 
+C (e.g. Błaszkowski et al. 2004, 2006, 2008, Oehl et al. 2005). Furthermore, in a 
+recent study (Gamper et al. 2009) species of Glomus, Diversispora and others, 
+e.g. Glomus versiforme and D. celata, were shown to be phylogenetically strongly 
+related, although no attempts were made to reorganize Gl. versiforme and related 
+‘Glomus’ spp. into Diversispora. In ecological studies, so-called ‘environmental 
+sequences’ (DNA sequences from AM species as yet unrecorded in databases, 
+often directly recovered from mycorrhizal root or soil analyses instead of from 
+identified spores) are named and referred to as ‘Glomus sp. uncultured’ or 
+78 ... Oehl & al.
+‘Glomus unknown,’ not particularly helpful to someone who wishes to know 
+whether the species so named represents Diversispora, Glomus group A or B 
+sensu Schüßler et al., or a different group that might have completely different 
+spore formation. 
+It is clear that an improved phylogeny of Glomus is urgently needed (see 
+also Krüger et al. 2009, Stockinger et al. 2009). Currently, new or unknown 
+species that are related to ‘groups of genetically related fungi’ but belong to 
+clearly distinct phylogenetic groups continue to be called ‘Glomus’ and thus 
+remain incorrectly classified. One motivation for this paper was the feeling that 
+because Gl. versiforme has been supported as belonging to Diversispora, it should 
+officially be included within that genus. From that it followed that if group 
+A could phylogenetically be separated from groups B and C (Diversispora), 
+a new organization of the known and described species is both justified and 
+necessary. A first attempt was tried only recently by Schüßler & Walker (2010); 
+however, these authors based their conclusions almost exclusively on molecular 
+analyses and did not correlate their phylogenetic results with the morphological 
+characters of the different phylogenetic clades that our analyses indicate.
+The objectives of the present study were therefore to: 1) identify and describe 
+morphological differences or similarities of species in the various ‘Glomus 
+groups,’ and 2) reorganize the species into existing or new genera as accurately 
+as possible according to currently available information. Thus, we aim here 
+at re-organizing the AM fungal species with glomoid spore formation using 
+existing genetic information combined with existing or new morphological 
+spore characteristics within the Glomerales and Diversisporales.
+Material & methods
+Specimen analyses
+We analyzed specimens representing 101 of a total 117 described Glomus and 
+Diversispora spp. (table 1). Holotype, isotype, paratype and ex-type materials were 
+examined along with representatives from institutional herbaria — OSC, FH, Z+ZT, 
+URM (Recife, Brazil), Embrapa Agrobiologia (Seropédica, Brazil), DCS-UFLA (Lavras, 
+Brazil), International Culture Collection of Vesicular-Arbuscular Mycorrhizal Fungi 
+(INVAM), Swiss collection of Arbuscular Mycorrhizal Fungi (SAF, Agroscope ART 
+Zurich) — and private AM fungal collections curated by Sieverding, Oehl, Trappe, 
+Błaszkowski, McGee, and Goto. The Hall & Abbott (1979) photographic slide collection 
+was also reviewed. For this paper, all original species descriptions and published species 
+emendations were also considered. 
+Older specimens (mounted on microscopic slides prior to 1990) were mostly 
+mounted in lactophenol, while others were fixed with polyvinyl alcohol-lactic acidglycerol (PVLG) or in a mixture of PVLG + Melzer’s reagent, which post-1990 are the 
+principal fixing media (Brundrett et al. 1994). Newly mounted spores and sporocarps 
+from collections or from cultures were fixed using the latter two fixing media, or 
+occasionally also in a mixture of 1:1 lactic acid to water, in Melzer’s reagent, and in water. 
+Glomoid species reorganized ... 79
+Table 1. Type and non-type specimens from 115 Glomus and 2 Diversispora species 
+analyzed for reorganization of the Glomerales.
+Species name 
+Type material (observer)
+Non type material (observer)
+Diversispora spurca 
+Ex type at INVAM (Oehl) 
+Specimen from Bolivia & Oman 
+(Oehl)
+Di. celata
+Ex type, inclusive  pure cultures (Oehl)
+Specimen from Switzerland (Oehl)
+Glomus achrum
+Type (Oehl), ex type (Goto)
+Gl. africanum
+No access 
+Gl. aggregatum
+Type OSC #40254 (Oehl)
+OSC #45840 (Oehl)
+Gl. albidum
+Holotype OSC #40400 (Oehl)
+Gl. ambisporum
+Holotype OSC #44289 (Oehl)
+Specimen from Bolivia, Benin (Oehl)
+Gl. antarcticum
+No access 
+Gl. arborense
+No access
+Gl. arenarium 
+Type at OSC (Oehl), ex type (Goto) 
+Specimen from Chile and UAE 
+(Sieverding)
+Gl. atrouva
+Ex type (Oehl, Goto) 
+Gl. aurantium
+Type (Oehl)
+Specimen from Germany (Oehl)
+Gl. aureum 
+Holotype Z+ZT, isotypes OSC #; FB; 
+Pure culture (Oehl)
+Specimen & pure cultures from 
+Central Europe (Oehl)
+Gl. australe
+No access
+(Trappe, McGee, Oehl)
+Gl. avelingiae
+No access
+Gl. badium 
+Holotype Z+ZT, isotypes deposited at 
+OSC (Sieverding, Oehl)
+Specimen from Central Europe 
+(Oehl, Sieverding)
+Gl. bagyarajii
+No access
+Gl. bistratum
+Type (Oehl), ex type (Goto)
+Gl. boreale 
+Photographic slide collection of Hall & 
+Abbott (1979)
+Gl. botryoides
+ 
+Trappe collection (Oehl) 
+Gl. brohultii 
+Ex type (Sieverding)
+Specimen from Benin (Oehl), and 
+Costa Rica (Sieverding) 
+Gl. caesaris 
+Holotype Z+ZT, isotypes OSC #; FB; 
+Pure culture (Oehl)
+Specimen and pure cultures from 
+Germany (Oehl)
+When available, spores freshly isolated from soils or bait cultures were also mounted 
+and analyzed. Spore wall terminology follows the nomenclature of Walker (1983) and 
+Stürmer & Morton (1997). Analyses of the spore walls, the germination structures and 
+all other mycorrhizal structures were performed using compound microscopes at 100–
+1000×. Most photographs were taken with a digital camera (Olympus model DP70CU) mounted on a Zeiss Axioplan compound microscope, although a few were taken at 
+OSC, URM or INVAM during short-term visits. Legends and scales were inserted with 
+Adobe Photoshop CS2 9.0.
+All spore observations and all information on spore characteristics are based on 
+spores extracted from soil, from trap cultures or from single or multiple spore-derived 
+pure cultures. No information is provided from in-vitro-cultured materials.
+Molecular and phylogenetic analyses 
+Genes analyzed: Partial sequences of β-tubulin and rRNA (SSU and LSU) genes 
+were used to reconstruct, by independent analyses, the phylogeny of the Glomeromycota. 
+Intron sequences from the β-tubulin gene were excluded and only exon regions were 
+considered within analyses. ITS sequences were also used to clarify relationships among 
+members of the Diversisporales. 
+Sequence alignment: The sequences (all obtained from the National Center for 
+Biotechnology Information-NCBI) were aligned using the program ClustalX (Larkin et 
+al. 2007) and edited with the BioEdit program (Hall 1999) to obtain a final alignment.
+80 ... Oehl & al.
+Gl. caledonium 
+Type FH (Oehl) 
+Specimen and pure cultures from 
+Central Europe (Oehl)
+Gl. canadense 
+Thaxter collection, Trappe collection 
+(Oehl) 
+Gl. candidum
+No access 
+Gl. canum
+Ex type (Oehl, Goto)
+Gl. cerebriforme
+Ex type (Oehl)
+Gl. citricola
+No access
+Gl. claroideum 
+Type OSC #40252 (Oehl) 
+Specimen from Brazil, Europe (Oehl), 
+cultures from Benin (Oehl)
+Gl. clarum 
+Ex type specimen (Sieverding) 
+INVAM; specimen from Colombia 
+(Sieverding)
+Gl. clavisporum
+Ex type (Oehl))
+Specimen from Benin (Oehl)
+Gl. constrictum 
+Paratypes OSC #38850 (Oehl, 
+Sieverding)
+Specimen and pure cultures from 
+Central Europe (Oehl)
+Gl. convolutum
+Paratype OSC #30986, ex isotype (Oehl)
+Gl. coremioides 
+Specimen from Brasil (Goto); Trappe 
+collection (Oehl) 
+Gl. coronatum 
+Ex type (Oehl) 
+Specimen from India, Mexico, Spain 
+(Oehl)
+Gl. corymbiforme
+Type OSC # 53909 (Oehl)
+Gl. cuneatum
+Ex type (Goto)
+Gl. delhiense
+No access
+Gl. diaphanum 
+Ex type (Oehl) 
+Specimen from Central Europe, 
+Bolivia (Oehl) 
+Gl. dimorphicum
+No access
+Gl. deserticola 
+Holotype 44474, Paratype OSC #47834 
+(Oehl)
+Colombia (Sieverding) 
+Gl. dolichosporum
+No access
+Gl. drummondii
+Type (Oehl), ex type (Goto)
+Gl. eburneum
+Ex type at INVAM (Oehl)
+Specimen from Bolivia & Oman 
+(Oehl)
+Gl. epigaeum
+Holotype OSC #39475 (Oehl)
+Gl. etunicatum 
+Holotype OSC (Oehl) 
+Specimen from Benin, Bolivia, 
+Paraguay, Europe, Mexico (Oehl)
+Gl. fasciculatum 
+Type sensu (Walker & Koske 1987) 
+Specimen from Central Europe 
+(Oehl, Sieverding) 
+Gl. flavisporum
+Trappe collection (Oehl) 
+Gl. formosanum
+Specimen from UAE (Sieverding)
+Gl. fragile
+Trappe collection (Oehl) 
+Gl. fragilistratum
+Ex type at INVAM (Oehl)
+Specimen from Switzerland (Oehl)
+Gl. fuegianum
+Trappe collection (Oehl) 
+Gl. fulvum
+Trappe collection (Oehl) 
+Gl. geosporum 
+Type OSC #29419 (Oehl) 
+Specimen and pure culture and from 
+Central Europe (Oehl)
+Gl. gibbosum
+Type: Błaszkowski online pages 
+Specimen from UAE (Sieverding)
+Gl. globiferum
+Holotype OSC #46718 (Oehl)
+Specimen at INVAM (Oehl)
+Gl. glomerulatum 
+Isotype OSC #46674, ex type 
+(Sieverding)  
+Specimen from Brazil (Goto) 
+Gl. goaense
+No access
+Gl. halonatum
+Paratype Trappe 3594 (Oehl) 
+Specimen from Brazil (Goto)
+Gl. heterosporum
+Holotype 44288 (Oehl)
+Specimen from Germany (Oehl) 
+Gl. hoi 
+Paratype  Trappe 3058 (Oehl)  
+Specimen from Germany (Oehl), 
+cultures from Benin (Oehl, IITA) 
+Gl. hyderabadense 
+Specimen from Benin (Oehl) and 
+from Colombia (Sieverding)
+Gl. indicum
+No access
+Gl. insculptum
+Type (Oehl)
+Gl. intraradices 
+Specimen and cultures from Europe 
+&, specimen from INVAM (Oehl)
+Gl. invermaium
+Isotype OSC #43941 (Oehl)
+Specimen from UAE (Sieverding)
+Gl. iranicum
+No access 
+Gl. irregulare
+Type (Oehl)
+Specimen from Switzerland (Oehl)
+Table 1, continued
+Glomoid species reorganized ... 81
+Gl. kerguelense
+Specimen from UAE (Sieverding)
+Gl. lacteum
+Type OSC  (Oehl)
+Gl. lamellosum 
+Isotype OSC #50183 (Oehl) 
+Specimen from Poland, Germany 
+(Oehl, Sieverding) 
+Gl. liquidambaris
+Specimen from Brazil (Oehl, Goto)
+Gl. luteum
+Type OSC, ex type INVAM (Oehl)
+Gl. macrocarpum 
+INVAM; specimen from Central 
+Europe, Benin, Mexico (Oehl)  
+Gl. magnicaule 
+Ex type, photographic slide collection 
+by Hall & Abbott (1979) (Oehl)
+Gl. manihotis
+Holotype OSC #41498 (Oehl)
+Gl. megalocarpum
+Holotype OSC #28739, ex type (Oehl)
+Gl. melanosporum
+Holotype OSC #, ex type (Oehl)
+Gl. microaggregatum
+Holotype OSC #46719 (Oehl)
+Specimen from Mexico (Oehl)
+Gl. microcarpum 
+Ex type (Oehl) 
+Specimen from Central Europe 
+(Oehl)
+Gl. minutum
+Ex type (Oehl)
+Gl. monosporum
+Type OSC (Oehl)
+Specimen from Switzerland (Oehl)
+Gl. mortonii 
+Holotype OSC #49460 (Oehl) 
+Specimen from Germany (Oehl, 
+Sieverding)
+Gl. mosseae 
+Holotype FH (Oehl) 
+Specimen and pure cultures from 
+Germany (Oehl)
+Gl. multicaule
+Holotype OSC #35386 (Oehl)
+Gl. multiforum 
+Type (Oehl) 
+Specimen from Switzerland &India 
+(Oehl)
+Gl. nanolumen
+Isotype OSC #49585
+Gl. pachycaule 
+Specimen from India and Benin 
+(Oehl)
+Gl. pallidum 
+Type at PDD (Oehl)
+Gl. pansihalos
+Holotype OSC (Oehl)
+Specimen at INVAM (Oehl)
+Gl. pellucidum
+Ex type (Oehl, Goto)
+Gl. perpusillum
+Type (Oehl), Ex type ( Goto)
+Gl. proliferum
+Ex type (Oehl)
+Gl. przelewicense 
+No access 
+Specimen and pure pot cultures from 
+Switzerland (Oehl, Sieverding) 
+Gl. pubescens
+OSC #30990 (Oehl) 
+Gl. pulvinatum
+Trappe collection (Oehl)
+Gl. pustulatum
+Holotype OSC #46721 (Oehl)
+Błaszkowski collection (Oehl) 
+Gl. radiatum
+Trappe collection (Oehl)
+Gl. rubiforme
+Type OSC #30931, paratypes (Oehl)
+Specimen from Switzerland (Oehl)
+Gl. segmentatum
+Type , ex type (Oehl)
+Gl. sinuosum 
+ 
+Specimen and cultures from Central 
+Europe, India, Oman, Benin, Bolivia 
+(Oehl, Sieverding)
+Gl. spinosum
+Ex type (Sieverding) 
+Gl. spinuliferum 
+Holotype Z+ZT, isotopes at OSC & FB 
+(Oehl, Sieverding)
+Specimen from Switzerland (Oehl)  
+Gl. taiwanense 
+Specimen from Benin (Oehl), 
+Thailand (Sieverding), Brasil (Goto) 
+Gl. tenebrosum
+Specimen from Switzerland (Oehl) 
+Gl. tenerum
+Specimen from Australia (Oehl) 
+Gl. tenue
+Specimen from alpine areas (Oehl) 
+Gl. tortuosum
+Type OSC #40‘251 (Oehl)
+OSC #32894
+Gl. trimurales
+Holotype OSC #49584 (Oehl)
+Gl. verruculosum
+Ex type, INVAM (Oehl)
+Gl. versiforme 
+Specimen at INVAM; specimen from 
+Central Europe (Oehl, Sieverding)
+Gl. vesiculiferum
+OSC #28727 (Oehl)
+Gl. viscosum
+Ex type (Oehl)
+Specimen at INVAM
+Gl. walkeri
+Type (Oehl), ex type ( Goto)
+Gl. warcupii
+Ex type (Oehl)
+Gl. xanthium
+Type (Oehl) ex type (Goto)
+Gl. zaozhangianum
+No access
+Table 1, concluded.
+82 ... Oehl & al.
+Phylogenetic analyses: The main tree was constructed by a heuristic search 
+using the maximum likelihood (ML) method with the Phylogenetic Analysis Using 
+Parsimony (PAUP) program version 4 (Swofford 2003). Maximum parsimony (MP) and 
+neighbor joining (NJ) analyses with 1000 bootstrap replications also were performed 
+by PAUP. Bayesian (two runs over 1 x 106 generations with a burnin value of 2500) and 
+maximum likelihood (1000 bootstrap) analyses were executed, respectively, in MrBayes 
+3.1.2 (Ronquist & Huelsenbeck 2003) and PhyML (Guindon & Gascuel 2003), launched 
+from Topali 2.5. The model of nucleotide substitution was estimated using Topali 2.5 
+(Milne et al. 2004). Sequences from Neurospora crassa, Boletus edulis, Rhizophydium 
+sphaerotheca were used as outgroups for Glomeromycota, and Glomus intraradices and 
+G. xanthium for Diversisporales (ITS analysis).
+Glomoid species reorganized ... 83
+Fig. 1a–b. Phylogenetic reconstruction of the Glomeromycota obtained from partial SSU rDNA 
+sequences (~1800 bp). Group C are Diversisporaceae. The neighbor-joining (NJ), maximum 
+likelihood (ML) and bayesian analyses were performed with GTR+G+I substitution model. 
+Sequences are labeled with their database accession numbers. Bootstrap values (in %) are from NJ, 
+maximum parsimony (MP) and ML analyses (1000 bootstraps), respectively. The lasting numbers 
+below each branch line denotes the credibility value from the bayesian analysis. Only topologies 
+with bootstrap values of at least 50% are shown (Consistency Index = 0.4701; Retention Index = 
+0.8241). (Fig. 1A left on p. 82; Fig. 1B above)
+84 ... Oehl & al.
+Results & discussion
+Relationships between general phylogenetics and morphological features
+All four orders of the Glomeromycota have species that form glomoid spores. 
+Paraglomerales and Archaeosporales have low phylogenetic relationship with 
+Glomerales and Diversisporales (e.g. Redecker et al. 2007, Palenzuela et al. 2008; 
+Figs. 1–2, 4). Representatives of Ambispora, Archaeospora, Intraspora, and 
+Paraglomus form extraradical mycelia and mycorrhizal structures that stain 
+faintly to not at all in trypan blue (Spain & Miranda 1996, Spain 2003, Spain 
+et al. 2006, Sieverding & Oehl 2006). (The reasons for this are unclear: vesicle 
+formation is rarely reported or might have been misinterpreted in Archaeospora, 
+Intraspora and Paraglomus.) This differs from the current glomeralean and 
+diversisporalean species, which have fungal structures that stain blue to deep 
+Glomoid species reorganized ... 85
+Fig. 2. Phylogenetic reconstruction of the Glomeromycota obtained from partial LSU rDNA 
+sequences (~600 bp). The neighbor-joining (NJ), maximum likelihood (ML) and bayesian analyses 
+were performed with GTR+G+I substitution model. Sequences are labeled with their database 
+accession numbers. Bootstrap values (in %) are from NJ, maximum parsimony (MP) and ML 
+analyses (1000 bootstraps), respectively. The lasting numbers below each branch line denotes the 
+credibility value from the bayesian analysis. Only topologies with bootstrap values of at least 50% 
+are shown (Consistency Index = 0.4207; Retention Index = 0.7818).  (Fig. 2A left on p. 84; Fig. 2B 
+above.)
+blue with trypan blue. They are also reported to form vesicular arbuscular 
+mycorrhiza (Schüßler et al. 2001), except for Gigasporaceae, Scutellosporaceae, 
+Racocetraceae and Dentiscutataceae, which form arbuscular mycorrhiza but not 
+intraradical vesicles, or at least vesicles have never been observed (Bentivenga & 
+Morton 1995, Oehl et al. 2008). To date Paraglomerales species are monogeneric 
+and form glomoid spores that may all germinate directly through the spore wall 
+instead of through the subtending hyphae as in Glomus and Diversispora (Spain 
+and Miranda 1996; Oehl pers. obs. on P. occultum).
+86 ... Oehl & al.
+Phylogenetic reconstructions for glomeromycotan species based on analyses of the 18S, 
+28S, and ITS regions of the ribosomal gene, and of the β-tubulin gene 
+The major clades for groups Aa, Ab, B and C were monophyletically obtained 
+in the phylogenetic trees constructed for the genome regions analyzed (Figs. 
+1–4). Clade group Aa was divided into three subclades with Gl. mosseae, Gl. hoi, 
+and Gl. constrictum as lead species of Aa1, Aa2 and Aa3, respectively. Further 
+separation of clade Ab is not clear, although former Sclerocystis spp. (group Ab3) 
+and Gl. badium (morphologically also in group Ab3) are monophyletic (Fig. 1). 
+Clades Ab1 and Ab2, which differ consistently in glomoid spore morphology 
+(see below) and contain the largest number of species, were not re-organized 
+because the genetic database is not yet complete. Of the species analyzed, only 
+Gl. aureum represents clade Ab1, which should have Gl. macrocarpum as type 
+species according to Clements & Shear (1931). However, the 18S rDNA region 
+(Fig. 1) does not provide sufficient support by itself for creating a new genus. 
+The two lead species of group Ab2 are Gl. intraradices and Gl. irregulare, but 
+this group also is not yet recognized at the genus level. The group B clade 
+clearly stands apart from the others and splits into Glomus groups B1 and B2. 
+Glomus viscosum is hereafter attributed as a single species to group B2, while 
+Gl. etunicatum was recognized as the lead species for the group B1 (Fig. 1). 
+The ITS regions from clade groups Ca and Cb were analyzed because other 
+sequence data were either unavailable for group Cb species or (for the 18S) 
+available only for the lead species, Gl. fulvum. ITS analyses showed the Ca and 
+Cb clades well separated from each other (Fig. 3). 
+Morphology of glomoid, diversisporoid, and pacisporoid spores 
+All glomoid spores of the present Glomeraceae and Diversisporaceae have 
+one single spore wall with several layers. In many species the structural wall 
+layer is the inner layer, although other species possess additional innermost 
+(semi-)flexible layers. Because these additional layers are generally thin (often 
+<1µm), closely adhere to the structural layer, and can be separated from the 
+latter only through hard pressure on the cover slides, they are not considered 
+separate walls. The presence or absence of innermost flexible layers is not 
+sufficient to distinguish morphologically between Glomus groups since the 
+majority of groups have some species with and some species without innermost 
+flexible layers. Such characters as mycelial/ mycorrhizal infection features, spore 
+size, spore wall color, wall ornamentation, and layer numbers or their staining 
+features could rarely be attributed to all species within a specific clade. 
+Spores of groups A and B have a structural layer that forms a continuum 
+from attached hyphal to spore wall layers (Figs. 5–17). We refer to such spore 
+types as glomoid. 
+Because Ca and Cb group spores have a structural layer that appears to 
+be inserted into the wall of the terminal element of the attached hypha, the 
+Glomoid species reorganized ... 87
+Fig. 3. Phylogenetic reconstruction of the Diversisporales obtained from ITS sequences (~500 bp). 
+The neighbor-joining (NJ), maximum likelihood (ML) and bayesian analyses were performed 
+with GTR+G+I substitution model. Sequences are labeled with their database accession numbers. 
+Bootstrap values (in %) are from NJ, maximum parsimony (MP) and ML analyses (1000 bootstraps), 
+respectively. The lasting numbers below each branch line denotes the credibility value from the 
+bayesian analysis. Only topologies with bootstrap values of at least 50% are shown (Consistency 
+Index = 0.5539; Retention Index = 0.8092).
+structural spore wall layers may not form a continuum with the hyphal wall 
+layers (Figs. 18–21). The inner wall layer appears to differentiate de novo, 
+similar (but not equal) to inner walls in Acaulosporaceae or Entrophosporaceae 
+88 ... Oehl & al.
+Fig. 4. Phylogenetic reconstruction of the Glomeromycota obtained from partial β-tubulin 
+sequences (~600 bp). The neighbor-joining (NJ), maximum likelihood (ML) and bayesian analyses 
+were performed with GTR+G+I substitution model. Sequences are labeled with their database 
+accession numbers. Bootstrap values (in %) are from NJ, maximum parsimony (MP) and ML 
+analyses (1000 bootstraps), respectively. The lasting numbers below each branch line denotes the 
+credibility value from the bayesian analysis. Only topologies with bootstrap values of at least 50% 
+are shown. (Consistency Index = 0.3709; Retention Index = 0.6969). 
+(Oehl et al. 2006, Sieverding & Oehl 2006). In Ca the structural and (if present) 
+inner flexible spore wall layers form a septum at the base or at a short distance 
+from the base of the spore within the subtending hypha. In Cb the inner lamina 
+of the structural wall layer always forms a septum at the spore base and the 
+outer lamina may continue for 1–10 µm into the subtending hypha. We refer to 
+this spore type as diversisporoid.
+Glomoid species reorganized ... 89
+Pacispora spores superficially resemble glomoid spores, as the spore wall 
+structural layer forms a continuum with the hyphal wall layers. However, 
+Pacispora spores strongly differ from glomoid spores: i) in possessing an 
+additional thick inner germinal wall that forms de novo and is clearly separate 
+from the outer wall; ii) by species-specific germination structures resembling 
+a germ shield; and iii) by germ tubes that arise from the ‘shields’ on the inner 
+wall and penetrate directly the adjacent outer wall. We refer to this spore type 
+as pacisporoid.
+Morphology of the subtending hypha, spore base, and spore pore closure 
+A combination of two major morphological features and one secondary 
+feature are congruent with the major molecular phylogenetic groups of the 
+glomoid, diversisporoid, and pacisporoid species (Table 2): i) the morphology 
+of the spore base including the pore closure and position of the septum 
+(Figs. 5–23, 24–114); ii) the morphology of the subtending hypha (sh) 
+(Figs. 5–23, 24–114); and iii) secondarily, the prevailing formation and spore 
+organization level within either sporocarps or spore clusters or singly in soil.
+Spores of Glomus groups Aa(1,2,3) and Ab(1,2,3) all have sh that are 
+concolorous with (or slightly lighter in color than) the structural spore wall, 
+and the spore wall differentiation extends completely into the sh (table 2, 
+Figs. 5–14, 24–89). In group B1 and B2 spores the structural spore wall 
+differentiation also extends into the sh, but the sh colour changes abruptly to 
+hyaline or white at the spore base, even when the spore wall layers are distinctly 
+pigmented (table 2, Figs. 15–17, 90–98). 
+Table 2. Morphology of subtending hyphae (sh) and spore formation in glomoid 
+spored species in Glomerales and Diversisporales 
+Group
+Aa1
+Aa2
+Aa3
+Ab1
+Ab2
+Lead 
+species
+Gl. mosseae 
+Gl. hoi 
+Gl. constrictum 
+Gl. macrocarpum
+Gl. microcarpum
+Gl. intraradices
+Gl. irregulare
+Recent or 
+New genus
+Funneliformis
+Simiglomus 
+Septoglomus 
+Glomus 
+Glomus 
+SH characters
+Color 
+Same as spore 
+wall 
+Same as 
+spore wall
+Same as  
+spore wall
+Same as 
+ spore wall
+Same as 
+ spore wall
+Shape  
+ 
+& 
+ 
+thickness
+Funnel-shape 
+to cylindric,  
+ 
+ 
+thick walled
+Cylindric/sl. 
+funnelshape,  
+ 
+thick walled 
+Cylindric to 
+constricted, 
+rarely sl. 
+funnel-shape, 
++/- thick walled
+Cylindric to 
+slightly funnelshape, 
+thick walled
+Cylindric, 
+ 
+ 
+thick walled
+Pore closure 
+ 
+ 
+ 
+Conspicuous 
+septum under 
+/ at spore 
+base 
+Sev. conspic. 
+septa distant 
+to spore 
+base 
+Septum under  
+/ at spore base 
+ 
+ 
+Introverted sw 
+thickening; +/- 
+bridging septum  
+ 
+Open or septum 
+distant to spore 
+base; introverted 
+sw thickening 
+rudimentary
+Spore 
+formation 
+ 
+ 
+Singly or in 
+few-spored  
+sporocarps 
+ 
+Singly or 
+open spore 
+clusters 
+ 
+Singly or open 
+spore clusters 
+ 
+ 
+Compact, 
+unorganized 
+multi-spored 
+sporocarps, 
+clusters or singly
+Loose or 
+compacted, 
+unorganized 
+clusters; also 
+singly
+90 ... Oehl & al.
+     
+Group
+Ab3
+B1
+B2
+Ca
+Cb
+Lead 
+species
+Gl. coremioides
+Gl. etunicatum
+Gl.viscosum
+Gl. versiforme
+Gl. fulvum 
+Recent or 
+New genus
+Glomus 
+Claroideoglomus 
+Viscospora 
+Diversispora 
+Redeckera 
+SH characters
+Color 
+ 
+ 
+ 
+Same as spore 
+wall  
+ 
+ 
+White to hyaline, 
+abrupt color 
+change at spore 
+base if spore wall 
+pigmented
+White to 
+hyaline  
+ 
+ 
+Hyaline distant 
+to septum that 
+is concolorous 
+with structural 
+swl
+Hyaline distant 
+to septum that 
+is concolorous 
+with structural 
+swl
+Shape;  
+ 
+& 
+ 
+Thickness
+Cylindric, 
+funnel-, or 
+bill-shaped,; 
+ 
+thick-walled
+Conspicuously 
+bill-shaped; 
+ 
+ 
++/- thick-walled
+Cylindric;  
+ 
+ 
+ 
+thick-walled 
+Generally fragile, 
+cylindric distant 
+to septum, or 
+constricted;  
+thin-walled
+Generally 
+fragile and 
+inflated ; 
+ 
+thin-walled
+Pore closure 
+ 
+Introverted sw 
+thickening  
+Septum at spore 
+base 
+Constricted 
+wall or 
+open 
+Septum at or 
+beneath spore 
+base, or open
+Broad septum 
+at spore base 
+Spore 
+formation 
+ 
+ 
+ 
+In compact, 
+organized 
+sporocarps, 
+around hyphal 
+center; initially 
+also singly
+Singly 
+ 
+ 
+ 
+ 
+Singly or 
+in loose 
+clusters 
+ 
+ 
+In large, compact 
+sporocarps,  
+or cluster 
+aggregates,  
+or singly
+In large, 
+compact 
+sporocarps/ 
+clusters,  open 
+aggregates,  
+or singly
+Table 2, concluded.
+Figs 5–17. Examples of spore bases (with 1–3 spore wall layers; swl1–3) and subtending hyphae 
+(sh) of species assigned to phylogenetic clades Aa1, Aa2, Aa3, Ab1, Ab2, Ab3, B1 and B2; structural 
+spore wall layers are continuous with the sh wall. 5–14. sh of A clade spores are concolorous 
+with or slightly lighter than the spore wall. 5–8. Clade Aa species never have an introverted wall 
+thickening at the base; spore pores are generally closed by a conspicuous septum (sp) arising 
+In contrast, the spore wall differentiation generally does not extend into the 
+sh in group Ca and Cb spores (table 2, Figs. 14–19, 99–114), as lamination 
+and differentiation of the structural spore wall layer either does not extend into 
+the sh or extends only a short distance from the base. Within these Ca and Cb, 
+therefore, the sh are usually quite fragile (Figs. 99–107) and hyaline to white, 
+distal to the pore closure at the spore base (Gl. spurcum = Di. spurca) or in the 
+sh (Gl. eburneum). The hyaline to white color of the sh behind the septum 
+changes conspicuously when spores are pigmented. Cb species have broad 
+sh and broad septa at the spore bases (Figs. 108–114). Their sh are inflated 
+(Gl. pulvinatum) or (sometimes) very short within compact sporocarps (e.g. 
+Gl. fulvum and Gl. canadense).
+Type of spore formation 
+Glomus group spore formation is intercalary or terminal on sh, both for 
+spores formed either singly in soil (e.g. Gl. arborense, Gl. etunicatum) or in 
+loose/dense spore clusters or sporocarps (e.g. Gl. fasciculatum, Gl. pallidum, 
+Gl. glomerulatum). 
+Glomoid species reorganized ... 91
+from the structural layer and/or the (semi-)flexible layer beneath. 5–6. Aa1. 5. Lead species 
+Glomus mosseae. 6. Gl. geosporum. 7. Aa3: lead species Gl. constrictum. 8. Aa2: so far single lead 
+species Gl. hoi. 9. Ab2: without introverted wall thickening; spore base pore regularly open; lead 
+species Gl. intraradices. 10–13. Ab1: typical Glomus species with an introverted wall thickening at the 
+spore base; sometimes a short bridging septum arising from the structural wall layer or innermost 
+flexible lamina closes the spore base pore. 10. Lead species Gl. microcarpum. 11. Gl. aureum. 
+12. Lead species Gl. macrocarpum. 13. Gl. pellucidum. 14. Ab3; also with a slight introverted 
+wall thickening but pores generally closed by a short septum arising from the structural layer 
+and/or the (semi-)flexible layers beneath. In some clade Ab3 species the spore head sometimes 
+is also thickened towards the sporocarp surface; lead species Gl. coremioides and Gl. sinuosum. 
+15–17. B1: spore sh bill-shaped and hyaline to white, even when the spore wall is pigmented. 
+15–16. lead species Gl. etunicatum. 17. Gl. claroideum. 
+92 ... Oehl & al.
+Figs 18–23. Clades Ca (Diversispora) and Cb (Redeckera) spore bases (with 1–3 spore wall layers; 
+swl1–3) and subtending hyphae (sh): structural spore wall layer seemingly extends only a very 
+short distance into the subtending hyphae, soon becoming hyaline to white and undetectable; often 
+only the adherent outer spore wall layer(s) appears continuous with the mycelial hyphal wall to 
+connect the two neighboring spores in compact sporocarps. The structural layer often appears 
+inserted into the ‘swollen hyphal tips’. 18–22. Ca: spore sh generally white and cylindrical at the 
+spore base, soon fragile. Septum (sp) arises from the structural spore wall layer and either closes 
+the pore immediately or at some distance from the spore base (18–21) or the spore pore appears 
+open (22). 23. Cb: spore sh generally inflated a very short distance from the spore base with the 
+structural layer extending an equally short distance in the subtending hypha. At base, spores are 
+‘endospore-like,’ with a broad, thick septum formed by the structural layer. 
+Aa1 species generally form spores singly (e.g. Gl. geosporum, Gl. caledonium) 
+or occasionally in sporocarps containing just a few (2–20) spores (e.g. Gl. 
+mosseae, Gl. monosporum, Gl. coronatum). Aa2 and Aa3 species form spores 
+preferably singly in soil or roots, or in very loose spore clusters (Gl. hoi, 
+Gl. constrictum, Gl. deserticola, Gl. xanthium). Ab1 and Ab2 species generally 
+form spores in multi-spored loose/dense variably sized spore clusters. During 
+initial spore formation they may also form spores singly, although some isolates 
+appear never to form clusters in single species cultures on certain hosts. Ab3 
+species form spores strictly in sporocarps but may initially form single spores 
+on their mycelia (Gl. sinuosum). 
+Glomoid species reorganized ... 93
+B1 species generally form spores either singly in soil (e.g. Gl. etunicatum, 
+Gl. claroideum, Gl. walkeri) or in variably sized loose spore clusters (Gl. viscosum). 
+Sporocarp formation is extremely rare, if ever. The solitary B2 species — 
+Gl. viscosum — forms spores in clusters of highly variable size. Ca species form 
+spores singly in soils (e.g. Gl. spurcum = Di. spurca; Gl. eburneum) or in small 
+to large and irregular shaped compacted clusters with numerous spores (e.g. 
+Gl. versiforme, Gl. epigaeum) depending on culture and site conditions. Finally, 
+Cb species generally form spores in large, compact sporocarps (e.g. Gl. fulvum, 
+Gl. fragile) that are among the largest known within the Glomeromycota 
+(especially Gl. megalocarpum). As the formation of a peridium around the 
+sporocarps or single spores does occur in groups Aa1, Ab1, Ab3, and Cb, it is 
+not a consistent morphological indicator at the family or genus level. Peridium 
+formation has not yet been observed for B1, B2, and Ca species.
+Organization level of sporocarps
+Except for group Ab3, spores of other Glomus groups have (with some 
+exceptions) limited to no organization in sporocarps or compacted spore 
+clusters. As spores in sporocarps appear to be randomly distributed, sh are 
+variably long (e.g. Gl. mosseae, Gl. coronatum, Gl. macrocarpum, Gl. ambisporum, 
+Gl. versiforme, Gl. fulvum, Gl. pulvinatum). In contrast, Ab3 sporocarps are 
+highly organized with spores forming around a central hyphal plexus. Variation 
+in sh length is much lower (e.g. Gl. sinuosum, Gl. rubiforme). Sporocarp size 
+variability of Ab3 species is low, largely dependent on the diameter of the central 
+hyphal plexus and spore size in individual species. In unorganized sporocarps 
+of the other ‘Glomus groups’ sporocarp size is much more variable due to a lack 
+of symmetry, greater sh length variability, and greater variability of numbers 
+of spores formed per sporocarp. According to our analyses, species that 
+form dense, highly compact sporocarps (e.g., Gl. radiatum, Gl. vesiculiferum, 
+Gl. segmentatum, Gl. convolutum, Gl. fuegianum) do not form spores around a 
+central hyphal plexus arising from a single hypha but sporocarps appear to have 
+several hyphal attachments. They thus probably belong to group Ab1 and so are 
+not attributed to group Ab3. 
+Taxonomic revision 
+Glomeraceae Piroz. & Dalpé emend. Oehl, G.A. Silva & Sieverd.  
+(Glomus group A)
+Emended Description: Spores formed terminally on or intercalary in hyphae, 
+in soil and sometimes in roots, either singly, in spore clusters, or in multiplespored loose to compact sporocarps when compact spores are randomly 
+distributed or organized around a central plexus of hyphae. Compact sporocarps 
+with or without peridium. Spores with one mono-to-multiple layered wall. 
+Wall of the sh conspicuously continuous and concolorous with the spore wall, 
+94 ... Oehl & al.
+or slightly lighter in color than the spore wall; sh funnel-shaped, cylindrical or 
+constricted; forming typical vesicular-arbuscular mycorrhiza, with mycorrhizal 
+structures that stain blue to dark blue in trypan blue.
+Type genus: Glomus Tul. & C. Tul. 
+Other genera: Funneliformis C. Walker & A. Schüssler, Septoglomus Sieverd. 
+et al., Simiglomus Sieverd. et al.
+Glomus Tul. & C. Tul. emend. Oehl, G.A. Silva & Sieverd. 
+Figs. 25–74 
+(Glomus groups Ab1, Ab2 & Ab3) 
+Emended Description: Spores formed singly within soil or sometimes roots, 
+in disorganized, multiple-spored loose spore clusters or in compact sporocarps; 
+compact sporocarps without or with peridium, spores are either not organized 
+in sporocarp, or organized around a central hyphal plexus. Spores with a 
+mono-to-multiple layered wall. Wall of the sh conspicuously continuous and 
+concolorous with the spore wall, or slightly lighter in color than the spore wall. 
+Spore pore closure often by introverted wall thickening, sometimes supported 
+by a short bridging septum, rarely open. Forming typical vesicular-arbuscular 
+mycorrhiza, with mycorrhizal structures that stain blue to dark blue in trypan 
+blue.
+Type species: Glomus macrocarpum Tul. & C. Tul.
+Glomus achrum Błaszk., D. Redecker, Koegel, Schützek, Oehl & Kovács, Botany 87: 
+262. 2009.
+Glomus aggregatum N.C. Schenck & G.S. Sm., Mycologia 74: 80. 1982.
+Glomus ambisporum G.S. Sm. & N.C. Schenck, Mycologia 77: 566. 1985.
+Glomus antarcticum Cabello, Mycotaxon 51: 124. 1994
+Glomus arborense McGee, Trans. Br. Mycol. Soc. 87: 123. 1986.
+Glomus atrouva McGee & Pattinson, Austral. Syst. Bot. 15: 115. 2002.
+Glomus aureum Oehl & Sieverd., J. Appl. Bot. 77: 111. 2003. 
+Glomus australe (Berk.) S.M. Berch, Can. J. Bot. 61: 2611. 1983. 
+≡ Endogone australis Berk., Fungi Flora Tasman. 2: 282. 1859.
+Glomus badium Oehl, D. Redecker & Sieverd., J. Appl. Bot. Food Qual. 79: 39. 2005.
+≡ Funneliformis badius (Oehl, D. Redecker & Sieverd.) C. Walker & A. Schüssler,  
+The Glomeromycota – a species list: 13. 2010.
+Glomus bagyarajii V.S. Mehrotra, Philipp. J. Sci. 126: 235. 1997.
+Glomus bistratum Błaszk., D. Redecker, Koegel, Symanczik, Oehl & Kovács, Botany 
+87: 267. 2009.
+Glomus boreale (Thaxt.) Trappe & Gerd., Mycol. Mem. 5: 58. 1974.
+≡ Endogone borealis Thaxt., Proc. Am. Acad. Arts Sci. 57: 318. 1922
+Glomoid species reorganized ... 95
+Glomus botryoides F.M. Rothwell & Victor, Mycotaxon 20: 163. 1984. 
+Glomus brohultii Sieverd. & R.A. Herrera, J. Appl. Bot. 77: 37. 2003
+Glomus canum McGee, Austral. Syst. Bot. 15: 116. 2002.
+Glomus cerebriforme McGee, Trans. Br. Mycol. Soc. 87: 123. 1986. 
+Glomus citricola D.Z. Tang & M. Zang, Acta Bot. Yunn. 6: 301. 1984. 
+Glomus clarum T.H. Nicolson & N.C. Schenck, Mycologia 71: 182. 1979. 
+≡ Rhizophagus clarus (T.H. Nicolson & N.C. Schenck) C. Walker & A. 
+Schüssler, The Glomeromycota – a species list: 19. 2010.
+Glomus clavisporum (Trappe) R.T. Almeida & N.C. Schenck, Mycologia 82: 710. 
+1990.
+≡ Sclerocystis clavispora Trappe, Mycotaxon 6: 359. 1977.
+= Sclerocystis microcarpus S.H. Iqbal & Perveen, Trans. Mycol. Soc. Japan 21: 58. 1980.
+Glomus convolutum Gerd. & Trappe, Mycol. Mem. 5: 42. 1974. 
+Glomus coremioides (Berk. & Broome) D. Redecker & J.B. Morton, Mycologia 92: 
+284. 2000.
+≡ Sclerocystis coremioides Berk. & Broome, J. Linn. Soc., Bot. 14: 137. 1873.
+= Xenomyces ochraceus Ces., Atti Accad. Sci. Fis. 8: 26. 1879.
+= Ackermannia coccogena Pat., Bull. Soc. Mycol. Fr. 18: 182. 1902.
+≡ Sphaerocreas coccogena (Pat.) Höhn., Sitzungsber. K. Akad. Wiss. 
+Wien, Math.-Naturwiss. Kl., Abt. 1, 118: 401. 1909.
+≡ Sclerocystis coccogena (Pat.) Höhn., Sitzungsber. K. Akad. Wiss. 
+Wien, Math.-Naturwiss. Kl., Abt. 1, 119: 399. 1910.
+= Ackermannia dussii Pat., Bull. Soc. Mycol. Fr. 18: 181. 1902.
+≡ Sphaerocreas dussii (Pat.) Höhn., Sitzungsber. K. Akad. Wiss. 
+Wien, Math.-Naturwiss. Kl., Abt. 1, 118: 401. 1909.
+≡ Sclerocystis dussii (Pat.) Höhn., Sitzungsber. K. Akad. Wiss. 
+Wien, Math.-Naturwiss. Kl., Abt. 1, 119: 399. 1910.
+Glomus corymbiforme Błaszk., Mycologia. 87: 732. 1995.
+Glomus cuneatum McGee & A. Cooper, Austral. Syst. Bot. 15: 117. 2002.
+Glomus custos C. Cano & Dalpé, Mycotaxon 109: 502. 2009. 
+≡ Rhizophagus custos (C.Cano & Dalpé) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 19. 2010.
+Glomus delhiense Mukerji, Bhattacharjee & J.P. Tewari, Trans. Br. Mycol. Soc 81: 643. 
+1983.
+Glomus diaphanum J.B. Morton & C. Walker, Mycotaxon 21: 433. 1984. 
+≡ Rhizophagus diaphanus (J.B. Morton & C. Walker) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 19. 2010.
+Glomus dolichosporum M.Q. Zhang & You S. Wang, Mycosystema 16: 241. 1997.
+96 ... Oehl & al.
+Glomus fasciculatum (Thaxt.) Gerd. & Trappe, Mycol. Mem. 5: 51. 1974.
+≡ Endogone fasciculata Thaxt., Proc. Am. Acad. Arts & Sci. 57: 308. 1922.
+≡ Rhizophagus fasciculatus (Thaxt.) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 19. 2010.
+= Endogone arenacea Thaxt., Proc. Am. Acad. Arts & Sci. 57: 317. 1922
+= Rhizophagites butleri Rosend., Bull. Torrey Bot. Club 70: 131. 1943. 
+Glomus flavisporum (M. Lange & E.M. Lund) Trappe & Gerd., Mycol. Mem. 5: 58. 
+1974.
+≡ Endogone flavispora M. Lange & E.M. Lund, Friesia 5: 93. 1954. 
+Glomus formosanum C.G. Wu & Z.C. Chen, Taiwania 31: 71. 1986.
+Glomus fuegianum (Speg.) Trappe & Gerd., Mycol. Mem. 5: 58. 1974.
+≡ Endogone fuegiana Speg., Anal. Soc. Cient. Argent. 24:125. 1887.
+Glomus globiferum Koske & C. Walker, Mycotaxon 26: 133. 1986.
+Glomus glomerulatum Sieverd., Mycotaxon 29: 74. 1987.
+Glomus goaense Khade, Mycorrhiza News 20(4): 21. 2010.
+Glomus heterosporum G.S. Sm. & N.C. Schenck, Mycologia 77: 567. 1985.
+Glomus hyderabadense Swarupa, Kunwar, G.S. Prasad & Manohar., Mycotaxon 89: 
+247. 2004.
+Glomus indicum Błaszk., Wubet & Harikumar, Botany 88: 134. 2010. 
+Glomus intraradices N.C. Schenck & G.S. Sm., Mycologia 74: 78. 1982.
+≡ Rhizophagus intraradices (N.C. Schenck & G.S. Sm.) C. Walker & 
+A. Schüssler, The Glomeromycota – a species list: 19. 2010.
+Glomus invermaium I.R. Hall, Trans. Br. Mycol. Soc. 68: 345. 1977.
+Figs 24–46. Glomus clade Ab1 forms spores in unorganized clusters/sporocarps or (sometimes) 
+singly in soil; subtending hyphae (sh) are concolorous with (or slightly lighter than) the spore 
+wall, normally with introverted, species-specific basal wall thickenings; sh often cylindrical 
+(very short if formed in compact sporocarps). Species-specific sh wall thickening may continue 
+over rather long distances (≤ 200–500 µm) even in sporocarps. Spores with 1–4 wall layers 
+(swl1–swl4); pore at spore base pores often closed by introverted wall thickenings or with an 
+additional septum (sp) that arises from the structural layer, from an adherent innermost (semi)flexible layer, or from both layers. Individual layers might be species-specifically ornamented 
+(orn). 24–25. Gl. microcarpum. 26. Gl. macrocarpum. 27. Gl. spinuliferum. 28. Gl. magnicaule. 
+29. Gl. multicaule. 30. Gl. heterosporum. 31. Gl. aureum. 32. Gl. invermaium. 33. Gl. glomerulatum. 
+34. Gl. ambisporum. 35. Gl. warcupii. 36. Gl. melanosporum. 37. Gl. atrouva. 38. Gl. botryoides. 
+39. Gl. spinosum. 40. Gl. mortonii. 41. Gl. australe. 42. Gl. fuegianum. 43. Gl. tenerum. 
+44. Gl. pellucidum. 45. Gl. segmentatum. 46. Gl. convolutum: spore peridium was removed by strong 
+pressure on the cover slide.
+Glomoid species reorganized ... 97
+98 ... Oehl & al.
+Figs 47–58. Glomus clade Ab2 form spores in disorganized loose/dense clusters/sporocarps 
+(sometimes singly in soil); subtending hyphae (sh) concolorous with (or slightly lighter than) the 
+spore wall. sh generally openly cylindric; introverted wall thickenings rudimentary, but usually not 
+existent; spore base pore diagnostic: open or (rather rarely) with a septum arising from innermost 
+adherent (semi-)flexible layer. Spores with 1–4 wall layers (swl1–swl4). 47. Gl. intraradices. 
+48. Gl. aggregatum. 49. Gl. vesiculiferum. 50. Gl. globiferum. 51. Gl. tortuosum. 52. Gl. corymbiforme. 
+53. Gl. microaggregatum. 54. Gl. clarum. 55. Gl. manihotis. 56. Gl. fasciculatum. 57. Gl. diaphanum. 
+58. Gl. pallidum. 
+Glomus iranicum Błaszk., Kovács & Balázs, Mycologia 102: 1457. 2010.
+≡ Rhizophagus iranicus (Błaszk., Kovács & Balázs) C. Walker & A. 
+Schüssler, The Glomeromycota – a species list: 19. 2010.
+Glomus irregulare Błaszk., Wubet, Renker & Buscot, Mycotaxon 106: 252. 2008. 
+≡ Rhizophagus irregularis (Błaszk., Wubet, Renker & Buscot) C. Walker 
+& A. Schüssler, The Glomeromycota – species list: 19. 2010.
+Glomus liquidambaris (C.G. Wu & Z.C. Chen) Y.J. Yao, Kew Bull. 50: 306. 1995.
+≡ Sclerocystis liquidambaris C.G. Wu & Z.C. Chen, Trans. 
+Mycol. Soc. Rep. China, 2: 74. 1987.
+= Sclerocystis cunninghamia H.T. Hu, Quart. J. Chinese For. 21: 52. 1988.
+Glomus macrocarpum Tul & C. Tul., Giorn. Bot. Ital., Anno 1, 2(7–8): 63. 1845.
+≡ Endogone macrocarpa (Tul. & C. Tul.) Tul. & C. Tul., Fungi Hypog.: 182. 1851. 
+Glomoid species reorganized ... 99
+= Endogone guttulata E. Fisch., Ber. Schweiz. Bot. Ges. 32: 13. 1923. 
+= Endogone nuda Petch., Ann. R. Bot. Gdns Peradeniya 9: 322. 1925.
+= Endogone pampaloniana Bacc., Nuovo Giorn. Bot. Ital., n.s. 10: 90. 1903.
+= Paurocotylis fulva var. zelandica Cooke, Grevillea 8: 59. 1879.
+Glomus magnicaule I.R. Hall, Trans. Br. Mycol. Soc. 68: 345. 1977.
+Glomus manihotis R.H. Howeler, Sieverd. & N.C. Schenck, Mycologia 76: 695. 1984.
+≡ Rhizophagus manihotis (R.H. Howeler, Sieverd. & N.C. Schenck) C. Walker 
+& A. Schüssler, The Glomeromycota – a species list: 19. 2010.
+Glomus melanosporum Gerd. & Trappe, Mycol. Mem. 5: 46. 1974.
+Glomus microaggregatum Koske, Gemma & P.D. Olexia, Mycotaxon 26: 125. 1986.
+Glomus microcarpum Tul. & C. Tul., Giorn. Bot. Ital., Anno 1, 2(7–8): 63. 1845.
+≡ Endogone microcarpa (Tul. & C. Tul.) Tul. & C. Tul., Fungi Hypog.: 182. 1851. 
+= Endogone neglecta Rodway, Proc. Roy. Soc. Tasmania 1917: 107. 1918.
+Glomus minutum Błaszk., Tadych & Madej, Mycologia 76: 189. 2000.
+Glomus mortonii Bentiv. & Hetrick, Mycotaxon 42: 10. 1991.
+Glomus multicaule Gerd. & B.K. Bakshi, Trans. Br. Mycol. Soc. 66: 340. 1976.
+Glomus nanolumen Koske & Gemma, Mycologia 81: 935. 1990. 
+Glomus pachycaule (C.G. Wu & Z.C. Chen) Sieverd. & Oehl, comb. nov.
+MycoBank MB 519622
+≡ Sclerocystis pachycaulis C.G. Wu & Z.C. Chen, Taiwania 31: 74. 1986.
+Glomus pallidum I.R. Hall, Trans. Br. Mycol. Soc. 68: 343. 1977.
+Glomus pansihalos S.M. Berch & Koske, Mycologia 78: 832. 1986.
+Glomus pellucidum McGee & Pattinson, Austral. Syst. Bot. 15: 120. 2002.
+Glomus perpusillum Błaszk. & Kovács, Mycologia 101: 249. 2009.
+Glomus proliferum Dalpé & Declerck, Mycologia 92: 1180. 2000.
+≡ Rhizophagus prolifer (Dalpé & Declerck) C. Walker & A. 
+Schüssler, The Glomeromycota – a species list: 19. 2010.
+Glomus pubescens (Sacc. & Ellis) Trappe & Gerd., Mycol. Mem. 5: 57. 1974. 
+≡ Sphaerocreas pubescens Sacc. & Ellis, Michelia 2: 582. 1882.
+≡ Stigmatella pubescens (Sacc. & Ellis) Sacc., Syll. Fung. 4: 680. 1886.
+≡ Sclerocystis pubescens (Sacc. & Ellis) Höhn., Sitzungsber. K. Akad. 
+Wiss. Wien, Math.-Naturwiss. Kl., Abt. 1, 119: 399. 1910.
+≡ Endogone pubescens (Sacc. & Ellis) Zycha, Krypt.-Fl. Brandenburg 6a: 214. 1935.
+Glomus radiatum (Thaxt.) Trappe & Gerd., Mycol. Mem. 5: 46. 1974.
+≡ Endogone radiata Thaxt., Proc. Am. Acad. Arts & Sci. 57: 316. 1922.
+100 ... Oehl & al.
+Figs 59–74. Glomus clade Ab3, with species virtually all belonging to the former genus Sclerocystis; 
+form spores in highly organized, compact sporocarps, generally with > 50 spores per sporocarp; 
+subtending hyphae (sh) generally short, bill-shaped or cylindrical, and concolorous with (or slightly 
+lighter than) the spore wall. Spores species-specifically with (1–)2 wall layers (SWL1–SWL2) and 
+wall thickening at spore base, but pore generally closed by a septum that regularly arises from 
+the structural wall layer. 59–60. Gl. coremioides. 61–63. Gl. clavisporum. 64–65. Gl. badium. 
+66–67. Gl. taiwanense. 68–70. Gl. sinuosum. 71–72. Gl. pachycaule. 73–74. Gl. rubiforme. 
+Glomus rubiforme (Gerd. & Trappe) R.T. Almeida & N.C. Schenck, Mycologia 82: 
+709. 1990.
+≡ Sclerocystis rubiformis Gerd. & Trappe, Mycol. Mem. 5: 60. 1974.
+= Sclerocystis indica Bhattacharjee & Mukerji, Acta Bot. Indica 8: 99. 1980.
+Glomus segmentatum Trappe, Spooner & Ivory, Trans. Br. Mycol. Soc. 73: 362. 1979. 
+Glomoid species reorganized ... 101
+Glomus sinuosum (Gerd. & B.K. Bakshi) R.T. Almeida & N.C. Schenck, Mycologia 
+82: 710. 1990
+≡ Sclerocystis sinuosa Gerd. & B.K. Bakshi, Trans. Br. Mycol. Soc. 66: 343. 1976.
+= Sclerocystis pakistanica S.H. Iqbal & Perveen, Trans. Mycol. Soc. Japan 21: 59. 1980.
+Glomus spinosum H.T. Hu, Mycotaxon 83: 160. 2002. 
+Glomus spinuliferum Sieverd. & Oehl, Mycotaxon 86: 158. 2003.
+Glomus taiwanense (C.G. Wu & Z.C. Chen) R.T. Almeida & N.C. Schenck  
+ex Y.J. Yao, Kew Bull. 50: 306. 1995.
+≡ Sclerocystis taiwanensis C.G. Wu & Z.C. Chen, Trans. 
+Mycol. Soc. Rep. China 2: 78. 1987.
+Glomus tenebrosum (Thaxt.) S.M. Berch. Can. J. Bot. 60: 2615. 1983.
+≡ Endogone tenebrosa Thaxt., Proc. Am. Acad. Arts Sci. 57: 314. 1922.
+Glomus tenue (Greenall) I.R. Hall, Trans. Br. Mycol. Soc. 68: 350. 1977.
+≡ Rhizophagus tenuis Greenall, New Zealand J. Bot. 1: 398. 1963.
+Glomus tortuosum N.C. Schenck & G.S. Sm., Mycologia 74: 83. 1982. 
+Glomus vesiculiferum (Thaxt.) Gerd. & Trappe, Mycol. Mem. 5: 49. 1974. 
+≡  Endogone vesiculifera Thaxt., Proc. Am. Acad. Arts Sci. 57: 309. 1922.
+≡ Funneliformis vesiculifer (Thaxt.) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 14. 2010.
+Glomus warcupii McGee, Trans. Br. Mycol. Soc. 87: 125. 1986. 
+Glomus zaozhuangianum F.Y. Wang & R.J. Liu, Mycosystema 21: 522. 2002.
+Funneliformis C. Walker & A. Schüssler, emend. Oehl, G.A. Silva & Sieverd.
+(Glomus group Aa1)  
+Figs. 75–84
+Emended Description: Spores formed within soil or rarely roots, singly or 
+sometimes in sporocarps with a few to several spores per sporocarp only; the 
+conspicuous sh is concolorous with spore wall color (or slightly lighter in 
+color), sh is species-specific and generally funnel-shaped to cylindrical. Wall 
+differentiation and pigmentation may continue over long distances from the 
+spore base (often > 50–250 µm), then mycelium may become hyaline. Pore 
+regularly closed by a conspicuous septum that species-specifically arises from 
+the structural wall layer, from an additional adherent innermost, (semi-)flexible 
+lamina, or from both but not by introverted wall thickening, which is lacking. 
+Forming typical vesicular-arbuscular mycorrhiza, with mycorrhizal structures 
+that stain blue to dark blue in trypan blue. 
+Gender: Funneliformis is a compound Latin adjective with a masculine/
+feminine termination. Although under ICBN [Vienna Code] Article 62.3, the 
+authors had the prerogative to choose either of these genders, their actual choice 
+102 ... Oehl & al.
+of neuter gender was not an available option. We therefore choose to treat this 
+genus as masculine (Article 62.3) and have made the appropriate corrections to 
+all adjectival epithets.
+Type species: Funneliformis mosseae (T.H. Nicolson & Gerd.) C. Walker & A. 
+Schüssler
+Funneliformis caesaris (Sieverd. & Oehl) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518445
+≡ Glomus caesaris Sieverd. & Oehl, Mycotaxon 84: 381. 2002.
+Funneliformis caledonius (T.H. Nicolson & Gerd.) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 13. 2010.
+≡ Endogone macrocarpa var. caledonia T.H. Nicolson & Gerd., Mycologia 60: 318. 1968.
+≡ Glomus caledonium (T.H. Nicolson & Gerd.) Trappe & Gerd., Mycol. Mem. 5: 56. 1974.
+Funneliformis coronatus (Giovann.) C. Walker & A. Schüssler, The Glomeromycota 
+– a species list: 13. 2010.
+≡ Glomus coronatum Giovann., Can. J. Bot. 69: 162. 1990.
+Funneliformis dimorphicus (Boyetchko & J.P. Tewari) Oehl, G.A. Silva & Sieverd., 
+comb. nov. 
+MycoBank MB 518447
+≡ Glomus dimorphicum Boyetchko & J.P. Tewari, Can J. Bot. 64: 90. 1986. 
+Funneliformis fragilistratus (Skou & I. Jakobsen) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 13. 2010.
+≡ Glomus fragilistratum Skou & I. Jakobsen, Mycotaxon 36: 276. 1989.
+Funneliformis geosporus (T.H. Nicolson & Gerd.) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 14. 2010.
+≡ Endogone macrocarpa var. geospora T.H. Nicolson & Gerd. Mycologia 60: 318. 1968.
+≡ Glomus macrocarpum var. geosporum (T.H. Nicolson & 
+Gerd.) Gerd. & Trappe, Mycol. Mem. 5: 55. 1974. 
+≡ Glomus geosporum (T.H. Nicolson & Gerd.) C. Walker, Mycotaxon 15: 56. 1982.
+Funneliformis halonatus (S.L. Rose & Trappe) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518453
+≡ Glomus halonatum S.L. Rose & Trappe, Mycotaxon 10: 413. 1980.
+Funneliformis kerguelensis (Dalpé & Strullu) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518454
+≡ Glomus kerguelense Dalpé & Strullu, Mycotaxon 84: 53. 2002.
+Funneliformis monosporus (Gerd. & Trappe) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518456
+≡ Glomus monosporum Gerd. & Trappe, Mycol. Mem. 5: 41. 1974.
+Funneliformis mosseae (T.H. Nicolson & Gerd.) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 13. 2010.
+≡ Endogone mosseae T.H. Nicolson & Gerd., Mycologia 60: 314. 1968.
+≡ Glomus mosseae (T.H. Nicolson & Gerd.) Gerd. & Trappe, Mycol. Mem. 5: 40. 1974.
+Glomoid species reorganized ... 103
+Figs 75–84. Funneliformis species (clade Aa1) generally form big (150–400 µm) spores, singly and 
+(species-specifically) also in ‘small’ sporocarps with only a few to several spores per sporocarp; 
+subtending hyphae (sh) are concolorous with (or slightly lighter than) the spore wall without 
+introverted wall thickening at the spore base and are species-specifically cylindrical, funnelshaped, or (rarely) slightly constricted. sh wall thickening may extend over long distances (> 
+100–300 µm). Spores with 1–5 wall layers (swl1–swl5); pore regularly closed by a conspicuous 
+septum (sp) that species-specifically arises from the structural layer, from an adherent innermost, 
+(semi-)flexible layer, or from both layers. 75. Fu. mosseae. 76. Fu. monosporus. 77. Fu. fragilistratus. 
+78. Fu. coronatus. 79. Fu. multiforus. 80. Fu. geosporus. 81. Fu. verruculosus. 82. Fu. kerguelensis. 
+83. Fu. caledonius. 84. Fu. caesaris. 
+Funneliformis multiforus (Tadych & Błaszk.) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518459
+≡ Glomus multiforum Tadych & Błaszk., Mycologia 89: 805. 1997.
+104 ... Oehl & al.
+Funneliformis verruculosus (Błaszk.) C. Walker & A. Schüssler, The Glomeromycota 
+– a species list: 14. 2010.
+≡ Glomus verruculosum Błaszk., Mycologia 89: 809. 1997.
+Simiglomus Sieverd., G.A. Silva & Oehl, gen. nov. 
+Figs. 85–86
+MycoBank MB 518435 
+(Glomus group Aa2)
+Sporae singulariter vel in congregatos apertos cum sporis pauciaribus efformatae; tunica 
+sporarum cum tunica hypharum coniuncta; porum sporarum apertum; hyphae cylindricae 
+vel infundiles pori sporarum aperti, pauciores septa in distanica ex tunicae hyphalis in 
+hypha; mycorrhizas vesicular-arbusculares formans caeruleas colorantes cum ‘trypan 
+blue’. 
+Etymology: from the Latin: simi(laris) = similar; glomus = cluster; referring to the 
+relation with Glomus, to which species of the new genus previously belonged. 
+Key characters: Spores formed singly or in very loose, small clusters. Spores 
+with a mono-to-multiple layered spore wall. Wall of the sh conspicuously 
+continuous and concolorous with the spore wall, or slightly lighter in color than 
+the spore wall. sh are funnel-shaped to cylindrical. Wall at spore attachment 
+not with introverted wall thickening. Pore at spore base open but several septa 
+in hyphae in some distance from spore base can separate spore contents from 
+mycelia contents. Walls of sh thickened over very long distances from the spore 
+base (up to > 1000 µm). Forming typical vesicular-arbuscular mycorrhiza, with 
+mycorrhizal structures that stain blue to dark blue in trypan blue. 
+Type species: Simiglomus hoi (S.M. Berch & Trappe) G.A. Silva et al.
+Simiglomus hoi (S.M. Berch & Trappe) G.A. Silva, Oehl & Sieverd., comb. nov. 
+MycoBank MB 518461
+≡ Glomus hoi S.M. Berch & Trappe, Mycologia 77: 654. 1985.
+Figs 85–86. Simiglomus hoi (clade Aa2). Spores formed singly or in very loose small clusters; the 
+subtending hyphae (sh) are concolorous with (or slightly lighter than) the spore wall without 
+introverted wall thickening at the spore base and generally cylindrical to slightly funnel-shaped 
+or slightly constricted. sh wall thickening may extend over very long distances. The spore pore is 
+generally closed by conspicuously recurved septa at varying distances from the spore base. Often 
+several recurved septa (sp) visible that arise from the structural layer in the subtending hyphae.
+Glomoid species reorganized ... 105
+Figs 87–89. Septoglomus (clade Aa3) species form spores singly in soil or in very loose small 
+clusters; subtending hyphae (sh) are concolorous with (or slightly lighter than) the spore wall 
+without introverted wall thickening at the spore base and generally cylindrical to constricted. 
+sh wall thickening may extend over long distances. Spores with 1–3 wall layers (swl1–swl3); if 
+closed, pore often with one to several septa (sp) that species-specifically arise from the structural 
+layer in the subtending hyphae. 87. Se. constrictum. 88. Se. deserticola. 89. Se. xanthium. 
+Septoglomus Sieverd., G.A. Silva & Oehl, gen. nov. 
+Figs. 87–89
+MycoBank MB 518436 
+(Glomus group Aa3)
+Sporae singulariter vel in congregatos apertos efformatae; tunica sporarum cum tunica 
+hypharum coniuncta; hyphae cylindricae vel infundiles pori sporarum occlusi septo. 
+Mycorrhizas vesicular-arbusculares formans caeruleas colorantes cum ‘trypan blue’. 
+Etymology: from the Latin: septum = septum; glomus = cluster; referring to the relation 
+with Glomus, to which species of the new genus previously belonged.
+Key characters: Spores formed singly or in very loose, small clusters. Spores 
+with a mono-to-multiple layered spore wall. Wall of the sh conspicuously 
+continuous and concolorous with the spore wall, or slightly lighter in color 
+than the spore wall. sh are cylindrical to constricted or slightly funnel shaped 
+at spore base. Pore at spore base or in some distance from spore based closed by 
+a septum. Forming typical vesicular-arbuscular mycorrhiza, with mycorrhizal 
+structures that stain blue to dark blue in trypan blue. 
+Type species: Septoglomus constrictum (Trappe) Sieverd. et al.
+Septoglomus africanum (Błaszk. & Kovács) Sieverd., G.A. Silva & Oehl, comb. nov.
+MycoBank MB 519466
+≡ Glomus africanum Błaszk. & Kovács, Mycologia 102: 1452. 2010.
+≡ Funneliformis africanus (Błaszk. & Kovács) C. Walker & A. 
+Schüssler, The Glomeromycota – a species list: 13. 2010.
+Septoglomus constrictum (Trappe) Sieverd., G.A. Silva & Oehl, comb. nov. 
+MycoBank MB 518462
+≡ Glomus constrictum Trappe, Mycotaxon 6: 361. 1977.
+≡ Funneliformis constrictus (Trappe) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 14. 2010.
+106 ... Oehl & al.
+Septoglomus deserticola (Trappe, Bloss & J.A. Menge) G.A. Silva, Oehl & Sieverd., 
+comb. nov. 
+MycoBank MB 518463
+≡ Glomus deserticola Trappe, Bloss & J.A. Menge, Mycotaxon 20: 123. 1984.
+Septoglomus xanthium (Błaszk., Blanke, Renker & Buscot) G.A. Silva, Oehl & 
+Sieverd., comb. nov. 
+MycoBank MB 518464
+≡ Glomus xanthium Błaszk., Blanke, Renker & Buscot, Mycotaxon 90: 459. 2004.
+≡ Funneliformis xanthius (Błaszk.) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 14. 2010.
+Claroideoglomeraceae C. Walker & A. Schüssler, emend. Oehl, G.A. Silva & Sieverd. 
+(Glomus group B)
+Emended Description: Spores formed singly or in clusters with low spore 
+numbers, extremely rarely in sporocarps; in soils or rarely in roots; sh hyaline 
+to white, rarely subhyaline, often conspicuously bill-shaped. Spores with 1–4 
+wall layers (swl1–swl4); pore closure at spore base often with a septum that 
+species-specifically may arise from the structural layer, from an adherent inner, 
+(semi-)flexible layer, or from both layers.
+Type genus: Claroideoglomus C. Walker & A. Schüssler 
+Other genus: Viscospora Sieverd. et al.
+Claroideoglomus C. Walker & A. Schüssler, emend. Oehl, G.A. Silva & Sieverd.
+(Glomus group B1)  
+Figs. 90–98
+Emended Description: Spores generally formed singly in soil or rarely in 
+roots; sh hyaline to white, rarely subhyaline, conspicuously bill-shaped. Spores 
+with 1–4 wall layers (swl1–swl4); pore closure at spore base often with a 
+septum that species-specifically may arise from the structural layer, from an 
+adherent innermost, (semi-)flexible layer, or from both layers.
+Type species: Claroideoglomus claroideum (N.C. Schenck & G.S. Sm.)  
+C. Walker & A. Schüssler
+Claroideoglomus candidum (Furrazola, Kaonongbua & Bever), Oehl, G.A. Silva & 
+Sieverd., comb. nov. 
+MycoBank MB 519459
+≡ Glomus candidum Furrazola, Kaonongbua & Bever, Mycotaxon 113: 103. 2010.
+Claroideoglomus claroideum (N.C. Schenck & G.S. Sm.) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 21. 2010.
+≡ Glomus claroideum N.C. Schenck & G.S. Sm., Mycologia 74: 
+84. 1982 (emend. Walker & Vestberg 1998).
+Claroideoglomus drummondii (Błaszk. & Renker) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 22. 2010.
+≡ Glomus drummondii Błaszk. & Renker, Mycol. Res. 110: 559. 2006.
+Glomoid species reorganized ... 107
+Claroideoglomus etunicatum (W.N. Becker & Gerd.) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 22. 2010.
+≡ Glomus etunicatum W.N. Becker & Gerd., Mycotaxon 6: 29. 1977.
+Claroideoglomus lamellosum (Dalpé, Koske & Tews) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 22. 2010.
+≡ Glomus lamellosum Dalpé, Koske & Tews, Mycotaxon 43: 289. 1992.
+Claroideoglomus luteum (L.J. Kenn., J.C. Stutz & J.B. Morton) C. Walker & A. 
+Schüssler, The Glomeromycota – a species list: 22. 2010.
+≡ Glomus luteum L.J. Kenn., J.C. Stutz & J.B. Morton, Mycologia 91: 1090. 1999.
+Claroideoglomus walkeri (Błaszk. & Renker) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 22. 2010.
+≡ Glomus walkeri Błaszk. & Renker. Mycol. Res. 110: 563. 2006.
+Figs 90–98. Claroideoglomus (clade B1) species generally form spores singly in soils or (rarely) in 
+roots; rarely also in very loose spore clusters; subtending hyphae (sh) conspicuously bill-shaped but 
+hyaline to white, rarely subhyaline. Spores with 1–4 wall layers (swl1–swl4); pore closure at spore 
+base generally with a septum (sp) that species-specifically may arise from structural wall layer, 
+an adherent inner (semi-)flexible layer, or both layers. 90–91. Cl. etunicatum. 92. Cl. lamellosum. 
+93–94. Cl. claroideum. 95–96. Cl. luteum. 97. Cl. drummondii. 98. Cl. walkeri. 
+108 ... Oehl & al.
+Viscospora Sieverd., Oehl & G.A. Silva, gen. nov. 
+(Glomus group B2)
+MycoBank MB 518439
+Sporae in congregatos apertos efformatae; tunica sporarum cum tunica hypharum 
+coniuncta; hyphae hyalinae vel albae; stratum exterior hyphae et sporarum cum materia 
+mucilagina; porum sporarum non occlusum vel occlusum hyphae crassae. Mycorrhizas 
+vesicular-arbusculares formans caeruleas colorantes cum ‘trypan blue’.
+Etymology: from the Latin: viscosus = sticky; spora = spore; referring to the adhesive 
+nature of the spore surface of the type species of the genus.
+Key characters: Spores generally formed in loose clusters; sh hyaline 
+to white, rarely subhyaline, often thick-walled. Spores with 1–4 wall layers 
+(swl1–swl4); outer wall layer exuding a mucigel-like substance. Pore closure 
+at spore base often open, or semi-closed by wall thickening.
+Type species: Viscospora viscosa (T.H Nicolson) Sieverd. et al.
+Viscospora viscosa (T.H Nicolson) Sieverd., Oehl & G.A. Silva, comb. nov. 
+MycoBank MB 518471
+≡ Glomus viscosum T.H. Nicolson, Mycol. Res. 99: 1502. 1995.
+Diversisporaceae C. Walker & A. Schüssler, emend. Oehl, G.A. Silva & Sieverd. 
+(Glomus group C)
+Emended description: Spore formation either diversisporoid or otosporoid. 
+Diversisporoid spores either formed singularly, in clusters or in large 
+sporocarps with high spores numbers, not organized; in pigmented spores sh 
+conspicuously change color, becoming hyaline to white behind the septum, 
+i.e. immediately or in a minimal distance to this septum; sh generally straight, 
+cylindrical, sometimes species-specifically constricted or inflated. Spores 
+with 1–3 wall layers (swl1–swl3); pore closure often with a septum that may 
+species-specifically arise from innermost wall lamina or overlaying laminate 
+layer, or from both; pore of hyphal attachment rarely (species-specifically) 
+open. Otosporoid spores with two multiple-layered walls, spore attachment 
+generally closed by a septum. 
+Type genus: Diversispora C. Walker & A. Schüssler 
+Other genera: Otospora Oehl et al., Redeckera C. Walker & A. Schüssler
+Diversispora C. Walker & A. Schüssler, emend. G.A. Silva, Oehl & Sieverd. 
+(Glomus group Ca) 
+Figs. 99–107
+Emended description: Spores either formed singularly, in small open clusters 
+or in large multi-spored clusters or sporocarps where spores are not organized. 
+In pigmented spores sh conspicuously change color, becoming hyaline to 
+white behind the septum; sh generally straight, cylindrical, sometimes speciesspecifically constricted, often hyphal attachment looks like inserted in spore 
+wall. Spores with 1–3 wall layers (swl1–swl3); pore closure often with a 
+Glomoid species reorganized ... 109
+Figs 99–107. Diversispora (clade Ca) species form spores singly or in unorganized clusters or 
+sporocarps; in pigmented spores subtending hyphae (sh) with a conspicuous color change 
+distant to the first septum at or near the spore base; sh generally cylindrical, species-specifically 
+sometimes constricted. Spores species-specifically with 1–3 wall layers (swl1–swl3); pore closure 
+at spore base often with a septum (sp) that species-specifically may arise from a structural wall 
+layer, an adherent inner (semi-)flexible layer, or both layers; rarely (species-specifically) pore open. 
+99. Di. spurca. 100. Di. eburnea. 101. Di. insculpta. 102. Di. arenaria. 103–104. Di. aurantia. 
+105. Di. epigaea. 106. Di. tenera. 107. Di. pustulata.
+septum that may species-specifically arise from the innermost wall layer; rarely 
+(species-specifically) pore of attachment open.
+Type species: Diversispora spurca (C.M. Peiff. et al.) C. Walker & A. Schüssler
+Diversispora arenaria (Błaszk., Tadych & Madej) Oehl, G.A. Silva & Sieverd.,  
+comb. nov. 
+MycoBank MB 518472
+≡ Glomus arenarium Błaszk., Tadych & Madej, Acta Soc. Bot. Pol. 70: 97. 2001. 
+Diversispora aurantia (Błaszk., Blanke, Renker & Buscot) C. Walker & A. Schüssler, 
+– a species list: 43. 2010.
+≡ Glomus aurantium Błaszk., Blanke, Renker & Buscot, Mycotaxon 90: 450. 2004.
+110 ... Oehl & al.
+Diversispora celata C. Walker, Gamper & A. Schuessler, New Phytol. 182:  497. 2009.
+Diversispora eburnea (L.J. Kenn., J.C. Stutz & J.B. Morton) C. Walker & A. Schüssler, 
+The Glomeromycota – a species list: 43. 2010.
+≡ Glomus eburneum L.J. Kenn., J.C. Stutz & J.B. Morton, Mycologia 91: 1084. 1999.
+Diversispora epigaea (B.A. Daniels & Trappe) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 43. 2010.
+≡ Glomus epigaeum B.A. Daniels & Trappe, Can. J. Bot. 57: 540. 1979.
+Diversispora gibbosa (Błaszk.) Błaszk. & Kovács, comb. nov. 
+MycoBank MB 518475
+≡ Glomus gibbosum Błaszk., Mycologia 89: 339. 1997.
+Diversispora insculpta (Błaszk.) Oehl, G.A. Silva & Sieverd., comb. nov.
+MycoBank MB 519546
+≡ Glomus insculptum Błaszk., Mycotaxon 89: 227. 2004.
+Diversispora przelewicensis (Błaszk.) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518477
+≡ Glomus przelewicense Błaszk., Bull. Pol. Acad. Sci., Biol. Sci. 36: 272. 1988.
+Diversispora pustulata (Koske, Friese, C. Walker & Dalpé) Oehl, G.A. Silva & 
+Sieverd., comb. nov. 
+MycoBank MB 518478
+≡ Glomus pustulatum Koske, Friese, C. Walker & Dalpé, Mycotaxon 26: 143. 1986.
+Diversispora spurca (C.M. Pfeiff., C. Walker & Bloss) C. Walker & A. Schüssler, 
+Mycol. Res. 108: 982. 2004.
+≡ Glomus spurcum C.M. Pfeiff., C. Walker & Bloss, Mycotaxon 59: 374. 1996.
+Diversispora tenera (P.A. Tandy) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518479
+≡ Glomus tenerum P.A. Tandy, Austral. J. Bot. 23: 864. 1975.
+Diversispora trimurales (Koske & Halvorson) C. Walker & A. Schüssler, The 
+Glomeromycota – a species list: 43. 2010.
+≡ Glomus trimurales Koske & Halvorson, Mycologia 81: 930. 1990.
+Diversispora versiformis (P. Karst.) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518481
+≡ Endogone versiformis P. Karst., Hedwigia 23: 39. 1884.
+= Glomus versiforme (P. Karst.) S.M. Berch, Can. J. Bot. 61: 2614. 1983.
+Redeckera C. Walker & A. Schüssler, emend. Oehl, G.A. Silva & Sieverd.
+(Glomus group Cb) 
+Figs. 108–114
+Emended description: Spore formation disorganized in large and compact 
+sporocarps, containing hundreds to thousands of spores per sporocarp; spores 
+Glomoid species reorganized ... 111
+with 2 to rarely 3 wall layers (swl1–swl3); sh generally broad at spore base and 
+with a conspicuous, thick and broad septum that arises from the inner lamina 
+(swl2) of the generally bi-laminated, structural wall layer; structural swl2 
+generally continue over very short distances (2–10 µm) into sh; swl1 fragile, 
+usually inflating in a short distance to the spore base where swl2 becomes 
+invisible in the sh.
+Gender: Redeckera is a Latin feminine noun, formed according to ICBN 
+[Vienna Code] Recommendation 60B.1(b). Because the feminine gender 
+is clearly apparent (and reinforced by the implication of Recommendation 
+20A.1(i)), Article 62.3 does not apply, and the authors did not have the 
+prerogative to choose any other gender. We therefore correct all adjectival 
+epithets to feminine.
+Type species: Redeckera megalocarpa (D. Redecker) C. Walker & A. Schüssler
+Redeckera avelingiae (R.C. Sinclair) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518482
+≡ Glomus avelingiae R.C. Sinclair, Mycotaxon 74: 338. 2000. 
+Redeckera canadensis (Thaxt.) Oehl, G.A. Silva & Sieverd., comb. nov. 
+MycoBank MB 518483
+≡ Endogone canadensis Thaxt., Proc. Am. Acad. Arts Sci. 57: 317. 1922.
+≡ Glomus canadense (Thaxt.) Trappe & Gerd., Mycol. Mem. 5: 59. 1974.
+Figs 108–114. Redeckera (clade Cb) with spore formation in unorganized but large and compact 
+sporocarps (usually with hundreds to thousands spores per sporocarp); spores species-specifically 
+with 2(–3) wall layers (swl1–swl3); subtending hyphae (sh) generally broad at spore base and with 
+a conspicuous thick, broad septum (sp) arising from the inner lamina of the generally bi-laminated 
+spore wall layer (swl2); structural swl2 generally extend over very short (2–10 µm) distances 
+into sh; swl1 fragile and usually inflating where swl2 becomes invisible in the sh. 108. Re. fulva. 
+109. Re. megalocarpa. 110. Re. pulvinata. 111–112. Re. canadensis. 113–114. Re. fragilis.
+112 ... Oehl & al.
+Redeckera fragilis (Berk. & Broome) Oehl, G.A. Silva & Sieverd., comb. nov.
+MycoBank MB 518484
+≡ Paurocotylis fragilis Berk. & Broome, J. Linn. Soc. Bot. 14: 137. 1873.
+≡ Glomus fragile (Berk. & Broome) Trappe & Gerd., Mycol. Mem. 5: 59. 1974.
+Redeckera fulva (Berk. & Broome) C. Walker & A. Schüssler, The Glomeromycota –  
+a species list: 44. 2010.
+≡ Paurocotylis fulva Berk. & Broome, J. Linn. Soc. Bot. 14: 137. 1873.
+≡ Glomus fulvum (Berk. & Broome) Trappe & Gerd., Mycol. Mem. 5: 59. 1974.
+Redeckera megalocarpa (D. Redecker) C. Walker & A. Schüssler, The 
+Glomeromycota: 44. 2010.
+≡ Glomus megalocarpum D. Redecker, Mycol. Progress 6: 38. 2007.
+Redeckera pulvinata (Henn.) C. Walker & A. Schüssler, The Glomeromycota: 44. 2010.
+≡ Endogone pulvinata Henn., Hedwigia 36: 212. 1897.
+≡ Glomus pulvinatum (Henn.) Trappe & Gerd., Mycol. Mem. 5: 59. 1974.
+Otospora Oehl, Palenz. & N. Ferrol
+Type species: Otospora bareae Palenz. et al.
+Otospora bareae Palenz., N. Ferrol & Oehl, Mycologia 100: 298. 2008.
+Paraglomeraceae J.B. Morton & D. Redecker
+Paraglomus J.B. Morton & D. Redecker
+Type species: Paraglomus occultum (C. Walker) J.B. Morton & D. Redecker 
+Paraglomus albidum (C. Walker & L.H. Rhodes) Oehl, G.A. Silva & Sieverd.,  
+comb. nov.
+MycoBank MB 518488
+≡ Glomus albidum C. Walker & L.H. Rhodes, Mycotaxon 12: 509. 1981.
+Paraglomus brasilianum (Spain & J. Miranda) J.B. Morton & D. Redecker, 
+Mycologia 93: 190. 2001.
+≡ Glomus brasilianum Spain & J. Miranda, Mycotaxon 60: 139. 1996.
+Paraglomus laccatum (Błaszk.) Renker, Błaszk. & Buscot, Nova Hedwigia 84: 400. 
+2007.
+≡ Glomus laccatum Błaszk., Bull. Pol. Acad. Sci., Biol. Sci. 36: 271. 1988.
+Paraglomus lacteum (S.L. Rose & Trappe) Oehl, G.A. Silva & Sieverd. comb. nov.
+MycoBank MB 518489
+≡ Glomus lacteum S.L. Rose & Trappe, Mycotaxon 10: 415. 1980.
+Paraglomus occultum (C. Walker) J.B. Morton & D. Redecker, Mycol. Res. 93:190. 
+2001. 
+≡ Glomus occultum C. Walker, Mycotaxon 15: 50. 1982.
+Glomoid species reorganized ... 113
+Taxonomic problems 
+We were unsure whether we had attributed Gl. dolichosporum and 
+Gl. citricola to the correct genus, as the available descriptions were either short 
+or in Chinese, images were missing or relatively poor, or the type specimen 
+was not accessible. Moreover, in several species descriptions (some even very 
+recent), the focus on the spore base and sh features was minimal to absent. For 
+such cases, we decided to retain these species within Glomus, pending future 
+revision. Placement of Gl. pubescens was similarly difficult: Already transferred 
+to four different genera other than its basionym genus, this particular species 
+may not even represent an AM fungus (e.g. Trappe, pers. comm.). Of all clades 
+discussed here and fungal genera known, this species appears to fit best in 
+Glomus group Ab1.
+During our spore analyses, it was apparent that several genetic groups 
+(clades) possess species with spores so similar that either the species are 
+difficult to differentiate morphologically or may be conspecific. Examples 
+include Aa3—Se. deserticola, Se. xanthium; Ab2—Gl. clarum, Gl. manihotis, 
+Gl. zaozhuangianum; and Ca—Di. versiformis, Di. przelewicensis, Di. epigaea. 
+As it was beyond the scope of this study to clarify all vagaries and possible 
+taxonomic uncertainties at the species level, we have placed them into genera 
+based on morphological characteristics, especially as many type specimens 
+were unavailable (see table 1). In some cases confusion may have resulted 
+from misidentification or incorrect re-naming prior to genetic analysis. For 
+example, the Gl. clarum isolate BR147B (supplied by Bioplanta) that grouped 
+with Gl. manihotis in the initial phylogenetic study by Schüßler et al. (2001) 
+was an ex-type of Gl. manihotis when sent in 1987 to Bioplanta (Sieverding 
+pers. com.) but which some time later was relabeled as Gl. clarum by someone 
+else. Not surprisingly, this particular ‘Gl. clarum’ isolate grouped with other 
+Gl. manihotis ex-type material in the study by Schüßler et al. (2001). 
+Consequently, genetic information provided for some species as well as the 
+conclusion that other species are conspecific may be based on erroneous 
+information. 
+Until recently, both germination and germination structures were regarded 
+as important features to distinguish between AM fungal genera and families 
+(e.g., Pacisporaceae vs. Glomeraceae by Oehl & Sieverding 2004, Walker & 
+Schüßler 2004; among Gigasporaceae, Scutellosporaceae, Racocetraceae, and 
+Dentiscutataceae by Oehl et al. 2008, 2011a; and Archaeospora vs. Ambispora by 
+Spain et al. 2006). There are clear indications that Paraglomus species germinate 
+directly through the spore wall as observed for Pa. occultum, Pa. brasilianum 
+and Pa. lacteum (Spain & Miranda 1996, Rose & Trappe 1980, Oehl pers. obs.) 
+in contrast to all other species forming single-walled glomoid or diversisporoid 
+spores where a germ tube emerges apparently through the sh (e.g. Glomus, 
+114 ... Oehl & al.
+Diversispora). There are uncertainties surrounding germ tube formation in some 
+Glomus spp., such as Gl. pallidum, which Hall (1977) reported as germinating 
+directly through the spore wall, although his description and photos suggest 
+instead either intercalary spore formation or two hyphal attachments on the 
+same spore. Intercalary spore formation (= two attachments) is a frequent 
+feature for many Glomus sporocarpic (Ab) species.
+Molecular difficulties
+The major problem encountered during the current study revolved around 
+the limited molecular database, especially for species of the former Glomus 
+groups Ab1, Ab3, and Cb. Moreover, only a limited number of Glomeromycota 
+species in the public databases have been sequenced for all currently available 
+markers (LSU rDNA, SSU rDNA, ITS region, β-tubulin). Some individual 
+clades were supported in just one dataset. Another major difficulty was that 
+either many cultures of glomoid or diversisporoid spore-forming species are 
+lost or yet to be cultured successfully in single species cultures or the species 
+were not culturable. This renders analyses difficult or impossible. During the 
+study, DNA extraction was attempted from several species using field spores or 
+sporocarps but they largely failed (e.g., Gl. invermaium, Gl. taiwanense). These 
+obstacles have left the database incomplete and slowed progress in complete 
+molecular AM fungal identification. 
+Discussion
+In this paper, we have revised the taxonomic organization of AM fungal 
+species with glomoid spore formation, based largely on newly available molecular 
+data retrieved from the literature and public databases. This organization 
+is also based upon morphological spore characteristics, which were either 
+already well established or newly established during this study. Phylogenetic 
+trees support all genera proposed in this paper and some genera proposed by 
+Walker & Schüßer (2010), with bootstrap support > 80% (except Septoglomus 
+in the beta-tubulin phylogeny) in at least one analysis (NJ, ML, Bayesian or 
+MP). However, Rhizophagus (Ab2) and Sclerocystis (Ab3) were not supported 
+by our phylogenetic analyses and thus, the resurrection of these genera Walker 
+& Schüßer (2010) cannot be accepted. The genera proposed or confirmed in 
+the present study are shown as clusters in the trees: Glomus (Ab1, Ab2, Ab3), 
+Funneliformis (Aa1), Simiglomus (Aa2), Septoglomus (Aa3), Claroideoglomus 
+(B1), Viscospora (B2), Diversispora (Ca) and Redeckera (Cb). In Table 3, we 
+summarize the new taxonomic organization of AM fungal species within the 
+Glomeromycota.
+There is no doubt that glomoid and diversisporoid spores in Glomeraceae, 
+Claroideoglomeraceae and Diversisporaceae can clearly be differentiated by 
+molecular phylogeny (Figs. 1–4), as shown earlier (Schüßler et al. 2001, Silva 
+Glomoid species reorganized ... 115
+et al. 2006, Stockinger et al. 2010). Glomeraceae and Claroideoglomeraceae 
+differ morphologically in the hyphal attachments at the spore base and in 
+spore clustering/aggregation or sporococarp formation. The phylogenetic trees 
+also show Glomeraceae and Claroideoglomeraceae as separate clades with high 
+bootstrap values in SSU, LSU, and beta-tubulin analyses.
+Differences in hyphal connections at the spore base are also basic 
+morphological indicators for other related but clearly genetically separate 
+families of the Glomeromycota (e.g., Acaulosporaceae, Pacisporaceae, 
+Scutellosporaceae). It has been argued earlier that unequivocal assignment 
+of glomoid and diversisporoid spore-forming species to the correct major 
+phylogenetic clade through morphological spore analyses alone would be 
+Table 3. New classification of the Glomeromycota 
+Class
+Order
+Family
+Genus
+Glomeromycetes
+Glomerales
+Glomeraceae
+Glomus
+Funneliformis
+Simiglomus 
+Septoglomus 
+ 
+Claroideoglomeraceae
+Claroideoglomus
+Viscospora
+Diversisporales 
+ 
+Diversisporaceae 
+ 
+Diversispora
+Redeckera
+Otospora
+Entrophosporaceae
+Entrophospora
+Acaulosporaceae
+Acaulospora
+Kuklospora
+Pacisporaceae
+Pacispora
+Gigasporales
+Gigasporaceae
+Gigaspora
+Scutellosporaceae 
+Scutellospora
+Orbispora
+Racocetraceae
+Racocetra
+Cetraspora
+Dentiscutataceae
+Dentiscutata
+Fuscutata
+Quatunica
+Archaeosporomycetes 
+Archaeosporales 
+Archaeosporaceae 
+Archaeospora  
+Intraspora
+Ambisporaceae
+Ambispora
+Geosiphonaceae
+Geosiphon
+Paraglomeromycetes
+Paraglomerales
+Paraglomeraceae
+Paraglomus
+The taxa Archaeosporomycetes, Paraglomeromycetes, Gigasporales and Orbispora are presented in this 
+volume (Oehl et al. 2011a, 2011b).
+116 ... Oehl & al.
+impossible (e.g. Schüßler et al. 2001, Morton & Redecker 2001, Walker et 
+al. 2007), primarily because glomoid and diversisporoid spores have but few 
+differentiating morphological characters (which may yet hold true). Features 
+other than hyphal connections (such as spore size and color) overlap between 
+many glomoid and diversisporoid species, and intraspecific variation might be 
+considerable. Spore aggregation and cluster/sporocarp formation in glomoid 
+and diversisporoid species are not well investigated and have thus far received 
+only limited attention. However, sporocarp formation and organization may 
+be stable characteristics, as found in the former genus Sclerocycstis, which at 
+some point may need to be raised again to genus level within the Glomeraceae. 
+Other species of Glomeraceae are also always formed in sporocarps (e.g. 
+Gl. glomerulatum, Gl. formosanum) but as yet there are insufficient molecular 
+data to support their placement within their own genus. Other glomoid spores 
+form in clusters or sporocarps occurring in relatively small to sometimes huge 
+spore numbers (Gl. macrocarpum, Gl. microcarpum, Gl. aureum) as well as 
+form singly in soil or in roots, so that spore aggregation alone cannot be used 
+to diagnose the taxonomic order. We acknowledge that the large genus Glomus 
+currently has morphologically heterogeneous spores, and recent findings 
+by Błaszkowski et al. (2009a, b) show that several clades with small-spored 
+species also belong to this group. To date, there are insufficient sequence sets 
+available for more detailed analyses, although new genera could result from 
+such analyses. This applies also for Gl. intraradices versus Gl. macrocarpum 
+and Gl. microcarpum and Glomus Ab1 species in general. Recent research 
+has also shown that genetic information generated years ago may actually be 
+derived from another species, Gl. irregulare (Stockinger et al. 2009). Based on 
+morphology alone, species such as Gl. intraradices should be excluded from 
+Glomus. 
+Within Diversispora (respective former Glomus group C, our clade Ca) 
+and Redeckera (our clade Cb), there has been no previous attempt to explain 
+how these species differ morphologically from the former Glomeraceae 
+groups A and B (Schüßler et al. 2001, Walker & Schüßler 2004). While 
+morphological differentiation between Diversispora and Redeckera is possible, 
+the morphology of Diversispora spores that differentiates them from spores of 
+some Claroideoglomus spp. may be difficult to recognize, even for taxonomic 
+specialists. 
+To conclude, our paper reports on the congruence of morphological groups 
+(genera and family) with molecular phylogeny that has shown the need for a 
+substantial reorganization of taxa in Glomeromycota.
+Unsolved obstacles in the Glomeraceae
+With approximately 70 species, the revised Glomus remains morphologically 
+heterogeneous and the largest genus in the Glomeromycota. Species such as 
+Glomoid species reorganized ... 117
+Gl. intraradices, Gl. aggregatum, and Gl. proliferum are atypical in the genus 
+regarding spore base closure by wall thickening and/or septum. These are 
+normally quite stable features and not highly variable within species: a septum 
+not readily seen at the spore base is either species specific or indicates the spore 
+development stage. Mature spores have septa more frequently formed by the 
+innermost lamina of the inner spore wall layer. Morphologically speaking, 
+species like Gl. intraradices, Gl. aggregatum, and Gl. proliferum should be 
+included in a separate genus, but the absence of sufficient genetic information 
+(in particular of the other Glomus spp.) does not support this hypothesis. 
+Additionally, we include several small-spored, cluster-forming species within 
+the revised Glomus (e.g. Gl. perpusillum, Gl. indicum, G. iranicum) whose spores 
+quickly decompose, suggesting that some earlier may have erroneously been 
+designated ‘non-sporulating AM fungi’ (Błaszkowski et al. 2009b). Verification 
+is still needed to establish whether there are indeed species of ‘non-sporulating’ 
+fungi within the Glomus clade.
+Acknowledgments
+We acknowledge the help of Joey Spatafora and Richard Halse for giving the 
+possibility to visit the OSU herbarium in Corvallis (Oregon) in 2002 and 2005. We 
+are also thankful to OSC (Oregon State University herbarium) and to FH (Farlow 
+Herbarium, at Harvard University) for providing us with type and non-type material 
+of several Glomus species. We especially thank Joseph B. Morton and William Wheeler 
+(West Virginia State University; Morgantown, USA) for giving F. Oehl the opportunity 
+to investigate, during his visit in 2002, many Glomus isolates maintained at INVAM. 
+James M. Trappe (USDA-Corvallis, Oregon, USA), Janusz Błaszkowski (Department of 
+Plant Pathology, Academy of Agriculture, Szczecin, Poland), Peter McGee (University 
+of Sydney, Australia), Manuela Giovannetti (Università di Pisa, Italy), Claudia Castillo 
+(Universidad Católica de Temuco, Chile), provided type or non type specimen of several 
+Glomus species. Fabien Hountondji, Atti Tchabi and Louis Lawouin (International 
+Institute of Tropical Agriculture, Benin) provided soil samples and specimen from 
+their country. F.A. Souza’s great help in discussing specific parts of the paper, and in 
+calculating clades is highly appreciated. We acknowledge the valuable comments and 
+revisions of several experts on the manuscript. We appreciate the corrections by Shaun 
+Pennycook, Nomenclatural Editor, and suggestions by Lorelei L. Norvell, Editor-inChief. This study was supported by the Swiss National Science Foundation (SNSF, Project 
+315230_130764/1) and by the Fundação de Amparo à Ciência e Tecnologia do Estado 
+de Pernambuco (FACEPE) which provided a grant to F. Oehl as ‘visiting researcher’.
+Literature cited
+Bentivenga SP, Morton JB. 1995. A monograph of the genus Gigaspora, incorporating developmental 
+patterns of morphological characters. Mycologia 87(5): 719–731.
+Błaszkowski J, Adamska I, Czerniawska B. 2004. Glomus insculptum, a new arbuscular mycorrhizal 
+species from Poland. Mycotaxon 89: 225–234.
+118 ... Oehl & al.
+Błaszkowski J, Renker C, Buscot F. 2006. Glomus drummondii and G. walkeri, two new species 
+of arbuscular mycorrhizal fungi (Glomeromycota). Mycol. Res. 110: 555–566. doi:10.1016/
+j.mycres.2006.02.006
+Błaszkowski J, Czerniawska B, Wubet T, Schäfer T, Buscot F, Renker C. 2008. Glomus irregulare, a 
+new arbuscular mycorrhizal fungus in the Glomeromycota. Mycotaxon 106:247–267.
+Błaszkowski J, Ryszka P, Oehl F, Koegel S, Wiemken A, Kovács GM, Redecker D. 2009a. Glomus 
+achrum and G. bistratum, two new species of arbuscular mycorrhizal fungi (Glomeromycota). 
+Botany 87: 260–271. doi:10.1139/B08-138
+Błaszkowski J, Kovács GM, Balázs TK. 2009b. Glomus perpusillum, a new arbuscular mycorrhizal 
+fungus. Mycologia 101(2): 247–255. doi: 10.3852/08-087
+Cavalier-Smith T. 1998. A revised six-kingdom system of life. Biol. Reviews 73: 203–266.
+Clements FE, Shear CL. 1931. The genera of fungi. Hafner Publishing Co., New York, USA.
+Daniell TJ, Husband R, Fitter AH, Young JPW. 2001. Molecular diversity of arbuscular mycorrhizal 
+fungi colonising arable crops. FEMS Microbiol. Ecol. 36: 203–209. 
+Gamper HA, Walker C, Schüßler A. 2009. Diversispora celata sp. nov.: molecular ecology and 
+phylotaxonomy of an inconspicuous arbuscular mycorrhizal fungus. New Phytol. 182(2): 
+495-506. doi: 10.1111/j.1469-8137.2008.02750.x
+Guindon S, Gascuel O. 2003. A simple, fast, and accurate algorithm to estimate large phylogenies 
+by maximum likelihood. System. Biol. 52(5): 696-704. doi: 10.1080/10635150390235520
+Hall IR. 1977. Species and mycorrhizal infections of New Zealand Endogonaceae. Trans. Br. Mycol. 
+Soc. 68: 341–356.
+Hall IR, Abbott LK. 1979. Photographic slide collection illustrating features of the Endogonaceae. 
+3rd edition. Invery Agricultural Research Centre and Soil Science Department, University of 
+Western Australia, p. 1–27, plus 400 color transparencies.
+Hall TA. 1999. BioEdit: a user-friendly biological sequence alignment editor and analysis program 
+for Windows 95/98/NT. Nucl. Acids Symp. Ser. 41: 95–98.
+Krüger M, Stockinger H, Krüger C, Schüßler A. 2009. DNA-based species-level detection of 
+arbuscular mycorrhizal fungi: one PCR primer set for all AMF. New Phytol. 183(1): 212–223. 
+doi: 10.1111/j.1469-8137.2009.02835.x
+Larkin MA, Blackshields G, Brown NP, Chenna R, McGettigan PA, McWilliam H, Valentin F, 
+Wallace IM, Wilm A, Lopez R, Thompson JD, Gibson TJ, Higgins DG. 2007. Clustal W and 
+Clustal X version 2.0. Bioinformatics 23: 2947–2948. doi: 10.1093/bioinformatics/btm404
+Morton JB, Benny GL. 1990. Revised classification of arbuscular mycorrhizal fungi (Zygomycetes): 
+a new order, Glomales, two new suborders, Glomineae and Gigasporinae, and two families, 
+Acaulosporaceae and Gigasporaceae, with an emendation of Glomaceae. Mycotaxon 37: 
+471–491. 
+Morton JB, Redecker D. 2001. Two new families of Glomales, Archaeosporaceae and Paraglomaceae, 
+with two new genera Archaeospora and Paraglomus, based on concordant molecular and 
+morphological characters. Mycologia 93(1): 181–195.
+Oehl F, Sieverding E. 2004. Pacispora, a new vesicular-arbuscular mycorrhizal fungal genus in the 
+Glomeromycetes. J. Appl. Bot. Food Qual. 78(1): 72–82.
+Oehl F, Redecker D, Sieverding E. 2005. Glomus badium, a new sporocarpic arbuscular mycorrhizal 
+fungal species from European grasslands of higher soil pH. J. Appl. Bot. Food Qual. 79(1): 
+38–43.
+Oehl F, Sýkorová Z, Redecker D, Wiemken A, Sieverding E. 2006. Acaulospora alpina, a new 
+arbuscular mycorrhizal fungal species characteristic for high mountainous and alpine regions 
+of the Swiss Alps. Mycologia 98(2): 286–294. 
+Glomoid species reorganized ... 119
+Oehl F, Souza FA de, Sieverding E. 2008. Revision of Scutellospora and description of five new genera 
+and three new families in the arbuscular mycorrhiza-forming Glomeromycetes. Mycotaxon 106: 
+311–360.
+Oehl F, Silva DKA, Maia LC, Ferreira NM, da Silva GA. 2011a. Orbispora gen. nov., ancestral in the 
+Scutellosporaceae of the Glomeromycetes. Mycotaxon 116: 161–169. doi: 10.5248/116.161
+Oehl F, Silva GA, Goto BT, Maia LC, Sieverding E. 2011b. Glomeromycota: two new classes and a 
+new order. Mycotaxon 116: 365–379. doi: 10.5248/116.365
+Öpik MM, Moora M, Liira J, Zobel M. 2006. Composition of root-colonizing arbuscular mycorrhizal 
+fungal communities in different ecosystems around the globe. J. Ecol. 94(4), 778–790. doi: 
+10.1111/j.1365-2745.2006.01136.x
+Palenzuela J, Ferrol N, Boller T, Azcón-Aquilar C, Oehl F. 2008. Otospora bareai, a new fungal 
+species in the Glomeromycetes from a dolomitic shrub-land in the National Park of Sierra de 
+Baza (Granada, Spain). Mycologia 100(2): 282–291.
+Palenzuela J, Barea JM, Ferrol N, Azcón-Aquilar C, Oehl F. 2010. Entrophospora nevadensis, a new 
+arbuscular mycorrhizal fungus from the Sierra Nevada National Park (southeastern Spain). 
+Mycologia 102(3): 624–632. doi: 10.3852/09-145
+Pirozynski KA, Dalpé Y. 1989. Geological history of the Glomaceae with particular reference to 
+mycorrhizal symbiosis. Symbiosis 7(1): 1–36.
+Redecker D, Morton JB, Bruns TD. 2000a. Ancestral lineages of arbuscular mycorrhizal fungi 
+(Glomales). Mol. Phylogenet. Evol. 14(2): 276–284.
+Redecker D, Morton JB, Bruns TD. 2000b. Molecular phylogeny of the arbuscular mycorrhizal 
+fungi Glomus sinuosum and Sclerocystis coremioides. Mycologia 92(2): 282–285.
+Redecker D, Raab P, Oehl F, Camacho FJ, Courtecuisse E. 2007. A novel clade of sporocarp-forming 
+glomeromycotan fungi in the Diversisporales lineage. Mycol. Progress 6(1): 35–44. doi: 10.1007/
+s11557-007-0524-2
+Ronquist F, Huelsenbeck JP. 2003. MrBayes 3: Bayesian phylogenetic inference under mixed 
+models. Bioinformatics 19(12): 1572–1574. doi: 10.1093/bioinformatics/btg180.
+Rose SL, Trappe JM. 1980. Three new endomycorrhizal Glomus spp. associated with actinorrhizal 
+shrubs. Mycotaxon 10: 413–420.
+Schwarzott D, Walker C, Schüßler A. 2001: Glomus, the largest genus of the arbuscular mycorrhizal 
+fungi (Glomales), is non-monophyletic. Mol. Phylogenet. Evol. 21: 190–197.
+Schüßler A, Walker C. 2010. The Glomeromycota. A species list with new families and new genera. 
+Gloucester, UK. 56 p.
+Schüßler A, Schwarzott D, Walker C. 2001. A new fungal phylum, the Glomeromycota: phylogeny 
+and evolution. Mycol. Res. 105: 1413–1421.
+Sieverding E, Oehl F. 2006. Revision of Entrophospora and description of Kuklospora and Intraspora, 
+two new genera in the arbuscular mycorrhizal Glomeromycetes. J. Appl. Bot. Food Qual. 80(1): 
+69–81.
+Silva GA da, Lumini E, Maia LC, Bonfante P, Bianciotto V. 2006. Phylogenetic analysis of 
+Glomeromycota by partial LSU rDNA sequences. Mycorrhiza 16(3): 183–189. doi: 10.1007/
+s00572-005-0030-9
+Simon L, Lalonde M, Bruns TD. 1992. Specific amplification of 18S fungal ribosomal genes from 
+vesicular-arbuscular endomycorrhizal fungi colonizing roots. Appl. Environ. Microbiol. 58(1): 
+291–295.
+Souza FA de, Declerck S, Smit E, Kowalchuk GA. 2005. Morphological, ontogenetic and molecular 
+characterization of Scutellospora reticulata (Glomeromycota). Mycol. Res. 109: 697-706. doi: 
+10.1017/S09532756205002546
+120 ... Oehl & al.
+Spain JL. 2003. Emendation of Archaeospora and of its type species, Archaeospora trappei Mvcotaxon 
+117: 109–112.
+Spain JL, Miranda JC. 1996. Glomus brasilianum: an ornamented species in the Glomaceae. 
+Mycotaxon 60: 137–142.
+Spain JL, Sieverding E, Oehl F. 2006. Appendicispora, a new genus in the arbuscular mycorrhizalforming Glomeromycetes, with a discussion of the genus Archaeospora. Mycotaxon 97: 
+163–182.
+Stockinger H, Walker C, Schüßler A. 2009. ‘Glomus intraradices DAOM197198’, a model fungus 
+in arbuscular mycorrhiza research, is not Glomus intraradices. New Phytol. 183(4): 1176-1187. 
+doi: 10.1111/j.1469-8137.2009.02874.x 
+Stockinger H, Krüger M, Schüßler A. 2010. DNA barcoding of arbuscular mycorrhizal fungi. New 
+Phytol. 187(2): 461–474. doi: 10.1111/j.1469-8137.2010.03262.x
+Stürmer SL, Morton JB. 1997. Developmental patterns defining morphological characters in spores 
+of four species in Glomus. Mycologia 89(1): 72–81.
+Swofford DL. 2003. PAUP*. Phylogenetic Analysis Using Parsimony (* and Other Methods), 
+Version 4. Sinauer Associates, Sunderland, Massachusetts.
+Walker C. 1983. Taxonomic concepts in the Endogonaceae: spore wall characteristics in species 
+descriptions. Mycotaxon 18: 443–455.
+Walker C. 2008. Ambispora and Ambisporaceae resurrected. Mycol. Res. 112: 297-298.
+Walker C, Schüßler A. 2004. Nomenclatural clarifications and new taxa in Glomeromycota. Mycol. 
+Res. 108: 981–982. 
+Walker C, Vestberg M. 1998. Synonymy amongst the arbuscular mycorrhizal fungi: Glomus 
+claroideum, G. maculosum, G. multisubstensum and G. fistulosum. Ann. Bot. 82(5): 601–624.
+Walker C, Vestberg M, Demircik F, Stockinger H, Saito M, Sawaki H, Nishmura I, Schüßler A. 2007. 
+Molecular phylogeny and new taxa in the Archaeosporales (Glomeromycota): Ambispora fennica 
+gen. sp. nov., Ambisporaceae fam. nov., and emendation of Archaeospora and Archaeosporaceae. 
+Mycol. Res. 111: 137–153. doi: 10.1016/j.mycres.2006.11.008
