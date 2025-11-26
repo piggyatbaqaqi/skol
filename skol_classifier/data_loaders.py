@@ -353,12 +353,12 @@ class RawTextLoader:
         df = df.withColumn("lines", sql_split(col("value"), "\n"))
 
         if line_level:
-            # Line-level: explode lines and add row numbers
+            # Line-level: explode lines and add line numbers
             window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("doc_id")
             return (
                 df.withColumn("value", explode(col("lines")))
                 .drop("lines")
-                .withColumn("row_number", row_number().over(window_spec))
+                .withColumn("line_number", row_number().over(window_spec))
             )
         else:
             # Paragraph-level: use heuristic extraction
@@ -373,5 +373,5 @@ class RawTextLoader:
                 df.withColumn("value", explode(heuristic_udf(col("lines"))))
                 .drop("lines")
                 .filter(trim(col("value")) != "")
-                .withColumn("row_number", row_number().over(window_spec))
+                .withColumn("line_number", row_number().over(window_spec))
             )
