@@ -555,9 +555,14 @@ class SkolClassifierV2:
             return predictions_df
 
     def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
-        """Format predictions as YEDA-style annotated blocks."""
+        """
+        Format predictions as YEDA-style annotated blocks.
+
+        Note: This does NOT apply coalescing. Coalescing is only applied
+        during save_annotated() to preserve line-level data for inspection.
+        """
         formatter = YedaFormatter(
-            coalesce_labels=self.coalesce_labels,
+            coalesce_labels=False,  # Never coalesce in predict()
             line_level=self.line_level
         )
         return formatter.format(predictions_df)
@@ -569,17 +574,20 @@ class SkolClassifierV2:
 
     def _save_to_couchdb(self, predictions: DataFrame) -> None:
         """Save predictions to CouchDB."""
-        conn = CouchDBConnection(
-            self.couchdb_url,
-            self.couchdb_database,
-            self.couchdb_username,
-            self.couchdb_password
+        from .output_formatters import CouchDBOutputWriter
+
+        writer = CouchDBOutputWriter(
+            couchdb_url=self.couchdb_url,
+            database=self.couchdb_database,
+            username=self.couchdb_username,
+            password=self.couchdb_password
         )
 
-        conn.save_predictions(
+        writer.save_annotated(
             predictions,
             suffix=self.output_couchdb_suffix,
-            coalesce_labels=self.coalesce_labels
+            coalesce_labels=self.coalesce_labels,
+            line_level=self.line_level
         )
 
     def _save_model_to_disk(self) -> None:

@@ -152,6 +152,8 @@ class YedaFormatter:
             groupby_cols = ["doc_id"]
 
         # Group by document and coalesce
+        # Note: coalesced_annotations is an array of annotation blocks,
+        # each block already contains the label inside the YEDA format
         return (
             predictions
             .groupBy(*groupby_cols)
