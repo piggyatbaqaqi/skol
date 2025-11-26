@@ -301,13 +301,39 @@ class SkolClassifierV2:
         # Store feature pipeline
         self._feature_pipeline = self._feature_extractor.get_pipeline()
 
-        # Train model
-        self._model = SkolModel(model_type=self.model_type, **self.model_params)
-        stats = self._model.fit(featured_df)
+        # Get the features column name based on configuration
+        features_col = self._feature_extractor.get_features_col()
+
+        # Train model with correct features column
+        self._model = SkolModel(
+            model_type=self.model_type,
+            features_col=features_col,
+            **self.model_params
+        )
+
+        # Get labels from feature extractor
+        labels = self._feature_extractor.get_labels()
+
+        # Fit model and pass labels for later use
+        self._model.fit(featured_df, labels=labels)
 
         # Store label mappings
         self._label_mapping = self._feature_extractor.get_label_mapping()
         self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
+
+        # Calculate training statistics
+        from .utils import calculate_stats
+
+        # Split data for evaluation
+        train_data, test_data = featured_df.randomSplit([0.8, 0.2], seed=42)
+
+        # Make predictions on test set
+        test_predictions = self._model.predict(test_data)
+
+        # Calculate stats
+        stats = calculate_stats(test_predictions, verbose=False)
+        stats['train_size'] = train_data.count()
+        stats['test_size'] = test_data.count()
 
         # Auto-save model if configured
         if self.model_storage:
@@ -455,7 +481,7 @@ class SkolClassifierV2:
         from .data_loaders import AnnotatedTextLoader
 
         loader = AnnotatedTextLoader(self.spark)
-        return loader.load_files(
+        return loader.load_from_files(
             self.file_paths,
             line_level=self.line_level,
             collapse_labels=self.collapse_labels

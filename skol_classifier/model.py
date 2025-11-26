@@ -44,7 +44,7 @@ class SkolModel:
         self.label_col = label_col
         self.model_params = model_params
         self.classifier_model: Optional[PipelineModel] = None
-        self.labels: Optional[List[str]] = None
+        self.labels: Optional[List[str]] = model_params.get("labels", None)
 
     def build_classifier(self):
         """
@@ -85,18 +85,19 @@ class SkolModel:
                 "Choose 'logistic', 'random_forest', or 'gradient_boosted'."
             )
 
-    def fit(self, train_data: DataFrame, labels: List[str]) -> PipelineModel:
+    def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> PipelineModel:
         """
         Train the classification model.
 
         Args:
             train_data: Training DataFrame with features
-            labels: List of label strings
+            labels: Optional list of label strings (for later use in predict_with_labels)
 
         Returns:
             Fitted classifier pipeline model
         """
-        self.labels = labels
+        if labels is not None:
+            self.labels = labels
         classifier = self.build_classifier()
         pipeline = Pipeline(stages=[classifier])
         self.classifier_model = pipeline.fit(train_data)
@@ -117,7 +118,7 @@ class SkolModel:
         """
         if self.classifier_model is None:
             raise ValueError("No classifier model found. Train a model first.")
-        return self.classifier_model.transform(data)
+        return self.classifier_model.transform(data)  # pyright: ignore[reportUnknownMemberType]
 
     def predict_with_labels(self, data: DataFrame) -> DataFrame:
         """
