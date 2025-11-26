@@ -99,7 +99,7 @@ class YedaFormatter:
             Coalesce consecutive lines with the same label.
 
             Args:
-                rows: List of (row_number, value, predicted_label) tuples
+                rows: List of (line_number, value, predicted_label) tuples
 
             Returns:
                 List of YEDA-formatted annotation blocks
@@ -150,7 +150,7 @@ class YedaFormatter:
             .groupBy(groupby_col)
             .agg(
                 collect_list(
-                    expr("struct(row_number, value, predicted_label)")
+                    expr("struct(line_number, value, predicted_label)")
                 ).alias("rows")
             )
             .withColumn("coalesced_annotations", coalesce_udf(col("rows")))
@@ -195,13 +195,13 @@ class FileOutputWriter:
         # Determine grouping column
         groupby_col = "filename" if "filename" in predictions.columns else "doc_id"
 
-        # Check if we have row_number for ordering
-        if "row_number" in predictions.columns:
+        # Check if we have line_number for ordering
+        if "line_number" in predictions.columns:
             # Aggregate with ordering
             aggregated_df = (
                 predictions.groupBy(groupby_col)
                 .agg(
-                    expr("sort_array(collect_list(struct(row_number, annotated_value))) AS sorted_list")
+                    expr("sort_array(collect_list(struct(line_number, annotated_value))) AS sorted_list")
                 )
                 .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
                 .withColumn("final_aggregated", expr("array_join(annotated_value_ordered, '\n')"))
@@ -316,13 +316,13 @@ class CouchDBOutputWriter:
             groupby_col = "doc_id" if "doc_id" in predictions.columns else "filename"
             attachment_col = "attachment_name" if "attachment_name" in predictions.columns else "filename"
 
-            # Check if we have row_number for ordering
-            if "row_number" in predictions.columns:
+            # Check if we have line_number for ordering
+            if "line_number" in predictions.columns:
                 from pyspark.sql.functions import expr
                 predictions = (
                     predictions.groupBy(groupby_col, attachment_col)
                     .agg(
-                        expr("sort_array(collect_list(struct(row_number, annotated_value))) AS sorted_list")
+                        expr("sort_array(collect_list(struct(line_number, annotated_value))) AS sorted_list")
                     )
                     .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
                     .withColumn("final_aggregated_pg", expr("array_join(annotated_value_ordered, '\n')"))
