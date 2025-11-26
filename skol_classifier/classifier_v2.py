@@ -572,15 +572,37 @@ class SkolClassifierV2:
         )
 
     def _save_model_to_disk(self) -> None:
-        """Save model to disk."""
-        import pickle
+        """Save model to disk using PySpark's native save."""
+        import json
+        import shutil
+
+        if self._model is None or self._feature_pipeline is None:
+            raise ValueError("No model to save. Train a model first.")
 
         model_path = Path(self.model_path)
         model_path.parent.mkdir(parents=True, exist_ok=True)
 
-        model_data = {
-            'model': self._model,
-            'feature_pipeline': self._feature_pipeline,
+        # Create a directory for the model
+        model_dir = model_path.parent / model_path.stem
+        model_dir.mkdir(exist_ok=True)
+
+        # Save feature pipeline using PySpark's save
+        pipeline_path = model_dir / "feature_pipeline"
+        if pipeline_path.exists():
+            shutil.rmtree(pipeline_path)
+        self._feature_pipeline.save(str(pipeline_path))
+
+        # Save classifier model using PySpark's save
+        classifier_model = self._model.get_model()
+        if classifier_model is None:
+            raise ValueError("Classifier model not trained")
+        classifier_path = model_dir / "classifier_model"
+        if classifier_path.exists():
+            shutil.rmtree(classifier_path)
+        classifier_model.save(str(classifier_path))
+
+        # Save metadata as JSON
+        metadata = {
             'label_mapping': self._label_mapping,
             'config': {
                 'line_level': self.line_level,
@@ -588,62 +610,159 @@ class SkolClassifierV2:
                 'min_doc_freq': self.min_doc_freq,
                 'model_type': self.model_type,
                 'model_params': self.model_params
-            }
+            },
+            'version': '2.0'
         }
-
-        with open(model_path, 'wb') as f:
-            pickle.dump(model_data, f)
+        metadata_path = model_dir / "metadata.json"
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=2)
 
     def _load_model_from_disk(self) -> None:
-        """Load model from disk."""
-        import pickle
+        """Load model from disk using PySpark's native load."""
+        import json
+        from pyspark.ml import PipelineModel
 
         model_path = Path(self.model_path)
-        if not model_path.exists():
-            raise FileNotFoundError(f"Model file not found: {model_path}")
+        model_dir = model_path.parent / model_path.stem
 
-        with open(model_path, 'rb') as f:
-            model_data = pickle.load(f)
+        if not model_dir.exists():
+            raise FileNotFoundError(f"Model directory not found: {model_dir}")
 
-        self._model = model_data['model']
-        self._feature_pipeline = model_data['feature_pipeline']
-        self._label_mapping = model_data['label_mapping']
+        # Load feature pipeline
+        pipeline_path = model_dir / "feature_pipeline"
+        self._feature_pipeline = PipelineModel.load(str(pipeline_path))
+
+        # Load classifier model
+        classifier_path = model_dir / "classifier_model"
+        classifier_model = PipelineModel.load(str(classifier_path))
+
+        # Load metadata
+        metadata_path = model_dir / "metadata.json"
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+
+        self._label_mapping = metadata['label_mapping']
         self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
 
-        # Optionally update config from saved model
-        # (or warn if mismatch)
+        # Recreate the SkolModel wrapper
+        features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
+        self._model = SkolModel(
+            model_type=metadata['config']['model_type'],
+            features_col=features_col,
+            **metadata['config'].get('model_params', {})
+        )
+        self._model.set_model(classifier_model)
+        self._model.set_labels(list(self._label_mapping.keys()))
 
     def _save_model_to_redis(self) -> None:
-        """Save model to Redis."""
-        import pickle
+        """Save model to Redis using tar archive."""
+        import json
+        import tempfile
+        import shutil
+        import tarfile
+        import io
 
-        model_data = {
-            'model': self._model,
-            'feature_pipeline': self._feature_pipeline,
-            'label_mapping': self._label_mapping,
-            'config': {
-                'line_level': self.line_level,
-                'use_suffixes': self.use_suffixes,
-                'min_doc_freq': self.min_doc_freq,
-                'model_type': self.model_type,
-                'model_params': self.model_params
+        if self._model is None or self._feature_pipeline is None:
+            raise ValueError("No model to save. Train a model first.")
+
+        temp_dir = None
+        try:
+            # Create temporary directory
+            temp_dir = tempfile.mkdtemp(prefix="skol_model_v2_")
+            temp_path = Path(temp_dir)
+
+            # Save feature pipeline
+            pipeline_path = temp_path / "feature_pipeline"
+            self._feature_pipeline.save(str(pipeline_path))
+
+            # Save classifier model
+            classifier_model = self._model.get_model()
+            if classifier_model is None:
+                raise ValueError("Classifier model not trained")
+            classifier_path = temp_path / "classifier_model"
+            classifier_model.save(str(classifier_path))
+
+            # Save metadata
+            metadata = {
+                'label_mapping': self._label_mapping,
+                'config': {
+                    'line_level': self.line_level,
+                    'use_suffixes': self.use_suffixes,
+                    'min_doc_freq': self.min_doc_freq,
+                    'model_type': self.model_type,
+                    'model_params': self.model_params
+                },
+                'version': '2.0'
             }
-        }
+            metadata_path = temp_path / "metadata.json"
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f, indent=2)
 
-        serialized = pickle.dumps(model_data)
-        self.redis_client.set(self.redis_key, serialized)
+            # Create tar archive
+            archive_buffer = io.BytesIO()
+            with tarfile.open(fileobj=archive_buffer, mode='w:gz') as tar:
+                tar.add(temp_path, arcname='.')
+
+            # Save to Redis
+            archive_data = archive_buffer.getvalue()
+            self.redis_client.set(self.redis_key, archive_data)
+
+        finally:
+            # Clean up temporary directory
+            if temp_dir and Path(temp_dir).exists():
+                shutil.rmtree(temp_dir)
 
     def _load_model_from_redis(self) -> None:
-        """Load model from Redis."""
-        import pickle
+        """Load model from Redis tar archive."""
+        import json
+        import tempfile
+        import shutil
+        import tarfile
+        import io
+        from pyspark.ml import PipelineModel
 
         serialized = self.redis_client.get(self.redis_key)
         if not serialized:
             raise ValueError(f"No model found in Redis with key: {self.redis_key}")
 
-        model_data = pickle.loads(serialized)
+        temp_dir = None
+        try:
+            # Create temporary directory
+            temp_dir = tempfile.mkdtemp(prefix="skol_model_load_v2_")
+            temp_path = Path(temp_dir)
 
-        self._model = model_data['model']
-        self._feature_pipeline = model_data['feature_pipeline']
-        self._label_mapping = model_data['label_mapping']
-        self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
+            # Extract tar archive
+            archive_buffer = io.BytesIO(serialized)
+            with tarfile.open(fileobj=archive_buffer, mode='r:gz') as tar:
+                tar.extractall(temp_path)
+
+            # Load feature pipeline
+            pipeline_path = temp_path / "feature_pipeline"
+            self._feature_pipeline = PipelineModel.load(str(pipeline_path))
+
+            # Load classifier model
+            classifier_path = temp_path / "classifier_model"
+            classifier_model = PipelineModel.load(str(classifier_path))
+
+            # Load metadata
+            metadata_path = temp_path / "metadata.json"
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+
+            self._label_mapping = metadata['label_mapping']
+            self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
+
+            # Recreate the SkolModel wrapper
+            features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
+            self._model = SkolModel(
+                model_type=metadata['config']['model_type'],
+                features_col=features_col,
+                **metadata['config'].get('model_params', {})
+            )
+            self._model.set_model(classifier_model)
+            self._model.set_labels(list(self._label_mapping.keys()))
+
+        finally:
+            # Clean up temporary directory
+            if temp_dir and Path(temp_dir).exists():
+                shutil.rmtree(temp_dir)
