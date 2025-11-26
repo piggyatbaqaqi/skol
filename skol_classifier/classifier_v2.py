@@ -538,11 +538,19 @@ class SkolClassifierV2:
             # Return full annotated format
             return self._format_as_annotated(predictions_df)
         elif self.output_format == 'labels':
-            # Return just labels
-            return predictions_df.select("doc_id", "predicted_label")
+            # Return just labels (preserve attachment_name if present)
+            cols = ["doc_id"]
+            if "attachment_name" in predictions_df.columns:
+                cols.append("attachment_name")
+            cols.append("predicted_label")
+            return predictions_df.select(*cols)
         elif self.output_format == 'probs':
-            # Return probabilities
-            return predictions_df.select("doc_id", "predicted_label", "probability")
+            # Return probabilities (preserve attachment_name if present)
+            cols = ["doc_id"]
+            if "attachment_name" in predictions_df.columns:
+                cols.append("attachment_name")
+            cols.extend(["predicted_label", "probability"])
+            return predictions_df.select(*cols)
         else:
             return predictions_df
 

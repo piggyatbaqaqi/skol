@@ -141,20 +141,27 @@ class YedaFormatter:
             ArrayType(StringType())
         )
 
-        # Check if DataFrame has filename or doc_id
-        groupby_col = "filename" if "filename" in predictions.columns else "doc_id"
+        # Determine grouping columns
+        # For CouchDB data, group by both doc_id and attachment_name
+        # For file data, group by filename only
+        if "attachment_name" in predictions.columns:
+            groupby_cols = ["doc_id", "attachment_name"]
+        elif "filename" in predictions.columns:
+            groupby_cols = ["filename"]
+        else:
+            groupby_cols = ["doc_id"]
 
         # Group by document and coalesce
         return (
             predictions
-            .groupBy(groupby_col)
+            .groupBy(*groupby_cols)
             .agg(
                 collect_list(
                     expr("struct(line_number, value, predicted_label)")
                 ).alias("rows")
             )
             .withColumn("coalesced_annotations", coalesce_udf(col("rows")))
-            .select(groupby_col, "coalesced_annotations")
+            .select(*groupby_cols, "coalesced_annotations")
         )
 
 
