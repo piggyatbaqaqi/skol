@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     input_file_name, collect_list, regexp_extract, col, udf,
-    explode, trim, row_number, min, expr, concat, lit
+    explode, split, trim, row_number, min, expr, concat, lit
 )
 from pyspark.sql.types import ArrayType, StringType
 from pyspark.sql.window import Window
@@ -785,7 +785,6 @@ class SkolClassifier:
 
         if line_level:
             # Line-level processing: split content into lines
-            from pyspark.sql.window import Window
 
             # Split the content into individual lines
             lines_df = (
@@ -800,35 +799,7 @@ class SkolClassifier:
             # Add row number for ordering
             processed_df = processed_df.withColumn("row_number", row_number().over(window_spec))
         else:
-            # Paragraph-level processing
-            from .preprocessing import ParagraphExtractor
-            from pyspark.sql.types import ArrayType, StringType
-            from pyspark.sql.window import Window
-
-            # First, split content into lines
-            lines_df = df.withColumn("value", explode(split(col("value"), "\n")))
-
-            heuristic_udf = udf(
-                ParagraphExtractor.extract_heuristic_paragraphs,
-                ArrayType(StringType())
-            )
-
-            # Window specification for ordering
-            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
-
-            # Group lines and extract paragraphs
-            processed_df = (
-                lines_df.groupBy("doc_id", "attachment_name")
-                .agg(
-                    collect_list("value").alias("lines"),
-                    min(lit(0)).alias("start_idx")
-                )
-                .withColumn("value", explode(heuristic_udf(col("lines"))))
-                .drop("lines")
-                .filter(trim(col("value")) != "")
-                .withColumn("row_number", row_number().over(window_spec))
-            )
-
+            processed_df = self._extracted_from_predict_from_couchdb_48(df)
         # Extract features
         features = self.pipeline_model.transform(processed_df)
 
@@ -858,6 +829,33 @@ class SkolClassifier:
             )
 
         return labeled_predictions
+
+    # TODO Rename this here and in `predict_from_couchdb`
+    def _extracted_from_predict_from_couchdb_48(self, df: DataFrame) -> DataFrame:
+        # Paragraph-level processing
+
+        # First, split content into lines
+        lines_df = df.withColumn("value", explode(split(col("value"), "\n")))
+
+        heuristic_udf = udf(
+            ParagraphExtractor.extract_heuristic_paragraphs,
+            ArrayType(StringType())
+        )
+
+        # Window specification for ordering
+        window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
+
+        return (
+            lines_df.groupBy("doc_id", "attachment_name")
+            .agg(
+                collect_list("value").alias("lines"),
+                min(lit(0)).alias("start_idx"),
+            )
+            .withColumn("value", explode(heuristic_udf(col("lines"))))
+            .drop("lines")
+            .filter(trim(col("value")) != "")
+            .withColumn("row_number", row_number().over(window_spec))
+        )
 
     def save_to_couchdb(
         self,
