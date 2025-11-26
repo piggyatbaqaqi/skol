@@ -548,7 +548,10 @@ class SkolClassifierV2:
 
     def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
         """Format predictions as YEDA-style annotated blocks."""
-        formatter = YedaFormatter(coalesce_labels=self.coalesce_labels)
+        formatter = YedaFormatter(
+            coalesce_labels=self.coalesce_labels,
+            line_level=self.line_level
+        )
         return formatter.format(predictions_df)
 
     def _save_to_files(self, predictions: DataFrame) -> None:
