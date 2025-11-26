@@ -13,7 +13,7 @@ from typing import Iterator, Optional, Dict, Any
 
 import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
-from pyspark.sql.types import StructType, StructField, StringType, BooleanType
+from pyspark.sql.types import StructType, StructField, StringType, BooleanType, MapType, IntegerType
 
 from skol_classifier.couchdb_io import CouchDBConnection
 
@@ -118,289 +118,249 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
         yield Row(**taxon_dict)
 
 
-def save_taxa_to_couchdb_partition(
-    partition: Iterator[Row],
-    couchdb_url: str,
-    taxon_db_name: str,
-    username: Optional[str] = None,
-    password: Optional[str] = None
-) -> Iterator[Row]:
+class TaxonExtractor:
     """
-    Save taxa to CouchDB for an entire partition (idempotent).
+    Extract and save Taxa from CouchDB annotated files.
 
-    This function creates deterministic document IDs based on
-    (source.doc_id, source.url, line_number) to ensure
-    idempotent writes.
+    This class encapsulates the complete pipeline for:
+    1. Loading annotated documents from a CouchDB ingest database
+    2. Extracting Taxon objects using the SKOL pipeline
+    3. Saving Taxa to a CouchDB taxon database with idempotent keys
 
     Args:
-        partition: Iterator of Rows with columns from Taxon.as_row():
-            - taxon: Nomenclature text
-            - description: Description text
-            - source: Dict with doc_id, url, db_name
-            - line_number: Line number
-            - paragraph_number, page_number, empirical_page_number
-        couchdb_url: CouchDB server URL
-        taxon_db_name: Target database name
-        username: Optional username
-        password: Optional password
-
-    Yields:
-        Rows with save results (doc_id, success, error_message)
-    """
-    # Connect to CouchDB once per partition
-    try:
-        server = couchdb.Server(couchdb_url)
-        if username and password:
-            server.resource.credentials = (username, password)
-
-        # Get or create database
-        if taxon_db_name in server:
-            db = server[taxon_db_name]
-        else:
-            db = server.create(taxon_db_name)  # pyright: ignore[reportUnknownMemberType]
-
-        # Process each taxon in the partition
-        for row in partition:
-            success = False
-            error_msg = ""
-            doc_id = "unknown"
-
-            try:
-                # Extract source metadata from row
-                source_dict = row.source if hasattr(row, 'source') else {}  # type: ignore[reportUnknownMemberType]
-                source: Dict[str, Any] = dict(source_dict) if isinstance(source_dict, dict) else {}  # type: ignore[reportUnknownArgumentType]
-                source_doc_id: str = str(source.get('doc_id', 'unknown'))
-                source_url: Optional[str] = source.get('url')  # type: ignore[reportUnknownArgumentType]
-                line_number: Any = row.line_number if hasattr(row, 'line_number') else 0  # type: ignore[reportUnknownMemberType]
-
-                # Generate deterministic document ID
-                doc_id = generate_taxon_doc_id(
-                    source_doc_id,
-                    source_url if isinstance(source_url, str) else None,
-                    int(line_number) if line_number else 0
-                )
-
-                # Convert row to dict for CouchDB storage
-                taxon_doc = row.asDict()
-
-                # Check if document already exists (idempotent)
-                if doc_id in db:
-                    # Document exists - update it
-                    existing_doc = db[doc_id]
-                    taxon_doc['_id'] = doc_id
-                    taxon_doc['_rev'] = existing_doc['_rev']
-                else:
-                    # New document - create it
-                    taxon_doc['_id'] = doc_id
-
-                db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
-                success = True
-
-            except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
-                error_msg = str(e)
-                print(f"Error saving taxon {doc_id}: {e}")
-
-            yield Row(
-                doc_id=doc_id,
-                success=success,
-                error_message=error_msg
-            )
-
-    except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
-        print(f"Error connecting to CouchDB: {e}")
-        # Yield failures for all rows
-        for row in partition:
-            yield Row(
-                doc_id="unknown_connection_error",
-                success=False,
-                error_message=str(e)
-            )
-
-
-def load_annotated_documents(
-    spark: SparkSession,
-    ingest_couchdb_url: str,
-    ingest_db_name: str,
-    ingest_username: Optional[str] = None,
-    ingest_password: Optional[str] = None,
-    pattern: str = "*.txt.ann"
-) -> DataFrame:
-    """
-    Load annotated documents from CouchDB.
-
-    Returns:
-        DataFrame with columns: doc_id, attachment_name, value
-    """
-    ingest_conn = CouchDBConnection(
-        ingest_couchdb_url,
-        ingest_db_name,
-        ingest_username,
-        ingest_password
-    )
-    return ingest_conn.load_distributed(spark, pattern)
-
-
-def extract_taxa_dataframe(
-    spark: SparkSession,
-    annotated_df: DataFrame,
-    ingest_db_name: str
-) -> DataFrame:
-    """
-    Extract taxa from annotated documents DataFrame.
-
-    Args:
-        spark: SparkSession
-        annotated_df: DataFrame with columns: doc_id, attachment_name, value
-        ingest_db_name: Database name for metadata
-
-    Returns:
-        DataFrame with taxa information (taxon, description, source, line numbers, etc.)
-    """
-    from pyspark.sql.types import MapType, IntegerType
-
-    extract_schema = StructType([
-        StructField("taxon", StringType(), False),
-        StructField("description", StringType(), False),
-        StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
-        StructField("line_number", IntegerType(), True),
-        StructField("paragraph_number", IntegerType(), True),
-        StructField("page_number", IntegerType(), True),
-        StructField("empirical_page_number", StringType(), True),
-    ])
-
-    def extract_partition(partition):
-        # Extract Taxon objects
-        taxa = extract_taxa_from_partition(partition, ingest_db_name)
-        # Convert to Rows for DataFrame
-        return convert_taxa_to_rows(taxa)
-
-    taxa_rdd = annotated_df.rdd.mapPartitions(extract_partition)
-    taxa_df = spark.createDataFrame(taxa_rdd, extract_schema)
-
-    return taxa_df
-
-
-def save_taxa_dataframe(
-    taxa_df: DataFrame,
-    taxon_couchdb_url: str,
-    taxon_db_name: str,
-    taxon_username: Optional[str] = None,
-    taxon_password: Optional[str] = None
-) -> DataFrame:
-    """
-    Save taxa DataFrame to CouchDB.
-
-    Args:
-        taxa_df: DataFrame with taxa information
-        taxon_couchdb_url: URL of taxon CouchDB server
-        taxon_db_name: Name of taxon database
-        taxon_username: Optional username
-        taxon_password: Optional password
-
-    Returns:
-        DataFrame with save results (doc_id, success, error_message)
-    """
-    save_schema = StructType([
-        StructField("doc_id", StringType(), False),
-        StructField("success", BooleanType(), False),
-        StructField("error_message", StringType(), False),
-    ])
-
-    def save_partition(partition):
-        return save_taxa_to_couchdb_partition(
-            partition,
-            taxon_couchdb_url,
-            taxon_db_name,
-            taxon_username,
-            taxon_password
-        )
-
-    results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(save_schema)
-    return results_df
-
-
-def extract_and_save_taxa_pipeline(
-    spark: SparkSession,
-    ingest_couchdb_url: str,
-    ingest_db_name: str,
-    taxon_db_name: str,
-    taxon_couchdb_url: Optional[str] = None,
-    ingest_username: Optional[str] = None,
-    ingest_password: Optional[str] = None,
-    taxon_username: Optional[str] = None,
-    taxon_password: Optional[str] = None,
-    pattern: str = "*.txt.ann"
-) -> DataFrame:
-    """
-    Complete pipeline to extract taxa from ingest database and save to taxon database.
-
-    This pipeline:
-    1. Loads annotated files from ingest CouchDB database
-    2. Extracts Taxon objects in parallel using mapPartitions
-    3. Saves Taxa to taxon CouchDB database with idempotent keys
-    4. Returns a DataFrame with success/failure results
-
-    Args:
-        spark: SparkSession
+        spark: SparkSession for distributed processing
         ingest_couchdb_url: URL of ingest CouchDB server
         ingest_db_name: Name of ingest database
         taxon_db_name: Name of taxon database
-        taxon_couchdb_url: URL of taxon CouchDB server (can be same as ingest)
+        taxon_couchdb_url: URL of taxon CouchDB server (defaults to ingest_couchdb_url)
         ingest_username: Optional username for ingest database
         ingest_password: Optional password for ingest database
-        taxon_username: Optional username for taxon database
-        taxon_password: Optional password for taxon database
-        pattern: Pattern for attachment names (default: "*.txt.ann")
-
-    Returns:
-        DataFrame with columns: doc_id, success, error_message
+        taxon_username: Optional username for taxon database (defaults to ingest_username)
+        taxon_password: Optional password for taxon database (defaults to ingest_password)
 
     Example:
         >>> spark = SparkSession.builder.appName("TaxonExtractor").getOrCreate()
         >>>
-        >>> results = extract_and_save_taxa_pipeline(
+        >>> extractor = TaxonExtractor(
         ...     spark=spark,
         ...     ingest_couchdb_url="http://localhost:5984",
         ...     ingest_db_name="mycobank_annotations",
-        ...     taxon_couchdb_url="http://localhost:5984",
         ...     taxon_db_name="mycobank_taxa",
         ...     ingest_username="admin",
-        ...     ingest_password="secret",
-        ...     taxon_username="admin",
-        ...     taxon_password="secret"
+        ...     ingest_password="secret"
         ... )
         >>>
-        >>> # Check results
-        >>> results.filter("success = true").count()
+        >>> # Step-by-step debugging
+        >>> annotated_df = extractor.load_annotated_documents()
+        >>> print(f"Loaded {annotated_df.count()} documents")
+        >>>
+        >>> taxa_df = extractor.extract_taxa(annotated_df)
+        >>> print(f"Extracted {taxa_df.count()} taxa")
+        >>> taxa_df.show(5)
+        >>>
+        >>> results = extractor.save_taxa(taxa_df)
+        >>> print(f"Saved: {results.filter('success = true').count()}")
+        >>>
+        >>> # Or run the complete pipeline
+        >>> results = extractor.run_pipeline()
         >>> results.filter("success = false").show()
     """
-    taxon_couchdb_url = taxon_couchdb_url or ingest_couchdb_url
-    taxon_username = taxon_username or ingest_username
-    taxon_password = taxon_password or ingest_password
 
-    # Step 1: Load annotated documents from CouchDB
-    annotated_df = load_annotated_documents(
-        spark,
-        ingest_couchdb_url,
-        ingest_db_name,
-        ingest_username,
-        ingest_password,
-        pattern
-    )
+    def __init__(
+        self,
+        spark: SparkSession,
+        ingest_couchdb_url: str,
+        ingest_db_name: str,
+        taxon_db_name: str,
+        taxon_couchdb_url: Optional[str] = None,
+        ingest_username: Optional[str] = None,
+        ingest_password: Optional[str] = None,
+        taxon_username: Optional[str] = None,
+        taxon_password: Optional[str] = None
+    ):
+        self.spark = spark
+        self.ingest_couchdb_url = ingest_couchdb_url
+        self.ingest_db_name = ingest_db_name
+        self.ingest_username = ingest_username
+        self.ingest_password = ingest_password
 
-    # Step 2: Extract taxa from annotated documents
-    taxa_df = extract_taxa_dataframe(spark, annotated_df, ingest_db_name)
+        self.taxon_couchdb_url = taxon_couchdb_url or ingest_couchdb_url
+        self.taxon_db_name = taxon_db_name
+        self.taxon_username = taxon_username or ingest_username
+        self.taxon_password = taxon_password or ingest_password
 
-    # Step 3: Save taxa to CouchDB
-    results_df = save_taxa_dataframe(
-        taxa_df,
-        taxon_couchdb_url,
-        taxon_db_name,
-        taxon_username,
-        taxon_password
-    )
+        # Schema for extracted taxa
+        self._extract_schema = StructType([
+            StructField("taxon", StringType(), False),
+            StructField("description", StringType(), False),
+            StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
+            StructField("line_number", IntegerType(), True),
+            StructField("paragraph_number", IntegerType(), True),
+            StructField("page_number", IntegerType(), True),
+            StructField("empirical_page_number", StringType(), True),
+        ])
 
-    return results_df
+        # Schema for save results
+        self._save_schema = StructType([
+            StructField("doc_id", StringType(), False),
+            StructField("success", BooleanType(), False),
+            StructField("error_message", StringType(), False),
+        ])
+
+    def load_annotated_documents(self, pattern: str = "*.txt.ann") -> DataFrame:
+        """
+        Load annotated documents from CouchDB ingest database.
+
+        Args:
+            pattern: Pattern for attachment names (default: "*.txt.ann")
+
+        Returns:
+            DataFrame with columns: doc_id, attachment_name, value
+        """
+        ingest_conn = CouchDBConnection(
+            self.ingest_couchdb_url,
+            self.ingest_db_name,
+            self.ingest_username,
+            self.ingest_password
+        )
+        return ingest_conn.load_distributed(self.spark, pattern)
+
+    def extract_taxa(self, annotated_df: DataFrame) -> DataFrame:
+        """
+        Extract taxa from annotated documents DataFrame.
+
+        Args:
+            annotated_df: DataFrame with columns: doc_id, attachment_name, value
+
+        Returns:
+            DataFrame with taxa information (taxon, description, source, line numbers, etc.)
+        """
+        def extract_partition(partition):  # type: ignore[reportUnknownParameterType]
+            # Extract Taxon objects
+            taxa = extract_taxa_from_partition(iter(partition), self.ingest_db_name)  # type: ignore[reportUnknownArgumentType]
+            # Convert to Rows for DataFrame
+            return convert_taxa_to_rows(taxa)
+
+        taxa_rdd = annotated_df.rdd.mapPartitions(extract_partition)  # type: ignore[reportUnknownArgumentType]
+        taxa_df = self.spark.createDataFrame(taxa_rdd, self._extract_schema)
+
+        return taxa_df
+
+    def save_taxa(self, taxa_df: DataFrame) -> DataFrame:
+        """
+        Save taxa DataFrame to CouchDB taxon database.
+
+        Args:
+            taxa_df: DataFrame with taxa information
+
+        Returns:
+            DataFrame with save results (doc_id, success, error_message)
+        """
+        def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
+            """Save taxa to CouchDB for an entire partition (idempotent)."""
+            # Connect to CouchDB once per partition
+            try:
+                server = couchdb.Server(self.taxon_couchdb_url)
+                if self.taxon_username and self.taxon_password:
+                    server.resource.credentials = (self.taxon_username, self.taxon_password)
+
+                # Get or create database
+                if self.taxon_db_name in server:
+                    db = server[self.taxon_db_name]
+                else:
+                    db = server.create(self.taxon_db_name)  # pyright: ignore[reportUnknownMemberType]
+
+                # Process each taxon in the partition
+                for row in partition:
+                    success = False
+                    error_msg = ""
+                    doc_id = "unknown"
+
+                    try:
+                        # Extract source metadata from row
+                        source_dict = row.source if hasattr(row, 'source') else {}  # type: ignore[reportUnknownMemberType]
+                        source: Dict[str, Any] = dict(source_dict) if isinstance(source_dict, dict) else {}  # type: ignore[reportUnknownArgumentType]
+                        source_doc_id: str = str(source.get('doc_id', 'unknown'))
+                        source_url: Optional[str] = source.get('url')  # type: ignore[reportUnknownArgumentType]
+                        line_number: Any = row.line_number if hasattr(row, 'line_number') else 0  # type: ignore[reportUnknownMemberType]
+
+                        # Generate deterministic document ID
+                        doc_id = generate_taxon_doc_id(
+                            source_doc_id,
+                            source_url if isinstance(source_url, str) else None,
+                            int(line_number) if line_number else 0
+                        )
+
+                        # Convert row to dict for CouchDB storage
+                        taxon_doc = row.asDict()
+
+                        # Check if document already exists (idempotent)
+                        if doc_id in db:
+                            # Document exists - update it
+                            existing_doc = db[doc_id]
+                            taxon_doc['_id'] = doc_id
+                            taxon_doc['_rev'] = existing_doc['_rev']
+                        else:
+                            # New document - create it
+                            taxon_doc['_id'] = doc_id
+
+                        db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
+                        success = True
+
+                    except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
+                        error_msg = str(e)
+                        print(f"Error saving taxon {doc_id}: {e}")
+
+                    yield Row(
+                        doc_id=doc_id,
+                        success=success,
+                        error_message=error_msg
+                    )
+
+            except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
+                print(f"Error connecting to CouchDB: {e}")
+                # Yield failures for all rows
+                for row in partition:
+                    yield Row(
+                        doc_id="unknown_connection_error",
+                        success=False,
+                        error_message=str(e)
+                    )
+
+        results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(self._save_schema)
+        return results_df
+
+    def run_pipeline(self, pattern: str = "*.txt.ann") -> DataFrame:
+        """
+        Run the complete pipeline: load, extract, and save taxa.
+
+        This method:
+        1. Loads annotated files from ingest CouchDB database
+        2. Extracts Taxon objects in parallel using mapPartitions
+        3. Saves Taxa to taxon CouchDB database with idempotent keys
+        4. Returns a DataFrame with success/failure results
+
+        Args:
+            pattern: Pattern for attachment names (default: "*.txt.ann")
+
+        Returns:
+            DataFrame with columns: doc_id, success, error_message
+
+        Example:
+            >>> results = extractor.run_pipeline()
+            >>> results.filter("success = true").count()
+            >>> results.filter("success = false").show()
+        """
+        # Step 1: Load annotated documents from CouchDB
+        annotated_df = self.load_annotated_documents(pattern)
+
+        # Step 2: Extract taxa from annotated documents
+        taxa_df = self.extract_taxa(annotated_df)
+
+        # Step 3: Save taxa to CouchDB
+        results_df = self.save_taxa(taxa_df)
+
+        return results_df
 
 
 # Command-line interface
@@ -465,19 +425,21 @@ if __name__ == "__main__":
 
     print(f"Extracting taxa from {args.ingest_database} to {args.taxon_database}...")
 
-    # Run pipeline
-    results = extract_and_save_taxa_pipeline(
+    # Create extractor instance
+    extractor = TaxonExtractor(
         spark=spark,
         ingest_couchdb_url=args.ingest_url,
         ingest_db_name=args.ingest_database,
-        taxon_couchdb_url=taxon_url,
         taxon_db_name=args.taxon_database,
+        taxon_couchdb_url=taxon_url,
         ingest_username=args.ingest_username,
         ingest_password=args.ingest_password,
         taxon_username=taxon_username,
-        taxon_password=taxon_password,
-        pattern=args.pattern
+        taxon_password=taxon_password
     )
+
+    # Run pipeline
+    results = extractor.run_pipeline(pattern=args.pattern)
 
     # Show results
     total = results.count()
