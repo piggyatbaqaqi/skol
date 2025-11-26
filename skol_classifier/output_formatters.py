@@ -19,6 +19,36 @@ class YedaFormatter:
     YEDA format: [@ text #Label*]
     """
 
+    def __init__(self, coalesce_labels: bool = False, line_level: bool = False):
+        """
+        Initialize the formatter.
+
+        Args:
+            coalesce_labels: Whether to coalesce consecutive labels
+            line_level: Whether data is line-level
+        """
+        self.coalesce_labels = coalesce_labels
+        self.line_level = line_level
+
+    def format(self, predictions: DataFrame) -> DataFrame:
+        """
+        Format predictions in YEDA annotation format.
+
+        Args:
+            predictions: DataFrame with predictions
+
+        Returns:
+            DataFrame with annotated_value column (and optionally coalesced)
+        """
+        # First add annotated_value column
+        formatted = self.format_predictions(predictions)
+
+        # Coalesce if requested
+        if self.coalesce_labels and self.line_level:
+            return self.coalesce_consecutive_labels(formatted, line_level=self.line_level)
+
+        return formatted
+
     @staticmethod
     def format_predictions(predictions: DataFrame) -> DataFrame:
         """
