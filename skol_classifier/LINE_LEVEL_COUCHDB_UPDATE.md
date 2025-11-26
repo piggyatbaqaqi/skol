@@ -2,7 +2,27 @@
 
 ## Summary
 
-Added support for the `line_level` argument to `SkolClassifier.predict_from_couchdb()` method, enabling line-by-line classification of documents stored in CouchDB.
+Fixed `SkolClassifier.predict_from_couchdb()` to properly process documents from CouchDB. The method now correctly splits document content into lines/paragraphs instead of treating entire articles as single units.
+
+## Critical Bug Fixed
+
+**Problem**: CouchDB attachments contain entire article text in a single `value` field. The previous implementation did not split this content, causing:
+- **Line-level mode**: Each entire article was treated as a single line
+- **Paragraph mode**: Each entire article was treated as a single paragraph (the UDF received `[entire_article]` instead of `[line1, line2, ...]`)
+
+**Root Cause**: The `load_from_couchdb()` method returns one row per attachment with the full content:
+```python
+# From couchdb_io.py:176
+yield Row(
+    doc_id=row.doc_id,
+    attachment_name=row.attachment_name,
+    value=content  # <-- ENTIRE ARTICLE TEXT IN ONE STRING
+)
+```
+
+**Solution**: Now properly splits content using `split(col("value"), "\n")` with `explode()` before processing in both modes. This creates one row per line, which can then be:
+- Classified individually (line-level mode)
+- Grouped and parsed into paragraphs (paragraph mode)
 
 ## Changes Made
 
@@ -20,36 +40,39 @@ Added support for the `line_level` argument to `SkolClassifier.predict_from_couc
 
 When `line_level=True`, the method:
 
-1. **Adds line numbers**: Creates a `line_number` column if not already present in the CouchDB data
+1. **Splits content into lines**: Uses `split(col("value"), "\n")` with `explode()` to create one row per line
 2. **Filters empty lines**: Removes blank lines from processing
-3. **Preserves document context**: Maintains `doc_id` and `attachment_name` for tracking source documents
-4. **Orders by line number**: Ensures lines are processed in their original order
+3. **Adds line numbers**: Creates a `line_number` column for each line within a document
+4. **Preserves document context**: Maintains `doc_id` and `attachment_name` for tracking source documents
+5. **Orders correctly**: Ensures lines are processed in their original order
 
 ```python
 if line_level:
-    # Line-level processing
+    # Line-level processing: split content into lines
     from pyspark.sql.window import Window
 
-    # Window specification for adding line numbers (needs a basic ordering first)
-    window_spec_init = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
-
-    # Add line numbers if not present
-    if "line_number" not in df.columns:
-        df = df.withColumn("line_number", row_number().over(window_spec_init) - 1)
-
-    # Window specification for final ordering by line number
-    window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("line_number")
-
-    # Filter empty lines and add row numbers
-    processed_df = (
-        df.filter(trim(col("value")) != "")
-        .withColumn("row_number", row_number().over(window_spec))
+    # Split the content into individual lines
+    lines_df = (
+        df.withColumn("value", explode(split(col("value"), "\n")))
+        .filter(trim(col("value")) != "")
     )
+
+    # Add line numbers
+    window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
+    processed_df = lines_df.withColumn("line_number", row_number().over(window_spec) - 1)
+
+    # Add row number for ordering
+    processed_df = processed_df.withColumn("row_number", row_number().over(window_spec))
 ```
 
-### Paragraph-Level Processing (Unchanged)
+### Paragraph-Level Processing (Fixed)
 
-When `line_level=False`, the method continues to use the original paragraph extraction logic:
+When `line_level=False`, the method now:
+
+1. **Splits content into lines first**: Critical fix - must split before paragraph extraction
+2. **Groups lines by document**: Collects all lines from the same document
+3. **Extracts paragraphs**: Uses heuristic paragraph detection on the line list
+4. **Creates one row per paragraph**: Each paragraph becomes a separate classification unit
 
 ```python
 else:
@@ -57,6 +80,9 @@ else:
     from .preprocessing import ParagraphExtractor
     from pyspark.sql.types import ArrayType, StringType
     from pyspark.sql.window import Window
+
+    # First, split content into lines
+    lines_df = df.withColumn("value", explode(split(col("value"), "\n")))
 
     heuristic_udf = udf(
         ParagraphExtractor.extract_heuristic_paragraphs,
@@ -66,9 +92,9 @@ else:
     # Window specification for ordering
     window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
 
-    # Group and extract paragraphs
+    # Group lines and extract paragraphs
     processed_df = (
-        df.groupBy("doc_id", "attachment_name")
+        lines_df.groupBy("doc_id", "attachment_name")
         .agg(
             collect_list("value").alias("lines"),
             min(lit(0)).alias("start_idx")
