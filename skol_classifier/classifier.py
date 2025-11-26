@@ -784,25 +784,29 @@ class SkolClassifier:
         df = self.load_from_couchdb(pattern)
 
         if line_level:
-            # Line-level processing
+            # Line-level processing: split content into lines
+            from pyspark.sql.window import Window
 
-            # Window specification for adding line numbers (needs a basic ordering first)
-            window_spec_init = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
-
-            # Add line numbers if not present
-            if "line_number" not in df.columns:
-                df = df.withColumn("line_number", row_number().over(window_spec_init) - 1)
-
-            # Window specification for final ordering by line number
-            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("line_number")
-
-            # Filter empty lines and add row numbers
-            processed_df = (
-                df.filter(trim(col("value")) != "")
-                .withColumn("row_number", row_number().over(window_spec))
+            # Split the content into individual lines
+            lines_df = (
+                df.withColumn("value", explode(split(col("value"), "\n")))
+                .filter(trim(col("value")) != "")
             )
+
+            # Add line numbers
+            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
+            processed_df = lines_df.withColumn("line_number", row_number().over(window_spec) - 1)
+
+            # Add row number for ordering
+            processed_df = processed_df.withColumn("row_number", row_number().over(window_spec))
         else:
             # Paragraph-level processing
+            from .preprocessing import ParagraphExtractor
+            from pyspark.sql.types import ArrayType, StringType
+            from pyspark.sql.window import Window
+
+            # First, split content into lines
+            lines_df = df.withColumn("value", explode(split(col("value"), "\n")))
 
             heuristic_udf = udf(
                 ParagraphExtractor.extract_heuristic_paragraphs,
@@ -812,9 +816,9 @@ class SkolClassifier:
             # Window specification for ordering
             window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
 
-            # Group and extract paragraphs
+            # Group lines and extract paragraphs
             processed_df = (
-                df.groupBy("doc_id", "attachment_name")
+                lines_df.groupBy("doc_id", "attachment_name")
                 .agg(
                     collect_list("value").alias("lines"),
                     min(lit(0)).alias("start_idx")
