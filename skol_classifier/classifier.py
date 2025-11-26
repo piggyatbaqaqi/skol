@@ -19,6 +19,15 @@ from pyspark.ml.feature import (
     Tokenizer, CountVectorizer, IDF, StringIndexer, VectorAssembler, IndexToString
 )
 from pyspark.ml.classification import LogisticRegression, RandomForestClassifier
+from pyspark.ml.feature import IndexToString
+from pyspark.sql.types import (
+    StructType as LineStructType,
+    StructField as LineStructField,
+    IntegerType as LineIntegerType,
+    ArrayType as LineArrayType,
+    ArrayType, StringType, StructType, StructField, IntegerType
+)
+
 import sparknlp  # typing: ignore[import-untyped]
 
 from .couchdb_io import CouchDBConnection
@@ -113,12 +122,6 @@ class SkolClassifier:
 
         if line_level:
             # Line-level extraction: parse each line from YEDA blocks
-            from pyspark.sql.types import (
-                StructType as LineStructType,
-                StructField as LineStructField,
-                IntegerType as LineIntegerType,
-                ArrayType as LineArrayType
-            )
 
             def extract_yeda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
                 """Extract individual lines from YEDA annotation blocks."""
@@ -753,7 +756,8 @@ class SkolClassifier:
     def predict_from_couchdb(
         self,
         pattern: str = "*.txt",
-        output_format: str = "annotated"
+        output_format: str = "annotated",
+        line_level: bool = False
     ) -> DataFrame:
         """
         Load text from CouchDB, predict labels, and return predictions.
@@ -763,6 +767,7 @@ class SkolClassifier:
         Args:
             pattern: Pattern for attachment names
             output_format: Output format ('annotated' or 'simple')
+            line_level: If True, process line-by-line instead of by paragraphs
 
         Returns:
             DataFrame with predictions, including doc_id and attachment_name
@@ -778,40 +783,55 @@ class SkolClassifier:
         # Load data from CouchDB
         df = self.load_from_couchdb(pattern)
 
-        # Process paragraphs
-        from .preprocessing import ParagraphExtractor
-        from pyspark.sql.types import ArrayType, StringType
-        from pyspark.sql.window import Window
+        if line_level:
+            # Line-level processing
 
-        heuristic_udf = udf(
-            ParagraphExtractor.extract_heuristic_paragraphs,
-            ArrayType(StringType())
-        )
+            # Window specification for adding line numbers (needs a basic ordering first)
+            window_spec_init = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
 
-        # Window specification for ordering
-        window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
+            # Add line numbers if not present
+            if "line_number" not in df.columns:
+                df = df.withColumn("line_number", row_number().over(window_spec_init) - 1)
 
-        # Group and extract paragraphs
-        grouped_df = (
-            df.groupBy("doc_id", "attachment_name")
-            .agg(
-                collect_list("value").alias("lines"),
-                min(lit(0)).alias("start_idx")
+            # Window specification for final ordering by line number
+            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("line_number")
+
+            # Filter empty lines and add row numbers
+            processed_df = (
+                df.filter(trim(col("value")) != "")
+                .withColumn("row_number", row_number().over(window_spec))
             )
-            .withColumn("value", explode(heuristic_udf(col("lines"))))
-            .drop("lines")
-            .filter(trim(col("value")) != "")
-            .withColumn("row_number", row_number().over(window_spec))
-        )
+        else:
+            # Paragraph-level processing
+
+            heuristic_udf = udf(
+                ParagraphExtractor.extract_heuristic_paragraphs,
+                ArrayType(StringType())
+            )
+
+            # Window specification for ordering
+            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("start_idx")
+
+            # Group and extract paragraphs
+            processed_df = (
+                df.groupBy("doc_id", "attachment_name")
+                .agg(
+                    collect_list("value").alias("lines"),
+                    min(lit(0)).alias("start_idx")
+                )
+                .withColumn("value", explode(heuristic_udf(col("lines"))))
+                .drop("lines")
+                .filter(trim(col("value")) != "")
+                .withColumn("row_number", row_number().over(window_spec))
+            )
 
         # Extract features
-        features = self.pipeline_model.transform(grouped_df)
+        features = self.pipeline_model.transform(processed_df)
 
         # Predict
         predictions = self.classifier_model.transform(features)
 
         # Convert label indices to strings
-        from pyspark.ml.feature import IndexToString
 
         converter = IndexToString(
             inputCol="prediction",
@@ -1071,7 +1091,6 @@ class SkolClassifier:
             predictions: DataFrame with line-level predictions
             output_path: Directory to save output files
         """
-        from pyspark.sql.functions import struct, collect_list
 
         # Create struct with line and label, collect by filename
         aggregated_df = (
@@ -1091,9 +1110,6 @@ class SkolClassifier:
         )
 
         # Define UDF to coalesce labels
-        from pyspark.sql.types import StructType, StructField
-        from pyspark.sql.functions import udf
-
         coalesce_udf = udf(self.coalesce_consecutive_labels, StringType())
 
         # Extract line/label pairs and coalesce
