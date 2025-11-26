@@ -217,12 +217,114 @@ def save_taxa_to_couchdb_partition(
             )
 
 
+def load_annotated_documents(
+    spark: SparkSession,
+    ingest_couchdb_url: str,
+    ingest_db_name: str,
+    ingest_username: Optional[str] = None,
+    ingest_password: Optional[str] = None,
+    pattern: str = "*.txt.ann"
+) -> DataFrame:
+    """
+    Load annotated documents from CouchDB.
+
+    Returns:
+        DataFrame with columns: doc_id, attachment_name, value
+    """
+    ingest_conn = CouchDBConnection(
+        ingest_couchdb_url,
+        ingest_db_name,
+        ingest_username,
+        ingest_password
+    )
+    return ingest_conn.load_distributed(spark, pattern)
+
+
+def extract_taxa_dataframe(
+    spark: SparkSession,
+    annotated_df: DataFrame,
+    ingest_db_name: str
+) -> DataFrame:
+    """
+    Extract taxa from annotated documents DataFrame.
+
+    Args:
+        spark: SparkSession
+        annotated_df: DataFrame with columns: doc_id, attachment_name, value
+        ingest_db_name: Database name for metadata
+
+    Returns:
+        DataFrame with taxa information (taxon, description, source, line numbers, etc.)
+    """
+    from pyspark.sql.types import MapType, IntegerType
+
+    extract_schema = StructType([
+        StructField("taxon", StringType(), False),
+        StructField("description", StringType(), False),
+        StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
+        StructField("line_number", IntegerType(), True),
+        StructField("paragraph_number", IntegerType(), True),
+        StructField("page_number", IntegerType(), True),
+        StructField("empirical_page_number", StringType(), True),
+    ])
+
+    def extract_partition(partition):
+        # Extract Taxon objects
+        taxa = extract_taxa_from_partition(partition, ingest_db_name)
+        # Convert to Rows for DataFrame
+        return convert_taxa_to_rows(taxa)
+
+    taxa_rdd = annotated_df.rdd.mapPartitions(extract_partition)
+    taxa_df = spark.createDataFrame(taxa_rdd, extract_schema)
+
+    return taxa_df
+
+
+def save_taxa_dataframe(
+    taxa_df: DataFrame,
+    taxon_couchdb_url: str,
+    taxon_db_name: str,
+    taxon_username: Optional[str] = None,
+    taxon_password: Optional[str] = None
+) -> DataFrame:
+    """
+    Save taxa DataFrame to CouchDB.
+
+    Args:
+        taxa_df: DataFrame with taxa information
+        taxon_couchdb_url: URL of taxon CouchDB server
+        taxon_db_name: Name of taxon database
+        taxon_username: Optional username
+        taxon_password: Optional password
+
+    Returns:
+        DataFrame with save results (doc_id, success, error_message)
+    """
+    save_schema = StructType([
+        StructField("doc_id", StringType(), False),
+        StructField("success", BooleanType(), False),
+        StructField("error_message", StringType(), False),
+    ])
+
+    def save_partition(partition):
+        return save_taxa_to_couchdb_partition(
+            partition,
+            taxon_couchdb_url,
+            taxon_db_name,
+            taxon_username,
+            taxon_password
+        )
+
+    results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(save_schema)
+    return results_df
+
+
 def extract_and_save_taxa_pipeline(
     spark: SparkSession,
     ingest_couchdb_url: str,
     ingest_db_name: str,
-    taxon_couchdb_url: str,
     taxon_db_name: str,
+    taxon_couchdb_url: Optional[str] = None,
     ingest_username: Optional[str] = None,
     ingest_password: Optional[str] = None,
     taxon_username: Optional[str] = None,
@@ -242,8 +344,8 @@ def extract_and_save_taxa_pipeline(
         spark: SparkSession
         ingest_couchdb_url: URL of ingest CouchDB server
         ingest_db_name: Name of ingest database
-        taxon_couchdb_url: URL of taxon CouchDB server (can be same as ingest)
         taxon_db_name: Name of taxon database
+        taxon_couchdb_url: URL of taxon CouchDB server (can be same as ingest)
         ingest_username: Optional username for ingest database
         ingest_password: Optional password for ingest database
         taxon_username: Optional username for taxon database
@@ -272,57 +374,31 @@ def extract_and_save_taxa_pipeline(
         >>> results.filter("success = true").count()
         >>> results.filter("success = false").show()
     """
+    taxon_couchdb_url = taxon_couchdb_url or ingest_couchdb_url
+    taxon_username = taxon_username or ingest_username
+    taxon_password = taxon_password or ingest_password
 
-    # Load annotated files from ingest database
-    ingest_conn = CouchDBConnection(
+    # Step 1: Load annotated documents from CouchDB
+    annotated_df = load_annotated_documents(
+        spark,
         ingest_couchdb_url,
         ingest_db_name,
         ingest_username,
-        ingest_password
+        ingest_password,
+        pattern
     )
 
-    df = ingest_conn.load_distributed(spark, pattern)
+    # Step 2: Extract taxa from annotated documents
+    taxa_df = extract_taxa_dataframe(spark, annotated_df, ingest_db_name)
 
-    # Extract taxa from each partition as Taxon objects, then convert to dicts
-    # Schema matches Taxon.as_row() output format
-    from pyspark.sql.types import MapType
-
-    extract_schema = StructType([
-        StructField("taxon", StringType(), False),
-        StructField("description", StringType(), False),
-        StructField("source", MapType(StringType(), StringType()), False),
-        StructField("line_number", StringType(), False),
-        StructField("paragraph_number", StringType(), False),
-        StructField("page_number", StringType(), False),
-        StructField("empirical_page_number", StringType(), True),
-    ])
-
-    def extract_partition(partition):
-        # Extract Taxon objects
-        taxa = extract_taxa_from_partition(partition, ingest_db_name)
-        # Convert to Rows for DataFrame
-        return convert_taxa_to_rows(taxa)
-
-    taxa_rdd = df.rdd.mapPartitions(extract_partition)
-    taxa_df = spark.createDataFrame(taxa_rdd, extract_schema)
-
-    # Save taxa to taxon database
-    save_schema = StructType([
-        StructField("doc_id", StringType(), False),
-        StructField("success", BooleanType(), False),
-        StructField("error_message", StringType(), False),
-    ])
-
-    def save_partition(partition):
-        return save_taxa_to_couchdb_partition(
-            partition,
-            taxon_couchdb_url,
-            taxon_db_name,
-            taxon_username,
-            taxon_password
-        )
-
-    results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(save_schema)
+    # Step 3: Save taxa to CouchDB
+    results_df = save_taxa_dataframe(
+        taxa_df,
+        taxon_couchdb_url,
+        taxon_db_name,
+        taxon_username,
+        taxon_password
+    )
 
     return results_df
 
