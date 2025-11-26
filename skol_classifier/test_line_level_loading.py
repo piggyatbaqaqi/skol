@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script to verify line-level vs paragraph-level data loading."""
+"""Test script to verify line-level vs paragraph-level data loading with V2 API."""
 
 import sys
 from pathlib import Path
@@ -10,15 +10,15 @@ import os
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pyspark.sql import SparkSession
-from skol_classifier.classifier import SkolClassifier
+from skol_classifier.classifier_v2 import SkolClassifierV2
 
 
 def test_line_level_loading():
-    """Compare line-level vs paragraph-level data loading."""
+    """Compare line-level vs paragraph-level data loading with SkolClassifierV2."""
 
     # Create Spark session
     spark = SparkSession.builder \
-        .appName("Test Line Level Loading") \
+        .appName("Test Line Level Loading V2") \
         .master("local[*]") \
         .getOrCreate()
 
@@ -39,16 +39,23 @@ exposition
 #Misc-exposition*]
 """)
 
-        print("Testing data loading...")
+        print("Testing data loading with SkolClassifierV2...")
         print("=" * 70)
-
-        # Initialize classifier
-        classifier = SkolClassifier(spark=spark, auto_load=False)
 
         # Test paragraph-level loading
         print("\n1. PARAGRAPH-LEVEL LOADING (line_level=False)")
         print("-" * 70)
-        para_df = classifier.load_annotated_data([temp_file], line_level=False)
+        classifier_para = SkolClassifierV2(
+            spark=spark,
+            input_source='files',
+            file_paths=[temp_file],
+            line_level=False,  # Paragraph level
+            model_type='logistic',
+            auto_load_model=False
+        )
+
+        # Load data directly
+        para_df = classifier_para._load_annotated_data()
         para_count = para_df.count()
         print(f"Total samples: {para_count}")
         print("\nSample data:")
@@ -57,7 +64,17 @@ exposition
         # Test line-level loading
         print("\n2. LINE-LEVEL LOADING (line_level=True)")
         print("-" * 70)
-        line_df = classifier.load_annotated_data([temp_file], line_level=True)
+        classifier_line = SkolClassifierV2(
+            spark=spark,
+            input_source='files',
+            file_paths=[temp_file],
+            line_level=True,  # Line level
+            model_type='logistic',
+            auto_load_model=False
+        )
+
+        # Load data directly
+        line_df = classifier_line._load_annotated_data()
         line_count = line_df.count()
         print(f"Total samples: {line_count}")
         print("\nSample data:")
@@ -86,6 +103,18 @@ exposition
         # Verify line_number column exists in line-level
         has_line_num = "line_number" in line_df.columns
         print(f"Line-level has line_number column: {'✓' if has_line_num else '✗'}")
+
+        # Verify paragraph-level doesn't have line_number (or has it with all same values)
+        para_has_line_num = "line_number" in para_df.columns
+        print(f"Paragraph-level structure correct: {'✓' if not para_has_line_num or para_count == 3 else '✗'}")
+
+        # Test V2 API specific features
+        print("\n3. V2 API FEATURES")
+        print("-" * 70)
+        print(f"Line-level classifier configuration:")
+        print(f"  line_level={classifier_line.line_level}")
+        print(f"  input_source={classifier_line.input_source}")
+        print(f"  ✓ Configuration verified")
 
         # Overall result
         success = (

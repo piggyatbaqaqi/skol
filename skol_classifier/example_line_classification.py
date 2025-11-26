@@ -16,14 +16,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pyspark.sql import SparkSession
-from skol_classifier.classifier import SkolClassifier
+from skol_classifier.classifier_v2 import SkolClassifierV2
 
 
 def main():
     """Run line-by-line classification example."""
 
     print("="*70)
-    print("SKOL Line-by-Line Classifier with YEDA Output")
+    print("SKOL Line-by-Line Classifier with YEDA Output (V2 API)")
     print("="*70)
 
     # Create Spark session
@@ -35,72 +35,82 @@ def main():
         .getOrCreate()
 
     try:
-        # Initialize classifier
-        print("Initializing classifier...")
-        classifier = SkolClassifier(spark=spark)
+        # Get annotated training files
+        data_dir = Path(__file__).parent.parent / "data" / "annotated"
 
-        # Check if model is loaded
-        if classifier.pipeline_model is None or classifier.classifier_model is None:
-            print("\n⚠ No trained model found.")
-            print("You need to train a model first using:")
-            print("  1. Load training data with load_annotated_data()")
-            print("  2. Build and fit feature pipeline with fit_features()")
-            print("  3. Train classifier with train_classifier()")
-            print("\nFor this example, we'll just demonstrate the YEDA formatting.")
-            print("\nShowing example YEDA coalescence:")
-
-            # Demonstrate YEDA formatting
-            example_lines = [
-                {'line': 'Glomus mosseae Nicolson & Gerdemann, 1963.', 'label': 'Nomenclature'},
-                {'line': '≡ Glomus mosseae (Nicolson & Gerdemann) C. Walker & A. Schüssler', 'label': 'Nomenclature'},
-                {'line': '', 'label': 'Misc-exposition'},
-                {'line': 'Key characters: Spores formed singly or in loose clusters.', 'label': 'Description'},
-                {'line': 'Spore wall structure: mono- to multiple-layered.', 'label': 'Description'},
-                {'line': '', 'label': 'Misc-exposition'},
-                {'line': 'This species is commonly found in temperate regions.', 'label': 'Misc-exposition'},
-                {'line': 'It forms arbuscular mycorrhizal associations.', 'label': 'Misc-exposition'},
-            ]
-
-            yeda_output = classifier.coalesce_consecutive_labels(example_lines)
-
-            print("\nInput lines with labels:")
-            for i, item in enumerate(example_lines, 1):
-                print(f"  {i}. [{item['label']}] {item['line'][:60]}...")
-
-            print("\nCoalesced YEDA output:")
-            print("-" * 70)
-            print(yeda_output)
-            print("-" * 70)
+        if not data_dir.exists():
+            print(f"\n⚠ Data directory not found: {data_dir}")
+            print("This example demonstrates the V2 API for line-level classification.")
+            print("\nTo use SkolClassifierV2 with line-level classification:")
+            print()
+            print("  # Train a model")
+            print("  classifier = SkolClassifierV2(")
+            print("      spark=spark,")
+            print("      input_source='files',")
+            print("      file_paths=['data/*.ann'],")
+            print("      line_level=True,           # Enable line-level processing")
+            print("      coalesce_labels=True,      # Coalesce consecutive labels")
+            print("      model_type='logistic'")
+            print("  )")
+            print("  results = classifier.fit()")
+            print()
+            print("  # Make predictions")
+            print("  predictions = classifier.predict()")
+            print()
+            print("  # Save with coalescing")
+            print("  classifier.save_annotated(predictions)")
+            print()
+            print("\nKey Features:")
+            print("  • line_level=True: Process text line-by-line")
+            print("  • coalesce_labels=True: Merge consecutive lines with same label")
+            print("  • Output in YEDA format: [@ text #Label*]")
+            print("  • Supports files and CouchDB")
 
         else:
-            print("\n✓ Model loaded successfully!")
-            print(f"  Labels: {classifier.labels}")
+            # Find annotated files
+            annotated_files = list(data_dir.glob("**/*.ann"))
 
-            # Example: Process raw text strings line-by-line
-            print("\nExample: Process raw text strings line-by-line:")
+            if len(annotated_files) == 0:
+                print(f"\n⚠ No annotated files found in {data_dir}")
+            else:
+                print(f"\nFound {len(annotated_files)} annotated files")
 
-            # Sample raw text
-            sample_text = """Glomus mosseae Nicolson & Gerdemann, 1963.
-≡ Glomus mosseae (Nicolson & Gerdemann) C. Walker
+                # Initialize and train classifier
+                print("\nInitializing SkolClassifierV2...")
+                classifier = SkolClassifierV2(
+                    spark=spark,
+                    input_source='files',
+                    file_paths=[str(f) for f in annotated_files],
+                    line_level=True,
+                    use_suffixes=False,
+                    model_type='logistic',
+                    output_format='annotated',
+                    coalesce_labels=True
+                )
 
-Key characters: Spores formed singly.
-Spore wall: mono- to multiple-layered.
+                # Train
+                print("Training classifier...")
+                results = classifier.fit()
 
-This species is common in temperate regions."""
+                print(f"\n✓ Training complete!")
+                print(f"  Accuracy: {results.get('accuracy', 0):.4f}")
+                print(f"  F1 Score: {results.get('f1_score', 0):.4f}")
 
-            print("\n  # Classify raw text content (not files)")
-            print("  predictions = classifier.predict_lines([sample_text])")
-            print("  classifier.save_yeda_output(predictions, 'output_dir')")
+                # Make predictions on first file
+                print("\nMaking predictions...")
+                predictions = classifier.predict()
 
-            print("\nKey differences from paragraph-based classification:")
-            print("  • Uses predict_lines() with raw text strings (not file paths)")
-            print("  • Each line is classified independently")
-            print("  • Consecutive lines with same label are coalesced into blocks")
-            print("  • Output is in YEDA format with proper block structure")
+                # Show sample predictions
+                print("\nSample predictions (line-level):")
+                predictions.select(
+                    "value", "predicted_label", "annotated_value"
+                ).show(10, truncate=50)
 
-            print("\nCouchDB Integration:")
-            print("  • Use save_to_couchdb(predictions, suffix='.ann', coalesce_labels=True)")
-            print("  • coalesce_labels=True creates YEDA blocks from line-level predictions")
+                print("\nLabel distribution:")
+                predictions.groupBy("predicted_label").count().orderBy("count", ascending=False).show()
+
+                print("\nNote: When saving with coalesce_labels=True,")
+                print("consecutive lines with the same label are merged into blocks.")
 
         print("\n" + "="*70)
         print("Example complete!")
