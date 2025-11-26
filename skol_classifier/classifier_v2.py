@@ -317,9 +317,13 @@ class SkolClassifierV2:
         # Fit model and pass labels for later use
         self._model.fit(featured_df, labels=labels)
 
-        # Store label mappings
-        self._label_mapping = self._feature_extractor.get_label_mapping()
-        self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
+        # Store label mappings (labels is a list like ['Label1', 'Label2'])
+        labels_list = self._feature_extractor.get_label_mapping()
+        if labels_list is not None:
+            # Create dict mapping from label to index
+            self._label_mapping = {label: i for i, label in enumerate(labels_list)}
+            # Create reverse mapping from index to label
+            self._reverse_label_mapping = {i: label for i, label in enumerate(labels_list)}
 
         # Calculate training statistics
         from .utils import calculate_stats
