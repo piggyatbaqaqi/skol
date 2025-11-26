@@ -1,91 +1,33 @@
 """
-Example of using SKOL classifier with CouchDB for input/output
+Example of using SKOL classifier V2 with CouchDB for input/output
 
-DISTRIBUTED ARCHITECTURE (foreachPartition approach):
-=====================================================
+This example demonstrates the SkolClassifierV2 unified API for:
+- Loading raw documents from CouchDB
+- Training/loading models
+- Making predictions
+- Saving annotated results back to CouchDB
 
-This example demonstrates the distributed partition-level processing approach:
-
-1. READING from CouchDB:
-   - Driver fetches document IDs (lightweight metadata only)
-   - Creates DataFrame with (doc_id, attachment_name) rows
-   - DataFrame is distributed across N partitions
-   - Each partition connects to CouchDB ONCE
-   - That connection fetches ALL documents in that partition
-   - Processing happens in parallel across all workers
-
-2. WRITING to CouchDB:
-   - Predictions DataFrame is distributed across partitions
-   - Each partition connects to CouchDB ONCE
-   - That connection saves ALL documents in that partition
-   - All writes happen in parallel
-
-3. EFFICIENCY GAINS:
-   - Traditional: N connections (one per document)
-   - foreachPartition: P connections (one per partition, where P << N)
-   - Example: 100,000 documents with 100 partitions = 100 connections vs 100,000
-
-4. SCALABILITY:
-   - More worker nodes = faster processing
-   - More partitions = more parallelism (up to number of cores)
-   - No driver bottleneck - driver only handles metadata
-   - Workers handle all actual I/O
-
-See DISTRIBUTED_COUCHDB.md for detailed architecture documentation.
+The V2 API simplifies CouchDB workflows with configuration-driven behavior.
+All CouchDB operations are distributed using PySpark's partitioning for scalability.
 """
 
 import redis
-from skol_classifier import SkolClassifier, CouchDBConnection
+from pyspark.sql import SparkSession
+from skol_classifier.classifier_v2 import SkolClassifierV2
+from skol_classifier import get_file_list
 
 
-def example_read_from_couchdb():
+def example_couchdb_prediction():
     """
-    Read text attachments from CouchDB using distributed processing.
+    Load model from Redis, predict from CouchDB, save back to CouchDB.
 
-    This uses the load_from_couchdb_distributed() function which:
-    1. Fetches document IDs on the driver (lightweight)
-    2. Distributes IDs across partitions
-    3. Each partition connects to CouchDB once
-    4. Each partition fetches all its assigned documents
+    This demonstrates the unified V2 API where all configuration
+    is specified in the constructor.
     """
-
-    # CouchDB connection details
-    couchdb_url = "http://localhost:5984"
-    database = "skol_documents"
-    username = "admin"
-    password = "password"
-
-    # Create classifier with CouchDB configuration
-    classifier = SkolClassifier(
-        couchdb_url=couchdb_url,
-        database=database,
-        username=username,
-        password=password
-    )
-
-    # Load documents using distributed approach
-    df = classifier.load_from_couchdb(pattern="*.txt")
-
-    print(f"Found {df.count()} text attachments")
-    print("\nSample documents:")
-    df.select("doc_id", "attachment_name").show(5, truncate=False)
-
-    # Show partition distribution
-    print(f"\nData distributed across {df.rdd.getNumPartitions()} partitions")
-    print("Each partition will process its documents using a single CouchDB connection")
-
-
-def example_classify_couchdb_data():
-    """
-    Load model from Redis, classify CouchDB data, save back to CouchDB.
-
-    This demonstrates the complete distributed pipeline:
-    1. Read documents from CouchDB (distributed across partitions)
-    2. Classify using PySpark pipeline (distributed)
-    3. Save results back to CouchDB (distributed writes)
-
-    Each partition maintains a single CouchDB connection throughout.
-    """
+    spark = SparkSession.builder \
+        .appName("SKOL CouchDB Prediction") \
+        .master("local[*]") \
+        .getOrCreate()
 
     # CouchDB settings
     couchdb_url = "http://localhost:5984"
@@ -96,27 +38,36 @@ def example_classify_couchdb_data():
     # Redis settings
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-    # Initialize classifier with both Redis and CouchDB configuration
-    print("Loading classifier from Redis...")
-    classifier = SkolClassifier(
-        redis_client=redis_client,
-        redis_key="production_model",
+    # Initialize classifier with unified configuration
+    print("Initializing classifier with V2 API...")
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='couchdb',
         couchdb_url=couchdb_url,
-        database=database,
-        username=username,
-        password=password
+        couchdb_database=database,
+        couchdb_username=username,
+        couchdb_password=password,
+        couchdb_pattern='*.txt',
+        output_dest='couchdb',
+        output_couchdb_suffix='.ann',
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key='production_model',
+        auto_load_model=True,
+        line_level=True,
+        coalesce_labels=True,
+        output_format='annotated'
     )
 
-    if classifier.labels is None:
-        print("No model found in Redis. Please train a model first.")
-        return
+    print(f"Model loaded from Redis")
 
-    print(f"Model loaded with labels: {classifier.labels}")
+    # Load, predict, and save in streamlined workflow
+    print("\nLoading documents from CouchDB...")
+    raw_df = classifier.load_raw()
+    print(f"Loaded {raw_df.count()} documents")
 
-    # Process CouchDB data using distributed approach
-    print("\nLoading and classifying documents from CouchDB...")
-    print("(Documents fetched in parallel using foreachPartition)")
-    predictions = classifier.predict_from_couchdb(pattern="*.txt")
+    print("\nMaking predictions...")
+    predictions = classifier.predict(raw_df)
 
     # Show sample predictions
     print("\nSample predictions:")
@@ -124,303 +75,263 @@ def example_classify_couchdb_data():
         "doc_id", "attachment_name", "predicted_label"
     ).show(5, truncate=50)
 
-    # Save results back to CouchDB using distributed writes
-    print("\nSaving predictions back to CouchDB...")
-    print("(Each partition writes its documents using a single connection)")
-    results = classifier.save_to_couchdb(predictions=predictions, suffix=".ann")
+    # Save back to CouchDB
+    print("\nSaving annotations back to CouchDB...")
+    classifier.save_annotated(predictions)
 
-    # Report results
-    successful = sum(1 for r in results if r['success'])
-    failed = len(results) - successful
-
-    print(f"\nSaved {successful} annotated files to CouchDB")
-    if failed > 0:
-        print(f"Failed to save {failed} files")
-        for r in results:
-            if not r['success']:
-                print(f"  {r['doc_id']}/{r['attachment_name']}")
+    print("✓ Complete! Predictions saved as .ann attachments")
+    spark.stop()
 
 
-def example_complete_pipeline():
-    """Complete pipeline: Train, save to Redis, classify CouchDB data."""
+def example_train_and_predict():
+    """
+    Train model from files, save to Redis, then predict from CouchDB.
 
-    from skol_classifier import get_file_list
+    Demonstrates using file-based training with CouchDB-based prediction.
+    """
+    spark = SparkSession.builder \
+        .appName("SKOL Train and Predict") \
+        .master("local[*]") \
+        .getOrCreate()
 
-    # Settings
-    couchdb_url = "http://localhost:5984"
-    database = "skol_documents"
-    db_username = "admin"
-    db_password = "password"
+    # Get annotated training files
+    annotated_files = get_file_list("/data/annotated", pattern="**/*.ann")
 
+    # Redis client
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-    # Step 1: Train model (or load from Redis)
-    classifier = SkolClassifier(
+    # Step 1: Train model from files and save to Redis
+    print("=" * 60)
+    print("Step 1: Training model from files")
+    print("=" * 60)
+
+    trainer = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='redis',
         redis_client=redis_client,
-        redis_key="skol_production_model",
-        couchdb_url=couchdb_url,
-        database=database,
-        username=db_username,
-        password=db_password
+        redis_key='skol_production_model',
+        line_level=True,
+        use_suffixes=True,
+        model_type='logistic'
     )
 
-    if classifier.labels is None:
-        print("Training new model...")
-        annotated_files = get_file_list("/data/annotated", pattern="**/*.ann")
-        results = classifier.fit(annotated_files)
-        print(f"Training complete! F1: {results['f1_score']:.4f}")
+    results = trainer.fit()
+    print(f"Training complete!")
+    print(f"  Accuracy: {results.get('accuracy', 0):.4f}")
+    print(f"  F1 Score: {results.get('f1_score', 0):.4f}")
+    print(f"  Model saved to Redis")
 
-        # Save to Redis
-        classifier.save_to_redis()
-        print("Model saved to Redis")
-    else:
-        print(f"Loaded model from Redis: {classifier.labels}")
+    # Step 2: Use trained model to process CouchDB documents
+    print("\n" + "=" * 60)
+    print("Step 2: Processing CouchDB documents")
+    print("=" * 60)
 
-    # Step 2: Process CouchDB documents
-    print("\nProcessing CouchDB documents...")
-    predictions = classifier.predict_from_couchdb()
-
-    # Step 3: Save back to CouchDB
-    print("Saving annotated results...")
-    results = classifier.save_to_couchdb(predictions=predictions)
-
-    print(f"Complete! Processed {len(results)} documents")
-
-
-def example_manual_couchdb_workflow():
-    """
-    Manual workflow using CouchDBConnection directly.
-
-    This demonstrates direct use of CouchDBConnection class which provides
-    the distributed foreachPartition approach for efficient I/O.
-    """
-
-    # CouchDB settings
-    couchdb_url = "http://localhost:5984"
-    database = "skol_documents"
-    username = "admin"
-    password = "password"
-
-    # Initialize classifier
-    classifier = SkolClassifier()
-    # ... assume model is trained or loaded ...
-
-    # Create CouchDB connection
-    conn = CouchDBConnection(couchdb_url, database, username, password)
-
-    # Step 1: Read from CouchDB using distributed approach
-    print("Reading documents from CouchDB...")
-    print("(Using mapPartitions for distributed reads)")
-    df = conn.load_distributed(classifier.spark, pattern="*.txt")
-
-    print(f"Loaded {df.count()} documents")
-    df.show(5, truncate=50)
-
-    # Step 2: Process with classifier
-    # (Use standard prediction methods on the distributed DataFrame)
-
-    # Step 3: Write back using CouchDBConnection
-    # The connection uses mapPartitions for distributed writes
-    print("\nSaving results back to CouchDB...")
-
-    # Create a sample predictions DataFrame
-    sample_predictions = classifier.spark.createDataFrame([
-        ("doc123", "article.txt", "[@ Sample paragraph #Description]")
-    ], ["doc_id", "attachment_name", "final_aggregated_pg"])
-
-    # Save using distributed approach
-    result_df = conn.save_distributed(sample_predictions, suffix=".ann")
-
-    # Collect results to verify success
-    results = result_df.collect()
-    successful = sum(1 for r in results if r.success)
-    failed = len(results) - successful
-
-    print(f"Saved {successful} documents using distributed writes")
-    if failed > 0:
-        print(f"Failed to save {failed} documents")
-
-
-def example_batch_processing():
-    """
-    Process documents in batches from CouchDB.
-
-    Note: With the foreachPartition approach, you typically don't need manual
-    batching. Spark automatically distributes work across partitions.
-    However, if you want to control memory usage or checkpoint progress,
-    you can process in batches.
-    """
-
-    couchdb_url = "http://localhost:5984"
-    database = "skol_documents"
-    redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
-
-    # Load classifier with both Redis and CouchDB configuration
-    classifier = SkolClassifier(
+    predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='couchdb',
+        couchdb_url='http://localhost:5984',
+        couchdb_database='skol_documents',
+        couchdb_username='admin',
+        couchdb_password='password',
+        couchdb_pattern='*.txt',
+        output_dest='couchdb',
+        output_couchdb_suffix='.ann',
+        model_storage='redis',
         redis_client=redis_client,
-        redis_key="production_model",
-        couchdb_url=couchdb_url,
-        database=database,
-        username="admin",
-        password="password"
+        redis_key='skol_production_model',
+        auto_load_model=True,
+        line_level=True,
+        coalesce_labels=True
     )
 
-    if classifier.labels is None:
-        print("No model available")
-        return
+    raw_df = predictor.load_raw()
+    predictions = predictor.predict(raw_df)
+    predictor.save_annotated(predictions)
 
-    # Load all documents using distributed approach
-    df = classifier.load_from_couchdb()
-
-    total_docs = df.count()
-    print(f"Found {total_docs} documents to process")
-
-    # Process in batches (optional - mainly for checkpointing)
-    batch_size = 1000
-    num_batches = (total_docs + batch_size - 1) // batch_size
-
-    for batch_num in range(num_batches):
-        offset = batch_num * batch_size
-        print(f"\nProcessing batch {batch_num + 1}/{num_batches}...")
-
-        # Get batch using limit/offset
-        # Note: Each batch still uses foreachPartition internally
-        batch_df = df.limit(batch_size).offset(offset)
-
-        # Predict on batch (distributed)
-        predictions = classifier.predict_raw_text(batch_df)
-
-        # Save batch (distributed writes)
-        results = classifier.save_to_couchdb(predictions=predictions)
-
-        print(f"Batch {batch_num + 1} complete: {len(results)} documents saved")
+    print(f"✓ Processed {raw_df.count()} documents from CouchDB")
+    spark.stop()
 
 
-def example_partitioning_and_parallelism():
+def example_disk_model_with_couchdb():
     """
-    Demonstrate how to control partitioning for optimal performance.
+    Use disk-based model storage with CouchDB input/output.
 
-    Key concepts:
-    - More partitions = more parallelism
-    - Each partition creates ONE CouchDB connection
-    - Rule of thumb: 2-4x the number of cores
+    Demonstrates that model storage is independent of data source.
     """
+    spark = SparkSession.builder \
+        .appName("SKOL Disk Model") \
+        .master("local[*]") \
+        .getOrCreate()
 
-    couchdb_url = "http://localhost:5984"
-    database = "skol_documents"
+    # Train and save to disk
+    print("Training model and saving to disk...")
+    trainer = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=get_file_list("/data/annotated", pattern="**/*.ann"),
+        model_storage='disk',
+        model_path='models/couchdb_classifier.pkl',
+        line_level=True,
+        model_type='random_forest',
+        n_estimators=100
+    )
+
+    trainer.fit()
+    print("✓ Model saved to disk")
+
+    # Load from disk and use with CouchDB
+    print("\nLoading model from disk for CouchDB processing...")
+    predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='couchdb',
+        couchdb_url='http://localhost:5984',
+        couchdb_database='skol_documents',
+        couchdb_username='admin',
+        couchdb_password='password',
+        output_dest='couchdb',
+        model_storage='disk',
+        model_path='models/couchdb_classifier.pkl',
+        auto_load_model=True,
+        line_level=True
+    )
+
+    raw_df = predictor.load_raw()
+    predictions = predictor.predict(raw_df)
+    predictor.save_annotated(predictions)
+
+    print("✓ Complete!")
+    spark.stop()
+
+
+def example_couchdb_to_files():
+    """
+    Read from CouchDB, predict, save to local files.
+
+    Demonstrates mixing input/output destinations.
+    """
+    spark = SparkSession.builder \
+        .appName("SKOL CouchDB to Files") \
+        .master("local[*]") \
+        .getOrCreate()
+
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='couchdb',
+        couchdb_url='http://localhost:5984',
+        couchdb_database='skol_documents',
+        couchdb_username='admin',
+        couchdb_password='password',
+        couchdb_pattern='*.txt',
+        output_dest='files',
+        output_path='/data/output/annotated',
+        model_storage='disk',
+        model_path='models/classifier.pkl',
+        auto_load_model=True,
+        line_level=True
+    )
+
+    print("Loading from CouchDB...")
+    raw_df = classifier.load_raw()
+
+    print("Making predictions...")
+    predictions = classifier.predict(raw_df)
+
+    print("Saving to local files...")
+    classifier.save_annotated(predictions)
+
+    print(f"✓ Saved annotated files to {classifier.output_path}")
+    spark.stop()
+
+
+def example_partitioning_control():
+    """
+    Control parallelism by adjusting DataFrame partitioning.
+
+    More partitions = more parallel CouchDB connections.
+    Rule of thumb: 2-4x the number of CPU cores.
+    """
+    spark = SparkSession.builder \
+        .appName("SKOL Partitioning") \
+        .master("local[*]") \
+        .getOrCreate()
+
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-    classifier = SkolClassifier(
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='couchdb',
+        couchdb_url='http://localhost:5984',
+        couchdb_database='skol_documents',
+        couchdb_username='admin',
+        couchdb_password='password',
+        output_dest='couchdb',
+        model_storage='redis',
         redis_client=redis_client,
-        redis_key="production_model",
-        couchdb_url=couchdb_url,
-        database=database,
-        username="admin",
-        password="password"
+        redis_key='production_model',
+        auto_load_model=True,
+        line_level=True
     )
 
     # Load documents
-    df = classifier.load_from_couchdb()
+    raw_df = classifier.load_raw()
+    print(f"Loaded {raw_df.count()} documents")
+    print(f"Default partitions: {raw_df.rdd.getNumPartitions()}")
 
-    print(f"Loaded {df.count()} documents")
-    print(f"Default partitions: {df.rdd.getNumPartitions()}")
-
-    # Repartition for better parallelism
-    # If you have 100 CPU cores, use 200-400 partitions
+    # Repartition for optimal parallelism
+    # If you have 100 cores, use 200-400 partitions
     num_partitions = 100
-    df_repartitioned = df.repartition(num_partitions)
+    raw_df = raw_df.repartition(num_partitions)
 
-    print(f"After repartitioning: {df_repartitioned.rdd.getNumPartitions()} partitions")
-    print(f"This means {num_partitions} CouchDB connections will be used in parallel")
-    print(f"(vs {df_repartitioned.count()} connections if we connected per-row)")
+    print(f"After repartitioning: {num_partitions} partitions")
+    print(f"This means {num_partitions} parallel CouchDB connections")
 
-    # Process with optimized partitioning
-    predictions = classifier.predict_raw_text(df_repartitioned)
+    # Predict with optimized partitioning
+    predictions = classifier.predict(raw_df)
 
-    # Save with same partitioning
-    # Each partition will reuse its connection for all saves
-    results = classifier.save_to_couchdb(predictions=predictions)
+    # Save (uses same partitioning)
+    classifier.save_annotated(predictions)
 
-    print(f"\nProcessed {len(results)} documents using {num_partitions} parallel connections")
-
-
-def example_monitoring_progress():
-    """
-    Example of monitoring progress during distributed processing.
-
-    Note: With foreachPartition, progress tracking is implicit through
-    Spark's task tracking. Use Spark UI (http://localhost:4040) to monitor:
-    - Number of active tasks (= number of partitions being processed)
-    - Task duration
-    - Failed tasks
-    """
-
-    couchdb_url = "http://localhost:5984"
-    database = "skol_documents"
-
-    classifier = SkolClassifier(
-        couchdb_url=couchdb_url,
-        database=database,
-        username="admin",
-        password="password"
-    )
-
-    print("Starting distributed CouchDB processing...")
-    print("Monitor progress at: http://localhost:4040 (Spark UI)")
-
-    # Load documents - watch Spark UI for task progress
-    df = classifier.load_from_couchdb()
-
-    # Cache for multiple operations
-    df.cache()
-
-    print(f"Loaded and cached {df.count()} documents")
-    print(f"Processing across {df.rdd.getNumPartitions()} partitions")
-
-    # View sample to trigger computation
-    print("\nSample documents:")
-    df.show(5)
-
-    print("\nDistributed processing complete!")
-    print("Check Spark UI for detailed task statistics")
+    print(f"✓ Processed using {num_partitions} parallel workers")
+    spark.stop()
 
 
 if __name__ == "__main__":
     print("=" * 80)
-    print("SKOL Classifier - CouchDB Integration Examples")
-    print("Using distributed foreachPartition approach for scalability")
+    print("SKOL Classifier V2 - CouchDB Integration Examples")
     print("=" * 80)
 
     print("\n" + "=" * 60)
-    print("Example 1: Read from CouchDB (distributed)")
+    print("Example 1: CouchDB Prediction with Redis Model")
     print("=" * 60)
-    example_read_from_couchdb()
+    example_couchdb_prediction()
 
     print("\n" + "=" * 60)
-    print("Example 2: Classify CouchDB data (distributed pipeline)")
+    print("Example 2: Train from Files, Predict from CouchDB")
     print("=" * 60)
-    example_classify_couchdb_data()
+    example_train_and_predict()
 
     print("\n" + "=" * 60)
-    print("Example 3: Complete pipeline (train + process)")
+    print("Example 3: Disk Model with CouchDB")
     print("=" * 60)
-    example_complete_pipeline()
+    example_disk_model_with_couchdb()
 
     print("\n" + "=" * 60)
-    print("Example 4: Partitioning and parallelism")
+    print("Example 4: CouchDB to Local Files")
     print("=" * 60)
-    example_partitioning_and_parallelism()
+    example_couchdb_to_files()
 
     print("\n" + "=" * 60)
-    print("Example 5: Monitoring progress")
+    print("Example 5: Partitioning Control")
     print("=" * 60)
-    example_monitoring_progress()
+    example_partitioning_control()
 
     print("\n" + "=" * 80)
     print("All examples complete!")
-    print("\nKey takeaways:")
-    print("- Each partition creates ONE CouchDB connection")
-    print("- That connection is reused for ALL documents in the partition")
-    print("- More partitions = more parallelism (but also more connections)")
-    print("- Monitor via Spark UI at http://localhost:4040")
+    print("\nKey benefits of V2 API:")
+    print("- Single constructor with all configuration")
+    print("- Unified methods: load_raw(), predict(), save_annotated()")
+    print("- Mix and match input sources and output destinations")
+    print("- Model storage independent of data source")
     print("=" * 80)

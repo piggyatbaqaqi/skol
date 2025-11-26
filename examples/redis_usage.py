@@ -1,13 +1,22 @@
 """
-Example of using SKOL classifier with Redis for model persistence
+Example of using SKOL classifier V2 with Redis for model persistence
+
+The V2 API simplifies Redis integration with automatic model saving/loading
+controlled by constructor parameters.
 """
 
 import redis
-from skol_classifier import SkolClassifier, get_file_list
+from pyspark.sql import SparkSession
+from skol_classifier.classifier_v2 import SkolClassifierV2
+from skol_classifier import get_file_list
 
 
 def example_save_to_redis():
     """Train a model and save it to Redis."""
+    spark = SparkSession.builder \
+        .appName("SKOL Redis Save") \
+        .master("local[*]") \
+        .getOrCreate()
 
     # Connect to Redis
     redis_client = redis.Redis(
@@ -17,40 +26,39 @@ def example_save_to_redis():
         decode_responses=False  # Important: keep as bytes for binary data
     )
 
-    # Initialize classifier with Redis connection
-    classifier = SkolClassifier(
-        redis_client=redis_client,
-        redis_key="skol_model_v1"
-    )
-
-    # Train the model
+    # Train and automatically save to Redis
     print("Training model...")
     annotated_files = get_file_list(
         "/path/to/annotated/data",
         pattern="**/*.txt.ann"
     )
 
-    results = classifier.fit(
-        annotated_file_paths=annotated_files,
-        model_type="logistic",
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key="skol_model_v2",
+        line_level=True,
         use_suffixes=True,
-        test_size=0.2
+        model_type='logistic'
     )
 
-    print(f"Training complete. F1 Score: {results['f1_score']:.4f}")
+    results = classifier.fit()  # Automatically saves to Redis
 
-    # Save to Redis
-    print("Saving model to Redis...")
-    success = classifier.save_to_redis()
+    print(f"Training complete. F1 Score: {results.get('f1_score', 0):.4f}")
+    print("✓ Model automatically saved to Redis!")
 
-    if success:
-        print("Model successfully saved to Redis!")
-    else:
-        print("Failed to save model to Redis")
+    spark.stop()
 
 
 def example_load_from_redis():
     """Load a pre-trained model from Redis and use it for predictions."""
+    spark = SparkSession.builder \
+        .appName("SKOL Redis Load") \
+        .master("local[*]") \
+        .getOrCreate()
 
     # Connect to Redis
     redis_client = redis.Redis(
@@ -60,26 +68,27 @@ def example_load_from_redis():
         decode_responses=False
     )
 
-    # Initialize classifier - model auto-loads if key exists!
-    print("Initializing classifier (auto-loading from Redis if key exists)...")
-    classifier = SkolClassifier(
+    # Initialize classifier with auto_load_model=True
+    print("Loading model from Redis...")
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=get_file_list("/path/to/raw/data", pattern="**/*.txt"),
+        output_dest='files',
+        output_path='/output/annotated',
+        model_storage='redis',
         redis_client=redis_client,
-        redis_key="skol_model_v1"
+        redis_key="skol_model_v2",
+        auto_load_model=True,
+        line_level=True
     )
 
-    # Check if model was loaded
-    if classifier.labels is None:
-        print("No model found in Redis")
-        return
+    print("✓ Model loaded from Redis!")
 
-    print("Model loaded successfully!")
-    print(f"Model labels: {classifier.labels}")
-
-    # Use the loaded model for predictions
-    raw_files = get_file_list("/path/to/raw/data", pattern="**/*.txt")
-
+    # Use the loaded model
     print("Making predictions...")
-    predictions = classifier.predict_raw_text(raw_files)
+    raw_df = classifier.load_raw()
+    predictions = classifier.predict(raw_df)
 
     # Show results
     predictions.select(
@@ -87,12 +96,18 @@ def example_load_from_redis():
     ).show(10, truncate=50)
 
     # Save annotated output
-    classifier.save_annotated_output(predictions, "/output/annotated")
+    classifier.save_annotated(predictions)
     print("Predictions saved!")
+
+    spark.stop()
 
 
 def example_with_custom_redis_config():
     """Example with custom Redis configuration."""
+    spark = SparkSession.builder \
+        .appName("SKOL Redis Custom") \
+        .master("local[*]") \
+        .getOrCreate()
 
     # Connect to Redis with custom configuration
     redis_client = redis.Redis(
@@ -104,115 +119,275 @@ def example_with_custom_redis_config():
         decode_responses=False
     )
 
-    # Initialize classifier
-    classifier = SkolClassifier(
+    # Train and save with custom key
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=get_file_list("/data/annotated", pattern="**/*.ann"),
+        model_storage='redis',
         redis_client=redis_client,
-        redis_key="skol_production_model"
+        redis_key="skol_production_model_2024_01_15",
+        line_level=True,
+        model_type='random_forest',
+        n_estimators=100
     )
 
-    # Train and save
-    annotated_files = get_file_list("/data/annotated")
-    results = classifier.fit(annotated_files)
+    results = classifier.fit()
+    print(f"Model trained and saved to Redis with custom key")
+    print(f"F1 Score: {results.get('f1_score', 0):.4f}")
 
-    # Save with explicit parameters
-    classifier.save_to_redis(
-        redis_client=redis_client,
-        redis_key="skol_model_2024_01_15"
+    spark.stop()
+
+
+def example_disk_vs_redis():
+    """Example comparing disk and Redis storage."""
+    spark = SparkSession.builder \
+        .appName("SKOL Storage Comparison") \
+        .master("local[*]") \
+        .getOrCreate()
+
+    annotated_files = get_file_list("/path/to/annotated/data", pattern="**/*.ann")
+
+    # Option 1: Save to disk
+    print("Training and saving to disk...")
+    disk_classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='disk',
+        model_path='/models/skol_classifier.pkl',
+        line_level=True,
+        model_type='logistic'
     )
+    disk_classifier.fit()
+    print("✓ Model saved to disk at /models/skol_classifier.pkl")
 
+    # Option 2: Save to Redis
+    print("\nTraining and saving to Redis...")
+    redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-def example_save_to_disk():
-    """Example of saving/loading models to/from disk instead of Redis."""
+    redis_classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key='skol_model',
+        line_level=True,
+        model_type='logistic'
+    )
+    redis_classifier.fit()
+    print("✓ Model saved to Redis with key 'skol_model'")
 
-    # Train model
-    classifier = SkolClassifier()
-    annotated_files = get_file_list("/path/to/annotated/data")
-    results = classifier.fit(annotated_files)
+    # Later, load from either storage
+    print("\nLoading from disk...")
+    disk_predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=get_file_list("/path/to/raw/data", pattern="**/*.txt"),
+        model_storage='disk',
+        model_path='/models/skol_classifier.pkl',
+        auto_load_model=True,
+        line_level=True
+    )
+    print("✓ Loaded from disk")
 
-    # Save to disk
-    print("Saving model to disk...")
-    classifier.save_to_disk("/models/skol_classifier")
-    print("Model saved!")
+    print("\nLoading from Redis...")
+    redis_predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=get_file_list("/path/to/raw/data", pattern="**/*.txt"),
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key='skol_model',
+        auto_load_model=True,
+        line_level=True
+    )
+    print("✓ Loaded from Redis")
 
-    # Later, load from disk
-    new_classifier = SkolClassifier()
-    print("Loading model from disk...")
-    new_classifier.load_from_disk("/models/skol_classifier")
-    print(f"Model loaded! Labels: {new_classifier.labels}")
-
-    # Use loaded model
-    raw_files = get_file_list("/path/to/raw/data")
-    predictions = new_classifier.predict_raw_text(raw_files)
+    spark.stop()
 
 
 def example_train_or_load():
     """Example: Train if model doesn't exist, otherwise load from Redis."""
+    spark = SparkSession.builder \
+        .appName("SKOL Train or Load") \
+        .master("local[*]") \
+        .getOrCreate()
 
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
+    model_key = "my_production_model"
 
-    # Initialize - auto-loads if exists
-    classifier = SkolClassifier(
-        redis_client=redis_client,
-        redis_key="my_production_model"
-    )
-
-    # Check if we need to train
-    if classifier.labels is None:
-        print("No model found in Redis. Training new model...")
-
-        # Train
-        annotated_files = get_file_list("/path/to/annotated/data")
-        results = classifier.fit(annotated_files)
-        print(f"Training complete! F1: {results['f1_score']:.4f}")
-
-        # Save to Redis for next time
-        classifier.save_to_redis()
-        print("Model saved to Redis")
+    # Check if model exists in Redis
+    if redis_client.exists(model_key):
+        print("Model found in Redis, loading...")
+        classifier = SkolClassifierV2(
+            spark=spark,
+            input_source='files',
+            file_paths=get_file_list("/path/to/raw/data", pattern="**/*.txt"),
+            model_storage='redis',
+            redis_client=redis_client,
+            redis_key=model_key,
+            auto_load_model=True,
+            line_level=True
+        )
+        print("✓ Model loaded from Redis")
     else:
-        print(f"Model loaded from Redis with labels: {classifier.labels}")
+        print("No model found in Redis. Training new model...")
+        annotated_files = get_file_list("/path/to/annotated/data", pattern="**/*.ann")
+
+        classifier = SkolClassifierV2(
+            spark=spark,
+            input_source='files',
+            file_paths=annotated_files,
+            model_storage='redis',
+            redis_client=redis_client,
+            redis_key=model_key,
+            line_level=True,
+            use_suffixes=True,
+            model_type='logistic'
+        )
+
+        results = classifier.fit()
+        print(f"✓ Model trained and saved to Redis. F1: {results.get('f1_score', 0):.4f}")
 
     # Now use the model (either freshly trained or loaded)
-    raw_files = get_file_list("/path/to/raw/data")
-    predictions = classifier.predict_raw_text(raw_files)
-    print(f"Predictions made on {predictions.count()} paragraphs")
+    classifier.input_source = 'files'
+    classifier.file_paths = get_file_list("/path/to/raw/data", pattern="**/*.txt")
+
+    raw_df = classifier.load_raw()
+    predictions = classifier.predict(raw_df)
+    print(f"Predictions made on {predictions.count()} items")
+
+    spark.stop()
 
 
 def example_multiple_models():
     """Example of managing multiple models in Redis."""
+    spark = SparkSession.builder \
+        .appName("SKOL Multiple Models") \
+        .master("local[*]") \
+        .getOrCreate()
+
+    redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
+    annotated_files = get_file_list("/path/to/annotated/data", pattern="**/*.ann")
+
+    # Train and save logistic regression model
+    print("Training Logistic Regression model...")
+    lr_classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key="skol_model_logistic_v2",
+        line_level=True,
+        model_type='logistic'
+    )
+    lr_results = lr_classifier.fit()
+    print(f"✓ LR Model saved. F1: {lr_results.get('f1_score', 0):.4f}")
+
+    # Train and save random forest model
+    print("\nTraining Random Forest model...")
+    rf_classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key="skol_model_rf_v2",
+        line_level=True,
+        model_type='random_forest',
+        n_estimators=100
+    )
+    rf_results = rf_classifier.fit()
+    print(f"✓ RF Model saved. F1: {rf_results.get('f1_score', 0):.4f}")
+
+    # Later, load and compare models
+    test_files = get_file_list("/path/to/test/data", pattern="**/*.txt")
+
+    print("\nComparing models on test data...")
+
+    # Load LR model
+    lr_predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=test_files,
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key="skol_model_logistic_v2",
+        auto_load_model=True,
+        line_level=True
+    )
+
+    # Load RF model
+    rf_predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=test_files,
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key="skol_model_rf_v2",
+        auto_load_model=True,
+        line_level=True
+    )
+
+    # Make predictions
+    test_df = lr_predictor.load_raw()
+
+    lr_predictions = lr_predictor.predict(test_df)
+    rf_predictions = rf_predictor.predict(test_df)
+
+    print(f"LR predictions: {lr_predictions.count()}")
+    print(f"RF predictions: {rf_predictions.count()}")
+
+    spark.stop()
+
+
+def example_redis_with_couchdb():
+    """Combine Redis model storage with CouchDB data source."""
+    spark = SparkSession.builder \
+        .appName("SKOL Redis + CouchDB") \
+        .master("local[*]") \
+        .getOrCreate()
 
     redis_client = redis.Redis(host='localhost', port=6379, decode_responses=False)
 
-    # Train and save model version 1 (logistic regression)
-    classifier_v1 = SkolClassifier(redis_client=redis_client)
-    annotated_files = get_file_list("/path/to/annotated/data")
+    # Load model from Redis, process CouchDB data
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='couchdb',
+        couchdb_url='http://localhost:5984',
+        couchdb_database='skol_documents',
+        couchdb_username='admin',
+        couchdb_password='password',
+        couchdb_pattern='*.txt',
+        output_dest='couchdb',
+        output_couchdb_suffix='.ann',
+        model_storage='redis',
+        redis_client=redis_client,
+        redis_key='production_model',
+        auto_load_model=True,
+        line_level=True,
+        coalesce_labels=True
+    )
 
-    print("Training Logistic Regression model...")
-    classifier_v1.fit(annotated_files, model_type="logistic")
-    classifier_v1.save_to_redis(redis_key="skol_model_logistic")
+    print("Processing CouchDB documents with Redis-stored model...")
+    raw_df = classifier.load_raw()
+    predictions = classifier.predict(raw_df)
+    classifier.save_annotated(predictions)
 
-    # Train and save model version 2 (random forest)
-    classifier_v2 = SkolClassifier(redis_client=redis_client)
-    print("Training Random Forest model...")
-    classifier_v2.fit(annotated_files, model_type="random_forest")
-    classifier_v2.save_to_redis(redis_key="skol_model_rf")
+    print("✓ Complete! Model from Redis, data from/to CouchDB")
 
-    # Later, compare models by loading them
-    lr_model = SkolClassifier(redis_client=redis_client)
-    lr_model.load_from_redis(redis_key="skol_model_logistic")
-
-    rf_model = SkolClassifier(redis_client=redis_client)
-    rf_model.load_from_redis(redis_key="skol_model_rf")
-
-    # Use both for predictions and compare
-    test_files = get_file_list("/path/to/test/data")
-
-    lr_predictions = lr_model.predict_raw_text(test_files)
-    rf_predictions = rf_model.predict_raw_text(test_files)
+    spark.stop()
 
 
 if __name__ == "__main__":
-    # Run examples
-    print("=" * 60)
+    print("=" * 80)
+    print("SKOL Classifier V2 - Redis Integration Examples")
+    print("=" * 80)
+
+    print("\n" + "=" * 60)
     print("Example 1: Save model to Redis")
     print("=" * 60)
     example_save_to_redis()
@@ -223,6 +398,30 @@ if __name__ == "__main__":
     example_load_from_redis()
 
     print("\n" + "=" * 60)
-    print("Example 3: Save/Load from disk")
+    print("Example 3: Disk vs Redis storage")
     print("=" * 60)
-    example_save_to_disk()
+    example_disk_vs_redis()
+
+    print("\n" + "=" * 60)
+    print("Example 4: Train or load from Redis")
+    print("=" * 60)
+    example_train_or_load()
+
+    print("\n" + "=" * 60)
+    print("Example 5: Multiple models in Redis")
+    print("=" * 60)
+    example_multiple_models()
+
+    print("\n" + "=" * 60)
+    print("Example 6: Redis with CouchDB")
+    print("=" * 60)
+    example_redis_with_couchdb()
+
+    print("\n" + "=" * 80)
+    print("All examples complete!")
+    print("\nKey benefits of V2 API with Redis:")
+    print("- Automatic save after fit() when model_storage='redis'")
+    print("- Automatic load with auto_load_model=True")
+    print("- Model storage independent of data source")
+    print("- Unified configuration in constructor")
+    print("=" * 80)

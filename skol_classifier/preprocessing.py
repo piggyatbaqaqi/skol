@@ -299,3 +299,15 @@ class ParagraphExtractor:
         if label not in ['Nomenclature', 'Description']:
             return 'Misc-exposition'
         return label
+
+
+
+__all__ = [
+    'SuffixTransformer',
+    'ParagraphExtractor',
+    'SUFFIXES',
+    'NOMENCLATURE_RE',
+    'TABLE_KEYWORDS',
+    'FIGURE_KEYWORDS',
+    'TAXON_PATTERN',
+]

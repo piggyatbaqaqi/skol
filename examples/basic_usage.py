@@ -1,15 +1,20 @@
 """
-Basic usage example for SKOL text classifier
+Basic usage example for SKOL text classifier using V2 API
 """
 
-from skol_classifier import SkolClassifier, get_file_list
+from pyspark.sql import SparkSession
+from skol_classifier.classifier_v2 import SkolClassifierV2
+from skol_classifier import get_file_list
 
 
 def main():
-    # Initialize classifier
-    classifier = SkolClassifier()
+    # Initialize Spark session
+    spark = SparkSession.builder \
+        .appName("SKOL Basic Usage Example") \
+        .master("local[*]") \
+        .getOrCreate()
 
-    # Example 1: Load and train on annotated data
+    # Example 1: Train from files and save to disk
     print("=" * 60)
     print("Example 1: Training the classifier")
     print("=" * 60)
@@ -19,27 +24,33 @@ def main():
         pattern="**/*.txt.ann"
     )
 
-    # Train the model
-    results = classifier.fit(
-        annotated_file_paths=annotated_files,
-        model_type="logistic",  # or "random_forest"
+    # Initialize classifier with all configuration in constructor
+    classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        model_storage='disk',
+        model_path='models/basic_model.pkl',
+        line_level=False,
         use_suffixes=True,
-        test_size=0.2,
+        model_type='logistic',
         maxIter=10,
         regParam=0.01
     )
 
-    print(f"\nTraining Results:")
-    print(f"  Train size: {results['train_size']}")
-    print(f"  Test size: {results['test_size']}")
-    print(f"  Model: {results['model_type']}")
-    print(f"  Features: {results['features_col']}")
-    print(f"  Accuracy: {results['accuracy']:.4f}")
-    print(f"  Precision: {results['precision']:.4f}")
-    print(f"  Recall: {results['recall']:.4f}")
-    print(f"  F1 Score: {results['f1_score']:.4f}")
+    # Train the model (automatically saves to disk)
+    results = classifier.fit()
 
-    # Example 2: Predict on raw text
+    print(f"\nTraining Results:")
+    print(f"  Train size: {results.get('train_size', 'N/A')}")
+    print(f"  Test size: {results.get('test_size', 'N/A')}")
+    print(f"  Accuracy: {results.get('accuracy', 0):.4f}")
+    print(f"  Precision: {results.get('precision', 0):.4f}")
+    print(f"  Recall: {results.get('recall', 0):.4f}")
+    print(f"  F1 Score: {results.get('f1_score', 0):.4f}")
+    print(f"  Model saved to: models/basic_model.pkl")
+
+    # Example 2: Predict on raw text files
     print("\n" + "=" * 60)
     print("Example 2: Predicting on raw text")
     print("=" * 60)
@@ -49,15 +60,30 @@ def main():
         pattern="**/*.txt"
     )
 
-    predictions = classifier.predict_raw_text(
+    # Create predictor with same model
+    predictor = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
         file_paths=raw_files,
-        output_format="annotated"
+        output_dest='files',
+        output_path='/path/to/output/annotated',
+        model_storage='disk',
+        model_path='models/basic_model.pkl',
+        auto_load_model=True,
+        line_level=False,
+        output_format='annotated'
     )
+
+    # Load, predict, and save
+    raw_df = predictor.load_raw()
+    print(f"Loaded {raw_df.count()} documents")
+
+    predictions = predictor.predict(raw_df)
 
     # Show sample predictions
     print("\nSample predictions:")
     predictions.select(
-        "filename", "row_number", "predicted_label", "value"
+        "filename", "predicted_label", "value"
     ).show(5, truncate=50)
 
     # Example 3: Save annotated output
@@ -65,44 +91,43 @@ def main():
     print("Example 3: Saving annotated output")
     print("=" * 60)
 
-    output_path = "/path/to/output/annotated"
-    classifier.save_annotated_output(predictions, output_path)
-    print(f"Annotated output saved to: {output_path}")
+    predictor.save_annotated(predictions)
+    print(f"Annotated output saved to: {predictor.output_path}")
 
-    # Example 4: Manual pipeline (for more control)
+    # Example 4: Train and predict in one session
     print("\n" + "=" * 60)
-    print("Example 4: Manual pipeline")
+    print("Example 4: Complete workflow")
     print("=" * 60)
 
-    # Load annotated data
-    annotated_df = classifier.load_annotated_data(annotated_files)
-    print(f"Loaded {annotated_df.count()} annotated paragraphs")
-
-    # Extract features
-    features = classifier.fit_features(
-        annotated_df,
+    # Single classifier instance handles everything
+    workflow_classifier = SkolClassifierV2(
+        spark=spark,
+        input_source='files',
+        file_paths=annotated_files,
+        line_level=True,  # Process at line level
         use_suffixes=True,
-        min_doc_freq=10
+        model_type='random_forest',
+        n_estimators=50
     )
-    print(f"Extracted features, labels: {classifier.labels}")
 
-    # Split data
-    train_data, test_data = features.randomSplit([0.8, 0.2], seed=42)
+    # Train
+    results = workflow_classifier.fit()
+    print(f"Trained with {results.get('train_size', 0)} samples")
 
-    # Train model
-    classifier.train_classifier(
-        train_data,
-        model_type="logistic",
-        features_col="combined_idf",
-        maxIter=10,
-        regParam=0.01
-    )
-    print("Model trained")
+    # Switch to prediction mode
+    workflow_classifier.input_source = 'files'
+    workflow_classifier.file_paths = raw_files
+    workflow_classifier.output_dest = 'files'
+    workflow_classifier.output_path = '/path/to/output'
 
-    # Predict and evaluate
-    predictions = classifier.predict(test_data)
-    stats = classifier.evaluate(predictions)
-    print(f"\nEvaluation stats: {stats}")
+    # Predict and save
+    raw_df = workflow_classifier.load_raw()
+    predictions = workflow_classifier.predict(raw_df)
+    workflow_classifier.save_annotated(predictions)
+
+    print(f"Complete workflow finished!")
+
+    spark.stop()
 
 
 if __name__ == "__main__":
