@@ -1,15 +1,23 @@
 """
-Example comparing different models and feature configurations
+Example comparing different models and feature configurations using V2 API
+
+This demonstrates how the unified SkolClassifierV2 API simplifies
+model comparison by having all configuration in the constructor.
 """
 
-from skol_classifier import SkolClassifier, get_file_list
+from pyspark.sql import SparkSession
+from skol_classifier.classifier_v2 import SkolClassifierV2
+from skol_classifier import get_file_list
 
 
 def compare_models():
-    """Compare different model configurations."""
+    """Compare different model configurations using V2 API."""
 
-    # Initialize classifier
-    classifier = SkolClassifier()
+    # Initialize Spark session
+    spark = SparkSession.builder \
+        .appName("SKOL Model Comparison") \
+        .master("local[*]") \
+        .getOrCreate()
 
     # Load annotated data
     annotated_files = get_file_list(
@@ -38,14 +46,14 @@ def compare_models():
             "name": "Random Forest (words only)",
             "model_type": "random_forest",
             "use_suffixes": False,
-            "numTrees": 100,
+            "n_estimators": 100,
             "line_level": False
         },
         {
             "name": "Random Forest (words + suffixes)",
             "model_type": "random_forest",
             "use_suffixes": True,
-            "numTrees": 100,
+            "n_estimators": 100,
             "line_level": False
         },
         {
@@ -68,14 +76,14 @@ def compare_models():
             "name": "Random Forest (line-level, words only)",
             "model_type": "random_forest",
             "use_suffixes": False,
-            "numTrees": 100,
+            "n_estimators": 100,
             "line_level": True
         },
         {
             "name": "Random Forest (line-level, words + suffixes)",
             "model_type": "random_forest",
             "use_suffixes": True,
-            "numTrees": 100,
+            "n_estimators": 100,
             "line_level": True
         }
     ]
@@ -87,18 +95,19 @@ def compare_models():
         print(f"Testing: {config['name']}")
         print(f"{'=' * 60}")
 
-        # Create fresh classifier for each test
-        test_classifier = SkolClassifier()
-
-        # Extract configuration parameters
+        # Extract name from config
         name = config.pop("name")
 
-        # Train and evaluate
-        stats = test_classifier.fit(
-            annotated_file_paths=annotated_files,
-            test_size=0.2,
-            **config
+        # Create classifier with V2 API - all config in constructor
+        classifier = SkolClassifierV2(
+            spark=spark,
+            input_source='files',
+            file_paths=annotated_files,
+            **config  # Pass all model/feature configuration
         )
+
+        # Train (no parameters needed - everything in constructor)
+        stats = classifier.fit()
 
         # Store results
         results.append({
@@ -106,13 +115,13 @@ def compare_models():
             **stats
         })
 
-        print(f"  Mode:      {'Line-level' if stats.get('line_level', False) else 'Paragraph'}")
-        print(f"  Train:     {stats['train_size']} samples")
-        print(f"  Test:      {stats['test_size']} samples")
-        print(f"  Accuracy:  {stats['accuracy']:.4f}")
-        print(f"  Precision: {stats['precision']:.4f}")
-        print(f"  Recall:    {stats['recall']:.4f}")
-        print(f"  F1 Score:  {stats['f1_score']:.4f}")
+        print(f"  Mode:      {'Line-level' if config.get('line_level', False) else 'Paragraph'}")
+        print(f"  Train:     {stats.get('train_size', 'N/A')} samples")
+        print(f"  Test:      {stats.get('test_size', 'N/A')} samples")
+        print(f"  Accuracy:  {stats.get('accuracy', 0):.4f}")
+        print(f"  Precision: {stats.get('precision', 0):.4f}")
+        print(f"  Recall:    {stats.get('recall', 0):.4f}")
+        print(f"  F1 Score:  {stats.get('f1_score', 0):.4f}")
 
     # Print comparison table
     print(f"\n{'=' * 80}")
@@ -124,17 +133,19 @@ def compare_models():
     for result in results:
         print(
             f"{result['name']:<45} "
-            f"{result['accuracy']:>8.4f} "
-            f"{result['precision']:>10.4f} "
-            f"{result['recall']:>8.4f} "
-            f"{result['f1_score']:>8.4f}"
+            f"{result.get('accuracy', 0):>8.4f} "
+            f"{result.get('precision', 0):>10.4f} "
+            f"{result.get('recall', 0):>8.4f} "
+            f"{result.get('f1_score', 0):>8.4f}"
         )
 
     # Find best model
-    best = max(results, key=lambda x: x['f1_score'])
+    best = max(results, key=lambda x: x.get('f1_score', 0))
     print(f"\n{'=' * 80}")
-    print(f"Best model: {best['name']} (F1: {best['f1_score']:.4f})")
+    print(f"Best model: {best['name']} (F1: {best.get('f1_score', 0):.4f})")
     print(f"{'=' * 80}")
+
+    spark.stop()
 
 
 if __name__ == "__main__":

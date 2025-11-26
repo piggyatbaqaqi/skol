@@ -51,9 +51,11 @@ from pathlib import Path
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.ml import PipelineModel
 
-# Import from existing classifier module
-from .preprocessing import FeatureExtractor
+# Import helper classes
+from .feature_extraction import FeatureExtractor
 from .model import SkolModel
+from .data_loaders import AnnotatedTextLoader, RawTextLoader
+from .output_formatters import YedaFormatter, FileOutputWriter, CouchDBOutputWriter
 from .couchdb_io import CouchDBConnection
 
 
@@ -450,7 +452,7 @@ class SkolClassifierV2:
 
     def _load_annotated_from_files(self) -> DataFrame:
         """Load annotated data from files."""
-        from .preprocessing import AnnotatedTextLoader
+        from .data_loaders import AnnotatedTextLoader
 
         loader = AnnotatedTextLoader(self.spark)
         return loader.load_files(
@@ -516,15 +518,11 @@ class SkolClassifierV2:
 
     def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
         """Format predictions as YEDA-style annotated blocks."""
-        from .formatting import YedaFormatter
-
         formatter = YedaFormatter(coalesce_labels=self.coalesce_labels)
         return formatter.format(predictions_df)
 
     def _save_to_files(self, predictions: DataFrame) -> None:
         """Save predictions to local files."""
-        from .output import FileOutputWriter
-
         writer = FileOutputWriter(self.output_path)
         writer.write(predictions)
 
