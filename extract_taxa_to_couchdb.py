@@ -249,6 +249,150 @@ class TaxonExtractor:
 
         return taxa_df
 
+    def load_taxa(self, pattern: str = "taxon_*") -> DataFrame:
+        """
+        Load taxa from CouchDB taxon database.
+
+        This method performs the inverse operation of save_taxa(), loading
+        taxa documents from CouchDB and converting them back to a DataFrame.
+
+        Args:
+            pattern: Pattern for document IDs to load (default: "taxon_*")
+                    Use "*" to load all documents
+                    Use "taxon_abc*" to load specific subset
+
+        Returns:
+            DataFrame with taxa information matching the extract_taxa() schema:
+            - taxon: String of concatenated nomenclature paragraphs
+            - description: String of concatenated description paragraphs
+            - source: Dict with keys doc_id, url, db_name
+            - line_number: Line number of first nomenclature paragraph
+            - paragraph_number: Paragraph number of first nomenclature paragraph
+            - page_number: Page number of first nomenclature paragraph
+            - empirical_page_number: Empirical page number of first nomenclature paragraph
+
+        Example:
+            >>> # Load all taxa
+            >>> taxa_df = extractor.load_taxa()
+            >>> print(f"Loaded {taxa_df.count()} taxa")
+            >>>
+            >>> # Load specific subset
+            >>> subset_df = extractor.load_taxa(pattern="taxon_abc*")
+        """
+        # Extract to local variables to avoid serializing self
+        couchdb_url = self.taxon_couchdb_url
+        db_name = self.taxon_db_name
+        username = self.taxon_username
+        password = self.taxon_password
+        extract_schema = self._extract_schema
+
+        def load_partition(partition: Iterator[Row]) -> Iterator[Row]:
+            """Load taxa from CouchDB for an entire partition."""
+            # Connect to CouchDB once per partition
+            try:
+                server = couchdb.Server(couchdb_url)
+                if username and password:
+                    server.resource.credentials = (username, password)
+
+                # Check if database exists
+                if db_name not in server:
+                    print(f"Database {db_name} does not exist")
+                    return
+
+                db = server[db_name]
+
+                # Process each row (which contains doc_id)
+                for row in partition:
+                    try:
+                        doc_id = row.doc_id if hasattr(row, 'doc_id') else str(row[0])
+
+                        # Load document from CouchDB
+                        if doc_id in db:
+                            doc = db[doc_id]
+
+                            # Convert CouchDB document to Row
+                            # Remove CouchDB metadata fields
+                            taxon_data = {
+                                'taxon': doc.get('taxon', ''),
+                                'description': doc.get('description', ''),
+                                'source': doc.get('source', {}),
+                                'line_number': doc.get('line_number'),
+                                'paragraph_number': doc.get('paragraph_number'),
+                                'page_number': doc.get('page_number'),
+                                'empirical_page_number': doc.get('empirical_page_number'),
+                            }
+
+                            yield Row(**taxon_data)
+                        else:
+                            print(f"Document {doc_id} not found in database")
+
+                    except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
+                        print(f"Error loading taxon {doc_id}: {e}")
+
+            except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
+                print(f"Error connecting to CouchDB: {e}")
+
+        # First, get list of document IDs matching pattern from CouchDB
+        # We need to create a DataFrame with doc_ids to process
+        doc_ids = self._get_matching_doc_ids(pattern)
+
+        if not doc_ids:
+            # Return empty DataFrame with correct schema
+            return self.spark.createDataFrame([], extract_schema)
+
+        # Create DataFrame with doc_ids for parallel processing
+        doc_ids_rdd = self.spark.sparkContext.parallelize(doc_ids)
+        doc_ids_df = doc_ids_rdd.map(lambda x: Row(doc_id=x)).toDF()
+
+        # Load taxa using mapPartitions
+        taxa_rdd = doc_ids_df.rdd.mapPartitions(load_partition)
+        taxa_df = self.spark.createDataFrame(taxa_rdd, extract_schema)
+
+        return taxa_df
+
+    def _get_matching_doc_ids(self, pattern: str) -> list:
+        """
+        Get list of document IDs matching the pattern from CouchDB.
+
+        Args:
+            pattern: Pattern for document IDs (e.g., "taxon_*", "*")
+
+        Returns:
+            List of matching document IDs
+        """
+        try:
+            server = couchdb.Server(self.taxon_couchdb_url)
+            if self.taxon_username and self.taxon_password:
+                server.resource.credentials = (self.taxon_username, self.taxon_password)
+
+            # Check if database exists
+            if self.taxon_db_name not in server:
+                print(f"Database {self.taxon_db_name} does not exist")
+                return []
+
+            db = server[self.taxon_db_name]
+
+            # Get all document IDs
+            all_doc_ids = [doc_id for doc_id in db if not doc_id.startswith('_design/')]
+
+            # Filter by pattern
+            if pattern == "*":
+                # Return all non-design documents
+                return all_doc_ids
+            else:
+                # Simple pattern matching (prefix matching for now)
+                # Convert glob pattern to prefix
+                if pattern.endswith('*'):
+                    prefix = pattern[:-1]
+                    return [doc_id for doc_id in all_doc_ids if doc_id.startswith(prefix)]
+                else:
+                    # Exact match
+                    return [doc_id for doc_id in all_doc_ids if doc_id == pattern]
+
+        except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
+            print(f"Error getting document IDs from CouchDB: {e}")
+            return []
+
     def save_taxa(self, taxa_df: DataFrame) -> DataFrame:
         """
         Save taxa DataFrame to CouchDB taxon database.
