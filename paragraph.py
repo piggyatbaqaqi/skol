@@ -121,8 +121,8 @@ class Paragraph(object):
             'filename': self.filename,
             'url': self.url,
             'label': str(self.top_label()),
-            'paragraph_number': str(self.paragraph_number),
-            'page_number': str(self.page_number),
+            'paragraph_number': self.paragraph_number,
+            'page_number': self.page_number,
             'empirical_page_number': str(self.empirical_page_number),
             'body': str(self)
         }
