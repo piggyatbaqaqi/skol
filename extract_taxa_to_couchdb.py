@@ -235,9 +235,12 @@ class TaxonExtractor:
         Returns:
             DataFrame with taxa information (taxon, description, source, line numbers, etc.)
         """
+        # Extract to local variable to avoid serializing self
+        db_name = self.ingest_db_name
+
         def extract_partition(partition):  # type: ignore[reportUnknownParameterType]
             # Extract Taxon objects
-            taxa = extract_taxa_from_partition(iter(partition), self.ingest_db_name)  # type: ignore[reportUnknownArgumentType]
+            taxa = extract_taxa_from_partition(iter(partition), db_name)  # type: ignore[reportUnknownArgumentType]
             # Convert to Rows for DataFrame
             return convert_taxa_to_rows(taxa)
 
@@ -256,19 +259,25 @@ class TaxonExtractor:
         Returns:
             DataFrame with save results (doc_id, success, error_message)
         """
+        # Extract to local variables to avoid serializing self
+        couchdb_url = self.taxon_couchdb_url
+        db_name = self.taxon_db_name
+        username = self.taxon_username
+        password = self.taxon_password
+
         def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
             """Save taxa to CouchDB for an entire partition (idempotent)."""
             # Connect to CouchDB once per partition
             try:
-                server = couchdb.Server(self.taxon_couchdb_url)
-                if self.taxon_username and self.taxon_password:
-                    server.resource.credentials = (self.taxon_username, self.taxon_password)
+                server = couchdb.Server(couchdb_url)
+                if username and password:
+                    server.resource.credentials = (username, password)
 
                 # Get or create database
-                if self.taxon_db_name in server:
-                    db = server[self.taxon_db_name]
+                if db_name in server:
+                    db = server[db_name]
                 else:
-                    db = server.create(self.taxon_db_name)  # pyright: ignore[reportUnknownMemberType]
+                    db = server.create(db_name)  # pyright: ignore[reportUnknownMemberType]
 
                 # Process each taxon in the partition
                 for row in partition:
