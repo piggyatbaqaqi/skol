@@ -128,7 +128,7 @@ Save annotated predictions back to CouchDB as attachments.
 Uses the CouchDB configuration set in the constructor.
 
 **Args:**
-- `predictions`: DataFrame with predictions (must include `annotated_pg` column)
+- `predictions`: DataFrame with predictions (must include `annotated_value` column)
 - `suffix`: Suffix to append to attachment names (default: ".ann")
 
 **Returns:** List of results from CouchDB operations

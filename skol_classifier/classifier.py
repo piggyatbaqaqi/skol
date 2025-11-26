@@ -425,7 +425,7 @@ class SkolClassifier:
         # Format output
         if output_format == "annotated":
             labeled_predictions = labeled_predictions.withColumn(
-                "annotated_pg",
+                "annotated_value",
                 concat(
                     lit("[@ "),
                     col("value"),
@@ -453,10 +453,10 @@ class SkolClassifier:
         aggregated_df = (
             predictions.groupBy("filename")
             .agg(
-                expr("sort_array(collect_list(struct(row_number, annotated_pg))) AS sorted_list")
+                expr("sort_array(collect_list(struct(row_number, annotated_value))) AS sorted_list")
             )
-            .withColumn("annotated_pg_ordered", expr("transform(sorted_list, x -> x.annotated_pg)"))
-            .withColumn("final_aggregated_pg", expr("array_join(annotated_pg_ordered, '\n')"))
+            .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
+            .withColumn("final_aggregated_pg", expr("array_join(annotated_value_ordered, '\n')"))
             .select("filename", "final_aggregated_pg")
         )
 
@@ -818,7 +818,7 @@ class SkolClassifier:
         # Format output
         if output_format == "annotated":
             labeled_predictions = labeled_predictions.withColumn(
-                "annotated_pg",
+                "annotated_value",
                 concat(
                     lit("[@ "),
                     col("value"),
@@ -930,10 +930,10 @@ class SkolClassifier:
             aggregated_df = (
                 predictions.groupBy("doc_id", "attachment_name")
                 .agg(
-                    expr("sort_array(collect_list(struct(row_number, annotated_pg))) AS sorted_list")
+                    expr("sort_array(collect_list(struct(row_number, annotated_value))) AS sorted_list")
                 )
-                .withColumn("annotated_pg_ordered", expr("transform(sorted_list, x -> x.annotated_pg)"))
-                .withColumn("final_aggregated_pg", expr("array_join(annotated_pg_ordered, '\n')"))
+                .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
+                .withColumn("final_aggregated_pg", expr("array_join(annotated_value_ordered, '\n')"))
                 .select("doc_id", "attachment_name", "final_aggregated_pg")
             )
             final_df = aggregated_df
