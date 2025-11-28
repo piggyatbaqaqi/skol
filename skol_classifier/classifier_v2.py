@@ -93,6 +93,7 @@ class SkolClassifierV2:
         model_storage: Where to store trained model ('disk', 'redis', or None)
         model_path: Path for disk storage
         redis_client: Redis client instance for redis storage
+        redis_expire: If not None, expiration time for redis storage
         redis_key: Key for redis storage
         auto_load_model: Whether to load model from storage on initialization
 
@@ -155,6 +156,7 @@ class SkolClassifierV2:
         model_path: Optional[str] = None,
         redis_client: Optional[Any] = None,
         redis_key: Optional[str] = None,
+        redis_expire: Optional[int] = None,
         auto_load_model: bool = False,
 
         # Processing configuration
@@ -193,6 +195,7 @@ class SkolClassifierV2:
         self.model_path = model_path
         self.redis_client = redis_client
         self.redis_key = redis_key
+        self.redis_expire = redis_expire
 
         # Processing configuration
         self.line_level = line_level
@@ -725,6 +728,8 @@ class SkolClassifierV2:
             # Save to Redis
             archive_data = archive_buffer.getvalue()
             self.redis_client.set(self.redis_key, archive_data)
+            if self.redis_expire is not None:
+                self.redis_client.expire(self.redis_key, self.redis_expire)
 
         finally:
             # Clean up temporary directory
