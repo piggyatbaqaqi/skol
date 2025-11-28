@@ -12,6 +12,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from pyspark.sql import SparkSession
 from skol_classifier.classifier_v2 import SkolClassifierV2
 
+# pylint: disable=protected-access
+
 
 def test_line_level_loading():
     """Compare line-level vs paragraph-level data loading with SkolClassifierV2."""
@@ -111,10 +113,10 @@ exposition
         # Test V2 API specific features
         print("\n3. V2 API FEATURES")
         print("-" * 70)
-        print(f"Line-level classifier configuration:")
+        print("Line-level classifier configuration:")
         print(f"  line_level={classifier_line.line_level}")
         print(f"  input_source={classifier_line.input_source}")
-        print(f"  ✓ Configuration verified")
+        print("  ✓ Configuration verified")
 
         # Overall result
         success = (
@@ -138,7 +140,7 @@ exposition
         if 'temp_file' in locals():
             try:
                 os.unlink(temp_file)
-            except:
+            except FileNotFoundError:
                 pass
         spark.stop()
 

@@ -11,8 +11,7 @@ processing, optimized for batch processing of taxa descriptions.
 
 import json
 import io
-from typing import Optional, Dict, Any, List
-from pathlib import Path
+from typing import Optional, Dict, Any
 
 import torch
 from transformers import (
@@ -23,7 +22,7 @@ from transformers import (
 from peft import PeftModel
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import udf, col
-from pyspark.sql.types import StringType, StructType, StructField
+from pyspark.sql.types import StringType
 
 
 class TaxaJSONTranslator:
@@ -99,13 +98,12 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 
 ## Instructions
 1. Read the entire species description carefully
-2. Identify all botanical features mentioned
+2. Identify all taxonomic features mentioned
 3. Organize them hierarchically (feature → subfeature → subsubfeature if needed)
 4. Extract all values and place them in arrays at the innermost level
 5. Split any comma-separated values into separate array elements
 6. Return valid JSON only, with no additional commentary
 
-## Species Description
 '''
 
     def __init__(
@@ -242,7 +240,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         """
         return f"""<s>[INST]{self.prompt}
 
-Here is the description:
+## Species Description
 {description}[/INST]
 
 Result:
@@ -289,13 +287,13 @@ Result:
 
     def generate_json(self, description: str) -> str:
         """
-        Generate JSON from a taxa description.
+        Generate JSON from a taxon description.
 
         Args:
-            description: Taxa description text
+            description: Taxon description text
 
         Returns:
-            JSON string (or empty JSON object if generation fails)
+            JSON object (or empty JSON object if generation fails)
         """
         try:
             # Create prompt
@@ -402,8 +400,8 @@ Result:
         print(f"  Output column: {output_col}")
         print(f"  Batch size: {batch_size}")
 
-        # Collect descriptions
-        descriptions = taxa_df.select("taxon", description_col).collect()
+        # Collect descriptions with _id for joining
+        descriptions = taxa_df.select("_id", "taxon", description_col).collect()
         total = len(descriptions)
 
         print(f"Processing {total} descriptions...")
@@ -415,22 +413,24 @@ Result:
             print(f"  Batch {i//batch_size + 1}/{(total + batch_size - 1)//batch_size}")
 
             for row in batch:
+                doc_id = row['_id']
                 taxon = row['taxon']
                 description = row[description_col]
 
                 # Generate JSON
-                json_str = self.generate_json(description)
+                json_obj = self.generate_json(description)
 
                 results.append({
-                    'taxon': taxon,
-                    output_col: json_str
+                    '_id': doc_id,
+                    output_col: json_obj
                 })
+                print("DEBUG: Generated JSON:", json_obj)
 
         # Create DataFrame from results
         results_df = self.spark.createDataFrame(results)
 
-        # Join back to original DataFrame
-        enriched_df = taxa_df.join(results_df, on="taxon", how="left")
+        # Join back to original DataFrame on _id
+        enriched_df = taxa_df.join(results_df, on="_id", how="left")
 
         print(f"✓ Translated {total} descriptions")
 
