@@ -55,13 +55,57 @@ class TaxaJSONTranslator:
     DEFAULT_MAX_NEW_TOKENS = 1024
 
     # Default prompt for feature extraction
-    DEFAULT_PROMPT = '''Please extract features, subfeatures, optional subsubfeatures, and values from the following species description.
-Format the output as JSON.
-The top level of the JSON is feature names. The next level in is subfeature names . The optional next level in is subsubfeature names.
-The innermost layer is lists of string-valued values.
-Lists are only present at the innermost level of the JSON.
-Feature values that are comma-separated strings should be broken down into separate values.
-Translate Latin paragraphs to English.
+    DEFAULT_PROMPT = '''\
+    # Task: Extract Taxonomic Features from Species Description
+
+## Objective
+Extract features, subfeatures, optional subsubfeatures, and their values from the provided species description and format them as structured JSON.
+
+## Pre-processing Steps
+1. If any paragraph is in Latin, translate it to English first
+2. Then proceed with feature extraction
+
+## Output Format Requirements
+
+### JSON Structure
+- **Level 1 (Top level)**: Feature names (keys)
+- **Level 2**: Subfeature names (keys)
+- **Level 3 (Optional)**: Subsubfeature names (keys)
+- **Add additional levels as needed for deeper nesting**
+- **Innermost level**: Arrays of string values
+
+### Critical Rules
+1. Values are ALWAYS stored in arrays (lists), even if there's only one value
+2. Arrays only appear at the deepest/innermost level of nesting
+3. All intermediate levels are objects (dictionaries), not arrays
+4. When you encounter comma-separated values, split them into separate array elements
+
+## Example Structure
+```json
+{
+  "leaf": {
+    "shape": ["ovate", "lanceolate"],
+    "margin": {
+      "type": ["serrate", "dentate"],
+      "apex": ["acute"]
+    }
+  },
+  "flower": {
+    "color": ["white", "pink"],
+    "size": ["2-3 cm"]
+  }
+}
+```
+
+## Instructions
+1. Read the entire species description carefully
+2. Identify all botanical features mentioned
+3. Organize them hierarchically (feature → subfeature → subsubfeature if needed)
+4. Extract all values and place them in arrays at the innermost level
+5. Split any comma-separated values into separate array elements
+6. Return valid JSON only, with no additional commentary
+
+## Species Description
 '''
 
     def __init__(
