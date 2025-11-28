@@ -21,7 +21,6 @@ from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
 from taxon import group_paragraphs, Taxon
 
-
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
     """
     Generate a unique, deterministic document ID for a taxon.
@@ -114,6 +113,31 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
     """
     for taxon in partition:
         taxon_dict = taxon.as_row()
+
+        # DEBUG: Validate ALL dict fields for non-string values
+        # The schema has two MapType(StringType(), StringType()) fields: 'source' and 'json_annotated'
+        for field_name in ['source', 'json_annotated']:
+            if field_name in taxon_dict and taxon_dict[field_name] is not None:
+                field_value = taxon_dict[field_name]
+                if isinstance(field_value, dict):
+                    for key, value in field_value.items():
+                        if value is not None and not isinstance(value, str):
+                            taxon_name = taxon_dict.get('taxon', 'N/A')
+                            taxon_preview = taxon_name[:50] + '...' if isinstance(taxon_name, str) and len(taxon_name) > 50 else taxon_name
+                            print(f"⚠️  ERROR: Non-string in {field_name}['{key}']: {value} ({type(value).__name__})")
+                            print(f"   Taxon: {taxon_preview}")
+                            print(f"   Full {field_name}: {field_value}")
+                            # Convert to string to prevent schema error
+                            field_value[key] = str(value)
+
+        # if '_id' not in taxon_dict:
+        #     taxon_dict['_id'] = generate_taxon_doc_id(
+        #         taxon_dict['source']['doc_id'],
+        #         taxon_dict['source'].get('url'),
+        #         taxon_dict['line_number'] or 0
+        #     )
+        # if 'json_annotated' not in taxon_dict:
+        #     taxon_dict['json_annotated'] = None
         # Convert dict to Row
         yield Row(**taxon_dict)
 
@@ -197,7 +221,7 @@ class TaxonExtractor:
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
             StructField("page_number", IntegerType(), True),
-            StructField("empirical_page_number", StringType(), True),
+            StructField("empirical_page_number", StringType(), True)
         ])
 
         # Schema for save results
@@ -309,9 +333,9 @@ class TaxonExtractor:
                         # Load document from CouchDB
                         if doc_id in db:
                             doc = db[doc_id]
+                            print("DEBUG: doc_id =", doc_id, "doc keys =", list(doc.keys()))
 
                             # Convert CouchDB document to Row
-                            # Remove CouchDB metadata fields
                             taxon_data = {
                                 'taxon': doc.get('taxon', ''),
                                 'description': doc.get('description', ''),
@@ -319,7 +343,7 @@ class TaxonExtractor:
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
                                 'page_number': doc.get('page_number'),
-                                'empirical_page_number': doc.get('empirical_page_number'),
+                                'empirical_page_number': doc.get('empirical_page_number')
                             }
 
                             yield Row(**taxon_data)

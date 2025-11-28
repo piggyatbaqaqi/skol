@@ -69,7 +69,7 @@ class Taxon(object):
         source_db_name = first_line.db_name or "unknown"
         line_number = first_line.line_number
 
-        retval: Dict[str, None | str | int | Dict[str, None | str | int]] = {
+        retval: Dict[str, None | str | int | Dict[str, None | str]] = {
             'taxon': "\n".join((str(pp) for pp in self._nomenclatures)),
             'description': "\n".join((str(pp) for pp in self._descriptions)),
             'source': {
@@ -80,7 +80,7 @@ class Taxon(object):
             'line_number': line_number,
             'paragraph_number': pp.paragraph_number,
             'page_number': pp.page_number,
-            'empirical_page_number': pp.empirical_page_number,
+            'empirical_page_number': str(pp.empirical_page_number) if pp.empirical_page_number is not None else None,
         }
         return retval
 
