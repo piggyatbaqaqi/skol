@@ -79,23 +79,6 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 3. All intermediate levels are objects (dictionaries), not arrays
 4. When you encounter comma-separated values, split them into separate array elements
 
-## Example Structure
-```json
-{
-  "leaf": {
-    "shape": ["ovate", "lanceolate"],
-    "margin": {
-      "type": ["serrate", "dentate"],
-      "apex": ["acute"]
-    }
-  },
-  "flower": {
-    "color": ["white", "pink"],
-    "size": ["2-3 cm"]
-  }
-}
-```
-
 ## Instructions
 1. Read the entire species description carefully
 2. Identify all taxonomic features mentioned
@@ -546,7 +529,6 @@ Result:
 
             for row in batch:
                 doc_id = row['_id']
-                taxon = row['taxon']
                 description = row[description_col]
 
                 # Generate JSON
@@ -556,6 +538,7 @@ Result:
                     '_id': doc_id,
                     output_col: json_obj
                 })
+                print("DEBUG: description:", description)
                 print("DEBUG: Generated JSON:", json_obj)
 
         # Create DataFrame from results
@@ -591,8 +574,6 @@ Result:
         taxa_df: DataFrame,
         couchdb_url: str,
         db_name: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
         json_annotated_col: str = "features_json"
     ) -> DataFrame:
         """
@@ -603,12 +584,12 @@ Result:
         The save operation is idempotent - documents with the same composite key
         (source.doc_id, source.url, line_number) will be updated rather than duplicated.
 
+        Uses credentials from self.username and self.password.
+
         Args:
             taxa_df: DataFrame with taxa and translations (must include json_annotated_col)
             couchdb_url: URL of CouchDB server
             db_name: Name of taxon database
-            username: Optional username for authentication
-            password: Optional password for authentication
             json_annotated_col: Name of column containing JSON features (default: "features_json")
 
         Returns:
@@ -623,14 +604,16 @@ Result:
             >>> results = translator.save_taxa(
             ...     enriched_df,
             ...     couchdb_url="http://localhost:5984",
-            ...     db_name="mycobank_taxa",
-            ...     username="admin",
-            ...     password="secret"
+            ...     db_name="mycobank_taxa"
             ... )
             >>> print(f"Saved: {results.filter('success = true').count()}")
         """
         from pyspark.sql import Row
         from pyspark.sql.types import StructType, StructField, StringType, BooleanType
+
+        # Get credentials from self
+        username = self.username
+        password = self.password
 
         # Schema for save results
         save_schema = StructType([
@@ -641,7 +624,7 @@ Result:
 
         def save_partition(partition):
             """Save taxa to CouchDB for an entire partition (idempotent)."""
-            import couchdb
+            from skol_classifier.couchdb_io import CouchDBConnection
             import hashlib
 
             def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
@@ -656,17 +639,21 @@ Result:
                 doc_hash = hash_obj.hexdigest()
                 return f"taxon_{doc_hash}"
 
+            # Create connection using CouchDBConnection API
+            conn = CouchDBConnection(couchdb_url, db_name, username, password)
+
             # Connect to CouchDB once per partition
             try:
+                # Try to get database, create if it doesn't exist
+                import couchdb
                 server = couchdb.Server(couchdb_url)
                 if username and password:
                     server.resource.credentials = (username, password)
 
-                # Get or create database
-                if db_name in server:
-                    db = server[db_name]
-                else:
-                    db = server.create(db_name)
+                if db_name not in server:
+                    server.create(db_name)
+
+                db = conn.db
 
                 # Process each taxon in the partition
                 for row in partition:
