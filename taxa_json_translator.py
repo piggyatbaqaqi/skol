@@ -92,6 +92,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
     def __init__(
         self,
         spark: SparkSession,
+        couchdb_url: str,
         checkpoint_path: Optional[str] = None,
         base_model_id: str = BASE_MODEL_ID,
         max_length: int = DEFAULT_MAX_LENGTH,
@@ -108,6 +109,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 
         Args:
             spark: SparkSession instance
+            couchdb_url: URL of CouchDB server (e.g., "http://localhost:5984")
             checkpoint_path: Path to fine-tuned model checkpoint (if None, uses base model)
             base_model_id: Hugging Face model ID for base model
             max_length: Maximum sequence length for tokenization
@@ -120,6 +122,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
             password: Optional password for couchdb authentication
         """
         self.spark = spark
+        self.couchdb_url = couchdb_url
         self.checkpoint_path = checkpoint_path
         self.base_model_id = base_model_id
         self.max_length = max_length
@@ -136,6 +139,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         self._tokenizer = None
 
         print(f"TaxaJSONTranslator initialized")
+        print(f"  CouchDB URL: {couchdb_url}")
         print(f"  Base model: {base_model_id}")
         print(f"  Checkpoint: {checkpoint_path or 'None (using base model)'}")
         print(f"  Device: {device}")
@@ -143,7 +147,6 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 
     def load_taxa(
         self,
-        couchdb_url: str,
         db_name: str,
         pattern: str = "*"
     ) -> DataFrame:
@@ -154,9 +157,8 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         and returns them as a DataFrame compatible with translate_descriptions().
 
         Args:
-            couchdb_url: URL of CouchDB server
             db_name: Name of taxon database
-            pattern: Pattern for document IDs to load (default: "taxon_*")
+            pattern: Pattern for document IDs to load (default: "*")
                     Use "*" to load all documents
                     Use "taxon_abc*" to load specific subset
 
@@ -172,13 +174,14 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
                 - empirical_page_number: Empirical page number of first nomenclature paragraph
 
         Example:
-            >>> translator = TaxaJSONTranslator(spark=spark, checkpoint_path="...")
-            >>> taxa_df = translator.load_taxa(
+            >>> translator = TaxaJSONTranslator(
+            ...     spark=spark,
             ...     couchdb_url="http://localhost:5984",
-            ...     db_name="mycobank_taxa",
             ...     username="admin",
-            ...     password="secret"
+            ...     password="secret",
+            ...     checkpoint_path="..."
             ... )
+            >>> taxa_df = translator.load_taxa(db_name="mycobank_taxa")
             >>> print(f"Loaded {taxa_df.count()} taxa")
         """
         from skol_classifier.couchdb_io import CouchDBConnection
@@ -197,7 +200,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         ])
 
         # Use CouchDBConnection to load data
-        conn = CouchDBConnection(couchdb_url, db_name, username=self.username, password=self.password)
+        conn = CouchDBConnection(self.couchdb_url, db_name, username=self.username, password=self.password)
 
         # Get matching document IDs
         doc_ids = conn.get_all_doc_ids(pattern)
@@ -213,6 +216,7 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         doc_ids_df = doc_ids_rdd.map(lambda x: (x,)).toDF(["doc_id"])
 
         # Prepare connection parameters for workers
+        couchdb_url = self.couchdb_url
         username = self.username
         password = self.password
 
@@ -572,7 +576,6 @@ Result:
     def save_taxa(
         self,
         taxa_df: DataFrame,
-        couchdb_url: str,
         db_name: str,
         json_annotated_col: str = "features_json"
     ) -> DataFrame:
@@ -588,7 +591,6 @@ Result:
 
         Args:
             taxa_df: DataFrame with taxa and translations (must include json_annotated_col)
-            couchdb_url: URL of CouchDB server
             db_name: Name of taxon database
             json_annotated_col: Name of column containing JSON features (default: "features_json")
 
@@ -597,21 +599,18 @@ Result:
 
         Example:
             >>> # Load taxa and translate
-            >>> taxa_df = translator.load_taxa(...)
+            >>> taxa_df = translator.load_taxa(db_name="mycobank_taxa")
             >>> enriched_df = translator.translate_descriptions(taxa_df)
             >>>
             >>> # Save back to CouchDB
-            >>> results = translator.save_taxa(
-            ...     enriched_df,
-            ...     couchdb_url="http://localhost:5984",
-            ...     db_name="mycobank_taxa"
-            ... )
+            >>> results = translator.save_taxa(enriched_df, db_name="mycobank_taxa")
             >>> print(f"Saved: {results.filter('success = true').count()}")
         """
         from pyspark.sql import Row
         from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 
         # Get credentials from self
+        couchdb_url = self.couchdb_url
         username = self.username
         password = self.password
 
@@ -862,6 +861,9 @@ def example_usage():
         # Initialize translator
         translator = TaxaJSONTranslator(
             spark=spark,
+            couchdb_url="http://localhost:5984",
+            username="admin",
+            password="password",
             checkpoint_path="./mistral_checkpoints/checkpoint-100"
         )
 
