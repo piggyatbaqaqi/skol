@@ -95,13 +95,7 @@ class CouchDBConnection:
         Returns:
             List of matching document IDs
         """
-        print("DEBUG: Before the try.")
-        # try:
         db = self.db
-        print("DEBUG: Connected to CouchDB database:", self.database)
-        print("DEBUG: Total documents in DB:", len(db))
-        print("DEBUG: Fetching document IDs with pattern:", pattern)
-        print("DEBUG: Sample document IDs:", list(db)[:10])
 
         # Get all document IDs (excluding design documents)
         all_doc_ids = [doc_id for doc_id in list(db) if not doc_id.startswith('_design/')]
@@ -117,10 +111,6 @@ class CouchDBConnection:
         else:
             # Exact match
             return [doc_id for doc_id in all_doc_ids if doc_id == pattern]
-
-        # except Exception as e:
-        #     print(f"Error getting document IDs from CouchDB: {e}")
-        #     return []
 
     def get_document_list(
         self,
