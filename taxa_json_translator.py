@@ -116,7 +116,9 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         prompt: str = DEFAULT_PROMPT,
         device: str = "cuda",
         load_in_4bit: bool = True,
-        use_auth_token: bool = True
+        use_auth_token: bool = True,
+        username: Optional[str] = None,
+        password: Optional[str] = None
     ):
         """
         Initialize the TaxaJSONTranslator.
@@ -131,6 +133,8 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
             device: Device to run inference on ("cuda" or "cpu")
             load_in_4bit: Whether to load model in 4-bit quantization
             use_auth_token: Whether to use Hugging Face authentication
+            username: Optional username for couchdb authentication
+            password: Optional password for couchdb authentication
         """
         self.spark = spark
         self.checkpoint_path = checkpoint_path
@@ -141,6 +145,8 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         self.device = device
         self.load_in_4bit = load_in_4bit
         self.use_auth_token = use_auth_token
+        self.username = username
+        self.password = password
 
         # Model and tokenizer (lazy loaded)
         self._model = None
@@ -151,6 +157,132 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         print(f"  Checkpoint: {checkpoint_path or 'None (using base model)'}")
         print(f"  Device: {device}")
         print(f"  4-bit quantization: {load_in_4bit}")
+
+    def load_taxa(
+        self,
+        couchdb_url: str,
+        db_name: str,
+        pattern: str = "*"
+    ) -> DataFrame:
+        """
+        Load taxa from CouchDB taxon database.
+
+        This method loads taxa documents saved by TaxonExtractor.save_taxa()
+        and returns them as a DataFrame compatible with translate_descriptions().
+
+        Args:
+            couchdb_url: URL of CouchDB server
+            db_name: Name of taxon database
+            pattern: Pattern for document IDs to load (default: "taxon_*")
+                    Use "*" to load all documents
+                    Use "taxon_abc*" to load specific subset
+
+        Returns:
+            DataFrame with columns:
+                - _id: CouchDB document ID (for joining results)
+                - taxon: String of concatenated nomenclature paragraphs
+                - description: String of concatenated description paragraphs
+                - source: Dict with keys doc_id, url, db_name
+                - line_number: Line number of first nomenclature paragraph
+                - paragraph_number: Paragraph number of first nomenclature paragraph
+                - page_number: Page number of first nomenclature paragraph
+                - empirical_page_number: Empirical page number of first nomenclature paragraph
+
+        Example:
+            >>> translator = TaxaJSONTranslator(spark=spark, checkpoint_path="...")
+            >>> taxa_df = translator.load_taxa(
+            ...     couchdb_url="http://localhost:5984",
+            ...     db_name="mycobank_taxa",
+            ...     username="admin",
+            ...     password="secret"
+            ... )
+            >>> print(f"Loaded {taxa_df.count()} taxa")
+        """
+        from skol_classifier.couchdb_io import CouchDBConnection
+        from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType
+
+        # Define schema with _id for joining results
+        schema = StructType([
+            StructField("_id", StringType(), False),
+            StructField("taxon", StringType(), False),
+            StructField("description", StringType(), False),
+            StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
+            StructField("line_number", IntegerType(), True),
+            StructField("paragraph_number", IntegerType(), True),
+            StructField("page_number", IntegerType(), True),
+            StructField("empirical_page_number", StringType(), True)
+        ])
+
+        # Use CouchDBConnection to load data
+        conn = CouchDBConnection(couchdb_url, db_name, username=self.username, password=self.password)
+
+        # Get matching document IDs
+        doc_ids = conn.get_all_doc_ids(pattern)
+
+        if not doc_ids:
+            print(f"No documents found matching pattern '{pattern}'")
+            return self.spark.createDataFrame([], schema)
+
+        print(f"Loading {len(doc_ids)} taxa from {db_name}...")
+
+        # Create DataFrame with doc_ids for parallel processing
+        doc_ids_rdd = self.spark.sparkContext.parallelize(doc_ids)
+        doc_ids_df = doc_ids_rdd.map(lambda x: (x,)).toDF(["doc_id"])
+
+        # Prepare connection parameters for workers
+        username = self.username
+        password = self.password
+
+        # Load taxa using mapPartitions
+        def load_partition(partition):
+            """Load taxa from CouchDB for an entire partition."""
+            from skol_classifier.couchdb_io import CouchDBConnection
+            from pyspark.sql import Row
+
+            # Create connection using CouchDBConnection API
+            conn = CouchDBConnection(couchdb_url, db_name, username, password)
+
+            try:
+                db = conn.db
+
+                # Process each row (which contains doc_id)
+                for row in partition:
+                    try:
+                        doc_id = row.doc_id if hasattr(row, 'doc_id') else str(row[0])
+
+                        # Load document from CouchDB
+                        if doc_id in db:
+                            doc = db[doc_id]
+
+                            # Convert CouchDB document to Row (include _id for joining)
+                            taxon_data = {
+                                '_id': doc.get('_id', doc_id),
+                                'taxon': doc.get('taxon', ''),
+                                'description': doc.get('description', ''),
+                                'source': doc.get('source', {}),
+                                'line_number': doc.get('line_number'),
+                                'paragraph_number': doc.get('paragraph_number'),
+                                'page_number': doc.get('page_number'),
+                                'empirical_page_number': doc.get('empirical_page_number')
+                            }
+
+                            yield Row(**taxon_data)
+                        else:
+                            print(f"Document {doc_id} not found in database")
+
+                    except Exception as e:
+                        print(f"Error loading taxon {doc_id}: {e}")
+
+            except Exception as e:
+                print(f"Error connecting to CouchDB: {e}")
+
+        taxa_rdd = doc_ids_df.rdd.mapPartitions(load_partition)
+        taxa_df = self.spark.createDataFrame(taxa_rdd, schema)
+
+        count = taxa_df.count()
+        print(f"✓ Loaded {count} taxa")
+
+        return taxa_df
 
     @property
     def model(self):
@@ -453,6 +585,176 @@ Result:
         """
         json_str = self.generate_json(description)
         return json.loads(json_str)
+
+    def save_taxa(
+        self,
+        taxa_df: DataFrame,
+        couchdb_url: str,
+        db_name: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        json_annotated_col: str = "features_json"
+    ) -> DataFrame:
+        """
+        Save taxa DataFrame to CouchDB, including the json_annotated field.
+
+        This method saves taxa with the translated JSON features back to CouchDB.
+        It handles arbitrary JSON in the json_annotated_col by parsing it before storage.
+        The save operation is idempotent - documents with the same composite key
+        (source.doc_id, source.url, line_number) will be updated rather than duplicated.
+
+        Args:
+            taxa_df: DataFrame with taxa and translations (must include json_annotated_col)
+            couchdb_url: URL of CouchDB server
+            db_name: Name of taxon database
+            username: Optional username for authentication
+            password: Optional password for authentication
+            json_annotated_col: Name of column containing JSON features (default: "features_json")
+
+        Returns:
+            DataFrame with save results (doc_id, success, error_message)
+
+        Example:
+            >>> # Load taxa and translate
+            >>> taxa_df = translator.load_taxa(...)
+            >>> enriched_df = translator.translate_descriptions(taxa_df)
+            >>>
+            >>> # Save back to CouchDB
+            >>> results = translator.save_taxa(
+            ...     enriched_df,
+            ...     couchdb_url="http://localhost:5984",
+            ...     db_name="mycobank_taxa",
+            ...     username="admin",
+            ...     password="secret"
+            ... )
+            >>> print(f"Saved: {results.filter('success = true').count()}")
+        """
+        from pyspark.sql import Row
+        from pyspark.sql.types import StructType, StructField, StringType, BooleanType
+
+        # Schema for save results
+        save_schema = StructType([
+            StructField("doc_id", StringType(), False),
+            StructField("success", BooleanType(), False),
+            StructField("error_message", StringType(), False),
+        ])
+
+        def save_partition(partition):
+            """Save taxa to CouchDB for an entire partition (idempotent)."""
+            import couchdb
+            import hashlib
+
+            def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
+                """Generate deterministic document ID for idempotent saves."""
+                key_parts = [
+                    doc_id,
+                    url if url else "no_url",
+                    str(line_number)
+                ]
+                composite_key = ":".join(key_parts)
+                hash_obj = hashlib.sha256(composite_key.encode('utf-8'))
+                doc_hash = hash_obj.hexdigest()
+                return f"taxon_{doc_hash}"
+
+            # Connect to CouchDB once per partition
+            try:
+                server = couchdb.Server(couchdb_url)
+                if username and password:
+                    server.resource.credentials = (username, password)
+
+                # Get or create database
+                if db_name in server:
+                    db = server[db_name]
+                else:
+                    db = server.create(db_name)
+
+                # Process each taxon in the partition
+                for row in partition:
+                    success = False
+                    error_msg = ""
+                    doc_id = "unknown"
+
+                    try:
+                        # Extract source metadata from row
+                        source_dict = row.source if hasattr(row, 'source') else {}
+                        source = dict(source_dict) if isinstance(source_dict, dict) else {}
+                        source_doc_id = str(source.get('doc_id', 'unknown'))
+                        source_url = source.get('url')
+                        line_number = row.line_number if hasattr(row, 'line_number') else 0
+
+                        # Generate deterministic document ID
+                        doc_id = generate_taxon_doc_id(
+                            source_doc_id,
+                            source_url if isinstance(source_url, str) else None,
+                            int(line_number) if line_number else 0
+                        )
+
+                        # Convert row to dict for CouchDB storage
+                        taxon_doc = row.asDict()
+
+                        # Handle json_annotated field: parse JSON string to dict
+                        if json_annotated_col in taxon_doc and taxon_doc[json_annotated_col]:
+                            json_str = taxon_doc[json_annotated_col]
+                            if isinstance(json_str, str):
+                                try:
+                                    # Parse JSON string to dict for storage
+                                    taxon_doc['json_annotated'] = json.loads(json_str)
+                                except json.JSONDecodeError:
+                                    print(f"Warning: Invalid JSON in {json_annotated_col} for doc {doc_id}")
+                                    taxon_doc['json_annotated'] = {}
+                            else:
+                                # Already a dict, just rename the field
+                                taxon_doc['json_annotated'] = json_str
+                            # Remove the original column if it has a different name
+                            if json_annotated_col != 'json_annotated':
+                                del taxon_doc[json_annotated_col]
+
+                        # Check if document already exists (idempotent)
+                        if doc_id in db:
+                            # Document exists - update it
+                            existing_doc = db[doc_id]
+                            taxon_doc['_id'] = doc_id
+                            taxon_doc['_rev'] = existing_doc['_rev']
+                        else:
+                            # New document - create it
+                            taxon_doc['_id'] = doc_id
+
+                        db.save(taxon_doc)
+                        success = True
+
+                    except Exception as e:
+                        error_msg = str(e)
+                        print(f"Error saving taxon {doc_id}: {e}")
+
+                    yield Row(
+                        doc_id=doc_id,
+                        success=success,
+                        error_message=error_msg
+                    )
+
+            except Exception as e:
+                print(f"Error connecting to CouchDB: {e}")
+                # Yield failures for all rows
+                for row in partition:
+                    yield Row(
+                        doc_id="unknown_connection_error",
+                        success=False,
+                        error_message=str(e)
+                    )
+
+        print(f"Saving taxa to {db_name}...")
+        results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(save_schema)
+
+        total = results_df.count()
+        successes = results_df.filter("success = true").count()
+        failures = total - successes
+
+        print(f"✓ Save complete:")
+        print(f"  Total: {total}")
+        print(f"  Successful: {successes}")
+        print(f"  Failed: {failures}")
+
+        return results_df
 
     def save_translations(
         self,
