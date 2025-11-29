@@ -9,7 +9,7 @@ from typing import List, Tuple
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import (
     input_file_name, collect_list, regexp_extract, col, udf,
-    explode, trim, row_number, min as sql_min
+    explode, trim, row_number, min as sql_min, monotonically_increasing_id
 )
 from pyspark.sql.types import ArrayType, StringType, StructType, StructField, IntegerType
 from pyspark.sql.window import Window
@@ -52,9 +52,11 @@ class AnnotatedTextLoader:
         Returns:
             Preprocessed DataFrame with paragraphs/lines and labels
         """
-        # Read annotated files
-        ann_df = self.spark.read.text(file_paths).withColumn(
-            "filename", input_file_name()
+        # Read annotated files and add line ID to preserve order
+        ann_df = (
+            self.spark.read.text(file_paths)
+            .withColumn("filename", input_file_name())
+            .withColumn("_line_id", monotonically_increasing_id())
         )
 
         if line_level:
@@ -87,9 +89,10 @@ class AnnotatedTextLoader:
                 ]))
             )
 
-            # Extract lines
+            # Extract lines with ordering preserved
             grouped_df = (
-                ann_df.groupBy("filename")
+                ann_df.orderBy("_line_id")
+                .groupBy("filename")
                 .agg(collect_list("value").alias("lines"))
                 .withColumn("line_data", explode(extract_udf(col("lines"))))
                 .select(
@@ -106,9 +109,10 @@ class AnnotatedTextLoader:
                 ArrayType(StringType())
             )
 
-            # Group and extract paragraphs
+            # Group and extract paragraphs with ordering preserved
             grouped_df = (
-                ann_df.groupBy("filename")
+                ann_df.orderBy("_line_id")
+                .groupBy("filename")
                 .agg(collect_list("value").alias("lines"))
                 .withColumn("value", explode(extract_udf(col("lines"))))
                 .drop("lines")
@@ -281,14 +285,16 @@ class RawTextLoader:
         Returns:
             Preprocessed DataFrame with paragraphs or lines
         """
-        # Read raw files
-        df = self.spark.read.text(file_paths).withColumn(
-            "filename", input_file_name()
+        # Read raw files and add line ID to preserve order
+        df = (
+            self.spark.read.text(file_paths)
+            .withColumn("filename", input_file_name())
+            .withColumn("_line_id", monotonically_increasing_id())
         )
 
         if line_level:
-            # Line-level: just add row numbers
-            window_spec = Window.partitionBy("filename").orderBy("filename")
+            # Line-level: add row numbers preserving order
+            window_spec = Window.partitionBy("filename").orderBy("_line_id")
             return df.withColumn("row_number", row_number().over(window_spec))
         else:
             # Paragraph-level: use heuristic extraction
@@ -298,14 +304,12 @@ class RawTextLoader:
             )
 
             # Window specification for ordering
-            window_spec = Window.partitionBy("filename").orderBy("start_line_id")
+            window_spec = Window.partitionBy("filename").orderBy("_line_id")
 
             return (
-                df.groupBy("filename")
-                .agg(
-                    collect_list("value").alias("lines"),
-                    sql_min("filename").alias("start_line_id"),
-                )
+                df.orderBy("_line_id")
+                .groupBy("filename")
+                .agg(collect_list("value").alias("lines"))
                 .withColumn("value", explode(heuristic_udf(col("lines"))))
                 .drop("lines")
                 .filter(trim(col("value")) != "")
