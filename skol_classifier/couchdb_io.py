@@ -2,7 +2,7 @@
 CouchDB I/O utilities for SKOL classifier using distributed foreachPartition
 """
 
-from typing import Optional, Iterator
+from typing import List, Optional, Iterator
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.functions import col, lit
 from pyspark.sql.types import (
@@ -81,6 +81,46 @@ class CouchDBConnection:
         if self._db is None:
             self._connect()
         return self._db
+
+    def get_all_doc_ids(self, pattern: str = "*") -> List[str]:
+        """
+        Get list of document IDs matching the pattern from CouchDB.
+
+        Args:
+            pattern: Pattern for document IDs (e.g., "taxon_*", "*")
+                    - "*" matches all non-design documents
+                    - "prefix*" matches documents starting with prefix
+                    - "exact" matches exactly
+
+        Returns:
+            List of matching document IDs
+        """
+        print("DEBUG: Before the try.")
+        # try:
+        db = self.db
+        print("DEBUG: Connected to CouchDB database:", self.database)
+        print("DEBUG: Total documents in DB:", len(db))
+        print("DEBUG: Fetching document IDs with pattern:", pattern)
+        print("DEBUG: Sample document IDs:", list(db)[:10])
+
+        # Get all document IDs (excluding design documents)
+        all_doc_ids = [doc_id for doc_id in list(db) if not doc_id.startswith('_design/')]
+
+        # Filter by pattern
+        if pattern == "*":
+            # Return all non-design documents
+            return all_doc_ids
+        elif pattern.endswith('*'):
+            # Prefix matching
+            prefix = pattern[:-1]
+            return [doc_id for doc_id in all_doc_ids if doc_id.startswith(prefix)]
+        else:
+            # Exact match
+            return [doc_id for doc_id in all_doc_ids if doc_id == pattern]
+
+        # except Exception as e:
+        #     print(f"Error getting document IDs from CouchDB: {e}")
+        #     return []
 
     def get_document_list(
         self,
