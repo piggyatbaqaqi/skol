@@ -152,16 +152,46 @@ class TaxonClusterer:
                     embedding_cols = [col for col in data.columns if col.startswith('F')]
                     self.embeddings = data[embedding_cols].values
 
-                    # Extract taxon names from description
-                    # The description field contains the full taxon description
-                    self.taxon_names = data['description'].tolist()
+                    # Extract taxon names from 'taxon' field (nomenclature)
+                    # If 'taxon' column doesn't exist, fall back to 'description'
+                    if 'taxon' in data.columns:
+                        self.taxon_names = data['taxon'].tolist()
+                    else:
+                        self.taxon_names = data['description'].tolist()
 
                     # Extract metadata from other columns
-                    metadata_cols = ['source', 'filename', 'row']
                     self.taxon_metadata = []
                     for idx, row in data.iterrows():
-                        metadata = {col: row[col] for col in metadata_cols if col in data.columns}
+                        metadata = {}
+
+                        # Handle 'source' field which may be a dict containing url, doc_id, db_name
+                        if 'source' in data.columns:
+                            source = row['source']
+                            if isinstance(source, dict):
+                                # Extract nested fields from source dict
+                                metadata['source'] = source.get('doc_id', source.get('db_name', str(source)))
+                                metadata['url'] = source.get('url')
+                                metadata['db_name'] = source.get('db_name')
+                            else:
+                                metadata['source'] = str(source)
+
+                        # Add other metadata fields
+                        if 'filename' in data.columns:
+                            metadata['filename'] = row.get('filename')
+                        if 'row' in data.columns:
+                            metadata['row'] = row.get('row')
+                        if 'line_number' in data.columns:
+                            metadata['line_number'] = row.get('line_number')
+                        if 'paragraph_number' in data.columns:
+                            metadata['paragraph_number'] = row.get('paragraph_number')
+                        if 'page_number' in data.columns:
+                            metadata['page_number'] = row.get('page_number')
+                        if 'empirical_page_number' in data.columns:
+                            metadata['empirical_page_number'] = row.get('empirical_page_number')
+
+                        # Always include description
                         metadata['description'] = row.get('description', '')
+
                         self.taxon_metadata.append(metadata)
                 else:
                     raise ValueError(f"Unexpected data format in Redis: {type(data)}")
