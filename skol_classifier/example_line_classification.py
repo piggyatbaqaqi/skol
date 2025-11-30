@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Example script demonstrating line-by-line classification with YEDA output.
+Example script demonstrating line-by-line classification with YEDDA output.
 
 This script shows how to:
 1. Load a trained classifier
 2. Classify text files line-by-line (instead of paragraph-by-paragraph)
-3. Coalesce consecutive lines with the same label into YEDA blocks
-4. Save the output in YEDA format
+3. Coalesce consecutive lines with the same label into YEDDA blocks
+4. Save the output in YEDDA format
 """
 
 import sys
@@ -23,7 +23,7 @@ def main():
     """Run line-by-line classification example."""
 
     print("="*70)
-    print("SKOL Line-by-Line Classifier with YEDA Output (V2 API)")
+    print("SKOL Line-by-Line Classifier with YEDDA Output (V2 API)")
     print("="*70)
 
     # Create Spark session
@@ -63,7 +63,7 @@ def main():
             print("\nKey Features:")
             print("  • line_level=True: Process text line-by-line")
             print("  • coalesce_labels=True: Merge consecutive lines with same label")
-            print("  • Output in YEDA format: [@ text #Label*]")
+            print("  • Output in YEDDA format: [@ text #Label*]")
             print("  • Supports files and CouchDB")
 
         else:

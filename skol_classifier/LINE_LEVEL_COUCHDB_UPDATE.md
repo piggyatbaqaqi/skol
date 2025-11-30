@@ -136,7 +136,7 @@ predictions = classifier.predict_from_couchdb(
 classifier.save_to_couchdb(
     predictions,
     suffix=".ann",
-    coalesce_labels=True  # Coalesce consecutive same-label lines into YEDA blocks
+    coalesce_labels=True  # Coalesce consecutive same-label lines into YEDDA blocks
 )
 ```
 
@@ -182,7 +182,7 @@ predictions = classifier.predict_from_couchdb(
     line_level=True  # Match training granularity
 )
 
-# 3. Save with coalesced labels to create YEDA blocks
+# 3. Save with coalesced labels to create YEDDA blocks
 classifier.save_to_couchdb(
     predictions,
     suffix=".ann",

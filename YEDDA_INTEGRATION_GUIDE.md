@@ -1,19 +1,19 @@
-# YEDA Integration Guide
+# YEDDA Integration Guide
 
-This guide shows how to use the YEDA parser module with the SKOL classifier for end-to-end text processing.
+This guide shows how to use the YEDDA parser module with the SKOL classifier for end-to-end text processing.
 
 ## Overview
 
-The YEDA (Yet Another Entity Detection and Annotation) format provides a standard way to annotate text with labels. The integration between `yeda_parser` and `skol_classifier` enables:
+The YEDDA (Yet Another Entity Detection and Annotation) format provides a standard way to annotate text with labels. The integration between `yeda_parser` and `skol_classifier` enables:
 
 1. **Classification**: Use `skol_classifier` to classify text line-by-line
-2. **Annotation**: Output is automatically formatted as YEDA blocks
-3. **Parsing**: Use `yeda_parser` to load YEDA into DataFrames
+2. **Annotation**: Output is automatically formatted as YEDDA blocks
+3. **Parsing**: Use `yeda_parser` to load YEDDA into DataFrames
 4. **Analysis**: Perform queries, statistics, and transformations
 
 ## Quick Start
 
-### 1. Classify Text and Generate YEDA
+### 1. Classify Text and Generate YEDDA
 
 ```python
 from pyspark.sql import SparkSession
@@ -33,16 +33,16 @@ with open('data/article2.txt', 'r') as f:
 # Classify raw text strings line-by-line
 predictions = classifier.predict_lines([text1, text2])
 
-# Save as YEDA format (auto-coalesces consecutive same-label lines)
+# Save as YEDDA format (auto-coalesces consecutive same-label lines)
 classifier.save_yeda_output(predictions, 'output/yeda_annotations')
 ```
 
-### 2. Parse YEDA into DataFrame
+### 2. Parse YEDDA into DataFrame
 
 ```python
 from yeda_parser import yeda_file_to_spark_df
 
-# Parse YEDA file with metadata
+# Parse YEDDA file with metadata
 df = yeda_file_to_spark_df(
     'output/yeda_annotations/article1.txt',
     spark,
@@ -95,7 +95,7 @@ from yeda_parser import (
 
 # Initialize Spark
 spark = SparkSession.builder \
-    .appName("YEDA Pipeline") \
+    .appName("YEDDA Pipeline") \
     .master("local[*]") \
     .getOrCreate()
 
@@ -111,7 +111,7 @@ predictions = classifier.predict_lines([text_content])
 classifier.save_yeda_output(predictions, 'output/yeda')
 
 # Step 2: Parse
-print("Step 2: Parsing YEDA...")
+print("Step 2: Parsing YEDDA...")
 df = yeda_file_to_spark_df(
     'output/yeda/article.txt',
     spark,
@@ -153,10 +153,10 @@ for filepath in ['corpus/file1.txt', 'corpus/file2.txt', 'corpus/file3.txt']:
 # Classify raw text strings
 predictions = classifier.predict_lines(text_contents)
 
-# Save all as YEDA
+# Save all as YEDDA
 classifier.save_yeda_output(predictions, 'output/yeda_batch')
 
-# Load all YEDA files
+# Load all YEDDA files
 from glob import glob
 yeda_files = glob('output/yeda_batch/**/*.txt', recursive=True)
 
@@ -208,7 +208,7 @@ transitions.select("line_number", "prev_label", "label", "line").show()
 Update annotations based on rules:
 
 ```python
-# Parse existing YEDA
+# Parse existing YEDDA
 df = yeda_file_to_spark_df('output/yeda/article.txt', spark)
 
 # Apply correction rules
@@ -223,7 +223,7 @@ df_corrected = df.withColumn(
 )
 
 # Save corrected version
-# (You'd need to write back to YEDA format - see yeda_parser docs)
+# (You'd need to write back to YEDDA format - see yeda_parser docs)
 ```
 
 ## Data Flow Diagram
@@ -237,7 +237,7 @@ Line-level Predictions (DataFrame)
       ↓
 [skol_classifier.save_yeda_output()]
       ↓
-YEDA Format Files (consecutive labels coalesced)
+YEDDA Format Files (consecutive labels coalesced)
       ↓
 [yeda_parser.yeda_file_to_spark_df()]
       ↓
@@ -259,7 +259,7 @@ Spore wall: mono- to multiple-layered.
 This species is common.
 ```
 
-### Intermediate (YEDA)
+### Intermediate (YEDDA)
 ```
 [@ Glomus mosseae Nicolson & Gerdemann, 1963.
 ≡ Glomus mosseae (Nicolson & Gerdemann) C. Walker
@@ -287,13 +287,13 @@ root
 
 1. **Add Metadata**: Always include provenance information (source, date, version)
 2. **Validate Results**: Use `get_label_statistics()` to check distribution
-3. **Save Checkpoints**: Save intermediate YEDA files for reproducibility
+3. **Save Checkpoints**: Save intermediate YEDDA files for reproducibility
 4. **Use Parquet**: For large datasets, save final DataFrames as Parquet
 5. **Document Labels**: Keep track of your label taxonomy
 
 ## See Also
 
-- `yeda_parser/README.md`: Complete YEDA parser documentation
+- `yeda_parser/README.md`: Complete YEDDA parser documentation
 - `skol_classifier/README.md`: Classifier documentation
 - `skol_classifier/example_line_classification.py`: Line classification example
-- `yeda_parser/example_yeda_to_spark.py`: YEDA parsing example
+- `yeda_parser/example_yeda_to_spark.py`: YEDDA parsing example

@@ -68,7 +68,7 @@ def save_to_couchdb(self, predictions: DataFrame, suffix: str = ".ann") -> List[
 ```python
 def save_to_couchdb(self, predictions: DataFrame, suffix: str = ".ann", coalesce_labels: bool = False) -> List[Dict[str, Any]]:
     if coalesce_labels:
-        # For line-level predictions with YEDA coalescence
+        # For line-level predictions with YEDDA coalescence
         ...
     else:
         # Original paragraph-based aggregation
@@ -77,7 +77,7 @@ def save_to_couchdb(self, predictions: DataFrame, suffix: str = ".ann", coalesce
 
 **Impact:**
 - Added `coalesce_labels` parameter for line-level predictions
-- When True, consecutive lines with same label are coalesced into YEDA blocks
+- When True, consecutive lines with same label are coalesced into YEDDA blocks
 - Backward compatible - default behavior unchanged
 
 ## Migration Guide
@@ -119,7 +119,7 @@ predictions = classifier.predict_lines([text1, text2])
 results = classifier.save_to_couchdb(
     predictions,
     suffix='.ann',
-    coalesce_labels=True  # NEW: Creates YEDA blocks
+    coalesce_labels=True  # NEW: Creates YEDDA blocks
 )
 
 # Option 3: From any source (database, API, etc.)
@@ -146,14 +146,14 @@ The changes are **not backward compatible** for code that:
 
 The `save_to_couchdb()` change **is backward compatible**:
 - Default `coalesce_labels=False` maintains original behavior
-- Only affects users who want YEDA coalescence
+- Only affects users who want YEDDA coalescence
 
 ## Updated Examples
 
 All examples have been updated:
 - [test_line_classifier.py](test_line_classifier.py) - Now tests with raw text
 - [example_line_classification.py](example_line_classification.py) - Shows raw text usage
-- [YEDA_INTEGRATION_GUIDE.md](../YEDA_INTEGRATION_GUIDE.md) - Updated all patterns
+- [YEDDA_INTEGRATION_GUIDE.md](../YEDDA_INTEGRATION_GUIDE.md) - Updated all patterns
 
 ## Testing
 
@@ -168,4 +168,4 @@ All tests pass with new API ✓
 
 - [README.md](README.md) - Updated API documentation
 - [LINE_CLASSIFICATION_SUMMARY.md](LINE_CLASSIFICATION_SUMMARY.md) - Line classification overview
-- [../YEDA_INTEGRATION_GUIDE.md](../YEDA_INTEGRATION_GUIDE.md) - Complete integration guide
+- [../YEDDA_INTEGRATION_GUIDE.md](../YEDDA_INTEGRATION_GUIDE.md) - Complete integration guide

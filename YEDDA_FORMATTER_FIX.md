@@ -51,7 +51,7 @@ class YedaFormatter:
 
     def format(self, predictions: DataFrame) -> DataFrame:
         """
-        Format predictions in YEDA annotation format.
+        Format predictions in YEDDA annotation format.
 
         Applies coalescing if configured.
         """

@@ -98,7 +98,7 @@ After this change, the column naming is:
 | Column Name | Purpose | Used In |
 |-------------|---------|---------|
 | `value` | Raw text content | Input data (lines or paragraphs) |
-| `annotated_value` | YEDA-formatted annotation | Output from formatters |
+| `annotated_value` | YEDDA-formatted annotation | Output from formatters |
 | `predicted_label` | Predicted class label | Model predictions |
 | `final_aggregated_pg` | Aggregated annotations for save | CouchDB save operations |
 

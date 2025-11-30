@@ -559,7 +559,7 @@ class SkolClassifierV2:
 
     def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
         """
-        Format predictions as YEDA-style annotated blocks.
+        Format predictions as YEDDA-style annotated blocks.
 
         Note: This does NOT apply coalescing. Coalescing is only applied
         during save_annotated() to preserve line-level data for inspection.

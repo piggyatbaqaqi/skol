@@ -1,10 +1,10 @@
-"""Parse YEDA (Yet Another Entity Detection and Annotation) format.
+"""Parse YEDDA (Yet Another Entity Detection and Annotation) format.
 
-YEDA format consists of annotated text blocks:
+YEDDA format consists of annotated text blocks:
     [@ <text content>
     #<label>*]
 
-This module provides functions to parse YEDA-annotated strings and convert
+This module provides functions to parse YEDDA-annotated strings and convert
 them to structured formats like PySpark DataFrames.
 """
 
@@ -16,10 +16,10 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 
 def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
-    """Parse a YEDA-annotated string into (label, line, line_number) tuples.
+    """Parse a YEDDA-annotated string into (label, line, line_number) tuples.
 
     Args:
-        yeda_text: String containing YEDA annotations in format:
+        yeda_text: String containing YEDDA annotations in format:
                    [@ <text>
                    #<label>*]
 
@@ -34,7 +34,7 @@ def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
     """
     results = []
 
-    # Pattern to match YEDA blocks: [@ ... #label*]
+    # Pattern to match YEDDA blocks: [@ ... #label*]
     # Using DOTALL to match across newlines
     pattern = r'\[@\s*(.*?)\s*#([^*]+)\*\]'
 
@@ -55,10 +55,10 @@ def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
 
 
 def parse_yeda_file(filepath: str) -> List[Tuple[str, str, int]]:
-    """Parse a YEDA-annotated file into (label, line, line_number) tuples.
+    """Parse a YEDDA-annotated file into (label, line, line_number) tuples.
 
     Args:
-        filepath: Path to file containing YEDA annotations.
+        filepath: Path to file containing YEDDA annotations.
 
     Returns:
         List of tuples (label, line_text, line_number) for each line in the file.
@@ -74,10 +74,10 @@ def yeda_to_spark_df(
     spark: Optional[SparkSession] = None,
     metadata: Optional[Dict[str, Any]] = None
 ) -> DataFrame:
-    """Convert YEDA-annotated text to a PySpark DataFrame.
+    """Convert YEDDA-annotated text to a PySpark DataFrame.
 
     Args:
-        yeda_text: String containing YEDA annotations.
+        yeda_text: String containing YEDDA annotations.
         spark: SparkSession instance. If None, creates a new session.
         metadata: Optional dictionary of metadata to attach to every row.
                  Useful for provenance tracking (e.g., source file, timestamp,
@@ -107,10 +107,10 @@ def yeda_to_spark_df(
     # Create SparkSession if not provided
     if spark is None:
         spark = SparkSession.builder \
-            .appName("YEDA Parser") \
+            .appName("YEDDA Parser") \
             .getOrCreate()
 
-    # Parse YEDA text
+    # Parse YEDDA text
     parsed_data = parse_yeda_string(yeda_text)
 
     # Add metadata to each row if provided
@@ -146,10 +146,10 @@ def yeda_file_to_spark_df(
     metadata: Optional[Dict[str, Any]] = None,
     auto_add_filepath: bool = True
 ) -> DataFrame:
-    """Convert YEDA-annotated file to a PySpark DataFrame.
+    """Convert YEDDA-annotated file to a PySpark DataFrame.
 
     Args:
-        filepath: Path to file containing YEDA annotations.
+        filepath: Path to file containing YEDDA annotations.
         spark: SparkSession instance. If None, creates a new session.
         metadata: Optional dictionary of metadata to attach to every row.
                  Useful for provenance tracking.
@@ -255,7 +255,7 @@ def add_metadata_to_existing_df(
 
 # Example usage and testing
 if __name__ == "__main__":
-    # Example YEDA text
+    # Example YEDDA text
     example_text = """[@ ISSN (print) 0093-4666
 © 2011. Mycotaxon, Ltd.
 ISSN (online) 2154-8889
@@ -266,7 +266,7 @@ ISSN (online) 2154-8889
 Spores with a mono-to-multiple layered spore wall.
 #Description*]"""
 
-    print("Parsing YEDA text...")
+    print("Parsing YEDDA text...")
     parsed = parse_yeda_string(example_text)
 
     print(f"\nParsed {len(parsed)} lines:")
@@ -278,7 +278,7 @@ Spores with a mono-to-multiple layered spore wall.
         from pyspark.sql import SparkSession
 
         spark = SparkSession.builder \
-            .appName("YEDA Parser Test") \
+            .appName("YEDDA Parser Test") \
             .master("local[*]") \
             .getOrCreate()
 

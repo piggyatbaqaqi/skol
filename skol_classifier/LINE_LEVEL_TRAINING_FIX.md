@@ -8,7 +8,7 @@ The `line_level` parameter was added to the model comparison configurations, but
 
 1. `load_annotated_data()` didn't have a `line_level` parameter
 2. `fit()` didn't accept or pass through `line_level`
-3. No extraction logic existed for parsing YEDA annotations at line level
+3. No extraction logic existed for parsing YEDDA annotations at line level
 
 ## Solution
 
@@ -23,7 +23,7 @@ Added `line_level` parameter with two different extraction paths:
 
 **Line-level (line_level=True - new behavior):**
 - Uses custom `extract_yeda_lines()` function
-- Parses YEDA blocks and extracts each line individually
+- Parses YEDDA blocks and extracts each line individually
 - Each training sample is a single line
 - Preserves line numbers within blocks
 
@@ -115,14 +115,14 @@ Testing: Logistic Regression (line-level, words only)
 
 ## Technical Details
 
-### YEDA Line Extraction Pattern
+### YEDDA Line Extraction Pattern
 
 ```python
 pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
 ```
 
 This regex:
-- Matches YEDA blocks: `[@ content #Label*]`
+- Matches YEDDA blocks: `[@ content #Label*]`
 - Captures content and label separately
 - Uses DOTALL to match across newlines
 - Splits content by `\n` to get individual lines
@@ -138,7 +138,7 @@ This regex:
 - `filename`: str
 - `label`: str
 - `value`: str (single line text)
-- `line_number`: int (position within YEDA block)
+- `line_number`: int (position within YEDDA block)
 
 ## Testing
 

@@ -11,13 +11,13 @@ def main():
     # Create Spark session
     print("Creating Spark session...")
     spark = SparkSession.builder \
-        .appName("YEDA Article Parser") \
+        .appName("YEDDA Article Parser") \
         .master("local[*]") \
         .config("spark.driver.memory", "2g") \
         .getOrCreate()
 
     try:
-        # Parse YEDA file to DataFrame
+        # Parse YEDDA file to DataFrame
         print("\nParsing test_data/article_reference.txt...")
         df = yeda_file_to_spark_df('test_data/article_reference.txt', spark)
 

@@ -38,7 +38,7 @@ extractor = TaxonExtractor(
 ### Step 2: Load Annotated Documents
 
 ```python
-# Load documents that have been annotated with YEDA format
+# Load documents that have been annotated with YEDDA format
 annotated_df = extractor.load_annotated_documents()
 
 print(f"Loaded {annotated_df.count()} annotated documents")

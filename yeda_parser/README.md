@@ -1,10 +1,10 @@
-# YEDA Parser Module
+# YEDDA Parser Module
 
-A Python module for parsing YEDA (Yet Another Entity Detection and Annotation) format text and converting it to PySpark DataFrames.
+A Python module for parsing YEDDA (Yet Another Entity Detection and Annotation) format text and converting it to PySpark DataFrames.
 
-## YEDA Format
+## YEDDA Format
 
-YEDA is an annotation format used for labeling text data. Each annotation block has the structure:
+YEDDA is an annotation format used for labeling text data. Each annotation block has the structure:
 
 ```
 [@ <text content>
@@ -19,7 +19,7 @@ Example:
 
 ## Features
 
-- Parse YEDA-annotated strings or files
+- Parse YEDDA-annotated strings or files
 - Convert to PySpark DataFrames with line-level granularity
 - Compute label statistics
 - Preserve line numbers within annotation blocks
@@ -57,7 +57,7 @@ result = parse_yeda_string(text)
 from pyspark.sql import SparkSession
 from yeda_parser import yeda_to_spark_df
 
-spark = SparkSession.builder.appName("YEDA Parser").getOrCreate()
+spark = SparkSession.builder.appName("YEDDA Parser").getOrCreate()
 
 text = "[@ First line\nSecond line\n#Nomenclature*]"
 df = yeda_to_spark_df(text, spark)
@@ -128,15 +128,15 @@ df.write.json("output.json")
 
 ### `parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]`
 
-Parse YEDA-annotated string into list of (label, line, line_number) tuples.
+Parse YEDDA-annotated string into list of (label, line, line_number) tuples.
 
 ### `parse_yeda_file(filepath: str) -> List[Tuple[str, str, int]]`
 
-Parse YEDA-annotated file into list of tuples.
+Parse YEDDA-annotated file into list of tuples.
 
 ### `yeda_to_spark_df(yeda_text: str, spark: SparkSession) -> DataFrame`
 
-Convert YEDA-annotated text to PySpark DataFrame.
+Convert YEDDA-annotated text to PySpark DataFrame.
 
 Returns DataFrame with columns:
 - `label` (string): Annotation label
@@ -145,7 +145,7 @@ Returns DataFrame with columns:
 
 ### `yeda_file_to_spark_df(filepath: str, spark: SparkSession) -> DataFrame`
 
-Convert YEDA-annotated file to PySpark DataFrame.
+Convert YEDDA-annotated file to PySpark DataFrame.
 
 ### `get_label_statistics(df: DataFrame) -> DataFrame`
 
@@ -159,7 +159,7 @@ Returns DataFrame with columns:
 ## Example Script
 
 See `example_yeda_to_spark.py` for a complete example that:
-- Loads a YEDA file
+- Loads a YEDDA file
 - Creates a Spark DataFrame
 - Computes statistics
 - Runs example queries

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Annotate article.txt with YEDA format labels."""
+"""Annotate article.txt with YEDDA format labels."""
 
 from line import Line
 from paragraph import Paragraph
@@ -138,7 +138,7 @@ def group_lines_into_paragraphs(lines):
     return paragraphs
 
 def classify_and_annotate(paragraphs):
-    """Classify paragraphs and add YEDA annotations."""
+    """Classify paragraphs and add YEDDA annotations."""
     output_lines = []
     stats = {'Nomenclature': 0, 'Description': 0, 'Misc-exposition': 0}
 
@@ -156,7 +156,7 @@ def classify_and_annotate(paragraphs):
 
         stats[label] += 1
 
-        # Add YEDA annotation
+        # Add YEDDA annotation
         output_lines.append('[@ ' + para)
         output_lines.append(f'#{label}*]')
 

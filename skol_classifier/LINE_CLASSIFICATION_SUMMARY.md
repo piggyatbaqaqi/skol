@@ -1,8 +1,8 @@
-# Line-by-Line Classification with YEDA Output
+# Line-by-Line Classification with YEDDA Output
 
 ## Summary
 
-Extended the SKOL classifier to support line-by-line classification in addition to paragraph-based classification. The new functionality produces YEDA-formatted output where consecutive lines with the same label are coalesced into blocks.
+Extended the SKOL classifier to support line-by-line classification in addition to paragraph-based classification. The new functionality produces YEDDA-formatted output where consecutive lines with the same label are coalesced into blocks.
 
 ## Changes Made
 
@@ -17,17 +17,17 @@ Extended the SKOL classifier to support line-by-line classification in addition 
 - Classifies individual lines instead of paragraphs
 - Supports three output formats:
   - `"yeda"`: Returns predictions for further processing
-  - `"annotated"`: Wraps each line in YEDA format
+  - `"annotated"`: Wraps each line in YEDDA format
   - `"simple"`: Returns basic predictions
 - Returns DataFrame with predictions and labels
 
 #### `coalesce_consecutive_labels(lines_data: List[Dict[str, Any]]) -> str`
 - Static method that merges consecutive lines with the same label
-- Creates YEDA blocks with format: `[@ <lines>\n#<label>*]`
+- Creates YEDDA blocks with format: `[@ <lines>\n#<label>*]`
 - Handles label transitions automatically
 
 #### `save_yeda_output(predictions: DataFrame, output_path: str) -> None`
-- Saves line-level predictions in YEDA format
+- Saves line-level predictions in YEDDA format
 - Automatically coalesces consecutive same-label lines into blocks
 - Outputs files partitioned by source filename
 
@@ -43,13 +43,13 @@ Unit tests for the coalescence functionality:
 #### `example_line_classification.py`
 Example script demonstrating:
 - How to use the new API
-- YEDA format output example
+- YEDDA format output example
 - Comparison with paragraph-based classification
 
 ### 3. Documentation Updates
 
 #### `README.md`
-- Added new "Line-by-Line Classification with YEDA Output" section
+- Added new "Line-by-Line Classification with YEDDA Output" section
 - Documented all new API methods
 - Included usage examples
 - Updated features list
@@ -63,7 +63,7 @@ predictions = classifier.predict_raw_text(['file.txt'])
 classifier.save_annotated_output(predictions, 'output_dir')
 ```
 
-Output: Each paragraph as a separate YEDA block
+Output: Each paragraph as a separate YEDDA block
 
 ### Line-Based (New)
 ```python
@@ -72,9 +72,9 @@ predictions = classifier.predict_lines(['file.txt'])
 classifier.save_yeda_output(predictions, 'output_dir')
 ```
 
-Output: Consecutive lines with same label coalesced into YEDA blocks
+Output: Consecutive lines with same label coalesced into YEDDA blocks
 
-## YEDA Format Example
+## YEDDA Format Example
 
 Input lines with labels:
 ```
@@ -85,7 +85,7 @@ Input lines with labels:
 [Misc-exposition] This species is common in temperate regions.
 ```
 
-Output YEDA blocks:
+Output YEDDA blocks:
 ```
 [@ Glomus mosseae Nicolson & Gerdemann, 1963.
 ≡ Glomus mosseae (Nicolson & Gerdemann) C. Walker
@@ -101,13 +101,13 @@ Spore wall: mono- to multiple-layered.
 
 1. **Granular Control**: Classify at line level instead of relying on paragraph detection
 2. **Better Segmentation**: More accurate for documents with poor paragraph structure
-3. **YEDA Integration**: Output compatible with the `yeda_parser` module
+3. **YEDDA Integration**: Output compatible with the `yeda_parser` module
 4. **Automatic Coalescence**: Reduces output size by merging consecutive same-label lines
 5. **Flexible Output**: Multiple output format options
 
 ## Integration with yeda_parser
 
-The YEDA output from `save_yeda_output()` can be directly parsed by the `yeda_parser` module:
+The YEDDA output from `save_yeda_output()` can be directly parsed by the `yeda_parser` module:
 
 ```python
 from yeda_parser import yeda_file_to_spark_df
@@ -119,8 +119,8 @@ df.show()
 
 This creates a complete pipeline:
 1. Classify text line-by-line
-2. Coalesce into YEDA blocks
-3. Parse YEDA into structured DataFrame
+2. Coalesce into YEDDA blocks
+3. Parse YEDDA into structured DataFrame
 4. Perform downstream analysis
 
 ## Files Modified
