@@ -140,19 +140,29 @@ Taxon nodes include metadata from the original `Raw_Data_Index.to_dict()` fields
 (:Taxon {
     name: "Amanita muscaria",
     node_id: 42,
-    source: "SKOL_TAXA",
-    filename: "couchdb://localhost:5984/skol_taxa_dev",
-    row: 15,
+    source: "doc_123",
+    url: "couchdb://localhost:5984/mycobank_taxa/doc_123",
+    db_name: "mycobank_taxa",
+    line_number: 15,
+    paragraph_number: 2,
+    page_number: 42,
+    empirical_page_number: "40",
     description: "Pileus 5-10 cm broad, convex..."
 })
 ```
 
 The metadata fields may include:
-- `source`: Data source class name (e.g., "SKOL_TAXA")
-- `filename`: Source file or database location
-- `row`: Row index in the original data
-- `description`: Full taxon description text
-- Additional fields depending on the data source
+- `name`: Taxon nomenclature from the 'taxon' field (concatenated nomenclature paragraphs)
+- `source`: Source document ID
+- `url`: Source document URL (e.g., CouchDB URL)
+- `db_name`: Source database name
+- `filename`: Source file path (for file-based sources)
+- `row`: Row index in the original data (for file-based sources)
+- `line_number`: Line number of first nomenclature paragraph
+- `paragraph_number`: Paragraph number of first nomenclature paragraph
+- `page_number`: Page number of first nomenclature paragraph
+- `empirical_page_number`: Empirical page number from source document
+- `description`: Full taxon description text (concatenated description paragraphs)
 
 **Pseudoclade (Internal Nodes)**
 ```cypher
@@ -185,9 +195,9 @@ The `distance` property represents the cosine similarity distance at which the c
 (Fungi:Pseudoclade)
     ├─[:PARENT_OF {distance: 0.234}]→ (Pseudoclade_1:Pseudoclade)
     │   ├─[:PARENT_OF {distance: 0.156}]→ (Amanita muscaria:Taxon {
-    │   │                                     source: "SKOL_TAXA",
-    │   │                                     filename: "couchdb://...",
-    │   │                                     row: 15,
+    │   │                                     source: "doc_123",
+    │   │                                     url: "couchdb://localhost:5984/mycobank_taxa/doc_123",
+    │   │                                     line_number: 15,
     │   │                                     description: "Pileus 5-10 cm..."
     │   │                                  })
     │   └─[:PARENT_OF {distance: 0.189}]→ (Amanita pantherina:Taxon {...})
@@ -271,11 +281,11 @@ LIMIT 10
 
 ### Query by Metadata Fields
 
-**Find taxa from a specific source**
+**Find taxa from a specific database**
 ```cypher
 MATCH (t:Taxon)
-WHERE t.source = "SKOL_TAXA"
-RETURN t.name, t.description
+WHERE t.db_name = "mycobank_taxa"
+RETURN t.name, t.description, t.url
 LIMIT 10
 ```
 
@@ -283,16 +293,24 @@ LIMIT 10
 ```cypher
 MATCH (t:Taxon)
 WHERE t.description CONTAINS "pileus"
-RETURN t.name, t.description, t.source
+RETURN t.name, t.description, t.url
 ORDER BY t.name
 ```
 
-**Find taxa by row range**
+**Find taxa by page number**
 ```cypher
 MATCH (t:Taxon)
-WHERE t.row >= 10 AND t.row <= 20
-RETURN t.name, t.row, t.filename
-ORDER BY t.row
+WHERE t.page_number >= 10 AND t.page_number <= 20
+RETURN t.name, t.page_number, t.url
+ORDER BY t.page_number
+```
+
+**Find taxa from a specific source document**
+```cypher
+MATCH (t:Taxon)
+WHERE t.url CONTAINS "doc_123"
+RETURN t.name, t.description, t.line_number
+ORDER BY t.line_number
 ```
 
 **Get all metadata for a taxon**

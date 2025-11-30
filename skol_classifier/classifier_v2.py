@@ -55,6 +55,7 @@ from pyspark.ml import PipelineModel
 from .feature_extraction import FeatureExtractor
 from .model import SkolModel
 from .output_formatters import YeddaFormatter, FileOutputWriter
+
 from .couchdb_io import CouchDBConnection
 
 
