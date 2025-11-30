@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Example script showing how to use yeda_parser with PySpark."""
+"""Example script showing how to use yedda_parser with PySpark."""
 
-from yeda_parser import yeda_file_to_spark_df, get_label_statistics
+from yedda_parser import yedda_file_to_spark_df, get_label_statistics
 from pyspark.sql import SparkSession
 
 
@@ -19,7 +19,7 @@ def main():
     try:
         # Parse YEDDA file to DataFrame
         print("\nParsing test_data/article_reference.txt...")
-        df = yeda_file_to_spark_df('test_data/article_reference.txt', spark)
+        df = yedda_file_to_spark_df('test_data/article_reference.txt', spark)
 
         # Show schema
         print("\nDataFrame Schema:")

@@ -1,16 +1,16 @@
-"""Tests for yeda_parser.py."""
+"""Tests for yedda_parser.py."""
 
 import unittest
-from yeda_parser import parse_yeda_string
+from yedda_parser import parse_yedda_string
 
 
-class TestYedaParser(unittest.TestCase):
+class TestYeddaParser(unittest.TestCase):
     """Test YEDDA parsing functions."""
 
     def test_parse_simple_block(self):
         """Test parsing a simple YEDDA block."""
         text = "[@ Line 1\nLine 2\n#Label*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0], ('Label', 'Line 1', 0))
@@ -24,7 +24,7 @@ First block line 2
 [@ Second block line 1
 #Label2*]"""
 
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 3)
         self.assertEqual(result[0][0], 'Label1')
@@ -34,7 +34,7 @@ First block line 2
     def test_parse_with_whitespace(self):
         """Test parsing with extra whitespace."""
         text = "[@   Line with spaces   \n  Another line  \n#Label*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 2)
         # Leading/trailing whitespace around content block is stripped by regex
@@ -45,7 +45,7 @@ First block line 2
     def test_parse_empty_lines(self):
         """Test parsing with empty lines in content."""
         text = "[@ Line 1\n\nLine 3\n#Label*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 3)
         self.assertEqual(result[0][1], 'Line 1')
@@ -55,7 +55,7 @@ First block line 2
     def test_parse_nomenclature_label(self):
         """Test parsing with Nomenclature label."""
         text = "[@ Glomus mosseae Nicolson & Gerdemann, 1963.\n#Nomenclature*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0][0], 'Nomenclature')
@@ -64,7 +64,7 @@ First block line 2
     def test_parse_description_label(self):
         """Test parsing with Description label."""
         text = "[@ Type species: Glomus mosseae\nSpores: 100-200 µm\n#Description*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0][0], 'Description')
@@ -78,7 +78,7 @@ and contains various information
 about taxonomy.
 #Misc-exposition*]"""
 
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 4)
         for label, line, line_num in result:
@@ -88,7 +88,7 @@ about taxonomy.
     def test_line_numbers(self):
         """Test that line numbers are correctly assigned."""
         text = "[@ Line 0\nLine 1\nLine 2\n#Label*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         for i, (label, line, line_num) in enumerate(result):
             self.assertEqual(line_num, i)
@@ -107,7 +107,7 @@ MycoBank MB 518461
 Etymology: from the Latin: simi(laris) = similar; glomus = cluster.
 #Description*]"""
 
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         # Count by label
         labels = [r[0] for r in result]
@@ -115,10 +115,10 @@ Etymology: from the Latin: simi(laris) = similar; glomus = cluster.
         self.assertEqual(labels.count('Nomenclature'), 3)
         self.assertEqual(labels.count('Description'), 2)
 
-    def test_parse_no_yeda_blocks(self):
+    def test_parse_no_yedda_blocks(self):
         """Test parsing text with no YEDDA blocks."""
         text = "Just plain text without any YEDDA annotations"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
 
         self.assertEqual(len(result), 0)
 
@@ -126,16 +126,16 @@ Etymology: from the Latin: simi(laris) = similar; glomus = cluster.
         """Test parsing with malformed YEDDA blocks."""
         # Missing closing bracket
         text = "[@ Some text\n#Label*"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
         self.assertEqual(len(result), 0)
 
         # Missing label
         text = "[@ Some text\n*]"
-        result = parse_yeda_string(text)
+        result = parse_yedda_string(text)
         self.assertEqual(len(result), 0)
 
 
-class TestYedaParserIntegration(unittest.TestCase):
+class TestYeddaParserIntegration(unittest.TestCase):
     """Integration tests that require PySpark."""
 
     @classmethod
@@ -158,15 +158,15 @@ class TestYedaParserIntegration(unittest.TestCase):
         if cls.has_spark:
             cls.spark.stop()
 
-    def test_yeda_to_spark_df(self):
+    def test_yedda_to_spark_df(self):
         """Test conversion to Spark DataFrame."""
         if not self.has_spark:
             self.skipTest("PySpark not available")
 
-        from yeda_parser import yeda_to_spark_df
+        from yedda_parser import yedda_to_spark_df
 
         text = "[@ Line 1\nLine 2\n#Label*]"
-        df = yeda_to_spark_df(text, self.spark)
+        df = yedda_to_spark_df(text, self.spark)
 
         self.assertEqual(df.count(), 2)
         self.assertEqual(len(df.columns), 3)
@@ -180,12 +180,12 @@ class TestYedaParserIntegration(unittest.TestCase):
         self.assertEqual(first_row['line'], 'Line 1')
         self.assertEqual(first_row['line_number'], 0)
 
-    def test_yeda_to_spark_df_with_metadata(self):
+    def test_yedda_to_spark_df_with_metadata(self):
         """Test conversion with metadata."""
         if not self.has_spark:
             self.skipTest("PySpark not available")
 
-        from yeda_parser import yeda_to_spark_df
+        from yedda_parser import yedda_to_spark_df
         import json
 
         text = "[@ Line 1\nLine 2\n#Label*]"
@@ -195,7 +195,7 @@ class TestYedaParserIntegration(unittest.TestCase):
             'count': 42
         }
 
-        df = yeda_to_spark_df(text, self.spark, metadata)
+        df = yedda_to_spark_df(text, self.spark, metadata)
 
         self.assertEqual(df.count(), 2)
         self.assertEqual(len(df.columns), 4)
@@ -213,27 +213,27 @@ class TestYedaParserIntegration(unittest.TestCase):
         if not self.has_spark:
             self.skipTest("PySpark not available")
 
-        from yeda_parser import yeda_to_spark_df, extract_metadata_field
+        from yedda_parser import yedda_to_spark_df, extract_metadata_field
 
         text = "[@ Line 1\n#Label*]"
         metadata = {'source_file': 'article.txt', 'version': '2.0'}
 
-        df = yeda_to_spark_df(text, self.spark, metadata)
+        df = yedda_to_spark_df(text, self.spark, metadata)
         df_extracted = extract_metadata_field(df, 'source_file')
 
         self.assertIn('source_file', df_extracted.columns)
         first_row = df_extracted.first()
         self.assertEqual(first_row['source_file'], 'article.txt')
 
-    def test_yeda_file_auto_add_filepath(self):
+    def test_yedda_file_auto_add_filepath(self):
         """Test auto-adding filepath to metadata."""
         if not self.has_spark:
             self.skipTest("PySpark not available")
 
-        from yeda_parser import yeda_file_to_spark_df, extract_metadata_field
+        from yedda_parser import yedda_file_to_spark_df, extract_metadata_field
 
         # Using the test_data file
-        df = yeda_file_to_spark_df(
+        df = yedda_file_to_spark_df(
             'test_data/article_reference.txt',
             self.spark,
             metadata={'version': '1.0'}
@@ -256,12 +256,12 @@ class TestYedaParserIntegration(unittest.TestCase):
         if not self.has_spark:
             self.skipTest("PySpark not available")
 
-        from yeda_parser import yeda_to_spark_df, get_label_statistics
+        from yedda_parser import yedda_to_spark_df, get_label_statistics
 
         text = """[@ Line 1\nLine 2\n#Label1*]
 [@ Line 3\nLine 4\nLine 5\n#Label2*]"""
 
-        df = yeda_to_spark_df(text, self.spark)
+        df = yedda_to_spark_df(text, self.spark)
         stats = get_label_statistics(df)
 
         self.assertEqual(stats.count(), 2)

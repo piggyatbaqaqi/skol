@@ -15,11 +15,11 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 
-def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
+def parse_yedda_string(yedda_text: str) -> List[Tuple[str, str, int]]:
     """Parse a YEDDA-annotated string into (label, line, line_number) tuples.
 
     Args:
-        yeda_text: String containing YEDDA annotations in format:
+        yedda_text: String containing YEDDA annotations in format:
                    [@ <text>
                    #<label>*]
 
@@ -29,7 +29,7 @@ def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
 
     Example:
         >>> text = "[@ Line 1\\nLine 2\\n#Label*]"
-        >>> parse_yeda_string(text)
+        >>> parse_yedda_string(text)
         [('Label', 'Line 1', 0), ('Label', 'Line 2', 1)]
     """
     results = []
@@ -38,7 +38,7 @@ def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
     # Using DOTALL to match across newlines
     pattern = r'\[@\s*(.*?)\s*#([^*]+)\*\]'
 
-    for match in re.finditer(pattern, yeda_text, re.DOTALL):
+    for match in re.finditer(pattern, yedda_text, re.DOTALL):
         content = match.group(1)
         label = match.group(2).strip()
 
@@ -54,7 +54,7 @@ def parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]:
     return results
 
 
-def parse_yeda_file(filepath: str) -> List[Tuple[str, str, int]]:
+def parse_yedda_file(filepath: str) -> List[Tuple[str, str, int]]:
     """Parse a YEDDA-annotated file into (label, line, line_number) tuples.
 
     Args:
@@ -64,20 +64,20 @@ def parse_yeda_file(filepath: str) -> List[Tuple[str, str, int]]:
         List of tuples (label, line_text, line_number) for each line in the file.
     """
     with open(filepath, 'r', encoding='utf-8') as f:
-        yeda_text = f.read()
+        yedda_text = f.read()
 
-    return parse_yeda_string(yeda_text)
+    return parse_yedda_string(yedda_text)
 
 
-def yeda_to_spark_df(
-    yeda_text: str,
+def yedda_to_spark_df(
+    yedda_text: str,
     spark: Optional[SparkSession] = None,
     metadata: Optional[Dict[str, Any]] = None
 ) -> DataFrame:
     """Convert YEDDA-annotated text to a PySpark DataFrame.
 
     Args:
-        yeda_text: String containing YEDDA annotations.
+        yedda_text: String containing YEDDA annotations.
         spark: SparkSession instance. If None, creates a new session.
         metadata: Optional dictionary of metadata to attach to every row.
                  Useful for provenance tracking (e.g., source file, timestamp,
@@ -95,7 +95,7 @@ def yeda_to_spark_df(
         >>> spark = SparkSession.builder.appName("test").getOrCreate()
         >>> text = "[@ First line\\nSecond line\\n#Nomenclature*]"
         >>> metadata = {"source": "article.txt", "version": "1.0"}
-        >>> df = yeda_to_spark_df(text, spark, metadata)
+        >>> df = yedda_to_spark_df(text, spark, metadata)
         >>> df.show()
         +-------------+-----------+-----------+--------------------+
         |        label|       line|line_number|            metadata|
@@ -111,7 +111,7 @@ def yeda_to_spark_df(
             .getOrCreate()
 
     # Parse YEDDA text
-    parsed_data = parse_yeda_string(yeda_text)
+    parsed_data = parse_yedda_string(yedda_text)
 
     # Add metadata to each row if provided
     if metadata is not None:
@@ -140,7 +140,7 @@ def yeda_to_spark_df(
     return df
 
 
-def yeda_file_to_spark_df(
+def yedda_file_to_spark_df(
     filepath: str,
     spark: Optional[SparkSession] = None,
     metadata: Optional[Dict[str, Any]] = None,
@@ -165,28 +165,28 @@ def yeda_file_to_spark_df(
                                 auto_add_filepath is True)
 
     Example:
-        >>> df = yeda_file_to_spark_df('article.txt', spark,
+        >>> df = yedda_file_to_spark_df('article.txt', spark,
         ...                            metadata={'version': '1.0'})
         >>> # metadata will include both 'source_file' and 'version'
     """
     with open(filepath, 'r', encoding='utf-8') as f:
-        yeda_text = f.read()
+        yedda_text = f.read()
 
     # Combine auto-added filepath with user metadata
     if auto_add_filepath:
         combined_metadata = {'source_file': filepath}
         if metadata:
             combined_metadata.update(metadata)
-        return yeda_to_spark_df(yeda_text, spark, combined_metadata)
+        return yedda_to_spark_df(yedda_text, spark, combined_metadata)
     else:
-        return yeda_to_spark_df(yeda_text, spark, metadata)
+        return yedda_to_spark_df(yedda_text, spark, metadata)
 
 
 def get_label_statistics(df: DataFrame) -> DataFrame:
     """Get statistics about labels in the DataFrame.
 
     Args:
-        df: DataFrame from yeda_to_spark_df()
+        df: DataFrame from yedda_to_spark_df()
 
     Returns:
         DataFrame with columns:
@@ -243,7 +243,7 @@ def add_metadata_to_existing_df(
         DataFrame with metadata column added
 
     Example:
-        >>> df_no_meta = yeda_to_spark_df(text, spark)
+        >>> df_no_meta = yedda_to_spark_df(text, spark)
         >>> meta = {'source': 'article.txt', 'date': '2025-01-01'}
         >>> df_with_meta = add_metadata_to_existing_df(df_no_meta, meta)
     """
@@ -267,7 +267,7 @@ Spores with a mono-to-multiple layered spore wall.
 #Description*]"""
 
     print("Parsing YEDDA text...")
-    parsed = parse_yeda_string(example_text)
+    parsed = parse_yedda_string(example_text)
 
     print(f"\nParsed {len(parsed)} lines:")
     for label, line, line_num in parsed[:5]:
@@ -283,7 +283,7 @@ Spores with a mono-to-multiple layered spore wall.
             .getOrCreate()
 
         # Example 1: DataFrame without metadata
-        df = yeda_to_spark_df(example_text, spark)
+        df = yedda_to_spark_df(example_text, spark)
 
         print("\nDataFrame Schema (without metadata):")
         df.printSchema()
@@ -300,7 +300,7 @@ Spores with a mono-to-multiple layered spore wall.
             'annotator': 'automated'
         }
 
-        df_with_meta = yeda_to_spark_df(example_text, spark, metadata)
+        df_with_meta = yedda_to_spark_df(example_text, spark, metadata)
 
         print("\nDataFrame Schema (with metadata):")
         df_with_meta.printSchema()

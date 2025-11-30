@@ -30,6 +30,7 @@ class ClusterNode:
     right_child: Optional['ClusterNode'] = None
     distance: float = 0.0
     count: int = 1
+    metadata: Optional[Dict[str, Any]] = None  # Metadata from Raw_Data_Index.to_dict()
 
 
 class TaxonClusterer:
@@ -93,6 +94,7 @@ class TaxonClusterer:
         # Data storage
         self.embeddings: Optional[np.ndarray] = None
         self.taxon_names: Optional[List[str]] = None
+        self.taxon_metadata: Optional[List[Dict[str, Any]]] = None  # Metadata per taxon
         self.linkage_matrix: Optional[np.ndarray] = None
         self.root_node: Optional[ClusterNode] = None
 
@@ -122,24 +124,49 @@ class TaxonClusterer:
         pickled_data = self.redis_client.get(embedding_key)
         data = pickle.loads(pickled_data)
 
-        # Extract embeddings and taxon names
-        # Assuming data structure: {'embeddings': array, 'taxon_names': list}
-        # or just a dict with taxon_name -> embedding mapping
+        # Extract embeddings, taxon names, and metadata
+        # The data is a pandas DataFrame from EmbeddingsComputer.result
+        # It contains: source, filename, row, description, F0, F1, F2, ..., Fn
         if isinstance(data, dict):
             if 'embeddings' in data and 'taxon_names' in data:
                 # Structured format
                 self.embeddings = np.array(data['embeddings'])
                 self.taxon_names = data['taxon_names']
+                self.taxon_metadata = data.get('metadata', [{}] * len(self.taxon_names))
             else:
                 # Assume dict mapping taxon_name -> embedding
                 self.taxon_names = list(data.keys())
                 self.embeddings = np.array(list(data.values()))
+                self.taxon_metadata = [{}] * len(self.taxon_names)
         elif isinstance(data, np.ndarray):
             # Just embeddings, generate names
             self.embeddings = data
             self.taxon_names = [f"Taxon_{i}" for i in range(len(data))]
+            self.taxon_metadata = [{}] * len(data)
         else:
-            raise ValueError(f"Unexpected data format in Redis: {type(data)}")
+            # Assume it's a pandas DataFrame from EmbeddingsComputer
+            try:
+                import pandas as pd
+                if isinstance(data, pd.DataFrame):
+                    # Extract embedding columns (F0, F1, F2, ...)
+                    embedding_cols = [col for col in data.columns if col.startswith('F')]
+                    self.embeddings = data[embedding_cols].values
+
+                    # Extract taxon names from description
+                    # The description field contains the full taxon description
+                    self.taxon_names = data['description'].tolist()
+
+                    # Extract metadata from other columns
+                    metadata_cols = ['source', 'filename', 'row']
+                    self.taxon_metadata = []
+                    for idx, row in data.iterrows():
+                        metadata = {col: row[col] for col in metadata_cols if col in data.columns}
+                        metadata['description'] = row.get('description', '')
+                        self.taxon_metadata.append(metadata)
+                else:
+                    raise ValueError(f"Unexpected data format in Redis: {type(data)}")
+            except Exception as e:
+                raise ValueError(f"Failed to parse data from Redis: {e}")
 
         print(f"✓ Loaded {len(self.taxon_names)} taxa with {self.embeddings.shape[1]}-dimensional embeddings")
 
@@ -203,12 +230,15 @@ class TaxonClusterer:
             """Recursively convert scipy tree to ClusterNode."""
             if scipy_node.is_leaf():
                 # Leaf node - represents a taxon
+                leaf_idx = scipy_node.id
+                metadata = self.taxon_metadata[leaf_idx] if self.taxon_metadata else {}
                 return ClusterNode(
                     node_id=node_id,
                     is_leaf=True,
-                    taxon_name=self.taxon_names[scipy_node.id],
+                    taxon_name=self.taxon_names[leaf_idx],
                     distance=0.0,
-                    count=1
+                    count=1,
+                    metadata=metadata
                 )
             else:
                 # Internal node - represents a pseudoclade
@@ -286,13 +316,24 @@ class TaxonClusterer:
             def store_node(node: ClusterNode, parent_id: Optional[int] = None, is_root: bool = False):
                 """Recursively store nodes in Neo4j."""
                 if node.is_leaf:
-                    # Create Taxon node
+                    # Create Taxon node with metadata
+                    taxon_props = {
+                        'name': node.taxon_name,
+                        'node_id': node.node_id
+                    }
+
+                    # Add metadata fields if available
+                    if node.metadata:
+                        for key, value in node.metadata.items():
+                            # Convert values to Neo4j-compatible types
+                            if value is not None and not isinstance(value, (bool, int, float, str)):
+                                taxon_props[key] = str(value)
+                            else:
+                                taxon_props[key] = value
+
                     session.run("""
-                        CREATE (t:Taxon {
-                            name: $name,
-                            node_id: $node_id
-                        })
-                    """, name=node.taxon_name, node_id=node.node_id)
+                        CREATE (t:Taxon $props)
+                    """, props=taxon_props)
 
                     # Create relationship to parent if exists
                     if parent_id is not None:

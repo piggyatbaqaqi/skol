@@ -39,7 +39,7 @@ pip install pyspark
 ### Basic Parsing
 
 ```python
-from yeda_parser import parse_yeda_string
+from yedda_parser import parse_yedda_string
 
 text = """[@ Line 1
 Line 2
@@ -47,7 +47,7 @@ Line 2
 [@ Line 3
 #Label2*]"""
 
-result = parse_yeda_string(text)
+result = parse_yedda_string(text)
 # Returns: [('Label1', 'Line 1', 0), ('Label1', 'Line 2', 1), ('Label2', 'Line 3', 0)]
 ```
 
@@ -55,12 +55,12 @@ result = parse_yeda_string(text)
 
 ```python
 from pyspark.sql import SparkSession
-from yeda_parser import yeda_to_spark_df
+from yedda_parser import yedda_to_spark_df
 
 spark = SparkSession.builder.appName("YEDDA Parser").getOrCreate()
 
 text = "[@ First line\nSecond line\n#Nomenclature*]"
-df = yeda_to_spark_df(text, spark)
+df = yedda_to_spark_df(text, spark)
 
 df.show()
 # +-------------+-----------+-----------+
@@ -74,16 +74,16 @@ df.show()
 ### Parse Files
 
 ```python
-from yeda_parser import yeda_file_to_spark_df
+from yedda_parser import yedda_file_to_spark_df
 
-df = yeda_file_to_spark_df('article_reference.txt', spark)
+df = yedda_file_to_spark_df('article_reference.txt', spark)
 print(f"Parsed {df.count()} lines")
 ```
 
 ### Get Label Statistics
 
 ```python
-from yeda_parser import get_label_statistics
+from yedda_parser import get_label_statistics
 
 stats = get_label_statistics(df)
 stats.show()
@@ -126,15 +126,15 @@ df.write.json("output.json")
 
 ## Module Functions
 
-### `parse_yeda_string(yeda_text: str) -> List[Tuple[str, str, int]]`
+### `parse_yedda_string(yedda_text: str) -> List[Tuple[str, str, int]]`
 
 Parse YEDDA-annotated string into list of (label, line, line_number) tuples.
 
-### `parse_yeda_file(filepath: str) -> List[Tuple[str, str, int]]`
+### `parse_yedda_file(filepath: str) -> List[Tuple[str, str, int]]`
 
 Parse YEDDA-annotated file into list of tuples.
 
-### `yeda_to_spark_df(yeda_text: str, spark: SparkSession) -> DataFrame`
+### `yedda_to_spark_df(yedda_text: str, spark: SparkSession) -> DataFrame`
 
 Convert YEDDA-annotated text to PySpark DataFrame.
 
@@ -143,7 +143,7 @@ Returns DataFrame with columns:
 - `line` (string): Text content
 - `line_number` (int): 0-indexed line number within annotation block
 
-### `yeda_file_to_spark_df(filepath: str, spark: SparkSession) -> DataFrame`
+### `yedda_file_to_spark_df(filepath: str, spark: SparkSession) -> DataFrame`
 
 Convert YEDDA-annotated file to PySpark DataFrame.
 
@@ -158,7 +158,7 @@ Returns DataFrame with columns:
 
 ## Example Script
 
-See `example_yeda_to_spark.py` for a complete example that:
+See `example_yedda_to_spark.py` for a complete example that:
 - Loads a YEDDA file
 - Creates a Spark DataFrame
 - Computes statistics
@@ -167,14 +167,14 @@ See `example_yeda_to_spark.py` for a complete example that:
 
 Run it with (from the skol root directory):
 ```bash
-python yeda_parser/example_yeda_to_spark.py
+python yedda_parser/example_yedda_to_spark.py
 ```
 
 ## Testing
 
 Run the test suite (from the skol root directory):
 ```bash
-python -m pytest yeda_parser/test_yeda_parser.py -v
+python -m pytest yedda_parser/test_yedda_parser.py -v
 ```
 
 ## Labels in article_reference.txt
