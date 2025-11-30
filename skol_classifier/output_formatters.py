@@ -10,6 +10,8 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, concat, lit, expr, udf, collect_list
 from pyspark.sql.types import StringType, ArrayType
 
+from .couchdb_io import CouchDBConnection
+
 
 class YeddaFormatter:
     """
@@ -278,8 +280,6 @@ class CouchDBOutputWriter:
             username: CouchDB username
             password: CouchDB password
         """
-        from .couchdb_io import CouchDBConnection
-
         self.conn = CouchDBConnection(
             couchdb_url=couchdb_url,
             database=database,
