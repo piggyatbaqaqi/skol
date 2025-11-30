@@ -5,10 +5,10 @@ from yeda_parser import parse_yeda_string
 
 
 class TestYedaParser(unittest.TestCase):
-    """Test YEDA parsing functions."""
+    """Test YEDDA parsing functions."""
 
     def test_parse_simple_block(self):
-        """Test parsing a simple YEDA block."""
+        """Test parsing a simple YEDDA block."""
         text = "[@ Line 1\nLine 2\n#Label*]"
         result = parse_yeda_string(text)
 
@@ -17,7 +17,7 @@ class TestYedaParser(unittest.TestCase):
         self.assertEqual(result[1], ('Label', 'Line 2', 1))
 
     def test_parse_multiple_blocks(self):
-        """Test parsing multiple YEDA blocks."""
+        """Test parsing multiple YEDDA blocks."""
         text = """[@ First block line 1
 First block line 2
 #Label1*]
@@ -95,7 +95,7 @@ about taxonomy.
             self.assertEqual(line, f'Line {i}')
 
     def test_parse_real_world_example(self):
-        """Test parsing a real-world YEDA example."""
+        """Test parsing a real-world YEDDA example."""
         text = """[@ ISSN (print) 0093-4666
 © 2011. Mycotaxon, Ltd.
 #Misc-exposition*]
@@ -116,14 +116,14 @@ Etymology: from the Latin: simi(laris) = similar; glomus = cluster.
         self.assertEqual(labels.count('Description'), 2)
 
     def test_parse_no_yeda_blocks(self):
-        """Test parsing text with no YEDA blocks."""
-        text = "Just plain text without any YEDA annotations"
+        """Test parsing text with no YEDDA blocks."""
+        text = "Just plain text without any YEDDA annotations"
         result = parse_yeda_string(text)
 
         self.assertEqual(len(result), 0)
 
     def test_parse_malformed_block(self):
-        """Test parsing with malformed YEDA blocks."""
+        """Test parsing with malformed YEDDA blocks."""
         # Missing closing bracket
         text = "[@ Some text\n#Label*"
         result = parse_yeda_string(text)
@@ -144,7 +144,7 @@ class TestYedaParserIntegration(unittest.TestCase):
         try:
             from pyspark.sql import SparkSession
             cls.spark = SparkSession.builder \
-                .appName("YEDA Parser Test") \
+                .appName("YEDDA Parser Test") \
                 .master("local[*]") \
                 .config("spark.driver.host", "localhost") \
                 .getOrCreate()

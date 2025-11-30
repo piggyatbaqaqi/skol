@@ -44,7 +44,7 @@ Created modular helper classes by extracting and refactoring functionality from 
 **Class: `AnnotatedTextLoader`**
 - Loads annotated text from files or CouchDB
 - Supports line-level and paragraph-level extraction
-- Parses YEDA annotation format: `[@ text #Label*]`
+- Parses YEDDA annotation format: `[@ text #Label*]`
 - Methods:
   - `load_from_files(file_paths, collapse_labels, line_level)`
   - `load_from_couchdb(couchdb_url, database, username, password, pattern, collapse_labels, line_level)`
@@ -59,10 +59,10 @@ Created modular helper classes by extracting and refactoring functionality from 
 ### 4. Output Formatting (`output_formatters.py`)
 
 **Class: `YedaFormatter`**
-- Formats predictions in YEDA annotation format
+- Formats predictions in YEDDA annotation format
 - Coalesces consecutive same-label predictions (for line-level)
 - Methods:
-  - `format_predictions(predictions)` - Adds YEDA formatting
+  - `format_predictions(predictions)` - Adds YEDDA formatting
   - `coalesce_consecutive_labels(predictions, line_level)` - Merges consecutive labels
 
 **Class: `FileOutputWriter`**

@@ -361,7 +361,7 @@ def define_args():
         action='store_true')
     parser.add_argument(
         '--output_annotated',
-        help='Output YEDA-annotated file.',
+        help='Output YEDDA-annotated file.',
         action='store_true')
     parser.add_argument(
         '--group_paragraphs',

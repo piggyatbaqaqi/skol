@@ -8,7 +8,7 @@ Updated all test and example files to use `SkolClassifierV2` instead of the depr
 
 ### 1. [skol_classifier/example_line_classification.py](skol_classifier/example_line_classification.py)
 
-**Purpose**: Demonstrates line-by-line classification with YEDA output
+**Purpose**: Demonstrates line-by-line classification with YEDDA output
 
 **Changes**:
 - Changed import from `SkolClassifier` to `SkolClassifierV2`
@@ -47,7 +47,7 @@ predictions = classifier.predict()
 - Unified API with single `fit()` call
 - Line-level processing
 - Label coalescing
-- YEDA format output
+- YEDDA format output
 - Sample predictions and label distribution
 
 ### 2. [skol_classifier/test_line_classifier.py](skol_classifier/test_line_classifier.py)
@@ -64,7 +64,7 @@ predictions = classifier.predict()
 1. **Initialization test**: Verify V2 API configuration
 2. **Training test**: Train with line-level processing
 3. **Prediction test**: Make and verify predictions
-4. **YEDA format test**: Verify output format
+4. **YEDDA format test**: Verify output format
 5. **Label distribution test**: Check predicted labels
 6. **No-coalesce test**: Verify coalescing can be disabled
 

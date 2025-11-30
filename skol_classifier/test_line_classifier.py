@@ -1,4 +1,4 @@
-"""Test script for line-by-line classification with YEDA output using V2 API."""
+"""Test script for line-by-line classification with YEDDA output using V2 API."""
 
 import sys
 from pathlib import Path
@@ -86,15 +86,15 @@ def test_line_classification():
                 count = predictions.count()
                 print(f"✓ Predictions generated: {count} lines")
 
-                # Test 3: Verify YEDA formatting
-                print("\nTest 3: Verifying YEDA format...")
+                # Test 3: Verify YEDDA formatting
+                print("\nTest 3: Verifying YEDDA format...")
                 sample = predictions.select("annotated_value").first()
                 if sample:
                     annotated = sample['annotated_value']
-                    assert '[@ ' in annotated, "Missing YEDA opening"
-                    assert '*]' in annotated, "Missing YEDA closing"
+                    assert '[@ ' in annotated, "Missing YEDDA opening"
+                    assert '*]' in annotated, "Missing YEDDA closing"
                     assert '#' in annotated, "Missing label marker"
-                    print(f"✓ YEDA format verified: {annotated[:50]}...")
+                    print(f"✓ YEDDA format verified: {annotated[:50]}...")
 
                 # Test 4: Verify label distribution
                 print("\nTest 4: Checking label distribution...")

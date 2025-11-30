@@ -60,9 +60,9 @@ class AnnotatedTextLoader:
         )
 
         if line_level:
-            # Line-level extraction: parse each line from YEDA blocks
+            # Line-level extraction: parse each line from YEDDA blocks
             def extract_yeda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
-                """Extract individual lines from YEDA annotation blocks."""
+                """Extract individual lines from YEDDA annotation blocks."""
                 import re
                 results = []
                 pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'

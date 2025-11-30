@@ -9,7 +9,7 @@ Created by: Christopher Murphy, La Monte Yarroll, David Caspers
 - **Multiple Classification Models**: Logistic Regression and Random Forest
 - **Advanced Feature Engineering**: TF-IDF with optional word suffix features (2-4 characters)
 - **Automated Paragraph Detection**: Heuristic-based paragraph extraction from raw text
-- **Line-by-Line Classification**: Optional line-level classification with YEDA format output
+- **Line-by-Line Classification**: Optional line-level classification with YEDDA format output
 - **Scalable Processing**: Built on Apache Spark for handling large document collections
 - **Model Persistence**: Save and load models to/from Redis or disk
 - **CouchDB Integration**: Read from and write to CouchDB attachments
@@ -395,15 +395,15 @@ classifier = SkolClassifier(spark=spark)
 
 Ensure Java 8 or 11 is installed and `JAVA_HOME` is set correctly.
 
-## Line-by-Line Classification with YEDA Output
+## Line-by-Line Classification with YEDDA Output
 
-In addition to paragraph-based classification, the classifier now supports line-by-line classification with YEDA (Yet Another Entity Detection and Annotation) format output.
+In addition to paragraph-based classification, the classifier now supports line-by-line classification with YEDDA (Yet Another Entity Detection and Annotation) format output.
 
 ### Why Line-by-Line Classification?
 
 - More granular control over text segmentation
 - Better for documents where paragraph detection is unreliable
-- Produces YEDA-formatted output for use with the yeda_parser module
+- Produces YEDDA-formatted output for use with the yeda_parser module
 - Consecutive lines with the same label are automatically coalesced into blocks
 
 ### Usage
@@ -421,20 +421,20 @@ with open('article.txt', 'r') as f:
 # Classify lines (not paragraphs) - pass raw text strings
 predictions = classifier.predict_lines([text_content])
 
-# Save as YEDA format (coalesces consecutive same-label lines)
+# Save as YEDDA format (coalesces consecutive same-label lines)
 classifier.save_yeda_output(predictions, 'output_dir')
 
 # Or save to CouchDB with coalescence
 results = classifier.save_to_couchdb(
     predictions,
     suffix='.ann',
-    coalesce_labels=True  # Enable YEDA block coalescence
+    coalesce_labels=True  # Enable YEDDA block coalescence
 )
 ```
 
-### YEDA Format Output
+### YEDDA Format Output
 
-The output coalesces consecutive lines with the same label into YEDA blocks:
+The output coalesces consecutive lines with the same label into YEDDA blocks:
 
 ```
 [@ Glomus mosseae Nicolson & Gerdemann, 1963.
@@ -467,7 +467,7 @@ Predict labels for individual lines. Returns DataFrame with line-level predictio
 
 #### `save_yeda_output(predictions: DataFrame, output_path: str) -> None`
 
-Save predictions in YEDA format with automatic label coalescence.
+Save predictions in YEDDA format with automatic label coalescence.
 
 **Parameters:**
 - `predictions`: DataFrame from `predict_lines()`
@@ -480,11 +480,11 @@ Save predictions to CouchDB with optional label coalescence.
 **Parameters:**
 - `predictions`: DataFrame with predictions
 - `suffix`: Suffix to append to attachment names (default: ".ann")
-- `coalesce_labels`: If True, coalesce consecutive lines with same label into YEDA blocks
+- `coalesce_labels`: If True, coalesce consecutive lines with same label into YEDDA blocks
 
 #### `coalesce_consecutive_labels(lines_data: List[Dict[str, Any]]) -> str`
 
-Static method to coalesce consecutive lines with the same label into YEDA blocks.
+Static method to coalesce consecutive lines with the same label into YEDDA blocks.
 
 ### Example
 

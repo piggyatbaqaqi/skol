@@ -2,7 +2,7 @@
 Output formatting module for SKOL classifier.
 
 This module provides classes for formatting predictions in various
-formats (YEDA annotation format, labels only, probabilities, etc.).
+formats (YEDDA annotation format, labels only, probabilities, etc.).
 """
 
 from typing import List
@@ -14,9 +14,9 @@ from pyspark.sql.window import Window
 
 class YedaFormatter:
     """
-    Formats predictions in YEDA annotation format.
+    Formats predictions in YEDDA annotation format.
 
-    YEDA format: [@ text #Label*]
+    YEDDA format: [@ text #Label*]
     """
 
     def __init__(self, coalesce_labels: bool = False, line_level: bool = False):
@@ -32,7 +32,7 @@ class YedaFormatter:
 
     def format(self, predictions: DataFrame) -> DataFrame:
         """
-        Format predictions in YEDA annotation format.
+        Format predictions in YEDDA annotation format.
 
         Args:
             predictions: DataFrame with predictions
@@ -52,7 +52,7 @@ class YedaFormatter:
     @staticmethod
     def format_predictions(predictions: DataFrame) -> DataFrame:
         """
-        Format predictions in YEDA annotation format.
+        Format predictions in YEDDA annotation format.
 
         Args:
             predictions: DataFrame with predictions
@@ -102,7 +102,7 @@ class YedaFormatter:
                 rows: List of (line_number, value, predicted_label) tuples
 
             Returns:
-                List of YEDA-formatted annotation blocks
+                List of YEDDA-formatted annotation blocks
             """
             if not rows:
                 return []
@@ -153,7 +153,7 @@ class YedaFormatter:
 
         # Group by document and coalesce
         # Note: coalesced_annotations is an array of annotation blocks,
-        # each block already contains the label inside the YEDA format
+        # each block already contains the label inside the YEDDA format
         return (
             predictions
             .groupBy(*groupby_cols)

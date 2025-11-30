@@ -132,7 +132,7 @@ This session continued work on the SKOL (Synoptic Key of Life) classifier projec
 - Single `fit()` call instead of multi-step process
 - Line-level vs paragraph-level processing
 - Label coalescing behavior
-- YEDA format output
+- YEDDA format output
 
 ---
 
