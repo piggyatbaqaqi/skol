@@ -1,16 +1,16 @@
-# YedaFormatter Coalesce Support
+# YeddaFormatter Coalesce Support
 
 ## Issue
 
-**Error**: `TypeError: YedaFormatter() takes no arguments`
+**Error**: `TypeError: YeddaFormatter() takes no arguments`
 
 **Location**: [skol_classifier/classifier_v2.py:551](skol_classifier/classifier_v2.py:551)
 
-**Cause**: The code tried to instantiate `YedaFormatter` with constructor arguments (`coalesce_labels`), but the class only had static methods and didn't accept any parameters.
+**Cause**: The code tried to instantiate `YeddaFormatter` with constructor arguments (`coalesce_labels`), but the class only had static methods and didn't accept any parameters.
 
 ## Solution
 
-Refactored `YedaFormatter` to support instance-based configuration with coalesce support, while maintaining backward compatibility with static methods.
+Refactored `YeddaFormatter` to support instance-based configuration with coalesce support, while maintaining backward compatibility with static methods.
 
 ### Key Changes
 
@@ -21,11 +21,11 @@ Refactored `YedaFormatter` to support instance-based configuration with coalesce
 
 ## Implementation Details
 
-### YedaFormatter Class ([output_formatters.py:15-72](skol_classifier/output_formatters.py:15-72))
+### YeddaFormatter Class ([output_formatters.py:15-72](skol_classifier/output_formatters.py:15-72))
 
 **Before (Static Only)**:
 ```python
-class YedaFormatter:
+class YeddaFormatter:
     @staticmethod
     def format_predictions(predictions: DataFrame) -> DataFrame:
         return predictions.withColumn(
@@ -37,7 +37,7 @@ class YedaFormatter:
 
 **After (Instance + Static)**:
 ```python
-class YedaFormatter:
+class YeddaFormatter:
     def __init__(self, coalesce_labels: bool = False, line_level: bool = False):
         """
         Initialize the formatter.
@@ -82,14 +82,14 @@ class YedaFormatter:
 **Before (Broken)**:
 ```python
 def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
-    formatter = YedaFormatter(coalesce_labels=self.coalesce_labels)  # ❌ Error!
+    formatter = YeddaFormatter(coalesce_labels=self.coalesce_labels)  # ❌ Error!
     return formatter.format(predictions_df)
 ```
 
 **After (Fixed)**:
 ```python
 def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
-    formatter = YedaFormatter(
+    formatter = YeddaFormatter(
         coalesce_labels=self.coalesce_labels,
         line_level=self.line_level  # ✅ Now passes line_level too
     )
@@ -128,27 +128,27 @@ line 2 text #Label1*]
 ### Instance Usage (New Way)
 
 ```python
-from skol_classifier.output_formatters import YedaFormatter
+from skol_classifier.output_formatters import YeddaFormatter
 
 # With coalescing
-formatter = YedaFormatter(coalesce_labels=True, line_level=True)
+formatter = YeddaFormatter(coalesce_labels=True, line_level=True)
 formatted = formatter.format(predictions_df)
 
 # Without coalescing
-formatter = YedaFormatter(coalesce_labels=False)
+formatter = YeddaFormatter(coalesce_labels=False)
 formatted = formatter.format(predictions_df)
 ```
 
 ### Static Usage (Old Way - Still Works)
 
 ```python
-from skol_classifier.output_formatters import YedaFormatter
+from skol_classifier.output_formatters import YeddaFormatter
 
 # Basic formatting only
-formatted = YedaFormatter.format_predictions(predictions_df)
+formatted = YeddaFormatter.format_predictions(predictions_df)
 
 # Manual coalescing
-coalesced = YedaFormatter.coalesce_consecutive_labels(
+coalesced = YeddaFormatter.coalesce_consecutive_labels(
     formatted,
     line_level=True
 )
@@ -180,7 +180,7 @@ predictions = classifier.predict()  # Automatically coalesces
 ## Files Modified
 
 1. [skol_classifier/output_formatters.py](skol_classifier/output_formatters.py)
-   - Lines 15-72: Added `__init__()` and `format()` methods to YedaFormatter
+   - Lines 15-72: Added `__init__()` and `format()` methods to YeddaFormatter
 
 2. [skol_classifier/classifier_v2.py](skol_classifier/classifier_v2.py)
    - Lines 549-555: Updated `_format_as_annotated()` to pass both parameters
@@ -223,7 +223,7 @@ predictions2 = classifier2.predict()
 ## Related Issues Fixed
 
 This fix resolves:
-- ✅ YedaFormatter instantiation error
+- ✅ YeddaFormatter instantiation error
 - ✅ Adds coalesce support as recommended
 - ✅ Maintains backward compatibility
 - ✅ Supports both line-level and paragraph-level data

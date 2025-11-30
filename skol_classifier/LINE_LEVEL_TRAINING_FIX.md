@@ -22,7 +22,7 @@ Added `line_level` parameter with two different extraction paths:
 - Each training sample is a complete paragraph
 
 **Line-level (line_level=True - new behavior):**
-- Uses custom `extract_yeda_lines()` function
+- Uses custom `extract_yedda_lines()` function
 - Parses YEDDA blocks and extracts each line individually
 - Each training sample is a single line
 - Preserves line numbers within blocks

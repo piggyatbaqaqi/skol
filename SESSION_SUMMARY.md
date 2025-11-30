@@ -9,12 +9,12 @@ This session continued work on the SKOL (Synoptic Key of Life) classifier projec
 
 ## Tasks Completed
 
-### 1. Fixed YedaFormatter Constructor Error
+### 1. Fixed YeddaFormatter Constructor Error
 
-**Issue**: `TypeError: YedaFormatter() takes no arguments` at [classifier_v2.py:551](skol_classifier/classifier_v2.py#L551)
+**Issue**: `TypeError: YeddaFormatter() takes no arguments` at [classifier_v2.py:551](skol_classifier/classifier_v2.py#L551)
 
 **Solution**:
-- Added `__init__` method to YedaFormatter accepting `coalesce_labels` and `line_level` parameters
+- Added `__init__` method to YeddaFormatter accepting `coalesce_labels` and `line_level` parameters
 - Added instance method `format()` that applies coalescing when configured
 - Kept static methods for backward compatibility
 
@@ -63,7 +63,7 @@ This session continued work on the SKOL (Synoptic Key of Life) classifier projec
 **Issue**: Coalescing grouped only by `doc_id` or `filename`, losing `attachment_name`
 
 **Solution**:
-- Modified `YedaFormatter.coalesce_consecutive_labels()` to group by multiple columns
+- Modified `YeddaFormatter.coalesce_consecutive_labels()` to group by multiple columns
 - For CouchDB data: group by `["doc_id", "attachment_name"]`
 - For file data: group by `["filename"]`
 
@@ -226,7 +226,7 @@ classifier.load_annotated_data(file_paths)
 classifier.fit_features()
 classifier.train_classifier()
 predictions = classifier.predict_lines(raw_data)
-classifier.save_yeda_output(predictions, output_dir)
+classifier.save_yedda_output(predictions, output_dir)
 ```
 
 ### After (V2 API)
@@ -374,7 +374,7 @@ subset = extractor.load_taxa(pattern="taxon_abc*")
 - ✅ No more column name errors
 - ✅ Metadata preserved throughout pipeline
 - ✅ Consistent naming (`annotated_value`)
-- ✅ YedaFormatter works with V2 API
+- ✅ YeddaFormatter works with V2 API
 
 ### 2. Feature Additions
 - ✅ Load taxa from CouchDB

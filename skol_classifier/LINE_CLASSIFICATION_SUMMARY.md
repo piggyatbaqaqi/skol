@@ -13,10 +13,10 @@ Extended the SKOL classifier to support line-by-line classification in addition 
 - Adds line numbers within each file
 - Returns DataFrame with columns: `value`, `filename`, `line_number`
 
-#### `predict_lines(file_paths: List[str], output_format: str = "yeda") -> DataFrame`
+#### `predict_lines(file_paths: List[str], output_format: str = "yedda") -> DataFrame`
 - Classifies individual lines instead of paragraphs
 - Supports three output formats:
-  - `"yeda"`: Returns predictions for further processing
+  - `"yedda"`: Returns predictions for further processing
   - `"annotated"`: Wraps each line in YEDDA format
   - `"simple"`: Returns basic predictions
 - Returns DataFrame with predictions and labels
@@ -26,7 +26,7 @@ Extended the SKOL classifier to support line-by-line classification in addition 
 - Creates YEDDA blocks with format: `[@ <lines>\n#<label>*]`
 - Handles label transitions automatically
 
-#### `save_yeda_output(predictions: DataFrame, output_path: str) -> None`
+#### `save_yedda_output(predictions: DataFrame, output_path: str) -> None`
 - Saves line-level predictions in YEDDA format
 - Automatically coalesces consecutive same-label lines into blocks
 - Outputs files partitioned by source filename
@@ -69,7 +69,7 @@ Output: Each paragraph as a separate YEDDA block
 ```python
 classifier = SkolClassifier()
 predictions = classifier.predict_lines(['file.txt'])
-classifier.save_yeda_output(predictions, 'output_dir')
+classifier.save_yedda_output(predictions, 'output_dir')
 ```
 
 Output: Consecutive lines with same label coalesced into YEDDA blocks
@@ -101,19 +101,19 @@ Spore wall: mono- to multiple-layered.
 
 1. **Granular Control**: Classify at line level instead of relying on paragraph detection
 2. **Better Segmentation**: More accurate for documents with poor paragraph structure
-3. **YEDDA Integration**: Output compatible with the `yeda_parser` module
+3. **YEDDA Integration**: Output compatible with the `yedda_parser` module
 4. **Automatic Coalescence**: Reduces output size by merging consecutive same-label lines
 5. **Flexible Output**: Multiple output format options
 
-## Integration with yeda_parser
+## Integration with yedda_parser
 
-The YEDDA output from `save_yeda_output()` can be directly parsed by the `yeda_parser` module:
+The YEDDA output from `save_yedda_output()` can be directly parsed by the `yedda_parser` module:
 
 ```python
-from yeda_parser import yeda_file_to_spark_df
+from yedda_parser import yedda_file_to_spark_df
 
 # After classification
-df = yeda_file_to_spark_df('output_dir/file.txt', spark)
+df = yedda_file_to_spark_df('output_dir/file.txt', spark)
 df.show()
 ```
 

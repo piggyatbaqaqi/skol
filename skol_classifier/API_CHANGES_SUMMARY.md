@@ -35,18 +35,18 @@ def load_raw_data_lines(self, text_contents: List[str]) -> DataFrame:
 - Each string in the list is treated as a separate document
 - Documents are labeled as `doc_0`, `doc_1`, etc.
 
-### 2. `predict_lines(text_contents: List[str], output_format: str = "yeda")`
+### 2. `predict_lines(text_contents: List[str], output_format: str = "yedda")`
 
 **Before:**
 ```python
-def predict_lines(self, file_paths: List[str], output_format: str = "yeda") -> DataFrame:
+def predict_lines(self, file_paths: List[str], output_format: str = "yedda") -> DataFrame:
     raw_df = self.load_raw_data_lines(file_paths)
     ...
 ```
 
 **After:**
 ```python
-def predict_lines(self, text_contents: List[str], output_format: str = "yeda") -> DataFrame:
+def predict_lines(self, text_contents: List[str], output_format: str = "yedda") -> DataFrame:
     raw_df = self.load_raw_data_lines(text_contents)
     ...
 ```
@@ -88,7 +88,7 @@ def save_to_couchdb(self, predictions: DataFrame, suffix: str = ".ann", coalesce
 # Read files from disk
 classifier = SkolClassifier(spark=spark)
 predictions = classifier.predict_lines(['path/to/file1.txt', 'path/to/file2.txt'])
-classifier.save_yeda_output(predictions, 'output_dir')
+classifier.save_yedda_output(predictions, 'output_dir')
 ```
 
 ### New API Usage
@@ -104,7 +104,7 @@ with open('path/to/file2.txt', 'r') as f:
     text2 = f.read()
 
 predictions = classifier.predict_lines([text1, text2])
-classifier.save_yeda_output(predictions, 'output_dir')
+classifier.save_yedda_output(predictions, 'output_dir')
 
 # Option 2: From CouchDB
 from couchdb_file import CouchDBFile

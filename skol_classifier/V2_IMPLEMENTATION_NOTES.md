@@ -58,7 +58,7 @@ Created modular helper classes by extracting and refactoring functionality from 
 
 ### 4. Output Formatting (`output_formatters.py`)
 
-**Class: `YedaFormatter`**
+**Class: `YeddaFormatter`**
 - Formats predictions in YEDDA annotation format
 - Coalesces consecutive same-label predictions (for line-level)
 - Methods:

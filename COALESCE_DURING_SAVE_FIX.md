@@ -11,7 +11,7 @@
 
 ## Root Cause
 
-The `predict()` method was calling `_format_predictions()`, which in turn called `YedaFormatter.format()` with `coalesce_labels=True`. This meant:
+The `predict()` method was calling `_format_predictions()`, which in turn called `YeddaFormatter.format()` with `coalesce_labels=True`. This meant:
 
 ```python
 # In predict()
@@ -44,7 +44,7 @@ This broke notebook code that expected to inspect `predicted_label`.
 ```python
 # Before - coalescing happened during predict()
 def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
-    formatter = YedaFormatter(
+    formatter = YeddaFormatter(
         coalesce_labels=self.coalesce_labels,  # ❌ Applied coalescing
         line_level=self.line_level
     )
@@ -58,7 +58,7 @@ def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
     Note: This does NOT apply coalescing. Coalescing is only applied
     during save_annotated() to preserve line-level data for inspection.
     """
-    formatter = YedaFormatter(
+    formatter = YeddaFormatter(
         coalesce_labels=False,  # ✅ Never coalesce in predict()
         line_level=self.line_level
     )

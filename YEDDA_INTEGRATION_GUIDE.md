@@ -4,11 +4,11 @@ This guide shows how to use the YEDDA parser module with the SKOL classifier for
 
 ## Overview
 
-The YEDDA (Yet Another Entity Detection and Annotation) format provides a standard way to annotate text with labels. The integration between `yeda_parser` and `skol_classifier` enables:
+The YEDDA (Yet Another Entity Detection and Annotation) format provides a standard way to annotate text with labels. The integration between `yedda_parser` and `skol_classifier` enables:
 
 1. **Classification**: Use `skol_classifier` to classify text line-by-line
 2. **Annotation**: Output is automatically formatted as YEDDA blocks
-3. **Parsing**: Use `yeda_parser` to load YEDDA into DataFrames
+3. **Parsing**: Use `yedda_parser` to load YEDDA into DataFrames
 4. **Analysis**: Perform queries, statistics, and transformations
 
 ## Quick Start
@@ -34,17 +34,17 @@ with open('data/article2.txt', 'r') as f:
 predictions = classifier.predict_lines([text1, text2])
 
 # Save as YEDDA format (auto-coalesces consecutive same-label lines)
-classifier.save_yeda_output(predictions, 'output/yeda_annotations')
+classifier.save_yedda_output(predictions, 'output/yedda_annotations')
 ```
 
 ### 2. Parse YEDDA into DataFrame
 
 ```python
-from yeda_parser import yeda_file_to_spark_df
+from yedda_parser import yedda_file_to_spark_df
 
 # Parse YEDDA file with metadata
-df = yeda_file_to_spark_df(
-    'output/yeda_annotations/article1.txt',
+df = yedda_file_to_spark_df(
+    'output/yedda_annotations/article1.txt',
     spark,
     metadata={'classifier_version': '1.0', 'date': '2025-01-01'}
 )
@@ -62,7 +62,7 @@ df.show()
 ### 3. Analyze Results
 
 ```python
-from yeda_parser import get_label_statistics
+from yedda_parser import get_label_statistics
 
 # Get label distribution
 stats = get_label_statistics(df)
@@ -87,8 +87,8 @@ species = nomenclature.filter(nomenclature.line.contains("mosseae"))
 ```python
 from pyspark.sql import SparkSession
 from skol_classifier import SkolClassifier
-from yeda_parser import (
-    yeda_file_to_spark_df,
+from yedda_parser import (
+    yedda_file_to_spark_df,
     get_label_statistics,
     extract_metadata_field
 )
@@ -108,12 +108,12 @@ with open('input/article.txt', 'r') as f:
     text_content = f.read()
 
 predictions = classifier.predict_lines([text_content])
-classifier.save_yeda_output(predictions, 'output/yeda')
+classifier.save_yedda_output(predictions, 'output/yedda')
 
 # Step 2: Parse
 print("Step 2: Parsing YEDDA...")
-df = yeda_file_to_spark_df(
-    'output/yeda/article.txt',
+df = yedda_file_to_spark_df(
+    'output/yedda/article.txt',
     spark,
     metadata={
         'source': 'taxonomic_journal',
@@ -154,14 +154,14 @@ for filepath in ['corpus/file1.txt', 'corpus/file2.txt', 'corpus/file3.txt']:
 predictions = classifier.predict_lines(text_contents)
 
 # Save all as YEDDA
-classifier.save_yeda_output(predictions, 'output/yeda_batch')
+classifier.save_yedda_output(predictions, 'output/yedda_batch')
 
 # Load all YEDDA files
 from glob import glob
-yeda_files = glob('output/yeda_batch/**/*.txt', recursive=True)
+yedda_files = glob('output/yedda_batch/**/*.txt', recursive=True)
 
 # Parse and combine
-dfs = [yeda_file_to_spark_df(f, spark) for f in yeda_files]
+dfs = [yedda_file_to_spark_df(f, spark) for f in yedda_files]
 combined_df = dfs[0]
 for df in dfs[1:]:
     combined_df = combined_df.union(df)
@@ -180,10 +180,10 @@ with open('article.txt', 'r') as f:
     text = f.read()
 
 predictions = classifier.predict_lines([text])
-classifier.save_yeda_output(predictions, 'output/yeda')
+classifier.save_yedda_output(predictions, 'output/yedda')
 
 # Parse
-df = yeda_file_to_spark_df('output/yeda/article.txt', spark)
+df = yedda_file_to_spark_df('output/yedda/article.txt', spark)
 
 # Find potential issues
 short_nomenclature = df.filter(
@@ -209,7 +209,7 @@ Update annotations based on rules:
 
 ```python
 # Parse existing YEDDA
-df = yeda_file_to_spark_df('output/yeda/article.txt', spark)
+df = yedda_file_to_spark_df('output/yedda/article.txt', spark)
 
 # Apply correction rules
 from pyspark.sql.functions import when
@@ -223,7 +223,7 @@ df_corrected = df.withColumn(
 )
 
 # Save corrected version
-# (You'd need to write back to YEDDA format - see yeda_parser docs)
+# (You'd need to write back to YEDDA format - see yedda_parser docs)
 ```
 
 ## Data Flow Diagram
@@ -235,11 +235,11 @@ Raw Text Files
       ↓
 Line-level Predictions (DataFrame)
       ↓
-[skol_classifier.save_yeda_output()]
+[skol_classifier.save_yedda_output()]
       ↓
 YEDDA Format Files (consecutive labels coalesced)
       ↓
-[yeda_parser.yeda_file_to_spark_df()]
+[yedda_parser.yedda_file_to_spark_df()]
       ↓
 Structured DataFrame with Metadata
       ↓
@@ -293,7 +293,7 @@ root
 
 ## See Also
 
-- `yeda_parser/README.md`: Complete YEDDA parser documentation
+- `yedda_parser/README.md`: Complete YEDDA parser documentation
 - `skol_classifier/README.md`: Classifier documentation
 - `skol_classifier/example_line_classification.py`: Line classification example
-- `yeda_parser/example_yeda_to_spark.py`: YEDDA parsing example
+- `yedda_parser/example_yedda_to_spark.py`: YEDDA parsing example
