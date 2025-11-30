@@ -403,7 +403,7 @@ In addition to paragraph-based classification, the classifier now supports line-
 
 - More granular control over text segmentation
 - Better for documents where paragraph detection is unreliable
-- Produces YEDDA-formatted output for use with the yeda_parser module
+- Produces YEDDA-formatted output for use with the yedda_parser module
 - Consecutive lines with the same label are automatically coalesced into blocks
 
 ### Usage
@@ -422,7 +422,7 @@ with open('article.txt', 'r') as f:
 predictions = classifier.predict_lines([text_content])
 
 # Save as YEDDA format (coalesces consecutive same-label lines)
-classifier.save_yeda_output(predictions, 'output_dir')
+classifier.save_yedda_output(predictions, 'output_dir')
 
 # Or save to CouchDB with coalescence
 results = classifier.save_to_couchdb(
@@ -457,15 +457,15 @@ Load raw text strings as individual lines (not paragraphs).
 **Parameters:**
 - `text_contents`: List of raw text strings
 
-#### `predict_lines(text_contents: List[str], output_format: str = "yeda") -> DataFrame`
+#### `predict_lines(text_contents: List[str], output_format: str = "yedda") -> DataFrame`
 
 Predict labels for individual lines. Returns DataFrame with line-level predictions.
 
 **Parameters:**
 - `text_contents`: List of raw text strings
-- `output_format`: 'yeda', 'annotated', or 'simple'
+- `output_format`: 'yedda', 'annotated', or 'simple'
 
-#### `save_yeda_output(predictions: DataFrame, output_path: str) -> None`
+#### `save_yedda_output(predictions: DataFrame, output_path: str) -> None`
 
 Save predictions in YEDDA format with automatic label coalescence.
 

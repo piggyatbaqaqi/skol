@@ -61,7 +61,7 @@ class AnnotatedTextLoader:
 
         if line_level:
             # Line-level extraction: parse each line from YEDDA blocks
-            def extract_yeda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
+            def extract_yedda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
                 """Extract individual lines from YEDDA annotation blocks."""
                 import re
                 results = []
@@ -81,7 +81,7 @@ class AnnotatedTextLoader:
 
             # UDF to extract lines
             extract_udf = udf(
-                extract_yeda_lines,
+                extract_yedda_lines,
                 ArrayType(StructType([
                     StructField("label", StringType(), False),
                     StructField("value", StringType(), False),
@@ -186,7 +186,7 @@ class AnnotatedTextLoader:
 
         # Process similar to file loading
         if line_level:
-            def extract_yeda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
+            def extract_yedda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
                 import re
                 results = []
                 pattern_re = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
@@ -203,7 +203,7 @@ class AnnotatedTextLoader:
                 return results
 
             extract_udf = udf(
-                extract_yeda_lines,
+                extract_yedda_lines,
                 ArrayType(StructType([
                     StructField("label", StringType(), False),
                     StructField("value", StringType(), False),

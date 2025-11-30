@@ -160,7 +160,7 @@ classifier.load_annotated_data(file_paths)
 classifier.fit_features()
 classifier.train_classifier()
 predictions = classifier.predict_lines(raw_data)
-classifier.save_yeda_output(predictions, output_dir)
+classifier.save_yedda_output(predictions, output_dir)
 ```
 
 ### V2 API (Current)

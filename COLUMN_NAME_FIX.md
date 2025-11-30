@@ -40,7 +40,7 @@ Changed all references from `row_number` to `line_number` throughout the output_
 
 ## Code Changes
 
-### YedaFormatter.coalesce_consecutive_labels
+### YeddaFormatter.coalesce_consecutive_labels
 
 **Before**:
 ```python

@@ -9,10 +9,9 @@ from typing import List
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, concat, lit, expr, udf, collect_list
 from pyspark.sql.types import StringType, ArrayType
-from pyspark.sql.window import Window
 
 
-class YedaFormatter:
+class YeddaFormatter:
     """
     Formats predictions in YEDDA annotation format.
 
@@ -190,11 +189,11 @@ class FileOutputWriter:
         """
         # Format predictions
         if "annotated_value" not in predictions.columns:
-            predictions = YedaFormatter.format_predictions(predictions)
+            predictions = YeddaFormatter.format_predictions(predictions)
 
         # Coalesce if requested
         if coalesce_labels and line_level:
-            predictions = YedaFormatter.coalesce_consecutive_labels(
+            predictions = YeddaFormatter.coalesce_consecutive_labels(
                 predictions, line_level=True
             )
             # For coalesced output, we have a different structure
@@ -306,11 +305,11 @@ class CouchDBOutputWriter:
         """
         # Format predictions
         if "annotated_value" not in predictions.columns:
-            predictions = YedaFormatter.format_predictions(predictions)
+            predictions = YeddaFormatter.format_predictions(predictions)
 
         # Coalesce if requested
         if coalesce_labels and line_level:
-            predictions = YedaFormatter.coalesce_consecutive_labels(
+            predictions = YeddaFormatter.coalesce_consecutive_labels(
                 predictions, line_level=True
             )
             # For coalesced output, we have coalesced_annotations column

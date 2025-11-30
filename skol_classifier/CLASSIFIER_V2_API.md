@@ -519,7 +519,7 @@ classifier.save_annotated(predictions_df)
    - NEW: Just `predict()` with configuration controlling behavior
 
 4. **Use unified save method:**
-   - OLD: `save_to_couchdb()`, `save_yeda_output()`, `save_annotated_output()`
+   - OLD: `save_to_couchdb()`, `save_yedda_output()`, `save_annotated_output()`
    - NEW: Just `save_annotated()` with `output_dest` controlling behavior
 
 ### Backward Compatibility
@@ -556,7 +556,7 @@ classifier_v2 = SkolClassifierV2(...)
 - ⏳ `SkolModel` class (may need updates)
 - ⏳ `AnnotatedTextLoader`, `RawTextLoader` classes
 - ⏳ `AnnotatedTextParser` class
-- ⏳ `YedaFormatter` class
+- ⏳ `YeddaFormatter` class
 - ⏳ `FileOutputWriter` class
 - ⏳ CouchDB `save_predictions()` method
 - ⏳ Integration testing

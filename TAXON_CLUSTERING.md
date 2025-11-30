@@ -133,12 +133,26 @@ clusterer.cluster(method="ward", metric="euclidean")
 ### Node Types
 
 **Taxon (Leaf Nodes)**
+
+Taxon nodes include metadata from the original `Raw_Data_Index.to_dict()` fields:
+
 ```cypher
 (:Taxon {
     name: "Amanita muscaria",
-    node_id: 42
+    node_id: 42,
+    source: "SKOL_TAXA",
+    filename: "couchdb://localhost:5984/skol_taxa_dev",
+    row: 15,
+    description: "Pileus 5-10 cm broad, convex..."
 })
 ```
+
+The metadata fields may include:
+- `source`: Data source class name (e.g., "SKOL_TAXA")
+- `filename`: Source file or database location
+- `row`: Row index in the original data
+- `description`: Full taxon description text
+- Additional fields depending on the data source
 
 **Pseudoclade (Internal Nodes)**
 ```cypher
@@ -170,13 +184,20 @@ The `distance` property represents the cosine similarity distance at which the c
 ```
 (Fungi:Pseudoclade)
     ├─[:PARENT_OF {distance: 0.234}]→ (Pseudoclade_1:Pseudoclade)
-    │   ├─[:PARENT_OF {distance: 0.156}]→ (Amanita muscaria:Taxon)
-    │   └─[:PARENT_OF {distance: 0.189}]→ (Amanita pantherina:Taxon)
+    │   ├─[:PARENT_OF {distance: 0.156}]→ (Amanita muscaria:Taxon {
+    │   │                                     source: "SKOL_TAXA",
+    │   │                                     filename: "couchdb://...",
+    │   │                                     row: 15,
+    │   │                                     description: "Pileus 5-10 cm..."
+    │   │                                  })
+    │   └─[:PARENT_OF {distance: 0.189}]→ (Amanita pantherina:Taxon {...})
     │
     └─[:PARENT_OF {distance: 0.289}]→ (Pseudoclade_2:Pseudoclade)
-        ├─[:PARENT_OF {distance: 0.098}]→ (Boletus edulis:Taxon)
-        └─[:PARENT_OF {distance: 0.123}]→ (Boletus badius:Taxon)
+        ├─[:PARENT_OF {distance: 0.098}]→ (Boletus edulis:Taxon {...})
+        └─[:PARENT_OF {distance: 0.123}]→ (Boletus badius:Taxon {...})
 ```
+
+Each Taxon node contains all metadata fields from the original data source, allowing for rich queries based on source, description content, and other attributes.
 
 ## Querying the Neo4j Database
 
@@ -246,6 +267,38 @@ WITH t1, t2, relationships(path) as rels
 RETURN t1.name, t2.name, reduce(s = 0, r IN rels | s + r.distance) as total_distance
 ORDER BY total_distance DESC
 LIMIT 10
+```
+
+### Query by Metadata Fields
+
+**Find taxa from a specific source**
+```cypher
+MATCH (t:Taxon)
+WHERE t.source = "SKOL_TAXA"
+RETURN t.name, t.description
+LIMIT 10
+```
+
+**Search taxa descriptions**
+```cypher
+MATCH (t:Taxon)
+WHERE t.description CONTAINS "pileus"
+RETURN t.name, t.description, t.source
+ORDER BY t.name
+```
+
+**Find taxa by row range**
+```cypher
+MATCH (t:Taxon)
+WHERE t.row >= 10 AND t.row <= 20
+RETURN t.name, t.row, t.filename
+ORDER BY t.row
+```
+
+**Get all metadata for a taxon**
+```cypher
+MATCH (t:Taxon {name: "Amanita muscaria"})
+RETURN properties(t) as metadata
 ```
 
 ## API Reference

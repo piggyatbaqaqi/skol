@@ -54,8 +54,7 @@ from pyspark.ml import PipelineModel
 # Import helper classes
 from .feature_extraction import FeatureExtractor
 from .model import SkolModel
-from .data_loaders import AnnotatedTextLoader, RawTextLoader
-from .output_formatters import YedaFormatter, FileOutputWriter, CouchDBOutputWriter
+from .output_formatters import YeddaFormatter, FileOutputWriter
 from .couchdb_io import CouchDBConnection
 
 
@@ -564,7 +563,7 @@ class SkolClassifierV2:
         Note: This does NOT apply coalescing. Coalescing is only applied
         during save_annotated() to preserve line-level data for inspection.
         """
-        formatter = YedaFormatter(
+        formatter = YeddaFormatter(
             coalesce_labels=False,  # Never coalesce in predict()
             line_level=self.line_level
         )
@@ -577,7 +576,7 @@ class SkolClassifierV2:
 
     def _save_to_couchdb(self, predictions: DataFrame) -> None:
         """Save predictions to CouchDB."""
-        from .output_formatters import CouchDBOutputWriter
+        from skol_classifier.output_formatters import CouchDBOutputWriter
 
         writer = CouchDBOutputWriter(
             couchdb_url=self.couchdb_url,

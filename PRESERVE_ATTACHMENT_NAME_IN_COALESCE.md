@@ -2,7 +2,7 @@
 
 ## Issue
 
-**Problem**: When `coalesce_labels=True`, the `YedaFormatter.coalesce_consecutive_labels()` method was grouping only by a single column (`filename` or `doc_id`), which lost the `attachment_name` column needed for CouchDB operations.
+**Problem**: When `coalesce_labels=True`, the `YeddaFormatter.coalesce_consecutive_labels()` method was grouping only by a single column (`filename` or `doc_id`), which lost the `attachment_name` column needed for CouchDB operations.
 
 **User Report**: "In jupyter/its769_skol.ipynb the clause after 'Extract the taxa names and descriptions' still gives an error about a missing attachment_name field in 'Show sample predictions'"
 
@@ -49,7 +49,7 @@ return (
 
 ### [skol_classifier/output_formatters.py](skol_classifier/output_formatters.py:144-165)
 
-**Method**: `YedaFormatter.coalesce_consecutive_labels`
+**Method**: `YeddaFormatter.coalesce_consecutive_labels`
 
 **Changes**:
 - Lines 144-152: Added logic to determine appropriate grouping columns
