@@ -104,6 +104,6 @@ class FileObject(ABC):
         """Filename or identifier for this file object."""
         return None
 
-    def url(self) -> Optional[str]:
+    def human_url(self) -> Optional[str]:
         """URL or source location for this file object."""
         return self.filename

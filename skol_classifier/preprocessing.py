@@ -328,11 +328,11 @@ class AnnotatedTextParser:
         Parse YEDDA-annotated text from a DataFrame.
 
         Args:
-            df: DataFrame with columns (doc_id, attachment_name, value)
+            df: DataFrame with columns (doc_id, human_url, attachment_name, value)
                 where value contains YEDDA-annotated text
 
         Returns:
-            DataFrame with columns (doc_id, attachment_name, label, value)
+            DataFrame with columns (doc_id, human_url, attachment_name, label, value)
             For line_level mode, also includes line_number column
         """
         from pyspark.sql.types import StructType, StructField, IntegerType
@@ -376,6 +376,7 @@ class AnnotatedTextParser:
                 df.withColumn("line_data", explode(extract_udf(col("value"))))
                 .select(
                     "doc_id",
+                    "human_url",
                     "attachment_name",
                     col("line_data.label").alias("label"),
                     col("line_data.value").alias("value"),
@@ -417,6 +418,7 @@ class AnnotatedTextParser:
                 df.withColumn("paragraph_data", explode(extract_udf(col("value"))))
                 .select(
                     "doc_id",
+                    "human_url",
                     "attachment_name",
                     col("paragraph_data.label").alias("label"),
                     col("paragraph_data.value").alias("value")

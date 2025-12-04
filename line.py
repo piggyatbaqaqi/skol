@@ -18,7 +18,7 @@ class Line(object):
     _doc_id: Optional[str]
     _attachment_name: Optional[str]
     _db_name: Optional[str]
-    _url: Optional[str]
+    _human_url: Optional[str]
 
     _TABLE = [
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
@@ -36,7 +36,7 @@ class Line(object):
         self._doc_id = None
         self._attachment_name = None
         self._db_name = None
-        self._url = None
+        self._human_url = None
 
         if fileobj:
             self._filename = fileobj.filename
@@ -51,8 +51,8 @@ class Line(object):
                 self._attachment_name = fileobj.attachment_name
             if hasattr(fileobj, 'db_name'):
                 self._db_name = fileobj.db_name
-            if hasattr(fileobj, 'url'):
-                self._url = fileobj.url
+            if hasattr(fileobj, 'human_url'):
+                self._human_url = fileobj.human_url
 
         self.strip_label_start()
         self.strip_label_end()
@@ -148,6 +148,8 @@ class Line(object):
         return self._db_name
 
     @property
-    def url(self) -> Optional[str]:
+    def human_url(self) -> Optional[str]:
         """URL from the source (optional)."""
-        return self._url or self._filename
+        if self._human_url is None:
+            print("DEBUG: substituting filename for human_url:", self._filename)
+        return self._human_url or self._filename

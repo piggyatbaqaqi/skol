@@ -44,7 +44,7 @@ class File(FileObject):
         return self._filename
 
     @property
-    def url(self) -> Optional[str]:
+    def human_url(self) -> Optional[str]:
         """URL is the filename for local files."""
         return self._filename
 

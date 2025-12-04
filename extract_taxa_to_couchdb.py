@@ -66,23 +66,26 @@ def extract_taxa_from_partition(
             - doc_id: CouchDB document ID
             - attachment_name: Attachment filename
             - value: Text content
-            - url: Optional URL
+            - human_url: Optional URL
         ingest_db_name: Database name for metadata tracking
 
     Yields:
         Taxon objects with nomenclature and description paragraphs
     """
     # Read lines from partition
-    lines = read_couchdb_partition(partition, ingest_db_name)
+    lines = list(read_couchdb_partition(partition, ingest_db_name))
+    print(f"DEBUG: etfp lines[0].human_url =", lines[0].human_url if lines else "No lines")
 
     # Parse annotated content
-    paragraphs = parse_annotated(lines)
-
+    paragraphs = [p for p in parse_annotated(lines)]
+    print(f"DEBUG: etfp paragraphs[0].human_url =", paragraphs[0].human_url if paragraphs else "No paragraphs")
     # Remove interstitial paragraphs
-    filtered = remove_interstitials(paragraphs)
+    filtered = [f for f in remove_interstitials(paragraphs)]
+    print(f"DEBUG: etfp filtered[0].human_url =", filtered[0].human_url if filtered else "No filtered paragraphs")
 
     # Convert to list to preserve paragraph objects for metadata extraction
     filtered_list = list(filtered)
+    print(f"DEBUG: etfp filtered_list[0].human_url =", filtered_list[0].human_url if filtered_list else "No filtered paragraphs")
 
     # Group into taxa (returns Taxon objects with references to paragraphs)
     taxa = group_paragraphs(iter(filtered_list))
@@ -91,6 +94,7 @@ def extract_taxa_from_partition(
     for taxon in taxa:
         # Only yield taxa that have nomenclature
         if taxon.has_nomenclature():
+            print(f"DEBUG: taxon.human_url =", taxon.human_url)
             yield taxon
 
 

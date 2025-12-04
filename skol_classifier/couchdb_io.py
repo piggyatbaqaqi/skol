@@ -22,6 +22,7 @@ class CouchDBConnection:
     # Shared schema definitions (DRY principle)
     LOAD_SCHEMA = StructType([
         StructField("doc_id", StringType(), False),
+        StructField("human_url", StringType(), False),
         StructField("attachment_name", StringType(), False),
         StructField("value", StringType(), False),
     ])
@@ -181,7 +182,7 @@ class CouchDBConnection:
             partition: Iterator of Rows with doc_id and attachment_name
 
         Yields:
-            Rows with doc_id, attachment_name, and value (content).
+            Rows with doc_id, human_url, attachment_name, and value (content).
         """
         # Connect to CouchDB once per partition
         try:
@@ -202,6 +203,7 @@ class CouchDBConnection:
 
                             yield Row(
                                 doc_id=row.doc_id,
+                                human_url=doc.get('url', 'missing_human_url'),
                                 attachment_name=row.attachment_name,
                                 value=content
                             )
@@ -227,6 +229,7 @@ class CouchDBConnection:
 
         Args:
             partition: Iterator of Rows with doc_id, attachment_name, final_aggregated_pg
+                       and optionally human_url
             suffix: Suffix to append to attachment names
 
         Yields:
@@ -243,6 +246,13 @@ class CouchDBConnection:
                 success = False
                 try:
                     doc = db[row.doc_id]
+
+                    # Update human_url field if provided
+                    if hasattr(row, 'human_url') and row.human_url:
+                        doc['url'] = row.human_url
+                        db.save(doc)
+                        # Reload doc to get updated _rev
+                        doc = db[row.doc_id]
 
                     # Create new attachment name by appending suffix
                     # e.g., "article.txt" becomes "article.txt.ann"

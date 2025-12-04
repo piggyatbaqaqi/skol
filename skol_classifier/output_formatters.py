@@ -326,26 +326,51 @@ class CouchDBOutputWriter:
 
             # Check if we have line_number for ordering
             if "line_number" in predictions.columns:
-                from pyspark.sql.functions import expr
-                predictions = (
-                    predictions.groupBy(groupby_col, attachment_col)
-                    .agg(
-                        expr("sort_array(collect_list(struct(line_number, annotated_value))) AS sorted_list")
+                from pyspark.sql.functions import expr, first
+                # Preserve human_url if it exists
+                if "human_url" in predictions.columns:
+                    predictions = (
+                        predictions.groupBy(groupby_col, attachment_col)
+                        .agg(
+                            expr("sort_array(collect_list(struct(line_number, annotated_value)))").alias("sorted_list"),
+                            first("human_url").alias("human_url")
+                        )
+                        .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
+                        .withColumn("final_aggregated_pg", expr("array_join(annotated_value_ordered, '\n')"))
+                        .select(groupby_col, "human_url", attachment_col, "final_aggregated_pg")
                     )
-                    .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
-                    .withColumn("final_aggregated_pg", expr("array_join(annotated_value_ordered, '\n')"))
-                    .select(groupby_col, attachment_col, "final_aggregated_pg")
-                )
+                else:
+                    predictions = (
+                        predictions.groupBy(groupby_col, attachment_col)
+                        .agg(
+                            expr("sort_array(collect_list(struct(line_number, annotated_value)))").alias("sorted_list")
+                        )
+                        .withColumn("annotated_value_ordered", expr("transform(sorted_list, x -> x.annotated_value)"))
+                        .withColumn("final_aggregated_pg", expr("array_join(annotated_value_ordered, '\n')"))
+                        .select(groupby_col, attachment_col, "final_aggregated_pg")
+                    )
             else:
-                from pyspark.sql.functions import collect_list, expr
-                predictions = (
-                    predictions.groupBy(groupby_col, attachment_col)
-                    .agg(
-                        collect_list("annotated_value").alias("annotations")
+                from pyspark.sql.functions import collect_list, expr, first
+                # Preserve human_url if it exists
+                if "human_url" in predictions.columns:
+                    predictions = (
+                        predictions.groupBy(groupby_col, attachment_col)
+                        .agg(
+                            collect_list("annotated_value").alias("annotations"),
+                            first("human_url").alias("human_url")
+                        )
+                        .withColumn("final_aggregated_pg", expr("array_join(annotations, '\n')"))
+                        .select(groupby_col, "human_url", attachment_col, "final_aggregated_pg")
                     )
-                    .withColumn("final_aggregated_pg", expr("array_join(annotations, '\n')"))
-                    .select(groupby_col, attachment_col, "final_aggregated_pg")
-                )
+                else:
+                    predictions = (
+                        predictions.groupBy(groupby_col, attachment_col)
+                        .agg(
+                            collect_list("annotated_value").alias("annotations")
+                        )
+                        .withColumn("final_aggregated_pg", expr("array_join(annotations, '\n')"))
+                        .select(groupby_col, attachment_col, "final_aggregated_pg")
+                    )
 
             # Rename columns for CouchDB save
             if groupby_col != "doc_id":
