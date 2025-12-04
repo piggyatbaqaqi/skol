@@ -19,7 +19,7 @@ class CouchDBFile(FileObject):
     _doc_id: str
     _attachment_name: str
     _db_name: str
-    _url: Optional[str]
+    _human_url: Optional[str]
     _content_lines: List[str]
 
     def __init__(
@@ -28,7 +28,7 @@ class CouchDBFile(FileObject):
         doc_id: str,
         attachment_name: str,
         db_name: str,
-        url: Optional[str] = None
+        human_url: Optional[str] = None
     ) -> None:
         """
         Initialize CouchDBFile from attachment content.
@@ -43,7 +43,7 @@ class CouchDBFile(FileObject):
         self._doc_id = doc_id
         self._attachment_name = attachment_name
         self._db_name = db_name
-        self._url = url
+        self._human_url = human_url
         self._line_number = 0
         self._page_number = 1
         self._empirical_page_number = None
@@ -81,9 +81,9 @@ class CouchDBFile(FileObject):
         return self._db_name
 
     @property
-    def url(self) -> Optional[str]:
+    def human_url(self) -> Optional[str]:
         """URL from the CouchDB row."""
-        return self._url
+        return self._human_url
 
 
 def read_couchdb_partition(
@@ -122,7 +122,7 @@ def read_couchdb_partition(
     """
     for row in partition:
         # Extract url from row if available
-        url = getattr(row, 'url', None)
+        human_url = getattr(row, 'human_url', None)
 
         # Create CouchDBFile object from row data
         file_obj = CouchDBFile(
@@ -130,7 +130,7 @@ def read_couchdb_partition(
             doc_id=row.doc_id,
             attachment_name=row.attachment_name,
             db_name=db_name,
-            url=url
+            human_url=human_url
         )
 
         # Yield all lines from this file

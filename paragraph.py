@@ -119,7 +119,7 @@ class Paragraph(object):
     def as_dict(self) -> Dict[str, Optional[str]]:
         return {
             'filename': self.filename,
-            'url': self.url,
+            'human_url': self.human_url,
             'label': str(self.top_label()),
             'paragraph_number': self.paragraph_number,
             'page_number': self.page_number,
@@ -323,10 +323,10 @@ class Paragraph(object):
         return self.last_line.empirical_page_number
 
     @property
-    def url(self) -> Optional[str]:
+    def human_url(self) -> Optional[str]:
         if self.last_line is None:
             return None
-        return self.last_line.url
+        return self.last_line.human_url
 
     def close(self) -> None:
         if self._next_line:
