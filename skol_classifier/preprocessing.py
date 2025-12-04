@@ -302,9 +302,134 @@ class ParagraphExtractor:
 
 
 
+class AnnotatedTextParser:
+    """
+    Parser for YEDDA-annotated text stored in CouchDB.
+
+    Extracts labeled text from YEDDA annotation format:
+    [@content#Label*]
+
+    Supports both line-level and paragraph-level extraction.
+    """
+
+    def __init__(self, line_level: bool = False, collapse_labels: bool = True):
+        """
+        Initialize the AnnotatedTextParser.
+
+        Args:
+            line_level: If True, extract individual lines; if False, extract paragraphs
+            collapse_labels: If True, collapse labels to 3 main categories
+        """
+        self.line_level = line_level
+        self.collapse_labels = collapse_labels
+
+    def parse(self, df: DataFrame) -> DataFrame:
+        """
+        Parse YEDDA-annotated text from a DataFrame.
+
+        Args:
+            df: DataFrame with columns (doc_id, attachment_name, value)
+                where value contains YEDDA-annotated text
+
+        Returns:
+            DataFrame with columns (doc_id, attachment_name, label, value)
+            For line_level mode, also includes line_number column
+        """
+        from pyspark.sql.types import StructType, StructField, IntegerType
+
+        if self.line_level:
+            # Line-level extraction: parse each line from YEDDA blocks
+            def extract_yedda_lines(text: str):
+                """Extract individual lines from YEDDA annotation blocks."""
+                import re
+                results = []
+                pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
+
+                for match in re.finditer(pattern, text, re.DOTALL):
+                    content = match.group(1)
+                    label = match.group(2).strip()
+
+                    # Collapse labels if requested
+                    if self.collapse_labels:
+                        label = ParagraphExtractor.collapse_labels(label)
+
+                    # Split content into lines
+                    content_lines = content.split('\n')
+                    for line_num, line in enumerate(content_lines):
+                        if line or line_num < len(content_lines) - 1:
+                            results.append((label, line, line_num))
+
+                return results
+
+            # UDF to extract lines
+            extract_udf = udf(
+                extract_yedda_lines,
+                ArrayType(StructType([
+                    StructField("label", StringType(), False),
+                    StructField("value", StringType(), False),
+                    StructField("line_number", IntegerType(), False)
+                ]))
+            )
+
+            # Extract lines and explode
+            result_df = (
+                df.withColumn("line_data", explode(extract_udf(col("value"))))
+                .select(
+                    "doc_id",
+                    "attachment_name",
+                    col("line_data.label").alias("label"),
+                    col("line_data.value").alias("value"),
+                    col("line_data.line_number")
+                )
+            )
+        else:
+            # Paragraph-level extraction
+            def extract_yedda_paragraphs(text: str):
+                """Extract paragraphs from YEDDA annotation blocks."""
+                import re
+                results = []
+                pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
+
+                for match in re.finditer(pattern, text, re.DOTALL):
+                    content = match.group(1).strip()
+                    label = match.group(2).strip()
+
+                    # Collapse labels if requested
+                    if self.collapse_labels:
+                        label = ParagraphExtractor.collapse_labels(label)
+
+                    if content:
+                        results.append((label, content))
+
+                return results
+
+            # UDF to extract paragraphs
+            extract_udf = udf(
+                extract_yedda_paragraphs,
+                ArrayType(StructType([
+                    StructField("label", StringType(), False),
+                    StructField("value", StringType(), False)
+                ]))
+            )
+
+            # Extract paragraphs and explode
+            result_df = (
+                df.withColumn("paragraph_data", explode(extract_udf(col("value"))))
+                .select(
+                    "doc_id",
+                    "attachment_name",
+                    col("paragraph_data.label").alias("label"),
+                    col("paragraph_data.value").alias("value")
+                )
+            )
+
+        return result_df
+
+
 __all__ = [
     'SuffixTransformer',
     'ParagraphExtractor',
+    'AnnotatedTextParser',
     'SUFFIXES',
     'NOMENCLATURE_RE',
     'TABLE_KEYWORDS',
