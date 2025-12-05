@@ -217,7 +217,6 @@ class TestParser(unittest.TestCase):
         into an infrageneric context.
         """)
         paragraphs = list(finder.parse_paragraphs(test_data))
-        print("DEBUG: paragraphs:", repr(str(paragraphs)))
 
         self.assertEqual(str(paragraphs[0]), expected0)
         self.assertEqual(str(paragraphs[1]), expected1)

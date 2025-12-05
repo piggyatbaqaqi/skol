@@ -73,19 +73,16 @@ def extract_taxa_from_partition(
         Taxon objects with nomenclature and description paragraphs
     """
     # Read lines from partition
-    lines = list(read_couchdb_partition(partition, ingest_db_name))
-    print(f"DEBUG: etfp lines[0].human_url =", lines[0].human_url if lines else "No lines")
+    lines = read_couchdb_partition(partition, ingest_db_name)
 
     # Parse annotated content
-    paragraphs = [p for p in parse_annotated(lines)]
-    print(f"DEBUG: etfp paragraphs[0].human_url =", paragraphs[0].human_url if paragraphs else "No paragraphs")
+    paragraphs = parse_annotated(lines)
+
     # Remove interstitial paragraphs
-    filtered = [f for f in remove_interstitials(paragraphs)]
-    print(f"DEBUG: etfp filtered[0].human_url =", filtered[0].human_url if filtered else "No filtered paragraphs")
+    filtered = remove_interstitials(paragraphs)
 
     # Convert to list to preserve paragraph objects for metadata extraction
     filtered_list = list(filtered)
-    print(f"DEBUG: etfp filtered_list[0].human_url =", filtered_list[0].human_url if filtered_list else "No filtered paragraphs")
 
     # Group into taxa (returns Taxon objects with references to paragraphs)
     taxa = group_paragraphs(iter(filtered_list))
@@ -94,7 +91,6 @@ def extract_taxa_from_partition(
     for taxon in taxa:
         # Only yield taxa that have nomenclature
         if taxon.has_nomenclature():
-            print(f"DEBUG: taxon.human_url =", taxon.human_url)
             yield taxon
 
 
@@ -118,30 +114,14 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
     for taxon in partition:
         taxon_dict = taxon.as_row()
 
-        # DEBUG: Validate ALL dict fields for non-string values
-        # The schema has two MapType(StringType(), StringType()) fields: 'source' and 'json_annotated'
-        for field_name in ['source', 'json_annotated']:
-            if field_name in taxon_dict and taxon_dict[field_name] is not None:
-                field_value = taxon_dict[field_name]
-                if isinstance(field_value, dict):
-                    for key, value in field_value.items():
-                        if value is not None and not isinstance(value, str):
-                            taxon_name = taxon_dict.get('taxon', 'N/A')
-                            taxon_preview = taxon_name[:50] + '...' if isinstance(taxon_name, str) and len(taxon_name) > 50 else taxon_name
-                            print(f"⚠️  ERROR: Non-string in {field_name}['{key}']: {value} ({type(value).__name__})")
-                            print(f"   Taxon: {taxon_preview}")
-                            print(f"   Full {field_name}: {field_value}")
-                            # Convert to string to prevent schema error
-                            field_value[key] = str(value)
-
-        # if '_id' not in taxon_dict:
-        #     taxon_dict['_id'] = generate_taxon_doc_id(
-        #         taxon_dict['source']['doc_id'],
-        #         taxon_dict['source'].get('url'),
-        #         taxon_dict['line_number'] or 0
-        #     )
-        # if 'json_annotated' not in taxon_dict:
-        #     taxon_dict['json_annotated'] = None
+        if '_id' not in taxon_dict:
+            taxon_dict['_id'] = generate_taxon_doc_id(
+                taxon_dict['source']['doc_id'],
+                taxon_dict['source'].get('human_url'),
+                taxon_dict['line_number'] or 0
+            )
+        if 'json_annotated' not in taxon_dict:
+            taxon_dict['json_annotated'] = None
         # Convert dict to Row
         yield Row(**taxon_dict)
 
@@ -337,7 +317,6 @@ class TaxonExtractor:
                         # Load document from CouchDB
                         if doc_id in db:
                             doc = db[doc_id]
-                            print("DEBUG: doc_id =", doc_id, "doc keys =", list(doc.keys()))
 
                             # Convert CouchDB document to Row
                             taxon_data = {

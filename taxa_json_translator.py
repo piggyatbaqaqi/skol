@@ -542,8 +542,6 @@ Result:
                     '_id': doc_id,
                     output_col: json_obj
                 })
-                print("DEBUG: description:", description)
-                print("DEBUG: Generated JSON:", json_obj)
 
         # Create DataFrame from results
         results_df = self.spark.createDataFrame(results)

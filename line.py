@@ -150,6 +150,4 @@ class Line(object):
     @property
     def human_url(self) -> Optional[str]:
         """URL from the source (optional)."""
-        if self._human_url is None:
-            print("DEBUG: substituting filename for human_url:", self._filename)
         return self._human_url or self._filename
