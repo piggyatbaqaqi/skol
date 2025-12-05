@@ -44,17 +44,11 @@ def process_partition_to_taxa(
     # Step 1: Read CouchDB rows into Line objects with metadata
     lines = list(read_couchdb_partition(partition, db_name))
 
-    print("DEBUG: line[0].human_url =", lines[0].human_url if lines else "No lines")
-
     # Step 2: Parse lines into Paragraph objects
     paragraphs = parse_annotated(lines)
 
-    print(f"DEBUG: paragraphs[0].human_url =", paragraphs[0].human_url if paragraphs else "No paragraphs")
-
     # Step 3: Remove interstitial paragraphs (optional)
     filtered = remove_interstitials(paragraphs)
-
-    print(f"DEBUG: filtered[0].human_url =", filtered[0].human_url if filtered else "No filtered paragraphs")
 
     # Step 4: Group paragraphs into Taxon objects
     taxa = group_paragraphs(filtered)
