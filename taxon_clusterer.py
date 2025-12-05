@@ -13,11 +13,13 @@ This module provides functionality to:
 from typing import List, Dict, Tuple, Optional, Any
 import pickle
 import numpy as np
+import pandas as pd
 import redis
 from scipy.cluster.hierarchy import linkage, to_tree
 from scipy.spatial.distance import cosine
 from neo4j import GraphDatabase
 from dataclasses import dataclass
+
 
 
 @dataclass
@@ -110,7 +112,7 @@ class TaxonClusterer:
             embedding_key: Redis key containing pickled embeddings
 
         Returns:
-            Tuple of (embeddings array, taxon names list)
+            Tuple of (embeddings array, taxon names list, taxon metadata list)
 
         Raises:
             ValueError: If key doesn't exist or data is invalid
@@ -124,83 +126,56 @@ class TaxonClusterer:
         pickled_data = self.redis_client.get(embedding_key)
         data = pickle.loads(pickled_data)
 
-        # Extract embeddings, taxon names, and metadata
-        # The data is a pandas DataFrame from EmbeddingsComputer.result
-        # It contains: source, filename, row, description, F0, F1, F2, ..., Fn
-        if isinstance(data, dict):
-            if 'embeddings' in data and 'taxon_names' in data:
-                # Structured format
-                self.embeddings = np.array(data['embeddings'])
-                self.taxon_names = data['taxon_names']
-                self.taxon_metadata = data.get('metadata', [{}] * len(self.taxon_names))
+        # Assume it's a pandas DataFrame from EmbeddingsComputer
+        try:
+            assert isinstance(data, pd.DataFrame)
+            # Extract embedding columns (F0, F1, F2, ...)
+            embedding_cols = [col for col in data.columns if col.startswith('F')]
+            self.embeddings = data[embedding_cols].values
+
+            # Extract taxon names from 'taxon' field (nomenclature)
+            # If 'taxon' column doesn't exist, fall back to 'description'
+            if 'taxon' in data.columns:
+                self.taxon_names = data['taxon'].tolist()
             else:
-                # Assume dict mapping taxon_name -> embedding
-                self.taxon_names = list(data.keys())
-                self.embeddings = np.array(list(data.values()))
-                self.taxon_metadata = [{}] * len(self.taxon_names)
-        elif isinstance(data, np.ndarray):
-            # Just embeddings, generate names
-            self.embeddings = data
-            self.taxon_names = [f"Taxon_{i}" for i in range(len(data))]
-            self.taxon_metadata = [{}] * len(data)
-        else:
-            # Assume it's a pandas DataFrame from EmbeddingsComputer
-            try:
-                import pandas as pd
-                if isinstance(data, pd.DataFrame):
-                    # Extract embedding columns (F0, F1, F2, ...)
-                    embedding_cols = [col for col in data.columns if col.startswith('F')]
-                    self.embeddings = data[embedding_cols].values
+                self.taxon_names = data['description'].tolist()
 
-                    # Extract taxon names from 'taxon' field (nomenclature)
-                    # If 'taxon' column doesn't exist, fall back to 'description'
-                    if 'taxon' in data.columns:
-                        self.taxon_names = data['taxon'].tolist()
-                    else:
-                        self.taxon_names = data['description'].tolist()
+            # Extract metadata from other columns
+            self.taxon_metadata = []
+            for _, row in data.iterrows():
+                metadata = {}
 
-                    # Extract metadata from other columns
-                    self.taxon_metadata = []
-                    for idx, row in data.iterrows():
-                        metadata = {}
+                # Flatten source dict for neo4j storage.
+                if 'source' in data.columns:
+                    source = row['source']
+                    assert isinstance(source, dict), "Source field must be dict"
+                    for key in source.keys():
+                        metadata[f'source_{key}'] = source[key]
 
-                        # Handle 'source' field which may be a dict containing url, doc_id, db_name
-                        if 'source' in data.columns:
-                            source = row['source']
-                            if isinstance(source, dict):
-                                # Extract nested fields from source dict
-                                metadata['source'] = source.get('doc_id', source.get('db_name', str(source)))
-                                metadata['url'] = source.get('url')
-                                metadata['db_name'] = source.get('db_name')
-                            else:
-                                metadata['source'] = str(source)
+                # Add other metadata fields
+                if 'filename' in data.columns:
+                    metadata['filename'] = row.get('filename')
+                if 'row' in data.columns:
+                    metadata['row'] = row.get('row')
+                if 'line_number' in data.columns:
+                    metadata['line_number'] = row.get('line_number')
+                if 'paragraph_number' in data.columns:
+                    metadata['paragraph_number'] = row.get('paragraph_number')
+                if 'page_number' in data.columns:
+                    metadata['page_number'] = row.get('page_number')
+                if 'empirical_page_number' in data.columns:
+                    metadata['empirical_page_number'] = row.get('empirical_page_number')
 
-                        # Add other metadata fields
-                        if 'filename' in data.columns:
-                            metadata['filename'] = row.get('filename')
-                        if 'row' in data.columns:
-                            metadata['row'] = row.get('row')
-                        if 'line_number' in data.columns:
-                            metadata['line_number'] = row.get('line_number')
-                        if 'paragraph_number' in data.columns:
-                            metadata['paragraph_number'] = row.get('paragraph_number')
-                        if 'page_number' in data.columns:
-                            metadata['page_number'] = row.get('page_number')
-                        if 'empirical_page_number' in data.columns:
-                            metadata['empirical_page_number'] = row.get('empirical_page_number')
+                # Always include description
+                metadata['description'] = row.get('description', '')
 
-                        # Always include description
-                        metadata['description'] = row.get('description', '')
-
-                        self.taxon_metadata.append(metadata)
-                else:
-                    raise ValueError(f"Unexpected data format in Redis: {type(data)}")
-            except Exception as e:
-                raise ValueError(f"Failed to parse data from Redis: {e}")
+                self.taxon_metadata.append(metadata)
+        except Exception as e:
+            raise ValueError(f"Failed to parse data from Redis: {e}")
 
         print(f"✓ Loaded {len(self.taxon_names)} taxa with {self.embeddings.shape[1]}-dimensional embeddings")
 
-        return self.embeddings, self.taxon_names
+        return self.embeddings, self.taxon_names, self.taxon_metadata
 
     def cluster(
         self,
