@@ -16,8 +16,8 @@ import sys
 import os
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pyspark.sql import SparkSession
 from extract_taxa_to_couchdb import TaxonExtractor
