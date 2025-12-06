@@ -3,6 +3,14 @@ Example comparing different models and feature configurations using V2 API
 
 This demonstrates how the unified SkolClassifierV2 API simplifies
 model comparison by having all configuration in the constructor.
+
+Models compared:
+- Logistic Regression (paragraph and line-level)
+- Random Forest (paragraph and line-level)
+- RNN BiLSTM (line-level with context)
+
+For RNN model support, install:
+    pip install tensorflow elephas
 """
 
 from pyspark.sql import SparkSession
@@ -85,6 +93,36 @@ def compare_models():
             "use_suffixes": True,
             "n_estimators": 100,
             "line_level": True
+        },
+        {
+            "name": "RNN BiLSTM (line-level, basic config)",
+            "model_type": "rnn",
+            "use_suffixes": True,
+            "line_level": True,
+            "input_size": 1000,
+            "hidden_size": 64,
+            "num_layers": 1,
+            "num_classes": 3,
+            "dropout": 0.3,
+            "window_size": 50,
+            "batch_size": 32,
+            "epochs": 5,
+            "num_workers": 4
+        },
+        {
+            "name": "RNN BiLSTM (line-level, advanced config)",
+            "model_type": "rnn",
+            "use_suffixes": True,
+            "line_level": True,
+            "input_size": 1000,
+            "hidden_size": 128,
+            "num_layers": 2,
+            "num_classes": 3,
+            "dropout": 0.3,
+            "window_size": 50,
+            "batch_size": 32,
+            "epochs": 10,
+            "num_workers": 4
         }
     ]
 
@@ -116,6 +154,15 @@ def compare_models():
         })
 
         print(f"  Mode:      {'Line-level' if config.get('line_level', False) else 'Paragraph'}")
+        print(f"  Suffixes:  {'Yes' if config.get('use_suffixes', False) else 'No'}")
+
+        # Show RNN-specific config if applicable
+        if config.get('model_type') == 'rnn':
+            print(f"  Hidden:    {config.get('hidden_size', 'N/A')}")
+            print(f"  Layers:    {config.get('num_layers', 'N/A')}")
+            print(f"  Window:    {config.get('window_size', 'N/A')}")
+            print(f"  Epochs:    {config.get('epochs', 'N/A')}")
+
         print(f"  Train:     {stats.get('train_size', 'N/A')} samples")
         print(f"  Test:      {stats.get('test_size', 'N/A')} samples")
         print(f"  Accuracy:  {stats.get('accuracy', 0):.4f}")
@@ -144,6 +191,35 @@ def compare_models():
     print(f"\n{'=' * 80}")
     print(f"Best model: {best['name']} (F1: {best.get('f1_score', 0):.4f})")
     print(f"{'=' * 80}")
+
+    # Show RNN models separately
+    rnn_results = [r for r in results if 'RNN' in r['name']]
+    if rnn_results:
+        print(f"\n{'=' * 80}")
+        print("RNN MODEL ANALYSIS")
+        print(f"{'=' * 80}")
+        print("\nRNN models use surrounding lines as context, which provides:")
+        print("  • Better understanding of document structure")
+        print("  • Improved classification of ambiguous lines")
+        print("  • Sequential pattern learning")
+        print("\nRNN Results:")
+        for rnn in rnn_results:
+            print(f"  {rnn['name']:<45} F1: {rnn.get('f1_score', 0):.4f}")
+
+        # Compare best RNN vs best non-RNN
+        non_rnn_results = [r for r in results if 'RNN' not in r['name']]
+        if non_rnn_results:
+            best_rnn = max(rnn_results, key=lambda x: x.get('f1_score', 0))
+            best_non_rnn = max(non_rnn_results, key=lambda x: x.get('f1_score', 0))
+
+            print(f"\nComparison:")
+            print(f"  Best RNN:     {best_rnn['name']} (F1: {best_rnn.get('f1_score', 0):.4f})")
+            print(f"  Best Non-RNN: {best_non_rnn['name']} (F1: {best_non_rnn.get('f1_score', 0):.4f})")
+
+            improvement = (best_rnn.get('f1_score', 0) - best_non_rnn.get('f1_score', 0)) / best_non_rnn.get('f1_score', 1) * 100
+            print(f"  Improvement:  {improvement:+.2f}%")
+
+        print(f"{'=' * 80}")
 
     spark.stop()
 
