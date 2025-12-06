@@ -14,6 +14,12 @@ from pyspark.ml.feature import IndexToString
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, concat, lit
 
+try:
+    from .rnn_model import RNNSkolModel
+    RNN_AVAILABLE = True
+except ImportError:
+    RNN_AVAILABLE = False
+
 
 class SkolModel:
     """
@@ -34,7 +40,8 @@ class SkolModel:
         Initialize the model.
 
         Args:
-            model_type: Type of classifier ('logistic', 'random_forest', 'gradient_boosted')
+            model_type: Type of classifier ('logistic', 'random_forest',
+                       'gradient_boosted', 'rnn')
             features_col: Name of features column
             label_col: Name of label column
             **model_params: Additional model parameters
@@ -45,13 +52,14 @@ class SkolModel:
         self.model_params = model_params
         self.classifier_model: Optional[PipelineModel] = None
         self.labels: Optional[List[str]] = model_params.get("labels", None)
+        self.rnn_model: Optional['RNNSkolModel'] = None
 
     def build_classifier(self):
         """
         Build the classifier based on model_type.
 
         Returns:
-            Classifier instance
+            Classifier instance (or None for RNN which uses different API)
 
         Raises:
             ValueError: If model_type is not recognized
@@ -79,29 +87,60 @@ class SkolModel:
                 maxDepth=self.model_params.get("max_depth", 5),
                 seed=self.model_params.get("seed", 42)
             )
+        elif self.model_type == "rnn":
+            if not RNN_AVAILABLE:
+                raise ValueError(
+                    "RNN model requires TensorFlow and Elephas. "
+                    "Install with: pip install tensorflow elephas"
+                )
+            # RNN model is built separately, return None
+            return None
         else:
             raise ValueError(
                 f"Unknown model_type: {self.model_type}. "
-                "Choose 'logistic', 'random_forest', or 'gradient_boosted'."
+                "Choose 'logistic', 'random_forest', 'gradient_boosted', "
+                "or 'rnn'."
             )
 
-    def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> PipelineModel:
+    def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> Optional[PipelineModel]:
         """
         Train the classification model.
 
         Args:
             train_data: Training DataFrame with features
-            labels: Optional list of label strings (for later use in predict_with_labels)
+            labels: Optional list of label strings
 
         Returns:
-            Fitted classifier pipeline model
+            Fitted classifier pipeline model (or None for RNN)
         """
         if labels is not None:
             self.labels = labels
-        classifier = self.build_classifier()
-        pipeline = Pipeline(stages=[classifier])
-        self.classifier_model = pipeline.fit(train_data)
-        return self.classifier_model
+
+        if self.model_type == "rnn":
+            # Build RNN model
+            input_size = self.model_params.get("input_size", 1000)
+            self.rnn_model = RNNSkolModel(
+                input_size=input_size,
+                hidden_size=self.model_params.get("hidden_size", 128),
+                num_layers=self.model_params.get("num_layers", 2),
+                num_classes=self.model_params.get("num_classes", 3),
+                dropout=self.model_params.get("dropout", 0.3),
+                window_size=self.model_params.get("window_size", 50),
+                batch_size=self.model_params.get("batch_size", 32),
+                epochs=self.model_params.get("epochs", 10),
+                num_workers=self.model_params.get("num_workers", 4),
+                features_col=self.features_col,
+                label_col=self.label_col
+            )
+            # Fit RNN model
+            self.classifier_model = self.rnn_model.fit(train_data, labels)
+            return self.classifier_model
+        else:
+            # Traditional ML models
+            classifier = self.build_classifier()
+            pipeline = Pipeline(stages=[classifier])
+            self.classifier_model = pipeline.fit(train_data)
+            return self.classifier_model
 
     def predict(self, data: DataFrame) -> DataFrame:
         """
@@ -118,7 +157,11 @@ class SkolModel:
         """
         if self.classifier_model is None:
             raise ValueError("No classifier model found. Train a model first.")
-        return self.classifier_model.transform(data)  # pyright: ignore[reportUnknownMemberType]
+
+        if self.model_type == "rnn" and self.rnn_model is not None:
+            return self.rnn_model.predict(data)
+        else:
+            return self.classifier_model.transform(data)  # pyright: ignore[reportUnknownMemberType]
 
     def predict_with_labels(self, data: DataFrame) -> DataFrame:
         """
@@ -138,15 +181,18 @@ class SkolModel:
         if self.labels is None:
             raise ValueError("No labels found. Train a model first.")
 
-        predictions = self.classifier_model.transform(data)
+        if self.model_type == "rnn" and self.rnn_model is not None:
+            return self.rnn_model.predict_with_labels(data)
+        else:
+            predictions = self.classifier_model.transform(data)
 
-        # Convert label indices to strings
-        converter = IndexToString(
-            inputCol="prediction",
-            outputCol="predicted_label",
-            labels=self.labels
-        )
-        return converter.transform(predictions)
+            # Convert label indices to strings
+            converter = IndexToString(
+                inputCol="prediction",
+                outputCol="predicted_label",
+                labels=self.labels
+            )
+            return converter.transform(predictions)
 
     def get_model(self) -> Optional[PipelineModel]:
         """Get the fitted model."""

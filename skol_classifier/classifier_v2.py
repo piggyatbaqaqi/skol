@@ -108,8 +108,19 @@ class SkolClassifierV2:
         min_doc_freq: Minimum document frequency for word features
 
     Model Configuration:
-        model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted')
+        model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted', 'rnn')
         **model_params: Additional parameters passed to the model
+
+        RNN Model Parameters (when model_type='rnn'):
+            input_size: Size of input feature vectors (default: 1000)
+            hidden_size: LSTM hidden state size (default: 128)
+            num_layers: Number of LSTM layers (default: 2)
+            num_classes: Number of output classes (default: 3)
+            dropout: Dropout rate (default: 0.3)
+            window_size: Maximum sequence length (default: 50)
+            batch_size: Batch size for training (default: 32)
+            epochs: Number of training epochs (default: 10)
+            num_workers: Number of Spark workers (default: 4)
 
     Methods:
     -------
