@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Example script showing how to use yedda_parser with PySpark."""
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from yedda_parser import yedda_file_to_spark_df, get_label_statistics
 from pyspark.sql import SparkSession
 
