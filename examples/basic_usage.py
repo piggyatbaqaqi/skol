@@ -38,8 +38,11 @@ def main():
         regParam=0.01
     )
 
-    # Train the model (automatically saves to disk)
+    # Train the model
     results = classifier.fit()
+
+    # Save the model to disk
+    classifier.save_model()
 
     print(f"\nTraining Results:")
     print(f"  Train size: {results.get('train_size', 'N/A')}")

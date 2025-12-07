@@ -73,6 +73,9 @@ def main():
     # Train the model
     metrics = classifier.fit()
 
+    # Save the model to disk
+    classifier.save_model()
+
     print("\nTraining completed!")
     print(f"  Model saved to: {classifier.model_path}")
     print(f"  Metrics: {metrics}")
@@ -135,6 +138,9 @@ def main():
     )
 
     lr_metrics = lr_classifier.fit()
+
+    # Save the logistic regression model
+    lr_classifier.save_model()
 
     print("\nComparison:")
     print(f"  RNN Model: {metrics}")

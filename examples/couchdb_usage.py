@@ -118,6 +118,10 @@ def example_train_and_predict():
     )
 
     results = trainer.fit()
+
+    # Save the model to Redis
+    trainer.save_model()
+
     print(f"Training complete!")
     print(f"  Accuracy: {results.get('accuracy', 0):.4f}")
     print(f"  F1 Score: {results.get('f1_score', 0):.4f}")
@@ -179,6 +183,7 @@ def example_disk_model_with_couchdb():
     )
 
     trainer.fit()
+    trainer.save_model()
     print("✓ Model saved to disk")
 
     # Load from disk and use with CouchDB

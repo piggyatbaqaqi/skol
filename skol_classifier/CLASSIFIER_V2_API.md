@@ -185,17 +185,14 @@ classifier = SkolClassifierV2(
 Save the trained model to the configured storage.
 
 ```python
-# Explicit save
-classifier.fit()
-classifier.save_model()
-
-# Or configure model_storage to auto-save after fit()
+# Train and save model
 classifier = SkolClassifierV2(
     model_storage='disk',
     model_path='models/my_model.pkl',
     # ... other config
 )
-classifier.fit()  # Automatically saves after training
+classifier.fit()
+classifier.save_model()  # Must call save_model() explicitly
 ```
 
 ## Configuration Groups

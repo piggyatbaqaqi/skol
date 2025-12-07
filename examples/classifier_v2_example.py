@@ -38,8 +38,11 @@ def example_1_train_from_files_save_to_disk():
         collapse_labels=True       # Collapse similar labels
     )
 
-    # Train the model (automatically saves to disk)
+    # Train the model
     stats = classifier.fit()
+
+    # Save the model to disk
+    classifier.save_model()
 
     print(f"\nTraining complete!")
     print(f"  Training samples: {stats.get('train_size', 'N/A')}")
@@ -135,6 +138,10 @@ def example_3_train_and_predict_same_session():
     )
 
     stats = trainer.fit()
+
+    # Save the model to disk
+    trainer.save_model()
+
     print(f"Training complete - Accuracy: {stats.get('accuracy', 'N/A'):.4f}")
 
     # Step 2: Use the trained model to predict on new files
@@ -203,6 +210,10 @@ def example_4_redis_model_storage():
     )
 
     stats = classifier.fit()
+
+    # Save the model to Redis
+    classifier.save_model()
+
     print(f"Model trained and saved to Redis key: {classifier.redis_key}")
 
     # Load from Redis and predict
