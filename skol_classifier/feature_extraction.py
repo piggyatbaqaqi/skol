@@ -27,7 +27,9 @@ class FeatureExtractor:
         use_suffixes: bool = True,
         min_doc_freq: int = 2,
         input_col: str = "value",
-        label_col: str = "label"
+        label_col: str = "label",
+        word_vocab_size: int = 800,
+        suffix_vocab_size: int = 200
     ):
         """
         Initialize the feature extractor.
@@ -44,6 +46,8 @@ class FeatureExtractor:
         self.label_col = label_col
         self.pipeline_model: Optional[PipelineModel] = None
         self.labels: Optional[List[str]] = None
+        self.word_vocab_size = word_vocab_size
+        self.suffix_vocab_size = suffix_vocab_size
 
     def build_pipeline(self) -> Pipeline:
         """
@@ -57,7 +61,7 @@ class FeatureExtractor:
 
         # Word TF-IDF
         word_count_vectorizer = CountVectorizer(
-            inputCol="words", outputCol="word_tf"
+            inputCol="words", outputCol="word_tf", vocabSize=self.word_vocab_size
         )
         word_idf = IDF(
             inputCol="word_tf", outputCol="word_idf", minDocFreq=self.min_doc_freq
@@ -69,7 +73,8 @@ class FeatureExtractor:
         if self.use_suffixes:
             suffixer = SuffixTransformer(inputCol="words", outputCol="suffixes")
             suffix_count_vectorizer = CountVectorizer(
-                inputCol="suffixes", outputCol="suffix_tf"
+                inputCol="suffixes", outputCol="suffix_tf",
+                vocabSize=self.suffix_vocab_size
             )
             suffix_idf = IDF(
                 inputCol="suffix_tf", outputCol="suffix_idf", minDocFreq=self.min_doc_freq

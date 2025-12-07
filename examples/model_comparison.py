@@ -16,8 +16,8 @@ For RNN model support, install:
 import os
 # Force TensorFlow to use CPU to avoid GPU driver issues
 # This must be set before importing any TensorFlow code
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from pyspark.sql import SparkSession
 from skol_classifier.classifier_v2 import SkolClassifierV2
@@ -103,36 +103,36 @@ def compare_models():
         #     "line_level": True
         # },
         # NOTE: RNN models now use Pandas UDFs instead of Elephas for better compatibility
-        {
-            "name": "RNN BiLSTM (line-level, basic config)",
-            "model_type": "rnn",
-            "use_suffixes": True,
-            "line_level": True,
-            "input_size": 1000,
-            "hidden_size": 64,
-            "num_layers": 1,
-            "num_classes": 3,
-            "dropout": 0.3,
-            "window_size": 50,
-            "batch_size": 32,
-            "epochs": 5,
-            "num_workers": 4
-        },
         # {
-        #     "name": "RNN BiLSTM (line-level, advanced config)",
+        #     "name": "RNN BiLSTM (line-level, basic config)",
         #     "model_type": "rnn",
         #     "use_suffixes": True,
         #     "line_level": True,
         #     "input_size": 1000,
-        #     "hidden_size": 128,
-        #     "num_layers": 2,
+        #     "hidden_size": 64,
+        #     "num_layers": 1,
         #     "num_classes": 3,
         #     "dropout": 0.3,
         #     "window_size": 50,
         #     "batch_size": 32,
-        #     "epochs": 10,
+        #     "epochs": 5,
         #     "num_workers": 4
-        # }
+        # },
+        {
+            "name": "RNN BiLSTM (line-level, advanced config)",
+            "model_type": "rnn",
+            "use_suffixes": True,
+            "line_level": True,
+            "input_size": 1000,
+            "hidden_size": 128,
+            "num_layers": 2,
+            "num_classes": 3,
+            "dropout": 0.3,
+            "window_size": 20,
+            "batch_size": 16,
+            "epochs": 4,
+            "num_workers": 2
+        }
     ]
 
     # Test each configuration
