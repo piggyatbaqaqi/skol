@@ -26,7 +26,7 @@ def example_save_to_redis():
         decode_responses=False  # Important: keep as bytes for binary data
     )
 
-    # Train and automatically save to Redis
+    # Train and save to Redis
     print("Training model...")
     annotated_files = get_file_list(
         "/path/to/annotated/data",
@@ -45,10 +45,13 @@ def example_save_to_redis():
         model_type='logistic'
     )
 
-    results = classifier.fit()  # Automatically saves to Redis
+    results = classifier.fit()
+
+    # Save the model to Redis
+    classifier.save_model()
 
     print(f"Training complete. F1 Score: {results.get('f1_score', 0):.4f}")
-    print("✓ Model automatically saved to Redis!")
+    print("✓ Model saved to Redis!")
 
     spark.stop()
 
@@ -133,6 +136,10 @@ def example_with_custom_redis_config():
     )
 
     results = classifier.fit()
+
+    # Save the model to Redis
+    classifier.save_model()
+
     print(f"Model trained and saved to Redis with custom key")
     print(f"F1 Score: {results.get('f1_score', 0):.4f}")
 
@@ -160,6 +167,7 @@ def example_disk_vs_redis():
         model_type='logistic'
     )
     disk_classifier.fit()
+    disk_classifier.save_model()
     print("✓ Model saved to disk at /models/skol_classifier.pkl")
 
     # Option 2: Save to Redis
@@ -177,6 +185,7 @@ def example_disk_vs_redis():
         model_type='logistic'
     )
     redis_classifier.fit()
+    redis_classifier.save_model()
     print("✓ Model saved to Redis with key 'skol_model'")
 
     # Later, load from either storage
@@ -249,6 +258,7 @@ def example_train_or_load():
         )
 
         results = classifier.fit()
+        classifier.save_model()
         print(f"✓ Model trained and saved to Redis. F1: {results.get('f1_score', 0):.4f}")
 
     # Now use the model (either freshly trained or loaded)
@@ -285,6 +295,7 @@ def example_multiple_models():
         model_type='logistic'
     )
     lr_results = lr_classifier.fit()
+    lr_classifier.save_model()
     print(f"✓ LR Model saved. F1: {lr_results.get('f1_score', 0):.4f}")
 
     # Train and save random forest model
@@ -301,6 +312,7 @@ def example_multiple_models():
         n_estimators=100
     )
     rf_results = rf_classifier.fit()
+    rf_classifier.save_model()
     print(f"✓ RF Model saved. F1: {rf_results.get('f1_score', 0):.4f}")
 
     # Later, load and compare models
@@ -420,7 +432,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 80)
     print("All examples complete!")
     print("\nKey benefits of V2 API with Redis:")
-    print("- Automatic save after fit() when model_storage='redis'")
+    print("- Save models to Redis with save_model() after fit()")
     print("- Automatic load with auto_load_model=True")
     print("- Model storage independent of data source")
     print("- Unified configuration in constructor")

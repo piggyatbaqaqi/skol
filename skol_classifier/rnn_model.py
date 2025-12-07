@@ -186,7 +186,7 @@ class RNNSkolModel:
         epochs: int = 10,
         num_workers: int = 4,
         features_col: str = "combined_idf",
-        label_col: str = "label_indexed",
+        label_col: str = "label_hamster",
         verbosity: int = 3
     ):
         """
@@ -614,7 +614,7 @@ class RNNSkolModel:
 
         # For line-level predictions, we need to explode the sequences back to individual lines
         # Use posexplode to get both position and value
-        if self.label_col in predictions.columns:
+        if has_labels:
             # If we have labels (e.g., for evaluation), explode both predictions and labels
             predictions_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
@@ -624,21 +624,29 @@ class RNNSkolModel:
             # Explode labels separately
             labels_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
-                posexplode(col("sequence_labels")).alias("pos", "label")
+                posexplode(col("sequence_labels")).alias("pos", "label_indexed")
             )
 
             # Join on filename and position to align predictions with labels
+            # Cast prediction to DoubleType as required by Spark ML evaluators
             result = predictions_exploded.join(
                 labels_exploded,
                 on=["filename", "pos"],
                 how="inner"
-            ).select("filename", "prediction", "label")
+            ).select(
+                "filename",
+                col("prediction").cast("double"),
+                "label_indexed"
+            )
         else:
             # No labels, just return predictions
             result = predictions.select(
                 col(doc_id_col).alias("filename"),
                 posexplode(col("predictions")).alias("pos", "prediction")
-            ).select("filename", "prediction")
+            ).select(
+                "filename",
+                col("prediction").cast("double")
+            )
 
         return result
 

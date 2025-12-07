@@ -359,10 +359,6 @@ class SkolClassifierV2:
         # Unpersist featured DataFrame to free memory
         featured_df.unpersist()
 
-        # Auto-save model if configured
-        if self.model_storage:
-            self.save_model()
-
         return stats
 
     def predict(self, raw_data: Optional[DataFrame] = None) -> DataFrame:
