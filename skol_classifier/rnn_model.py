@@ -186,7 +186,8 @@ class RNNSkolModel:
         epochs: int = 10,
         num_workers: int = 4,
         features_col: str = "combined_idf",
-        label_col: str = "label_indexed"
+        label_col: str = "label_indexed",
+        verbosity: int = 3
     ):
         """
         Initialize RNN classifier.
@@ -221,6 +222,7 @@ class RNNSkolModel:
         self.num_workers = num_workers
         self.features_col = features_col
         self.label_col = label_col
+        self.verbosity = verbosity
 
         # Build Keras model
         self.keras_model = build_bilstm_model(
@@ -235,12 +237,175 @@ class RNNSkolModel:
         self.labels = None
         self.model_weights = None
 
+    def _process_row_to_windows(self, row):
+        """Process a single row into training windows."""
+        features = row.sequence_features
+        labels_seq = row.sequence_labels
+
+        # Convert sparse vectors to dense arrays
+        dense_features = []
+        for feat in features:
+            if feat is None:
+                continue
+            elif hasattr(feat, 'toArray'):
+                dense_features.append(feat.toArray().tolist())
+            elif isinstance(feat, (list, tuple)):
+                dense_features.append(list(feat))
+            else:
+                try:
+                    dense_features.append(list(feat))
+                except TypeError:
+                    continue
+
+        # Convert labels to list
+        dense_labels = [float(l) for l in labels_seq if l is not None]
+
+        # Create windows from this document
+        windows = []
+        for i in range(0, len(dense_features), self.window_size):
+            window_features = dense_features[i:i + self.window_size]
+            window_labels = dense_labels[i:i + self.window_size]
+
+            if len(window_features) == 0:
+                continue
+
+            # Pad or truncate to window_size
+            if len(window_features) < self.window_size:
+                padding = [[0.0] * self.input_size] * (self.window_size - len(window_features))
+                window_features = window_features + padding
+                window_labels = window_labels + [0.0] * (self.window_size - len(window_labels))
+            else:
+                window_features = window_features[:self.window_size]
+                window_labels = window_labels[:self.window_size]
+
+            windows.append((window_features, window_labels))
+
+        return windows
+
+    def _data_generator(self, sequenced_data, batch_size, chunk_size=50):
+        """
+        Generator that yields batches of training data without loading everything into memory.
+
+        Processes documents in small chunks to minimize memory footprint.
+
+        Args:
+            sequenced_data: DataFrame with sequence_features and sequence_labels
+            batch_size: Number of sequences per batch
+            chunk_size: Number of documents to process at once (default: 50)
+
+        Yields:
+            Tuple of (X_batch, y_batch) as numpy arrays
+        """
+        import random
+        import gc
+
+        # Get total count for planning
+        total_docs = sequenced_data.count()
+        if self.verbosity >= 5:
+            print(f"[RNN Generator] Processing {total_docs} documents in chunks of {chunk_size}...")
+
+        # Create list of document indices
+        doc_indices = list(range(total_docs))
+
+        # Batch accumulator
+        X_batch = []
+        y_batch = []
+
+        epoch_num = 0
+        batch_num = 0
+
+        while True:  # Keras generators need to loop infinitely (for multiple epochs)
+            epoch_num += 1
+            if self.verbosity >= 5:
+                print(f"[RNN Generator] Starting epoch {epoch_num}")
+
+            # Shuffle document order for each epoch
+            random.shuffle(doc_indices)
+
+            # Process documents in chunks
+            chunk_num = 0
+            for chunk_start in range(0, total_docs, chunk_size):
+                chunk_num += 1
+                chunk_end = min(chunk_start + chunk_size, total_docs)
+
+                if self.verbosity >= 3:
+                    print(f"[RNN Generator] Epoch {epoch_num}, Chunk {chunk_num}/{(total_docs + chunk_size - 1) // chunk_size}: docs {chunk_start}-{chunk_end}")
+
+                # Get this chunk of documents using skip/limit
+                # Note: This is not perfectly efficient but avoids loading all data
+                if self.verbosity >= 5:
+                    print(f"[RNN Generator] Collecting chunk documents...")
+                chunk_docs = (sequenced_data
+                             .limit(chunk_end)
+                             .collect()[chunk_start:chunk_end])
+                if self.verbosity >= 5:
+                    print(f"[RNN Generator] Got {len(chunk_docs)} documents in chunk")
+
+                # Process each document in the chunk
+                doc_num = 0
+                for row in chunk_docs:
+                    doc_num += 1
+                    windows = self._process_row_to_windows(row)
+
+                    if doc_num % 10 == 0 and self.verbosity >= 5:
+                        print(f"[RNN Generator] Processing doc {doc_num}/{len(chunk_docs)} in chunk, {len(windows)} windows, batch accumulator size: {len(X_batch)}")
+
+                    for window_features, window_labels in windows:
+                        X_batch.append(window_features)
+                        y_batch.append(window_labels)
+
+                        # Yield when we have a full batch
+                        if len(X_batch) >= batch_size:
+                            batch_num += 1
+                            if self.verbosity >= 5:
+                                print(f"[RNN Generator] Creating batch {batch_num} (size {batch_size})")
+                            X = np.array(X_batch[:batch_size], dtype=np.float32)
+                            y = np.array(y_batch[:batch_size], dtype=np.int32)
+                            if self.verbosity >= 5:
+                                print(f"[RNN Generator] Converting to categorical...")
+                            y_cat = to_categorical(y, num_classes=self.num_classes)
+
+                            if self.verbosity >= 5:
+                                print(f"[RNN Generator] Yielding batch {batch_num}")
+                            yield X, y_cat
+
+                            # Keep overflow for next batch
+                            X_batch = X_batch[batch_size:]
+                            y_batch = y_batch[batch_size:]
+
+                            # Force garbage collection
+                            del X, y, y_cat
+                            gc.collect()
+
+                # Clear chunk from memory
+                if self.verbosity >= 5:
+                    print(f"[RNN Generator] Clearing chunk {chunk_num} from memory")
+                del chunk_docs
+                gc.collect()
+
+            # Yield remaining data at end of epoch if we have any
+            if X_batch:
+                batch_num += 1
+                if self.verbosity >= 5:
+                    print(f"[RNN Generator] End of epoch {epoch_num}, yielding final batch {batch_num} with {len(X_batch)} samples")
+                X = np.array(X_batch, dtype=np.float32)
+                y = np.array(y_batch, dtype=np.int32)
+                y_cat = to_categorical(y, num_classes=self.num_classes)
+                yield X, y_cat
+                X_batch = []
+                y_batch = []
+                del X, y, y_cat
+                gc.collect()
+
+            if self.verbosity >= 5:
+                print(f"[RNN Generator] Completed epoch {epoch_num}")
+
     def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> 'RNNSkolModel':
         """
-        Train the RNN classification model using standard Keras training.
+        Train the RNN classification model using Keras generators.
 
-        Since RNN training requires sequences and doesn't parallelize well across
-        documents, we collect the data and train on the driver.
+        Uses a generator-based approach to avoid loading all data into memory,
+        which prevents OOM errors with large datasets.
 
         Args:
             train_data: Training DataFrame with features and labels
@@ -249,15 +414,25 @@ class RNNSkolModel:
         Returns:
             Self (fitted model)
         """
+        if self.verbosity >= 3:
+            print("[RNN Fit] Starting RNN model training")
+
         if labels is not None:
             self.labels = labels
+            if self.verbosity >= 3:
+                print(f"[RNN Fit] Set labels: {labels}")
 
-        print("Preparing sequences for RNN training...")
+        if verbosity >= 3:
+            print("[RNN Fit] Preparing sequences for RNN training...")
 
         # Determine document ID column (CouchDB uses 'doc_id', files use 'filename')
         doc_id_col = "doc_id" if "doc_id" in train_data.columns else "filename"
+        if verbosity >= 3:
+            print(f"[RNN Fit] Using document ID column: {doc_id_col}")
 
         # Create sequence preprocessor
+        if verbosity >= 3:
+            print("[RNN Fit] Creating sequence preprocessor...")
         preprocessor = SequencePreprocessor(
             inputCol=self.features_col,
             outputCol="sequence_features",
@@ -267,91 +442,100 @@ class RNNSkolModel:
         )
 
         # Transform data into sequences
+        if verbosity >= 3:
+            print("[RNN Fit] Transforming data into sequences...")
         sequenced_data = preprocessor.transform(train_data)
 
-        # Collect sequences to driver for training
-        print("Collecting sequences for training...")
-        collected = sequenced_data.collect()
+        # Cache to avoid recomputation
+        if verbosity >= 3:
+            print("[RNN Fit] Caching sequenced data...")
+        sequenced_data = sequenced_data.cache()
 
-        if len(collected) == 0:
+        # Estimate number of sequences for steps_per_epoch
+        # Sample a few documents to estimate average windows per document
+        if self.verbosity >= 3:
+            print("[RNN Fit] Sampling documents to estimate training size...")
+        sample = sequenced_data.limit(3).collect()  # Reduced from 10 to 3
+        if self.verbosity >= 3:
+            print(f"[RNN Fit] Got {len(sample)} sample documents")
+
+        if len(sample) == 0:
             raise ValueError("No sequences generated from training data")
 
-        # Prepare training data with windowing
-        X_train = []
-        y_train = []
+        if self.verbosity >= 3:
+            print("[RNN Fit] Counting total documents...")
+        total_docs = sequenced_data.count()
+        if self.verbosity >= 3:
+            print(f"[RNN Fit] Total documents: {total_docs}")
 
-        for row in collected:
-            features = row.sequence_features
-            labels_seq = row.sequence_labels
+        if self.verbosity >= 3:
+            print("[RNN Fit] Estimating windows per document (memory-efficient)...")
+        # Don't process full windows, just count lines to estimate
+        total_windows = 0
+        import gc
+        for idx, row in enumerate(sample):
+            # Just count the number of features (lines) without converting to dense
+            num_features = len(row.sequence_features) if row.sequence_features else 0
+            # Estimate windows as ceil(num_features / window_size)
+            doc_windows = max(1, (num_features + self.window_size - 1) // self.window_size)
+            total_windows += doc_windows
+            if self.verbosity >= 4:
+                print(f"[RNN Fit]   Sample {idx+1}: {num_features} lines -> ~{doc_windows} windows")
+            # Clear this sample from memory
+            del row
+            gc.collect()
 
-            # Convert sparse vectors to dense arrays
-            dense_features = []
-            for feat in features:
-                if feat is None:
-                    # Skip None values
-                    continue
-                elif hasattr(feat, 'toArray'):
-                    # SparseVector from PySpark
-                    dense_features.append(feat.toArray().tolist())
-                elif isinstance(feat, (list, tuple)):
-                    dense_features.append(list(feat))
-                else:
-                    # Try to convert to list
-                    try:
-                        dense_features.append(list(feat))
-                    except TypeError:
-                        # Skip if not iterable
-                        continue
+        avg_windows = total_windows / len(sample)
+        estimated_sequences = int(total_docs * avg_windows)
+        steps_per_epoch = max(1, estimated_sequences // self.batch_size)
 
-            # Convert labels to list
-            dense_labels = [float(l) for l in labels_seq if l is not None]
+        # Clean up sample data
+        del sample
+        gc.collect()
 
-            # Create windows from this document
-            for i in range(0, len(dense_features), self.window_size):
-                window_features = dense_features[i:i + self.window_size]
-                window_labels = dense_labels[i:i + self.window_size]
+        if self.verbosity >= 1:
+            print(f"[RNN Fit] Training RNN model with generator-based approach...")
+            print(f"[RNN Fit]   Estimated sequences: ~{estimated_sequences}")
+            print(f"[RNN Fit]   Batch size: {self.batch_size}")
+            print(f"[RNN Fit]   Steps per epoch: {steps_per_epoch}")
+            print(f"[RNN Fit]   Epochs: {self.epochs}")
+            print(f"[RNN Fit]   Window size: {self.window_size}")
+            print(f"[RNN Fit]   Input size: {self.input_size}")
 
-                # Skip if window is too small
-                if len(window_features) == 0:
-                    continue
+        # Create generator
+        if self.verbosity >= 1:
+            print("[RNN Fit] Creating data generator...")
+        train_generator = self._data_generator(sequenced_data, self.batch_size, chunk_size=25)
 
-                # Pad or truncate to window_size
-                if len(window_features) < self.window_size:
-                    # Pad with zeros
-                    padding = [[0.0] * self.input_size] * (self.window_size - len(window_features))
-                    window_features = window_features + padding
-                    window_labels = window_labels + [0.0] * (self.window_size - len(window_labels))
-                else:
-                    window_features = window_features[:self.window_size]
-                    window_labels = window_labels[:self.window_size]
-
-                X_train.append(window_features)
-                y_train.append(window_labels)
-
-        X_train = np.array(X_train, dtype=np.float32)
-        y_train = np.array(y_train, dtype=np.int32)
-
-        # Convert labels to one-hot encoding
-        y_train_cat = to_categorical(y_train, num_classes=self.num_classes)
-
-        print(f"Training RNN model on {len(X_train)} sequences...")
-        print(f"  Input shape: {X_train.shape}")
-        print(f"  Output shape: {y_train_cat.shape}")
-
-        # Train model
-        self.keras_model.fit(
-            X_train,
-            y_train_cat,
-            batch_size=self.batch_size,
-            epochs=self.epochs,
-            validation_split=0.2,
-            verbose=1
-        )
+        # Train model with generator
+        if self.verbosity >= 1:
+            print("[RNN Fit] Starting Keras model.fit()...")
+        try:
+            self.keras_model.fit(
+                train_generator,
+                steps_per_epoch=steps_per_epoch,
+                epochs=self.epochs,
+                verbose=1
+            )
+            if self.verbosity >= 1:
+                print("[RNN Fit] Keras model.fit() completed successfully")
+        except Exception as e:
+            if self.verbosity >= 1:
+                print(f"[RNN Fit] ERROR during model.fit(): {e}")
+            raise
 
         # Store model weights for distribution
+        if self.verbosity >= 3:
+            print("[RNN Fit] Storing model weights...")
         self.model_weights = self.keras_model.get_weights()
         self.classifier_model = self.keras_model
 
+        # Unpersist cached data
+        if self.verbosity >= 3:
+            print("[RNN Fit] Unpersisting cached data...")
+        sequenced_data.unpersist()
+        if self.verbosity >= 1:
+            print("[RNN Fit] Training completed successfully")
         return self
 
     def predict(self, data: DataFrame) -> DataFrame:

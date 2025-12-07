@@ -312,6 +312,9 @@ class SkolClassifierV2:
         # Fit features and transform data
         featured_df = self._feature_extractor.fit_transform(annotated_data)
 
+        # Cache featured DataFrame to avoid recomputation and reduce memory pressure
+        featured_df = featured_df.persist()
+
         # Store feature pipeline
         self._feature_pipeline = self._feature_extractor.get_pipeline()
 
@@ -352,6 +355,9 @@ class SkolClassifierV2:
         stats = calculate_stats(test_predictions, verbose=False)
         stats['train_size'] = train_data.count()
         stats['test_size'] = test_data.count()
+
+        # Unpersist featured DataFrame to free memory
+        featured_df.unpersist()
 
         # Auto-save model if configured
         if self.model_storage:
