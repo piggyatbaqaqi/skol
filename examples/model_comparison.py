@@ -10,8 +10,14 @@ Models compared:
 - RNN BiLSTM (line-level with context)
 
 For RNN model support, install:
-    pip install tensorflow elephas
+    pip install tensorflow
 """
+
+import os
+# Force TensorFlow to use CPU to avoid GPU driver issues
+# This must be set before importing any TensorFlow code
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from pyspark.sql import SparkSession
 from skol_classifier.classifier_v2 import SkolClassifierV2
@@ -24,7 +30,9 @@ def compare_models():
     # Initialize Spark session
     spark = SparkSession.builder \
         .appName("SKOL Model Comparison") \
-        .master("local[*]") \
+        .master("local[2]") \
+        .config("spark.driver.memory", "16g") \
+        .config("spark.executor.memory", "20g") \
         .getOrCreate()
 
     # Load annotated data
@@ -34,66 +42,67 @@ def compare_models():
 
     # Configurations to test
     configs = [
-        {
-            "name": "Logistic Regression (words only)",
-            "model_type": "logistic",
-            "use_suffixes": False,
-            "maxIter": 10,
-            "regParam": 0.01,
-            "line_level": False
-        },
-        {
-            "name": "Logistic Regression (words + suffixes)",
-            "model_type": "logistic",
-            "use_suffixes": True,
-            "maxIter": 10,
-            "regParam": 0.01,
-            "line_level": False
-        },
-        {
-            "name": "Random Forest (words only)",
-            "model_type": "random_forest",
-            "use_suffixes": False,
-            "n_estimators": 100,
-            "line_level": False
-        },
-        {
-            "name": "Random Forest (words + suffixes)",
-            "model_type": "random_forest",
-            "use_suffixes": True,
-            "n_estimators": 100,
-            "line_level": False
-        },
-        {
-            "name": "Logistic Regression (line-level, words only)",
-            "model_type": "logistic",
-            "use_suffixes": False,
-            "maxIter": 10,
-            "regParam": 0.01,
-            "line_level": True
-        },
-        {
-            "name": "Logistic Regression (line-level, words + suffixes)",
-            "model_type": "logistic",
-            "use_suffixes": True,
-            "maxIter": 10,
-            "regParam": 0.01,
-            "line_level": True
-        },
-        {
-            "name": "Random Forest (line-level, words only)",
-            "model_type": "random_forest",
-            "use_suffixes": False,
-            "n_estimators": 100,
-            "line_level": True
-        },
-        {
-            "name": "Random Forest (line-level, words + suffixes)",
-            "model_type": "random_forest",
-            "use_suffixes": True,
-            "n_estimators": 100,
-            "line_level": True
-        },
+        # {
+        #     "name": "Logistic Regression (words only)",
+        #     "model_type": "logistic",
+        #     "use_suffixes": False,
+        #     "maxIter": 10,
+        #     "regParam": 0.01,
+        #     "line_level": False
+        # },
+        # {
+        #     "name": "Logistic Regression (words + suffixes)",
+        #     "model_type": "logistic",
+        #     "use_suffixes": True,
+        #     "maxIter": 10,
+        #     "regParam": 0.01,
+        #     "line_level": False
+        # },
+        # {
+        #     "name": "Random Forest (words only)",
+        #     "model_type": "random_forest",
+        #     "use_suffixes": False,
+        #     "n_estimators": 100,
+        #     "line_level": False
+        # },
+        # {
+        #     "name": "Random Forest (words + suffixes)",
+        #     "model_type": "random_forest",
+        #     "use_suffixes": True,
+        #     "n_estimators": 100,
+        #     "line_level": False
+        # },
+        # {
+        #     "name": "Logistic Regression (line-level, words only)",
+        #     "model_type": "logistic",
+        #     "use_suffixes": False,
+        #     "maxIter": 10,
+        #     "regParam": 0.01,
+        #     "line_level": True
+        # },
+        # {
+        #     "name": "Logistic Regression (line-level, words + suffixes)",
+        #     "model_type": "logistic",
+        #     "use_suffixes": True,
+        #     "maxIter": 10,
+        #     "regParam": 0.01,
+        #     "line_level": True
+        # },
+        # {
+        #     "name": "Random Forest (line-level, words only)",
+        #     "model_type": "random_forest",
+        #     "use_suffixes": False,
+        #     "n_estimators": 100,
+        #     "line_level": True
+        # },
+        # {
+        #     "name": "Random Forest (line-level, words + suffixes)",
+        #     "model_type": "random_forest",
+        #     "use_suffixes": True,
+        #     "n_estimators": 100,
+        #     "line_level": True
+        # },
+        # NOTE: RNN models now use Pandas UDFs instead of Elephas for better compatibility
         {
             "name": "RNN BiLSTM (line-level, basic config)",
             "model_type": "rnn",
@@ -109,21 +118,21 @@ def compare_models():
             "epochs": 5,
             "num_workers": 4
         },
-        {
-            "name": "RNN BiLSTM (line-level, advanced config)",
-            "model_type": "rnn",
-            "use_suffixes": True,
-            "line_level": True,
-            "input_size": 1000,
-            "hidden_size": 128,
-            "num_layers": 2,
-            "num_classes": 3,
-            "dropout": 0.3,
-            "window_size": 50,
-            "batch_size": 32,
-            "epochs": 10,
-            "num_workers": 4
-        }
+        # {
+        #     "name": "RNN BiLSTM (line-level, advanced config)",
+        #     "model_type": "rnn",
+        #     "use_suffixes": True,
+        #     "line_level": True,
+        #     "input_size": 1000,
+        #     "hidden_size": 128,
+        #     "num_layers": 2,
+        #     "num_classes": 3,
+        #     "dropout": 0.3,
+        #     "window_size": 50,
+        #     "batch_size": 32,
+        #     "epochs": 10,
+        #     "num_workers": 4
+        # }
     ]
 
     # Test each configuration
@@ -141,6 +150,7 @@ def compare_models():
             spark=spark,
             input_source='files',
             file_paths=annotated_files,
+            output_dest='strings',  # Don't need to save outputs for comparison
             **config  # Pass all model/feature configuration
         )
 
@@ -187,10 +197,13 @@ def compare_models():
         )
 
     # Find best model
-    best = max(results, key=lambda x: x.get('f1_score', 0))
-    print(f"\n{'=' * 80}")
-    print(f"Best model: {best['name']} (F1: {best.get('f1_score', 0):.4f})")
-    print(f"{'=' * 80}")
+    if results:
+        best = max(results, key=lambda x: x.get('f1_score', 0))
+        print(f"\n{'=' * 80}")
+        print(f"Best model: {best['name']} (F1: {best.get('f1_score', 0):.4f})")
+        print(f"{'=' * 80}")
+    else:
+        print("\nNo models were successfully trained.")
 
     # Show RNN models separately
     rnn_results = [r for r in results if 'RNN' in r['name']]

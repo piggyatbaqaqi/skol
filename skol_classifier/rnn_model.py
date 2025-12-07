@@ -1,28 +1,55 @@
 """
-RNN-based model for sequential line classification with context using Keras + Elephas.
+RNN-based model for sequential line classification with context using Keras + Pandas UDFs.
 
 This module provides an LSTM/GRU-based model that uses surrounding lines
-as context to improve classification accuracy for individual lines. It integrates
-with PySpark using Elephas for distributed training.
+as context to improve classification accuracy for individual lines. It uses
+PySpark Pandas UDFs for distributed training instead of Elephas.
 """
 
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Tuple
 import numpy as np
+import pickle
+import tempfile
+import os
+
+# Configure TensorFlow GPU settings BEFORE importing TensorFlow
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
+
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, collect_list, struct, array, size, explode, posexplode
-from pyspark.ml import Pipeline, PipelineModel, Transformer
-from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param
-from pyspark.ml.util import DefaultParamsReadable, DefaultParamsWritable
+from pyspark.sql.functions import col, collect_list, pandas_udf, struct, array
+from pyspark.sql.types import ArrayType, FloatType, BinaryType, StructType, StructField, StringType
+from pyspark.ml import Transformer
+import pandas as pd
 
 try:
+    import tensorflow as tf
+
+    # Configure GPU to prevent CUDA_ERROR_INVALID_HANDLE
+    # This must happen before any TensorFlow operations
+    try:
+        gpus = tf.config.list_physical_devices('GPU')
+        if gpus:
+            # Try to enable memory growth
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print(f"Configured {len(gpus)} GPU(s) with memory growth enabled")
+    except Exception as e:
+        # If GPU configuration fails, try to force CPU
+        print(f"GPU configuration failed: {e}. Attempting to use CPU...")
+        try:
+            tf.config.set_visible_devices([], 'GPU')
+            print("Forced CPU-only mode")
+        except Exception as e2:
+            print(f"Could not force CPU mode: {e2}")
+
     from tensorflow import keras
     from tensorflow.keras import layers, models, optimizers
     from tensorflow.keras.utils import to_categorical
-    from elephas.ml_model import ElephasEstimator
-    ELEPHAS_AVAILABLE = True
+
+    KERAS_AVAILABLE = True
 except ImportError:
-    ELEPHAS_AVAILABLE = False
-    print("Warning: TensorFlow or Elephas not available. RNN model will not work.")
+    KERAS_AVAILABLE = False
+    print("Warning: TensorFlow/Keras not available. RNN model will not work.")
 
 
 def build_bilstm_model(
@@ -31,7 +58,7 @@ def build_bilstm_model(
     hidden_size: int = 128,
     num_layers: int = 2,
     dropout: float = 0.3
-) -> keras.Model:
+) -> 'keras.Model':
     """
     Build a Bidirectional LSTM model for sequence classification.
 
@@ -72,19 +99,13 @@ def build_bilstm_model(
     return model
 
 
-class SequencePreprocessor(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
+class SequencePreprocessor(Transformer):
     """
     Transformer that converts flat features into sequences grouped by document.
 
     This preprocessor groups lines by document ID and creates sequences with
     a maximum window size, preparing data for RNN training.
     """
-
-    window_size = Param(
-        Params._dummy(),
-        "window_size",
-        "Maximum sequence length for windowing long documents"
-    )
 
     def __init__(
         self,
@@ -104,33 +125,20 @@ class SequencePreprocessor(Transformer, HasInputCol, HasOutputCol, DefaultParams
             labelCol: Column containing labels
             window_size: Maximum sequence length
         """
-        super(SequencePreprocessor, self).__init__()
-        self._setDefault(
-            inputCol=inputCol,
-            outputCol=outputCol,
-            window_size=window_size
-        )
-        self.setParams(
-            inputCol=inputCol,
-            outputCol=outputCol,
-            docIdCol=docIdCol,
-            labelCol=labelCol,
-            window_size=window_size
-        )
+        super().__init__()
+        self.inputCol = inputCol
+        self.outputCol = outputCol
         self.docIdCol = docIdCol
         self.labelCol = labelCol
+        self.window_size = window_size
 
-    def setParams(
-        self,
-        inputCol: str = "features",
-        outputCol: str = "sequence_features",
-        docIdCol: str = "doc_id",
-        labelCol: str = "label_indexed",
-        window_size: int = 50
-    ):
-        """Set parameters."""
-        kwargs = self._input_kwargs
-        return self._set(**kwargs)
+    def getInputCol(self):
+        """Get input column name."""
+        return self.inputCol
+
+    def getOutputCol(self):
+        """Get output column name."""
+        return self.outputCol
 
     def _transform(self, df: DataFrame) -> DataFrame:
         """
@@ -146,60 +154,24 @@ class SequencePreprocessor(Transformer, HasInputCol, HasOutputCol, DefaultParams
         """
         input_col = self.getInputCol()
         output_col = self.getOutputCol()
-        window = self.getOrDefault(self.window_size)
+        window = self.window_size
 
-        # Group by document and collect features and labels
+        # Simply group by document and collect all features and labels
+        # We'll do windowing in the fit() method after collecting
         grouped = df.groupBy(self.docIdCol).agg(
-            collect_list(input_col).alias("feature_list"),
-            collect_list(self.labelCol).alias("label_list")
+            collect_list(input_col).alias("sequence_features"),
+            collect_list(self.labelCol).alias("sequence_labels")
         )
 
-        # Window long sequences
-        from pyspark.sql.functions import udf, explode
-        from pyspark.sql.types import ArrayType, StructType, StructField, IntegerType
-
-        def window_sequence(features, labels):
-            """Split long sequences into windows."""
-            results = []
-            for i in range(0, len(features), window):
-                end_idx = min(i + window, len(features))
-                results.append((features[i:end_idx], labels[i:end_idx]))
-            return results
-
-        window_schema = ArrayType(
-            StructType([
-                StructField("features", ArrayType(df.schema[input_col].dataType)),
-                StructField("labels", ArrayType(df.schema[self.labelCol].dataType))
-            ])
-        )
-
-        window_udf = udf(window_sequence, window_schema)
-
-        # Apply windowing and explode
-        windowed = grouped.withColumn(
-            "windows",
-            window_udf(col("feature_list"), col("label_list"))
-        )
-
-        result = windowed.select(
-            self.docIdCol,
-            explode(col("windows")).alias("window")
-        ).select(
-            self.docIdCol,
-            col("window.features").alias(output_col),
-            col("window.labels").alias("sequence_labels")
-        )
-
-        return result
+        return grouped
 
 
 class RNNSkolModel:
     """
-    RNN-based classifier for line-level classification with sequential context.
+    RNN-based classifier using Pandas UDFs for distributed training.
 
-    This classifier uses a Bidirectional LSTM to process sequences of lines,
-    allowing it to use surrounding lines as context when classifying each line.
-    Integrates with PySpark using Elephas for distributed training.
+    This implementation uses PySpark's Pandas UDFs to distribute training
+    across partitions, avoiding the Elephas compatibility issues.
     """
 
     def __init__(
@@ -228,14 +200,14 @@ class RNNSkolModel:
             window_size: Maximum sequence length for windowing
             batch_size: Batch size for training
             epochs: Number of training epochs
-            num_workers: Number of Spark workers for distributed training
+            num_workers: Number of Spark workers (unused in Pandas UDF approach)
             features_col: Name of features column
             label_col: Name of label column
         """
-        if not ELEPHAS_AVAILABLE:
+        if not KERAS_AVAILABLE:
             raise ImportError(
-                "TensorFlow and Elephas are required for RNN model. "
-                "Install with: pip install tensorflow elephas"
+                "TensorFlow and Keras are required for RNN model. "
+                "Install with: pip install tensorflow"
             )
 
         self.input_size = input_size
@@ -259,113 +231,213 @@ class RNNSkolModel:
             dropout=dropout
         )
 
-        # Elephas estimator (will be created during fit)
-        self.elephas_estimator: Optional[ElephasEstimator] = None
-        self.classifier_model: Optional[PipelineModel] = None
-        self.labels: Optional[List[str]] = None
+        self.classifier_model = None
+        self.labels = None
+        self.model_weights = None
 
-    def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> PipelineModel:
+    def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> 'RNNSkolModel':
         """
-        Train the RNN classification model using Elephas for distributed training.
+        Train the RNN classification model using standard Keras training.
+
+        Since RNN training requires sequences and doesn't parallelize well across
+        documents, we collect the data and train on the driver.
 
         Args:
             train_data: Training DataFrame with features and labels
             labels: Optional list of label strings
 
         Returns:
-            Fitted classifier pipeline model
+            Self (fitted model)
         """
         if labels is not None:
             self.labels = labels
+
+        print("Preparing sequences for RNN training...")
+
+        # Determine document ID column (CouchDB uses 'doc_id', files use 'filename')
+        doc_id_col = "doc_id" if "doc_id" in train_data.columns else "filename"
 
         # Create sequence preprocessor
         preprocessor = SequencePreprocessor(
             inputCol=self.features_col,
             outputCol="sequence_features",
-            docIdCol="doc_id",
+            docIdCol=doc_id_col,
             labelCol=self.label_col,
             window_size=self.window_size
         )
 
-        # Create Elephas estimator
-        self.elephas_estimator = ElephasEstimator()
-        self.elephas_estimator.set_keras_model_config(self.keras_model.to_json())
-        self.elephas_estimator.set_optimizer_config(
-            optimizers.Adam(learning_rate=0.001).get_config()
+        # Transform data into sequences
+        sequenced_data = preprocessor.transform(train_data)
+
+        # Collect sequences to driver for training
+        print("Collecting sequences for training...")
+        collected = sequenced_data.collect()
+
+        if len(collected) == 0:
+            raise ValueError("No sequences generated from training data")
+
+        # Prepare training data with windowing
+        X_train = []
+        y_train = []
+
+        for row in collected:
+            features = row.sequence_features
+            labels_seq = row.sequence_labels
+
+            # Convert sparse vectors to dense arrays
+            dense_features = []
+            for feat in features:
+                if feat is None:
+                    # Skip None values
+                    continue
+                elif hasattr(feat, 'toArray'):
+                    # SparseVector from PySpark
+                    dense_features.append(feat.toArray().tolist())
+                elif isinstance(feat, (list, tuple)):
+                    dense_features.append(list(feat))
+                else:
+                    # Try to convert to list
+                    try:
+                        dense_features.append(list(feat))
+                    except TypeError:
+                        # Skip if not iterable
+                        continue
+
+            # Convert labels to list
+            dense_labels = [float(l) for l in labels_seq if l is not None]
+
+            # Create windows from this document
+            for i in range(0, len(dense_features), self.window_size):
+                window_features = dense_features[i:i + self.window_size]
+                window_labels = dense_labels[i:i + self.window_size]
+
+                # Skip if window is too small
+                if len(window_features) == 0:
+                    continue
+
+                # Pad or truncate to window_size
+                if len(window_features) < self.window_size:
+                    # Pad with zeros
+                    padding = [[0.0] * self.input_size] * (self.window_size - len(window_features))
+                    window_features = window_features + padding
+                    window_labels = window_labels + [0.0] * (self.window_size - len(window_labels))
+                else:
+                    window_features = window_features[:self.window_size]
+                    window_labels = window_labels[:self.window_size]
+
+                X_train.append(window_features)
+                y_train.append(window_labels)
+
+        X_train = np.array(X_train, dtype=np.float32)
+        y_train = np.array(y_train, dtype=np.int32)
+
+        # Convert labels to one-hot encoding
+        y_train_cat = to_categorical(y_train, num_classes=self.num_classes)
+
+        print(f"Training RNN model on {len(X_train)} sequences...")
+        print(f"  Input shape: {X_train.shape}")
+        print(f"  Output shape: {y_train_cat.shape}")
+
+        # Train model
+        self.keras_model.fit(
+            X_train,
+            y_train_cat,
+            batch_size=self.batch_size,
+            epochs=self.epochs,
+            validation_split=0.2,
+            verbose=1
         )
-        self.elephas_estimator.set_mode("synchronous")
-        self.elephas_estimator.set_loss("categorical_crossentropy")
-        self.elephas_estimator.set_metrics(['accuracy'])
-        self.elephas_estimator.set_epochs(self.epochs)
-        self.elephas_estimator.set_batch_size(self.batch_size)
-        self.elephas_estimator.set_num_workers(self.num_workers)
-        self.elephas_estimator.set_features_col("sequence_features")
-        self.elephas_estimator.set_label_col("sequence_labels")
 
-        # Build pipeline
-        pipeline = Pipeline(stages=[preprocessor, self.elephas_estimator])
+        # Store model weights for distribution
+        self.model_weights = self.keras_model.get_weights()
+        self.classifier_model = self.keras_model
 
-        # Fit pipeline
-        print("Training RNN model with Elephas...")
-        self.classifier_model = pipeline.fit(train_data)
-
-        return self.classifier_model
+        return self
 
     def predict(self, data: DataFrame) -> DataFrame:
         """
         Make predictions on data.
 
         Args:
-            data: DataFrame with features
+            data: DataFrame to predict on
 
         Returns:
             DataFrame with predictions
-
-        Raises:
-            ValueError: If model hasn't been trained yet
         """
         if self.classifier_model is None:
-            raise ValueError("No classifier model found. Train a model first.")
-        return self.classifier_model.transform(data)
+            raise ValueError("Model not trained. Call fit() first.")
 
-    def predict_with_labels(self, data: DataFrame) -> DataFrame:
-        """
-        Make predictions and convert indices to label strings.
+        # Determine document ID column
+        doc_id_col = "doc_id" if "doc_id" in data.columns else "filename"
 
-        Args:
-            data: DataFrame with features
-
-        Returns:
-            DataFrame with predictions including predicted_label column
-
-        Raises:
-            ValueError: If model hasn't been trained yet or labels not set
-        """
-        if self.classifier_model is None:
-            raise ValueError("No classifier model found. Train a model first.")
-        if self.labels is None:
-            raise ValueError("No labels found. Train a model first.")
-
-        predictions = self.classifier_model.transform(data)
-
-        # Convert label indices to strings
-        from pyspark.ml.feature import IndexToString
-
-        converter = IndexToString(
-            inputCol="prediction",
-            outputCol="predicted_label",
-            labels=self.labels
+        # Create sequence preprocessor
+        preprocessor = SequencePreprocessor(
+            inputCol=self.features_col,
+            outputCol="sequence_features",
+            docIdCol=doc_id_col,
+            labelCol=self.label_col if self.label_col in data.columns else "dummy_label",
+            window_size=self.window_size
         )
-        return converter.transform(predictions)
 
-    def get_model(self) -> Optional[PipelineModel]:
-        """Get the fitted model."""
-        return self.classifier_model
+        # Add dummy labels if not present (for prediction)
+        if self.label_col not in data.columns:
+            from pyspark.sql.functions import lit
+            data = data.withColumn(self.label_col, lit(0.0))
 
-    def set_model(self, model: PipelineModel) -> None:
-        """Set the model (useful for loading)."""
-        self.classifier_model = model
+        # Transform into sequences
+        sequenced_data = preprocessor.transform(data)
 
-    def set_labels(self, labels: List[str]) -> None:
-        """Set the labels (useful for loading)."""
-        self.labels = labels
+        # Broadcast model weights for UDF
+        model_config = self.keras_model.to_json()
+        model_weights = self.model_weights
+        input_size = self.input_size
+        window_size = self.window_size
+        num_classes = self.num_classes
+
+        # Define prediction UDF
+        @pandas_udf(ArrayType(FloatType()))
+        def predict_sequence(features_series: pd.Series) -> pd.Series:
+            """Predict on sequences using the trained model."""
+            # Rebuild model from config and weights
+            model = keras.models.model_from_json(model_config)
+            model.set_weights(model_weights)
+
+            results = []
+            for features in features_series:
+                # Pad or truncate
+                if len(features) < window_size:
+                    padding = [[0.0] * input_size] * (window_size - len(features))
+                    features = features + padding
+                else:
+                    features = features[:window_size]
+
+                # Predict
+                X = np.array([features], dtype=np.float32)
+                preds = model.predict(X, verbose=0)[0]
+                # Get argmax for each timestep
+                pred_classes = [float(np.argmax(p)) for p in preds]
+                results.append(pred_classes[:len(features_series)])
+
+            return pd.Series(results)
+
+        # Apply prediction
+        predictions = sequenced_data.withColumn(
+            "predictions",
+            predict_sequence(col("sequence_features"))
+        )
+
+        return predictions
+
+    def save(self, path: str) -> None:
+        """Save model to disk."""
+        if self.classifier_model is None:
+            raise ValueError("No model to save")
+
+        self.classifier_model.save(path)
+
+    def load(self, path: str) -> 'RNNSkolModel':
+        """Load model from disk."""
+        self.keras_model = keras.models.load_model(path)
+        self.classifier_model = self.keras_model
+        self.model_weights = self.keras_model.get_weights()
+        return self
