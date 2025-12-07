@@ -422,16 +422,16 @@ class RNNSkolModel:
             if self.verbosity >= 3:
                 print(f"[RNN Fit] Set labels: {labels}")
 
-        if verbosity >= 3:
+        if self.verbosity >= 3:
             print("[RNN Fit] Preparing sequences for RNN training...")
 
         # Determine document ID column (CouchDB uses 'doc_id', files use 'filename')
         doc_id_col = "doc_id" if "doc_id" in train_data.columns else "filename"
-        if verbosity >= 3:
+        if self.verbosity >= 3:
             print(f"[RNN Fit] Using document ID column: {doc_id_col}")
 
         # Create sequence preprocessor
-        if verbosity >= 3:
+        if self.verbosity >= 3:
             print("[RNN Fit] Creating sequence preprocessor...")
         preprocessor = SequencePreprocessor(
             inputCol=self.features_col,
@@ -442,12 +442,12 @@ class RNNSkolModel:
         )
 
         # Transform data into sequences
-        if verbosity >= 3:
+        if self.verbosity >= 3:
             print("[RNN Fit] Transforming data into sequences...")
         sequenced_data = preprocessor.transform(train_data)
 
         # Cache to avoid recomputation
-        if verbosity >= 3:
+        if self.verbosity >= 3:
             print("[RNN Fit] Caching sequenced data...")
         sequenced_data = sequenced_data.cache()
 
@@ -605,12 +605,42 @@ class RNNSkolModel:
             return pd.Series(results)
 
         # Apply prediction
+        from pyspark.sql.functions import posexplode
+
         predictions = sequenced_data.withColumn(
             "predictions",
             predict_sequence(col("sequence_features"))
         )
 
-        return predictions
+        # For line-level predictions, we need to explode the sequences back to individual lines
+        # Use posexplode to get both position and value
+        if self.label_col in predictions.columns:
+            # If we have labels (e.g., for evaluation), explode both predictions and labels
+            predictions_exploded = predictions.select(
+                col(doc_id_col).alias("filename"),
+                posexplode(col("predictions")).alias("pos", "prediction")
+            )
+
+            # Explode labels separately
+            labels_exploded = predictions.select(
+                col(doc_id_col).alias("filename"),
+                posexplode(col("sequence_labels")).alias("pos", "label")
+            )
+
+            # Join on filename and position to align predictions with labels
+            result = predictions_exploded.join(
+                labels_exploded,
+                on=["filename", "pos"],
+                how="inner"
+            ).select("filename", "prediction", "label")
+        else:
+            # No labels, just return predictions
+            result = predictions.select(
+                col(doc_id_col).alias("filename"),
+                posexplode(col("predictions")).alias("pos", "prediction")
+            ).select("filename", "prediction")
+
+        return result
 
     def save(self, path: str) -> None:
         """Save model to disk."""

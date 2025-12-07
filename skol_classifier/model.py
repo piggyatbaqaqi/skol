@@ -130,7 +130,8 @@ class SkolModel:
                 epochs=self.model_params.get("epochs", 10),
                 num_workers=self.model_params.get("num_workers", 4),
                 features_col=self.features_col,
-                label_col=self.label_col
+                label_col=self.label_col,
+                verbosity=self.model_params.get("verbosity", 2)
             )
             # Fit RNN model
             self.classifier_model = self.rnn_model.fit(train_data, labels)
