@@ -188,7 +188,8 @@ class RNNSkolModel(SkolModel):
         num_workers: int = 4,
         features_col: str = "combined_idf",
         label_col: str = "label_indexed",
-        verbosity: int = 3
+        verbosity: int = 3,
+        name: str = "RNN_BiLSTM"
     ):
         """
         Initialize RNN classifier.
@@ -206,6 +207,7 @@ class RNNSkolModel(SkolModel):
             features_col: Name of features column
             label_col: Name of label column
             verbosity: Verbosity level for logging
+            name: Name of the model
         """
         if not KERAS_AVAILABLE:
             raise ImportError(
@@ -230,6 +232,7 @@ class RNNSkolModel(SkolModel):
         self.epochs = epochs
         self.num_workers = num_workers
         self.verbosity = verbosity
+        self.name = name
 
         # Build Keras model
         self.keras_model = build_bilstm_model(
