@@ -7,7 +7,7 @@ PySpark Pandas UDFs for distributed training instead of Elephas.
 """
 
 import gc
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 import numpy as np
 import os
 
@@ -15,7 +15,9 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, collect_list, pandas_udf, struct, array
+from pyspark.sql.functions import (
+    col, collect_list, lit, pandas_udf, posexplode, struct, array
+)
 from pyspark.sql.types import ArrayType, FloatType, BinaryType, StructType, StructField, StringType
 from pyspark.ml import Transformer
 import pandas as pd
@@ -572,9 +574,9 @@ class RNNSkolModel(SkolModel):
             window_size=self.window_size
         )
 
+        has_labels = self.label_col in data.columns
         # Add dummy labels if not present (for prediction)
-        if self.label_col not in data.columns:
-            from pyspark.sql.functions import lit
+        if not has_labels:
             data = data.withColumn(self.label_col, lit(0.0))
 
         # Transform into sequences
@@ -585,7 +587,6 @@ class RNNSkolModel(SkolModel):
         model_weights = self.model_weights
         input_size = self.input_size
         window_size = self.window_size
-        num_classes = self.num_classes
 
         # Define prediction UDF
         @pandas_udf(ArrayType(FloatType()))
@@ -614,8 +615,6 @@ class RNNSkolModel(SkolModel):
             return pd.Series(results)
 
         # Apply prediction
-        from pyspark.sql.functions import posexplode
-
         predictions = sequenced_data.withColumn(
             "predictions",
             predict_sequence(col("sequence_features"))
@@ -633,7 +632,7 @@ class RNNSkolModel(SkolModel):
             # Explode labels separately
             labels_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
-                posexplode(col("sequence_labels")).alias("pos", "label_indexed")
+                posexplode(col("sequence_labels")).alias("pos", self.label_col)
             )
 
             # Join on filename and position to align predictions with labels
@@ -660,6 +659,70 @@ class RNNSkolModel(SkolModel):
 
         return result
 
+    def calculate_stats(
+        self,
+        predictions: DataFrame,
+        verbose: bool = True
+    ) -> Dict[str, float]:
+        """
+        Calculate evaluation statistics for RNN predictions.
+
+        Overrides the base method to handle RNN-specific prediction format,
+        which includes a 'filename' column and line-level predictions that
+        have been exploded from sequences.
+
+        Args:
+            predictions: DataFrame with predictions and labels.
+                        Expected to have columns: filename, prediction, label_col
+            verbose: Whether to print statistics
+
+        Returns:
+            Dictionary containing accuracy, precision, recall, f1_score
+        """
+        if self.verbosity >= 3:
+            print("[RNN Stats] Calculating statistics for RNN predictions")
+            print(f"[RNN Stats] Predictions schema: {predictions.schema}")
+
+        # Verify required columns are present
+        required_cols = {"prediction", self.label_col}
+        actual_cols = set(predictions.columns)
+
+        if not required_cols.issubset(actual_cols):
+            missing = required_cols - actual_cols
+            raise ValueError(
+                f"Predictions DataFrame missing required columns: {missing}. "
+                f"Available columns: {actual_cols}"
+            )
+
+        # RNN predictions may have extra columns like 'filename' which evaluators ignore
+        # We can use the predictions as-is, but let's select only the columns needed
+        # for evaluation to ensure compatibility
+        eval_predictions = predictions.select("prediction", self.label_col)
+
+        if self.verbosity >= 3:
+            print(f"[RNN Stats] Evaluating {eval_predictions.count()} line-level predictions")
+
+        # Use parent class method to create evaluators and calculate stats
+        evaluators = self._create_evaluators()
+
+        stats = {
+            'accuracy': evaluators['accuracy'].evaluate(eval_predictions),
+            'precision': evaluators['precision'].evaluate(eval_predictions),
+            'recall': evaluators['recall'].evaluate(eval_predictions),
+            'f1_score': evaluators['f1'].evaluate(eval_predictions)
+        }
+
+        if verbose:
+            print("=" * 50)
+            print("RNN Model Evaluation Statistics (Line-Level)")
+            print("=" * 50)
+            print(f"Test Accuracy:  {stats['accuracy']:.4f}")
+            print(f"Test Precision: {stats['precision']:.4f}")
+            print(f"Test Recall:    {stats['recall']:.4f}")
+            print(f"Test F1 Score:  {stats['f1_score']:.4f}")
+            print("=" * 50)
+
+        return stats
 
     def save(self, path: str) -> None:
         """Save model to disk."""
