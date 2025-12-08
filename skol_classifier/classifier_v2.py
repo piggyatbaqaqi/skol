@@ -345,9 +345,6 @@ class SkolClassifierV2:
             # Create reverse mapping from index to label
             self._reverse_label_mapping = {i: label for i, label in enumerate(labels_list)}
 
-        # Calculate training statistics
-        from .utils import calculate_stats
-
         # Split data for evaluation
         train_data, test_data = featured_df.randomSplit([0.8, 0.2], seed=42)
         print("DEBUG: test_data schema:")
@@ -362,8 +359,8 @@ class SkolClassifierV2:
         print("DEBUG: Test predictions:")
         test_predictions.show()
 
-        # Calculate stats
-        stats = calculate_stats(test_predictions, verbose=False)
+        # Calculate stats using model's method
+        stats = self._model.calculate_stats(test_predictions, verbose=False)
         stats['train_size'] = train_data.count()
         stats['test_size'] = test_data.count()
 

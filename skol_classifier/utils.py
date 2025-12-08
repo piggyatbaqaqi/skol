@@ -3,11 +3,16 @@ Utility functions for SKOL text classification
 """
 
 import glob
+import warnings
 from typing import List
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
 
-def get_file_list(folder: str, pattern: str = "**/*.txt*", exclude_pattern: str = "Sydowia") -> List[str]:
+def get_file_list(
+    folder: str,
+    pattern: str = "**/*.txt*",
+    exclude_pattern: str = "Sydowia"
+) -> List[str]:
     """
     List all files matching the pattern in a folder.
 
@@ -41,9 +46,19 @@ def create_evaluators():
     """
     Create evaluation metrics for multiclass classification.
 
+    .. deprecated::
+        Use ``model._create_evaluators()`` instead.
+        This function is deprecated and will be removed in a future version.
+
     Returns:
         Dictionary containing evaluators for accuracy, precision, recall, and F1 score
     """
+    warnings.warn(
+        "create_evaluators() is deprecated and will be removed in a future version. "
+        "Use model._create_evaluators() instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     evaluators = {
         'accuracy': MulticlassClassificationEvaluator(
             labelCol="label_indexed",
@@ -73,6 +88,10 @@ def calculate_stats(predictions, evaluators=None, verbose=True):
     """
     Calculate and optionally print evaluation statistics.
 
+    .. deprecated::
+        Use ``model.calculate_stats(predictions)`` instead.
+        This function is deprecated and will be removed in a future version.
+
     Args:
         predictions: PySpark DataFrame with predictions
         evaluators: Dictionary of evaluators (created if None)
@@ -81,6 +100,12 @@ def calculate_stats(predictions, evaluators=None, verbose=True):
     Returns:
         Dictionary containing accuracy, precision, recall, and f1_score
     """
+    warnings.warn(
+        "calculate_stats() is deprecated and will be removed in a future version. "
+        "Use model.calculate_stats(predictions) instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     if evaluators is None:
         evaluators = create_evaluators()
 

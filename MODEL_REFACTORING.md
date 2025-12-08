@@ -107,3 +107,7 @@ self._model = create_model(
 ## Backward Compatibility
 
 The external API remains unchanged. Users continue to specify `model_type='logistic'` etc., but internally the code now uses proper OOP principles.
+
+## Related Refactoring
+
+See [EVALUATION_REFACTORING.md](EVALUATION_REFACTORING.md) for details on moving evaluation statistics to model methods.
