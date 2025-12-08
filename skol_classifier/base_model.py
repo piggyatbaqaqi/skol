@@ -6,9 +6,10 @@ inherit from, avoiding circular import issues.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 from pyspark.sql import DataFrame
 from pyspark.ml.feature import IndexToString
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
 
 class SkolModel(ABC):
@@ -104,3 +105,67 @@ class SkolModel(ABC):
     def set_labels(self, labels: List[str]) -> None:
         """Set the labels (useful for loading)."""
         self.labels = labels
+
+    def _create_evaluators(self) -> Dict[str, MulticlassClassificationEvaluator]:
+        """
+        Create evaluation metrics for this model type.
+
+        Returns:
+            Dictionary containing evaluators for various metrics
+        """
+        # Default implementation for standard multiclass classification
+        evaluators = {
+            'accuracy': MulticlassClassificationEvaluator(
+                labelCol=self.label_col,
+                predictionCol="prediction",
+                metricName="accuracy"
+            ),
+            'precision': MulticlassClassificationEvaluator(
+                labelCol=self.label_col,
+                predictionCol="prediction",
+                metricName="precisionByLabel"
+            ),
+            'recall': MulticlassClassificationEvaluator(
+                labelCol=self.label_col,
+                predictionCol="prediction",
+                metricName="recallByLabel"
+            ),
+            'f1': MulticlassClassificationEvaluator(
+                labelCol=self.label_col,
+                predictionCol="prediction",
+                metricName="f1"
+            )
+        }
+        return evaluators
+
+    def calculate_stats(
+        self,
+        predictions: DataFrame,
+        verbose: bool = True
+    ) -> Dict[str, float]:
+        """
+        Calculate evaluation statistics for predictions.
+
+        Args:
+            predictions: DataFrame with predictions and labels
+            verbose: Whether to print statistics
+
+        Returns:
+            Dictionary containing accuracy, precision, recall, f1_score
+        """
+        evaluators = self._create_evaluators()
+
+        stats = {
+            'accuracy': evaluators['accuracy'].evaluate(predictions),
+            'precision': evaluators['precision'].evaluate(predictions),
+            'recall': evaluators['recall'].evaluate(predictions),
+            'f1_score': evaluators['f1'].evaluate(predictions)
+        }
+
+        if verbose:
+            print(f"Test Accuracy: {stats['accuracy']:.4f}")
+            print(f"Test Precision: {stats['precision']:.4f}")
+            print(f"Test Recall: {stats['recall']:.4f}")
+            print(f"Test F1 Score: {stats['f1_score']:.4f}")
+
+        return stats
