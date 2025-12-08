@@ -6,10 +6,9 @@ as context to improve classification accuracy for individual lines. It uses
 PySpark Pandas UDFs for distributed training instead of Elephas.
 """
 
+import gc
 from typing import Optional, List, Tuple
 import numpy as np
-import pickle
-import tempfile
 import os
 
 # Configure TensorFlow GPU settings BEFORE importing TensorFlow
@@ -20,6 +19,8 @@ from pyspark.sql.functions import col, collect_list, pandas_udf, struct, array
 from pyspark.sql.types import ArrayType, FloatType, BinaryType, StructType, StructField, StringType
 from pyspark.ml import Transformer
 import pandas as pd
+
+from .base_model import SkolModel
 
 try:
     import tensorflow as tf
@@ -166,7 +167,7 @@ class SequencePreprocessor(Transformer):
         return grouped
 
 
-class RNNSkolModel:
+class RNNSkolModel(SkolModel):
     """
     RNN-based classifier using Pandas UDFs for distributed training.
 
@@ -186,7 +187,7 @@ class RNNSkolModel:
         epochs: int = 10,
         num_workers: int = 4,
         features_col: str = "combined_idf",
-        label_col: str = "label_hamster",
+        label_col: str = "label_indexed",
         verbosity: int = 3
     ):
         """
@@ -204,6 +205,7 @@ class RNNSkolModel:
             num_workers: Number of Spark workers (unused in Pandas UDF approach)
             features_col: Name of features column
             label_col: Name of label column
+            verbosity: Verbosity level for logging
         """
         if not KERAS_AVAILABLE:
             raise ImportError(
@@ -211,6 +213,13 @@ class RNNSkolModel:
                 "Install with: pip install tensorflow"
             )
 
+        # Initialize parent class
+        super().__init__(
+            features_col=features_col,
+            label_col=label_col
+        )
+
+        # Store RNN-specific parameters
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -220,8 +229,6 @@ class RNNSkolModel:
         self.batch_size = batch_size
         self.epochs = epochs
         self.num_workers = num_workers
-        self.features_col = features_col
-        self.label_col = label_col
         self.verbosity = verbosity
 
         # Build Keras model
@@ -233,8 +240,6 @@ class RNNSkolModel:
             dropout=dropout
         )
 
-        self.classifier_model = None
-        self.labels = None
         self.model_weights = None
 
     def _process_row_to_windows(self, row):
@@ -445,7 +450,7 @@ class RNNSkolModel:
         if self.verbosity >= 3:
             print("[RNN Fit] Transforming data into sequences...")
         sequenced_data = preprocessor.transform(train_data)
-
+        print("DEBUG: Transformed sequenced_data schema:", sequenced_data.printSchema())
         # Cache to avoid recomputation
         if self.verbosity >= 3:
             print("[RNN Fit] Caching sequenced data...")
@@ -458,6 +463,8 @@ class RNNSkolModel:
         sample = sequenced_data.limit(3).collect()  # Reduced from 10 to 3
         if self.verbosity >= 3:
             print(f"[RNN Fit] Got {len(sample)} sample documents")
+
+        print( f"DEBUG: Sample documents: {sample}")
 
         if len(sample) == 0:
             raise ValueError("No sequences generated from training data")
@@ -472,7 +479,6 @@ class RNNSkolModel:
             print("[RNN Fit] Estimating windows per document (memory-efficient)...")
         # Don't process full windows, just count lines to estimate
         total_windows = 0
-        import gc
         for idx, row in enumerate(sample):
             # Just count the number of features (lines) without converting to dense
             num_features = len(row.sequence_features) if row.sequence_features else 0
@@ -636,7 +642,7 @@ class RNNSkolModel:
             ).select(
                 "filename",
                 col("prediction").cast("double"),
-                "label_indexed"
+                self.label_col
             )
         else:
             # No labels, just return predictions
@@ -645,10 +651,12 @@ class RNNSkolModel:
                 posexplode(col("predictions")).alias("pos", "prediction")
             ).select(
                 "filename",
-                col("prediction").cast("double")
+                col("prediction").cast("double"),
+                self.label_col
             )
 
         return result
+
 
     def save(self, path: str) -> None:
         """Save model to disk."""

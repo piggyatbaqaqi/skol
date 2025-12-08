@@ -53,7 +53,8 @@ from pyspark.ml import PipelineModel
 
 # Import helper classes
 from .feature_extraction import FeatureExtractor
-from .model import SkolModel
+from .base_model import SkolModel
+from .model import create_model
 from .output_formatters import YeddaFormatter, FileOutputWriter
 
 from .couchdb_io import CouchDBConnection
@@ -321,10 +322,12 @@ class SkolClassifierV2:
         # Get the features column name based on configuration
         features_col = self._feature_extractor.get_features_col()
 
-        # Train model with correct features column
-        self._model = SkolModel(
+        # Train model with correct features column using factory
+        # The label column is always "label_indexed" from the feature extractor
+        self._model = create_model(
             model_type=self.model_type,
             features_col=features_col,
+            label_col="label_indexed",
             **self.model_params
         )
 
@@ -347,9 +350,17 @@ class SkolClassifierV2:
 
         # Split data for evaluation
         train_data, test_data = featured_df.randomSplit([0.8, 0.2], seed=42)
+        print("DEBUG: test_data schema:")
+        test_data.printSchema()
+        print("DEBUG: test_data sample:")
+        test_data.show()
 
         # Make predictions on test set
         test_predictions = self._model.predict(test_data)
+        print("DEBUG: test_predictions schema:")
+        test_predictions.printSchema()
+        print("DEBUG: Test predictions:")
+        test_predictions.show()
 
         # Calculate stats
         stats = calculate_stats(test_predictions, verbose=False)
@@ -679,11 +690,12 @@ class SkolClassifierV2:
         self._label_mapping = metadata['label_mapping']
         self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
 
-        # Recreate the SkolModel wrapper
+        # Recreate the SkolModel wrapper using factory
         features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
-        self._model = SkolModel(
+        self._model = create_model(
             model_type=metadata['config']['model_type'],
             features_col=features_col,
+            label_col="label_indexed",
             **metadata['config'].get('model_params', {})
         )
         self._model.set_model(classifier_model)
@@ -789,11 +801,12 @@ class SkolClassifierV2:
             self._label_mapping = metadata['label_mapping']
             self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
 
-            # Recreate the SkolModel wrapper
+            # Recreate the SkolModel wrapper using factory
             features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
-            self._model = SkolModel(
+            self._model = create_model(
                 model_type=metadata['config']['model_type'],
                 features_col=features_col,
+                label_col="label_indexed",
                 **metadata['config'].get('model_params', {})
             )
             self._model.set_model(classifier_model)
