@@ -77,10 +77,12 @@ def build_bilstm_model(
     """
     model = models.Sequential()
 
+    # Add Input layer as the first layer (recommended by Keras)
+    model.add(layers.Input(shape=input_shape))
+
     # First LSTM layer
     model.add(layers.Bidirectional(
-        layers.LSTM(hidden_size, return_sequences=True, dropout=dropout),
-        input_shape=input_shape
+        layers.LSTM(hidden_size, return_sequences=True, dropout=dropout)
     ))
 
     # Additional LSTM layers
