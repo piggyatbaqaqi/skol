@@ -16,9 +16,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import (
-    col, collect_list, lit, pandas_udf, posexplode, struct, array
+    col, collect_list, lit, pandas_udf, posexplode
 )
-from pyspark.sql.types import ArrayType, FloatType, BinaryType, StructType, StructField, StringType
+from pyspark.sql.types import ArrayType, FloatType
 from pyspark.ml import Transformer
 import pandas as pd
 
@@ -29,13 +29,36 @@ try:
 
     # Configure GPU to prevent CUDA_ERROR_INVALID_HANDLE
     # This must happen before any TensorFlow operations
+    USE_CPU_ONLY = False
     try:
         gpus = tf.config.list_physical_devices('GPU')
         if gpus:
-            # Try to enable memory growth
+            # Check GPU details to see if compute capability is supported
+            gpu_details = []
             for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            print(f"Configured {len(gpus)} GPU(s) with memory growth enabled")
+                details = tf.config.experimental.get_device_details(gpu)
+                gpu_details.append(details)
+                compute_cap = details.get('compute_capability')
+                if compute_cap:
+                    major, minor = compute_cap
+                    print(f"GPU {gpu.name}: Compute capability {major}.{minor}")
+                    # TensorFlow 2.21 supports up to compute capability 9.0
+                    # Newer GPUs (10.0+, 12.0+) may have JIT compilation issues
+                    if major >= 10:
+                        print(f"WARNING: Compute capability {major}.{minor} may not be fully supported.")
+                        print(f"         Pre-compiled kernels not available, JIT compilation may fail.")
+                        print(f"         Falling back to CPU-only mode for stability.")
+                        USE_CPU_ONLY = True
+                        break
+
+            if not USE_CPU_ONLY:
+                # Try to enable memory growth
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                print(f"Configured {len(gpus)} GPU(s) with memory growth enabled")
+            else:
+                tf.config.set_visible_devices([], 'GPU')
+                print("Forced CPU-only mode due to GPU compatibility issues")
     except Exception as e:
         # If GPU configuration fails, try to force CPU
         print(f"GPU configuration failed: {e}. Attempting to use CPU...")
@@ -74,34 +97,55 @@ def build_bilstm_model(
 
     Returns:
         Compiled Keras model
+
+    Raises:
+        RuntimeError: If GPU initialization fails with helpful error message
     """
-    model = models.Sequential()
+    try:
+        model = models.Sequential()
 
-    # Add Input layer as the first layer (recommended by Keras)
-    model.add(layers.Input(shape=input_shape))
+        # Add Input layer as the first layer (recommended by Keras)
+        model.add(layers.Input(shape=input_shape))
 
-    # First LSTM layer
-    model.add(layers.Bidirectional(
-        layers.LSTM(hidden_size, return_sequences=True, dropout=dropout)
-    ))
-
-    # Additional LSTM layers
-    for _ in range(num_layers - 1):
+        # First LSTM layer
         model.add(layers.Bidirectional(
             layers.LSTM(hidden_size, return_sequences=True, dropout=dropout)
         ))
 
-    # Time-distributed dense layer for per-timestep classification
-    model.add(layers.TimeDistributed(layers.Dense(num_classes, activation='softmax')))
+        # Additional LSTM layers
+        for _ in range(num_layers - 1):
+            model.add(layers.Bidirectional(
+                layers.LSTM(hidden_size, return_sequences=True, dropout=dropout)
+            ))
 
-    # Compile model
-    model.compile(
-        optimizer=optimizers.Adam(learning_rate=0.001),
-        loss='categorical_crossentropy',
-        metrics=['accuracy']
-    )
+        # Time-distributed dense layer for per-timestep classification
+        model.add(layers.TimeDistributed(layers.Dense(num_classes, activation='softmax')))
 
-    return model
+        # Compile model
+        model.compile(
+            optimizer=optimizers.Adam(learning_rate=0.001),
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
+
+        return model
+
+    except Exception as e:
+        error_msg = str(e)
+        if 'CUDA_ERROR' in error_msg or 'INVALID_PTX' in error_msg or 'INVALID_HANDLE' in error_msg:
+            raise RuntimeError(
+                f"Failed to build model due to GPU error: {error_msg}\n\n"
+                "Your GPU may not be fully supported by this TensorFlow version.\n"
+                "To fix this, restart your Python session and set this environment variable "
+                "BEFORE importing skol_classifier:\n\n"
+                "    import os\n"
+                "    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Force CPU-only mode\n"
+                "    # Now import skol_classifier\n\n"
+                "Or run your script with: CUDA_VISIBLE_DEVICES='' python your_script.py\n"
+            ) from e
+        else:
+            # Re-raise other errors as-is
+            raise
 
 
 class SequencePreprocessor(Transformer):
@@ -457,7 +501,7 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print("[RNN Fit] Transforming data into sequences...")
         sequenced_data = preprocessor.transform(train_data)
-        print("DEBUG: Transformed sequenced_data schema:", sequenced_data.printSchema())
+
         # Cache to avoid recomputation
         if self.verbosity >= 3:
             print("[RNN Fit] Caching sequenced data...")
