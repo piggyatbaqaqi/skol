@@ -493,6 +493,41 @@ class RNNSkolModel(SkolModel):
             print("[RNN Fit] Caching sequenced data...")
         sequenced_data = sequenced_data.cache()
 
+        # Detect actual feature dimension from data
+        if self.verbosity >= 3:
+            print("[RNN Fit] Detecting actual feature dimension...")
+        sample_row = sequenced_data.select("sequence_features").first()
+        if sample_row and sample_row.sequence_features:
+            first_feature = sample_row.sequence_features[0]
+            if hasattr(first_feature, 'size'):
+                actual_input_size = first_feature.size
+            elif hasattr(first_feature, 'toArray'):
+                actual_input_size = len(first_feature.toArray())
+            elif hasattr(first_feature, '__len__'):
+                actual_input_size = len(first_feature)
+            else:
+                actual_input_size = self.input_size
+
+            if actual_input_size != self.input_size:
+                if self.verbosity >= 1:
+                    print(f"[RNN Fit] WARNING: Model input_size ({self.input_size}) != actual feature size ({actual_input_size})")
+                    print(f"[RNN Fit] Rebuilding model with correct input size...")
+
+                # Update input_size and rebuild model
+                self.input_size = actual_input_size
+                self.keras_model = build_bilstm_model(
+                    input_shape=(self.window_size, self.input_size),
+                    num_classes=self.num_classes,
+                    hidden_size=self.hidden_size,
+                    num_layers=self.num_layers,
+                    dropout=self.dropout
+                )
+                if self.verbosity >= 2:
+                    print(f"[RNN Fit] Model rebuilt with input_size={self.input_size}")
+            else:
+                if self.verbosity >= 3:
+                    print(f"[RNN Fit] Feature dimension matches: {actual_input_size}")
+
         # Estimate number of sequences for steps_per_epoch
         # Sample a few documents to estimate average windows per document
         if self.verbosity >= 3:
@@ -501,7 +536,8 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Fit] Got {len(sample)} sample documents")
 
-        print( f"DEBUG: Sample documents: {sample}")
+        if self.verbosity >= 5:
+            print(f"[RNN Fit] Sample documents:\n{sample}")
 
         if len(sample) == 0:
             raise ValueError("No sequences generated from training data")
@@ -591,13 +627,22 @@ class RNNSkolModel(SkolModel):
         Returns:
             DataFrame with predictions
         """
+        if self.verbosity >= 2:
+            print("[RNN Predict] Starting prediction")
+            print(f"[RNN Predict] Input data columns: {data.columns}")
+            print(f"[RNN Predict] Input data count: {data.count()}")
+
         if self.classifier_model is None:
             raise ValueError("Model not trained. Call fit() first.")
 
         # Determine document ID column
         doc_id_col = "doc_id" if "doc_id" in data.columns else "filename"
+        if self.verbosity >= 3:
+            print(f"[RNN Predict] Using document ID column: {doc_id_col}")
 
         # Create sequence preprocessor
+        if self.verbosity >= 3:
+            print("[RNN Predict] Creating sequence preprocessor")
         preprocessor = SequencePreprocessor(
             inputCol=self.features_col,
             outputCol="sequence_features",
@@ -607,14 +652,25 @@ class RNNSkolModel(SkolModel):
         )
 
         has_labels = self.label_col in data.columns
+        if self.verbosity >= 3:
+            print(f"[RNN Predict] Has labels: {has_labels}")
+
         # Add dummy labels if not present (for prediction)
         if not has_labels:
             data = data.withColumn(self.label_col, lit(0.0))
+            if self.verbosity >= 3:
+                print("[RNN Predict] Added dummy labels for prediction")
 
         # Transform into sequences
+        if self.verbosity >= 2:
+            print("[RNN Predict] Transforming data into sequences")
         sequenced_data = preprocessor.transform(data)
+        if self.verbosity >= 3:
+            print(f"[RNN Predict] Sequenced data columns: {sequenced_data.columns}")
 
         # Broadcast model weights for UDF
+        if self.verbosity >= 3:
+            print("[RNN Predict] Preparing model config and weights for UDF")
         model_config = self.keras_model.to_json()
         model_weights = self.model_weights
         input_size = self.input_size
@@ -624,12 +680,40 @@ class RNNSkolModel(SkolModel):
         @pandas_udf(ArrayType(FloatType()))
         def predict_sequence(features_series: pd.Series) -> pd.Series:
             """Predict on sequences using the trained model."""
+            import os
+            import numpy as np
+
+            # Force CPU-only mode in executors to prevent CUDA errors
+            # This is critical for GPUs with unsupported compute capabilities
+            os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
+            # Import TensorFlow/Keras inside UDF after setting CPU mode
+            try:
+                import tensorflow as tf
+                # Double-check GPU is disabled
+                tf.config.set_visible_devices([], 'GPU')
+                from tensorflow import keras
+            except Exception as e:
+                # If TensorFlow config fails, try to continue anyway
+                # The CPU-only env var should be sufficient
+                pass
+
             # Rebuild model from config and weights
-            model = keras.models.model_from_json(model_config)
-            model.set_weights(model_weights)
+            try:
+                model = keras.models.model_from_json(model_config)
+                model.set_weights(model_weights)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to rebuild model in executor: {e}\n"
+                    "This may be due to GPU compatibility issues. "
+                    "Ensure CUDA_VISIBLE_DEVICES='' is set before starting Spark."
+                )
 
             results = []
             for features in features_series:
+                # Track original length before padding/truncating
+                original_length = len(features)
+
                 # Pad or truncate
                 if len(features) < window_size:
                     padding = [[0.0] * input_size] * (window_size - len(features))
@@ -639,29 +723,48 @@ class RNNSkolModel(SkolModel):
 
                 # Predict
                 X = np.array([features], dtype=np.float32)
-                preds = model.predict(X, verbose=0)[0]
+                try:
+                    preds = model.predict(X, verbose=0)[0]
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Prediction failed in executor: {e}\n"
+                        "This may be a CUDA/GPU error. Ensure CPU-only mode is active."
+                    )
+
                 # Get argmax for each timestep
                 pred_classes = [float(np.argmax(p)) for p in preds]
-                results.append(pred_classes[:len(features_series)])
+                # Slice to original length (before padding/truncating)
+                results.append(pred_classes[:original_length])
 
             return pd.Series(results)
 
         # Apply prediction
+        if self.verbosity >= 2:
+            print("[RNN Predict] Applying prediction UDF to sequences")
         predictions = sequenced_data.withColumn(
             "predictions",
             predict_sequence(col("sequence_features"))
         )
+        if self.verbosity >= 3:
+            print(f"[RNN Predict] Predictions columns: {predictions.columns}")
 
         # For line-level predictions, we need to explode the sequences back to individual lines
         # Use posexplode to get both position and value
         if has_labels:
+            if self.verbosity >= 2:
+                print("[RNN Predict] Exploding predictions and labels for evaluation")
+
             # If we have labels (e.g., for evaluation), explode both predictions and labels
+            if self.verbosity >= 3:
+                print("[RNN Predict] Exploding predictions")
             predictions_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
                 posexplode(col("predictions")).alias("pos", "prediction")
             )
 
             # Explode labels separately
+            if self.verbosity >= 3:
+                print("[RNN Predict] Exploding labels")
             labels_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
                 posexplode(col("sequence_labels")).alias("pos", self.label_col)
@@ -669,6 +772,8 @@ class RNNSkolModel(SkolModel):
 
             # Join on filename and position to align predictions with labels
             # Cast prediction to DoubleType as required by Spark ML evaluators
+            if self.verbosity >= 2:
+                print("[RNN Predict] Joining predictions with labels")
             result = predictions_exploded.join(
                 labels_exploded,
                 on=["filename", "pos"],
@@ -678,7 +783,11 @@ class RNNSkolModel(SkolModel):
                 col("prediction").cast("double"),
                 self.label_col
             )
+            if self.verbosity >= 2:
+                print(f"[RNN Predict] Result columns: {result.columns}")
         else:
+            if self.verbosity >= 2:
+                print("[RNN Predict] Exploding predictions (no labels)")
             # No labels, just return predictions
             result = predictions.select(
                 col(doc_id_col).alias("filename"),
@@ -689,6 +798,8 @@ class RNNSkolModel(SkolModel):
                 self.label_col
             )
 
+        if self.verbosity >= 1:
+            print("[RNN Predict] Prediction completed successfully")
         return result
 
     def calculate_stats(
@@ -706,7 +817,6 @@ class RNNSkolModel(SkolModel):
         Args:
             predictions: DataFrame with predictions and labels.
                         Expected to have columns: filename, prediction, label_col
-            verbose: Whether to print statistics
 
         Returns:
             Dictionary containing accuracy, precision, recall, f1_score
@@ -744,7 +854,7 @@ class RNNSkolModel(SkolModel):
             'f1_score': evaluators['f1'].evaluate(eval_predictions)
         }
 
-        if verbose:
+        if self.verbosity >= 1:
             print("=" * 50)
             print("RNN Model Evaluation Statistics (Line-Level)")
             print("=" * 50)
