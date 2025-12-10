@@ -162,24 +162,26 @@ def create_model(
     elif model_type == "rnn":
         try:
             from .rnn_model import RNNSkolModel
-            return RNNSkolModel(
-                input_size=model_params.get("input_size", 1000),
-                hidden_size=model_params.get("hidden_size", 128),
-                num_layers=model_params.get("num_layers", 2),
-                num_classes=model_params.get("num_classes", 3),
-                dropout=model_params.get("dropout", 0.3),
-                window_size=model_params.get("window_size", 50),
-                batch_size=model_params.get("batch_size", 32),
-                epochs=model_params.get("epochs", 10),
-                num_workers=model_params.get("num_workers", 4),
-                features_col=features_col,
-                label_col=label_col,
-                verbosity=model_params.get("verbosity", 2),
-                **{k: v for k, v in model_params.items()
-                   if k not in ['input_size', 'hidden_size', 'num_layers', 'num_classes',
-                               'dropout', 'window_size', 'batch_size', 'epochs',
-                               'num_workers', 'verbosity']}
-            )
+            # RNNSkolModel only accepts specific parameters, extract only what it needs
+            rnn_params = {
+                'input_size': model_params.get("input_size", 1000),
+                'hidden_size': model_params.get("hidden_size", 128),
+                'num_layers': model_params.get("num_layers", 2),
+                'num_classes': model_params.get("num_classes", 3),
+                'dropout': model_params.get("dropout", 0.3),
+                'window_size': model_params.get("window_size", 50),
+                'batch_size': model_params.get("batch_size", 32),
+                'epochs': model_params.get("epochs", 10),
+                'num_workers': model_params.get("num_workers", 4),
+                'features_col': features_col,
+                'label_col': label_col,
+                'verbosity': model_params.get("verbosity", 2)
+            }
+            # Add 'name' parameter if provided
+            if 'name' in model_params:
+                rnn_params['name'] = model_params['name']
+
+            return RNNSkolModel(**rnn_params)
         except ImportError:
             raise ValueError(
                 "RNN model requires TensorFlow. "

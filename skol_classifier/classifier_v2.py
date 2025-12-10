@@ -337,6 +337,11 @@ class SkolClassifierV2:
         # Fit model and pass labels for later use
         self._model.fit(featured_df, labels=labels)
 
+        # Check if model has verbosity for logging
+        model_verbosity = getattr(self._model, 'verbosity', 0)
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Model training completed, starting evaluation")
+
         # Store label mappings (labels is a list like ['Label1', 'Label2'])
         labels_list = self._feature_extractor.get_label_mapping()
         if labels_list is not None:
@@ -344,29 +349,60 @@ class SkolClassifierV2:
             self._label_mapping = {label: i for i, label in enumerate(labels_list)}
             # Create reverse mapping from index to label
             self._reverse_label_mapping = {i: label for i, label in enumerate(labels_list)}
+            if model_verbosity >= 2:
+                print(f"[Classifier Fit] Stored label mappings for {len(labels_list)} labels")
 
         # Split data for evaluation
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Splitting data for evaluation (80/20)")
         train_data, test_data = featured_df.randomSplit([0.8, 0.2], seed=42)
-        print("DEBUG: test_data schema:")
-        test_data.printSchema()
-        print("DEBUG: test_data sample:")
-        test_data.show()
+
+        if model_verbosity >= 2:
+            print("[Classifier Fit] Counting split data...")
+            train_count = train_data.count()
+            test_count = test_data.count()
+            print(f"[Classifier Fit]   Train data count: {train_count}")
+            print(f"[Classifier Fit]   Test data count: {test_count}")
+
+        if model_verbosity >= 3:
+            print("[Classifier Fit] Test data schema:")
+            test_data.printSchema()
+            print("[Classifier Fit] Test data sample:")
+            test_data.show(5)
 
         # Make predictions on test set
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Making predictions on test set")
         test_predictions = self._model.predict(test_data)
-        print("DEBUG: test_predictions schema:")
-        test_predictions.printSchema()
-        print("DEBUG: Test predictions:")
-        test_predictions.show()
+
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Predictions completed, validating output")
+
+        if model_verbosity >= 3:
+            print("[Classifier Fit] Test predictions schema:")
+            test_predictions.printSchema()
+            print("[Classifier Fit] Test predictions sample:")
+            test_predictions.show(5)
 
         # Calculate stats using model's method
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Calculating statistics")
         stats = self._model.calculate_stats(test_predictions, verbose=False)
+
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Statistics calculated, adding metadata")
         stats['train_size'] = train_data.count()
         stats['test_size'] = test_data.count()
+        if model_verbosity >= 2:
+            print(f"[Classifier Fit] Final stats: {stats}")
 
         # Unpersist featured DataFrame to free memory
+        if model_verbosity >= 2:
+            print("[Classifier Fit] Unpersisting featured DataFrame")
         featured_df.unpersist()
 
+        if model_verbosity >= 1:
+            print("[Classifier Fit] Evaluation complete, returning stats")
         return stats
 
     def predict(self, raw_data: Optional[DataFrame] = None) -> DataFrame:
