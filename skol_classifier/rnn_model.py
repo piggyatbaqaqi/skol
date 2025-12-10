@@ -34,23 +34,7 @@ try:
         gpus = tf.config.list_physical_devices('GPU')
         if gpus:
             # Check GPU details to see if compute capability is supported
-            gpu_details = []
-            for gpu in gpus:
-                details = tf.config.experimental.get_device_details(gpu)
-                gpu_details.append(details)
-                compute_cap = details.get('compute_capability')
-                if compute_cap:
-                    major, minor = compute_cap
-                    print(f"GPU {gpu.name}: Compute capability {major}.{minor}")
-                    # TensorFlow 2.21 supports up to compute capability 9.0
-                    # Newer GPUs (10.0+, 12.0+) may have JIT compilation issues
-                    if major >= 10:
-                        print(f"WARNING: Compute capability {major}.{minor} may not be fully supported.")
-                        print(f"         Pre-compiled kernels not available, JIT compilation may fail.")
-                        print(f"         Falling back to CPU-only mode for stability.")
-                        USE_CPU_ONLY = True
-                        break
-
+            print(f"Detected GPUs: {[gpu.name for gpu in gpus]}")
             if not USE_CPU_ONLY:
                 # Try to enable memory growth
                 for gpu in gpus:
@@ -59,6 +43,8 @@ try:
             else:
                 tf.config.set_visible_devices([], 'GPU')
                 print("Forced CPU-only mode due to GPU compatibility issues")
+        else:
+            print("No GPUs detected, using CPU")
     except Exception as e:
         # If GPU configuration fails, try to force CPU
         print(f"GPU configuration failed: {e}. Attempting to use CPU...")
