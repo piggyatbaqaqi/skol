@@ -20,6 +20,6 @@ sentence-transformers>=3.0.1
 setuptools
 spark-nlp
 tesseract>=0.1.3
-tf-nightly[and-cuda]
-torch
+tf_nightly[and-cuda]==2.21.0.dev20251201
+torch==2.9.1+cu129
 transformers>=4.44.0
