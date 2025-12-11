@@ -690,7 +690,7 @@ class SkolClassifierV2:
         classifier_model = self._model.get_model()
         if classifier_model is None:
             raise ValueError("Classifier model not trained")
-        classifier_path = model_dir / "classifier_model"
+        classifier_path = model_dir / "classifier_model.h5"
         if classifier_path.exists():
             shutil.rmtree(classifier_path)
         classifier_model.save(str(classifier_path))
@@ -727,7 +727,7 @@ class SkolClassifierV2:
         self._feature_pipeline = PipelineModel.load(str(pipeline_path))
 
         # Load classifier model
-        classifier_path = model_dir / "classifier_model"
+        classifier_path = model_dir / "classifier_model.h5"
         classifier_model = PipelineModel.load(str(classifier_path))
 
         # Load metadata
@@ -774,7 +774,7 @@ class SkolClassifierV2:
             classifier_model = self._model.get_model()
             if classifier_model is None:
                 raise ValueError("Classifier model not trained")
-            classifier_path = temp_path / "classifier_model"
+            classifier_path = temp_path / "classifier_model.h5"
             classifier_model.save(str(classifier_path))
 
             # Save metadata
@@ -838,7 +838,7 @@ class SkolClassifierV2:
             self._feature_pipeline = PipelineModel.load(str(pipeline_path))
 
             # Load classifier model
-            classifier_path = temp_path / "classifier_model"
+            classifier_path = temp_path / "classifier_model.h5"
             classifier_model = PipelineModel.load(str(classifier_path))
 
             # Load metadata

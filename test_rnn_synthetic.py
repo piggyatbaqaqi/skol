@@ -68,13 +68,11 @@ spark = SparkSession.builder \
     .config("spark.executor.memory", "2g") \
     .config("spark.sql.shuffle.partitions", "4") \
     .config("spark.driver.extraJavaOptions",
-            "-XX:+UseG1GC -XX:+PrintFlagsFinal -XX:+UseContainerSupport -Dio.netty.tryReflectionSetAccessible=true "
             "--add-opens=java.base/java.nio=ALL-UNNAMED "
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED "
             "--add-opens=java.base/sun.security.action=ALL-UNNAMED "
             "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED") \
     .config("spark.executor.extraJavaOptions",
-            "-XX:+UseG1GC -XX:+PrintFlagsFinal -XX:+UseContainerSupport -Dio.netty.tryReflectionSetAccessible=true "
             "--add-opens=java.base/java.nio=ALL-UNNAMED "
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED "
             "--add-opens=java.base/sun.security.action=ALL-UNNAMED "
