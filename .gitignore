@@ -26,3 +26,9 @@ ENV/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Python packaging and distribution artifacts
+build/
+dist/
+*.egg-info/
+*.egg
