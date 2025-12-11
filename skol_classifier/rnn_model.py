@@ -628,9 +628,10 @@ class RNNSkolModel(SkolModel):
             DataFrame with predictions
         """
         if self.verbosity >= 2:
-            print("[RNN Predict] Starting prediction")
+            print("[RNN Predict] Starting prediction [CODE VERSION 2025-12-11-17:45]")
             print(f"[RNN Predict] Input data columns: {data.columns}")
             print(f"[RNN Predict] Input data count: {data.count()}")
+            print(f"[RNN Predict] Verbosity level: {self.verbosity}")
 
         if self.classifier_model is None:
             raise ValueError("Model not trained. Call fit() first.")
@@ -675,6 +676,7 @@ class RNNSkolModel(SkolModel):
         model_weights = self.model_weights
         input_size = self.input_size
         window_size = self.window_size
+        verbosity = self.verbosity  # Capture for UDF closure
 
         # Define prediction UDF
         @pandas_udf(ArrayType(FloatType()))
@@ -683,76 +685,196 @@ class RNNSkolModel(SkolModel):
             import os
             import numpy as np
 
-            # Force CPU-only mode in executors to prevent CUDA errors
-            # This is critical for GPUs with unsupported compute capabilities
-            os.environ['CUDA_VISIBLE_DEVICES'] = ''
-
-            # Import TensorFlow/Keras inside UDF after setting CPU mode
             try:
-                import tensorflow as tf
-                # Double-check GPU is disabled
-                tf.config.set_visible_devices([], 'GPU')
-                from tensorflow import keras
-            except Exception as e:
-                # If TensorFlow config fails, try to continue anyway
-                # The CPU-only env var should be sufficient
-                pass
+                # Force CPU-only mode in executors to prevent CUDA errors
+                # This is critical for GPUs with unsupported compute capabilities
+                os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-            # Rebuild model from config and weights
-            try:
-                model = keras.models.model_from_json(model_config)
-                model.set_weights(model_weights)
-            except Exception as e:
-                raise RuntimeError(
-                    f"Failed to rebuild model in executor: {e}\n"
-                    "This may be due to GPU compatibility issues. "
-                    "Ensure CUDA_VISIBLE_DEVICES='' is set before starting Spark."
-                )
-
-            results = []
-            for features in features_series:
-                # Track original length before padding/truncating
-                original_length = len(features)
-
-                # Pad or truncate
-                if len(features) < window_size:
-                    padding = [[0.0] * input_size] * (window_size - len(features))
-                    features = features + padding
-                else:
-                    features = features[:window_size]
-
-                # Predict
-                X = np.array([features], dtype=np.float32)
+                # Import TensorFlow/Keras inside UDF after setting CPU mode
                 try:
-                    preds = model.predict(X, verbose=0)[0]
+                    import tensorflow as tf
+                    # Double-check GPU is disabled
+                    tf.config.set_visible_devices([], 'GPU')
+                    from tensorflow import keras
+                except Exception as e:
+                    # If TensorFlow config fails, try to continue anyway
+                    # The CPU-only env var should be sufficient
+                    pass
+
+                # Rebuild model from config and weights
+                try:
+                    model = keras.models.model_from_json(model_config)
+                    model.set_weights(model_weights)
                 except Exception as e:
                     raise RuntimeError(
-                        f"Prediction failed in executor: {e}\n"
-                        "This may be a CUDA/GPU error. Ensure CPU-only mode is active."
+                        f"Failed to rebuild model in executor: {e}\n"
+                        "This may be due to GPU compatibility issues. "
+                        "Ensure CUDA_VISIBLE_DEVICES='' is set before starting Spark."
                     )
 
-                # Get argmax for each timestep
-                pred_classes = [float(np.argmax(p)) for p in preds]
-                # Slice to original length (before padding/truncating)
-                results.append(pred_classes[:original_length])
+                results = []
+            except Exception as e:
+                # If initialization fails, return empty lists for all sequences
+                # This allows us to see the error in logs
+                import sys
+                print(f"[UDF ERROR] Initialization failed: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                return pd.Series([[]] * len(features_series))
 
-            return pd.Series(results)
+            try:
+                for seq_idx, features in enumerate(features_series):
+                    # Convert to list of dense arrays and normalize to input_size
+                    dense_features = []
+
+                    # Debug: Track what we're processing
+                    total_features = 0
+                    none_features = 0
+                    conversion_failures = 0
+                    numeric_filter_failures = 0
+                    empty_after_filter = 0
+                    successful_features = 0
+
+                    for _, feat in enumerate(features):
+                        total_features += 1
+
+                        if feat is None:
+                            none_features += 1
+                            continue
+
+                        # Convert to dense array (features should already be numeric from PySpark)
+                        try:
+                            if hasattr(feat, 'toArray'):
+                                # SparseVector or DenseVector from PySpark
+                                dense_arr = np.array(feat.toArray(), dtype=np.float32)
+                            elif isinstance(feat, np.ndarray):
+                                dense_arr = np.asarray(feat, dtype=np.float32)
+                            elif isinstance(feat, (list, tuple)):
+                                dense_arr = np.array(feat, dtype=np.float32)
+                            else:
+                                # Try to convert to numpy array
+                                dense_arr = np.array(list(feat), dtype=np.float32)
+                        except Exception as e:
+                            # Don't skip - this is causing too many to be filtered
+                            # Just create a zero array
+                            dense_arr = np.zeros(input_size, dtype=np.float32)
+                            conversion_failures += 1
+
+                        # Skip empty features
+                        if len(dense_arr) == 0:
+                            empty_after_filter += 1
+                            continue
+
+                        # Ensure each feature vector is exactly input_size
+                        if len(dense_arr) < input_size:
+                            # Pad to input_size
+                            padding = np.zeros(input_size - len(dense_arr), dtype=np.float32)
+                            dense_arr = np.concatenate([dense_arr, padding])
+                        elif len(dense_arr) > input_size:
+                            # Truncate to input_size
+                            dense_arr = dense_arr[:input_size]
+
+                        # Convert to list for consistent handling
+                        dense_features.append(dense_arr.tolist())
+                        successful_features += 1
+
+                    # Debug: Log statistics for first sequence
+                    if seq_idx == 0 and verbosity >= 3:
+                        print(f"[UDF DEBUG] Sequence 0 processing:")
+                        print(f"  Total features: {total_features}")
+                        print(f"  None features: {none_features}")
+                        print(f"  Conversion failures: {conversion_failures}")
+                        print(f"  Numeric filter issues: {numeric_filter_failures}")
+                        print(f"  Empty after filter: {empty_after_filter}")
+                        print(f"  Successful features: {successful_features}")
+                        print(f"  dense_features length: {len(dense_features)}")
+
+                    # Track original length before padding/truncating
+                    original_length = len(dense_features)
+
+                    # Handle empty sequences - create at least one prediction using padding
+                    if original_length == 0:
+                        original_length = 1  # Return at least one prediction (all padding)
+
+                    # Pad or truncate to window_size
+                    if len(dense_features) < window_size:
+                        # Each feature should be a list of floats with length input_size
+                        padding = [[0.0] * input_size] * (window_size - len(dense_features))
+                        dense_features = dense_features + padding
+                    elif len(dense_features) > window_size:
+                        dense_features = dense_features[:window_size]
+
+                    # Predict
+                    X = np.array([dense_features], dtype=np.float32)
+                    try:
+                        preds = model.predict(X, verbose=0)[0]
+                    except Exception as e:
+                        raise RuntimeError(
+                            f"Prediction failed in executor: {e}\n"
+                            "This may be a CUDA/GPU error. Ensure CPU-only mode is active."
+                        )
+
+                    # Get argmax for each timestep
+                    pred_classes = [float(np.argmax(p)) for p in preds]
+                    # Slice to original length (before padding/truncating)
+                    results.append(pred_classes[:original_length])
+
+                return pd.Series(results)
+            except Exception as e:
+                # If processing fails, return empty lists and log error
+                import sys
+                print(f"[UDF ERROR] Processing failed: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                return pd.Series([[]] * len(features_series))
 
         # Apply prediction
         if self.verbosity >= 2:
             print("[RNN Predict] Applying prediction UDF to sequences")
+        if self.verbosity >= 3:
+            print(f"[RNN Predict] DEBUG: About to call predict_sequence UDF")
+            print(f"[RNN Predict] DEBUG: input_size={input_size}, window_size={window_size}")
+            # Check what's actually in sequence_features
+            print("[RNN Predict] DEBUG: Sampling sequence_features...")
+            first_seq = sequenced_data.select("sequence_features").first()
+            if first_seq and first_seq.sequence_features:
+                print(f"[RNN Predict] DEBUG: Sample has {len(first_seq.sequence_features)} features")
+                if len(first_seq.sequence_features) > 0:
+                    feat0 = first_seq.sequence_features[0]
+                    print(f"[RNN Predict] DEBUG: First feature type: {type(feat0)}")
+                    if hasattr(feat0, 'toArray'):
+                        arr = feat0.toArray()
+                        print(f"[RNN Predict] DEBUG: First feature array length: {len(arr)}")
+                        print(f"[RNN Predict] DEBUG: First feature sample values: {arr[:5]}")
+            else:
+                print("[RNN Predict] DEBUG: No sequence_features in sample!")
+
         predictions = sequenced_data.withColumn(
             "predictions",
             predict_sequence(col("sequence_features"))
         )
         if self.verbosity >= 3:
             print(f"[RNN Predict] Predictions columns: {predictions.columns}")
+        if self.verbosity >= 4:
+            print(f"[RNN Predict] DEBUG: UDF application completed")
 
         # For line-level predictions, we need to explode the sequences back to individual lines
         # Use posexplode to get both position and value
         if has_labels:
             if self.verbosity >= 2:
                 print("[RNN Predict] Exploding predictions and labels for evaluation")
+
+            # Debug: Check what's in predictions before exploding
+            if self.verbosity >= 3:
+                pred_count = predictions.count()
+                print(f"[RNN Predict] DEBUG: predictions DataFrame has {pred_count} rows before explode")
+                if pred_count > 0:
+                    first_row = predictions.first()
+                    print(f"[RNN Predict] DEBUG: First row predictions column: {first_row.predictions if first_row else 'None'}")
+                    if first_row and first_row.predictions:
+                        print(f"[RNN Predict] DEBUG: Predictions type: {type(first_row.predictions)}, length: {len(first_row.predictions)}")
+                    else:
+                        print(f"[RNN Predict] DEBUG: Predictions column is None or empty!")
 
             # If we have labels (e.g., for evaluation), explode both predictions and labels
             if self.verbosity >= 3:
@@ -835,6 +957,10 @@ class RNNSkolModel(SkolModel):
                 f"Predictions DataFrame missing required columns: {missing}. "
                 f"Available columns: {actual_cols}"
             )
+
+        print(f"DEBUG: Predictions schema: {predictions.schema}")
+        print(f"DEBUG: Sample predictions:")
+        predictions.show(5)
 
         # RNN predictions may have extra columns like 'filename' which evaluators ignore
         # We can use the predictions as-is, but let's select only the columns needed

@@ -378,7 +378,22 @@ class SkolClassifierV2:
         if model_verbosity >= 1:
             print("[Classifier Fit] Predictions completed, validating output")
 
-        if model_verbosity >= 3:
+        # Debug: Check if predictions are empty
+        if model_verbosity >= 1:  # Changed from >= 3 to ensure it runs
+            pred_count = test_predictions.count()
+            print(f"[Classifier Fit] Predictions count: {pred_count}")
+            if pred_count == 0:
+                print("[Classifier Fit] ERROR: Predictions DataFrame is EMPTY!")
+                print("[Classifier Fit] This means the UDF returned no results.")
+            else:
+                print(f"[Classifier Fit] Predictions columns: {test_predictions.columns}")
+                if model_verbosity >= 1:
+                    print("[Classifier Fit] First prediction:")
+                    first_pred = test_predictions.first()
+                    print(f"  {first_pred}")
+
+        #if model_verbosity >= 3:
+        if False:  # Disabled: .show() can fail with Pandas UDF results
             print("[Classifier Fit] Test predictions schema:")
             test_predictions.printSchema()
             print("[Classifier Fit] Test predictions sample:")

@@ -37,8 +37,8 @@ print()
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='Test RNN model with synthetic data')
-parser.add_argument('--verbosity', type=int, default=2, choices=[0, 1, 2, 3],
-                    help='Verbosity level (0-3)')
+parser.add_argument('--verbosity', type=int, default=2, choices=[0, 1, 2, 3, 4, 5],
+                    help='Verbosity level (0-5)')
 parser.add_argument('--num-docs', type=int, default=10,
                     help='Number of documents to generate')
 parser.add_argument('--lines-per-doc', type=int, default=20,
@@ -61,22 +61,27 @@ print()
 print("-" * 70)
 print("Initializing Spark...")
 print("-" * 70)
+
 spark = SparkSession.builder \
-    .appName("RNN_Synthetic_Test") \
+    .config("spark.executor.extraJavaOptions", "-XX:+UseG1GC -XX:+PrintFlagsFinal -XX:+UseContainerSupport -Dio.netty.tryReflectionSetAccessible=true")\
     .config("spark.driver.memory", "2g") \
     .config("spark.executor.memory", "2g") \
     .config("spark.sql.shuffle.partitions", "4") \
     .config("spark.driver.extraJavaOptions",
+            "-XX:+UseG1GC -XX:+PrintFlagsFinal -XX:+UseContainerSupport -Dio.netty.tryReflectionSetAccessible=true "
             "--add-opens=java.base/java.nio=ALL-UNNAMED "
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED "
             "--add-opens=java.base/sun.security.action=ALL-UNNAMED "
             "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED") \
     .config("spark.executor.extraJavaOptions",
+            "-XX:+UseG1GC -XX:+PrintFlagsFinal -XX:+UseContainerSupport -Dio.netty.tryReflectionSetAccessible=true "
             "--add-opens=java.base/java.nio=ALL-UNNAMED "
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED "
             "--add-opens=java.base/sun.security.action=ALL-UNNAMED "
             "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED") \
     .getOrCreate()
+
+spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
 
 print(f"✓ Spark version: {spark.version}")
 print()
@@ -197,7 +202,7 @@ classifier = SkolClassifierV2(
     model_type='rnn',
     use_suffixes=True,
     min_doc_freq=1,  # Low threshold for small dataset
-    model_params=model_params
+    **model_params  # Spread the dict instead of passing as model_params=
 )
 
 print("✓ Classifier initialized")
