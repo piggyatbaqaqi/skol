@@ -16,6 +16,7 @@ import sys
 import os
 import time
 import argparse
+from turtle import pos
 
 # CRITICAL: Force CPU-only mode BEFORE any imports
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -23,7 +24,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
 
 # Now import everything
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType
+from pyspark.sql.types import StructType, StructField, StringType, ArrayType, IntegerType
 import random
 
 print("=" * 70)
@@ -113,6 +114,7 @@ def generate_document(doc_id, num_lines):
     """Generate a synthetic document with mixed labels."""
     lines = []
     labels = []
+    line_nums = []
     for i in range(num_lines):
         # Mix of labels with some bias
         if i < num_lines // 3:
@@ -128,22 +130,23 @@ def generate_document(doc_id, num_lines):
 
         lines.append(generate_line(label))
         labels.append(label)
+        line_nums.append(i + 1)
 
-    return doc_id, lines, labels
+    return doc_id, lines, labels, line_nums
 
 # Generate documents
 print(f"Generating {args.num_docs} documents with {args.lines_per_doc} lines each...")
 documents = []
 for i in range(args.num_docs):
     doc_id = f"doc_{i:03d}.txt"
-    filename, lines, labels = generate_document(doc_id, args.lines_per_doc)
-    for line, label in zip(lines, labels):
-        documents.append((filename, line, label))
+    filename, lines, labels, line_nums = generate_document(doc_id, args.lines_per_doc)
+    for line, label, line_num in zip(lines, labels, line_nums):
+        documents.append((filename, line, label, line_num))
 
 print(f"✓ Generated {len(documents)} total lines")
 print(f"  Label distribution:")
 for label in LABELS:
-    count = sum(1 for _, _, l in documents if l == label)
+    count = sum(1 for _, _, l, _ in documents if l == label)
     pct = 100.0 * count / len(documents)
     print(f"    {label}: {count} ({pct:.1f}%)")
 print()
@@ -152,8 +155,9 @@ print()
 # Note: The FeatureExtractor expects a column named "value" by default
 schema = StructType([
     StructField("filename", StringType(), False),
-    StructField("value", StringType(), False),  # Changed from "line" to "value"
-    StructField("label", StringType(), False)
+    StructField("value", StringType(), False),
+    StructField("label", StringType(), False),
+    StructField("line_num", IntegerType(), False)
 ])
 
 df = spark.createDataFrame(documents, schema)
@@ -192,7 +196,7 @@ for key, value in model_params.items():
     print(f"  {key}: {value}")
 print()
 
-classifier = SkolClassifierV2(
+rnn_classifier = SkolClassifierV2(
     spark=spark,
     input_source='dataframe',
     output_dest=None,  # No output needed for test
@@ -203,29 +207,46 @@ classifier = SkolClassifierV2(
     **model_params  # Spread the dict instead of passing as model_params=
 )
 
-print("✓ Classifier initialized")
+logistic_classifier = SkolClassifierV2(
+    spark=spark,
+    input_source='dataframe',
+    output_dest=None,  # No output needed for test
+    model_storage=None,  # No model saving needed
+    model_type='logistic',
+    use_suffixes=True,
+    min_doc_freq=1,  # Low threshold for small dataset
+    **model_params  # Spread the dict instead of passing as model_params=
+)
+
+
+print("✓ Classifiers initialized")
 print()
 
-# Train model
+# Train models
 print("=" * 70)
 print("TRAINING")
 print("=" * 70)
 print()
 
+# Split data for testing
+train_df, test_df = df.randomSplit([0.8, 0.2], seed=42)
+
+
 try:
     start_time = time.time()
-    results = classifier.fit(annotated_data=df)
+    logistic_results = logistic_classifier.fit(annotated_data=df)
     elapsed = time.time() - start_time
 
     print()
     print("=" * 70)
-    print("TRAINING COMPLETE")
+    print("LOGISTIC TRAINING COMPLETE")
     print("=" * 70)
     print()
     print(f"Training time: {elapsed:.2f} seconds")
     print()
-    print("Results:")
-    for key, value in results.items():
+
+    print("LOGISTIC Results:")
+    for key, value in logistic_results.items():
         if isinstance(value, float):
             print(f"  {key}: {value:.4f}")
         else:
@@ -234,16 +255,13 @@ try:
 
     # Test model save and load with Redis
     print("=" * 70)
-    print("TESTING MODEL SAVE/LOAD (Redis)")
+    print("TESTING LOGISTIC MODEL SAVE/LOAD (Redis)")
     print("=" * 70)
     print()
 
-    # Split data for testing
-    train_df, test_df = df.randomSplit([0.8, 0.2], seed=42)
-
     # Setup Redis client
     import redis
-    redis_key = "test_rnn_model_synthetic"
+    logistic_redis_key = "test_logistic_model_synthetic"
     try:
         redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=False)
         redis_client.ping()
@@ -255,99 +273,81 @@ try:
 
     if redis_client:
         # Configure the classifier for Redis storage
-        classifier.model_storage = 'redis'
-        classifier.redis_client = redis_client
-        classifier.redis_key = redis_key
+        logistic_classifier.model_storage = 'redis'
+        logistic_classifier.redis_client = redis_client
+        logistic_classifier.redis_key = logistic_redis_key
+        logistic_classifier.redis_expire = 3600  # 1 hour
 
-        # Save model to Redis
-        print(f"Saving model to Redis key: {redis_key}")
-        classifier.save_model()
-        print("✓ Model saved to Redis")
+        # Save models to Redis
+        print(f"Saving logistic model to Redis key: {logistic_redis_key}")
+        logistic_classifier.save_model()
+        print("✓ LOGISTIC model saved to Redis")
         print()
-
-        # Add a dummy 'value' column to test_df for prediction compatibility
-        # The RNN model doesn't use this column, but the output formatter expects it
-        from pyspark.sql.functions import lit
-        test_df_with_value = test_df.withColumn("value", lit(""))
-
-        # Apply feature pipeline to test data
-        test_df_featured = classifier._feature_pipeline.transform(test_df)
 
         # Make predictions with original model
-        # Use internal _model.predict and then add decoded labels manually
-        print("Making predictions with ORIGINAL model...")
-        original_predictions_raw = classifier._model.predict(test_df_featured)
-        original_predictions = classifier._decode_predictions(original_predictions_raw)
-        original_predictions = original_predictions.select("doc_id", "line_num", "prediction", "predicted_label")
-        original_count = original_predictions.count()
-        print(f"✓ Original model predictions: {original_count} rows")
+        logistic_original_predictions = logistic_classifier.predict(test_df)
+        logistic_original_predictions = logistic_original_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        logistic_original_count = logistic_original_predictions.count()
+        print(f"✓ Original LOGISTIC model predictions: {logistic_original_count} rows")
+
 
         # Collect a few predictions for comparison
-        original_sample = original_predictions.limit(10).collect()
-        if original_count == 0:
-            print("⚠ WARNING: Original model produced 0 predictions!")
+        logistic_original_sample = logistic_original_predictions.limit(10).collect()
+        if logistic_original_count == 0:
+            print("⚠ WARNING: Original LOGISTIC model produced 0 predictions!")
         print()
 
+
         # Create a new classifier instance and load the model from Redis
-        print("Loading model into NEW classifier instance from Redis...")
-        classifier_loaded = SkolClassifierV2(
+        print("Loading models into NEW classifier instances from Redis...")
+        logistic_classifier_loaded = SkolClassifierV2(
             spark=spark,
             input_source='dataframe',
             output_dest=None,
             model_storage='redis',
             redis_client=redis_client,
-            redis_key=redis_key,
-            model_type='rnn',
+            redis_key=logistic_redis_key,
+            model_type='logistic',
             use_suffixes=True,
             min_doc_freq=1,
             **model_params
         )
-        classifier_loaded.load_model()
-        print("✓ Model loaded from Redis")
-        print(f"  DEBUG: Loaded model input_size: {classifier_loaded._model.input_size}")
-        print(f"  DEBUG: Loaded model window_size: {classifier_loaded._model.window_size}")
-        print()
+        logistic_classifier_loaded.load_model()
 
-        # Apply the LOADED classifier's feature pipeline to test data
-        # (cannot reuse test_df_featured from original classifier)
-        test_df_featured_loaded = classifier_loaded._feature_pipeline.transform(test_df)
-        print(f"  DEBUG: Featured loaded data count: {test_df_featured_loaded.count()}")
-        print(f"  DEBUG: Featured loaded columns: {test_df_featured_loaded.columns}")
+        print("✓ Logistic model loaded from Redis")
+        print()
 
         # Make predictions with loaded model
         print("Making predictions with LOADED model...")
-        loaded_predictions_raw = classifier_loaded._model.predict(test_df_featured_loaded)
-        print(f"  DEBUG: Raw predictions count: {loaded_predictions_raw.count()}")
-        print(f"  DEBUG: Raw predictions columns: {loaded_predictions_raw.columns}")
+        logistic_loaded_predictions = logistic_classifier_loaded.predict(test_df)
+        print(f"  DEBUG: Raw LOGISTIC predictions count: {logistic_loaded_predictions.count()}")
+        print(f"  DEBUG: Raw LOGISTIC predictions columns: {logistic_loaded_predictions.columns}")
 
         # Show a sample of raw predictions
-        if loaded_predictions_raw.count() > 0:
-            print("  DEBUG: Sample raw predictions:")
-            loaded_predictions_raw.show(5, truncate=False)
+        if logistic_loaded_predictions.count() > 0:
+            print("  Sample LOGISTIC raw predictions:")
+            logistic_loaded_predictions.show(5, truncate=False)
 
-        loaded_predictions = classifier_loaded._decode_predictions(loaded_predictions_raw)
-        print(f"  DEBUG: After decode count: {loaded_predictions.count()}")
-
-        loaded_predictions = loaded_predictions.select("doc_id", "line_num", "prediction", "predicted_label")
-        loaded_count = loaded_predictions.count()
-        print(f"✓ Loaded model predictions: {loaded_count} rows")
+        # logistic_loaded_predictions = logistic_loaded_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        logistic_loaded_count = logistic_loaded_predictions.count()
+        print(f"✓ Loaded LOGISTIC model predictions: {logistic_loaded_count} rows")
 
         # Collect a few predictions for comparison
-        loaded_sample = loaded_predictions.limit(10).collect()
-        if loaded_count == 0:
-            print("⚠ WARNING: Loaded model produced 0 predictions!")
+        logistic_loaded_sample = logistic_loaded_predictions.orderBy("doc_id", "line_num").limit(10).collect()
+        if logistic_loaded_count == 0:
+            print("⚠ WARNING: Loaded  LOGISTIC model produced 0 predictions!")
         print()
 
         # Compare predictions
-        print("Comparing predictions...")
+        print("Comparing LOGISTIC predictions...")
         print("-" * 70)
         print(f"{'Doc ID':<15} {'Line#':<7} {'Original':<12} {'Loaded':<12} {'Match':<10}")
         print("-" * 70)
 
         mismatches = 0
-        for i in range(min(len(original_sample), len(loaded_sample))):
-            orig = original_sample[i]
-            load = loaded_sample[i]
+        for i in range(min(len(logistic_original_sample), len(logistic_loaded_sample))):
+            orig = logistic_original_sample[i]
+            load = logistic_loaded_sample[i]
             match = "✓" if orig.prediction == load.prediction else "✗"
             if orig.prediction != load.prediction:
                 mismatches += 1
@@ -357,22 +357,181 @@ try:
         print()
 
         if mismatches == 0:
-            print("✓✓✓ ALL PREDICTIONS MATCH ✓✓✓")
+            print("✓✓✓ ALL LOGISTIC PREDICTIONS MATCH ✓✓✓")
             print("The saved and loaded model produces identical predictions!")
         else:
-            print(f"⚠ WARNING: {mismatches} predictions differ between original and loaded model")
+            print(f"⚠ WARNING: {mismatches} LOGISTIC predictions differ between original and loaded model")
+        print()
+
+
+        # Clean up Redis key
+        try:
+            redis_client.delete(logistic_redis_key)
+            print(f"✓ Cleaned up Redis key: {logistic_redis_key}")
+        except Exception as e:
+            print(f"⚠ Could not clean up Redis keys: {e}")
+        print()
+
+    # Success indicators
+    if logistic_results.get('accuracy', 0) > 0:
+        print("✓✓✓ SUCCESS ✓✓✓")
+        print()
+        print("The LOGISTIC model trained and evaluated successfully!")
+        print("You can now iterate on logistic_model.py with confidence.")
+    else:
+        print("⚠ WARNING: Accuracy is 0")
+        print("The model trained but may not be learning correctly.")
+
+except Exception as e:
+    elapsed = time.time() - start_time
+    print()
+    print("=" * 70)
+    print("LOGISTIC TRAINING FAILED")
+    print("=" * 70)
+    print()
+    print(f"Time before failure: {elapsed:.2f} seconds")
+    print()
+    print(f"Error: {type(e).__name__}")
+    print(f"Message: {e}")
+    print()
+    # Cleanup
+    print()
+    print("Stopping Spark session...")
+    spark.stop()
+    print("✓ Done")
+    sys.exit(1)
+
+try:
+    start_time = time.time()
+    rnn_results = rnn_classifier.fit(annotated_data=df)
+    elapsed = time.time() - start_time
+
+    print()
+    print("=" * 70)
+    print("RNN TRAINING COMPLETE")
+    print("=" * 70)
+    print()
+    print(f"Training time: {elapsed:.2f} seconds")
+    print()
+
+    print("RNN Results:")
+    for key, value in rnn_results.items():
+        if isinstance(value, float):
+            print(f"  {key}: {value:.4f}")
+        else:
+            print(f"  {key}: {value}")
+    print()
+
+    # Test model save and load with Redis
+    print("=" * 70)
+    print("TESTING RNN MODEL SAVE/LOAD (Redis)")
+    print("=" * 70)
+    print()
+
+    # Setup Redis client
+    rnn_redis_key = "test_rnn_model_synthetic"
+    if redis_client:
+        # Configure the classifier for Redis storage
+        rnn_classifier.model_storage = 'redis'
+        rnn_classifier.redis_client = redis_client
+        rnn_classifier.redis_key = rnn_redis_key
+        rnn_classifier.redis_expire = 3600  # 1 hour
+
+        # Save models to Redis
+        print(f"Saving rnn model to Redis key: {rnn_redis_key}")
+        rnn_classifier.save_model()
+        print("✓ RNN model saved to Redis")
+        print()
+
+        # Make predictions with original model
+        print("Making predictions with ORIGINAL model...")
+        rnn_original_predictions = rnn_classifier.predict(test_df)
+        # rnn_original_predictions = rnn_original_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        rnn_original_count = rnn_original_predictions.count()
+        print(f"✓ Original RNN model predictions: {rnn_original_count} rows")
+
+        # Collect a few predictions for comparison
+        rnn_original_sample = rnn_original_predictions.limit(10).collect()
+        if rnn_original_count == 0:
+            print("⚠ WARNING: Original RNN model produced 0 predictions!")
+        print()
+
+        # Create a new classifier instance and load the model from Redis
+        print("Loading models into NEW classifier instances from Redis...")
+        rnn_classifier_loaded = SkolClassifierV2(
+            spark=spark,
+            input_source='dataframe',
+            output_dest=None,
+            model_storage='redis',
+            redis_client=redis_client,
+            redis_key=rnn_redis_key,
+            model_type='rnn',
+            use_suffixes=True,
+            min_doc_freq=1,
+            **model_params
+        )
+        rnn_classifier_loaded.load_model()
+
+        print("✓ Models loaded from Redis")
+        print(f"  DEBUG: Loaded RNN model input_size: {rnn_classifier_loaded._model.input_size}")
+        print(f"  DEBUG: Loaded RNN model window_size: {rnn_classifier_loaded._model.window_size}")
+        print()
+
+        # Make predictions with loaded model
+        print("Making predictions with LOADED model...")
+        rnn_loaded_predictions_raw = rnn_classifier_loaded.predict(rnn_test_df_featured_loaded)
+        print(f"  Raw RNN predictions count: {rnn_loaded_predictions_raw.count()}")
+        print(f"  Raw RNN predictions columns: {rnn_loaded_predictions_raw.columns}")
+        # Show a sample of raw predictions
+        if rnn_loaded_predictions.count() > 0:
+            print("  Sample RNN raw predictions:")
+            rnn_loaded_predictions.show(5, truncate=False)
+
+        # rnn_loaded_predictions = rnn_loaded_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        rnn_loaded_count = rnn_loaded_predictions.count()
+        print(f"✓ Loaded RNN model predictions: {rnn_loaded_count} rows")
+
+        # Collect a few predictions for comparison
+        rnn_loaded_sample = rnn_loaded_predictions.orderBy("doc_id", "line_num").limit(10).collect()
+        if rnn_loaded_count == 0:
+            print("⚠ WARNING: Loaded  RNN model produced 0 predictions!")
+        print()
+
+        # Compare predictions
+        print("Comparing RNN predictions...")
+        print("-" * 70)
+        print(f"{'Doc ID':<15} {'Line#':<7} {'Original':<12} {'Loaded':<12} {'Match':<10}")
+        print("-" * 70)
+
+        mismatches = 0
+        for i in range(min(len(rnn_original_sample), len(rnn_loaded_sample))):
+            orig = rnn_original_sample[i]
+            load = rnn_loaded_sample[i]
+            match = "✓" if orig.prediction == load.prediction else "✗"
+            if orig.prediction != load.prediction:
+                mismatches += 1
+            print(f"{orig.doc_id:<15} {orig.line_num:<7} {orig.prediction:<12.1f} {load.prediction:<12.1f} {match:<10}")
+
+        print("-" * 70)
+        print()
+
+        if mismatches == 0:
+            print("✓✓✓ ALL RNN PREDICTIONS MATCH ✓✓✓")
+            print("The saved and loaded model produces identical predictions!")
+        else:
+            print(f"⚠ WARNING: {mismatches} RNN predictions differ between original and loaded model")
         print()
 
         # Clean up Redis key
         try:
-            redis_client.delete(redis_key)
-            print(f"✓ Cleaned up Redis key: {redis_key}")
+            redis_client.delete(rnn_redis_key)
+            print(f"✓ Cleaned up Redis key: {rnn_redis_key}")
         except Exception as e:
-            print(f"⚠ Could not clean up Redis key: {e}")
+            print(f"⚠ Could not clean up Redis keys: {e}")
         print()
 
     # Success indicators
-    if results.get('accuracy', 0) > 0:
+    if rnn_results.get('accuracy', 0) > 0:
         print("✓✓✓ SUCCESS ✓✓✓")
         print()
         print("The RNN model trained and evaluated successfully!")
@@ -411,3 +570,5 @@ finally:
     print("Stopping Spark session...")
     spark.stop()
     print("✓ Done")
+
+exit(0)
