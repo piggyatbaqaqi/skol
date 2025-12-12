@@ -7,7 +7,7 @@ PySpark Pandas UDFs for distributed training instead of Elephas.
 """
 
 import gc
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple, Dict, Any
 import numpy as np
 import os
 
@@ -670,8 +670,11 @@ class RNNSkolModel(SkolModel):
             print(f"[RNN Predict] Sequenced data columns: {sequenced_data.columns}")
 
         # Broadcast model weights for UDF
-        if self.verbosity >= 3:
-            print("[RNN Predict] Preparing model config and weights for UDF")
+        if self.verbosity >= 2:
+            print(f"[RNN Predict] Preparing model config and weights for UDF")
+            print(f"[RNN Predict] DEBUG: model_weights is None: {self.model_weights is None}")
+            if self.model_weights:
+                print(f"[RNN Predict] DEBUG: model_weights count: {len(self.model_weights)}")
         model_config = self.keras_model.to_json()
         model_weights = self.model_weights
         input_size = self.input_size
@@ -877,20 +880,26 @@ class RNNSkolModel(SkolModel):
                         print(f"[RNN Predict] DEBUG: Predictions column is None or empty!")
 
             # If we have labels (e.g., for evaluation), explode both predictions and labels
-            if self.verbosity >= 3:
+            if self.verbosity >= 2:
                 print("[RNN Predict] Exploding predictions")
             predictions_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
                 posexplode(col("predictions")).alias("pos", "prediction")
             )
+            if self.verbosity >= 2:
+                pred_expl_count = predictions_exploded.count()
+                print(f"[RNN Predict] DEBUG: predictions_exploded count: {pred_expl_count}")
 
             # Explode labels separately
-            if self.verbosity >= 3:
+            if self.verbosity >= 2:
                 print("[RNN Predict] Exploding labels")
             labels_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
                 posexplode(col("sequence_labels")).alias("pos", self.label_col)
             )
+            if self.verbosity >= 2:
+                labels_expl_count = labels_exploded.count()
+                print(f"[RNN Predict] DEBUG: labels_exploded count: {labels_expl_count}")
 
             # Join on filename and position to align predictions with labels
             # Cast prediction to DoubleType as required by Spark ML evaluators
@@ -902,6 +911,7 @@ class RNNSkolModel(SkolModel):
                 how="inner"
             ).select(
                 "filename",
+                "pos",  # Keep line number for unique identification
                 col("prediction").cast("double"),
                 self.label_col
             )
@@ -916,6 +926,7 @@ class RNNSkolModel(SkolModel):
                 posexplode(col("predictions")).alias("pos", "prediction")
             ).select(
                 "filename",
+                "pos",  # Keep line number for unique identification
                 col("prediction").cast("double"),
                 self.label_col
             )
@@ -998,6 +1009,14 @@ class RNNSkolModel(SkolModel):
             raise ValueError("No model to save")
 
         self.classifier_model.save(path)
+
+    def set_model(self, model: Any) -> None:
+        """Set the model (useful for loading from Redis)."""
+        self.keras_model = model
+        self.classifier_model = model
+        self.model_weights = model.get_weights()
+        if self.verbosity >= 2:
+            print(f"[RNN set_model] Model set, weights count: {len(self.model_weights) if self.model_weights else 0}")
 
     def load(self, path: str) -> 'RNNSkolModel':
         """Load model from disk."""
