@@ -15,10 +15,11 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
 
 from pyspark.sql import DataFrame
+from pyspark.sql import functions as F
 from pyspark.sql.functions import (
-    col, collect_list, lit, pandas_udf, posexplode
+    col, collect_list, lit, pandas_udf
 )
-from pyspark.sql.types import ArrayType, FloatType
+from pyspark.sql.types import ArrayType, DoubleType, FloatType
 from pyspark.ml import Transformer
 import pandas as pd
 
@@ -191,7 +192,7 @@ class SequencePreprocessor(Transformer):
         Groups by document ID and creates sequences with windowing for long documents.
 
         Args:
-            df: Input DataFrame with columns: doc_id, features, label_indexed
+            df: Input DataFrame with columns: doc_id, line_number, features, label_indexed
 
         Returns:
             DataFrame with sequence_features and sequence_labels columns
@@ -499,12 +500,16 @@ class RNNSkolModel(SkolModel):
         # Transform data into sequences
         if self.verbosity >= 3:
             print("[RNN Fit] Transforming data into sequences...")
+            print(f"[RNN Fit]   Input data columns: {train_data.columns}")
         sequenced_data = preprocessor.transform(train_data)
 
         # Cache to avoid recomputation
         if self.verbosity >= 3:
             print("[RNN Fit] Caching sequenced data...")
         sequenced_data = sequenced_data.cache()
+
+        print(f"DEBUG: DEBUG: Sequenced data count: {sequenced_data.count()}")
+        sequenced_data.show(5)  # DEBUG
 
         # Detect actual feature dimension from data
         if self.verbosity >= 3:
@@ -684,6 +689,9 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Predict] Sequenced data columns: {sequenced_data.columns}")
 
+        print(f"DEBUG: Sequenced data count: {sequenced_data.count()}")
+        sequenced_data.show(5)  # DEBUG
+
         # Broadcast model weights for UDF
         if self.verbosity >= 2:
             print(f"[RNN Predict] Preparing model config and weights for UDF")
@@ -853,28 +861,34 @@ class RNNSkolModel(SkolModel):
             print(f"[RNN Predict] About to call predict_sequence UDF")
             print(f"[RNN Predict] input_size={input_size}, window_size={window_size}")
             # Check what's actually in sequence_features
-            print("[RNN Predict] DEBUG: Sampling sequence_features...")
+            print("[RNN Predict] Sampling sequence_features...")
             first_seq = sequenced_data.select("sequence_features").first()
             if first_seq and first_seq.sequence_features:
-                print(f"[RNN Predict] DEBUG: Sample has {len(first_seq.sequence_features)} features")
+                print(f"[RNN Predict] Sample has {len(first_seq.sequence_features)} features")
                 if len(first_seq.sequence_features) > 0:
                     feat0 = first_seq.sequence_features[0]
-                    print(f"[RNN Predict] DEBUG: First feature type: {type(feat0)}")
+                    print(f"[RNN Predict] First feature type: {type(feat0)}")
                     if hasattr(feat0, 'toArray'):
                         arr = feat0.toArray()
-                        print(f"[RNN Predict] DEBUG: First feature array length: {len(arr)}")
-                        print(f"[RNN Predict] DEBUG: First feature sample values: {arr[:5]}")
+                        print(f"[RNN Predict] First feature array length: {len(arr)}")
+                        print(f"[RNN Predict] First feature sample values: {arr[:5]}")
             else:
-                print("[RNN Predict] DEBUG: No sequence_features in sample!")
+                print("[RNN Predict] No sequence_features in sample!")
 
         predictions = sequenced_data.withColumn(
             "predictions",
-            predict_sequence(col("sequence_features"))
+            predict_sequence(col("sequence_features")).cast(ArrayType(DoubleType()))
         )
+        if self.verbosity >= 3:
+            print("[RNN Predict]: Predictions DataFrame schema:")
+            predictions.printSchema()
+            print("[RNN Predict]: Predictions DataFrame sample:")
+            predictions.show(5)
+
         if self.verbosity >= 3:
             print(f"[RNN Predict] Predictions columns: {predictions.columns}")
         if self.verbosity >= 4:
-            print(f"[RNN Predict] DEBUG: UDF application completed")
+            print(f"[RNN Predict] UDF application completed")
 
         # For line-level predictions, we need to explode the sequences back to individual lines
         # Use posexplode to get both position and value
@@ -897,56 +911,56 @@ class RNNSkolModel(SkolModel):
             # If we have labels (e.g., for evaluation), explode both predictions and labels
             if self.verbosity >= 2:
                 print("[RNN Predict] Exploding predictions")
-            predictions_exploded = predictions.select(
-                col(doc_id_col).alias("filename"),
-                col("value").alias("value"),
-                posexplode(col("predictions")).alias("pos", "prediction")
-            )
-            if self.verbosity >= 2:
-                pred_expl_count = predictions_exploded.count()
-                print(f"[RNN Predict] DEBUG: predictions_exploded count: {pred_expl_count}")
 
-            # Explode labels separately
-            if self.verbosity >= 2:
-                print("[RNN Predict] Exploding labels")
-            labels_exploded = predictions.select(
-                col(doc_id_col).alias("filename"),
-                posexplode(col("sequence_labels")).alias("pos", self.label_col)
-            )
-            if self.verbosity >= 2:
-                labels_expl_count = labels_exploded.count()
-                print(f"[RNN Predict] DEBUG: labels_exploded count: {labels_expl_count}")
+            # Create a new column 'zipped_arrays' using arrays_zip
+            predictions_zipped = predictions.withColumn(
+                "zipped_arrays",
+                F.arrays_zip("predictions", "sequence_features", "sequence_labels", "sequence_line_numbers"))
 
-            # Join on filename and position to align predictions with labels
-            # Cast prediction to DoubleType as required by Spark ML evaluators
-            if self.verbosity >= 2:
-                print("[RNN Predict] Joining predictions with labels")
-            result = predictions_exploded.join(
-                labels_exploded,
-                on=["filename", "pos"],
-                how="inner"
-            ).select(
-                "filename",
-                "pos",  # Keep line number for unique identification,
-                "value",
-                col("prediction").cast("double"),
-                self.label_col
+            # Posexplode the 'zipped_arrays' column
+            # This will create 'pos' (position/index) and 'col' (the struct containing the zipped values) columns
+            predictions_exploded = predictions_zipped.select(
+                predictions_zipped[doc_id_col],
+                predictions_zipped["value"],
+                F.posexplode(predictions_zipped["zipped_arrays"])
+            )
+
+            result = predictions_exploded.select(
+                predictions_exploded[doc_id_col],
+                predictions_exploded["pos"],
+                predictions_exploded["col"]["predictions"].alias("prediction"),
+                predictions_exploded["col"]["sequence_features"].alias("features"),
+                predictions_exploded["col"]["sequence_labels"].alias("label_indexed"),
+                predictions_exploded["col"]["sequence_line_numbers"].alias("line_number"),
+                predictions_exploded["value"].alias("value")
             )
             if self.verbosity >= 2:
                 print(f"[RNN Predict] Result columns: {result.columns}")
         else:
+            # If no labels, just explode predictions
             if self.verbosity >= 2:
-                print("[RNN Predict] Exploding predictions (no labels)")
-            # No labels, just return predictions
-            result = predictions.select(
-                col(doc_id_col).alias("filename"),
-                posexplode(col("predictions")).alias("pos", "prediction")
-            ).select(
-                "filename",
-                "pos",  # Keep line number for unique identification
-                col("prediction").cast("double"),
-                self.label_col
+                print("[RNN Predict] Exploding predictions without labels")
+
+            # Create a new column 'zipped_arrays' using arrays_zip
+            predictions_zipped = predictions.withColumn(
+                "zipped_arrays",
+                F.arrays_zip("predictions", "sequence_features", "sequence_line_numbers"))
+
+            # Posexplode the 'zipped_arrays' column
+            predictions_exploded = predictions_zipped.select(
+                predictions_zipped[doc_id_col],
+                F.posexplode(predictions_zipped["zipped_arrays"])
             )
+
+            result = predictions_exploded.select(
+                predictions_exploded[doc_id_col],
+                predictions_exploded["pos"],
+                predictions_exploded["col"]["predictions"].alias("prediction"),
+                predictions_exploded["col"]["sequence_features"].alias("features"),
+                predictions_exploded["col"]["sequence_line_numbers"].alias("line_number")
+            )
+            if self.verbosity >= 2:
+                print(f"[RNN Predict] Result columns: {result.columns}")
 
         if self.verbosity >= 1:
             print("[RNN Predict] Prediction completed successfully")
