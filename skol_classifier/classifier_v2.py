@@ -594,6 +594,13 @@ class SkolClassifierV2:
         from pyspark.sql.functions import udf
         from pyspark.sql.types import StringType
 
+        # Standardize column names for consistency
+        # RNN models use 'filename' and 'pos', others use 'doc_id'
+        if "filename" in predictions_df.columns and "doc_id" not in predictions_df.columns:
+            predictions_df = predictions_df.withColumnRenamed("filename", "doc_id")
+        if "pos" in predictions_df.columns and "line_num" not in predictions_df.columns:
+            predictions_df = predictions_df.withColumnRenamed("pos", "line_num")
+
         # Create UDF to map indices to labels
         label_map = self._reverse_label_mapping
 
@@ -778,6 +785,25 @@ class SkolClassifierV2:
             classifier_model.save(str(classifier_path))
 
             # Save metadata
+            # For RNN models, save the actual model parameters (not the original params)
+            if self.model_type == 'rnn':
+                actual_model_params = {
+                    'input_size': self._model.input_size,
+                    'hidden_size': self._model.hidden_size,
+                    'num_layers': self._model.num_layers,
+                    'num_classes': self._model.num_classes,
+                    'dropout': self._model.dropout,
+                    'window_size': self._model.window_size,
+                    'batch_size': self._model.batch_size,
+                    'epochs': self._model.epochs,
+                    'num_workers': self._model.num_workers,
+                    'verbosity': self._model.verbosity,
+                }
+                if hasattr(self._model, 'name'):
+                    actual_model_params['name'] = self._model.name
+            else:
+                actual_model_params = self.model_params
+
             metadata = {
                 'label_mapping': self._label_mapping,
                 'config': {
@@ -785,7 +811,7 @@ class SkolClassifierV2:
                     'use_suffixes': self.use_suffixes,
                     'min_doc_freq': self.min_doc_freq,
                     'model_type': self.model_type,
-                    'model_params': self.model_params
+                    'model_params': actual_model_params
                 },
                 'version': '2.0'
             }
@@ -833,26 +859,35 @@ class SkolClassifierV2:
             with tarfile.open(fileobj=archive_buffer, mode='r:gz') as tar:
                 tar.extractall(temp_path)
 
-            # Load feature pipeline
-            pipeline_path = temp_path / "feature_pipeline"
-            self._feature_pipeline = PipelineModel.load(str(pipeline_path))
-
-            # Load classifier model
-            classifier_path = temp_path / "classifier_model.h5"
-            classifier_model = PipelineModel.load(str(classifier_path))
-
-            # Load metadata
+            # Load metadata first to know model type
             metadata_path = temp_path / "metadata.json"
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
 
             self._label_mapping = metadata['label_mapping']
             self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
+            model_type = metadata['config']['model_type']
+
+            # Load feature pipeline
+            pipeline_path = temp_path / "feature_pipeline"
+            self._feature_pipeline = PipelineModel.load(str(pipeline_path))
+
+            # Load classifier model (different approach for RNN vs traditional ML)
+            classifier_path = temp_path / "classifier_model.h5"
+
+            if model_type == 'rnn':
+                # For RNN models, load the Keras .h5 file directly
+                from tensorflow import keras
+                keras_model = keras.models.load_model(str(classifier_path))
+                classifier_model = keras_model  # This is the Keras model itself
+            else:
+                # For traditional ML models, load as PipelineModel
+                classifier_model = PipelineModel.load(str(classifier_path))
 
             # Recreate the SkolModel wrapper using factory
             features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
             self._model = create_model(
-                model_type=metadata['config']['model_type'],
+                model_type=model_type,
                 features_col=features_col,
                 label_col="label_indexed",
                 **metadata['config'].get('model_params', {})

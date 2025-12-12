@@ -232,6 +232,145 @@ try:
             print(f"  {key}: {value}")
     print()
 
+    # Test model save and load with Redis
+    print("=" * 70)
+    print("TESTING MODEL SAVE/LOAD (Redis)")
+    print("=" * 70)
+    print()
+
+    # Split data for testing
+    train_df, test_df = df.randomSplit([0.8, 0.2], seed=42)
+
+    # Setup Redis client
+    import redis
+    redis_key = "test_rnn_model_synthetic"
+    try:
+        redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=False)
+        redis_client.ping()
+        print("✓ Connected to Redis")
+    except Exception as e:
+        print(f"⚠ WARNING: Could not connect to Redis: {e}")
+        print("Skipping save/load test")
+        redis_client = None
+
+    if redis_client:
+        # Configure the classifier for Redis storage
+        classifier.model_storage = 'redis'
+        classifier.redis_client = redis_client
+        classifier.redis_key = redis_key
+
+        # Save model to Redis
+        print(f"Saving model to Redis key: {redis_key}")
+        classifier.save_model()
+        print("✓ Model saved to Redis")
+        print()
+
+        # Add a dummy 'value' column to test_df for prediction compatibility
+        # The RNN model doesn't use this column, but the output formatter expects it
+        from pyspark.sql.functions import lit
+        test_df_with_value = test_df.withColumn("value", lit(""))
+
+        # Apply feature pipeline to test data
+        test_df_featured = classifier._feature_pipeline.transform(test_df)
+
+        # Make predictions with original model
+        # Use internal _model.predict and then add decoded labels manually
+        print("Making predictions with ORIGINAL model...")
+        original_predictions_raw = classifier._model.predict(test_df_featured)
+        original_predictions = classifier._decode_predictions(original_predictions_raw)
+        original_predictions = original_predictions.select("doc_id", "line_num", "prediction", "predicted_label")
+        original_count = original_predictions.count()
+        print(f"✓ Original model predictions: {original_count} rows")
+
+        # Collect a few predictions for comparison
+        original_sample = original_predictions.limit(10).collect()
+        if original_count == 0:
+            print("⚠ WARNING: Original model produced 0 predictions!")
+        print()
+
+        # Create a new classifier instance and load the model from Redis
+        print("Loading model into NEW classifier instance from Redis...")
+        classifier_loaded = SkolClassifierV2(
+            spark=spark,
+            input_source='dataframe',
+            output_dest=None,
+            model_storage='redis',
+            redis_client=redis_client,
+            redis_key=redis_key,
+            model_type='rnn',
+            use_suffixes=True,
+            min_doc_freq=1,
+            **model_params
+        )
+        classifier_loaded.load_model()
+        print("✓ Model loaded from Redis")
+        print(f"  DEBUG: Loaded model input_size: {classifier_loaded._model.input_size}")
+        print(f"  DEBUG: Loaded model window_size: {classifier_loaded._model.window_size}")
+        print()
+
+        # Apply the LOADED classifier's feature pipeline to test data
+        # (cannot reuse test_df_featured from original classifier)
+        test_df_featured_loaded = classifier_loaded._feature_pipeline.transform(test_df)
+        print(f"  DEBUG: Featured loaded data count: {test_df_featured_loaded.count()}")
+        print(f"  DEBUG: Featured loaded columns: {test_df_featured_loaded.columns}")
+
+        # Make predictions with loaded model
+        print("Making predictions with LOADED model...")
+        loaded_predictions_raw = classifier_loaded._model.predict(test_df_featured_loaded)
+        print(f"  DEBUG: Raw predictions count: {loaded_predictions_raw.count()}")
+        print(f"  DEBUG: Raw predictions columns: {loaded_predictions_raw.columns}")
+
+        # Show a sample of raw predictions
+        if loaded_predictions_raw.count() > 0:
+            print("  DEBUG: Sample raw predictions:")
+            loaded_predictions_raw.show(5, truncate=False)
+
+        loaded_predictions = classifier_loaded._decode_predictions(loaded_predictions_raw)
+        print(f"  DEBUG: After decode count: {loaded_predictions.count()}")
+
+        loaded_predictions = loaded_predictions.select("doc_id", "line_num", "prediction", "predicted_label")
+        loaded_count = loaded_predictions.count()
+        print(f"✓ Loaded model predictions: {loaded_count} rows")
+
+        # Collect a few predictions for comparison
+        loaded_sample = loaded_predictions.limit(10).collect()
+        if loaded_count == 0:
+            print("⚠ WARNING: Loaded model produced 0 predictions!")
+        print()
+
+        # Compare predictions
+        print("Comparing predictions...")
+        print("-" * 70)
+        print(f"{'Doc ID':<15} {'Line#':<7} {'Original':<12} {'Loaded':<12} {'Match':<10}")
+        print("-" * 70)
+
+        mismatches = 0
+        for i in range(min(len(original_sample), len(loaded_sample))):
+            orig = original_sample[i]
+            load = loaded_sample[i]
+            match = "✓" if orig.prediction == load.prediction else "✗"
+            if orig.prediction != load.prediction:
+                mismatches += 1
+            print(f"{orig.doc_id:<15} {orig.line_num:<7} {orig.prediction:<12.1f} {load.prediction:<12.1f} {match:<10}")
+
+        print("-" * 70)
+        print()
+
+        if mismatches == 0:
+            print("✓✓✓ ALL PREDICTIONS MATCH ✓✓✓")
+            print("The saved and loaded model produces identical predictions!")
+        else:
+            print(f"⚠ WARNING: {mismatches} predictions differ between original and loaded model")
+        print()
+
+        # Clean up Redis key
+        try:
+            redis_client.delete(redis_key)
+            print(f"✓ Cleaned up Redis key: {redis_key}")
+        except Exception as e:
+            print(f"⚠ Could not clean up Redis key: {e}")
+        print()
+
     # Success indicators
     if results.get('accuracy', 0) > 0:
         print("✓✓✓ SUCCESS ✓✓✓")
