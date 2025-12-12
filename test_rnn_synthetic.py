@@ -152,7 +152,7 @@ print()
 # Create DataFrame
 # Note: The FeatureExtractor expects a column named "value" by default
 schema = StructType([
-    StructField("filename", StringType(), False),
+    StructField("doc_id", StringType(), False),
     StructField("value", StringType(), False),
     StructField("label", StringType(), False),
 ])
@@ -218,6 +218,10 @@ logistic_classifier = SkolClassifierV2(
 
 # Both classifier loaders produce the same result.
 df = rnn_classifier.load_raw_from_df(df)
+if args.verbosity >= 3:
+    print("Sample annotated data:")
+    df.show(10, truncate=60)
+    print()
 
 print("✓ Classifiers initialized")
 print()
