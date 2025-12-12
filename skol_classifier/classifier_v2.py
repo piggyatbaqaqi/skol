@@ -48,8 +48,10 @@ Example usage:
 from typing import Optional, List, Dict, Any, Literal
 from pathlib import Path
 
-from pyspark.sql import SparkSession, DataFrame
 from pyspark.ml import PipelineModel
+from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql.functions import explode, split, col, trim, row_number, lit
+from pyspark.sql.window import Window
 
 # Import helper classes
 from .feature_extraction import FeatureExtractor
@@ -392,13 +394,6 @@ class SkolClassifierV2:
                     first_pred = test_predictions.first()
                     print(f"  {first_pred}")
 
-        #if model_verbosity >= 3:
-        if False:  # Disabled: .show() can fail with Pandas UDF results
-            print("[Classifier Fit] Test predictions schema:")
-            test_predictions.printSchema()
-            print("[Classifier Fit] Test predictions sample:")
-            test_predictions.show(5)
-
         # Calculate stats using model's method
         if model_verbosity >= 1:
             print("[Classifier Fit] Calculating statistics")
@@ -514,10 +509,12 @@ class SkolClassifierV2:
         from .preprocessing import RawTextLoader
 
         loader = RawTextLoader(self.spark)
-        return loader.load_files(
+        df = loader.load_files(
             self.file_paths,
             line_level=self.line_level
         )
+
+        return self.load_raw_from_df(df)
 
     def _load_raw_from_couchdb(self) -> DataFrame:
         """Load raw text from CouchDB."""
@@ -530,18 +527,23 @@ class SkolClassifierV2:
 
         df = conn.load_distributed(self.spark, self.couchdb_pattern)
 
+        return self.load_raw_from_df(df)
+
+    def load_raw_from_df(self, df: DataFrame) -> DataFrame:
+        """Load raw text from provided DataFrame."""
+        if "doc_id" not in df.columns:
+            df = df.withColumn("doc_id", col("filename"))
+        if "attachment_name" not in df.columns:
+            df = df.withColumn("attachment_name", lit("main.txt"))
+
         # Split into lines if line_level mode
         if self.line_level:
-            from pyspark.sql.functions import explode, split, col, trim, row_number, lit
-            from pyspark.sql.window import Window
-
             df = df.withColumn("value", explode(split(col("value"), "\\n")))
             df = df.filter(trim(col("value")) != "")
 
             # Add line numbers
             window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
             df = df.withColumn("line_number", row_number().over(window_spec) - 1)
-
         return df
 
     def _load_annotated_data(self) -> DataFrame:
@@ -598,8 +600,8 @@ class SkolClassifierV2:
         # RNN models use 'filename' and 'pos', others use 'doc_id'
         if "filename" in predictions_df.columns and "doc_id" not in predictions_df.columns:
             predictions_df = predictions_df.withColumnRenamed("filename", "doc_id")
-        if "pos" in predictions_df.columns and "line_num" not in predictions_df.columns:
-            predictions_df = predictions_df.withColumnRenamed("pos", "line_num")
+        if "pos" in predictions_df.columns and "line_number" not in predictions_df.columns:
+            predictions_df = predictions_df.withColumnRenamed("pos", "line_number")
 
         # Create UDF to map indices to labels
         label_map = self._reverse_label_mapping

@@ -114,7 +114,6 @@ def generate_document(doc_id, num_lines):
     """Generate a synthetic document with mixed labels."""
     lines = []
     labels = []
-    line_nums = []
     for i in range(num_lines):
         # Mix of labels with some bias
         if i < num_lines // 3:
@@ -130,23 +129,22 @@ def generate_document(doc_id, num_lines):
 
         lines.append(generate_line(label))
         labels.append(label)
-        line_nums.append(i + 1)
 
-    return doc_id, lines, labels, line_nums
+    return doc_id, lines, labels
 
 # Generate documents
 print(f"Generating {args.num_docs} documents with {args.lines_per_doc} lines each...")
 documents = []
 for i in range(args.num_docs):
     doc_id = f"doc_{i:03d}.txt"
-    filename, lines, labels, line_nums = generate_document(doc_id, args.lines_per_doc)
-    for line, label, line_num in zip(lines, labels, line_nums):
-        documents.append((filename, line, label, line_num))
+    filename, lines, labels = generate_document(doc_id, args.lines_per_doc)
+    for line, label in zip(lines, labels):
+        documents.append((filename, line, label))
 
 print(f"✓ Generated {len(documents)} total lines")
 print(f"  Label distribution:")
 for label in LABELS:
-    count = sum(1 for _, _, l, _ in documents if l == label)
+    count = sum(1 for _, _, l in documents if l == label)
     pct = 100.0 * count / len(documents)
     print(f"    {label}: {count} ({pct:.1f}%)")
 print()
@@ -157,7 +155,6 @@ schema = StructType([
     StructField("filename", StringType(), False),
     StructField("value", StringType(), False),
     StructField("label", StringType(), False),
-    StructField("line_num", IntegerType(), False)
 ])
 
 df = spark.createDataFrame(documents, schema)
@@ -188,6 +185,7 @@ model_params = {
     'batch_size': 8,        # Small batches
     'epochs': args.epochs,
     'num_workers': 2,
+    'line_level': True,
     'verbosity': args.verbosity
 }
 
@@ -218,6 +216,8 @@ logistic_classifier = SkolClassifierV2(
     **model_params  # Spread the dict instead of passing as model_params=
 )
 
+# Both classifier loaders produce the same result.
+df = rnn_classifier.load_raw_from_df(df)
 
 print("✓ Classifiers initialized")
 print()
@@ -286,7 +286,7 @@ try:
 
         # Make predictions with original model
         logistic_original_predictions = logistic_classifier.predict(test_df)
-        logistic_original_predictions = logistic_original_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        logistic_original_predictions = logistic_original_predictions.select("doc_id", "line_number", "prediction", "predicted_label", "value")
         logistic_original_count = logistic_original_predictions.count()
         print(f"✓ Original LOGISTIC model predictions: {logistic_original_count} rows")
 
@@ -328,12 +328,12 @@ try:
             print("  Sample LOGISTIC raw predictions:")
             logistic_loaded_predictions.show(5, truncate=False)
 
-        # logistic_loaded_predictions = logistic_loaded_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        # logistic_loaded_predictions = logistic_loaded_predictions.select("doc_id", "line_number", "prediction", "predicted_label", "value")
         logistic_loaded_count = logistic_loaded_predictions.count()
         print(f"✓ Loaded LOGISTIC model predictions: {logistic_loaded_count} rows")
 
         # Collect a few predictions for comparison
-        logistic_loaded_sample = logistic_loaded_predictions.orderBy("doc_id", "line_num").limit(10).collect()
+        logistic_loaded_sample = logistic_loaded_predictions.orderBy("doc_id", "line_number").limit(10).collect()
         if logistic_loaded_count == 0:
             print("⚠ WARNING: Loaded  LOGISTIC model produced 0 predictions!")
         print()
@@ -351,7 +351,7 @@ try:
             match = "✓" if orig.prediction == load.prediction else "✗"
             if orig.prediction != load.prediction:
                 mismatches += 1
-            print(f"{orig.doc_id:<15} {orig.line_num:<7} {orig.prediction:<12.1f} {load.prediction:<12.1f} {match:<10}")
+            print(f"{orig.doc_id:<15} {orig.line_number:<7} {orig.prediction:<12.1f} {load.prediction:<12.1f} {match:<10}")
 
         print("-" * 70)
         print()
@@ -446,7 +446,7 @@ try:
         # Make predictions with original model
         print("Making predictions with ORIGINAL model...")
         rnn_original_predictions = rnn_classifier.predict(test_df)
-        # rnn_original_predictions = rnn_original_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        # rnn_original_predictions = rnn_original_predictions.select("doc_id", "line_number", "prediction", "predicted_label", "value")
         rnn_original_count = rnn_original_predictions.count()
         print(f"✓ Original RNN model predictions: {rnn_original_count} rows")
 
@@ -479,20 +479,20 @@ try:
 
         # Make predictions with loaded model
         print("Making predictions with LOADED model...")
-        rnn_loaded_predictions_raw = rnn_classifier_loaded.predict(rnn_test_df_featured_loaded)
-        print(f"  Raw RNN predictions count: {rnn_loaded_predictions_raw.count()}")
-        print(f"  Raw RNN predictions columns: {rnn_loaded_predictions_raw.columns}")
+        rnn_loaded_predictions = rnn_classifier_loaded.predict(test_df)
+        print(f"  Raw RNN predictions count: {rnn_loaded_predictions.count()}")
+        print(f"  Raw RNN predictions columns: {rnn_loaded_predictions.columns}")
         # Show a sample of raw predictions
         if rnn_loaded_predictions.count() > 0:
             print("  Sample RNN raw predictions:")
             rnn_loaded_predictions.show(5, truncate=False)
 
-        # rnn_loaded_predictions = rnn_loaded_predictions.select("doc_id", "line_num", "prediction", "predicted_label", "value")
+        # rnn_loaded_predictions = rnn_loaded_predictions.select("doc_id", "line_number", "prediction", "predicted_label", "value")
         rnn_loaded_count = rnn_loaded_predictions.count()
         print(f"✓ Loaded RNN model predictions: {rnn_loaded_count} rows")
 
         # Collect a few predictions for comparison
-        rnn_loaded_sample = rnn_loaded_predictions.orderBy("doc_id", "line_num").limit(10).collect()
+        rnn_loaded_sample = rnn_loaded_predictions.orderBy("doc_id", "line_number").limit(10).collect()
         if rnn_loaded_count == 0:
             print("⚠ WARNING: Loaded  RNN model produced 0 predictions!")
         print()
@@ -510,7 +510,7 @@ try:
             match = "✓" if orig.prediction == load.prediction else "✗"
             if orig.prediction != load.prediction:
                 mismatches += 1
-            print(f"{orig.doc_id:<15} {orig.line_num:<7} {orig.prediction:<12.1f} {load.prediction:<12.1f} {match:<10}")
+            print(f"{orig.doc_id:<15} {orig.line_number:<7} {orig.prediction:<12.1f} {load.prediction:<12.1f} {match:<10}")
 
         print("-" * 70)
         print()

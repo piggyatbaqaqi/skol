@@ -147,7 +147,9 @@ class SequencePreprocessor(Transformer):
         inputCol: str = "features",
         outputCol: str = "sequence_features",
         docIdCol: str = "doc_id",
+        lineNumberCol: str = "line_number",
         labelCol: str = "label_indexed",
+        valueCol: str = "value",
         window_size: int = 50
     ):
         """
@@ -157,6 +159,7 @@ class SequencePreprocessor(Transformer):
             inputCol: Column containing feature vectors
             outputCol: Column for output sequences
             docIdCol: Column containing document IDs
+            lineNoCol: Column containing line numbers (for sorting)
             labelCol: Column containing labels
             window_size: Maximum sequence length
         """
@@ -164,7 +167,9 @@ class SequencePreprocessor(Transformer):
         self.inputCol = inputCol
         self.outputCol = outputCol
         self.docIdCol = docIdCol
+        self.lineNoCol = lineNumberCol
         self.labelCol = labelCol
+        self.valueCol = valueCol
         self.window_size = window_size
 
     def getInputCol(self):
@@ -174,6 +179,10 @@ class SequencePreprocessor(Transformer):
     def getOutputCol(self):
         """Get output column name."""
         return self.outputCol
+
+    def getLineNoCol(self):
+        """Get line number column name."""
+        return self.lineNoCol
 
     def _transform(self, df: DataFrame) -> DataFrame:
         """
@@ -188,14 +197,14 @@ class SequencePreprocessor(Transformer):
             DataFrame with sequence_features and sequence_labels columns
         """
         input_col = self.getInputCol()
-        output_col = self.getOutputCol()
-        window = self.window_size
 
         # Simply group by document and collect all features and labels
         # We'll do windowing in the fit() method after collecting
-        grouped = df.groupBy(self.docIdCol).agg(
+        # The groupBy should produce a single (docid, value) per document.
+        grouped = df.groupBy(self.docIdCol, self.valueCol).agg(
             collect_list(input_col).alias("sequence_features"),
-            collect_list(self.labelCol).alias("sequence_labels")
+            collect_list(self.labelCol).alias("sequence_labels"),
+            collect_list(self.lineNoCol).alias("sequence_line_numbers")
         )
 
         return grouped
@@ -222,6 +231,7 @@ class RNNSkolModel(SkolModel):
         num_workers: int = 4,
         features_col: str = "combined_idf",
         label_col: str = "label_indexed",
+        line_no_col: str = "line_number",
         verbosity: int = 3,
         name: str = "RNN_BiLSTM"
     ):
@@ -240,6 +250,7 @@ class RNNSkolModel(SkolModel):
             num_workers: Number of Spark workers (unused in Pandas UDF approach)
             features_col: Name of features column
             label_col: Name of label column
+            line_no_col: Name of line number column
             verbosity: Verbosity level for logging
             name: Name of the model
         """
@@ -469,6 +480,7 @@ class RNNSkolModel(SkolModel):
 
         # Determine document ID column (CouchDB uses 'doc_id', files use 'filename')
         doc_id_col = "doc_id" if "doc_id" in train_data.columns else "filename"
+        line_no_col = "line_number" if "line_number" in train_data.columns else "dummy_line_number"
         if self.verbosity >= 3:
             print(f"[RNN Fit] Using document ID column: {doc_id_col}")
 
@@ -479,6 +491,7 @@ class RNNSkolModel(SkolModel):
             inputCol=self.features_col,
             outputCol="sequence_features",
             docIdCol=doc_id_col,
+            lineNumberCol=line_no_col,
             labelCol=self.label_col,
             window_size=self.window_size
         )
@@ -638,6 +651,7 @@ class RNNSkolModel(SkolModel):
 
         # Determine document ID column
         doc_id_col = "doc_id" if "doc_id" in data.columns else "filename"
+        line_no_col = "line_number" if "line_number" in data.columns else "dummy_line_number"
         if self.verbosity >= 3:
             print(f"[RNN Predict] Using document ID column: {doc_id_col}")
 
@@ -648,6 +662,7 @@ class RNNSkolModel(SkolModel):
             inputCol=self.features_col,
             outputCol="sequence_features",
             docIdCol=doc_id_col,
+            lineNumberCol=line_no_col,
             labelCol=self.label_col if self.label_col in data.columns else "dummy_label",
             window_size=self.window_size
         )
@@ -672,9 +687,9 @@ class RNNSkolModel(SkolModel):
         # Broadcast model weights for UDF
         if self.verbosity >= 2:
             print(f"[RNN Predict] Preparing model config and weights for UDF")
-            print(f"[RNN Predict] DEBUG: model_weights is None: {self.model_weights is None}")
+            print(f"[RNN Predict] model_weights is None: {self.model_weights is None}")
             if self.model_weights:
-                print(f"[RNN Predict] DEBUG: model_weights count: {len(self.model_weights)}")
+                print(f"[RNN Predict] model_weights count: {len(self.model_weights)}")
         model_config = self.keras_model.to_json()
         model_weights = self.model_weights
         input_size = self.input_size
@@ -835,8 +850,8 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 2:
             print("[RNN Predict] Applying prediction UDF to sequences")
         if self.verbosity >= 3:
-            print(f"[RNN Predict] DEBUG: About to call predict_sequence UDF")
-            print(f"[RNN Predict] DEBUG: input_size={input_size}, window_size={window_size}")
+            print(f"[RNN Predict] About to call predict_sequence UDF")
+            print(f"[RNN Predict] input_size={input_size}, window_size={window_size}")
             # Check what's actually in sequence_features
             print("[RNN Predict] DEBUG: Sampling sequence_features...")
             first_seq = sequenced_data.select("sequence_features").first()
@@ -870,20 +885,21 @@ class RNNSkolModel(SkolModel):
             # Debug: Check what's in predictions before exploding
             if self.verbosity >= 3:
                 pred_count = predictions.count()
-                print(f"[RNN Predict] DEBUG: predictions DataFrame has {pred_count} rows before explode")
+                print(f"[RNN Predict] predictions DataFrame has {pred_count} rows before explode")
                 if pred_count > 0:
                     first_row = predictions.first()
-                    print(f"[RNN Predict] DEBUG: First row predictions column: {first_row.predictions if first_row else 'None'}")
+                    print(f"[RNN Predict] First row predictions column: {first_row.predictions if first_row else 'None'}")
                     if first_row and first_row.predictions:
-                        print(f"[RNN Predict] DEBUG: Predictions type: {type(first_row.predictions)}, length: {len(first_row.predictions)}")
+                        print(f"[RNN Predict] Predictions type: {type(first_row.predictions)}, length: {len(first_row.predictions)}")
                     else:
-                        print(f"[RNN Predict] DEBUG: Predictions column is None or empty!")
+                        print(f"[RNN Predict] Predictions column is None or empty!")
 
             # If we have labels (e.g., for evaluation), explode both predictions and labels
             if self.verbosity >= 2:
                 print("[RNN Predict] Exploding predictions")
             predictions_exploded = predictions.select(
                 col(doc_id_col).alias("filename"),
+                col("value").alias("value"),
                 posexplode(col("predictions")).alias("pos", "prediction")
             )
             if self.verbosity >= 2:
@@ -911,7 +927,8 @@ class RNNSkolModel(SkolModel):
                 how="inner"
             ).select(
                 "filename",
-                "pos",  # Keep line number for unique identification
+                "pos",  # Keep line number for unique identification,
+                "value",
                 col("prediction").cast("double"),
                 self.label_col
             )
