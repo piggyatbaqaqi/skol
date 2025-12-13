@@ -693,6 +693,15 @@ class RNNSkolModel(SkolModel):
         if self.classifier_model is None:
             raise ValueError("Model not trained. Call fit() first.")
 
+        # Import tqdm for progress bar
+        try:
+            from tqdm.auto import tqdm
+            tqdm_available = True
+        except ImportError:
+            tqdm_available = False
+            if self.verbosity >= 2:
+                print("[RNN Predict] tqdm not available, progress bar disabled")
+
         # Determine document ID column
         doc_id_col = "doc_id" if "doc_id" in data.columns else "filename"
         line_no_col = "line_number" if "line_number" in data.columns else "dummy_line_number"
@@ -722,6 +731,19 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Predict] Sequenced data columns: {sequenced_data.columns}")
 
+        # Get total sequence count for progress bar
+        total_sequences = sequenced_data.count() if tqdm_available else 0
+        if tqdm_available and self.verbosity >= 1:
+            print(f"[RNN Predict] Total sequences to process: {total_sequences}")
+
+        # Create accumulator for progress tracking
+        if tqdm_available:
+            from pyspark import SparkContext
+            sc = SparkContext.getOrCreate()
+            sequences_processed_acc = sc.accumulator(0)
+        else:
+            sequences_processed_acc = None
+
         # Broadcast model weights for UDF
         if self.verbosity >= 2:
             print(f"[RNN Predict] Preparing model config and weights for UDF")
@@ -737,6 +759,7 @@ class RNNSkolModel(SkolModel):
         prediction_stride = self.prediction_stride
         prediction_batch_size = self.prediction_batch_size
         verbosity = self.verbosity  # Capture for UDF closure
+        show_progress = tqdm_available and self.verbosity >= 1
 
         # Define prediction UDF
         @pandas_udf(ArrayType(FloatType()))
@@ -764,7 +787,8 @@ class RNNSkolModel(SkolModel):
                         f.flush()
                 except Exception:
                     pass
-                print(msg, file=sys.stderr)
+                if verbosity >= 3:
+                    print(msg, file=sys.stderr)
 
             log(f"[UDF START] Processing {len(sorted_data_series)} sequences")
             log(f"[UDF START] Config: input_size={input_size}, window_size={window_size}, features_col={self.features_col}")
@@ -1026,6 +1050,11 @@ class RNNSkolModel(SkolModel):
             log(f"[UDF COMPLETE] Processed {len(sorted_data_series)} sequences, {len(all_windows)} total windows")
             log(f"[UDF COMPLETE] Non-empty results: {sum(1 for r in results if r and len(r) > 0)}")
             log(f"[UDF COMPLETE] Empty results: {sum(1 for r in results if not r or len(r) == 0)}")
+
+            # Update progress accumulator
+            if sequences_processed_acc is not None:
+                sequences_processed_acc.add(len(sorted_data_series))
+
             return pd.Series(results)
 
         # Apply prediction
@@ -1056,7 +1085,38 @@ class RNNSkolModel(SkolModel):
         )
 
         # Check for empty or null prediction arrays (indicates UDF failures)
-        total_seqs = predictions.count()
+        # Trigger computation with progress bar
+        if show_progress:
+            import threading
+            import time
+
+            pbar = tqdm(total=total_sequences, desc="Predicting sequences", unit="seq")
+
+            def update_progress():
+                """Background thread to update progress bar."""
+                last_value = 0
+                while not stop_progress.is_set():
+                    current = sequences_processed_acc.value
+                    if current > last_value:
+                        pbar.update(current - last_value)
+                        last_value = current
+                    time.sleep(0.5)  # Poll every 500ms
+
+            stop_progress = threading.Event()
+            progress_thread = threading.Thread(target=update_progress, daemon=True)
+            progress_thread.start()
+
+            try:
+                total_seqs = predictions.count()
+                # Final update to ensure we reach 100%
+                final_value = sequences_processed_acc.value
+                pbar.update(final_value - pbar.n)
+            finally:
+                stop_progress.set()
+                progress_thread.join(timeout=1.0)
+                pbar.close()
+        else:
+            total_seqs = predictions.count()
         empty_preds = predictions.filter(F.size(col("predictions")) == 0)
         empty_count = empty_preds.count()
         null_preds = predictions.filter(col("predictions").isNull())
