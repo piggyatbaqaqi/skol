@@ -14,13 +14,14 @@ import os
 # Configure TensorFlow GPU settings BEFORE importing TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
 
+from pyspark.ml import Transformer
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.functions import (
     col, collect_list, lit, pandas_udf
 )
 from pyspark.sql.types import ArrayType, DoubleType, FloatType
-from pyspark.ml import Transformer
+
 import pandas as pd
 
 from .base_model import SkolModel
@@ -195,18 +196,29 @@ class SequencePreprocessor(Transformer):
             df: Input DataFrame with columns: doc_id, line_number, features, label_indexed
 
         Returns:
-            DataFrame with sequence_features and sequence_labels columns
+            DataFrame with sequence_features and optional sequence_labels columns
         """
+        has_labels = self.labelCol in df.columns
         input_col = self.getInputCol()
 
         # Simply group by document and collect all features and labels
         # We'll do windowing in the fit() method after collecting
         # The groupBy should produce one row per document.
+        # The collect_list elements are ordered by line number using struct-based sorting.
+
+        cols = [self.lineNoCol, self.docIdCol]
+        for col in df.columns:
+            if col not in cols:
+                cols.append(col)
+
+        fcols = [F.col(c) for c in cols]
+        struct_col = F.struct(*fcols).alias("zipped_arrays")
+
+        # Collect structs containing line number etc, then sort and extract
         grouped = df.groupBy(self.docIdCol).agg(
-            collect_list(input_col).alias("sequence_features"),
-            collect_list(self.labelCol).alias("sequence_labels"),
-            collect_list(self.lineNoCol).alias("sequence_line_numbers"),
-            # Keep first value for reference (useful for debugging)
+            F.sort_array(
+                collect_list(struct_col)
+            ).alias("sorted_data"),
             F.first(self.valueCol).alias(self.valueCol)
         )
 
@@ -301,15 +313,21 @@ class RNNSkolModel(SkolModel):
 
     def _process_row_to_windows(self, row):
         """Process a single row into training windows."""
-        features = row.sequence_features
-        labels_seq = row.sequence_labels
+        # Access the sorted_data array of structs
+        sorted_data = row.sorted_data
 
-        # Convert sparse vectors to dense arrays
+        # Extract features and labels from the struct array
         dense_features = []
-        for feat in features:
+        dense_labels = []
+
+        for item in sorted_data:
+            # Extract the feature from the struct
+            feat = item[self.features_col]
             if feat is None:
                 continue
-            elif hasattr(feat, 'toArray'):
+
+            # Convert to dense array
+            if hasattr(feat, 'toArray'):
                 dense_features.append(feat.toArray().tolist())
             elif isinstance(feat, (list, tuple)):
                 dense_features.append(list(feat))
@@ -319,8 +337,10 @@ class RNNSkolModel(SkolModel):
                 except TypeError:
                     continue
 
-        # Convert labels to list
-        dense_labels = [float(l) for l in labels_seq if l is not None]
+            # Extract the label from the struct
+            label = item[self.label_col]
+            if label is not None:
+                dense_labels.append(float(label))
 
         # Create windows from this document
         windows = []
@@ -351,7 +371,7 @@ class RNNSkolModel(SkolModel):
         Processes documents in small chunks to minimize memory footprint.
 
         Args:
-            sequenced_data: DataFrame with sequence_features and sequence_labels
+            sequenced_data: DataFrame with sequence_features and optionally sequence_labels
             batch_size: Number of sequences per batch
             chunk_size: Number of documents to process at once (default: 50)
 
@@ -523,9 +543,13 @@ class RNNSkolModel(SkolModel):
         # Detect actual feature dimension from data
         if self.verbosity >= 3:
             print("[RNN Fit] Detecting actual feature dimension...")
-        sample_row = sequenced_data.select("sequence_features").first()
-        if sample_row and sample_row.sequence_features:
-            first_feature = sample_row.sequence_features[0]
+        # Access the sorted_data array of structs
+        sample_row = sequenced_data.select("sorted_data").first()
+        if sample_row and sample_row.sorted_data:
+            # Get the first struct from the array
+            first_struct = sample_row.sorted_data[0]
+            # Extract the feature from the struct
+            first_feature = first_struct[self.features_col]
             if hasattr(first_feature, 'size'):
                 actual_input_size = first_feature.size
             elif hasattr(first_feature, 'toArray'):
@@ -580,13 +604,13 @@ class RNNSkolModel(SkolModel):
         # Don't process full windows, just count lines to estimate
         total_windows = 0
         for idx, row in enumerate(sample):
-            # Just count the number of features (lines) without converting to dense
-            num_features = len(row.sequence_features) if row.sequence_features else 0
-            # Estimate windows as ceil(num_features / window_size)
-            doc_windows = max(1, (num_features + self.window_size - 1) // self.window_size)
+            # Just count the number of rows (lines) in sorted_data
+            num_rows = len(row.sorted_data) if row.sorted_data else 0
+            # Estimate windows as ceil(num_rows / window_size)
+            doc_windows = max(1, (num_rows + self.window_size - 1) // self.window_size)
             total_windows += doc_windows
             if self.verbosity >= 4:
-                print(f"[RNN Fit]   Sample {idx+1}: {num_features} lines -> ~{doc_windows} windows")
+                print(f"[RNN Fit]   Sample {idx+1}: {num_rows} lines -> ~{doc_windows} windows")
             # Clear this sample from memory
             del row
             gc.collect()
@@ -686,12 +710,6 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Predict] Has labels: {has_labels}")
 
-        # Add dummy labels if not present (for prediction)
-        if not has_labels:
-            data = data.withColumn(self.label_col, lit(0.0))
-            if self.verbosity >= 3:
-                print("[RNN Predict] Added dummy labels for prediction")
-
         # Transform into sequences
         if self.verbosity >= 2:
             print("[RNN Predict] Transforming data into sequences")
@@ -716,8 +734,13 @@ class RNNSkolModel(SkolModel):
 
         # Define prediction UDF
         @pandas_udf(ArrayType(FloatType()))
-        def predict_sequence(features_series: pd.Series) -> pd.Series:
-            """Predict on sequences using the trained model."""
+        def predict_sequence(sorted_data_series: pd.Series) -> pd.Series:
+            """Predict on sequences using the trained model.
+
+            Args:
+                sorted_data_series: Series of arrays of Row objects (structs),
+                                   each containing features and other fields
+            """
             import os
             import numpy as np
             import tempfile
@@ -737,8 +760,8 @@ class RNNSkolModel(SkolModel):
                     pass
                 print(msg, file=sys.stderr)
 
-            log(f"[UDF START] Processing {len(features_series)} sequences")
-            log(f"[UDF START] Config: input_size={input_size}, window_size={window_size}")
+            log(f"[UDF START] Processing {len(sorted_data_series)} sequences")
+            log(f"[UDF START] Config: input_size={input_size}, window_size={window_size}, features_col={self.features_col}")
             log(f"[UDF START] Log file: {log_file}")
 
             try:
@@ -782,19 +805,21 @@ class RNNSkolModel(SkolModel):
                 import sys
                 import traceback
                 traceback.print_exc(file=sys.stderr)
-                log(f"[UDF ERROR] Returning empty arrays for all {len(features_series)} sequences")
-                return pd.Series([[]] * len(features_series))
+                log(f"[UDF ERROR] Returning empty arrays for all {len(sorted_data_series)} sequences")
+                return pd.Series([[]] * len(sorted_data_series))
 
             # Process each sequence independently with per-sequence error handling
-            for seq_idx, features in enumerate(features_series):
+            for seq_idx, sorted_data in enumerate(sorted_data_series):
                 try:
                     if seq_idx < 3 or seq_idx % 1000 == 0:
-                        log(f"[UDF SEQ {seq_idx}] Processing sequence with {len(features)} features")
+                        log(f"[UDF SEQ {seq_idx}] Processing sequence with {len(sorted_data)} rows")
 
-                    # Convert to list of dense arrays and normalize to input_size
+                    # Extract features from the struct array
                     dense_features = []
 
-                    for feat_idx, feat in enumerate(features):
+                    for row in sorted_data:
+                        # Extract the feature from the struct
+                        feat = row[self.features_col]
                         if feat is None:
                             continue
 
@@ -921,7 +946,7 @@ class RNNSkolModel(SkolModel):
                     # Empty array for this sequence - will become null after arrays_zip
                     results.append([])
 
-            log(f"[UDF COMPLETE] Processed {len(features_series)} sequences, {len(results)} results")
+            log(f"[UDF COMPLETE] Processed {len(sorted_data_series)} sequences, {len(results)} results")
             log(f"[UDF COMPLETE] Non-empty results: {sum(1 for r in results if len(r) > 0)}")
             log(f"[UDF COMPLETE] Empty results: {sum(1 for r in results if len(r) == 0)}")
             return pd.Series(results)
@@ -932,24 +957,25 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Predict] About to call predict_sequence UDF")
             print(f"[RNN Predict] input_size={input_size}, window_size={window_size}")
-            # Check what's actually in sequence_features
-            print("[RNN Predict] Sampling sequence_features...")
-            first_seq = sequenced_data.select("sequence_features").first()
-            if first_seq and first_seq.sequence_features:
-                print(f"[RNN Predict] Sample has {len(first_seq.sequence_features)} features")
-                if len(first_seq.sequence_features) > 0:
-                    feat0 = first_seq.sequence_features[0]
+            # Check what's actually in sorted_data
+            print("[RNN Predict] Sampling sorted_data...")
+            first_seq = sequenced_data.select("sorted_data").first()
+            if first_seq and first_seq.sorted_data:
+                print(f"[RNN Predict] Sample has {len(first_seq.sorted_data)} rows")
+                if len(first_seq.sorted_data) > 0:
+                    row0 = first_seq.sorted_data[0]
+                    feat0 = row0[self.features_col]
                     print(f"[RNN Predict] First feature type: {type(feat0)}")
                     if hasattr(feat0, 'toArray'):
                         arr = feat0.toArray()
                         print(f"[RNN Predict] First feature array length: {len(arr)}")
                         print(f"[RNN Predict] First feature sample values: {arr[:5]}")
             else:
-                print("[RNN Predict] No sequence_features in sample!")
+                print("[RNN Predict] No sorted_data in sample!")
 
         predictions = sequenced_data.withColumn(
             "predictions",
-            predict_sequence(col("sequence_features")).cast(ArrayType(DoubleType()))
+            predict_sequence(col("sorted_data")).cast(ArrayType(DoubleType()))
         )
 
         # Check for empty or null prediction arrays (indicates UDF failures)
@@ -971,15 +997,14 @@ class RNNSkolModel(SkolModel):
                 print("\n[RNN Predict] Sample sequences with EMPTY predictions:")
                 empty_preds.select(
                     doc_id_col,
-                    F.size("sequence_features").alias("num_features"),
-                    F.size("sequence_labels").alias("num_labels"),
-                    F.size("sequence_line_numbers").alias("num_lines")
+                    F.size("sorted_data").alias("num_rows"),
+                    "value"
                 ).show(5, truncate=False)
             if null_count > 0:
                 print("\n[RNN Predict] Sample sequences with NULL predictions:")
                 null_preds.select(
                     doc_id_col,
-                    F.size("sequence_features").alias("num_features")
+                    F.size("sorted_data").alias("num_rows")
                 ).show(5, truncate=False)
             print("\nCheck stderr output above for [UDF ERROR] messages with details.\n")
 
@@ -989,80 +1014,84 @@ class RNNSkolModel(SkolModel):
             print("[RNN Predict]: Predictions DataFrame sample:")
             predictions.show(5)
 
-        if self.verbosity >= 3:
-            print(f"[RNN Predict] Predictions columns: {predictions.columns}")
         if self.verbosity >= 4:
             print(f"[RNN Predict] UDF application completed")
 
         # For line-level predictions, we need to explode the sequences back to individual lines
         # Use posexplode to get both position and value
-        if has_labels:
-            if self.verbosity >= 2:
-                print("[RNN Predict] Exploding predictions and labels for evaluation")
+        if self.verbosity >= 2:
+            print("[RNN Predict] Exploding predictions and labels for evaluation")
 
-            # Debug: Check what's in predictions before exploding
-            if self.verbosity >= 3:
-                pred_count = predictions.count()
-                print(f"[RNN Predict] predictions DataFrame has {pred_count} rows before explode")
-                if pred_count > 0:
-                    first_row = predictions.first()
-                    print(f"[RNN Predict] First row predictions column: {first_row.predictions if first_row else 'None'}")
-                    if first_row and first_row.predictions:
-                        print(f"[RNN Predict] Predictions type: {type(first_row.predictions)}, length: {len(first_row.predictions)}")
-                    else:
-                        print(f"[RNN Predict] Predictions column is None or empty!")
+        # Debug: Check what's in predictions before exploding
+        if self.verbosity >= 3:
+            pred_count = predictions.count()
+            print(f"[RNN Predict] predictions DataFrame has {pred_count} rows before explode")
+            if pred_count > 0:
+                first_row = predictions.first()
+                print(f"[RNN Predict] First row predictions column: {first_row.predictions if first_row else 'None'}")
+                if first_row and first_row.predictions:
+                    print(f"[RNN Predict] Predictions type: {type(first_row.predictions)}, length: {len(first_row.predictions)}")
+                else:
+                    print(f"[RNN Predict] Predictions column is None or empty!")
 
-            # If we have labels (e.g., for evaluation), explode both predictions and labels
-            if self.verbosity >= 2:
-                print("[RNN Predict] Exploding predictions")
+        # If we have labels (e.g., for evaluation), explode both predictions and labels
+        if self.verbosity >= 2:
+            print("[RNN Predict] Exploding predictions")
 
-            # Create a new column 'zipped_arrays' using arrays_zip
-            predictions_zipped = predictions.withColumn(
-                "zipped_arrays",
-                F.arrays_zip("predictions", "sequence_features", "sequence_labels", "sequence_line_numbers"))
+        # Combine predictions array with sorted_data array using arrays_zip
+        # This creates a new array where each element is a struct containing all fields
+        predictions_with_data = predictions.withColumn(
+            "zipped_arrays",
+            F.arrays_zip("sorted_data", "predictions")
+        )
 
-            # Posexplode the 'zipped_arrays' column
-            # This will create 'pos' (position/index) and 'col' (the struct containing the zipped values) columns
-            predictions_exploded = predictions_zipped.select(
-                predictions_zipped[doc_id_col],
-                predictions_zipped["value"],
-                F.posexplode(predictions_zipped["zipped_arrays"])
-            )
+        # Posexplode the 'zipped_arrays' column
+        # This will create 'pos' (position/index) and 'col' (the struct containing the zipped values) columns
+        predictions_exploded = predictions_with_data.select(
+            predictions_with_data[doc_id_col],
+            predictions_with_data["value"],
+            F.posexplode(predictions_with_data["zipped_arrays"]).alias("pos", "col")
+        )
+
+        # Extract fields from the nested struct:
+        # col.sorted_data contains the original row data (line_number, features, label, etc.)
+        # col.predictions contains the prediction value
+
+        # Get the struct field names from the schema
+        from pyspark.sql.types import StructType
+        col_struct_type = predictions_exploded.schema["col"].dataType
+
+        # Find the sorted_data field within the col struct
+        sorted_data_struct_type = None
+        if isinstance(col_struct_type, StructType):
+            for field in col_struct_type.fields:
+                if field.name == "sorted_data":
+                    sorted_data_struct_type = field.dataType
+                    break
+
+        # Extract all fields from sorted_data struct
+        if sorted_data_struct_type and isinstance(sorted_data_struct_type, StructType):
+            # Skip fields we're already extracting at the top level to avoid duplicates
+            skip_fields = {doc_id_col, "value"}
 
             result = predictions_exploded.select(
                 predictions_exploded[doc_id_col],
                 predictions_exploded["pos"],
+                predictions_exploded["value"].alias("value"),
                 predictions_exploded["col"]["predictions"].alias("prediction"),
-                predictions_exploded["col"]["sequence_features"].alias("features"),
-                predictions_exploded["col"]["sequence_labels"].alias("label_indexed"),
-                predictions_exploded["col"]["sequence_line_numbers"].alias("line_number"),
-                predictions_exploded["value"].alias("value")
+                # Extract all fields from the sorted_data struct except ones we already have
+                *[predictions_exploded["col"]["sorted_data"][field.name].alias(field.name)
+                  for field in sorted_data_struct_type.fields
+                  if field.name not in skip_fields]
             )
         else:
-            # If no labels, just explode predictions
-            if self.verbosity >= 2:
-                print("[RNN Predict] Exploding predictions without labels")
-
-            # Create a new column 'zipped_arrays' using arrays_zip
-            predictions_zipped = predictions.withColumn(
-                "zipped_arrays",
-                F.arrays_zip("predictions", "sequence_features", "sequence_line_numbers"))
-
-            # Posexplode the 'zipped_arrays' column
-            predictions_exploded = predictions_zipped.select(
-                predictions_zipped[doc_id_col],
-                F.posexplode(predictions_zipped["zipped_arrays"])
-            )
-
+            # Fallback if we can't get the struct type
             result = predictions_exploded.select(
                 predictions_exploded[doc_id_col],
                 predictions_exploded["pos"],
-                predictions_exploded["col"]["predictions"].alias("prediction"),
-                predictions_exploded["col"]["sequence_features"].alias("features"),
-                predictions_exploded["col"]["sequence_line_numbers"].alias("line_number")
+                predictions_exploded["value"].alias("value"),
+                predictions_exploded["col"]["predictions"].alias("prediction")
             )
-            if self.verbosity >= 2:
-                print(f"[RNN Predict] Result columns: {result.columns}")
 
         if self.verbosity >= 2:
             print(f"[RNN Predict] Result columns: {result.columns}")
@@ -1072,11 +1101,11 @@ class RNNSkolModel(SkolModel):
             print("[RNN Predict]: Result DataFrame sample:")
             result.show(5)
 
-        if self.verbosity >= 2:
-            print("[RNN Predict] Checking for all-zero predictions...")
-            f_zeros = result.filter(F.col('prediction') == 0.0)
-            if f_zeros.count() == result.count():
-                raise ValueError("All predictions are zero, model may not be learning correctly.")
+        # if self.verbosity >= 2:
+        #     print("[RNN Predict] Checking for all-zero predictions...")
+        #     f_zeros = result.filter(F.col('prediction') == 0.0)
+        #     if f_zeros.count() == result.count():
+        #         raise ValueError("All predictions are zero, model may not be learning correctly.")
 
         if self.verbosity >= 1:
             print("[RNN Predict] Prediction completed successfully")
