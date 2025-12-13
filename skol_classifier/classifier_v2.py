@@ -801,6 +801,8 @@ class SkolClassifierV2:
                     'num_workers': self._model.num_workers,
                     'verbosity': self._model.verbosity,
                 }
+                if hasattr(self._model, 'prediction_stride'):
+                    actual_model_params['prediction_stride'] = self._model.prediction_stride
                 if hasattr(self._model, 'name'):
                     actual_model_params['name'] = self._model.name
             else:
