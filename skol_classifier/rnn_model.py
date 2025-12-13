@@ -229,6 +229,7 @@ class RNNSkolModel(SkolModel):
         num_classes: int = 3,
         dropout: float = 0.3,
         window_size: int = 50,
+        prediction_stride: Optional[int] = None,
         batch_size: int = 32,
         epochs: int = 10,
         num_workers: int = 4,
@@ -247,7 +248,11 @@ class RNNSkolModel(SkolModel):
             num_layers: Number of LSTM layers
             num_classes: Number of output classes
             dropout: Dropout rate
-            window_size: Maximum sequence length for windowing
+            window_size: Maximum sequence length for training and prediction windows
+            prediction_stride: Stride for sliding window during prediction.
+                             If None, defaults to window_size (non-overlapping windows).
+                             Use smaller values (e.g., window_size // 2) for overlapping windows
+                             to classify longer documents.
             batch_size: Batch size for training
             epochs: Number of training epochs
             num_workers: Number of Spark workers (unused in Pandas UDF approach)
@@ -276,6 +281,7 @@ class RNNSkolModel(SkolModel):
         self.num_classes = num_classes
         self.dropout = dropout
         self.window_size = window_size
+        self.prediction_stride = prediction_stride if prediction_stride is not None else window_size
         self.batch_size = batch_size
         self.epochs = epochs
         self.num_workers = num_workers
@@ -600,6 +606,7 @@ class RNNSkolModel(SkolModel):
             print(f"[RNN Fit]   Steps per epoch: {steps_per_epoch}")
             print(f"[RNN Fit]   Epochs: {self.epochs}")
             print(f"[RNN Fit]   Window size: {self.window_size}")
+            print(f"[RNN Fit]   Stride size: {self.prediction_stride}")
             print(f"[RNN Fit]   Input size: {self.input_size}")
 
         # Create generator
@@ -698,10 +705,13 @@ class RNNSkolModel(SkolModel):
             print(f"[RNN Predict] model_weights is None: {self.model_weights is None}")
             if self.model_weights:
                 print(f"[RNN Predict] model_weights count: {len(self.model_weights)}")
+            print(f"[RNN Predict] Using sliding window: window_size={self.window_size}, stride={self.prediction_stride}")
         model_config = self.keras_model.to_json()
         model_weights = self.model_weights
         input_size = self.input_size
         window_size = self.window_size
+        num_classes = self.num_classes
+        prediction_stride = self.prediction_stride
         verbosity = self.verbosity  # Capture for UDF closure
 
         # Define prediction UDF
@@ -835,31 +845,74 @@ class RNNSkolModel(SkolModel):
                     if len(dense_features) == 0:
                         dense_features = [[0.0] * input_size]  # Use one padded feature
 
-                    # Track length BEFORE padding to window_size (but AFTER ensuring non-empty)
-                    # This is the number of predictions we'll actually return
-                    original_length = min(len(dense_features), window_size)
+                    sequence_length = len(dense_features)
 
-                    # Pad or truncate to window_size for model input
-                    if len(dense_features) < window_size:
-                        # Each feature should be a list of floats with length input_size
-                        padding = [[0.0] * input_size] * (window_size - len(dense_features))
-                        dense_features = dense_features + padding
-                    elif len(dense_features) > window_size:
-                        # Only use first window_size features - we can't predict beyond this
-                        dense_features = dense_features[:window_size]
+                    # Use sliding window approach for sequences longer than window_size
+                    if sequence_length <= window_size:
+                        # Short sequence: pad to window_size and predict once
+                        if sequence_length < window_size:
+                            padding = [[0.0] * input_size] * (window_size - sequence_length)
+                            padded_features = dense_features + padding
+                        else:
+                            padded_features = dense_features
 
-                    # Predict
-                    X = np.array([dense_features], dtype=np.float32)
-                    if seq_idx < 2:
-                        log(f"[UDF SEQ {seq_idx}] Running prediction on shape {X.shape}, will return {original_length} predictions")
-                    preds = model.predict(X, verbose=0)[0]
+                        X = np.array([padded_features], dtype=np.float32)
+                        preds = model.predict(X, verbose=0)[0]
+                        pred_classes = [float(np.argmax(p)) for p in preds[:sequence_length]]
 
-                    # Get argmax for each timestep
-                    pred_classes = [float(np.argmax(p)) for p in preds]
-                    # Return only the predictions for actual features (not padding)
-                    results.append(pred_classes[:original_length])
-                    if seq_idx < 2:
-                        log(f"[UDF SEQ {seq_idx}] Success: {len(pred_classes[:original_length])} predictions")
+                        if seq_idx < 2:
+                            log(f"[UDF SEQ {seq_idx}] Short sequence: {sequence_length} features, 1 window")
+
+                        results.append(pred_classes)
+                    else:
+                        # Long sequence: use sliding windows with stride
+                        if seq_idx < 2:
+                            log(f"[UDF SEQ {seq_idx}] Long sequence: {sequence_length} features, using sliding windows")
+
+                        # Initialize prediction accumulator (sum of predictions) and count (how many windows predicted each position)
+                        # We'll store class probabilities and average them
+                        prediction_counts = np.zeros(sequence_length, dtype=np.int32)
+                        prediction_sums = np.zeros((sequence_length, num_classes), dtype=np.float32)
+
+                        # Create sliding windows
+                        num_windows = 0
+                        for window_start in range(0, sequence_length, prediction_stride):
+                            window_end = min(window_start + window_size, sequence_length)
+                            window_features = dense_features[window_start:window_end]
+
+                            # Pad if this is the last window and it's shorter than window_size
+                            if len(window_features) < window_size:
+                                padding = [[0.0] * input_size] * (window_size - len(window_features))
+                                window_features = window_features + padding
+
+                            # Predict for this window
+                            X = np.array([window_features], dtype=np.float32)
+                            window_preds = model.predict(X, verbose=0)[0]  # Shape: (window_size, num_classes)
+
+                            # Add predictions to accumulator (only for actual positions, not padding)
+                            actual_window_length = min(window_size, window_end - window_start)
+                            for i in range(actual_window_length):
+                                global_pos = window_start + i
+                                if global_pos < sequence_length:
+                                    prediction_sums[global_pos] += window_preds[i]
+                                    prediction_counts[global_pos] += 1
+
+                            num_windows += 1
+
+                        # Average overlapping predictions and take argmax
+                        pred_classes = []
+                        for i in range(sequence_length):
+                            if prediction_counts[i] > 0:
+                                avg_probs = prediction_sums[i] / prediction_counts[i]
+                                pred_classes.append(float(np.argmax(avg_probs)))
+                            else:
+                                # Shouldn't happen, but handle gracefully
+                                pred_classes.append(0.0)
+
+                        if seq_idx < 2:
+                            log(f"[UDF SEQ {seq_idx}] Used {num_windows} windows, generated {len(pred_classes)} predictions")
+
+                        results.append(pred_classes)
 
                 except Exception as e:
                     # Per-sequence failure - return empty array for THIS sequence only
