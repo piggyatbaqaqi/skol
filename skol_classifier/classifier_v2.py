@@ -408,8 +408,9 @@ class SkolClassifierV2:
 
         # Unpersist featured DataFrame to free memory
         if model_verbosity >= 2:
-            print("[Classifier Fit] Unpersisting featured DataFrame")
+            print("[Classifier Fit] Unpersisting featured DataFrame and result")
         featured_df.unpersist()
+        test_predictions.unpersist()
 
         if model_verbosity >= 1:
             print("[Classifier Fit] Evaluation complete, returning stats")
