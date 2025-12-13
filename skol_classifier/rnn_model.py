@@ -773,9 +773,9 @@ class RNNSkolModel(SkolModel):
                 # Import TensorFlow/Keras inside UDF after setting CPU mode
                 try:
                     import tensorflow as tf
+                    from tensorflow import keras
                     # Double-check GPU is disabled
                     tf.config.set_visible_devices([], 'GPU')
-                    from tensorflow import keras
                     log("[UDF] TensorFlow imported and GPU disabled")
                 except Exception as e:
                     # If TensorFlow config fails, try to continue anyway
@@ -1068,7 +1068,6 @@ class RNNSkolModel(SkolModel):
                 if field.name == "sorted_data":
                     sorted_data_struct_type = field.dataType
                     break
-
         # Extract all fields from sorted_data struct
         if sorted_data_struct_type and isinstance(sorted_data_struct_type, StructType):
             # Skip fields we're already extracting at the top level to avoid duplicates
