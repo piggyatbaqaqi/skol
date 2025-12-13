@@ -242,6 +242,7 @@ class RNNSkolModel(SkolModel):
         dropout: float = 0.3,
         window_size: int = 50,
         prediction_stride: Optional[int] = None,
+        prediction_batch_size: int = 64,
         batch_size: int = 32,
         epochs: int = 10,
         num_workers: int = 4,
@@ -265,6 +266,9 @@ class RNNSkolModel(SkolModel):
                              If None, defaults to window_size (non-overlapping windows).
                              Use smaller values (e.g., window_size // 2) for overlapping windows
                              to classify longer documents.
+            prediction_batch_size: Maximum number of windows to predict in a single batch.
+                                  Controls memory usage during prediction. Larger values are faster
+                                  but use more memory. Default: 64
             batch_size: Batch size for training
             epochs: Number of training epochs
             num_workers: Number of Spark workers (unused in Pandas UDF approach)
@@ -294,6 +298,7 @@ class RNNSkolModel(SkolModel):
         self.dropout = dropout
         self.window_size = window_size
         self.prediction_stride = prediction_stride if prediction_stride is not None else window_size
+        self.prediction_batch_size = prediction_batch_size
         self.batch_size = batch_size
         self.epochs = epochs
         self.num_workers = num_workers
@@ -730,6 +735,7 @@ class RNNSkolModel(SkolModel):
         window_size = self.window_size
         num_classes = self.num_classes
         prediction_stride = self.prediction_stride
+        prediction_batch_size = self.prediction_batch_size
         verbosity = self.verbosity  # Capture for UDF closure
 
         # Define prediction UDF
@@ -808,12 +814,15 @@ class RNNSkolModel(SkolModel):
                 log(f"[UDF ERROR] Returning empty arrays for all {len(sorted_data_series)} sequences")
                 return pd.Series([[]] * len(sorted_data_series))
 
-            # Process each sequence independently with per-sequence error handling
+            # PHASE 1: Extract features and prepare all windows for batched prediction
+            # Store metadata for each sequence to reconstruct results later
+            sequence_metadata = []
+            all_windows = []  # Will contain all windows from all sequences
+
+            log(f"[UDF PHASE 1] Extracting features from {len(sorted_data_series)} sequences")
+
             for seq_idx, sorted_data in enumerate(sorted_data_series):
                 try:
-                    if seq_idx < 3 or seq_idx % 1000 == 0:
-                        log(f"[UDF SEQ {seq_idx}] Processing sequence with {len(sorted_data)} rows")
-
                     # Extract features from the struct array
                     dense_features = []
 
@@ -863,92 +872,160 @@ class RNNSkolModel(SkolModel):
                             # Truncate to input_size
                             dense_arr = dense_arr[:input_size]
 
-                        # Convert to list for consistent handling
-                        dense_features.append(dense_arr.tolist())
+                        dense_features.append(dense_arr)
 
                     # Handle empty sequences - create at least one prediction using padding
                     if len(dense_features) == 0:
-                        dense_features = [[0.0] * input_size]  # Use one padded feature
+                        dense_features = [np.zeros(input_size, dtype=np.float32)]
 
                     sequence_length = len(dense_features)
 
-                    # Use sliding window approach for sequences longer than window_size
+                    # Prepare windows for this sequence
                     if sequence_length <= window_size:
-                        # Short sequence: pad to window_size and predict once
+                        # Short sequence: pad to window_size and create one window
                         if sequence_length < window_size:
-                            padding = [[0.0] * input_size] * (window_size - sequence_length)
+                            padding = [np.zeros(input_size, dtype=np.float32)] * (window_size - sequence_length)
                             padded_features = dense_features + padding
                         else:
                             padded_features = dense_features
 
-                        X = np.array([padded_features], dtype=np.float32)
-                        preds = model.predict(X, verbose=0)[0]
-                        pred_classes = [float(np.argmax(p)) for p in preds[:sequence_length]]
+                        window_array = np.array(padded_features, dtype=np.float32)
+                        all_windows.append(window_array)
 
-                        if seq_idx < 2:
-                            log(f"[UDF SEQ {seq_idx}] Short sequence: {sequence_length} features, 1 window")
-
-                        results.append(pred_classes)
+                        # Metadata: (seq_idx, is_sliding_window, window_info)
+                        # For short sequences: window_info = sequence_length
+                        sequence_metadata.append({
+                            'seq_idx': seq_idx,
+                            'type': 'short',
+                            'sequence_length': sequence_length,
+                            'window_indices': [len(all_windows) - 1]  # Index of this window in all_windows
+                        })
                     else:
-                        # Long sequence: use sliding windows with stride
-                        if seq_idx < 2:
-                            log(f"[UDF SEQ {seq_idx}] Long sequence: {sequence_length} features, using sliding windows")
+                        # Long sequence: create sliding windows
+                        window_indices = []
+                        window_positions = []  # (window_start, actual_window_length) for each window
 
-                        # Initialize prediction accumulator (sum of predictions) and count (how many windows predicted each position)
-                        # We'll store class probabilities and average them
-                        prediction_counts = np.zeros(sequence_length, dtype=np.int32)
-                        prediction_sums = np.zeros((sequence_length, num_classes), dtype=np.float32)
-
-                        # Create sliding windows
-                        num_windows = 0
                         for window_start in range(0, sequence_length, prediction_stride):
                             window_end = min(window_start + window_size, sequence_length)
                             window_features = dense_features[window_start:window_end]
 
                             # Pad if this is the last window and it's shorter than window_size
                             if len(window_features) < window_size:
-                                padding = [[0.0] * input_size] * (window_size - len(window_features))
+                                padding = [np.zeros(input_size, dtype=np.float32)] * (window_size - len(window_features))
                                 window_features = window_features + padding
 
-                            # Predict for this window
-                            X = np.array([window_features], dtype=np.float32)
-                            window_preds = model.predict(X, verbose=0)[0]  # Shape: (window_size, num_classes)
+                            window_array = np.array(window_features, dtype=np.float32)
+                            all_windows.append(window_array)
+                            window_indices.append(len(all_windows) - 1)
 
-                            # Add predictions to accumulator (only for actual positions, not padding)
                             actual_window_length = min(window_size, window_end - window_start)
-                            for i in range(actual_window_length):
-                                global_pos = window_start + i
-                                if global_pos < sequence_length:
-                                    prediction_sums[global_pos] += window_preds[i]
-                                    prediction_counts[global_pos] += 1
+                            window_positions.append((window_start, actual_window_length))
 
-                            num_windows += 1
-
-                        # Average overlapping predictions and take argmax
-                        pred_classes = []
-                        for i in range(sequence_length):
-                            if prediction_counts[i] > 0:
-                                avg_probs = prediction_sums[i] / prediction_counts[i]
-                                pred_classes.append(float(np.argmax(avg_probs)))
-                            else:
-                                # Shouldn't happen, but handle gracefully
-                                pred_classes.append(0.0)
-
-                        if seq_idx < 2:
-                            log(f"[UDF SEQ {seq_idx}] Used {num_windows} windows, generated {len(pred_classes)} predictions")
-
-                        results.append(pred_classes)
+                        sequence_metadata.append({
+                            'seq_idx': seq_idx,
+                            'type': 'sliding',
+                            'sequence_length': sequence_length,
+                            'window_indices': window_indices,
+                            'window_positions': window_positions
+                        })
 
                 except Exception as e:
-                    # Per-sequence failure - return empty array for THIS sequence only
+                    # Per-sequence failure - mark for empty result
                     if seq_idx < 10 or seq_idx % 1000 == 0:
-                        log(f"[UDF ERROR] Sequence {seq_idx} failed: {e}")
-                    # Empty array for this sequence - will become null after arrays_zip
-                    results.append([])
+                        log(f"[UDF ERROR] Sequence {seq_idx} failed during feature extraction: {e}")
+                    sequence_metadata.append({
+                        'seq_idx': seq_idx,
+                        'type': 'failed',
+                        'error': str(e)
+                    })
 
-            log(f"[UDF COMPLETE] Processed {len(sorted_data_series)} sequences, {len(results)} results")
-            log(f"[UDF COMPLETE] Non-empty results: {sum(1 for r in results if len(r) > 0)}")
-            log(f"[UDF COMPLETE] Empty results: {sum(1 for r in results if len(r) == 0)}")
+            # PHASE 2: Batch predict all windows (in chunks to respect max batch size)
+            log(f"[UDF PHASE 2] Predicting on {len(all_windows)} windows from {len(sorted_data_series)} sequences")
+
+            if len(all_windows) == 0:
+                log(f"[UDF ERROR] No windows to predict - returning empty results")
+                return pd.Series([[]] * len(sorted_data_series))
+
+            # Predict in batches to control memory usage
+            total_windows = len(all_windows)
+            num_batches = (total_windows + prediction_batch_size - 1) // prediction_batch_size
+            log(f"[UDF PHASE 2] Using {num_batches} batches of max size {prediction_batch_size}")
+
+            all_predictions = []
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * prediction_batch_size
+                end_idx = min(start_idx + prediction_batch_size, total_windows)
+
+                # Get windows for this batch
+                batch_windows = all_windows[start_idx:end_idx]
+                X_batch = np.array(batch_windows, dtype=np.float32)
+
+                if batch_idx == 0 or batch_idx == num_batches - 1:
+                    log(f"[UDF PHASE 2] Batch {batch_idx+1}/{num_batches}: shape {X_batch.shape}")
+
+                # Predict this batch
+                batch_preds = model.predict(X_batch, verbose=0)
+                all_predictions.append(batch_preds)
+
+            # Concatenate all batch predictions
+            all_predictions = np.concatenate(all_predictions, axis=0)
+            log(f"[UDF PHASE 2] Total predictions shape: {all_predictions.shape}")
+
+            # PHASE 3: Reconstruct results for each sequence
+            log(f"[UDF PHASE 3] Reconstructing results for {len(sequence_metadata)} sequences")
+
+            results = [None] * len(sorted_data_series)  # Pre-allocate results array
+
+            for metadata in sequence_metadata:
+                seq_idx = metadata['seq_idx']
+
+                if metadata['type'] == 'failed':
+                    results[seq_idx] = []
+                    continue
+
+                if metadata['type'] == 'short':
+                    # Single window - extract predictions for actual sequence length
+                    window_idx = metadata['window_indices'][0]
+                    sequence_length = metadata['sequence_length']
+                    preds = all_predictions[window_idx][:sequence_length]  # Shape: (sequence_length, num_classes)
+                    pred_classes = [float(np.argmax(p)) for p in preds]
+                    results[seq_idx] = pred_classes
+
+                elif metadata['type'] == 'sliding':
+                    # Multiple sliding windows - need to average overlapping predictions
+                    sequence_length = metadata['sequence_length']
+                    window_indices = metadata['window_indices']
+                    window_positions = metadata['window_positions']
+
+                    # Initialize prediction accumulator
+                    prediction_counts = np.zeros(sequence_length, dtype=np.int32)
+                    prediction_sums = np.zeros((sequence_length, num_classes), dtype=np.float32)
+
+                    # Accumulate predictions from all windows
+                    for window_idx, (window_start, actual_window_length) in zip(window_indices, window_positions):
+                        window_preds = all_predictions[window_idx]  # Shape: (window_size, num_classes)
+
+                        # Add predictions to accumulator (only for actual positions, not padding)
+                        for i in range(actual_window_length):
+                            global_pos = window_start + i
+                            if global_pos < sequence_length:
+                                prediction_sums[global_pos] += window_preds[i]
+                                prediction_counts[global_pos] += 1
+
+                    # Average overlapping predictions and take argmax
+                    pred_classes = []
+                    for i in range(sequence_length):
+                        if prediction_counts[i] > 0:
+                            avg_probs = prediction_sums[i] / prediction_counts[i]
+                            pred_classes.append(float(np.argmax(avg_probs)))
+                        else:
+                            pred_classes.append(0.0)
+
+                    results[seq_idx] = pred_classes
+
+            log(f"[UDF COMPLETE] Processed {len(sorted_data_series)} sequences, {len(all_windows)} total windows")
+            log(f"[UDF COMPLETE] Non-empty results: {sum(1 for r in results if r and len(r) > 0)}")
+            log(f"[UDF COMPLETE] Empty results: {sum(1 for r in results if not r or len(r) == 0)}")
             return pd.Series(results)
 
         # Apply prediction

@@ -185,7 +185,8 @@ class SkolClassifierV2:
 
         # Model configuration
         model_type: str = 'logistic',
-        **model_params
+        verbosity: int = 1,
+        **model_params: Any
     ):
         # Core
         self.spark = spark or SparkSession.builder.getOrCreate()
@@ -224,6 +225,8 @@ class SkolClassifierV2:
         # Model configuration
         self.model_type = model_type
         self.model_params = model_params
+        self.model_params['verbosity'] = verbosity
+        self.verbosity = verbosity
 
         # Internal state
         self._feature_extractor: Optional[FeatureExtractor] = None
@@ -750,11 +753,33 @@ class SkolClassifierV2:
 
         # Recreate the SkolModel wrapper using factory
         features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
+
+        # Merge saved model params with any new params provided in constructor
+        # New params override saved params for runtime-tunable parameters
+        saved_params = metadata['config'].get('model_params', {})
+        merged_params = saved_params.copy()
+
+        # Override runtime-tunable parameters if provided
+        if self.model_params:
+            # These parameters can be changed without retraining
+            runtime_tunable = {
+                'prediction_batch_size',
+                'prediction_stride',
+                'num_workers',
+                'verbosity',
+                'batch_size'  # Training batch size, can be changed for future fine-tuning
+            }
+            for param, value in self.model_params.items():
+                if param in runtime_tunable:
+                    merged_params[param] = value
+                    if self.verbosity >= 2:
+                        print(f"[Load Model] Overriding {param}: {saved_params.get(param)} -> {value}")
+
         self._model = create_model(
             model_type=metadata['config']['model_type'],
             features_col=features_col,
             label_col="label_indexed",
-            **metadata['config'].get('model_params', {})
+            **merged_params
         )
         self._model.set_model(classifier_model)
         self._model.set_labels(list(self._label_mapping.keys()))
@@ -804,6 +829,8 @@ class SkolClassifierV2:
                 }
                 if hasattr(self._model, 'prediction_stride'):
                     actual_model_params['prediction_stride'] = self._model.prediction_stride
+                if hasattr(self._model, 'prediction_batch_size'):
+                    actual_model_params['prediction_batch_size'] = self._model.prediction_batch_size
                 if hasattr(self._model, 'name'):
                     actual_model_params['name'] = self._model.name
             else:
@@ -891,11 +918,33 @@ class SkolClassifierV2:
 
             # Recreate the SkolModel wrapper using factory
             features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
+
+            # Merge saved model params with any new params provided in constructor
+            # New params override saved params for runtime-tunable parameters
+            saved_params = metadata['config'].get('model_params', {})
+            merged_params = saved_params.copy()
+
+            # Override runtime-tunable parameters if provided
+            if self.model_params:
+                # These parameters can be changed without retraining
+                runtime_tunable = {
+                    'prediction_batch_size',
+                    'prediction_stride',
+                    'num_workers',
+                    'verbosity',
+                    'batch_size'  # Training batch size, can be changed for future fine-tuning
+                }
+                for param, value in self.model_params.items():
+                    if param in runtime_tunable:
+                        merged_params[param] = value
+                        if self.verbosity >= 2:
+                            print(f"[Load Model] Overriding {param}: {saved_params.get(param)} -> {value}")
+
             self._model = create_model(
                 model_type=model_type,
                 features_col=features_col,
                 label_col="label_indexed",
-                **metadata['config'].get('model_params', {})
+                **merged_params
             )
             self._model.set_model(classifier_model)
             self._model.set_labels(list(self._label_mapping.keys()))
