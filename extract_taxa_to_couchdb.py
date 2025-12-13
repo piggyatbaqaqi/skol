@@ -205,7 +205,9 @@ class TaxonExtractor:
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
             StructField("page_number", IntegerType(), True),
-            StructField("empirical_page_number", StringType(), True)
+            StructField("empirical_page_number", StringType(), True),
+            StructField("_id", StringType(), True),
+            StructField("json_annotated", StringType(), True)
         ])
 
         # Schema for save results
@@ -239,10 +241,28 @@ class TaxonExtractor:
 
         Args:
             annotated_df: DataFrame with columns: doc_id, attachment_name, value
+                         (or prediction DataFrame with doc_id, pos, value, prediction, ...)
 
         Returns:
             DataFrame with taxa information (taxon, description, source, line numbers, etc.)
         """
+        # Select only the columns we need for extraction
+        # This prevents column count mismatch errors when receiving prediction outputs
+        required_cols = ["doc_id", "value"]
+
+        # Add attachment_name if it exists (from CouchDB), otherwise we'll handle it
+        if "attachment_name" in annotated_df.columns:
+            required_cols.append("attachment_name")
+
+        # Select only required columns to avoid schema mismatch
+        annotated_df_filtered = annotated_df.select(*required_cols)
+
+        # Debug: Print schema to verify
+        print(f"[TaxonExtractor] Input DataFrame columns: {annotated_df.columns}")
+        print(f"[TaxonExtractor] Filtered DataFrame columns: {annotated_df_filtered.columns}")
+        print(f"[TaxonExtractor] Filtered DataFrame schema:")
+        annotated_df_filtered.printSchema()
+
         # Extract to local variable to avoid serializing self
         db_name = self.ingest_db_name
 
@@ -252,7 +272,7 @@ class TaxonExtractor:
             # Convert to Rows for DataFrame
             return convert_taxa_to_rows(taxa)
 
-        taxa_rdd = annotated_df.rdd.mapPartitions(extract_partition)  # type: ignore[reportUnknownArgumentType]
+        taxa_rdd = annotated_df_filtered.rdd.mapPartitions(extract_partition)  # type: ignore[reportUnknownArgumentType]
         taxa_df = self.spark.createDataFrame(taxa_rdd, self._extract_schema)
 
         return taxa_df
