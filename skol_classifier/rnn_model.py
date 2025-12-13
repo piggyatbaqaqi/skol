@@ -1082,7 +1082,7 @@ class RNNSkolModel(SkolModel):
                 *[predictions_exploded["col"]["sorted_data"][field.name].alias(field.name)
                   for field in sorted_data_struct_type.fields
                   if field.name not in skip_fields]
-            )
+            ).cache()
         else:
             # Fallback if we can't get the struct type
             result = predictions_exploded.select(
@@ -1090,7 +1090,7 @@ class RNNSkolModel(SkolModel):
                 predictions_exploded["pos"],
                 predictions_exploded["value"].alias("value"),
                 predictions_exploded["col"]["predictions"].alias("prediction")
-            )
+            ).cache()
 
         if self.verbosity >= 2:
             print(f"[RNN Predict] Result columns: {result.columns}")
