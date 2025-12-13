@@ -170,6 +170,7 @@ def create_model(
                 'num_classes': model_params.get("num_classes", 3),
                 'dropout': model_params.get("dropout", 0.3),
                 'window_size': model_params.get("window_size", 50),
+                'prediction_stride': model_params.get("prediction_stride", None),
                 'batch_size': model_params.get("batch_size", 32),
                 'epochs': model_params.get("epochs", 10),
                 'num_workers': model_params.get("num_workers", 4),
