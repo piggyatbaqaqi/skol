@@ -201,11 +201,13 @@ class SequencePreprocessor(Transformer):
 
         # Simply group by document and collect all features and labels
         # We'll do windowing in the fit() method after collecting
-        # The groupBy should produce a single (docid, value) per document.
-        grouped = df.groupBy(self.docIdCol, self.valueCol).agg(
+        # The groupBy should produce one row per document.
+        grouped = df.groupBy(self.docIdCol).agg(
             collect_list(input_col).alias("sequence_features"),
             collect_list(self.labelCol).alias("sequence_labels"),
-            collect_list(self.lineNoCol).alias("sequence_line_numbers")
+            collect_list(self.lineNoCol).alias("sequence_line_numbers"),
+            # Keep first value for reference (useful for debugging)
+            F.first(self.valueCol).alias(self.valueCol)
         )
 
         return grouped
@@ -508,8 +510,9 @@ class RNNSkolModel(SkolModel):
             print("[RNN Fit] Caching sequenced data...")
         sequenced_data = sequenced_data.cache()
 
-        print(f"DEBUG: DEBUG: Sequenced data count: {sequenced_data.count()}")
-        sequenced_data.show(5)  # DEBUG
+        if self.verbosity >= 3:
+            print(f"[RNN Fit] Sequenced data count: {sequenced_data.count()}")
+            sequenced_data.show(5)  # DEBUG
 
         # Detect actual feature dimension from data
         if self.verbosity >= 3:
@@ -689,9 +692,6 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Predict] Sequenced data columns: {sequenced_data.columns}")
 
-        print(f"DEBUG: Sequenced data count: {sequenced_data.count()}")
-        sequenced_data.show(5)  # DEBUG
-
         # Broadcast model weights for UDF
         if self.verbosity >= 2:
             print(f"[RNN Predict] Preparing model config and weights for UDF")
@@ -753,24 +753,27 @@ class RNNSkolModel(SkolModel):
                     # Convert to list of dense arrays and normalize to input_size
                     dense_features = []
 
-                    # Debug: Track what we're processing
-                    total_features = 0
-                    none_features = 0
+                    # Track conversion failures for debugging
                     conversion_failures = 0
-                    numeric_filter_failures = 0
-                    empty_after_filter = 0
-                    successful_features = 0
 
                     for _, feat in enumerate(features):
-                        total_features += 1
-
                         if feat is None:
-                            none_features += 1
                             continue
 
                         # Convert to dense array (features should already be numeric from PySpark)
                         try:
-                            if hasattr(feat, 'toArray'):
+                            # Handle dictionaries (vectors serialized through Pandas UDF)
+                            if isinstance(feat, dict):
+                                # Deserialize PySpark vector from dictionary
+                                from pyspark.ml.linalg import Vectors, DenseVector, SparseVector
+                                if feat.get('type') == 0:  # DenseVector
+                                    vec = Vectors.dense(feat['values'])
+                                elif feat.get('type') == 1:  # SparseVector
+                                    vec = Vectors.sparse(feat['size'], feat['indices'], feat['values'])
+                                else:
+                                    raise ValueError(f"Unknown vector type: {feat.get('type')}")
+                                dense_arr = np.array(vec.toArray(), dtype=np.float32)
+                            elif hasattr(feat, 'toArray'):
                                 # SparseVector or DenseVector from PySpark
                                 dense_arr = np.array(feat.toArray(), dtype=np.float32)
                             elif isinstance(feat, np.ndarray):
@@ -781,14 +784,14 @@ class RNNSkolModel(SkolModel):
                                 # Try to convert to numpy array
                                 dense_arr = np.array(list(feat), dtype=np.float32)
                         except Exception as e:
-                            # Don't skip - this is causing too many to be filtered
-                            # Just create a zero array
+                            # Conversion failed - use zero array as fallback
+                            if seq_idx == 0 and verbosity >= 4:
+                                print(f"[UDF DEBUG] Conversion failure: {e}")
                             dense_arr = np.zeros(input_size, dtype=np.float32)
                             conversion_failures += 1
 
                         # Skip empty features
                         if len(dense_arr) == 0:
-                            empty_after_filter += 1
                             continue
 
                         # Ensure each feature vector is exactly input_size
@@ -802,18 +805,6 @@ class RNNSkolModel(SkolModel):
 
                         # Convert to list for consistent handling
                         dense_features.append(dense_arr.tolist())
-                        successful_features += 1
-
-                    # Debug: Log statistics for first sequence
-                    if seq_idx == 0 and verbosity >= 3:
-                        print(f"[UDF DEBUG] Sequence 0 processing:")
-                        print(f"  Total features: {total_features}")
-                        print(f"  None features: {none_features}")
-                        print(f"  Conversion failures: {conversion_failures}")
-                        print(f"  Numeric filter issues: {numeric_filter_failures}")
-                        print(f"  Empty after filter: {empty_after_filter}")
-                        print(f"  Successful features: {successful_features}")
-                        print(f"  dense_features length: {len(dense_features)}")
 
                     # Track original length before padding/truncating
                     original_length = len(dense_features)
@@ -934,8 +925,6 @@ class RNNSkolModel(SkolModel):
                 predictions_exploded["col"]["sequence_line_numbers"].alias("line_number"),
                 predictions_exploded["value"].alias("value")
             )
-            if self.verbosity >= 2:
-                print(f"[RNN Predict] Result columns: {result.columns}")
         else:
             # If no labels, just explode predictions
             if self.verbosity >= 2:
@@ -961,6 +950,20 @@ class RNNSkolModel(SkolModel):
             )
             if self.verbosity >= 2:
                 print(f"[RNN Predict] Result columns: {result.columns}")
+
+        if self.verbosity >= 2:
+            print(f"[RNN Predict] Result columns: {result.columns}")
+        if self.verbosity >= 3:
+            print("[RNN Predict]: Result DataFrame schema:")
+            result.printSchema()
+            print("[RNN Predict]: Result DataFrame sample:")
+            result.show(5)
+
+        if self.verbosity >= 2:
+            print("[RNN Predict] Checking for all-zero predictions...")
+            f_zeros = result.filter(F.col('prediction') == 0.0)
+            if f_zeros.count() == result.count():
+                raise ValueError("All predictions are zero, model may not be learning correctly.")
 
         if self.verbosity >= 1:
             print("[RNN Predict] Prediction completed successfully")
@@ -999,10 +1002,6 @@ class RNNSkolModel(SkolModel):
                 f"Predictions DataFrame missing required columns: {missing}. "
                 f"Available columns: {actual_cols}"
             )
-
-        print(f"DEBUG: Predictions schema: {predictions.schema}")
-        print(f"DEBUG: Sample predictions:")
-        predictions.show(5)
 
         # RNN predictions may have extra columns like 'filename' which evaluators ignore
         # We can use the predictions as-is, but let's select only the columns needed
