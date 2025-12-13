@@ -710,11 +710,32 @@ class RNNSkolModel(SkolModel):
             """Predict on sequences using the trained model."""
             import os
             import numpy as np
+            import tempfile
+            import time
+
+            # Create a debug log file in /tmp for this executor
+            log_file = f"/tmp/rnn_udf_debug_{os.getpid()}_{int(time.time())}.log"
+
+            def log(msg):
+                """Write to both stderr and file."""
+                import sys
+                try:
+                    with open(log_file, 'a') as f:
+                        f.write(f"{msg}\n")
+                        f.flush()
+                except Exception:
+                    pass
+                print(msg, file=sys.stderr)
+
+            log(f"[UDF START] Processing {len(features_series)} sequences")
+            log(f"[UDF START] Config: input_size={input_size}, window_size={window_size}")
+            log(f"[UDF START] Log file: {log_file}")
 
             try:
                 # Force CPU-only mode in executors to prevent CUDA errors
                 # This is critical for GPUs with unsupported compute capabilities
                 os.environ['CUDA_VISIBLE_DEVICES'] = ''
+                log("[UDF] Set CUDA_VISIBLE_DEVICES to empty string")
 
                 # Import TensorFlow/Keras inside UDF after setting CPU mode
                 try:
@@ -722,16 +743,20 @@ class RNNSkolModel(SkolModel):
                     # Double-check GPU is disabled
                     tf.config.set_visible_devices([], 'GPU')
                     from tensorflow import keras
+                    log("[UDF] TensorFlow imported and GPU disabled")
                 except Exception as e:
                     # If TensorFlow config fails, try to continue anyway
                     # The CPU-only env var should be sufficient
+                    log(f"[UDF WARNING] TensorFlow config issue: {e}")
                     pass
 
                 # Rebuild model from config and weights
                 try:
                     model = keras.models.model_from_json(model_config)
                     model.set_weights(model_weights)
+                    log(f"[UDF] Model rebuilt successfully")
                 except Exception as e:
+                    log(f"[UDF FATAL] Model rebuild failed: {e}")
                     raise RuntimeError(
                         f"Failed to rebuild model in executor: {e}\n"
                         "This may be due to GPU compatibility issues. "
@@ -739,24 +764,27 @@ class RNNSkolModel(SkolModel):
                     )
 
                 results = []
+                log(f"[UDF] Initialization complete, starting prediction loop")
             except Exception as e:
                 # If initialization fails, return empty lists for all sequences
                 # This allows us to see the error in logs
+                log(f"[UDF ERROR] Initialization failed: {e}")
                 import sys
-                print(f"[UDF ERROR] Initialization failed: {e}", file=sys.stderr)
                 import traceback
                 traceback.print_exc(file=sys.stderr)
+                log(f"[UDF ERROR] Returning empty arrays for all {len(features_series)} sequences")
                 return pd.Series([[]] * len(features_series))
 
-            try:
-                for seq_idx, features in enumerate(features_series):
+            # Process each sequence independently with per-sequence error handling
+            for seq_idx, features in enumerate(features_series):
+                try:
+                    if seq_idx < 3 or seq_idx % 1000 == 0:
+                        log(f"[UDF SEQ {seq_idx}] Processing sequence with {len(features)} features")
+
                     # Convert to list of dense arrays and normalize to input_size
                     dense_features = []
 
-                    # Track conversion failures for debugging
-                    conversion_failures = 0
-
-                    for _, feat in enumerate(features):
+                    for feat_idx, feat in enumerate(features):
                         if feat is None:
                             continue
 
@@ -783,12 +811,9 @@ class RNNSkolModel(SkolModel):
                             else:
                                 # Try to convert to numpy array
                                 dense_arr = np.array(list(feat), dtype=np.float32)
-                        except Exception as e:
+                        except Exception:
                             # Conversion failed - use zero array as fallback
-                            if seq_idx == 0 and verbosity >= 4:
-                                print(f"[UDF DEBUG] Conversion failure: {e}")
                             dense_arr = np.zeros(input_size, dtype=np.float32)
-                            conversion_failures += 1
 
                         # Skip empty features
                         if len(dense_arr) == 0:
@@ -806,44 +831,47 @@ class RNNSkolModel(SkolModel):
                         # Convert to list for consistent handling
                         dense_features.append(dense_arr.tolist())
 
-                    # Track original length before padding/truncating
-                    original_length = len(dense_features)
-
                     # Handle empty sequences - create at least one prediction using padding
-                    if original_length == 0:
-                        original_length = 1  # Return at least one prediction (all padding)
+                    if len(dense_features) == 0:
+                        dense_features = [[0.0] * input_size]  # Use one padded feature
 
-                    # Pad or truncate to window_size
+                    # Track length BEFORE padding to window_size (but AFTER ensuring non-empty)
+                    # This is the number of predictions we'll actually return
+                    original_length = min(len(dense_features), window_size)
+
+                    # Pad or truncate to window_size for model input
                     if len(dense_features) < window_size:
                         # Each feature should be a list of floats with length input_size
                         padding = [[0.0] * input_size] * (window_size - len(dense_features))
                         dense_features = dense_features + padding
                     elif len(dense_features) > window_size:
+                        # Only use first window_size features - we can't predict beyond this
                         dense_features = dense_features[:window_size]
 
                     # Predict
                     X = np.array([dense_features], dtype=np.float32)
-                    try:
-                        preds = model.predict(X, verbose=0)[0]
-                    except Exception as e:
-                        raise RuntimeError(
-                            f"Prediction failed in executor: {e}\n"
-                            "This may be a CUDA/GPU error. Ensure CPU-only mode is active."
-                        )
+                    if seq_idx < 2:
+                        log(f"[UDF SEQ {seq_idx}] Running prediction on shape {X.shape}, will return {original_length} predictions")
+                    preds = model.predict(X, verbose=0)[0]
 
                     # Get argmax for each timestep
                     pred_classes = [float(np.argmax(p)) for p in preds]
-                    # Slice to original length (before padding/truncating)
+                    # Return only the predictions for actual features (not padding)
                     results.append(pred_classes[:original_length])
+                    if seq_idx < 2:
+                        log(f"[UDF SEQ {seq_idx}] Success: {len(pred_classes[:original_length])} predictions")
 
-                return pd.Series(results)
-            except Exception as e:
-                # If processing fails, return empty lists and log error
-                import sys
-                print(f"[UDF ERROR] Processing failed: {e}", file=sys.stderr)
-                import traceback
-                traceback.print_exc(file=sys.stderr)
-                return pd.Series([[]] * len(features_series))
+                except Exception as e:
+                    # Per-sequence failure - return empty array for THIS sequence only
+                    if seq_idx < 10 or seq_idx % 1000 == 0:
+                        log(f"[UDF ERROR] Sequence {seq_idx} failed: {e}")
+                    # Empty array for this sequence - will become null after arrays_zip
+                    results.append([])
+
+            log(f"[UDF COMPLETE] Processed {len(features_series)} sequences, {len(results)} results")
+            log(f"[UDF COMPLETE] Non-empty results: {sum(1 for r in results if len(r) > 0)}")
+            log(f"[UDF COMPLETE] Empty results: {sum(1 for r in results if len(r) == 0)}")
+            return pd.Series(results)
 
         # Apply prediction
         if self.verbosity >= 2:
@@ -870,6 +898,38 @@ class RNNSkolModel(SkolModel):
             "predictions",
             predict_sequence(col("sequence_features")).cast(ArrayType(DoubleType()))
         )
+
+        # Check for empty or null prediction arrays (indicates UDF failures)
+        total_seqs = predictions.count()
+        empty_preds = predictions.filter(F.size(col("predictions")) == 0)
+        empty_count = empty_preds.count()
+        null_preds = predictions.filter(col("predictions").isNull())
+        null_count = null_preds.count()
+
+        if empty_count > 0 or null_count > 0:
+            print(f"\n{'='*70}")
+            print(f"[RNN Predict] PREDICTION FAILURE DETECTED!")
+            print(f"  Total sequences: {total_seqs}")
+            print(f"  Empty prediction arrays: {empty_count}")
+            print(f"  Null prediction arrays: {null_count}")
+            print(f"  Success rate: {((total_seqs - empty_count - null_count) / total_seqs * 100):.1f}%")
+            print(f"{'='*70}")
+            if empty_count > 0:
+                print("\n[RNN Predict] Sample sequences with EMPTY predictions:")
+                empty_preds.select(
+                    doc_id_col,
+                    F.size("sequence_features").alias("num_features"),
+                    F.size("sequence_labels").alias("num_labels"),
+                    F.size("sequence_line_numbers").alias("num_lines")
+                ).show(5, truncate=False)
+            if null_count > 0:
+                print("\n[RNN Predict] Sample sequences with NULL predictions:")
+                null_preds.select(
+                    doc_id_col,
+                    F.size("sequence_features").alias("num_features")
+                ).show(5, truncate=False)
+            print("\nCheck stderr output above for [UDF ERROR] messages with details.\n")
+
         if self.verbosity >= 3:
             print("[RNN Predict]: Predictions DataFrame schema:")
             predictions.printSchema()
@@ -1007,6 +1067,13 @@ class RNNSkolModel(SkolModel):
         # We can use the predictions as-is, but let's select only the columns needed
         # for evaluation to ensure compatibility
         eval_predictions = predictions.select("prediction", self.label_col)
+
+        # Filter out any null predictions (which can occur if UDF fails for some sequences)
+        null_count = eval_predictions.filter(col("prediction").isNull()).count()
+        if null_count > 0:
+            if self.verbosity >= 1:
+                print(f"[RNN Stats] WARNING: Filtering out {null_count} null predictions")
+            eval_predictions = eval_predictions.filter(col("prediction").isNotNull())
 
         if self.verbosity >= 3:
             print(f"[RNN Stats] Evaluating {eval_predictions.count()} line-level predictions")
