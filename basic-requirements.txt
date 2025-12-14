@@ -32,3 +32,4 @@ tools
 PyMuPDF
 peft
 pyspark>=3.5.7, <4.0
+git+https://github.com/sciunto-org/python-bibtexparser@main
