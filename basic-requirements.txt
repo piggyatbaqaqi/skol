@@ -9,7 +9,6 @@ numpy
 nvidia-cuda-runtime-cu12
 pandas
 pymupdf4llm
-pyspark
 python-dateutil
 redis
 regex
@@ -25,5 +24,11 @@ torch
 transformers
 tqdm
 tf-keras
-
 pyarrow
+bibtexparser
+feedparser
+frontend
+tools
+PyMuPDF
+peft
+pyspark>=3.5.7, <4.0
