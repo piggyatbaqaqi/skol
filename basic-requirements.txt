@@ -18,7 +18,7 @@ scipy
 sentence-transformers
 setuptools
 spark-nlp
-tesseract
+pytesseract
 tensorflow
 torch
 transformers
