@@ -358,9 +358,47 @@ class SkolClassifierV2:
                 print(f"[Classifier Fit] Stored label mappings for {len(labels_list)} labels")
 
         # Split data for evaluation
+        # IMPORTANT: Split by document (filename/doc_id), not by row
+        # to ensure all lines from a document stay together
         if model_verbosity >= 1:
             print("[Classifier Fit] Splitting data for evaluation (80/20)")
-        train_data, test_data = featured_df.randomSplit([0.8, 0.2], seed=42)
+
+        # Determine which column to use for document grouping
+        doc_col = "filename" if "filename" in featured_df.columns else "doc_id"
+
+        if model_verbosity >= 2:
+            print(f"[Classifier Fit] Grouping by document column: {doc_col}")
+
+        # Get unique documents and split them randomly
+        from pyspark.sql.functions import rand
+        unique_docs = featured_df.select(doc_col).distinct()
+
+        if model_verbosity >= 2:
+            doc_count = unique_docs.count()
+            print(f"[Classifier Fit] Total unique documents: {doc_count}")
+
+        # Add random column for splitting
+        unique_docs_with_rand = unique_docs.withColumn("rand", rand(seed=42))
+
+        # Split documents into train and test (80/20)
+        train_docs = unique_docs_with_rand.filter("rand < 0.8").select(doc_col)
+        test_docs = unique_docs_with_rand.filter("rand >= 0.8").select(doc_col)
+
+        # Filter featured_df to get train and test data based on document assignments
+        train_data = featured_df.join(train_docs, on=doc_col, how="inner")
+        test_data = featured_df.join(test_docs, on=doc_col, how="inner")
+
+        # Sort by doc_col and line_number to maintain ordering within documents
+        if "line_number" in featured_df.columns:
+            train_data = train_data.orderBy(doc_col, "line_number")
+            test_data = test_data.orderBy(doc_col, "line_number")
+            if model_verbosity >= 2:
+                print("[Classifier Fit] Data sorted by document and line_number")
+        else:
+            train_data = train_data.orderBy(doc_col)
+            test_data = test_data.orderBy(doc_col)
+            if model_verbosity >= 2:
+                print("[Classifier Fit] Warning: No line_number column, sorted by document only")
 
         if model_verbosity >= 2:
             print("[Classifier Fit] Counting split data...")
@@ -406,6 +444,7 @@ class SkolClassifierV2:
             print("[Classifier Fit] Statistics calculated, adding metadata")
         stats['train_size'] = train_data.count()
         stats['test_size'] = test_data.count()
+        stats['class_frequencies'] = test_predictions.select("label_indexed").groupBy("label_indexed").count().collect()
         if model_verbosity >= 2:
             print(f"[Classifier Fit] Final stats: {stats}")
 
