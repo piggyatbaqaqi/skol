@@ -381,8 +381,8 @@ class SkolClassifierV2:
         unique_docs_with_rand = unique_docs.withColumn("rand", rand(seed=42))
 
         # Split documents into train and test (80/20)
-        train_docs = unique_docs_with_rand.filter("rand < 0.8").select(doc_col)
-        test_docs = unique_docs_with_rand.filter("rand >= 0.8").select(doc_col)
+        train_docs = unique_docs_with_rand.filter("rand < 0.9").select(doc_col)
+        test_docs = unique_docs_with_rand.filter("rand >= 0.9").select(doc_col)
 
         # Filter featured_df to get train and test data based on document assignments
         train_data = featured_df.join(train_docs, on=doc_col, how="inner")
