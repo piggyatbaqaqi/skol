@@ -333,8 +333,8 @@ if not args.suppress_logistic:
             # Make predictions with loaded model
             print("Making predictions with LOADED model...")
             logistic_loaded_predictions = logistic_classifier_loaded.predict(test_df)
-            print(f"  DEBUG: Raw LOGISTIC predictions count: {logistic_loaded_predictions.count()}")
-            print(f"  DEBUG: Raw LOGISTIC predictions columns: {logistic_loaded_predictions.columns}")
+            print(f"  Raw LOGISTIC predictions count: {logistic_loaded_predictions.count()}")
+            print(f"  Raw LOGISTIC predictions columns: {logistic_loaded_predictions.columns}")
 
             # Show a sample of raw predictions
             if logistic_loaded_predictions.count() > 0:
