@@ -1247,6 +1247,501 @@ class RNNSkolModel(SkolModel):
             print("[RNN Predict] Prediction completed successfully")
         return result
 
+    def predict_proba(self, data: DataFrame) -> DataFrame:
+        """
+        Make predictions on data, returning probability distributions.
+
+        Args:
+            data: DataFrame to predict on
+
+        Returns:
+            DataFrame with probability distributions for each class.
+            The 'probabilities' column contains an array of probabilities,
+            one per class (e.g., [0.8, 0.15, 0.05] for 3 classes).
+        """
+        if self.verbosity >= 2:
+            print("[RNN Predict Proba] Starting probability prediction [CODE VERSION 2025-12-16]")
+            print(f"[RNN Predict Proba] Input data columns: {data.columns}")
+            print(f"[RNN Predict Proba] Input data count: {data.count()}")
+            print(f"[RNN Predict Proba] Verbosity level: {self.verbosity}")
+
+        if self.classifier_model is None:
+            raise ValueError("Model not trained. Call fit() first.")
+
+        # Import tqdm for progress bar
+        try:
+            from tqdm.auto import tqdm
+            tqdm_available = True
+        except ImportError:
+            tqdm_available = False
+            if self.verbosity >= 2:
+                print("[RNN Predict Proba] tqdm not available, progress bar disabled")
+
+        # Determine document ID column
+        doc_id_col = "doc_id" if "doc_id" in data.columns else "filename"
+        line_no_col = "line_number" if "line_number" in data.columns else "dummy_line_number"
+        if self.verbosity >= 3:
+            print(f"[RNN Predict Proba] Using document ID column: {doc_id_col}")
+
+        # Create sequence preprocessor
+        if self.verbosity >= 3:
+            print("[RNN Predict Proba] Creating sequence preprocessor")
+        preprocessor = SequencePreprocessor(
+            inputCol=self.features_col,
+            outputCol="sequence_features",
+            docIdCol=doc_id_col,
+            lineNumberCol=line_no_col,
+            labelCol=self.label_col if self.label_col in data.columns else "dummy_label",
+            window_size=self.window_size
+        )
+
+        has_labels = self.label_col in data.columns
+        if self.verbosity >= 3:
+            print(f"[RNN Predict Proba] Has labels: {has_labels}")
+
+        # Transform into sequences
+        if self.verbosity >= 2:
+            print("[RNN Predict Proba] Transforming data into sequences")
+        sequenced_data = preprocessor.transform(data)
+        if self.verbosity >= 3:
+            print(f"[RNN Predict Proba] Sequenced data columns: {sequenced_data.columns}")
+
+        # Get total sequence count for progress bar
+        total_sequences = sequenced_data.count() if tqdm_available else 0
+        if tqdm_available and self.verbosity >= 1:
+            print(f"[RNN Predict Proba] Total sequences to process: {total_sequences}")
+
+        # Create accumulator for progress tracking
+        if tqdm_available:
+            from pyspark import SparkContext
+            sc = SparkContext.getOrCreate()
+            sequences_processed_acc = sc.accumulator(0)
+        else:
+            sequences_processed_acc = None
+
+        # Broadcast model weights for UDF
+        if self.verbosity >= 2:
+            print(f"[RNN Predict Proba] Preparing model config and weights for UDF")
+            print(f"[RNN Predict Proba] model_weights is None: {self.model_weights is None}")
+            if self.model_weights:
+                print(f"[RNN Predict Proba] model_weights count: {len(self.model_weights)}")
+            print(f"[RNN Predict Proba] Using sliding window: window_size={self.window_size}, stride={self.prediction_stride}")
+        model_config = self.keras_model.to_json()
+        model_weights = self.model_weights
+        input_size = self.input_size
+        window_size = self.window_size
+        num_classes = self.num_classes
+        prediction_stride = self.prediction_stride
+        prediction_batch_size = self.prediction_batch_size
+        features_col = self.features_col  # Capture for UDF closure
+        verbosity = self.verbosity  # Capture for UDF closure
+        show_progress = tqdm_available and self.verbosity >= 1
+
+        # Define prediction UDF that returns probability distributions
+        @pandas_udf(ArrayType(ArrayType(FloatType())))
+        def predict_proba_sequence(sorted_data_series: pd.Series) -> pd.Series:
+            """Predict probability distributions on sequences using the trained model.
+
+            Args:
+                sorted_data_series: Series of arrays of Row objects (structs),
+                                   each containing features and other fields
+
+            Returns:
+                Series where each element is a list of probability arrays,
+                one array per line in the sequence.
+            """
+            import os
+            import numpy as np
+            import tempfile
+            import time
+
+            # Create a debug log file in /tmp for this executor
+            log_file = f"/tmp/rnn_proba_udf_debug_{os.getpid()}_{int(time.time())}.log"
+
+            def log(msg):
+                """Write to both stderr and file."""
+                import sys
+                try:
+                    with open(log_file, 'a') as f:
+                        f.write(f"{msg}\n")
+                        f.flush()
+                except Exception:
+                    pass
+                if verbosity >= 3:
+                    print(msg, file=sys.stderr)
+
+            log(f"[UDF PROBA START] Processing {len(sorted_data_series)} sequences")
+            log(f"[UDF PROBA START] Config: input_size={input_size}, window_size={window_size}, num_classes={num_classes}")
+            log(f"[UDF PROBA START] Log file: {log_file}")
+
+            try:
+                # Force CPU-only mode in executors to prevent CUDA errors
+                os.environ['CUDA_VISIBLE_DEVICES'] = ''
+                log("[UDF PROBA] Set CUDA_VISIBLE_DEVICES to empty string")
+
+                # Import TensorFlow/Keras inside UDF after setting CPU mode
+                try:
+                    import tensorflow as tf
+                    from tensorflow import keras
+                    # Double-check GPU is disabled
+                    tf.config.set_visible_devices([], 'GPU')
+                    log("[UDF PROBA] TensorFlow imported and GPU disabled")
+                except Exception as e:
+                    log(f"[UDF PROBA WARNING] TensorFlow config issue: {e}")
+                    pass
+
+                # Rebuild model from config and weights
+                try:
+                    model = keras.models.model_from_json(model_config)
+                    model.set_weights(model_weights)
+                    log(f"[UDF PROBA] Model rebuilt successfully")
+                except Exception as e:
+                    log(f"[UDF PROBA FATAL] Model rebuild failed: {e}")
+                    raise RuntimeError(
+                        f"Failed to rebuild model in executor: {e}\n"
+                        "This may be due to GPU compatibility issues. "
+                        "Ensure CUDA_VISIBLE_DEVICES='' is set before starting Spark."
+                    )
+
+                results = []
+                log(f"[UDF PROBA] Initialization complete, starting prediction loop")
+            except Exception as e:
+                # If initialization fails, return empty lists for all sequences
+                log(f"[UDF PROBA ERROR] Initialization failed: {e}")
+                import sys
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                log(f"[UDF PROBA ERROR] Returning empty arrays for all {len(sorted_data_series)} sequences")
+                return pd.Series([[]] * len(sorted_data_series))
+
+            # PHASE 1: Extract features and prepare all windows for batched prediction
+            sequence_metadata = []
+            all_windows = []
+
+            log(f"[UDF PROBA PHASE 1] Extracting features from {len(sorted_data_series)} sequences")
+
+            for seq_idx, sorted_data in enumerate(sorted_data_series):
+                try:
+                    # Extract features from the struct array
+                    dense_features = []
+
+                    for row in sorted_data:
+                        # Extract the feature from the struct
+                        feat = row[features_col]
+                        if feat is None:
+                            continue
+
+                        # Convert to dense array
+                        try:
+                            if isinstance(feat, dict):
+                                from pyspark.ml.linalg import Vectors
+                                if feat.get('type') == 0:  # DenseVector
+                                    vec = Vectors.dense(feat['values'])
+                                elif feat.get('type') == 1:  # SparseVector
+                                    vec = Vectors.sparse(feat['size'], feat['indices'], feat['values'])
+                                else:
+                                    raise ValueError(f"Unknown vector type: {feat.get('type')}")
+                                dense_arr = np.array(vec.toArray(), dtype=np.float32)
+                            elif hasattr(feat, 'toArray'):
+                                dense_arr = np.array(feat.toArray(), dtype=np.float32)
+                            elif isinstance(feat, np.ndarray):
+                                dense_arr = np.asarray(feat, dtype=np.float32)
+                            elif isinstance(feat, (list, tuple)):
+                                dense_arr = np.array(feat, dtype=np.float32)
+                            else:
+                                dense_arr = np.array(list(feat), dtype=np.float32)
+                        except Exception:
+                            dense_arr = np.zeros(input_size, dtype=np.float32)
+
+                        if len(dense_arr) == 0:
+                            continue
+
+                        # Ensure each feature vector is exactly input_size
+                        if len(dense_arr) < input_size:
+                            padding = np.zeros(input_size - len(dense_arr), dtype=np.float32)
+                            dense_arr = np.concatenate([dense_arr, padding])
+                        elif len(dense_arr) > input_size:
+                            dense_arr = dense_arr[:input_size]
+
+                        dense_features.append(dense_arr)
+
+                    # Handle empty sequences
+                    if len(dense_features) == 0:
+                        dense_features = [np.zeros(input_size, dtype=np.float32)]
+
+                    sequence_length = len(dense_features)
+
+                    # Prepare windows for this sequence
+                    if sequence_length <= window_size:
+                        # Short sequence: pad to window_size and create one window
+                        if sequence_length < window_size:
+                            padding = [np.zeros(input_size, dtype=np.float32)] * (window_size - sequence_length)
+                            padded_features = dense_features + padding
+                        else:
+                            padded_features = dense_features
+
+                        window_array = np.array(padded_features, dtype=np.float32)
+                        all_windows.append(window_array)
+
+                        sequence_metadata.append({
+                            'seq_idx': seq_idx,
+                            'type': 'short',
+                            'sequence_length': sequence_length,
+                            'window_indices': [len(all_windows) - 1]
+                        })
+                    else:
+                        # Long sequence: create sliding windows
+                        window_indices = []
+                        window_positions = []
+
+                        for window_start in range(0, sequence_length, prediction_stride):
+                            window_end = min(window_start + window_size, sequence_length)
+                            window_features = dense_features[window_start:window_end]
+
+                            if len(window_features) < window_size:
+                                padding = [np.zeros(input_size, dtype=np.float32)] * (window_size - len(window_features))
+                                window_features = window_features + padding
+
+                            window_array = np.array(window_features, dtype=np.float32)
+                            all_windows.append(window_array)
+                            window_indices.append(len(all_windows) - 1)
+
+                            actual_window_length = min(window_size, window_end - window_start)
+                            window_positions.append((window_start, actual_window_length))
+
+                        sequence_metadata.append({
+                            'seq_idx': seq_idx,
+                            'type': 'sliding',
+                            'sequence_length': sequence_length,
+                            'window_indices': window_indices,
+                            'window_positions': window_positions
+                        })
+
+                except Exception as e:
+                    if seq_idx < 10 or seq_idx % 1000 == 0:
+                        log(f"[UDF PROBA ERROR] Sequence {seq_idx} failed during feature extraction: {e}")
+                    sequence_metadata.append({
+                        'seq_idx': seq_idx,
+                        'type': 'failed',
+                        'error': str(e)
+                    })
+
+            # PHASE 2: Batch predict all windows
+            log(f"[UDF PROBA PHASE 2] Predicting on {len(all_windows)} windows from {len(sorted_data_series)} sequences")
+
+            if len(all_windows) == 0:
+                log(f"[UDF PROBA ERROR] No windows to predict - returning empty results")
+                return pd.Series([[]] * len(sorted_data_series))
+
+            # Predict in batches
+            total_windows = len(all_windows)
+            num_batches = (total_windows + prediction_batch_size - 1) // prediction_batch_size
+            log(f"[UDF PROBA PHASE 2] Using {num_batches} batches of max size {prediction_batch_size}")
+
+            all_predictions = []
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * prediction_batch_size
+                end_idx = min(start_idx + prediction_batch_size, total_windows)
+
+                batch_windows = all_windows[start_idx:end_idx]
+                X_batch = np.array(batch_windows, dtype=np.float32)
+
+                if batch_idx == 0 or batch_idx == num_batches - 1:
+                    log(f"[UDF PROBA PHASE 2] Batch {batch_idx+1}/{num_batches}: shape {X_batch.shape}")
+
+                # Predict this batch - returns probability distributions
+                batch_preds = model.predict(X_batch, verbose=0)
+                all_predictions.append(batch_preds)
+
+            # Concatenate all batch predictions
+            all_predictions = np.concatenate(all_predictions, axis=0)
+            log(f"[UDF PROBA PHASE 2] Total predictions shape: {all_predictions.shape}")
+
+            # PHASE 3: Reconstruct results for each sequence
+            log(f"[UDF PROBA PHASE 3] Reconstructing probability results for {len(sequence_metadata)} sequences")
+
+            results = [None] * len(sorted_data_series)
+
+            for metadata in sequence_metadata:
+                seq_idx = metadata['seq_idx']
+
+                if metadata['type'] == 'failed':
+                    results[seq_idx] = []
+                    continue
+
+                if metadata['type'] == 'short':
+                    # Single window - extract probabilities for actual sequence length
+                    window_idx = metadata['window_indices'][0]
+                    sequence_length = metadata['sequence_length']
+                    preds = all_predictions[window_idx][:sequence_length]  # Shape: (sequence_length, num_classes)
+                    # Convert to list of lists (each element is a probability distribution)
+                    proba_arrays = [p.tolist() for p in preds]
+                    results[seq_idx] = proba_arrays
+
+                elif metadata['type'] == 'sliding':
+                    # Multiple sliding windows - average overlapping predictions
+                    sequence_length = metadata['sequence_length']
+                    window_indices = metadata['window_indices']
+                    window_positions = metadata['window_positions']
+
+                    # Initialize prediction accumulator
+                    prediction_counts = np.zeros(sequence_length, dtype=np.int32)
+                    prediction_sums = np.zeros((sequence_length, num_classes), dtype=np.float32)
+
+                    # Accumulate predictions from all windows
+                    for window_idx, (window_start, actual_window_length) in zip(window_indices, window_positions):
+                        window_preds = all_predictions[window_idx]  # Shape: (window_size, num_classes)
+
+                        for i in range(actual_window_length):
+                            global_pos = window_start + i
+                            if global_pos < sequence_length:
+                                prediction_sums[global_pos] += window_preds[i]
+                                prediction_counts[global_pos] += 1
+
+                    # Average overlapping predictions and return probability distributions
+                    proba_arrays = []
+                    for i in range(sequence_length):
+                        if prediction_counts[i] > 0:
+                            avg_probs = prediction_sums[i] / prediction_counts[i]
+                            proba_arrays.append(avg_probs.tolist())
+                        else:
+                            # Default to uniform distribution if no predictions
+                            uniform_probs = [1.0 / num_classes] * num_classes
+                            proba_arrays.append(uniform_probs)
+
+                    results[seq_idx] = proba_arrays
+
+            log(f"[UDF PROBA COMPLETE] Processed {len(sorted_data_series)} sequences, {len(all_windows)} total windows")
+            log(f"[UDF PROBA COMPLETE] Non-empty results: {sum(1 for r in results if r and len(r) > 0)}")
+            log(f"[UDF PROBA COMPLETE] Empty results: {sum(1 for r in results if not r or len(r) == 0)}")
+
+            # Update progress accumulator
+            if sequences_processed_acc is not None:
+                sequences_processed_acc.add(len(sorted_data_series))
+
+            return pd.Series(results)
+
+        # Apply prediction
+        if self.verbosity >= 2:
+            print("[RNN Predict Proba] Applying probability prediction UDF to sequences")
+
+        predictions = sequenced_data.withColumn(
+            "probabilities",
+            predict_proba_sequence(col("sorted_data"))
+        )
+
+        # Check for empty or null prediction arrays
+        if show_progress:
+            import threading
+            import time
+
+            pbar = tqdm(total=total_sequences, desc="Predicting probabilities", unit="seq")
+
+            def update_progress():
+                """Background thread to update progress bar."""
+                last_value = 0
+                while not stop_progress.is_set():
+                    current = sequences_processed_acc.value
+                    if current > last_value:
+                        pbar.update(current - last_value)
+                        last_value = current
+                    time.sleep(0.5)
+
+            stop_progress = threading.Event()
+            progress_thread = threading.Thread(target=update_progress, daemon=True)
+            progress_thread.start()
+
+            try:
+                total_seqs = predictions.count()
+                final_value = sequences_processed_acc.value
+                pbar.update(final_value - pbar.n)
+            finally:
+                stop_progress.set()
+                progress_thread.join(timeout=1.0)
+                pbar.close()
+        else:
+            total_seqs = predictions.count()
+
+        empty_preds = predictions.filter(F.size(col("probabilities")) == 0)
+        empty_count = empty_preds.count()
+        null_preds = predictions.filter(col("probabilities").isNull())
+        null_count = null_preds.count()
+
+        if empty_count > 0 or null_count > 0:
+            print(f"\n{'='*70}")
+            print(f"[RNN Predict Proba] PREDICTION FAILURE DETECTED!")
+            print(f"  Total sequences: {total_seqs}")
+            print(f"  Empty probability arrays: {empty_count}")
+            print(f"  Null probability arrays: {null_count}")
+            print(f"  Success rate: {((total_seqs - empty_count - null_count) / total_seqs * 100):.1f}%")
+            print(f"{'='*70}")
+
+        if self.verbosity >= 3:
+            print("[RNN Predict Proba]: Predictions DataFrame schema:")
+            predictions.printSchema()
+            print("[RNN Predict Proba]: Predictions DataFrame sample:")
+            predictions.show(5, truncate=False)
+
+        # Explode probabilities back to line-level
+        if self.verbosity >= 2:
+            print("[RNN Predict Proba] Exploding probabilities for line-level results")
+
+        # Combine probabilities array with sorted_data array using arrays_zip
+        predictions_with_data = predictions.withColumn(
+            "zipped_arrays",
+            F.arrays_zip("sorted_data", "probabilities")
+        )
+
+        # Posexplode the zipped arrays
+        predictions_exploded = predictions_with_data.select(
+            predictions_with_data[doc_id_col],
+            predictions_with_data["value"],
+            F.posexplode(predictions_with_data["zipped_arrays"]).alias("pos", "col")
+        )
+
+        # Extract fields from the nested struct
+        from pyspark.sql.types import StructType
+        col_struct_type = predictions_exploded.schema["col"].dataType
+
+        sorted_data_struct_type = None
+        if isinstance(col_struct_type, StructType):
+            for field in col_struct_type.fields:
+                if field.name == "sorted_data":
+                    sorted_data_struct_type = field.dataType
+                    break
+
+        if sorted_data_struct_type and isinstance(sorted_data_struct_type, StructType):
+            skip_fields = {doc_id_col, "value"}
+
+            result = predictions_exploded.select(
+                predictions_exploded[doc_id_col],
+                predictions_exploded["pos"],
+                predictions_exploded["value"].alias("value"),
+                predictions_exploded["col"]["probabilities"].alias("probabilities"),
+                *[predictions_exploded["col"]["sorted_data"][field.name].alias(field.name)
+                  for field in sorted_data_struct_type.fields
+                  if field.name not in skip_fields]
+            ).cache()
+        else:
+            result = predictions_exploded.select(
+                predictions_exploded[doc_id_col],
+                predictions_exploded["pos"],
+                predictions_exploded["value"].alias("value"),
+                predictions_exploded["col"]["probabilities"].alias("probabilities")
+            ).cache()
+
+        if self.verbosity >= 2:
+            print(f"[RNN Predict Proba] Result columns: {result.columns}")
+        if self.verbosity >= 3:
+            print("[RNN Predict Proba]: Result DataFrame schema:")
+            result.printSchema()
+            print("[RNN Predict Proba]: Result DataFrame sample:")
+            result.show(5, truncate=False)
+
+        if self.verbosity >= 1:
+            print("[RNN Predict Proba] Probability prediction completed successfully")
+        return result
+
     def calculate_stats(
         self,
         predictions: DataFrame,
