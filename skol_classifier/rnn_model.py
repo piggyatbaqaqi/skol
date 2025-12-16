@@ -20,7 +20,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.functions import (
     col, collect_list, lit, pandas_udf
 )
-from pyspark.sql.types import ArrayType, DoubleType, FloatType
+from pyspark.sql.types import ArrayType, FloatType
 
 import pandas as pd
 
@@ -678,14 +678,16 @@ class RNNSkolModel(SkolModel):
         """
         Make predictions on data.
 
+        Reimplemented to use predict_proba() and add argmax to get predictions.
+
         Args:
             data: DataFrame to predict on
 
         Returns:
-            DataFrame with predictions
+            DataFrame with both 'prediction' and 'probabilities' columns
         """
         if self.verbosity >= 2:
-            print("[RNN Predict] Starting prediction [CODE VERSION 2025-12-11-17:45]")
+            print("[RNN Predict] Starting prediction [CODE VERSION 2025-12-16]")
             print(f"[RNN Predict] Input data columns: {data.columns}")
             print(f"[RNN Predict] Input data count: {data.count()}")
             print(f"[RNN Predict] Verbosity level: {self.verbosity}")
@@ -693,541 +695,29 @@ class RNNSkolModel(SkolModel):
         if self.classifier_model is None:
             raise ValueError("Model not trained. Call fit() first.")
 
-        # Import tqdm for progress bar
-        try:
-            from tqdm.auto import tqdm
-            tqdm_available = True
-        except ImportError:
-            tqdm_available = False
-            if self.verbosity >= 2:
-                print("[RNN Predict] tqdm not available, progress bar disabled")
-
-        # Determine document ID column
-        doc_id_col = "doc_id" if "doc_id" in data.columns else "filename"
-        line_no_col = "line_number" if "line_number" in data.columns else "dummy_line_number"
-        if self.verbosity >= 3:
-            print(f"[RNN Predict] Using document ID column: {doc_id_col}")
-
-        # Create sequence preprocessor
-        if self.verbosity >= 3:
-            print("[RNN Predict] Creating sequence preprocessor")
-        preprocessor = SequencePreprocessor(
-            inputCol=self.features_col,
-            outputCol="sequence_features",
-            docIdCol=doc_id_col,
-            lineNumberCol=line_no_col,
-            labelCol=self.label_col if self.label_col in data.columns else "dummy_label",
-            window_size=self.window_size
-        )
-
-        has_labels = self.label_col in data.columns
-        if self.verbosity >= 3:
-            print(f"[RNN Predict] Has labels: {has_labels}")
-
-        # Transform into sequences
+        # Use predict_proba to get probability distributions
         if self.verbosity >= 2:
-            print("[RNN Predict] Transforming data into sequences")
-        sequenced_data = preprocessor.transform(data)
-        if self.verbosity >= 3:
-            print(f"[RNN Predict] Sequenced data columns: {sequenced_data.columns}")
+            print("[RNN Predict] Calling predict_proba to get probabilities")
 
-        # Get total sequence count for progress bar
-        total_sequences = sequenced_data.count() if tqdm_available else 0
-        if tqdm_available and self.verbosity >= 1:
-            print(f"[RNN Predict] Total sequences to process: {total_sequences}")
+        proba_result = self.predict_proba(data)
 
-        # Create accumulator for progress tracking
-        if tqdm_available:
-            from pyspark import SparkContext
-            sc = SparkContext.getOrCreate()
-            sequences_processed_acc = sc.accumulator(0)
-        else:
-            sequences_processed_acc = None
-
-        # Broadcast model weights for UDF
+        # Add prediction column by taking argmax of probabilities
         if self.verbosity >= 2:
-            print(f"[RNN Predict] Preparing model config and weights for UDF")
-            print(f"[RNN Predict] model_weights is None: {self.model_weights is None}")
-            if self.model_weights:
-                print(f"[RNN Predict] model_weights count: {len(self.model_weights)}")
-            print(f"[RNN Predict] Using sliding window: window_size={self.window_size}, stride={self.prediction_stride}")
-        model_config = self.keras_model.to_json()
-        model_weights = self.model_weights
-        input_size = self.input_size
-        window_size = self.window_size
-        num_classes = self.num_classes
-        prediction_stride = self.prediction_stride
-        prediction_batch_size = self.prediction_batch_size
-        verbosity = self.verbosity  # Capture for UDF closure
-        show_progress = tqdm_available and self.verbosity >= 1
-
-        # Define prediction UDF
-        @pandas_udf(ArrayType(FloatType()))
-        def predict_sequence(sorted_data_series: pd.Series) -> pd.Series:
-            """Predict on sequences using the trained model.
-
-            Args:
-                sorted_data_series: Series of arrays of Row objects (structs),
-                                   each containing features and other fields
-            """
-            import os
-            import numpy as np
-            import tempfile
-            import time
-
-            # Create a debug log file in /tmp for this executor
-            log_file = f"/tmp/rnn_udf_debug_{os.getpid()}_{int(time.time())}.log"
-
-            def log(msg):
-                """Write to both stderr and file."""
-                import sys
-                try:
-                    with open(log_file, 'a') as f:
-                        f.write(f"{msg}\n")
-                        f.flush()
-                except Exception:
-                    pass
-                if verbosity >= 3:
-                    print(msg, file=sys.stderr)
-
-            log(f"[UDF START] Processing {len(sorted_data_series)} sequences")
-            log(f"[UDF START] Config: input_size={input_size}, window_size={window_size}, features_col={self.features_col}")
-            log(f"[UDF START] Log file: {log_file}")
-
-            try:
-                # Force CPU-only mode in executors to prevent CUDA errors
-                # This is critical for GPUs with unsupported compute capabilities
-                os.environ['CUDA_VISIBLE_DEVICES'] = ''
-                log("[UDF] Set CUDA_VISIBLE_DEVICES to empty string")
-
-                # Import TensorFlow/Keras inside UDF after setting CPU mode
-                try:
-                    import tensorflow as tf
-                    from tensorflow import keras
-                    # Double-check GPU is disabled
-                    tf.config.set_visible_devices([], 'GPU')
-                    log("[UDF] TensorFlow imported and GPU disabled")
-                except Exception as e:
-                    # If TensorFlow config fails, try to continue anyway
-                    # The CPU-only env var should be sufficient
-                    log(f"[UDF WARNING] TensorFlow config issue: {e}")
-                    pass
-
-                # Rebuild model from config and weights
-                try:
-                    model = keras.models.model_from_json(model_config)
-                    model.set_weights(model_weights)
-                    log(f"[UDF] Model rebuilt successfully")
-                except Exception as e:
-                    log(f"[UDF FATAL] Model rebuild failed: {e}")
-                    raise RuntimeError(
-                        f"Failed to rebuild model in executor: {e}\n"
-                        "This may be due to GPU compatibility issues. "
-                        "Ensure CUDA_VISIBLE_DEVICES='' is set before starting Spark."
-                    )
-
-                results = []
-                log(f"[UDF] Initialization complete, starting prediction loop")
-            except Exception as e:
-                # If initialization fails, return empty lists for all sequences
-                # This allows us to see the error in logs
-                log(f"[UDF ERROR] Initialization failed: {e}")
-                import sys
-                import traceback
-                traceback.print_exc(file=sys.stderr)
-                log(f"[UDF ERROR] Returning empty arrays for all {len(sorted_data_series)} sequences")
-                return pd.Series([[]] * len(sorted_data_series))
-
-            # PHASE 1: Extract features and prepare all windows for batched prediction
-            # Store metadata for each sequence to reconstruct results later
-            sequence_metadata = []
-            all_windows = []  # Will contain all windows from all sequences
-
-            log(f"[UDF PHASE 1] Extracting features from {len(sorted_data_series)} sequences")
-
-            for seq_idx, sorted_data in enumerate(sorted_data_series):
-                try:
-                    # Extract features from the struct array
-                    dense_features = []
-
-                    for row in sorted_data:
-                        # Extract the feature from the struct
-                        feat = row[self.features_col]
-                        if feat is None:
-                            continue
-
-                        # Convert to dense array (features should already be numeric from PySpark)
-                        try:
-                            # Handle dictionaries (vectors serialized through Pandas UDF)
-                            if isinstance(feat, dict):
-                                # Deserialize PySpark vector from dictionary
-                                from pyspark.ml.linalg import Vectors, DenseVector, SparseVector
-                                if feat.get('type') == 0:  # DenseVector
-                                    vec = Vectors.dense(feat['values'])
-                                elif feat.get('type') == 1:  # SparseVector
-                                    vec = Vectors.sparse(feat['size'], feat['indices'], feat['values'])
-                                else:
-                                    raise ValueError(f"Unknown vector type: {feat.get('type')}")
-                                dense_arr = np.array(vec.toArray(), dtype=np.float32)
-                            elif hasattr(feat, 'toArray'):
-                                # SparseVector or DenseVector from PySpark
-                                dense_arr = np.array(feat.toArray(), dtype=np.float32)
-                            elif isinstance(feat, np.ndarray):
-                                dense_arr = np.asarray(feat, dtype=np.float32)
-                            elif isinstance(feat, (list, tuple)):
-                                dense_arr = np.array(feat, dtype=np.float32)
-                            else:
-                                # Try to convert to numpy array
-                                dense_arr = np.array(list(feat), dtype=np.float32)
-                        except Exception:
-                            # Conversion failed - use zero array as fallback
-                            dense_arr = np.zeros(input_size, dtype=np.float32)
-
-                        # Skip empty features
-                        if len(dense_arr) == 0:
-                            continue
-
-                        # Ensure each feature vector is exactly input_size
-                        if len(dense_arr) < input_size:
-                            # Pad to input_size
-                            padding = np.zeros(input_size - len(dense_arr), dtype=np.float32)
-                            dense_arr = np.concatenate([dense_arr, padding])
-                        elif len(dense_arr) > input_size:
-                            # Truncate to input_size
-                            dense_arr = dense_arr[:input_size]
-
-                        dense_features.append(dense_arr)
-
-                    # Handle empty sequences - create at least one prediction using padding
-                    if len(dense_features) == 0:
-                        dense_features = [np.zeros(input_size, dtype=np.float32)]
-
-                    sequence_length = len(dense_features)
-
-                    # Prepare windows for this sequence
-                    if sequence_length <= window_size:
-                        # Short sequence: pad to window_size and create one window
-                        if sequence_length < window_size:
-                            padding = [np.zeros(input_size, dtype=np.float32)] * (window_size - sequence_length)
-                            padded_features = dense_features + padding
-                        else:
-                            padded_features = dense_features
-
-                        window_array = np.array(padded_features, dtype=np.float32)
-                        all_windows.append(window_array)
-
-                        # Metadata: (seq_idx, is_sliding_window, window_info)
-                        # For short sequences: window_info = sequence_length
-                        sequence_metadata.append({
-                            'seq_idx': seq_idx,
-                            'type': 'short',
-                            'sequence_length': sequence_length,
-                            'window_indices': [len(all_windows) - 1]  # Index of this window in all_windows
-                        })
-                    else:
-                        # Long sequence: create sliding windows
-                        window_indices = []
-                        window_positions = []  # (window_start, actual_window_length) for each window
-
-                        for window_start in range(0, sequence_length, prediction_stride):
-                            window_end = min(window_start + window_size, sequence_length)
-                            window_features = dense_features[window_start:window_end]
-
-                            # Pad if this is the last window and it's shorter than window_size
-                            if len(window_features) < window_size:
-                                padding = [np.zeros(input_size, dtype=np.float32)] * (window_size - len(window_features))
-                                window_features = window_features + padding
-
-                            window_array = np.array(window_features, dtype=np.float32)
-                            all_windows.append(window_array)
-                            window_indices.append(len(all_windows) - 1)
-
-                            actual_window_length = min(window_size, window_end - window_start)
-                            window_positions.append((window_start, actual_window_length))
-
-                        sequence_metadata.append({
-                            'seq_idx': seq_idx,
-                            'type': 'sliding',
-                            'sequence_length': sequence_length,
-                            'window_indices': window_indices,
-                            'window_positions': window_positions
-                        })
-
-                except Exception as e:
-                    # Per-sequence failure - mark for empty result
-                    if seq_idx < 10 or seq_idx % 1000 == 0:
-                        log(f"[UDF ERROR] Sequence {seq_idx} failed during feature extraction: {e}")
-                    sequence_metadata.append({
-                        'seq_idx': seq_idx,
-                        'type': 'failed',
-                        'error': str(e)
-                    })
-
-            # PHASE 2: Batch predict all windows (in chunks to respect max batch size)
-            log(f"[UDF PHASE 2] Predicting on {len(all_windows)} windows from {len(sorted_data_series)} sequences")
-
-            if len(all_windows) == 0:
-                log(f"[UDF ERROR] No windows to predict - returning empty results")
-                return pd.Series([[]] * len(sorted_data_series))
-
-            # Predict in batches to control memory usage
-            total_windows = len(all_windows)
-            num_batches = (total_windows + prediction_batch_size - 1) // prediction_batch_size
-            log(f"[UDF PHASE 2] Using {num_batches} batches of max size {prediction_batch_size}")
-
-            all_predictions = []
-            for batch_idx in range(num_batches):
-                start_idx = batch_idx * prediction_batch_size
-                end_idx = min(start_idx + prediction_batch_size, total_windows)
-
-                # Get windows for this batch
-                batch_windows = all_windows[start_idx:end_idx]
-                X_batch = np.array(batch_windows, dtype=np.float32)
-
-                if batch_idx == 0 or batch_idx == num_batches - 1:
-                    log(f"[UDF PHASE 2] Batch {batch_idx+1}/{num_batches}: shape {X_batch.shape}")
-
-                # Predict this batch
-                batch_preds = model.predict(X_batch, verbose=0)
-                all_predictions.append(batch_preds)
-
-            # Concatenate all batch predictions
-            all_predictions = np.concatenate(all_predictions, axis=0)
-            log(f"[UDF PHASE 2] Total predictions shape: {all_predictions.shape}")
-
-            # PHASE 3: Reconstruct results for each sequence
-            log(f"[UDF PHASE 3] Reconstructing results for {len(sequence_metadata)} sequences")
-
-            results = [None] * len(sorted_data_series)  # Pre-allocate results array
-
-            for metadata in sequence_metadata:
-                seq_idx = metadata['seq_idx']
-
-                if metadata['type'] == 'failed':
-                    results[seq_idx] = []
-                    continue
-
-                if metadata['type'] == 'short':
-                    # Single window - extract predictions for actual sequence length
-                    window_idx = metadata['window_indices'][0]
-                    sequence_length = metadata['sequence_length']
-                    preds = all_predictions[window_idx][:sequence_length]  # Shape: (sequence_length, num_classes)
-                    pred_classes = [float(np.argmax(p)) for p in preds]
-                    results[seq_idx] = pred_classes
-
-                elif metadata['type'] == 'sliding':
-                    # Multiple sliding windows - need to average overlapping predictions
-                    sequence_length = metadata['sequence_length']
-                    window_indices = metadata['window_indices']
-                    window_positions = metadata['window_positions']
-
-                    # Initialize prediction accumulator
-                    prediction_counts = np.zeros(sequence_length, dtype=np.int32)
-                    prediction_sums = np.zeros((sequence_length, num_classes), dtype=np.float32)
-
-                    # Accumulate predictions from all windows
-                    for window_idx, (window_start, actual_window_length) in zip(window_indices, window_positions):
-                        window_preds = all_predictions[window_idx]  # Shape: (window_size, num_classes)
-
-                        # Add predictions to accumulator (only for actual positions, not padding)
-                        for i in range(actual_window_length):
-                            global_pos = window_start + i
-                            if global_pos < sequence_length:
-                                prediction_sums[global_pos] += window_preds[i]
-                                prediction_counts[global_pos] += 1
-
-                    # Average overlapping predictions and take argmax
-                    pred_classes = []
-                    for i in range(sequence_length):
-                        if prediction_counts[i] > 0:
-                            avg_probs = prediction_sums[i] / prediction_counts[i]
-                            pred_classes.append(float(np.argmax(avg_probs)))
-                        else:
-                            pred_classes.append(0.0)
-
-                    results[seq_idx] = pred_classes
-
-            log(f"[UDF COMPLETE] Processed {len(sorted_data_series)} sequences, {len(all_windows)} total windows")
-            log(f"[UDF COMPLETE] Non-empty results: {sum(1 for r in results if r and len(r) > 0)}")
-            log(f"[UDF COMPLETE] Empty results: {sum(1 for r in results if not r or len(r) == 0)}")
-
-            # Update progress accumulator
-            if sequences_processed_acc is not None:
-                sequences_processed_acc.add(len(sorted_data_series))
-
-            return pd.Series(results)
-
-        # Apply prediction
-        if self.verbosity >= 2:
-            print("[RNN Predict] Applying prediction UDF to sequences")
-        if self.verbosity >= 3:
-            print(f"[RNN Predict] About to call predict_sequence UDF")
-            print(f"[RNN Predict] input_size={input_size}, window_size={window_size}")
-            # Check what's actually in sorted_data
-            print("[RNN Predict] Sampling sorted_data...")
-            first_seq = sequenced_data.select("sorted_data").first()
-            if first_seq and first_seq.sorted_data:
-                print(f"[RNN Predict] Sample has {len(first_seq.sorted_data)} rows")
-                if len(first_seq.sorted_data) > 0:
-                    row0 = first_seq.sorted_data[0]
-                    feat0 = row0[self.features_col]
-                    print(f"[RNN Predict] First feature type: {type(feat0)}")
-                    if hasattr(feat0, 'toArray'):
-                        arr = feat0.toArray()
-                        print(f"[RNN Predict] First feature array length: {len(arr)}")
-                        print(f"[RNN Predict] First feature sample values: {arr[:5]}")
-            else:
-                print("[RNN Predict] No sorted_data in sample!")
-
-        predictions = sequenced_data.withColumn(
-            "predictions",
-            predict_sequence(col("sorted_data")).cast(ArrayType(DoubleType()))
-        )
-
-        # Check for empty or null prediction arrays (indicates UDF failures)
-        # Trigger computation with progress bar
-        if show_progress:
-            import threading
-            import time
-
-            pbar = tqdm(total=total_sequences, desc="Predicting sequences", unit="seq")
-
-            def update_progress():
-                """Background thread to update progress bar."""
-                last_value = 0
-                while not stop_progress.is_set():
-                    current = sequences_processed_acc.value
-                    if current > last_value:
-                        pbar.update(current - last_value)
-                        last_value = current
-                    time.sleep(0.5)  # Poll every 500ms
-
-            stop_progress = threading.Event()
-            progress_thread = threading.Thread(target=update_progress, daemon=True)
-            progress_thread.start()
-
-            try:
-                total_seqs = predictions.count()
-                # Final update to ensure we reach 100%
-                final_value = sequences_processed_acc.value
-                pbar.update(final_value - pbar.n)
-            finally:
-                stop_progress.set()
-                progress_thread.join(timeout=1.0)
-                pbar.close()
-        else:
-            total_seqs = predictions.count()
-        empty_preds = predictions.filter(F.size(col("predictions")) == 0)
-        empty_count = empty_preds.count()
-        null_preds = predictions.filter(col("predictions").isNull())
-        null_count = null_preds.count()
-
-        if empty_count > 0 or null_count > 0:
-            print(f"\n{'='*70}")
-            print(f"[RNN Predict] PREDICTION FAILURE DETECTED!")
-            print(f"  Total sequences: {total_seqs}")
-            print(f"  Empty prediction arrays: {empty_count}")
-            print(f"  Null prediction arrays: {null_count}")
-            print(f"  Success rate: {((total_seqs - empty_count - null_count) / total_seqs * 100):.1f}%")
-            print(f"{'='*70}")
-            if empty_count > 0:
-                print("\n[RNN Predict] Sample sequences with EMPTY predictions:")
-                empty_preds.select(
-                    doc_id_col,
-                    F.size("sorted_data").alias("num_rows"),
-                    "value"
-                ).show(5, truncate=False)
-            if null_count > 0:
-                print("\n[RNN Predict] Sample sequences with NULL predictions:")
-                null_preds.select(
-                    doc_id_col,
-                    F.size("sorted_data").alias("num_rows")
-                ).show(5, truncate=False)
-            print("\nCheck stderr output above for [UDF ERROR] messages with details.\n")
-
-        if self.verbosity >= 3:
-            print("[RNN Predict]: Predictions DataFrame schema:")
-            predictions.printSchema()
-            print("[RNN Predict]: Predictions DataFrame sample:")
-            predictions.show(5)
-
-        if self.verbosity >= 4:
-            print(f"[RNN Predict] UDF application completed")
-
-        # For line-level predictions, we need to explode the sequences back to individual lines
-        # Use posexplode to get both position and value
-        if self.verbosity >= 2:
-            print("[RNN Predict] Exploding predictions and labels for evaluation")
-
-        # Debug: Check what's in predictions before exploding
-        if self.verbosity >= 3:
-            pred_count = predictions.count()
-            print(f"[RNN Predict] predictions DataFrame has {pred_count} rows before explode")
-            if pred_count > 0:
-                first_row = predictions.first()
-                print(f"[RNN Predict] First row predictions column: {first_row.predictions if first_row else 'None'}")
-                if first_row and first_row.predictions:
-                    print(f"[RNN Predict] Predictions type: {type(first_row.predictions)}, length: {len(first_row.predictions)}")
-                else:
-                    print(f"[RNN Predict] Predictions column is None or empty!")
-
-        # If we have labels (e.g., for evaluation), explode both predictions and labels
-        if self.verbosity >= 2:
-            print("[RNN Predict] Exploding predictions")
-
-        # Combine predictions array with sorted_data array using arrays_zip
-        # This creates a new array where each element is a struct containing all fields
-        predictions_with_data = predictions.withColumn(
-            "zipped_arrays",
-            F.arrays_zip("sorted_data", "predictions")
-        )
-
-        # Posexplode the 'zipped_arrays' column
-        # This will create 'pos' (position/index) and 'col' (the struct containing the zipped values) columns
-        predictions_exploded = predictions_with_data.select(
-            predictions_with_data[doc_id_col],
-            predictions_with_data["value"],
-            F.posexplode(predictions_with_data["zipped_arrays"]).alias("pos", "col")
-        )
-
-        # Extract fields from the nested struct:
-        # col.sorted_data contains the original row data (line_number, features, label, etc.)
-        # col.predictions contains the prediction value
-
-        # Get the struct field names from the schema
-        from pyspark.sql.types import StructType
-        col_struct_type = predictions_exploded.schema["col"].dataType
-
-        # Find the sorted_data field within the col struct
-        sorted_data_struct_type = None
-        if isinstance(col_struct_type, StructType):
-            for field in col_struct_type.fields:
-                if field.name == "sorted_data":
-                    sorted_data_struct_type = field.dataType
-                    break
-        # Extract all fields from sorted_data struct
-        if sorted_data_struct_type and isinstance(sorted_data_struct_type, StructType):
-            # Skip fields we're already extracting at the top level to avoid duplicates
-            skip_fields = {doc_id_col, "value"}
-
-            result = predictions_exploded.select(
-                predictions_exploded[doc_id_col],
-                predictions_exploded["pos"],
-                predictions_exploded["value"].alias("value"),
-                predictions_exploded["col"]["predictions"].alias("prediction"),
-                # Extract all fields from the sorted_data struct except ones we already have
-                *[predictions_exploded["col"]["sorted_data"][field.name].alias(field.name)
-                  for field in sorted_data_struct_type.fields
-                  if field.name not in skip_fields]
-            ).cache()
-        else:
-            # Fallback if we can't get the struct type
-            result = predictions_exploded.select(
-                predictions_exploded[doc_id_col],
-                predictions_exploded["pos"],
-                predictions_exploded["value"].alias("value"),
-                predictions_exploded["col"]["predictions"].alias("prediction")
-            ).cache()
+            print("[RNN Predict] Adding prediction column via argmax")
+
+        # Define UDF to compute argmax of probability array
+        from pyspark.sql.functions import udf
+        from pyspark.sql.types import IntegerType
+        from typing import Optional
+
+        @udf(returnType=IntegerType())
+        def argmax_udf(proba_array: Optional[List[float]]) -> int:
+            """Return the index of the maximum probability."""
+            if proba_array is None or len(proba_array) == 0:
+                return 0
+            return int(max(range(len(proba_array)), key=lambda i: float(proba_array[i])))
+
+        result = proba_result.withColumn("prediction", argmax_udf(col("probabilities")).cast("double"))
 
         if self.verbosity >= 2:
             print(f"[RNN Predict] Result columns: {result.columns}")
@@ -1235,13 +725,7 @@ class RNNSkolModel(SkolModel):
             print("[RNN Predict]: Result DataFrame schema:")
             result.printSchema()
             print("[RNN Predict]: Result DataFrame sample:")
-            result.show(5)
-
-        # if self.verbosity >= 2:
-        #     print("[RNN Predict] Checking for all-zero predictions...")
-        #     f_zeros = result.filter(F.col('prediction') == 0.0)
-        #     if f_zeros.count() == result.count():
-        #         raise ValueError("All predictions are zero, model may not be learning correctly.")
+            result.show(5, truncate=False)
 
         if self.verbosity >= 1:
             print("[RNN Predict] Prediction completed successfully")
@@ -1754,12 +1238,19 @@ class RNNSkolModel(SkolModel):
         which includes a 'filename' column and line-level predictions that
         have been exploded from sequences.
 
+        Now includes per-class metrics (accuracy, precision, recall, F1, loss)
+        for each of the 3 classes.
+
         Args:
             predictions: DataFrame with predictions and labels.
                         Expected to have columns: filename, prediction, label_col
+                        Optionally: probabilities (if available)
 
         Returns:
-            Dictionary containing accuracy, precision, recall, f1_score
+            Dictionary containing:
+            - Overall: accuracy, precision, recall, f1_score, loss
+            - Per-class: class_0_*, class_1_*, class_2_* metrics
+            - class_counts: number of instances per class
         """
         if self.verbosity >= 3:
             print("[RNN Stats] Calculating statistics for RNN predictions")
@@ -1776,10 +1267,21 @@ class RNNSkolModel(SkolModel):
                 f"Available columns: {actual_cols}"
             )
 
+        # Check if we have probabilities column for loss calculation
+        has_probabilities = "probabilities" in actual_cols
+
+        # If no probabilities, we can't calculate loss
+        if not has_probabilities and self.verbosity >= 2:
+            print("[RNN Stats] WARNING: 'probabilities' column not found. Loss metrics will not be calculated.")
+            print("[RNN Stats] To get loss metrics, use the result from predict() which includes probabilities.")
+
         # RNN predictions may have extra columns like 'filename' which evaluators ignore
-        # We can use the predictions as-is, but let's select only the columns needed
-        # for evaluation to ensure compatibility
-        eval_predictions = predictions.select("prediction", self.label_col)
+        # Select columns we need for evaluation
+        select_cols = ["prediction", self.label_col]
+        if has_probabilities:
+            select_cols.append("probabilities")
+
+        eval_predictions = predictions.select(*select_cols)
 
         # Filter out any null predictions (which can occur if UDF fails for some sequences)
         null_count = eval_predictions.filter(col("prediction").isNull()).count()
@@ -1791,7 +1293,7 @@ class RNNSkolModel(SkolModel):
         if self.verbosity >= 3:
             print(f"[RNN Stats] Evaluating {eval_predictions.count()} line-level predictions")
 
-        # Use parent class method to create evaluators and calculate stats
+        # Use parent class method to create evaluators and calculate overall stats
         evaluators = self._create_evaluators()
 
         stats = {
@@ -1801,15 +1303,180 @@ class RNNSkolModel(SkolModel):
             'f1_score': evaluators['f1'].evaluate(eval_predictions)
         }
 
+        # Calculate overall loss if we have probabilities
+        if has_probabilities:
+            # Define UDF to calculate cross-entropy loss
+            from pyspark.sql.functions import udf
+            from pyspark.sql.types import DoubleType
+
+            @udf(returnType=DoubleType())
+            def cross_entropy_loss_udf(probabilities: Optional[List[float]], true_label: int) -> float:
+                """Calculate cross-entropy loss for a single prediction."""
+                if probabilities is None or len(probabilities) == 0:
+                    return 0.0
+                if true_label < 0 or true_label >= len(probabilities):
+                    return 0.0
+                # Cross-entropy: -log(p(true_class))
+                prob_true_class = max(probabilities[int(true_label)], 1e-10)  # Avoid log(0)
+                return float(-np.log(prob_true_class))
+
+            # Add loss column to eval_predictions
+            eval_predictions_with_loss = eval_predictions.withColumn(
+                "loss",
+                cross_entropy_loss_udf(col("probabilities"), col(self.label_col).cast("int"))
+            )
+
+            # Calculate average loss
+            from pyspark.sql.functions import avg
+            avg_loss = eval_predictions_with_loss.select(avg("loss")).first()[0]
+            stats['loss'] = float(avg_loss) if avg_loss is not None else 0.0
+        else:
+            stats['loss'] = float('nan')
+            eval_predictions_with_loss = eval_predictions
+
+        # Calculate per-class metrics
+        per_class_stats: Dict[str, float] = {}
+        class_names = self.labels if hasattr(self, 'labels') and self.labels else None
+
+        for class_idx in range(self.num_classes):
+            # Get class name if available
+            class_name = class_names[class_idx] if class_names else f"class_{class_idx}"
+
+            # Filter predictions for this class (true positives + false negatives)
+            class_actual = eval_predictions.filter(col(self.label_col) == class_idx)
+            class_count = class_actual.count()
+
+            if class_count > 0:
+                # Calculate per-class accuracy (recall for this class)
+                class_correct = class_actual.filter(col("prediction") == class_idx).count()
+                class_accuracy = float(class_correct) / float(class_count)
+
+                # Calculate precision: TP / (TP + FP)
+                # How many predicted as this class were actually this class
+                predicted_as_class = eval_predictions.filter(col("prediction") == class_idx)
+                predicted_count = predicted_as_class.count()
+                if predicted_count > 0:
+                    true_positives = predicted_as_class.filter(col(self.label_col) == class_idx).count()
+                    class_precision = float(true_positives) / float(predicted_count)
+                else:
+                    class_precision = 0.0
+
+                # Calculate recall: TP / (TP + FN)
+                # How many actual instances of this class were correctly predicted
+                class_recall = float(class_correct) / float(class_count)
+
+                # Calculate F1 score
+                if class_precision + class_recall > 0:
+                    class_f1 = 2.0 * (class_precision * class_recall) / (class_precision + class_recall)
+                else:
+                    class_f1 = 0.0
+
+                # Calculate per-class loss if we have probabilities
+                if has_probabilities:
+                    class_actual_with_loss = eval_predictions_with_loss.filter(col(self.label_col) == class_idx)
+                    from pyspark.sql.functions import avg
+                    class_avg_loss = class_actual_with_loss.select(avg("loss")).first()[0]
+                    class_loss = float(class_avg_loss) if class_avg_loss is not None else 0.0
+                else:
+                    class_loss = float('nan')
+
+                # Store per-class metrics
+                per_class_stats[f"{class_name}_accuracy"] = class_accuracy
+                per_class_stats[f"{class_name}_precision"] = class_precision
+                per_class_stats[f"{class_name}_recall"] = class_recall
+                per_class_stats[f"{class_name}_f1"] = class_f1
+                per_class_stats[f"{class_name}_loss"] = class_loss
+                per_class_stats[f"{class_name}_support"] = float(class_count)
+            else:
+                # No instances of this class in test set
+                per_class_stats[f"{class_name}_accuracy"] = 0.0
+                per_class_stats[f"{class_name}_precision"] = 0.0
+                per_class_stats[f"{class_name}_recall"] = 0.0
+                per_class_stats[f"{class_name}_f1"] = 0.0
+                per_class_stats[f"{class_name}_loss"] = float('nan')
+                per_class_stats[f"{class_name}_support"] = 0.0
+
+        # Add per-class stats to overall stats
+        stats.update(per_class_stats)
+
+        # Calculate confusion matrix for additional insights
+        total_count = eval_predictions.count()
+        confusion_data: List[Dict[str, int]] = []
+        for true_class in range(self.num_classes):
+            for pred_class in range(self.num_classes):
+                count = eval_predictions.filter(
+                    (col(self.label_col) == true_class) & (col("prediction") == pred_class)
+                ).count()
+                confusion_data.append({
+                    'true_class': true_class,
+                    'predicted_class': pred_class,
+                    'count': count
+                })
+
+        # Store confusion matrix info
+        stats['total_predictions'] = float(total_count)
+
+        # Print formatted statistics
         if self.verbosity >= 1:
-            print("=" * 50)
+            print("\n" + "=" * 70)
             print("RNN Model Evaluation Statistics (Line-Level)")
-            print("=" * 50)
-            print(f"Test Accuracy:  {stats['accuracy']:.4f}")
-            print(f"Test Precision: {stats['precision']:.4f}")
-            print(f"Test Recall:    {stats['recall']:.4f}")
-            print(f"Test F1 Score:  {stats['f1_score']:.4f}")
-            print("=" * 50)
+            print("=" * 70)
+            print(f"\nOverall Metrics:")
+            print(f"  Accuracy:  {stats['accuracy']:.4f}")
+            print(f"  Precision: {stats['precision']:.4f}")
+            print(f"  Recall:    {stats['recall']:.4f}")
+            print(f"  F1 Score:  {stats['f1_score']:.4f}")
+            if has_probabilities:
+                print(f"  Loss:      {stats['loss']:.4f}")
+            print(f"  Total Predictions: {total_count}")
+
+            # Print per-class metrics
+            print(f"\nPer-Class Metrics:")
+            if has_probabilities:
+                print(f"{'Class':<20} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'F1':<10} {'Loss':<10} {'Support':<10}")
+                print("-" * 80)
+            else:
+                print(f"{'Class':<20} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'F1':<10} {'Support':<10}")
+                print("-" * 70)
+
+            for class_idx in range(self.num_classes):
+                class_name = class_names[class_idx] if class_names else f"Class {class_idx}"
+                metric_name = class_names[class_idx] if class_names else f'class_{class_idx}'
+                acc = per_class_stats.get(f"{metric_name}_accuracy", 0.0)
+                prec = per_class_stats.get(f"{metric_name}_precision", 0.0)
+                rec = per_class_stats.get(f"{metric_name}_recall", 0.0)
+                f1 = per_class_stats.get(f"{metric_name}_f1", 0.0)
+                loss = per_class_stats.get(f"{metric_name}_loss", float('nan'))
+                support = per_class_stats.get(f"{metric_name}_support", 0)
+
+                if has_probabilities:
+                    print(f"{class_name:<20} {acc:<10.4f} {prec:<10.4f} {rec:<10.4f} {f1:<10.4f} {loss:<10.4f} {support:<10.0f}")
+                else:
+                    print(f"{class_name:<20} {acc:<10.4f} {prec:<10.4f} {rec:<10.4f} {f1:<10.4f} {support:<10.0f}")
+
+            # Print confusion matrix
+            if self.verbosity >= 2:
+                print(f"\nConfusion Matrix:")
+                print(f"{'True \\ Pred':<15}", end="")
+                for pred_class in range(self.num_classes):
+                    pred_name = class_names[pred_class] if class_names else f"C{pred_class}"
+                    print(f"{pred_name:<12}", end="")
+                print()
+                print("-" * (15 + 12 * self.num_classes))
+
+                for true_class in range(self.num_classes):
+                    true_name = class_names[true_class] if class_names else f"Class {true_class}"
+                    print(f"{true_name:<15}", end="")
+                    for pred_class in range(self.num_classes):
+                        count = next(
+                            (item['count'] for item in confusion_data
+                             if item['true_class'] == true_class and item['predicted_class'] == pred_class),
+                            0
+                        )
+                        print(f"{count:<12}", end="")
+                    print()
+
+            print("=" * 70 + "\n")
 
         return stats
 
