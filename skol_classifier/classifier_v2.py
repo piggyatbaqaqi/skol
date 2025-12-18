@@ -969,17 +969,36 @@ class SkolClassifierV2:
         pipeline_path = model_dir / "feature_pipeline"
         self._feature_pipeline = PipelineModel.load(str(pipeline_path))
 
-        # Load classifier model
-        classifier_path = model_dir / "classifier_model.h5"
-        classifier_model = PipelineModel.load(str(classifier_path))
-
-        # Load metadata
+        # Load metadata first to know model type
         metadata_path = model_dir / "metadata.json"
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
 
         self._label_mapping = metadata['label_mapping']
         self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
+        model_type = metadata['config']['model_type']
+
+        # Load classifier model (different approach for RNN vs traditional ML)
+        classifier_path = model_dir / "classifier_model.h5"
+        if model_type == 'rnn':
+            # For RNN models, load the Keras .h5 file directly
+            from tensorflow import keras
+            import tensorflow as tf
+
+            # Define a dummy loss function for deserialization
+            def weighted_categorical_crossentropy(y_true, y_pred):
+                """Dummy loss function for model deserialization. Not used for prediction."""
+                return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+
+            custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
+            classifier_model = keras.models.load_model(
+                str(classifier_path),
+                custom_objects=custom_objects,
+                compile=False
+            )
+        else:
+            # For traditional ML models, load as PipelineModel
+            classifier_model = PipelineModel.load(str(classifier_path))
 
         # Recreate the SkolModel wrapper using factory
         features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
@@ -1009,7 +1028,7 @@ class SkolClassifierV2:
         labels_list = list(self._label_mapping.keys()) if self._label_mapping else None
 
         self._model = create_model(
-            model_type=metadata['config']['model_type'],
+            model_type=model_type,
             features_col=features_col,
             label_col="label_indexed",
             labels=labels_list,  # Pass labels for class weight support
@@ -1146,7 +1165,19 @@ class SkolClassifierV2:
                 # For RNN models, load the Keras .h5 file directly
                 # Load without compiling to avoid issues with custom loss functions
                 from tensorflow import keras
-                keras_model = keras.models.load_model(str(classifier_path), compile=False)
+                import tensorflow as tf
+
+                # Define a dummy loss function for deserialization
+                def weighted_categorical_crossentropy(y_true, y_pred):
+                    """Dummy loss function for model deserialization. Not used for prediction."""
+                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+
+                custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
+                keras_model = keras.models.load_model(
+                    str(classifier_path),
+                    custom_objects=custom_objects,
+                    compile=False
+                )
                 classifier_model = keras_model  # This is the Keras model itself
             else:
                 # For traditional ML models, load as PipelineModel
