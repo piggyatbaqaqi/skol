@@ -208,9 +208,11 @@ def create_model(
         features_col: Name of features column
         label_col: Name of label column
         labels: Optional list of label strings (e.g., ["Nomenclature", "Description", "Misc"])
-                Required for any model using class weights
+                Required for any model using class weights or focal_labels
         **model_params: Additional model parameters
-                       Can include 'class_weights' dict mapping label strings to weights
+                       Can include:
+                       - 'class_weights': dict mapping label strings to weights
+                       - 'focal_labels': list of label strings for F1-based loss (RNN only)
 
     Returns:
         Instance of appropriate SkolModel subclass
@@ -219,9 +221,10 @@ def create_model(
         ValueError: If model_type is not recognized or RNN dependencies missing
 
     Notes:
-        Class weights are supported for all model types:
-        - Logistic/RandomForest/GBT: Converted to instance weights via weightCol
-        - RNN: Applied via weighted categorical cross-entropy loss
+        Loss functions for handling class imbalance:
+        - Logistic/RandomForest/GBT: 'class_weights' converted to instance weights via weightCol
+        - RNN: 'class_weights' applied via weighted categorical cross-entropy loss
+        - RNN: 'focal_labels' uses mean F1 loss for specified labels only
     """
     if model_type == "logistic":
         model = LogisticRegressionSkolModel(
@@ -279,9 +282,13 @@ def create_model(
             if 'class_weights' in model_params:
                 rnn_params['class_weights'] = model_params['class_weights']
 
+            # Add 'focal_labels' parameter if provided
+            if 'focal_labels' in model_params:
+                rnn_params['focal_labels'] = model_params['focal_labels']
+
             model = RNNSkolModel(**rnn_params)
 
-            # Set labels if provided (needed for class weights to work)
+            # Set labels if provided (needed for class weights and focal_labels to work)
             if labels is not None:
                 model.labels = labels
 

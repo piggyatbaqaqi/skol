@@ -52,27 +52,22 @@ For **prediction only**, we don't need the loss function. The solution is to pro
 ### 1. Distributed Prediction (Spark UDF)
 
 **File**: `skol_classifier/rnn_model.py`
-**Lines**: 970-986
+**Lines**: 971-978
 
 ```python
 # Before
 model = keras.models.model_from_json(model_config)
 
 # After - provide custom_objects with dummy loss function
-import json
-
 def weighted_categorical_crossentropy(y_true, y_pred):
     """Dummy loss function for model deserialization. Not used for prediction."""
     return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
 
-config = json.loads(model_config)
 custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
-
-from tensorflow.keras.models import model_from_config
-model = model_from_config(config, custom_objects=custom_objects)
+model = keras.models.model_from_json(model_config, custom_objects=custom_objects)
 ```
 
-**Note**: `model_from_json()` doesn't support `compile=False`, so we use `model_from_config()` with custom objects instead.
+**Note**: `model_from_json()` accepts `custom_objects` parameter to handle custom loss functions.
 
 ### 2. Loading from Disk (RNNSkolModel)
 
@@ -127,14 +122,14 @@ The solution uses two complementary approaches:
    - Keras can now deserialize the model config (which references this function name)
    - The dummy function just returns standard categorical cross-entropy
    - Since we're only doing prediction, the actual loss function is never called
+   - Works with both `model_from_json()` (for UDFs) and `load_model()` (for disk/Redis)
 
 2. **`compile=False` parameter** (for `load_model()` only):
    - Skips loading the optimizer state and compiling the model
    - Loads only the architecture and weights
    - Model can still be used for prediction via `model.predict()`
    - Much faster loading since no compilation step
-
-**Note**: `model_from_json()` doesn't support `compile=False`, so for UDF serialization we use `model_from_config()` with custom objects instead.
+   - Note: `model_from_json()` doesn't have a `compile` parameter, so we only use this with `load_model()`
 
 ### For Prediction
 ```python
@@ -272,13 +267,13 @@ predictions = classifier.predict(large_data)  # ✅ Works!
 ## Files Modified
 
 1. **`skol_classifier/rnn_model.py`**:
-   - Lines 970-986: Changed from `model_from_json()` to `model_from_config()` with custom objects
-   - Lines 1609-1619: Added custom objects and `compile=False` to `load_model()`
+   - Lines 971-978: Added `custom_objects` parameter to `model_from_json()` with dummy loss function
+   - Lines 1609-1619: Added `custom_objects` and `compile=False` to `load_model()`
    - Updated docstring for `load()` method
 
 2. **`skol_classifier/classifier_v2.py`**:
-   - Lines 983-998: Added custom objects and `compile=False` to `load_model()` in `_load_model_from_disk()`
-   - Lines 1151-1161: Added custom objects and `compile=False` to `load_model()` in `_load_model_from_redis()`
+   - Lines 983-998: Added `custom_objects` and `compile=False` to `load_model()` in `_load_model_from_disk()`
+   - Lines 1151-1161: Added `custom_objects` and `compile=False` to `load_model()` in `_load_model_from_redis()`
    - Fixed `_load_model_from_disk()` to properly handle RNN models (was trying to load .h5 as PipelineModel)
 
 ## References
