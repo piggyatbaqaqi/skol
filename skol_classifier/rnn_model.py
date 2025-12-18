@@ -966,9 +966,22 @@ class RNNSkolModel(SkolModel):
                     pass
 
                 # Rebuild model from config and weights
-                # For prediction, we don't need the loss function, so compile=False
+                # Provide dummy loss function for deserialization (won't be used for prediction)
                 try:
-                    model = keras.models.model_from_json(model_config, compile=False)
+                    import json
+
+                    # Define a dummy loss function for deserialization
+                    def weighted_categorical_crossentropy(y_true, y_pred):
+                        """Dummy loss function for model deserialization. Not used for prediction."""
+                        return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+
+                    # Parse JSON and rebuild with custom objects
+                    config = json.loads(model_config)
+                    custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
+
+                    # Rebuild model from config
+                    from tensorflow.keras.models import model_from_config
+                    model = model_from_config(config, custom_objects=custom_objects)
                     model.set_weights(model_weights)
                     log(f"[UDF PROBA] Model rebuilt successfully")
                 except Exception as e:
@@ -1593,10 +1606,17 @@ class RNNSkolModel(SkolModel):
         Note: Model is loaded without compilation. If you need to continue training,
         call fit() which will rebuild and recompile the model.
         """
+        # Define a dummy loss function for deserialization (not used for prediction)
+        def weighted_categorical_crossentropy(y_true, y_pred):
+            """Dummy loss function for model deserialization. Not used for prediction."""
+            import tensorflow as tf
+            return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+
         # Load without compiling to avoid issues with custom loss functions
         # For prediction, we don't need the loss function
         # For training, fit() will rebuild the model anyway
-        self.keras_model = keras.models.load_model(path, compile=False)
+        custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
+        self.keras_model = keras.models.load_model(path, custom_objects=custom_objects, compile=False)
         self.classifier_model = self.keras_model
         self.model_weights = self.keras_model.get_weights()
         return self
