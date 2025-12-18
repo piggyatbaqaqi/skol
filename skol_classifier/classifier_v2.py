@@ -187,6 +187,8 @@ class SkolClassifierV2:
         # Model configuration
         model_type: str = 'logistic',
         weight_strategy: Optional[Literal['inverse', 'balanced', 'aggressive']] = None,
+        min_weight: float = 0.1,
+        max_weight: float = 100.0,
         verbosity: int = 1,
         **model_params: Any
     ):
@@ -220,6 +222,8 @@ class SkolClassifierV2:
         self.coalesce_labels = coalesce_labels
         self.output_format = output_format
         self.weight_strategy = weight_strategy
+        self.min_weight = min_weight
+        self.max_weight = max_weight
         # Auto-enable frequency computation if weight strategy is specified
         self.compute_label_frequencies = compute_label_frequencies or (weight_strategy is not None)
 
@@ -320,7 +324,9 @@ class SkolClassifierV2:
             # Type checker narrowing: at this point weight_strategy is one of the literals
             strategy = cast(Literal['inverse', 'balanced', 'aggressive'], self.weight_strategy)
             recommended_weights = self.get_recommended_class_weights(
-                strategy=strategy
+                strategy=strategy,
+                min_weight=self.min_weight,
+                max_weight=self.max_weight
             )
             if recommended_weights is not None:
                 self.model_params['class_weights'] = recommended_weights
