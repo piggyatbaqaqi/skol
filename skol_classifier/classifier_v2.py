@@ -45,7 +45,7 @@ Example usage:
     classifier.save_annotated(predictions_df)
 """
 
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any, Literal, cast
 from pathlib import Path
 
 from pyspark.ml import PipelineModel
@@ -186,6 +186,7 @@ class SkolClassifierV2:
 
         # Model configuration
         model_type: str = 'logistic',
+        weight_strategy: Optional[Literal['inverse', 'balanced', 'aggressive']] = None,
         verbosity: int = 1,
         **model_params: Any
     ):
@@ -218,7 +219,9 @@ class SkolClassifierV2:
         self.collapse_labels = collapse_labels
         self.coalesce_labels = coalesce_labels
         self.output_format = output_format
-        self.compute_label_frequencies = compute_label_frequencies
+        self.weight_strategy = weight_strategy
+        # Auto-enable frequency computation if weight strategy is specified
+        self.compute_label_frequencies = compute_label_frequencies or (weight_strategy is not None)
 
         # Feature configuration
         self.use_suffixes = use_suffixes
@@ -311,6 +314,25 @@ class SkolClassifierV2:
         # Load annotated data if not provided
         if annotated_data is None:
             annotated_data = self._load_annotated_data()
+
+        # Apply weight strategy if specified
+        if self.weight_strategy is not None:
+            # Type checker narrowing: at this point weight_strategy is one of the literals
+            strategy = cast(Literal['inverse', 'balanced', 'aggressive'], self.weight_strategy)
+            recommended_weights = self.get_recommended_class_weights(
+                strategy=strategy
+            )
+            if recommended_weights is not None:
+                self.model_params['class_weights'] = recommended_weights
+                if self.verbosity >= 1:
+                    print(f"\n[Classifier] Applied '{self.weight_strategy}' weight strategy:")
+                    sorted_weights = sorted(recommended_weights.items(), key=lambda x: x[1], reverse=True)
+                    for label, weight in sorted_weights:
+                        print(f"  {label:<20} {weight:>6.2f}")
+                    print()
+            else:
+                if self.verbosity >= 1:
+                    print(f"[Classifier] WARNING: Could not compute weights for strategy '{self.weight_strategy}' - label frequencies not available")
 
         # Build feature pipeline
         self._feature_extractor = FeatureExtractor(
@@ -1122,8 +1144,9 @@ class SkolClassifierV2:
 
             if model_type == 'rnn':
                 # For RNN models, load the Keras .h5 file directly
+                # Load without compiling to avoid issues with custom loss functions
                 from tensorflow import keras
-                keras_model = keras.models.load_model(str(classifier_path))
+                keras_model = keras.models.load_model(str(classifier_path), compile=False)
                 classifier_model = keras_model  # This is the Keras model itself
             else:
                 # For traditional ML models, load as PipelineModel
