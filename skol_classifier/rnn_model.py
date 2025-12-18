@@ -1066,15 +1066,22 @@ class RNNSkolModel(SkolModel):
                     pass
 
                 # Rebuild model from config and weights
-                # Provide dummy loss function for deserialization (won't be used for prediction)
+                # Provide dummy loss functions for deserialization (won't be used for prediction)
                 try:
-                    # Define a dummy loss function for deserialization
+                    # Define dummy loss functions for deserialization
                     def weighted_categorical_crossentropy(y_true, y_pred):
                         """Dummy loss function for model deserialization. Not used for prediction."""
                         return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
 
-                    # Rebuild with custom objects to handle custom loss function
-                    custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
+                    def mean_f1_loss(y_true, y_pred):
+                        """Dummy loss function for model deserialization. Not used for prediction."""
+                        return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+
+                    # Rebuild with custom objects to handle custom loss functions
+                    custom_objects = {
+                        'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
+                        'mean_f1_loss': mean_f1_loss
+                    }
                     model = keras.models.model_from_json(model_config, custom_objects=custom_objects)
                     model.set_weights(model_weights)
                     log(f"[UDF PROBA] Model rebuilt successfully")
@@ -1700,8 +1707,13 @@ class RNNSkolModel(SkolModel):
         Note: Model is loaded without compilation. If you need to continue training,
         call fit() which will rebuild and recompile the model.
         """
-        # Define a dummy loss function for deserialization (not used for prediction)
+        # Define dummy loss functions for deserialization (not used for prediction)
         def weighted_categorical_crossentropy(y_true, y_pred):
+            """Dummy loss function for model deserialization. Not used for prediction."""
+            import tensorflow as tf
+            return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+
+        def mean_f1_loss(y_true, y_pred):
             """Dummy loss function for model deserialization. Not used for prediction."""
             import tensorflow as tf
             return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
@@ -1709,7 +1721,10 @@ class RNNSkolModel(SkolModel):
         # Load without compiling to avoid issues with custom loss functions
         # For prediction, we don't need the loss function
         # For training, fit() will rebuild the model anyway
-        custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
+        custom_objects = {
+            'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
+            'mean_f1_loss': mean_f1_loss
+        }
         self.keras_model = keras.models.load_model(path, custom_objects=custom_objects, compile=False)
         self.classifier_model = self.keras_model
         self.model_weights = self.keras_model.get_weights()
