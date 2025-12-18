@@ -123,6 +123,7 @@ def create_model(
     model_type: str = "logistic",
     features_col: str = "combined_idf",
     label_col: str = "label_indexed",
+    labels: Optional[List[str]] = None,
     **model_params
 ) -> SkolModel:
     """
@@ -133,6 +134,8 @@ def create_model(
                    'gradient_boosted', 'rnn')
         features_col: Name of features column
         label_col: Name of label column
+        labels: Optional list of label strings (e.g., ["Nomenclature", "Description", "Misc"])
+                Required for RNN models using class weights
         **model_params: Additional model parameters
 
     Returns:
@@ -176,13 +179,25 @@ def create_model(
                 'num_workers': model_params.get("num_workers", 4),
                 'features_col': features_col,
                 'label_col': label_col,
-                'verbosity': model_params.get("verbosity", 2)
+                'verbosity': model_params.get("verbosity", 2),
+                'prediction_batch_size': model_params.get("prediction_batch_size", 64)
             }
+
             # Add 'name' parameter if provided
             if 'name' in model_params:
                 rnn_params['name'] = model_params['name']
 
-            return RNNSkolModel(**rnn_params)
+            # Add 'class_weights' parameter if provided
+            if 'class_weights' in model_params:
+                rnn_params['class_weights'] = model_params['class_weights']
+
+            model = RNNSkolModel(**rnn_params)
+
+            # Set labels if provided (needed for class weights to work)
+            if labels is not None:
+                model.labels = labels
+
+            return model
         except ImportError:
             raise ValueError(
                 "RNN model requires TensorFlow. "
