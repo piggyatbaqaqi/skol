@@ -178,6 +178,7 @@ class SkolClassifierV2:
         collapse_labels: bool = True,
         coalesce_labels: bool = False,
         output_format: Literal['annotated', 'labels', 'probs'] = 'annotated',
+        compute_label_frequencies: bool = False,
 
         # Feature configuration
         use_suffixes: bool = True,
@@ -217,6 +218,7 @@ class SkolClassifierV2:
         self.collapse_labels = collapse_labels
         self.coalesce_labels = coalesce_labels
         self.output_format = output_format
+        self.compute_label_frequencies = compute_label_frequencies
 
         # Feature configuration
         self.use_suffixes = use_suffixes
@@ -234,6 +236,7 @@ class SkolClassifierV2:
         self._model: Optional[SkolModel] = None
         self._label_mapping: Optional[Dict[str, int]] = None
         self._reverse_label_mapping: Optional[Dict[int, str]] = None
+        self._label_frequencies: Optional[Dict[str, int]] = None
 
         # Validate configuration
         self._validate_config()
@@ -327,17 +330,19 @@ class SkolClassifierV2:
         # Get the features column name based on configuration
         features_col = self._feature_extractor.get_features_col()
 
+        # Get labels from feature extractor (available after fit_transform)
+        labels = self._feature_extractor.get_labels()
+
         # Train model with correct features column using factory
         # The label column is always "label_indexed" from the feature extractor
+        # Pass labels to create_model so RNN can use them for class weights
         self._model = create_model(
             model_type=self.model_type,
             features_col=features_col,
             label_col="label_indexed",
+            labels=labels,  # Pass labels for class weight support
             **self.model_params
         )
-
-        # Get labels from feature extractor
-        labels = self._feature_extractor.get_labels()
 
         # Fit model and pass labels for later use
         self._model.fit(featured_df, labels=labels)
@@ -545,6 +550,127 @@ class SkolClassifierV2:
         else:
             raise ValueError("model_storage not configured")
 
+    def get_label_frequencies(self) -> Optional[Dict[str, int]]:
+        """
+        Get computed label frequencies.
+
+        Returns:
+            Dictionary mapping label strings to counts, or None if not computed.
+            Example: {"Nomenclature": 100, "Description": 1000, "Misc": 10000}
+
+        Note:
+            Frequencies are only available if compute_label_frequencies=True was
+            set in the constructor and fit() has been called.
+        """
+        return self._label_frequencies
+
+    def get_recommended_class_weights(
+        self,
+        strategy: Literal['inverse', 'balanced', 'aggressive'] = 'inverse',
+        min_weight: float = 0.1,
+        max_weight: float = 100.0
+    ) -> Optional[Dict[str, float]]:
+        """
+        Compute recommended class weights based on label frequencies.
+
+        Args:
+            strategy: Weighting strategy:
+                     'inverse' - Inverse frequency weighting (recommended)
+                     'balanced' - Sklearn-style balanced weighting
+                     'aggressive' - More aggressive weights for rare classes
+            min_weight: Minimum weight value (for common classes)
+            max_weight: Maximum weight value (for rare classes)
+
+        Returns:
+            Dictionary mapping label strings to recommended weights,
+            or None if frequencies not computed.
+            Example: {"Nomenclature": 100.0, "Description": 10.0, "Misc": 1.0}
+
+        Note:
+            Requires compute_label_frequencies=True and fit() to have been called.
+
+        Example:
+            classifier = SkolClassifierV2(
+                spark=spark,
+                compute_label_frequencies=True,
+                ...
+            )
+            classifier.fit()
+            weights = classifier.get_recommended_class_weights(strategy='inverse')
+            print(weights)
+            # Output: {"Nomenclature": 100.0, "Description": 10.0, "Misc": 0.1}
+        """
+        if self._label_frequencies is None:
+            if self.verbosity >= 1:
+                print("[Classifier] WARNING: Label frequencies not computed. "
+                      "Set compute_label_frequencies=True in constructor.")
+            return None
+
+        if len(self._label_frequencies) == 0:
+            return None
+
+        # Get total count and frequencies
+        total = sum(self._label_frequencies.values())
+        num_classes = len(self._label_frequencies)
+
+        weights = {}
+
+        if strategy == 'inverse':
+            # Inverse frequency: weight = total / (num_classes * frequency)
+            # Then normalize to range [min_weight, max_weight]
+            raw_weights = {}
+            for label, count in self._label_frequencies.items():
+                raw_weights[label] = total / (num_classes * count)
+
+            # Normalize to range
+            min_raw = min(raw_weights.values())
+            max_raw = max(raw_weights.values())
+            range_raw = max_raw - min_raw
+
+            if range_raw > 0:
+                for label, raw_weight in raw_weights.items():
+                    normalized = (raw_weight - min_raw) / range_raw
+                    weights[label] = min_weight + normalized * (max_weight - min_weight)
+            else:
+                # All classes have same frequency
+                for label in raw_weights:
+                    weights[label] = (min_weight + max_weight) / 2
+
+        elif strategy == 'balanced':
+            # Sklearn-style balanced: weight = total / (num_classes * frequency)
+            for label, count in self._label_frequencies.items():
+                weights[label] = total / (num_classes * count)
+
+        elif strategy == 'aggressive':
+            # Aggressive: square the inverse frequency for more extreme weights
+            raw_weights = {}
+            for label, count in self._label_frequencies.items():
+                raw_weights[label] = (total / (num_classes * count)) ** 2
+
+            # Normalize to range
+            min_raw = min(raw_weights.values())
+            max_raw = max(raw_weights.values())
+            range_raw = max_raw - min_raw
+
+            if range_raw > 0:
+                for label, raw_weight in raw_weights.items():
+                    normalized = (raw_weight - min_raw) / range_raw
+                    weights[label] = min_weight + normalized * (max_weight - min_weight)
+            else:
+                for label in raw_weights:
+                    weights[label] = (min_weight + max_weight) / 2
+
+        if self.verbosity >= 1:
+            print(f"\n[Classifier] Recommended Class Weights (strategy='{strategy}'):")
+            # Sort by weight descending
+            sorted_weights = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+            for label, weight in sorted_weights:
+                freq = self._label_frequencies[label]
+                print(f"  {label:<20} {weight:>8.2f} (frequency: {freq})")
+            print()
+
+        return weights
+
     # Private helper methods
 
     def _load_raw_from_files(self) -> DataFrame:
@@ -590,15 +716,58 @@ class SkolClassifierV2:
         return df
 
     def _load_annotated_data(self) -> DataFrame:
-        """Load annotated data for training."""
+        """
+        Load annotated data for training.
+
+        If compute_label_frequencies is True, computes and stores label frequencies
+        in self._label_frequencies as a dict mapping label strings to counts.
+
+        Returns:
+            DataFrame with annotated data
+        """
         if self.input_source == 'files':
-            return self._load_annotated_from_files()
+            df = self._load_annotated_from_files()
         elif self.input_source == 'couchdb':
-            return self._load_annotated_from_couchdb()
+            df = self._load_annotated_from_couchdb()
         else:
             raise ValueError(
                 f"Cannot load annotated data from input_source='{self.input_source}'"
             )
+
+        # Compute label frequencies if requested
+        if self.compute_label_frequencies:
+            self._compute_label_frequencies(df)
+
+        return df
+
+    def _compute_label_frequencies(self, df: DataFrame) -> None:
+        """
+        Compute and store label frequencies from annotated data.
+
+        Args:
+            df: DataFrame with 'label' column containing label strings
+        """
+        if 'label' not in df.columns:
+            if self.verbosity >= 1:
+                print("[Classifier] WARNING: Cannot compute label frequencies - 'label' column not found")
+            return
+
+        # Count labels
+        label_counts = df.groupBy('label').count().collect()
+
+        # Store as dictionary
+        self._label_frequencies = {row['label']: row['count'] for row in label_counts}
+
+        if self.verbosity >= 1:
+            print(f"\n[Classifier] Label Frequencies:")
+            # Sort by count descending
+            sorted_labels = sorted(self._label_frequencies.items(), key=lambda x: x[1], reverse=True)
+            total = sum(count for _, count in sorted_labels)
+            for label, count in sorted_labels:
+                percentage = (count / total) * 100
+                print(f"  {label:<20} {count:>8} ({percentage:>5.1f}%)")
+            print(f"  {'Total':<20} {total:>8} (100.0%)")
+            print()
 
     def _load_annotated_from_files(self) -> DataFrame:
         """Load annotated data from files."""
@@ -814,14 +983,19 @@ class SkolClassifierV2:
                     if self.verbosity >= 2:
                         print(f"[Load Model] Overriding {param}: {saved_params.get(param)} -> {value}")
 
+        # Get labels from label mapping
+        labels_list = list(self._label_mapping.keys()) if self._label_mapping else None
+
         self._model = create_model(
             model_type=metadata['config']['model_type'],
             features_col=features_col,
             label_col="label_indexed",
+            labels=labels_list,  # Pass labels for class weight support
             **merged_params
         )
         self._model.set_model(classifier_model)
-        self._model.set_labels(list(self._label_mapping.keys()))
+        if labels_list:
+            self._model.set_labels(labels_list)
 
     def _save_model_to_redis(self) -> None:
         """Save model to Redis using tar archive."""
@@ -979,14 +1153,19 @@ class SkolClassifierV2:
                         if self.verbosity >= 2:
                             print(f"[Load Model] Overriding {param}: {saved_params.get(param)} -> {value}")
 
+            # Get labels from label mapping
+            labels_list = list(self._label_mapping.keys()) if self._label_mapping else None
+
             self._model = create_model(
                 model_type=model_type,
                 features_col=features_col,
                 label_col="label_indexed",
+                labels=labels_list,  # Pass labels for class weight support
                 **merged_params
             )
             self._model.set_model(classifier_model)
-            self._model.set_labels(list(self._label_mapping.keys()))
+            if labels_list:
+                self._model.set_labels(labels_list)
 
         finally:
             # Clean up temporary directory
