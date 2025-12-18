@@ -73,7 +73,8 @@ def build_bilstm_model(
     num_layers: int = 2,
     dropout: float = 0.3,
     class_weights: Optional[Dict[str, float]] = None,
-    labels: Optional[List[str]] = None
+    labels: Optional[List[str]] = None,
+    focal_labels: Optional[List[str]] = None
 ) -> 'keras.Model':
     """
     Build a Bidirectional LSTM model for sequence classification.
@@ -87,16 +88,21 @@ def build_bilstm_model(
         class_weights: Optional dict mapping class label strings to weights.
                       Example: {"Nomenclature": 100.0, "Description": 10.0, "Misc": 0.1}
                       Higher weights penalize errors on that class more heavily.
-                      Use for addressing class imbalance.
+                      Use for addressing class imbalance with weighted cross-entropy.
         labels: List of label strings in order (e.g., ["Nomenclature", "Description", "Misc"])
-                Required if class_weights is provided.
+                Required if class_weights or focal_labels is provided.
+        focal_labels: Optional list of label strings to focus on for F1-based loss.
+                     Example: ["Nomenclature", "Description"]
+                     If provided, uses mean F1 loss for these labels only.
+                     Cannot be used with class_weights (mutually exclusive).
 
     Returns:
         Compiled Keras model
 
     Raises:
         RuntimeError: If GPU initialization fails with helpful error message
-        ValueError: If class_weights provided but labels is None
+        ValueError: If class_weights/focal_labels provided but labels is None,
+                   or if both class_weights and focal_labels are provided
     """
     try:
         model = models.Sequential()
@@ -118,8 +124,82 @@ def build_bilstm_model(
         # Time-distributed dense layer for per-timestep classification
         model.add(layers.TimeDistributed(layers.Dense(num_classes, activation='softmax')))
 
-        # Create loss function based on whether class weights are provided
-        if class_weights is not None:
+        # Validate mutually exclusive loss options
+        if class_weights is not None and focal_labels is not None:
+            raise ValueError("class_weights and focal_labels are mutually exclusive. Use one or the other.")
+
+        # Create loss function based on parameters
+        if focal_labels is not None:
+            # Use F1-based loss for specified labels
+            if labels is None:
+                raise ValueError("labels parameter is required when focal_labels is provided")
+
+            import tensorflow as tf
+
+            # Map focal label strings to indices
+            focal_indices = []
+            for focal_label in focal_labels:
+                if focal_label not in labels:
+                    raise ValueError(f"focal_label '{focal_label}' not found in labels: {labels}")
+                focal_indices.append(labels.index(focal_label))
+
+            focal_indices_tensor = tf.constant(focal_indices, dtype=tf.int32)
+
+            def mean_f1_loss(y_true, y_pred):
+                """
+                Mean F1 loss for specified focal labels.
+
+                Computes soft F1 score for each focal label and returns 1 - mean(F1)
+                so that minimizing the loss maximizes F1.
+
+                Args:
+                    y_true: One-hot encoded true labels, shape (batch, timesteps, num_classes)
+                    y_pred: Predicted probabilities, shape (batch, timesteps, num_classes)
+
+                Returns:
+                    Loss scalar (1 - mean F1)
+                """
+                epsilon = tf.keras.backend.epsilon()
+
+                f1_scores = []
+                for focal_idx in focal_indices:
+                    # Extract true and predicted for this class
+                    # Shape: (batch, timesteps)
+                    y_true_class = y_true[:, :, focal_idx]
+                    y_pred_class = y_pred[:, :, focal_idx]
+
+                    # Compute soft true positives, false positives, false negatives
+                    # TP: sum of (true * pred) - when both are high
+                    # FP: sum of ((1-true) * pred) - when pred is high but true is low
+                    # FN: sum of (true * (1-pred)) - when true is high but pred is low
+
+                    tp = tf.reduce_sum(y_true_class * y_pred_class)
+                    fp = tf.reduce_sum((1.0 - y_true_class) * y_pred_class)
+                    fn = tf.reduce_sum(y_true_class * (1.0 - y_pred_class))
+
+                    # Compute soft precision and recall
+                    precision = tp / (tp + fp + epsilon)
+                    recall = tp / (tp + fn + epsilon)
+
+                    # Compute F1 score
+                    f1 = 2 * precision * recall / (precision + recall + epsilon)
+
+                    f1_scores.append(f1)
+
+                # Mean F1 across focal labels
+                mean_f1 = tf.reduce_mean(tf.stack(f1_scores))
+
+                # Return 1 - F1 so minimizing loss maximizes F1
+                return 1.0 - mean_f1
+
+            loss_fn = mean_f1_loss
+
+            # Print focal labels for visibility
+            print(f"[BiLSTM] Using mean F1 loss for focal labels:")
+            for focal_label in focal_labels:
+                print(f"  {focal_label}")
+
+        elif class_weights is not None:
             if labels is None:
                 raise ValueError("labels parameter is required when class_weights is provided")
 
@@ -317,7 +397,8 @@ class RNNSkolModel(SkolModel):
         line_no_col: str = "line_number",
         verbosity: int = 3,
         name: str = "RNN_BiLSTM",
-        class_weights: Optional[Dict[str, float]] = None
+        class_weights: Optional[Dict[str, float]] = None,
+        focal_labels: Optional[List[str]] = None
     ):
         """
         Initialize RNN classifier.
@@ -347,8 +428,14 @@ class RNNSkolModel(SkolModel):
             class_weights: Optional dict mapping class label strings to weights.
                           Example: {"Nomenclature": 100.0, "Description": 10.0, "Misc": 0.1}
                           Higher weights penalize errors on that class more heavily.
-                          Use for addressing class imbalance.
+                          Use for addressing class imbalance with weighted cross-entropy.
+                          Cannot be used with focal_labels (mutually exclusive).
                           Note: Labels must be provided in fit() for this to work.
+            focal_labels: Optional list of label strings to focus on for F1-based loss.
+                         Example: ["Nomenclature", "Description"]
+                         Uses mean F1 loss for these labels only, ignoring others.
+                         Cannot be used with class_weights (mutually exclusive).
+                         Note: Labels must be provided in fit() for this to work.
         """
         if not KERAS_AVAILABLE:
             raise ImportError(
@@ -377,16 +464,22 @@ class RNNSkolModel(SkolModel):
         self.verbosity = verbosity
         self.name = name
         self.class_weights = class_weights
+        self.focal_labels = focal_labels
 
-        # Build Keras model (without class weights initially, will rebuild in fit())
+        # Validate mutually exclusive options
+        if class_weights is not None and focal_labels is not None:
+            raise ValueError("class_weights and focal_labels are mutually exclusive. Use one or the other.")
+
+        # Build Keras model (without class weights/focal labels initially, will rebuild in fit())
         self.keras_model = build_bilstm_model(
             input_shape=(window_size, input_size),
             num_classes=num_classes,
             hidden_size=hidden_size,
             num_layers=num_layers,
             dropout=dropout,
-            class_weights=None,  # Will rebuild with weights in fit() when labels are available
-            labels=None
+            class_weights=None,  # Will rebuild with weights/focal labels in fit() when labels are available
+            labels=None,
+            focal_labels=None
         )
 
         self.model_weights = None
@@ -653,7 +746,8 @@ class RNNSkolModel(SkolModel):
                     num_layers=self.num_layers,
                     dropout=self.dropout,
                     class_weights=self.class_weights,
-                    labels=self.labels if hasattr(self, 'labels') else None
+                    labels=self.labels if hasattr(self, 'labels') else None,
+                    focal_labels=self.focal_labels
                 )
                 if self.verbosity >= 2:
                     print(f"[RNN Fit] Model rebuilt with input_size={self.input_size}")
@@ -661,10 +755,15 @@ class RNNSkolModel(SkolModel):
                 if self.verbosity >= 3:
                     print(f"[RNN Fit] Feature dimension matches: {actual_input_size}")
 
-                # Even if dimensions match, rebuild if we have class weights and haven't applied them yet
-                if self.class_weights is not None and hasattr(self, 'labels') and self.labels is not None:
+                # Even if dimensions match, rebuild if we have class weights/focal labels and haven't applied them yet
+                needs_rebuild = (
+                    (self.class_weights is not None or self.focal_labels is not None) and
+                    hasattr(self, 'labels') and self.labels is not None
+                )
+                if needs_rebuild:
                     if self.verbosity >= 2:
-                        print(f"[RNN Fit] Rebuilding model to apply class weights...")
+                        loss_type = "focal F1 loss" if self.focal_labels is not None else "class weights"
+                        print(f"[RNN Fit] Rebuilding model to apply {loss_type}...")
                     self.keras_model = build_bilstm_model(
                         input_shape=(self.window_size, self.input_size),
                         num_classes=self.num_classes,
@@ -672,7 +771,8 @@ class RNNSkolModel(SkolModel):
                         num_layers=self.num_layers,
                         dropout=self.dropout,
                         class_weights=self.class_weights,
-                        labels=self.labels
+                        labels=self.labels,
+                        focal_labels=self.focal_labels
                     )
 
         # Estimate number of sequences for steps_per_epoch
@@ -968,20 +1068,14 @@ class RNNSkolModel(SkolModel):
                 # Rebuild model from config and weights
                 # Provide dummy loss function for deserialization (won't be used for prediction)
                 try:
-                    import json
-
                     # Define a dummy loss function for deserialization
                     def weighted_categorical_crossentropy(y_true, y_pred):
                         """Dummy loss function for model deserialization. Not used for prediction."""
                         return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
 
-                    # Parse JSON and rebuild with custom objects
-                    config = json.loads(model_config)
+                    # Rebuild with custom objects to handle custom loss function
                     custom_objects = {'weighted_categorical_crossentropy': weighted_categorical_crossentropy}
-
-                    # Rebuild model from config
-                    from tensorflow.keras.models import model_from_config
-                    model = model_from_config(config, custom_objects=custom_objects)
+                    model = keras.models.model_from_json(model_config, custom_objects=custom_objects)
                     model.set_weights(model_weights)
                     log(f"[UDF PROBA] Model rebuilt successfully")
                 except Exception as e:
