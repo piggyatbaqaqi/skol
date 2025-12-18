@@ -6,12 +6,13 @@ using proper inheritance.
 """
 
 from abc import abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.classification import (
     LogisticRegression, RandomForestClassifier, GBTClassifier
 )
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import when, col
 
 from .base_model import SkolModel
 
@@ -24,6 +25,17 @@ class TraditionalMLSkolModel(SkolModel):
     RandomForest, GradientBoostedTrees, etc.
     """
 
+    def __init__(
+        self,
+        features_col: str = "combined_idf",
+        label_col: str = "label_indexed",
+        **model_params
+    ):
+        """Initialize the model with optional class weights."""
+        super().__init__(features_col=features_col, label_col=label_col, **model_params)
+        self.class_weights: Optional[Dict[str, float]] = model_params.get("class_weights", None)
+        self.weight_col = "instance_weight" if self.class_weights is not None else None
+
     @abstractmethod
     def build_classifier(self):
         """
@@ -33,6 +45,39 @@ class TraditionalMLSkolModel(SkolModel):
             Configured classifier instance
         """
         pass
+
+    def _add_instance_weights(self, data: DataFrame) -> DataFrame:
+        """
+        Add instance weight column based on class weights.
+
+        Args:
+            data: DataFrame with label_col
+
+        Returns:
+            DataFrame with instance_weight column added
+        """
+        if self.class_weights is None or self.labels is None or self.weight_col is None:
+            return data
+
+        if len(self.labels) == 0:
+            return data
+
+        # Build a when-otherwise chain to map label indices to weights
+        # Start with the first label
+        weight_expr = None
+        for idx, label in enumerate(self.labels):
+            weight = self.class_weights.get(label, 1.0)
+            if weight_expr is None:
+                weight_expr = when(col(self.label_col) == idx, weight)
+            else:
+                weight_expr = weight_expr.when(col(self.label_col) == idx, weight)
+
+        # Add default weight of 1.0 for any unmatched labels
+        # weight_expr is guaranteed to be not None here due to len check above
+        assert weight_expr is not None
+        weight_expr = weight_expr.otherwise(1.0)
+
+        return data.withColumn(self.weight_col, weight_expr)
 
     def fit(self, train_data: DataFrame, labels: Optional[List[str]] = None) -> PipelineModel:
         """
@@ -47,6 +92,18 @@ class TraditionalMLSkolModel(SkolModel):
         """
         if labels is not None:
             self.labels = labels
+
+        # Add instance weights if class weights are specified
+        if self.class_weights is not None:
+            if self.labels is None:
+                raise ValueError("Labels must be provided to use class weights")
+            train_data = self._add_instance_weights(train_data)
+            if hasattr(self, 'verbosity') and self.model_params.get('verbosity', 0) >= 1:
+                print(f"\n[{self.__class__.__name__}] Using class weights:")
+                sorted_weights = sorted(self.class_weights.items(), key=lambda x: x[1], reverse=True)
+                for label, weight in sorted_weights:
+                    print(f"  {label:<20} {weight:>6.2f}")
+                print()
 
         classifier = self.build_classifier()
         pipeline = Pipeline(stages=[classifier])
@@ -77,13 +134,19 @@ class LogisticRegressionSkolModel(TraditionalMLSkolModel):
 
     def build_classifier(self):
         """Build Logistic Regression classifier."""
-        return LogisticRegression(
-            family="multinomial",
-            featuresCol=self.features_col,
-            labelCol=self.label_col,
-            maxIter=self.model_params.get("maxIter", 10),
-            regParam=self.model_params.get("regParam", 0.01)
-        )
+        kwargs = {
+            "family": "multinomial",
+            "featuresCol": self.features_col,
+            "labelCol": self.label_col,
+            "maxIter": self.model_params.get("maxIter", 10),
+            "regParam": self.model_params.get("regParam", 0.01)
+        }
+
+        # Add weight column if class weights are specified
+        if self.weight_col is not None:
+            kwargs["weightCol"] = self.weight_col
+
+        return LogisticRegression(**kwargs)
 
 
 class RandomForestSkolModel(TraditionalMLSkolModel):
@@ -102,6 +165,10 @@ class RandomForestSkolModel(TraditionalMLSkolModel):
         if max_depth is not None:
             kwargs["maxDepth"] = max_depth
 
+        # Add weight column if class weights are specified
+        if self.weight_col is not None:
+            kwargs["weightCol"] = self.weight_col
+
         return RandomForestClassifier(**kwargs)
 
 
@@ -110,13 +177,19 @@ class GradientBoostedSkolModel(TraditionalMLSkolModel):
 
     def build_classifier(self):
         """Build Gradient Boosted Trees classifier."""
-        return GBTClassifier(
-            featuresCol=self.features_col,
-            labelCol=self.label_col,
-            maxIter=self.model_params.get("max_iter", 50),
-            maxDepth=self.model_params.get("max_depth", 5),
-            seed=self.model_params.get("seed", 42)
-        )
+        kwargs = {
+            "featuresCol": self.features_col,
+            "labelCol": self.label_col,
+            "maxIter": self.model_params.get("max_iter", 50),
+            "maxDepth": self.model_params.get("max_depth", 5),
+            "seed": self.model_params.get("seed", 42)
+        }
+
+        # Add weight column if class weights are specified
+        if self.weight_col is not None:
+            kwargs["weightCol"] = self.weight_col
+
+        return GBTClassifier(**kwargs)
 
 
 def create_model(
@@ -135,33 +208,48 @@ def create_model(
         features_col: Name of features column
         label_col: Name of label column
         labels: Optional list of label strings (e.g., ["Nomenclature", "Description", "Misc"])
-                Required for RNN models using class weights
+                Required for any model using class weights
         **model_params: Additional model parameters
+                       Can include 'class_weights' dict mapping label strings to weights
 
     Returns:
         Instance of appropriate SkolModel subclass
 
     Raises:
         ValueError: If model_type is not recognized or RNN dependencies missing
+
+    Notes:
+        Class weights are supported for all model types:
+        - Logistic/RandomForest/GBT: Converted to instance weights via weightCol
+        - RNN: Applied via weighted categorical cross-entropy loss
     """
     if model_type == "logistic":
-        return LogisticRegressionSkolModel(
+        model = LogisticRegressionSkolModel(
             features_col=features_col,
             label_col=label_col,
             **model_params
         )
+        if labels is not None:
+            model.labels = labels
+        return model
     elif model_type == "random_forest":
-        return RandomForestSkolModel(
+        model = RandomForestSkolModel(
             features_col=features_col,
             label_col=label_col,
             **model_params
         )
+        if labels is not None:
+            model.labels = labels
+        return model
     elif model_type == "gradient_boosted":
-        return GradientBoostedSkolModel(
+        model = GradientBoostedSkolModel(
             features_col=features_col,
             label_col=label_col,
             **model_params
         )
+        if labels is not None:
+            model.labels = labels
+        return model
     elif model_type == "rnn":
         try:
             from .rnn_model import RNNSkolModel

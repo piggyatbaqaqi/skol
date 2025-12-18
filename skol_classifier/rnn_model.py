@@ -966,8 +966,9 @@ class RNNSkolModel(SkolModel):
                     pass
 
                 # Rebuild model from config and weights
+                # For prediction, we don't need the loss function, so compile=False
                 try:
-                    model = keras.models.model_from_json(model_config)
+                    model = keras.models.model_from_json(model_config, compile=False)
                     model.set_weights(model_weights)
                     log(f"[UDF PROBA] Model rebuilt successfully")
                 except Exception as e:
@@ -1587,8 +1588,15 @@ class RNNSkolModel(SkolModel):
             print(f"[RNN set_model] Model set, weights count: {len(self.model_weights) if self.model_weights else 0}")
 
     def load(self, path: str) -> 'RNNSkolModel':
-        """Load model from disk."""
-        self.keras_model = keras.models.load_model(path)
+        """Load model from disk.
+
+        Note: Model is loaded without compilation. If you need to continue training,
+        call fit() which will rebuild and recompile the model.
+        """
+        # Load without compiling to avoid issues with custom loss functions
+        # For prediction, we don't need the loss function
+        # For training, fit() will rebuild the model anyway
+        self.keras_model = keras.models.load_model(path, compile=False)
         self.classifier_model = self.keras_model
         self.model_weights = self.keras_model.get_weights()
         return self
