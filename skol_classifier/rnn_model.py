@@ -71,7 +71,9 @@ def build_bilstm_model(
     num_classes: int,
     hidden_size: int = 128,
     num_layers: int = 2,
-    dropout: float = 0.3
+    dropout: float = 0.3,
+    class_weights: Optional[Dict[str, float]] = None,
+    labels: Optional[List[str]] = None
 ) -> 'keras.Model':
     """
     Build a Bidirectional LSTM model for sequence classification.
@@ -82,12 +84,19 @@ def build_bilstm_model(
         hidden_size: Size of LSTM hidden state
         num_layers: Number of LSTM layers
         dropout: Dropout rate
+        class_weights: Optional dict mapping class label strings to weights.
+                      Example: {"Nomenclature": 100.0, "Description": 10.0, "Misc": 0.1}
+                      Higher weights penalize errors on that class more heavily.
+                      Use for addressing class imbalance.
+        labels: List of label strings in order (e.g., ["Nomenclature", "Description", "Misc"])
+                Required if class_weights is provided.
 
     Returns:
         Compiled Keras model
 
     Raises:
         RuntimeError: If GPU initialization fails with helpful error message
+        ValueError: If class_weights provided but labels is None
     """
     try:
         model = models.Sequential()
@@ -109,10 +118,67 @@ def build_bilstm_model(
         # Time-distributed dense layer for per-timestep classification
         model.add(layers.TimeDistributed(layers.Dense(num_classes, activation='softmax')))
 
+        # Create loss function based on whether class weights are provided
+        if class_weights is not None:
+            if labels is None:
+                raise ValueError("labels parameter is required when class_weights is provided")
+
+            # Create weighted categorical cross-entropy loss
+            import tensorflow as tf
+
+            # Map label strings to indices and build weight tensor
+            weight_list = []
+            for i, label in enumerate(labels):
+                weight = class_weights.get(label, 1.0)
+                weight_list.append(weight)
+
+            weight_tensor = tf.constant(weight_list, dtype=tf.float32)
+
+            def weighted_categorical_crossentropy(y_true, y_pred):
+                """
+                Weighted categorical cross-entropy loss for class imbalance.
+
+                Args:
+                    y_true: One-hot encoded true labels, shape (batch, timesteps, num_classes)
+                    y_pred: Predicted probabilities, shape (batch, timesteps, num_classes)
+
+                Returns:
+                    Weighted loss scalar
+                """
+                # Clip predictions to avoid log(0)
+                epsilon = tf.keras.backend.epsilon()
+                y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
+
+                # Calculate per-sample cross-entropy loss
+                # Shape: (batch, timesteps)
+                loss = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
+
+                # Apply class weights based on true class
+                # Get class indices from one-hot encoded labels
+                class_indices = tf.argmax(y_true, axis=-1)  # Shape: (batch, timesteps)
+
+                # Gather weights for each sample based on its true class
+                weights = tf.gather(weight_tensor, class_indices)  # Shape: (batch, timesteps)
+
+                # Apply weights
+                weighted_loss = loss * weights
+
+                return tf.reduce_mean(weighted_loss)
+
+            loss_fn = weighted_categorical_crossentropy
+
+            # Print class weights for visibility
+            print(f"[BiLSTM] Using weighted loss with class weights:")
+            for label, weight in sorted(class_weights.items()):
+                print(f"  {label}: {weight:.1f}")
+        else:
+            loss_fn = 'categorical_crossentropy'
+            print("[BiLSTM] Using standard categorical cross-entropy loss (no class weights)")
+
         # Compile model
         model.compile(
             optimizer=optimizers.Adam(learning_rate=0.001),
-            loss='categorical_crossentropy',
+            loss=loss_fn,
             metrics=['accuracy']
         )
 
@@ -250,7 +316,8 @@ class RNNSkolModel(SkolModel):
         label_col: str = "label_indexed",
         line_no_col: str = "line_number",
         verbosity: int = 3,
-        name: str = "RNN_BiLSTM"
+        name: str = "RNN_BiLSTM",
+        class_weights: Optional[Dict[str, float]] = None
     ):
         """
         Initialize RNN classifier.
@@ -277,6 +344,11 @@ class RNNSkolModel(SkolModel):
             line_no_col: Name of line number column
             verbosity: Verbosity level for logging
             name: Name of the model
+            class_weights: Optional dict mapping class label strings to weights.
+                          Example: {"Nomenclature": 100.0, "Description": 10.0, "Misc": 0.1}
+                          Higher weights penalize errors on that class more heavily.
+                          Use for addressing class imbalance.
+                          Note: Labels must be provided in fit() for this to work.
         """
         if not KERAS_AVAILABLE:
             raise ImportError(
@@ -304,14 +376,17 @@ class RNNSkolModel(SkolModel):
         self.num_workers = num_workers
         self.verbosity = verbosity
         self.name = name
+        self.class_weights = class_weights
 
-        # Build Keras model
+        # Build Keras model (without class weights initially, will rebuild in fit())
         self.keras_model = build_bilstm_model(
             input_shape=(window_size, input_size),
             num_classes=num_classes,
             hidden_size=hidden_size,
             num_layers=num_layers,
-            dropout=dropout
+            dropout=dropout,
+            class_weights=None,  # Will rebuild with weights in fit() when labels are available
+            labels=None
         )
 
         self.model_weights = None
@@ -576,13 +651,29 @@ class RNNSkolModel(SkolModel):
                     num_classes=self.num_classes,
                     hidden_size=self.hidden_size,
                     num_layers=self.num_layers,
-                    dropout=self.dropout
+                    dropout=self.dropout,
+                    class_weights=self.class_weights,
+                    labels=self.labels if hasattr(self, 'labels') else None
                 )
                 if self.verbosity >= 2:
                     print(f"[RNN Fit] Model rebuilt with input_size={self.input_size}")
             else:
                 if self.verbosity >= 3:
                     print(f"[RNN Fit] Feature dimension matches: {actual_input_size}")
+
+                # Even if dimensions match, rebuild if we have class weights and haven't applied them yet
+                if self.class_weights is not None and hasattr(self, 'labels') and self.labels is not None:
+                    if self.verbosity >= 2:
+                        print(f"[RNN Fit] Rebuilding model to apply class weights...")
+                    self.keras_model = build_bilstm_model(
+                        input_shape=(self.window_size, self.input_size),
+                        num_classes=self.num_classes,
+                        hidden_size=self.hidden_size,
+                        num_layers=self.num_layers,
+                        dropout=self.dropout,
+                        class_weights=self.class_weights,
+                        labels=self.labels
+                    )
 
         # Estimate number of sequences for steps_per_epoch
         # Sample a few documents to estimate average windows per document
