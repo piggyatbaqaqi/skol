@@ -204,7 +204,7 @@ def create_model(
 
     Args:
         model_type: Type of classifier ('logistic', 'random_forest',
-                   'gradient_boosted', 'rnn')
+                   'gradient_boosted', 'rnn', 'hybrid')
         features_col: Name of features column
         label_col: Name of label column
         labels: Optional list of label strings (e.g., ["Nomenclature", "Description", "Misc"])
@@ -213,6 +213,9 @@ def create_model(
                        Can include:
                        - 'class_weights': dict mapping label strings to weights
                        - 'focal_labels': list of label strings for F1-based loss (RNN only)
+                       - 'nomenclature_threshold': float for hybrid model (default 0.6)
+                       - 'logistic_params': dict of params for logistic model in hybrid
+                       - 'rnn_params': dict of params for RNN model in hybrid
 
     Returns:
         Instance of appropriate SkolModel subclass
@@ -225,6 +228,7 @@ def create_model(
         - Logistic/RandomForest/GBT: 'class_weights' converted to instance weights via weightCol
         - RNN: 'class_weights' applied via weighted categorical cross-entropy loss
         - RNN: 'focal_labels' uses mean F1 loss for specified labels only
+        - Hybrid: Two-stage pipeline using logistic for Nomenclature, RNN for Description/Misc
     """
     if model_type == "logistic":
         model = LogisticRegressionSkolModel(
@@ -298,8 +302,65 @@ def create_model(
                 "RNN model requires TensorFlow. "
                 "Install with: pip install tensorflow"
             )
+    elif model_type == "hybrid":
+        try:
+            from .hybrid_model import HybridSkolModel
+
+            # Extract hybrid-specific parameters
+            nomenclature_threshold = model_params.get("nomenclature_threshold", 0.6)
+            logistic_params = model_params.get("logistic_params", {})
+            rnn_params = model_params.get("rnn_params", {})
+
+            # If class_weights provided at top level, apply to both models
+            if 'class_weights' in model_params and 'class_weights' not in logistic_params:
+                logistic_params['class_weights'] = model_params['class_weights']
+            if 'class_weights' in model_params and 'class_weights' not in rnn_params:
+                rnn_params['class_weights'] = model_params['class_weights']
+
+            # Extract RNN-specific parameters if provided at top level
+            rnn_top_level_params = {
+                'input_size': model_params.get("input_size", 1000),
+                'hidden_size': model_params.get("hidden_size", 128),
+                'num_layers': model_params.get("num_layers", 2),
+                'num_classes': model_params.get("num_classes", 3),
+                'dropout': model_params.get("dropout", 0.3),
+                'window_size': model_params.get("window_size", 50),
+                'prediction_stride': model_params.get("prediction_stride", None),
+                'batch_size': model_params.get("batch_size", 32),
+                'epochs': model_params.get("epochs", 10),
+                'num_workers': model_params.get("num_workers", 4),
+                'prediction_batch_size': model_params.get("prediction_batch_size", 64)
+            }
+
+            # Merge top-level RNN params with explicit rnn_params (explicit takes precedence)
+            for key, value in rnn_top_level_params.items():
+                if key not in rnn_params:
+                    rnn_params[key] = value
+
+            # Add focal_labels if provided
+            if 'focal_labels' in model_params and 'focal_labels' not in rnn_params:
+                rnn_params['focal_labels'] = model_params['focal_labels']
+
+            model = HybridSkolModel(
+                features_col=features_col,
+                label_col=label_col,
+                nomenclature_threshold=nomenclature_threshold,
+                logistic_params=logistic_params,
+                rnn_params=rnn_params,
+                verbosity=model_params.get("verbosity", 2)
+            )
+
+            if labels is not None:
+                model.labels = labels
+
+            return model
+        except ImportError:
+            raise ValueError(
+                "Hybrid model requires TensorFlow. "
+                "Install with: pip install tensorflow"
+            )
     else:
         raise ValueError(
             f"Unknown model_type: {model_type}. "
-            "Choose 'logistic', 'random_forest', 'gradient_boosted', or 'rnn'."
+            "Choose 'logistic', 'random_forest', 'gradient_boosted', 'rnn', or 'hybrid'."
         )

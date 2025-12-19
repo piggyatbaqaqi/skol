@@ -109,13 +109,16 @@ class SkolClassifierV2:
     Feature Configuration:
         use_suffixes: Whether to use word suffix features
         min_doc_freq: Minimum document frequency for word features
+        word_vocab_size: Maximum vocabulary size for word features (default: 800)
+        suffix_vocab_size: Maximum vocabulary size for suffix features (default: 200)
 
     Model Configuration:
         model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted', 'rnn')
         **model_params: Additional parameters passed to the model
 
         RNN Model Parameters (when model_type='rnn'):
-            input_size: Size of input feature vectors (default: 1000)
+            input_size: Size of input feature vectors (default: auto-calculated from vocab sizes)
+                       Automatically set to word_vocab_size + suffix_vocab_size
             hidden_size: LSTM hidden state size (default: 128)
             num_layers: Number of LSTM layers (default: 2)
             num_classes: Number of output classes (default: 3)
@@ -183,6 +186,8 @@ class SkolClassifierV2:
         # Feature configuration
         use_suffixes: bool = True,
         min_doc_freq: int = 2,
+        word_vocab_size: int = 800,
+        suffix_vocab_size: int = 200,
 
         # Model configuration
         model_type: str = 'logistic',
@@ -230,6 +235,8 @@ class SkolClassifierV2:
         # Feature configuration
         self.use_suffixes = use_suffixes
         self.min_doc_freq = min_doc_freq
+        self.word_vocab_size = word_vocab_size
+        self.suffix_vocab_size = suffix_vocab_size
 
         # Model configuration
         self.model_type = model_type
@@ -343,7 +350,9 @@ class SkolClassifierV2:
         # Build feature pipeline
         self._feature_extractor = FeatureExtractor(
             use_suffixes=self.use_suffixes,
-            min_doc_freq=self.min_doc_freq
+            min_doc_freq=self.min_doc_freq,
+            word_vocab_size=self.word_vocab_size,
+            suffix_vocab_size=self.suffix_vocab_size
         )
 
         # Fit features and transform data
@@ -360,6 +369,20 @@ class SkolClassifierV2:
 
         # Get labels from feature extractor (available after fit_transform)
         labels = self._feature_extractor.get_labels()
+
+        # Calculate input_size based on vocabulary sizes
+        # This ensures consistency between feature extraction and model input
+        calculated_input_size = self.word_vocab_size + (self.suffix_vocab_size if self.use_suffixes else 0)
+
+        # Set input_size in model_params if not already specified
+        if 'input_size' not in self.model_params:
+            self.model_params['input_size'] = calculated_input_size
+        elif self.model_params['input_size'] != calculated_input_size:
+            # Warn if user-provided input_size doesn't match vocabulary configuration
+            if self.verbosity >= 1:
+                print(f"[Classifier] WARNING: input_size ({self.model_params['input_size']}) doesn't match "
+                      f"calculated size ({calculated_input_size}) from word_vocab_size ({self.word_vocab_size}) "
+                      f"+ suffix_vocab_size ({self.suffix_vocab_size}). Using user-provided value.")
 
         # Train model with correct features column using factory
         # The label column is always "label_indexed" from the feature extractor

@@ -39,6 +39,8 @@ class FeatureExtractor:
             min_doc_freq: Minimum document frequency for IDF
             input_col: Name of input text column
             label_col: Name of label column
+            word_vocab_size: Maximum vocabulary size for word TF-IDF features (default: 800)
+            suffix_vocab_size: Maximum vocabulary size for suffix TF-IDF features (default: 200)
         """
         self.use_suffixes = use_suffixes
         self.min_doc_freq = min_doc_freq
