@@ -139,8 +139,9 @@ class SkolClassifierV2:
     predict(raw_data: Optional[DataFrame] = None) -> DataFrame:
         Make predictions on raw data (loads from input_source if not provided)
 
-    save_annotated(predictions: DataFrame) -> None:
+    save_annotated(predictions: DataFrame) -> Optional[List[str]]:
         Save predictions to configured output destination
+        Returns List[str] if output_dest='strings', None otherwise
 
     load_model() -> None:
         Load model from configured storage
@@ -550,20 +551,27 @@ class SkolClassifierV2:
 
         return predictions_df
 
-    def save_annotated(self, predictions: DataFrame) -> None:
+    def save_annotated(self, predictions: DataFrame) -> Optional[List[str]]:
         """
         Save predictions to configured output destination.
 
         Args:
             predictions: DataFrame with predictions to save
 
+        Returns:
+            List of annotated strings if output_dest='strings', None otherwise
+
         Raises:
             ValueError: If output destination is not properly configured
         """
         if self.output_dest == 'files':
             self._save_to_files(predictions)
+            return None
         elif self.output_dest == 'couchdb':
             self._save_to_couchdb(predictions)
+            return None
+        elif self.output_dest == 'strings':
+            return self._format_as_strings(predictions)
         else:
             raise ValueError(
                 f"save_annotated() not supported for output_dest='{self.output_dest}'"
@@ -936,6 +944,115 @@ class SkolClassifierV2:
             coalesce_labels=self.coalesce_labels,
             line_level=self.line_level
         )
+
+    def _format_as_strings(self, predictions: DataFrame) -> List[str]:
+        """
+        Format predictions as a list of annotated strings.
+
+        Each string in the list represents one document with all its
+        annotations joined by newlines.
+
+        Args:
+            predictions: DataFrame with predictions
+
+        Returns:
+            List of annotated strings (one per document)
+        """
+        from pyspark.sql.functions import expr, collect_list
+
+        # Format predictions if not already formatted
+        if "annotated_value" not in predictions.columns:
+            formatter = YeddaFormatter(
+                coalesce_labels=self.coalesce_labels,
+                line_level=self.line_level
+            )
+            predictions = formatter.format(predictions)
+
+        # Apply coalescing if requested and not already done
+        if self.coalesce_labels and self.line_level:
+            if "coalesced_annotations" not in predictions.columns:
+                predictions = YeddaFormatter.coalesce_consecutive_labels(
+                    predictions, line_level=True
+                )
+
+        # Determine grouping column
+        if "filename" in predictions.columns:
+            groupby_col = "filename"
+        elif "doc_id" in predictions.columns:
+            groupby_col = "doc_id"
+        else:
+            # If no grouping column, treat as single document
+            groupby_col = None
+
+        # If coalesced, we have coalesced_annotations column
+        if self.coalesce_labels and self.line_level:
+            if groupby_col:
+                # Collect coalesced annotations per document
+                aggregated = predictions.groupBy(groupby_col).agg(
+                    expr("array_join(coalesced_annotations, '\n')").alias(
+                        "final_annotated"
+                    )
+                )
+            else:
+                # Single document
+                aggregated = predictions.select(
+                    expr("array_join(coalesced_annotations, '\n')").alias(
+                        "final_annotated"
+                    )
+                )
+        else:
+            # Not coalesced - aggregate annotated_value
+            if groupby_col:
+                # Check if we have line_number for ordering
+                if "line_number" in predictions.columns:
+                    # Order by line_number within each document
+                    aggregated = (
+                        predictions.groupBy(groupby_col)
+                        .agg(
+                            expr("sort_array(collect_list(struct(line_number, "
+                                 "annotated_value))) AS sorted_list")
+                        )
+                        .withColumn(
+                            "annotated_value_ordered",
+                            expr("transform(sorted_list, x -> x.annotated_value)")
+                        )
+                        .withColumn(
+                            "final_annotated",
+                            expr("array_join(annotated_value_ordered, '\n')")
+                        )
+                        .select("final_annotated")
+                    )
+                else:
+                    # No line_number, just collect
+                    aggregated = (
+                        predictions.groupBy(groupby_col)
+                        .agg(collect_list("annotated_value").alias("annotations"))
+                        .withColumn(
+                            "final_annotated",
+                            expr("array_join(annotations, '\n')")
+                        )
+                        .select("final_annotated")
+                    )
+            else:
+                # Single document without grouping
+                if "line_number" in predictions.columns:
+                    aggregated = predictions.orderBy("line_number").agg(
+                        collect_list("annotated_value").alias("annotations")
+                    ).withColumn(
+                        "final_annotated",
+                        expr("array_join(annotations, '\n')")
+                    ).select("final_annotated")
+                else:
+                    aggregated = predictions.agg(
+                        collect_list("annotated_value").alias("annotations")
+                    ).withColumn(
+                        "final_annotated",
+                        expr("array_join(annotations, '\n')")
+                    ).select("final_annotated")
+
+        # Collect to list
+        result = aggregated.select("final_annotated").collect()
+        return [row["final_annotated"] for row in result]
 
     def _save_model_to_disk(self) -> None:
         """Save model to disk using PySpark's native save."""
