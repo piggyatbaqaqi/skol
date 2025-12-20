@@ -35,6 +35,7 @@ class TraditionalMLSkolModel(SkolModel):
         super().__init__(features_col=features_col, label_col=label_col, **model_params)
         self.class_weights: Optional[Dict[str, float]] = model_params.get("class_weights", None)
         self.weight_col = "instance_weight" if self.class_weights is not None else None
+        self._last_predictions: Optional[DataFrame] = None  # Cache for stats calculation
 
     @abstractmethod
     def build_classifier(self):
@@ -110,23 +111,67 @@ class TraditionalMLSkolModel(SkolModel):
         self.classifier_model = pipeline.fit(train_data)
         return self.classifier_model
 
-    def predict(self, data: DataFrame) -> DataFrame:
+    def predict_proba(self, data: DataFrame) -> DataFrame:
         """
-        Make predictions using Spark ML pipeline.
+        Make predictions with probabilities using Spark ML pipeline.
+
+        The results are cached in self._last_predictions for use by calculate_stats().
 
         Args:
             data: DataFrame with features
 
         Returns:
-            DataFrame with predictions
+            DataFrame with predictions and probabilities column
 
         Raises:
             ValueError: If model hasn't been trained yet
         """
+        from pyspark.sql.functions import udf, col
+        from pyspark.sql.types import ArrayType, DoubleType
+
         if self.classifier_model is None:
             raise ValueError("No classifier model found. Train a model first.")
 
-        return self.classifier_model.transform(data)  # pyright: ignore[reportUnknownMemberType]
+        # Transform returns prediction and probability columns
+        predictions = self.classifier_model.transform(data)  # pyright: ignore[reportUnknownMemberType]
+
+        # Convert Spark ML's 'probability' Vector column to 'probabilities' array
+        # for compatibility with calculate_stats()
+        if "probability" in predictions.columns:
+            @udf(returnType=ArrayType(DoubleType()))
+            def vector_to_array(v):  # pyright: ignore[reportUnknownParameterType]
+                """Convert Spark ML Vector to list of floats."""
+                if v is None:
+                    return []
+                return [float(x) for x in v.toArray()]  # pyright: ignore[reportUnknownMemberType]
+
+            predictions = predictions.withColumn(
+                "probabilities",
+                vector_to_array(col("probability"))
+            )
+
+        # Cache for stats calculation
+        self._last_predictions = predictions
+
+        return predictions
+
+    def predict(self, data: DataFrame) -> DataFrame:
+        """
+        Make predictions using Spark ML pipeline.
+
+        Uses predict_proba() internally and caches results for calculate_stats().
+
+        Args:
+            data: DataFrame with features
+
+        Returns:
+            DataFrame with predictions (includes probabilities column)
+
+        Raises:
+            ValueError: If model hasn't been trained yet
+        """
+        # Use predict_proba which caches the full results
+        return self.predict_proba(data)
 
 
 class LogisticRegressionSkolModel(TraditionalMLSkolModel):
