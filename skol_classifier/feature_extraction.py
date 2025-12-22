@@ -19,37 +19,46 @@ class FeatureExtractor:
     """
     Extracts features from text data for classification.
 
-    Supports word TF-IDF and optional suffix TF-IDF features.
+    Supports word TF-IDF and optional suffix TF-IDF and section name TF-IDF features.
     """
 
     def __init__(
         self,
         use_suffixes: bool = True,
+        use_section_names: bool = False,
         min_doc_freq: int = 2,
         input_col: str = "value",
         label_col: str = "label",
+        section_name_col: str = "section_name",
         word_vocab_size: int = 800,
-        suffix_vocab_size: int = 200
+        suffix_vocab_size: int = 200,
+        section_name_vocab_size: int = 50
     ):
         """
         Initialize the feature extractor.
 
         Args:
             use_suffixes: Whether to include suffix features
+            use_section_names: Whether to include section name TF-IDF features
             min_doc_freq: Minimum document frequency for IDF
             input_col: Name of input text column
             label_col: Name of label column
+            section_name_col: Name of section name column (default: "section_name")
             word_vocab_size: Maximum vocabulary size for word TF-IDF features (default: 800)
             suffix_vocab_size: Maximum vocabulary size for suffix TF-IDF features (default: 200)
+            section_name_vocab_size: Maximum vocabulary size for section name TF-IDF (default: 50)
         """
         self.use_suffixes = use_suffixes
+        self.use_section_names = use_section_names
         self.min_doc_freq = min_doc_freq
         self.input_col = input_col
         self.label_col = label_col
+        self.section_name_col = section_name_col
         self.pipeline_model: Optional[PipelineModel] = None
         self.labels: Optional[List[str]] = None
         self.word_vocab_size = word_vocab_size
         self.suffix_vocab_size = suffix_vocab_size
+        self.section_name_vocab_size = section_name_vocab_size
 
     def build_pipeline(self) -> Pipeline:
         """
@@ -71,6 +80,9 @@ class FeatureExtractor:
 
         stages = [tokenizer, word_count_vectorizer, word_idf]
 
+        # Collect feature columns to combine
+        feature_cols = ["word_idf"]
+
         # Suffix TF-IDF (optional)
         if self.use_suffixes:
             suffixer = SuffixTransformer(inputCol="words", outputCol="suffixes")
@@ -81,12 +93,30 @@ class FeatureExtractor:
             suffix_idf = IDF(
                 inputCol="suffix_tf", outputCol="suffix_idf", minDocFreq=self.min_doc_freq
             )
-            idf_combiner = VectorAssembler(
-                inputCols=["word_idf", "suffix_idf"], outputCol="combined_idf"
+            stages.extend([suffixer, suffix_count_vectorizer, suffix_idf])
+            feature_cols.append("suffix_idf")
+
+        # Section Name TF-IDF (optional)
+        if self.use_section_names:
+            section_tokenizer = Tokenizer(
+                inputCol=self.section_name_col, outputCol="section_tokens"
             )
-            stages.extend([
-                suffixer, suffix_count_vectorizer, suffix_idf, idf_combiner
-            ])
+            section_count_vectorizer = CountVectorizer(
+                inputCol="section_tokens", outputCol="section_tf",
+                vocabSize=self.section_name_vocab_size
+            )
+            section_idf = IDF(
+                inputCol="section_tf", outputCol="section_idf", minDocFreq=self.min_doc_freq
+            )
+            stages.extend([section_tokenizer, section_count_vectorizer, section_idf])
+            feature_cols.append("section_idf")
+
+        # Combine features if multiple feature types are enabled
+        if len(feature_cols) > 1:
+            feature_combiner = VectorAssembler(
+                inputCols=feature_cols, outputCol="combined_idf"
+            )
+            stages.append(feature_combiner)
 
         # Label indexing
         indexer = StringIndexer(inputCol=self.label_col, outputCol="label_indexed")
@@ -145,4 +175,8 @@ class FeatureExtractor:
         Returns:
             Name of the features column based on configuration
         """
-        return "combined_idf" if self.use_suffixes else "word_idf"
+        # If multiple feature types are enabled, features are combined
+        if self.use_suffixes or self.use_section_names:
+            return "combined_idf"
+        else:
+            return "word_idf"
