@@ -80,6 +80,9 @@ class PDFSectionExtractor:
         self.verbosity = verbosity
         self.spark = spark
 
+        # Storage for figure captions (populated during parsing)
+        self.figure_captions = []
+
         # Get credentials from environment if not provided
         self.couchdb_url = couchdb_url or os.environ.get('COUCHDB_URL', 'http://localhost:5984')
         self.username = username or os.environ.get('COUCHDB_USER', 'admin')
@@ -403,6 +406,49 @@ class PDFSectionExtractor:
 
         return None
 
+    def _is_figure_caption(self, text: str) -> bool:
+        """
+        Check if text appears to be a figure caption.
+
+        Detects patterns like:
+        - "Fig. 1."
+        - "Figure 1:"
+        - "Fig 1A."
+        - "FIG. 1."
+
+        Args:
+            text: Text to check
+
+        Returns:
+            True if text appears to be a figure caption
+        """
+        text_stripped = text.strip()
+
+        # Pattern: Fig/Figure followed by number/letter
+        # Matches: "Fig. 1", "Figure 1:", "Fig 1A.", "FIG. 1."
+        pattern = r'^(Fig\.?|Figure|FIG\.?)\s*\d+[A-Za-z]?[\.:,\s]'
+
+        return bool(re.match(pattern, text_stripped))
+
+    def _extract_figure_number(self, caption_text: str) -> Optional[str]:
+        """
+        Extract figure number from caption text.
+
+        Args:
+            caption_text: Figure caption text
+
+        Returns:
+            Figure number/identifier (e.g., "1", "2A", "3B") or None
+        """
+        # Pattern to extract figure number
+        pattern = r'^(?:Fig\.?|Figure|FIG\.?)\s*(\d+[A-Za-z]?)'
+        match = re.match(pattern, caption_text.strip())
+
+        if match:
+            return match.group(1)
+
+        return None
+
     def parse_text_to_sections(
         self,
         text: str,
@@ -423,6 +469,9 @@ class PDFSectionExtractor:
         - empirical_page_number: Page number extracted from document itself
         - section_name: Standardized section name (e.g., "Introduction", "Methods")
 
+        Figure captions (e.g., "Fig. 1. Description") are automatically detected
+        and excluded from the DataFrame. Access them via get_figure_captions().
+
         Args:
             text: Extracted text from PDF
             doc_id: Document ID
@@ -430,7 +479,7 @@ class PDFSectionExtractor:
             min_paragraph_length: Minimum characters for a paragraph
 
         Returns:
-            PySpark DataFrame with sections and metadata
+            PySpark DataFrame with sections and metadata (figure captions excluded)
 
         Raises:
             ImportError: If PySpark is not available
@@ -480,6 +529,9 @@ class PDFSectionExtractor:
                 empirical_page_map[pdf_page] = empirical_num
 
         # Second pass: parse sections with metadata
+        # Clear figure captions from previous extraction
+        self.figure_captions = []
+
         records = []
         current_paragraph = []
         current_paragraph_start_line = None
@@ -511,17 +563,33 @@ class PDFSectionExtractor:
                 if current_paragraph:
                     para_text = ' '.join(current_paragraph).strip()
                     if len(para_text) >= min_paragraph_length:
-                        paragraph_number += 1
-                        records.append({
-                            'value': para_text,
-                            'doc_id': doc_id,
-                            'attachment_name': attachment_name,
-                            'paragraph_number': paragraph_number,
-                            'line_number': current_paragraph_start_line,
-                            'page_number': current_page_number,
-                            'empirical_page_number': empirical_page_map.get(current_page_number),
-                            'section_name': current_section_name
-                        })
+                        # Check if this is a figure caption
+                        if self._is_figure_caption(para_text):
+                            # Store as figure caption instead of regular paragraph
+                            figure_num = self._extract_figure_number(para_text)
+                            self.figure_captions.append({
+                                'figure_number': figure_num,
+                                'caption': para_text,
+                                'doc_id': doc_id,
+                                'attachment_name': attachment_name,
+                                'line_number': current_paragraph_start_line,
+                                'page_number': current_page_number,
+                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'section_name': current_section_name
+                            })
+                        else:
+                            # Regular paragraph
+                            paragraph_number += 1
+                            records.append({
+                                'value': para_text,
+                                'doc_id': doc_id,
+                                'attachment_name': attachment_name,
+                                'paragraph_number': paragraph_number,
+                                'line_number': current_paragraph_start_line,
+                                'page_number': current_page_number,
+                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'section_name': current_section_name
+                            })
                     current_paragraph = []
                     current_paragraph_start_line = None
 
@@ -550,17 +618,33 @@ class PDFSectionExtractor:
                 if current_paragraph:
                     para_text = ' '.join(current_paragraph).strip()
                     if len(para_text) >= min_paragraph_length:
-                        paragraph_number += 1
-                        records.append({
-                            'value': para_text,
-                            'doc_id': doc_id,
-                            'attachment_name': attachment_name,
-                            'paragraph_number': paragraph_number,
-                            'line_number': current_paragraph_start_line,
-                            'page_number': current_page_number,
-                            'empirical_page_number': empirical_page_map.get(current_page_number),
-                            'section_name': current_section_name
-                        })
+                        # Check if this is a figure caption
+                        if self._is_figure_caption(para_text):
+                            # Store as figure caption instead of regular paragraph
+                            figure_num = self._extract_figure_number(para_text)
+                            self.figure_captions.append({
+                                'figure_number': figure_num,
+                                'caption': para_text,
+                                'doc_id': doc_id,
+                                'attachment_name': attachment_name,
+                                'line_number': current_paragraph_start_line,
+                                'page_number': current_page_number,
+                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'section_name': current_section_name
+                            })
+                        else:
+                            # Regular paragraph
+                            paragraph_number += 1
+                            records.append({
+                                'value': para_text,
+                                'doc_id': doc_id,
+                                'attachment_name': attachment_name,
+                                'paragraph_number': paragraph_number,
+                                'line_number': current_paragraph_start_line,
+                                'page_number': current_page_number,
+                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'section_name': current_section_name
+                            })
                     current_paragraph = []
                     current_paragraph_start_line = None
 
@@ -576,20 +660,38 @@ class PDFSectionExtractor:
         if current_paragraph:
             para_text = ' '.join(current_paragraph).strip()
             if len(para_text) >= min_paragraph_length:
-                paragraph_number += 1
-                records.append({
-                    'value': para_text,
-                    'doc_id': doc_id,
-                    'attachment_name': attachment_name,
-                    'paragraph_number': paragraph_number,
-                    'line_number': current_paragraph_start_line,
-                    'page_number': current_page_number,
-                    'empirical_page_number': empirical_page_map.get(current_page_number),
-                    'section_name': current_section_name
-                })
+                # Check if this is a figure caption
+                if self._is_figure_caption(para_text):
+                    # Store as figure caption instead of regular paragraph
+                    figure_num = self._extract_figure_number(para_text)
+                    self.figure_captions.append({
+                        'figure_number': figure_num,
+                        'caption': para_text,
+                        'doc_id': doc_id,
+                        'attachment_name': attachment_name,
+                        'line_number': current_paragraph_start_line,
+                        'page_number': current_page_number,
+                        'empirical_page_number': empirical_page_map.get(current_page_number),
+                        'section_name': current_section_name
+                    })
+                else:
+                    # Regular paragraph
+                    paragraph_number += 1
+                    records.append({
+                        'value': para_text,
+                        'doc_id': doc_id,
+                        'attachment_name': attachment_name,
+                        'paragraph_number': paragraph_number,
+                        'line_number': current_paragraph_start_line,
+                        'page_number': current_page_number,
+                        'empirical_page_number': empirical_page_map.get(current_page_number),
+                        'section_name': current_section_name
+                    })
 
         if self.verbosity >= 1:
             print(f"Parsed {len(records)} sections/paragraphs")
+            if self.figure_captions:
+                print(f"Extracted {len(self.figure_captions)} figure captions")
             if empirical_page_map:
                 print(f"Extracted empirical page numbers: {empirical_page_map}")
 
@@ -734,6 +836,33 @@ class PDFSectionExtractor:
 
         combined_df = reduce(DataFrame.unionAll, dfs)
         return combined_df
+
+    def get_figure_captions(self) -> List[Dict[str, Any]]:
+        """
+        Get all figure captions extracted from the last document processing.
+
+        Figure captions are automatically detected and excluded from the main
+        DataFrame during parsing. This method provides access to them.
+
+        Returns:
+            List of dictionaries, each containing:
+            - figure_number: Extracted figure number (e.g., "1", "2A", "3B")
+            - caption: Full caption text
+            - doc_id: Document ID
+            - attachment_name: PDF attachment name
+            - line_number: Line number of the caption
+            - page_number: PDF page number
+            - empirical_page_number: Document page number (nullable)
+            - section_name: Section where the caption appears (nullable)
+
+        Example:
+            >>> extractor = PDFSectionExtractor(spark=spark)
+            >>> sections_df = extractor.extract_from_document('db', 'doc_id')
+            >>> captions = extractor.get_figure_captions()
+            >>> for caption in captions:
+            ...     print(f"Figure {caption['figure_number']}: {caption['caption'][:50]}...")
+        """
+        return self.figure_captions
 
     def get_section_by_keyword(
         self,
