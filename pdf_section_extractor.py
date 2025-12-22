@@ -288,6 +288,121 @@ class PDFSectionExtractor:
         pattern = r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$'
         return re.match(pattern, line.strip())
 
+    def _extract_empirical_page_number(self, lines_buffer: List[str]) -> Optional[int]:
+        """
+        Extract empirical page number from first/last lines of a page.
+
+        Looks for patterns like:
+        - "485"
+        - "486 ... Wang"
+        - "485–489"
+
+        Args:
+            lines_buffer: List of lines from start or end of page
+
+        Returns:
+            Page number as integer, or None if not found
+        """
+        for line in lines_buffer:
+            text = line.strip()
+
+            # Pattern 1: Just a number (possibly with surrounding text)
+            # e.g., "485" or "485 ... Wang" or "Page 485"
+            match = re.search(r'\b(\d{1,4})\b', text)
+            if match:
+                page_num = int(match.group(1))
+                # Reasonable page number range
+                if 1 <= page_num <= 9999:
+                    return page_num
+
+        return None
+
+    def _is_page_number_line(self, line: str) -> bool:
+        """
+        Check if a line appears to be a page number line.
+
+        Page number lines typically:
+        - Are very short (< 50 chars)
+        - Contain mostly numbers
+        - Match patterns like "485", "486 ... Author", "485–489"
+
+        Args:
+            line: Line to check
+
+        Returns:
+            True if line appears to be a page number
+        """
+        text = line.strip()
+
+        # Empty lines are not page numbers
+        if not text:
+            return False
+
+        # Too long to be a page number line
+        if len(text) > 50:
+            return False
+
+        # Pattern: mostly numbers with optional separators/ellipsis
+        # e.g., "485", "486 ... Wang", "485–489"
+        if re.match(r'^\d+(\s*[–—-]\s*\d+)?(\s+\.{2,}\s+\S+)?$', text):
+            return True
+
+        # Pattern: Page number with optional text
+        # e.g., "Page 485", "p. 485"
+        if re.match(r'^(Page|p\.?|pp\.?)\s+\d+', text, re.IGNORECASE):
+            return True
+
+        return False
+
+    def _get_section_name(self, header_text: str) -> Optional[str]:
+        """
+        Extract standardized section name from header text.
+
+        Args:
+            header_text: Header text to analyze
+
+        Returns:
+            Standardized section name, or None if not a known section
+        """
+        text_lower = header_text.strip().lower()
+
+        # Map of section keywords to standardized names
+        section_map = {
+            'introduction': 'Introduction',
+            'abstract': 'Abstract',
+            'key words': 'Keywords',
+            'keywords': 'Keywords',
+            'taxonomy': 'Taxonomy',
+            'materials and methods': 'Materials and Methods',
+            'methods': 'Methods',
+            'results': 'Results',
+            'discussion': 'Discussion',
+            'acknowledgments': 'Acknowledgments',
+            'acknowledgements': 'Acknowledgments',
+            'references': 'References',
+            'conclusion': 'Conclusion',
+            'description': 'Description',
+            'etymology': 'Etymology',
+            'specimen': 'Specimen',
+            'holotype': 'Holotype',
+            'paratype': 'Paratype',
+            'literature cited': 'Literature Cited',
+            'background': 'Background',
+            'objectives': 'Objectives',
+            'summary': 'Summary',
+            'figures': 'Figures',
+            'tables': 'Tables',
+            'appendix': 'Appendix',
+            'supplementary': 'Supplementary'
+        }
+
+        # Check for exact matches or starts with
+        for keyword, standard_name in section_map.items():
+            if text_lower == keyword or text_lower.startswith(keyword):
+                return standard_name
+
+        return None
+
     def parse_text_to_sections(
         self,
         text: str,
@@ -305,6 +420,8 @@ class PDFSectionExtractor:
         - paragraph_number: Sequential paragraph number within the attachment
         - line_number: Line number of the first line of the section
         - page_number: PDF page number from page markers
+        - empirical_page_number: Page number extracted from document itself
+        - section_name: Standardized section name (e.g., "Introduction", "Methods")
 
         Args:
             text: Extracted text from PDF
@@ -331,10 +448,43 @@ class PDFSectionExtractor:
             )
 
         lines = text.split('\n')
+
+        # First pass: identify page boundaries and extract empirical page numbers
+        page_boundaries = []  # List of (pdf_page_num, start_line_idx, end_line_idx)
+        current_pdf_page = 1
+        page_start_idx = 0
+
+        for i, line in enumerate(lines):
+            page_marker = self._get_pdf_page_marker(line)
+            if page_marker:
+                # End of previous page
+                if i > page_start_idx:
+                    page_boundaries.append((current_pdf_page, page_start_idx, i - 1))
+                # Start of new page
+                current_pdf_page = int(page_marker.group(1))
+                page_start_idx = i + 1
+
+        # Add last page
+        if page_start_idx < len(lines):
+            page_boundaries.append((current_pdf_page, page_start_idx, len(lines) - 1))
+
+        # Extract empirical page numbers for each page
+        empirical_page_map = {}  # pdf_page_num -> empirical_page_num
+        for pdf_page, start_idx, end_idx in page_boundaries:
+            # Check first 5 and last 5 lines of page
+            first_lines = [lines[i] for i in range(start_idx, min(start_idx + 5, end_idx + 1))]
+            last_lines = [lines[i] for i in range(max(end_idx - 4, start_idx), end_idx + 1)]
+
+            empirical_num = self._extract_empirical_page_number(first_lines + last_lines)
+            if empirical_num:
+                empirical_page_map[pdf_page] = empirical_num
+
+        # Second pass: parse sections with metadata
         records = []
         current_paragraph = []
         current_paragraph_start_line = None
         current_page_number = 1
+        current_section_name = None
         paragraph_number = 0
 
         for i, line in enumerate(lines):
@@ -345,6 +495,10 @@ class PDFSectionExtractor:
             page_marker = self._get_pdf_page_marker(line)
             if page_marker:
                 current_page_number = int(page_marker.group(1))
+                continue
+
+            # Skip page number lines
+            if self._is_page_number_line(line):
                 continue
 
             # Skip completely blank lines at the start
@@ -364,7 +518,9 @@ class PDFSectionExtractor:
                             'attachment_name': attachment_name,
                             'paragraph_number': paragraph_number,
                             'line_number': current_paragraph_start_line,
-                            'page_number': current_page_number
+                            'page_number': current_page_number,
+                            'empirical_page_number': empirical_page_map.get(current_page_number),
+                            'section_name': current_section_name
                         })
                     current_paragraph = []
                     current_paragraph_start_line = None
@@ -372,6 +528,11 @@ class PDFSectionExtractor:
                 # Add header
                 header_text = line.strip()
                 if header_text:
+                    # Update current section name
+                    section_name = self._get_section_name(header_text)
+                    if section_name:
+                        current_section_name = section_name
+
                     paragraph_number += 1
                     records.append({
                         'value': header_text,
@@ -379,7 +540,9 @@ class PDFSectionExtractor:
                         'attachment_name': attachment_name,
                         'paragraph_number': paragraph_number,
                         'line_number': line_number,
-                        'page_number': current_page_number
+                        'page_number': current_page_number,
+                        'empirical_page_number': empirical_page_map.get(current_page_number),
+                        'section_name': section_name  # For headers, use the section name if detected
                     })
 
             # Blank line indicates paragraph break
@@ -394,7 +557,9 @@ class PDFSectionExtractor:
                             'attachment_name': attachment_name,
                             'paragraph_number': paragraph_number,
                             'line_number': current_paragraph_start_line,
-                            'page_number': current_page_number
+                            'page_number': current_page_number,
+                            'empirical_page_number': empirical_page_map.get(current_page_number),
+                            'section_name': current_section_name
                         })
                     current_paragraph = []
                     current_paragraph_start_line = None
@@ -418,11 +583,15 @@ class PDFSectionExtractor:
                     'attachment_name': attachment_name,
                     'paragraph_number': paragraph_number,
                     'line_number': current_paragraph_start_line,
-                    'page_number': current_page_number
+                    'page_number': current_page_number,
+                    'empirical_page_number': empirical_page_map.get(current_page_number),
+                    'section_name': current_section_name
                 })
 
         if self.verbosity >= 1:
             print(f"Parsed {len(records)} sections/paragraphs")
+            if empirical_page_map:
+                print(f"Extracted empirical page numbers: {empirical_page_map}")
 
         # Create DataFrame with explicit schema
         from pyspark.sql.types import StructType, StructField, StringType, IntegerType
@@ -433,7 +602,9 @@ class PDFSectionExtractor:
             StructField("attachment_name", StringType(), False),
             StructField("paragraph_number", IntegerType(), False),
             StructField("line_number", IntegerType(), False),
-            StructField("page_number", IntegerType(), False)
+            StructField("page_number", IntegerType(), False),
+            StructField("empirical_page_number", IntegerType(), True),  # Nullable
+            StructField("section_name", StringType(), True)  # Nullable
         ])
 
         df = self.spark.createDataFrame(records, schema=schema)
@@ -468,7 +639,9 @@ class PDFSectionExtractor:
             - attachment_name: Attachment name
             - paragraph_number: Sequential paragraph number
             - line_number: Line number of first line
-            - page_number: PDF page number
+            - page_number: PDF page number (from PDF page markers)
+            - empirical_page_number: Page number extracted from document (nullable)
+            - section_name: Standardized section name like "Introduction" (nullable)
 
         Raises:
             ValueError: If no PDF attachment found
@@ -549,7 +722,9 @@ class PDFSectionExtractor:
                 StructField("attachment_name", StringType(), False),
                 StructField("paragraph_number", IntegerType(), False),
                 StructField("line_number", IntegerType(), False),
-                StructField("page_number", IntegerType(), False)
+                StructField("page_number", IntegerType(), False),
+                StructField("empirical_page_number", IntegerType(), True),
+                StructField("section_name", StringType(), True)
             ])
             return self.spark.createDataFrame([], schema=schema)
 
