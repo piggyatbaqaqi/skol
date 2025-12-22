@@ -150,22 +150,33 @@ class PDFSectionExtractor:
 
     def find_pdf_attachment(self, database: str, doc_id: str) -> Optional[str]:
         """
-        Find the first PDF attachment in a document.
+        Find the first PDF or text attachment in a document.
+
+        Searches for PDF files first, then falls back to .txt files.
 
         Args:
             database: Database name
             doc_id: Document ID
 
         Returns:
-            Attachment name of first PDF found, or None
+            Attachment name of first PDF or txt found, or None
         """
         attachments = self.list_attachments(database, doc_id)
 
+        # First pass: look for PDFs
         for name, info in attachments.items():
             content_type = info.get('content_type', '')
             if 'pdf' in content_type.lower() or name.lower().endswith('.pdf'):
                 if self.verbosity >= 2:
                     print(f"Found PDF attachment: {name} ({content_type})")
+                return name
+
+        # Second pass: look for .txt files if no PDF found
+        for name, info in attachments.items():
+            content_type = info.get('content_type', '')
+            if 'text' in content_type.lower() or name.lower().endswith('.txt'):
+                if self.verbosity >= 2:
+                    print(f"Found text attachment: {name} ({content_type})")
                 return name
 
         return None
@@ -213,6 +224,50 @@ class PDFSectionExtractor:
 
         if self.verbosity >= 2:
             print(f"Extracted {len(full_text)} characters from PDF")
+
+        return full_text
+
+    def txt_to_text_with_pages(self, txt_data: bytes) -> str:
+        """
+        Process text attachment, replacing form feeds with page markers.
+
+        Form feed characters (^L, ASCII 12) are replaced with page number
+        annotations in the format "--- PDF Page N ---" to match PDF output.
+
+        Args:
+            txt_data: Text file contents as bytes
+
+        Returns:
+            Processed text with page markers
+
+        Example:
+            Input: "Page 1 text\\fPage 2 text\\fPage 3 text"
+            Output: "--- PDF Page 1 ---\\nPage 1 text\\n--- PDF Page 2 ---\\nPage 2 text\\n--- PDF Page 3 ---\\nPage 3 text"
+        """
+        # Decode bytes to string
+        try:
+            text = txt_data.decode('utf-8')
+        except UnicodeDecodeError:
+            # Try latin-1 as fallback
+            text = txt_data.decode('latin-1', errors='replace')
+
+        # Split on form feed characters
+        pages = text.split('\f')
+
+        # Add page markers with proper spacing
+        full_text = ''
+        for page_num, page_content in enumerate(pages, start=1):
+            # Add page marker
+            if page_num > 1:
+                # Ensure clean separation between pages
+                if not full_text.endswith('\n'):
+                    full_text += '\n'
+                full_text += '\n'
+            full_text += f"--- PDF Page {page_num} ---\n"
+            full_text += page_content
+
+        if self.verbosity >= 2:
+            print(f"Extracted {len(full_text)} characters from text file ({len(pages)} pages)")
 
         return full_text
 
@@ -792,18 +847,21 @@ class PDFSectionExtractor:
         cleanup: bool = True
     ) -> DataFrame:
         """
-        Extract sections from a PDF attachment in a CouchDB document.
+        Extract sections from a PDF or text attachment in a CouchDB document.
 
         This is the main convenience method that handles the entire pipeline:
-        1. Find PDF attachment
-        2. Get PDF data directly from CouchDB (no temp file)
-        3. Extract text from bytes
+        1. Find PDF or text attachment
+        2. Get attachment data directly from CouchDB (no temp file)
+        3. Extract/process text (PDFs via PyMuPDF, txt files with form feed replacement)
         4. Parse into sections DataFrame
+
+        For .txt files, form feed characters (^L) are replaced with page markers
+        to maintain compatibility with PDF processing.
 
         Args:
             database: Database name
             doc_id: Document ID
-            attachment_name: PDF attachment name (auto-detected if None)
+            attachment_name: PDF or txt attachment name (auto-detected if None)
             cleanup: Deprecated (kept for API compatibility, has no effect)
 
         Returns:
@@ -813,37 +871,48 @@ class PDFSectionExtractor:
             - attachment_name: Attachment name
             - paragraph_number: Sequential paragraph number
             - line_number: Line number of first line
-            - page_number: PDF page number (from PDF page markers)
+            - page_number: PDF page number (from page markers)
             - empirical_page_number: Page number extracted from document (nullable)
             - section_name: Standardized section name like "Introduction" (nullable)
             - label: YEDDA annotation label active at first line (nullable)
 
         Raises:
-            ValueError: If no PDF attachment found
-            ImportError: If PyMuPDF or PySpark is not installed
+            ValueError: If no PDF or text attachment found
+            ImportError: If PyMuPDF is not installed (for PDFs) or PySpark is not installed
         """
         if self.verbosity >= 1:
             print(f"\nExtracting sections from document {doc_id} in {database}")
 
-        # Find PDF attachment if not specified
+        # Find PDF or text attachment if not specified
         if attachment_name is None:
             attachment_name = self.find_pdf_attachment(database, doc_id)
             if attachment_name is None:
                 attachments = self.list_attachments(database, doc_id)
                 raise ValueError(
-                    f"No PDF attachment found in document {doc_id}. "
+                    f"No PDF or text attachment found in document {doc_id}. "
                     f"Available attachments: {list(attachments.keys())}"
                 )
 
-        # Get PDF data directly from CouchDB (no temp file)
+        # Get attachment data directly from CouchDB (no temp file)
         db = self.couch[database]
-        pdf_data = db.get_attachment(doc_id, attachment_name).read()
+        file_data = db.get_attachment(doc_id, attachment_name).read()
 
         if self.verbosity >= 1:
-            print(f"Retrieved PDF: {attachment_name} ({len(pdf_data):,} bytes)")
+            print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
 
-        # Extract text from bytes
-        text = self.pdf_to_text(pdf_data)
+        # Extract text from bytes (method depends on file type)
+        if attachment_name.lower().endswith('.pdf'):
+            text = self.pdf_to_text(file_data)
+        elif attachment_name.lower().endswith('.txt'):
+            text = self.txt_to_text_with_pages(file_data)
+        else:
+            # Try to detect based on content
+            # If it looks like PDF magic bytes, treat as PDF
+            if file_data[:4] == b'%PDF':
+                text = self.pdf_to_text(file_data)
+            else:
+                # Default to text processing
+                text = self.txt_to_text_with_pages(file_data)
 
         # Parse into sections DataFrame
         sections_df = self.parse_text_to_sections(text, doc_id, attachment_name)
