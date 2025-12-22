@@ -13,31 +13,32 @@ Key improvements over SkolClassifier:
 
 Example usage:
 
-    # Train from files, save model to disk
+    # Train from files, save model to disk (line-level tokenization)
     classifier = SkolClassifierV2(
         input_source='files',
         file_paths=['data/train/*.txt.ann'],
         model_storage='disk',
         model_path='models/my_model.pkl',
-        line_level=True,
+        tokenizer='line',
         use_suffixes=True,
         model_type='logistic'
     )
     classifier.fit()
 
-    # Predict from CouchDB, save to CouchDB
+    # Predict from CouchDB PDFs with section-level tokenization
     classifier = SkolClassifierV2(
         input_source='couchdb',
         couchdb_url='http://localhost:5984',
         couchdb_database='taxonomic_articles',
         couchdb_username='admin',
         couchdb_password='password',
-        couchdb_pattern='*.txt',
+        # couchdb_doc_ids auto-discovers all PDFs if not specified
         output_dest='couchdb',
         output_couchdb_suffix='.ann',
         model_storage='disk',
         model_path='models/my_model.pkl',
-        line_level=True,
+        tokenizer='section',
+        section_filter=['Introduction', 'Methods', 'Results'],  # Optional filtering
         coalesce_labels=True
     )
     raw_df = classifier.load_raw()
@@ -86,6 +87,8 @@ class SkolClassifierV2:
             couchdb_username: Optional username
             couchdb_password: Optional password
             couchdb_pattern: Attachment pattern (e.g., '*.txt')
+            couchdb_doc_ids: Optional list of document IDs (for section mode)
+                           If not provided in section mode, auto-discovers all PDFs
 
     Output Configuration:
         output_dest: Where to save predictions ('files', 'couchdb', or 'strings')
@@ -101,7 +104,12 @@ class SkolClassifierV2:
         auto_load_model: Whether to load model from storage on initialization
 
     Processing Configuration:
-        line_level: Whether to process at line level (True) or paragraph level (False)
+        tokenizer: Text tokenization mode ('line', 'paragraph', or 'section')
+                  'line': Process text line-by-line (equivalent to old line_level=True)
+                  'paragraph': Process text by paragraphs (equivalent to old line_level=False)
+                  'section': Use PDF section extraction with section name features
+        section_filter: Optional list of section names to include (for section mode)
+                       Example: ['Introduction', 'Methods', 'Results']
         collapse_labels: Whether to collapse similar labels during training
         coalesce_labels: Whether to merge consecutive same-label predictions
         output_format: Format for predictions ('annotated', 'labels', 'probs')
@@ -163,6 +171,7 @@ class SkolClassifierV2:
         couchdb_username: Optional[str] = None,
         couchdb_password: Optional[str] = None,
         couchdb_pattern: Optional[str] = None,
+        couchdb_doc_ids: Optional[List[str]] = None,  # For section mode
 
         # Output configuration
         output_dest: Literal['files', 'couchdb', 'strings'] = 'files',
@@ -178,7 +187,8 @@ class SkolClassifierV2:
         auto_load_model: bool = False,
 
         # Processing configuration
-        line_level: bool = False,
+        tokenizer: Literal['line', 'paragraph', 'section'] = 'paragraph',
+        section_filter: Optional[List[str]] = None,  # Filter by section names (for section mode)
         collapse_labels: bool = True,
         coalesce_labels: bool = False,
         output_format: Literal['annotated', 'labels', 'probs'] = 'annotated',
@@ -209,6 +219,7 @@ class SkolClassifierV2:
         self.couchdb_username = couchdb_username
         self.couchdb_password = couchdb_password
         self.couchdb_pattern = couchdb_pattern or '*.txt'
+        self.couchdb_doc_ids = couchdb_doc_ids
 
         # Output configuration
         self.output_dest = output_dest
@@ -223,7 +234,8 @@ class SkolClassifierV2:
         self.redis_expire = redis_expire
 
         # Processing configuration
-        self.line_level = line_level
+        self.tokenizer = tokenizer
+        self.section_filter = section_filter
         self.collapse_labels = collapse_labels
         self.coalesce_labels = coalesce_labels
         self.output_format = output_format
@@ -259,6 +271,11 @@ class SkolClassifierV2:
         # Auto-load model if requested
         if auto_load_model and model_storage:
             self.load_model()
+
+    @property
+    def line_level(self) -> bool:
+        """Backwards compatibility property: returns True if tokenizer is 'line'."""
+        return self.tokenizer == 'line'
 
     def _validate_config(self) -> None:
         """Validate configuration parameters."""
@@ -349,8 +366,12 @@ class SkolClassifierV2:
                     print(f"[Classifier] WARNING: Could not compute weights for strategy '{self.weight_strategy}' - label frequencies not available")
 
         # Build feature pipeline
+        # Enable section name features when using 'section' tokenizer mode
+        use_section_names = (self.tokenizer == 'section')
+
         self._feature_extractor = FeatureExtractor(
             use_suffixes=self.use_suffixes,
+            use_section_names=use_section_names,
             min_doc_freq=self.min_doc_freq,
             word_vocab_size=self.word_vocab_size,
             suffix_vocab_size=self.suffix_vocab_size
@@ -734,6 +755,11 @@ class SkolClassifierV2:
 
     def _load_raw_from_files(self) -> DataFrame:
         """Load raw text from local files."""
+        # For 'section' tokenizer mode with PDF files, use PDFSectionExtractor
+        if self.tokenizer == 'section':
+            return self._load_sections_from_files()
+
+        # For 'line' and 'paragraph' modes, use traditional text loading
         from .preprocessing import RawTextLoader
 
         loader = RawTextLoader(self.spark)
@@ -746,6 +772,11 @@ class SkolClassifierV2:
 
     def _load_raw_from_couchdb(self) -> DataFrame:
         """Load raw text from CouchDB."""
+        # For 'section' tokenizer mode, use PDFSectionExtractor
+        if self.tokenizer == 'section':
+            return self._load_sections_from_couchdb()
+
+        # For 'line' and 'paragraph' modes, use traditional text loading
         conn = CouchDBConnection(
             self.couchdb_url,
             self.couchdb_database,
@@ -861,6 +892,147 @@ class SkolClassifierV2:
 
         parser = AnnotatedTextParser(line_level=self.line_level)
         return parser.parse(df)
+
+    def _load_sections_from_files(self) -> DataFrame:
+        """
+        Load sections from PDF files.
+
+        Note: For 'section' tokenizer mode, PDFs must be stored in CouchDB.
+        The file_paths parameter is not supported for section mode.
+        Use input_source='couchdb' instead.
+        """
+        raise NotImplementedError(
+            "Section-based tokenization requires PDFs to be stored in CouchDB. "
+            "Please use input_source='couchdb' with tokenizer='section'. "
+            "The PDFSectionExtractor only supports loading from CouchDB attachments."
+        )
+
+    def _discover_pdf_documents(self) -> List[str]:
+        """
+        Discover all documents with PDF attachments in CouchDB.
+
+        Returns:
+            List of document IDs that have PDF attachments
+        """
+        import couchdb
+
+        # Connect to CouchDB
+        if self.couchdb_username and self.couchdb_password:
+            server = couchdb.Server(self.couchdb_url)
+            server.resource.credentials = (self.couchdb_username, self.couchdb_password)
+        else:
+            server = couchdb.Server(self.couchdb_url)
+
+        db = server[self.couchdb_database]
+
+        # Query all documents
+        doc_ids_with_pdfs = []
+
+        if self.verbosity >= 2:
+            print(f"[Classifier] Querying database for documents with PDF attachments...")
+
+        # Iterate through all documents
+        for doc_id in db:
+            try:
+                doc = db[doc_id]
+
+                # Check if document has attachments
+                if '_attachments' in doc:
+                    # Check if any attachment is a PDF
+                    for att_name, att_info in doc['_attachments'].items():
+                        if att_name.lower().endswith('.pdf') or \
+                           att_info.get('content_type', '').startswith('application/pdf'):
+                            doc_ids_with_pdfs.append(doc_id)
+                            if self.verbosity >= 3:
+                                print(f"[Classifier]   Found PDF in document: {doc_id} ({att_name})")
+                            break  # Found a PDF, no need to check other attachments
+
+            except Exception as e:
+                if self.verbosity >= 2:
+                    print(f"[Classifier] Warning: Could not check document {doc_id}: {e}")
+                continue
+
+        return doc_ids_with_pdfs
+
+    def _load_sections_from_couchdb(self) -> DataFrame:
+        """Load sections from PDF documents in CouchDB using PDFSectionExtractor."""
+        # Import here to avoid circular dependencies
+        import sys
+        from pathlib import Path
+
+        # Add parent directory to path to import pdf_section_extractor
+        parent_dir = Path(__file__).parent.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
+
+        from pdf_section_extractor import PDFSectionExtractor
+
+        # Get document IDs (either provided or auto-discover)
+        if self.couchdb_doc_ids:
+            doc_ids = self.couchdb_doc_ids
+            if self.verbosity >= 1:
+                print(f"[Classifier] Loading sections from {len(doc_ids)} specified PDF documents")
+        else:
+            # Auto-discover documents with PDF attachments
+            if self.verbosity >= 1:
+                print(f"[Classifier] Auto-discovering PDF documents in database: {self.couchdb_database}")
+
+            doc_ids = self._discover_pdf_documents()
+
+            if not doc_ids:
+                raise ValueError(
+                    f"No PDF documents found in database '{self.couchdb_database}'. "
+                    "Please ensure documents have PDF attachments or provide couchdb_doc_ids explicitly."
+                )
+
+            if self.verbosity >= 1:
+                print(f"[Classifier] Found {len(doc_ids)} documents with PDF attachments")
+
+        if self.verbosity >= 1:
+            print(f"[Classifier] Database: {self.couchdb_database}")
+
+        # Create extractor
+        extractor = PDFSectionExtractor(
+            couchdb_url=self.couchdb_url,
+            username=self.couchdb_username,
+            password=self.couchdb_password,
+            spark=self.spark,
+            verbosity=max(0, self.verbosity - 1)  # Reduce verbosity for extractor
+        )
+
+        # Extract sections from multiple documents
+        sections_df = extractor.extract_from_multiple_documents(
+            database=self.couchdb_database,
+            doc_ids=self.couchdb_doc_ids
+        )
+
+        # Apply section filter if specified
+        if self.section_filter:
+            if self.verbosity >= 1:
+                print(f"[Classifier] Filtering sections: {self.section_filter}")
+
+            original_count = sections_df.count()
+            sections_df = sections_df.filter(
+                sections_df.section_name.isin(self.section_filter)
+            )
+            filtered_count = sections_df.count()
+
+            if self.verbosity >= 1:
+                print(f"[Classifier] Kept {filtered_count}/{original_count} sections after filtering")
+
+        if self.verbosity >= 1:
+            total_sections = sections_df.count()
+            print(f"[Classifier] Total sections: {total_sections}")
+
+            # Show section name distribution
+            if self.verbosity >= 2 and "section_name" in sections_df.columns:
+                print(f"[Classifier] Section distribution:")
+                section_counts = sections_df.filter(sections_df.section_name.isNotNull()) \
+                    .groupBy("section_name").count() \
+                    .orderBy("count", ascending=False)
+                section_counts.show(10, truncate=False)
+
+        return sections_df
 
     def _decode_predictions(self, predictions_df: DataFrame) -> DataFrame:
         """Convert label indices back to label strings."""
@@ -1088,13 +1260,13 @@ class SkolClassifierV2:
         metadata = {
             'label_mapping': self._label_mapping,
             'config': {
-                'line_level': self.line_level,
+                'tokenizer': self.tokenizer,
                 'use_suffixes': self.use_suffixes,
                 'min_doc_freq': self.min_doc_freq,
                 'model_type': self.model_type,
                 'model_params': self.model_params
             },
-            'version': '2.0'
+            'version': '2.1'
         }
         metadata_path = model_dir / "metadata.json"
         with open(metadata_path, 'w') as f:
@@ -1246,13 +1418,13 @@ class SkolClassifierV2:
             metadata = {
                 'label_mapping': self._label_mapping,
                 'config': {
-                    'line_level': self.line_level,
+                    'tokenizer': self.tokenizer,
                     'use_suffixes': self.use_suffixes,
                     'min_doc_freq': self.min_doc_freq,
                     'model_type': self.model_type,
                     'model_params': actual_model_params
                 },
-                'version': '2.0'
+                'version': '2.1'
             }
             metadata_path = temp_path / "metadata.json"
             with open(metadata_path, 'w') as f:
