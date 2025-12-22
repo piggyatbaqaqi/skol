@@ -84,6 +84,9 @@ class SkolClassifierV2:
         For input_source='couchdb':
             couchdb_url: CouchDB server URL
             couchdb_database: Database name
+            couchdb_training_database: Optional separate database for training data
+                                      If specified, training data is loaded from this database
+                                      while predictions use couchdb_database
             couchdb_username: Optional username
             couchdb_password: Optional password
             couchdb_pattern: Attachment pattern (e.g., '*.txt')
@@ -119,6 +122,8 @@ class SkolClassifierV2:
         min_doc_freq: Minimum document frequency for word features
         word_vocab_size: Maximum vocabulary size for word features (default: 800)
         suffix_vocab_size: Maximum vocabulary size for suffix features (default: 200)
+        section_name_vocab_size: Maximum vocabulary size for section name features (default: 50)
+                                Used when tokenizer='section' to create TF-IDF features from section names
 
     Model Configuration:
         model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted', 'rnn')
@@ -168,6 +173,7 @@ class SkolClassifierV2:
         file_paths: Optional[List[str]] = None,
         couchdb_url: Optional[str] = None,
         couchdb_database: Optional[str] = None,
+        couchdb_training_database: Optional[str] = None,  # Separate database for training
         couchdb_username: Optional[str] = None,
         couchdb_password: Optional[str] = None,
         couchdb_pattern: Optional[str] = None,
@@ -199,6 +205,7 @@ class SkolClassifierV2:
         min_doc_freq: int = 2,
         word_vocab_size: int = 800,
         suffix_vocab_size: int = 200,
+        section_name_vocab_size: int = 50,
 
         # Model configuration
         model_type: str = 'logistic',
@@ -216,6 +223,7 @@ class SkolClassifierV2:
         self.file_paths = file_paths
         self.couchdb_url = couchdb_url
         self.couchdb_database = couchdb_database
+        self.couchdb_training_database = couchdb_training_database
         self.couchdb_username = couchdb_username
         self.couchdb_password = couchdb_password
         self.couchdb_pattern = couchdb_pattern or '*.txt'
@@ -250,6 +258,7 @@ class SkolClassifierV2:
         self.min_doc_freq = min_doc_freq
         self.word_vocab_size = word_vocab_size
         self.suffix_vocab_size = suffix_vocab_size
+        self.section_name_vocab_size = section_name_vocab_size
 
         # Model configuration
         self.model_type = model_type
@@ -374,7 +383,8 @@ class SkolClassifierV2:
             use_section_names=use_section_names,
             min_doc_freq=self.min_doc_freq,
             word_vocab_size=self.word_vocab_size,
-            suffix_vocab_size=self.suffix_vocab_size
+            suffix_vocab_size=self.suffix_vocab_size,
+            section_name_vocab_size=self.section_name_vocab_size
         )
 
         # Fit features and transform data
@@ -871,11 +881,23 @@ class SkolClassifierV2:
         )
 
     def _load_annotated_from_couchdb(self) -> DataFrame:
-        """Load annotated data from CouchDB."""
+        """Load annotated data from CouchDB.
+
+        Uses couchdb_training_database if specified, otherwise uses couchdb_database.
+        """
+        # Use training database if specified, otherwise use main database
+        database = self.couchdb_training_database or self.couchdb_database
+
+        if self.verbosity >= 2:
+            if self.couchdb_training_database:
+                print(f"[Classifier] Loading training data from database: {database}")
+            else:
+                print(f"[Classifier] Loading training data from main database: {database}")
+
         # Load raw annotations from CouchDB
         conn = CouchDBConnection(
             self.couchdb_url,
-            self.couchdb_database,
+            database,
             self.couchdb_username,
             self.couchdb_password
         )
