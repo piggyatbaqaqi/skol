@@ -449,6 +449,65 @@ class PDFSectionExtractor:
 
         return None
 
+    def _parse_yedda_annotations(self, text: str) -> Dict[int, str]:
+        """
+        Parse YEDDA annotations from text and create line-to-label mapping.
+
+        YEDDA format: [@ text content #Label*]
+        Annotations can nest, in which case the innermost label takes precedence.
+        Annotations can span multiple lines.
+
+        Args:
+            text: Full text with potential YEDDA annotations
+
+        Returns:
+            Dictionary mapping line numbers (1-indexed) to labels
+
+        Example:
+            >>> text = "[@ Line 1\\nLine 2\\n#Label1*]\\nLine 3\\n[@ Line 4\\n#Label2*]"
+            >>> mapping = extractor._parse_yedda_annotations(text)
+            >>> # Returns: {1: 'Label1', 2: 'Label1', 4: 'Label2'}
+        """
+        line_to_label = {}
+        lines = text.split('\n')
+
+        # Track annotation boundaries with labels
+        # Stack of (start_line, label) tuples for nested annotations
+        annotation_stack = []
+
+        # Pattern to match YEDDA annotation start: [@
+        start_pattern = r'\[@'
+        # Pattern to match YEDDA annotation end: #Label*]
+        end_pattern = r'#([^*]+)\*\]'
+
+        for line_idx, line in enumerate(lines):
+            line_number = line_idx + 1  # 1-indexed
+
+            # Check for annotation starts
+            start_matches = list(re.finditer(start_pattern, line))
+            for match in start_matches:
+                # Push onto stack (we don't know the label yet)
+                annotation_stack.append({'start_line': line_number, 'label': None})
+
+            # Check for annotation ends
+            end_matches = list(re.finditer(end_pattern, line))
+            for match in end_matches:
+                label = match.group(1).strip()
+
+                # Pop from stack and assign label
+                if annotation_stack:
+                    annotation = annotation_stack.pop()
+                    annotation['label'] = label
+                    annotation['end_line'] = line_number
+
+                    # Now assign this label to all lines in the range
+                    for ln in range(annotation['start_line'], annotation['end_line'] + 1):
+                        # Innermost label wins - only set if not already set by nested annotation
+                        if ln not in line_to_label:
+                            line_to_label[ln] = label
+
+        return line_to_label
+
     def parse_text_to_sections(
         self,
         text: str,
@@ -468,9 +527,14 @@ class PDFSectionExtractor:
         - page_number: PDF page number from page markers
         - empirical_page_number: Page number extracted from document itself
         - section_name: Standardized section name (e.g., "Introduction", "Methods")
+        - label: YEDDA annotation label active at first line (nullable)
 
         Figure captions (e.g., "Fig. 1. Description") are automatically detected
         and excluded from the DataFrame. Access them via get_figure_captions().
+
+        YEDDA annotations in format [@ text #Label*] are parsed and the label
+        active at the first line of each section is included. For nested annotations,
+        the innermost label is used.
 
         Args:
             text: Extracted text from PDF
@@ -497,6 +561,9 @@ class PDFSectionExtractor:
             )
 
         lines = text.split('\n')
+
+        # Parse YEDDA annotations to build line-to-label mapping
+        line_to_label = self._parse_yedda_annotations(text)
 
         # First pass: identify page boundaries and extract empirical page numbers
         page_boundaries = []  # List of (pdf_page_num, start_line_idx, end_line_idx)
@@ -553,8 +620,8 @@ class PDFSectionExtractor:
             if self._is_page_number_line(line):
                 continue
 
-            # Skip completely blank lines at the start
-            if not records and self._is_blank_or_whitespace(line):
+            # Skip completely blank lines at the start (before any content)
+            if not records and not current_paragraph and self._is_blank_or_whitespace(line):
                 continue
 
             # Check if this is a header
@@ -588,7 +655,8 @@ class PDFSectionExtractor:
                                 'line_number': current_paragraph_start_line,
                                 'page_number': current_page_number,
                                 'empirical_page_number': empirical_page_map.get(current_page_number),
-                                'section_name': current_section_name
+                                'section_name': current_section_name,
+                                'label': line_to_label.get(current_paragraph_start_line)
                             })
                     current_paragraph = []
                     current_paragraph_start_line = None
@@ -610,7 +678,8 @@ class PDFSectionExtractor:
                         'line_number': line_number,
                         'page_number': current_page_number,
                         'empirical_page_number': empirical_page_map.get(current_page_number),
-                        'section_name': section_name  # For headers, use the section name if detected
+                        'section_name': section_name,  # For headers, use the section name if detected
+                        'label': line_to_label.get(line_number)
                     })
 
             # Blank line indicates paragraph break
@@ -643,7 +712,8 @@ class PDFSectionExtractor:
                                 'line_number': current_paragraph_start_line,
                                 'page_number': current_page_number,
                                 'empirical_page_number': empirical_page_map.get(current_page_number),
-                                'section_name': current_section_name
+                                'section_name': current_section_name,
+                                'label': line_to_label.get(current_paragraph_start_line)
                             })
                     current_paragraph = []
                     current_paragraph_start_line = None
@@ -685,7 +755,8 @@ class PDFSectionExtractor:
                         'line_number': current_paragraph_start_line,
                         'page_number': current_page_number,
                         'empirical_page_number': empirical_page_map.get(current_page_number),
-                        'section_name': current_section_name
+                        'section_name': current_section_name,
+                        'label': line_to_label.get(current_paragraph_start_line)
                     })
 
         if self.verbosity >= 1:
@@ -706,7 +777,8 @@ class PDFSectionExtractor:
             StructField("line_number", IntegerType(), False),
             StructField("page_number", IntegerType(), False),
             StructField("empirical_page_number", IntegerType(), True),  # Nullable
-            StructField("section_name", StringType(), True)  # Nullable
+            StructField("section_name", StringType(), True),  # Nullable
+            StructField("label", StringType(), True)  # Nullable - YEDDA annotation label
         ])
 
         df = self.spark.createDataFrame(records, schema=schema)
@@ -744,6 +816,7 @@ class PDFSectionExtractor:
             - page_number: PDF page number (from PDF page markers)
             - empirical_page_number: Page number extracted from document (nullable)
             - section_name: Standardized section name like "Introduction" (nullable)
+            - label: YEDDA annotation label active at first line (nullable)
 
         Raises:
             ValueError: If no PDF attachment found
