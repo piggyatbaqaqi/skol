@@ -39,6 +39,14 @@ try:
 except ImportError:
     PYMUPDF_AVAILABLE = False
 
+# PySpark availability check
+PYSPARK_AVAILABLE = False
+try:
+    from pyspark.sql import DataFrame
+    PYSPARK_AVAILABLE = True
+except ImportError:
+    pass
+
 
 class PDFSectionExtractor:
     """
@@ -56,7 +64,8 @@ class PDFSectionExtractor:
         couchdb_url: Optional[str] = None,
         username: Optional[str] = None,
         password: Optional[str] = None,
-        verbosity: int = 1
+        verbosity: int = 1,
+        spark: Optional[Any] = None
     ):
         """
         Initialize the PDF section extractor.
@@ -66,8 +75,10 @@ class PDFSectionExtractor:
             username: CouchDB username (default: from COUCHDB_USER env var)
             password: CouchDB password (default: from COUCHDB_PASSWORD env var)
             verbosity: Logging verbosity (0=silent, 1=info, 2=debug)
+            spark: SparkSession instance (required for DataFrame output)
         """
         self.verbosity = verbosity
+        self.spark = spark
 
         # Get credentials from environment if not provided
         self.couchdb_url = couchdb_url or os.environ.get('COUCHDB_URL', 'http://localhost:5984')
@@ -264,40 +275,80 @@ class PDFSectionExtractor:
         """Check if line is blank or only whitespace."""
         return not line.strip()
 
-    def _is_page_marker(self, line: str) -> bool:
-        """Check if line is a PDF page marker (--- PDF Page N ---)."""
-        import re
-        pattern = r'^---\s*PDF\s+Page\s+\d+\s*---\s*$'
-        return bool(re.match(pattern, line.strip()))
+    def _get_pdf_page_marker(self, line: str):
+        """
+        Check if line is a PDF page marker and extract page number.
+
+        Args:
+            line: Line to check
+
+        Returns:
+            Match object with page number in group(1), or None
+        """
+        pattern = r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$'
+        return re.match(pattern, line.strip())
 
     def parse_text_to_sections(
         self,
         text: str,
+        doc_id: str,
+        attachment_name: str,
         min_paragraph_length: int = 10
-    ) -> List[str]:
+    ):
         """
         Parse extracted text into section headers and paragraphs.
 
+        Returns a PySpark DataFrame with columns:
+        - value: Section/paragraph text
+        - doc_id: Document ID
+        - attachment_name: Name of the PDF attachment
+        - paragraph_number: Sequential paragraph number within the attachment
+        - line_number: Line number of the first line of the section
+        - page_number: PDF page number from page markers
+
         Args:
             text: Extracted text from PDF
-            min_paragraph_length: Minimum characters for a valid paragraph
+            doc_id: Document ID
+            attachment_name: Attachment name
+            min_paragraph_length: Minimum characters for a paragraph
 
         Returns:
-            List of section headers and paragraph strings
+            PySpark DataFrame with sections and metadata
+
+        Raises:
+            ImportError: If PySpark is not available
         """
+        if not PYSPARK_AVAILABLE:
+            raise ImportError(
+                "PySpark is required for DataFrame output. "
+                "Install with: pip install pyspark"
+            )
+
+        if self.spark is None:
+            raise ValueError(
+                "SparkSession is required for DataFrame output. "
+                "Pass spark parameter to PDFSectionExtractor.__init__()"
+            )
+
         lines = text.split('\n')
-        sections = []
+        records = []
         current_paragraph = []
+        current_paragraph_start_line = None
+        current_page_number = 1
+        paragraph_number = 0
 
         for i, line in enumerate(lines):
+            line_number = i + 1  # 1-indexed
             next_line = lines[i+1] if i+1 < len(lines) else None
 
-            # Skip completely blank lines at the start
-            if not sections and self._is_blank_or_whitespace(line):
+            # Check if this is a PDF page marker
+            page_marker = self._get_pdf_page_marker(line)
+            if page_marker:
+                current_page_number = int(page_marker.group(1))
                 continue
 
-            # Skip PDF page markers
-            if self._is_page_marker(line):
+            # Skip completely blank lines at the start
+            if not records and self._is_blank_or_whitespace(line):
                 continue
 
             # Check if this is a header
@@ -306,38 +357,87 @@ class PDFSectionExtractor:
                 if current_paragraph:
                     para_text = ' '.join(current_paragraph).strip()
                     if len(para_text) >= min_paragraph_length:
-                        sections.append(para_text)
+                        paragraph_number += 1
+                        records.append({
+                            'value': para_text,
+                            'doc_id': doc_id,
+                            'attachment_name': attachment_name,
+                            'paragraph_number': paragraph_number,
+                            'line_number': current_paragraph_start_line,
+                            'page_number': current_page_number
+                        })
                     current_paragraph = []
+                    current_paragraph_start_line = None
 
                 # Add header
                 header_text = line.strip()
                 if header_text:
-                    sections.append(header_text)
+                    paragraph_number += 1
+                    records.append({
+                        'value': header_text,
+                        'doc_id': doc_id,
+                        'attachment_name': attachment_name,
+                        'paragraph_number': paragraph_number,
+                        'line_number': line_number,
+                        'page_number': current_page_number
+                    })
 
             # Blank line indicates paragraph break
             elif self._is_blank_or_whitespace(line):
                 if current_paragraph:
                     para_text = ' '.join(current_paragraph).strip()
                     if len(para_text) >= min_paragraph_length:
-                        sections.append(para_text)
+                        paragraph_number += 1
+                        records.append({
+                            'value': para_text,
+                            'doc_id': doc_id,
+                            'attachment_name': attachment_name,
+                            'paragraph_number': paragraph_number,
+                            'line_number': current_paragraph_start_line,
+                            'page_number': current_page_number
+                        })
                     current_paragraph = []
+                    current_paragraph_start_line = None
 
             # Regular content line
             else:
                 text_content = line.strip()
                 if text_content:
+                    if current_paragraph_start_line is None:
+                        current_paragraph_start_line = line_number
                     current_paragraph.append(text_content)
 
         # Don't forget the last paragraph
         if current_paragraph:
             para_text = ' '.join(current_paragraph).strip()
             if len(para_text) >= min_paragraph_length:
-                sections.append(para_text)
+                paragraph_number += 1
+                records.append({
+                    'value': para_text,
+                    'doc_id': doc_id,
+                    'attachment_name': attachment_name,
+                    'paragraph_number': paragraph_number,
+                    'line_number': current_paragraph_start_line,
+                    'page_number': current_page_number
+                })
 
         if self.verbosity >= 1:
-            print(f"Parsed {len(sections)} sections/paragraphs")
+            print(f"Parsed {len(records)} sections/paragraphs")
 
-        return sections
+        # Create DataFrame with explicit schema
+        from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+        schema = StructType([
+            StructField("value", StringType(), False),
+            StructField("doc_id", StringType(), False),
+            StructField("attachment_name", StringType(), False),
+            StructField("paragraph_number", IntegerType(), False),
+            StructField("line_number", IntegerType(), False),
+            StructField("page_number", IntegerType(), False)
+        ])
+
+        df = self.spark.createDataFrame(records, schema=schema)
+        return df
 
     def extract_from_document(
         self,
@@ -345,7 +445,7 @@ class PDFSectionExtractor:
         doc_id: str,
         attachment_name: Optional[str] = None,
         cleanup: bool = True
-    ) -> List[str]:
+    ) -> DataFrame:
         """
         Extract sections from a PDF attachment in a CouchDB document.
 
@@ -353,7 +453,7 @@ class PDFSectionExtractor:
         1. Find PDF attachment
         2. Get PDF data directly from CouchDB (no temp file)
         3. Extract text from bytes
-        4. Parse into sections
+        4. Parse into sections DataFrame
 
         Args:
             database: Database name
@@ -362,11 +462,17 @@ class PDFSectionExtractor:
             cleanup: Deprecated (kept for API compatibility, has no effect)
 
         Returns:
-            List of section headers and paragraph strings
+            PySpark DataFrame with columns:
+            - value: Section/paragraph text
+            - doc_id: Document ID
+            - attachment_name: Attachment name
+            - paragraph_number: Sequential paragraph number
+            - line_number: Line number of first line
+            - page_number: PDF page number
 
         Raises:
             ValueError: If no PDF attachment found
-            ImportError: If PyMuPDF is not installed
+            ImportError: If PyMuPDF or PySpark is not installed
         """
         if self.verbosity >= 1:
             print(f"\nExtracting sections from document {doc_id} in {database}")
@@ -391,17 +497,17 @@ class PDFSectionExtractor:
         # Extract text from bytes
         text = self.pdf_to_text(pdf_data)
 
-        # Parse into sections
-        sections = self.parse_text_to_sections(text)
+        # Parse into sections DataFrame
+        sections_df = self.parse_text_to_sections(text, doc_id, attachment_name)
 
-        return sections
+        return sections_df
 
     def extract_from_multiple_documents(
         self,
         database: str,
         doc_ids: List[str],
         attachment_name: Optional[str] = None
-    ) -> Dict[str, List[str]]:
+    ):
         """
         Extract sections from multiple documents.
 
@@ -411,22 +517,48 @@ class PDFSectionExtractor:
             attachment_name: PDF attachment name (auto-detected if None)
 
         Returns:
-            Dictionary mapping doc_id to list of sections
-        """
-        results = {}
+            Combined PySpark DataFrame with all sections from all documents
 
+        Raises:
+            ImportError: If PySpark is not available
+        """
+        if not PYSPARK_AVAILABLE:
+            raise ImportError(
+                "PySpark is required for DataFrame output. "
+                "Install with: pip install pyspark"
+            )
+
+        dfs = []
         for doc_id in doc_ids:
             try:
-                sections = self.extract_from_document(
+                sections_df = self.extract_from_document(
                     database, doc_id, attachment_name
                 )
-                results[doc_id] = sections
+                dfs.append(sections_df)
             except Exception as e:
                 if self.verbosity >= 1:
-                    print(f"Error processing {doc_id}: {e}")
-                results[doc_id] = []
+                    print(f"Error extracting from {doc_id}: {e}")
 
-        return results
+        if not dfs:
+            # Return empty DataFrame with correct schema
+            from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+            schema = StructType([
+                StructField("value", StringType(), False),
+                StructField("doc_id", StringType(), False),
+                StructField("attachment_name", StringType(), False),
+                StructField("paragraph_number", IntegerType(), False),
+                StructField("line_number", IntegerType(), False),
+                StructField("page_number", IntegerType(), False)
+            ])
+            return self.spark.createDataFrame([], schema=schema)
+
+        # Union all DataFrames
+        from functools import reduce
+        from pyspark.sql import DataFrame
+
+        combined_df = reduce(DataFrame.unionAll, dfs)
+        return combined_df
 
     def get_section_by_keyword(
         self,
@@ -521,12 +653,19 @@ class PDFSectionExtractor:
 
 # Example usage
 if __name__ == '__main__':
-    # Initialize extractor
-    extractor = PDFSectionExtractor(verbosity=2)
+    # Initialize Spark
+    from pyspark.sql import SparkSession
+
+    spark = SparkSession.builder \
+        .appName("PDFSectionExtractor") \
+        .getOrCreate()
+
+    # Initialize extractor with SparkSession
+    extractor = PDFSectionExtractor(verbosity=2, spark=spark)
 
     # Example: Extract from the Arachnopeziza paper
     try:
-        sections = extractor.extract_from_document(
+        sections_df = extractor.extract_from_document(
             database='skol_dev',
             doc_id='00df9554e9834283b5e844c7a994ba5f',
             attachment_name='article.pdf'
@@ -535,22 +674,24 @@ if __name__ == '__main__':
         print("\n" + "="*70)
         print("EXTRACTION RESULTS")
         print("="*70)
-        print(f"Total sections: {len(sections)}\n")
+        print(f"Total sections: {sections_df.count()}\n")
 
-        # Extract metadata
-        metadata = extractor.extract_metadata(sections)
+        # Show schema
+        print("DataFrame schema:")
+        sections_df.printSchema()
 
-        print(f"Title: {metadata.get('title', 'Not found')}")
-        print(f"Keywords: {', '.join(metadata.get('keywords', []))}")
-        sections_found = ', '.join(metadata.get('sections_found', []))
-        print(f"Sections found: {sections_found}")
-
+        # Show first 5 sections
         print("\nFirst 5 sections:")
-        for i, section in enumerate(sections[:5], 1):
-            preview = section[:80] + "..." if len(section) > 80 else section
-            print(f"{i}. {preview}")
+        sections_df.select("paragraph_number", "value", "page_number", "line_number") \
+            .show(5, truncate=80, vertical=False)
+
+        # Example queries
+        print("\nSections on page 1:")
+        sections_df.filter(sections_df.page_number == 1).select("paragraph_number", "value").show(5, truncate=60)
 
     except Exception as e:
         print(f"Error: {e}")
         import traceback
         traceback.print_exc()
+    finally:
+        spark.stop()
