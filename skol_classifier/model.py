@@ -258,6 +258,7 @@ def create_model(
                        Can include:
                        - 'class_weights': dict mapping label strings to weights
                        - 'focal_labels': list of label strings for F1-based loss (RNN only)
+                       - 'use_gpu_in_udf': bool to enable GPU in RNN UDFs (default: False)
                        - 'nomenclature_threshold': float for hybrid model (default 0.6)
                        - 'logistic_params': dict of params for logistic model in hybrid
                        - 'rnn_params': dict of params for RNN model in hybrid
@@ -274,6 +275,11 @@ def create_model(
         - RNN: 'class_weights' applied via weighted categorical cross-entropy loss
         - RNN: 'focal_labels' uses mean F1 loss for specified labels only
         - Hybrid: Two-stage pipeline using logistic for Nomenclature, RNN for Description/Misc
+
+        GPU in RNN UDFs:
+        - Set 'use_gpu_in_udf=True' to enable GPU usage in Spark executor UDFs
+        - Only use if worker nodes have compatible GPUs with proper CUDA setup
+        - Default is False (CPU-only) for maximum compatibility
     """
     if model_type == "logistic":
         model = LogisticRegressionSkolModel(
@@ -334,6 +340,10 @@ def create_model(
             # Add 'focal_labels' parameter if provided
             if 'focal_labels' in model_params:
                 rnn_params['focal_labels'] = model_params['focal_labels']
+
+            # Add 'use_gpu_in_udf' parameter if provided
+            if 'use_gpu_in_udf' in model_params:
+                rnn_params['use_gpu_in_udf'] = model_params['use_gpu_in_udf']
 
             model = RNNSkolModel(**rnn_params)
 

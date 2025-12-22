@@ -398,7 +398,8 @@ class RNNSkolModel(SkolModel):
         verbosity: int = 3,
         name: str = "RNN_BiLSTM",
         class_weights: Optional[Dict[str, float]] = None,
-        focal_labels: Optional[List[str]] = None
+        focal_labels: Optional[List[str]] = None,
+        use_gpu_in_udf: bool = False
     ):
         """
         Initialize RNN classifier.
@@ -436,6 +437,17 @@ class RNNSkolModel(SkolModel):
                          Uses mean F1 loss for these labels only, ignoring others.
                          Cannot be used with class_weights (mutually exclusive).
                          Note: Labels must be provided in fit() for this to work.
+            use_gpu_in_udf: Whether to allow GPU usage in Spark executor UDFs during prediction.
+                           Default: False (CPU-only mode for compatibility).
+                           Set to True to enable GPU in UDFs if:
+                           - Worker nodes have GPUs with proper CUDA/TensorFlow setup
+                           - GPU memory is sufficient for batch predictions
+                           - You've tested that CUDA initialization works in executors
+                           WARNING: GPU usage in UDFs can cause CUDA errors if:
+                           - Worker GPUs are incompatible with TensorFlow version
+                           - Multiple executors try to use the same GPU
+                           - GPU memory is insufficient
+                           Only enable if you've verified GPU availability on workers.
         """
         if not KERAS_AVAILABLE:
             raise ImportError(
@@ -465,6 +477,24 @@ class RNNSkolModel(SkolModel):
         self.name = name
         self.class_weights = class_weights
         self.focal_labels = focal_labels
+        self.use_gpu_in_udf = use_gpu_in_udf
+
+        # Warn if GPU is enabled in UDFs
+        if self.use_gpu_in_udf and self.verbosity >= 1:
+            print("\n" + "="*70)
+            print("WARNING: GPU enabled in Spark executor UDFs")
+            print("="*70)
+            print("GPU usage in distributed UDFs can cause issues:")
+            print("  - CUDA initialization errors if GPUs are incompatible")
+            print("  - Memory errors if GPU memory is insufficient")
+            print("  - Conflicts if multiple executors share a GPU")
+            print("")
+            print("Only use this if you've verified:")
+            print("  ✓ All worker nodes have compatible GPUs")
+            print("  ✓ CUDA and TensorFlow are properly configured")
+            print("  ✓ GPU memory is sufficient for batch predictions")
+            print("  ✓ Executor GPU assignment is properly configured")
+            print("="*70 + "\n")
 
         # Validate mutually exclusive options
         if class_weights is not None and focal_labels is not None:
@@ -1001,6 +1031,7 @@ class RNNSkolModel(SkolModel):
             if self.model_weights:
                 print(f"[RNN Predict Proba] model_weights count: {len(self.model_weights)}")
             print(f"[RNN Predict Proba] Using sliding window: window_size={self.window_size}, stride={self.prediction_stride}")
+            print(f"[RNN Predict Proba] GPU in UDF: {self.use_gpu_in_udf}")
         model_config = self.keras_model.to_json()
         model_weights = self.model_weights
         input_size = self.input_size
@@ -1010,6 +1041,7 @@ class RNNSkolModel(SkolModel):
         prediction_batch_size = self.prediction_batch_size
         features_col = self.features_col  # Capture for UDF closure
         verbosity = self.verbosity  # Capture for UDF closure
+        use_gpu_in_udf = self.use_gpu_in_udf  # Capture for UDF closure
         show_progress = tqdm_available and self.verbosity >= 1
 
         # Define prediction UDF that returns probability distributions
@@ -1047,20 +1079,39 @@ class RNNSkolModel(SkolModel):
 
             log(f"[UDF PROBA START] Processing {len(sorted_data_series)} sequences")
             log(f"[UDF PROBA START] Config: input_size={input_size}, window_size={window_size}, num_classes={num_classes}")
+            log(f"[UDF PROBA START] GPU enabled: {use_gpu_in_udf}")
             log(f"[UDF PROBA START] Log file: {log_file}")
 
             try:
-                # Force CPU-only mode in executors to prevent CUDA errors
-                os.environ['CUDA_VISIBLE_DEVICES'] = ''
-                log("[UDF PROBA] Set CUDA_VISIBLE_DEVICES to empty string")
+                # Conditionally configure GPU based on use_gpu_in_udf flag
+                if not use_gpu_in_udf:
+                    # Force CPU-only mode in executors to prevent CUDA errors
+                    os.environ['CUDA_VISIBLE_DEVICES'] = ''
+                    log("[UDF PROBA] Set CUDA_VISIBLE_DEVICES to empty string (CPU-only mode)")
+                else:
+                    log("[UDF PROBA] GPU enabled - will attempt to use GPU if available")
 
-                # Import TensorFlow/Keras inside UDF after setting CPU mode
+                # Import TensorFlow/Keras inside UDF
                 try:
                     import tensorflow as tf
                     from tensorflow import keras
-                    # Double-check GPU is disabled
-                    tf.config.set_visible_devices([], 'GPU')
-                    log("[UDF PROBA] TensorFlow imported and GPU disabled")
+
+                    if not use_gpu_in_udf:
+                        # Double-check GPU is disabled for CPU-only mode
+                        tf.config.set_visible_devices([], 'GPU')
+                        log("[UDF PROBA] TensorFlow imported and GPU disabled")
+                    else:
+                        # Configure GPU with memory growth if available
+                        gpus = tf.config.list_physical_devices('GPU')
+                        if gpus:
+                            try:
+                                for gpu in gpus:
+                                    tf.config.experimental.set_memory_growth(gpu, True)
+                                log(f"[UDF PROBA] TensorFlow imported, {len(gpus)} GPU(s) available with memory growth enabled")
+                            except Exception as e:
+                                log(f"[UDF PROBA WARNING] GPU memory growth configuration failed: {e}")
+                        else:
+                            log("[UDF PROBA] TensorFlow imported, no GPUs detected - will use CPU")
                 except Exception as e:
                     log(f"[UDF PROBA WARNING] TensorFlow config issue: {e}")
                     pass
