@@ -827,8 +827,7 @@ class PDFSectionExtractor:
             StructField("line_number", IntegerType(), False),
             StructField("page_number", IntegerType(), False),
             StructField("empirical_page_number", IntegerType(), True),  # Nullable
-            StructField("section_name", StringType(), True),  # Nullable
-            StructField("label", StringType(), True)  # Nullable - YEDDA annotation label
+            StructField("section_name", StringType(), True)  # Nullable
         ])
 
         df = self.spark.createDataFrame(records, schema=schema)
