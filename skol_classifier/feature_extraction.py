@@ -98,8 +98,14 @@ class FeatureExtractor:
 
         # Section Name TF-IDF (optional)
         if self.use_section_names:
+            from pyspark.ml.feature import SQLTransformer
+
+            # Fill NULL section names with empty string (Tokenizer can't handle NULLs)
+            section_null_filler = SQLTransformer(
+                statement=f"SELECT *, COALESCE({self.section_name_col}, '') AS section_name_filled FROM __THIS__"
+            )
             section_tokenizer = Tokenizer(
-                inputCol=self.section_name_col, outputCol="section_tokens"
+                inputCol="section_name_filled", outputCol="section_tokens"
             )
             section_count_vectorizer = CountVectorizer(
                 inputCol="section_tokens", outputCol="section_tf",
@@ -108,7 +114,7 @@ class FeatureExtractor:
             section_idf = IDF(
                 inputCol="section_tf", outputCol="section_idf", minDocFreq=self.min_doc_freq
             )
-            stages.extend([section_tokenizer, section_count_vectorizer, section_idf])
+            stages.extend([section_null_filler, section_tokenizer, section_count_vectorizer, section_idf])
             feature_cols.append("section_idf")
 
         # Combine features if multiple feature types are enabled

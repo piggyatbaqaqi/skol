@@ -279,7 +279,7 @@ YEDDA labels can be used as training labels:
 # Extract sections with YEDDA labels
 classifier = SkolClassifierV2(
     input_source='couchdb',
-    tokenizer='section',
+    extraction_mode='section',
     ...
 )
 

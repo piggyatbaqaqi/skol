@@ -205,7 +205,7 @@ classifier = SkolClassifierV2(
     input_source='couchdb',
     couchdb_url='http://localhost:5984',
     couchdb_database='mixed_documents',
-    tokenizer='section',
+    extraction_mode='section',
     use_suffixes=True
 )
 

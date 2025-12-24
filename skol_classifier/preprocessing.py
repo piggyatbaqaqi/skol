@@ -310,6 +310,7 @@ class AnnotatedTextParser:
     [@content#Label*]
 
     Supports both line-level and paragraph-level extraction.
+    Detects section names from content for compatibility with section-based features.
     """
 
     def __init__(self, line_level: bool = False, collapse_labels: bool = True):
@@ -323,6 +324,56 @@ class AnnotatedTextParser:
         self.line_level = line_level
         self.collapse_labels = collapse_labels
 
+    @staticmethod
+    def _get_section_name(text: str) -> str:
+        """
+        Extract standardized section name from text content.
+
+        Args:
+            text: Text to analyze (typically first line or header)
+
+        Returns:
+            Standardized section name, or None if not a known section
+        """
+        text_lower = text.strip().lower()
+
+        # Map of section keywords to standardized names
+        section_map = {
+            'introduction': 'Introduction',
+            'abstract': 'Abstract',
+            'key words': 'Keywords',
+            'keywords': 'Keywords',
+            'taxonomy': 'Taxonomy',
+            'materials and methods': 'Materials and Methods',
+            'methods': 'Methods',
+            'results': 'Results',
+            'discussion': 'Discussion',
+            'acknowledgments': 'Acknowledgments',
+            'acknowledgements': 'Acknowledgments',
+            'references': 'References',
+            'conclusion': 'Conclusion',
+            'description': 'Description',
+            'etymology': 'Etymology',
+            'specimen': 'Specimen',
+            'holotype': 'Holotype',
+            'paratype': 'Paratype',
+            'literature cited': 'Literature Cited',
+            'background': 'Background',
+            'objectives': 'Objectives',
+            'summary': 'Summary',
+            'figures': 'Figures',
+            'tables': 'Tables',
+            'appendix': 'Appendix',
+            'supplementary': 'Supplementary'
+        }
+
+        # Check for exact matches or starts with
+        for keyword, standard_name in section_map.items():
+            if text_lower == keyword or text_lower.startswith(keyword):
+                return standard_name
+
+        return None
+
     def parse(self, df: DataFrame) -> DataFrame:
         """
         Parse YEDDA-annotated text from a DataFrame.
@@ -332,7 +383,7 @@ class AnnotatedTextParser:
                 where value contains YEDDA-annotated text
 
         Returns:
-            DataFrame with columns (doc_id, human_url, attachment_name, label, value)
+            DataFrame with columns (doc_id, human_url, attachment_name, label, value, section_name)
             For line_level mode, also includes line_number column
         """
         from pyspark.sql.types import StructType, StructField, IntegerType
@@ -340,7 +391,7 @@ class AnnotatedTextParser:
         if self.line_level:
             # Line-level extraction: parse each line from YEDDA blocks
             def extract_yedda_lines(text: str):
-                """Extract individual lines from YEDDA annotation blocks."""
+                """Extract individual lines from YEDDA annotation blocks with section detection."""
                 import re
                 results = []
                 pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
@@ -353,11 +404,15 @@ class AnnotatedTextParser:
                     if self.collapse_labels:
                         label = ParagraphExtractor.collapse_labels(label)
 
+                    # Detect section name from first line of content
+                    first_line = content.split('\n')[0] if content else ""
+                    section_name = AnnotatedTextParser._get_section_name(first_line)
+
                     # Split content into lines
                     content_lines = content.split('\n')
                     for line_num, line in enumerate(content_lines):
                         if line or line_num < len(content_lines) - 1:
-                            results.append((label, line, line_num))
+                            results.append((label, line, line_num, section_name))
 
                 return results
 
@@ -367,7 +422,8 @@ class AnnotatedTextParser:
                 ArrayType(StructType([
                     StructField("label", StringType(), False),
                     StructField("value", StringType(), False),
-                    StructField("line_number", IntegerType(), False)
+                    StructField("line_number", IntegerType(), False),
+                    StructField("section_name", StringType(), True)
                 ]))
             )
 
@@ -380,13 +436,14 @@ class AnnotatedTextParser:
                     "attachment_name",
                     col("line_data.label").alias("label"),
                     col("line_data.value").alias("value"),
-                    col("line_data.line_number")
+                    col("line_data.line_number"),
+                    col("line_data.section_name")
                 )
             )
         else:
             # Paragraph-level extraction
             def extract_yedda_paragraphs(text: str):
-                """Extract paragraphs from YEDDA annotation blocks."""
+                """Extract paragraphs from YEDDA annotation blocks with section detection."""
                 import re
                 results = []
                 pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
@@ -399,8 +456,12 @@ class AnnotatedTextParser:
                     if self.collapse_labels:
                         label = ParagraphExtractor.collapse_labels(label)
 
+                    # Detect section name from first line of content
+                    first_line = content.split('\n')[0] if content else ""
+                    section_name = AnnotatedTextParser._get_section_name(first_line)
+
                     if content:
-                        results.append((label, content))
+                        results.append((label, content, section_name))
 
                 return results
 
@@ -409,7 +470,8 @@ class AnnotatedTextParser:
                 extract_yedda_paragraphs,
                 ArrayType(StructType([
                     StructField("label", StringType(), False),
-                    StructField("value", StringType(), False)
+                    StructField("value", StringType(), False),
+                    StructField("section_name", StringType(), True)
                 ]))
             )
 
@@ -421,7 +483,8 @@ class AnnotatedTextParser:
                     "human_url",
                     "attachment_name",
                     col("paragraph_data.label").alias("label"),
-                    col("paragraph_data.value").alias("value")
+                    col("paragraph_data.value").alias("value"),
+                    col("paragraph_data.section_name")
                 )
             )
 

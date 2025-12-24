@@ -2,7 +2,7 @@
 
 ## Overview
 
-Updated `SkolClassifierV2` to replace the boolean `line_level` parameter with a more flexible `tokenizer` parameter that supports three text processing modes.
+Updated `SkolClassifierV2` to replace the boolean `line_level` parameter with a more flexible `extraction_mode` parameter that supports three text processing modes.
 
 **Date**: 2025-12-22
 **Version**: 2.1
@@ -19,7 +19,7 @@ line_level: bool = False  # True = line-by-line, False = paragraph
 
 **New Parameter**:
 ```python
-tokenizer: Literal['line', 'paragraph', 'section'] = 'paragraph'
+extraction_mode: Literal['line', 'paragraph', 'section'] = 'paragraph'
 ```
 
 ### 2. Tokenizer Modes
@@ -32,7 +32,7 @@ tokenizer: Literal['line', 'paragraph', 'section'] = 'paragraph'
 
 ### 3. Section Mode Features
 
-When `tokenizer='section'`:
+When `extraction_mode='section'`:
 - Uses `PDFSectionExtractor` to parse PDF documents
 - Automatically extracts section names (Introduction, Methods, Results, etc.)
 - Enables section name TF-IDF features in `FeatureExtractor`
@@ -44,8 +44,8 @@ When `tokenizer='section'`:
 The `FeatureExtractor` now automatically enables section name features:
 
 ```python
-# When tokenizer='section'
-use_section_names = (self.tokenizer == 'section')
+# When extraction_mode='section'
+use_section_names = (self.extraction_mode == 'section')
 
 feature_extractor = FeatureExtractor(
     use_suffixes=self.use_suffixes,
@@ -64,7 +64,7 @@ feature_extractor = FeatureExtractor(
 classifier = SkolClassifierV2(
     input_source='files',
     file_paths=['data/train/*.txt.ann'],
-    tokenizer='line',  # Process line-by-line
+    extraction_mode='line',  # Process line-by-line
     use_suffixes=True,
     model_type='logistic'
 )
@@ -76,7 +76,7 @@ classifier = SkolClassifierV2(
 classifier = SkolClassifierV2(
     input_source='files',
     file_paths=['data/train/*.txt.ann'],
-    tokenizer='paragraph',  # Default, process by paragraphs
+    extraction_mode='paragraph',  # Default, process by paragraphs
     use_suffixes=True,
     model_type='logistic'
 )
@@ -94,7 +94,7 @@ classifier = SkolClassifierV2(
     couchdb_username='admin',
     couchdb_password='password',
     # No couchdb_doc_ids needed - auto-discovers PDFs!
-    tokenizer='section',  # Use PDF section extraction
+    extraction_mode='section',  # Use PDF section extraction
     use_suffixes=True,
     model_type='logistic'
 )
@@ -117,7 +117,7 @@ classifier = SkolClassifierV2(
     couchdb_username='admin',
     couchdb_password='password',
     couchdb_doc_ids=['doc1', 'doc2', 'doc3'],  # Process only these
-    tokenizer='section',
+    extraction_mode='section',
     use_suffixes=True,
     model_type='logistic'
 )
@@ -147,7 +147,7 @@ classifier = SkolClassifierV2(
     couchdb_username='admin',
     couchdb_password='password',
     couchdb_doc_ids=['doc1', 'doc2', 'doc3'],
-    tokenizer='section',
+    extraction_mode='section',
     section_filter=['Introduction', 'Methods', 'Results'],  # Only these sections
     use_suffixes=True,
     model_type='logistic'
@@ -164,13 +164,13 @@ raw_df = classifier.load_raw()
 A backwards-compatible `line_level` property is provided:
 
 ```python
-classifier = SkolClassifierV2(tokenizer='line')
+classifier = SkolClassifierV2(extraction_mode='line')
 print(classifier.line_level)  # True
 
-classifier = SkolClassifierV2(tokenizer='paragraph')
+classifier = SkolClassifierV2(extraction_mode='paragraph')
 print(classifier.line_level)  # False
 
-classifier = SkolClassifierV2(tokenizer='section')
+classifier = SkolClassifierV2(extraction_mode='section')
 print(classifier.line_level)  # False
 ```
 
@@ -193,7 +193,7 @@ classifier = SkolClassifierV2(
 classifier = SkolClassifierV2(
     input_source='files',
     file_paths=['data/*.ann'],
-    tokenizer='line',  # New parameter
+    extraction_mode='line',  # New parameter
     use_suffixes=True
 )
 ```
@@ -208,7 +208,7 @@ Model metadata version updated from `2.0` to `2.1`:
 {
   "label_mapping": {...},
   "config": {
-    "tokenizer": "section",
+    "extraction_mode": "section",
     "use_suffixes": true,
     "min_doc_freq": 2,
     "model_type": "logistic",
@@ -235,16 +235,16 @@ Model metadata version updated from `2.0` to `2.1`:
 
 **[classifier_v2.py](../skol_classifier/classifier_v2.py)**:
 - Line 88: Added `couchdb_doc_ids` to docstring
-- Line 104-107: Updated docstring for `tokenizer` parameter
+- Line 104-107: Updated docstring for `extraction_mode` parameter
 - Line 108-109: Added `section_filter` to docstring
 - Line 168: Added `couchdb_doc_ids` parameter
 - Line 186: Added `section_filter` parameter
-- Line 185: Changed `line_level: bool` to `tokenizer: Literal['line', 'paragraph', 'section']`
+- Line 185: Changed `line_level: bool` to `extraction_mode: Literal['line', 'paragraph', 'section']`
 - Line 216: Store `self.couchdb_doc_ids`
-- Line 234: Store `self.tokenizer` instead of `self.line_level`
+- Line 234: Store `self.extraction_mode` instead of `self.line_level`
 - Line 235: Store `self.section_filter`
 - Line 266-269: Added `line_level` property for backwards compatibility
-- Line 361: Enable section name features when `tokenizer='section'`
+- Line 361: Enable section name features when `extraction_mode='section'`
 - Line 747-762: Updated `_load_raw_from_files()` to handle section mode
 - Line 764-780: Updated `_load_raw_from_couchdb()` to handle section mode
 - Line 887-899: Added `_load_sections_from_files()` (raises NotImplementedError)
@@ -252,7 +252,7 @@ Model metadata version updated from `2.0` to `2.1`:
   - Uses PDFSectionExtractor with document IDs
   - Applies section filtering
   - Shows detailed progress and statistics
-- Line 1173, 1331: Updated metadata to use `tokenizer` and version `2.1`
+- Line 1173, 1331: Updated metadata to use `extraction_mode` and version `2.1`
 
 ### New Parameters
 
@@ -283,7 +283,7 @@ Model metadata version updated from `2.0` to `2.1`:
 # Using section mode with files
 classifier = SkolClassifierV2(
     input_source='files',
-    tokenizer='section'  # ERROR
+    extraction_mode='section'  # ERROR
 )
 # Raises: NotImplementedError - section mode requires CouchDB
 
@@ -292,7 +292,7 @@ classifier = SkolClassifierV2(
     input_source='couchdb',
     couchdb_url='http://localhost:5984',
     couchdb_database='empty_db',
-    tokenizer='section'
+    extraction_mode='section'
 )
 classifier.load_raw()
 # Raises: ValueError - No PDF documents found in database
@@ -302,7 +302,7 @@ classifier.load_raw()
 
 ### 1. Clearer API
 
-- More descriptive parameter name (`tokenizer` vs `line_level`)
+- More descriptive parameter name (`extraction_mode` vs `line_level`)
 - Supports more than two modes
 - Self-documenting code
 
@@ -336,7 +336,7 @@ classifier.load_raw()
 
 1. **Local PDF Support**: Add `_load_sections_from_files()` for local PDFs
 2. **Optimized Discovery**: Use CouchDB views/queries for faster PDF document discovery
-3. **Hybrid Modes**: Support combinations like `tokenizer='section+line'`
+3. **Hybrid Modes**: Support combinations like `extraction_mode='section+line'`
 4. **Custom Section Patterns**: User-defined section recognition patterns
 5. **Section Annotations**: Support for annotated sections in training data
 
@@ -348,7 +348,7 @@ classifier = SkolClassifierV2(
     input_source='couchdb',
     couchdb_url='http://localhost:5984',
     couchdb_database='mydb',
-    tokenizer='section',
+    extraction_mode='section',
     use_views=True,  # Use _all_docs with attachment filtering for speed
     section_filter=['Introduction', 'Methods'],
     ...
@@ -357,7 +357,7 @@ classifier = SkolClassifierV2(
 # Custom section patterns (planned)
 classifier = SkolClassifierV2(
     input_source='couchdb',
-    tokenizer='section',
+    extraction_mode='section',
     section_patterns={'custom_section': r'^Custom\s+Section'},  # Custom patterns
     ...
 )
@@ -389,7 +389,7 @@ clf_line = SkolClassifierV2(
     spark=spark,
     input_source='files',
     file_paths=['test.ann'],
-    tokenizer='line'
+    extraction_mode='line'
 )
 assert clf_line.tokenizer == 'line'
 assert clf_line.line_level == True
@@ -399,7 +399,7 @@ clf_para = SkolClassifierV2(
     spark=spark,
     input_source='files',
     file_paths=['test.ann'],
-    tokenizer='paragraph'
+    extraction_mode='paragraph'
 )
 assert clf_para.tokenizer == 'paragraph'
 assert clf_para.line_level == False
@@ -409,7 +409,7 @@ try:
     clf_section = SkolClassifierV2(
         spark=spark,
         input_source='files',
-        tokenizer='section'
+        extraction_mode='section'
     )
     clf_section.load_raw()
 except NotImplementedError as e:
@@ -422,7 +422,7 @@ try:
         input_source='couchdb',
         couchdb_url='http://localhost:5984',
         couchdb_database='mydb',
-        tokenizer='section'
+        extraction_mode='section'
         # Missing: couchdb_doc_ids
     )
     clf_section.load_raw()
@@ -436,7 +436,7 @@ clf_section = SkolClassifierV2(
     couchdb_url='http://localhost:5984',
     couchdb_database='skol_dev',
     couchdb_doc_ids=['doc1', 'doc2', 'doc3'],
-    tokenizer='section',
+    extraction_mode='section',
     section_filter=['Introduction', 'Methods'],
     verbosity=2
 )
@@ -450,7 +450,7 @@ clf_auto = SkolClassifierV2(
     couchdb_url='http://localhost:5984',
     couchdb_database='skol_dev',
     # No couchdb_doc_ids - auto-discovers all PDFs
-    tokenizer='section',
+    extraction_mode='section',
     verbosity=2
 )
 # sections_df = clf_auto.load_raw()

@@ -250,7 +250,7 @@ classifier = SkolClassifierV2(
     input_source='couchdb',
     couchdb_url='http://localhost:5984',
     couchdb_database='training_docs',
-    tokenizer='section',  # Use PDF section extraction
+    extraction_mode='section',  # Use PDF section extraction
     use_suffixes=True,
     model_type='logistic'
 )
