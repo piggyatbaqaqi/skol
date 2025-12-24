@@ -899,10 +899,19 @@ class SkolClassifierV2:
             else:
                 print(f"[Classifier] Loading training data from main database: {database}")
 
-        # For 'section' extraction mode, use PDFSectionExtractor
-        # which preserves line_number and other metadata
+        # For 'section' extraction mode, use PDFSectionExtractor to get structure,
+        # then pass through AnnotatedTextParser to extract labels
         if self.extraction_mode == 'section':
-            return self._load_sections_from_couchdb(database=database)
+            # Get pre-segmented sections with structure metadata
+            sections_df = self._load_sections_from_couchdb(database=database)
+
+            # Parse YEDDA labels using unified AnnotatedTextParser
+            from .preprocessing import AnnotatedTextParser
+            parser = AnnotatedTextParser(
+                extraction_mode='section',
+                collapse_labels=self.collapse_labels
+            )
+            return parser.parse(sections_df)
 
         # For 'line' and 'paragraph' modes, use traditional text loading
         # Load raw annotations from CouchDB
@@ -920,10 +929,13 @@ class SkolClassifierV2:
 
         df = conn.load_distributed(self.spark, pattern)
 
-        # Parse annotations
+        # Parse annotations using unified AnnotatedTextParser
         from .preprocessing import AnnotatedTextParser
 
-        parser = AnnotatedTextParser(line_level=self.line_level)
+        parser = AnnotatedTextParser(
+            extraction_mode=self.extraction_mode,
+            collapse_labels=self.collapse_labels
+        )
         return parser.parse(df)
 
     def _load_sections_from_files(self) -> DataFrame:
@@ -940,7 +952,7 @@ class SkolClassifierV2:
             "The PDFSectionExtractor only supports loading from CouchDB attachments."
         )
 
-    def _discover_pdf_documents(self) -> List[str]:
+    def _discover_pdf_documents(self, database: Optional[str] = None) -> List[str]:
         """
         Discover all documents with PDF attachments in CouchDB.
 
@@ -949,6 +961,12 @@ class SkolClassifierV2:
         """
         import couchdb
 
+        if database is None:
+            database = self.couchdb_database
+
+        if self.verbosity >= 2:
+            print(f"[Classifier] Discovering PDF documents in database: {database}")
+
         # Connect to CouchDB
         if self.couchdb_username and self.couchdb_password:
             server = couchdb.Server(self.couchdb_url)
@@ -956,7 +974,7 @@ class SkolClassifierV2:
         else:
             server = couchdb.Server(self.couchdb_url)
 
-        db = server[self.couchdb_database]
+        db = server[database]
 
         # Query all documents
         doc_ids_with_pdfs = []
@@ -1019,7 +1037,7 @@ class SkolClassifierV2:
             if self.verbosity >= 1:
                 print(f"[Classifier] Auto-discovering PDF documents in database: {db}")
 
-            doc_ids = self._discover_pdf_documents()
+            doc_ids = self._discover_pdf_documents(db)
 
             if not doc_ids:
                 raise ValueError(

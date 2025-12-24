@@ -574,7 +574,7 @@ class PDFSectionExtractor:
         Parse extracted text into section headers and paragraphs.
 
         Returns a PySpark DataFrame with columns:
-        - value: Section/paragraph text
+        - value: Section/paragraph text (with YEDDA annotations preserved)
         - doc_id: Document ID
         - attachment_name: Name of the PDF attachment
         - paragraph_number: Sequential paragraph number within the attachment
@@ -582,14 +582,13 @@ class PDFSectionExtractor:
         - page_number: PDF page number from page markers
         - empirical_page_number: Page number extracted from document itself
         - section_name: Standardized section name (e.g., "Introduction", "Methods")
-        - label: YEDDA annotation label active at first line (nullable)
 
         Figure captions (e.g., "Fig. 1. Description") are automatically detected
         and excluded from the DataFrame. Access them via get_figure_captions().
 
-        YEDDA annotations in format [@ text #Label*] are parsed and the label
-        active at the first line of each section is included. For nested annotations,
-        the innermost label is used.
+        YEDDA annotations in format [@ text #Label*] are PRESERVED in the value field.
+        Label extraction is delegated to AnnotatedTextParser for consistency with
+        other extraction modes.
 
         Args:
             text: Extracted text from PDF
@@ -617,8 +616,8 @@ class PDFSectionExtractor:
 
         lines = text.split('\n')
 
-        # Parse YEDDA annotations to build line-to-label mapping
-        line_to_label = self._parse_yedda_annotations(text)
+        # YEDDA label extraction is delegated to AnnotatedTextParser for consistency.
+        # PDFSectionExtractor focuses on structural extraction (sections, pages, layout).
 
         # First pass: identify page boundaries and extract empirical page numbers
         page_boundaries = []  # List of (pdf_page_num, start_line_idx, end_line_idx)
@@ -711,7 +710,6 @@ class PDFSectionExtractor:
                                 'page_number': current_page_number,
                                 'empirical_page_number': empirical_page_map.get(current_page_number),
                                 'section_name': current_section_name,
-                                'label': line_to_label.get(current_paragraph_start_line)
                             })
                     current_paragraph = []
                     current_paragraph_start_line = None
@@ -734,7 +732,6 @@ class PDFSectionExtractor:
                         'page_number': current_page_number,
                         'empirical_page_number': empirical_page_map.get(current_page_number),
                         'section_name': section_name,  # For headers, use the section name if detected
-                        'label': line_to_label.get(line_number)
                     })
 
             # Blank line indicates paragraph break
@@ -768,7 +765,6 @@ class PDFSectionExtractor:
                                 'page_number': current_page_number,
                                 'empirical_page_number': empirical_page_map.get(current_page_number),
                                 'section_name': current_section_name,
-                                'label': line_to_label.get(current_paragraph_start_line)
                             })
                     current_paragraph = []
                     current_paragraph_start_line = None
@@ -811,7 +807,6 @@ class PDFSectionExtractor:
                         'page_number': current_page_number,
                         'empirical_page_number': empirical_page_map.get(current_page_number),
                         'section_name': current_section_name,
-                        'label': line_to_label.get(current_paragraph_start_line)
                     })
 
         if self.verbosity >= 1:

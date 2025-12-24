@@ -309,20 +309,37 @@ class AnnotatedTextParser:
     Extracts labeled text from YEDDA annotation format:
     [@content#Label*]
 
-    Supports both line-level and paragraph-level extraction.
+    Supports line-level, paragraph-level, and section-level extraction.
     Detects section names from content for compatibility with section-based features.
     """
 
-    def __init__(self, line_level: bool = False, collapse_labels: bool = True):
+    def __init__(self, extraction_mode: str = 'paragraph', collapse_labels: bool = True, line_level: bool = None):
         """
         Initialize the AnnotatedTextParser.
 
         Args:
-            line_level: If True, extract individual lines; if False, extract paragraphs
+            extraction_mode: Extraction granularity - 'line', 'paragraph', or 'section'
             collapse_labels: If True, collapse labels to 3 main categories
+            line_level: DEPRECATED - use extraction_mode instead. For backwards compatibility only.
         """
-        self.line_level = line_level
+        # Handle backwards compatibility
+        if line_level is not None:
+            import warnings
+            warnings.warn(
+                "line_level parameter is deprecated, use extraction_mode='line' instead",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            self.extraction_mode = 'line' if line_level else 'paragraph'
+        else:
+            self.extraction_mode = extraction_mode
+
         self.collapse_labels = collapse_labels
+
+    @property
+    def line_level(self) -> bool:
+        """Backwards compatibility property."""
+        return self.extraction_mode == 'line'
 
     @staticmethod
     def _get_section_name(text: str) -> str:
@@ -381,14 +398,42 @@ class AnnotatedTextParser:
         Args:
             df: DataFrame with columns (doc_id, human_url, attachment_name, value)
                 where value contains YEDDA-annotated text
+                For section mode, may also include (line_number, page_number, section_name, etc.)
 
         Returns:
             DataFrame with columns (doc_id, human_url, attachment_name, label, value, section_name)
-            For line_level mode, also includes line_number column
+            For extraction_mode='line', also includes line_number column
+            For extraction_mode='section', preserves all input metadata columns
         """
         from pyspark.sql.types import StructType, StructField, IntegerType
 
-        if self.line_level:
+        if self.extraction_mode == 'section':
+            # Section-level: Input already has pre-segmented sections with metadata
+            # Just extract YEDDA labels without further splitting
+            def extract_yedda_label(text: str):
+                """Extract label from YEDDA annotation block."""
+                import re
+                # Match YEDDA format: [@ content #Label*]
+                pattern = r'\[@\s*.*?\s*#([^\*]+)\*\]'
+                match = re.search(pattern, text, re.DOTALL)
+                if match:
+                    label = match.group(1).strip()
+                    # Collapse labels if requested
+                    if self.collapse_labels:
+                        label = ParagraphExtractor.collapse_labels(label)
+                    return label
+                return None
+
+            # UDF to extract label
+            extract_label_udf = udf(extract_yedda_label, StringType())
+
+            # Apply UDF to extract label, preserve all existing columns
+            result_df = df.withColumn("label", extract_label_udf(col("value")))
+
+            # Filter out rows without labels (if any)
+            result_df = result_df.filter(col("label").isNotNull())
+
+        elif self.extraction_mode == 'line':
             # Line-level extraction: parse each line from YEDDA blocks
             def extract_yedda_lines(text: str):
                 """Extract individual lines from YEDDA annotation blocks with section detection."""
@@ -440,7 +485,7 @@ class AnnotatedTextParser:
                     col("line_data.section_name")
                 )
             )
-        else:
+        elif self.extraction_mode == 'paragraph':
             # Paragraph-level extraction
             def extract_yedda_paragraphs(text: str):
                 """Extract paragraphs from YEDDA annotation blocks with section detection."""
@@ -486,6 +531,11 @@ class AnnotatedTextParser:
                     col("paragraph_data.value").alias("value"),
                     col("paragraph_data.section_name")
                 )
+            )
+        else:
+            raise ValueError(
+                f"Unknown extraction_mode: {self.extraction_mode}. "
+                f"Must be 'line', 'paragraph', or 'section'"
             )
 
         return result_df
