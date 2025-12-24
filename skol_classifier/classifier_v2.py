@@ -482,6 +482,11 @@ class SkolClassifierV2:
             test_data = test_data.orderBy(doc_col, "line_number")
             if model_verbosity >= 2:
                 print("[Classifier Fit] Data sorted by document and line_number")
+        elif "paragraph_number" in featured_df.columns:
+            train_data = train_data.orderBy(doc_col, "paragraph_number")
+            test_data = test_data.orderBy(doc_col, "paragraph_number")
+            if model_verbosity >= 2:
+                print("[Classifier Fit] Data sorted by document and paragraph_number")
         else:
             train_data = train_data.orderBy(doc_col)
             test_data = test_data.orderBy(doc_col)
@@ -894,6 +899,12 @@ class SkolClassifierV2:
             else:
                 print(f"[Classifier] Loading training data from main database: {database}")
 
+        # For 'section' extraction mode, use PDFSectionExtractor
+        # which preserves line_number and other metadata
+        if self.extraction_mode == 'section':
+            return self._load_sections_from_couchdb(database=database)
+
+        # For 'line' and 'paragraph' modes, use traditional text loading
         # Load raw annotations from CouchDB
         conn = CouchDBConnection(
             self.couchdb_url,
@@ -976,8 +987,12 @@ class SkolClassifierV2:
 
         return doc_ids_with_pdfs
 
-    def _load_sections_from_couchdb(self) -> DataFrame:
-        """Load sections from PDF documents in CouchDB using PDFSectionExtractor."""
+    def _load_sections_from_couchdb(self, database: Optional[str] = None) -> DataFrame:
+        """Load sections from PDF documents in CouchDB using PDFSectionExtractor.
+
+        Args:
+            database: Optional database name. If not provided, uses self.couchdb_database.
+        """
         # Import here to avoid circular dependencies
         import sys
         from pathlib import Path
@@ -989,6 +1004,11 @@ class SkolClassifierV2:
 
         from pdf_section_extractor import PDFSectionExtractor
 
+        # Use provided database or fall back to instance variable
+        db = database or self.couchdb_database
+        if not db:
+            raise ValueError("Database name must be provided either as parameter or via couchdb_database")
+
         # Get document IDs (either provided or auto-discover)
         if self.couchdb_doc_ids:
             doc_ids = self.couchdb_doc_ids
@@ -997,13 +1017,13 @@ class SkolClassifierV2:
         else:
             # Auto-discover documents with PDF attachments
             if self.verbosity >= 1:
-                print(f"[Classifier] Auto-discovering PDF documents in database: {self.couchdb_database}")
+                print(f"[Classifier] Auto-discovering PDF documents in database: {db}")
 
             doc_ids = self._discover_pdf_documents()
 
             if not doc_ids:
                 raise ValueError(
-                    f"No PDF documents found in database '{self.couchdb_database}'. "
+                    f"No PDF documents found in database '{db}'. "
                     "Please ensure documents have PDF attachments or provide couchdb_doc_ids explicitly."
                 )
 
@@ -1011,7 +1031,7 @@ class SkolClassifierV2:
                 print(f"[Classifier] Found {len(doc_ids)} documents with PDF attachments")
 
         if self.verbosity >= 1:
-            print(f"[Classifier] Database: {self.couchdb_database}")
+            print(f"[Classifier] Database: {db}")
 
         # Create extractor
         extractor = PDFSectionExtractor(
@@ -1024,8 +1044,8 @@ class SkolClassifierV2:
 
         # Extract sections from multiple documents
         sections_df = extractor.extract_from_multiple_documents(
-            database=self.couchdb_database,
-            doc_ids=self.couchdb_doc_ids
+            database=db,
+            doc_ids=doc_ids
         )
 
         # Apply section filter if specified
