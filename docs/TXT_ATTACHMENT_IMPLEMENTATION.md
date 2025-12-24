@@ -248,7 +248,7 @@ Text files work seamlessly with the classifier:
 ```python
 classifier = SkolClassifierV2(
     input_source='couchdb',
-    tokenizer='section',
+    extraction_mode='section',
     # Works with both PDFs and .txt files
 )
 ```

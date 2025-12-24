@@ -13,19 +13,19 @@ Key improvements over SkolClassifier:
 
 Example usage:
 
-    # Train from files, save model to disk (line-level tokenization)
+    # Train from files, save model to disk (line-level extraction)
     classifier = SkolClassifierV2(
         input_source='files',
         file_paths=['data/train/*.txt.ann'],
         model_storage='disk',
         model_path='models/my_model.pkl',
-        tokenizer='line',
+        extraction_mode='line',
         use_suffixes=True,
         model_type='logistic'
     )
     classifier.fit()
 
-    # Predict from CouchDB PDFs with section-level tokenization
+    # Predict from CouchDB PDFs with section-level extraction
     classifier = SkolClassifierV2(
         input_source='couchdb',
         couchdb_url='http://localhost:5984',
@@ -37,7 +37,7 @@ Example usage:
         output_couchdb_suffix='.ann',
         model_storage='disk',
         model_path='models/my_model.pkl',
-        tokenizer='section',
+        extraction_mode='section',
         section_filter=['Introduction', 'Methods', 'Results'],  # Optional filtering
         coalesce_labels=True
     )
@@ -107,10 +107,10 @@ class SkolClassifierV2:
         auto_load_model: Whether to load model from storage on initialization
 
     Processing Configuration:
-        tokenizer: Text tokenization mode ('line', 'paragraph', or 'section')
-                  'line': Process text line-by-line (equivalent to old line_level=True)
-                  'paragraph': Process text by paragraphs (equivalent to old line_level=False)
-                  'section': Use PDF section extraction with section name features
+        extraction_mode: Text extraction granularity ('line', 'paragraph', or 'section')
+                  'line': Extract and process text line-by-line (equivalent to old line_level=True)
+                  'paragraph': Extract and process text by paragraphs (equivalent to old line_level=False)
+                  'section': Extract sections from PDFs with section name features
         section_filter: Optional list of section names to include (for section mode)
                        Example: ['Introduction', 'Methods', 'Results']
         collapse_labels: Whether to collapse similar labels during training
@@ -123,7 +123,7 @@ class SkolClassifierV2:
         word_vocab_size: Maximum vocabulary size for word features (default: 800)
         suffix_vocab_size: Maximum vocabulary size for suffix features (default: 200)
         section_name_vocab_size: Maximum vocabulary size for section name features (default: 50)
-                                Used when tokenizer='section' to create TF-IDF features from section names
+                                Used when extraction_mode='section' to create TF-IDF features from section names
 
     Model Configuration:
         model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted', 'rnn')
@@ -193,7 +193,7 @@ class SkolClassifierV2:
         auto_load_model: bool = False,
 
         # Processing configuration
-        tokenizer: Literal['line', 'paragraph', 'section'] = 'paragraph',
+        extraction_mode: Literal['line', 'paragraph', 'section'] = 'paragraph',
         section_filter: Optional[List[str]] = None,  # Filter by section names (for section mode)
         collapse_labels: bool = True,
         coalesce_labels: bool = False,
@@ -242,7 +242,7 @@ class SkolClassifierV2:
         self.redis_expire = redis_expire
 
         # Processing configuration
-        self.tokenizer = tokenizer
+        self.extraction_mode = extraction_mode
         self.section_filter = section_filter
         self.collapse_labels = collapse_labels
         self.coalesce_labels = coalesce_labels
@@ -283,8 +283,8 @@ class SkolClassifierV2:
 
     @property
     def line_level(self) -> bool:
-        """Backwards compatibility property: returns True if tokenizer is 'line'."""
-        return self.tokenizer == 'line'
+        """Backwards compatibility property: returns True if extraction_mode is 'line'."""
+        return self.extraction_mode == 'line'
 
     def _validate_config(self) -> None:
         """Validate configuration parameters."""
@@ -375,8 +375,8 @@ class SkolClassifierV2:
                     print(f"[Classifier] WARNING: Could not compute weights for strategy '{self.weight_strategy}' - label frequencies not available")
 
         # Build feature pipeline
-        # Enable section name features when using 'section' tokenizer mode
-        use_section_names = (self.tokenizer == 'section')
+        # Enable section name features when using 'section' extraction mode
+        use_section_names = (self.extraction_mode == 'section')
 
         self._feature_extractor = FeatureExtractor(
             use_suffixes=self.use_suffixes,
@@ -765,8 +765,8 @@ class SkolClassifierV2:
 
     def _load_raw_from_files(self) -> DataFrame:
         """Load raw text from local files."""
-        # For 'section' tokenizer mode with PDF files, use PDFSectionExtractor
-        if self.tokenizer == 'section':
+        # For 'section' extraction mode with PDF files, use PDFSectionExtractor
+        if self.extraction_mode == 'section':
             return self._load_sections_from_files()
 
         # For 'line' and 'paragraph' modes, use traditional text loading
@@ -782,8 +782,8 @@ class SkolClassifierV2:
 
     def _load_raw_from_couchdb(self) -> DataFrame:
         """Load raw text from CouchDB."""
-        # For 'section' tokenizer mode, use PDFSectionExtractor
-        if self.tokenizer == 'section':
+        # For 'section' extraction mode, use PDFSectionExtractor
+        if self.extraction_mode == 'section':
             return self._load_sections_from_couchdb()
 
         # For 'line' and 'paragraph' modes, use traditional text loading
@@ -919,7 +919,7 @@ class SkolClassifierV2:
         """
         Load sections from PDF files.
 
-        Note: For 'section' tokenizer mode, PDFs must be stored in CouchDB.
+        Note: For 'section' extraction mode, PDFs must be stored in CouchDB.
         The file_paths parameter is not supported for section mode.
         Use input_source='couchdb' instead.
         """
@@ -1282,7 +1282,7 @@ class SkolClassifierV2:
         metadata = {
             'label_mapping': self._label_mapping,
             'config': {
-                'tokenizer': self.tokenizer,
+                'tokenizer': self.extraction_mode,
                 'use_suffixes': self.use_suffixes,
                 'min_doc_freq': self.min_doc_freq,
                 'model_type': self.model_type,
@@ -1440,7 +1440,7 @@ class SkolClassifierV2:
             metadata = {
                 'label_mapping': self._label_mapping,
                 'config': {
-                    'tokenizer': self.tokenizer,
+                    'tokenizer': self.extraction_mode,
                     'use_suffixes': self.use_suffixes,
                     'min_doc_freq': self.min_doc_freq,
                     'model_type': self.model_type,
