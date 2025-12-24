@@ -6,6 +6,18 @@ All three extraction modes (`'line'`, `'paragraph'`, `'section'`) now use a unif
 
 ## Architecture
 
+### Critical Distinction: Training vs. Prediction
+
+**Training Data** (from `couchdb_training_database`):
+- ALWAYS reads from `.txt.ann` files (YEDDA annotated text)
+- For ALL three extraction modes (line, paragraph, section)
+- PDFs are NEVER used for training
+
+**Prediction Data** (from `couchdb_database`):
+- Reads from PDF files (unannotated documents)
+- Only for section mode (line/paragraph modes use text files)
+- Uses PDFSectionExtractor to extract structure
+
 ### Before Refactoring
 
 **Line/Paragraph modes:**
@@ -22,29 +34,29 @@ PDFSectionExtractor (includes YEDDA parsing) → DataFrame(value, label, section
 
 ### After Refactoring
 
-**All modes now use:**
+**Training (ALL modes):**
 ```
-Raw Data Source → Structural Extractor → AnnotatedTextParser → DataFrame(value, label, ...)
+CouchDBConnection.load_distributed("*.txt.ann")
+  ↓ (raw YEDDA annotated text from training database)
+AnnotatedTextParser(extraction_mode='line'|'paragraph'|'section')
+  ↓ (extracts YEDDA labels + splits text + detects sections)
+DataFrame(doc_id, value, label, section_name)
 ```
 
-**Specific flows:**
+**Prediction:**
 
 **Line/Paragraph modes:**
 ```
-CouchDBConnection.load_distributed()
-  ↓ (raw annotated text)
-AnnotatedTextParser(extraction_mode='line'|'paragraph')
-  ↓ (extracts YEDDA labels + splits text)
-DataFrame(doc_id, value, label, section_name, [line_number])
+CouchDBConnection.load_distributed("*.txt")
+  ↓ (raw unannotated text)
+DataFrame(doc_id, value)
 ```
 
 **Section mode:**
 ```
 PDFSectionExtractor.extract_from_multiple_documents()
-  ↓ (sections with structure, YEDDA preserved in text)
-AnnotatedTextParser(extraction_mode='section')
-  ↓ (extracts YEDDA labels, preserves all metadata)
-DataFrame(doc_id, value, label, section_name, line_number, page_number, ...)
+  ↓ (sections with structure from PDFs)
+DataFrame(doc_id, value, section_name, line_number, page_number, ...)
 ```
 
 ## Key Components
@@ -78,55 +90,70 @@ StructType([
 - Supports three extraction modes:
   - `'line'`: Splits into individual lines
   - `'paragraph'`: Treats each annotation block as a paragraph
-  - `'section'`: Treats input as pre-segmented (preserves structure)
+  - `'section'`: Adaptive behavior (see below)
 
-**Key Method:**
+**Section Mode - Adaptive Behavior:**
+
+Section mode handles both training and prediction data:
+
+1. **Training** (plain `.txt.ann` files):
+   - Input: `DataFrame(doc_id, value=annotated_text)`
+   - Behavior: Parse like paragraphs + detect section names
+   - Output: `DataFrame(doc_id, value, label, section_name)`
+
+2. **Prediction** (pre-segmented from PDFSectionExtractor):
+   - Input: `DataFrame(doc_id, value, line_number, page_number, section_name, ...)`
+   - Behavior: Extract labels only, preserve ALL columns
+   - Output: Same columns + `label`
+
+**Detection Logic:**
 ```python
 def parse(self, df: DataFrame) -> DataFrame:
     if self.extraction_mode == 'section':
-        # Input already segmented, just extract labels
-        # Preserves ALL existing columns
-        return df.withColumn("label", extract_label_udf(col("value")))
-
-    elif self.extraction_mode == 'line':
-        # Extract labels AND split into lines
-        ...
-
-    elif self.extraction_mode == 'paragraph':
-        # Extract labels AND split into paragraphs
-        ...
+        if 'line_number' in df.columns:
+            # Pre-segmented (prediction): just extract labels
+            return df.withColumn("label", extract_label_udf(col("value")))
+        else:
+            # Plain text (training): parse paragraphs + detect sections
+            # Behavior similar to paragraph mode
+            ...
 ```
 
 ### 3. Classifier Integration
 
-**Unified Loading Path** ([classifier_v2.py:888-939](../skol_classifier/classifier_v2.py#L888-L939)):
+**Training Data Loading** ([classifier_v2.py:888-928](../skol_classifier/classifier_v2.py#L888-L928)):
 
 ```python
 def _load_annotated_from_couchdb(self) -> DataFrame:
+    """Load training data from .txt.ann files (ALL modes)."""
     database = self.couchdb_training_database or self.couchdb_database
 
+    # For ALL extraction modes, load from .txt.ann files
+    # PDFs are only used for prediction, not training
+    conn = CouchDBConnection(self.couchdb_url, database, ...)
+    pattern = "*.txt.ann"  # YEDDA annotated text
+    df = conn.load_distributed(self.spark, pattern)
+
+    # Parse annotations using unified AnnotatedTextParser
+    parser = AnnotatedTextParser(
+        extraction_mode=self.extraction_mode,
+        collapse_labels=self.collapse_labels
+    )
+    return parser.parse(df)
+```
+
+**Prediction Data Loading** ([classifier_v2.py:788-820](../skol_classifier/classifier_v2.py#L788-L820)):
+
+```python
+def _load_raw_from_couchdb(self) -> DataFrame:
+    """Load prediction data from CouchDB."""
     if self.extraction_mode == 'section':
-        # Get structure from PDFSectionExtractor
-        sections_df = self._load_sections_from_couchdb(database=database)
-
-        # Extract labels through AnnotatedTextParser
-        parser = AnnotatedTextParser(
-            extraction_mode='section',
-            collapse_labels=self.collapse_labels
-        )
-        return parser.parse(sections_df)
-
-    else:  # 'line' or 'paragraph'
-        # Load raw text
+        # Load from PDFs using PDFSectionExtractor
+        return self._load_sections_from_couchdb()
+    else:
+        # Load from text files for line/paragraph modes
         conn = CouchDBConnection(...)
-        df = conn.load_distributed(self.spark, pattern)
-
-        # Extract labels and split text through AnnotatedTextParser
-        parser = AnnotatedTextParser(
-            extraction_mode=self.extraction_mode,
-            collapse_labels=self.collapse_labels
-        )
-        return parser.parse(df)
+        return conn.load_distributed(self.spark, pattern="*.txt")
 ```
 
 ## Benefits
@@ -151,40 +178,61 @@ def _load_annotated_from_couchdb(self) -> DataFrame:
 - Automatic conversion: `line_level=True` → `extraction_mode='line'`
 - Existing code continues to work
 
-## Data Flow Example
+## Data Flow Examples
 
-### Section Mode Training
+### Training: Section Mode from .txt.ann Files
 
-1. **Load Structure**:
+1. **Load Annotated Text**:
 ```python
-# PDFSectionExtractor extracts sections
-sections_df = extract_from_multiple_documents(...)
-# Columns: value, doc_id, attachment_name, line_number, page_number, section_name
-# value = "[@Introduction\nThis paper describes...#Misc-exposition*]"
+# CouchDBConnection loads .txt.ann files
+conn = CouchDBConnection(...)
+df = conn.load_distributed(spark, "*.txt.ann")
+# Columns: doc_id, attachment_name, value
+# value = "[@Introduction\nThis paper describes...#Misc-exposition*]\n[@Methods\n...#Methods*]"
 ```
 
-2. **Extract Labels**:
+2. **Parse Annotations**:
 ```python
-# AnnotatedTextParser extracts labels
+# AnnotatedTextParser extracts labels and detects sections
 parser = AnnotatedTextParser(extraction_mode='section')
-annotated_df = parser.parse(sections_df)
-# Columns: value, doc_id, attachment_name, line_number, page_number, section_name, label
+annotated_df = parser.parse(df)
+# Columns: doc_id, attachment_name, value, label, section_name
+# value = "Introduction\nThis paper describes..."
 # label = "Misc-exposition"
+# section_name = "Introduction"
 ```
 
-3. **Feature Extraction**:
+3. **Train Model**:
 ```python
-# Features are extracted from text
-featured_df = feature_extractor.fit_transform(annotated_df)
-# line_number preserved through transformations
+# Model learns from (value, label, section_name)
+clf.fit()
 ```
 
-4. **Output Sorting**:
+### Prediction: Section Mode from PDF Files
+
+1. **Extract Structure**:
+```python
+# PDFSectionExtractor extracts sections from PDFs
+extractor = PDFSectionExtractor(...)
+sections_df = extractor.extract_from_multiple_documents(...)
+# Columns: value, doc_id, line_number, page_number, section_name, ...
+# value = "Introduction\nThis paper describes..." (no YEDDA annotations)
+```
+
+2. **Predict Labels**:
+```python
+# Model predicts labels for each section
+predictions_df = clf.predict()
+# Columns: value, doc_id, line_number, page_number, section_name, predicted_label
+```
+
+3. **Output Sorting**:
 ```python
 # CouchDBOutputWriter sorts by line_number when present
 predictions.groupBy(...).agg(
     sort_array(collect_list(struct(line_number, annotated_value)))
 )
+# Results saved back to CouchDB in original document order
 ```
 
 ## Migration Guide

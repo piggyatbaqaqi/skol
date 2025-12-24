@@ -408,30 +408,83 @@ class AnnotatedTextParser:
         from pyspark.sql.types import StructType, StructField, IntegerType
 
         if self.extraction_mode == 'section':
-            # Section-level: Input already has pre-segmented sections with metadata
-            # Just extract YEDDA labels without further splitting
-            def extract_yedda_label(text: str):
-                """Extract label from YEDDA annotation block."""
-                import re
-                # Match YEDDA format: [@ content #Label*]
-                pattern = r'\[@\s*.*?\s*#([^\*]+)\*\]'
-                match = re.search(pattern, text, re.DOTALL)
-                if match:
-                    label = match.group(1).strip()
-                    # Collapse labels if requested
-                    if self.collapse_labels:
-                        label = ParagraphExtractor.collapse_labels(label)
-                    return label
-                return None
+            # Section-level extraction has two modes:
+            # 1. Pre-segmented input (from PDFSectionExtractor): preserve structure, extract labels
+            # 2. Plain text input (from .txt.ann files): parse like paragraphs with section detection
 
-            # UDF to extract label
-            extract_label_udf = udf(extract_yedda_label, StringType())
+            # Check if input has pre-existing structure (line_number column indicates this)
+            if 'line_number' in df.columns:
+                # Pre-segmented: just extract YEDDA labels, preserve all metadata
+                def extract_yedda_label(text: str):
+                    """Extract label from YEDDA annotation block."""
+                    import re
+                    # Match YEDDA format: [@ content #Label*]
+                    pattern = r'\[@\s*.*?\s*#([^\*]+)\*\]'
+                    match = re.search(pattern, text, re.DOTALL)
+                    if match:
+                        label = match.group(1).strip()
+                        # Collapse labels if requested
+                        if self.collapse_labels:
+                            label = ParagraphExtractor.collapse_labels(label)
+                        return label
+                    return None
 
-            # Apply UDF to extract label, preserve all existing columns
-            result_df = df.withColumn("label", extract_label_udf(col("value")))
+                # UDF to extract label
+                extract_label_udf = udf(extract_yedda_label, StringType())
 
-            # Filter out rows without labels (if any)
-            result_df = result_df.filter(col("label").isNotNull())
+                # Apply UDF to extract label, preserve all existing columns
+                result_df = df.withColumn("label", extract_label_udf(col("value")))
+
+                # Filter out rows without labels (if any)
+                result_df = result_df.filter(col("label").isNotNull())
+            else:
+                # Plain text: parse like paragraphs with section detection
+                # This handles training data from .txt.ann files
+                def extract_yedda_paragraphs(text: str):
+                    """Extract paragraphs from YEDDA annotation blocks with section detection."""
+                    import re
+                    results = []
+                    pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
+
+                    for match in re.finditer(pattern, text, re.DOTALL):
+                        content = match.group(1).strip()
+                        label = match.group(2).strip()
+
+                        # Collapse labels if requested
+                        if self.collapse_labels:
+                            label = ParagraphExtractor.collapse_labels(label)
+
+                        # Detect section name from first line of content
+                        first_line = content.split('\n')[0] if content else ""
+                        section_name = AnnotatedTextParser._get_section_name(first_line)
+
+                        if content:
+                            results.append((label, content, section_name))
+
+                    return results
+
+                # UDF to extract paragraphs
+                extract_udf = udf(
+                    extract_yedda_paragraphs,
+                    ArrayType(StructType([
+                        StructField("label", StringType(), False),
+                        StructField("value", StringType(), False),
+                        StructField("section_name", StringType(), True)
+                    ]))
+                )
+
+                # Extract paragraphs and explode
+                result_df = (
+                    df.withColumn("paragraph_data", explode(extract_udf(col("value"))))
+                    .select(
+                        "doc_id",
+                        "human_url",
+                        "attachment_name",
+                        col("paragraph_data.label").alias("label"),
+                        col("paragraph_data.value").alias("value"),
+                        col("paragraph_data.section_name")
+                    )
+                )
 
         elif self.extraction_mode == 'line':
             # Line-level extraction: parse each line from YEDDA blocks

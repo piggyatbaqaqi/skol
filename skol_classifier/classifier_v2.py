@@ -889,6 +889,9 @@ class SkolClassifierV2:
         """Load annotated data from CouchDB.
 
         Uses couchdb_training_database if specified, otherwise uses couchdb_database.
+
+        IMPORTANT: Training data ALWAYS comes from .txt.ann files (YEDDA annotated text),
+        regardless of extraction_mode. PDFs are only used for prediction (unannotated data).
         """
         # Use training database if specified, otherwise use main database
         database = self.couchdb_training_database or self.couchdb_database
@@ -899,22 +902,8 @@ class SkolClassifierV2:
             else:
                 print(f"[Classifier] Loading training data from main database: {database}")
 
-        # For 'section' extraction mode, use PDFSectionExtractor to get structure,
-        # then pass through AnnotatedTextParser to extract labels
-        if self.extraction_mode == 'section':
-            # Get pre-segmented sections with structure metadata
-            sections_df = self._load_sections_from_couchdb(database=database)
-
-            # Parse YEDDA labels using unified AnnotatedTextParser
-            from .preprocessing import AnnotatedTextParser
-            parser = AnnotatedTextParser(
-                extraction_mode='section',
-                collapse_labels=self.collapse_labels
-            )
-            return parser.parse(sections_df)
-
-        # For 'line' and 'paragraph' modes, use traditional text loading
-        # Load raw annotations from CouchDB
+        # For ALL extraction modes, load from .txt.ann files (annotated text)
+        # PDFs are only used for prediction, not training
         conn = CouchDBConnection(
             self.couchdb_url,
             database,
