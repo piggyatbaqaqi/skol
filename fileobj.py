@@ -106,4 +106,4 @@ class FileObject(ABC):
 
     def human_url(self) -> Optional[str]:
         """URL or source location for this file object."""
-        return self.filename
+        return None
