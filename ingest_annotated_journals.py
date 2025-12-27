@@ -15,14 +15,14 @@ from typing import Dict, Optional, Tuple
 import argparse
 
 
-class JournalIngester:
+class JournalIngestor:
     """Ingest annotated journal files into CouchDB."""
 
     def __init__(self, couchdb_url: str, username: str, password: str,
                  database_name: str = 'skol_training', verbosity: int = 1,
                  local_pdf_root: Optional[str] = None):
         """
-        Initialize the ingester.
+        Initialize the ingestor.
 
         Args:
             couchdb_url: CouchDB server URL
@@ -441,8 +441,8 @@ def main():
     # Set verbosity
     verbosity = 0 if args.quiet else args.verbose
 
-    # Create ingester
-    ingester = JournalIngester(
+    # Create ingestor
+    ingestor = JournalIngestor(
         couchdb_url=args.couchdb_url,
         username=args.username,
         password=args.password,
@@ -452,7 +452,7 @@ def main():
     )
 
     # Ingest directory
-    stats = ingester.ingest_directory(
+    stats = ingestor.ingest_directory(
         base_dir=args.data_dir,
         overwrite=args.overwrite
     )
@@ -468,7 +468,7 @@ def main():
         if args.pdf_dir:
             print(f"  PDFs attached:         {stats['pdfs_attached']}")
         print(f"\nDatabase: {args.database}")
-        print(f"Documents in database: {len(ingester.db)}")
+        print(f"Documents in database: {len(ingestor.db)}")
 
 
 if __name__ == '__main__':
