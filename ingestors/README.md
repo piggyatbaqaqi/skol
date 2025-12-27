@@ -32,10 +32,19 @@ python -m ingestors.main --source ingenta \
   --rss https://api.ingentaconnect.com/content/wfbi/sim?format=rss \
   -v 0
 
-# Custom database and CouchDB URL
+# Custom database and CouchDB URL with credentials
 python -m ingestors.main --source ingenta \
   --couchdb-url http://localhost:5984 \
+  --couchdb-username myuser \
+  --couchdb-password mypass \
   --database my_database \
+  --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
+
+# Using environment variables for credentials
+export COUCHDB_URL=http://localhost:5984
+export COUCHDB_USER=myuser
+export COUCHDB_PASSWORD=mypass
+python -m ingestors.main --source ingenta \
   --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
 ```
 
@@ -52,13 +61,25 @@ python -m ingestors.main --source ingenta \
 --source {ingenta}        Data source to ingest from (required)
 --rss URL                 RSS feed URL to ingest from
 --local DIR               Local directory containing BibTeX files
---couchdb-url URL         CouchDB server URL (default: http://localhost:5984)
+--couchdb-url URL         CouchDB server URL (default: $COUCHDB_URL or http://localhost:5984)
+--couchdb-username USER   CouchDB username (default: $COUCHDB_USER)
+--couchdb-password PASS   CouchDB password (default: $COUCHDB_PASSWORD)
 --database NAME           CouchDB database name (default: skol_dev)
 --user-agent STRING       User agent for HTTP requests (default: synoptickeyof.life)
 --robots-url URL          Custom robots.txt URL
 --bibtex-pattern PATTERN  Filename pattern for BibTeX files (default: format=bib)
 -v, --verbosity {0,1,2,3} Verbosity level (default: 2)
 ```
+
+### Environment Variables
+
+The following environment variables are supported:
+
+- `COUCHDB_URL` - CouchDB server URL (overridden by `--couchdb-url`)
+- `COUCHDB_USER` - CouchDB username (overridden by `--couchdb-username`)
+- `COUCHDB_PASSWORD` - CouchDB password (overridden by `--couchdb-password`)
+
+Environment variables provide a convenient way to avoid exposing credentials in command-line arguments.
 
 ## Programmatic Usage
 

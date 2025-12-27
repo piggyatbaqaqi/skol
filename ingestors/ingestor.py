@@ -66,6 +66,18 @@ class Ingestor(ABC):
         """
         return base_url
 
+    def format_human_url(self, base_url: str) -> str:
+        """
+        Format human-readable URL according to source-specific requirements.
+
+        Args:
+            base_url: The base URL from the BibTeX entry
+
+        Returns:
+            Formatted human-readable URL
+        """
+        return base_url
+
     def transform_bibtex_content(self, content: bytes) -> bytes:
         """
         Apply source-specific transformations to BibTeX content.
@@ -111,6 +123,7 @@ class Ingestor(ABC):
                 '_id': uuid4().hex,
                 'meta': meta,
                 'pdf_url': self.format_pdf_url(bib_entry['url']),
+                'human_url': self.format_human_url(bib_entry['url']),
             }
 
             # Check if document already exists

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Main entry point for ingesting data into CouchDB.
 
@@ -6,14 +7,25 @@ various sources using different ingestor implementations.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Optional
 from urllib.robotparser import RobotFileParser
 
+# Add parent directory to path for direct script execution
+if __name__ == '__main__' and __package__ is None:
+    parent_dir = str(Path(__file__).resolve().parent.parent)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+
 import couchdb
 
-from ingestors.ingenta import IngentaIngestor
+# Support both direct execution and module execution
+try:
+    from .ingenta import IngentaIngestor
+except ImportError:
+    from ingestors.ingenta import IngentaIngestor
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -40,6 +52,13 @@ Examples:
   # Ingest from local BibTeX files
   %(prog)s --source ingenta --local /data/skol/www/www.ingentaconnect.com
 
+  # With credentials from command line
+  %(prog)s --source ingenta --rss <url> --couchdb-username user --couchdb-password pass
+
+  # With credentials from environment variables
+  export COUCHDB_USER=myuser COUCHDB_PASSWORD=mypass
+  %(prog)s --source ingenta --rss <url>
+
   # Silent mode
   %(prog)s --source ingenta --rss <url> --verbosity 0
 
@@ -52,8 +71,20 @@ Examples:
     parser.add_argument(
         '--couchdb-url',
         type=str,
-        default='http://localhost:5984',
-        help='CouchDB server URL (default: http://localhost:5984)'
+        default=os.environ.get('COUCHDB_URL', 'http://localhost:5984'),
+        help='CouchDB server URL (default: $COUCHDB_URL or http://localhost:5984)'
+    )
+    parser.add_argument(
+        '--couchdb-username',
+        type=str,
+        default=os.environ.get('COUCHDB_USER'),
+        help='CouchDB username (default: $COUCHDB_USER)'
+    )
+    parser.add_argument(
+        '--couchdb-password',
+        type=str,
+        default=os.environ.get('COUCHDB_PASSWORD'),
+        help='CouchDB password (default: $COUCHDB_PASSWORD)'
     )
     parser.add_argument(
         '--database',
@@ -150,7 +181,16 @@ def main() -> int:
         # Connect to CouchDB
         if args.verbosity >= 2:
             print(f"Connecting to CouchDB at {args.couchdb_url}...")
-        couch = couchdb.Server(args.couchdb_url)
+
+        # Create server connection with credentials if provided
+        if args.couchdb_username and args.couchdb_password:
+            couch = couchdb.Server(args.couchdb_url)
+            couch.resource.credentials = (args.couchdb_username, args.couchdb_password)
+            if args.verbosity >= 3:
+                print(f"Using credentials for user: {args.couchdb_username}")
+        else:
+            couch = couchdb.Server(args.couchdb_url)
+
         db = couch[args.database]
         if args.verbosity >= 2:
             print(f"Using database: {args.database}")
