@@ -9,17 +9,64 @@ ingestors/
 ├── __init__.py              # Package exports
 ├── ingestor.py              # Base Ingestor class (abstract)
 ├── ingenta.py               # IngentaConnect implementation
-├── main.py                  # Usage examples
+├── main.py                  # CLI entry point
 └── README.md                # This file
 ```
 
-## Usage
+## Command Line Usage
+
+The easiest way to use the ingestors is through the CLI:
+
+```bash
+# Ingest from Ingenta RSS feed (normal verbosity)
+python -m ingestors.main --source ingenta \
+  --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
+
+# Ingest from local BibTeX files (verbose mode)
+python -m ingestors.main --source ingenta \
+  --local /data/skol/www/www.ingentaconnect.com \
+  --verbosity 3
+
+# Silent mode (no output except errors)
+python -m ingestors.main --source ingenta \
+  --rss https://api.ingentaconnect.com/content/wfbi/sim?format=rss \
+  -v 0
+
+# Custom database and CouchDB URL
+python -m ingestors.main --source ingenta \
+  --couchdb-url http://localhost:5984 \
+  --database my_database \
+  --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
+```
+
+### Verbosity Levels
+
+- `0` - Silent (no output except errors)
+- `1` - Warnings only (robot denials, errors)
+- `2` - Normal (default: skip and add messages)
+- `3` - Verbose (includes URLs and separators)
+
+### CLI Options
+
+```
+--source {ingenta}        Data source to ingest from (required)
+--rss URL                 RSS feed URL to ingest from
+--local DIR               Local directory containing BibTeX files
+--couchdb-url URL         CouchDB server URL (default: http://localhost:5984)
+--database NAME           CouchDB database name (default: skol_dev)
+--user-agent STRING       User agent for HTTP requests (default: synoptickeyof.life)
+--robots-url URL          Custom robots.txt URL
+--bibtex-pattern PATTERN  Filename pattern for BibTeX files (default: format=bib)
+-v, --verbosity {0,1,2,3} Verbosity level (default: 2)
+```
+
+## Programmatic Usage
 
 ```python
 from pathlib import Path
 from urllib.robotparser import RobotFileParser
 import couchdb
-from ingestors.ingenta import IngentaIngestor
+from ingestors import IngentaIngestor
 
 # Set up dependencies
 couch = couchdb.Server('http://localhost:5984')
@@ -30,11 +77,12 @@ robot_parser = RobotFileParser()
 robot_parser.set_url("https://www.ingentaconnect.com/robots.txt")
 robot_parser.read()
 
-# Create ingestor
+# Create ingestor with verbosity control
 ingestor = IngentaIngestor(
     db=db,
     user_agent=user_agent,
-    robot_parser=robot_parser
+    robot_parser=robot_parser,
+    verbosity=2  # 0=silent, 1=warnings, 2=normal, 3=verbose
 )
 
 # Ingest from RSS feed
@@ -53,15 +101,16 @@ ingestor.ingest_from_local_bibtex(
 To create an ingestor for a new data source:
 
 1. Subclass `Ingestor` from `ingestor.py`
-2. Implement the two abstract methods:
+2. Implement the two methods (default implementations exist but may need overriding):
    - `format_pdf_url(base_url: str) -> str` - Format PDF URLs for your source
    - `transform_bibtex_content(content: bytes) -> bytes` - Fix any source-specific syntax issues
 3. Optionally override `ingest_from_local_bibtex()` to provide source-specific defaults
+4. The `verbosity` parameter is automatically inherited from the base class
 
 Example:
 
 ```python
-from ingesters.ingestor import Ingestor
+from ingestors.ingestor import Ingestor
 
 class ArXivIngestor(Ingestor):
     def format_pdf_url(self, base_url: str) -> str:
@@ -71,7 +120,20 @@ class ArXivIngestor(Ingestor):
     def transform_bibtex_content(self, content: bytes) -> bytes:
         # ArXiv BibTeX is clean, no transformation needed
         return content
+
+# Usage
+ingestor = ArXivIngestor(
+    db=db,
+    user_agent=user_agent,
+    robot_parser=robot_parser,
+    verbosity=2
+)
 ```
+
+All print statements in your custom methods should check `self.verbosity`:
+- `self.verbosity >= 1` - Warnings and errors
+- `self.verbosity >= 2` - Normal progress messages
+- `self.verbosity >= 3` - Verbose/debug output
 
 ## Type Safety
 

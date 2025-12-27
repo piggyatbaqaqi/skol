@@ -31,12 +31,14 @@ class Ingestor(ABC):
     db: couchdb.Database
     user_agent: str
     robot_parser: RobotFileParser
+    verbosity: int
 
     def __init__(
         self,
         db: couchdb.Database,
         user_agent: str,
-        robot_parser: RobotFileParser
+        robot_parser: RobotFileParser,
+        verbosity: int = 2
     ) -> None:
         """
         Initialize the Ingestor.
@@ -45,12 +47,13 @@ class Ingestor(ABC):
             db: CouchDB database instance for storing documents
             user_agent: User agent string for HTTP requests
             robot_parser: Robot file parser for checking crawl permissions
+            verbosity: Verbosity level (0=silent, 1=warnings, 2=normal, 3=verbose)
         """
         self.db = db
         self.user_agent = user_agent
         self.robot_parser = robot_parser
+        self.verbosity = verbosity
 
-    @abstractmethod
     def format_pdf_url(self, base_url: str) -> str:
         """
         Format a PDF URL according to source-specific requirements.
@@ -61,9 +64,8 @@ class Ingestor(ABC):
         Returns:
             Formatted PDF URL ready for fetching
         """
-        pass
+        return base_url
 
-    @abstractmethod
     def transform_bibtex_content(self, content: bytes) -> bytes:
         """
         Apply source-specific transformations to BibTeX content.
@@ -76,7 +78,7 @@ class Ingestor(ABC):
         Returns:
             Transformed BibTeX content ready for parsing
         """
-        pass
+        return content
 
     def ingest_from_bibtex(
         self,
@@ -117,16 +119,19 @@ class Ingestor(ABC):
             for e in self.db.find(selector):
                 found = True
             if found:
-                print(f"Skipping {doc['pdf_url']}")
+                if self.verbosity >= 2:
+                    print(f"Skipping {doc['pdf_url']}")
                 continue
 
             # Check robot permissions
             if not self.robot_parser.can_fetch(self.user_agent, doc['pdf_url']):
                 # TODO(piggy): We should probably log blocked URLs.
-                print(f"Robot permission denied {doc['pdf_url']}")
+                if self.verbosity >= 1:
+                    print(f"Robot permission denied {doc['pdf_url']}")
                 continue
 
-            print(f"Adding {doc['pdf_url']}")
+            if self.verbosity >= 2:
+                print(f"Adding {doc['pdf_url']}")
 
             # Add all BibTeX fields to document
             for k in bib_entry.fields_dict.keys():
@@ -151,7 +156,8 @@ class Ingestor(ABC):
                 attachment_content_type
             )
 
-            print("-" * 10)
+            if self.verbosity >= 3:
+                print("-" * 10)
 
     def ingest_from_rss(
         self,
@@ -191,11 +197,13 @@ class Ingestor(ABC):
             else:
                 bibtex_link = f'{entry.link}?format=bib'
 
-            print(f"bibtex_link: {bibtex_link}")
+            if self.verbosity >= 3:
+                print(f"bibtex_link: {bibtex_link}")
 
             # Check robot permissions
             if not self.robot_parser.can_fetch(self.user_agent, bibtex_link):
-                print(f"Robot permission denied {bibtex_link}")
+                if self.verbosity >= 1:
+                    print(f"Robot permission denied {bibtex_link}")
                 continue
 
             # Fetch BibTeX file
@@ -210,7 +218,8 @@ class Ingestor(ABC):
                         'entry': entry_meta,
                     }
                 )
-            print("=" * 20)
+            if self.verbosity >= 3:
+                print("=" * 20)
 
     def ingest_from_local_bibtex(
         self,
