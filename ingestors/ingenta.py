@@ -29,11 +29,21 @@ class IngentaIngestor(Ingestor):
         """
         return f"{base_url}?crawler=true"
 
+    def format_human_url(self, base_url: str) -> str:
+        """
+        Format human-readable URL for Ingenta.
+
+        Args:
+            base_url: The base URL from the BibTeX entry
+        """
+        return base_url
+
     def transform_bibtex_content(self, content: bytes) -> bytes:
         """
         Fix Ingenta-specific BibTeX syntax issues.
 
         Ingenta BibTeX files have syntax problems that need correction:
+        - Missing commas between url and parent_itemid fields
         - Missing commas before 'parent' field
         - Embedded newlines that break parsing
 
@@ -45,7 +55,12 @@ class IngentaIngestor(Ingestor):
         """
         return (
             content
+            # Fix url field running into parent_itemid field
+            .replace(b"\"\nparent_itemid", b"\",\nparent_itemid")
+            .replace(b"\"\\nparent_itemid", b"\",\\nparent_itemid")
+            # Fix other parent field issues
             .replace(b"\"\\nparent", b"\",\\nparent")
+            # Remove remaining embedded newlines
             .replace(b"\\n", b"")
         )
 
