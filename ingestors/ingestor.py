@@ -9,7 +9,7 @@ import os
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from urllib.robotparser import RobotFileParser
 
 import bibtexparser
@@ -54,7 +54,20 @@ class Ingestor(ABC):
         self.robot_parser = robot_parser
         self.verbosity = verbosity
 
-    def format_pdf_url(self, base_url: str) -> str:
+
+    def format_bibtex_url(self, base: Dict[str, str], bibtex_link: Optional[str]) -> Optional[str]:
+        """
+        Format the BibTeX URL for a given entry.
+
+        Args:
+            base: The base dictionary from the BibTeX entry
+            bibtex_link: The original BibTeX link
+        Returns:
+            Formatted BibTeX URL
+        """
+        return bibtex_link
+
+    def format_pdf_url(self, base: Dict[str, str]) -> str:
         """
         Format a PDF URL according to source-specific requirements.
 
@@ -64,9 +77,9 @@ class Ingestor(ABC):
         Returns:
             Formatted PDF URL ready for fetching
         """
-        return base_url
+        return base['url']
 
-    def format_human_url(self, base_url: str) -> str:
+    def format_human_url(self, base: Dict[str, str]) -> str:
         """
         Format human-readable URL according to source-specific requirements.
 
@@ -76,7 +89,7 @@ class Ingestor(ABC):
         Returns:
             Formatted human-readable URL
         """
-        return base_url
+        return base['url']
 
     def transform_bibtex_content(self, content: bytes) -> bytes:
         """
@@ -91,6 +104,81 @@ class Ingestor(ABC):
             Transformed BibTeX content ready for parsing
         """
         return content
+
+    def _ingest_documents(
+        self,
+        documents: List[Dict[str, Any]],
+        meta: Dict[str, Any],
+        bibtex_link: str
+    ) -> None:
+        """
+        Process and ingest a list of document dictionaries.
+
+        This method handles the core ingestion logic: checking for duplicates,
+        verifying robot permissions, saving to CouchDB, and fetching PDFs.
+        It treats the document dictionaries as opaque data structures.
+
+        Args:
+            documents: List of document dictionaries with arbitrary fields
+            meta: Metadata dictionary to attach to each document
+            bibtex_link: URL or path to the BibTeX file
+        """
+        for doc_dict in documents:
+            # Create document with formatted URLs
+            doc = {
+                '_id': uuid4().hex,
+                'meta': meta,
+                'bibtex_url': self.format_bibtex_url(doc_dict, bibtex_link),
+                'pdf_url': self.format_pdf_url(doc_dict),
+                'human_url': self.format_human_url(doc_dict),
+            }
+
+            # Add all fields from source dictionary
+            for k, v in doc_dict.items():
+                doc[k] = v
+
+            # Check if document already exists
+            selector = {'selector': {'pdf_url': doc['pdf_url']}}
+            found = False
+            for _ in self.db.find(selector):
+                found = True
+                break
+            if found:
+                if self.verbosity >= 2:
+                    print(f"Skipping {doc['pdf_url']}")
+                continue
+
+            # Check robot permissions
+            if not self.robot_parser.can_fetch(self.user_agent, doc['pdf_url']):
+                # TODO(piggy): We should probably log blocked URLs.
+                if self.verbosity >= 1:
+                    print(f"Robot permission denied {doc['pdf_url']}")
+                continue
+
+            if self.verbosity >= 2:
+                print(f"Adding {doc['pdf_url']}")
+
+            # Save document to CouchDB
+            _doc_id, _doc_rev = self.db.save(doc)
+
+            # Fetch and attach PDF
+            with requests.get(doc['pdf_url'], stream=False) as pdf_f:
+                pdf_f.raise_for_status()
+                pdf_doc = pdf_f.content
+
+            attachment_filename = 'article.pdf'
+            attachment_content_type = 'application/pdf'
+            attachment_file = BytesIO(pdf_doc)
+
+            self.db.put_attachment(
+                doc,
+                attachment_file,
+                attachment_filename,
+                attachment_content_type
+            )
+
+            if self.verbosity >= 3:
+                print("-" * 10)
 
     def ingest_from_bibtex(
         self,
@@ -112,65 +200,17 @@ class Ingestor(ABC):
         # Parse BibTeX
         bib_database = bibtexparser.parse_string(transformed_content.decode('utf-8'))
 
-        bibtex_data = {
-            'link': bibtex_link,
-            'bibtex': bibtexparser.write_string(bib_database),
-        }
-
+        # Extract all BibTeX fields into plain dictionaries first
+        # This loop runs before processing to make documents opaque
+        documents = []
         for bib_entry in bib_database.entries:
-            # Create document with formatted PDF URL
-            doc = {
-                '_id': uuid4().hex,
-                'meta': meta,
-                'pdf_url': self.format_pdf_url(bib_entry['url']),
-                'human_url': self.format_human_url(bib_entry['url']),
-            }
-
-            # Check if document already exists
-            selector = {'selector': {'pdf_url': doc['pdf_url']}}
-            found = False
-            for e in self.db.find(selector):
-                found = True
-            if found:
-                if self.verbosity >= 2:
-                    print(f"Skipping {doc['pdf_url']}")
-                continue
-
-            # Check robot permissions
-            if not self.robot_parser.can_fetch(self.user_agent, doc['pdf_url']):
-                # TODO(piggy): We should probably log blocked URLs.
-                if self.verbosity >= 1:
-                    print(f"Robot permission denied {doc['pdf_url']}")
-                continue
-
-            if self.verbosity >= 2:
-                print(f"Adding {doc['pdf_url']}")
-
-            # Add all BibTeX fields to document
+            doc_dict = {}
             for k in bib_entry.fields_dict.keys():
-                doc[k] = bib_entry[k]
+                doc_dict[k] = bib_entry[k]
+            documents.append(doc_dict)
 
-            # Save document to CouchDB
-            doc_id, doc_rev = self.db.save(doc)
-
-            # Fetch and attach PDF
-            with requests.get(doc['pdf_url'], stream=False) as pdf_f:
-                pdf_f.raise_for_status()
-                pdf_doc = pdf_f.content
-
-            attachment_filename = 'article.pdf'
-            attachment_content_type = 'application/pdf'
-            attachment_file = BytesIO(pdf_doc)
-
-            self.db.put_attachment(
-                doc,
-                attachment_file,
-                attachment_filename,
-                attachment_content_type
-            )
-
-            if self.verbosity >= 3:
-                print("-" * 10)
+        # Process all documents through generic ingestion pipeline
+        self._ingest_documents(documents, meta, bibtex_link)
 
     def ingest_from_rss(
         self,
@@ -248,7 +288,7 @@ class Ingestor(ABC):
             bibtex_file_pattern: Filename pattern to match BibTeX files
             url_prefix: URL prefix to construct bibtex_link from file path
         """
-        for dirpath, dirnames, filenames in os.walk(root):
+        for dirpath, _dirnames, filenames in os.walk(root):
             for filename in filenames:
                 if not filename.endswith(bibtex_file_pattern):
                     continue

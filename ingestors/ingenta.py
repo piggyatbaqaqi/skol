@@ -6,6 +6,7 @@ IngentaConnect RSS feeds and local BibTeX files.
 """
 
 from pathlib import Path
+from typing import Dict
 
 from .ingestor import Ingestor
 
@@ -17,7 +18,7 @@ class IngentaIngestor(Ingestor):
     Handles Ingenta-specific URL formatting and BibTeX content transformations.
     """
 
-    def format_pdf_url(self, base_url: str) -> str:
+    def format_pdf_url(self, base: Dict[str, str]) -> str:
         """
         Format PDF URL for Ingenta with crawler parameter.
 
@@ -27,16 +28,16 @@ class IngentaIngestor(Ingestor):
         Returns:
             URL with ?crawler=true appended
         """
-        return f"{base_url}?crawler=true"
+        return f"{base['url']}?crawler=true"
 
-    def format_human_url(self, base_url: str) -> str:
+    def format_human_url(self, base: Dict[str, str]) -> str:
         """
         Format human-readable URL for Ingenta.
 
         Args:
             base_url: The base URL from the BibTeX entry
         """
-        return base_url
+        return base['url']
 
     def transform_bibtex_content(self, content: bytes) -> bytes:
         """
