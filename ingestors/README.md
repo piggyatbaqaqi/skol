@@ -8,7 +8,8 @@ This package provides classes for ingesting web data into CouchDB from various s
 ingestors/
 ├── __init__.py              # Package exports
 ├── ingestor.py              # Base Ingestor class (abstract)
-├── ingenta.py               # IngentaConnect implementation
+├── ingenta.py               # IngentaConnect RSS implementation
+├── local_ingenta.py         # Local IngentaConnect mirror implementation
 ├── main.py                  # CLI entry point
 └── README.md                # This file
 ```
@@ -102,8 +103,9 @@ Environment variables provide a convenient way to avoid exposing credentials in 
 
 ## Programmatic Usage
 
+### Ingesting from RSS feeds
+
 ```python
-from pathlib import Path
 from urllib.robotparser import RobotFileParser
 import couchdb
 from ingestors import IngentaIngestor
@@ -129,8 +131,36 @@ ingestor = IngentaIngestor(
 ingestor.ingest_from_rss(
     rss_url='https://api.ingentaconnect.com/content/mtax/mt?format=rss'
 )
+```
+
+### Ingesting from local mirror
+
+```python
+from pathlib import Path
+from urllib.robotparser import RobotFileParser
+import couchdb
+from ingestors import LocalIngentaIngestor
+
+# Set up dependencies
+couch = couchdb.Server('http://localhost:5984')
+db = couch['skol_dev']
+
+user_agent = "synoptickeyof.life"
+robot_parser = RobotFileParser()
+robot_parser.set_url("https://www.ingentaconnect.com/robots.txt")
+robot_parser.read()
+
+# Create ingestor for local mirror
+ingestor = LocalIngentaIngestor(
+    db=db,
+    user_agent=user_agent,
+    robot_parser=robot_parser,
+    verbosity=2
+)
 
 # Ingest from local BibTeX files
+# Converts /data/skol/www/www.ingentaconnect.com/* to
+# https://www.ingentaconnect.com/*
 ingestor.ingest_from_local_bibtex(
     root=Path("/data/skol/www/www.ingentaconnect.com")
 )
