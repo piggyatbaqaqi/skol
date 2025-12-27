@@ -28,6 +28,29 @@ except ImportError:
     from ingestors.ingenta import IngentaIngestor
 
 
+# Predefined ingestion sources from ist769_skol.ipynb
+SOURCES = {
+    'mycotaxon': {
+        'name': 'Mycotaxon',
+        'source': 'ingenta',
+        'mode': 'rss',
+        'rss_url': 'https://api.ingentaconnect.com/content/mtax/mt?format=rss',
+    },
+    'studies-in-mycology': {
+        'name': 'Studies in Mycology',
+        'source': 'ingenta',
+        'mode': 'rss',
+        'rss_url': 'https://api.ingentaconnect.com/content/wfbi/sim?format=rss',
+    },
+    'ingenta-local': {
+        'name': 'Ingenta Local BibTeX Files',
+        'source': 'ingenta',
+        'mode': 'local',
+        'local_path': '/data/skol/www/www.ingentaconnect.com',
+    },
+}
+
+
 def create_parser() -> argparse.ArgumentParser:
     """
     Create and configure the argument parser.
@@ -46,24 +69,29 @@ Verbosity levels:
   3 - Verbose (includes URLs and separators)
 
 Examples:
-  # Ingest from Ingenta RSS feed
+  # Ingest from a specific publication source
+  %(prog)s --publication mycotaxon
+  %(prog)s --publication studies-in-mycology
+  %(prog)s --publication ingenta-local
+
+  # Ingest from all predefined sources
+  %(prog)s --all
+
+  # Ingest from custom RSS feed
   %(prog)s --source ingenta --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
 
-  # Ingest from local BibTeX files
+  # Ingest from custom local directory
   %(prog)s --source ingenta --local /data/skol/www/www.ingentaconnect.com
-
-  # With credentials from command line
-  %(prog)s --source ingenta --rss <url> --couchdb-username user --couchdb-password pass
 
   # With credentials from environment variables
   export COUCHDB_USER=myuser COUCHDB_PASSWORD=mypass
-  %(prog)s --source ingenta --rss <url>
+  %(prog)s --all
 
   # Silent mode
-  %(prog)s --source ingenta --rss <url> --verbosity 0
+  %(prog)s --publication mycotaxon --verbosity 0
 
   # Verbose mode
-  %(prog)s --source ingenta --rss <url> -v 3
+  %(prog)s --all -v 3
         """
     )
 
@@ -93,13 +121,12 @@ Examples:
         help='CouchDB database name (default: skol_dev)'
     )
 
-    # Ingestor selection
+    # Ingestor selection (only required for --rss or --local)
     parser.add_argument(
         '--source',
         type=str,
-        required=True,
         choices=['ingenta'],
-        help='Data source to ingest from'
+        help='Data source to ingest from (required with --rss or --local)'
     )
 
     # Ingestion mode (mutually exclusive)
@@ -115,6 +142,23 @@ Examples:
         type=Path,
         metavar='DIR',
         help='Local directory containing BibTeX files'
+    )
+    mode_group.add_argument(
+        '--publication',
+        type=str,
+        metavar='KEY',
+        choices=list(SOURCES.keys()),
+        help=f'Use predefined source: {", ".join(SOURCES.keys())}'
+    )
+    mode_group.add_argument(
+        '--all',
+        action='store_true',
+        help='Ingest from all predefined sources'
+    )
+    mode_group.add_argument(
+        '--list-publications',
+        action='store_true',
+        help='List all available publication sources and exit'
     )
 
     # Optional arguments
@@ -167,6 +211,93 @@ def get_robots_url(source: str, custom_url: Optional[str]) -> str:
     return robots_urls.get(source, '')
 
 
+def run_ingestion(
+    db: couchdb.Database,
+    source: str,
+    mode: str,
+    rss_url: Optional[str] = None,
+    local_path: Optional[Path] = None,
+    user_agent: str = 'synoptickeyof.life',
+    robots_url: Optional[str] = None,
+    bibtex_pattern: str = 'format=bib',
+    verbosity: int = 2
+) -> None:
+    """
+    Run a single ingestion task.
+
+    Args:
+        db: CouchDB database instance
+        source: Source type ('ingenta', etc.)
+        mode: Ingestion mode ('rss' or 'local')
+        rss_url: RSS feed URL (required if mode='rss')
+        local_path: Local directory path (required if mode='local')
+        user_agent: User agent string
+        robots_url: Custom robots.txt URL
+        bibtex_pattern: BibTeX filename pattern
+        verbosity: Verbosity level
+    """
+    # Set up robot parser
+    robots_url_final = get_robots_url(source, robots_url)
+    if verbosity >= 3:
+        print(f"Loading robots.txt from {robots_url_final}")
+    robot_parser = RobotFileParser()
+    robot_parser.set_url(robots_url_final)
+    robot_parser.read()
+
+    # Create appropriate ingestor
+    if source == 'ingenta':
+        ingestor = IngentaIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity
+        )
+    else:
+        raise ValueError(f"Unknown source '{source}'")
+
+    # Perform ingestion
+    if mode == 'rss':
+        if not rss_url:
+            raise ValueError("rss_url required for RSS mode")
+        if verbosity >= 2:
+            print(f"Ingesting from RSS feed: {rss_url}")
+        ingestor.ingest_from_rss(rss_url=rss_url)
+    elif mode == 'local':
+        if not local_path:
+            raise ValueError("local_path required for local mode")
+        if verbosity >= 2:
+            print(f"Ingesting from local directory: {local_path}")
+        ingestor.ingest_from_local_bibtex(
+            root=local_path,
+            bibtex_file_pattern=bibtex_pattern
+        )
+    else:
+        raise ValueError(f"Unknown mode '{mode}'")
+
+
+def list_publications() -> None:
+    """Print a table of all available publication sources."""
+    print("\nAvailable publication Sources:")
+    print("=" * 80)
+    print(f"{'Key':<25} {'Name':<30} {'Type':<10} {'Details':<15}")
+    print("-" * 80)
+
+    for key, config in SOURCES.items():
+        source_type = config['mode'].upper()
+        if config['mode'] == 'rss':
+            details = config['rss_url'].split('/')[-1][:15]
+        else:
+            details = "Local files"
+        print(f"{key:<25} {config['name']:<30} {source_type:<10} {details:<15}")
+
+    print("=" * 80)
+    print(f"\nTotal: {len(SOURCES)} publication sources")
+    print("\nUsage:")
+    print("  Single publication:  ./main.py --publication <key>")
+    print("  All publications:    ./main.py --all")
+    print()
+
+
 def main() -> int:
     """
     Main entry point for the ingestor CLI.
@@ -176,6 +307,15 @@ def main() -> int:
     """
     parser = create_parser()
     args = parser.parse_args()
+
+    # Handle --list-publications
+    if args.list_publications:
+        list_publications()
+        return 0
+
+    # Validate --source is provided when needed
+    if (args.rss or args.local) and not args.source:
+        parser.error("--source is required when using --rss or --local")
 
     try:
         # Connect to CouchDB
@@ -195,41 +335,72 @@ def main() -> int:
         if args.verbosity >= 2:
             print(f"Using database: {args.database}")
 
-        # Set up robot parser
-        robots_url = get_robots_url(args.source, args.robots_url)
-        if args.verbosity >= 3:
-            print(f"Loading robots.txt from {robots_url}")
-        robot_parser = RobotFileParser()
-        robot_parser.set_url(robots_url)
-        robot_parser.read()
+        # Handle different ingestion modes
+        if args.all:
+            # Ingest from all predefined sources
+            if args.verbosity >= 2:
+                print(f"Ingesting from all {len(SOURCES)} predefined sources...")
+            for key, config in SOURCES.items():
+                if args.verbosity >= 2:
+                    print(f"\n{'=' * 60}")
+                    print(f"Processing: {config['name']} ({key})")
+                    print(f"{'=' * 60}")
 
-        # Create appropriate ingestor
-        if args.source == 'ingenta':
-            ingestor = IngentaIngestor(
+                run_ingestion(
+                    db=db,
+                    source=config['source'],
+                    mode=config['mode'],
+                    rss_url=config.get('rss_url'),
+                    local_path=Path(config['local_path']) if config.get('local_path') else None,
+                    user_agent=args.user_agent,
+                    robots_url=args.robots_url,
+                    bibtex_pattern=args.bibtex_pattern,
+                    verbosity=args.verbosity
+                )
+        elif args.publication:
+            # Use predefined source
+            config = SOURCES[args.publication]
+            if args.verbosity >= 2:
+                print(f"Using publication: {config['name']}")
+
+            run_ingestion(
                 db=db,
+                source=config['source'],
+                mode=config['mode'],
+                rss_url=config.get('rss_url'),
+                local_path=Path(config['local_path']) if config.get('local_path') else None,
                 user_agent=args.user_agent,
-                robot_parser=robot_parser,
+                robots_url=args.robots_url,
+                bibtex_pattern=args.bibtex_pattern,
                 verbosity=args.verbosity
             )
-        else:
-            print(f"Error: Unknown source '{args.source}'", file=sys.stderr)
-            return 1
-
-        # Perform ingestion
-        if args.rss:
-            if args.verbosity >= 2:
-                print(f"Ingesting from RSS feed: {args.rss}")
-            ingestor.ingest_from_rss(rss_url=args.rss)
+        elif args.rss:
+            # Direct RSS mode
+            run_ingestion(
+                db=db,
+                source=args.source,
+                mode='rss',
+                rss_url=args.rss,
+                user_agent=args.user_agent,
+                robots_url=args.robots_url,
+                bibtex_pattern=args.bibtex_pattern,
+                verbosity=args.verbosity
+            )
         elif args.local:
-            if args.verbosity >= 2:
-                print(f"Ingesting from local directory: {args.local}")
-            ingestor.ingest_from_local_bibtex(
-                root=args.local,
-                bibtex_file_pattern=args.bibtex_pattern
+            # Direct local mode
+            run_ingestion(
+                db=db,
+                source=args.source,
+                mode='local',
+                local_path=args.local,
+                user_agent=args.user_agent,
+                robots_url=args.robots_url,
+                bibtex_pattern=args.bibtex_pattern,
+                verbosity=args.verbosity
             )
 
         if args.verbosity >= 2:
-            print("Ingestion complete!")
+            print("\nIngestion complete!")
 
         return 0
 

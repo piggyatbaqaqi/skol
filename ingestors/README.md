@@ -15,38 +15,47 @@ ingestors/
 
 ## Command Line Usage
 
-The easiest way to use the ingestors is through the CLI:
+The easiest way to use the ingestors is through the CLI with publication sources:
 
 ```bash
-# Ingest from Ingenta RSS feed (normal verbosity)
+# List all available publication sources
+python -m ingestors.main --list-publications
+
+# Ingest from a specific publication
+python -m ingestors.main --publication mycotaxon
+python -m ingestors.main --publication studies-in-mycology
+python -m ingestors.main --publication ingenta-local
+
+# Ingest from ALL predefined sources (from ist769_skol.ipynb)
+python -m ingestors.main --all
+
+# Custom sources with explicit parameters
 python -m ingestors.main --source ingenta \
   --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
 
-# Ingest from local BibTeX files (verbose mode)
 python -m ingestors.main --source ingenta \
   --local /data/skol/www/www.ingentaconnect.com \
   --verbosity 3
-
-# Silent mode (no output except errors)
-python -m ingestors.main --source ingenta \
-  --rss https://api.ingentaconnect.com/content/wfbi/sim?format=rss \
-  -v 0
-
-# Custom database and CouchDB URL with credentials
-python -m ingestors.main --source ingenta \
-  --couchdb-url http://localhost:5984 \
-  --couchdb-username myuser \
-  --couchdb-password mypass \
-  --database my_database \
-  --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
 
 # Using environment variables for credentials
 export COUCHDB_URL=http://localhost:5984
 export COUCHDB_USER=myuser
 export COUCHDB_PASSWORD=mypass
-python -m ingestors.main --source ingenta \
-  --rss https://api.ingentaconnect.com/content/mtax/mt?format=rss
+python -m ingestors.main --all
+
+# Silent mode
+python -m ingestors.main --publication mycotaxon -v 0
 ```
+
+### Available publications
+
+The following publication sources are defined (from `jupyter/ist769_skol.ipynb`):
+
+| Key | Name | Type | URL/Path |
+|-----|------|------|----------|
+| `mycotaxon` | Mycotaxon | RSS | https://api.ingentaconnect.com/content/mtax/mt?format=rss |
+| `studies-in-mycology` | Studies in Mycology | RSS | https://api.ingentaconnect.com/content/wfbi/sim?format=rss |
+| `ingenta-local` | Ingenta Local BibTeX Files | Local | /data/skol/www/www.ingentaconnect.com |
 
 ### Verbosity Levels
 
@@ -58,13 +67,23 @@ python -m ingestors.main --source ingenta \
 ### CLI Options
 
 ```
---source {ingenta}        Data source to ingest from (required)
+# publication/batch options (mutually exclusive with --rss/--local)
+--publication KEY              Use predefined source (mycotaxon, studies-in-mycology, ingenta-local)
+--all                     Ingest from all predefined sources
+--list-publications            List all available publication sources and exit
+
+# Custom source options (require --source)
+--source {ingenta}        Data source to ingest from (required with --rss or --local)
 --rss URL                 RSS feed URL to ingest from
 --local DIR               Local directory containing BibTeX files
+
+# CouchDB connection
 --couchdb-url URL         CouchDB server URL (default: $COUCHDB_URL or http://localhost:5984)
 --couchdb-username USER   CouchDB username (default: $COUCHDB_USER)
 --couchdb-password PASS   CouchDB password (default: $COUCHDB_PASSWORD)
 --database NAME           CouchDB database name (default: skol_dev)
+
+# Other options
 --user-agent STRING       User agent for HTTP requests (default: synoptickeyof.life)
 --robots-url URL          Custom robots.txt URL
 --bibtex-pattern PATTERN  Filename pattern for BibTeX files (default: format=bib)
