@@ -24,8 +24,10 @@ import couchdb
 # Support both direct execution and module execution
 try:
     from .ingenta import IngentaIngestor
+    from .local_ingenta import LocalIngentaIngestor
 except ImportError:
     from ingestors.ingenta import IngentaIngestor
+    from ingestors.local_ingenta import LocalIngentaIngestor
 
 
 # Predefined ingestion sources from ist769_skol.ipynb
@@ -244,14 +246,22 @@ def run_ingestion(
     robot_parser.set_url(robots_url_final)
     robot_parser.read()
 
-    # Create appropriate ingestor
+    # Create appropriate ingestor based on source and mode
     if source == 'ingenta':
-        ingestor = IngentaIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity
-        )
+        if mode == 'local':
+            ingestor = LocalIngentaIngestor(
+                db=db,
+                user_agent=user_agent,
+                robot_parser=robot_parser,
+                verbosity=verbosity
+            )
+        else:
+            ingestor = IngentaIngestor(
+                db=db,
+                user_agent=user_agent,
+                robot_parser=robot_parser,
+                verbosity=verbosity
+            )
     else:
         raise ValueError(f"Unknown source '{source}'")
 
