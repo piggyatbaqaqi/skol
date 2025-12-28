@@ -25,9 +25,11 @@ import couchdb
 try:
     from .ingenta import IngentaIngestor
     from .local_ingenta import LocalIngentaIngestor
+    from .local_mykoweb import LocalMykowebJournalsIngestor
 except ImportError:
     from ingestors.ingenta import IngentaIngestor
     from ingestors.local_ingenta import LocalIngentaIngestor
+    from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
 
 
 # Predefined ingestion sources from ist769_skol.ipynb
@@ -49,6 +51,12 @@ SOURCES = {
         'source': 'ingenta',
         'mode': 'local',
         'local_path': '/data/skol/www/www.ingentaconnect.com',
+    },
+    'mykoweb-journals': {
+        'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',
+        'source': 'mykoweb',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/systematics/journals',
     },
 }
 
@@ -208,6 +216,7 @@ def get_robots_url(source: str, custom_url: Optional[str]) -> str:
 
     robots_urls = {
         'ingenta': 'https://www.ingentaconnect.com/robots.txt',
+        'mykoweb': 'https://mykoweb.com/robots.txt',
     }
 
     return robots_urls.get(source, '')
@@ -262,6 +271,18 @@ def run_ingestion(
                 robot_parser=robot_parser,
                 verbosity=verbosity
             )
+    elif source == 'mykoweb':
+        # Configure local PDF mapping for Mykoweb journals
+        local_pdf_map = {
+            'https://mykoweb.com/systematics/journals': '/data/skol/www/mykoweb.com/systematics/journals'
+        }
+        ingestor = LocalMykowebJournalsIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
     else:
         raise ValueError(f"Unknown source '{source}'")
 
@@ -277,10 +298,15 @@ def run_ingestion(
             raise ValueError("local_path required for local mode")
         if verbosity >= 2:
             print(f"Ingesting from local directory: {local_path}")
-        ingestor.ingest_from_local_bibtex(
-            root=local_path,
-            bibtex_file_pattern=bibtex_pattern
-        )
+
+        # Call appropriate method based on source
+        if isinstance(ingestor, LocalMykowebJournalsIngestor):
+            ingestor.ingest_from_local_journals(root=local_path)
+        else:
+            ingestor.ingest_from_local_bibtex(
+                root=local_path,
+                bibtex_file_pattern=bibtex_pattern
+            )
     else:
         raise ValueError(f"Unknown mode '{mode}'")
 
