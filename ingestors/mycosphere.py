@@ -9,6 +9,8 @@ import re
 from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
 from datetime import datetime
+import couchdb
+from urllib.robotparser import RobotFileParser
 
 from bs4 import BeautifulSoup
 
@@ -50,6 +52,49 @@ class MycosphereIngestor(Ingestor):
     EISSN = '2077-7019'
     BASE_URL = 'https://mycosphere.org'
     ARCHIVES_URL = 'https://mycosphere.org/archives.php'
+
+    def __init__(
+        self,
+        db: couchdb.Database,
+        user_agent: str,
+        robot_parser: RobotFileParser,
+        verbosity: int = 2,
+        local_pdf_map: Optional[Dict[str, str]] = None,
+        rate_limit_min_ms: int = 1000,
+        rate_limit_max_ms: int = 5000,
+        archives_url: Optional[str] = None
+    ) -> None:
+        """
+        Initialize the MycosphereIngestor.
+
+        Args:
+            db: CouchDB database instance
+            user_agent: User agent string for HTTP requests
+            robot_parser: Robot file parser for checking crawl permissions
+            verbosity: Verbosity level (0=silent, 1=warnings, 2=normal, 3=verbose)
+            local_pdf_map: Optional mapping of URL prefixes to local directories
+            rate_limit_min_ms: Minimum delay between requests in milliseconds
+            rate_limit_max_ms: Maximum delay between requests in milliseconds
+            archives_url: Archives URL to scrape from (default: ARCHIVES_URL)
+        """
+        super().__init__(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map,
+            rate_limit_min_ms=rate_limit_min_ms,
+            rate_limit_max_ms=rate_limit_max_ms
+        )
+        self.archives_url = archives_url if archives_url is not None else self.ARCHIVES_URL
+
+    def ingest(self) -> None:
+        """
+        Perform the ingestion operation.
+
+        Scrapes and ingests articles from the Mycosphere archives.
+        """
+        self.ingest_from_archives(archives_url=self.archives_url)
 
     def format_pdf_url(self, base: Dict[str, str]) -> str:
         """

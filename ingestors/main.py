@@ -28,101 +28,16 @@ try:
     from .local_mykoweb import LocalMykowebJournalsIngestor
     from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
     from .mycosphere import MycosphereIngestor
+    from .publications import PublicationRegistry
 except ImportError:
     from ingestors.ingenta import IngentaIngestor
     from ingestors.local_ingenta import LocalIngentaIngestor
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
     from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
     from ingestors.mycosphere import MycosphereIngestor
+    from ingestors.publications import PublicationRegistry
 
 
-# Predefined ingestion sources from ist769_skol.ipynb
-SOURCES_DEFAULTS: Dict[str, Union[int, float, str]] = {
-    'rate_limit_min_ms': 1000,  # Minimum delay between requests (milliseconds)
-    'rate_limit_max_ms': 5000,  # Maximum delay between requests (milliseconds)
-}
-
-SOURCES = {
-    'mycotaxon': {
-        'name': 'Mycotaxon',
-        'source': 'ingenta',
-        'mode': 'rss',
-        'rss_url': 'https://api.ingentaconnect.com/content/mtax/mt?format=rss',
-    },
-    'studies-in-mycology': {
-        'name': 'Studies in Mycology',
-        'source': 'ingenta',
-        'mode': 'rss',
-        'rss_url': 'https://api.ingentaconnect.com/content/wfbi/sim?format=rss',
-    },
-    'ingenta-local': {
-        'name': 'Ingenta Local BibTeX Files',
-        'source': 'ingenta',
-        'mode': 'local',
-        'local_path': '/data/skol/www/www.ingentaconnect.com',
-    },
-    'mykoweb-journals': {
-        'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',
-        'source': 'mykoweb-journals',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/systematics/journals',
-    },
-    'mykoweb-literature': {
-        'name': 'Mykoweb Literature/Books',
-        'source': 'mykoweb-literature',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/systematics/literature',
-        'url_prefix': 'https://mykoweb.com/systematics/literature',
-    },
-    'mykoweb-caf': {
-        'name': 'Mykoweb CAF PDFs',
-        'source': 'mykoweb-caf',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/CAF',
-        'url_prefix': 'https://mykoweb.com/CAF',
-    },
-    'mykoweb-crepidotus': {
-        'name': 'Mykoweb Crepidotus',
-        'source': 'mykoweb-crepidotus',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/Crepidotus',
-        'url_prefix': 'https://mykoweb.com/Crepidotus',
-    },
-    'mykoweb-oldbooks': {
-        'name': 'Mykoweb Old Books',
-        'source': 'mykoweb-oldbooks',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/OldBooks',
-        'url_prefix': 'https://mykoweb.com/OldBooks',
-    },
-    'mykoweb-gsmnp': {
-        'name': 'Mykoweb GSMNP',
-        'source': 'mykoweb-gsmnp',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/GSMNP',
-        'url_prefix': 'https://mykoweb.com/GSMNP',
-    },
-    'mykoweb-pholiota': {
-        'name': 'Mykoweb Pholiota',
-        'source': 'mykoweb-pholiota',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/Pholiota',
-        'url_prefix': 'https://mykoweb.com/Pholiota',
-    },
-    'mykoweb-misc': {
-        'name': 'Mykoweb Misc',
-        'source': 'mykoweb-misc',
-        'mode': 'local',
-        'local_path': '/data/skol/www/mykoweb.com/misc',
-        'url_prefix': 'https://mykoweb.com/misc',
-    },
-    'mycosphere': {
-        'name': 'Mycosphere',
-        'source': 'mycosphere',
-        'mode': 'web',
-        'archives_url': 'https://mycosphere.org/archives.php',
-    },
-}
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -221,8 +136,8 @@ Examples:
         '--publication',
         type=str,
         metavar='KEY',
-        choices=list(SOURCES.keys()),
-        help=f'Use predefined source: {", ".join(SOURCES.keys())}'
+        choices=PublicationRegistry.list_publications(),
+        help=f'Use predefined source: {", ".join(PublicationRegistry.list_publications())}'
     )
     mode_group.add_argument(
         '--all',
@@ -264,36 +179,6 @@ Examples:
     return parser
 
 
-def get_robots_url(source: str, custom_url: Optional[str]) -> str:
-    """
-    Get the robots.txt URL for a given source.
-
-    Args:
-        source: Name of the data source
-        custom_url: Custom robots.txt URL (overrides default)
-
-    Returns:
-        URL to robots.txt file
-    """
-    if custom_url:
-        return custom_url
-
-    robots_urls = {
-        'ingenta': 'https://www.ingentaconnect.com/robots.txt',
-        'mykoweb-journals': 'https://mykoweb.com/robots.txt',
-        'mykoweb-literature': 'https://mykoweb.com/robots.txt',
-        'mykoweb-caf': 'https://mykoweb.com/robots.txt',
-        'mykoweb-crepidotus': 'https://mykoweb.com/robots.txt',
-        'mykoweb-oldbooks': 'https://mykoweb.com/robots.txt',
-        'mykoweb-gsmnp': 'https://mykoweb.com/robots.txt',
-        'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
-        'mykoweb-misc': 'https://mykoweb.com/robots.txt',
-        'mycosphere': 'https://mycosphere.org/robots.txt',
-    }
-
-    return robots_urls.get(source, '')
-
-
 def run_ingestion(
     db: couchdb.Database,
     source: str,
@@ -328,7 +213,7 @@ def run_ingestion(
         rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
     """
     # Set up robot parser
-    robots_url_final = get_robots_url(source, robots_url)
+    robots_url_final = PublicationRegistry.get_robots_url(source, robots_url)
     if verbosity >= 3:
         print(f"Loading robots.txt from {robots_url_final}")
     robot_parser = RobotFileParser()
@@ -342,14 +227,17 @@ def run_ingestion(
                 db=db,
                 user_agent=user_agent,
                 robot_parser=robot_parser,
-                verbosity=verbosity
+                verbosity=verbosity,
+                root=local_path,
+                bibtex_pattern=bibtex_pattern
             )
-        else:
+        else:  # RSS mode
             ingestor = IngentaIngestor(
                 db=db,
                 user_agent=user_agent,
                 robot_parser=robot_parser,
-                verbosity=verbosity
+                verbosity=verbosity,
+                rss_url=rss_url
             )
     elif source == 'mykoweb-journals':
         # Configure local PDF mapping for Mykoweb journals
@@ -361,91 +249,36 @@ def run_ingestion(
             user_agent=user_agent,
             robot_parser=robot_parser,
             verbosity=verbosity,
-            local_pdf_map=local_pdf_map
+            local_pdf_map=local_pdf_map,
+            root=local_path,
+            local_path_prefix=str(local_path) if local_path else '/data/skol/www/mykoweb.com/systematics/journals',
+            url_prefix=url_prefix or 'https://mykoweb.com/systematics/journals'
         )
-    elif source == 'mykoweb-literature':
-        # Configure local PDF mapping for Mykoweb literature
-        local_pdf_map = {
-            'https://mykoweb.com/systematics/literature': '/data/skol/www/mykoweb.com/systematics/literature'
+    elif source in ('mykoweb-literature', 'mykoweb-caf', 'mykoweb-crepidotus',
+                     'mykoweb-oldbooks', 'mykoweb-gsmnp', 'mykoweb-pholiota', 'mykoweb-misc'):
+        # Configure local PDF mapping for Mykoweb literature sources
+        source_prefix_map = {
+            'mykoweb-literature': ('https://mykoweb.com/systematics/literature',
+                                  '/data/skol/www/mykoweb.com/systematics/literature'),
+            'mykoweb-caf': ('https://mykoweb.com/CAF', '/data/skol/www/mykoweb.com/CAF'),
+            'mykoweb-crepidotus': ('https://mykoweb.com/Crepidotus', '/data/skol/www/mykoweb.com/Crepidotus'),
+            'mykoweb-oldbooks': ('https://mykoweb.com/OldBooks', '/data/skol/www/mykoweb.com/OldBooks'),
+            'mykoweb-gsmnp': ('https://mykoweb.com/GSMNP', '/data/skol/www/mykoweb.com/GSMNP'),
+            'mykoweb-pholiota': ('https://mykoweb.com/Pholiota', '/data/skol/www/mykoweb.com/Pholiota'),
+            'mykoweb-misc': ('https://mykoweb.com/misc', '/data/skol/www/mykoweb.com/misc'),
         }
+        url_prefix_default, local_prefix_default = source_prefix_map[source]
+        local_pdf_map = {url_prefix_default: local_prefix_default}
+
         ingestor = LocalMykowebLiteratureIngestor(
             db=db,
             user_agent=user_agent,
             robot_parser=robot_parser,
             verbosity=verbosity,
-            local_pdf_map=local_pdf_map
-        )
-    elif source == 'mykoweb-caf':
-        # Configure local PDF mapping for Mykoweb CAF PDFs
-        local_pdf_map = {
-            'https://mykoweb.com/CAF': '/data/skol/www/mykoweb.com/CAF'
-        }
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map
-        )
-    elif source == 'mykoweb-crepidotus':
-        # Configure local PDF mapping for Mykoweb Crepidotus
-        local_pdf_map = {
-            'https://mykoweb.com/Crepidotus': '/data/skol/www/mykoweb.com/Crepidotus'
-        }
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map
-        )
-    elif source == 'mykoweb-oldbooks':
-        # Configure local PDF mapping for Mykoweb Old Books
-        local_pdf_map = {
-            'https://mykoweb.com/OldBooks': '/data/skol/www/mykoweb.com/OldBooks'
-        }
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map
-        )
-    elif source == 'mykoweb-gsmnp':
-        # Configure local PDF mapping for Mykoweb GSMNP
-        local_pdf_map = {
-            'https://mykoweb.com/GSMNP': '/data/skol/www/mykoweb.com/GSMNP'
-        }
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map
-        )
-    elif source == 'mykoweb-pholiota':
-        # Configure local PDF mapping for Mykoweb Pholiota
-        local_pdf_map = {
-            'https://mykoweb.com/Pholiota': '/data/skol/www/mykoweb.com/Pholiota'
-        }
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map
-        )
-    elif source == 'mykoweb-misc':
-        # Configure local PDF mapping for Mykoweb misc
-        local_pdf_map = {
-            'https://mykoweb.com/misc': '/data/skol/www/mykoweb.com/misc'
-        }
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map
+            local_pdf_map=local_pdf_map,
+            root=local_path,
+            local_path_prefix=str(local_path) if local_path else local_prefix_default,
+            url_prefix=url_prefix or url_prefix_default
         )
     elif source == 'mycosphere':
         # Mycosphere web scraper
@@ -455,52 +288,22 @@ def run_ingestion(
             robot_parser=robot_parser,
             verbosity=verbosity,
             rate_limit_min_ms=rate_limit_min_ms,
-            rate_limit_max_ms=rate_limit_max_ms
+            rate_limit_max_ms=rate_limit_max_ms,
+            archives_url=archives_url
         )
     else:
         raise ValueError(f"Unknown source '{source}'")
 
-    # Perform ingestion
-    if mode == 'rss':
-        if not rss_url:
-            raise ValueError("rss_url required for RSS mode")
-        if verbosity >= 2:
+    # Perform ingestion using polymorphic ingest() method
+    if verbosity >= 2:
+        if mode == 'rss' and rss_url:
             print(f"Ingesting from RSS feed: {rss_url}")
-        ingestor.ingest_from_rss(rss_url=rss_url)
-    elif mode == 'local':
-        if not local_path:
-            raise ValueError("local_path required for local mode")
-        if verbosity >= 2:
+        elif mode == 'local' and local_path:
             print(f"Ingesting from local directory: {local_path}")
+        elif mode == 'web' and archives_url:
+            print(f"Scraping archives from: {archives_url}")
 
-        # Call appropriate method based on ingestor type
-        if isinstance(ingestor, LocalMykowebJournalsIngestor):
-            ingestor.ingest_from_local_journals(root=local_path)
-        elif isinstance(ingestor, LocalMykowebLiteratureIngestor):
-            # Pass url_prefix if provided
-            if url_prefix:
-                ingestor.ingest_from_local_literature(
-                    root=local_path,
-                    local_path_prefix=str(local_path),
-                    url_prefix=url_prefix
-                )
-            else:
-                ingestor.ingest_from_local_literature(root=local_path)
-        else:
-            ingestor.ingest_from_local_bibtex(
-                root=local_path,
-                bibtex_file_pattern=bibtex_pattern
-            )
-    elif mode == 'web':
-        # Web scraping mode (e.g., Mycosphere)
-        if isinstance(ingestor, MycosphereIngestor):
-            if verbosity >= 2:
-                print(f"Scraping archives from: {archives_url or ingestor.ARCHIVES_URL}")
-            ingestor.ingest_from_archives(archives_url=archives_url or ingestor.ARCHIVES_URL)
-        else:
-            raise ValueError(f"Source '{source}' does not support web scraping mode")
-    else:
-        raise ValueError(f"Unknown mode '{mode}'")
+    ingestor.ingest()
 
 
 def list_publications() -> None:
@@ -510,10 +313,7 @@ def list_publications() -> None:
     print(f"{'Key':<25} {'Name':<30} {'Type':<10} {'Details':<15}")
     print("-" * 80)
 
-    for key, config in SOURCES.items():
-        cfg = SOURCES_DEFAULTS.copy()
-        cfg.update(config)
-        config = cfg
+    for key, config in PublicationRegistry.get_all().items():
         source_type = config['mode'].upper()
         if config['mode'] == 'rss':
             details = config['rss_url'].split('/')[-1][:15]
@@ -522,7 +322,7 @@ def list_publications() -> None:
         print(f"{key:<25} {config['name']:<30} {source_type:<10} {details:<15}")
 
     print("=" * 80)
-    print(f"\nTotal: {len(SOURCES)} publication sources")
+    print(f"\nTotal: {len(PublicationRegistry.get_all())} publication sources")
     print("\nUsage:")
     print("  Single publication:  ./main.py --publication <key>")
     print("  All publications:    ./main.py --all")
@@ -569,13 +369,10 @@ def main() -> int:
         # Handle different ingestion modes
         if args.all:
             # Ingest from all predefined sources
+            all_sources = PublicationRegistry.get_all()
             if args.verbosity >= 2:
-                print(f"Ingesting from all {len(SOURCES)} predefined sources...")
-            for key, config in SOURCES.items():
-                cfg = SOURCES_DEFAULTS.copy()
-                cfg.update(config)
-                config = cfg
-
+                print(f"Ingesting from all {len(all_sources)} predefined sources...")
+            for key, config in all_sources.items():
                 if args.verbosity >= 2:
                     print(f"\n{'=' * 60}")
                     print(f"Processing: {config['name']} ({key})")
@@ -598,7 +395,11 @@ def main() -> int:
                 )
         elif args.publication:
             # Use predefined source
-            config = SOURCES[args.publication]
+            config = PublicationRegistry.get(args.publication)
+            if config is None:
+                print(f"Error: Unknown publication '{args.publication}'", file=sys.stderr)
+                return 1
+
             if args.verbosity >= 2:
                 print(f"Using publication: {config['name']}")
 

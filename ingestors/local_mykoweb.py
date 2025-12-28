@@ -9,6 +9,8 @@ import os
 import re
 from pathlib import Path
 from typing import Dict, Any, Optional
+import couchdb
+from urllib.robotparser import RobotFileParser
 
 from .ingestor import Ingestor
 
@@ -39,6 +41,59 @@ class LocalMykowebJournalsIngestor(Ingestor):
 
     # Default root for local mirror
     DEFAULT_ROOT = Path('/data/skol/www/mykoweb.com/systematics/journals')
+
+    def __init__(
+        self,
+        db: couchdb.Database,
+        user_agent: str,
+        robot_parser: RobotFileParser,
+        verbosity: int = 2,
+        local_pdf_map: Optional[Dict[str, str]] = None,
+        rate_limit_min_ms: int = 1000,
+        rate_limit_max_ms: int = 5000,
+        root: Optional[Path] = None,
+        local_path_prefix: str = '/data/skol/www/mykoweb.com/systematics/journals',
+        url_prefix: str = 'https://mykoweb.com/systematics/journals'
+    ) -> None:
+        """
+        Initialize the LocalMykowebJournalsIngestor.
+
+        Args:
+            db: CouchDB database instance
+            user_agent: User agent string for HTTP requests
+            robot_parser: Robot file parser for checking crawl permissions
+            verbosity: Verbosity level (0=silent, 1=warnings, 2=normal, 3=verbose)
+            local_pdf_map: Optional mapping of URL prefixes to local directories
+            rate_limit_min_ms: Minimum delay between requests in milliseconds
+            rate_limit_max_ms: Maximum delay between requests in milliseconds
+            root: Root directory to search for journal PDFs (default: DEFAULT_ROOT)
+            local_path_prefix: Local path prefix to replace
+            url_prefix: URL prefix to use as replacement
+        """
+        super().__init__(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map,
+            rate_limit_min_ms=rate_limit_min_ms,
+            rate_limit_max_ms=rate_limit_max_ms
+        )
+        self.root = root if root is not None else self.DEFAULT_ROOT
+        self.local_path_prefix = local_path_prefix
+        self.url_prefix = url_prefix
+
+    def ingest(self) -> None:
+        """
+        Perform the ingestion operation.
+
+        Ingests data from the local journals directory specified in the constructor.
+        """
+        self.ingest_from_local_journals(
+            root=self.root,
+            local_path_prefix=self.local_path_prefix,
+            url_prefix=self.url_prefix
+        )
 
     # Journal metadata
     JOURNAL_ISSN = {

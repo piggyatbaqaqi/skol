@@ -6,6 +6,9 @@ local BibTeX files that mirror the IngentaConnect website structure.
 """
 
 from pathlib import Path
+from typing import Dict, Optional
+import couchdb
+from urllib.robotparser import RobotFileParser
 
 from .ingenta import IngentaIngestor
 
@@ -35,6 +38,56 @@ class LocalIngentaIngestor(IngentaIngestor):
 
     # Default root for local mirror
     DEFAULT_ROOT = Path('/data/skol/www/www.ingentaconnect.com')
+
+    def __init__(
+        self,
+        db: couchdb.Database,
+        user_agent: str,
+        robot_parser: RobotFileParser,
+        verbosity: int = 2,
+        local_pdf_map: Optional[Dict[str, str]] = None,
+        rate_limit_min_ms: int = 1000,
+        rate_limit_max_ms: int = 5000,
+        root: Optional[Path] = None,
+        bibtex_pattern: str = 'format=bib'
+    ) -> None:
+        """
+        Initialize the LocalIngentaIngestor.
+
+        Args:
+            db: CouchDB database instance
+            user_agent: User agent string for HTTP requests
+            robot_parser: Robot file parser for checking crawl permissions
+            verbosity: Verbosity level (0=silent, 1=warnings, 2=normal, 3=verbose)
+            local_pdf_map: Optional mapping of URL prefixes to local directories
+            rate_limit_min_ms: Minimum delay between requests in milliseconds
+            rate_limit_max_ms: Maximum delay between requests in milliseconds
+            root: Root directory to search for BibTeX files (default: DEFAULT_ROOT)
+            bibtex_pattern: Filename pattern to match BibTeX files (default: format=bib)
+        """
+        super().__init__(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map,
+            rate_limit_min_ms=rate_limit_min_ms,
+            rate_limit_max_ms=rate_limit_max_ms
+        )
+        self.root = root if root is not None else self.DEFAULT_ROOT
+        self.bibtex_pattern = bibtex_pattern
+
+    def ingest(self) -> None:
+        """
+        Perform the ingestion operation.
+
+        Ingests data from the local directory specified in the constructor.
+        """
+        self.ingest_from_local_bibtex(
+            root=self.root,
+            bibtex_file_pattern=self.bibtex_pattern,
+            url_prefix='https://www.ingentaconnect.com'
+        )
 
     def ingest_from_local_bibtex(
         self,

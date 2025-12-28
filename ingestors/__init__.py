@@ -11,6 +11,7 @@ from .local_ingenta import LocalIngentaIngestor
 from .local_mykoweb import LocalMykowebJournalsIngestor
 from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
 from .mycosphere import MycosphereIngestor
+from .publications import PublicationRegistry
 
 __all__ = [
     'Ingestor',
@@ -19,4 +20,5 @@ __all__ = [
     'LocalMykowebJournalsIngestor',
     'LocalMykowebLiteratureIngestor',
     'MycosphereIngestor',
+    'PublicationRegistry',
 ]
