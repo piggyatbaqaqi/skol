@@ -34,6 +34,9 @@ class Ingestor(ABC):
     robot_parser: RobotFileParser
     verbosity: int
     local_pdf_map: Dict[str, str]
+    rate_limit_min_ms: int
+    rate_limit_max_ms: int
+    last_fetch_time: Optional[float]
 
     def __init__(
         self,
@@ -41,7 +44,9 @@ class Ingestor(ABC):
         user_agent: str,
         robot_parser: RobotFileParser,
         verbosity: int = 2,
-        local_pdf_map: Optional[Dict[str, str]] = None
+        local_pdf_map: Optional[Dict[str, str]] = None,
+        rate_limit_min_ms: int = 1000,
+        rate_limit_max_ms: int = 5000
     ) -> None:
         """
         Initialize the Ingestor.
@@ -56,12 +61,17 @@ class Ingestor(ABC):
                 the PDF will be read from the corresponding local directory
                 instead of being downloaded.
                 Example: {'https://mykoweb.com/journals': '/data/skol/www/mykoweb.com/journals'}
+            rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
+            rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
         """
         self.db = db
         self.user_agent = user_agent
         self.robot_parser = robot_parser
         self.verbosity = verbosity
         self.local_pdf_map = local_pdf_map if local_pdf_map is not None else {}
+        self.rate_limit_min_ms = rate_limit_min_ms
+        self.rate_limit_max_ms = rate_limit_max_ms
+        self.last_fetch_time = None
 
 
     def _get_local_pdf_path(self, pdf_url: str) -> Optional[Path]:

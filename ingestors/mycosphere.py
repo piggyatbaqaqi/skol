@@ -6,6 +6,8 @@ articles from the Mycosphere journal website.
 """
 
 import re
+import time
+import random
 from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
 from datetime import datetime
@@ -81,6 +83,8 @@ class MycosphereIngestor(Ingestor):
         Fetch and parse a web page.
 
         Checks robots.txt before fetching to ensure compliance.
+        Implements rate limiting using Crawl-Delay from robots.txt if available,
+        otherwise uses a random delay between configured min/max bounds.
 
         Args:
             url: URL to fetch
@@ -94,9 +98,41 @@ class MycosphereIngestor(Ingestor):
                 print(f"  Blocked by robots.txt: {url}")
             return None
 
+        # Rate limiting: wait before fetching if we've made a previous request
+        if self.last_fetch_time is not None:
+            # Check if robots.txt specifies a Crawl-Delay
+            crawl_delay = self.robot_parser.crawl_delay(self.user_agent)
+
+            if crawl_delay is not None:
+                # Use Crawl-Delay from robots.txt (in seconds)
+                # crawl_delay can be int, float, or string - convert to float
+                delay_seconds = float(crawl_delay)
+                if self.verbosity >= 3:
+                    print(f"  Using Crawl-Delay from robots.txt: {delay_seconds}s")
+            else:
+                # Use random delay between configured bounds (convert ms to seconds)
+                delay_seconds = random.uniform(
+                    self.rate_limit_min_ms / 1000.0,
+                    self.rate_limit_max_ms / 1000.0
+                )
+                if self.verbosity >= 3:
+                    print(f"  Using random delay: {delay_seconds:.2f}s")
+
+            # Calculate time since last fetch
+            elapsed = time.time() - self.last_fetch_time
+            sleep_time = delay_seconds - elapsed
+
+            if sleep_time > 0:
+                if self.verbosity >= 3:
+                    print(f"  Sleeping for {sleep_time:.2f}s")
+                time.sleep(sleep_time)
+
         try:
             if self.verbosity >= 3:
                 print(f"  Fetching: {url}")
+
+            # Record fetch time before making request
+            self.last_fetch_time = time.time()
 
             response = requests.get(url, headers={'User-Agent': self.user_agent})
             response.raise_for_status()
