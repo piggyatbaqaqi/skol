@@ -116,6 +116,8 @@ SOURCES = {
         'source': 'mycosphere',
         'mode': 'web',
         'archives_url': 'https://mycosphere.org/archives.php',
+        'rate_limit_min_ms': 1000,  # Minimum delay between requests (milliseconds)
+        'rate_limit_max_ms': 5000,  # Maximum delay between requests (milliseconds)
     },
 }
 
@@ -300,7 +302,9 @@ def run_ingestion(
     bibtex_pattern: str = 'format=bib',
     verbosity: int = 2,
     url_prefix: Optional[str] = None,
-    archives_url: Optional[str] = None
+    archives_url: Optional[str] = None,
+    rate_limit_min_ms: int = 1000,
+    rate_limit_max_ms: int = 5000
 ) -> None:
     """
     Run a single ingestion task.
@@ -317,6 +321,8 @@ def run_ingestion(
         verbosity: Verbosity level
         url_prefix: URL prefix for local file mapping
         archives_url: Archives URL for web scraping (required if mode='web')
+        rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
+        rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
     """
     # Set up robot parser
     robots_url_final = get_robots_url(source, robots_url)
@@ -444,7 +450,9 @@ def run_ingestion(
             db=db,
             user_agent=user_agent,
             robot_parser=robot_parser,
-            verbosity=verbosity
+            verbosity=verbosity,
+            rate_limit_min_ms=rate_limit_min_ms,
+            rate_limit_max_ms=rate_limit_max_ms
         )
     else:
         raise ValueError(f"Unknown source '{source}'")
@@ -574,7 +582,9 @@ def main() -> int:
                     bibtex_pattern=args.bibtex_pattern,
                     verbosity=args.verbosity,
                     url_prefix=config.get('url_prefix'),
-                    archives_url=config.get('archives_url')
+                    archives_url=config.get('archives_url'),
+                    rate_limit_min_ms=config.get('rate_limit_min_ms', 1000),
+                    rate_limit_max_ms=config.get('rate_limit_max_ms', 5000)
                 )
         elif args.publication:
             # Use predefined source
@@ -593,7 +603,9 @@ def main() -> int:
                 bibtex_pattern=args.bibtex_pattern,
                 verbosity=args.verbosity,
                 url_prefix=config.get('url_prefix'),
-                archives_url=config.get('archives_url')
+                archives_url=config.get('archives_url'),
+                rate_limit_min_ms=config.get('rate_limit_min_ms', 1000),
+                rate_limit_max_ms=config.get('rate_limit_max_ms', 5000)
             )
         elif args.rss:
             # Direct RSS mode
