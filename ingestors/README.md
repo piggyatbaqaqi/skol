@@ -10,7 +10,9 @@ ingestors/
 ├── ingestor.py              # Base Ingestor class (abstract)
 ├── ingenta.py               # IngentaConnect RSS implementation
 ├── local_ingenta.py         # Local IngentaConnect mirror implementation
+├── local_mykoweb.py         # Local Mykoweb journals implementation
 ├── main.py                  # CLI entry point
+├── migrate_to_uuid5.py      # Database migration script
 └── README.md                # This file
 ```
 
@@ -50,13 +52,14 @@ python -m ingestors.main --publication mycotaxon -v 0
 
 ### Available publications
 
-The following publication sources are defined (from `jupyter/ist769_skol.ipynb`):
+The following publication sources are defined:
 
 | Key | Name | Type | URL/Path |
 |-----|------|------|----------|
 | `mycotaxon` | Mycotaxon | RSS | https://api.ingentaconnect.com/content/mtax/mt?format=rss |
 | `studies-in-mycology` | Studies in Mycology | RSS | https://api.ingentaconnect.com/content/wfbi/sim?format=rss |
 | `ingenta-local` | Ingenta Local BibTeX Files | Local | /data/skol/www/www.ingentaconnect.com |
+| `mykoweb-journals` | Mykoweb Journals (Mycotaxon, Persoonia, Sydowia) | Local | /data/skol/www/mykoweb.com/systematics/journals |
 
 ### Verbosity Levels
 
@@ -165,6 +168,84 @@ ingestor.ingest_from_local_bibtex(
     root=Path("/data/skol/www/www.ingentaconnect.com")
 )
 ```
+
+### Ingesting from local Mykoweb journals
+
+```python
+from pathlib import Path
+from urllib.robotparser import RobotFileParser
+import couchdb
+from ingestors import LocalMykowebJournalsIngestor
+
+# Set up dependencies
+couch = couchdb.Server('http://localhost:5984')
+db = couch['skol_dev']
+
+user_agent = "synoptickeyof.life"
+robot_parser = RobotFileParser()
+robot_parser.set_url("https://mykoweb.com/robots.txt")
+robot_parser.read()
+
+# Configure local PDF mapping to read PDFs from local filesystem
+# instead of downloading them
+local_pdf_map = {
+    'https://mykoweb.com/systematics/journals': '/data/skol/www/mykoweb.com/systematics/journals'
+}
+
+# Create ingestor for Mykoweb journals
+ingestor = LocalMykowebJournalsIngestor(
+    db=db,
+    user_agent=user_agent,
+    robot_parser=robot_parser,
+    verbosity=2,
+    local_pdf_map=local_pdf_map
+)
+
+# Ingest from local journal PDFs
+# Parses filenames like "Mycotaxon v001n1.pdf", "Sydowia Vol20.pdf", etc.
+# Converts /data/skol/www/mykoweb.com/systematics/journals/* to
+# https://mykoweb.com/systematics/journals/*
+# PDFs are read from local files via local_pdf_map instead of being downloaded
+ingestor.ingest_from_local_journals(
+    root=Path("/data/skol/www/mykoweb.com/systematics/journals")
+)
+```
+
+## Local PDF Mapping
+
+All ingestors support the `local_pdf_map` parameter, which allows PDFs to be read from the local filesystem instead of being downloaded. This is useful when you have a local mirror of web content.
+
+The `local_pdf_map` is a dictionary mapping URL prefixes to local directory paths:
+
+```python
+local_pdf_map = {
+    'https://example.com/pdfs': '/data/local/mirror/example.com/pdfs',
+    'https://other.org/files': '/mnt/archives/other.org/files',
+}
+```
+
+When ingesting, if a PDF URL starts with any of the configured prefixes:
+1. The URL prefix is replaced with the corresponding local directory path
+2. If the local file exists, it's read from disk instead of being downloaded
+3. If the local file doesn't exist, the PDF is downloaded normally
+
+**Example:**
+
+```python
+# PDF URL: https://example.com/pdfs/journal/vol1/article.pdf
+# Local path: /data/local/mirror/example.com/pdfs/journal/vol1/article.pdf
+
+ingestor = SomeIngestor(
+    db=db,
+    user_agent=user_agent,
+    robot_parser=robot_parser,
+    local_pdf_map={
+        'https://example.com/pdfs': '/data/local/mirror/example.com/pdfs'
+    }
+)
+```
+
+This feature reduces network traffic and speeds up ingestion when you have local copies of PDFs.
 
 ## Creating New Ingestors
 

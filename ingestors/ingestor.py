@@ -32,13 +32,15 @@ class Ingestor(ABC):
     user_agent: str
     robot_parser: RobotFileParser
     verbosity: int
+    local_pdf_map: Dict[str, str]
 
     def __init__(
         self,
         db: couchdb.Database,
         user_agent: str,
         robot_parser: RobotFileParser,
-        verbosity: int = 2
+        verbosity: int = 2,
+        local_pdf_map: Optional[Dict[str, str]] = None
     ) -> None:
         """
         Initialize the Ingestor.
@@ -48,12 +50,39 @@ class Ingestor(ABC):
             user_agent: User agent string for HTTP requests
             robot_parser: Robot file parser for checking crawl permissions
             verbosity: Verbosity level (0=silent, 1=warnings, 2=normal, 3=verbose)
+            local_pdf_map: Optional mapping of URL prefixes to local directories.
+                When fetching PDFs, if the URL starts with a prefix in this map,
+                the PDF will be read from the corresponding local directory
+                instead of being downloaded.
+                Example: {'https://mykoweb.com/journals': '/data/skol/www/mykoweb.com/journals'}
         """
         self.db = db
         self.user_agent = user_agent
         self.robot_parser = robot_parser
         self.verbosity = verbosity
+        self.local_pdf_map = local_pdf_map if local_pdf_map is not None else {}
 
+
+    def _get_local_pdf_path(self, pdf_url: str) -> Optional[Path]:
+        """
+        Get the local filesystem path for a PDF URL if it exists in local_pdf_map.
+
+        Args:
+            pdf_url: The PDF URL to check
+
+        Returns:
+            Path object if a local file exists, None otherwise
+        """
+        for url_prefix, local_dir in self.local_pdf_map.items():
+            if pdf_url.startswith(url_prefix):
+                # Replace URL prefix with local directory
+                relative_path = pdf_url[len(url_prefix):]
+                local_path = Path(local_dir) / relative_path.lstrip('/')
+
+                if local_path.exists() and local_path.is_file():
+                    return local_path
+
+        return None
 
     def format_bibtex_url(self, base: Dict[str, str], bibtex_link: Optional[str]) -> Optional[str]:
         """
@@ -159,10 +188,22 @@ class Ingestor(ABC):
             # Save document to CouchDB
             _doc_id, _doc_rev = self.db.save(doc)
 
-            # Fetch and attach PDF
-            with requests.get(doc['pdf_url'], stream=False) as pdf_f:
-                pdf_f.raise_for_status()
-                pdf_doc = pdf_f.content
+            # Fetch PDF - check local first, then download if needed
+            local_pdf_path = self._get_local_pdf_path(doc['pdf_url'])
+
+            if local_pdf_path:
+                # Read PDF from local filesystem
+                if self.verbosity >= 3:
+                    print(f"  Reading PDF from local file: {local_pdf_path}")
+                with open(local_pdf_path, 'rb') as pdf_f:
+                    pdf_doc = pdf_f.read()
+            else:
+                # Download PDF from URL
+                if self.verbosity >= 3:
+                    print(f"  Downloading PDF from: {doc['pdf_url']}")
+                with requests.get(doc['pdf_url'], stream=False) as pdf_f:
+                    pdf_f.raise_for_status()
+                    pdf_doc = pdf_f.content
 
             attachment_filename = 'article.pdf'
             attachment_content_type = 'application/pdf'

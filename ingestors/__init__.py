@@ -8,5 +8,11 @@ ingesting data from various web sources.
 from .ingestor import Ingestor
 from .ingenta import IngentaIngestor
 from .local_ingenta import LocalIngentaIngestor
+from .local_mykoweb import LocalMykowebJournalsIngestor
 
-__all__ = ['Ingestor', 'IngentaIngestor', 'LocalIngentaIngestor']
+__all__ = [
+    'Ingestor',
+    'IngentaIngestor',
+    'LocalIngentaIngestor',
+    'LocalMykowebJournalsIngestor',
+]
