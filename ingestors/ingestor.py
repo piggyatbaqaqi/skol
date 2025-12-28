@@ -76,6 +76,18 @@ class Ingestor(ABC):
         self.rate_limit_max_ms = rate_limit_max_ms
         self.last_fetch_time = None
 
+    @abstractmethod
+    def ingest(self) -> None:
+        """
+        Perform the ingestion operation.
+
+        Each subclass must implement this method to define its specific
+        ingestion logic. This method should call the appropriate ingestion
+        method (e.g., ingest_from_rss, ingest_from_local_bibtex, etc.)
+        with the parameters stored in the instance.
+        """
+        raise NotImplementedError("Subclasses must implement ingest()")
+
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
         """
         Fetch and parse a web page.
