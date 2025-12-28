@@ -11,6 +11,7 @@ ingestors/
 ├── ingenta.py               # IngentaConnect RSS implementation
 ├── local_ingenta.py         # Local IngentaConnect mirror implementation
 ├── local_mykoweb.py         # Local Mykoweb journals implementation
+├── local_mykoweb_literature.py # Local Mykoweb literature/books implementation
 ├── main.py                  # CLI entry point
 ├── migrate_to_uuid5.py      # Database migration script
 └── README.md                # This file
@@ -60,6 +61,13 @@ The following publication sources are defined:
 | `studies-in-mycology` | Studies in Mycology | RSS | https://api.ingentaconnect.com/content/wfbi/sim?format=rss |
 | `ingenta-local` | Ingenta Local BibTeX Files | Local | /data/skol/www/www.ingentaconnect.com |
 | `mykoweb-journals` | Mykoweb Journals (Mycotaxon, Persoonia, Sydowia) | Local | /data/skol/www/mykoweb.com/systematics/journals |
+| `mykoweb-literature` | Mykoweb Literature/Books | Local | /data/skol/www/mykoweb.com/systematics/literature |
+| `mykoweb-caf` | Mykoweb CAF PDFs | Local | /data/skol/www/mykoweb.com/CAF |
+| `mykoweb-crepidotus` | Mykoweb Crepidotus | Local | /data/skol/www/mykoweb.com/Crepidotus |
+| `mykoweb-oldbooks` | Mykoweb Old Books | Local | /data/skol/www/mykoweb.com/OldBooks |
+| `mykoweb-gsmnp` | Mykoweb GSMNP | Local | /data/skol/www/mykoweb.com/GSMNP |
+| `mykoweb-pholiota` | Mykoweb Pholiota | Local | /data/skol/www/mykoweb.com/Pholiota |
+| `mykoweb-misc` | Mykoweb Misc | Local | /data/skol/www/mykoweb.com/misc |
 
 ### Verbosity Levels
 
@@ -211,6 +219,46 @@ ingestor.ingest_from_local_journals(
 )
 ```
 
+### Ingesting from local Mykoweb literature
+
+```python
+from pathlib import Path
+from urllib.robotparser import RobotFileParser
+import couchdb
+from ingestors import LocalMykowebLiteratureIngestor
+
+# Set up dependencies
+couch = couchdb.Server('http://localhost:5984')
+db = couch['skol_dev']
+
+user_agent = "synoptickeyof.life"
+robot_parser = RobotFileParser()
+robot_parser.set_url("https://mykoweb.com/robots.txt")
+robot_parser.read()
+
+# Configure local PDF mapping to read PDFs from local filesystem
+local_pdf_map = {
+    'https://mykoweb.com/systematics/literature': '/data/skol/www/mykoweb.com/systematics/literature'
+}
+
+# Create ingestor for Mykoweb literature
+ingestor = LocalMykowebLiteratureIngestor(
+    db=db,
+    user_agent=user_agent,
+    robot_parser=robot_parser,
+    verbosity=2,
+    local_pdf_map=local_pdf_map
+)
+
+# Ingest from local literature PDFs
+# Uses filename (without .pdf) as the title
+# Example: "Introduction to Mycology.pdf" -> title="Introduction to Mycology"
+# itemtype is set to "book"
+ingestor.ingest_from_local_literature(
+    root=Path("/data/skol/www/mykoweb.com/systematics/literature")
+)
+```
+
 ## Local PDF Mapping
 
 All ingestors support the `local_pdf_map` parameter, which allows PDFs to be read from the local filesystem instead of being downloaded. This is useful when you have a local mirror of web content.
@@ -226,8 +274,11 @@ local_pdf_map = {
 
 When ingesting, if a PDF URL starts with any of the configured prefixes:
 1. The URL prefix is replaced with the corresponding local directory path
-2. If the local file exists, it's read from disk instead of being downloaded
-3. If the local file doesn't exist, the PDF is downloaded normally
+2. The system tries to find the file:
+   - First with the URL path as-is (may contain URL encoding like `%20`)
+   - If not found, tries with URL-decoded path (e.g., `%20` → space)
+3. If the local file exists, it's read from disk instead of being downloaded
+4. If the local file doesn't exist (even after URL decoding), the PDF is downloaded normally
 
 **Example:**
 
@@ -244,6 +295,12 @@ ingestor = SomeIngestor(
     }
 )
 ```
+
+**URL Decoding:**
+The local PDF mapping automatically handles URL-encoded characters. For example:
+- URL: `https://mykoweb.com/systematics/literature/Introduction%20to%20Mycology.pdf`
+- Local file: `/data/local/mykoweb/literature/Introduction to Mycology.pdf` (with space)
+- The system will find the file even though the URL has `%20` instead of a space
 
 This feature reduces network traffic and speeds up ingestion when you have local copies of PDFs.
 

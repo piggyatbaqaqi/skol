@@ -9,10 +9,12 @@ from .ingestor import Ingestor
 from .ingenta import IngentaIngestor
 from .local_ingenta import LocalIngentaIngestor
 from .local_mykoweb import LocalMykowebJournalsIngestor
+from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
 
 __all__ = [
     'Ingestor',
     'IngentaIngestor',
     'LocalIngentaIngestor',
     'LocalMykowebJournalsIngestor',
+    'LocalMykowebLiteratureIngestor',
 ]
