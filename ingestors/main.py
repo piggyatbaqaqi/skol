@@ -26,10 +26,12 @@ try:
     from .ingenta import IngentaIngestor
     from .local_ingenta import LocalIngentaIngestor
     from .local_mykoweb import LocalMykowebJournalsIngestor
+    from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
 except ImportError:
     from ingestors.ingenta import IngentaIngestor
     from ingestors.local_ingenta import LocalIngentaIngestor
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
+    from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
 
 
 # Predefined ingestion sources from ist769_skol.ipynb
@@ -54,9 +56,58 @@ SOURCES = {
     },
     'mykoweb-journals': {
         'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',
-        'source': 'mykoweb',
+        'source': 'mykoweb-journals',
         'mode': 'local',
         'local_path': '/data/skol/www/mykoweb.com/systematics/journals',
+    },
+    'mykoweb-literature': {
+        'name': 'Mykoweb Literature/Books',
+        'source': 'mykoweb-literature',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/systematics/literature',
+        'url_prefix': 'https://mykoweb.com/systematics/literature',
+    },
+    'mykoweb-caf': {
+        'name': 'Mykoweb CAF PDFs',
+        'source': 'mykoweb-caf',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/CAF',
+        'url_prefix': 'https://mykoweb.com/CAF',
+    },
+    'mykoweb-crepidotus': {
+        'name': 'Mykoweb Crepidotus',
+        'source': 'mykoweb-crepidotus',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/Crepidotus',
+        'url_prefix': 'https://mykoweb.com/Crepidotus',
+    },
+    'mykoweb-oldbooks': {
+        'name': 'Mykoweb Old Books',
+        'source': 'mykoweb-oldbooks',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/OldBooks',
+        'url_prefix': 'https://mykoweb.com/OldBooks',
+    },
+    'mykoweb-gsmnp': {
+        'name': 'Mykoweb GSMNP',
+        'source': 'mykoweb-gsmnp',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/GSMNP',
+        'url_prefix': 'https://mykoweb.com/GSMNP',
+    },
+    'mykoweb-pholiota': {
+        'name': 'Mykoweb Pholiota',
+        'source': 'mykoweb-pholiota',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/Pholiota',
+        'url_prefix': 'https://mykoweb.com/Pholiota',
+    },
+    'mykoweb-misc': {
+        'name': 'Mykoweb Misc',
+        'source': 'mykoweb-misc',
+        'mode': 'local',
+        'local_path': '/data/skol/www/mykoweb.com/misc',
+        'url_prefix': 'https://mykoweb.com/misc',
     },
 }
 
@@ -216,7 +267,14 @@ def get_robots_url(source: str, custom_url: Optional[str]) -> str:
 
     robots_urls = {
         'ingenta': 'https://www.ingentaconnect.com/robots.txt',
-        'mykoweb': 'https://mykoweb.com/robots.txt',
+        'mykoweb-journals': 'https://mykoweb.com/robots.txt',
+        'mykoweb-literature': 'https://mykoweb.com/robots.txt',
+        'mykoweb-caf': 'https://mykoweb.com/robots.txt',
+        'mykoweb-crepidotus': 'https://mykoweb.com/robots.txt',
+        'mykoweb-oldbooks': 'https://mykoweb.com/robots.txt',
+        'mykoweb-gsmnp': 'https://mykoweb.com/robots.txt',
+        'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
+        'mykoweb-misc': 'https://mykoweb.com/robots.txt',
     }
 
     return robots_urls.get(source, '')
@@ -231,7 +289,8 @@ def run_ingestion(
     user_agent: str = 'synoptickeyof.life',
     robots_url: Optional[str] = None,
     bibtex_pattern: str = 'format=bib',
-    verbosity: int = 2
+    verbosity: int = 2,
+    url_prefix: Optional[str] = None
 ) -> None:
     """
     Run a single ingestion task.
@@ -271,12 +330,96 @@ def run_ingestion(
                 robot_parser=robot_parser,
                 verbosity=verbosity
             )
-    elif source == 'mykoweb':
+    elif source == 'mykoweb-journals':
         # Configure local PDF mapping for Mykoweb journals
         local_pdf_map = {
             'https://mykoweb.com/systematics/journals': '/data/skol/www/mykoweb.com/systematics/journals'
         }
         ingestor = LocalMykowebJournalsIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-literature':
+        # Configure local PDF mapping for Mykoweb literature
+        local_pdf_map = {
+            'https://mykoweb.com/systematics/literature': '/data/skol/www/mykoweb.com/systematics/literature'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-caf':
+        # Configure local PDF mapping for Mykoweb CAF PDFs
+        local_pdf_map = {
+            'https://mykoweb.com/CAF': '/data/skol/www/mykoweb.com/CAF'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-crepidotus':
+        # Configure local PDF mapping for Mykoweb Crepidotus
+        local_pdf_map = {
+            'https://mykoweb.com/Crepidotus': '/data/skol/www/mykoweb.com/Crepidotus'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-oldbooks':
+        # Configure local PDF mapping for Mykoweb Old Books
+        local_pdf_map = {
+            'https://mykoweb.com/OldBooks': '/data/skol/www/mykoweb.com/OldBooks'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-gsmnp':
+        # Configure local PDF mapping for Mykoweb GSMNP
+        local_pdf_map = {
+            'https://mykoweb.com/GSMNP': '/data/skol/www/mykoweb.com/GSMNP'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-pholiota':
+        # Configure local PDF mapping for Mykoweb Pholiota
+        local_pdf_map = {
+            'https://mykoweb.com/Pholiota': '/data/skol/www/mykoweb.com/Pholiota'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            local_pdf_map=local_pdf_map
+        )
+    elif source == 'mykoweb-misc':
+        # Configure local PDF mapping for Mykoweb misc
+        local_pdf_map = {
+            'https://mykoweb.com/misc': '/data/skol/www/mykoweb.com/misc'
+        }
+        ingestor = LocalMykowebLiteratureIngestor(
             db=db,
             user_agent=user_agent,
             robot_parser=robot_parser,
@@ -299,9 +442,19 @@ def run_ingestion(
         if verbosity >= 2:
             print(f"Ingesting from local directory: {local_path}")
 
-        # Call appropriate method based on source
+        # Call appropriate method based on ingestor type
         if isinstance(ingestor, LocalMykowebJournalsIngestor):
             ingestor.ingest_from_local_journals(root=local_path)
+        elif isinstance(ingestor, LocalMykowebLiteratureIngestor):
+            # Pass url_prefix if provided
+            if url_prefix:
+                ingestor.ingest_from_local_literature(
+                    root=local_path,
+                    local_path_prefix=str(local_path),
+                    url_prefix=url_prefix
+                )
+            else:
+                ingestor.ingest_from_local_literature(root=local_path)
         else:
             ingestor.ingest_from_local_bibtex(
                 root=local_path,
@@ -391,7 +544,8 @@ def main() -> int:
                     user_agent=args.user_agent,
                     robots_url=args.robots_url,
                     bibtex_pattern=args.bibtex_pattern,
-                    verbosity=args.verbosity
+                    verbosity=args.verbosity,
+                    url_prefix=config.get('url_prefix')
                 )
         elif args.publication:
             # Use predefined source
@@ -408,7 +562,8 @@ def main() -> int:
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
                 bibtex_pattern=args.bibtex_pattern,
-                verbosity=args.verbosity
+                verbosity=args.verbosity,
+                url_prefix=config.get('url_prefix')
             )
         elif args.rss:
             # Direct RSS mode

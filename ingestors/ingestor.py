@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import unquote
 from urllib.robotparser import RobotFileParser
 
 import bibtexparser
@@ -67,6 +68,10 @@ class Ingestor(ABC):
         """
         Get the local filesystem path for a PDF URL if it exists in local_pdf_map.
 
+        This method tries to find the local file in two ways:
+        1. First with the URL path as-is (may contain URL encoding)
+        2. If not found, with URL-decoded path (e.g., %20 -> space)
+
         Args:
             pdf_url: The PDF URL to check
 
@@ -77,10 +82,20 @@ class Ingestor(ABC):
             if pdf_url.startswith(url_prefix):
                 # Replace URL prefix with local directory
                 relative_path = pdf_url[len(url_prefix):]
-                local_path = Path(local_dir) / relative_path.lstrip('/')
 
+                # Try with URL-encoded path first
+                local_path = Path(local_dir) / relative_path.lstrip('/')
                 if local_path.exists() and local_path.is_file():
                     return local_path
+
+                # If not found, try with URL-decoded path
+                # This handles cases like "Introduction%20to%20Mycology.pdf"
+                # -> "Introduction to Mycology.pdf"
+                decoded_relative_path = unquote(relative_path)
+                if decoded_relative_path != relative_path:
+                    local_path_decoded = Path(local_dir) / decoded_relative_path.lstrip('/')
+                    if local_path_decoded.exists() and local_path_decoded.is_file():
+                        return local_path_decoded
 
         return None
 
