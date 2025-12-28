@@ -10,7 +10,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional, Union
 from urllib.robotparser import RobotFileParser
 
 # Add parent directory to path for direct script execution
@@ -37,6 +37,11 @@ except ImportError:
 
 
 # Predefined ingestion sources from ist769_skol.ipynb
+SOURCES_DEFAULTS: Dict[str, Union[int, float, str]] = {
+    'rate_limit_min_ms': 1000,  # Minimum delay between requests (milliseconds)
+    'rate_limit_max_ms': 5000,  # Maximum delay between requests (milliseconds)
+}
+
 SOURCES = {
     'mycotaxon': {
         'name': 'Mycotaxon',
@@ -116,8 +121,6 @@ SOURCES = {
         'source': 'mycosphere',
         'mode': 'web',
         'archives_url': 'https://mycosphere.org/archives.php',
-        'rate_limit_min_ms': 1000,  # Minimum delay between requests (milliseconds)
-        'rate_limit_max_ms': 5000,  # Maximum delay between requests (milliseconds)
     },
 }
 
@@ -508,6 +511,9 @@ def list_publications() -> None:
     print("-" * 80)
 
     for key, config in SOURCES.items():
+        cfg = SOURCES_DEFAULTS.copy()
+        cfg.update(config)
+        config = cfg
         source_type = config['mode'].upper()
         if config['mode'] == 'rss':
             details = config['rss_url'].split('/')[-1][:15]
@@ -566,6 +572,10 @@ def main() -> int:
             if args.verbosity >= 2:
                 print(f"Ingesting from all {len(SOURCES)} predefined sources...")
             for key, config in SOURCES.items():
+                cfg = SOURCES_DEFAULTS.copy()
+                cfg.update(config)
+                config = cfg
+
                 if args.verbosity >= 2:
                     print(f"\n{'=' * 60}")
                     print(f"Processing: {config['name']} ({key})")
