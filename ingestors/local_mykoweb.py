@@ -8,9 +8,7 @@ journal PDF files from a local mirror of https://mykoweb.com/systematics/journal
 import os
 import re
 from pathlib import Path
-from typing import Dict, Any, Optional
-import couchdb
-from urllib.robotparser import RobotFileParser
+from typing import Any, Dict, Optional
 
 from .ingestor import Ingestor
 
@@ -44,41 +42,21 @@ class LocalMykowebJournalsIngestor(Ingestor):
 
     def __init__(
         self,
-        db: couchdb.Database,
-        user_agent: str,
-        robot_parser: RobotFileParser,
-        verbosity: int = 2,
-        local_pdf_map: Optional[Dict[str, str]] = None,
-        rate_limit_min_ms: int = 1000,
-        rate_limit_max_ms: int = 5000,
         root: Optional[Path] = None,
         local_path_prefix: str = '/data/skol/www/mykoweb.com/systematics/journals',
-        url_prefix: str = 'https://mykoweb.com/systematics/journals'
+        url_prefix: str = 'https://mykoweb.com/systematics/journals',
+        **kwargs: Any
     ) -> None:
         """
         Initialize the LocalMykowebJournalsIngestor.
 
         Args:
-            db: CouchDB database instance
-            user_agent: User agent string for HTTP requests
-            robot_parser: Robot file parser for checking crawl permissions
-            verbosity: Verbosity level (0=silent, 1=warnings, 2=normal, 3=verbose)
-            local_pdf_map: Optional mapping of URL prefixes to local directories
-            rate_limit_min_ms: Minimum delay between requests in milliseconds
-            rate_limit_max_ms: Maximum delay between requests in milliseconds
             root: Root directory to search for journal PDFs (default: DEFAULT_ROOT)
             local_path_prefix: Local path prefix to replace
             url_prefix: URL prefix to use as replacement
+            **kwargs: Base class arguments (db, user_agent, robot_parser, etc.)
         """
-        super().__init__(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map,
-            rate_limit_min_ms=rate_limit_min_ms,
-            rate_limit_max_ms=rate_limit_max_ms
-        )
+        super().__init__(**kwargs)
         self.root = root if root is not None else self.DEFAULT_ROOT
         self.local_path_prefix = local_path_prefix
         self.url_prefix = url_prefix
