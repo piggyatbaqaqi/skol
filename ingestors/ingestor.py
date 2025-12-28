@@ -140,11 +140,7 @@ class Ingestor(ABC):
                 doc[k] = v
 
             # Check if document already exists
-            selector = {'selector': {'pdf_url': doc['pdf_url']}}
-            found = False
-            for _ in self.db.find(selector):
-                found = True
-                break
+            found = doc['_id'] in self.db
             if found:
                 if self.verbosity >= 2:
                     print(f"Skipping {doc['pdf_url']}")
