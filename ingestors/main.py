@@ -27,11 +27,13 @@ try:
     from .local_ingenta import LocalIngentaIngestor
     from .local_mykoweb import LocalMykowebJournalsIngestor
     from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
+    from .mycosphere import MycosphereIngestor
 except ImportError:
     from ingestors.ingenta import IngentaIngestor
     from ingestors.local_ingenta import LocalIngentaIngestor
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
     from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
+    from ingestors.mycosphere import MycosphereIngestor
 
 
 # Predefined ingestion sources from ist769_skol.ipynb
@@ -108,6 +110,12 @@ SOURCES = {
         'mode': 'local',
         'local_path': '/data/skol/www/mykoweb.com/misc',
         'url_prefix': 'https://mykoweb.com/misc',
+    },
+    'mycosphere': {
+        'name': 'Mycosphere',
+        'source': 'mycosphere',
+        'mode': 'web',
+        'archives_url': 'https://mycosphere.org/archives.php',
     },
 }
 
@@ -275,6 +283,7 @@ def get_robots_url(source: str, custom_url: Optional[str]) -> str:
         'mykoweb-gsmnp': 'https://mykoweb.com/robots.txt',
         'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
         'mykoweb-misc': 'https://mykoweb.com/robots.txt',
+        'mycosphere': 'https://mycosphere.org/robots.txt',
     }
 
     return robots_urls.get(source, '')
@@ -290,7 +299,8 @@ def run_ingestion(
     robots_url: Optional[str] = None,
     bibtex_pattern: str = 'format=bib',
     verbosity: int = 2,
-    url_prefix: Optional[str] = None
+    url_prefix: Optional[str] = None,
+    archives_url: Optional[str] = None
 ) -> None:
     """
     Run a single ingestion task.
@@ -298,13 +308,15 @@ def run_ingestion(
     Args:
         db: CouchDB database instance
         source: Source type ('ingenta', etc.)
-        mode: Ingestion mode ('rss' or 'local')
+        mode: Ingestion mode ('rss', 'local', or 'web')
         rss_url: RSS feed URL (required if mode='rss')
         local_path: Local directory path (required if mode='local')
         user_agent: User agent string
         robots_url: Custom robots.txt URL
         bibtex_pattern: BibTeX filename pattern
         verbosity: Verbosity level
+        url_prefix: URL prefix for local file mapping
+        archives_url: Archives URL for web scraping (required if mode='web')
     """
     # Set up robot parser
     robots_url_final = get_robots_url(source, robots_url)
@@ -426,6 +438,14 @@ def run_ingestion(
             verbosity=verbosity,
             local_pdf_map=local_pdf_map
         )
+    elif source == 'mycosphere':
+        # Mycosphere web scraper
+        ingestor = MycosphereIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity
+        )
     else:
         raise ValueError(f"Unknown source '{source}'")
 
@@ -460,6 +480,14 @@ def run_ingestion(
                 root=local_path,
                 bibtex_file_pattern=bibtex_pattern
             )
+    elif mode == 'web':
+        # Web scraping mode (e.g., Mycosphere)
+        if isinstance(ingestor, MycosphereIngestor):
+            if verbosity >= 2:
+                print(f"Scraping archives from: {archives_url or ingestor.ARCHIVES_URL}")
+            ingestor.ingest_from_archives(archives_url=archives_url or ingestor.ARCHIVES_URL)
+        else:
+            raise ValueError(f"Source '{source}' does not support web scraping mode")
     else:
         raise ValueError(f"Unknown mode '{mode}'")
 
@@ -545,7 +573,8 @@ def main() -> int:
                     robots_url=args.robots_url,
                     bibtex_pattern=args.bibtex_pattern,
                     verbosity=args.verbosity,
-                    url_prefix=config.get('url_prefix')
+                    url_prefix=config.get('url_prefix'),
+                    archives_url=config.get('archives_url')
                 )
         elif args.publication:
             # Use predefined source
@@ -563,7 +592,8 @@ def main() -> int:
                 robots_url=args.robots_url,
                 bibtex_pattern=args.bibtex_pattern,
                 verbosity=args.verbosity,
-                url_prefix=config.get('url_prefix')
+                url_prefix=config.get('url_prefix'),
+                archives_url=config.get('archives_url')
             )
         elif args.rss:
             # Direct RSS mode
