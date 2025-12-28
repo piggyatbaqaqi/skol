@@ -12,8 +12,10 @@ ingestors/
 ├── local_ingenta.py         # Local IngentaConnect mirror implementation
 ├── local_mykoweb.py         # Local Mykoweb journals implementation
 ├── local_mykoweb_literature.py # Local Mykoweb literature/books implementation
+├── mycosphere.py            # Mycosphere web scraper implementation
 ├── main.py                  # CLI entry point
 ├── migrate_to_uuid5.py      # Database migration script
+├── test_mycosphere.py       # Standalone test for Mycosphere scraper
 └── README.md                # This file
 ```
 
@@ -68,6 +70,7 @@ The following publication sources are defined:
 | `mykoweb-gsmnp` | Mykoweb GSMNP | Local | /data/skol/www/mykoweb.com/GSMNP |
 | `mykoweb-pholiota` | Mykoweb Pholiota | Local | /data/skol/www/mykoweb.com/Pholiota |
 | `mykoweb-misc` | Mykoweb Misc | Local | /data/skol/www/mykoweb.com/misc |
+| `mycosphere` | Mycosphere | Web | https://mycosphere.org/archives.php |
 
 ### Verbosity Levels
 
@@ -303,6 +306,53 @@ The local PDF mapping automatically handles URL-encoded characters. For example:
 - The system will find the file even though the URL has `%20` instead of a space
 
 This feature reduces network traffic and speeds up ingestion when you have local copies of PDFs.
+
+### Ingesting from Mycosphere (web scraping)
+
+```python
+from urllib.robotparser import RobotFileParser
+import couchdb
+from ingestors import MycosphereIngestor
+
+# Set up dependencies
+couch = couchdb.Server('http://localhost:5984')
+db = couch['skol_dev']
+
+user_agent = "synoptickeyof.life"
+robot_parser = RobotFileParser()
+robot_parser.set_url("https://mycosphere.org/robots.txt")
+robot_parser.read()
+
+# Create ingestor for Mycosphere
+ingestor = MycosphereIngestor(
+    db=db,
+    user_agent=user_agent,
+    robot_parser=robot_parser,
+    verbosity=2
+)
+
+# Ingest from Mycosphere archives
+# Starts at archives page, follows volume links, then issue links
+# Extracts: title, authors, volume, number, dates, pages, abstract, keywords
+ingestor.ingest_from_archives(
+    archives_url='https://mycosphere.org/archives.php',
+    max_volumes=1  # Optional: limit for testing
+)
+```
+
+### Testing Mycosphere Scraper
+
+A standalone test program is provided to verify metadata extraction:
+
+```bash
+python3 ingestors/test_mycosphere.py
+```
+
+This test program:
+- Extracts volume links from the archives page
+- Tests metadata extraction from both issue pages and volume index pages
+- Saves extracted metadata to JSON files for inspection
+- Does not actually ingest into the database
 
 ## Creating New Ingestors
 
