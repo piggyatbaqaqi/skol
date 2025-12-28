@@ -16,7 +16,7 @@ import bibtexparser
 import couchdb
 import feedparser
 import requests
-from uuid import uuid4
+from uuid import uuid5, NAMESPACE_URL
 
 
 class Ingestor(ABC):
@@ -125,11 +125,13 @@ class Ingestor(ABC):
         """
         for doc_dict in documents:
             # Create document with formatted URLs
+            pdf_url = self.format_pdf_url(doc_dict)
+            # Use UUID5 to create a consistent document ID based on the PDF URL
             doc = {
-                '_id': uuid4().hex,
+                '_id': uuid5(NAMESPACE_URL, pdf_url).hex,
                 'meta': meta,
                 'bibtex_url': self.format_bibtex_url(doc_dict, bibtex_link),
-                'pdf_url': self.format_pdf_url(doc_dict),
+                'pdf_url': pdf_url,
                 'human_url': self.format_human_url(doc_dict),
             }
 
