@@ -48,8 +48,26 @@ class PublicationRegistry:
         'studies-in-mycology': {
             'name': 'Studies in Mycology',
             'source': 'ingenta',
+            'mode': 'index',
+            'index_url': 'https://api.ingentaconnect.com/content/wfbi/sim?format=index',
+        },
+        'studies-in-mycology-rss': {
+            'name': 'Studies in Mycology',
+            'source': 'ingenta',
             'mode': 'rss',
             'rss_url': 'https://api.ingentaconnect.com/content/wfbi/sim?format=rss',
+        },
+        'persoonia': {
+            'name': 'Persoonia',
+            'source': 'ingenta',
+            'mode': 'index',
+            'index_url': 'https://api.ingentaconnect.com/content/wfbi/pimj?format=index',
+        },
+        'persoonia-rss': {
+            'name': 'Persoonia',
+            'source': 'ingenta',
+            'mode': 'rss',
+            'rss_url': 'https://api.ingentaconnect.com/content/wfbi/pimj?format=rss',
         },
         'ingenta-local': {
             'name': 'Ingenta Local BibTeX Files',

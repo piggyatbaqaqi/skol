@@ -201,8 +201,8 @@ def run_ingestion(
 
     Args:
         db: CouchDB database instance
-        source: Source type ('ingenta', etc.)
-        mode: Ingestion mode ('rss', 'local', or 'web')
+        source: Source type ('ingenta', 'mycosphere', etc.)
+        mode: Ingestion mode ('rss', 'local', 'web', or 'index')
         rss_url: RSS feed URL (required if mode='rss')
         local_path: Local directory path (required if mode='local')
         user_agent: User agent string
@@ -210,7 +210,7 @@ def run_ingestion(
         bibtex_pattern: BibTeX filename pattern
         verbosity: Verbosity level
         url_prefix: URL prefix for local file mapping
-        archives_url: Archives URL for web scraping (required if mode='web')
+        archives_url: Archives/index URL for web scraping (required if mode='web' or 'index')
         rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
         rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
     """
@@ -233,12 +233,25 @@ def run_ingestion(
                 root=local_path,
                 bibtex_pattern=bibtex_pattern
             )
+        elif mode == 'index':
+            # Index mode (web scraping with volume/issue navigation)
+            ingestor = IngentaIngestor(
+                db=db,
+                user_agent=user_agent,
+                robot_parser=robot_parser,
+                verbosity=verbosity,
+                rate_limit_min_ms=rate_limit_min_ms,
+                rate_limit_max_ms=rate_limit_max_ms,
+                index_url=archives_url  # archives_url contains the index URL
+            )
         else:  # RSS mode
             ingestor = IngentaIngestor(
                 db=db,
                 user_agent=user_agent,
                 robot_parser=robot_parser,
                 verbosity=verbosity,
+                rate_limit_min_ms=rate_limit_min_ms,
+                rate_limit_max_ms=rate_limit_max_ms,
                 rss_url=rss_url
             )
     elif source == 'mykoweb-journals':
@@ -406,7 +419,7 @@ def main() -> int:
                     bibtex_pattern=args.bibtex_pattern,
                     verbosity=args.verbosity,
                     url_prefix=config.get('url_prefix'),
-                    archives_url=config.get('archives_url'),
+                    archives_url=config.get('archives_url') or config.get('index_url'),
                     rate_limit_min_ms=config.get('rate_limit_min_ms', 1000),
                     rate_limit_max_ms=config.get('rate_limit_max_ms', 5000)
                 )
@@ -431,7 +444,7 @@ def main() -> int:
                 bibtex_pattern=args.bibtex_pattern,
                 verbosity=args.verbosity,
                 url_prefix=config.get('url_prefix'),
-                archives_url=config.get('archives_url'),
+                archives_url=config.get('archives_url') or config.get('index_url'),
                 rate_limit_min_ms=config.get('rate_limit_min_ms', 1000),
                 rate_limit_max_ms=config.get('rate_limit_max_ms', 5000)
             )
