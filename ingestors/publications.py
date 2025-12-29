@@ -39,12 +39,19 @@ class PublicationRegistry:
 
     # Publication source configurations
     SOURCES: Dict[str, Dict[str, Any]] = {
-        'mycotaxon': {
+        'mycotaxon-rss': {
             'name': 'Mycotaxon',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
             'rss_url': 'https://api.ingentaconnect.com/content/mtax/mt?format=rss',
+        },
+        'mycotaxon': {
+            'name': 'Mycotaxon',
+            'source': 'ingenta',
+            'ingestor_class': 'IngentaIngestor',
+            'mode': 'index',
+            'index_url': 'https://api.ingentaconnect.com/content/mtax/mt?format=index',
         },
         'studies-in-mycology': {
             'name': 'Studies in Mycology',
