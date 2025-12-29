@@ -153,7 +153,9 @@ class Ingestor(ABC):
             kwargs['headers'] = headers
 
         response = requests.get(url, **kwargs)
-        response.raise_for_status()
+        if response.status_code != 200:
+            if self.verbosity >= 1:
+                print(f"  Warning: Received status code {response.status_code} for URL: {url}")
         return response
 
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
@@ -178,6 +180,7 @@ class Ingestor(ABC):
 
         try:
             response = self._get_with_rate_limit(url)
+            response.raise_for_status()
             return BeautifulSoup(response.content, 'html.parser')
         except Exception as e:
             if self.verbosity >= 1:
@@ -350,6 +353,10 @@ class Ingestor(ABC):
                 if self.verbosity >= 3:
                     print(f"  Downloading PDF from: {pdf_url}")
                 response = self._get_with_rate_limit(pdf_url, stream=False)
+                if response.status_code != 200:
+                    if self.verbosity >= 1:
+                        print(f"  Failed to download PDF: {pdf_url} (status code {response.status_code})")
+                    continue
                 pdf_doc = response.content
 
             attachment_filename = 'article.pdf'
@@ -464,7 +471,10 @@ class Ingestor(ABC):
 
             # Fetch BibTeX file with rate limiting
             bibtex_response = self._get_with_rate_limit(bibtex_link, stream=False)
-
+            if bibtex_response.status_code != 200:
+                if self.verbosity >= 1:
+                    print(f"  Failed to download BibTeX: {bibtex_link} (status code {bibtex_response.status_code})")
+                continue
             self.ingest_from_bibtex(
                 content=bibtex_response.content,
                 bibtex_link=bibtex_link,
