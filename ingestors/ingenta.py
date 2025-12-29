@@ -264,6 +264,12 @@ class IngentaIngestor(Ingestor):
 
             article_url = urljoin(self.BASE_URL, href_clean)
 
+            # Skip if we've already ingested this article.
+            if self._is_url_ingested(article_url):
+                if self.verbosity >= 3:
+                    print(f"      Skipping already ingested article: {title[:50]}...")
+                continue
+
             # Extract page numbers
             pages = None
             pages_elem = parent.find(string=re.compile(r'pp\.\s*\d+'))
