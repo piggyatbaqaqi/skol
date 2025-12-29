@@ -49,7 +49,8 @@ class Ingestor(ABC):
         verbosity: int = 2,
         local_pdf_map: Optional[Dict[str, str]] = None,
         rate_limit_min_ms: int = 1000,
-        rate_limit_max_ms: int = 5000
+        rate_limit_max_ms: int = 5000,
+        **kwargs: Any
     ) -> None:
         """
         Initialize the Ingestor.
@@ -66,6 +67,7 @@ class Ingestor(ABC):
                 Example: {'https://mykoweb.com/journals': '/data/skol/www/mykoweb.com/journals'}
             rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
             rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
+            **kwargs: Additional parameters (ignored by base class, used by subclasses)
         """
         self.db = db
         self.user_agent = user_agent
