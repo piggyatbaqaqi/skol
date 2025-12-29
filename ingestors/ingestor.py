@@ -437,11 +437,26 @@ class Ingestor(ABC):
         """
         feed = feedparser.parse(rss_url)
 
+        # Check if feedparser successfully parsed the feed
+        if feed.bozo:
+            # Parse error - likely got HTML error page instead of RSS
+            error_msg = f"Failed to parse RSS feed from {rss_url}"
+            if hasattr(feed, 'bozo_exception'):
+                error_msg += f": {feed.bozo_exception}"
+            # Check if we got an access denied page
+            if hasattr(feed.feed, 'summary') and 'Access Denied' in feed.feed.get('summary', ''):
+                error_msg = f"Access denied when fetching RSS feed from {rss_url}"
+            if self.verbosity >= 1:
+                print(f"ERROR: {error_msg}")
+            raise ValueError(error_msg)
+
+        # feedparser normalizes all feed formats to feed.feed
+        # Use getattr with defaults for missing optional fields
         feed_meta = {
             'url': rss_url,
-            'title': feed.feed.title,
-            'link': feed.feed.link,
-            'description': feed.feed.description,
+            'title': getattr(feed.feed, 'title', 'Unknown'),
+            'link': getattr(feed.feed, 'link', rss_url),
+            'description': getattr(feed.feed, 'description', ''),
         }
 
         for entry in feed.entries:
