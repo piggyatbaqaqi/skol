@@ -25,6 +25,7 @@ class PublicationRegistry:
     # Robots.txt URLs for each source
     ROBOTS_URLS: Dict[str, str] = {
         'ingenta': 'https://www.ingentaconnect.com/robots.txt',
+        'mdpi': 'https://www.mdpi.com/robots.txt',
         'mykoweb-journals': 'https://mykoweb.com/robots.txt',
         'mykoweb-literature': 'https://mykoweb.com/robots.txt',
         'mykoweb-caf': 'https://mykoweb.com/robots.txt',
@@ -101,6 +102,24 @@ class PublicationRegistry:
             'ingestor_class': 'LocalIngentaIngestor',
             'mode': 'local',
             'local_path': '/data/skol/www/www.ingentaconnect.com',
+        },
+        'jof-rss': {
+            'name': 'Journal of Fungi',
+            'source': 'mdpi',
+            'ingestor_class': 'MdpiIngestor',
+            'mode': 'rss',
+            'rss_url': 'https://www.mdpi.com/rss/journal/jof',
+            'journal_code': 'jof',
+            'issn': '2309-608X',
+        },
+        'jof': {
+            'name': 'Journal of Fungi',
+            'source': 'mdpi',
+            'ingestor_class': 'MdpiIngestor',
+            'mode': 'index',
+            'index_url': 'https://www.mdpi.com/journal/jof',
+            'journal_code': 'jof',
+            'issn': '2309-608X',
         },
         'mykoweb-journals': {
             'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',

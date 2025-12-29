@@ -27,6 +27,7 @@ try:
     from .local_ingenta import LocalIngentaIngestor
     from .local_mykoweb import LocalMykowebJournalsIngestor
     from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
+    from .mdpi import MdpiIngestor
     from .mycosphere import MycosphereIngestor
     from .taylor_francis import TaylorFrancisIngestor
     from .publications import PublicationRegistry
@@ -35,6 +36,7 @@ except ImportError:
     from ingestors.local_ingenta import LocalIngentaIngestor
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
     from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
+    from ingestors.mdpi import MdpiIngestor
     from ingestors.mycosphere import MycosphereIngestor
     from ingestors.taylor_francis import TaylorFrancisIngestor
     from ingestors.publications import PublicationRegistry
@@ -46,6 +48,7 @@ INGESTOR_CLASSES = {
     'LocalIngentaIngestor': LocalIngentaIngestor,
     'LocalMykowebJournalsIngestor': LocalMykowebJournalsIngestor,
     'LocalMykowebLiteratureIngestor': LocalMykowebLiteratureIngestor,
+    'MdpiIngestor': MdpiIngestor,
     'MycosphereIngestor': MycosphereIngestor,
     'TaylorFrancisIngestor': TaylorFrancisIngestor,
 }
