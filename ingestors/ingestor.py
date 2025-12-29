@@ -302,11 +302,26 @@ class Ingestor(ABC):
                 doc[k] = v
 
             # Check if document already exists
-            found = doc['_id'] in self.db
-            if found:
+            doc_exists = doc['_id'] in self.db
+            if doc_exists:
+                # Document exists - check if it has PDF attachment
+                existing_doc = self.db[doc['_id']]
+                has_pdf = '_attachments' in existing_doc and 'article.pdf' in existing_doc['_attachments']
+
+                if has_pdf:
+                    # Document has PDF, skip it
+                    if self.verbosity >= 2:
+                        print(f"Skipping {pdf_url} (already has PDF)")
+                    continue
+                else:
+                    # Document exists but missing PDF - we'll add it below
+                    if self.verbosity >= 2:
+                        print(f"Adding PDF to existing record: {pdf_url}")
+                    doc = existing_doc  # Use existing doc to preserve _rev
+            else:
+                # New document
                 if self.verbosity >= 2:
-                    print(f"Skipping {pdf_url}")
-                continue
+                    print(f"Adding {pdf_url}")
 
             # Check robot permissions
             if not self.robot_parser.can_fetch(self.user_agent, pdf_url):
@@ -315,11 +330,9 @@ class Ingestor(ABC):
                     print(f"Robot permission denied {pdf_url}")
                 continue
 
-            if self.verbosity >= 2:
-                print(f"Adding {pdf_url}")
-
-            # Save document to CouchDB
-            _doc_id, _doc_rev = self.db.save(doc)
+            # Save document to CouchDB if it's new
+            if not doc_exists:
+                _doc_id, _doc_rev = self.db.save(doc)
 
             # Fetch PDF - check local first, then download if needed
             local_pdf_path = self._get_local_pdf_path(pdf_url)
