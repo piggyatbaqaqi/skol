@@ -67,13 +67,21 @@ class IngentaIngestor(Ingestor):
         """
         Format PDF URL for Ingenta with crawler parameter.
 
+        Removes session IDs (;jsessionid=...) to ensure stable URLs for indexing.
+
         Args:
             base_url: The base URL from the BibTeX entry
 
         Returns:
-            URL with ?crawler=true appended
+            URL with session ID removed and ?crawler=true appended
         """
-        return f"{base['url']}?crawler=true"
+        url = base['url']
+
+        # Remove session ID if present (e.g., ;jsessionid=e7caa4aba81qk.x-ic-live-01)
+        # Session ID appears after semicolon and before ? or end of string
+        url_clean = url.split(';')[0]
+
+        return f"{url_clean}?crawler=true"
 
     def format_human_url(self, base: Dict[str, str]) -> str:
         """
@@ -245,7 +253,16 @@ class IngentaIngestor(Ingestor):
                 continue
 
             title = title_link.get_text(strip=True)
-            article_url = urljoin(self.BASE_URL, title_link.get('href', ''))
+            href = title_link.get('href', '')
+
+            # Ensure href is a string
+            if not isinstance(href, str):
+                continue
+
+            # Clean session IDs from href (e.g., ;jsessionid=...)
+            href_clean = href.split(';')[0]
+
+            article_url = urljoin(self.BASE_URL, href_clean)
 
             # Extract page numbers
             pages = None
