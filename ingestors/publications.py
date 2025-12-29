@@ -39,6 +39,20 @@ class PublicationRegistry:
 
     # Publication source configurations
     SOURCES: Dict[str, Dict[str, Any]] = {
+        'fuse-rss': {
+            'name': 'Fungal Systematics and Evolution',
+            'source': 'ingenta',
+            'ingestor_class': 'IngentaIngestor',
+            'mode': 'rss',
+            'rss_url': 'https://api.ingentaconnect.com/content/wfbi/fuse?format=rss',
+        },
+        'fuse': {
+            'name': 'Fungal Systematics and Evolution',
+            'source': 'ingenta',
+            'ingestor_class': 'IngentaIngestor',
+            'mode': 'index',
+            'index_url': 'https://api.ingentaconnect.com/content/wfbi/fuse?format=index',
+        },
         'mycotaxon-rss': {
             'name': 'Mycotaxon',
             'source': 'ingenta',
