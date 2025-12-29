@@ -396,7 +396,7 @@ def main() -> int:
         return 1
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        if args.verbosity >= 3:
+        if args.verbosity >= 1:
             import traceback
             traceback.print_exc()
         return 1
