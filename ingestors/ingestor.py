@@ -366,6 +366,23 @@ class Ingestor(ABC):
             if self.verbosity >= 3:
                 print("-" * 10)
 
+    def _is_url_ingested(self, url: str) -> bool:
+        """
+        Check if a URL has already been ingested.
+
+        We do this check twice so that we can bail out early if we already
+        have the PDF attachment.
+
+        Args:
+            url: URL to check
+        Returns:
+            True if the URL has been fully ingested, False otherwise
+        """
+        doc_id = uuid5(NAMESPACE_URL, url).hex
+        return (doc_id in self.db and
+                '_attachments' in self.db[doc_id] and
+                'article.pdf' in self.db[doc_id]['_attachments'])
+
     def ingest_from_bibtex(
         self,
         content: bytes,
