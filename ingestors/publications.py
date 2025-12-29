@@ -34,6 +34,7 @@ class PublicationRegistry:
         'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
         'mykoweb-misc': 'https://mykoweb.com/robots.txt',
         'mycosphere': 'https://mycosphere.org/robots.txt',
+        'taylor-francis-mycology': 'https://www.tandfonline.com/robots.txt',
     }
 
     # Publication source configurations
@@ -116,6 +117,17 @@ class PublicationRegistry:
             'source': 'mycosphere',
             'mode': 'web',
             'archives_url': 'https://mycosphere.org/archives.php',
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 5000,
+        },
+        'taylor-francis-mycology': {
+            'name': 'Mycology (Taylor & Francis)',
+            'source': 'taylor-francis-mycology',
+            'mode': 'web',
+            'archives_url': 'https://www.tandfonline.com/loi/tmyc20',
+            'journal_name': 'Mycology',
+            'issn': '2150-1203',
+            'eissn': '2150-1211',
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 5000,
         },

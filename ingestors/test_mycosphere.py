@@ -18,25 +18,11 @@ if __name__ == '__main__' and __package__ is None:
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
 
-# Mock CouchDB database for testing
-class MockDatabase:
-    """Mock database that doesn't actually store anything."""
-
-    def __init__(self):
-        self.documents = []
-
-    def save(self, doc):
-        """Mock save - just collect documents."""
-        self.documents.append(doc)
-        return (doc.get('_id'), 'mock-rev')
-
-    def __getitem__(self, doc_id):
-        """Mock getitem - always returns None (not found)."""
-        return None
-
-    def get(self, doc_id):
-        """Mock get - always returns None (not found)."""
-        return None
+# Import mock database
+try:
+    from ingestors.mock_database import MockDatabase
+except ImportError:
+    from mock_database import MockDatabase
 
 
 # Import the ingestor

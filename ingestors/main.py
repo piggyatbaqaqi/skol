@@ -28,6 +28,7 @@ try:
     from .local_mykoweb import LocalMykowebJournalsIngestor
     from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
     from .mycosphere import MycosphereIngestor
+    from .taylor_francis import TaylorFrancisIngestor
     from .publications import PublicationRegistry
 except ImportError:
     from ingestors.ingenta import IngentaIngestor
@@ -35,6 +36,7 @@ except ImportError:
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
     from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
     from ingestors.mycosphere import MycosphereIngestor
+    from ingestors.taylor_francis import TaylorFrancisIngestor
     from ingestors.publications import PublicationRegistry
 
 
@@ -290,6 +292,21 @@ def run_ingestion(
             rate_limit_min_ms=rate_limit_min_ms,
             rate_limit_max_ms=rate_limit_max_ms,
             archives_url=archives_url
+        )
+    elif source == 'taylor-francis-mycology':
+        # Taylor & Francis journals - get config for journal-specific params
+        config = PublicationRegistry.get(source)
+        ingestor = TaylorFrancisIngestor(
+            db=db,
+            user_agent=user_agent,
+            robot_parser=robot_parser,
+            verbosity=verbosity,
+            rate_limit_min_ms=rate_limit_min_ms,
+            rate_limit_max_ms=rate_limit_max_ms,
+            archives_url=archives_url,
+            journal_name=config.get('journal_name') if config else None,
+            issn=config.get('issn') if config else None,
+            eissn=config.get('eissn') if config else None
         )
     else:
         raise ValueError(f"Unknown source '{source}'")
