@@ -40,6 +40,17 @@ except ImportError:
     from ingestors.publications import PublicationRegistry
 
 
+# Registry mapping ingestor class names to actual classes
+INGESTOR_CLASSES = {
+    'IngentaIngestor': IngentaIngestor,
+    'LocalIngentaIngestor': LocalIngentaIngestor,
+    'LocalMykowebJournalsIngestor': LocalMykowebJournalsIngestor,
+    'LocalMykowebLiteratureIngestor': LocalMykowebLiteratureIngestor,
+    'MycosphereIngestor': MycosphereIngestor,
+    'TaylorFrancisIngestor': TaylorFrancisIngestor,
+}
+
+
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -183,38 +194,23 @@ Examples:
 
 def run_ingestion(
     db: couchdb.Database,
-    source: str,
-    mode: str,
-    rss_url: Optional[str] = None,
-    local_path: Optional[Path] = None,
+    config: Dict,
     user_agent: str = 'synoptickeyof.life',
     robots_url: Optional[str] = None,
-    bibtex_pattern: str = 'format=bib',
-    verbosity: int = 2,
-    url_prefix: Optional[str] = None,
-    archives_url: Optional[str] = None,
-    rate_limit_min_ms: int = 1000,
-    rate_limit_max_ms: int = 5000
+    verbosity: int = 2
 ) -> None:
     """
     Run a single ingestion task.
 
     Args:
         db: CouchDB database instance
-        source: Source type ('ingenta', 'mycosphere', etc.)
-        mode: Ingestion mode ('rss', 'local', 'web', or 'index')
-        rss_url: RSS feed URL (required if mode='rss')
-        local_path: Local directory path (required if mode='local')
+        config: Publication configuration dictionary from PublicationRegistry
         user_agent: User agent string
         robots_url: Custom robots.txt URL
-        bibtex_pattern: BibTeX filename pattern
         verbosity: Verbosity level
-        url_prefix: URL prefix for local file mapping
-        archives_url: Archives/index URL for web scraping (required if mode='web' or 'index')
-        rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
-        rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
     """
     # Set up robot parser
+    source = config.get('source', 'unknown')
     robots_url_final = PublicationRegistry.get_robots_url(source, robots_url)
     if verbosity >= 3:
         print(f"Loading robots.txt from {robots_url_final}")
@@ -222,117 +218,38 @@ def run_ingestion(
     robot_parser.set_url(robots_url_final)
     robot_parser.read()
 
-    # Create appropriate ingestor based on source and mode
-    if source == 'ingenta':
-        if mode == 'local':
-            ingestor = LocalIngentaIngestor(
-                db=db,
-                user_agent=user_agent,
-                robot_parser=robot_parser,
-                verbosity=verbosity,
-                root=local_path,
-                bibtex_pattern=bibtex_pattern
-            )
-        elif mode == 'index':
-            # Index mode (web scraping with volume/issue navigation)
-            ingestor = IngentaIngestor(
-                db=db,
-                user_agent=user_agent,
-                robot_parser=robot_parser,
-                verbosity=verbosity,
-                rate_limit_min_ms=rate_limit_min_ms,
-                rate_limit_max_ms=rate_limit_max_ms,
-                index_url=archives_url  # archives_url contains the index URL
-            )
-        else:  # RSS mode
-            ingestor = IngentaIngestor(
-                db=db,
-                user_agent=user_agent,
-                robot_parser=robot_parser,
-                verbosity=verbosity,
-                rate_limit_min_ms=rate_limit_min_ms,
-                rate_limit_max_ms=rate_limit_max_ms,
-                rss_url=rss_url
-            )
-    elif source == 'mykoweb-journals':
-        # Configure local PDF mapping for Mykoweb journals
-        local_pdf_map = {
-            'https://mykoweb.com/systematics/journals': '/data/skol/www/mykoweb.com/systematics/journals'
-        }
-        ingestor = LocalMykowebJournalsIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map,
-            root=local_path,
-            local_path_prefix=str(local_path) if local_path else '/data/skol/www/mykoweb.com/systematics/journals',
-            url_prefix=url_prefix or 'https://mykoweb.com/systematics/journals'
-        )
-    elif source in ('mykoweb-literature', 'mykoweb-caf', 'mykoweb-crepidotus',
-                     'mykoweb-oldbooks', 'mykoweb-gsmnp', 'mykoweb-pholiota', 'mykoweb-misc'):
-        # Configure local PDF mapping for Mykoweb literature sources
-        source_prefix_map = {
-            'mykoweb-literature': ('https://mykoweb.com/systematics/literature',
-                                  '/data/skol/www/mykoweb.com/systematics/literature'),
-            'mykoweb-caf': ('https://mykoweb.com/CAF', '/data/skol/www/mykoweb.com/CAF'),
-            'mykoweb-crepidotus': ('https://mykoweb.com/Crepidotus', '/data/skol/www/mykoweb.com/Crepidotus'),
-            'mykoweb-oldbooks': ('https://mykoweb.com/OldBooks', '/data/skol/www/mykoweb.com/OldBooks'),
-            'mykoweb-gsmnp': ('https://mykoweb.com/GSMNP', '/data/skol/www/mykoweb.com/GSMNP'),
-            'mykoweb-pholiota': ('https://mykoweb.com/Pholiota', '/data/skol/www/mykoweb.com/Pholiota'),
-            'mykoweb-misc': ('https://mykoweb.com/misc', '/data/skol/www/mykoweb.com/misc'),
-        }
-        url_prefix_default, local_prefix_default = source_prefix_map[source]
-        local_pdf_map = {url_prefix_default: local_prefix_default}
+    # Get the ingestor class
+    ingestor_class_name = config.get('ingestor_class')
+    if not ingestor_class_name:
+        raise ValueError(f"No ingestor_class specified for source '{source}'")
 
-        ingestor = LocalMykowebLiteratureIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            local_pdf_map=local_pdf_map,
-            root=local_path,
-            local_path_prefix=str(local_path) if local_path else local_prefix_default,
-            url_prefix=url_prefix or url_prefix_default
-        )
-    elif source == 'mycosphere':
-        # Mycosphere web scraper
-        ingestor = MycosphereIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            rate_limit_min_ms=rate_limit_min_ms,
-            rate_limit_max_ms=rate_limit_max_ms,
-            archives_url=archives_url
-        )
-    elif source == 'taylor-francis-mycology':
-        # Taylor & Francis journals - get config for journal-specific params
-        config = PublicationRegistry.get(source)
-        ingestor = TaylorFrancisIngestor(
-            db=db,
-            user_agent=user_agent,
-            robot_parser=robot_parser,
-            verbosity=verbosity,
-            rate_limit_min_ms=rate_limit_min_ms,
-            rate_limit_max_ms=rate_limit_max_ms,
-            archives_url=archives_url,
-            journal_name=config.get('journal_name') if config else None,
-            issn=config.get('issn') if config else None,
-            eissn=config.get('eissn') if config else None
-        )
-    else:
-        raise ValueError(f"Unknown source '{source}'")
+    ingestor_class = INGESTOR_CLASSES.get(ingestor_class_name)
+    if not ingestor_class:
+        raise ValueError(f"Unknown ingestor class: {ingestor_class_name}")
+
+    # Prepare constructor arguments - pass everything from config plus common params
+    # Each ingestor will ignore params it doesn't need via **kwargs
+    constructor_args = {
+        'db': db,
+        'user_agent': user_agent,
+        'robot_parser': robot_parser,
+        'verbosity': verbosity,
+        # Add all config values (mode, urls, paths, etc.)
+        **{k: Path(v) if k in ('root', 'local_path') and isinstance(v, str) else v
+           for k, v in config.items()
+           if k not in ('name', 'source', 'ingestor_class')},
+    }
+
+    # Special handling for local PDF maps (for Mykoweb ingestors)
+    if 'local_path_prefix' in config and 'url_prefix' in config:
+        constructor_args['local_pdf_map'] = {
+            config['url_prefix']: config['local_path_prefix']
+        }
+
+    # Create and run the ingestor
+    ingestor = ingestor_class(**constructor_args)
 
     # Perform ingestion using polymorphic ingest() method
-    if verbosity >= 2:
-        if mode == 'rss' and rss_url:
-            print(f"Ingesting from RSS feed: {rss_url}")
-        elif mode == 'local' and local_path:
-            print(f"Ingesting from local directory: {local_path}")
-        elif mode == 'web' and archives_url:
-            print(f"Scraping archives from: {archives_url}")
-
     ingestor.ingest()
 
 
@@ -410,18 +327,10 @@ def main() -> int:
 
                 run_ingestion(
                     db=db,
-                    source=config['source'],
-                    mode=config['mode'],
-                    rss_url=config.get('rss_url'),
-                    local_path=Path(config['local_path']) if config.get('local_path') else None,
+                    config=config,
                     user_agent=args.user_agent,
                     robots_url=args.robots_url,
-                    bibtex_pattern=args.bibtex_pattern,
-                    verbosity=args.verbosity,
-                    url_prefix=config.get('url_prefix'),
-                    archives_url=config.get('archives_url') or config.get('index_url'),
-                    rate_limit_min_ms=config.get('rate_limit_min_ms', 1000),
-                    rate_limit_max_ms=config.get('rate_limit_max_ms', 5000)
+                    verbosity=args.verbosity
                 )
         elif args.publication:
             # Use predefined source
@@ -435,41 +344,42 @@ def main() -> int:
 
             run_ingestion(
                 db=db,
-                source=config['source'],
-                mode=config['mode'],
-                rss_url=config.get('rss_url'),
-                local_path=Path(config['local_path']) if config.get('local_path') else None,
+                config=config,
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
-                bibtex_pattern=args.bibtex_pattern,
-                verbosity=args.verbosity,
-                url_prefix=config.get('url_prefix'),
-                archives_url=config.get('archives_url') or config.get('index_url'),
-                rate_limit_min_ms=config.get('rate_limit_min_ms', 1000),
-                rate_limit_max_ms=config.get('rate_limit_max_ms', 5000)
+                verbosity=args.verbosity
             )
         elif args.rss:
-            # Direct RSS mode
+            # Direct RSS mode - construct config dict
+            config = {
+                'source': args.source,
+                'ingestor_class': 'IngentaIngestor',
+                'mode': 'rss',
+                'rss_url': args.rss,
+                'bibtex_pattern': args.bibtex_pattern,
+            }
             run_ingestion(
                 db=db,
-                source=args.source,
-                mode='rss',
-                rss_url=args.rss,
+                config=config,
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
-                bibtex_pattern=args.bibtex_pattern,
                 verbosity=args.verbosity
             )
         elif args.local:
-            # Direct local mode
+            # Direct local mode - construct config dict
+            config = {
+                'source': args.source,
+                'ingestor_class': 'LocalIngentaIngestor',
+                'mode': 'local',
+                'local_path': str(args.local),
+                'root': str(args.local),
+                'bibtex_pattern': args.bibtex_pattern,
+            }
             run_ingestion(
                 db=db,
-                source=args.source,
-                mode='local',
-                local_path=args.local,
+                config=config,
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
-                bibtex_pattern=args.bibtex_pattern,
                 verbosity=args.verbosity
             )
 
