@@ -88,6 +88,72 @@ class Ingestor(ABC):
         """
         raise NotImplementedError("Subclasses must implement ingest()")
 
+    def _apply_rate_limit(self) -> None:
+        """
+        Apply rate limiting before making an HTTP request.
+
+        Uses Crawl-Delay from robots.txt if available, otherwise uses a
+        random delay between configured min/max bounds.
+        """
+        if self.last_fetch_time is None:
+            return
+
+        # Check if robots.txt specifies a Crawl-Delay
+        crawl_delay = self.robot_parser.crawl_delay(self.user_agent)
+
+        if crawl_delay is not None:
+            # Use Crawl-Delay from robots.txt (in seconds)
+            # crawl_delay can be int, float, or string - convert to float
+            delay_seconds = float(crawl_delay)
+            if self.verbosity >= 3:
+                print(f"  Using Crawl-Delay from robots.txt: {delay_seconds}s")
+        else:
+            # Use random delay between configured bounds (convert ms to seconds)
+            delay_seconds = random.uniform(
+                self.rate_limit_min_ms / 1000.0,
+                self.rate_limit_max_ms / 1000.0
+            )
+            if self.verbosity >= 3:
+                print(f"  Using random delay: {delay_seconds:.2f}s")
+
+        # Calculate time since last fetch
+        elapsed = time.time() - self.last_fetch_time
+        sleep_time = delay_seconds - elapsed
+
+        if sleep_time > 0:
+            if self.verbosity >= 3:
+                print(f"  Sleeping for {sleep_time:.2f}s")
+            time.sleep(sleep_time)
+
+    def _get_with_rate_limit(self, url: str, **kwargs: Any) -> requests.Response:
+        """
+        Wrapper for requests.get() that respects rate limiting.
+
+        Args:
+            url: URL to fetch
+            **kwargs: Additional arguments to pass to requests.get()
+
+        Returns:
+            Response object from requests.get()
+        """
+        self._apply_rate_limit()
+
+        if self.verbosity >= 3:
+            print(f"  Fetching: {url}")
+
+        # Record fetch time before making request
+        self.last_fetch_time = time.time()
+
+        # Ensure User-Agent header is set
+        headers = kwargs.get('headers', {})
+        if 'User-Agent' not in headers:
+            headers['User-Agent'] = self.user_agent
+            kwargs['headers'] = headers
+
+        response = requests.get(url, **kwargs)
+        response.raise_for_status()
+        return response
+
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
         """
         Fetch and parse a web page.
@@ -108,44 +174,8 @@ class Ingestor(ABC):
                 print(f"  Blocked by robots.txt: {url}")
             return None
 
-        # Rate limiting: wait before fetching if we've made a previous request
-        if self.last_fetch_time is not None:
-            # Check if robots.txt specifies a Crawl-Delay
-            crawl_delay = self.robot_parser.crawl_delay(self.user_agent)
-
-            if crawl_delay is not None:
-                # Use Crawl-Delay from robots.txt (in seconds)
-                # crawl_delay can be int, float, or string - convert to float
-                delay_seconds = float(crawl_delay)
-                if self.verbosity >= 3:
-                    print(f"  Using Crawl-Delay from robots.txt: {delay_seconds}s")
-            else:
-                # Use random delay between configured bounds (convert ms to seconds)
-                delay_seconds = random.uniform(
-                    self.rate_limit_min_ms / 1000.0,
-                    self.rate_limit_max_ms / 1000.0
-                )
-                if self.verbosity >= 3:
-                    print(f"  Using random delay: {delay_seconds:.2f}s")
-
-            # Calculate time since last fetch
-            elapsed = time.time() - self.last_fetch_time
-            sleep_time = delay_seconds - elapsed
-
-            if sleep_time > 0:
-                if self.verbosity >= 3:
-                    print(f"  Sleeping for {sleep_time:.2f}s")
-                time.sleep(sleep_time)
-
         try:
-            if self.verbosity >= 3:
-                print(f"  Fetching: {url}")
-
-            # Record fetch time before making request
-            self.last_fetch_time = time.time()
-
-            response = requests.get(url, headers={'User-Agent': self.user_agent})
-            response.raise_for_status()
+            response = self._get_with_rate_limit(url)
             return BeautifulSoup(response.content, 'html.parser')
         except Exception as e:
             if self.verbosity >= 1:
@@ -275,24 +305,24 @@ class Ingestor(ABC):
             found = doc['_id'] in self.db
             if found:
                 if self.verbosity >= 2:
-                    print(f"Skipping {doc['pdf_url']}")
+                    print(f"Skipping {pdf_url}")
                 continue
 
             # Check robot permissions
-            if not self.robot_parser.can_fetch(self.user_agent, doc['pdf_url']):
+            if not self.robot_parser.can_fetch(self.user_agent, pdf_url):
                 # TODO(piggy): We should probably log blocked URLs.
                 if self.verbosity >= 1:
-                    print(f"Robot permission denied {doc['pdf_url']}")
+                    print(f"Robot permission denied {pdf_url}")
                 continue
 
             if self.verbosity >= 2:
-                print(f"Adding {doc['pdf_url']}")
+                print(f"Adding {pdf_url}")
 
             # Save document to CouchDB
             _doc_id, _doc_rev = self.db.save(doc)
 
             # Fetch PDF - check local first, then download if needed
-            local_pdf_path = self._get_local_pdf_path(doc['pdf_url'])
+            local_pdf_path = self._get_local_pdf_path(pdf_url)
 
             if local_pdf_path:
                 # Read PDF from local filesystem
@@ -301,12 +331,11 @@ class Ingestor(ABC):
                 with open(local_pdf_path, 'rb') as pdf_f:
                     pdf_doc = pdf_f.read()
             else:
-                # Download PDF from URL
+                # Download PDF from URL with rate limiting
                 if self.verbosity >= 3:
-                    print(f"  Downloading PDF from: {doc['pdf_url']}")
-                with requests.get(doc['pdf_url'], stream=False) as pdf_f:
-                    pdf_f.raise_for_status()
-                    pdf_doc = pdf_f.content
+                    print(f"  Downloading PDF from: {pdf_url}")
+                response = self._get_with_rate_limit(pdf_url, stream=False)
+                pdf_doc = response.content
 
             attachment_filename = 'article.pdf'
             attachment_content_type = 'application/pdf'
@@ -401,18 +430,17 @@ class Ingestor(ABC):
                     print(f"Robot permission denied {bibtex_link}")
                 continue
 
-            # Fetch BibTeX file
-            with requests.get(bibtex_link, stream=False) as bibtex_f:
-                bibtex_f.raise_for_status()
+            # Fetch BibTeX file with rate limiting
+            bibtex_response = self._get_with_rate_limit(bibtex_link, stream=False)
 
-                self.ingest_from_bibtex(
-                    content=bibtex_f.content,
-                    bibtex_link=bibtex_link,
-                    meta={
-                        'feed': feed_meta,
-                        'entry': entry_meta,
-                    }
-                )
+            self.ingest_from_bibtex(
+                content=bibtex_response.content,
+                bibtex_link=bibtex_link,
+                meta={
+                    'feed': feed_meta,
+                    'entry': entry_meta,
+                }
+            )
             if self.verbosity >= 3:
                 print("=" * 20)
 
