@@ -134,7 +134,8 @@ class IngentaIngestor(Ingestor):
         """
         Extract volume and issue links from the index page.
 
-        The index page has Volume headers followed by issue links.
+        The index page has Volume headers as <li><strong>Volume X</strong></li>
+        followed by sibling <li> elements containing issue links.
 
         Args:
             soup: BeautifulSoup object of index page
@@ -144,8 +145,13 @@ class IngentaIngestor(Ingestor):
         """
         issue_links = []
 
-        # Find all bold text that contains "Volume"
-        volume_headers = soup.find_all('strong', string=re.compile(r'Volume\s+\d+', re.IGNORECASE))
+        # Find all strong tags that contain "Volume"
+        all_strong = soup.find_all('strong')
+        volume_headers = []
+        for strong in all_strong:
+            text = strong.get_text(strip=True)
+            if re.match(r'Volume\s+\d+', text, re.IGNORECASE):
+                volume_headers.append(strong)
 
         for volume_header in volume_headers:
             # Extract volume number from header text
@@ -155,48 +161,51 @@ class IngentaIngestor(Ingestor):
 
             volume = volume_match.group(1)
 
-            # Find the parent list item or container
-            parent = volume_header.find_parent(['li', 'div', 'ul'])
-            if not parent:
+            # Find the parent <li> of this volume header
+            parent_li = volume_header.find_parent('li')
+            if not parent_li:
                 continue
 
-            # Look for issue links in siblings or nested lists
-            # Issues are typically in a nested <ul> after the volume header
-            issue_list = parent.find('ul')
-            if not issue_list:
-                # Try next sibling
-                issue_list = parent.find_next_sibling('ul')
+            # Iterate through next sibling <li> elements until we hit another volume
+            for sibling in parent_li.next_siblings:
+                # Skip non-tag siblings (text nodes, etc.)
+                if not hasattr(sibling, 'name') or sibling.name != 'li':
+                    continue
 
-            if not issue_list:
-                continue
+                # Stop if we hit another volume header
+                if sibling.find('strong'):
+                    break
 
-            # Find all links in the issue list
-            issue_link_elements = issue_list.find_all('a', href=re.compile(r'/content/'))
+                # Find links in this issue <li>
+                links = sibling.find_all('a', href=re.compile(r'/content/'))
 
-            for link in issue_link_elements:
-                href = link.get('href', '')
-                text = link.get_text(strip=True)
+                for link in links:
+                    href = link.get('href', '')
+                    text = link.get_text(strip=True)
 
-                # Extract issue number from link text
-                issue_match = re.search(r'Number\s+(\d+)', text, re.IGNORECASE)
-                if not issue_match:
-                    # Try to extract from href (e.g., /content/wfbi/sim/2025/00000111/00000001)
-                    href_match = re.search(r'/(\d{8})$', href)
-                    if href_match:
-                        issue_num = str(int(href_match.group(1)))  # Remove leading zeros
+                    # Clean session IDs from href
+                    href_clean = href.split(';')[0]
+
+                    # Extract issue number from link text
+                    issue_match = re.search(r'Number\s+(\d+)', text, re.IGNORECASE)
+                    if not issue_match:
+                        # Try to extract from href (e.g., /content/wfbi/pimj/2025/00000054/00000001)
+                        href_match = re.search(r'/(\d{8})$', href_clean)
+                        if href_match:
+                            issue_num = str(int(href_match.group(1)))  # Remove leading zeros
+                        else:
+                            continue
                     else:
-                        continue
-                else:
-                    issue_num = issue_match.group(1)
+                        issue_num = issue_match.group(1)
 
-                full_url = urljoin(self.BASE_URL, href)
+                    full_url = urljoin(self.BASE_URL, href_clean)
 
-                issue_links.append({
-                    'url': full_url,
-                    'volume': volume,
-                    'issue': issue_num,
-                    'text': text
-                })
+                    issue_links.append({
+                        'url': full_url,
+                        'volume': volume,
+                        'issue': issue_num,
+                        'text': text
+                    })
 
         return issue_links
 
