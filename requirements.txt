@@ -27,3 +27,4 @@ tqdm
 tf-keras-nightly==2.21.0.dev20251201
 paperscraper
 habanero
+git+https://github.com/josephisaacturner/pypaperretriever.git
