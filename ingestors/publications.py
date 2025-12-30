@@ -104,6 +104,7 @@ class PublicationRegistry:
             'local_path': '/data/skol/www/www.ingentaconnect.com',
         },
         'jof-rss': {
+            # Currently blocked by technical measures at mdpi.com.
             'name': 'Journal of Fungi',
             'source': 'mdpi',
             'ingestor_class': 'MdpiIngestor',
@@ -113,6 +114,7 @@ class PublicationRegistry:
             'issn': '2309-608X',
         },
         'jof': {
+            # Currently blocked by technical measures at mdpi.com.
             'name': 'Journal of Fungi',
             'source': 'mdpi',
             'ingestor_class': 'MdpiIngestor',
@@ -203,6 +205,7 @@ class PublicationRegistry:
             'rate_limit_max_ms': 5000,
         },
         'taylor-francis-mycology': {
+            # Currently blocked by technical measures at tandfonline.com.
             'name': 'Mycology (Taylor & Francis)',
             'source': 'taylor-francis-mycology',
             'ingestor_class': 'TaylorFrancisIngestor',
@@ -211,8 +214,6 @@ class PublicationRegistry:
             'journal_name': 'Mycology',
             'issn': '2150-1203',
             'eissn': '2150-1211',
-            'rate_limit_min_ms': 1000,
-            'rate_limit_max_ms': 5000,
         },
     }
 
