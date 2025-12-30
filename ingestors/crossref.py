@@ -284,6 +284,9 @@ class CrossrefIngestor(Ingestor):
         Returns:
             PDF content as bytes, or None if download failed
         """
+        # Apply rate limiting before PDF download
+        self._apply_rate_limit()
+
         # Create temporary directory
         temp_dir = tempfile.mkdtemp(prefix='crossref_ingest_')
         temp_path = Path(temp_dir)
@@ -302,6 +305,8 @@ class CrossrefIngestor(Ingestor):
 
             try:
                 retriever.download()
+                # Update last fetch time after download
+                self.last_fetch_time = time.time()
             except Exception as e:
                 if self.verbosity >= 2:
                     print(f"  pypaperretriever failed: {e}")
