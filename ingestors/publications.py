@@ -24,6 +24,7 @@ class PublicationRegistry:
 
     # Robots.txt URLs for each source
     ROBOTS_URLS: Dict[str, str] = {
+        'crossref': 'https://api.crossref.org/robots.txt',
         'ingenta': 'https://www.ingentaconnect.com/robots.txt',
         'mdpi': 'https://www.mdpi.com/robots.txt',
         'mykoweb-journals': 'https://mykoweb.com/robots.txt',
@@ -122,6 +123,16 @@ class PublicationRegistry:
             'index_url': 'https://www.mdpi.com/journal/jof',
             'journal_code': 'jof',
             'issn': '2309-608X',
+        },
+        'jof-crossref': {
+            'name': 'Journal of Fungi',
+            'source': 'crossref',
+            'ingestor_class': 'CrossrefIngestor',
+            'mode': 'api',
+            'issn': '2309-608X',
+            'mailto': 'piggy.yarroll+skol@gmail.com',
+            'max_articles': None,  # None = all articles
+            'allow_scihub': False,
         },
         'mykoweb-journals': {
             'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',

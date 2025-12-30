@@ -90,10 +90,14 @@ class MockDatabase:
         if doc_id not in self.attachments:
             self.attachments[doc_id] = {}
 
+        # Read file content for size calculation
+        file.seek(0)
+        content = file.read()
+
         # Store attachment metadata
         self.attachments[doc_id][filename] = {
             'content_type': content_type,
-            'size': len(file.read()) if hasattr(file, 'read') else 0
+            'size': len(content)
         }
 
         # Update document with attachment metadata
@@ -101,7 +105,29 @@ class MockDatabase:
             if '_attachments' not in self.documents[doc_id]:
                 self.documents[doc_id]['_attachments'] = {}
             self.documents[doc_id]['_attachments'][filename] = {
-                'content_type': content_type
+                'content_type': content_type,
+                'length': len(content)
             }
 
         return {'ok': True}
+
+    def get_documents(self):
+        """
+        Get all documents in the database.
+
+        Returns:
+            List of all document dictionaries
+        """
+        return list(self.documents.values())
+
+    def get_attachment_info(self, doc_id):
+        """
+        Get attachment information for a document.
+
+        Args:
+            doc_id: Document ID
+
+        Returns:
+            Dictionary of attachment metadata
+        """
+        return self.attachments.get(doc_id, {})
