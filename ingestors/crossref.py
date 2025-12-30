@@ -23,6 +23,11 @@ try:
 except ImportError:
     raise ImportError("pypaperretriever library required. Install with: pip install pypaperretriever")
 
+try:
+    from paperscraper.pdf import save_pdf
+except ImportError:
+    save_pdf = None  # Optional fallback
+
 from .ingestor import Ingestor
 
 
@@ -254,29 +259,63 @@ class CrossrefIngestor(Ingestor):
             _doc_id, _doc_rev = self.db.save(doc)
 
         # Download PDF using pypaperretriever with temp directory
-        pdf_content = self._download_pdf_with_pypaperretriever(doi)
+        attachment_data = self._download_pdf_with_pypaperretriever(doi)
 
-        if pdf_content:
-            # Attach PDF to document
+        if attachment_data:
+            content, filename, content_type = attachment_data
+            # Attach content to document
             if self.verbosity >= 3:
-                print(f"  Attaching PDF ({len(pdf_content)} bytes)")
+                print(f"  Attaching {filename} ({len(content)} bytes)")
 
             self.db.put_attachment(
                 doc,
-                BytesIO(pdf_content),
-                'article.pdf',
-                'application/pdf'
+                BytesIO(content),
+                filename,
+                content_type
             )
 
             if self.verbosity >= 2:
-                print(f"  Successfully ingested with PDF")
+                print(f"  Successfully ingested with {filename}")
         else:
             if self.verbosity >= 2:
-                print(f"  Could not download PDF")
+                print(f"  Could not download PDF or XML")
 
-    def _download_pdf_with_pypaperretriever(self, doi: str) -> Optional[bytes]:
+    def _download_pdf_with_pypaperretriever(self, doi: str) -> Optional[tuple]:
         """
-        Download PDF using pypaperretriever, then delete the file.
+        Download PDF using pypaperretriever with paperscraper fallback.
+
+        Args:
+            doi: DOI of the article
+
+        Returns:
+            Tuple of (content_bytes, filename, content_type) or None if both fail
+        """
+        # Apply rate limiting before PDF download
+        self._apply_rate_limit()
+
+        # Try pypaperretriever first
+        content = self._try_pypaperretriever(doi)
+
+        # If pypaperretriever failed, try paperscraper fallback
+        if content is None and save_pdf is not None:
+            if self.verbosity >= 2:
+                print(f"  Trying paperscraper fallback...")
+            content = self._try_paperscraper(doi)
+
+        if content is None:
+            return None
+
+        # Detect content type based on magic bytes
+        filename, content_type = self._detect_content_type(content)
+
+        if self.verbosity >= 3:
+            print(f"  Detected content type: {content_type}")
+
+        return (content, filename, content_type)
+
+    def _try_pypaperretriever(self, doi: str) -> Optional[bytes]:
+        """
+        Try to download PDF using pypaperretriever.
 
         Args:
             doi: DOI of the article
@@ -284,9 +323,6 @@ class CrossrefIngestor(Ingestor):
         Returns:
             PDF content as bytes, or None if download failed
         """
-        # Apply rate limiting before PDF download
-        self._apply_rate_limit()
-
         # Create temporary directory
         temp_dir = tempfile.mkdtemp(prefix='crossref_ingest_')
         temp_path = Path(temp_dir)
@@ -308,7 +344,7 @@ class CrossrefIngestor(Ingestor):
                 # Update last fetch time after download
                 self.last_fetch_time = time.time()
             except Exception as e:
-                if self.verbosity >= 2:
+                if self.verbosity >= 3:
                     print(f"  pypaperretriever failed: {e}")
                 return None
 
@@ -326,9 +362,7 @@ class CrossrefIngestor(Ingestor):
                 print(f"  Reading PDF from: {pdf_file.name}")
 
             with open(pdf_file, 'rb') as f:
-                pdf_content = f.read()
-
-            return pdf_content
+                return f.read()
 
         finally:
             # Always clean up temp directory
@@ -339,6 +373,84 @@ class CrossrefIngestor(Ingestor):
             except Exception as e:
                 if self.verbosity >= 1:
                     print(f"  WARNING: Failed to clean up temp directory {temp_dir}: {e}")
+
+    def _try_paperscraper(self, doi: str) -> Optional[bytes]:
+        """
+        Try to download PDF using paperscraper fallback.
+
+        Args:
+            doi: DOI of the article
+
+        Returns:
+            Content as bytes (could be PDF or XML), or None if download failed
+        """
+        # Create temporary directory
+        temp_dir = tempfile.mkdtemp(prefix='crossref_paperscraper_')
+        temp_path = Path(temp_dir)
+
+        try:
+            if self.verbosity >= 3:
+                print(f"  Using paperscraper temp directory: {temp_dir}")
+
+            # Try to download using paperscraper
+            try:
+                # save_pdf returns the path to the downloaded file
+                output_path = save_pdf(doi, filepath=str(temp_path))
+                # Update last fetch time after download
+                self.last_fetch_time = time.time()
+
+                if output_path and Path(output_path).exists():
+                    if self.verbosity >= 3:
+                        print(f"  paperscraper downloaded: {output_path}")
+
+                    with open(output_path, 'rb') as f:
+                        return f.read()
+                else:
+                    if self.verbosity >= 3:
+                        print(f"  paperscraper returned no file")
+                    return None
+
+            except Exception as e:
+                if self.verbosity >= 3:
+                    print(f"  paperscraper failed: {e}")
+                return None
+
+        finally:
+            # Always clean up temp directory
+            try:
+                shutil.rmtree(temp_dir)
+                if self.verbosity >= 3:
+                    print(f"  Cleaned up paperscraper temp directory")
+            except Exception as e:
+                if self.verbosity >= 1:
+                    print(f"  WARNING: Failed to clean up temp directory {temp_dir}: {e}")
+
+    def _detect_content_type(self, content: bytes) -> tuple:
+        """
+        Detect if content is PDF or XML based on magic bytes.
+
+        Args:
+            content: File content as bytes
+
+        Returns:
+            Tuple of (filename, content_type)
+        """
+        # Check for PDF magic bytes (%PDF)
+        if content.startswith(b'%PDF'):
+            return ('article.pdf', 'application/pdf')
+
+        # Check for XML declaration or common XML start tags
+        if (content.startswith(b'<?xml') or
+            content.startswith(b'<article') or
+            content.startswith(b'<xml') or
+            content.lstrip().startswith(b'<?xml') or
+            content.lstrip().startswith(b'<article')):
+            return ('article.xml', 'application/xml')
+
+        # Default to PDF if uncertain
+        if self.verbosity >= 2:
+            print(f"  Warning: Could not detect content type, defaulting to PDF")
+        return ('article.pdf', 'application/pdf')
 
     def _format_authors(self, authors: list) -> str:
         """
