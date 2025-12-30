@@ -121,7 +121,7 @@ class CrossrefIngestor(Ingestor):
         """
         cursor = '*'
         batch_num = 0
-        if self.max_articles:
+        if self.max_articles is not None:
             per_page = min(1000, self.max_articles)
         else:
             per_page = 1000 # Crossref allows up to 1000
@@ -167,7 +167,8 @@ class CrossrefIngestor(Ingestor):
                     batch_count += 1
 
                     # Check if we've reached the max limit
-                    if self.max_articles and total_yielded >= self.max_articles:
+                    if (self.max_articles is not None and
+                            total_yielded >= self.max_articles):
                         if self.verbosity >= 2:
                             print(f"  Reached max_articles limit of {self.max_articles}")
                         return
