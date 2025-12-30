@@ -43,7 +43,7 @@ def test_crossref_ingestor(
     issn: str = '2309-608X',
     count: int = 2,
     skip_pdf: bool = False,
-    verbose: int = 2
+    verbosity: int = 3
 ):
     """
     Test CrossrefIngestor with a small number of articles.
@@ -52,7 +52,7 @@ def test_crossref_ingestor(
         issn: ISSN of the journal to test
         count: Number of articles to retrieve
         skip_pdf: If True, skip PDF downloads (faster testing)
-        verbose: Verbosity level (0-3)
+        verbosity: Verbosity level (0-3)
     """
     print("=" * 80)
     print("CrossrefIngestor Test Program")
@@ -61,7 +61,7 @@ def test_crossref_ingestor(
     print(f"ISSN: {issn}")
     print(f"Articles to retrieve: {count}")
     print(f"Skip PDF downloads: {skip_pdf}")
-    print(f"Verbosity: {verbose}")
+    print(f"Verbosity: {verbosity}")
     print()
 
     # Create mock database
@@ -82,7 +82,7 @@ def test_crossref_ingestor(
         mailto='piggy.yarroll+skol@gmail.com',
         max_articles=count,
         allow_scihub=not skip_pdf,  # Only allow Sci-Hub if we're downloading PDFs
-        verbosity=verbose
+        verbosity=verbosity
     )
 
     # Override _download_pdf_with_pypaperretriever if skipping PDFs
@@ -215,7 +215,7 @@ Examples:
         '--verbosity', '-v',
         type=int,
         choices=[0, 1, 2, 3],
-        default=2,
+        default=3,
         help='Verbosity level: 0=silent, 1=errors, 2=normal, 3=verbose (default: 2)'
     )
 
@@ -225,7 +225,7 @@ Examples:
         issn=args.issn,
         count=args.count,
         skip_pdf=args.no_pdf,
-        verbose=args.verbosity
+        verbosity=args.verbosity
     )
 
 

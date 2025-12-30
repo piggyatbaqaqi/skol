@@ -121,11 +121,14 @@ class CrossrefIngestor(Ingestor):
         """
         cursor = '*'
         batch_num = 0
-        per_page = 100  # Crossref allows up to 1000
+        if self.max_articles:
+            per_page = min(1000, self.max_articles)
+        else:
+            per_page = 1000 # Crossref allows up to 1000
         total_yielded = 0
 
         if self.verbosity >= 2:
-            print("Fetching works from Crossref...")
+            print(f"Fetching works from Crossref (max {self.max_articles})...")
 
         while True:
             batch_num += 1
@@ -258,8 +261,8 @@ class CrossrefIngestor(Ingestor):
             # Save document
             _doc_id, _doc_rev = self.db.save(doc)
 
-        # Download PDF using pypaperretriever with temp directory
-        attachment_data = self._download_pdf_with_pypaperretriever(doi)
+        # Download PDF using TDM links, pypaperretriever, or paperscraper
+        attachment_data = self._download_pdf_with_pypaperretriever(doi, work)
 
         if attachment_data:
             content, filename, content_type = attachment_data
@@ -280,21 +283,26 @@ class CrossrefIngestor(Ingestor):
             if self.verbosity >= 2:
                 print(f"  Could not download PDF or XML")
 
-    def _download_pdf_with_pypaperretriever(self, doi: str) -> Optional[tuple]:
+    def _download_pdf_with_pypaperretriever(self, doi: str, work: Dict[str, Any]) -> Optional[tuple]:
         """
-        Download PDF using pypaperretriever with paperscraper fallback.
+        Download PDF using TDM links, pypaperretriever, or paperscraper fallback.
 
         Args:
             doi: DOI of the article
+            work: Crossref work dictionary
 
         Returns:
-            Tuple of (content_bytes, filename, content_type) or None if both fail
+            Tuple of (content_bytes, filename, content_type) or None if all methods fail
         """
         # Apply rate limiting before PDF download
         self._apply_rate_limit()
 
-        # Try pypaperretriever first
-        content = self._try_pypaperretriever(doi)
+        # Try TDM link first (text-mining or tdm intended application)
+        content = self._try_tdm_link(work)
+
+        # If TDM failed, try pypaperretriever
+        if content is None:
+            content = self._try_pypaperretriever(doi)
 
         # If pypaperretriever failed, try paperscraper fallback
         if content is None and save_pdf is not None:
@@ -312,6 +320,66 @@ class CrossrefIngestor(Ingestor):
             print(f"  Detected content type: {content_type}")
 
         return (content, filename, content_type)
+
+    def _try_tdm_link(self, work: Dict[str, Any]) -> Optional[bytes]:
+        """
+        Try to download from TDM (Text and Data Mining) link in Crossref record.
+
+        Args:
+            work: Crossref work dictionary
+
+        Returns:
+            Content as bytes, or None if no TDM link or download failed
+        """
+        # Check for links with TDM intended application
+        if 'link' not in work:
+            return None
+
+        links = work['link']
+        if not isinstance(links, list):
+            return None
+
+        # Look for TDM or text-mining link
+        tdm_url = None
+        for link in links:
+            if not isinstance(link, dict):
+                continue
+
+            intended_app = link.get('intended-application', '')
+            if intended_app in ('tdm', 'text-mining'):
+                tdm_url = link.get('URL')
+                if tdm_url:
+                    if self.verbosity >= 2:
+                        print(f"  Found TDM link: {tdm_url}")
+                    break
+
+        if not tdm_url:
+            if self.verbosity >= 3:
+                print(f"  No TDM link found in Crossref record")
+            return None
+
+        # Try to download from TDM URL
+        try:
+            if self.verbosity >= 3:
+                print(f"  Downloading from TDM URL...")
+
+            response = self._get_with_rate_limit(tdm_url, stream=False)
+            self.last_fetch_time = time.time()
+
+            if response.status_code == 200:
+                content = response.content
+                if self.verbosity >= 3:
+                    print(f"  Downloaded {len(content)} bytes from TDM link")
+                return content
+            else:
+                if self.verbosity >= 3:
+                    print(f"  TDM download failed: HTTP {response.status_code}")
+                return None
+
+        except Exception as e:
+            if self.verbosity >= 3:
+                print(f"  TDM download failed: {e}")
+            return None
 
     def _try_pypaperretriever(self, doi: str) -> Optional[bytes]:
         """
