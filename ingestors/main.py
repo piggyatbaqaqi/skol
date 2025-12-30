@@ -23,6 +23,7 @@ import couchdb
 
 # Support both direct execution and module execution
 try:
+    from .crossref import CrossrefIngestor
     from .ingenta import IngentaIngestor
     from .local_ingenta import LocalIngentaIngestor
     from .local_mykoweb import LocalMykowebJournalsIngestor
@@ -32,6 +33,7 @@ try:
     from .taylor_francis import TaylorFrancisIngestor
     from .publications import PublicationRegistry
 except ImportError:
+    from ingestors.crossref import CrossrefIngestor
     from ingestors.ingenta import IngentaIngestor
     from ingestors.local_ingenta import LocalIngentaIngestor
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
@@ -44,6 +46,7 @@ except ImportError:
 
 # Registry mapping ingestor class names to actual classes
 INGESTOR_CLASSES = {
+    'CrossrefIngestor': CrossrefIngestor,
     'IngentaIngestor': IngentaIngestor,
     'LocalIngentaIngestor': LocalIngentaIngestor,
     'LocalMykowebJournalsIngestor': LocalMykowebJournalsIngestor,
@@ -264,11 +267,15 @@ def list_publications() -> None:
     print("-" * 80)
 
     for key, config in PublicationRegistry.get_all().items():
-        source_type = config['mode'].upper()
-        if config['mode'] == 'rss':
+        source_type = config.get('mode', 'WEB').upper()
+        if config.get('mode') == 'rss':
             details = config['rss_url'].split('/')[-1][:15]
-        else:
+        elif config.get('mode') == 'api':
+            details = f"ISSN {config.get('issn', 'N/A')}"
+        elif config.get('mode') == 'local':
             details = "Local files"
+        else:
+            details = "Web scraping"
         print(f"{key:<25} {config['name']:<30} {source_type:<10} {details:<15}")
 
     print("=" * 80)
