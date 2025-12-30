@@ -200,8 +200,8 @@ Examples:
     parser.add_argument(
         '--output-dir', '-o',
         type=Path,
-        default=Path('./paperscraper_archives'),
-        help='Output directory for archives (default: ./paperscraper_archives)'
+        default=Path('/data/skol/paperscraper_archives'),
+        help='Output directory for archives (default: /data/skol/paperscraper_archives)'
     )
     parser.add_argument(
         '--list-only', '-l',
