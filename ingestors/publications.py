@@ -138,6 +138,17 @@ class PublicationRegistry:
             'max_articles': None,  # None = all articles
             'allow_scihub': True,  # An OA journal.
         },
+        'mycologie-crossref': {
+            # https://sciencepress.mnhn.fr/en/articles/mycologie
+            'name': 'Cryptogamie, Mycologie',
+            'source': 'crossref',
+            'ingestor_class': 'CrossrefIngestor',
+            'mode': 'api',
+            'issn': '0181-1584',
+            'mailto': 'piggy.yarroll+skol@gmail.com',
+            'max_articles': None,  # None = all articles
+            'allow_scihub': True,  # An OA journal.
+        },
         'mycoscience-crossref': {
             # https://mycoscience.org/
             'name': 'Mycoscience: An open access journal of the Mycological Society of Japan',
