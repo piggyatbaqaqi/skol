@@ -9,6 +9,7 @@ import os
 import time
 import random
 from abc import ABC, abstractmethod
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -131,6 +132,9 @@ class Ingestor(ABC):
         """
         Wrapper for requests.get() that respects rate limiting.
 
+        Handles HTTP 429 (Too Many Requests) responses by checking the
+        Retry-After header and waiting the specified duration before retrying.
+
         Args:
             url: URL to fetch
             **kwargs: Additional arguments to pass to requests.get()
@@ -153,9 +157,115 @@ class Ingestor(ABC):
             kwargs['headers'] = headers
 
         response = requests.get(url, **kwargs)
+
+        # Log rate limit info if available (for debugging)
+        if self.verbosity >= 4:
+            rate_limit_headers = {
+                'RateLimit-Limit': response.headers.get('RateLimit-Limit'),
+                'RateLimit-Remaining': response.headers.get('RateLimit-Remaining'),
+                'RateLimit-Reset': response.headers.get('RateLimit-Reset'),
+                'X-RateLimit-Limit': response.headers.get('X-RateLimit-Limit'),
+                'X-RateLimit-Remaining': (
+                    response.headers.get('X-RateLimit-Remaining')
+                ),
+                'X-RateLimit-Reset': response.headers.get('X-RateLimit-Reset'),
+            }
+            present_headers = {
+                k: v for k, v in rate_limit_headers.items() if v
+            }
+            if present_headers:
+                print(f"  Rate limit headers: {present_headers}")
+
+        # Handle HTTP 429 (Too Many Requests) with various headers
+        if response.status_code == 429:
+            wait_seconds = None
+            header_used = None
+
+            # 1. Check Retry-After header (RFC 7231)
+            retry_after = response.headers.get('Retry-After')
+            if retry_after:
+                try:
+                    # Try parsing as integer (seconds)
+                    wait_seconds = int(retry_after)
+                    header_used = 'Retry-After'
+                except ValueError:
+                    # Try parsing as HTTP date
+                    try:
+                        from email.utils import parsedate_to_datetime
+                        retry_time = parsedate_to_datetime(retry_after)
+                        wait_seconds = (
+                            retry_time - datetime.now(retry_time.tzinfo)
+                        ).total_seconds()
+                        wait_seconds = max(0, wait_seconds)
+                        header_used = 'Retry-After'
+                    except (ValueError, TypeError):
+                        wait_seconds = None
+
+            # 2. Check RateLimit-Reset or X-RateLimit-Reset (IETF draft)
+            if wait_seconds is None:
+                reset_header = (
+                    response.headers.get('RateLimit-Reset') or
+                    response.headers.get('X-RateLimit-Reset')
+                )
+                if reset_header:
+                    try:
+                        reset_value = int(reset_header)
+                        # Could be either:
+                        # - Unix timestamp (> 1000000000)
+                        # - Seconds until reset (< 1000000000)
+                        current_time = time.time()
+                        if reset_value > 1000000000:
+                            # Unix timestamp
+                            wait_seconds = max(0, reset_value - current_time)
+                        else:
+                            # Seconds until reset
+                            wait_seconds = reset_value
+                        header_used = (
+                            'RateLimit-Reset'
+                            if 'RateLimit-Reset' in response.headers
+                            else 'X-RateLimit-Reset'
+                        )
+                    except (ValueError, TypeError):
+                        wait_seconds = None
+
+            # 3. Default if no headers found or parsing failed
+            if wait_seconds is None:
+                wait_seconds = 60
+                header_used = 'default'
+                if self.verbosity >= 1:
+                    print(
+                        "  Warning: No rate limit headers found, "
+                        "using 60s default"
+                    )
+
+            if self.verbosity >= 1:
+                msg = (
+                    f"  HTTP 429 (Too Many Requests) - "
+                    f"waiting {wait_seconds:.0f}s before retry "
+                    f"(from {header_used})"
+                )
+                print(msg)
+
+            time.sleep(wait_seconds)
+
+            # Update last fetch time after the wait
+            self.last_fetch_time = time.time()
+
+            # Retry the request
+            if self.verbosity >= 3:
+                print(f"  Retrying: {url}")
+
+            response = requests.get(url, **kwargs)
+
+        # Log non-200 status codes
         if response.status_code != 200:
             if self.verbosity >= 1:
-                print(f"  Warning: Received status code {response.status_code} for URL: {url}")
+                msg = (
+                    f"  Warning: Received status code "
+                    f"{response.status_code} for URL: {url}"
+                )
+                print(msg)
+
         return response
 
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
