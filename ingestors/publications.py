@@ -260,8 +260,6 @@ class PublicationRegistry:
             'ingestor_class': 'MycosphereIngestor',
             'mode': 'web',
             'archives_url': 'https://mycosphere.org/archives.php',
-            'rate_limit_min_ms': 1000,
-            'rate_limit_max_ms': 5000,
         },
         'oajmms': {
             'name': 'Open Access Journal of Mycology & Mycological Sciences',
@@ -271,8 +269,6 @@ class PublicationRegistry:
             'archives_url': 'https://www.medwinpublishers.com/OAJMMS/archive.php',
             'issn': '2689-7822',
             'journal_name': 'Open Access Journal of Mycology & Mycological Sciences',
-            'rate_limit_min_ms': 1000,
-            'rate_limit_max_ms': 5000,
         },
         'mycokeys': {
             'name': 'MycoKeys: A peer reviewed open access journal',
