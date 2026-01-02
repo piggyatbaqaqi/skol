@@ -38,7 +38,7 @@ class PublicationRegistry:
         'mykoweb-misc': 'https://mykoweb.com/robots.txt',
         'mycosphere': 'https://mycosphere.org/robots.txt',
         'pensoft': 'https://pensoft.net/robots.txt',
-        'taylor-francis-mycology': 'https://www.tandfonline.com/robots.txt',
+        'mycology-taylor-francis': 'https://www.tandfonline.com/robots.txt',
     }
 
     # Publication source configurations
@@ -147,6 +147,17 @@ class PublicationRegistry:
             'mailto': 'piggy.yarroll+skol@gmail.com',
             'max_articles': None,  # None = all articles
             'allow_scihub': True,  # An OA journal.
+        },
+        'mycologia-crossref': {
+            # https://www.tandfonline.com/journals/umyc20
+            'name': 'Mycologia (Taylor & Francis)',
+            'source': 'crossref',
+            'ingestor_class': 'CrossrefIngestor',
+            'mode': 'api',
+            'issn': '0027-5514',
+            'mailto': 'piggy.yarroll+skol@gmail.com',
+            'max_articles': None,  # None = all articles
+            'allow_scihub': False,  # Not an OA journal.
         },
         'mycology-crossref': {
             # https://www.tandfonline.com/journals/tmyc20
@@ -287,10 +298,10 @@ class PublicationRegistry:
             'issn': '2210-6340',
             'eissn': '2210-6359',
         },
-        'taylor-francis-mycology': {
+        'mycology-taylor-francis': {
             # Currently blocked by technical measures at tandfonline.com.
             'name': 'Mycology (Taylor & Francis)',
-            'source': 'taylor-francis-mycology',
+            'source': 'mycology-taylor-francis',
             'ingestor_class': 'TaylorFrancisIngestor',
             'mode': 'web',
             'archives_url': 'https://www.tandfonline.com/loi/tmyc20',
