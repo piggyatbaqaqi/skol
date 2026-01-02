@@ -417,8 +417,8 @@ class CrossrefIngestor(Ingestor):
                     print(f"  pypaperretriever failed: {e}")
                 return None
 
-            # Find the downloaded PDF file
-            pdf_files = list(temp_path.glob('*.pdf'))
+            # Find the downloaded PDF file (search recursively as pypaperretriever may create subdirectories)
+            pdf_files = list(temp_path.glob('**/*.pdf'))
 
             if not pdf_files:
                 if self.verbosity >= 3:

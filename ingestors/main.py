@@ -29,6 +29,7 @@ try:
     from .local_mykoweb import LocalMykowebJournalsIngestor
     from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
     from .mdpi import MdpiIngestor
+    from .medwin_publishers import MedwinPublishersIngestor
     from .mycosphere import MycosphereIngestor
     from .taylor_francis import TaylorFrancisIngestor
     from .publications import PublicationRegistry
@@ -39,6 +40,7 @@ except ImportError:
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
     from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
     from ingestors.mdpi import MdpiIngestor
+    from ingestors.medwin_publishers import MedwinPublishersIngestor
     from ingestors.mycosphere import MycosphereIngestor
     from ingestors.taylor_francis import TaylorFrancisIngestor
     from ingestors.publications import PublicationRegistry
@@ -52,6 +54,7 @@ INGESTOR_CLASSES = {
     'LocalMykowebJournalsIngestor': LocalMykowebJournalsIngestor,
     'LocalMykowebLiteratureIngestor': LocalMykowebLiteratureIngestor,
     'MdpiIngestor': MdpiIngestor,
+    'MedwinPublishersIngestor': MedwinPublishersIngestor,
     'MycosphereIngestor': MycosphereIngestor,
     'TaylorFrancisIngestor': TaylorFrancisIngestor,
 }
