@@ -14,6 +14,11 @@ from typing import Any, Dict, Iterator, Optional
 from io import BytesIO
 
 try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
+
+try:
     from habanero import Crossref
 except ImportError:
     raise ImportError("habanero library required. Install with: pip install habanero")
@@ -310,10 +315,17 @@ class CrossrefIngestor(Ingestor):
         # Apply rate limiting before PDF download
         self._apply_rate_limit()
 
+        # Construct DOI URL
+        doi_url = f"https://doi.org/{doi}"
+
         # Try TDM link first (text-mining or tdm intended application)
         content = self._try_tdm_link(work)
 
-        # If TDM failed, try pypaperretriever
+        # If TDM failed, try citation_pdf_url from article landing page
+        if content is None:
+            content = self._try_citation_pdf_url(work, doi_url)
+
+        # If citation_pdf_url failed, try pypaperretriever
         if content is None:
             content = self._try_pypaperretriever(doi)
 
@@ -392,6 +404,71 @@ class CrossrefIngestor(Ingestor):
         except Exception as e:
             if self.verbosity >= 3:
                 print(f"  TDM download failed: {e}")
+            return None
+
+    def _try_citation_pdf_url(self, work: Dict[str, Any], doi_url: str) -> Optional[bytes]:
+        """
+        Try to extract and download from citation_pdf_url meta tag on article page.
+
+        Args:
+            work: Crossref work dictionary
+            doi_url: DOI resolution URL (e.g., https://doi.org/...)
+
+        Returns:
+            PDF content as bytes, or None if extraction or download failed
+        """
+        # Check if BeautifulSoup is available
+        if BeautifulSoup is None:
+            return None
+
+        # Get the article landing page URL
+        landing_url = self._extract_human_url(work, doi_url)
+        if not landing_url or landing_url == doi_url:
+            # No separate landing page, skip
+            return None
+
+        try:
+            if self.verbosity >= 3:
+                print(f"  Checking for citation_pdf_url at: {landing_url}")
+
+            # Fetch the landing page HTML
+            response = self._get_with_rate_limit(landing_url, stream=False)
+            if response.status_code != 200:
+                if self.verbosity >= 3:
+                    print(f"  Failed to fetch landing page: HTTP {response.status_code}")
+                return None
+
+            # Parse HTML
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Look for citation_pdf_url meta tag
+            pdf_meta = soup.find('meta', attrs={'name': 'citation_pdf_url'})
+            if not pdf_meta or not pdf_meta.get('content'):
+                if self.verbosity >= 3:
+                    print("  No citation_pdf_url meta tag found")
+                return None
+
+            pdf_url = str(pdf_meta['content'])
+            if self.verbosity >= 2:
+                print(f"  Found citation_pdf_url: {pdf_url}")
+
+            # Download from the citation_pdf_url
+            pdf_response = self._get_with_rate_limit(pdf_url, stream=False)
+            self.last_fetch_time = time.time()
+
+            if pdf_response.status_code == 200:
+                content = pdf_response.content
+                if self.verbosity >= 3:
+                    print(f"  Downloaded {len(content)} bytes from citation_pdf_url")
+                return content
+            else:
+                if self.verbosity >= 3:
+                    print(f"  citation_pdf_url download failed: HTTP {pdf_response.status_code}")
+                return None
+
+        except Exception as e:
+            if self.verbosity >= 3:
+                print(f"  citation_pdf_url extraction/download failed: {e}")
             return None
 
     def _try_pypaperretriever(self, doi: str) -> Optional[bytes]:
