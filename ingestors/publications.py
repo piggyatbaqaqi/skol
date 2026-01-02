@@ -276,6 +276,17 @@ class PublicationRegistry:
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 5000,
         },
+        'imafungus': {
+            'name': 'IMA Fungus: The Global Mycological Journal',
+            'source': 'pensoft',
+            'ingestor_class': 'PensoftIngestor',
+            'mode': 'web',
+            'journal_name': 'imafungus',
+            'journal_id': '132',
+            'issues_url': 'https://imafungus.pensoft.net/issues',
+            'issn': '2210-6340',
+            'eissn': '2210-6359',
+        },
         'taylor-francis-mycology': {
             # Currently blocked by technical measures at tandfonline.com.
             'name': 'Mycology (Taylor & Francis)',
