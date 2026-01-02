@@ -25,6 +25,7 @@ import couchdb
 try:
     from .crossref import CrossrefIngestor
     from .ingenta import IngentaIngestor
+    from .internet_archive import InternetArchiveIngestor
     from .local_ingenta import LocalIngentaIngestor
     from .local_mykoweb import LocalMykowebJournalsIngestor
     from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
@@ -37,6 +38,7 @@ try:
 except ImportError:
     from ingestors.crossref import CrossrefIngestor
     from ingestors.ingenta import IngentaIngestor
+    from ingestors.internet_archive import InternetArchiveIngestor
     from ingestors.local_ingenta import LocalIngentaIngestor
     from ingestors.local_mykoweb import LocalMykowebJournalsIngestor
     from ingestors.local_mykoweb_literature import LocalMykowebLiteratureIngestor
@@ -52,6 +54,7 @@ except ImportError:
 INGESTOR_CLASSES = {
     'CrossrefIngestor': CrossrefIngestor,
     'IngentaIngestor': IngentaIngestor,
+    'InternetArchiveIngestor': InternetArchiveIngestor,
     'LocalIngentaIngestor': LocalIngentaIngestor,
     'LocalMykowebJournalsIngestor': LocalMykowebJournalsIngestor,
     'LocalMykowebLiteratureIngestor': LocalMykowebLiteratureIngestor,

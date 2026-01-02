@@ -39,6 +39,7 @@ class PublicationRegistry:
         'mycosphere': 'https://mycosphere.org/robots.txt',
         'pensoft': 'https://pensoft.net/robots.txt',
         'mycology-taylor-francis': 'https://www.tandfonline.com/robots.txt',
+        'internet-archive': 'https://archive.org/robots.txt',
     }
 
     # Publication source configurations
@@ -305,6 +306,29 @@ class PublicationRegistry:
             'issn': '2150-1203',
             'eissn': '2150-1211',
         },
+        'sydowia-ia': {
+            'name': 'Sydowia (Internet Archive)',
+            'source': 'internet-archive',
+            'ingestor_class': 'InternetArchiveIngestor',
+            'mode': 'web',
+            'collection': 'pub_sydowia',
+            'download_xml': True,
+            'issn': '0082-0598',
+            'rate_limit_min_ms': 2000,
+            'rate_limit_max_ms': 5000,
+        },
+        'jmycology-ia': {
+            'name': 'Journal of Mycology (Internet Archive)',
+            'source': 'internet-archive',
+            'ingestor_class': 'InternetArchiveIngestor',
+            'mode': 'web',
+            'collection': 'jstor_jmycology',
+            'download_xml': True,
+            'issn': '1052-0368',
+            'rate_limit_min_ms': 2000,
+            'rate_limit_max_ms': 5000,
+        },
+
     }
 
     @classmethod
