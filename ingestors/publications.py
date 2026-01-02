@@ -37,6 +37,7 @@ class PublicationRegistry:
         'mykoweb-pholiota': 'https://mykoweb.com/robots.txt',
         'mykoweb-misc': 'https://mykoweb.com/robots.txt',
         'mycosphere': 'https://mycosphere.org/robots.txt',
+        'pensoft': 'https://pensoft.net/robots.txt',
         'taylor-francis-mycology': 'https://www.tandfonline.com/robots.txt',
     }
 
@@ -259,6 +260,19 @@ class PublicationRegistry:
             'archives_url': 'https://www.medwinpublishers.com/OAJMMS/archive.php',
             'issn': '2689-7822',
             'journal_name': 'Open Access Journal of Mycology & Mycological Sciences',
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 5000,
+        },
+        'mycokeys': {
+            'name': 'MycoKeys: A peer reviewed open access journal',
+            'source': 'pensoft',
+            'ingestor_class': 'PensoftIngestor',
+            'mode': 'web',
+            'journal_name': 'mycokeys',
+            'journal_id': '11',
+            'issues_url': 'https://mycokeys.pensoft.net/issues',
+            'issn': '1314-4057',
+            'eissn': '1314-4049',
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 5000,
         },
