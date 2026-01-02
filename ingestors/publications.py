@@ -27,6 +27,7 @@ class PublicationRegistry:
         'crossref': 'https://api.crossref.org/robots.txt',
         'ingenta': 'https://www.ingentaconnect.com/robots.txt',
         'mdpi': 'https://www.mdpi.com/robots.txt',
+        'medwin-publishers': 'https://medwinpublishers.com/robots.txt',
         'mykoweb-journals': 'https://mykoweb.com/robots.txt',
         'mykoweb-literature': 'https://mykoweb.com/robots.txt',
         'mykoweb-caf': 'https://mykoweb.com/robots.txt',
@@ -118,13 +119,14 @@ class PublicationRegistry:
             # Currently blocked by technical measures at mdpi.com.
             'name': 'Journal of Fungi',
             'source': 'mdpi',
-            'ingestor_class': 'MdpiIngestor',
+            'ingestor_chttps://doi.org/10.3390/jof5020045lass': 'MdpiIngestor',
             'mode': 'index',
             'index_url': 'https://www.mdpi.com/journal/jof',
             'journal_code': 'jof',
             'issn': '2309-608X',
         },
         'jof-crossref': {
+            # https://www.mdpi.com/journal/jof
             'name': 'Journal of Fungi',
             'source': 'crossref',
             'ingestor_class': 'CrossrefIngestor',
@@ -132,9 +134,43 @@ class PublicationRegistry:
             'issn': '2309-608X',
             'mailto': 'piggy.yarroll+skol@gmail.com',
             'max_articles': None,  # None = all articles
-            'allow_scihub': False,
+            'allow_scihub': True,  # An OA journal.
         },
-        'mykoweb-journals': {
+        'mycoscience-crossref': {
+            # https://mycoscience.org/
+            'name': 'Mycoscience: An open access journal of the Mycological Society of Japan',
+            'source': 'crossref',
+            'ingestor_class': 'CrossrefIngestor',
+            'mode': 'api',
+            'issn': '1340-3540',
+            'mailto': 'piggy.yarroll+skol@gmail.com',
+            'max_articles': None,  # None = all articles
+            'allow_scihub': True,  # An OA journal.
+        },
+        'mycology-crossref': {
+            # https://www.tandfonline.com/journals/tmyc20
+            'name': 'Mycology: An International Journal on Fungal Biology (Taylor & Francis)',
+            'source': 'crossref',
+            'ingestor_class': 'CrossrefIngestor',
+            'mode': 'api',
+            'issn': '2150-1211',
+            'mailto': 'piggy.yarroll+skol@gmail.com',
+            'max_articles': None,  # None = all articles
+            'allow_scihub': True,  # An OA journal.
+        },
+        # This source is not working at all.
+        # 'oajmms-crossref': {
+        #     # https://www.medwinpublishers.com/OAJMMS/
+        #     'name': 'Open Access Journal of Mycology and Mycological Sciences',
+        #     'source': 'crossref',
+        #     'ingestor_class': 'CrossrefIngestor',
+        #     'mode': 'api',
+        #     'issn': '2689-7822',
+        #     'mailto': 'piggy.yarroll+skol@gmail.com',
+        #     'max_articles': None,  # None = all articles
+        #     'allow_scihub': True,  # An OA journal.
+        # },
+       'mykoweb-journals': {
             'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',
             'source': 'mykoweb-journals',
             'ingestor_class': 'LocalMykowebJournalsIngestor',
@@ -212,6 +248,17 @@ class PublicationRegistry:
             'ingestor_class': 'MycosphereIngestor',
             'mode': 'web',
             'archives_url': 'https://mycosphere.org/archives.php',
+            'rate_limit_min_ms': 1000,
+            'rate_limit_max_ms': 5000,
+        },
+        'oajmms': {
+            'name': 'Open Access Journal of Mycology & Mycological Sciences',
+            'source': 'medwin-publishers',
+            'ingestor_class': 'MedwinPublishersIngestor',
+            'mode': 'web',
+            'archives_url': 'https://www.medwinpublishers.com/OAJMMS/archive.php',
+            'issn': '2689-7822',
+            'journal_name': 'Open Access Journal of Mycology & Mycological Sciences',
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 5000,
         },
