@@ -272,7 +272,7 @@ Total: **21 publications** (up from 19)
 
 ### Other Publishers (4)
 - `mycosphere` - Mycosphere
-- `taylor-francis-mycology` - Mycology (Taylor & Francis)
+- `mycology-taylor-francis` - Mycology (Taylor & Francis)
 
 ---
 

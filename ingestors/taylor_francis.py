@@ -482,7 +482,7 @@ class TaylorFrancisIngestor(Ingestor):
             self._ingest_documents(
                 documents=articles,
                 meta={
-                    'source': 'taylor-francis-mycology',
+                    'source': 'mycology-taylor-francis',
                     'volume': issue_info['volume'],
                     'issue': issue_info['issue'],
                 },
