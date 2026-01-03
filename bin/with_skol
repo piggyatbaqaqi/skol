@@ -1,0 +1,5 @@
+#!/bin/bash
+## Run a python script with the conda skol environment
+source /home/skol/miniconda3/etc/profile.d/conda.sh 
+/home/skol/miniconda3/bin/conda activate skol
+exec python $*
