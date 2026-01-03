@@ -51,9 +51,6 @@ class CrossrefIngestor(Ingestor):
         mailto: str = "piggy.yarroll+skol@gmail.com",
         max_articles: Optional[int] = None,
         allow_scihub: bool = True,
-        max_retries: int = 3,
-        retry_base_wait_time: int = 60,
-        retry_backoff_multiplier: float = 2.0,
         api_batch_delay: float = 0.1,
         **kwargs: Any
     ) -> None:
@@ -65,20 +62,14 @@ class CrossrefIngestor(Ingestor):
             mailto: Email address for Crossref API polite pool (default: piggy.yarroll+skol@gmail.com)
             max_articles: Maximum number of articles to ingest (None = all)
             allow_scihub: Whether to allow pypaperretriever to use Sci-Hub as fallback
-            max_retries: Maximum retry attempts for 429 rate limit errors (default: 3)
-            retry_base_wait_time: Initial wait time in seconds for exponential backoff (default: 60)
-            retry_backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
             api_batch_delay: Delay in seconds between Crossref API batch requests (default: 0.1)
-            **kwargs: Additional parameters passed to Ingestor base class
+            **kwargs: Additional parameters passed to Ingestor base class (including max_retries, retry_base_wait_time, retry_backoff_multiplier)
         """
         super().__init__(**kwargs)
         self.issn = issn
         self.mailto = mailto
         self.max_articles = max_articles
         self.allow_scihub = allow_scihub
-        self.max_retries = max_retries
-        self.retry_base_wait_time = retry_base_wait_time
-        self.retry_backoff_multiplier = retry_backoff_multiplier
         self.api_batch_delay = api_batch_delay
 
     def ingest(self) -> None:
@@ -481,7 +472,8 @@ class CrossrefIngestor(Ingestor):
         Returns:
             PDF content as bytes, or None if download failed
         """
-        for attempt in range(self.max_retries):
+        def _download_with_habanero():
+            """Inner function that performs the actual download."""
             # Create temporary directory
             temp_dir = tempfile.mkdtemp(prefix='crossref_ingest_')
             temp_path = Path(temp_dir)
@@ -498,37 +490,14 @@ class CrossrefIngestor(Ingestor):
                     allow_scihub=self.allow_scihub
                 )
 
-                try:
-                    retriever.download()
-                    # Update last fetch time after download
-                    self.last_fetch_time = time.time()
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    # Check if error is rate-limit related
-                    is_rate_limit = (
-                        '429' in error_msg or
-                        'too many requests' in error_msg or
-                        'rate limit' in error_msg
-                    )
+                retriever.download()
 
-                    if is_rate_limit and attempt < self.max_retries - 1:
-                        wait_time = self.retry_base_wait_time * (self.retry_backoff_multiplier ** attempt)
-                        if self.verbosity >= 2:
-                            print(f"  pypaperretriever hit rate limit, waiting {wait_time:.0f}s (attempt {attempt + 1}/{self.max_retries})")
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        if self.verbosity >= 3:
-                            error_type = "rate limit" if is_rate_limit else "error"
-                            print(f"  pypaperretriever {error_type}: {e}")
-                        return None
-
-                # Find the downloaded PDF file (search recursively as pypaperretriever may create subdirectories)
+                # Find the downloaded PDF file (search recursively)
                 pdf_files = list(temp_path.glob('**/*.pdf'))
 
                 if not pdf_files:
                     if self.verbosity >= 3:
-                        print(f"  No PDF file found in temp directory")
+                        print("  No PDF file found in temp directory")
                     return None
 
                 # Read the first PDF file found
@@ -544,12 +513,16 @@ class CrossrefIngestor(Ingestor):
                 try:
                     shutil.rmtree(temp_dir)
                     if self.verbosity >= 3:
-                        print(f"  Cleaned up temp directory")
+                        print("  Cleaned up temp directory")
                 except Exception as e:
                     if self.verbosity >= 1:
                         print(f"  WARNING: Failed to clean up temp directory {temp_dir}: {e}")
 
-        return None
+        # Use the base class retry wrapper
+        return self._retry_with_backoff(
+            _download_with_habanero,
+            operation_name="pypaperretriever"
+        )
 
     def _try_paperscraper(self, doi: str) -> Optional[bytes]:
         """
@@ -565,7 +538,8 @@ class CrossrefIngestor(Ingestor):
         if save_pdf is None:
             return None
 
-        for attempt in range(self.max_retries):
+        def _download_with_paperscraper():
+            """Inner function that performs the actual download."""
             # Create temporary directory
             temp_dir = tempfile.mkdtemp(prefix='crossref_paperscraper_')
             temp_path = Path(temp_dir)
@@ -574,56 +548,35 @@ class CrossrefIngestor(Ingestor):
                 if self.verbosity >= 3:
                     print(f"  Using paperscraper temp directory: {temp_dir}")
 
-                # Try to download using paperscraper
-                try:
-                    # save_pdf returns the path to the downloaded file
-                    output_path = save_pdf(doi, filepath=str(temp_path))
-                    # Update last fetch time after download
-                    self.last_fetch_time = time.time()
+                # save_pdf returns the path to the downloaded file
+                output_path = save_pdf(doi, filepath=str(temp_path))
 
-                    if output_path and Path(output_path).exists():
-                        if self.verbosity >= 3:
-                            print(f"  paperscraper downloaded: {output_path}")
+                if output_path and Path(output_path).exists():
+                    if self.verbosity >= 3:
+                        print(f"  paperscraper downloaded: {output_path}")
 
-                        with open(output_path, 'rb') as f:
-                            return f.read()
-                    else:
-                        if self.verbosity >= 3:
-                            print(f"  paperscraper returned no file")
-                        return None
-
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    # Check if error is rate-limit related
-                    is_rate_limit = (
-                        '429' in error_msg or
-                        'too many requests' in error_msg or
-                        'rate limit' in error_msg
-                    )
-
-                    if is_rate_limit and attempt < self.max_retries - 1:
-                        wait_time = self.retry_base_wait_time * (self.retry_backoff_multiplier ** attempt)
-                        if self.verbosity >= 2:
-                            print(f"  paperscraper hit rate limit, waiting {wait_time:.0f}s (attempt {attempt + 1}/{self.max_retries})")
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        if self.verbosity >= 3:
-                            error_type = "rate limit" if is_rate_limit else "error"
-                            print(f"  paperscraper {error_type}: {e}")
-                        return None
+                    with open(output_path, 'rb') as f:
+                        return f.read()
+                else:
+                    if self.verbosity >= 3:
+                        print("  paperscraper returned no file")
+                    return None
 
             finally:
                 # Always clean up temp directory
                 try:
                     shutil.rmtree(temp_dir)
                     if self.verbosity >= 3:
-                        print(f"  Cleaned up paperscraper temp directory")
+                        print("  Cleaned up paperscraper temp directory")
                 except Exception as e:
                     if self.verbosity >= 1:
                         print(f"  WARNING: Failed to clean up temp directory {temp_dir}: {e}")
 
-        return None
+        # Use the base class retry wrapper
+        return self._retry_with_backoff(
+            _download_with_paperscraper,
+            operation_name="paperscraper"
+        )
 
     def _detect_content_type(self, content: bytes) -> tuple:
         """

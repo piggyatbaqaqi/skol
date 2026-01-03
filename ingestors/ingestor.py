@@ -51,6 +51,9 @@ class Ingestor(ABC):
         local_pdf_map: Optional[Dict[str, str]] = None,
         rate_limit_min_ms: int = 1000,
         rate_limit_max_ms: int = 5000,
+        max_retries: int = 3,
+        retry_base_wait_time: int = 60,
+        retry_backoff_multiplier: float = 2.0,
         **kwargs: Any
     ) -> None:
         """
@@ -68,6 +71,9 @@ class Ingestor(ABC):
                 Example: {'https://mykoweb.com/journals': '/data/skol/www/mykoweb.com/journals'}
             rate_limit_min_ms: Minimum delay between requests in milliseconds (default: 1000)
             rate_limit_max_ms: Maximum delay between requests in milliseconds (default: 5000)
+            max_retries: Maximum retry attempts for 429 rate limit errors (default: 3)
+            retry_base_wait_time: Initial wait time in seconds for exponential backoff (default: 60)
+            retry_backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
             **kwargs: Additional parameters (ignored by base class, used by subclasses)
         """
         self.db = db
@@ -77,6 +83,9 @@ class Ingestor(ABC):
         self.local_pdf_map = local_pdf_map if local_pdf_map is not None else {}
         self.rate_limit_min_ms = rate_limit_min_ms
         self.rate_limit_max_ms = rate_limit_max_ms
+        self.max_retries = max_retries
+        self.retry_base_wait_time = retry_base_wait_time
+        self.retry_backoff_multiplier = retry_backoff_multiplier
         self.last_fetch_time = None
 
     @abstractmethod
@@ -267,6 +276,50 @@ class Ingestor(ABC):
                 print(msg)
 
         return response
+
+    def _retry_with_backoff(self, func, *args, operation_name: str = "operation", **kwargs):
+        """
+        Execute a function with exponential backoff retry logic for rate limit errors.
+
+        Args:
+            func: Callable to execute
+            *args: Positional arguments to pass to func
+            operation_name: Name of the operation for logging (default: "operation")
+            **kwargs: Keyword arguments to pass to func
+
+        Returns:
+            Result of func() or None if all retries fail
+        """
+        for attempt in range(self.max_retries):
+            try:
+                result = func(*args, **kwargs)
+                # Success - update last fetch time and return
+                self.last_fetch_time = time.time()
+                return result
+            except Exception as e:
+                error_msg = str(e).lower()
+                # Check if error is rate-limit related
+                is_rate_limit = (
+                    '429' in error_msg or
+                    'too many requests' in error_msg or
+                    'rate limit' in error_msg
+                )
+
+                if is_rate_limit and attempt < self.max_retries - 1:
+                    # Calculate exponential backoff wait time
+                    wait_time = self.retry_base_wait_time * (self.retry_backoff_multiplier ** attempt)
+                    if self.verbosity >= 2:
+                        print(f"  {operation_name} hit rate limit, waiting {wait_time:.0f}s (attempt {attempt + 1}/{self.max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # Not a rate limit error, or we've exhausted retries
+                    if self.verbosity >= 3:
+                        error_type = "rate limit" if is_rate_limit else "error"
+                        print(f"  {operation_name} {error_type}: {e}")
+                    return None
+
+        return None
 
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
         """
