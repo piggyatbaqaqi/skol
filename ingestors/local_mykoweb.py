@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .ingestor import Ingestor
+from .publications import PublicationRegistry
 
 
 class LocalMykowebJournalsIngestor(Ingestor):
@@ -25,9 +26,11 @@ class LocalMykowebJournalsIngestor(Ingestor):
         https://mykoweb.com/systematics/journals/
 
     Supported journals:
-        - Mycotaxon (ISSN: 0093-4666, eISSN: 2154-8889)
-        - Persoonia (ISSN: 0031-5850, eISSN: 1878-9080)
-        - Sydowia (ISSN/eISSN: 0082-0598)
+        - Mycotaxon
+        - Persoonia
+        - Sydowia
+
+    ISSN metadata is retrieved from PublicationRegistry.SOURCES.
 
     File naming patterns:
         - "Mycotaxon v001n1.pdf" -> volume=1, number=1
@@ -73,18 +76,35 @@ class LocalMykowebJournalsIngestor(Ingestor):
             url_prefix=self.url_prefix
         )
 
-    # Journal metadata
-    JOURNAL_ISSN = {
-        'Mycotaxon': '0093-4666',
-        'Persoonia': '0031-5850',
-        'Sydowia': '0082-0598',
-    }
+    def _get_journal_metadata(self, journal_name: str) -> Optional[Dict[str, str]]:
+        """
+        Get ISSN/eISSN metadata for a journal from SOURCES.
 
-    JOURNAL_EISSN = {
-        'Mycotaxon': '2154-8889',
-        'Persoonia': '1878-9080',
-        'Sydowia': '0082-0598',
-    }
+        Args:
+            journal_name: Name of the journal (e.g., 'Mycotaxon', 'Persoonia', 'Sydowia')
+
+        Returns:
+            Dictionary with 'issn' and 'eissn' keys, or None if not found
+        """
+        # Map journal directory names to publication keys
+        journal_key_map = {
+            'Mycotaxon': 'mycotaxon',
+            'Persoonia': 'persoonia',
+            'Sydowia': 'sydowia-ia',
+        }
+
+        key = journal_key_map.get(journal_name)
+        if not key:
+            return None
+
+        source_config = PublicationRegistry.SOURCES.get(key)
+        if not source_config:
+            return None
+
+        return {
+            'issn': source_config.get('issn', ''),
+            'eissn': source_config.get('eissn', ''),
+        }
 
     # Filename patterns
     # Pattern 1: "Journal vXXXnY.pdf" (Mycotaxon, Persoonia with number)
@@ -204,8 +224,9 @@ class LocalMykowebJournalsIngestor(Ingestor):
             if not journal_path.is_dir():
                 continue
 
-            # Skip if not a known journal
-            if journal_dir not in self.JOURNAL_ISSN:
+            # Get journal metadata
+            journal_metadata = self._get_journal_metadata(journal_dir)
+            if not journal_metadata:
                 if self.verbosity >= 1:
                     print(f"Warning: Unknown journal directory '{journal_dir}', skipping")
                 continue
@@ -236,8 +257,8 @@ class LocalMykowebJournalsIngestor(Ingestor):
                     'url': file_url,
                     'journal': parsed['journal'],
                     'volume': parsed['volume'],
-                    'issn': self.JOURNAL_ISSN[journal_dir],
-                    'eissn': self.JOURNAL_EISSN[journal_dir],
+                    'issn': journal_metadata['issn'],
+                    'eissn': journal_metadata['eissn'],
                     'itemtype': 'article',
                 }
 

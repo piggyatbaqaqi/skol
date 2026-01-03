@@ -71,6 +71,8 @@ class PublicationRegistry:
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
             'index_url': 'https://api.ingentaconnect.com/content/mtax/mt?format=index',
+            'issn': '0093-4666',
+            'eissn': '2154-8889',
         },
         'studies-in-mycology': {
             'name': 'Studies in Mycology',
@@ -92,6 +94,8 @@ class PublicationRegistry:
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
             'index_url': 'https://api.ingentaconnect.com/content/wfbi/pimj?format=index',
+            'issn': '0031-5850',
+            'eissn': '1878-9080',
         },
         'persoonia-rss': {
             'name': 'Persoonia',
