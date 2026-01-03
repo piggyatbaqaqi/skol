@@ -13,7 +13,7 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 from urllib.robotparser import RobotFileParser
 
 import bibtexparser
@@ -41,6 +41,7 @@ class Ingestor(ABC):
     rate_limit_min_ms: int
     rate_limit_max_ms: int
     last_fetch_time: Optional[float]
+    suppressed_domains: Dict[str, str]
 
     def __init__(
         self,
@@ -87,6 +88,8 @@ class Ingestor(ABC):
         self.retry_base_wait_time = retry_base_wait_time
         self.retry_backoff_multiplier = retry_backoff_multiplier
         self.last_fetch_time = None
+        self.suppressed_domains = {}  # Dict[domain, reason] for 403 forbidden domains
+        self._session = requests.Session()
 
     @abstractmethod
     def ingest(self) -> None:
@@ -137,6 +140,33 @@ class Ingestor(ABC):
                 print(f"  Sleeping for {sleep_time:.2f}s")
             time.sleep(sleep_time)
 
+    def _check_suppression(self, url: str) -> Optional[requests.Response]:
+        """
+        Check if the domain of the given URL is suppressed.
+
+        Args:
+            url: URL to check
+
+        Returns:
+            Mock 403 Response if domain is suppressed, None otherwise
+        """
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc
+
+        if domain in self.suppressed_domains:
+            if self.verbosity >= 2:
+                reason = self.suppressed_domains[domain]
+                print(f"  Skipping suppressed domain: {domain} ({reason})")
+
+            # Return a mock 403 response
+            mock_response = requests.Response()
+            mock_response.status_code = 403
+            mock_response.url = url
+            mock_response._content = b''
+            return mock_response
+
+        return None
+
     def _get_with_rate_limit(self, url: str, **kwargs: Any) -> requests.Response:
         """
         Wrapper for requests.get() that respects rate limiting.
@@ -151,6 +181,11 @@ class Ingestor(ABC):
         Returns:
             Response object from requests.get()
         """
+        # Check if domain is suppressed (returns mock 403 if suppressed)
+        suppression_response = self._check_suppression(url)
+        if suppression_response is not None:
+            return suppression_response
+
         self._apply_rate_limit()
 
         if self.verbosity >= 3:
@@ -165,7 +200,7 @@ class Ingestor(ABC):
             headers['User-Agent'] = self.user_agent
             kwargs['headers'] = headers
 
-        response = requests.get(url, **kwargs)
+        response = self._session.get(url, **kwargs)
 
         # Log rate limit info if available (for debugging)
         if self.verbosity >= 4:
@@ -246,6 +281,9 @@ class Ingestor(ABC):
                         "  Warning: No rate limit headers found, "
                         "using 60s default"
                     )
+                    print("  All response headers:")
+                    for header_name, header_value in response.headers.items():
+                        print(f"    {header_name}: {header_value}")
 
             if self.verbosity >= 1:
                 msg = (
@@ -266,6 +304,10 @@ class Ingestor(ABC):
 
             response = requests.get(url, **kwargs)
 
+        # Handle HTTP 403 (Forbidden) - add domain to suppression list
+        if response.status_code == 403:
+            self._register_suppression(url)
+
         # Log non-200 status codes
         if response.status_code != 200:
             if self.verbosity >= 1:
@@ -276,6 +318,17 @@ class Ingestor(ABC):
                 print(msg)
 
         return response
+
+    def _register_suppression(self, url):
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc
+
+        if domain not in self.suppressed_domains:
+            reason = f"403 Forbidden at {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            self.suppressed_domains[domain] = reason
+
+            if self.verbosity >= 1:
+                print(f"  Domain suppressed due to 403 Forbidden: {domain}")
 
     def _retry_with_backoff(self, func, *args, operation_name: str = "operation", **kwargs):
         """
