@@ -58,7 +58,7 @@ Detailed description here.
     print("\n✓ Created test DataFrame")
 
     # Parse with AnnotatedTextParser
-    parser = AnnotatedTextParser(line_level=False, collapse_labels=True)
+    parser = AnnotatedTextParser(extraction_mode='paragraph', collapse_labels=True)
     result_df = parser.parse(df)
 
     print(f"\n✓ Parsed {result_df.count()} paragraphs")

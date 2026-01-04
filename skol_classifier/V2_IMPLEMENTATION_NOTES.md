@@ -169,7 +169,7 @@ classifier = SkolClassifierV2(
     file_paths=['data/*.ann'],
     model_storage='disk',
     model_path='models/model.pkl',
-    line_level=True,
+    extraction_mode='line',
     use_suffixes=True,
     model_type='logistic'
 )

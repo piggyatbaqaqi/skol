@@ -9,12 +9,10 @@ from .base import AnnotatedTextParser
 from .line_mode import LineAnnotatedTextParser
 from .paragraph_mode import ParagraphAnnotatedTextParser
 from .section_mode import SectionAnnotatedTextParser
-from .mode import (
-    ExtractionMode,
-    LineExtractionMode,
-    ParagraphExtractionMode,
-    SectionExtractionMode,
-)
+from .mode import ExtractionMode
+from .line import LineExtractionMode
+from .paragraph import ParagraphExtractionMode
+from .section import SectionExtractionMode
 
 
 def get_parser(mode: str, collapse_labels: bool = True) -> AnnotatedTextParser:

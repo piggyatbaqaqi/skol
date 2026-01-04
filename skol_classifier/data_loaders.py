@@ -1,26 +1,26 @@
 """
 Data loading module for SKOL classifier.
 
-This module provides classes for loading annotated and raw text data
-from various sources (files, CouchDB, strings).
+This module provides backward-compatible wrapper classes for loading
+annotated and raw text data. The actual implementations have been moved
+to extraction_modes/ to properly separate concerns by extraction mode.
+
+These classes are maintained for backwards compatibility and delegate
+to the appropriate extraction mode implementations.
 """
 
-from typing import List, Tuple
+from typing import List
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import (
-    input_file_name, collect_list, regexp_extract, col, udf,
-    explode, trim, row_number, min as sql_min, monotonically_increasing_id
-)
-from pyspark.sql.types import ArrayType, StringType, StructType, StructField, IntegerType
-from pyspark.sql.window import Window
 
-from .preprocessing import ParagraphExtractor
-from .couchdb_io import CouchDBConnection
+from .extraction_modes import get_mode
 
 
 class AnnotatedTextLoader:
     """
     Loads annotated text data from various sources.
+
+    This is a backward-compatibility wrapper that delegates to the
+    appropriate extraction mode implementation.
 
     Supports file-based and CouchDB-based loading with paragraph-level
     or line-level extraction.
@@ -47,100 +47,19 @@ class AnnotatedTextLoader:
         Args:
             file_paths: List of paths to annotated files
             collapse_labels: Whether to collapse labels to 3 main categories
-            line_level: If True, extract individual lines instead of paragraphs
+            line_level: If True, extract individual lines instead of
+                paragraphs
 
         Returns:
             Preprocessed DataFrame with paragraphs/lines and labels
         """
-        # Read annotated files and add line ID to preserve order
-        ann_df = (
-            self.spark.read.text(file_paths)
-            .withColumn("filename", input_file_name())
-            .withColumn("_line_id", monotonically_increasing_id())
+        mode_name = 'line' if line_level else 'paragraph'
+        mode = get_mode(mode_name)
+        return mode.load_annotated_from_files(
+            spark=self.spark,
+            file_paths=file_paths,
+            collapse_labels=collapse_labels
         )
-
-        if line_level:
-            # Line-level extraction: parse each line from YEDDA blocks
-            def extract_yedda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
-                """Extract individual lines from YEDDA annotation blocks."""
-                import re
-                results = []
-                pattern = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
-
-                for match in re.finditer(pattern, '\n'.join(lines), re.DOTALL):
-                    content = match.group(1)
-                    label = match.group(2).strip()
-
-                    # Split content into lines
-                    content_lines = content.split('\n')
-                    for line_num, line in enumerate(content_lines):
-                        if line or line_num < len(content_lines) - 1:
-                            results.append((label, line, line_num))
-
-                return results
-
-            # UDF to extract lines
-            extract_udf = udf(
-                extract_yedda_lines,
-                ArrayType(StructType([
-                    StructField("label", StringType(), False),
-                    StructField("value", StringType(), False),
-                    StructField("line_number", IntegerType(), False)
-                ]))
-            )
-
-            # Extract lines with ordering preserved
-            grouped_df = (
-                ann_df.orderBy("_line_id")
-                .groupBy("filename")
-                .agg(collect_list("value").alias("lines"))
-                .withColumn("line_data", explode(extract_udf(col("lines"))))
-                .select(
-                    "filename",
-                    col("line_data.label").alias("label"),
-                    col("line_data.value").alias("value"),
-                    col("line_data.line_number")
-                )
-            )
-        else:
-            # Paragraph-level extraction (original behavior)
-            extract_udf = udf(
-                ParagraphExtractor.extract_annotated_paragraphs,
-                ArrayType(StringType())
-            )
-
-            # Group and extract paragraphs with ordering preserved
-            grouped_df = (
-                ann_df.orderBy("_line_id")
-                .groupBy("filename")
-                .agg(collect_list("value").alias("lines"))
-                .withColumn("value", explode(extract_udf(col("lines"))))
-                .drop("lines")
-            )
-
-            # Extract labels
-            label_pattern = r"#(\S+?)(?:\*)?]"
-            lead_pattern = r"^\[@"
-            trail_pattern = label_pattern + r"$"
-            clean_pattern = lead_pattern + r"(.*)" + trail_pattern
-
-            grouped_df = grouped_df.withColumn(
-                "label", regexp_extract(col("value"), label_pattern, 1)
-            ).withColumn(
-                "value", regexp_extract(col("value"), clean_pattern, 1)
-            )
-
-        # Optionally collapse labels
-        if collapse_labels:
-            collapse_udf = udf(
-                ParagraphExtractor.collapse_labels,
-                StringType()
-            )
-            grouped_df = grouped_df.withColumn(
-                "label", collapse_udf(col("label"))
-            )
-
-        return grouped_df
 
     def load_from_couchdb(
         self,
@@ -167,95 +86,25 @@ class AnnotatedTextLoader:
         Returns:
             DataFrame with annotated data
         """
-        conn = CouchDBConnection(
+        mode_name = 'line' if line_level else 'paragraph'
+        mode = get_mode(mode_name)
+        return mode.load_annotated_from_couchdb(
+            spark=self.spark,
             couchdb_url=couchdb_url,
             database=database,
             username=username,
-            password=password
+            password=password,
+            pattern=pattern,
+            collapse_labels=collapse_labels
         )
-
-        # Load annotated attachments from CouchDB
-        df = conn.load_distributed(
-            spark=self.spark,
-            pattern=pattern
-        )
-
-        # Split content into lines for processing
-        from pyspark.sql.functions import split as sql_split
-        df = df.withColumn("lines", sql_split(col("value"), "\n"))
-
-        # Process similar to file loading
-        if line_level:
-            def extract_yedda_lines(lines: List[str]) -> List[Tuple[str, str, int]]:
-                import re
-                results = []
-                pattern_re = r'\[@\s*(.*?)\s*#([^\*]+)\*\]'
-
-                for match in re.finditer(pattern_re, '\n'.join(lines), re.DOTALL):
-                    content = match.group(1)
-                    label = match.group(2).strip()
-
-                    content_lines = content.split('\n')
-                    for line_num, line in enumerate(content_lines):
-                        if line or line_num < len(content_lines) - 1:
-                            results.append((label, line, line_num))
-
-                return results
-
-            extract_udf = udf(
-                extract_yedda_lines,
-                ArrayType(StructType([
-                    StructField("label", StringType(), False),
-                    StructField("value", StringType(), False),
-                    StructField("line_number", IntegerType(), False)
-                ]))
-            )
-
-            df = (
-                df.withColumn("line_data", explode(extract_udf(col("lines"))))
-                .select(
-                    "doc_id",
-                    "attachment_name",
-                    col("line_data.label").alias("label"),
-                    col("line_data.value").alias("value"),
-                    col("line_data.line_number")
-                )
-            )
-        else:
-            extract_udf = udf(
-                ParagraphExtractor.extract_annotated_paragraphs,
-                ArrayType(StringType())
-            )
-
-            df = (
-                df.withColumn("value", explode(extract_udf(col("lines"))))
-                .drop("lines")
-            )
-
-            label_pattern = r"#(\S+?)(?:\*)?]"
-            lead_pattern = r"^\[@"
-            trail_pattern = label_pattern + r"$"
-            clean_pattern = lead_pattern + r"(.*)" + trail_pattern
-
-            df = df.withColumn(
-                "label", regexp_extract(col("value"), label_pattern, 1)
-            ).withColumn(
-                "value", regexp_extract(col("value"), clean_pattern, 1)
-            )
-
-        if collapse_labels:
-            collapse_udf = udf(
-                ParagraphExtractor.collapse_labels,
-                StringType()
-            )
-            df = df.withColumn("label", collapse_udf(col("label")))
-
-        return df
 
 
 class RawTextLoader:
     """
     Loads raw (unannotated) text data from various sources.
+
+    This is a backward-compatibility wrapper that delegates to the
+    appropriate extraction mode implementation.
 
     Supports file-based and CouchDB-based loading with heuristic
     paragraph extraction or line-level processing.
@@ -280,41 +129,18 @@ class RawTextLoader:
 
         Args:
             file_paths: List of paths to raw text files
-            line_level: If True, process individual lines instead of paragraphs
+            line_level: If True, process individual lines instead of
+                paragraphs
 
         Returns:
             Preprocessed DataFrame with paragraphs or lines
         """
-        # Read raw files and add line ID to preserve order
-        df = (
-            self.spark.read.text(file_paths)
-            .withColumn("filename", input_file_name())
-            .withColumn("_line_id", monotonically_increasing_id())
+        mode_name = 'line' if line_level else 'paragraph'
+        mode = get_mode(mode_name)
+        return mode.load_raw_from_files(
+            spark=self.spark,
+            file_paths=file_paths
         )
-
-        if line_level:
-            # Line-level: add row numbers preserving order
-            window_spec = Window.partitionBy("filename").orderBy("_line_id")
-            return df.withColumn("row_number", row_number().over(window_spec))
-        else:
-            # Paragraph-level: use heuristic extraction
-            heuristic_udf = udf(
-                ParagraphExtractor.extract_heuristic_paragraphs,
-                ArrayType(StringType())
-            )
-
-            # Window specification for ordering
-            window_spec = Window.partitionBy("filename").orderBy("_line_id")
-
-            return (
-                df.orderBy("_line_id")
-                .groupBy("filename")
-                .agg(collect_list("value").alias("lines"))
-                .withColumn("value", explode(heuristic_udf(col("lines"))))
-                .drop("lines")
-                .filter(trim(col("value")) != "")
-                .withColumn("row_number", row_number().over(window_spec))
-            )
 
     def load_from_couchdb(
         self,
@@ -339,43 +165,13 @@ class RawTextLoader:
         Returns:
             DataFrame with raw text data
         """
-        conn = CouchDBConnection(
+        mode_name = 'line' if line_level else 'paragraph'
+        mode = get_mode(mode_name)
+        return mode.load_raw_from_couchdb(
+            spark=self.spark,
             couchdb_url=couchdb_url,
             database=database,
             username=username,
-            password=password
-        )
-
-        # Load raw attachments from CouchDB
-        df = conn.load_distributed(
-            spark=self.spark,
+            password=password,
             pattern=pattern
         )
-
-        # Split content into lines for processing
-        from pyspark.sql.functions import split as sql_split
-        df = df.withColumn("lines", sql_split(col("value"), "\n"))
-
-        if line_level:
-            # Line-level: explode lines and add line numbers
-            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("doc_id")
-            return (
-                df.withColumn("value", explode(col("lines")))
-                .drop("lines")
-                .withColumn("line_number", row_number().over(window_spec))
-            )
-        else:
-            # Paragraph-level: use heuristic extraction
-            heuristic_udf = udf(
-                ParagraphExtractor.extract_heuristic_paragraphs,
-                ArrayType(StringType())
-            )
-
-            window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy("doc_id")
-
-            return (
-                df.withColumn("value", explode(heuristic_udf(col("lines"))))
-                .drop("lines")
-                .filter(trim(col("value")) != "")
-                .withColumn("line_number", row_number().over(window_spec))
-            )

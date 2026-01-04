@@ -304,8 +304,7 @@ class ParagraphExtractor:
 
 def AnnotatedTextParser(
     extraction_mode: str = 'paragraph',
-    collapse_labels: bool = True,
-    line_level: Optional[bool] = None
+    collapse_labels: bool = True
 ):
     """
     Factory function for creating AnnotatedTextParser instances.
@@ -316,7 +315,6 @@ def AnnotatedTextParser(
     Args:
         extraction_mode: Extraction granularity ('line', 'paragraph', 'section')
         collapse_labels: If True, collapse labels to 3 main categories
-        line_level: DEPRECATED - use extraction_mode instead
 
     Returns:
         An AnnotatedTextParser subclass instance
@@ -326,16 +324,6 @@ def AnnotatedTextParser(
         result_df = parser.parse(df)
     """
     from .extraction_modes import get_parser
-
-    # Handle backwards compatibility
-    if line_level is not None:
-        import warnings
-        warnings.warn(
-            "line_level parameter is deprecated, use extraction_mode='line'",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        extraction_mode = 'line' if line_level else 'paragraph'
 
     return get_parser(mode=extraction_mode, collapse_labels=collapse_labels)
 
@@ -348,5 +336,5 @@ __all__ = [
     'NOMENCLATURE_RE',
     'TABLE_KEYWORDS',
     'FIGURE_KEYWORDS',
-    'TAXON_PATTERN',
+    'TAXON_PATTERN',None
 ]

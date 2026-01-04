@@ -1,16 +1,15 @@
 """
 ExtractionMode classes for handling mode-specific behavior.
 
-These classes encapsulate mode-specific logic that was previously
-handled with if statements checking extraction_mode strings.
+These classes encapsulate mode-specific logic for different text extraction
+granularities (line, paragraph, section), including data loading.
 """
 
 from abc import ABC
-from typing import TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyspark.sql import DataFrame
-    from ..classifier_v2 import TaxaClassifier
+    from pyspark.sql import SparkSession, DataFrame
 
 
 class ExtractionMode(ABC):
@@ -18,7 +17,8 @@ class ExtractionMode(ABC):
     Base class for extraction modes.
 
     Encapsulates mode-specific behavior for different text extraction
-    granularities (line, paragraph, section).
+    granularities (line, paragraph, section), including loading data
+    from files and CouchDB.
     """
 
     @property
@@ -31,68 +31,93 @@ class ExtractionMode(ABC):
         """Return True if this is line-level extraction mode."""
         return False
 
-    def load_from_files(self, classifier: 'TaxaClassifier') -> 'DataFrame':
+    def load_raw_from_files(
+        self,
+        spark: 'SparkSession',
+        file_paths: List[str]
+    ) -> 'DataFrame':
         """
-        Load raw text from local files.
+        Load raw (unannotated) text from local files.
 
         Args:
-            classifier: The TaxaClassifier instance
+            spark: SparkSession instance
+            file_paths: List of file paths to load
 
         Returns:
             DataFrame with raw text data
         """
-        # Default implementation for line and paragraph modes
-        from ..preprocessing import RawTextLoader
+        raise NotImplementedError
 
-        loader = RawTextLoader(classifier.spark)
-        df = loader.load_files(
-            classifier.file_paths,
-            line_level=self.is_line_mode
-        )
-
-        return classifier.load_raw_from_df(df)
-
-    def load_from_couchdb(self, classifier: 'TaxaClassifier') -> 'DataFrame':
+    def load_raw_from_couchdb(
+        self,
+        spark: 'SparkSession',
+        couchdb_url: str,
+        database: str,
+        username: str,
+        password: str,
+        pattern: str = "*.txt"
+    ) -> 'DataFrame':
         """
         Load raw text from CouchDB.
 
         Args:
-            classifier: The TaxaClassifier instance
+            spark: SparkSession instance
+            couchdb_url: CouchDB server URL
+            database: Database name
+            username: CouchDB username
+            password: CouchDB password
+            pattern: Pattern to match attachment names
 
         Returns:
             DataFrame with raw text data
         """
-        # Default implementation for line and paragraph modes
-        from ..classifier_v2 import CouchDBConnection
+        raise NotImplementedError
 
-        conn = CouchDBConnection(
-            classifier.couchdb_url,
-            classifier.couchdb_database,
-            classifier.couchdb_username,
-            classifier.couchdb_password
-        )
+    def load_annotated_from_files(
+        self,
+        spark: 'SparkSession',
+        file_paths: List[str],
+        collapse_labels: bool = True
+    ) -> 'DataFrame':
+        """
+        Load annotated text from local files.
 
-        # Load using attachment pattern
-        if not classifier.couchdb_attachment_pattern:
-            raise ValueError(
-                "couchdb_attachment_pattern must be specified for "
-                "CouchDB-based loading"
-            )
+        Args:
+            spark: SparkSession instance
+            file_paths: List of file paths to load
+            collapse_labels: Whether to collapse labels to 3 main categories
 
-        if classifier.verbosity >= 1:
-            print(
-                f"[Classifier] Loading training data from CouchDB: "
-                f"{classifier.couchdb_database}"
-            )
-            print(f"[Classifier] Attachment pattern: "
-                  f"{classifier.couchdb_attachment_pattern}")
+        Returns:
+            DataFrame with annotated data (includes label column)
+        """
+        raise NotImplementedError
 
-        df = conn.load_distributed(
-            classifier.spark,
-            classifier.couchdb_attachment_pattern
-        )
+    def load_annotated_from_couchdb(
+        self,
+        spark: 'SparkSession',
+        couchdb_url: str,
+        database: str,
+        username: str,
+        password: str,
+        pattern: str = "*.txt.ann",
+        collapse_labels: bool = True
+    ) -> 'DataFrame':
+        """
+        Load annotated text from CouchDB.
 
-        return classifier.load_raw_from_df(df)
+        Args:
+            spark: SparkSession instance
+            couchdb_url: CouchDB server URL
+            database: Database name
+            username: CouchDB username
+            password: CouchDB password
+            pattern: Pattern to match attachment names
+            collapse_labels: Whether to collapse labels
+
+        Returns:
+            DataFrame with annotated data
+        """
+        raise NotImplementedError
 
     def __str__(self) -> str:
         return self.name
@@ -105,61 +130,3 @@ class ExtractionMode(ABC):
         if isinstance(other, str):
             return self.name == other
         return isinstance(other, ExtractionMode) and self.name == other.name
-
-
-class LineExtractionMode(ExtractionMode):
-    """Line-level extraction mode."""
-
-    @property
-    def name(self) -> str:
-        return 'line'
-
-    @property
-    def is_line_mode(self) -> bool:
-        return True
-
-
-class ParagraphExtractionMode(ExtractionMode):
-    """Paragraph-level extraction mode."""
-
-    @property
-    def name(self) -> str:
-        return 'paragraph'
-
-
-class SectionExtractionMode(ExtractionMode):
-    """Section-level extraction mode."""
-
-    @property
-    def name(self) -> str:
-        return 'section'
-
-    def load_from_files(self, classifier: 'TaxaClassifier') -> 'DataFrame':
-        """
-        Load sections from PDF files.
-
-        Note: For 'section' extraction mode, PDFs must be stored in CouchDB.
-        The file_paths parameter is not supported for section mode.
-        Use input_source='couchdb' instead.
-        """
-        raise NotImplementedError(
-            "Section-based tokenization requires PDFs to be stored in "
-            "CouchDB. "
-            "Please use input_source='couchdb' with tokenizer='section'. "
-            "The PDFSectionExtractor only supports loading from CouchDB "
-            "attachments."
-        )
-
-    def load_from_couchdb(self, classifier: 'TaxaClassifier') -> 'DataFrame':
-        """
-        Load sections from PDF documents in CouchDB using
-        PDFSectionExtractor.
-
-        Args:
-            classifier: The TaxaClassifier instance
-
-        Returns:
-            DataFrame with section data
-        """
-        # Delegate to classifier's _load_sections_from_couchdb method
-        return classifier._load_sections_from_couchdb()
