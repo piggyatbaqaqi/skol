@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Pipeline to extract Taxon objects from CouchDB annotated files and save back to CouchDB.
 
