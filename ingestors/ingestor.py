@@ -319,7 +319,7 @@ class Ingestor(ABC):
 
         return response
 
-    def _register_suppression(self, url):
+    def _register_suppression(self, url: str) -> None:
         parsed_url = urlparse(url)
         domain = parsed_url.netloc
 
