@@ -1,0 +1,93 @@
+##### services #####
+services:
+
+  # rediscommander
+  rediscommander:
+    image: docker.io/rediscommander/redis-commander:latest
+    hostname: rediscommander
+    environment: 
+      REDIS_PORT: "6379"
+      REDIS_HOST: "redis" 
+    ports: 
+      - 8882:8081
+    depends_on: 
+      - redis 
+
+  # neo4j#
+  neo4j:
+    image: docker.io/neo4j:5.26 #5.15
+    hostname: neo4j
+    ports:
+      - "7474:7474" #http
+    #  - "7473:7473" #https
+      - "7687:7687" #bolt
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_AUTH=none
+      - NEO4J_PLUGINS='["apoc", "graph-data-science"]'
+      - NEO4J_dbms_memory_pagecache_size=1G
+      # - "NEO4J_dbms_directories_plugins=/plugins"
+      # - "NEO4J_dbms_security_procedures_unrestricted=algo.*,apoc.*,gds.*"
+    volumes:
+      - neo4j-data:/data
+      # - ./neo4j-plugins:/plugins
+
+  #redis#
+  redis:
+    image: docker.io/redis:7.4
+    restart: always
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  #couchdb_skol#
+  couchdb_skol:
+    image: couchdb:3.3.3
+    restart: always
+    ports:
+      - "5984:5984"
+    environment:
+      # Use these variables to set up the admin user and password
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=SU2orange!
+    volumes:
+      - /data/skol/couchdb/data:/opt/couchdb/data
+
+
+##### volumes #####
+volumes:
+  cassandra-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  minio-data:
+    driver: local
+  mongo-data:
+    driver: local
+  mssql-data:
+    driver: local
+  neo4j-data:
+    driver: local
+  redis-data:
+    driver: local
+  metastore-postgresql:
+    driver: local
+  hdfs-datanode:
+    driver: local
+  hdfs-namenode:
+    driver: local
+  couchdb-data:
+    driver: local
+
+
+##### networks #####
+networks:
+  default:
+    name: local
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+          gateway: 10.10.10.1
