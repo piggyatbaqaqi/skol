@@ -1,5 +1,26 @@
 #!/bin/bash
 ## Run a python script with the conda skol environment
-source /home/skol/miniconda3/etc/profile.d/conda.sh 
+##
+## Usage:
+##   with_skol script.py args...     # Run script.py with skol environment
+##   foo args...                     # If symlinked as 'foo', runs foo.py with args
+##
+## This script can be symlinked with different names. When invoked via a symlink,
+## it will automatically run the corresponding .py file. For example:
+##   ln -s with_skol train_classifier
+##   ./train_classifier --help       # Runs: python train_classifier.py --help
+
+source /home/skol/miniconda3/etc/profile.d/conda.sh
 /home/skol/miniconda3/bin/conda activate skol
-exec python $*
+
+# Get the name this script was invoked as
+SCRIPT_NAME=$(basename "$0")
+SCRIPT_DIR=$(dirname "$0")
+
+# If invoked as 'with_skol', run python with all arguments as-is
+if [ "$SCRIPT_NAME" = "with_skol" ]; then
+    exec python "$@"
+else
+    # Invoked via symlink - run the corresponding .py file
+    exec python "${SCRIPT_DIR}/${SCRIPT_NAME}.py" "$@"
+fi
