@@ -65,7 +65,9 @@ class PDFSectionExtractor:
         username: Optional[str] = None,
         password: Optional[str] = None,
         verbosity: int = 1,
-        spark: Optional[Any] = None
+        spark: Optional[Any] = None,
+        read_text: bool = False,
+        save_text: bool = False
     ):
         """
         Initialize the PDF section extractor.
@@ -76,9 +78,14 @@ class PDFSectionExtractor:
             password: CouchDB password (default: from COUCHDB_PASSWORD env var)
             verbosity: Logging verbosity (0=silent, 1=info, 2=debug)
             spark: SparkSession instance (required for DataFrame output)
+            read_text: If True, read from .txt attachment instead of converting PDF
+            save_text: If True, save extracted text as .txt attachment
+                      If both read_text and save_text are True: always convert PDF and replace .txt
         """
         self.verbosity = verbosity
         self.spark = spark
+        self.read_text = read_text
+        self.save_text = save_text
 
         # Storage for figure captions (populated during parsing)
         self.figure_captions = []
@@ -852,6 +859,12 @@ class PDFSectionExtractor:
         For .txt files, form feed characters (^L) are replaced with page markers
         to maintain compatibility with PDF processing.
 
+        Text attachment behavior (controlled by read_text and save_text):
+        - If both read_text and save_text are True: Always convert PDF and replace .txt attachment
+        - If read_text is True and save_text is False: Read from .txt if exists, else convert PDF
+        - If read_text is False and save_text is True: Convert PDF and save as .txt
+        - If both are False: Convert PDF without saving
+
         Args:
             database: Database name
             doc_id: Document ID
@@ -887,26 +900,71 @@ class PDFSectionExtractor:
                     f"Available attachments: {list(attachments.keys())}"
                 )
 
-        # Get attachment data directly from CouchDB (no temp file)
-        db = self.couch[database]
-        file_data = db.get_attachment(doc_id, attachment_name).read()
+        # Determine text attachment name for read_text/save_text functionality
+        txt_attachment_name = self._get_text_attachment_name(attachment_name)
+        txt_exists = self._text_attachment_exists(database, doc_id, txt_attachment_name)
 
-        if self.verbosity >= 1:
-            print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+        text = None
 
-        # Extract text from bytes (method depends on file type)
-        if attachment_name.lower().endswith('.pdf'):
+        # Decision logic for read_text and save_text
+        if self.read_text and self.save_text:
+            # Both true: Always convert PDF and replace .txt
+            if self.verbosity >= 1:
+                print("read_text=True, save_text=True: Converting PDF and will replace text attachment")
+            db = self.couch[database]
+            file_data = db.get_attachment(doc_id, attachment_name).read()
+            if self.verbosity >= 1:
+                print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
             text = self.pdf_to_text(file_data)
-        elif attachment_name.lower().endswith('.txt'):
-            text = self.txt_to_text_with_pages(file_data)
-        else:
-            # Try to detect based on content
-            # If it looks like PDF magic bytes, treat as PDF
-            if file_data[:4] == b'%PDF':
-                text = self.pdf_to_text(file_data)
+            # Save the text attachment
+            self._save_text_attachment(database, doc_id, txt_attachment_name, text)
+
+        elif self.read_text and not self.save_text:
+            # read_text=True, save_text=False: Use .txt if exists, else convert PDF
+            if txt_exists:
+                text = self._read_text_attachment(database, doc_id, txt_attachment_name)
             else:
-                # Default to text processing
+                if self.verbosity >= 1:
+                    print(f"Text attachment {txt_attachment_name} not found, converting PDF")
+                db = self.couch[database]
+                file_data = db.get_attachment(doc_id, attachment_name).read()
+                if self.verbosity >= 1:
+                    print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+                text = self.pdf_to_text(file_data)
+
+        elif not self.read_text and self.save_text:
+            # read_text=False, save_text=True: Convert PDF and save as .txt
+            if self.verbosity >= 1:
+                print("read_text=False, save_text=True: Converting PDF and saving text attachment")
+            db = self.couch[database]
+            file_data = db.get_attachment(doc_id, attachment_name).read()
+            if self.verbosity >= 1:
+                print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+            text = self.pdf_to_text(file_data)
+            # Save the text attachment
+            self._save_text_attachment(database, doc_id, txt_attachment_name, text)
+
+        else:
+            # Both false: Original behavior - extract based on file type
+            db = self.couch[database]
+            file_data = db.get_attachment(doc_id, attachment_name).read()
+
+            if self.verbosity >= 1:
+                print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+
+            # Extract text from bytes (method depends on file type)
+            if attachment_name.lower().endswith('.pdf'):
+                text = self.pdf_to_text(file_data)
+            elif attachment_name.lower().endswith('.txt'):
                 text = self.txt_to_text_with_pages(file_data)
+            else:
+                # Try to detect based on content
+                # If it looks like PDF magic bytes, treat as PDF
+                if file_data[:4] == b'%PDF':
+                    text = self.pdf_to_text(file_data)
+                else:
+                    # Default to text processing
+                    text = self.txt_to_text_with_pages(file_data)
 
         # Parse into sections DataFrame
         sections_df = self.parse_text_to_sections(text, doc_id, attachment_name)
@@ -973,6 +1031,99 @@ class PDFSectionExtractor:
         combined_df = reduce(DataFrame.unionAll, dfs)
         return combined_df
 
+    def _get_text_attachment_name(self, pdf_attachment_name: str) -> str:
+        """
+        Convert PDF attachment name to text attachment name.
+
+        Args:
+            pdf_attachment_name: PDF attachment name (e.g., "foo.pdf")
+
+        Returns:
+            Text attachment name (e.g., "foo.txt")
+
+        Example:
+            >>> extractor._get_text_attachment_name("article.pdf")
+            'article.txt'
+            >>> extractor._get_text_attachment_name("foo.PDF")
+            'foo.txt'
+        """
+        # Replace .pdf extension with .txt (case-insensitive)
+        if pdf_attachment_name.lower().endswith('.pdf'):
+            return pdf_attachment_name[:-4] + '.txt'
+        # If no .pdf extension, just append .txt
+        return pdf_attachment_name + '.txt'
+
+    def _text_attachment_exists(self, database: str, doc_id: str, txt_attachment_name: str) -> bool:
+        """
+        Check if a text attachment exists in the document.
+
+        Args:
+            database: Database name
+            doc_id: Document ID
+            txt_attachment_name: Text attachment name to check
+
+        Returns:
+            True if attachment exists, False otherwise
+        """
+        attachments = self.list_attachments(database, doc_id)
+        return txt_attachment_name in attachments
+
+    def _read_text_attachment(self, database: str, doc_id: str, txt_attachment_name: str) -> str:
+        """
+        Read text from a text attachment.
+
+        Args:
+            database: Database name
+            doc_id: Document ID
+            txt_attachment_name: Text attachment name
+
+        Returns:
+            Text content with page markers
+        """
+        db = self.couch[database]
+        file_data = db.get_attachment(doc_id, txt_attachment_name).read()
+
+        if self.verbosity >= 1:
+            print(f"Reading from text attachment: {txt_attachment_name} ({len(file_data):,} bytes)")
+
+        # Use the existing method to process text with form feeds
+        return self.txt_to_text_with_pages(file_data)
+
+    def _save_text_attachment(
+        self,
+        database: str,
+        doc_id: str,
+        txt_attachment_name: str,
+        text_content: str
+    ) -> None:
+        """
+        Save text as a text attachment to the document.
+
+        If the attachment already exists, it will be replaced.
+
+        Args:
+            database: Database name
+            doc_id: Document ID
+            txt_attachment_name: Text attachment name
+            text_content: Text content to save
+        """
+        db = self.couch[database]
+
+        # Get current document to access _rev
+        doc = db[doc_id]
+
+        # Save as text attachment
+        text_bytes = text_content.encode('utf-8')
+        db.put_attachment(
+            doc,
+            text_bytes,
+            filename=txt_attachment_name,
+            content_type='text/plain'
+        )
+
+        if self.verbosity >= 1:
+            print(f"Saved text attachment: {txt_attachment_name} ({len(text_bytes):,} bytes)")
+
     def get_figure_captions(self) -> List[Dict[str, Any]]:
         """
         Get all figure captions extracted from the last document processing.
@@ -1017,17 +1168,16 @@ class PDFSectionExtractor:
         Returns:
             List of matching sections
         """
-        if not case_sensitive:
-            keyword = keyword.lower()
-            return [
-                s for s in sections
-                if keyword in s.lower()
-            ]
-        else:
+        if case_sensitive:
             return [
                 s for s in sections
                 if keyword in s
             ]
+        keyword = keyword.lower()
+        return [
+            s for s in sections
+            if keyword in s.lower()
+        ]
 
     def extract_metadata(
         self,

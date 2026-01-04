@@ -113,6 +113,12 @@ class SkolClassifierV2:
                   'section': Extract sections from PDFs with section name features
         section_filter: Optional list of section names to include (for section mode)
                        Example: ['Introduction', 'Methods', 'Results']
+        read_text: If True, read from existing .txt attachment instead of converting PDF
+                   Only applies to section extraction mode
+        save_text: If True, save extracted PDF text as .txt attachment
+                   Only applies to section extraction mode
+                   If both read_text and save_text are True: always convert PDF and replace .txt
+                   If read_text=True and save_text=False: convert PDF but don't save
         collapse_labels: Whether to collapse similar labels during training
         coalesce_labels: Whether to merge consecutive same-label predictions
         output_format: Format for predictions ('annotated', 'labels', 'probs')
@@ -195,6 +201,8 @@ class SkolClassifierV2:
         # Processing configuration
         extraction_mode: Literal['line', 'paragraph', 'section'] = 'paragraph',
         section_filter: Optional[List[str]] = None,  # Filter by section names (for section mode)
+        read_text: bool = False,  # Read from .txt attachment instead of converting PDF
+        save_text: bool = False,  # Save extracted text as .txt attachment
         collapse_labels: bool = True,
         coalesce_labels: bool = False,
         output_format: Literal['annotated', 'labels', 'probs'] = 'annotated',
@@ -245,6 +253,8 @@ class SkolClassifierV2:
         from .extraction_modes import get_mode
         self.extraction_mode = get_mode(extraction_mode)
         self.section_filter = section_filter
+        self.read_text = read_text
+        self.save_text = save_text
         self.collapse_labels = collapse_labels
         self.coalesce_labels = coalesce_labels
         self.output_format = output_format
@@ -1038,7 +1048,9 @@ class SkolClassifierV2:
             username=self.couchdb_username,
             password=self.couchdb_password,
             spark=self.spark,
-            verbosity=max(0, self.verbosity - 1)  # Reduce verbosity for extractor
+            verbosity=max(0, self.verbosity - 1),  # Reduce verbosity for extractor
+            read_text=self.read_text,
+            save_text=self.save_text
         )
 
         # Extract sections from multiple documents
