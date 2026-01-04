@@ -67,7 +67,7 @@ class PDFSectionExtractor:
         verbosity: int = 1,
         spark: Optional[Any] = None,
         read_text: bool = False,
-        save_text: bool = False
+        save_text: Optional[str] = None
     ):
         """
         Initialize the PDF section extractor.
@@ -79,8 +79,10 @@ class PDFSectionExtractor:
             verbosity: Logging verbosity (0=silent, 1=info, 2=debug)
             spark: SparkSession instance (required for DataFrame output)
             read_text: If True, read from .txt attachment instead of converting PDF
-            save_text: If True, save extracted text as .txt attachment
-                      If both read_text and save_text are True: always convert PDF and replace .txt
+            save_text: Text attachment saving strategy:
+                      'eager': Always convert PDF and save/replace .txt attachment
+                      'lazy': Save .txt attachment only if one doesn't exist
+                      None: Do not save .txt attachment
         """
         self.verbosity = verbosity
         self.spark = spark
@@ -860,10 +862,12 @@ class PDFSectionExtractor:
         to maintain compatibility with PDF processing.
 
         Text attachment behavior (controlled by read_text and save_text):
-        - If both read_text and save_text are True: Always convert PDF and replace .txt attachment
-        - If read_text is True and save_text is False: Read from .txt if exists, else convert PDF
-        - If read_text is False and save_text is True: Convert PDF and save as .txt
-        - If both are False: Convert PDF without saving
+        - save_text='eager' + read_text=True: Always convert PDF and replace .txt
+        - save_text='eager' + read_text=False: Always convert PDF and save/replace .txt
+        - save_text='lazy' + read_text=True: Read .txt if exists, else convert PDF and save .txt
+        - save_text='lazy' + read_text=False: Convert PDF and save .txt only if it doesn't exist
+        - save_text=None + read_text=True: Read .txt if exists, else convert PDF (don't save)
+        - save_text=None + read_text=False: Convert PDF without saving (original behavior)
 
         Args:
             database: Database name
@@ -907,10 +911,10 @@ class PDFSectionExtractor:
         text = None
 
         # Decision logic for read_text and save_text
-        if self.read_text and self.save_text:
-            # Both true: Always convert PDF and replace .txt
+        if self.save_text == 'eager':
+            # Always convert PDF and save/replace .txt
             if self.verbosity >= 1:
-                print("read_text=True, save_text=True: Converting PDF and will replace text attachment")
+                print(f"save_text='eager': Converting PDF and will save/replace text attachment")
             db = self.couch[database]
             file_data = db.get_attachment(doc_id, attachment_name).read()
             if self.verbosity >= 1:
@@ -919,52 +923,56 @@ class PDFSectionExtractor:
             # Save the text attachment
             self._save_text_attachment(database, doc_id, txt_attachment_name, text)
 
-        elif self.read_text and not self.save_text:
-            # read_text=True, save_text=False: Use .txt if exists, else convert PDF
-            if txt_exists:
+        elif self.save_text == 'lazy':
+            # Save .txt only if it doesn't exist
+            if txt_exists and self.read_text:
+                # .txt exists and we want to read it
                 text = self._read_text_attachment(database, doc_id, txt_attachment_name)
             else:
+                # .txt doesn't exist, or we're not reading - convert PDF
                 if self.verbosity >= 1:
-                    print(f"Text attachment {txt_attachment_name} not found, converting PDF")
+                    if txt_exists:
+                        print(f"save_text='lazy', read_text=False: Converting PDF (ignoring existing .txt)")
+                    else:
+                        print(f"save_text='lazy': Text attachment doesn't exist, converting PDF and saving")
                 db = self.couch[database]
                 file_data = db.get_attachment(doc_id, attachment_name).read()
                 if self.verbosity >= 1:
                     print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
                 text = self.pdf_to_text(file_data)
+                # Save only if doesn't exist
+                if not txt_exists:
+                    self._save_text_attachment(database, doc_id, txt_attachment_name, text)
 
-        elif not self.read_text and self.save_text:
-            # read_text=False, save_text=True: Convert PDF and save as .txt
-            if self.verbosity >= 1:
-                print("read_text=False, save_text=True: Converting PDF and saving text attachment")
-            db = self.couch[database]
-            file_data = db.get_attachment(doc_id, attachment_name).read()
-            if self.verbosity >= 1:
-                print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
-            text = self.pdf_to_text(file_data)
-            # Save the text attachment
-            self._save_text_attachment(database, doc_id, txt_attachment_name, text)
-
-        else:
-            # Both false: Original behavior - extract based on file type
-            db = self.couch[database]
-            file_data = db.get_attachment(doc_id, attachment_name).read()
-
-            if self.verbosity >= 1:
-                print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
-
-            # Extract text from bytes (method depends on file type)
-            if attachment_name.lower().endswith('.pdf'):
-                text = self.pdf_to_text(file_data)
-            elif attachment_name.lower().endswith('.txt'):
-                text = self.txt_to_text_with_pages(file_data)
+        elif self.save_text is None:
+            # Don't save .txt attachment
+            if self.read_text and txt_exists:
+                # Read from .txt if exists
+                text = self._read_text_attachment(database, doc_id, txt_attachment_name)
             else:
-                # Try to detect based on content
-                # If it looks like PDF magic bytes, treat as PDF
-                if file_data[:4] == b'%PDF':
+                # Convert PDF without saving
+                if self.read_text and not txt_exists:
+                    if self.verbosity >= 1:
+                        print(f"Text attachment {txt_attachment_name} not found, converting PDF")
+                db = self.couch[database]
+                file_data = db.get_attachment(doc_id, attachment_name).read()
+
+                if self.verbosity >= 1:
+                    print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+
+                # Extract text from bytes (method depends on file type)
+                if attachment_name.lower().endswith('.pdf'):
                     text = self.pdf_to_text(file_data)
-                else:
-                    # Default to text processing
+                elif attachment_name.lower().endswith('.txt'):
                     text = self.txt_to_text_with_pages(file_data)
+                else:
+                    # Try to detect based on content
+                    # If it looks like PDF magic bytes, treat as PDF
+                    if file_data[:4] == b'%PDF':
+                        text = self.pdf_to_text(file_data)
+                    else:
+                        # Default to text processing
+                        text = self.txt_to_text_with_pages(file_data)
 
         # Parse into sections DataFrame
         sections_df = self.parse_text_to_sections(text, doc_id, attachment_name)

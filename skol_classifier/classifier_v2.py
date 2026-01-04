@@ -202,7 +202,7 @@ class SkolClassifierV2:
         extraction_mode: Literal['line', 'paragraph', 'section'] = 'paragraph',
         section_filter: Optional[List[str]] = None,  # Filter by section names (for section mode)
         read_text: bool = False,  # Read from .txt attachment instead of converting PDF
-        save_text: bool = False,  # Save extracted text as .txt attachment
+        save_text: Optional[Literal['eager', 'lazy']] = None,  # 'eager': always save, 'lazy': save if missing, None: don't save
         collapse_labels: bool = True,
         coalesce_labels: bool = False,
         output_format: Literal['annotated', 'labels', 'probs'] = 'annotated',
