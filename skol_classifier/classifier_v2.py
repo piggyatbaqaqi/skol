@@ -242,7 +242,8 @@ class SkolClassifierV2:
         self.redis_expire = redis_expire
 
         # Processing configuration
-        self.extraction_mode = extraction_mode
+        from .extraction_modes import get_mode
+        self.extraction_mode = get_mode(extraction_mode)
         self.section_filter = section_filter
         self.collapse_labels = collapse_labels
         self.coalesce_labels = coalesce_labels
@@ -770,36 +771,30 @@ class SkolClassifierV2:
 
     def _load_raw_from_files(self) -> DataFrame:
         """Load raw text from local files."""
-        # For 'section' extraction mode with PDF files, use PDFSectionExtractor
-        if self.extraction_mode == 'section':
-            return self._load_sections_from_files()
-
-        # For 'line' and 'paragraph' modes, use traditional text loading
-        from .preprocessing import RawTextLoader
-
-        loader = RawTextLoader(self.spark)
-        df = loader.load_files(
-            self.file_paths,
-            line_level=self.line_level
+        # Delegate to extraction mode - section mode will raise NotImplementedError
+        df = self.extraction_mode.load_raw_from_files(
+            spark=self.spark,
+            file_paths=self.file_paths
         )
 
         return self.load_raw_from_df(df)
 
     def _load_raw_from_couchdb(self) -> DataFrame:
         """Load raw text from CouchDB."""
-        # For 'section' extraction mode, use PDFSectionExtractor
-        if self.extraction_mode == 'section':
+        # For section mode, use the classifier's special section loading logic
+        # which handles doc ID discovery and verbosity
+        if self.extraction_mode.name == 'section':
             return self._load_sections_from_couchdb()
 
-        # For 'line' and 'paragraph' modes, use traditional text loading
-        conn = CouchDBConnection(
-            self.couchdb_url,
-            self.couchdb_database,
-            self.couchdb_username,
-            self.couchdb_password
+        # For line and paragraph modes, delegate to extraction mode
+        df = self.extraction_mode.load_raw_from_couchdb(
+            spark=self.spark,
+            couchdb_url=self.couchdb_url,
+            database=self.couchdb_database,
+            username=self.couchdb_username,
+            password=self.couchdb_password,
+            pattern=self.couchdb_pattern
         )
-
-        df = conn.load_distributed(self.spark, self.couchdb_pattern)
 
         return self.load_raw_from_df(df)
 
@@ -876,12 +871,9 @@ class SkolClassifierV2:
 
     def _load_annotated_from_files(self) -> DataFrame:
         """Load annotated data from files."""
-        from .data_loaders import AnnotatedTextLoader
-
-        loader = AnnotatedTextLoader(self.spark)
-        return loader.load_from_files(
-            self.file_paths,
-            line_level=self.line_level,
+        return self.extraction_mode.load_annotated_from_files(
+            spark=self.spark,
+            file_paths=self.file_paths,
             collapse_labels=self.collapse_labels
         )
 
@@ -922,7 +914,7 @@ class SkolClassifierV2:
         from .preprocessing import AnnotatedTextParser
 
         parser = AnnotatedTextParser(
-            extraction_mode=self.extraction_mode,
+            extraction_mode=self.extraction_mode.name,
             collapse_labels=self.collapse_labels
         )
         return parser.parse(df)
@@ -1309,7 +1301,7 @@ class SkolClassifierV2:
         metadata = {
             'label_mapping': self._label_mapping,
             'config': {
-                'tokenizer': self.extraction_mode,
+                'tokenizer': self.extraction_mode.name,
                 'use_suffixes': self.use_suffixes,
                 'min_doc_freq': self.min_doc_freq,
                 'model_type': self.model_type,
@@ -1467,7 +1459,7 @@ class SkolClassifierV2:
             metadata = {
                 'label_mapping': self._label_mapping,
                 'config': {
-                    'tokenizer': self.extraction_mode,
+                    'tokenizer': self.extraction_mode.name,
                     'use_suffixes': self.use_suffixes,
                     'min_doc_freq': self.min_doc_freq,
                     'model_type': self.model_type,
