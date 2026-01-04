@@ -15,10 +15,11 @@ Example:
 """
 
 import argparse
+from datetime import datetime
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import redis
 from pyspark.sql import SparkSession
@@ -79,7 +80,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Model settings
         'model_version': os.environ.get('MODEL_VERSION', 'v2.0'),
-        'classifier_model_expire': int(os.environ.get('MODEL_EXPIRE', str(60 * 60 * 24 * 2))),  # 2 days
+        'classifier_model_expire': os.environ.get('MODEL_EXPIRE', None),  # %H:%M:%S; None = never expires
 
         # Data paths
         'annotated_path': Path(os.environ.get('ANNOTATED_PATH', Path.cwd().parent / "data" / "annotated")),
@@ -123,9 +124,10 @@ def train_classifier(
     model_config: Dict[str, Any],
     config: Dict[str, Any],
     redis_client: redis.Redis,
-    verbosity_override: int = None,
-    read_text_override: bool = None,
-    save_text_override: str = None
+    verbosity_override: Optional[int] = None,
+    read_text_override: Optional[bool] = None,
+    save_text_override: Optional[str] = None,
+    expire_override: Optional[str] = None
 ) -> None:
     """
     Train a classifier model and save it to Redis.
@@ -138,6 +140,7 @@ def train_classifier(
         verbosity_override: Optional verbosity level override
         read_text_override: Optional read_text parameter override
         save_text_override: Optional save_text parameter override ('eager', 'lazy', or None)
+        expire_override: Optional Redis expiration time override in HH:MM:SS format (None = no expiration)
     """
     # Apply overrides if provided
     if verbosity_override is not None or read_text_override is not None or save_text_override is not None:
@@ -148,6 +151,13 @@ def train_classifier(
             model_config['read_text'] = read_text_override
         if save_text_override is not None:
             model_config['save_text'] = save_text_override
+
+    # Determine Redis expiration time
+    expire_time = config.get('classifier_model_expire')
+    if expire_override is not None:
+        duration = datetime.strptime(expire_override, '%H:%M:%S')
+        expire_time = duration.hour * 3600 + duration.minute * 60 + duration.second
+    redis_expire = expire_time
 
     # Build Redis key for model
     classifier_model_name = f"skol:classifier:model:{model_name}_{config['model_version']}"
@@ -163,78 +173,57 @@ def train_classifier(
     print(f"Training database: {model_config.get('couchdb_training_database')}")
     print()
 
-    # Check if model already exists in Redis
-    if redis_client.exists(classifier_model_name):
-        print(f"⚠ Model already exists in Redis: {classifier_model_name}")
-        response = input("Overwrite? [y/N]: ")
-        if response.lower() not in ['y', 'yes']:
-            print("Skipping model training.")
-            return
+    # Create Spark session
+    print("Initializing Spark session...")
+    spark = make_spark_session(config)
 
-    # Check for annotated training data
-    annotated_path = config['annotated_path']
-    if annotated_path.exists():
-        annotated_files = get_file_list(str(annotated_path), pattern="**/*.ann")
+    try:
+        # Create classifier instance
+        print("Creating classifier with SkolClassifierV2...")
+        classifier = SkolClassifierV2(
+            spark=spark,
 
-        if len(annotated_files) > 0:
-            print(f"Found {len(annotated_files)} annotated training files")
+            # Model I/O
+            auto_load_model=False,  # Fit a new model
+            model_storage='redis',
+            redis_client=redis_client,
+            redis_key=classifier_model_name,
+            redis_expire=redis_expire,
 
-            # Create Spark session
-            print("Initializing Spark session...")
-            spark = make_spark_session(config)
+            # Output options
+            output_dest='couchdb',
+            couchdb_url=couchdb_url,
+            couchdb_database=config['ingest_db_name'],
+            couchdb_username=config['couchdb_username'],
+            couchdb_password=config['couchdb_password'],
+            output_couchdb_suffix='.ann',
 
-            try:
-                # Create classifier instance
-                print("Creating classifier with SkolClassifierV2...")
-                classifier = SkolClassifierV2(
-                    spark=spark,
+            # Model and preprocessing options
+            **model_config
+        )
 
-                    # Model I/O
-                    auto_load_model=False,  # Fit a new model
-                    model_storage='redis',
-                    redis_client=redis_client,
-                    redis_key=classifier_model_name,
-                    redis_expire=config['classifier_model_expire'],
+        # Train the model
+        print("\nTraining model...")
+        results = classifier.fit()
 
-                    # Output options
-                    output_dest='couchdb',
-                    couchdb_url=couchdb_url,
-                    couchdb_database=config['ingest_db_name'],
-                    couchdb_username=config['couchdb_username'],
-                    couchdb_password=config['couchdb_password'],
-                    output_couchdb_suffix='.ann',
+        print(f"\n{'='*70}")
+        print("Training Complete!")
+        print(f"{'='*70}")
+        print(f"  Accuracy: {results.get('accuracy', 0):.4f}")
+        print(f"  F1 Score: {results.get('f1_score', 0):.4f}")
 
-                    # Model and preprocessing options
-                    **model_config
-                )
-
-                # Train the model
-                print("\nTraining model...")
-                results = classifier.fit()
-
-                print(f"\n{'='*70}")
-                print("Training Complete!")
-                print(f"{'='*70}")
-                print(f"  Accuracy: {results.get('accuracy', 0):.4f}")
-                print(f"  F1 Score: {results.get('f1_score', 0):.4f}")
-
-                # Save model to Redis
-                classifier.save_model()
-                print(f"\n✓ Model saved to Redis with key: {classifier_model_name}")
-                print(f"  Expiration: {config['classifier_model_expire']} seconds")
-
-            finally:
-                # Clean up Spark session
-                spark.stop()
-                print("\nSpark session stopped.")
+        # Save model to Redis
+        classifier.save_model()
+        print(f"\n✓ Model saved to Redis with key: {classifier_model_name}")
+        if redis_expire is not None:
+            print(f"  Expiration: {redis_expire} seconds")
         else:
-            print(f"✗ No annotated files found in {annotated_path}")
-            print("  Please ensure annotated training data is available.")
-            sys.exit(1)
-    else:
-        print(f"✗ Directory does not exist: {annotated_path}")
-        print("  Please create the directory and add annotated training data.")
-        sys.exit(1)
+            print(f"  Expiration: None (never expires)")
+
+    finally:
+        # Clean up Spark session
+        spark.stop()
+        print("\nSpark session stopped.")
 
 
 # ============================================================================
@@ -295,6 +284,14 @@ Environment Variables:
     )
 
     parser.add_argument(
+        '--expire',
+        type=int,
+        default=None,
+        metavar='SECONDS',
+        help='Redis key expiration time in seconds (None = never expires, default: 172800)'
+    )
+
+    parser.add_argument(
         '--list-models',
         action='store_true',
         help='List available model configurations and exit'
@@ -349,7 +346,8 @@ Environment Variables:
             redis_client=redis_client,
             verbosity_override=args.verbosity,
             read_text_override=args.read_text or None,
-            save_text_override=args.save_text
+            save_text_override=args.save_text,
+            expire_override=args.expire
         )
     except KeyboardInterrupt:
         print("\n\n✗ Training interrupted by user")
