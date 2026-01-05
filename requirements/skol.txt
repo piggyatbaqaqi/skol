@@ -1,3 +1,4 @@
+CouchDB>=1.2
 accelerate>=1.12.0
 huggingface-hub>=0.35.3
 jupyterlab
@@ -30,4 +31,4 @@ paperscraper
 habanero
 # git+https://github.com/josephisaacturner/pypaperretriever.git
 internetarchive>=5.7.1
-couchdb>=1.2
+
