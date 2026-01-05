@@ -10,8 +10,8 @@
 ##   ln -s with_skol train_classifier
 ##   ./train_classifier --help       # Runs: python train_classifier.py --help
 
-source /home/skol/miniconda3/etc/profile.d/conda.sh
-/home/skol/miniconda3/bin/conda activate skol
+source /home/skol/miniconda3/etc/profile.d/conda.sh && \
+conda activate skol
 
 # Get the name this script was invoked as
 SCRIPT_NAME=$(basename "$0")
