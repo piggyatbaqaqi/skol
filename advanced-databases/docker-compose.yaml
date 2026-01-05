@@ -4,6 +4,7 @@ services:
   # rediscommander
   rediscommander:
     image: docker.io/rediscommander/redis-commander:latest
+    restart: always
     hostname: rediscommander
     environment: 
       REDIS_PORT: "6379"
@@ -16,6 +17,7 @@ services:
   # neo4j#
   neo4j:
     image: docker.io/neo4j:5.26 #5.15
+    restart: always
     hostname: neo4j
     ports:
       - "7474:7474" #http
