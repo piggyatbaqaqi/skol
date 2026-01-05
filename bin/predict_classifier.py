@@ -75,7 +75,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Spark settings
         'cores': int(os.environ.get('SPARK_CORES', '4')),
-        'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:4.0.0'),
+        'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
     }
 
 
