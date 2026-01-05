@@ -197,6 +197,12 @@ Examples:
         help='Filename pattern for BibTeX files (default: format=bib)'
     )
     parser.add_argument(
+        '--blocked',
+        type=bool,
+        default=False,
+        help="Attempt blocked targets if set."
+    )
+    parser.add_argument(
         '-v', '--verbosity',
         type=int,
         default=2,
@@ -272,7 +278,7 @@ def list_publications() -> None:
     """Print a table of all available publication sources."""
     print("\nAvailable publication Sources:")
     print("=" * 80)
-    print(f"{'Key':<25} {'Name':<30} {'Type':<10} {'Details':<15}")
+    print(f"{'B':<2} {'Key':<25} {'Name':<30} {'Type':<10} {'Details':<15}")
     print("-" * 80)
 
     for key, config in PublicationRegistry.get_all().items():
@@ -285,7 +291,8 @@ def list_publications() -> None:
             details = "Local files"
         else:
             details = "Web scraping"
-        print(f"{key:<25} {config['name']:<30} {source_type:<10} {details:<15}")
+        blocked = "*" if config.get('blocked', False) else " "
+        print(f"{blocked:<2} {key:<25} {config['name']:<30} {source_type:<10} {details:<15}")
 
     print("=" * 80)
     print(f"\nTotal: {len(PublicationRegistry.get_all())} publication sources")
@@ -339,6 +346,12 @@ def main() -> int:
             if args.verbosity >= 2:
                 print(f"Ingesting from all {len(all_sources)} predefined sources...")
             for key, config in all_sources.items():
+                # Skip blocked sources unless we are asked not to.
+                if config.get('blocked', False):
+                    if not args.blocked:
+                        print(f"\nSkipping blocked {key}.")
+                        continue
+
                 if args.verbosity >= 2:
                     print(f"\n{'=' * 60}")
                     print(f"Processing: {config['name']} ({key})")
@@ -357,6 +370,11 @@ def main() -> int:
             if config is None:
                 print(f"Error: Unknown publication '{args.publication}'", file=sys.stderr)
                 return 1
+
+            # Warn on blocked sources unless we are asked not to.
+            if config.get('blocked', False):
+                if not args.blocked:
+                    print(f"\nWarning blocked {key}.")
 
             if args.verbosity >= 2:
                 print(f"Using publication: {config['name']}")

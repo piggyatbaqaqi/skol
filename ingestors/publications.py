@@ -113,6 +113,7 @@ class PublicationRegistry:
         },
         'jof-rss': {
             # Currently blocked by technical measures at mdpi.com.
+            'blocked': True,
             'name': 'Journal of Fungi',
             'source': 'mdpi',
             'ingestor_class': 'MdpiIngestor',
@@ -123,6 +124,7 @@ class PublicationRegistry:
         },
         'jof': {
             # Currently blocked by technical measures at mdpi.com.
+            'blocked': True,
             'name': 'Journal of Fungi',
             'source': 'mdpi',
             'ingestor_chttps://doi.org/10.3390/jof5020045lass': 'MdpiIngestor',
@@ -312,6 +314,7 @@ class PublicationRegistry:
         },
         'mycology-taylor-francis': {
             # Currently blocked by technical measures at tandfonline.com.
+            'blocked': True,
             'name': 'Mycology (Taylor & Francis)',
             'source': 'mycology-taylor-francis',
             'ingestor_class': 'TaylorFrancisIngestor',
@@ -343,7 +346,6 @@ class PublicationRegistry:
             'rate_limit_min_ms': 2000,
             'rate_limit_max_ms': 5000,
         },
-
     }
 
     @classmethod
