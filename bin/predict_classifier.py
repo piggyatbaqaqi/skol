@@ -70,12 +70,14 @@ def get_env_config() -> Dict[str, Any]:
 
         # Prediction settings
         'couchdb_pattern': os.environ.get('COUCHDB_PATTERN', '*.txt'),
-        'prediction_batch_size': int(os.environ.get('PREDICTION_BATCH_SIZE', '96')),
+        'prediction_batch_size': int(os.environ.get('PREDICTION_BATCH_SIZE', '24')),
         'num_workers': int(os.environ.get('NUM_WORKERS', '4')),
 
         # Spark settings
-        'cores': int(os.environ.get('SPARK_CORES', '4')),
+        'cores': int(os.environ.get('SPARK_CORES', '6')),
         'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:4.0.0'),
+        'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '2g'),
+        'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '2g'),
     }
 
 
@@ -98,8 +100,8 @@ def make_spark_session(config: Dict[str, Any]) -> SparkSession:
         .config("cloudant.username", config['couchdb_username']) \
         .config("cloudant.password", config['couchdb_password']) \
         .config("spark.jars.packages", config['bahir_package']) \
-        .config("spark.driver.memory", "4g") \
-        .config("spark.executor.memory", "4g") \
+        .config("spark.driver.memory", config['spark_driver_memory']) \
+        .config("spark.executor.memory", config['spark_executor_memory']) \
         .getOrCreate()
 
 
@@ -276,6 +278,8 @@ Environment Variables:
   PREDICTION_BATCH_SIZE Batch size for predictions (default: 96)
   NUM_WORKERS           Number of workers (default: 4)
   SPARK_CORES           Number of Spark cores (default: 4)
+  SPARK_DRIVER_MEMORY   Spark driver memory (default: 2g)
+  SPARK_EXECUTOR_MEMORY Spark executor memory (default: 2g)
 """
     )
 

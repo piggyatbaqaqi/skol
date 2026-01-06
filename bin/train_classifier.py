@@ -88,6 +88,8 @@ def get_env_config() -> Dict[str, Any]:
         # Spark settings
         'cores': int(os.environ.get('SPARK_CORES', '4')),
         'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:4.0.0'),
+        'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '4g'),
+        'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '4g'),
     }
 
 
@@ -110,8 +112,8 @@ def make_spark_session(config: Dict[str, Any]) -> SparkSession:
         .config("cloudant.username", config['couchdb_username']) \
         .config("cloudant.password", config['couchdb_password']) \
         .config("spark.jars.packages", config['bahir_package']) \
-        .config("spark.driver.memory", "4g") \
-        .config("spark.executor.memory", "4g") \
+        .config("spark.driver.memory", config['spark_driver_memory']) \
+        .config("spark.executor.memory", config['spark_executor_memory']) \
         .getOrCreate()
 
 
@@ -251,6 +253,8 @@ Environment Variables:
   MODEL_EXPIRE          Model expiration in seconds (default: 172800)
   ANNOTATED_PATH        Path to annotated training data
   SPARK_CORES           Number of Spark cores (default: 4)
+  SPARK_DRIVER_MEMORY   Spark driver memory (default: 4g)
+  SPARK_EXECUTOR_MEMORY Spark executor memory (default: 4g)
 """
     )
 
