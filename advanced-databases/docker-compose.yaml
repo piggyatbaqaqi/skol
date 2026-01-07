@@ -1,18 +1,23 @@
 ##### services #####
 services:
 
-  # rediscommander
-  rediscommander:
-    image: docker.io/rediscommander/redis-commander:latest
+  # redisinsight
+  redisinsight:
+    image: redis/redisinsight:latest
     restart: always
-    hostname: rediscommander
+    hostname: redisinsight
     environment: 
       REDIS_PORT: "6379"
       REDIS_HOST: "redis" 
+      RI_SERVER_TLS_KEY: /etc/letsencrypt/live/synoptickeyof.life/privkey.pem
+      RI_SERVER_TLS_CERT: /etc/letsencrypt/live/synoptickeyof.life/fullchain.pem
     ports: 
-      - 8882:8081
+      - 5540:5540
     depends_on: 
-      - redis 
+      - redis
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/ssl:/etc/ssl
 
   # neo4j#
   neo4j:
@@ -40,7 +45,7 @@ services:
     restart: always
     hostname: redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
 
@@ -49,14 +54,18 @@ services:
     image: couchdb:3.3.3
     restart: always
     ports:
-      - "5984:5984"
+      - "127.0.0.1:5984:5984"
+      - "::1:5984:5984"
+      - "6984:6984"
     environment:
       # Use these variables to set up the admin user and password
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=SU2orange!
     volumes:
       - /data/skol/couchdb/data:/opt/couchdb/data
-
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/ssl:/etc/ssl
+      - ./couchdb/etc:/opt/couchdb/etc
 
 ##### volumes #####
 volumes:
