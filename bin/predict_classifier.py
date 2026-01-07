@@ -74,10 +74,10 @@ def get_env_config() -> Dict[str, Any]:
         'num_workers': int(os.environ.get('NUM_WORKERS', '4')),
 
         # Spark settings
-        'cores': int(os.environ.get('SPARK_CORES', '6')),
+        'cores': int(os.environ.get('SPARK_CORES', '4')),
         'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
-        'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '2g'),
-        'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '2g'),
+        'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '4g'),
+        'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '4g'),
     }
 
 
