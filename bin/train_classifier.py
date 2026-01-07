@@ -157,8 +157,11 @@ def train_classifier(
     # Determine Redis expiration time
     expire_time = config.get('classifier_model_expire')
     if expire_override is not None:
-        duration = datetime.strptime(expire_override, '%H:%M:%S')
-        expire_time = duration.hour * 3600 + duration.minute * 60 + duration.second
+        if expire_override.lower() == 'none':
+            expire_time = None
+        else:
+            duration = datetime.strptime(expire_override, '%H:%M:%S')
+            expire_time = duration.hour * 3600 + duration.minute * 60 + duration.second
     redis_expire = expire_time
 
     # Build Redis key for model
@@ -289,10 +292,10 @@ Environment Variables:
 
     parser.add_argument(
         '--expire',
-        type=int,
+        type=str,
         default=None,
-        metavar='SECONDS',
-        help='Redis key expiration time in seconds (None = never expires, default: 172800)'
+        metavar='HH:MM:SS',
+        help='Redis key expiration time (None = never expires, default: 172800)'
     )
 
     parser.add_argument(
