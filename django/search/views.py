@@ -140,7 +140,31 @@ class SearchView(APIView):
             # Get results
             results = []
             for i in range(min(k, len(experiment.nearest_neighbors))):
-                result_dict = experiment.read_neighbor(i)
+                # Get the row index and similarity score
+                idx = experiment.nearest_neighbors.index[i]
+                similarity = experiment.nearest_neighbors.iloc[i]['similarity']
+                row = experiment.embeddings.loc[idx]
+
+                # Build result dictionary from the embedding row data
+                # For SKOL_TAXA, all data is already in the embeddings DataFrame
+                result_dict = {
+                    'Similarity': float(similarity),
+                    'Title': row.get('taxon', ''),
+                    'Description': row.get('description', ''),
+                    'Feed': row.get('source', ''),
+                    'URL': row.get('filename', '')
+                }
+
+                # Add optional metadata fields if they exist
+                if 'source_metadata' in row.index and isinstance(row['source_metadata'], dict):
+                    result_dict['SourceMetadata'] = row['source_metadata']
+                if 'line_number' in row.index:
+                    result_dict['LineNumber'] = row['line_number']
+                if 'paragraph_number' in row.index:
+                    result_dict['ParagraphNumber'] = row['paragraph_number']
+                if 'page_number' in row.index:
+                    result_dict['PageNumber'] = row['page_number']
+
                 results.append(result_dict)
 
             return Response({
@@ -152,12 +176,16 @@ class SearchView(APIView):
             })
 
         except ValueError as e:
+            import traceback
+            tb = traceback.format_exc()
             return Response(
-                {'error': f'Embedding error: {str(e)}'},
+                {'error': f'Embedding error: {str(e)}', 'traceback': tb},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
             return Response(
-                {'error': f'Search failed: {str(e)}'},
+                {'error': f'Search failed: {str(e)}', 'traceback': tb},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
