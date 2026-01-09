@@ -6,14 +6,14 @@ services:
     image: redis/redisinsight:latest
     restart: always
     hostname: redisinsight
-    environment: 
+    environment:
       REDIS_PORT: "6379"
-      REDIS_HOST: "redis" 
+      REDIS_HOST: "redis"
       RI_SERVER_TLS_KEY: /etc/letsencrypt/live/synoptickeyof.life/privkey.pem
       RI_SERVER_TLS_CERT: /etc/letsencrypt/live/synoptickeyof.life/fullchain.pem
-    ports: 
+    ports:
       - 5540:5540
-    depends_on: 
+    depends_on:
       - redis
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
@@ -38,6 +38,8 @@ services:
     volumes:
       - neo4j-data:/data
       # - ./neo4j-plugins:/plugins
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/ssl:/etc/ssl
 
   #redis#
   redis:
