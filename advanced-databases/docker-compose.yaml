@@ -41,6 +41,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt
       - /etc/ssl:/etc/ssl
       - ./neo4j/conf:/var/lib/neo4j/conf
+      - ./neo4j/certificates:/var/lib/neo4j/certificates
 
   #redis#
   redis:
