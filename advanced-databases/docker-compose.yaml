@@ -42,6 +42,7 @@ services:
       - /etc/ssl:/etc/ssl:ro
       - /usr/share/ca-certificates:/usr/share/ca-certificates:ro
       - ./neo4j/conf:/var/lib/neo4j/conf:ro
+      - ./neo4j/certificates:/var/lib/neo4j/certificates:ro
 
   #redis#
   redis:
