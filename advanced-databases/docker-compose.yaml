@@ -38,9 +38,10 @@ services:
     volumes:
       - neo4j-data:/data
       # - ./neo4j-plugins:/plugins
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /etc/ssl:/etc/ssl
-      - ./neo4j/conf:/var/lib/neo4j/conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/ssl:/etc/ssl:ro
+      - /usr/share/ca-certificates:/usr/share/ca-certificates:ro
+      - ./neo4j/conf:/var/lib/neo4j/conf:ro
 
   #redis#
   redis:
