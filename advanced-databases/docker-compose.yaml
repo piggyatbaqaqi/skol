@@ -25,8 +25,8 @@ services:
     restart: always
     hostname: neo4j
     ports:
-      - "7474:7474" #http
-    #  - "7473:7473" #https
+    #  - "7474:7474" #http
+      - "7473:7473" #https
       - "7687:7687" #bolt
     environment:
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
