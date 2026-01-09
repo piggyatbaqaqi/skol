@@ -1,0 +1,16 @@
+{
+  "_id": "taxon_008a4936284ee379383cf489e543c7a2ea0c5175eff89e999534d075c81844dc",
+  "_rev": "4-af178819e37bc20e459bab9efd96b9b8",
+  "taxon": " Biol.) Univ. Qd. 3: 39. 1954. Fig. 18H–J.\nSynonym: Claviceps paspali var. queenslandica Tanda, J. Agric.\n\n",
+  "description": " Sclerotia globose or subglobose, greyish white, surface cracked\nand rough, 1.6–3.4 × 1.3–3.1 mm. Ascostromata 1–3 per sclerotium;\nstipes cylindrical, glabrous, light yellow, 3.0–5.5 × 0.4–0.7 mm;\ncapitula depressed globose or subglobose, yellow, 0.8–1.3 ×\n1.2–1.8 mm, concolourous with stipe or slightly darker than stipe in\ncolour; perithecia immersed, obpyriform or ovoid, slightly protruding\nfrom the surface of capitulum, 200–287 × 84–137 µm; asci hyaline,\neight-spored, 130–242 × 3.2–4.9 µm; ascospores hyaline, filiform,\n\n\n or cylindrical, 7.0–21.6 × 3.5–6.2 µm, L/W ratio 2.5.\n\n",
+  "source": {
+    "db_name": "skol_dev",
+    "doc_id": "30dfcd72d3b0488a9e62a4d5cfe5888c",
+    "human_url": "skol_dev/30dfcd72d3b0488a9e62a4d5cfe5888c/article.txt.ann"
+  },
+  "line_number": 4212,
+  "paragraph_number": 20222,
+  "page_number": 1,
+  "empirical_page_number": "1",
+  "json_annotated": "{\"Sclerotia\": {\"Shape\": [\"globose\", \"subglobose\"], \"Color\": [\"greyish white\"], \"Surface\": [\"cracked\", \"rough\"], \"Size\": {\"Diameter\": [\"1.6–3.4 mm\", \"1.3–3.1 mm\"]}}, \"Ascostromata\": {\"Number per Sclerotium\": [\"1–3\"]}, \"Stipes\": {\"Shape\": [\"cylindrical\"], \"Color\": [\"light yellow\"], \"Size\": {\"Length\": [\"3.0–5.5 mm\", \"0.4–0.7 mm\"]}}, \"Capitula\": {\"Shape\": [\"depressed globose\", \"subglobose\"], \"Color\": [\"yellow\"], \"Size\": {\"Diameter\": [\"0.8–1.3 mm\", \"1.2–1.8 mm\"]}, \"Color Relative to Stipe\": [\"concolourous\", \"slightly darker than stipe\"]}, \"Perithecia\": {\"Shape\": [\"obpyriform\", \"oid\"], \"Size\": {\"Length\": [\"200–287 µm\", \"84–137 µm\"], \"Width\": [\"-\", \"-\"]}, \"Position\": [\"immersed\", \"slightly protruding from the surface of capitulum\"]}, \"Asci\": {\"Color\": [\"hyaline\"], \"Spore Count\": [\"eight-spored\"], \"Size\": {\"Length\": [\"130–242 µm\", \"-\"], \"Width\": [\"3.2–4.9 µm\"]}}, \"Ascospores\": {\"Color\": [\"hyaline\"], \"Shape\": [\"filiform\", \"cylindrical\"], \"Size\": {\"Length\": [\"7.0–21.6 µm\"], \"Width\": [\"3.5–6.2 µm\"]}, \"L/W Ratio\": [\"2.5\"]}}"
+}
