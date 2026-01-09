@@ -15,6 +15,11 @@ dr_drafts_path = Path(__file__).resolve().parent.parent.parent.parent / 'dr-draf
 if str(dr_drafts_path) not in sys.path:
     sys.path.insert(0, str(dr_drafts_path))
 
+# Add skol to path for skol_compat module
+skol_path = Path(__file__).resolve().parent.parent.parent.parent / 'skol'
+if str(skol_path) not in sys.path:
+    sys.path.insert(0, str(skol_path))
+
 # Note: Experiment is imported lazily inside SearchView.post() to avoid
 # loading heavy ML dependencies (TensorFlow, transformers, etc.) at Django startup
 
@@ -115,34 +120,8 @@ class SearchView(APIView):
             )
 
         try:
-            # Python 3.11+ compatibility: Provide formatargspec for wrapt/TensorFlow
-            # formatargspec was removed in Python 3.11 but is needed by wrapt.
-            # This shim works on both old and new Python versions:
-            # - Python 3.10 and earlier: Uses native formatargspec (shim not applied)
-            # - Python 3.11+: Uses this compatibility shim
-            import inspect
-            if not hasattr(inspect, 'formatargspec'):
-                # Create a minimal implementation based on formatargvalues
-                def formatargspec(args, varargs=None, varkw=None, defaults=None,
-                                kwonlyargs=(), kwonlydefaults={}, annotations={}):
-                    """Compatibility shim for deprecated formatargspec."""
-                    # Build argument list
-                    specs = []
-                    if defaults:
-                        firstdefault = len(args) - len(defaults)
-                    for i, arg in enumerate(args):
-                        spec = arg
-                        if defaults and i >= firstdefault:
-                            spec = f"{arg}={repr(defaults[i - firstdefault])}"
-                        specs.append(spec)
-                    if varargs:
-                        specs.append(f"*{varargs}")
-                    if varkw:
-                        specs.append(f"**{varkw}")
-                    return f"({', '.join(specs)})"
-
-                # Monkey-patch it back into the inspect module
-                inspect.formatargspec = formatargspec
+            # Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
+            import skol_compat  # noqa: F401 (imported for side effects)
 
             # Lazy import to avoid loading heavy ML dependencies at Django startup
             from src.sota_search import Experiment

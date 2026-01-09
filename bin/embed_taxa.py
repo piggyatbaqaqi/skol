@@ -17,8 +17,15 @@ import argparse
 import os
 import sys
 from typing import Dict, Any
+from pathlib import Path
 
 import redis
+
+# Add parent directory to path for skol_compat
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
+import skol_compat  # noqa: F401 (imported for side effects)
 
 from dr_drafts_mycosearch.data import SKOL_TAXA
 from dr_drafts_mycosearch.compute_embeddings import EmbeddingsComputer
@@ -197,6 +204,12 @@ Environment Variables:
   REDIS_PORT            Redis port (default: 6379)
   EMBEDDING_NAME        Redis key for embeddings (default: skol:embedding:v1.1)
   EMBEDDING_EXPIRE      Expiration time in seconds (default: 172800 = 2 days)
+
+Examples:
+  python embed_taxa.py --force                  # Recompute with default expiration
+  python embed_taxa.py --expire 604800          # Expire after 7 days
+  python embed_taxa.py --expire None            # Never expire
+  python embed_taxa.py --expire 0               # Never expire (same as None)
 """
     )
 
@@ -214,12 +227,24 @@ Environment Variables:
         help='Verbosity level (0=silent, 1=info, 2=debug, default: 1)'
     )
 
+    def parse_expire(value):
+        """Parse expire argument: integer seconds or 'None' for no expiration."""
+        if value.lower() == 'none':
+            return None
+        try:
+            expire_val = int(value)
+            if expire_val < 0:
+                raise argparse.ArgumentTypeError("expire must be non-negative or 'None'")
+            return expire_val
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"expire must be an integer or 'None', got: {value}")
+
     parser.add_argument(
         '--expire',
-        type=int,
-        default=None,
+        type=parse_expire,
+        default=argparse.SUPPRESS,  # Don't set attribute if not provided
         metavar='SECONDS',
-        help='Override expiration time in seconds (default: 172800 = 2 days, 0 = never)'
+        help='Expiration time in seconds, or "None" for no expiration (default: 172800 = 2 days)'
     )
 
     args = parser.parse_args()
@@ -227,13 +252,19 @@ Environment Variables:
     # Get configuration
     config = get_env_config()
 
+    # Handle expire argument:
+    # - If user didn't provide --expire: attribute doesn't exist, use config default
+    # - If user provided --expire None: args.expire == None, explicitly set no expiration
+    # - If user provided --expire N: args.expire == N, use that value
+    expire_override = getattr(args, 'expire', None)
+
     # Run embedding computation
     try:
         compute_and_save_embeddings(
             config=config,
             force=args.force,
             verbosity=args.verbosity,
-            expire_override=args.expire
+            expire_override=expire_override
         )
     except KeyboardInterrupt:
         print("\n\n✗ Embedding computation interrupted by user")
