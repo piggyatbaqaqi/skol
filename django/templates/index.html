@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKOL Semantic Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .search-form {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        textarea, select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        textarea:focus, select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .inline-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .inline-group .form-group {
+            flex: 1;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 6px;
+            padding: 15px;
+            color: #c33;
+            margin-bottom: 20px;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            color: #333;
+            font-size: 1.3em;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .similarity-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .meta-label {
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .result-description {
+            color: #444;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .result-json {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .toggle-json {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .toggle-json:hover {
+            background: #e8e8e8;
+            transform: none;
+            box-shadow: none;
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SKOL Semantic Search</h1>
+        <p class="subtitle">Search taxonomic descriptions using semantic similarity</p>
+
+        <div class="search-form">
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="prompt">Description Text</label>
+                    <textarea id="prompt" name="prompt" placeholder="Enter a taxonomic description to search for similar entries..." required></textarea>
+                </div>
+
+                <div class="inline-group">
+                    <div class="form-group">
+                        <label for="embedding">Embedding Model</label>
+                        <select id="embedding" name="embedding" required>
+                            <option value="">Loading embeddings...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="k">Number of Results (k)</label>
+                        <input type="number" id="k" name="k" value="3" min="1" max="20" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="searchButton">Search</button>
+            </form>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Searching...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        // Load available embeddings on page load
+        async function loadEmbeddings() {
+            try {
+                const response = await fetch('/api/embeddings/');
+                const data = await response.json();
+
+                const select = document.getElementById('embedding');
+                select.innerHTML = '';
+
+                if (data.embeddings && data.embeddings.length > 0) {
+                    data.embeddings.forEach(embedding => {
+                        const option = document.createElement('option');
+                        option.value = embedding;
+                        option.textContent = embedding;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No embeddings found</option>';
+                }
+            } catch (error) {
+                console.error('Error loading embeddings:', error);
+                document.getElementById('embedding').innerHTML = '<option value="">Error loading embeddings</option>';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const prompt = document.getElementById('prompt').value;
+            const embedding = document.getElementById('embedding').value;
+            const k = parseInt(document.getElementById('k').value);
+
+            // Show loading, hide error and results
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('searchButton').disabled = true;
+
+            try {
+                const response = await fetch('/api/search/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        embedding_name: embedding,
+                        k: k
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Search failed');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('searchButton').disabled = false;
+            }
+        });
+
+        // Display search results
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data.results || data.results.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '';
+
+            data.results.forEach((result, index) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+
+                const similarity = (result.Similarity * 100).toFixed(1);
+
+                card.innerHTML = `
+                    <div class="result-header">
+                        <div class="result-title">${escapeHtml(result.Title || 'Untitled')}</div>
+                        <div class="similarity-badge">${similarity}%</div>
+                    </div>
+                    <div class="result-meta">
+                        ${result.Feed ? `<div class="meta-item"><span class="meta-label">Feed:</span>${escapeHtml(result.Feed)}</div>` : ''}
+                        ${result.FeedID ? `<div class="meta-item"><span class="meta-label">ID:</span>${escapeHtml(result.FeedID)}</div>` : ''}
+                        ${result.Sponsor ? `<div class="meta-item"><span class="meta-label">Sponsor:</span>${escapeHtml(result.Sponsor)}</div>` : ''}
+                    </div>
+                    ${result.Description ? `<div class="result-description">${escapeHtml(result.Description).substring(0, 500)}${result.Description.length > 500 ? '...' : ''}</div>` : ''}
+                    ${result.URL ? `<div class="result-meta"><a href="${escapeHtml(result.URL)}" target="_blank">View Details</a></div>` : ''}
+                    <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
+                    <div id="json-${index}" class="result-json" style="display: none;">
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+                resultsDiv.appendChild(card);
+            });
+        }
+
+        // Toggle JSON display
+        function toggleJson(index) {
+            const jsonDiv = document.getElementById(`json-${index}`);
+            const button = event.target;
+
+            if (jsonDiv.style.display === 'none') {
+                jsonDiv.style.display = 'block';
+                button.textContent = 'Hide Full JSON';
+            } else {
+                jsonDiv.style.display = 'none';
+                button.textContent = 'Show Full JSON';
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
+        // Load embeddings when page loads
+        loadEmbeddings();
+    </script>
+</body>
+</html>
