@@ -10,6 +10,7 @@ This module provides a UDF-based PySpark pipeline that:
 """
 
 import hashlib
+import os
 from typing import Iterator, Optional, Dict, Any
 
 import couchdb
@@ -557,46 +558,57 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--ingest-url",
-        default="http://localhost:5984",
-        help="CouchDB server URL for ingest database"
+        default=os.environ.get("INGEST_URL", os.environ.get("COUCHDB_URL", "http://localhost:5984")),
+        help="CouchDB server URL for ingest database (default: $INGEST_URL or $COUCHDB_URL or http://localhost:5984)"
     )
     parser.add_argument(
         "--ingest-database",
-        required=True,
-        help="Name of ingest database (e.g., mycobank_annotations)"
+        default=os.environ.get("INGEST_DATABASE"),
+        help="Name of ingest database (default: $INGEST_DATABASE, e.g., mycobank_annotations)"
     )
     parser.add_argument(
         "--ingest-username",
-        help="Username for ingest database"
+        default=os.environ.get("INGEST_USERNAME", os.environ.get("COUCHDB_USER")),
+        help="Username for ingest database (default: $INGEST_USERNAME or $COUCHDB_USER)"
     )
     parser.add_argument(
         "--ingest-password",
-        help="Password for ingest database"
+        default=os.environ.get("INGEST_PASSWORD", os.environ.get("COUCHDB_PASSWORD")),
+        help="Password for ingest database (default: $INGEST_PASSWORD or $COUCHDB_PASSWORD)"
     )
     parser.add_argument(
         "--taxon-url",
-        help="CouchDB server URL for taxon database (defaults to ingest-url)"
+        default=os.environ.get("TAXON_URL"),
+        help="CouchDB server URL for taxon database (default: $TAXON_URL or ingest-url)"
     )
     parser.add_argument(
         "--taxon-database",
-        required=True,
-        help="Name of taxon database (e.g., mycobank_taxa)"
+        default=os.environ.get("TAXON_DATABASE"),
+        help="Name of taxon database (default: $TAXON_DATABASE, e.g., mycobank_taxa)"
     )
     parser.add_argument(
         "--taxon-username",
-        help="Username for taxon database (defaults to ingest-username)"
+        default=os.environ.get("TAXON_USERNAME"),
+        help="Username for taxon database (default: $TAXON_USERNAME or ingest-username)"
     )
     parser.add_argument(
         "--taxon-password",
-        help="Password for taxon database (defaults to ingest-password)"
+        default=os.environ.get("TAXON_PASSWORD"),
+        help="Password for taxon database (default: $TAXON_PASSWORD or ingest-password)"
     )
     parser.add_argument(
         "--pattern",
-        default="*.txt.ann",
-        help="Pattern for attachment names (default: *.txt.ann)"
+        default=os.environ.get("PATTERN", "*.txt.ann"),
+        help="Pattern for attachment names (default: $PATTERN or *.txt.ann)"
     )
 
     args = parser.parse_args()
+
+    # Validate required arguments
+    if not args.ingest_database:
+        parser.error("--ingest-database is required (or set $INGEST_DATABASE)")
+    if not args.taxon_database:
+        parser.error("--taxon-database is required (or set $TAXON_DATABASE)")
 
     # Default taxon credentials to ingest credentials
     taxon_url = args.taxon_url or args.ingest_url
