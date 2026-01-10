@@ -120,6 +120,7 @@ class Paragraph(object):
         return {
             'filename': self.filename,
             'human_url': self.human_url,
+            'pdf_url': self.pdf_url,
             'label': str(self.top_label()),
             'paragraph_number': self.paragraph_number,
             'page_number': self.page_number,
@@ -333,6 +334,12 @@ class Paragraph(object):
         if self.last_line is None:
             return None
         return self.last_line.human_url
+
+    @property
+    def pdf_url(self) -> Optional[str]:
+        if self.last_line is None:
+            return None
+        return self.last_line.pdf_url
 
     def close(self) -> None:
         if self._next_line:

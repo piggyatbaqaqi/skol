@@ -11,6 +11,7 @@ This module provides a UDF-based PySpark pipeline that:
 
 import hashlib
 import sys
+import logging
 from pathlib import Path
 from typing import Iterator, Optional, Dict, Any
 
@@ -27,6 +28,13 @@ from env_config import get_env_config
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
 from taxon import group_paragraphs, Taxon
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Global debug flag
+DEBUG_TRACE = False
+DEBUG_DOC_ID = None
 
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
     """
@@ -79,17 +87,44 @@ def extract_taxa_from_partition(
     Yields:
         Taxon objects with nomenclature and description paragraphs
     """
+    # Convert to list to enable tracing
+    partition_list = list(partition)
+
+    if DEBUG_TRACE:
+        for row in partition_list:
+            if DEBUG_DOC_ID is None or row.doc_id == DEBUG_DOC_ID:
+                logger.info(f"[TRACE] Row from CouchDB: doc_id={row.doc_id}, "
+                           f"human_url={getattr(row, 'human_url', 'NOT_PRESENT')}, "
+                           f"pdf_url={getattr(row, 'pdf_url', 'NOT_PRESENT')}")
+
     # Read lines from partition
-    lines = read_couchdb_partition(partition, ingest_db_name)
+    lines = read_couchdb_partition(iter(partition_list), ingest_db_name)
+
+    # Trace first few lines
+    lines_list = []
+    for i, line in enumerate(lines):
+        lines_list.append(line)
+        if DEBUG_TRACE and i < 3:
+            if DEBUG_DOC_ID is None or (hasattr(line, 'doc_id') and line.doc_id == DEBUG_DOC_ID):
+                logger.info(f"[TRACE] Line {i}: doc_id={getattr(line, 'doc_id', 'N/A')}, "
+                           f"human_url={getattr(line, 'human_url', 'N/A')}, "
+                           f"pdf_url={getattr(line, 'pdf_url', 'N/A')}")
 
     # Parse annotated content
-    paragraphs = parse_annotated(lines)
+    paragraphs = parse_annotated(iter(lines_list))
 
     # Remove interstitial paragraphs
     filtered = remove_interstitials(paragraphs)
 
     # Convert to list to preserve paragraph objects for metadata extraction
     filtered_list = list(filtered)
+
+    if DEBUG_TRACE and filtered_list:
+        first_para = filtered_list[0]
+        if DEBUG_DOC_ID is None or (hasattr(first_para.first_line, 'doc_id') and first_para.first_line.doc_id == DEBUG_DOC_ID):
+            logger.info(f"[TRACE] First paragraph: "
+                       f"human_url={getattr(first_para, 'human_url', 'N/A')}, "
+                       f"pdf_url={getattr(first_para, 'pdf_url', 'N/A')}")
 
     # Group into taxa (returns Taxon objects with references to paragraphs)
     taxa = group_paragraphs(iter(filtered_list))
@@ -98,6 +133,13 @@ def extract_taxa_from_partition(
     for taxon in taxa:
         # Only yield taxa that have nomenclature
         if taxon.has_nomenclature():
+            if DEBUG_TRACE:
+                taxon_row = taxon.as_row()
+                source_doc_id = taxon_row.get('source', {}).get('doc_id')
+                if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                    logger.info(f"[TRACE] Taxon extracted: doc_id={source_doc_id}, "
+                               f"human_url={taxon_row.get('source', {}).get('human_url')}, "
+                               f"pdf_url={taxon_row.get('source', {}).get('pdf_url')}")
             yield taxon
 
 
@@ -122,6 +164,13 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
     for taxon in partition:
         taxon_dict = taxon.as_row()
 
+        if DEBUG_TRACE:
+            source_doc_id = taxon_dict.get('source', {}).get('doc_id')
+            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                logger.info(f"[TRACE] convert_taxa_to_rows: doc_id={source_doc_id}, "
+                           f"human_url={taxon_dict.get('source', {}).get('human_url')}, "
+                           f"pdf_url={taxon_dict.get('source', {}).get('pdf_url')}")
+
         if '_id' not in taxon_dict:
             taxon_dict['_id'] = generate_taxon_doc_id(
                 taxon_dict['source']['doc_id'],
@@ -131,7 +180,14 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
         if 'json_annotated' not in taxon_dict:
             taxon_dict['json_annotated'] = None
         # Convert dict to Row
-        yield Row(**taxon_dict)
+        row = Row(**taxon_dict)
+
+        if DEBUG_TRACE:
+            source_doc_id = taxon_dict.get('source', {}).get('doc_id')
+            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                logger.info(f"[TRACE] Row created: source={row.source}")
+
+        yield row
 
 
 class TaxonExtractor:
@@ -262,6 +318,12 @@ class TaxonExtractor:
         # Add attachment_name if it exists (from CouchDB), otherwise we'll handle it
         if "attachment_name" in annotated_df.columns:
             required_cols.append("attachment_name")
+
+        # Add URL columns if they exist (needed for proper source metadata)
+        if "human_url" in annotated_df.columns:
+            required_cols.append("human_url")
+        if "pdf_url" in annotated_df.columns:
+            required_cols.append("pdf_url")
 
         # Select only required columns to avoid schema mismatch
         annotated_df_filtered = annotated_df.select(*required_cols)
@@ -472,8 +534,14 @@ class TaxonExtractor:
                         source_dict = row.source if hasattr(row, 'source') else {}  # type: ignore[reportUnknownMemberType]
                         source: Dict[str, Any] = dict(source_dict) if isinstance(source_dict, dict) else {}  # type: ignore[reportUnknownArgumentType]
                         source_doc_id: str = str(source.get('doc_id', 'unknown'))
-                        source_url: Optional[str] = source.get('url')  # type: ignore[reportUnknownArgumentType]
+                        source_url: Optional[str] = source.get('human_url')  # type: ignore[reportUnknownArgumentType]  # FIXED: was 'url', should be 'human_url'
                         line_number: Any = row.line_number if hasattr(row, 'line_number') else 0  # type: ignore[reportUnknownMemberType]
+
+                        if DEBUG_TRACE:
+                            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                                logger.info(f"[TRACE] save_partition: doc_id={source_doc_id}, "
+                                           f"human_url={source.get('human_url')}, "
+                                           f"pdf_url={source.get('pdf_url')}")
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
@@ -484,6 +552,11 @@ class TaxonExtractor:
 
                         # Convert row to dict for CouchDB storage
                         taxon_doc = row.asDict()
+
+                        if DEBUG_TRACE:
+                            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                                logger.info(f"[TRACE] taxon_doc before save: _id={doc_id}, "
+                                           f"source={taxon_doc.get('source')}")
 
                         # Check if document already exists (idempotent)
                         if doc_id in db:
@@ -497,6 +570,10 @@ class TaxonExtractor:
 
                         db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
                         success = True
+
+                        if DEBUG_TRACE:
+                            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                                logger.info(f"[TRACE] Successfully saved taxon: {doc_id}")
 
                     except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
                         error_msg = str(e)
@@ -609,8 +686,35 @@ if __name__ == "__main__":
         default=config['pattern'],
         help="Pattern for attachment names (default: $PATTERN or *.txt.ann)"
     )
+    parser.add_argument(
+        "--debug-trace",
+        action="store_true",
+        help="Enable debug tracing of URL propagation through the pipeline"
+    )
+    parser.add_argument(
+        "--debug-doc-id",
+        type=str,
+        default=None,
+        help="Only trace this specific document ID (optional, for focused debugging)"
+    )
 
     args = parser.parse_args()
+
+    # Set up debug tracing (modify module-level variables)
+    import sys
+    current_module = sys.modules[__name__]
+    current_module.DEBUG_TRACE = args.debug_trace
+    current_module.DEBUG_DOC_ID = args.debug_doc_id
+
+    if DEBUG_TRACE:
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+        if DEBUG_DOC_ID:
+            logger.info(f"[TRACE] Debug tracing enabled for doc_id: {DEBUG_DOC_ID}")
+        else:
+            logger.info("[TRACE] Debug tracing enabled for all documents")
 
     # Validate required arguments
     if not args.ingest_database:
