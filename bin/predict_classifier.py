@@ -16,7 +16,6 @@ Example:
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 from typing import Dict, Any
@@ -24,7 +23,11 @@ from typing import Dict, Any
 import redis
 from pyspark.sql import SparkSession
 
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from skol_classifier.classifier_v2 import SkolClassifierV2
+from env_config import get_env_config
 
 
 # ============================================================================
@@ -41,44 +44,6 @@ MODEL_CONFIGS = {
         "output_format": "annotated",
     }
 }
-
-
-# ============================================================================
-# Environment Configuration
-# ============================================================================
-
-def get_env_config() -> Dict[str, Any]:
-    """
-    Get environment configuration from environment variables or defaults.
-
-    Returns:
-        Dictionary of configuration values
-    """
-    return {
-        # CouchDB settings
-        'couchdb_host': os.environ.get('COUCHDB_HOST', '127.0.0.1:5984'),
-        'couchdb_username': os.environ.get('COUCHDB_USER', 'admin'),
-        'couchdb_password': os.environ.get('COUCHDB_PASSWORD', 'SU2orange!'),
-        'ingest_db_name': os.environ.get('INGEST_DB_NAME', 'skol_dev'),
-
-        # Redis settings
-        'redis_host': os.environ.get('REDIS_HOST', 'localhost'),
-        'redis_port': int(os.environ.get('REDIS_PORT', '6379')),
-
-        # Model settings
-        'model_version': os.environ.get('MODEL_VERSION', 'v2.0'),
-
-        # Prediction settings
-        'couchdb_pattern': os.environ.get('COUCHDB_PATTERN', '*.txt'),
-        'prediction_batch_size': int(os.environ.get('PREDICTION_BATCH_SIZE', '24')),
-        'num_workers': int(os.environ.get('NUM_WORKERS', '4')),
-
-        # Spark settings
-        'cores': int(os.environ.get('SPARK_CORES', '4')),
-        'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
-        'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '4g'),
-        'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '4g'),
-    }
 
 
 def make_spark_session(config: Dict[str, Any]) -> SparkSession:

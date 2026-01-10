@@ -14,7 +14,6 @@ Example:
 """
 
 import argparse
-import os
 import sys
 from typing import Dict, Any
 from pathlib import Path
@@ -29,34 +28,7 @@ import skol_compat  # noqa: F401 (imported for side effects)
 
 from dr_drafts_mycosearch.data import SKOL_TAXA
 from dr_drafts_mycosearch.compute_embeddings import EmbeddingsComputer
-
-
-# ============================================================================
-# Environment Configuration
-# ============================================================================
-
-def get_env_config() -> Dict[str, Any]:
-    """
-    Get environment configuration from environment variables or defaults.
-
-    Returns:
-        Dictionary of configuration values
-    """
-    return {
-        # CouchDB settings
-        'couchdb_host': os.environ.get('COUCHDB_HOST', '127.0.0.1:5984'),
-        'couchdb_username': os.environ.get('COUCHDB_USER', 'admin'),
-        'couchdb_password': os.environ.get('COUCHDB_PASSWORD', 'SU2orange!'),
-        'taxon_db_name': os.environ.get('TAXON_DB_NAME', 'skol_taxa_dev'),
-
-        # Redis settings
-        'redis_host': os.environ.get('REDIS_HOST', 'localhost'),
-        'redis_port': int(os.environ.get('REDIS_PORT', '6379')),
-
-        # Embedding settings
-        'embedding_name': os.environ.get('EMBEDDING_NAME', 'skol:embedding:v1.1'),
-        'embedding_expire': int(os.environ.get('EMBEDDING_EXPIRE', str(60 * 60 * 24 * 2))),  # 2 days default
-    }
+from env_config import get_env_config
 
 
 # ============================================================================

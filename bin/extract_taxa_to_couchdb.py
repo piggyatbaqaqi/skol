@@ -10,14 +10,19 @@ This module provides a UDF-based PySpark pipeline that:
 """
 
 import hashlib
-import os
+import sys
+from pathlib import Path
 from typing import Iterator, Optional, Dict, Any
 
 import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.types import StructType, StructField, StringType, BooleanType, MapType, IntegerType
 
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from skol_classifier.couchdb_io import CouchDBConnection
+from env_config import get_env_config
 
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
@@ -553,52 +558,55 @@ class TaxonExtractor:
 if __name__ == "__main__":
     import argparse
 
+    # Get environment configuration
+    config = get_env_config()
+
     parser = argparse.ArgumentParser(
         description="Extract Taxa from CouchDB annotated files and save to CouchDB"
     )
     parser.add_argument(
         "--ingest-url",
-        default=os.environ.get("INGEST_URL", os.environ.get("COUCHDB_URL", "http://localhost:5984")),
+        default=config['ingest_url'],
         help="CouchDB server URL for ingest database (default: $INGEST_URL or $COUCHDB_URL or http://localhost:5984)"
     )
     parser.add_argument(
         "--ingest-database",
-        default=os.environ.get("INGEST_DATABASE"),
+        default=config['ingest_database'],
         help="Name of ingest database (default: $INGEST_DATABASE, e.g., mycobank_annotations)"
     )
     parser.add_argument(
         "--ingest-username",
-        default=os.environ.get("INGEST_USERNAME", os.environ.get("COUCHDB_USER")),
+        default=config['ingest_username'],
         help="Username for ingest database (default: $INGEST_USERNAME or $COUCHDB_USER)"
     )
     parser.add_argument(
         "--ingest-password",
-        default=os.environ.get("INGEST_PASSWORD", os.environ.get("COUCHDB_PASSWORD")),
+        default=config['ingest_password'],
         help="Password for ingest database (default: $INGEST_PASSWORD or $COUCHDB_PASSWORD)"
     )
     parser.add_argument(
         "--taxon-url",
-        default=os.environ.get("TAXON_URL"),
+        default=config['taxon_url'],
         help="CouchDB server URL for taxon database (default: $TAXON_URL or ingest-url)"
     )
     parser.add_argument(
         "--taxon-database",
-        default=os.environ.get("TAXON_DATABASE"),
+        default=config['taxon_database'],
         help="Name of taxon database (default: $TAXON_DATABASE, e.g., mycobank_taxa)"
     )
     parser.add_argument(
         "--taxon-username",
-        default=os.environ.get("TAXON_USERNAME"),
+        default=config['taxon_username'],
         help="Username for taxon database (default: $TAXON_USERNAME or ingest-username)"
     )
     parser.add_argument(
         "--taxon-password",
-        default=os.environ.get("TAXON_PASSWORD"),
+        default=config['taxon_password'],
         help="Password for taxon database (default: $TAXON_PASSWORD or ingest-password)"
     )
     parser.add_argument(
         "--pattern",
-        default=os.environ.get("PATTERN", "*.txt.ann"),
+        default=config['pattern'],
         help="Pattern for attachment names (default: $PATTERN or *.txt.ann)"
     )
 

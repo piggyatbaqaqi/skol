@@ -101,7 +101,10 @@ Examples:
   %(prog)s --source ingenta --local /data/skol/www/www.ingentaconnect.com
 
   # With credentials from environment variables
-  export COUCHDB_USER=myuser COUCHDB_PASSWORD=mypass
+  export COUCHDB_URL=http://myserver:5984
+  export COUCHDB_DATABASE=mycobank
+  export COUCHDB_USER=myuser
+  export COUCHDB_PASSWORD=mypass
   %(prog)s --all
 
   # Silent mode
@@ -134,8 +137,8 @@ Examples:
     parser.add_argument(
         '--database',
         type=str,
-        default='skol_dev',
-        help='CouchDB database name (default: skol_dev)'
+        default=os.environ.get('COUCHDB_DATABASE', 'skol_dev'),
+        help='CouchDB database name (default: $COUCHDB_DATABASE or skol_dev)'
     )
 
     # Ingestor selection (only required for --rss or --local)
