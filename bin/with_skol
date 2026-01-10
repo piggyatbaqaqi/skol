@@ -10,12 +10,15 @@
 ##   ln -s with_skol train_classifier
 ##   ./train_classifier --help       # Runs: python train_classifier.py --help
 
-source /home/skol/miniconda3/etc/profile.d/conda.sh && \
+source "${HOME}/miniconda3/etc/profile.d/conda.sh" && \
 conda activate skol
 
 # Get the name this script was invoked as
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_DIR=$(dirname "$0")
+
+# Add parent directory to Python path to enable imports from skol module
+export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH}"
 
 # If invoked as 'with_skol', run python with all arguments as-is
 if [ "$SCRIPT_NAME" = "with_skol" ]; then
