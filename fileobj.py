@@ -13,6 +13,7 @@ class FileObject(ABC):
 
     _line_number: int
     _page_number: int
+    _pdf_page: int
     _empirical_page_number: Optional[str]
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
@@ -56,6 +57,7 @@ class FileObject(ABC):
         This template method handles common line processing logic:
         - Tracking line and page numbers
         - Detecting page breaks (form feed characters)
+        - Detecting PDF page markers (--- PDF Page N ---)
         - Extracting empirical page numbers
         - Creating Line objects
 
@@ -77,7 +79,13 @@ class FileObject(ABC):
                 # Strip the form feed
                 self._set_empirical_page(l_str[1:])
 
-            # TODO(piggy): Implement pdf_page_number extraction logic here if needed
+            # Check for PDF page marker (from pdf_section_extractor.py)
+            # Format: "--- PDF Page N ---"
+            pdf_page_match = re.match(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$', l_str.strip())
+            if pdf_page_match:
+                self._pdf_page = int(pdf_page_match.group(1))
+                # Skip the marker line itself - don't create a Line object for it
+                continue
 
             # Create Line object with file metadata
             l = Line(l_str, self)
@@ -92,6 +100,11 @@ class FileObject(ABC):
     def page_number(self) -> int:
         """Current page number."""
         return self._page_number
+
+    @property
+    def pdf_page(self) -> int:
+        """PDF page number from PDF page markers (--- PDF Page N ---), or 0 if not present."""
+        return self._pdf_page
 
     @property
     def empirical_page_number(self) -> Optional[str]:

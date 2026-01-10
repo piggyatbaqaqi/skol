@@ -12,6 +12,7 @@ class Line(object):
     _label_start: bool
     _label_end: Optional[str]
     _line_number: int
+    _pdf_page: int
     _empirical_page_number: Optional[str]
     _file = None
     # CouchDB metadata (optional)
@@ -19,6 +20,7 @@ class Line(object):
     _attachment_name: Optional[str]
     _db_name: Optional[str]
     _human_url: Optional[str]
+    _pdf_url: Optional[str]
 
     _TABLE = [
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
@@ -28,6 +30,7 @@ class Line(object):
         self._value = line.strip(' \n')
         self._filename = None
         self._page_number = None
+        self._pdf_page = 0  # Default to 0 if no PDF page markers present
         self._empirical_page_number = None
         self._line_number = 0
         self._label_start = False
@@ -37,11 +40,13 @@ class Line(object):
         self._attachment_name = None
         self._db_name = None
         self._human_url = None
+        self._pdf_url = None
 
         if fileobj:
             self._filename = fileobj.filename
             self._line_number = fileobj.line_number
             self._page_number = fileobj.page_number
+            self._pdf_page = fileobj.pdf_page
             self._empirical_page_number = fileobj.empirical_page_number
 
             # Check if fileobj has CouchDB metadata (duck typing)
@@ -53,6 +58,8 @@ class Line(object):
                 self._db_name = fileobj.db_name
             if hasattr(fileobj, 'human_url'):
                 self._human_url = fileobj.human_url
+            if hasattr(fileobj, 'pdf_url'):
+                self._pdf_url = fileobj.pdf_url
 
         self.strip_label_start()
         self.strip_label_end()
@@ -72,6 +79,10 @@ class Line(object):
     @property
     def page_number(self) -> int:
         return self._page_number
+
+    @property
+    def pdf_page(self) -> int:
+        return self._pdf_page
 
     @property
     def empirical_page_number(self) -> Optional[str]:
@@ -151,3 +162,8 @@ class Line(object):
     def human_url(self) -> Optional[str]:
         """URL from the source (optional)."""
         return self._human_url
+
+    @property
+    def pdf_url(self) -> Optional[str]:
+        """PDF URL from the source (optional)."""
+        return self._pdf_url

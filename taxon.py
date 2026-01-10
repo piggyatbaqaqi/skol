@@ -8,8 +8,8 @@ from label import Label
 class Taxon(object):
     FIELDNAMES = [
         'serial_number',
-        'filename', 'human_url', 'label', 'paragraph_number', 'page_number',
-        'empirical_page_number', 'body'
+        'filename', 'human_url', 'pdf_url', 'label', 'paragraph_number', 'page_number',
+        'pdf_page', 'empirical_page_number', 'body'
     ]
     LONG_GAP = 6  # 6 Paragraphs is long enough to give up.
 
@@ -70,6 +70,7 @@ class Taxon(object):
         assert first_line is not None, "Nomenclature paragraph must have at least one line"
         source_doc_id = first_line.doc_id or "unknown"
         source_url = first_line.human_url
+        source_pdf_url = first_line.pdf_url
         source_db_name = first_line.db_name or "unknown"
         line_number = first_line.line_number
 
@@ -79,11 +80,15 @@ class Taxon(object):
             'source': {
                 'doc_id': source_doc_id,
                 'human_url': source_url,
+                'pdf_url': source_pdf_url,
                 'db_name': source_db_name,
             },
             'line_number': line_number,
             'paragraph_number': pp.paragraph_number,
             'page_number': pp.page_number,
+            # pdf_page comes from "--- PDF Page N ---" markers in text (from pdf_section_extractor.py)
+            # Will be 0 if markers are not present in the text
+            'pdf_page': pp.pdf_page,
             'empirical_page_number': str(pp.empirical_page_number) if pp.empirical_page_number is not None else None,
         }
         return retval

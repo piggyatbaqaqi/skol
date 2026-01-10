@@ -23,6 +23,7 @@ class CouchDBConnection:
     LOAD_SCHEMA = StructType([
         StructField("doc_id", StringType(), False),
         StructField("human_url", StringType(), False),
+        StructField("pdf_url", StringType(), True),
         StructField("attachment_name", StringType(), False),
         StructField("value", StringType(), False),
     ])
@@ -203,7 +204,8 @@ class CouchDBConnection:
 
                             yield Row(
                                 doc_id=row.doc_id,
-                                human_url=doc.get('url', 'missing_human_url'),
+                                human_url=doc.get('url', None),
+                                pdf_url=doc.get('pdf_url', None),
                                 attachment_name=row.attachment_name,
                                 value=content
                             )

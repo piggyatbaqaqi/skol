@@ -20,6 +20,7 @@ class CouchDBFile(FileObject):
     _attachment_name: str
     _db_name: str
     _human_url: Optional[str]
+    _pdf_url: Optional[str]
     _content_lines: List[str]
 
     def __init__(
@@ -28,7 +29,8 @@ class CouchDBFile(FileObject):
         doc_id: str,
         attachment_name: str,
         db_name: str,
-        human_url: Optional[str] = None
+        human_url: Optional[str] = None,
+        pdf_url: Optional[str] = None
     ) -> None:
         """
         Initialize CouchDBFile from attachment content.
@@ -38,14 +40,17 @@ class CouchDBFile(FileObject):
             doc_id: CouchDB document ID
             attachment_name: Name of the attachment (e.g., "article.txt.ann")
             db_name: Database name where document is stored (ingest_db_name)
-            url: Optional URL from the CouchDB row
+            human_url: Optional human-readable URL from the CouchDB document
+            pdf_url: Optional PDF URL from the CouchDB document
         """
         self._doc_id = doc_id
         self._attachment_name = attachment_name
         self._db_name = db_name
         self._human_url = human_url
+        self._pdf_url = pdf_url
         self._line_number = 0
         self._page_number = 1
+        self._pdf_page = 0  # Will be updated when PDF page markers are encountered
         self._empirical_page_number = None
 
         # Split content into lines
@@ -82,8 +87,13 @@ class CouchDBFile(FileObject):
 
     @property
     def human_url(self) -> Optional[str]:
-        """URL from the CouchDB row."""
+        """Human-readable URL from the CouchDB document."""
         return self._human_url
+
+    @property
+    def pdf_url(self) -> Optional[str]:
+        """PDF URL from the CouchDB document."""
+        return self._pdf_url
 
 
 def read_couchdb_partition(
@@ -100,12 +110,15 @@ def read_couchdb_partition(
     Args:
         partition: Iterator of PySpark Rows with columns:
             - doc_id: CouchDB document ID
+            - human_url: Optional human-readable URL
+            - pdf_url: Optional PDF URL
             - attachment_name: Attachment filename
             - value: Text content from attachment
         db_name: Database name to store in metadata (ingest_db_name)
 
     Yields:
-        Line objects with content and CouchDB metadata (doc_id, attachment_name, db_name)
+        Line objects with content and CouchDB metadata (doc_id, human_url,
+        pdf_url, attachment_name, db_name)
 
     Example:
         >>> # In a PySpark context
@@ -121,8 +134,9 @@ def read_couchdb_partition(
         >>> result = df.rdd.mapPartitions(process_partition)
     """
     for row in partition:
-        # Extract url from row if available
+        # Extract URLs from row if available
         human_url = getattr(row, 'human_url', None)
+        pdf_url = getattr(row, 'pdf_url', None)
 
         # Create CouchDBFile object from row data
         file_obj = CouchDBFile(
@@ -130,7 +144,8 @@ def read_couchdb_partition(
             doc_id=row.doc_id,
             attachment_name=row.attachment_name,
             db_name=db_name,
-            human_url=human_url
+            human_url=human_url,
+            pdf_url=pdf_url
         )
 
         # Yield all lines from this file

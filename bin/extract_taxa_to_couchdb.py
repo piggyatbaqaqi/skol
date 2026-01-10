@@ -106,10 +106,11 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
         PySpark Row objects with fields:
             - taxon: String of concatenated nomenclature paragraphs
             - description: String of concatenated description paragraphs
-            - source: Dict with keys doc_id, url, db_name
+            - source: Dict with keys doc_id, human_url, pdf_url, db_name
             - line_number: Line number of first nomenclature paragraph
             - paragraph_number: Paragraph number of first nomenclature paragraph
             - page_number: Page number of first nomenclature paragraph
+            - pdf_page: PDF page number (same as page_number)
             - empirical_page_number: Empirical page number of first nomenclature paragraph
     """
     for taxon in partition:
@@ -206,6 +207,7 @@ class TaxonExtractor:
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
             StructField("page_number", IntegerType(), True),
+            StructField("pdf_page", IntegerType(), True),
             StructField("empirical_page_number", StringType(), True),
             StructField("_id", StringType(), True),
             StructField("json_annotated", StringType(), True)
@@ -294,10 +296,11 @@ class TaxonExtractor:
             DataFrame with taxa information matching the extract_taxa() schema:
             - taxon: String of concatenated nomenclature paragraphs
             - description: String of concatenated description paragraphs
-            - source: Dict with keys doc_id, url, db_name
+            - source: Dict with keys doc_id, human_url, pdf_url, db_name
             - line_number: Line number of first nomenclature paragraph
             - paragraph_number: Paragraph number of first nomenclature paragraph
             - page_number: Page number of first nomenclature paragraph
+            - pdf_page: PDF page number (same as page_number)
             - empirical_page_number: Empirical page number of first nomenclature paragraph
 
         Example:
@@ -347,6 +350,7 @@ class TaxonExtractor:
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
                                 'page_number': doc.get('page_number'),
+                                'pdf_page': doc.get('pdf_page'),
                                 'empirical_page_number': doc.get('empirical_page_number')
                             }
 
