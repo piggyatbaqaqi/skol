@@ -178,7 +178,7 @@ Examples:
         help='Database name (default: from --couchdb-database or $COUCHDB_DATABASE or skol_dev)'
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # Use --database arg if provided, otherwise fall back to config
     database = args.database or config['couchdb_database'] or 'skol_dev'

@@ -263,7 +263,7 @@ Environment Variables:
         help='List available model configurations and exit'
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # List models if requested
     if args.list_models:

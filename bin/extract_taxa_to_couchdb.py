@@ -687,7 +687,7 @@ Script-specific Options:
         help="Only trace this specific document ID (optional, for focused debugging)"
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # Set up debug tracing (modify module-level variables)
     import sys

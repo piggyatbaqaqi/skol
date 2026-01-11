@@ -213,7 +213,7 @@ Examples:
         help='Expiration time in seconds, or "None" for no expiration (default: 172800 = 2 days)'
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # Get configuration
     config = get_env_config()
