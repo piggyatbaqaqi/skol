@@ -139,7 +139,7 @@ def predict_and_save(
     # Check if model exists in Redis
     if not redis_client.exists(classifier_model_name):
         print(f"✗ Model not found in Redis: {classifier_model_name}")
-        print(f"  Please train the model first using train_classifier.py")
+        print("  Please train the model first using bin/train_classifier.")
         sys.exit(1)
 
     # Create Spark session
