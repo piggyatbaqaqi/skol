@@ -53,6 +53,8 @@ class LineExtractionMode(ExtractionMode):
         pattern: str = "*.txt"
     ) -> DataFrame:
         """Load raw text from CouchDB at line level."""
+        from pyspark.sql.functions import when, regexp_extract
+
         conn = CouchDBConnection(
             couchdb_url=couchdb_url,
             database=database,
@@ -67,10 +69,17 @@ class LineExtractionMode(ExtractionMode):
         window_spec = Window.partitionBy("doc_id", "attachment_name") \
             .orderBy("doc_id")
 
-        return (
+        exploded_df = (
             df.withColumn("value", explode(col("lines")))
             .drop("lines")
             .withColumn("line_number", row_number().over(window_spec))
+        )
+
+        # Mark PDF page markers (format: "--- PDF Page N ---")
+        # These will be preserved but not classified
+        return exploded_df.withColumn(
+            "is_page_marker",
+            col("value").rlike(r"^\s*---\s*PDF\s+Page\s+\d+\s*---\s*$")
         )
 
     def load_annotated_from_files(

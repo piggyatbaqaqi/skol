@@ -99,11 +99,13 @@ class YeddaFormatter:
             """
             Coalesce consecutive lines with the same label.
 
+            Page markers break coalescing chains and are preserved as-is.
+
             Args:
-                rows: List of (line_number, value, predicted_label) tuples
+                rows: List of tuples (line_number, value, predicted_label, is_page_marker)
 
             Returns:
-                List of YEDDA-formatted annotation blocks
+                List of YEDDA-formatted annotation blocks or raw page markers
             """
             if not rows:
                 return []
@@ -112,27 +114,40 @@ class YeddaFormatter:
             sorted_rows = sorted(rows, key=lambda x: x[0])
 
             result = []
-            current_label = sorted_rows[0][2]
-            current_lines = [sorted_rows[0][1]]
+            current_label = None
+            current_lines = []
 
-            for i in range(1, len(sorted_rows)):
-                row_num, value, label = sorted_rows[i]
-
-                if label == current_label:
-                    # Same label, accumulate
-                    current_lines.append(value)
-                else:
-                    # Different label, output current block
+            def flush_current_block():
+                """Flush current block to result if it has content."""
+                if current_lines and current_label is not None:
                     block_text = '\n'.join(current_lines)
                     result.append(f"[@ {block_text} #{current_label}*]")
 
-                    # Start new block
-                    current_label = label
-                    current_lines = [value]
+            for row in sorted_rows:
+                row_num, value, label, is_page_marker = row
 
-            # Output final block
-            block_text = '\n'.join(current_lines)
-            result.append(f"[@ {block_text} #{current_label}*]")
+                # Check if this is a page marker
+                if is_page_marker:
+                    # Flush current block
+                    flush_current_block()
+                    # Add page marker as-is (no YEDDA formatting)
+                    result.append(value)
+                    # Reset current block
+                    current_label = None
+                    current_lines = []
+                else:
+                    # Regular line
+                    if label == current_label and current_label is not None:
+                        # Same label, accumulate
+                        current_lines.append(value)
+                    else:
+                        # Different label, flush and start new block
+                        flush_current_block()
+                        current_label = label
+                        current_lines = [value]
+
+            # Flush final block
+            flush_current_block()
 
             return result
 
@@ -155,13 +170,18 @@ class YeddaFormatter:
         # Group by document and coalesce
         # Note: coalesced_annotations is an array of annotation blocks,
         # each block already contains the label inside the YEDDA format
+        # Include is_page_marker field if it exists (defaulting to false)
+        if "is_page_marker" in predictions.columns:
+            struct_expr = "struct(line_number, value, predicted_label, is_page_marker)"
+        else:
+            # For backward compatibility, default is_page_marker to false
+            struct_expr = "struct(line_number, value, predicted_label, false as is_page_marker)"
+
         return (
             predictions
             .groupBy(*groupby_cols)
             .agg(
-                collect_list(
-                    expr("struct(line_number, value, predicted_label)")
-                ).alias("rows")
+                collect_list(expr(struct_expr)).alias("rows")
             )
             .withColumn("coalesced_annotations", coalesce_udf(col("rows")))
             .select(*groupby_cols, "coalesced_annotations")

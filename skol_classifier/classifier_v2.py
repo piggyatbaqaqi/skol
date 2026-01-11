@@ -584,6 +584,14 @@ class SkolClassifierV2:
         if raw_data is None:
             raw_data = self.load_raw()
 
+        # Separate page markers from regular lines (line mode only)
+        page_markers_df = None
+        if "is_page_marker" in raw_data.columns:
+            # Save page markers for later reinsertion
+            page_markers_df = raw_data.filter(col("is_page_marker") == True)
+            # Filter out page markers before classification
+            raw_data = raw_data.filter(col("is_page_marker") == False)
+
         # Apply feature pipeline
         featured_df = self._feature_pipeline.transform(raw_data)
 
@@ -595,6 +603,10 @@ class SkolClassifierV2:
 
         # Format output
         predictions_df = self._format_predictions(predictions_df)
+
+        # Reinsert page markers if they were separated
+        if page_markers_df is not None:
+            predictions_df = self._reinsert_page_markers(predictions_df, page_markers_df)
 
         return predictions_df
 
@@ -1133,6 +1145,58 @@ class SkolClassifierV2:
             return predictions_df.select(*cols)
         else:
             return predictions_df
+
+    def _reinsert_page_markers(
+        self,
+        predictions_df: DataFrame,
+        page_markers_df: DataFrame
+    ) -> DataFrame:
+        """
+        Reinsert PDF page markers into predictions DataFrame.
+
+        Page markers are preserved but not classified. They are added back
+        with a special 'PAGE_MARKER' pseudo-label to maintain proper ordering.
+
+        Args:
+            predictions_df: DataFrame with predictions
+            page_markers_df: DataFrame with page markers
+
+        Returns:
+            Combined DataFrame with page markers reinserted
+        """
+        from pyspark.sql.functions import lit
+
+        # If output_format is 'annotated', page markers need annotated_value column
+        if "annotated_value" in predictions_df.columns:
+            # Page markers don't get classified - preserve their raw value
+            page_markers_with_label = page_markers_df.withColumn(
+                "annotated_value", col("value")  # Keep raw marker text
+            )
+        else:
+            # For non-annotated format, just add the value
+            page_markers_with_label = page_markers_df
+
+        # Add columns that predictions_df has but page markers don't
+        for column in predictions_df.columns:
+            if column not in page_markers_with_label.columns:
+                # Use None for most columns, False for boolean columns
+                if column == "is_page_marker":
+                    page_markers_with_label = page_markers_with_label.withColumn(
+                        column, lit(True)
+                    )
+                else:
+                    page_markers_with_label = page_markers_with_label.withColumn(
+                        column, lit(None)
+                    )
+
+        # Union predictions with page markers
+        combined_df = predictions_df.union(page_markers_with_label)
+
+        # Sort by line_number to restore original order (if line_number exists)
+        if "line_number" in combined_df.columns:
+            combined_df = combined_df.orderBy("doc_id", "attachment_name", "line_number")
+
+        return combined_df
 
     def _format_as_annotated(self, predictions_df: DataFrame) -> DataFrame:
         """

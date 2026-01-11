@@ -84,7 +84,10 @@ class FileObject(ABC):
             pdf_page_match = re.match(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$', l_str.strip())
             if pdf_page_match:
                 self._pdf_page = int(pdf_page_match.group(1))
-                # Skip the marker line itself - don't create a Line object for it
+                # Create a special Line object for the page marker
+                # This line will be preserved in output but not classified
+                l = Line(l_str, self, is_page_marker=True)
+                yield l
                 continue
 
             # Create Line object with file metadata

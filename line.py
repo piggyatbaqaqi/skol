@@ -15,6 +15,7 @@ class Line(object):
     _pdf_page: int
     _empirical_page_number: Optional[str]
     _file = None
+    _is_page_marker: bool  # True if this line is a PDF page marker
     # CouchDB metadata (optional)
     _doc_id: Optional[str]
     _attachment_name: Optional[str]
@@ -26,7 +27,7 @@ class Line(object):
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
     ]
 
-    def __init__(self, line: str, fileobj: Optional[FileObject] = None) -> None:
+    def __init__(self, line: str, fileobj: Optional[FileObject] = None, is_page_marker: bool = False) -> None:
         self._value = line.strip(' \n')
         self._filename = None
         self._page_number = None
@@ -35,6 +36,7 @@ class Line(object):
         self._line_number = 0
         self._label_start = False
         self._label_end = None
+        self._is_page_marker = is_page_marker  # Mark if this is a PDF page marker
         # Initialize optional CouchDB metadata
         self._doc_id = None
         self._attachment_name = None
@@ -91,6 +93,11 @@ class Line(object):
     @property
     def line(self) -> str:
         return self._value
+
+    @property
+    def is_page_marker(self) -> bool:
+        """True if this line is a PDF page marker (--- PDF Page N ---)."""
+        return self._is_page_marker
 
     def strip_label_start(self) -> None:
         if self.startswith('[@'):
