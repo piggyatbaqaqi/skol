@@ -23,8 +23,10 @@ from typing import Dict, Any
 import redis
 from pyspark.sql import SparkSession
 
-# Add parent directory to path
+# Add parent directory to path for skol modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Add bin directory to path for env_config
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.classifier_v2 import SkolClassifierV2
 from env_config import get_env_config

@@ -19,8 +19,10 @@ import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.types import StructType, StructField, StringType, BooleanType, MapType, IntegerType
 
-# Add parent directory to path
+# Add parent directory to path for skol modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Add bin directory to path for env_config
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.couchdb_io import CouchDBConnection
 from env_config import get_env_config

@@ -20,8 +20,10 @@ from pathlib import Path
 
 import redis
 
-# Add parent directory to path for skol_compat
+# Add parent directory to path for skol modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Add bin directory to path for env_config
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
 import skol_compat  # noqa: F401 (imported for side effects)

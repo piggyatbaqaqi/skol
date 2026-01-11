@@ -15,6 +15,7 @@ from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config
 
