@@ -81,11 +81,8 @@ def predict_and_save(
     model_config: Dict[str, Any],
     config: Dict[str, Any],
     redis_client: redis.Redis,
-    verbosity_override: int = None,
-    read_text_override: bool = None,
-    save_text_override: str = None,
-    pattern_override: str = None,
-    batch_size_override: int = None
+    read_text_override: bool = False,
+    save_text_override: str = None
 ) -> None:
     """
     Load classifier from Redis, make predictions, and save to CouchDB.
@@ -95,27 +92,23 @@ def predict_and_save(
         model_config: Model configuration dictionary
         config: Environment configuration
         redis_client: Redis client instance
-        verbosity_override: Optional verbosity level override
         read_text_override: Optional read_text parameter override
         save_text_override: Optional save_text parameter override
-        pattern_override: Optional CouchDB pattern override
-        batch_size_override: Optional batch size override
     """
-    # Apply overrides if provided
+    # Apply overrides and use config verbosity
     model_config = model_config.copy()
-    if verbosity_override is not None:
-        model_config['verbosity'] = verbosity_override
-    else:
-        model_config.setdefault('verbosity', 1)
 
-    if read_text_override is not None:
+    # Use verbosity from config (command-line or environment)
+    model_config['verbosity'] = config['verbosity']
+
+    if read_text_override:
         model_config['read_text'] = read_text_override
     if save_text_override is not None:
         model_config['save_text'] = save_text_override
 
-    # Determine batch size and pattern
-    batch_size = batch_size_override if batch_size_override is not None else config['prediction_batch_size']
-    pattern = pattern_override if pattern_override is not None else config['couchdb_pattern']
+    # Get batch size and pattern from config (can be overridden via command-line)
+    batch_size = config['prediction_batch_size']
+    pattern = config['couchdb_pattern']
 
     model_config['prediction_batch_size'] = batch_size
     model_config['num_workers'] = config['num_workers']
@@ -233,20 +226,24 @@ def main():
 Available Models:
   """ + '\n  '.join([f"{k}: {v.get('name', k)}" for k, v in MODEL_CONFIGS.items()]) + """
 
-Environment Variables:
-  COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
-  COUCHDB_USER          CouchDB username (default: admin)
-  COUCHDB_PASSWORD      CouchDB password (default: SU2orange!)
-  INGEST_DB_NAME        Database to predict on (default: skol_dev)
-  REDIS_HOST            Redis host (default: localhost)
-  REDIS_PORT            Redis port (default: 6379)
-  MODEL_VERSION         Model version tag (default: v2.0)
-  COUCHDB_PATTERN       File pattern to match (default: *.txt)
-  PREDICTION_BATCH_SIZE Batch size for predictions (default: 96)
-  NUM_WORKERS           Number of workers (default: 4)
-  SPARK_CORES           Number of Spark cores (default: 4)
-  SPARK_DRIVER_MEMORY   Spark driver memory (default: 2g)
-  SPARK_EXECUTOR_MEMORY Spark executor memory (default: 2g)
+Configuration (via environment variables or command-line arguments):
+  --couchdb-host          CouchDB host (default: 127.0.0.1:5984)
+  --couchdb-username      CouchDB username (default: admin)
+  --couchdb-password      CouchDB password (default: SU2orange!)
+  --ingest-db-name        Database to predict on (default: skol_dev)
+  --redis-host            Redis host (default: localhost)
+  --redis-port            Redis port (default: 6379)
+  --model-version         Model version tag (default: v2.0)
+  --couchdb-pattern       File pattern to match (default: *.txt)
+  --prediction-batch-size Batch size for predictions (default: 24)
+  --num-workers           Number of workers (default: 4)
+  --cores                 Number of Spark cores (default: 4)
+  --spark-driver-memory   Spark driver memory (default: 4g)
+  --spark-executor-memory Spark executor memory (default: 4g)
+
+Note: Command-line arguments override environment variables.
+      Use --couchdb-pattern instead of --pattern
+      Use --prediction-batch-size instead of --batch-size
 """
     )
 
@@ -256,14 +253,6 @@ Environment Variables:
         default='logistic_sections',
         choices=list(MODEL_CONFIGS.keys()),
         help='Model configuration to use (default: logistic_sections)'
-    )
-
-    parser.add_argument(
-        '--verbosity',
-        type=int,
-        choices=[0, 1, 2],
-        default=None,
-        help='Override verbosity level (0=silent, 1=info, 2=debug)'
     )
 
     parser.add_argument(
@@ -277,22 +266,6 @@ Environment Variables:
         choices=['eager', 'lazy'],
         default=None,
         help="Save text attachment: 'eager' (always save/replace), 'lazy' (save if missing)"
-    )
-
-    parser.add_argument(
-        '--pattern',
-        type=str,
-        default=None,
-        metavar='PATTERN',
-        help='CouchDB file pattern to match (default: *.txt)'
-    )
-
-    parser.add_argument(
-        '--batch-size',
-        type=int,
-        default=None,
-        metavar='SIZE',
-        help='Prediction batch size (default: 96)'
     )
 
     parser.add_argument(
@@ -346,11 +319,8 @@ Environment Variables:
             model_config=model_config,
             config=config,
             redis_client=redis_client,
-            verbosity_override=args.verbosity,
-            read_text_override=args.read_text or None,
-            save_text_override=args.save_text,
-            pattern_override=args.pattern,
-            batch_size_override=args.batch_size
+            read_text_override=args.read_text,
+            save_text_override=args.save_text
         )
     except KeyboardInterrupt:
         print("\n\n✗ Prediction interrupted by user")

@@ -193,14 +193,6 @@ Examples:
         help='Recompute embeddings even if they already exist in Redis'
     )
 
-    parser.add_argument(
-        '--verbosity',
-        type=int,
-        choices=[0, 1, 2],
-        default=1,
-        help='Verbosity level (0=silent, 1=info, 2=debug, default: 1)'
-    )
-
     def parse_expire(value):
         """Parse expire argument: integer seconds or 'None' for no expiration."""
         if value.lower() == 'none':
@@ -237,7 +229,7 @@ Examples:
         compute_and_save_embeddings(
             config=config,
             force=args.force,
-            verbosity=args.verbosity,
+            verbosity=config['verbosity'],
             expire_override=expire_override
         )
     except KeyboardInterrupt:

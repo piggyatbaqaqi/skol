@@ -232,26 +232,8 @@ Environment Variables:
 
     parser.add_argument(
         '--database',
-        required=True,
-        help='CouchDB database name (e.g., skol_dev)'
-    )
-
-    parser.add_argument(
-        '--couchdb-url',
-        default=config['couchdb_url'],
-        help='CouchDB server URL (default: $COUCHDB_URL or http://localhost:5984)'
-    )
-
-    parser.add_argument(
-        '--couchdb-username',
-        default=config['couchdb_username'],
-        help='CouchDB username (default: $COUCHDB_USER)'
-    )
-
-    parser.add_argument(
-        '--couchdb-password',
-        default=config['couchdb_password'],
-        help='CouchDB password (default: $COUCHDB_PASSWORD)'
+        default=None,
+        help='CouchDB database name (default: from --couchdb-database or $COUCHDB_DATABASE)'
     )
 
     parser.add_argument(
@@ -266,14 +248,6 @@ Environment Variables:
     )
 
     parser.add_argument(
-        '--verbosity',
-        type=int,
-        choices=[0, 1, 2],
-        default=1,
-        help='Verbosity level (0=silent, 1=info, 2=debug, default: 1)'
-    )
-
-    parser.add_argument(
         '--dry-run',
         action='store_true',
         help='Preview what would be done without actually saving'
@@ -281,15 +255,20 @@ Environment Variables:
 
     args = parser.parse_args()
 
+    # Use --database arg if provided, otherwise fall back to config
+    database = args.database or config['couchdb_database']
+    if not database:
+        parser.error("--database is required (or use --couchdb-database / $COUCHDB_DATABASE)")
+
     try:
         regenerate_txt_files(
-            database=args.database,
-            couchdb_url=args.couchdb_url,
-            username=args.couchdb_username,
-            password=args.couchdb_password,
+            database=database,
+            couchdb_url=config['couchdb_url'],
+            username=config['couchdb_username'],
+            password=config['couchdb_password'],
             pattern=args.pattern,
             doc_id=args.doc_id,
-            verbosity=args.verbosity,
+            verbosity=config['verbosity'],
             dry_run=args.dry_run
         )
     except KeyboardInterrupt:
@@ -297,7 +276,7 @@ Environment Variables:
         sys.exit(130)
     except Exception as e:
         print(f"\nError: {e}")
-        if args.verbosity >= 2:
+        if config['verbosity'] >= 2:
             import traceback
             traceback.print_exc()
         sys.exit(1)

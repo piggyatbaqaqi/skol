@@ -94,7 +94,6 @@ def train_classifier(
     model_config: Dict[str, Any],
     config: Dict[str, Any],
     redis_client: redis.Redis,
-    verbosity_override: Optional[int] = None,
     read_text_override: Optional[bool] = None,
     save_text_override: Optional[str] = None,
     expire_override: Optional[str] = None
@@ -107,20 +106,20 @@ def train_classifier(
         model_config: Model configuration dictionary
         config: Environment configuration
         redis_client: Redis client instance
-        verbosity_override: Optional verbosity level override
         read_text_override: Optional read_text parameter override
         save_text_override: Optional save_text parameter override ('eager', 'lazy', or None)
         expire_override: Optional Redis expiration time override in HH:MM:SS format (None = no expiration)
     """
-    # Apply overrides if provided
-    if verbosity_override is not None or read_text_override is not None or save_text_override is not None:
-        model_config = model_config.copy()
-        if verbosity_override is not None:
-            model_config['verbosity'] = verbosity_override
-        if read_text_override is not None:
-            model_config['read_text'] = read_text_override
-        if save_text_override is not None:
-            model_config['save_text'] = save_text_override
+    # Apply overrides if provided and use config verbosity
+    model_config = model_config.copy()
+
+    # Override verbosity from config (command-line or environment)
+    model_config['verbosity'] = config['verbosity']
+
+    if read_text_override is not None:
+        model_config['read_text'] = read_text_override
+    if save_text_override is not None:
+        model_config['save_text'] = save_text_override
 
     # Determine Redis expiration time
     expire_time = config.get('classifier_model_expire')
@@ -238,14 +237,6 @@ Environment Variables:
     )
 
     parser.add_argument(
-        '--verbosity',
-        type=int,
-        choices=[0, 1, 2],
-        default=None,
-        help='Override verbosity level (0=silent, 1=info, 2=debug)'
-    )
-
-    parser.add_argument(
         '--read-text',
         action='store_true',
         help='Read from .txt attachment instead of converting PDF'
@@ -319,7 +310,6 @@ Environment Variables:
             model_config=model_config,
             config=config,
             redis_client=redis_client,
-            verbosity_override=args.verbosity,
             read_text_override=args.read_text or None,
             save_text_override=args.save_text,
             expire_override=args.expire

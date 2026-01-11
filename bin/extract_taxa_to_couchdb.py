@@ -250,7 +250,8 @@ class TaxonExtractor:
         ingest_username: Optional[str] = None,
         ingest_password: Optional[str] = None,
         taxon_username: Optional[str] = None,
-        taxon_password: Optional[str] = None
+        taxon_password: Optional[str] = None,
+        verbosity: int = 1
     ):
         self.spark = spark
         self.ingest_couchdb_url = ingest_couchdb_url
@@ -262,6 +263,7 @@ class TaxonExtractor:
         self.taxon_db_name = taxon_db_name
         self.taxon_username = taxon_username or ingest_username
         self.taxon_password = taxon_password or ingest_password
+        self.verbosity = verbosity
 
         # Schema for extracted taxa
         self._extract_schema = StructType([
@@ -331,10 +333,11 @@ class TaxonExtractor:
         annotated_df_filtered = annotated_df.select(*required_cols)
 
         # Debug: Print schema to verify
-        print(f"[TaxonExtractor] Input DataFrame columns: {annotated_df.columns}")
-        print(f"[TaxonExtractor] Filtered DataFrame columns: {annotated_df_filtered.columns}")
-        print(f"[TaxonExtractor] Filtered DataFrame schema:")
-        annotated_df_filtered.printSchema()
+        if self.verbosity >= 2:
+            print(f"[TaxonExtractor] Input DataFrame columns: {annotated_df.columns}")
+            print(f"[TaxonExtractor] Filtered DataFrame columns: {annotated_df_filtered.columns}")
+            print(f"[TaxonExtractor] Filtered DataFrame schema:")
+            annotated_df_filtered.printSchema()
 
         # Extract to local variable to avoid serializing self
         db_name = self.ingest_db_name
@@ -387,6 +390,7 @@ class TaxonExtractor:
         username = self.taxon_username
         password = self.taxon_password
         extract_schema = self._extract_schema
+        verbosity = self.verbosity
 
         def load_partition(partition: Iterator[Row]) -> Iterator[Row]:
             """Load taxa from CouchDB for an entire partition."""
@@ -398,13 +402,15 @@ class TaxonExtractor:
 
                 # Check if database exists
                 if db_name not in server:
-                    print(f"Database {db_name} does not exist")
+                    if verbosity >= 1:
+                        print(f"Database {db_name} does not exist")
                     return
 
                 db = server[db_name]
 
                 # Process each row (which contains doc_id)
                 for row in partition:
+                    doc_id = "unknown"
                     try:
                         doc_id = row.doc_id if hasattr(row, 'doc_id') else str(row[0])
 
@@ -426,13 +432,16 @@ class TaxonExtractor:
 
                             yield Row(**taxon_data)
                         else:
-                            print(f"Document {doc_id} not found in database")
+                            if verbosity >= 1:
+                                print(f"Document {doc_id} not found in database")
 
                     except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
-                        print(f"Error loading taxon {doc_id}: {e}")
+                        if verbosity >= 1:
+                            print(f"Error loading taxon {doc_id}: {e}")
 
             except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
-                print(f"Error connecting to CouchDB: {e}")
+                if verbosity >= 1:
+                    print(f"Error connecting to CouchDB: {e}")
 
         # First, get list of document IDs matching pattern from CouchDB
         # We need to create a DataFrame with doc_ids to process
@@ -469,7 +478,8 @@ class TaxonExtractor:
 
             # Check if database exists
             if self.taxon_db_name not in server:
-                print(f"Database {self.taxon_db_name} does not exist")
+                if self.verbosity >= 1:
+                    print(f"Database {self.taxon_db_name} does not exist")
                 return []
 
             db = server[self.taxon_db_name]
@@ -492,7 +502,8 @@ class TaxonExtractor:
                     return [doc_id for doc_id in all_doc_ids if doc_id == pattern]
 
         except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
-            print(f"Error getting document IDs from CouchDB: {e}")
+            if self.verbosity >= 1:
+                print(f"Error getting document IDs from CouchDB: {e}")
             return []
 
     def save_taxa(self, taxa_df: DataFrame) -> DataFrame:
@@ -510,6 +521,7 @@ class TaxonExtractor:
         db_name = self.taxon_db_name
         username = self.taxon_username
         password = self.taxon_password
+        verbosity = self.verbosity
 
         def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
             """Save taxa to CouchDB for an entire partition (idempotent)."""
@@ -579,7 +591,8 @@ class TaxonExtractor:
 
                     except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
                         error_msg = str(e)
-                        print(f"Error saving taxon {doc_id}: {e}")
+                        if verbosity >= 1:
+                            print(f"Error saving taxon {doc_id}: {e}")
 
                     yield Row(
                         doc_id=doc_id,
@@ -588,7 +601,8 @@ class TaxonExtractor:
                     )
 
             except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
-                print(f"Error connecting to CouchDB: {e}")
+                if verbosity >= 1:
+                    print(f"Error connecting to CouchDB: {e}")
                 # Yield failures for all rows
                 for row in partition:
                     yield Row(
@@ -641,52 +655,25 @@ if __name__ == "__main__":
     config = get_env_config()
 
     parser = argparse.ArgumentParser(
-        description="Extract Taxa from CouchDB annotated files and save to CouchDB"
-    )
-    parser.add_argument(
-        "--ingest-url",
-        default=config['ingest_url'],
-        help="CouchDB server URL for ingest database (default: $INGEST_URL or $COUCHDB_URL or http://localhost:5984)"
-    )
-    parser.add_argument(
-        "--ingest-database",
-        default=config['ingest_database'],
-        help="Name of ingest database (default: $INGEST_DATABASE, e.g., mycobank_annotations)"
-    )
-    parser.add_argument(
-        "--ingest-username",
-        default=config['ingest_username'],
-        help="Username for ingest database (default: $INGEST_USERNAME or $COUCHDB_USER)"
-    )
-    parser.add_argument(
-        "--ingest-password",
-        default=config['ingest_password'],
-        help="Password for ingest database (default: $INGEST_PASSWORD or $COUCHDB_PASSWORD)"
-    )
-    parser.add_argument(
-        "--taxon-url",
-        default=config['taxon_url'],
-        help="CouchDB server URL for taxon database (default: $TAXON_URL or ingest-url)"
-    )
-    parser.add_argument(
-        "--taxon-database",
-        default=config['taxon_database'],
-        help="Name of taxon database (default: $TAXON_DATABASE, e.g., mycobank_taxa)"
-    )
-    parser.add_argument(
-        "--taxon-username",
-        default=config['taxon_username'],
-        help="Username for taxon database (default: $TAXON_USERNAME or ingest-username)"
-    )
-    parser.add_argument(
-        "--taxon-password",
-        default=config['taxon_password'],
-        help="Password for taxon database (default: $TAXON_PASSWORD or ingest-password)"
-    )
-    parser.add_argument(
-        "--pattern",
-        default=config['pattern'],
-        help="Pattern for attachment names (default: $PATTERN or *.txt.ann)"
+        description="Extract Taxa from CouchDB annotated files and save to CouchDB",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Configuration (via environment variables or command-line arguments):
+  --ingest-url            CouchDB server URL for ingest database
+  --ingest-database       Name of ingest database
+  --ingest-username       Username for ingest database
+  --ingest-password       Password for ingest database
+  --taxon-url             CouchDB server URL for taxon database
+  --taxon-database        Name of taxon database
+  --taxon-username        Username for taxon database
+  --taxon-password        Password for taxon database
+  --pattern               Pattern for attachment names (default: *.txt.ann)
+
+Note: All database configuration can be set via command-line arguments to env_config.
+      Example: python extract_taxa_to_couchdb.py --ingest-database mydb --taxon-database mytaxa
+
+Script-specific Options:
+"""
     )
     parser.add_argument(
         "--debug-trace",
@@ -719,51 +706,54 @@ if __name__ == "__main__":
             logger.info("[TRACE] Debug tracing enabled for all documents")
 
     # Validate required arguments
-    if not args.ingest_database:
+    if not config['ingest_database']:
         parser.error("--ingest-database is required (or set $INGEST_DATABASE)")
-    if not args.taxon_database:
+    if not config['taxon_database']:
         parser.error("--taxon-database is required (or set $TAXON_DATABASE)")
 
     # Default taxon credentials to ingest credentials
-    taxon_url = args.taxon_url or args.ingest_url
-    taxon_username = args.taxon_username or args.ingest_username
-    taxon_password = args.taxon_password or args.ingest_password
+    taxon_url = config['taxon_url'] or config['ingest_url']
+    taxon_username = config['taxon_username'] or config['ingest_username']
+    taxon_password = config['taxon_password'] or config['ingest_password']
 
     # Create Spark session
     spark = SparkSession.builder \
         .appName("SKOL Taxon Extractor") \
         .getOrCreate()
 
-    print(f"Extracting taxa from {args.ingest_database} to {args.taxon_database}...")
+    if config['verbosity'] >= 1:
+        print(f"Extracting taxa from {config['ingest_database']} to {config['taxon_database']}...")
 
     # Create extractor instance
     extractor = TaxonExtractor(
         spark=spark,
-        ingest_couchdb_url=args.ingest_url,
-        ingest_db_name=args.ingest_database,
-        taxon_db_name=args.taxon_database,
+        ingest_couchdb_url=config['ingest_url'],
+        ingest_db_name=config['ingest_database'],
+        taxon_db_name=config['taxon_database'],
         taxon_couchdb_url=taxon_url,
-        ingest_username=args.ingest_username,
-        ingest_password=args.ingest_password,
+        ingest_username=config['ingest_username'],
+        ingest_password=config['ingest_password'],
         taxon_username=taxon_username,
-        taxon_password=taxon_password
+        taxon_password=taxon_password,
+        verbosity=config['verbosity']
     )
 
     # Run pipeline
-    results = extractor.run_pipeline(pattern=args.pattern)
+    results = extractor.run_pipeline(pattern=config['pattern'])
 
     # Show results
-    total = results.count()
-    successes = results.filter("success = true").count()
-    failures = results.filter("success = false").count()
+    if config['verbosity'] >= 1:
+        total = results.count()
+        successes = results.filter("success = true").count()
+        failures = results.filter("success = false").count()
 
-    print(f"\nResults:")
-    print(f"  Total taxa: {total}")
-    print(f"  Successful saves: {successes}")
-    print(f"  Failed saves: {failures}")
+        print(f"\nResults:")
+        print(f"  Total taxa: {total}")
+        print(f"  Successful saves: {successes}")
+        print(f"  Failed saves: {failures}")
 
-    if failures > 0:
-        print("\nFailed documents:")
-        results.filter("success = false").show(truncate=False)
+        if failures > 0 and config['verbosity'] >= 2:
+            print("\nFailed documents:")
+            results.filter("success = false").show(truncate=False)
 
     spark.stop()

@@ -3,8 +3,14 @@ Centralized environment variable configuration for SKOL scripts.
 
 This module provides a unified way to read configuration from environment
 variables with sensible defaults, used by all bin scripts.
+
+Configuration priority (highest to lowest):
+1. Command-line arguments
+2. Environment variables
+3. Default values
 """
 
+import argparse
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -12,12 +18,17 @@ from typing import Dict, Any, Optional
 
 def get_env_config() -> Dict[str, Any]:
     """
-    Get complete environment configuration from environment variables or defaults.
+    Get complete environment configuration from command-line args, environment variables, or defaults.
+
+    Command-line arguments take priority over environment variables, which take priority over defaults.
+    Arguments follow the pattern: --config-key for config['config_key']
+    (underscores in keys become dashes in argument names)
 
     Returns:
         Dictionary of configuration values for all SKOL components
     """
-    return {
+    # First, get base configuration from environment variables and defaults
+    base_config = {
         # CouchDB connection settings
         'couchdb_url': os.environ.get('COUCHDB_URL', 'http://localhost:5984'),
         'couchdb_host': os.environ.get('COUCHDB_HOST', '127.0.0.1:5984'),
@@ -69,7 +80,50 @@ def get_env_config() -> Dict[str, Any]:
         'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
         'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '4g'),
         'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '4g'),
+
+        # General settings
+        'verbosity': int(os.environ.get('VERBOSITY', '1')),
     }
+
+    # Parse command-line arguments to override config
+    parser = argparse.ArgumentParser(add_help=False)  # Don't add -h/--help to avoid conflicts
+
+    # Add arguments for each configuration key
+    # String arguments
+    for key in [
+        'couchdb_url', 'couchdb_host', 'couchdb_username', 'couchdb_password', 'couchdb_database',
+        'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
+        'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'taxon_db_name',
+        'training_database',
+        'redis_host', 'redis_url',
+        'model_version', 'classifier_model_expire',
+        'embedding_name',
+        'couchdb_pattern', 'pattern',
+        'bahir_package', 'spark_driver_memory', 'spark_executor_memory'
+    ]:
+        arg_name = '--' + key.replace('_', '-')
+        parser.add_argument(arg_name, type=str, default=None, dest=key)
+
+    # Integer arguments
+    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity']:
+        arg_name = '--' + key.replace('_', '-')
+        parser.add_argument(arg_name, type=int, default=None, dest=key)
+
+    # Path arguments
+    parser.add_argument('--annotated-path', type=str, default=None, dest='annotated_path')
+
+    # Parse known args (ignore unknown args to avoid breaking scripts with their own arguments)
+    args, _ = parser.parse_known_args()
+
+    # Override base config with command-line arguments (if provided)
+    for key, value in vars(args).items():
+        if value is not None:
+            if key == 'annotated_path':
+                base_config[key] = Path(value)
+            else:
+                base_config[key] = value
+
+    return base_config
 
 
 def get_couchdb_config() -> Dict[str, Any]:

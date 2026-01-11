@@ -174,14 +174,17 @@ Examples:
 
     parser.add_argument(
         '--database',
-        default='skol_dev',
-        help='Database name (default: skol_dev)'
+        default=None,
+        help='Database name (default: from --couchdb-database or $COUCHDB_DATABASE or skol_dev)'
     )
 
     args = parser.parse_args()
 
+    # Use --database arg if provided, otherwise fall back to config
+    database = args.database or config['couchdb_database'] or 'skol_dev'
+
     try:
-        success = test_page_markers(args.doc_id, args.database)
+        success = test_page_markers(args.doc_id, database)
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
         print("\n\nInterrupted by user")
