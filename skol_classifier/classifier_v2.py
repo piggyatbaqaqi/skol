@@ -1071,31 +1071,18 @@ class SkolClassifierV2:
             doc_ids=doc_ids
         )
 
+        # Resist the temptation to count these. It's slow and makes garbage.
+        # If absolutely necessary:
+        # sections_df.cache()
+        # ... here and again at the end of the section_filter if block.
         # Apply section filter if specified
         if self.section_filter:
             if self.verbosity >= 1:
                 print(f"[Classifier] Filtering sections: {self.section_filter}")
 
-            original_count = sections_df.count()
             sections_df = sections_df.filter(
                 sections_df.section_name.isin(self.section_filter)
             )
-            filtered_count = sections_df.count()
-
-            if self.verbosity >= 1:
-                print(f"[Classifier] Kept {filtered_count}/{original_count} sections after filtering")
-
-        if self.verbosity >= 1:
-            total_sections = sections_df.count()
-            print(f"[Classifier] Total sections: {total_sections}")
-
-            # Show section name distribution
-            if self.verbosity >= 2 and "section_name" in sections_df.columns:
-                print(f"[Classifier] Section distribution:")
-                section_counts = sections_df.filter(sections_df.section_name.isNotNull()) \
-                    .groupBy("section_name").count() \
-                    .orderBy("count", ascending=False)
-                section_counts.show(10, truncate=False)
 
         return sections_df
 
