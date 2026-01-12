@@ -835,6 +835,7 @@ class SkolClassifierV2:
             # Add line numbers
             window_spec = Window.partitionBy("doc_id", "attachment_name").orderBy(lit(1))
             df = df.withColumn("line_number", row_number().over(window_spec) - 1)
+        df.cache()
         return df
 
     def _load_annotated_data(self) -> DataFrame:

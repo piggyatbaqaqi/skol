@@ -172,12 +172,17 @@ def predict_and_save(
         # Load raw data
         print("\nLoading documents from CouchDB...")
         raw_df = classifier.load_raw()
-        doc_count = raw_df.count()
-        print(f"✓ Loaded {doc_count} documents")
 
-        if doc_count == 0:
-            print("\n⚠ No documents found matching pattern. Nothing to predict.")
-            return
+        # Only count if verbosity >= 2 (expensive operation)
+        if model_config.get('verbosity', 1) >= 2:
+            doc_count = raw_df.count()
+            print(f"✓ Loaded {doc_count} documents")
+
+            if doc_count == 0:
+                print("\n⚠ No documents found matching pattern. Nothing to predict.")
+                return
+        else:
+            print("✓ Documents loaded (use --verbosity 2 to see count)")
 
         # Show sample
         if model_config.get('verbosity', 1) >= 2:

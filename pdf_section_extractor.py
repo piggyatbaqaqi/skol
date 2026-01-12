@@ -1037,6 +1037,11 @@ class PDFSectionExtractor:
         from pyspark.sql import DataFrame
 
         combined_df = reduce(DataFrame.unionAll, dfs)
+
+        # Cache to break the deep lineage from 1000s of unions
+        # This prevents OOM during query plan construction
+        combined_df = combined_df.cache()
+
         return combined_df
 
     def _get_text_attachment_name(self, pdf_attachment_name: str) -> str:
