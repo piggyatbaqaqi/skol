@@ -1057,21 +1057,23 @@ class PDFSectionExtractor:
                 else:
                     batch_df = reduce(DataFrame.unionAll, batch)
 
-                # Cache each batch to break lineage at batch boundaries
-                # This prevents the query planner from having to traverse
-                # all 15K document operations when analyzing the final plan
-                batch_df = batch_df.cache()
+                # Checkpoint each batch to completely break lineage
+                # Unlike cache(), checkpoint() severs the logical plan connection
+                # This prevents query planner OOM when building complex trees
 
-                # Materialize the cache by triggering a small action
-                # This forces Spark to actually cache the data now, not lazily later
+                # Materialize first to avoid checkpointing lazy operations
                 row_count = batch_df.count()
+
+                # Use localCheckpoint (in-memory) instead of checkpoint (disk)
+                # This is faster but still breaks lineage for the query planner
+                batch_df = batch_df.localCheckpoint(eager=True)
 
                 batched_dfs.append(batch_df)
 
                 if self.verbosity >= 2:
                     batch_num = (i // batch_size) + 1
                     total_batches = (len(dfs) + batch_size - 1) // batch_size
-                    print(f"[PDFSectionExtractor] Cached batch {batch_num}/{total_batches}: {len(batch)} docs, {row_count} rows")
+                    print(f"[PDFSectionExtractor] Checkpointed batch {batch_num}/{total_batches}: {len(batch)} docs, {row_count} rows")
 
         # Union the batches
         if len(batched_dfs) == 1:
@@ -1081,11 +1083,11 @@ class PDFSectionExtractor:
                 print(f"[PDFSectionExtractor] Final union of {len(batched_dfs)} batches")
             combined_df = reduce(DataFrame.unionAll, batched_dfs)
 
-        # Cache the final result as well
-        combined_df = combined_df.cache()
+            # Checkpoint the final union to break lineage
+            combined_df = combined_df.localCheckpoint(eager=True)
 
         if self.verbosity >= 2:
-            print(f"[PDFSectionExtractor] Union complete, cached result")
+            print(f"[PDFSectionExtractor] Union complete, checkpointed result")
 
         return combined_df
 
