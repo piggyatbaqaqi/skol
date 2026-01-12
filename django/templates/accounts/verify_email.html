@@ -1,0 +1,36 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Email Verification - SKOL{% endblock %}
+
+{% block content %}
+<h1>Email Verification</h1>
+
+{% if success %}
+    <div class="success">
+        <p><strong>Success!</strong></p>
+        <p>Your email has been verified. You can now log in to your account.</p>
+    </div>
+
+    <div class="text-center">
+        <p><a href="{% url 'accounts:login' %}" class="btn-primary" style="display: inline-block; text-decoration: none;">Log In</a></p>
+    </div>
+{% else %}
+    <div class="error">
+        <p><strong>Verification Failed</strong></p>
+        <p>The verification link is invalid or has expired. This may happen if:</p>
+        <ul>
+            <li>The link was already used</li>
+            <li>The link is more than 3 days old</li>
+            <li>The link was copied incorrectly</li>
+        </ul>
+    </div>
+
+    <div class="text-center">
+        <p>Please try <a href="{% url 'accounts:register' %}">registering again</a> or contact support if you continue to have issues.</p>
+    </div>
+{% endif %}
+
+<div class="links">
+    <p><a href="{% url 'home' %}">Back to search</a></p>
+</div>
+{% endblock %}

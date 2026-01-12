@@ -1,0 +1,21 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Check Your Email - SKOL{% endblock %}
+
+{% block content %}
+<h1>Check Your Email</h1>
+<p class="subtitle">Account Created Successfully</p>
+
+<div class="info">
+    <p><strong>Thank you for registering!</strong></p>
+    <p>We've sent a verification link to your email address. Please click the link in the email to activate your account.</p>
+</div>
+
+<div class="text-center">
+    <p>After verifying your email, you can <a href="{% url 'accounts:login' %}">log in</a>.</p>
+</div>
+
+<div class="links">
+    <p><a href="{% url 'home' %}">Back to search</a></p>
+</div>
+{% endblock %}
