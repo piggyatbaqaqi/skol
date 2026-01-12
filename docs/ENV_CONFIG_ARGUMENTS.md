@@ -126,6 +126,8 @@ In this example:
 --pattern <pattern>              # Pattern for annotated files
 --prediction-batch-size <size>   # Prediction batch size (integer)
 --num-workers <num>              # Number of workers (integer)
+--union-batch-size <size>        # DataFrame union batch size (integer, default: 1000)
+                                 # Controls memory usage during large-scale operations
 ```
 
 ### Data Paths

@@ -115,6 +115,7 @@ def train_classifier(
 
     # Override verbosity from config (command-line or environment)
     model_config['verbosity'] = config['verbosity']
+    model_config['union_batch_size'] = config['union_batch_size']
 
     if read_text_override is not None:
         model_config['read_text'] = read_text_override

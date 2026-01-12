@@ -112,6 +112,7 @@ def predict_and_save(
 
     model_config['prediction_batch_size'] = batch_size
     model_config['num_workers'] = config['num_workers']
+    model_config['union_batch_size'] = config['union_batch_size']
 
     # Build Redis key for model
     classifier_model_name = f"skol:classifier:model:{model_name}_{config['model_version']}"

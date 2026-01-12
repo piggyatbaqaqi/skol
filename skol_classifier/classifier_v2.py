@@ -221,6 +221,7 @@ class SkolClassifierV2:
         min_weight: float = 0.1,
         max_weight: float = 100.0,
         verbosity: int = 1,
+        union_batch_size: int = 1000,
         **model_params: Any
     ):
         # Core
@@ -276,6 +277,7 @@ class SkolClassifierV2:
         self.model_params = model_params
         self.model_params['verbosity'] = verbosity
         self.verbosity = verbosity
+        self.union_batch_size = union_batch_size
 
         # Internal state
         self._feature_extractor: Optional[FeatureExtractor] = None
@@ -1063,7 +1065,8 @@ class SkolClassifierV2:
             spark=self.spark,
             verbosity=max(0, self.verbosity - 1),  # Reduce verbosity for extractor
             read_text=self.read_text,
-            save_text=self.save_text
+            save_text=self.save_text,
+            union_batch_size=self.union_batch_size
         )
 
         # Extract sections from multiple documents

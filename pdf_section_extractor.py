@@ -67,7 +67,8 @@ class PDFSectionExtractor:
         verbosity: int = 1,
         spark: Optional[Any] = None,
         read_text: bool = False,
-        save_text: Optional[str] = None
+        save_text: Optional[str] = None,
+        union_batch_size: int = 1000
     ):
         """
         Initialize the PDF section extractor.
@@ -83,11 +84,15 @@ class PDFSectionExtractor:
                       'eager': Always convert PDF and save/replace .txt attachment
                       'lazy': Save .txt attachment only if one doesn't exist
                       None: Do not save .txt attachment
+            union_batch_size: Number of DataFrames to union at once (default: 1000)
+                            Larger values = fewer intermediate unions but deeper plans
+                            Smaller values = more intermediate unions but shallower plans
         """
         self.verbosity = verbosity
         self.spark = spark
         self.read_text = read_text
         self.save_text = save_text
+        self.union_batch_size = union_batch_size
 
         # Storage for figure captions (populated during parsing)
         self.figure_captions = []
@@ -1032,15 +1037,55 @@ class PDFSectionExtractor:
             ])
             return self.spark.createDataFrame([], schema=schema)
 
-        # Union all DataFrames
+        # Union all DataFrames using batched unions to avoid deep query plans
         from functools import reduce
         from pyspark.sql import DataFrame
 
-        combined_df = reduce(DataFrame.unionAll, dfs)
+        # Batch the unions to create a balanced tree instead of a skewed one
+        # This limits plan depth to ~log(N) instead of N
+        if self.verbosity >= 2:
+            print(f"[PDFSectionExtractor] Unioning {len(dfs)} DataFrames in batches of {self.union_batch_size}")
 
-        # Cache to break the deep lineage from 1000s of unions
-        # This prevents OOM during query plan construction
+        batch_size = self.union_batch_size
+        batched_dfs = []
+
+        for i in range(0, len(dfs), batch_size):
+            batch = dfs[i:i+batch_size]
+            if batch:
+                if len(batch) == 1:
+                    batch_df = batch[0]
+                else:
+                    batch_df = reduce(DataFrame.unionAll, batch)
+
+                # Cache each batch to break lineage at batch boundaries
+                # This prevents the query planner from having to traverse
+                # all 15K document operations when analyzing the final plan
+                batch_df = batch_df.cache()
+
+                # Materialize the cache by triggering a small action
+                # This forces Spark to actually cache the data now, not lazily later
+                row_count = batch_df.count()
+
+                batched_dfs.append(batch_df)
+
+                if self.verbosity >= 2:
+                    batch_num = (i // batch_size) + 1
+                    total_batches = (len(dfs) + batch_size - 1) // batch_size
+                    print(f"[PDFSectionExtractor] Cached batch {batch_num}/{total_batches}: {len(batch)} docs, {row_count} rows")
+
+        # Union the batches
+        if len(batched_dfs) == 1:
+            combined_df = batched_dfs[0]
+        else:
+            if self.verbosity >= 2:
+                print(f"[PDFSectionExtractor] Final union of {len(batched_dfs)} batches")
+            combined_df = reduce(DataFrame.unionAll, batched_dfs)
+
+        # Cache the final result as well
         combined_df = combined_df.cache()
+
+        if self.verbosity >= 2:
+            print(f"[PDFSectionExtractor] Union complete, cached result")
 
         return combined_df
 
