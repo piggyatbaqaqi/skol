@@ -6,8 +6,12 @@ from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
+from django.contrib.auth.views import PasswordResetView
 from .forms import CustomUserCreationForm
 from .tokens import email_verification_token
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def register(request):
@@ -77,3 +81,26 @@ def verify_email(request, uidb64, token):
     else:
         messages.error(request, 'The verification link is invalid or has expired.')
         return render(request, 'accounts/verify_email.html', {'success': False})
+
+
+class CustomPasswordResetView(PasswordResetView):
+    """Custom password reset view with detailed logging."""
+
+    def form_valid(self, form):
+        """Override to add logging before sending email."""
+        email = form.cleaned_data['email']
+        logger.info(f"[PasswordReset] Password reset requested for email: {email}")
+
+        # Check if any users with this email exist
+        users = User.objects.filter(email=email)
+        logger.info(f"[PasswordReset] Found {users.count()} user(s) with email: {email}")
+
+        for user in users:
+            logger.info(f"[PasswordReset] User: {user.username}, Active: {user.is_active}, Email: {user.email}")
+
+        # Call parent form_valid which sends the email
+        result = super().form_valid(form)
+
+        logger.info(f"[PasswordReset] Email sending completed for: {email}")
+
+        return result
