@@ -1,0 +1,38 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Resend Verification Email - SKOL{% endblock %}
+
+{% block content %}
+<h1>Resend Verification Email</h1>
+<p class="subtitle">Haven't received your verification email?</p>
+
+<div class="info">
+    <p>If you didn't receive the verification email when you registered, or if the link has expired, enter your email address below to receive a new verification link.</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-input" placeholder="your.email@example.com" required>
+    </div>
+
+    <button type="submit">Send Verification Email</button>
+</form>
+
+<div class="links">
+    <p>Already verified? <a href="{% url 'accounts:login' %}">Log in</a></p>
+    <p>Don't have an account? <a href="{% url 'accounts:register' %}">Register</a></p>
+    <p><a href="{% url 'home' %}">Back to search</a></p>
+</div>
+
+<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #666; font-size: 0.9em;">
+    <p><strong>Note:</strong> For security reasons, you can only request a new verification email once every 5 minutes. If you don't receive the email:</p>
+    <ul style="margin-left: 20px; margin-top: 10px;">
+        <li>Check your spam/junk folder</li>
+        <li>Make sure you entered the correct email address</li>
+        <li>Verify your email account is accepting emails</li>
+    </ul>
+</div>
+{% endblock %}

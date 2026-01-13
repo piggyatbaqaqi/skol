@@ -10,6 +10,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('register/complete/', views.register_complete, name='register_complete'),
     path('verify-email/<uidb64>/<token>/', views.verify_email, name='verify_email'),
+    path('resend-verification/', views.resend_verification, name='resend_verification'),
 
     # Login/Logout
     path('login/', auth_views.LoginView.as_view(
