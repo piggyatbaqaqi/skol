@@ -122,23 +122,27 @@ class TestTaxon(unittest.TestCase):
         """).split('\n'))
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
-        self.assertEqual(len(taxa), 2)
+        # Now expecting 3 taxa due to stub nomenclature creation for bare Description
+        # Taxon 1: paragraph1+3 (nomenclatures) + paragraph4+6 (descriptions)
+        # Taxon 2: stub + ignored2 (description that was too far from nomenclature)
+        # Taxon 3: paragraph9 (nomenclature) + paragraph12+14+15 (descriptions)
+        self.assertEqual(len(taxa), 3)
 
         dictionaries1 = list(taxa[0].dictionaries())
         dictionaries2 = list(taxa[1].dictionaries())
+        dictionaries3 = list(taxa[2].dictionaries())
         sn1 = dictionaries1[0]['serial_number']
         sn2 = dictionaries2[0]['serial_number']
+        sn3 = dictionaries3[0]['serial_number']
         self.assertNotEqual(sn1, sn2)
+        self.assertNotEqual(sn2, sn3)
+        self.assertNotEqual(sn1, sn3)
 
+        # First taxon: paragraph1+3 (nomenclatures) + paragraph4+6 (descriptions)
         self.assertEqual(len(dictionaries1), 4)
         self.assertTrue(all([d['serial_number'] == sn1 for d in dictionaries1]))
         self.assertListEqual([d['paragraph_number'] for d in dictionaries1],
                              [6, 7, 8, 9])
-
-        self.assertEqual(len(dictionaries2), 4)
-        self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries2],
-                             [17, 19, 21, 22])
 
         dict0 = dictionaries1[0]
         dict2 = dictionaries1[2]
@@ -147,8 +151,22 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dict2['body'], 'paragraph4\n')
         self.assertEqual(dict2['label'], 'Description')
 
-        dict4 = dictionaries2[0]
-        dict7 = dictionaries2[3]
+        # Second taxon: stub + ignored2 (bare description with no preceding nomenclature)
+        self.assertEqual(len(dictionaries2), 2)
+        self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
+        self.assertEqual(dictionaries2[0]['body'], 'Nomen undetected\n')
+        self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries2[1]['body'], 'ignored2\n')
+        self.assertEqual(dictionaries2[1]['label'], 'Description')
+
+        # Third taxon: paragraph9 (nomenclature) + paragraph12+14+15 (descriptions)
+        self.assertEqual(len(dictionaries3), 4)
+        self.assertTrue(all([d['serial_number'] == sn3 for d in dictionaries3]))
+        self.assertListEqual([d['paragraph_number'] for d in dictionaries3],
+                             [17, 19, 21, 22])
+
+        dict4 = dictionaries3[0]
+        dict7 = dictionaries3[3]
         self.assertEqual(dict4['body'], 'paragraph9\n')
         self.assertEqual(dict4['label'], 'Nomenclature')
         self.assertEqual(dict7['body'], 'paragraph15\n')
@@ -295,6 +313,63 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(len(dictionaries2), 2)
         self.assertEqual(dictionaries2[0]['body'], 'nom_from_doc_b\n')
         self.assertEqual(dictionaries2[1]['body'], 'desc2_b\n')
+
+    def test_bare_description_creates_stub_nomenclature(self):
+        """Test that a Description without preceding Nomenclature creates a stub.
+
+        When we encounter a Description paragraph without any preceding Nomenclature,
+        a stub Nomenclature paragraph with 'Nomen undetected' should be automatically
+        created since Descriptions are more reliably detected than Nomenclatures.
+        """
+        test_data = lineify(textwrap.dedent("""\
+        [@desc1#Description*]
+        [@desc2#Description*]
+        """).split('\n'))
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1, "Should generate exactly one taxon")
+
+        dictionaries = list(taxa[0].dictionaries())
+        self.assertEqual(len(dictionaries), 3, "Should have 1 stub nomenclature + 2 descriptions")
+
+        # Verify the stub nomenclature was created
+        self.assertEqual(dictionaries[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries[0]['body'], 'Nomen undetected\n')
+        self.assertEqual(dictionaries[1]['label'], 'Description')
+        self.assertEqual(dictionaries[1]['body'], 'desc1\n')
+        self.assertEqual(dictionaries[2]['label'], 'Description')
+        self.assertEqual(dictionaries[2]['body'], 'desc2\n')
+
+    def test_bare_description_with_nomenclature_later(self):
+        """Test stub creation when bare Description comes before actual Nomenclature.
+
+        First taxon should have stub + descriptions, second taxon should have
+        actual nomenclature + its descriptions.
+        """
+        test_data = lineify(textwrap.dedent("""\
+        [@desc1#Description*]
+        [@desc2#Description*]
+        [@nom1#Nomenclature*]
+        [@desc3#Description*]
+        """).split('\n'))
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 2, "Should generate 2 taxa")
+
+        # First taxon: stub + desc1 + desc2
+        dictionaries1 = list(taxa[0].dictionaries())
+        self.assertEqual(len(dictionaries1), 3)
+        self.assertEqual(dictionaries1[0]['body'], 'Nomen undetected\n')
+        self.assertEqual(dictionaries1[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries1[1]['body'], 'desc1\n')
+        self.assertEqual(dictionaries1[2]['body'], 'desc2\n')
+
+        # Second taxon: nom1 + desc3
+        dictionaries2 = list(taxa[1].dictionaries())
+        self.assertEqual(len(dictionaries2), 2)
+        self.assertEqual(dictionaries2[0]['body'], 'nom1\n')
+        self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries2[1]['body'], 'desc3\n')
 
 if __name__ == '__main__':
     unittest.main()

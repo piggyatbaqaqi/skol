@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Iterator, List
 
 from paragraph import Paragraph
 from label import Label
+from line import Line
 
 class Taxon(object):
     FIELDNAMES = [
@@ -122,6 +123,15 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                         # Different document - reset and skip this description
                         taxon.reset()
                         continue
+                    state = 'Look for Descriptions'
+                    # Fall through to the description handling below.
+                else:
+                    # Found a Description without a preceding Nomenclature
+                    # Create a stub nomenclature paragraph with "Nomen undetected"
+                    stub_line = Line("Nomen undetected")
+                    stub_paragraph = Paragraph(labels=[nomenclature], lines=[stub_line],
+                                               paragraph_number=pp.paragraph_number)
+                    taxon.add_nomenclature(stub_paragraph)
                     state = 'Look for Descriptions'
                     # Fall through to the description handling below.
             if taxon.been_too_long(pp):
