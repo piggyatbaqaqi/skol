@@ -75,6 +75,17 @@ def parse_annotated(contents: Iterable[Line]) -> Iterator[Paragraph]:
             yield retval
             continue
 
+    # Flush the last paragraph if it has content
+    # Check both _lines and _next_line since append_ahead stores lines in _next_line first
+    if not pp.is_empty() or (hasattr(pp, '_next_line') and pp._next_line is not None):
+        # Move _next_line to _lines if it exists
+        if hasattr(pp, '_next_line') and pp._next_line is not None:
+            pp.append(pp._next_line)
+            pp._next_line = None
+        if not pp.is_empty():
+            _count_the_labels(pp, label_counts)
+            yield pp
+
     # Print label summary
     print("\n=== parse_annotated Label Summary ===")
     total_labels = sum(label_counts.values())

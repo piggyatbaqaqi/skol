@@ -12,6 +12,33 @@ def lineify(lines: List[str]) -> List[Line]:
     return [Line(l) for l in lines]
 
 
+class MockFileObject:
+    """Mock file object for testing with doc_id support."""
+    def __init__(self, doc_id: str = None, filename: str = "test.txt"):
+        self.doc_id = doc_id
+        self.filename = filename
+        self.line_number = 1
+        self.page_number = 1
+        self.pdf_page = 0
+        self.empirical_page_number = None
+
+
+def lineify_with_doc_id(lines: List[tuple]) -> List[Line]:
+    """Create Lines with specific doc_id values.
+
+    Args:
+        lines: List of tuples (line_text, doc_id)
+
+    Returns:
+        List of Line objects with doc_id metadata
+    """
+    result = []
+    for line_text, doc_id in lines:
+        fileobj = MockFileObject(doc_id=doc_id)
+        result.append(Line(line_text, fileobj))
+    return result
+
+
 class TestTaxon(unittest.TestCase):
 
     def setUp(self):
@@ -46,12 +73,12 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(len(dictionaries1), 4)
         self.assertTrue(all([d['serial_number'] == sn1 for d in dictionaries1]))
         self.assertListEqual([d['paragraph_number'] for d in dictionaries1],
-                             ['1', '3', '4', '6'])
+                             [1, 3, 4, 6])
 
         self.assertEqual(len(dictionaries2), 4)
         self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
         self.assertListEqual([d['paragraph_number'] for d in dictionaries2],
-                             ['9', '11', '13', '14'])
+                             [9, 11, 13, 14])
 
         dict0 = dictionaries1[0]
         dict2 = dictionaries1[2]
@@ -106,12 +133,12 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(len(dictionaries1), 4)
         self.assertTrue(all([d['serial_number'] == sn1 for d in dictionaries1]))
         self.assertListEqual([d['paragraph_number'] for d in dictionaries1],
-                             ['6', '7', '8', '9'])
+                             [6, 7, 8, 9])
 
         self.assertEqual(len(dictionaries2), 4)
         self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
         self.assertListEqual([d['paragraph_number'] for d in dictionaries2],
-                             ['17', '19', '21', '22'])
+                             [17, 19, 21, 22])
 
         dict0 = dictionaries1[0]
         dict2 = dictionaries1[2]
@@ -148,7 +175,7 @@ class TestTaxon(unittest.TestCase):
 
         # Verify the first description was captured (fall-through worked)
         self.assertListEqual([d['paragraph_number'] for d in dictionaries],
-                             ['1', '2', '3'])
+                             [1, 2, 3])
         self.assertEqual(dictionaries[0]['label'], 'Nomenclature')
         self.assertEqual(dictionaries[1]['label'], 'Description')
         self.assertEqual(dictionaries[1]['body'], 'desc1\n')
@@ -177,9 +204,97 @@ class TestTaxon(unittest.TestCase):
         # Should only have nom2 and desc1, not nom1 (it was reset due to gap)
         self.assertEqual(len(dictionaries), 2, "Should have 1 nomenclature + 1 description")
         self.assertListEqual([d['paragraph_number'] for d in dictionaries],
-                             ['6', '7'])
+                             [6, 7])
         self.assertEqual(dictionaries[0]['body'], 'nom2\n')
         self.assertEqual(dictionaries[1]['body'], 'desc1\n')
+
+    def test_document_boundary(self):
+        """Test that Nomenclature-Description associations do not cross document boundaries.
+
+        When processing multiple documents (different doc_id values), a Nomenclature
+        from one document should not be associated with Descriptions from another document.
+        The doc_id boundary should cause the current taxon to be yielded and a new one started.
+        """
+        # Create test data with two different documents
+        # Document A (doc_id='doc_a'): Nomenclature at paragraph 1, Description at paragraph 2
+        # Document B (doc_id='doc_b'): Description at paragraph 3, Nomenclature at paragraph 4
+        test_data = lineify_with_doc_id([
+            ('[@nom_from_doc_a#Nomenclature*]', 'doc_a'),
+            ('[@desc_from_doc_a#Description*]', 'doc_a'),
+            ('[@desc_from_doc_b#Description*]', 'doc_b'),  # Different doc - should NOT associate with nom_from_doc_a
+            ('[@nom_from_doc_b#Nomenclature*]', 'doc_b'),
+            ('[@desc2_from_doc_b#Description*]', 'doc_b'),
+        ])
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+
+        # Should generate 2 taxa, one for each document
+        self.assertEqual(len(taxa), 2, "Should generate 2 taxa (one per document)")
+
+        # First taxon: from document A
+        dictionaries1 = list(taxa[0].dictionaries())
+        self.assertEqual(len(dictionaries1), 2, "First taxon should have nom + desc from doc_a")
+        self.assertEqual(dictionaries1[0]['body'], 'nom_from_doc_a\n')
+        self.assertEqual(dictionaries1[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries1[1]['body'], 'desc_from_doc_a\n')
+        self.assertEqual(dictionaries1[1]['label'], 'Description')
+
+        # Verify first taxon is from doc_a
+        taxon1_row = taxa[0].as_row()
+        self.assertEqual(taxon1_row['source']['doc_id'], 'doc_a')
+
+        # Second taxon: from document B
+        dictionaries2 = list(taxa[1].dictionaries())
+        self.assertEqual(len(dictionaries2), 2, "Second taxon should have nom + desc from doc_b")
+        self.assertEqual(dictionaries2[0]['body'], 'nom_from_doc_b\n')
+        self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
+        self.assertEqual(dictionaries2[1]['body'], 'desc2_from_doc_b\n')
+        self.assertEqual(dictionaries2[1]['label'], 'Description')
+
+        # Verify second taxon is from doc_b
+        taxon2_row = taxa[1].as_row()
+        self.assertEqual(taxon2_row['source']['doc_id'], 'doc_b')
+
+        # Ensure desc_from_doc_b was NOT associated with nom_from_doc_a
+        # (it should have been skipped due to document boundary)
+        self.assertNotIn('desc_from_doc_b', [d['body'] for d in dictionaries1])
+
+    def test_document_boundary_while_looking_for_descriptions(self):
+        """Test document boundary check in 'Look for Descriptions' state.
+
+        When already collecting descriptions for a nomenclature and we encounter
+        a description from a different document, the current taxon should be yielded
+        and we should start fresh with the new document.
+        """
+        test_data = lineify_with_doc_id([
+            ('[@nom1#Nomenclature*]', 'doc_a'),
+            ('[@desc1_a#Description*]', 'doc_a'),
+            ('[@desc2_a#Description*]', 'doc_a'),
+            ('[@desc_from_doc_b#Description*]', 'doc_b'),  # Boundary while collecting descriptions
+            ('[@nom_from_doc_b#Nomenclature*]', 'doc_b'),
+            ('[@desc2_b#Description*]', 'doc_b'),
+        ])
+
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+
+        # Should generate 2 taxa
+        self.assertEqual(len(taxa), 2, "Should generate 2 taxa")
+
+        # First taxon: nom1 + desc1_a + desc2_a from doc_a
+        dictionaries1 = list(taxa[0].dictionaries())
+        self.assertEqual(len(dictionaries1), 3)
+        self.assertEqual(dictionaries1[0]['body'], 'nom1\n')
+        self.assertEqual(dictionaries1[1]['body'], 'desc1_a\n')
+        self.assertEqual(dictionaries1[2]['body'], 'desc2_a\n')
+
+        # desc_from_doc_b should NOT be in first taxon
+        self.assertNotIn('desc_from_doc_b', [d['body'] for d in dictionaries1])
+
+        # Second taxon: nom_from_doc_b + desc2_b from doc_b
+        dictionaries2 = list(taxa[1].dictionaries())
+        self.assertEqual(len(dictionaries2), 2)
+        self.assertEqual(dictionaries2[0]['body'], 'nom_from_doc_b\n')
+        self.assertEqual(dictionaries2[1]['body'], 'desc2_b\n')
 
 if __name__ == '__main__':
     unittest.main()
