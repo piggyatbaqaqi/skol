@@ -110,13 +110,14 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
     so line counts may differ between .txt and .txt.ann files.
 
     Strategy:
-    1. Extract all non-marker content lines from .txt
-    2. Strip YEDDA annotations from .ann to get raw content
-    3. For each marker position in .txt, find what content comes
+    1. First remove any existing page markers from .ann (in case of re-fix)
+    2. Extract all non-marker content lines from .txt
+    3. Strip YEDDA annotations from .ann to get raw content
+    4. For each marker position in .txt, find what content comes
        immediately after it
-    4. Search for that content in the stripped .ann to find where
+    5. Search for that content in the stripped .ann to find where
        to insert the marker
-    5. Insert markers at the found positions in the original .ann
+    6. Insert markers at the found positions in the original .ann
 
     Args:
         txt_content: Content of .txt file with page markers
@@ -125,6 +126,13 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
     Returns:
         Updated .txt.ann content with page markers inserted
     """
+    # First, strip any existing page markers from ann_content
+    # (in case we're re-fixing a document with incorrect markers)
+    ann_lines_orig = ann_content.split('\n')
+    marker_pattern = re.compile(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$')
+    ann_lines_clean = [line for line in ann_lines_orig if not marker_pattern.match(line)]
+    ann_content = '\n'.join(ann_lines_clean)
+
     # Extract markers from txt file
     markers = extract_page_markers_with_positions(txt_content)
 
@@ -150,8 +158,52 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
                 if len(context_lines) >= 3:
                     break
 
+        # If no content after (last page marker), look for content before
+        if not context_lines and line_num > 0:
+            # Look backwards for content
+            for j in range(line_num - 1, max(0, line_num - 20), -1):
+                line = txt_lines[j].strip()
+                if line and not re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', line):
+                    context_lines.insert(0, line)  # Insert at beginning since we're going backwards
+                    if len(context_lines) >= 3:
+                        break
+
         if context_lines:
-            marker_insertions.append((marker_text, context_lines))
+            marker_insertions.append((marker_text, context_lines, line_num))
+        else:
+            # No context found - this is likely a blank page or part of consecutive blank pages
+            # We'll handle these separately by inserting them at the beginning
+            marker_insertions.append((marker_text, [], line_num))
+
+    # Detect consecutive markers at document start (blank pages)
+    # These need special handling even if they found context by looking ahead
+    consecutive_start_markers = []
+    for i, (marker_text, context_lines, line_num) in enumerate(marker_insertions):
+        # Check if this is part of a consecutive group at the start
+        if i == 0:
+            consecutive_start_markers.append((marker_text, context_lines, line_num))
+        else:
+            prev_line_num = marker_insertions[i-1][2]
+            # Check if there's non-marker content between this and previous marker
+            lines_between = txt_lines[prev_line_num + 1:line_num]
+            non_marker_content = [l for l in lines_between
+                                 if l.strip() and not re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', l)]
+
+            if not non_marker_content and len(consecutive_start_markers) > 0:
+                # Still consecutive - add to group
+                consecutive_start_markers.append((marker_text, context_lines, line_num))
+            else:
+                # No longer consecutive
+                break
+
+    # Separate markers: consecutive start group vs. others
+    consecutive_start_line_nums = {l for _, _, l in consecutive_start_markers}
+    markers_after_start = [m for m in marker_insertions
+                          if m[2] not in consecutive_start_line_nums]
+
+    # Further separate "markers after start" into those with/without content
+    markers_with_content = [(m, c, l) for m, c, l in markers_after_start if c]
+    markers_without_content = [(m, c, l) for m, c, l in markers_after_start if not c]
 
     # Now find where to insert each marker in the .ann file
     # Build a map: ann_line_idx -> marker_text
@@ -164,10 +216,8 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
         cleaned = re.sub(r'\s*#[^\*]+\*\]', '', cleaned)
         cleaned_ann_lines.append(cleaned.strip())
 
-    # Join cleaned lines into a single text for searching
-    full_ann_text = '\n'.join(cleaned_ann_lines)
-
-    for marker_text, context_lines in marker_insertions:
+    # Process markers WITH content using fuzzy matching
+    for marker_text, context_lines, orig_line_num in markers_with_content:
         # Try to find the context in the cleaned ann content
         # Use the first distinctive line as primary search
         search_text = context_lines[0][:60]  # First 60 chars
@@ -206,13 +256,44 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
 
         if best_match_idx is not None:
             insertions_map[best_match_idx] = marker_text
+        else:
+            # Marker couldn't be matched - check if it's the last marker
+            # (i.e., appears at end of file with no following content)
+            # In that case, we'll append it at the end
+            if orig_line_num == len(txt_lines) - 1 or \
+               all(not txt_lines[j].strip() for j in range(orig_line_num + 1, len(txt_lines))):
+                # This is a trailing marker - mark it for appending at the end
+                insertions_map['END'] = marker_text
+
+    # Handle remaining blank page markers (those not in consecutive start group)
+    # Place them using relative position in file
+    for marker_text, _, orig_line_num in markers_without_content:
+        # Calculate relative position (0.0 to 1.0) in txt file
+        relative_pos = orig_line_num / len(txt_lines) if txt_lines else 0
+        # Map to approximate line in ann file
+        approx_ann_line = int(relative_pos * len(ann_lines))
+        # Find nearest available position
+        while approx_ann_line in insertions_map and approx_ann_line < len(ann_lines):
+            approx_ann_line += 1
+        if approx_ann_line < len(ann_lines):
+            insertions_map[approx_ann_line] = marker_text
 
     # Build result by inserting markers at the appropriate positions
     result = []
+
+    # First, add consecutive start markers in order (blank pages at document start)
+    for marker_text, _, _ in sorted(consecutive_start_markers, key=lambda x: x[2]):
+        result.append(marker_text)
+
+    # Then add the rest of the content with markers inserted at matched positions
     for i, line in enumerate(ann_lines):
         if i in insertions_map:
             result.append(insertions_map[i])
         result.append(line)
+
+    # Append any end markers
+    if 'END' in insertions_map:
+        result.append(insertions_map['END'])
 
     return '\n'.join(result)
 
@@ -293,6 +374,27 @@ def find_documents_with_missing_markers(db, doc_id: Optional[str] = None) -> Lis
                     'txt_marker_count': len(txt_markers),
                     'ann_marker_count': len(ann_markers),
                 })
+            elif txt_markers and ann_markers and len(txt_markers) == len(ann_markers):
+                # Check if markers are in correct order
+                # txt_markers and ann_markers are lists of tuples (line_num, marker_text)
+                txt_pages = [int(re.search(r'(\d+)', marker_text).group(1))
+                             for _, marker_text in txt_markers]
+                ann_pages = [int(re.search(r'(\d+)', marker_text).group(1))
+                             for _, marker_text in ann_markers]
+
+                if txt_pages != ann_pages:
+                    # Markers exist but are out of order
+                    problematic_docs.append({
+                        'doc_id': doc_id,
+                        'txt_attachment': txt_name,
+                        'ann_attachment': ann_name,
+                        'marker_count': len(txt_markers),
+                        'txt_content': txt_content,
+                        'ann_content': ann_content,
+                        'order_mismatch': True,
+                        'txt_marker_count': len(txt_markers),
+                        'ann_marker_count': len(ann_markers),
+                    })
 
         except Exception as e:
             print(f"  Warning: Error processing document {doc_id}: {e}")
@@ -422,7 +524,10 @@ def main():
         for i, doc_info in enumerate(problematic_docs, 1):
             doc_id = doc_info['doc_id']
             marker_count = doc_info['marker_count']
-            if doc_info.get('mismatch'):
+            if doc_info.get('order_mismatch'):
+                print(f"{i}. {doc_id}")
+                print(f"   ⚠ Marker order mismatch: {doc_info['txt_marker_count']} markers in wrong sequence")
+            elif doc_info.get('mismatch'):
                 print(f"{i}. {doc_id}")
                 print(f"   ⚠ Marker count mismatch: .txt has {doc_info['txt_marker_count']}, "
                       f".txt.ann has {doc_info['ann_marker_count']}")
