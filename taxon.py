@@ -51,6 +51,13 @@ class Taxon(object):
     def has_description(self) -> bool:
         return bool(self._descriptions)
 
+    def doc_id(self) -> str | None:
+        '''Return the doc_id from the first nomenclature paragraph, if any.'''
+        if self._nomenclatures:
+            first_line = self._nomenclatures[0].first_line
+            return first_line.doc_id if first_line else None
+        return None
+
     def dictionaries(self) -> Iterator[Dict[str, str]]:
         for pp in itertools.chain(self._nomenclatures, self._descriptions):
             d = pp.as_dict()
@@ -108,6 +115,13 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                 continue
             if pp.top_label() == description:
                 if taxon.has_nomenclature():
+                    # Check if description is from same document as nomenclature
+                    pp_doc_id = pp.first_line.doc_id if pp.first_line else None
+                    taxon_doc_id = taxon.doc_id()
+                    if pp_doc_id and taxon_doc_id and pp_doc_id != taxon_doc_id:
+                        # Different document - reset and skip this description
+                        taxon.reset()
+                        continue
                     state = 'Look for Descriptions'
                     # Fall through to the description handling below.
             if taxon.been_too_long(pp):
@@ -115,6 +129,20 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                 continue
             # Fall through in case we just found a description.
         if state == 'Look for Descriptions':
+            # Check if we've crossed a document boundary
+            pp_doc_id = pp.first_line.doc_id if pp.first_line else None
+            taxon_doc_id = taxon.doc_id()
+            if pp_doc_id and taxon_doc_id and pp_doc_id != taxon_doc_id:
+                # Document boundary crossed - yield current taxon and reset
+                if taxon and taxon.has_description() and taxon.has_nomenclature():
+                    yield taxon
+                taxon = Taxon()
+                state = 'Look for Nomenclatures'
+                # Re-process this paragraph in the new state
+                if pp.top_label() == nomenclature:
+                    taxon.add_nomenclature(pp)
+                continue
+
             if pp.top_label() == description:
                 taxon.add_description(pp)
                 continue
