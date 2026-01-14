@@ -2,17 +2,16 @@
 Line-level extraction mode implementation.
 """
 
-import re
 from typing import List, Tuple
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import (
-    input_file_name, collect_list, regexp_extract, col, udf,
+    input_file_name, collect_list, col, udf,
     explode, monotonically_increasing_id, row_number, split as sql_split
 )
 from pyspark.sql.types import ArrayType, StringType, StructType, StructField, IntegerType
 from pyspark.sql.window import Window
 
-import ..constants
+from constants import pdf_page_pattern
 from .mode import ExtractionMode
 from ..preprocessing import ParagraphExtractor
 from ..couchdb_io import CouchDBConnection
@@ -77,13 +76,11 @@ class LineExtractionMode(ExtractionMode):
             .withColumn("line_number", row_number().over(window_spec))
         )
 
-        marker_pattern = re.compile(constants.pdf_page_pattern)
-
         # Mark PDF page markers (format: "--- PDF Page N Label L ---")
         # These will be preserved but not classified
         return exploded_df.withColumn(
             "is_page_marker",
-            col("value").rlike(marker_pattern.pattern)
+            col("value").rlike(pdf_page_pattern)
         )
 
     def load_annotated_from_files(

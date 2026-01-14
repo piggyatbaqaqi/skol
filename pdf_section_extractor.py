@@ -27,13 +27,10 @@ Usage:
 
 import os
 import re
-import tempfile
 from typing import List, Optional, Dict, Any
 from urllib.parse import urlparse, urlunparse
 from io import BytesIO
 import couchdb
-
-import .constants
 
 try:
     import fitz  # PyMuPDF
@@ -49,6 +46,7 @@ try:
 except ImportError:
     pass
 
+from constants import pdf_page_pattern
 
 class PDFSectionExtractor:
     """
@@ -360,7 +358,7 @@ class PDFSectionExtractor:
         Returns:
             Match object with page number in group(1), or None
         """
-        return re.match(constants.pdf_page_pattern, line.strip())
+        return re.match(pdf_page_pattern, line.strip())
 
     def _extract_empirical_page_number(self, lines_buffer: List[str]) -> Optional[int]:
         """
@@ -851,10 +849,10 @@ class PDFSectionExtractor:
             StructField("paragraph_number", IntegerType(), False),
             StructField("line_number", IntegerType(), False),
             StructField("pdf_page", IntegerType(), False),
-            StructField("empirical_page_number", IntegerType(), True)
+            StructField("empirical_page_number", IntegerType(), True), # Nullable
             StructField("pdf_page", IntegerType(), True),  # Nullable
             StructField("pdf_label", StringType(), True),  # Nullable
-            StructField("section_name", StringType(), True)  # Nullable
+            StructField("section_name", StringType(), True),  # Nullable
         ])
 
         df = self.spark.createDataFrame(records, schema=schema)
@@ -934,10 +932,9 @@ class PDFSectionExtractor:
             # Always convert PDF and save/replace .txt
             if self.verbosity >= 1:
                 print(f"save_text='eager': Converting PDF and will save/replace text attachment")
-            db = self.couch[database]
-            file_data = db.get_attachment(doc_id, attachment_name).read()
-            if self.verbosity >= 1:
-                print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+            file_data = self._attachment_from_couch(
+                database, doc_id, attachment_name
+            )
             text = self.pdf_to_text(file_data)
             # Save the text attachment
             self._save_text_attachment(database, doc_id, txt_attachment_name, text)
@@ -954,10 +951,9 @@ class PDFSectionExtractor:
                         print(f"save_text='lazy', read_text=False: Converting PDF (ignoring existing .txt)")
                     else:
                         print(f"save_text='lazy': Text attachment doesn't exist, converting PDF and saving")
-                db = self.couch[database]
-                file_data = db.get_attachment(doc_id, attachment_name).read()
-                if self.verbosity >= 1:
-                    print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
+                file_data = self._attachment_from_couch(
+                    database, doc_id, attachment_name,
+                )
                 text = self.pdf_to_text(file_data)
                 # Save only if doesn't exist
                 if not txt_exists:
@@ -973,12 +969,9 @@ class PDFSectionExtractor:
                 if self.read_text and not txt_exists:
                     if self.verbosity >= 1:
                         print(f"Text attachment {txt_attachment_name} not found, converting PDF")
-                db = self.couch[database]
-                file_data = db.get_attachment(doc_id, attachment_name).read()
-
-                if self.verbosity >= 1:
-                    print(f"Retrieved attachment: {attachment_name} ({len(file_data):,} bytes)")
-
+                file_data = self._attachment_from_couch(
+                    database, doc_id, attachment_name
+                )
                 # Extract text from bytes (method depends on file type)
                 if attachment_name.lower().endswith('.pdf'):
                     text = self.pdf_to_text(file_data)
@@ -1154,14 +1147,18 @@ class PDFSectionExtractor:
         Returns:
             Text content with page markers
         """
-        db = self.couch[database]
-        file_data = db.get_attachment(doc_id, txt_attachment_name).read()
-
-        if self.verbosity >= 1:
-            print(f"Reading from text attachment: {txt_attachment_name} ({len(file_data):,} bytes)")
-
+        file_data = self._attachment_from_couch(
+            database, doc_id, txt_attachment_name
+        )
         # Use the existing method to process text with form feeds
         return self.txt_to_text_with_pages(file_data)
+
+    def _attachment_from_couch(self, database: str, doc_id: str, attachment_name: str) -> bytes:
+        db = self.couch[database]
+        result: bytes = db.get_attachment(doc_id, attachment_name).read()
+        if self.verbosity >= 1:
+            print(f"Retrieved attachment: {attachment_name} ({len(result):,} bytes)")
+        return result
 
     def _save_text_attachment(
         self,
