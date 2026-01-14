@@ -12,8 +12,7 @@ from pyspark.sql.functions import (
 from pyspark.sql.types import ArrayType, StringType, StructType, StructField, IntegerType
 from pyspark.sql.window import Window
 
-from skol import constants
-
+import ..constants
 from .mode import ExtractionMode
 from ..preprocessing import ParagraphExtractor
 from ..couchdb_io import CouchDBConnection

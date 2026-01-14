@@ -35,14 +35,12 @@ import re
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from skol import constants
-
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
+import constants
 from env_config import get_env_config
-
 
 def extract_page_markers_with_positions(text: str) -> List[Tuple[int, str]]:
     """

@@ -4,13 +4,14 @@
 import sys
 from pathlib import Path
 
-from skol import constants
+import re
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config
-import re
+import constants
+
 
 def analyze_markers(doc_id):
     """Analyze page marker patterns in a document."""

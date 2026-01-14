@@ -33,7 +33,7 @@ from urllib.parse import urlparse, urlunparse
 from io import BytesIO
 import couchdb
 
-from skol import constants
+import .constants
 
 try:
     import fitz  # PyMuPDF

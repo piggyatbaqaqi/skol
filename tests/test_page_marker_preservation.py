@@ -75,7 +75,7 @@ def test_page_markers(doc_id: str, database: str = "skol_dev"):
         return False
 
     print(f"  ✓ PASS: Found {len(txt_markers)} page markers in article.txt")
-    print(f"  Page numbers: {', '.join([m[1] for m in txt_markers])}")
+    print(f"  Page numbers: {', '.join([m[0] for m in txt_markers])}")
     print()
 
     # Test 2: Check .txt.ann file has page markers

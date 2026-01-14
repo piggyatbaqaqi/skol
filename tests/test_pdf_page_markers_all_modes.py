@@ -16,8 +16,6 @@ import sys
 from pathlib import Path
 import re
 
-from skol import constants
-
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
@@ -26,6 +24,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, BooleanType
 
+import constants
 from skol_classifier.output_formatters import YeddaFormatter
 
 
@@ -56,13 +55,13 @@ def create_test_data_with_markers(spark):
     data = [
         ("test_doc", "article.txt", 1, "This is the introduction paragraph.", "Description", False),
         ("test_doc", "article.txt", 2, "It describes the research.", "Description", False),
-        ("test_doc", "article.txt", 3, "--- PDF Page 1 Label i---", None, True),
+        ("test_doc", "article.txt", 3, "--- PDF Page 1 Label i ---", None, True),
         ("test_doc", "article.txt", 4, "Materials and Methods section.", "Description", False),
         ("test_doc", "article.txt", 5, "We used various techniques.", "Description", False),
-        ("test_doc", "article.txt", 6, "--- PDF Page 2 Label ii---", None, True),
+        ("test_doc", "article.txt", 6, "--- PDF Page 2 Label ii ---", None, True),
         ("test_doc", "article.txt", 7, "Results are presented here.", "Description", False),
         ("test_doc", "article.txt", 8, "The data shows interesting patterns.", "Description", False),
-        ("test_doc", "article.txt", 9, "--- PDF Page 3 Label iii---", None, True),
+        ("test_doc", "article.txt", 9, "--- PDF Page 3 Label iii ---", None, True),
         ("test_doc", "article.txt", 10, "Discussion and conclusions.", "Description", False),
         ("test_doc", "article.txt", 11, "Future work is needed.", "Description", False),
     ]
@@ -151,9 +150,11 @@ def test_page_marker_preservation(spark):
     print("Test 2: Page marker preservation...")
     output_markers = extract_page_markers(output_text)
     print(f"  Found {len(output_markers)} page markers in output")
-    print(f"  Page numbers: {', '.join(output_markers)}")
+    print(f"  Page numbers: {', '.join([m[0] for m in output_markers])}")
+    print(f"  Page labels: {', '.join([m[2] for m in output_markers])}")
     assert len(output_markers) == 3, f"Expected 3 page markers, found {len(output_markers)}"
-    assert output_markers == ['1', '2', '3'], f"Page numbers don't match: {output_markers}"
+    assert [m[0] for m in output_markers] == ['1', '2', '3'], f"Page numbers don't match: {output_markers}"
+    assert [m[2] for m in output_markers] == ['i', 'ii', 'iii'], f"Page labels don't match: {output_markers}"
     print("  ✓ PASS: All 3 page markers preserved correctly")
     print()
 
