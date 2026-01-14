@@ -115,7 +115,7 @@ class FileObject(ABC):
         """PDF page number from PDF page markers (--- PDF Page N Label L ---), or 0 if not present."""
         return self._pdf_label
 
-     @property
+    @property
     def empirical_page_number(self) -> Optional[str]:
         """Empirical page number extracted from document."""
         return self._empirical_page_number
