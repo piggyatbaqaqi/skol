@@ -312,7 +312,8 @@ class CouchDBOutputWriter:
         predictions: DataFrame,
         suffix: str = ".ann",
         coalesce_labels: bool = False,
-        line_level: bool = False
+        line_level: bool = False,
+        verbosity: int = 1
     ) -> None:
         """
         Save predictions to CouchDB as attachments.
@@ -322,13 +323,32 @@ class CouchDBOutputWriter:
             suffix: Suffix for attachment names
             coalesce_labels: Whether to coalesce consecutive labels
             line_level: Whether data is line-level
+            verbosity: Logging level for instrumentation (0=none, 1=warnings, 2=info, 3=debug)
         """
+        from .instrumentation import SparkInstrumentation
+
+        # Initialize instrumentation
+        instr = SparkInstrumentation(verbosity=verbosity)
+
+        instr.log(2, "\n" + "="*70)
+        instr.log(2, "CouchDBOutputWriter.save_annotated: Starting")
+        instr.log(2, "="*70)
+
+        # Analyze input DataFrame
+        instr.analyze_dataframe(predictions, "predictions_input", count=False)
+
+        # Check if lineage is getting too deep - checkpoint if needed
+        if verbosity >= 1:
+            predictions = instr.checkpoint_if_needed(predictions, "predictions_before_format", lineage_threshold=30)
+
         # Format predictions
         if "annotated_value" not in predictions.columns:
+            instr.log(3, "  Formatting predictions...")
             predictions = YeddaFormatter.format_predictions(predictions)
 
         # Coalesce if requested
         if coalesce_labels and line_level:
+            instr.log(3, "  Coalescing consecutive labels...")
             predictions = YeddaFormatter.coalesce_consecutive_labels(
                 predictions, line_level=True
             )
@@ -398,5 +418,22 @@ class CouchDBOutputWriter:
             if attachment_col != "attachment_name":
                 predictions = predictions.withColumnRenamed(attachment_col, "attachment_name")
 
+        # Analyze DataFrame before save
+        instr.log(3, "  Analyzing DataFrame before save_distributed...")
+        instr.analyze_dataframe(predictions, "predictions_before_save", count=False)
+
+        # Check for deep lineage before save
+        if verbosity >= 1:
+            predictions = instr.checkpoint_if_needed(predictions, "predictions_before_save", lineage_threshold=30)
+
+        instr.log(2, "  Calling save_distributed...")
+
         # Use CouchDB connection to save
-        self.conn.save_distributed(predictions, suffix=suffix)
+        self.conn.save_distributed(predictions, suffix=suffix, verbosity=verbosity)
+
+        instr.log(2, "✓ CouchDBOutputWriter.save_annotated complete")
+        instr.log(2, "="*70 + "\n")
+
+        # Print metrics summary
+        if verbosity >= 2:
+            print(instr.get_metrics_summary())

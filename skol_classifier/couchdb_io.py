@@ -329,7 +329,8 @@ class CouchDBConnection:
     def save_distributed(
         self,
         df: DataFrame,
-        suffix: str = ".ann"
+        suffix: str = ".ann",
+        verbosity: int = 1
     ) -> DataFrame:
         """
         Save annotated predictions to CouchDB using foreachPartition.
@@ -340,12 +341,26 @@ class CouchDBConnection:
         Args:
             df: DataFrame with columns: doc_id, attachment_name, final_aggregated_pg
             suffix: Suffix to append to attachment names
+            verbosity: Logging level (0=none, 1=warnings, 2=info, 3=debug)
 
         Returns:
             DataFrame with doc_id, attachment_name, and success columns
         """
+        from .instrumentation import SparkInstrumentation
+
+        # Initialize instrumentation
+        instr = SparkInstrumentation(verbosity=verbosity)
+
+        instr.log(2, "\n" + "="*70)
+        instr.log(2, "save_distributed: Starting CouchDB save operation")
+        instr.log(2, "="*70)
+
+        # Analyze input DataFrame
+        instr.analyze_dataframe(df, "save_input", count=False)
+
         # Use mapPartitions for efficient batch saving
         # Create new connection instance with same params for workers
+        # IMPORTANT: Keep conn_params minimal to reduce closure size
         conn_params = (self.couchdb_url, self.database, self.username, self.password)
 
         def save_partition(partition):
@@ -353,8 +368,20 @@ class CouchDBConnection:
             conn = CouchDBConnection(*conn_params)
             return conn.save_partition(partition, suffix)
 
+        # Measure closure size before applying
+        instr.measure_closure_size(save_partition, "save_partition")
+
+        instr.log(2, "  Applying mapPartitions...")
+
         # Apply mapPartitions using shared schema
         result_df = df.rdd.mapPartitions(save_partition).toDF(self.SAVE_SCHEMA)
+
+        instr.log(2, "✓ mapPartitions complete")
+        instr.log(2, "="*70 + "\n")
+
+        # Print metrics summary if requested
+        if verbosity >= 2:
+            print(instr.get_metrics_summary())
 
         return result_df
 

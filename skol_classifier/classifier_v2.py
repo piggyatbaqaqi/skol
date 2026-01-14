@@ -1222,7 +1222,8 @@ class SkolClassifierV2:
             predictions,
             suffix=self.output_couchdb_suffix,
             coalesce_labels=self.coalesce_labels,
-            line_level=self.line_level
+            line_level=self.line_level,
+            verbosity=self.verbosity
         )
 
     def _format_as_strings(self, predictions: DataFrame) -> List[str]:
