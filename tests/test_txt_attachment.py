@@ -33,9 +33,9 @@ def test_txt_to_text_with_pages():
     print(result)
 
     # Verify page markers were added
-    assert "--- PDF Page 1 ---" in result
-    assert "--- PDF Page 2 ---" in result
-    assert "--- PDF Page 3 ---" in result
+    assert "--- PDF Page 1 Label i ---" in result
+    assert "--- PDF Page 2 Label ii ---" in result
+    assert "--- PDF Page 3 Label iii ---" in result
 
     # Verify content is preserved
     assert "Page 1 content" in result
@@ -57,7 +57,7 @@ def test_txt_parsing_to_dataframe():
     """Test parsing text file into DataFrame with sections."""
 
     # Create test text with YEDDA annotations and form feeds
-    test_text = """--- PDF Page 1 ---
+    test_text = """--- PDF Page 1 Label i ---
 
 [@ Introduction text here.
 This is the introduction section.
@@ -66,7 +66,7 @@ This is the introduction section.
 [@ Nomenclature section
 #Nomenclature*]
 
---- PDF Page 2 ---
+--- PDF Page 2 Label ii ---
 
 [@ Methods section here.
 #Methods*]
@@ -144,9 +144,9 @@ def test_complete_txt_workflow():
     print(text_with_markers[:200] + "...")
 
     # Verify page markers
-    assert "--- PDF Page 1 ---" in text_with_markers
-    assert "--- PDF Page 2 ---" in text_with_markers
-    assert "--- PDF Page 3 ---" in text_with_markers
+    assert "--- PDF Page 1 Label i ---" in text_with_markers
+    assert "--- PDF Page 2 Label ii ---" in text_with_markers
+    assert "--- PDF Page 3 Label iii ---" in text_with_markers
 
     print("\n✓ Form feeds replaced with page markers")
 

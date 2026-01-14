@@ -35,6 +35,8 @@ import re
 from pathlib import Path
 from typing import List, Tuple, Optional
 
+from skol import constants
+
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
@@ -54,8 +56,7 @@ def extract_page_markers_with_positions(text: str) -> List[Tuple[int, str]]:
     """
     markers = []
     lines = text.split('\n')
-
-    marker_pattern = re.compile(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$')
+    marker_pattern = re.compile(constants.pdf_page_pattern)
 
     for i, line in enumerate(lines):
         if marker_pattern.match(line):
@@ -75,7 +76,7 @@ def extract_content_without_markers(text: str) -> str:
         Text with page markers removed
     """
     lines = text.split('\n')
-    marker_pattern = re.compile(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$')
+    marker_pattern = re.compile(constants.pdf_page_pattern)
 
     content_lines = [line for line in lines if not marker_pattern.match(line)]
     return '\n'.join(content_lines)
@@ -129,7 +130,7 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
     # First, strip any existing page markers from ann_content
     # (in case we're re-fixing a document with incorrect markers)
     ann_lines_orig = ann_content.split('\n')
-    marker_pattern = re.compile(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$')
+    marker_pattern = re.compile(constants.pdf_page_pattern)
     ann_lines_clean = [line for line in ann_lines_orig if not marker_pattern.match(line)]
     ann_content = '\n'.join(ann_lines_clean)
 
@@ -153,7 +154,7 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
         for j in range(line_num + 1, min(line_num + 20, len(txt_lines))):
             line = txt_lines[j].strip()
             # Skip empty lines, other markers
-            if line and not re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', line):
+            if line and not re.match(constants.pdf_page_pattern, line):
                 context_lines.append(line)
                 if len(context_lines) >= 3:
                     break
@@ -163,7 +164,7 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
             # Look backwards for content
             for j in range(line_num - 1, max(0, line_num - 20), -1):
                 line = txt_lines[j].strip()
-                if line and not re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', line):
+                if line and not re.match(constants.pdf_page_pattern, line):
                     context_lines.insert(0, line)  # Insert at beginning since we're going backwards
                     if len(context_lines) >= 3:
                         break
@@ -187,7 +188,7 @@ def copy_markers_to_annotated(txt_content: str, ann_content: str) -> str:
             # Check if there's non-marker content between this and previous marker
             lines_between = txt_lines[prev_line_num + 1:line_num]
             non_marker_content = [l for l in lines_between
-                                 if l.strip() and not re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', l)]
+                                 if l.strip() and not re.match(constants.pdf_page_pattern, l)]
 
             if not non_marker_content and len(consecutive_start_markers) > 0:
                 # Still consecutive - add to group

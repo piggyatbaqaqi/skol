@@ -33,6 +33,8 @@ from urllib.parse import urlparse, urlunparse
 from io import BytesIO
 import couchdb
 
+from skol import constants
+
 try:
     import fitz  # PyMuPDF
     PYMUPDF_AVAILABLE = True
@@ -233,7 +235,7 @@ class PDFSectionExtractor:
                 "text",
                 flags=fitz.TEXT_PRESERVE_WHITESPACE | fitz.TEXT_DEHYPHENATE
             )
-            full_text += f"\n--- PDF Page {page_num+1} ---\n"
+            full_text += f"\n--- PDF Page {page_num+1} Label {page.get_label()} ---\n"
             full_text += text
 
         if self.verbosity >= 2:
@@ -246,7 +248,7 @@ class PDFSectionExtractor:
         Process text attachment, replacing form feeds with page markers.
 
         Form feed characters (^L, ASCII 12) are replaced with page number
-        annotations in the format "--- PDF Page N ---" to match PDF output.
+        annotations in the format "--- PDF Page N Label L ---" to match PDF output.
 
         Args:
             txt_data: Text file contents as bytes
@@ -256,7 +258,7 @@ class PDFSectionExtractor:
 
         Example:
             Input: "Page 1 text\\fPage 2 text\\fPage 3 text"
-            Output: "--- PDF Page 1 ---\\nPage 1 text\\n--- PDF Page 2 ---\\nPage 2 text\\n--- PDF Page 3 ---\\nPage 3 text"
+            Output: "--- PDF Page 1 Label i ---\\nPage 1 text\\n--- PDF Page 2 Label ii ---\\nPage 2 text\\n--- PDF Page 3 Label iii ---\\nPage 3 text"
         """
         # Decode bytes to string
         try:
@@ -277,7 +279,8 @@ class PDFSectionExtractor:
                 if not full_text.endswith('\n'):
                     full_text += '\n'
                 full_text += '\n'
-            full_text += f"--- PDF Page {page_num} ---\n"
+            pdf_label = "i"  # Default label; could be improved to match actual labels
+            full_text += f"--- PDF Page {page_num} Label {pdf_label} ---\n"
             full_text += page_content
 
         if self.verbosity >= 2:
@@ -347,7 +350,7 @@ class PDFSectionExtractor:
         """Check if line is blank or only whitespace."""
         return not line.strip()
 
-    def _get_pdf_page_marker(self, line: str):
+    def _get_pdf_page_marker(self, line: str) -> Optional[re.Match]:
         """
         Check if line is a PDF page marker and extract page number.
 
@@ -357,8 +360,7 @@ class PDFSectionExtractor:
         Returns:
             Match object with page number in group(1), or None
         """
-        pattern = r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$'
-        return re.match(pattern, line.strip())
+        return re.match(constants.pdf_page_pattern, line.strip())
 
     def _extract_empirical_page_number(self, lines_buffer: List[str]) -> Optional[int]:
         """
@@ -593,7 +595,7 @@ class PDFSectionExtractor:
         - attachment_name: Name of the PDF attachment
         - paragraph_number: Sequential paragraph number within the attachment
         - line_number: Line number of the first line of the section
-        - page_number: PDF page number from page markers
+        - pdf_page: PDF page number from page markers
         - empirical_page_number: Page number extracted from document itself
         - section_name: Standardized section name (e.g., "Introduction", "Methods")
 
@@ -636,6 +638,7 @@ class PDFSectionExtractor:
         # First pass: identify page boundaries and extract empirical page numbers
         page_boundaries = []  # List of (pdf_page_num, start_line_idx, end_line_idx)
         current_pdf_page = 1
+        current_pdf_label: Optional[str] = None
         page_start_idx = 0
 
         for i, line in enumerate(lines):
@@ -646,6 +649,7 @@ class PDFSectionExtractor:
                     page_boundaries.append((current_pdf_page, page_start_idx, i - 1))
                 # Start of new page
                 current_pdf_page = int(page_marker.group(1))
+                current_pdf_label = page_marker.group(3)  # May be None
                 page_start_idx = i + 1
 
         # Add last page
@@ -670,7 +674,8 @@ class PDFSectionExtractor:
         records = []
         current_paragraph = []
         current_paragraph_start_line = None
-        current_page_number = 1
+        current_pdf_page = 1
+        current_pdf_label = None
         current_section_name = None
         paragraph_number = 0
 
@@ -681,7 +686,8 @@ class PDFSectionExtractor:
             # Check if this is a PDF page marker
             page_marker = self._get_pdf_page_marker(line)
             if page_marker:
-                current_page_number = int(page_marker.group(1))
+                current_pdf_page = int(page_marker.group(1))
+                current_pdf_label = page_marker.group(3)  # May be None
                 continue
 
             # Skip page number lines
@@ -708,8 +714,9 @@ class PDFSectionExtractor:
                                 'doc_id': doc_id,
                                 'attachment_name': attachment_name,
                                 'line_number': current_paragraph_start_line,
-                                'page_number': current_page_number,
-                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'pdf_page': current_pdf_page,
+                                'pdf_label': current_pdf_label,
+                                'empirical_page_number': empirical_page_map.get(current_pdf_page),
                                 'section_name': current_section_name
                             })
                         else:
@@ -721,8 +728,8 @@ class PDFSectionExtractor:
                                 'attachment_name': attachment_name,
                                 'paragraph_number': paragraph_number,
                                 'line_number': current_paragraph_start_line,
-                                'page_number': current_page_number,
-                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'pdf_page': current_pdf_page,
+                                'pdf_label': current_pdf_label,
                                 'section_name': current_section_name,
                             })
                     current_paragraph = []
@@ -743,8 +750,9 @@ class PDFSectionExtractor:
                         'attachment_name': attachment_name,
                         'paragraph_number': paragraph_number,
                         'line_number': line_number,
-                        'page_number': current_page_number,
-                        'empirical_page_number': empirical_page_map.get(current_page_number),
+                        'pdf_page': current_pdf_page,
+                        'pdf_label': current_pdf_label,
+                        'empirical_page_number': empirical_page_map.get(current_pdf_page),
                         'section_name': section_name,  # For headers, use the section name if detected
                     })
 
@@ -763,8 +771,9 @@ class PDFSectionExtractor:
                                 'doc_id': doc_id,
                                 'attachment_name': attachment_name,
                                 'line_number': current_paragraph_start_line,
-                                'page_number': current_page_number,
-                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'pdf_page': current_pdf_page,
+                                'pdf_label': current_pdf_label,
+                                'empirical_page_number': empirical_page_map.get(current_pdf_page),
                                 'section_name': current_section_name
                             })
                         else:
@@ -776,8 +785,9 @@ class PDFSectionExtractor:
                                 'attachment_name': attachment_name,
                                 'paragraph_number': paragraph_number,
                                 'line_number': current_paragraph_start_line,
-                                'page_number': current_page_number,
-                                'empirical_page_number': empirical_page_map.get(current_page_number),
+                                'pdf_page': current_pdf_page,
+                                'pdf_label': current_pdf_label,
+                                'empirical_page_number': empirical_page_map.get(current_pdf_page),
                                 'section_name': current_section_name,
                             })
                     current_paragraph = []
@@ -805,8 +815,8 @@ class PDFSectionExtractor:
                         'doc_id': doc_id,
                         'attachment_name': attachment_name,
                         'line_number': current_paragraph_start_line,
-                        'page_number': current_page_number,
-                        'empirical_page_number': empirical_page_map.get(current_page_number),
+                        'pdf_label': current_pdf_label,
+                        'pdf_page': current_pdf_page,
                         'section_name': current_section_name
                     })
                 else:
@@ -818,8 +828,9 @@ class PDFSectionExtractor:
                         'attachment_name': attachment_name,
                         'paragraph_number': paragraph_number,
                         'line_number': current_paragraph_start_line,
-                        'page_number': current_page_number,
-                        'empirical_page_number': empirical_page_map.get(current_page_number),
+                        'empirical_page_number': empirical_page_map.get(current_pdf_page),
+                        'pdf_page': current_pdf_page,
+                        'pdf_label': current_pdf_label,
                         'section_name': current_section_name,
                     })
 
@@ -839,8 +850,10 @@ class PDFSectionExtractor:
             StructField("attachment_name", StringType(), False),
             StructField("paragraph_number", IntegerType(), False),
             StructField("line_number", IntegerType(), False),
-            StructField("page_number", IntegerType(), False),
-            StructField("empirical_page_number", IntegerType(), True),  # Nullable
+            StructField("pdf_page", IntegerType(), False),
+            StructField("empirical_page_number", IntegerType(), True)
+            StructField("pdf_page", IntegerType(), True),  # Nullable
+            StructField("pdf_label", StringType(), True),  # Nullable
             StructField("section_name", StringType(), True)  # Nullable
         ])
 
@@ -887,8 +900,9 @@ class PDFSectionExtractor:
             - attachment_name: Attachment name
             - paragraph_number: Sequential paragraph number
             - line_number: Line number of first line
-            - page_number: PDF page number (from page markers)
+            - pdf_page: PDF page number (from page markers)
             - empirical_page_number: Page number extracted from document (nullable)
+            - pdf_label: Human-readable label from PDF page marker (nullable)
             - section_name: Standardized section name like "Introduction" (nullable)
             - label: YEDDA annotation label active at first line (nullable)
 
@@ -1031,7 +1045,7 @@ class PDFSectionExtractor:
                 StructField("attachment_name", StringType(), False),
                 StructField("paragraph_number", IntegerType(), False),
                 StructField("line_number", IntegerType(), False),
-                StructField("page_number", IntegerType(), False),
+                StructField("pdf_page", IntegerType(), False),
                 StructField("empirical_page_number", IntegerType(), True),
                 StructField("section_name", StringType(), True)
             ])
@@ -1198,7 +1212,7 @@ class PDFSectionExtractor:
             - doc_id: Document ID
             - attachment_name: PDF attachment name
             - line_number: Line number of the caption
-            - page_number: PDF page number
+            - pdf_page: PDF page number
             - empirical_page_number: Document page number (nullable)
             - section_name: Section where the caption appears (nullable)
 
@@ -1332,12 +1346,12 @@ if __name__ == '__main__':
 
         # Show first 5 sections
         print("\nFirst 5 sections:")
-        sections_df.select("paragraph_number", "value", "page_number", "line_number") \
+        sections_df.select("paragraph_number", "value", "pdf_page", "line_number") \
             .show(5, truncate=80, vertical=False)
 
         # Example queries
         print("\nSections on page 1:")
-        sections_df.filter(sections_df.page_number == 1).select("paragraph_number", "value").show(5, truncate=60)
+        sections_df.filter(sections_df.pdf_page == 1).select("paragraph_number", "value").show(5, truncate=60)
 
     except Exception as e:
         print(f"Error: {e}")

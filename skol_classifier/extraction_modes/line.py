@@ -2,6 +2,7 @@
 Line-level extraction mode implementation.
 """
 
+import re
 from typing import List, Tuple
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import (
@@ -10,6 +11,8 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, StringType, StructType, StructField, IntegerType
 from pyspark.sql.window import Window
+
+from skol import constants
 
 from .mode import ExtractionMode
 from ..preprocessing import ParagraphExtractor
@@ -75,11 +78,13 @@ class LineExtractionMode(ExtractionMode):
             .withColumn("line_number", row_number().over(window_spec))
         )
 
-        # Mark PDF page markers (format: "--- PDF Page N ---")
+        marker_pattern = re.compile(constants.pdf_page_pattern)
+
+        # Mark PDF page markers (format: "--- PDF Page N Label L ---")
         # These will be preserved but not classified
         return exploded_df.withColumn(
             "is_page_marker",
-            col("value").rlike(r"^\s*---\s*PDF\s+Page\s+\d+\s*---\s*$")
+            col("value").rlike(marker_pattern.pattern)
         )
 
     def load_annotated_from_files(

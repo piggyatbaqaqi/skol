@@ -324,6 +324,12 @@ class Paragraph(object):
         return self.last_line.pdf_page
 
     @property
+    def pdf_label(self) -> Optional[str]:
+        if self.last_line is None:
+            return None
+        return self.last_line.pdf_label
+
+    @property
     def empirical_page_number(self) -> Optional[str]:
         if self.last_line is None:
             return None

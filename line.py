@@ -13,6 +13,7 @@ class Line(object):
     _label_end: Optional[str]
     _line_number: int
     _pdf_page: int
+    _pdf_label: Optional[str]
     _empirical_page_number: Optional[str]
     _file = None
     _is_page_marker: bool  # True if this line is a PDF page marker
@@ -32,6 +33,7 @@ class Line(object):
         self._filename = None
         self._page_number = None
         self._pdf_page = 0  # Default to 0 if no PDF page markers present
+        self._pdf_label = None
         self._empirical_page_number = None
         self._line_number = 0
         self._label_start = False
@@ -87,6 +89,10 @@ class Line(object):
         return self._pdf_page
 
     @property
+    def pdf_label(self) -> Optional[str]:
+        return self._pdf_label
+
+    @property
     def empirical_page_number(self) -> Optional[str]:
         return self._empirical_page_number
 
@@ -96,7 +102,7 @@ class Line(object):
 
     @property
     def is_page_marker(self) -> bool:
-        """True if this line is a PDF page marker (--- PDF Page N ---)."""
+        """True if this line is a PDF page marker (--- PDF Page N Label L ---)."""
         return self._is_page_marker
 
     def strip_label_start(self) -> None:

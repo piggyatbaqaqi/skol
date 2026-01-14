@@ -20,6 +20,7 @@ class MockFileObject:
         self.line_number = 1
         self.page_number = 1
         self.pdf_page = 0
+        self.pdf_label = None
         self.empirical_page_number = None
 
 

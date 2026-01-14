@@ -80,7 +80,7 @@ def test_yedda_in_dataframe():
 
     # Create test text with YEDDA annotations and proper paragraph breaks
     # Note: Using correct page marker format
-    test_text = """--- PDF Page 1 ---
+    test_text = """--- PDF Page 1 Label i ---
 
 [@ This is the introduction section.
 #Introduction*]

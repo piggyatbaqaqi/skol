@@ -2,7 +2,7 @@
 """
 Test PDF Page Marker Preservation
 
-This test verifies that PDF page markers (format: --- PDF Page N ---)
+This test verifies that PDF page markers (format: --- PDF Page N Label L ---)
 are properly preserved in the YEDDA annotation output and are NOT
 wrapped in YEDDA annotation blocks.
 
@@ -15,6 +15,8 @@ The test creates sample data with page markers and verifies:
 import sys
 from pathlib import Path
 import re
+
+from skol import constants
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -54,13 +56,13 @@ def create_test_data_with_markers(spark):
     data = [
         ("test_doc", "article.txt", 1, "This is the introduction paragraph.", "Description", False),
         ("test_doc", "article.txt", 2, "It describes the research.", "Description", False),
-        ("test_doc", "article.txt", 3, "--- PDF Page 1 ---", None, True),
+        ("test_doc", "article.txt", 3, "--- PDF Page 1 Label i---", None, True),
         ("test_doc", "article.txt", 4, "Materials and Methods section.", "Description", False),
         ("test_doc", "article.txt", 5, "We used various techniques.", "Description", False),
-        ("test_doc", "article.txt", 6, "--- PDF Page 2 ---", None, True),
+        ("test_doc", "article.txt", 6, "--- PDF Page 2 Label ii---", None, True),
         ("test_doc", "article.txt", 7, "Results are presented here.", "Description", False),
         ("test_doc", "article.txt", 8, "The data shows interesting patterns.", "Description", False),
-        ("test_doc", "article.txt", 9, "--- PDF Page 3 ---", None, True),
+        ("test_doc", "article.txt", 9, "--- PDF Page 3 Label iii---", None, True),
         ("test_doc", "article.txt", 10, "Discussion and conclusions.", "Description", False),
         ("test_doc", "article.txt", 11, "Future work is needed.", "Description", False),
     ]
@@ -70,7 +72,7 @@ def create_test_data_with_markers(spark):
 
 def extract_page_markers(text):
     """Extract PDF page markers from text."""
-    return re.findall(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$', text, re.MULTILINE)
+    return re.findall(constants.pdf_page_pattern, text, re.MULTILINE)
 
 
 def check_markers_not_in_yedda_blocks(text):
@@ -80,7 +82,7 @@ def check_markers_not_in_yedda_blocks(text):
 
     markers_in_blocks = []
     for block in yedda_blocks:
-        if re.search(r'---\s*PDF\s+Page\s+\d+\s*---', block):
+        if re.search(constants.pdf_page_pattern, block):
             markers_in_blocks.append(block[:100])
 
     return markers_in_blocks
@@ -133,11 +135,11 @@ def test_page_marker_preservation(spark):
     print("Test 1: Output block count...")
     # After coalescing:
     # - Block 0: lines 1-2 coalesced (Description)
-    # - Block 1: marker "--- PDF Page 1 ---"
+    # - Block 1: marker "--- PDF Page 1 Label i ---"
     # - Block 2: lines 4-5 coalesced (Description)
-    # - Block 3: marker "--- PDF Page 2 ---"
+    # - Block 3: marker "--- PDF Page 2 Label ii ---"
     # - Block 4: lines 7-8 coalesced (Description)
-    # - Block 5: marker "--- PDF Page 3 ---"
+    # - Block 5: marker "--- PDF Page 3 Label iii ---"
     # - Block 6: lines 10-11 coalesced (Description)
     # Total: 7 blocks
     print(f"  Output has {len(output_lines)} blocks")
@@ -159,7 +161,7 @@ def test_page_marker_preservation(spark):
     print("Test 3: Page markers are standalone blocks...")
     marker_blocks = []
     for i, line in enumerate(output_lines):
-        if re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', line):
+        if re.match(constants.pdf_page_pattern, line):
             marker_blocks.append((i+1, line))
 
     print(f"  Found {len(marker_blocks)} standalone marker blocks")

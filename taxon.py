@@ -9,8 +9,8 @@ from line import Line
 class Taxon(object):
     FIELDNAMES = [
         'serial_number',
-        'filename', 'human_url', 'pdf_url', 'label', 'paragraph_number', 'page_number',
-        'pdf_page', 'empirical_page_number', 'body'
+        'filename', 'human_url', 'pdf_url', 'label', 'paragraph_number', 'pdf_page',
+        'pdf_label', 'empirical_page_number', 'body'
     ]
     LONG_GAP = 6  # 6 Paragraphs is long enough to give up.
 
@@ -93,10 +93,10 @@ class Taxon(object):
             },
             'line_number': line_number,
             'paragraph_number': pp.paragraph_number,
-            'page_number': pp.page_number,
-            # pdf_page comes from "--- PDF Page N ---" markers in text (from pdf_section_extractor.py)
+            # pdf_page comes from "--- PDF Page N Label L---" markers in text (from pdf_section_extractor.py)
             # Will be 0 if markers are not present in the text
             'pdf_page': pp.pdf_page,
+            'pdf_label': pp.pdf_label,
             'empirical_page_number': str(pp.empirical_page_number) if pp.empirical_page_number is not None else None,
         }
         return retval

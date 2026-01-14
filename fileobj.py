@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Iterator, Optional
 import regex as re  # type: ignore
 
+import constants
 
 class FileObject(ABC):
     """
@@ -14,6 +15,7 @@ class FileObject(ABC):
     _line_number: int
     _page_number: int
     _pdf_page: int
+    _pdf_label: Optional[str]
     _empirical_page_number: Optional[str]
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
@@ -57,7 +59,7 @@ class FileObject(ABC):
         This template method handles common line processing logic:
         - Tracking line and page numbers
         - Detecting page breaks (form feed characters)
-        - Detecting PDF page markers (--- PDF Page N ---)
+        - Detecting PDF page markers (--- PDF Page N Label L ---)
         - Extracting empirical page numbers
         - Creating Line objects
 
@@ -79,10 +81,9 @@ class FileObject(ABC):
                 # Strip the form feed
                 self._set_empirical_page(l_str[1:])
 
-            # Check for PDF page marker (from pdf_section_extractor.py)
-            # Format: "--- PDF Page N ---"
-            pdf_page_match = re.match(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$', l_str.strip())
-            if pdf_page_match:
+            if pdf_page_match := re.match(
+                constants.pdf_page_pattern, l_str.strip()
+            ):
                 self._pdf_page = int(pdf_page_match.group(1))
                 # Create a special Line object for the page marker
                 # This line will be preserved in output but not classified
@@ -106,10 +107,15 @@ class FileObject(ABC):
 
     @property
     def pdf_page(self) -> int:
-        """PDF page number from PDF page markers (--- PDF Page N ---), or 0 if not present."""
+        """PDF page number from PDF page markers (--- PDF Page N Label L ---), or 0 if not present."""
         return self._pdf_page
 
     @property
+    def pdf_label(self) -> Optional[str]:
+        """PDF page number from PDF page markers (--- PDF Page N Label L ---), or 0 if not present."""
+        return self._pdf_label
+
+     @property
     def empirical_page_number(self) -> Optional[str]:
         """Empirical page number extracted from document."""
         return self._empirical_page_number

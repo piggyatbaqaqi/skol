@@ -4,6 +4,8 @@
 import sys
 from pathlib import Path
 
+from skol import constants
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
@@ -27,7 +29,7 @@ def analyze_markers(doc_id):
     txt_lines = txt_content.split('\n')
 
     # Find all markers and analyze patterns
-    marker_pattern = re.compile(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$')
+    marker_pattern = re.compile(constants.pdf_page_pattern)
 
     markers = []
     for i, line in enumerate(txt_lines):

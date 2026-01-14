@@ -161,6 +161,7 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
             - paragraph_number: Paragraph number of first nomenclature paragraph
             - page_number: Page number of first nomenclature paragraph
             - pdf_page: PDF page number (same as page_number)
+            - pdf_label: Human-readable PDF page label.
             - empirical_page_number: Empirical page number of first nomenclature paragraph
     """
     for taxon in partition:
@@ -274,6 +275,7 @@ class TaxonExtractor:
             StructField("paragraph_number", IntegerType(), True),
             StructField("page_number", IntegerType(), True),
             StructField("pdf_page", IntegerType(), True),
+            StructField("pdf_label", StringType(), True),
             StructField("empirical_page_number", StringType(), True),
             StructField("_id", StringType(), True),
             StructField("json_annotated", StringType(), True)

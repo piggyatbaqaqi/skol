@@ -51,6 +51,7 @@ class CouchDBFile(FileObject):
         self._line_number = 0
         self._page_number = 1
         self._pdf_page = 0  # Will be updated when PDF page markers are encountered
+        self._pdf_label = None  # Will be updated when PDF page markers are encountered
         self._empirical_page_number = None
 
         # Split content into lines

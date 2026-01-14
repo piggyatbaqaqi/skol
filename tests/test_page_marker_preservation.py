@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
+import constants
 from env_config import get_env_config
 
 
@@ -66,7 +67,7 @@ def test_page_markers(doc_id: str, database: str = "skol_dev"):
         return False
 
     txt_content = db.get_attachment(doc_id, 'article.txt').read().decode('utf-8')
-    txt_markers = re.findall(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$', txt_content, re.MULTILINE)
+    txt_markers = re.findall(constants.pdf_page_pattern, txt_content, re.MULTILINE)
 
     if not txt_markers:
         print("  ✗ FAIL: No page markers found in article.txt")
@@ -74,7 +75,7 @@ def test_page_markers(doc_id: str, database: str = "skol_dev"):
         return False
 
     print(f"  ✓ PASS: Found {len(txt_markers)} page markers in article.txt")
-    print(f"  Page numbers: {', '.join(txt_markers)}")
+    print(f"  Page numbers: {', '.join([m[1] for m in txt_markers])}")
     print()
 
     # Test 2: Check .txt.ann file has page markers
@@ -85,7 +86,7 @@ def test_page_markers(doc_id: str, database: str = "skol_dev"):
         return True  # Not a failure, just not generated yet
 
     ann_content = db.get_attachment(doc_id, 'article.txt.ann').read().decode('utf-8')
-    ann_markers = re.findall(r'^---\s*PDF\s+Page\s+(\d+)\s*---\s*$', ann_content, re.MULTILINE)
+    ann_markers = re.findall(constants.pdf_page_pattern, ann_content, re.MULTILINE)
 
     if not ann_markers:
         print("  ✗ FAIL: No page markers found in article.txt.ann")
@@ -115,7 +116,7 @@ def test_page_markers(doc_id: str, database: str = "skol_dev"):
 
     markers_in_blocks = 0
     for block in yedda_blocks:
-        if re.search(r'---\s*PDF\s+Page\s+\d+\s*---', block):
+        if re.search(constants.pdf_page_pattern, block):
             markers_in_blocks += 1
             print(f"  Found marker inside block: {block[:100]}...")
 
@@ -131,7 +132,7 @@ def test_page_markers(doc_id: str, database: str = "skol_dev"):
     print("Test 5: Sample output around page markers...")
     lines = ann_content.split('\n')
     for i, line in enumerate(lines):
-        if re.match(r'^---\s*PDF\s+Page\s+\d+\s*---\s*$', line):
+        if re.match(constants.pdf_page_pattern, line):
             start = max(0, i - 2)
             end = min(len(lines), i + 3)
             print(f"\n  Context around line {i+1}:")

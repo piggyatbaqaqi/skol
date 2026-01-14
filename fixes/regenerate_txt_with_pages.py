@@ -4,7 +4,7 @@ Regenerate .txt Attachments with PDF Page Markers
 
 This script regenerates all .txt attachments in a CouchDB database by:
 1. Extracting text from PDF attachments
-2. Adding "--- PDF Page N ---" markers between pages
+2. Adding "--- PDF Page N Label L ---" markers between pages
 3. Saving as .txt attachments (replaces existing ones)
 
 The page markers are essential for proper page tracking in the extraction pipeline.
