@@ -51,9 +51,9 @@ def print_article(article, index):
 
     # Print abstract (truncated)
     if 'abstract' in article:
-        abstract = article['abstract']
-        if len(abstract) > 200:
-            abstract = abstract[:200] + '...'
+        abstract: Optional(str) = article['abstract']
+        if len(str(abstract)) > 200:
+            abstract = str(abstract)[:200] + '...'
         print(f"  {'abstract':20s}: {abstract}")
 
     # Print keywords
