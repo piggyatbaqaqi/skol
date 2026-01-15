@@ -4,11 +4,14 @@ Tests for couchdb_io.py module.
 Run with: pytest skol_classifier/couchdb_io_test.py -v
 """
 
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 import pytest
 from pyspark.sql import SparkSession, Row
 
 from .couchdb_io import CouchDBConnection
+
+# Module path for patching - couchdb is imported directly in couchdb_io
+COUCHDB_MODULE_PATH = 'skol_classifier.couchdb_io.couchdb'
 
 
 # Fixtures
@@ -72,7 +75,7 @@ class TestCouchDBConnectionInit:
 class TestCouchDBConnectionConnect:
     """Tests for CouchDBConnection._connect method."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_connect_without_credentials(self, mock_server_class):
         """Test connection without credentials."""
         mock_server = MagicMock()
@@ -90,7 +93,7 @@ class TestCouchDBConnectionConnect:
         mock_server_class.assert_called_once_with("http://localhost:5984")
         assert conn._server is mock_server
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_connect_with_credentials(self, mock_server_class):
         """Test connection with credentials."""
         mock_server = MagicMock()
@@ -110,7 +113,7 @@ class TestCouchDBConnectionConnect:
 
         assert mock_server.resource.credentials == ("admin", "secret")
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_connect_idempotent(self, mock_server_class):
         """Test that multiple connects don't create multiple servers."""
         mock_server = MagicMock()
@@ -135,7 +138,7 @@ class TestCouchDBConnectionConnect:
 class TestCouchDBConnectionDbProperty:
     """Tests for CouchDBConnection.db property."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_db_property_connects_if_needed(self, mock_server_class):
         """Test that db property triggers connection if not connected."""
         mock_server = MagicMock()
@@ -158,7 +161,7 @@ class TestCouchDBConnectionDbProperty:
 class TestCouchDBConnectionGetAllDocIds:
     """Tests for CouchDBConnection.get_all_doc_ids method."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_get_all_doc_ids_all(self, mock_server_class):
         """Test getting all document IDs."""
         mock_server = MagicMock()
@@ -182,7 +185,7 @@ class TestCouchDBConnectionGetAllDocIds:
         assert "doc3" in result
         assert "_design/test" not in result
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_get_all_doc_ids_prefix(self, mock_server_class):
         """Test getting document IDs with prefix pattern."""
         mock_server = MagicMock()
@@ -204,7 +207,7 @@ class TestCouchDBConnectionGetAllDocIds:
         assert "taxon_2" in result
         assert "other_doc" not in result
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_get_all_doc_ids_exact(self, mock_server_class):
         """Test getting document ID with exact match."""
         mock_server = MagicMock()
@@ -228,7 +231,7 @@ class TestCouchDBConnectionGetAllDocIds:
 class TestCouchDBConnectionGetDocumentList:
     """Tests for CouchDBConnection.get_document_list method."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_get_document_list_txt_pattern(self, mock_server_class, spark):
         """Test getting document list with .txt pattern."""
         mock_server = MagicMock()
@@ -279,7 +282,7 @@ class TestCouchDBConnectionGetDocumentList:
 class TestCouchDBConnectionFetchPartition:
     """Tests for CouchDBConnection.fetch_partition method."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_fetch_partition_basic(self, mock_server_class):
         """Test basic partition fetching."""
         mock_server = MagicMock()
@@ -324,7 +327,7 @@ class TestCouchDBConnectionFetchPartition:
 class TestCouchDBConnectionSavePartition:
     """Tests for CouchDBConnection.save_partition method."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_save_partition_basic(self, mock_server_class):
         """Test basic partition saving."""
         mock_server = MagicMock()
@@ -390,7 +393,7 @@ class TestCouchDBConnectionSchemas:
 class TestCouchDBConnectionProcessPartition:
     """Tests for CouchDBConnection.process_partition_with_func method."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_process_partition_with_func(self, mock_server_class):
         """Test processing partition with custom function."""
         mock_server = MagicMock()
@@ -438,7 +441,7 @@ class TestCouchDBConnectionProcessPartition:
 class TestCouchDBConnectionDistributedMethods:
     """Tests for load_distributed and save_distributed methods."""
 
-    @patch('couchdb.Server')
+    @patch(COUCHDB_MODULE_PATH + '.Server')
     def test_load_distributed(self, mock_server_class, spark):
         """Test load_distributed method structure."""
         mock_server = MagicMock()
@@ -461,9 +464,16 @@ class TestCouchDBConnectionDistributedMethods:
             "doc_id", "human_url", "pdf_url", "attachment_name", "value"
         }
 
+    @patch('skol_classifier.couchdb_io.SparkInstrumentation')
     @patch.object(CouchDBConnection, 'save_partition')
-    def test_save_distributed_creates_result_df(self, mock_save_partition, spark):
+    def test_save_distributed_creates_result_df(
+        self, mock_save_partition, mock_instr_class, spark
+    ):
         """Test that save_distributed creates proper result DataFrame."""
+        # Mock instrumentation to avoid toDebugString issues
+        mock_instr = MagicMock()
+        mock_instr_class.return_value = mock_instr
+
         # Create mock save_partition that yields success results
         def mock_save(partition, suffix):
             for row in partition:
