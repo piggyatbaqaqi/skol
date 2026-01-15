@@ -139,8 +139,14 @@ class SparkInstrumentation:
             self.log(2, f"    Rows: {row_count:,} (counted in {elapsed:.1f}s)")
 
         # Check lineage depth as proxy for execution plan size
-        lineage_str = df._jdf.toDebugString()
-        lineage_depth = lineage_str.count('\n')
+        # Note: toDebugString() may not exist in Spark Connect mode
+        try:
+            lineage_str = df._jdf.toDebugString()
+            lineage_depth = lineage_str.count('\n')
+        except Exception:
+            # Spark Connect or other mode without toDebugString
+            lineage_depth = 0
+            self.log(3, f"  (lineage depth unavailable - Spark Connect mode)")
         metrics["lineage_depth"] = lineage_depth
 
         if lineage_depth > 50:
