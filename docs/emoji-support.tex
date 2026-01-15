@@ -1,0 +1,21 @@
+% Emoji support for LuaLaTeX/XeLaTeX
+% This file configures font fallback to render emoji characters like ✅ and ❌
+
+\usepackage{fontspec}
+
+% Load Noto Color Emoji by file path for reliable font finding
+\newfontfamily\emojifont{NotoColorEmoji.ttf}[
+    Path=/usr/share/fonts/truetype/noto/,
+    Renderer=Harfbuzz
+]
+
+% Use newunicodechar to automatically substitute emoji with the emoji font
+\usepackage{newunicodechar}
+\newunicodechar{✅}{{\emojifont ✅}}
+\newunicodechar{❌}{{\emojifont ❌}}
+\newunicodechar{⚠}{{\emojifont ⚠}}
+\newunicodechar{ℹ}{{\emojifont ℹ}}
+\newunicodechar{🔧}{{\emojifont 🔧}}
+\newunicodechar{📝}{{\emojifont 📝}}
+\newunicodechar{🚀}{{\emojifont 🚀}}
+\newunicodechar{💡}{{\emojifont 💡}}
