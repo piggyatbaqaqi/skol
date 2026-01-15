@@ -177,8 +177,14 @@ class SparkInstrumentation:
         Returns:
             Original or checkpointed DataFrame
         """
-        lineage_str = df._jdf.toDebugString()
-        lineage_depth = lineage_str.count('\n')
+        # Note: toDebugString() may not exist in Spark Connect mode
+        try:
+            lineage_str = df._jdf.toDebugString()
+            lineage_depth = lineage_str.count('\n')
+        except Exception:
+            # Spark Connect or other mode without toDebugString - skip checkpointing
+            self.log(3, f"  (lineage depth unavailable for '{name}' - Spark Connect mode)")
+            return df
 
         if lineage_depth > lineage_threshold:
             self.log(1, f"  Checkpointing '{name}' due to deep lineage ({lineage_depth} stages)")

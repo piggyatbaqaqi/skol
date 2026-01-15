@@ -3,6 +3,7 @@ Utility functions for SKOL text classification
 """
 
 import glob
+import os
 import warnings
 from typing import List
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
@@ -28,15 +29,16 @@ def get_file_list(
         FileNotFoundError: If the folder doesn't exist
         PermissionError: If access to the folder is denied
     """
+    # Check if folder exists - glob.glob() silently returns [] for missing paths
+    if not os.path.isdir(folder):
+        raise FileNotFoundError(f"Folder '{folder}' not found.")
+
     try:
         files = [
             file for file in glob.glob(f'{folder}/{pattern}', recursive=True)
             if exclude_pattern not in file
         ]
         return files
-    except FileNotFoundError:
-        print(f"Folder '{folder}' not found.")
-        raise
     except PermissionError:
         print(f"Permission denied to access folder '{folder}'.")
         raise

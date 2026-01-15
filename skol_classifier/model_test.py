@@ -112,8 +112,11 @@ class TestCreateModel:
 class TestLogisticRegressionSkolModel:
     """Tests for LogisticRegressionSkolModel class."""
 
-    def test_build_classifier(self):
-        """Test building logistic regression classifier."""
+    def test_build_classifier(self, spark):
+        """Test building logistic regression classifier.
+
+        Note: spark fixture required as Spark ML stages need an active context.
+        """
         model = LogisticRegressionSkolModel()
         classifier = model.build_classifier()
 
