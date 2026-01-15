@@ -210,7 +210,9 @@ def predict_and_save(
         print(f"{'='*70}")
         print(f"✓ Predictions saved to CouchDB")
         print(f"  Database: {config['ingest_db_name']}")
-        print(f"  Documents processed: {doc_count}")
+        if model_config.get('verbosity', 1) >= 2:
+            # We have not calculated doc_count for lower verbosity.
+            print(f"  Documents processed: {doc_count}")
 
     finally:
         # Clean up Spark session
