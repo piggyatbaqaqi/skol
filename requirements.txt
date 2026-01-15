@@ -32,3 +32,4 @@ habanero
 # git+https://github.com/josephisaacturner/pypaperretriever.git
 bibtexparser==2.0.0b3
 ninja
+wrapt

@@ -39,6 +39,7 @@ class HybridSkolModel(SkolModel):
         features_col: str = "combined_idf",
         label_col: str = "label_indexed",
         nomenclature_threshold: float = 0.6,
+        input_size: int = 1000,
         logistic_params: Optional[Dict[str, Any]] = None,
         rnn_params: Optional[Dict[str, Any]] = None,
         **model_params
@@ -51,8 +52,9 @@ class HybridSkolModel(SkolModel):
             label_col: Name of label column
             nomenclature_threshold: Confidence threshold for logistic Nomenclature predictions
                                    (0.0-1.0, default 0.6)
+            input_size: Size of input feature vectors for RNN (default 1000)
             logistic_params: Parameters for logistic regression model
-            rnn_params: Parameters for RNN model
+            rnn_params: Parameters for RNN model (can override input_size)
             **model_params: Additional parameters (verbosity, etc.)
         """
         super().__init__(features_col=features_col, label_col=label_col, **model_params)
@@ -69,8 +71,10 @@ class HybridSkolModel(SkolModel):
             **logistic_config
         )
 
-        # Initialize RNN model
+        # Initialize RNN model - use input_size from rnn_params if provided, else use default
         rnn_config = rnn_params or {}
+        if 'input_size' not in rnn_config:
+            rnn_config['input_size'] = input_size
         rnn_config.update({'verbosity': self.verbosity})
         self.rnn_model = RNNSkolModel(
             features_col=features_col,

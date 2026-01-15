@@ -32,3 +32,5 @@ habanero
 # git+https://github.com/josephisaacturner/pypaperretriever.git
 internetarchive>=5.7.1
 bibtexparser==2.0.0b3
+wrapt>=2.0.1
+ninja>=1.13.0
