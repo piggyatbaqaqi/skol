@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+# Create skol group if it doesn't exist
+if ! getent group skol > /dev/null 2>&1; then
+    groupadd --system skol
+    echo "Created group 'skol'"
+fi
+
+# Create skol user if it doesn't exist
+if ! getent passwd skol > /dev/null 2>&1; then
+    useradd --system --gid skol --home-dir /opt/skol --shell /bin/false skol
+    echo "Created user 'skol'"
+fi
+
+# Create /opt/skol directory structure
+mkdir -p /opt/skol/bin
+mkdir -p /opt/skol/data
+mkdir -p /opt/skol/models
+chown -R skol:skol /opt/skol
+chmod 755 /opt/skol
+
+# Create log directory
+mkdir -p /var/log/skol
+chown skol:skol /var/log/skol
+chmod 755 /var/log/skol
+
+# Create with_skol wrapper script
+cat > /opt/skol/bin/with_skol << 'EOF'
+#!/bin/bash
+# Wrapper script to run skol commands with proper environment
+export SKOL_HOME=/opt/skol
+export SKOL_DATA=/opt/skol/data
+export SKOL_MODELS=/opt/skol/models
+exec "$@"
+EOF
+chmod 755 /opt/skol/bin/with_skol
+chown skol:skol /opt/skol/bin/with_skol
+
+#DEBHELPER#
+
+exit 0

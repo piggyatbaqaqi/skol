@@ -7,7 +7,7 @@ name = "skol"
 version = "0.1.0"
 description = "Taxonomic text classification and extraction pipeline for mycological literature"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "GPL-3.0-or-later"}
 authors = [
     {name = "Christopher Murphy"},
     {name = "La Monte Henry Piggy Yarroll"},

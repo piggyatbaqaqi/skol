@@ -1,0 +1,18 @@
+[Unit]
+Description=SKOL Taxonomic Classification Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=skol
+Group=skol
+WorkingDirectory=/opt/skol
+RemainAfterExit=yes
+
+# Environment
+Environment=SKOL_HOME=/opt/skol
+Environment=SKOL_DATA=/opt/skol/data
+Environment=SKOL_MODELS=/opt/skol/models
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,27 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include setup.py
+include stdeb.cfg
+recursive-include debian *
+recursive-include bin *.py
+recursive-include skol_classifier *.py *.txt *.json
+recursive-include ingestors *.py
+recursive-include training *.py
+recursive-include yedda_parser *.py
+include constants.py
+include couchdb_file.py
+include file.py
+include fileobj.py
+include finder.py
+include indexfungorum_authors.py
+include iso4.py
+include label.py
+include line.py
+include mycobank_authors.py
+include mycobank_species.py
+include nomenclature.py
+include paragraph.py
+include skol_compat.py
+include taxon.py
+include tokenizer.py
