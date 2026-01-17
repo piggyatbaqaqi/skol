@@ -104,8 +104,14 @@ USE_I18N = True
 USE_TZ = True
 
 
+# URL prefix when running behind a reverse proxy at a subpath
+# e.g., FORCE_SCRIPT_NAME='/skol' for https://example.com/skol/
+FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME', None)
+
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+# Prefix with FORCE_SCRIPT_NAME if set
+_script_name = FORCE_SCRIPT_NAME or ''
+STATIC_URL = f'{_script_name}/static/'
 STATICFILES_DIRS = [SKOL_DJANGO_ROOT / 'static']
 
 # Default primary key field type
@@ -154,9 +160,9 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@skol.example.com')
 
 # Authentication Configuration
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = f'{_script_name}/accounts/login/'
+LOGIN_REDIRECT_URL = f'{_script_name}/'
+LOGOUT_REDIRECT_URL = f'{_script_name}/'
 PASSWORD_RESET_TIMEOUT = 259200  # 3 days in seconds
 
 # Logging Configuration

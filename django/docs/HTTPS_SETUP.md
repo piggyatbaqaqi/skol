@@ -29,14 +29,87 @@ Using Let's Encrypt (recommended):
 
 ```bash
 sudo apt install certbot python3-certbot-apache
-sudo certbot --apache -d skol.synoptickeyof.life
+sudo certbot --apache -d synoptickeyof.life
 ```
 
 Or if you have existing certificates, note their paths (typically):
-- Certificate: `/etc/letsencrypt/live/skol.synoptickeyof.life/fullchain.pem`
-- Private Key: `/etc/letsencrypt/live/skol.synoptickeyof.life/privkey.pem`
+- Certificate: `/etc/letsencrypt/live/synoptickeyof.life/fullchain.pem`
+- Private Key: `/etc/letsencrypt/live/synoptickeyof.life/privkey.pem`
 
-## Step 3: Configure Apache Virtual Host
+## Deployment Options
+
+You can deploy SKOL Django in two ways:
+
+### Option A: At a Subpath (e.g., https://synoptickeyof.life/skol/)
+
+This is useful when you have an existing website and want to add SKOL Django at a specific path.
+
+### Option B: At a Subdomain (e.g., https://skol.synoptickeyof.life/)
+
+This gives SKOL Django its own subdomain.
+
+---
+
+## Option A: Subpath Configuration
+
+### Apache Configuration
+
+Add to your existing site's VirtualHost in `/etc/apache2/sites-available/your-site-ssl.conf`:
+
+```apache
+<VirtualHost *:443>
+    ServerName synoptickeyof.life
+
+    # ... your existing SSL and site configuration ...
+
+    # SKOL Django at /skol path
+    <Location /skol>
+        ProxyPass http://127.0.0.1:8000
+        ProxyPassReverse http://127.0.0.1:8000
+        RequestHeader set X-Forwarded-Proto "https"
+        RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
+        RequestHeader set X-Script-Name "/skol"
+    </Location>
+
+    # ... rest of your configuration ...
+</VirtualHost>
+```
+
+### Django Configuration
+
+Edit `/opt/skol/django/skol-django.env`:
+
+```bash
+# Set to True when running behind HTTPS reverse proxy
+SKOL_HTTPS=True
+
+# Add your domain to trusted origins
+CSRF_TRUSTED_ORIGINS=https://synoptickeyof.life
+
+# URL path prefix - must match Apache's Location path
+FORCE_SCRIPT_NAME=/skol
+
+# Redis configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### Restart Services
+
+```bash
+sudo systemctl restart skol-django
+sudo systemctl reload apache2
+```
+
+### Verify
+
+Visit https://synoptickeyof.life/skol/
+
+---
+
+## Option B: Subdomain Configuration
+
+### Apache Configuration
 
 Create `/etc/apache2/sites-available/skol-django-ssl.conf`:
 
@@ -87,12 +160,11 @@ Enable the site:
 
 ```bash
 sudo a2ensite skol-django-ssl
-sudo a2dissite 000-default  # Optional: disable default site
 sudo apache2ctl configtest
 sudo systemctl reload apache2
 ```
 
-## Step 4: Configure Django for HTTPS
+### Django Configuration
 
 Edit `/opt/skol/django/skol-django.env`:
 
@@ -103,32 +175,36 @@ SKOL_HTTPS=True
 # Add your domain to trusted origins
 CSRF_TRUSTED_ORIGINS=https://skol.synoptickeyof.life
 
+# Leave empty for subdomain deployment (no path prefix)
+FORCE_SCRIPT_NAME=
+
 # Redis configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
-## Step 5: Restart Services
+### Restart Services
 
 ```bash
 sudo systemctl restart skol-django
 sudo systemctl restart apache2
 ```
 
-## Step 6: Verify Configuration
+### Verify
 
-1. Check Django is running:
-   ```bash
-   sudo systemctl status skol-django
-   curl http://127.0.0.1:8000/
-   ```
+Visit https://skol.synoptickeyof.life/
 
-2. Check Apache is proxying correctly:
-   ```bash
-   curl -I https://skol.synoptickeyof.life/
-   ```
+---
 
-3. Verify HTTPS in browser - visit https://skol.synoptickeyof.life/
+## Configuration File Location
+
+The Django environment configuration file is at:
+
+```
+/opt/skol/django/skol-django.env
+```
+
+This file is read by the systemd service and sets environment variables for Django.
 
 ## Troubleshooting
 
@@ -154,9 +230,13 @@ sudo tail -f /var/log/apache2/skol-django-access.log
 - Ensure `SKOL_HTTPS=True` is set
 - Restart Django after changing environment: `sudo systemctl restart skol-django`
 
+**404 on subpath deployment**
+- Ensure `FORCE_SCRIPT_NAME` matches the Apache `<Location>` path exactly
+- Restart Django after changes: `sudo systemctl restart skol-django`
+
 **Static files not loading**
-- Django's development server serves static files
-- For production, consider using `collectstatic` and serving via Apache
+- Check `FORCE_SCRIPT_NAME` is set correctly (static URLs include the prefix)
+- Django's development server serves static files automatically
 
 ### Certificate renewal (Let's Encrypt)
 

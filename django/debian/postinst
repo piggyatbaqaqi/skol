@@ -58,6 +58,8 @@ chmod 755 ${SKOL_HOME}/bin/with_skol_django
 chown skol:skol ${SKOL_HOME}/bin/with_skol_django
 
 # Create environment file for systemd service customization
+# Only create if it doesn't exist (preserve user customizations on upgrade)
+if [ ! -f ${SKOL_HOME}/django/skol-django.env ]; then
 cat > ${SKOL_HOME}/django/skol-django.env << 'EOF'
 # SKOL Django Environment Configuration
 # Edit this file to customize the Django environment
@@ -69,10 +71,16 @@ SKOL_HTTPS=False
 # Example: https://skol.example.com,https://www.skol.example.com
 CSRF_TRUSTED_ORIGINS=
 
+# URL path prefix when running at a subpath (e.g., /skol)
+# Leave empty if running at the root of a domain
+# Example: FORCE_SCRIPT_NAME=/skol
+FORCE_SCRIPT_NAME=
+
 # Redis configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
 EOF
+fi
 chown skol:skol ${SKOL_HOME}/django/skol-django.env
 chmod 640 ${SKOL_HOME}/django/skol-django.env
 
