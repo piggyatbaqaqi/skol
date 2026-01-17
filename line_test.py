@@ -28,6 +28,14 @@ class TestLine(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r'Label open not at start of line: [^:]+:[0-9]+:'):
             lineify(test_data)
 
+    def test_middle_end(self):
+        test_data = textwrap.dedent("""\
+        multiformibus ornata.#Description*] Habitat in herbidis locis
+        """).split('\n')
+
+        with self.assertRaisesRegex(ValueError, r'Label close not at end of line: [^:]+:[0-9]+:'):
+            lineify(test_data)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -148,6 +148,9 @@ class Line(object):
         match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]$', self._value)
         if not match:
             self._label_end = None
+            # Check if there's a label close marker in the middle (not at end) - that's an error
+            if re.search(r'\#.*\*\]', self._value):
+                raise ValueError('Label close not at end of line: %r' % self)
             return False
         else:
             (self._value, self._label_end) = match.groups()
