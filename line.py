@@ -65,8 +65,29 @@ class Line(object):
             if hasattr(fileobj, 'pdf_url'):
                 self._pdf_url = fileobj.pdf_url
 
-        self.strip_label_start()
-        self.strip_label_end()
+        had_label_start = self.strip_label_start()
+
+        # Handle form feed that was hidden inside annotation start marker
+        # e.g., "[@\fdolor sit..." -> after stripping "[@", we have "\fdolor sit..."
+        # Only do this if we actually stripped a label start marker (to avoid double-counting
+        # form feeds that were already handled by FileObject.read_line())
+        if had_label_start and self._value and self._value.startswith('\f') and fileobj:
+            fileobj._page_number += 1
+            fileobj._line_number = 1
+            self._value = self._value[1:]  # Strip the form feed
+            self._page_number = fileobj.page_number
+            self._line_number = fileobj.line_number
+            # Extract empirical page number from content after form feed
+            fileobj._set_empirical_page(self._value)
+            self._empirical_page_number = fileobj.empirical_page_number
+
+        had_label_end = self.strip_label_end()
+
+        # After stripping annotation end marker, check if a page number is now visible
+        # (e.g., "dolor sit  xii  #Header*]" -> "dolor sit  xii  " exposes trailing "xii")
+        # Only do this when we actually stripped an annotation marker
+        if had_label_end:
+            self._check_empirical_page_after_strip(fileobj)
 
     def __repr__(self) -> str:
         return '%s:%d: start: %s end: %s value: %r' % (
@@ -105,24 +126,53 @@ class Line(object):
         """True if this line is a PDF page marker (--- PDF Page N Label L ---)."""
         return self._is_page_marker
 
-    def strip_label_start(self) -> None:
+    def strip_label_start(self) -> bool:
+        """Strip label start marker from line. Returns True if a label was stripped."""
         if self.startswith('[@'):
             self._label_start = True
             self._value = self._value[2:]
+            if '[@' in self._value:
+                raise ValueError('Label open not at start of line: %s' % self)
+            return True
         else:
             self._label_start = False
-        if '[@' in self._value:
-            raise ValueError('Label open not at start of line: %s' % self)
+            if self._value and '[@' in self._value:
+                raise ValueError('Label open not at start of line: %s' % self)
+            return False
 
-    def strip_label_end(self) -> None:
+    def strip_label_end(self) -> bool:
+        """Strip label end marker from line. Returns True if a label was stripped."""
+        if not self._value:
+            self._label_end = None
+            return False
         match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]$', self._value)
         if not match:
             self._label_end = None
+            return False
         else:
             (self._value, self._label_end) = match.groups()
-        match = re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]', self._value)
-        if match:
+        if self._value and re.search(r'(?P<line>.*)\#(?P<label_value>.*)\*\]', self._value):
             raise ValueError('Label close not at end of line: %r' % self)
+        return True
+
+    def _check_empirical_page_after_strip(self, fileobj: Optional[FileObject]) -> None:
+        """
+        Check for empirical page number after stripping annotation markers.
+
+        Annotated blocks like "dolor sit  xii  #Header*]" have the page number
+        hidden in the middle. After stripping "#Header*]", the "xii" becomes
+        visible at the trailing position and should be detected.
+
+        Updates both this Line's and the FileObject's empirical_page_number
+        so subsequent lines inherit the new page number.
+        """
+        if not self._value or not fileobj:
+            return
+
+        # Use the FileObject's method to extract and set the empirical page number
+        # This updates the FileObject so subsequent lines inherit the new page number
+        fileobj._set_empirical_page(self._value)
+        self._empirical_page_number = fileobj.empirical_page_number
 
     def startswith(self, tokens: Union[str, List[str]]) -> bool:
         if not self._value:
