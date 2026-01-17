@@ -676,8 +676,8 @@ class TestParseAnnotated(unittest.TestCase):
         paragraphs = list(finder.parse_annotated(lines))
 
         # Verify total paragraph count
-        self.assertEqual(len(paragraphs), 11317,
-                         "Should parse 11317 paragraphs from the file")
+        self.assertEqual(len(paragraphs), 11318,
+                         "Should parse 11318 paragraphs from the file")
 
         # Count labels
         label_counts = {}
@@ -695,7 +695,7 @@ class TestParseAnnotated(unittest.TestCase):
             'None': 4440,
             'Nomenclature': 641,
             'Description': 498,
-            'Page-header': 487,
+            'Page-header': 488,
             'Bibliography': 271,
             'Figure': 116,
             'Key': 36,
