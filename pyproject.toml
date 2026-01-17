@@ -1,0 +1,204 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skol"
+version = "0.1.0"
+description = "Taxonomic text classification and extraction pipeline for mycological literature"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Christopher Murphy"},
+    {name = "La Monte Henry Piggy Yarroll"},
+    {name = "David Caspers"},
+]
+keywords = [
+    "text classification",
+    "taxonomy",
+    "mycology",
+    "nlp",
+    "pyspark",
+    "machine learning",
+    "couchdb",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+
+dependencies = [
+    "CouchDB>=1.2",
+    "numpy",
+    "pandas",
+    "pyspark>=3.5.0,<4.0",
+    "redis>=4.0.0",
+    "regex>=2024.0.0",
+    "requests>=2.32.0",
+    "scikit-learn>=1.0.0",
+    "tqdm",
+    "python-dateutil>=2.9.0",
+]
+
+[project.optional-dependencies]
+ml = [
+    "tensorflow",
+    "tf-keras",
+    "torch",
+    "transformers>=4.44.0",
+    "sentence-transformers>=3.0.1",
+    "accelerate>=1.12.0",
+    "huggingface-hub>=0.35.0",
+    "spark-nlp",
+]
+pdf = [
+    "pymupdf4llm>=0.2.0",
+    "pytesseract",
+]
+ingest = [
+    "habanero",
+    "paperscraper",
+    "bibtexparser>=2.0.0b3",
+]
+mcp = [
+    "mcp>=1.22.0",
+]
+neo4j = [
+    "neo4j",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "pytest-xdist",
+    "black>=24.0",
+    "ruff",
+    "mypy",
+]
+all = [
+    "skol[ml,pdf,ingest,mcp,neo4j,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/piggyatbaqaqi/skol"
+Repository = "https://github.com/piggyatbaqaqi/skol"
+
+[project.scripts]
+skol-ingest = "bin.ingest:main"
+skol-train = "bin.train_classifier:main"
+skol-predict = "bin.predict_classifier:main"
+skol-extract-taxa = "bin.extract_taxa_to_couchdb:main"
+skol-embed-taxa = "bin.embed_taxa:main"
+
+[tool.setuptools.packages.find]
+include = [
+    "skol_classifier",
+    "skol_classifier.*",
+    "ingestors",
+    "ingestors.*",
+    "training",
+    "training.*",
+    "yedda_parser",
+    "yedda_parser.*",
+    "bin",
+]
+exclude = [
+    "build*",
+    "dist*",
+    "docs*",
+    "tests*",
+    "django*",
+    "webapp*",
+    "jupyter*",
+    "*.egg-info*",
+]
+
+# Root-level Python modules (not in subdirectories)
+[tool.setuptools]
+py-modules = [
+    "constants",
+    "couchdb_file",
+    "file",
+    "fileobj",
+    "finder",
+    "indexfungorum_authors",
+    "iso4",
+    "label",
+    "line",
+    "mycobank_authors",
+    "mycobank_species",
+    "nomenclature",
+    "paragraph",
+    "skol_compat",
+    "taxon",
+    "tokenizer",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.txt", "*.md", "*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["*_test.py"]
+norecursedirs = [
+    ".git",
+    "build",
+    "dist",
+    "docs",
+    "tests",
+    "django",
+    "webapp",
+    "*.egg-info",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312", "py313"]
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | build
+    | dist
+    | django
+    | webapp
+    | node_modules
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+    "django",
+    "webapp",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # Line too long - handled by formatter
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "django/",
+    "webapp/",
+    "build/",
+    "dist/",
+]
