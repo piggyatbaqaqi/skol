@@ -2,4 +2,4 @@
 * Python code formatting follows PEP-8.
 * All new code gets PEP 484 and PEP 526 type annotation. New code needs to pass mypy type checking.
 * New markdown documents live in docs/ unless otherwise requested.
-* Functional tests live in tests/ and need not by pytest compatible.
+* Functional tests live in tests/ and need not be pytest compatible.
