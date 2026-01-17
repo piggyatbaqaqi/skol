@@ -1,12 +1,24 @@
 #!/bin/bash
 set -e
 
+SKOL_HOME=/opt/skol
+SKOL_DJANGO_VENV=${SKOL_HOME}/django-venv
+
 # Stop and disable the service before removal
 if [ -d /run/systemd/system ]; then
     systemctl stop skol-django.service 2>/dev/null || true
     systemctl disable skol-django.service 2>/dev/null || true
     rm -f /etc/systemd/system/skol-django.service
     systemctl daemon-reload
+fi
+
+# Remove the wrapper script
+rm -f ${SKOL_HOME}/bin/with_skol_django 2>/dev/null || true
+
+# Remove the virtual environment
+if [ -d "${SKOL_DJANGO_VENV}" ]; then
+    echo "Removing Python virtual environment..."
+    rm -rf "${SKOL_DJANGO_VENV}"
 fi
 
 #DEBHELPER#

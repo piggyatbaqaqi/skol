@@ -1,6 +1,23 @@
 #!/bin/bash
 set -e
 
+SKOL_HOME=/opt/skol
+SKOL_VENV=${SKOL_HOME}/venv
+
+# Remove command symlinks in /opt/skol/bin
+for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa; do
+    rm -f ${SKOL_HOME}/bin/${cmd} 2>/dev/null || true
+done
+
+# Remove the with_skol wrapper
+rm -f ${SKOL_HOME}/bin/with_skol 2>/dev/null || true
+
+# Remove the virtual environment
+if [ -d "${SKOL_VENV}" ]; then
+    echo "Removing Python virtual environment..."
+    rm -rf "${SKOL_VENV}"
+fi
+
 #DEBHELPER#
 
 exit 0

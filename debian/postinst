@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+SKOL_HOME=/opt/skol
+SKOL_VENV=${SKOL_HOME}/venv
+
 # Create skol group if it doesn't exist
 if ! getent group skol > /dev/null 2>&1; then
     groupadd --system skol
@@ -9,33 +12,79 @@ fi
 
 # Create skol user if it doesn't exist
 if ! getent passwd skol > /dev/null 2>&1; then
-    useradd --system --gid skol --home-dir /opt/skol --shell /bin/false skol
+    useradd --system --gid skol --home-dir ${SKOL_HOME} --shell /bin/false skol
     echo "Created user 'skol'"
 fi
 
 # Create /opt/skol directory structure
-mkdir -p /opt/skol/bin
-mkdir -p /opt/skol/data
-mkdir -p /opt/skol/models
-chown -R skol:skol /opt/skol
-chmod 755 /opt/skol
+mkdir -p ${SKOL_HOME}/bin
+mkdir -p ${SKOL_HOME}/data
+mkdir -p ${SKOL_HOME}/models
+chown -R skol:skol ${SKOL_HOME}
+chmod 755 ${SKOL_HOME}
 
 # Create log directory
 mkdir -p /var/log/skol
 chown skol:skol /var/log/skol
 chmod 755 /var/log/skol
 
-# Create with_skol wrapper script
-cat > /opt/skol/bin/with_skol << 'EOF'
+# Create Python virtual environment and install dependencies
+echo "Creating Python virtual environment at ${SKOL_VENV}..."
+python3 -m venv ${SKOL_VENV}
+
+echo "Upgrading pip..."
+${SKOL_VENV}/bin/pip install --upgrade pip
+
+echo "Installing skol package from local wheel..."
+${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/skol-*.whl
+
+# Set ownership of venv to skol user
+chown -R skol:skol ${SKOL_VENV}
+
+# Create with_skol wrapper script that activates the venv
+# When invoked via symlink, it runs the corresponding .py file
+cat > ${SKOL_HOME}/bin/with_skol << 'EOF'
 #!/bin/bash
 # Wrapper script to run skol commands with proper environment
+# Can be invoked directly: with_skol python script.py
+# Or via symlink: if symlinked as 'foo', runs foo.py
+
 export SKOL_HOME=/opt/skol
 export SKOL_DATA=/opt/skol/data
 export SKOL_MODELS=/opt/skol/models
-exec "$@"
+export VIRTUAL_ENV=/opt/skol/venv
+export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+unset PYTHONHOME
+
+# Add skol bin directory to Python path for imports
+export PYTHONPATH="${SKOL_HOME}/bin:${PYTHONPATH}"
+
+# Get the name this script was invoked as
+SCRIPT_NAME=$(basename "$0")
+
+# If invoked as 'with_skol', run the command as-is
+if [ "$SCRIPT_NAME" = "with_skol" ]; then
+    exec "$@"
+else
+    # Invoked via symlink - run the corresponding .py file
+    exec python "${SKOL_HOME}/bin/${SCRIPT_NAME}.py" "$@"
+fi
 EOF
-chmod 755 /opt/skol/bin/with_skol
-chown skol:skol /opt/skol/bin/with_skol
+chmod 755 ${SKOL_HOME}/bin/with_skol
+chown skol:skol ${SKOL_HOME}/bin/with_skol
+
+# Create symlinks for each command in /opt/skol/bin
+for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa; do
+    ln -sf with_skol ${SKOL_HOME}/bin/${cmd}
+done
+
+# Set ownership of bin directory
+chown -R skol:skol ${SKOL_HOME}/bin
+
+echo "SKOL installation complete."
+echo "Commands available in ${SKOL_HOME}/bin/:"
+echo "  ingest, train_classifier, predict_classifier, extract_taxa_to_couchdb, embed_taxa"
+echo "Or use: ${SKOL_HOME}/bin/with_skol <command>"
 
 #DEBHELPER#
 

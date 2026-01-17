@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+SKOL_HOME=/opt/skol
+SKOL_DJANGO_VENV=${SKOL_HOME}/django-venv
+
 # Create skol group if it doesn't exist
 if ! getent group skol > /dev/null 2>&1; then
     groupadd --system skol
@@ -9,7 +12,7 @@ fi
 
 # Create skol user if it doesn't exist
 if ! getent passwd skol > /dev/null 2>&1; then
-    useradd --system --gid skol --home-dir /opt/skol --shell /bin/false skol
+    useradd --system --gid skol --home-dir ${SKOL_HOME} --shell /bin/false skol
     echo "Created user 'skol'"
 fi
 
@@ -18,9 +21,40 @@ mkdir -p /var/log/skol
 chown skol:skol /var/log/skol
 chmod 755 /var/log/skol
 
-# Create opt directory for skol
-mkdir -p /opt/skol
-chown skol:skol /opt/skol
+# Create opt directory for skol (including bin for wrapper scripts)
+mkdir -p ${SKOL_HOME}
+mkdir -p ${SKOL_HOME}/bin
+mkdir -p ${SKOL_HOME}/django
+chown -R skol:skol ${SKOL_HOME}
+
+# Create Python virtual environment for Django and install dependencies
+echo "Creating Python virtual environment at ${SKOL_DJANGO_VENV}..."
+python3 -m venv ${SKOL_DJANGO_VENV}
+
+echo "Upgrading pip..."
+${SKOL_DJANGO_VENV}/bin/pip install --upgrade pip
+
+echo "Installing skol-django package from local wheel..."
+${SKOL_DJANGO_VENV}/bin/pip install ${SKOL_HOME}/wheels/skol_django-*.whl
+
+# Set ownership of venv to skol user
+chown -R skol:skol ${SKOL_DJANGO_VENV}
+
+# Create with_skol_django wrapper script that activates the venv
+cat > ${SKOL_HOME}/bin/with_skol_django << 'EOF'
+#!/bin/bash
+# Wrapper script to run skol-django commands with proper environment
+export SKOL_HOME=/opt/skol
+export SKOL_DATA=/opt/skol/data
+export SKOL_MODELS=/opt/skol/models
+export VIRTUAL_ENV=/opt/skol/django-venv
+export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+export DJANGO_SETTINGS_MODULE=skolweb.settings
+unset PYTHONHOME
+exec "$@"
+EOF
+chmod 755 ${SKOL_HOME}/bin/with_skol_django
+chown skol:skol ${SKOL_HOME}/bin/with_skol_django
 
 # Install systemd service
 if [ -d /run/systemd/system ]; then
@@ -29,6 +63,9 @@ if [ -d /run/systemd/system ]; then
     systemctl enable skol-django.service
     echo "SKOL Django service installed. Start with: systemctl start skol-django"
 fi
+
+echo "SKOL Django installation complete."
+echo "Use '/opt/skol/bin/with_skol_django <command>' to run django commands."
 
 #DEBHELPER#
 

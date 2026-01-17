@@ -2,3 +2,4 @@ pytest-xdist
 stdeb
 debhelper
 build
+mypy
