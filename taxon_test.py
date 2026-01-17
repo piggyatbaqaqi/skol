@@ -22,6 +22,22 @@ class MockFileObject:
         self.pdf_page = 0
         self.pdf_label = None
         self.empirical_page_number = None
+        self._empirical_page_number = None
+
+    def _set_empirical_page(self, line: str) -> None:
+        """Mock implementation of empirical page extraction."""
+        import regex as re
+        match = re.search(
+            r'(^\s*(?P<leading>[mdclxvi\d]+\b))|((?P<trailing>\b[mdclxvi\d]+)\s*$)',
+            line
+        )
+        if not match:
+            self._empirical_page_number = None
+        else:
+            self._empirical_page_number = (
+                match.group('leading') or match.group('trailing')
+            )
+        self.empirical_page_number = self._empirical_page_number
 
 
 def lineify_with_doc_id(lines: List[tuple]) -> List[Line]:
