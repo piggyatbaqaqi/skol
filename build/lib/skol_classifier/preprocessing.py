@@ -3,23 +3,28 @@ Text preprocessing utilities for SKOL classifier
 """
 
 import regex as re
-from typing import List
+from typing import List, Optional
 from pyspark.ml import Transformer
+from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param, Params
+from pyspark.ml.util import DefaultParamsReadable, DefaultParamsWritable
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import udf, col, explode, collect_list, regexp_extract
 from pyspark.sql.types import ArrayType, StringType
+
+
+SUFFIXES=r'(ae}al|am|an|ar|ba|be|bi|ca|ch|ci|ck|da|di|ea|ed|ei|en|er|es|ev|gi|ha|he|ia|ic|id|ii|is|ix|íz|la|le|li|ll|ma|me|na|nd|ni|ns|o|oa|oé|of|oi|on|or|os|ox|pa|ph|ps|ra|re|ri|rt|sa|se|si|ta|te|ti|ts|ty|ua|ud|um|up|us|va|vá|xa|ya|yi|ys|za|zi)'
 
 
 # Regex patterns for nomenclature detection
 NOMENCLATURE_RE = re.compile(
     r'^([-\w≡=.*|:]*\s+)?'
     r'('
-        r'([A-Z]\w*(aceae|idae|iformes|ales|ineae|inae)?)'
+        r'([A-Z]\w*' + SUFFIXES + r'?)'
         r'|(\w+\b)'
     r')'
     r'\s'
     r'('
-        r'(\w+(aceae|idae|iformes|ales|ineae|inae)?)'
+        r'(\w+' + SUFFIXES + r'?)'
         r'|(\w+\b)'
     r')'
     r'.*'
@@ -44,9 +49,12 @@ TAXON_PATTERN = (
 )
 
 
-class SuffixTransformer(Transformer):
+class SuffixTransformer(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
     """
     Custom PySpark Transformer that extracts word suffixes (2-4 characters).
+
+    This transformer is MLWritable and MLReadable, so it can be saved and loaded
+    as part of PySpark ML pipelines.
     """
 
     def __init__(self, inputCol: str = "words", outputCol: str = "suffixes"):
@@ -57,9 +65,22 @@ class SuffixTransformer(Transformer):
             inputCol: Column name containing tokenized words
             outputCol: Column name for output suffixes
         """
-        super().__init__()
-        self.input_col = inputCol
-        self.output_col = outputCol
+        super(SuffixTransformer, self).__init__()
+        self._setDefault(inputCol="words", outputCol="suffixes")
+        self.setParams(inputCol=inputCol, outputCol=outputCol)
+
+    def setParams(self, inputCol: str = "words", outputCol: str = "suffixes"):
+        """
+        Set parameters for the transformer.
+
+        Args:
+            inputCol: Column name containing tokenized words
+            outputCol: Column name for output suffixes
+
+        Returns:
+            self
+        """
+        return self._set(inputCol=inputCol, outputCol=outputCol)
 
     @staticmethod
     def extract_suffixes(words: List[str]) -> List[str]:
@@ -89,12 +110,15 @@ class SuffixTransformer(Transformer):
         """
         suffixes_udf = udf(self.extract_suffixes, ArrayType(StringType()))
 
-        if isinstance(df.schema[self.input_col].dataType, ArrayType):
-            return df.withColumn(self.output_col, suffixes_udf(df[self.input_col]))
+        input_col = self.getInputCol()
+        output_col = self.getOutputCol()
+
+        if isinstance(df.schema[input_col].dataType, ArrayType):
+            return df.withColumn(output_col, suffixes_udf(df[input_col]))
         else:
             raise ValueError(
-                f"Column '{self.input_col}' is not an array type but a "
-                f"{type(self.input_col)}."
+                f"Column '{input_col}' is not an array type but a "
+                f"{type(df.schema[input_col].dataType)}."
             )
 
 
@@ -275,3 +299,42 @@ class ParagraphExtractor:
         if label not in ['Nomenclature', 'Description']:
             return 'Misc-exposition'
         return label
+
+
+
+def AnnotatedTextParser(
+    extraction_mode: str = 'paragraph',
+    collapse_labels: bool = True
+):
+    """
+    Factory function for creating AnnotatedTextParser instances.
+
+    Creates the appropriate parser subclass based on extraction_mode.
+    This function maintains backwards compatibility with the old class-based API.
+
+    Args:
+        extraction_mode: Extraction granularity ('line', 'paragraph', 'section')
+        collapse_labels: If True, collapse labels to 3 main categories
+
+    Returns:
+        An AnnotatedTextParser subclass instance
+
+    Example:
+        parser = AnnotatedTextParser(extraction_mode='section')
+        result_df = parser.parse(df)
+    """
+    from .extraction_modes import get_parser
+
+    return get_parser(mode=extraction_mode, collapse_labels=collapse_labels)
+
+
+__all__ = [
+    'SuffixTransformer',
+    'ParagraphExtractor',
+    'AnnotatedTextParser',
+    'SUFFIXES',
+    'NOMENCLATURE_RE',
+    'TABLE_KEYWORDS',
+    'FIGURE_KEYWORDS',
+    'TAXON_PATTERN',None
+]

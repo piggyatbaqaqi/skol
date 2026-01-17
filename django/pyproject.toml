@@ -7,7 +7,7 @@ name = "skol-django"
 version = "0.1.0"
 description = "Django web application for SKOL taxonomic search and user management"
 readme = "README.md"
-license = {text = "GPL-3.0-or-later"}
+license = {file = "LICENSE"}
 authors = [
     {name = "Christopher Murphy"},
     {name = "La Monte Henry Piggy Yarroll"},
