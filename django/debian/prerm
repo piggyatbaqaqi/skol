@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+# Stop and disable the service before removal
+if [ -d /run/systemd/system ]; then
+    systemctl stop skol-django.service 2>/dev/null || true
+    systemctl disable skol-django.service 2>/dev/null || true
+    rm -f /etc/systemd/system/skol-django.service
+    systemctl daemon-reload
+fi
+
+#DEBHELPER#
+
+exit 0

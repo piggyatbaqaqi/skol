@@ -1,0 +1,6 @@
+include README.md
+include requirements.txt
+include stdeb.cfg
+recursive-include debian *
+recursive-include templates *
+recursive-include static *

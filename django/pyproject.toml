@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skol-django"
+version = "0.1.0"
+description = "Django web application for SKOL taxonomic search and user management"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Christopher Murphy"},
+    {name = "La Monte Henry Piggy Yarroll"},
+    {name = "David Caspers"},
+]
+keywords = [
+    "django",
+    "taxonomy",
+    "mycology",
+    "semantic search",
+    "embeddings",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+
+dependencies = [
+    "Django>=4.2,<5.0",
+    "djangorestframework>=3.14.0",
+    "django-cors-headers>=4.0.0",
+    "redis>=4.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django",
+]
+
+[project.urls]
+Homepage = "https://github.com/piggyatbaqaqi/skol"
+Repository = "https://github.com/piggyatbaqaqi/skol"
+
+[project.scripts]
+skol-django = "skolweb.manage:main"
+
+[tool.setuptools.packages.find]
+include = [
+    "skolweb",
+    "skolweb.*",
+    "search",
+    "search.*",
+    "accounts",
+    "accounts.*",
+]
+
+[tool.setuptools.package-data]
+"templates" = ["**/*.html"]
+"static" = ["**/*"]
+"*" = ["*.txt", "*.md", "*.json"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "skolweb.settings"
+python_files = ["test_*.py", "*_test.py"]
