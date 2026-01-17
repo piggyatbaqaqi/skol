@@ -44,7 +44,6 @@ fpm -s python -t deb \
     --deb-group root \
     --after-install debian/postinst \
     --before-remove debian/prerm \
-    --config-files /usr/share/skol-django/skol-django.service \
     --package "deb_dist/${PACKAGE}_${VERSION}_all.deb" \
     setup.py
 
