@@ -361,12 +361,13 @@ class SequencePreprocessor(Transformer):
         struct_col = F.struct(*fcols).alias("zipped_arrays")
 
         # Collect structs containing line number etc, then sort and extract
-        grouped = df.groupBy(self.docIdCol).agg(
-            F.sort_array(
-                collect_list(struct_col)
-            ).alias("sorted_data"),
-            F.first(self.valueCol).alias(self.valueCol)
-        )
+        agg_exprs = [F.sort_array(collect_list(struct_col)).alias("sorted_data")]
+
+        # Only include valueCol if it exists in the DataFrame
+        if self.valueCol in df.columns:
+            agg_exprs.append(F.first(self.valueCol).alias(self.valueCol))
+
+        grouped = df.groupBy(self.docIdCol).agg(*agg_exprs)
 
         return grouped
 

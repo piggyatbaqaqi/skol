@@ -460,8 +460,8 @@ class TestRNNSkolModelLoadSave:
         )
         model.classifier_model = keras_model
 
-        # Save model
-        model_path = str(tmp_path / "test_model")
+        # Save model (Keras 3 requires .keras extension)
+        model_path = str(tmp_path / "test_model.keras")
         model.save(model_path)
 
         # Create new model and load
