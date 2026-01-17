@@ -1,2 +1,4 @@
 pytest-xdist
 stdeb
+debhelper
+build
