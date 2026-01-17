@@ -8,7 +8,6 @@ Tests will be skipped if TensorFlow is not available.
 """
 
 import pytest
-import numpy as np
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     StructType, StructField, StringType, IntegerType, DoubleType, ArrayType
@@ -17,7 +16,6 @@ from pyspark.ml.linalg import Vectors, VectorUDT
 
 # Check if TensorFlow is available
 try:
-    import tensorflow as tf
     from tensorflow import keras
     KERAS_AVAILABLE = True
 except ImportError:
