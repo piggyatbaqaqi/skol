@@ -8,6 +8,10 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# SKOL_DJANGO_ROOT is set when running via deb package (/opt/skol/django)
+# Fall back to BASE_DIR for development
+SKOL_DJANGO_ROOT = Path(os.environ.get('SKOL_DJANGO_ROOT', BASE_DIR))
+
 LOG_FILE_PATH = "/var/log/skol/skolweb.log"
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -50,7 +54,7 @@ ROOT_URLCONF = 'skolweb.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [SKOL_DJANGO_ROOT / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -102,13 +106,28 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [SKOL_DJANGO_ROOT / 'static']
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings - allow all origins for development
 CORS_ALLOW_ALL_ORIGINS = True
+
+# HTTPS/Proxy settings
+# When behind a reverse proxy (Apache/nginx), trust the X-Forwarded-Proto header
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Set these to True in production when using HTTPS
+CSRF_COOKIE_SECURE = os.environ.get('SKOL_HTTPS', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.environ.get('SKOL_HTTPS', 'False') == 'True'
+
+# CSRF trusted origins - add your domain here
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
 
 # REST Framework settings
 REST_FRAMEWORK = {

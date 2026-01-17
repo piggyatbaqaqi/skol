@@ -47,6 +47,7 @@ cat > ${SKOL_HOME}/bin/with_skol_django << 'EOF'
 export SKOL_HOME=/opt/skol
 export SKOL_DATA=/opt/skol/data
 export SKOL_MODELS=/opt/skol/models
+export SKOL_DJANGO_ROOT=/opt/skol/django
 export VIRTUAL_ENV=/opt/skol/django-venv
 export PATH="${VIRTUAL_ENV}/bin:${PATH}"
 export DJANGO_SETTINGS_MODULE=skolweb.settings
@@ -55,6 +56,25 @@ exec "$@"
 EOF
 chmod 755 ${SKOL_HOME}/bin/with_skol_django
 chown skol:skol ${SKOL_HOME}/bin/with_skol_django
+
+# Create environment file for systemd service customization
+cat > ${SKOL_HOME}/django/skol-django.env << 'EOF'
+# SKOL Django Environment Configuration
+# Edit this file to customize the Django environment
+
+# Set to True when running behind HTTPS reverse proxy
+SKOL_HTTPS=False
+
+# Comma-separated list of trusted origins for CSRF protection
+# Example: https://skol.example.com,https://www.skol.example.com
+CSRF_TRUSTED_ORIGINS=
+
+# Redis configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+EOF
+chown skol:skol ${SKOL_HOME}/django/skol-django.env
+chmod 640 ${SKOL_HOME}/django/skol-django.env
 
 # Install systemd service
 if [ -d /run/systemd/system ]; then

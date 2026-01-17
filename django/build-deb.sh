@@ -23,9 +23,11 @@ echo "=== Building Debian package with fpm ==="
 rm -rf dist/ build/ *.egg-info deb_dist/ staging/
 
 # Create output and staging directories
+DJANGO_ROOT="/opt/skol/django"
 mkdir -p deb_dist
 mkdir -p staging${WHEEL_DIR}
 mkdir -p staging${SERVICE_DIR}
+mkdir -p staging${DJANGO_ROOT}
 
 # Build the wheel
 echo "Building Python wheel..."
@@ -36,6 +38,11 @@ cp dist/*.whl staging${WHEEL_DIR}/
 
 # Copy service file to staging area
 cp debian/skol-django.service staging${SERVICE_DIR}/
+
+# Copy templates and static directories
+echo "Copying templates and static files..."
+cp -r templates staging${DJANGO_ROOT}/
+cp -r static staging${DJANGO_ROOT}/
 
 # Build the deb using fpm from the staging directory
 # --no-auto-depends prevents fpm from generating dependencies automatically
