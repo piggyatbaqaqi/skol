@@ -36,8 +36,8 @@ ${PYTHON} -m venv ${SKOL_VENV}
 echo "Upgrading pip..."
 ${SKOL_VENV}/bin/pip install --upgrade pip
 
-echo "Installing skol package from local wheel..."
-${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/skol-*.whl
+echo "Installing all packages from local wheels..."
+${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 
 # Set ownership of venv to skol user
 chown -R skol:skol ${SKOL_VENV}
