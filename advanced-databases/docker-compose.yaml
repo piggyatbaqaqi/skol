@@ -62,10 +62,12 @@ services:
       - "127.0.0.1:5984:5984"
       - "::1:5984:5984"
       - "6984:6984"
+    secrets:
+      - couchdb_password
     environment:
       # Use these variables to set up the admin user and password
       - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=SU2orange!
+      - COUCHDB_PASSWORD=/run/secrets/couchdb_password
     volumes:
       - /data/skol/couchdb/data:/opt/couchdb/data
       - /etc/letsencrypt:/etc/letsencrypt
@@ -74,27 +76,11 @@ services:
 
 ##### volumes #####
 volumes:
-  cassandra-data:
-    driver: local
-  elasticsearch-data:
-    driver: local
-  minio-data:
-    driver: local
-  mongo-data:
-    driver: local
-  mssql-data:
-    driver: local
   neo4j-data:
     driver: local
   redis-data:
     driver: local
   metastore-postgresql:
-    driver: local
-  hdfs-datanode:
-    driver: local
-  hdfs-namenode:
-    driver: local
-  couchdb-data:
     driver: local
 
 
@@ -107,3 +93,7 @@ networks:
       config:
         - subnet: 10.10.10.0/24
           gateway: 10.10.10.1
+
+secrets:
+  couchdb_password:
+    file: /home/skol/.couchdb_password
