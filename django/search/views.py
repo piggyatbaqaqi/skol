@@ -1,11 +1,16 @@
 """
 REST API views for SKOL semantic search.
 """
+import logging
+import traceback
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 import redis
+
+logger = logging.getLogger(__name__)
 
 # Note: dr_drafts_mycosearch and skol packages are installed via pip
 # No sys.path manipulation needed in production
@@ -166,16 +171,16 @@ class SearchView(APIView):
             })
 
         except ValueError as e:
-            import traceback
             tb = traceback.format_exc()
+            logger.error(f"Embedding error for prompt='{prompt[:50]}...', embedding={embedding_name}: {e}\n{tb}")
             return Response(
-                {'error': f'Embedding error: {str(e)}', 'traceback': tb},
+                {'error': f'Embedding error: {str(e)}'},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            import traceback
             tb = traceback.format_exc()
+            logger.error(f"Search failed for prompt='{prompt[:50]}...', embedding={embedding_name}: {e}\n{tb}")
             return Response(
-                {'error': f'Search failed: {str(e)}', 'traceback': tb},
+                {'error': f'Search failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

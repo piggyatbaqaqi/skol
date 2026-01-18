@@ -215,5 +215,10 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'search': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
