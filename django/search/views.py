@@ -1,24 +1,14 @@
 """
 REST API views for SKOL semantic search.
 """
-import sys
-from pathlib import Path
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 import redis
 
-# Add dr-drafts-mycosearch to path (but don't import yet)
-# Note: We add the parent directory, not src/, because sota_search.py does "from src import data"
-dr_drafts_path = Path(__file__).resolve().parent.parent.parent.parent / 'dr-drafts-mycosearch'
-if str(dr_drafts_path) not in sys.path:
-    sys.path.insert(0, str(dr_drafts_path))
-
-# Add skol to path for skol_compat module
-skol_path = Path(__file__).resolve().parent.parent.parent.parent / 'skol'
-if str(skol_path) not in sys.path:
-    sys.path.insert(0, str(skol_path))
+# Note: dr_drafts_mycosearch and skol packages are installed via pip
+# No sys.path manipulation needed in production
 
 # Note: Experiment is imported lazily inside SearchView.post() to avoid
 # loading heavy ML dependencies (TensorFlow, transformers, etc.) at Django startup
@@ -124,7 +114,7 @@ class SearchView(APIView):
             import skol_compat  # noqa: F401 (imported for side effects)
 
             # Lazy import to avoid loading heavy ML dependencies at Django startup
-            from src.sota_search import Experiment
+            from dr_drafts_mycosearch.sota_search import Experiment
 
             # Create experiment instance
             experiment = Experiment(
