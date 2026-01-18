@@ -273,7 +273,6 @@ class TaxonExtractor:
             StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
-            StructField("page_number", IntegerType(), True),
             StructField("pdf_page", IntegerType(), True),
             StructField("pdf_label", StringType(), True),
             StructField("empirical_page_number", StringType(), True),
