@@ -3,6 +3,7 @@ set -e
 
 SKOL_HOME=/opt/skol
 SKOL_DJANGO_VENV=${SKOL_HOME}/django-venv
+PYTHON=python3.13
 
 # Create skol group if it doesn't exist
 if ! getent group skol > /dev/null 2>&1; then
@@ -28,8 +29,8 @@ mkdir -p ${SKOL_HOME}/django
 chown -R skol:skol ${SKOL_HOME}
 
 # Create Python virtual environment for Django and install dependencies
-echo "Creating Python virtual environment at ${SKOL_DJANGO_VENV}..."
-python3 -m venv ${SKOL_DJANGO_VENV}
+echo "Creating Python 3.13 virtual environment at ${SKOL_DJANGO_VENV}..."
+${PYTHON} -m venv ${SKOL_DJANGO_VENV}
 
 echo "Upgrading pip..."
 ${SKOL_DJANGO_VENV}/bin/pip install --upgrade pip

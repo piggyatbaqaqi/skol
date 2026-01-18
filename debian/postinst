@@ -3,6 +3,7 @@ set -e
 
 SKOL_HOME=/opt/skol
 SKOL_VENV=${SKOL_HOME}/venv
+PYTHON=python3.13
 
 # Create skol group if it doesn't exist
 if ! getent group skol > /dev/null 2>&1; then
@@ -29,8 +30,8 @@ chown skol:skol /var/log/skol
 chmod 755 /var/log/skol
 
 # Create Python virtual environment and install dependencies
-echo "Creating Python virtual environment at ${SKOL_VENV}..."
-python3 -m venv ${SKOL_VENV}
+echo "Creating Python 3.13 virtual environment at ${SKOL_VENV}..."
+${PYTHON} -m venv ${SKOL_VENV}
 
 echo "Upgrading pip..."
 ${SKOL_VENV}/bin/pip install --upgrade pip
@@ -58,6 +59,16 @@ unset PYTHONHOME
 
 # Add skol bin directory to Python path for imports
 export PYTHONPATH="${SKOL_HOME}/bin:${PYTHONPATH}"
+
+# PySpark 4.x requires Java 17+
+# Find Java 17+ installation
+for java_dir in /usr/lib/jvm/java-21-openjdk-amd64 /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-17-openjdk; do
+    if [ -d "$java_dir" ]; then
+        export JAVA_HOME="$java_dir"
+        export PATH="${JAVA_HOME}/bin:${PATH}"
+        break
+    fi
+done
 
 # Get the name this script was invoked as
 SCRIPT_NAME=$(basename "$0")
