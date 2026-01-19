@@ -5,8 +5,9 @@ The Synoptic Key of Life is an effort to understand all the formal taxonomic des
 The core of the SKOL web site is a search capability which allows an aspiring taxonomist to enter a description of a specimen and find the most relevant literature.
 
 Key:
+
 | Token | Meaning |
-|-------|---------|
+|:-----:|:--------|
 | **D** | Done as of 2026-01-15 |
 | **M** | Miniumum Viable Product |
 | **I** | Planned for IST690 |
