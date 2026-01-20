@@ -26,11 +26,18 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
 
-def _inference_worker(descriptions, model_config, batch_size, result_queue):
+def _inference_worker(descriptions, model_config, batch_size, result_queue, streaming=False):
     """
     Worker function that runs model inference in an isolated subprocess.
 
     Must be defined at module level for pickling with 'spawn' context.
+
+    Args:
+        descriptions: List of dicts with '_id', 'taxon', 'description' keys
+        model_config: Dict with model configuration
+        batch_size: Number of descriptions per batch (for progress reporting)
+        result_queue: Queue to send results back
+        streaming: If True, send each result immediately; if False, batch all results
     """
     try:
         # Import inside subprocess to avoid Spark context
@@ -114,39 +121,76 @@ Result:
         # Process descriptions
         results = {}
         total = len(descriptions)
-        for i in range(0, total, batch_size):
-            batch = descriptions[i:i+batch_size]
-            batch_num = i // batch_size + 1
-            total_batches = (total + batch_size - 1) // batch_size
-            print(f"    Batch {batch_num}/{total_batches}")
+        for i, item in enumerate(descriptions):
+            doc_id = item['_id']
+            description = item['description']
 
-            for item in batch:
-                doc_id = item['_id']
-                description = item['description']
+            # Progress reporting
+            if i % batch_size == 0:
+                batch_num = i // batch_size + 1
+                total_batches = (total + batch_size - 1) // batch_size
+                print(f"    Batch {batch_num}/{total_batches}")
 
-                try:
-                    prompt = make_prompt(description)
-                    model_input = tokenizer(prompt, return_tensors="pt").to(model_config['device'])
+            try:
+                prompt = make_prompt(description)
+                model_input = tokenizer(prompt, return_tensors="pt").to(model_config['device'])
 
-                    with torch.no_grad():
-                        output = model.generate(
-                            **model_input,
-                            max_new_tokens=model_config['max_new_tokens'],
-                            pad_token_id=2,
-                            do_sample=False,
-                            temperature=None,
-                            top_p=None
-                        )
+                with torch.no_grad():
+                    output = model.generate(
+                        **model_input,
+                        max_new_tokens=model_config['max_new_tokens'],
+                        pad_token_id=2,
+                        do_sample=False,
+                        temperature=None,
+                        top_p=None
+                    )
 
-                    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
-                    json_obj = extract_json(generated_text)
-                    results[doc_id] = json_module.dumps(json_obj, ensure_ascii=False)
+                generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+                json_obj = extract_json(generated_text)
+                json_str = json_module.dumps(json_obj, ensure_ascii=False)
 
-                except Exception as e:
-                    print(f"    Warning: Error processing {doc_id}: {e}")
+                if streaming:
+                    # Send result immediately with full item data for saving
+                    result_queue.put(('result', {
+                        '_id': doc_id,
+                        'taxon': item.get('taxon', ''),
+                        'description': description,
+                        'source': item.get('source', {}),
+                        'line_number': item.get('line_number'),
+                        'paragraph_number': item.get('paragraph_number'),
+                        'page_number': item.get('page_number'),
+                        'empirical_page_number': item.get('empirical_page_number'),
+                        'features_json': json_str,
+                        'index': i,
+                        'total': total
+                    }))
+                else:
+                    results[doc_id] = json_str
+
+            except Exception as e:
+                print(f"    Warning: Error processing {doc_id}: {e}")
+                if streaming:
+                    result_queue.put(('result', {
+                        '_id': doc_id,
+                        'taxon': item.get('taxon', ''),
+                        'description': description,
+                        'source': item.get('source', {}),
+                        'line_number': item.get('line_number'),
+                        'paragraph_number': item.get('paragraph_number'),
+                        'page_number': item.get('page_number'),
+                        'empirical_page_number': item.get('empirical_page_number'),
+                        'features_json': '{}',
+                        'index': i,
+                        'total': total,
+                        'error': str(e)
+                    }))
+                else:
                     results[doc_id] = "{}"
 
-        result_queue.put(('success', results))
+        if streaming:
+            result_queue.put(('done', None))
+        else:
+            result_queue.put(('success', results))
 
     except Exception as e:
         import traceback
@@ -752,6 +796,250 @@ Result:
             raise RuntimeError(f"Model inference failed: {result}")
 
         return result
+
+    def translate_and_save_streaming(
+        self,
+        taxa_df: DataFrame,
+        db_name: str,
+        description_col: str = "description",
+        batch_size: int = 10,
+        validate: bool = True,
+        verbosity: int = 1
+    ) -> dict:
+        """
+        Translate descriptions and save to CouchDB incrementally as each record completes.
+
+        This method processes taxa one at a time, saving each to the database immediately
+        after translation. This provides:
+        - Real-time progress visibility in the database
+        - Crash resilience (completed records are already saved)
+        - Better progress monitoring
+
+        Args:
+            taxa_df: Input DataFrame from load_taxa()
+            db_name: Destination CouchDB database name
+            description_col: Name of column containing descriptions
+            batch_size: Batch size for progress reporting (not for saving)
+            validate: If True, validate JSON before saving
+            verbosity: Verbosity level (0=silent, 1=info, 2=debug)
+
+        Returns:
+            Dict with 'success_count', 'failure_count', 'total' keys
+
+        Example:
+            >>> taxa_df = translator.load_taxa(db_name="skol_taxa_dev")
+            >>> results = translator.translate_and_save_streaming(
+            ...     taxa_df,
+            ...     db_name="skol_taxa_full",
+            ...     verbosity=2
+            ... )
+            >>> print(f"Saved {results['success_count']} of {results['total']}")
+        """
+        import queue
+        import hashlib
+        import couchdb
+
+        print(f"Translating and saving incrementally to {db_name}...")
+        print(f"  Input column: {description_col}")
+        print(f"  Batch size (for progress): {batch_size}")
+
+        # Step 1: Collect all data from Spark to pure Python
+        if verbosity >= 1:
+            print("  Collecting data from Spark...")
+        rows = taxa_df.select(
+            "_id", "taxon", description_col, "source",
+            "line_number", "paragraph_number", "page_number", "empirical_page_number"
+        ).collect()
+
+        # Convert to pure Python list of dicts
+        descriptions = []
+        for row in rows:
+            item = {
+                '_id': row['_id'],
+                'taxon': row['taxon'],
+                'description': row[description_col],
+                'source': dict(row['source']) if row['source'] else {},
+                'line_number': row['line_number'],
+                'paragraph_number': row['paragraph_number'],
+                'page_number': row['page_number'],
+                'empirical_page_number': row['empirical_page_number']
+            }
+            descriptions.append(item)
+
+        total = len(descriptions)
+        if verbosity >= 1:
+            print(f"  ✓ Collected {total} descriptions")
+
+        # Step 2: Connect to CouchDB
+        if verbosity >= 1:
+            print(f"  Connecting to CouchDB...")
+        server = couchdb.Server(self.couchdb_url)
+        if self.username and self.password:
+            server.resource.credentials = (self.username, self.password)
+
+        # Create database if it doesn't exist
+        if db_name not in server:
+            server.create(db_name)
+        db = server[db_name]
+
+        if verbosity >= 1:
+            print(f"  ✓ Connected to {db_name}")
+
+        # Helper to generate deterministic doc ID
+        def generate_taxon_doc_id(doc_id: str, url, line_number) -> str:
+            key_parts = [
+                doc_id,
+                url if url else "no_url",
+                str(line_number) if line_number else "0"
+            ]
+            composite_key = ":".join(key_parts)
+            hash_obj = hashlib.sha256(composite_key.encode('utf-8'))
+            doc_hash = hash_obj.hexdigest()
+            return f"taxon_{doc_hash}"
+
+        # Helper to validate JSON
+        def is_valid_json(json_str: str) -> bool:
+            try:
+                obj = json.loads(json_str)
+                return isinstance(obj, dict) and len(obj) > 0
+            except:
+                return False
+
+        # Step 3: Capture model config for subprocess
+        model_config = {
+            'base_model_id': self.base_model_id,
+            'checkpoint_path': self.checkpoint_path,
+            'max_length': self.max_length,
+            'max_new_tokens': self.max_new_tokens,
+            'prompt': self.prompt,
+            'device': self.device,
+            'load_in_4bit': self.load_in_4bit,
+            'use_auth_token': self.use_auth_token,
+        }
+
+        # Step 4: Start subprocess with streaming=True
+        if verbosity >= 1:
+            print("  Starting model inference subprocess...")
+        ctx = mp.get_context('spawn')
+        result_queue = ctx.Queue()
+
+        proc = ctx.Process(
+            target=_inference_worker,
+            args=(descriptions, model_config, batch_size, result_queue, True)  # streaming=True
+        )
+        proc.start()
+
+        # Step 5: Process results as they arrive
+        success_count = 0
+        failure_count = 0
+        validation_failures = 0
+
+        try:
+            while True:
+                try:
+                    status, data = result_queue.get(timeout=600)  # 10 min timeout per record
+                except queue.Empty:
+                    print("  ⚠ Timeout waiting for result")
+                    break
+
+                if status == 'done':
+                    break
+                elif status == 'error':
+                    raise RuntimeError(f"Model inference failed: {data}")
+                elif status == 'result':
+                    # Process and save this record
+                    try:
+                        source = data.get('source', {})
+                        source_doc_id = str(source.get('doc_id', 'unknown'))
+                        source_url = source.get('url')
+                        line_number = data.get('line_number')
+
+                        # Generate deterministic document ID
+                        doc_id = generate_taxon_doc_id(
+                            source_doc_id,
+                            source_url if isinstance(source_url, str) else None,
+                            line_number
+                        )
+
+                        # Validate JSON if requested
+                        json_str = data.get('features_json', '{}')
+                        json_valid = True
+                        if validate and not is_valid_json(json_str):
+                            json_valid = False
+                            validation_failures += 1
+
+                        # Parse JSON for storage
+                        try:
+                            json_annotated = json.loads(json_str)
+                        except json.JSONDecodeError:
+                            json_annotated = {}
+
+                        # Build document
+                        taxon_doc = {
+                            '_id': doc_id,
+                            'taxon': data.get('taxon', ''),
+                            'description': data.get('description', ''),
+                            'source': source,
+                            'line_number': line_number,
+                            'paragraph_number': data.get('paragraph_number'),
+                            'page_number': data.get('page_number'),
+                            'empirical_page_number': data.get('empirical_page_number'),
+                            'json_annotated': json_annotated,
+                            'json_valid': json_valid
+                        }
+
+                        # Check if document exists (for update)
+                        if doc_id in db:
+                            existing_doc = db[doc_id]
+                            taxon_doc['_rev'] = existing_doc['_rev']
+
+                        # Save to CouchDB
+                        db.save(taxon_doc)
+                        success_count += 1
+
+                        # Progress reporting
+                        idx = data.get('index', 0) + 1
+                        if verbosity >= 1:
+                            print(f"  ✓ [{idx}/{total}] Saved {doc_id[:40]}...")
+                        if not json_valid:
+                            taxon_preview = data.get('taxon', '')[:60]
+                            desc_text = data.get('description', '')
+                            desc_preview = desc_text[:150] if len(desc_text) > 150 else desc_text
+                            print(f"    ⚠ Invalid JSON for {doc_id}")
+                            print(f"      Taxon: {taxon_preview}...")
+                            print(f"      Description: {desc_preview}...")
+                            # Log the actual generated JSON for debugging
+                            json_preview = json_str[:200] if len(json_str) > 200 else json_str
+                            print(f"      Generated: {json_preview}")
+
+                    except Exception as e:
+                        failure_count += 1
+                        if verbosity >= 1:
+                            print(f"  ✗ Error saving record: {e}")
+
+        finally:
+            # Clean up subprocess
+            if proc.is_alive():
+                proc.terminate()
+            proc.join(timeout=10)
+
+        # Summary
+        print(f"\n{'='*70}")
+        print("Streaming Translation Complete!")
+        print(f"{'='*70}")
+        print(f"✓ Successfully saved: {success_count}")
+        if validation_failures > 0:
+            print(f"⚠ Validation failures: {validation_failures} (still saved)")
+        if failure_count > 0:
+            print(f"✗ Failed to save: {failure_count}")
+        print(f"Total processed: {total}")
+
+        return {
+            'success_count': success_count,
+            'failure_count': failure_count,
+            'validation_failures': validation_failures,
+            'total': total
+        }
 
     def translate_single(self, description: str) -> Dict[str, Any]:
         """

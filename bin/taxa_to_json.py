@@ -9,7 +9,7 @@ saves the enriched records to another CouchDB database.
 Usage:
     python taxa_to_json.py [--source-db NAME] [--dest-db NAME] [--checkpoint PATH]
                            [--batch-size N] [--pattern PATTERN] [--limit N]
-                           [--verbosity LEVEL]
+                           [--verbosity LEVEL] [--incremental]
 
 Example:
     # Default: load from skol_taxa_dev, save to skol_taxa_full
@@ -26,6 +26,9 @@ Example:
 
     # Use a specific model checkpoint
     python taxa_to_json.py --checkpoint ./mistral_checkpoints/checkpoint-100
+
+    # Save each record as soon as it's translated (recommended for long jobs)
+    python taxa_to_json.py --incremental
 """
 
 import argparse
@@ -68,7 +71,8 @@ def translate_taxa_to_json(
     limit: Optional[int] = None,
     verbosity: int = 1,
     validate: bool = True,
-    dry_run: bool = False
+    dry_run: bool = False,
+    incremental: bool = False
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -84,6 +88,7 @@ def translate_taxa_to_json(
         verbosity: Verbosity level (0=silent, 1=info, 2=debug)
         validate: If True, validate JSON output
         dry_run: If True, show what would be done without actually saving
+        incremental: If True, save each record as it's translated (recommended)
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -110,6 +115,8 @@ def translate_taxa_to_json(
         print(f"Model checkpoint: None (using base Mistral model)")
     if dry_run:
         print(f"Mode: DRY RUN (no changes will be saved)")
+    if incremental:
+        print(f"Mode: INCREMENTAL (save each record immediately)")
     print()
 
     # Initialize Spark
@@ -179,43 +186,63 @@ def translate_taxa_to_json(
                 taxon_preview = row['taxon'][:80] + '...' if len(row['taxon']) > 80 else row['taxon']
                 print(f"  {row['_id']}: {taxon_preview}")
 
-        # Translate descriptions to JSON
-        if verbosity >= 1:
-            print(f"\nTranslating {total_count} descriptions to JSON...")
-
-        enriched_df = translator.translate_descriptions_batch(
-            taxa_df,
-            description_col="description",
-            output_col="features_json",
-            batch_size=batch_size
-        )
-
-        # Validate JSON if requested
-        if validate:
-            if verbosity >= 1:
-                print("\nValidating JSON output...")
-
-            validated_df = translator.validate_json(enriched_df, json_col="features_json")
-
-            # Show validation results
-            valid_count = validated_df.filter("json_valid = 'true'").count()
-            invalid_count = total_count - valid_count
-
-            if invalid_count > 0:
-                print(f"⚠ {invalid_count} descriptions produced invalid JSON")
-                if verbosity >= 2:
-                    print("\nInvalid entries:")
-                    invalid_rows = validated_df.filter("json_valid = 'false'").select("_id", "taxon").limit(5).collect()
-                    for row in invalid_rows:
-                        print(f"  - {row['_id']}")
-        else:
-            validated_df = enriched_df
-
-        # Save to destination database
+        # Handle dry run
         if dry_run:
-            print(f"\n[DRY RUN] Would save {total_count} taxa to {dest_db}")
+            print(f"\n[DRY RUN] Would process {total_count} taxa")
+            print(f"[DRY RUN] Source: {source_db} -> Destination: {dest_db}")
             print(f"[DRY RUN] No changes have been made")
+            return
+
+        # Process based on mode
+        if incremental:
+            # Incremental mode: translate and save each record immediately
+            if verbosity >= 1:
+                print(f"\nTranslating and saving {total_count} descriptions incrementally...")
+
+            results = translator.translate_and_save_streaming(
+                taxa_df,
+                db_name=dest_db,
+                description_col="description",
+                batch_size=batch_size,
+                validate=validate,
+                verbosity=verbosity
+            )
+            # Results summary is printed by translate_and_save_streaming
+
         else:
+            # Batch mode: translate all, then save all
+            if verbosity >= 1:
+                print(f"\nTranslating {total_count} descriptions to JSON...")
+
+            enriched_df = translator.translate_descriptions_batch(
+                taxa_df,
+                description_col="description",
+                output_col="features_json",
+                batch_size=batch_size
+            )
+
+            # Validate JSON if requested
+            if validate:
+                if verbosity >= 1:
+                    print("\nValidating JSON output...")
+
+                validated_df = translator.validate_json(enriched_df, json_col="features_json")
+
+                # Show validation results
+                valid_count = validated_df.filter("json_valid = 'true'").count()
+                invalid_count = total_count - valid_count
+
+                if invalid_count > 0:
+                    print(f"⚠ {invalid_count} descriptions produced invalid JSON")
+                    if verbosity >= 2:
+                        print("\nInvalid entries:")
+                        invalid_rows = validated_df.filter("json_valid = 'false'").select("_id", "taxon").limit(5).collect()
+                        for row in invalid_rows:
+                            print(f"  - {row['_id']}")
+            else:
+                validated_df = enriched_df
+
+            # Save to destination database
             if verbosity >= 1:
                 print(f"\nSaving enriched taxa to {dest_db}...")
 
@@ -297,6 +324,12 @@ Examples:
 
   # Skip JSON validation
   python taxa_to_json.py --no-validate
+
+  # Incremental mode: save each record immediately (recommended for long jobs)
+  python taxa_to_json.py --incremental
+
+  # Combination: debug with limit and incremental saving
+  python taxa_to_json.py --limit 10 --incremental --verbosity 2
 """
     )
 
@@ -361,6 +394,12 @@ Examples:
     )
 
     parser.add_argument(
+        '--incremental',
+        action='store_true',
+        help='Save each record as it completes (recommended for long jobs, crash-resistant)'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -392,7 +431,8 @@ Examples:
             limit=args.limit,
             verbosity=verbosity,
             validate=not args.no_validate,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
+            incremental=args.incremental
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")
