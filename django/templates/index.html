@@ -260,10 +260,14 @@
         {% if user.is_authenticated %}
         <div class="user-navbar">
             <span>Welcome, <strong>{{ user.username }}</strong></span>
+            <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
+            <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:logout' %}">Logout</a>
         </div>
         {% else %}
         <div class="user-navbar">
+            <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
+            <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:login' %}">Login</a>
             <a href="{% url 'accounts:register' %}">Register</a>
         </div>

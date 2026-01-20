@@ -1,0 +1,45 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Contact Us - SKOL{% endblock %}
+
+{% block content %}
+<h1>Contact Us</h1>
+<p class="subtitle">Have a question or want to get in touch? Send us a message.</p>
+
+{% if form.errors %}
+<div class="error">
+    Please correct the errors below.
+</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+        {{ form.email.label_tag }}
+        {{ form.email }}
+        {% if form.email.help_text %}
+        <p class="helptext">{{ form.email.help_text }}</p>
+        {% endif %}
+        {{ form.email.errors }}
+    </div>
+
+    <div class="form-group">
+        {{ form.subject.label_tag }}
+        {{ form.subject }}
+        {{ form.subject.errors }}
+    </div>
+
+    <div class="form-group">
+        {{ form.message.label_tag }}
+        {{ form.message }}
+        {{ form.message.errors }}
+    </div>
+
+    <button type="submit">Send Message</button>
+</form>
+
+<div class="links">
+    <p><a href="{{ SCRIPT_NAME }}/">Back to Home</a></p>
+</div>
+{% endblock %}

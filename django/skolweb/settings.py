@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'search',
     'accounts',
+    'contact',
 ]
 
 MIDDLEWARE = [
@@ -160,6 +161,10 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@skol.example.com')
 
+# Contact/Feedback Email Recipients
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'piggy.yarroll+skol-contact@gmail.com')
+FEEDBACK_EMAIL = os.environ.get('FEEDBACK_EMAIL', 'piggy.yarroll+skol-feedback@gmail.com')
+
 # Authentication Configuration
 LOGIN_URL = f'{_script_name}/accounts/login/'
 LOGIN_REDIRECT_URL = f'{_script_name}/'
@@ -216,6 +221,11 @@ LOGGING = {
             'propagate': False,
         },
         'search': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'contact': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,

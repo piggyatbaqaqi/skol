@@ -1,0 +1,54 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Feedback - SKOL{% endblock %}
+
+{% block content %}
+<h1>Send Feedback</h1>
+<p class="subtitle">Report a bug, request a feature, or share your thoughts.</p>
+
+{% if form.errors %}
+<div class="error">
+    Please correct the errors below.
+</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+        {{ form.email.label_tag }}
+        {{ form.email }}
+        {% if form.email.help_text %}
+        <p class="helptext">{{ form.email.help_text }}</p>
+        {% endif %}
+        {{ form.email.errors }}
+    </div>
+
+    <div class="form-group">
+        {{ form.page_url.label_tag }}
+        {{ form.page_url }}
+        {% if form.page_url.help_text %}
+        <p class="helptext">{{ form.page_url.help_text }}</p>
+        {% endif %}
+        {{ form.page_url.errors }}
+    </div>
+
+    <div class="form-group">
+        {{ form.feedback_type.label_tag }}
+        {{ form.feedback_type }}
+        {{ form.feedback_type.errors }}
+    </div>
+
+    <div class="form-group">
+        {{ form.message.label_tag }}
+        {{ form.message }}
+        {{ form.message.errors }}
+    </div>
+
+    <button type="submit">Submit Feedback</button>
+</form>
+
+<div class="links">
+    <p><a href="{{ SCRIPT_NAME }}/">Back to Home</a></p>
+</div>
+{% endblock %}
