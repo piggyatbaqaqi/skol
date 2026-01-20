@@ -151,7 +151,6 @@ class SearchView(APIView):
                     'Description': row.get('description', ''),
                     'Feed': row.get('source', ''),
                     'URL': row.get('filename', ''),
-                    'TaxaID': str(idx),  # Document ID for PDF viewer
                 }
 
                 # Add optional metadata fields if they exist
@@ -159,6 +158,10 @@ class SearchView(APIView):
                     src_meta = row['source_metadata']
                     if isinstance(src_meta, dict):
                         result_dict['SourceMetadata'] = src_meta
+                        # Extract PDF source info for direct PDF access
+                        if 'db_name' in src_meta and 'doc_id' in src_meta:
+                            result_dict['PDFDbName'] = src_meta['db_name']
+                            result_dict['PDFDocId'] = src_meta['doc_id']
                 if 'source' in row.index:
                     src = row['source']
                     if isinstance(src, dict):

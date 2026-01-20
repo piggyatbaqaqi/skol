@@ -460,12 +460,12 @@
 
                 const similarity = (result.Similarity * 100).toFixed(1);
 
-                // Build PDF viewer URL if TaxaID is available
+                // Build PDF viewer URL if source metadata is available
                 let pdfLink = '';
-                if (result.TaxaID) {
-                    let pdfUrl = `${API_BASE}/pdf/taxa/${encodeURIComponent(result.TaxaID)}/`;
+                if (result.PDFDbName && result.PDFDocId) {
+                    let pdfUrl = `${API_BASE}/pdf/?db=${encodeURIComponent(result.PDFDbName)}&doc_id=${encodeURIComponent(result.PDFDocId)}`;
                     if (result.PDFPage) {
-                        pdfUrl += `?page=${result.PDFPage}`;
+                        pdfUrl += `&page=${result.PDFPage}`;
                     }
                     pdfLink = `<a href="${pdfUrl}" class="view-pdf-btn" target="_blank">View PDF</a>`;
                 }
