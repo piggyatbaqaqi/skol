@@ -62,6 +62,8 @@ include = [
     "search.*",
     "accounts",
     "accounts.*",
+    "contact",
+    "contact.*",
 ]
 
 [tool.setuptools.package-data]

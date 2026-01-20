@@ -11,7 +11,7 @@ setup(
     description="Django web application for SKOL taxonomic search and user management",
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     license="GPL-3.0-or-later",
-    packages=find_packages(include=["skolweb", "skolweb.*", "search", "search.*", "accounts", "accounts.*"]),
+    packages=find_packages(include=["skolweb", "skolweb.*", "search", "search.*", "accounts", "accounts.*", "contact", "contact.*"]),
     include_package_data=True,
     python_requires=">=3.10",
     install_requires=[

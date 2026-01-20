@@ -35,6 +35,13 @@ def contact_view(request):
             body = '\n'.join(body_parts)
 
             try:
+                # Debug: log email settings
+                logger.debug(
+                    f"Email config: HOST={settings.EMAIL_HOST}, PORT={settings.EMAIL_PORT}, "
+                    f"USER={settings.EMAIL_HOST_USER}, TLS={settings.EMAIL_USE_TLS}, "
+                    f"BACKEND={settings.EMAIL_BACKEND}"
+                )
+
                 email = EmailMessage(
                     subject=f'[SKOL Contact] {subject}',
                     body=body,
@@ -107,6 +114,13 @@ def feedback_view(request):
             subject = f'[SKOL Feedback] {type_labels.get(feedback_type, "Feedback")}'
 
             try:
+                # Debug: log email settings
+                logger.debug(
+                    f"Email config: HOST={settings.EMAIL_HOST}, PORT={settings.EMAIL_PORT}, "
+                    f"USER={settings.EMAIL_HOST_USER}, TLS={settings.EMAIL_USE_TLS}, "
+                    f"BACKEND={settings.EMAIL_BACKEND}"
+                )
+
                 email = EmailMessage(
                     subject=subject,
                     body=body,
