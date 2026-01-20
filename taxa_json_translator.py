@@ -138,6 +138,9 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         self._model = None
         self._tokenizer = None
 
+        # Track last loaded database for save_taxa default
+        self._last_loaded_db_name = None
+
         print(f"TaxaJSONTranslator initialized")
         print(f"  CouchDB URL: {couchdb_url}")
         print(f"  Base model: {base_model_id}")
@@ -268,6 +271,9 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 
         count = taxa_df.count()
         print(f"✓ Loaded {count} taxa")
+
+        # Store the database name for use as default in save_taxa
+        self._last_loaded_db_name = db_name
 
         return taxa_df
 
@@ -574,7 +580,7 @@ Result:
     def save_taxa(
         self,
         taxa_df: DataFrame,
-        db_name: str,
+        db_name: Optional[str] = None,
         json_annotated_col: str = "features_json"
     ) -> DataFrame:
         """
@@ -589,7 +595,9 @@ Result:
 
         Args:
             taxa_df: DataFrame with taxa and translations (must include json_annotated_col)
-            db_name: Name of taxon database
+            db_name: Name of taxon database. If None, uses the database from the most
+                    recent load_taxa() call. If no database was loaded and db_name is
+                    None, raises ValueError.
             json_annotated_col: Name of column containing JSON features (default: "features_json")
 
         Returns:
@@ -600,10 +608,21 @@ Result:
             >>> taxa_df = translator.load_taxa(db_name="mycobank_taxa")
             >>> enriched_df = translator.translate_descriptions(taxa_df)
             >>>
-            >>> # Save back to CouchDB
-            >>> results = translator.save_taxa(enriched_df, db_name="mycobank_taxa")
+            >>> # Save back to same database (default)
+            >>> results = translator.save_taxa(enriched_df)
             >>> print(f"Saved: {results.filter('success = true').count()}")
+            >>>
+            >>> # Or save to a different database
+            >>> results = translator.save_taxa(enriched_df, db_name="mycobank_taxa_v2")
         """
+        # Resolve db_name: use provided value or fall back to last loaded
+        if db_name is None:
+            if self._last_loaded_db_name is None:
+                raise ValueError(
+                    "db_name must be specified when no database has been loaded via load_taxa()"
+                )
+            db_name = self._last_loaded_db_name
+            print(f"Using database from last load_taxa(): {db_name}")
         from pyspark.sql import Row
         from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 

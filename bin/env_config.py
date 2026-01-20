@@ -50,6 +50,11 @@ def get_env_config() -> Dict[str, Any]:
         'taxon_password': os.environ.get('TAXON_PASSWORD'),
         'taxon_db_name': os.environ.get('TAXON_DB_NAME', 'skol_taxa_dev'),
 
+        # JSON translation settings (for taxa_to_json.py)
+        'source_db': os.environ.get('SOURCE_DB', 'skol_taxa_dev'),
+        'dest_db': os.environ.get('DEST_DB', 'skol_taxa_full'),
+        'checkpoint_path': os.environ.get('CHECKPOINT_PATH'),
+
         # Training database settings
         'training_database': os.environ.get('TRAINING_DATABASE', 'skol_training'),
 
