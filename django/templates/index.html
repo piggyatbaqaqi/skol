@@ -253,6 +253,30 @@
         .user-navbar a:hover {
             color: #764ba2;
         }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: #764ba2;
+        }
+
+        .footer p {
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -308,6 +332,13 @@
         <div id="error" class="error" style="display: none;"></div>
 
         <div id="results" class="results"></div>
+
+        <div class="footer">
+            <a href="{% url 'about' %}">About</a>
+            <a href="{% url 'contact:contact' %}">Contact</a>
+            <a href="{% url 'contact:feedback' %}">Feedback</a>
+            <p>&copy; 2024 SKOL Project Contributors. Licensed under GPLv3.</p>
+        </div>
     </div>
 
     <script>
