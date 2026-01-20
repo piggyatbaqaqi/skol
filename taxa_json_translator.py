@@ -11,6 +11,7 @@ processing, optimized for batch processing of taxa descriptions.
 
 import json
 import io
+import multiprocessing as mp
 from typing import Optional, Dict, Any
 
 import torch
@@ -23,6 +24,133 @@ from peft import PeftModel
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
+
+
+def _inference_worker(descriptions, model_config, batch_size, result_queue):
+    """
+    Worker function that runs model inference in an isolated subprocess.
+
+    Must be defined at module level for pickling with 'spawn' context.
+    """
+    try:
+        # Import inside subprocess to avoid Spark context
+        import torch
+        from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+        from peft import PeftModel
+        import json as json_module
+        import io
+
+        # Load tokenizer
+        print("    Loading tokenizer...")
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_config['base_model_id'],
+            model_max_length=model_config['max_length'],
+            padding_side="left",
+            add_eos_token=True
+        )
+        tokenizer.pad_token = tokenizer.eos_token
+
+        # Load model
+        print("    Loading model...")
+        bnb_config = None
+        if model_config['load_in_4bit']:
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16
+            )
+
+        base_model = AutoModelForCausalLM.from_pretrained(
+            model_config['base_model_id'],
+            quantization_config=bnb_config,
+            device_map="auto",
+            trust_remote_code=True,
+            token=model_config['use_auth_token']
+        )
+
+        if model_config['checkpoint_path']:
+            model = PeftModel.from_pretrained(base_model, model_config['checkpoint_path'])
+        else:
+            model = base_model
+
+        model.eval()
+        print("    ✓ Model ready")
+
+        # Helper to make prompt
+        def make_prompt(description):
+            return f"""<s>[INST]{model_config['prompt']}
+
+## Species Description
+{description}[/INST]
+
+Result:
+"""
+
+        # Helper to extract JSON
+        def extract_json(text):
+            state = "START"
+            lines = []
+            try:
+                with io.StringIO(text) as f:
+                    for line in f:
+                        if line.startswith('```json') or line.startswith("result:") or line.startswith("Result:"):
+                            state = "RECORDING"
+                        elif line.startswith('```'):
+                            state = "END"
+                            return json_module.loads("\n".join(lines))
+                        elif line.startswith("}"):
+                            lines.append(line)
+                            state = "END"
+                            return json_module.loads("\n".join(lines))
+                        elif state == "RECORDING":
+                            lines.append(line)
+                if lines:
+                    return json_module.loads("\n".join(lines))
+                return json_module.loads(text)
+            except json_module.JSONDecodeError:
+                return {}
+
+        # Process descriptions
+        results = {}
+        total = len(descriptions)
+        for i in range(0, total, batch_size):
+            batch = descriptions[i:i+batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (total + batch_size - 1) // batch_size
+            print(f"    Batch {batch_num}/{total_batches}")
+
+            for item in batch:
+                doc_id = item['_id']
+                description = item['description']
+
+                try:
+                    prompt = make_prompt(description)
+                    model_input = tokenizer(prompt, return_tensors="pt").to(model_config['device'])
+
+                    with torch.no_grad():
+                        output = model.generate(
+                            **model_input,
+                            max_new_tokens=model_config['max_new_tokens'],
+                            pad_token_id=2,
+                            do_sample=False,
+                            temperature=None,
+                            top_p=None
+                        )
+
+                    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+                    json_obj = extract_json(generated_text)
+                    results[doc_id] = json_module.dumps(json_obj, ensure_ascii=False)
+
+                except Exception as e:
+                    print(f"    Warning: Error processing {doc_id}: {e}")
+                    results[doc_id] = "{}"
+
+        result_queue.put(('success', results))
+
+    except Exception as e:
+        import traceback
+        result_queue.put(('error', str(e) + "\n" + traceback.format_exc()))
 
 
 class TaxaJSONTranslator:
@@ -481,6 +609,12 @@ Result:
         print(f"  Input column: {description_col}")
         print(f"  Output column: {output_col}")
 
+        # Pre-load model and tokenizer before UDF execution
+        print("  Pre-loading model and tokenizer...")
+        _ = self.tokenizer  # Force lazy load
+        _ = self.model      # Force lazy load
+        print("  ✓ Model ready")
+
         # Create UDF for translation
         translate_udf = udf(self.generate_json, StringType())
 
@@ -525,39 +659,99 @@ Result:
         print(f"  Output column: {output_col}")
         print(f"  Batch size: {batch_size}")
 
-        # Collect descriptions with _id for joining
-        descriptions = taxa_df.select("_id", "taxon", description_col).collect()
+        # Step 1: Collect all data from Spark to pure Python
+        print("  Collecting data from Spark...")
+        rows = taxa_df.select("_id", "taxon", description_col).collect()
+
+        # Convert to pure Python list of dicts (no Spark Row objects)
+        descriptions = [
+            {'_id': row['_id'], 'taxon': row['taxon'], 'description': row[description_col]}
+            for row in rows
+        ]
         total = len(descriptions)
+        print(f"  ✓ Collected {total} descriptions")
 
-        print(f"Processing {total} descriptions...")
+        # Step 2: Run model inference in a subprocess to isolate from Spark daemon
+        # This is necessary because Spark's Python daemon processes can conflict
+        # with CUDA operations. Using a subprocess works in both local and distributed modes.
+        print("  Running model inference in isolated subprocess...")
 
-        # Process in batches
-        results = []
-        for i in range(0, total, batch_size):
-            batch = descriptions[i:i+batch_size]
-            print(f"  Batch {i//batch_size + 1}/{(total + batch_size - 1)//batch_size}")
+        results = self._run_inference_subprocess(descriptions, batch_size)
 
-            for row in batch:
-                doc_id = row['_id']
-                description = row[description_col]
+        print(f"✓ Generated JSON for {len(results)} descriptions")
 
-                # Generate JSON
-                json_obj = self.generate_json(description)
+        # Step 3: Add results to DataFrame using broadcast variable
+        print("  Adding JSON results to DataFrame...")
+        from pyspark.sql.functions import udf, col
+        from pyspark.sql.types import StringType
 
-                results.append({
-                    '_id': doc_id,
-                    output_col: json_obj
-                })
+        results_broadcast = self.spark.sparkContext.broadcast(results)
 
-        # Create DataFrame from results
-        results_df = self.spark.createDataFrame(results)
+        def lookup_json(doc_id):
+            return results_broadcast.value.get(doc_id, "{}")
 
-        # Join back to original DataFrame on _id
-        enriched_df = taxa_df.join(results_df, on="_id", how="left")
+        lookup_udf = udf(lookup_json, StringType())
+        enriched_df = taxa_df.withColumn(output_col, lookup_udf(col("_id")))
 
         print(f"✓ Translated {total} descriptions")
 
         return enriched_df
+
+    def _run_inference_subprocess(
+        self,
+        descriptions: list,
+        batch_size: int
+    ) -> dict:
+        """
+        Run model inference in a subprocess isolated from Spark.
+
+        This avoids conflicts between Spark's Python daemon and CUDA operations.
+        Works in both local and distributed Spark modes.
+
+        Args:
+            descriptions: List of dicts with '_id' and 'description' keys
+            batch_size: Number of descriptions to process per batch
+
+        Returns:
+            Dict mapping doc_id to JSON string
+        """
+        import queue
+
+        # Capture model config for subprocess
+        model_config = {
+            'base_model_id': self.base_model_id,
+            'checkpoint_path': self.checkpoint_path,
+            'max_length': self.max_length,
+            'max_new_tokens': self.max_new_tokens,
+            'prompt': self.prompt,
+            'device': self.device,
+            'load_in_4bit': self.load_in_4bit,
+            'use_auth_token': self.use_auth_token,
+        }
+
+        # Use spawn to ensure clean subprocess without Spark daemon threads
+        ctx = mp.get_context('spawn')
+        result_queue = ctx.Queue()
+
+        # Start subprocess using module-level function (required for pickling with spawn)
+        proc = ctx.Process(
+            target=_inference_worker,
+            args=(descriptions, model_config, batch_size, result_queue)
+        )
+        proc.start()
+
+        # Wait for result
+        try:
+            status, result = result_queue.get(timeout=3600)  # 1 hour timeout
+            proc.join(timeout=60)
+        except queue.Empty:
+            proc.terminate()
+            raise RuntimeError("Model inference subprocess timed out")
+
+        if status == 'error':
+            raise RuntimeError(f"Model inference failed: {result}")
+
+        return result
 
     def translate_single(self, description: str) -> Dict[str, Any]:
         """

@@ -121,6 +121,9 @@ def translate_taxa_to_json(
         .master(f"local[{config['cores']}]") \
         .config("spark.driver.memory", config['spark_driver_memory']) \
         .config("spark.executor.memory", config['spark_executor_memory']) \
+        .config("spark.network.timeout", "600s") \
+        .config("spark.executor.heartbeatInterval", "60s") \
+        .config("spark.sql.broadcastTimeout", "600") \
         .getOrCreate()
 
     # Set log level
