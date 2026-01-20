@@ -2,7 +2,7 @@
 # Build Debian package for skol-django using fpm
 #
 # Prerequisites:
-#   sudo apt install ruby ruby-dev build-essential python3-venv python3-pip python3-build
+#   sudo apt install ruby ruby-dev build-essential python3-venv python3-pip python3-build nodejs npm
 #   sudo gem install fpm
 #
 # Usage:
@@ -28,6 +28,21 @@ mkdir -p deb_dist
 mkdir -p staging${WHEEL_DIR}
 mkdir -p staging${SERVICE_DIR}
 mkdir -p staging${DJANGO_ROOT}
+
+# Build the React frontend
+echo "Building React PDF viewer..."
+if [ -d "frontend" ]; then
+    cd frontend
+    if [ ! -d "node_modules" ]; then
+        echo "Installing npm dependencies..."
+        npm install
+    fi
+    echo "Running webpack build..."
+    npm run build
+    cd ..
+else
+    echo "Warning: frontend directory not found, skipping React build"
+fi
 
 # Build the wheel
 echo "Building Python wheel..."

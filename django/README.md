@@ -8,6 +8,8 @@ A Django REST API and web interface for semantic search of taxonomic description
 - **Web Interface**: Clean, modern UI for searching taxa descriptions
 - **Redis Integration**: Loads embeddings from Redis keys matching `skol:embedding:*`
 - **Flexible Search**: Configurable number of results and embedding model selection
+- **PDF Viewer**: React-based viewer for source PDFs (see [docs/PDF_VIEWER.md](docs/PDF_VIEWER.md))
+- **CouchDB Integration**: Retrieves PDF attachments from CouchDB documents
 
 ## Architecture
 
@@ -16,6 +18,9 @@ The application consists of:
 1. **Django REST API** (`search/views.py`):
    - `/api/embeddings/` - List available embedding models from Redis
    - `/api/search/` - Perform semantic search
+   - `/api/taxa/<taxa_id>/` - Get taxa document info
+   - `/api/taxa/<taxa_id>/pdf/` - Get PDF from taxa source
+   - `/api/pdf/<db>/<doc_id>/` - Direct PDF attachment access
 
 2. **Web Interface** (`templates/index.html`):
    - Input text box for description
@@ -169,6 +174,11 @@ Access the web interface at `http://127.0.0.1:8000/`
 
 - `REDIS_HOST`: Redis server host (default: `localhost`)
 - `REDIS_PORT`: Redis server port (default: `6379`)
+- `COUCHDB_HOST`: CouchDB server host (default: `localhost`)
+- `COUCHDB_PORT`: CouchDB server port (default: `5984`)
+- `COUCHDB_USER`: CouchDB username (default: `admin`)
+- `COUCHDB_PASSWORD`: CouchDB password
+- `COUCHDB_URL`: Full CouchDB URL (overrides host:port)
 
 ### Django Settings
 
@@ -184,6 +194,7 @@ Edit `skolweb/settings.py` to customize:
 django/
 ├── manage.py                 # Django management script
 ├── requirements.txt          # Python dependencies
+├── build-deb.sh              # Debian package build script
 ├── README.md                 # This file
 ├── skolweb/                  # Django project
 │   ├── __init__.py
@@ -197,8 +208,22 @@ django/
 │   ├── models.py             # Models (none needed)
 │   ├── urls.py               # App URL configuration
 │   └── views.py              # REST API views
-└── templates/                # HTML templates
-    └── index.html            # Main search interface
+├── frontend/                 # React PDF viewer
+│   ├── package.json          # npm dependencies
+│   ├── webpack.config.js     # Webpack build config
+│   └── src/                  # React source files
+│       ├── index.js
+│       ├── PDFViewer.jsx
+│       └── styles.css
+├── templates/                # HTML templates
+│   ├── index.html            # Main search interface
+│   └── pdf_viewer.html       # PDF viewer page
+├── static/                   # Static files
+│   └── js/                   # Built JavaScript (from frontend/)
+└── docs/                     # Documentation
+    ├── EMAIL_SETUP.md
+    ├── HTTPS_SETUP.md
+    └── PDF_VIEWER.md
 ```
 
 ## Production Deployment

@@ -152,6 +152,13 @@ REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
 
+# CouchDB configuration
+COUCHDB_HOST = os.environ.get('COUCHDB_HOST', 'localhost')
+COUCHDB_PORT = int(os.environ.get('COUCHDB_PORT', '5984'))
+COUCHDB_USERNAME = os.environ.get('COUCHDB_USER', 'admin')
+COUCHDB_PASSWORD = os.environ.get('COUCHDB_PASSWORD', 'SU2orange!')
+COUCHDB_URL = os.environ.get('COUCHDB_URL', f'http://{COUCHDB_HOST}:{COUCHDB_PORT}')
+
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', '')

@@ -221,6 +221,34 @@
             box-shadow: none;
         }
 
+        .view-pdf-btn {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-top: 10px;
+            margin-right: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .view-pdf-btn:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+            transform: none;
+            box-shadow: none;
+            color: white;
+        }
+
+        .result-actions {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
         pre {
             margin: 0;
             white-space: pre-wrap;
@@ -432,19 +460,32 @@
 
                 const similarity = (result.Similarity * 100).toFixed(1);
 
+                // Build PDF viewer URL if TaxaID is available
+                let pdfLink = '';
+                if (result.TaxaID) {
+                    let pdfUrl = `${API_BASE}/pdf/taxa/${encodeURIComponent(result.TaxaID)}/`;
+                    if (result.PDFPage) {
+                        pdfUrl += `?page=${result.PDFPage}`;
+                    }
+                    pdfLink = `<a href="${pdfUrl}" class="view-pdf-btn" target="_blank">View PDF</a>`;
+                }
+
                 card.innerHTML = `
                     <div class="result-header">
                         <div class="result-title">${escapeHtml(result.Title || 'Untitled')}</div>
                         <div class="similarity-badge">${similarity}%</div>
                     </div>
                     <div class="result-meta">
-                        ${result.Feed ? `<div class="meta-item"><span class="meta-label">Feed:</span>${escapeHtml(result.Feed)}</div>` : ''}
-                        ${result.FeedID ? `<div class="meta-item"><span class="meta-label">ID:</span>${escapeHtml(result.FeedID)}</div>` : ''}
-                        ${result.Sponsor ? `<div class="meta-item"><span class="meta-label">Sponsor:</span>${escapeHtml(result.Sponsor)}</div>` : ''}
+                        ${result.Feed ? `<div class="meta-item"><span class="meta-label">Feed:</span>${escapeHtml(typeof result.Feed === 'object' ? JSON.stringify(result.Feed) : result.Feed)}</div>` : ''}
+                        ${result.PDFPage ? `<div class="meta-item"><span class="meta-label">PDF Page:</span>${result.PDFPage}</div>` : ''}
+                        ${result.LineNumber ? `<div class="meta-item"><span class="meta-label">Line:</span>${result.LineNumber}</div>` : ''}
                     </div>
                     ${result.Description ? `<div class="result-description">${escapeHtml(result.Description).substring(0, 500)}${result.Description.length > 500 ? '...' : ''}</div>` : ''}
-                    ${result.URL ? `<div class="result-meta"><a href="${escapeHtml(result.URL)}" target="_blank">View Details</a></div>` : ''}
-                    <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
+                    <div class="result-actions">
+                        ${pdfLink}
+                        ${result.URL ? `<a href="${escapeHtml(result.URL)}" target="_blank" class="view-pdf-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">View Source</a>` : ''}
+                        <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
+                    </div>
                     <div id="json-${index}" class="result-json" style="display: none;">
                         <pre>${JSON.stringify(result, null, 2)}</pre>
                     </div>

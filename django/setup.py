@@ -19,6 +19,7 @@ setup(
         "djangorestframework>=3.14.0",
         "django-cors-headers>=4.0.0",
         "redis>=4.5.0",
+        "requests>=2.28.0",
     ],
     entry_points={
         "console_scripts": [

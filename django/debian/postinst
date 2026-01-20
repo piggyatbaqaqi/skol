@@ -80,6 +80,14 @@ FORCE_SCRIPT_NAME=
 # Redis configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
+
+# CouchDB configuration for PDF attachment retrieval
+COUCHDB_HOST=localhost
+COUCHDB_PORT=5984
+COUCHDB_USER=admin
+COUCHDB_PASSWORD=
+# Optionally set COUCHDB_URL to override host:port
+# COUCHDB_URL=http://localhost:5984
 EOF
 fi
 chown skol:skol ${SKOL_HOME}/django/skol-django.env
