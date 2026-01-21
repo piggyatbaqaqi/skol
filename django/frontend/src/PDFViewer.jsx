@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
+// CSS files from react-pdf source (4 levels up from src to reach parent of skol)
+import '../../../../react-pdf/packages/react-pdf/src/Page/AnnotationLayer.css';
+import '../../../../react-pdf/packages/react-pdf/src/Page/TextLayer.css';
 
 // Set the worker source - this file is copied by webpack
 pdfjs.GlobalWorkerOptions.workerSrc = `${window.API_BASE}/static/js/pdf.worker.min.mjs`;
@@ -34,6 +35,13 @@ const PDFViewer = ({ pdfUrl, initialPage = 1, title = 'PDF Viewer' }) => {
     setError(error.message || 'Failed to load PDF');
     setLoading(false);
   }, []);
+
+  // Handle navigation from URL hash or internal links
+  const onItemClick = useCallback(({ pageNumber: targetPage }) => {
+    if (targetPage >= 1 && targetPage <= (numPages || Infinity)) {
+      setPageNumber(targetPage);
+    }
+  }, [numPages]);
 
   const goToPrevPage = () => {
     setPageNumber((prev) => Math.max(prev - 1, 1));
@@ -129,7 +137,10 @@ const PDFViewer = ({ pdfUrl, initialPage = 1, title = 'PDF Viewer' }) => {
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
+          onItemClick={onItemClick}
           loading={<div className="pdf-loading">Loading document...</div>}
+          enableUrlHash={true}
+          syncUrlHash={true}
         >
           <Page
             pageNumber={pageNumber}

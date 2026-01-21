@@ -1,6 +1,6 @@
 # PDF Viewer Feature
 
-The SKOL web application includes a React-based PDF viewer that allows users to view source PDFs directly from search results. The viewer uses [react-pdf](https://github.com/wojtekmaj/react-pdf) by wojtekmaj.
+The SKOL web application includes a React-based PDF viewer that allows users to view source PDFs directly from search results. The viewer uses a locally modified version of [react-pdf](https://github.com/wojtekmaj/react-pdf) by wojtekmaj, with added URL hash navigation support.
 
 ## Features
 
@@ -9,6 +9,8 @@ The SKOL web application includes a React-based PDF viewer that allows users to 
 - Zoom controls (zoom in/out, reset)
 - Download PDF button
 - Automatic navigation to the relevant page when viewing from taxa search results
+- URL hash support (`#page=<label>`) for bookmarkable page navigation
+- Support for PDF page labels (e.g., Roman numerals for front matter)
 
 ## Architecture
 
@@ -44,14 +46,22 @@ The PDF viewer is built with React and bundled using webpack:
 
 ### Building the Frontend
 
+**Important:** The frontend requires the local react-pdf source to be present as a neighbor directory to skol:
+
+```
+piggyatbaqaqi/
+├── skol/           # This repository
+└── react-pdf/      # Local react-pdf fork with URL hash support
+```
+
 ```bash
 cd django/frontend
-npm install
+npm install --omit=optional  # Skip large optional deps
 npm run build
 ```
 
-This outputs:
-- `static/js/pdf-viewer.bundle.js` - The bundled React app
+This compiles react-pdf from TypeScript source and outputs:
+- `static/js/pdf-viewer.bundle.js` - The bundled React app with react-pdf compiled in
 - `static/js/pdf.worker.min.mjs` - PDF.js worker file
 
 ## Configuration
@@ -149,23 +159,30 @@ The source document in `skol_dev` has the PDF as an attachment:
 
 - Node.js 18+ and npm
 - Python 3.10+
+- Local react-pdf fork as neighbor directory to skol (see Building the Frontend)
 
 ### Local Development
 
-1. Build the frontend:
+1. Clone react-pdf fork (if not already present):
    ```bash
-   cd django/frontend
-   npm install
+   cd /path/to/piggyatbaqaqi
+   git clone https://github.com/piggyatbaqaqi/react-pdf.git
+   ```
+
+2. Build the frontend:
+   ```bash
+   cd skol/django/frontend
+   npm install --omit=optional
    npm run build
    ```
 
-2. Run Django development server:
+3. Run Django development server:
    ```bash
    cd django
    python manage.py runserver
    ```
 
-3. For frontend development with auto-rebuild:
+4. For frontend development with auto-rebuild:
    ```bash
    cd django/frontend
    npm run watch
@@ -179,4 +196,8 @@ The `build-deb.sh` script automatically builds the React frontend before creatin
 ./build-deb.sh
 ```
 
-This runs `npm install` and `npm run build` in the frontend directory as part of the build process.
+This:
+1. Verifies that react-pdf source is present as a neighbor directory
+2. Runs `npm install --omit=optional` in the frontend directory
+3. Runs `npm run build` to compile react-pdf from source and bundle the viewer
+4. Builds the Python wheel and creates the .deb package

@@ -1,4 +1,4 @@
-import React from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import PDFViewer from './PDFViewer';
 import './styles.css';
@@ -13,12 +13,12 @@ if (container) {
 
   const root = createRoot(container);
   root.render(
-    <React.StrictMode>
+    <StrictMode>
       <PDFViewer
         pdfUrl={pdfUrl}
         initialPage={initialPage}
         title={title}
       />
-    </React.StrictMode>
+    </StrictMode>
   );
 }

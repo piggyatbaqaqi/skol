@@ -7,6 +7,9 @@
 #
 # Usage:
 #   ./build-deb.sh
+#
+# Note: This build compiles the local react-pdf from source using webpack/babel.
+#       The react-pdf source is expected to be at ../../../react-pdf relative to django/frontend.
 
 set -e
 
@@ -17,7 +20,19 @@ PACKAGE="skol-django"
 WHEEL_DIR="/opt/skol/wheels"
 SERVICE_DIR="/usr/share/skol-django"
 
+# Path to local react-pdf (neighbor directory to skol)
+# From django, go up 2 levels to piggyatbaqaqi, then into react-pdf
+REACT_PDF_DIR="$(cd "$(dirname "$0")/../.." && pwd)/react-pdf"
+
 echo "=== Building Debian package with fpm ==="
+
+# Verify react-pdf source exists
+if [ ! -d "$REACT_PDF_DIR/packages/react-pdf/src" ]; then
+    echo "Error: react-pdf source directory not found at $REACT_PDF_DIR/packages/react-pdf/src"
+    echo "Expected react-pdf to be a neighbor directory to skol"
+    exit 1
+fi
+echo "Found react-pdf source at $REACT_PDF_DIR"
 
 # Clean previous builds
 rm -rf dist/ build/ *.egg-info deb_dist/ staging/
@@ -29,15 +44,16 @@ mkdir -p staging${WHEEL_DIR}
 mkdir -p staging${SERVICE_DIR}
 mkdir -p staging${DJANGO_ROOT}
 
-# Build the React frontend
+# Build the React frontend (compiles react-pdf from source via webpack)
 echo "Building React PDF viewer..."
+cd "$(dirname "$0")"
 if [ -d "frontend" ]; then
     cd frontend
     if [ ! -d "node_modules" ]; then
-        echo "Installing npm dependencies..."
-        npm install
+        echo "Installing npm dependencies (omitting optional deps for smaller install)..."
+        npm install --omit=optional
     fi
-    echo "Running webpack build..."
+    echo "Running webpack build (compiles react-pdf from source)..."
     npm run build
     cd ..
 else
