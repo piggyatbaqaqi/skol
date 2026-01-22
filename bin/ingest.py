@@ -4,13 +4,26 @@ Main entry point for ingesting data into CouchDB.
 
 This module provides a command-line interface for ingesting data from
 various sources using different ingestor implementations.
+
+Examples:
+    # Ingest from a specific publication
+    python ingest.py --publication mycotaxon
+
+    # Preview what would be ingested without saving
+    python ingest.py --publication mycotaxon --dry-run
+
+    # Ingest at most 10 items
+    python ingest.py --publication mycotaxon --limit 10
+
+    # Skip items that already exist in the database
+    python ingest.py --publication mycotaxon --skip-existing
 """
 
 import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 from urllib.robotparser import RobotFileParser
 
 # Add parent directory to path for direct script execution
@@ -18,6 +31,12 @@ if __name__ == '__main__' and __package__ is None:
     parent_dir = str(Path(__file__).resolve().parent.parent)
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
+    # Also add bin directory for env_config
+    bin_dir = str(Path(__file__).resolve().parent)
+    if bin_dir not in sys.path:
+        sys.path.insert(0, bin_dir)
+
+from env_config import get_env_config
 
 import couchdb
 
@@ -112,6 +131,25 @@ Examples:
 
   # Verbose mode
   %(prog)s --all -v 3
+
+  # Preview without saving (dry run)
+  %(prog)s --publication mycotaxon --dry-run
+
+  # Limit number of items
+  %(prog)s --publication mycotaxon --limit 10
+
+  # Skip existing documents
+  %(prog)s --publication mycotaxon --skip-existing
+
+Work Control Options:
+  --dry-run             Preview what would be ingested without saving
+  --skip-existing       Skip documents that already exist in CouchDB
+  --limit N             Process at most N items
+
+Environment Variables for Work Control:
+  DRY_RUN=1             Same as --dry-run
+  SKIP_EXISTING=1       Same as --skip-existing
+  LIMIT=N               Same as --limit N
         """
     )
 
@@ -221,7 +259,10 @@ def run_ingestion(
     config: Dict,
     user_agent: str = 'synoptickeyof.life',
     robots_url: Optional[str] = None,
-    verbosity: int = 2
+    verbosity: int = 2,
+    dry_run: bool = False,
+    skip_existing: bool = False,
+    limit: Optional[int] = None,
 ) -> None:
     """
     Run a single ingestion task.
@@ -232,6 +273,9 @@ def run_ingestion(
         user_agent: User agent string
         robots_url: Custom robots.txt URL
         verbosity: Verbosity level
+        dry_run: If True, preview without saving
+        skip_existing: If True, skip documents that already exist
+        limit: If set, process at most this many items
     """
     # Set up robot parser
     source = config.get('source', 'unknown')
@@ -258,6 +302,9 @@ def run_ingestion(
         'user_agent': user_agent,
         'robot_parser': robot_parser,
         'verbosity': verbosity,
+        'dry_run': dry_run,
+        'skip_existing': skip_existing,
+        'limit': limit,
         # Add all config values (mode, urls, paths, etc.)
         **{k: Path(v) if k in ('root', 'local_path') and isinstance(v, str) else v
            for k, v in config.items()
@@ -312,6 +359,9 @@ def main() -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
+    # Get environment configuration (includes command-line overrides)
+    env_config = get_env_config()
+
     parser = create_parser()
     args = parser.parse_args()
 
@@ -365,7 +415,10 @@ def main() -> int:
                     config=config,
                     user_agent=args.user_agent,
                     robots_url=args.robots_url,
-                    verbosity=args.verbosity
+                    verbosity=args.verbosity,
+                    dry_run=env_config.get('dry_run', False),
+                    skip_existing=env_config.get('skip_existing', False),
+                    limit=env_config.get('limit'),
                 )
         elif args.publication:
             # Use predefined source
@@ -387,7 +440,10 @@ def main() -> int:
                 config=config,
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
-                verbosity=args.verbosity
+                verbosity=args.verbosity,
+                dry_run=env_config.get('dry_run', False),
+                skip_existing=env_config.get('skip_existing', False),
+                limit=env_config.get('limit'),
             )
         elif args.rss:
             # Direct RSS mode - construct config dict
@@ -403,7 +459,10 @@ def main() -> int:
                 config=config,
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
-                verbosity=args.verbosity
+                verbosity=args.verbosity,
+                dry_run=env_config.get('dry_run', False),
+                skip_existing=env_config.get('skip_existing', False),
+                limit=env_config.get('limit'),
             )
         elif args.local:
             # Direct local mode - construct config dict
@@ -420,7 +479,10 @@ def main() -> int:
                 config=config,
                 user_agent=args.user_agent,
                 robots_url=args.robots_url,
-                verbosity=args.verbosity
+                verbosity=args.verbosity,
+                dry_run=env_config.get('dry_run', False),
+                skip_existing=env_config.get('skip_existing', False),
+                limit=env_config.get('limit'),
             )
 
         if args.verbosity >= 2:

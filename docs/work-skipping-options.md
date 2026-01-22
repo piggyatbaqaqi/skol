@@ -142,18 +142,54 @@ This document summarizes the current state of work-skipping options across SKOL 
 
 ---
 
-## Summary Matrix
+## Summary Matrix (Updated)
 
-| Program | --dry-run | --skip-existing | --force | --limit | --doc-id | --incremental |
-|---------|:---------:|:---------------:|:-------:|:-------:|:--------:|:-------------:|
-| ingest.py | - | - | - | - | - | - |
-| train_classifier.py | - | - | - | - | - | - |
-| predict_classifier.py | - | - | - | - | - | - |
-| extract_taxa_to_couchdb.py | - | (idempotent) | - | - | YES | - |
-| embed_taxa.py | - | (auto) | YES | - | - | - |
-| taxa_to_json.py | YES | YES | - | YES | - | YES |
+All programs now support standard options via `env_config.py`:
+
+| Program | --dry-run | --skip-existing | --force | --limit | --doc-ids | --incremental |
+|---------|:---------:|:---------------:|:-------:|:-------:|:---------:|:-------------:|
+| ingest.py | YES | YES | - | YES | - | - |
+| train_classifier.py | YES | YES | YES | - | - | - |
+| predict_classifier.py | YES | YES | YES | YES | YES | - |
+| extract_taxa_to_couchdb.py | YES | (idempotent) | - | YES | YES | - |
+| embed_taxa.py | YES | YES (default) | YES | - | - | - |
+| taxa_to_json.py | YES | YES | YES | YES | YES | YES |
 | regenerate_from_pdf.py | YES | - | - | - | YES | - |
 | regenerate_txt_with_pages.py | YES | - | - | - | YES | - |
+
+**Note:** `--doc-ids` now accepts comma-separated list of document IDs (renamed from `--doc-id`).
+
+---
+
+## Centralized Configuration (env_config.py)
+
+All standard options are now centralized in `bin/env_config.py` which provides:
+
+### Environment Variables
+```bash
+DRY_RUN=1              # Preview without making changes
+SKIP_EXISTING=1        # Skip records that already have output
+FORCE=1                # Process even if output exists
+INCREMENTAL=1          # Save each record immediately
+LIMIT=N                # Process at most N records
+DOC_IDS=id1,id2,...    # Process only specific document IDs
+```
+
+### Command-Line Arguments
+All programs automatically support these via `env_config.py`:
+```bash
+--dry-run              # Preview without making changes
+--skip-existing        # Skip records that already have output
+--force                # Process even if output exists
+--incremental          # Save each record immediately
+--limit N              # Process at most N records
+--doc-id id1,id2,...   # Process only specific document IDs (comma-separated)
+```
+
+### Priority Order
+1. Command-line arguments (highest priority)
+2. Environment variables
+3. Default values (lowest priority)
 
 ---
 
@@ -263,19 +299,23 @@ Programs should be **explicit** about their skip behavior:
 
 Exception: Idempotent programs (like `extract_taxa_to_couchdb.py`) don't need skip options since re-running is safe and produces the same output.
 
-### Implementation Priority
+### Implementation Status
+
+✅ **Completed** - All programs now have unified options via `env_config.py`:
 
 1. **High Priority** (frequently re-run, long-running):
-   - `predict_classifier.py`: Add `--dry-run`, `--skip-existing`, `--doc-id`, `--limit`
-   - `train_classifier.py`: Add `--dry-run`, `--force` (for Redis key overwrite)
+   - ✅ `predict_classifier.py`: Added `--dry-run`, `--skip-existing`, `--force`, `--doc-ids`, `--limit`
+   - ✅ `train_classifier.py`: Added `--dry-run`, `--skip-existing`, `--force`
 
 2. **Medium Priority** (occasionally re-run):
-   - `ingest.py`: Add `--dry-run`, `--limit`
-   - `extract_taxa_to_couchdb.py`: Add `--dry-run`, `--limit`
+   - ✅ `ingest.py`: Added `--dry-run`, `--skip-existing`, `--limit`
+   - ✅ `extract_taxa_to_couchdb.py`: Added `--dry-run`, `--doc-ids`, `--limit`
+   - ✅ `embed_taxa.py`: Added `--dry-run`, `--skip-existing` (was default), `--force`
+   - ✅ `taxa_to_json.py`: Added `--doc-ids`, `--force` (already had other options)
 
 3. **Low Priority** (fixes/, already have good options):
-   - `regenerate_from_pdf.py`: Add `--limit`
-   - `regenerate_txt_with_pages.py`: Add `--limit`
+   - `regenerate_from_pdf.py`: Has `--dry-run`, `--doc-id`
+   - `regenerate_txt_with_pages.py`: Has `--dry-run`, `--doc-id`
 
 ### Checking for Existing Output
 

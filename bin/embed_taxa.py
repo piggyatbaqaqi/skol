@@ -41,7 +41,9 @@ def compute_and_save_embeddings(
     config: Dict[str, Any],
     force: bool = False,
     verbosity: int = 1,
-    expire_override: int = None
+    expire_override: int = None,
+    dry_run: bool = False,
+    skip_existing: bool = True,
 ) -> None:
     """
     Load taxa descriptions from CouchDB, compute embeddings, and save to Redis.
@@ -51,6 +53,8 @@ def compute_and_save_embeddings(
         force: If True, compute embeddings even if they already exist in Redis
         verbosity: Verbosity level (0=silent, 1=info, 2=debug)
         expire_override: Optional expiration time override (seconds)
+        dry_run: If True, show what would be computed without saving
+        skip_existing: If True, skip if embeddings already exist (default behavior)
     """
     # Determine expiration time
     embedding_expire = expire_override if expire_override is not None else config['embedding_expire']
@@ -72,6 +76,10 @@ def compute_and_save_embeddings(
         print(f"Expiration: {embedding_expire} seconds ({embedding_expire / 86400:.1f} days)")
     else:
         print(f"Expiration: None (never expires)")
+    if dry_run:
+        print(f"Mode: DRY RUN (no changes will be saved)")
+    if force:
+        print(f"Mode: FORCE (recompute even if exists)")
     print()
 
     # Connect to Redis
@@ -91,7 +99,8 @@ def compute_and_save_embeddings(
         sys.exit(1)
 
     # Check if embeddings already exist
-    if not force and redis_client.exists(config['embedding_name']):
+    embedding_exists = redis_client.exists(config['embedding_name'])
+    if skip_existing and not force and embedding_exists:
         print(f"\n✓ Embeddings already exist in Redis: {config['embedding_name']}")
         print(f"  Use --force to recompute them")
         return
@@ -129,6 +138,15 @@ def compute_and_save_embeddings(
         sys.exit(1)
 
     # Compute embeddings
+    if dry_run:
+        print(f"\n[DRY RUN] Would compute embeddings for {len(descriptions)} taxa")
+        print(f"[DRY RUN] Would save to Redis key: {config['embedding_name']}")
+        if embedding_expire:
+            print(f"[DRY RUN] With expiration: {embedding_expire} seconds")
+        if embedding_exists:
+            print(f"[DRY RUN] Would overwrite existing embeddings")
+        return
+
     if verbosity >= 1:
         print("\nComputing embeddings...")
 
@@ -169,7 +187,15 @@ def main():
         description='Compute sBERT embeddings for taxa and save to Redis',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+Work Control Options (from env_config):
+  --dry-run             Preview what would be computed without saving
+  --skip-existing       Skip if embeddings already exist (default behavior)
+  --force               Recompute even if embeddings exist (overrides --skip-existing)
+
 Environment Variables:
+  DRY_RUN=1             Same as --dry-run
+  SKIP_EXISTING=1       Same as --skip-existing (default)
+  FORCE=1               Same as --force
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
   COUCHDB_PASSWORD      CouchDB password (default: SU2orange!)
@@ -181,16 +207,11 @@ Environment Variables:
 
 Examples:
   python embed_taxa.py --force                  # Recompute with default expiration
+  python embed_taxa.py --dry-run                # Preview without saving
   python embed_taxa.py --expire 604800          # Expire after 7 days
   python embed_taxa.py --expire None            # Never expire
   python embed_taxa.py --expire 0               # Never expire (same as None)
 """
-    )
-
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Recompute embeddings even if they already exist in Redis'
     )
 
     def parse_expire(value):
@@ -224,13 +245,20 @@ Examples:
     # - If user provided --expire N: args.expire == N, use that value
     expire_override = getattr(args, 'expire', None)
 
+    # Use env_config values for work control options (args.force overrides if explicitly set)
+    force = args.force or config.get('force', False)
+    dry_run = config.get('dry_run', False)
+    skip_existing = config.get('skip_existing', True)  # Default to True for this script
+
     # Run embedding computation
     try:
         compute_and_save_embeddings(
             config=config,
-            force=args.force,
+            force=force,
             verbosity=config['verbosity'],
-            expire_override=expire_override
+            expire_override=expire_override,
+            dry_run=dry_run,
+            skip_existing=skip_existing,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Embedding computation interrupted by user")

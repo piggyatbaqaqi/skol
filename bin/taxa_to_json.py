@@ -76,7 +76,10 @@ def translate_taxa_to_json(
     validate: bool = True,
     dry_run: bool = False,
     incremental: bool = False,
-    skip_existing: bool = False
+    skip_existing: bool = False,
+    doc_ids: Optional[list] = None,
+    force: bool = False,
+    recompute_invalid: bool = False,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -94,6 +97,9 @@ def translate_taxa_to_json(
         dry_run: If True, show what would be done without actually saving
         incremental: If True, save each record as it's translated (recommended)
         skip_existing: If True, skip records that already exist in destination database
+        doc_ids: If specified, only process these specific document IDs
+        force: If True, process even if output already exists (overrides skip_existing)
+        recompute_invalid: If True, only process records with invalid/missing JSON in destination
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -122,8 +128,14 @@ def translate_taxa_to_json(
         print(f"Mode: DRY RUN (no changes will be saved)")
     if incremental:
         print(f"Mode: INCREMENTAL (save each record immediately)")
-    if skip_existing:
+    if skip_existing and not force:
         print(f"Mode: SKIP EXISTING (skip records already in destination)")
+    if force:
+        print(f"Mode: FORCE (process even if output exists)")
+    if doc_ids:
+        print(f"Processing specific doc_ids: {len(doc_ids)} documents")
+    if recompute_invalid:
+        print(f"Mode: RECOMPUTE INVALID (only process records with invalid/missing JSON)")
     print()
 
     # Initialize Spark
@@ -176,8 +188,79 @@ def translate_taxa_to_json(
         if verbosity >= 1:
             print(f"✓ Loaded {loaded_count} taxa")
 
-        # Skip existing records if requested
-        if skip_existing:
+        # Filter to specific doc_ids if provided
+        if doc_ids:
+            from pyspark.sql.functions import col
+            taxa_df = taxa_df.filter(col("_id").isin(doc_ids))
+            filtered_count = taxa_df.count()
+            if verbosity >= 1:
+                print(f"  Filtered to {len(doc_ids)} specified doc_ids: {filtered_count} found")
+            loaded_count = filtered_count
+
+            if loaded_count == 0:
+                print(f"\n⚠ No taxa found for specified doc_ids")
+                return
+
+        # Filter to only invalid records if recompute_invalid is set
+        if recompute_invalid:
+            if verbosity >= 1:
+                print(f"\nFinding records with invalid/missing JSON in {dest_db}...")
+
+            import couchdb
+            server = couchdb.Server(couchdb_url)
+            if username and password:
+                server.resource.credentials = (username, password)
+
+            # Find doc_ids with invalid or missing json_annotated
+            invalid_ids = set()
+            if dest_db in server:
+                dest_db_conn = server[dest_db]
+                for doc_id in dest_db_conn:
+                    if doc_id.startswith('_design/'):
+                        continue
+                    try:
+                        doc = dest_db_conn[doc_id]
+                        json_annotated = doc.get('json_annotated')
+                        json_valid = doc.get('json_valid')
+                        # Invalid if: no json_annotated, empty json_annotated, or explicitly marked invalid
+                        if not json_annotated or json_valid == 'false':
+                            invalid_ids.add(doc_id)
+                    except Exception:
+                        # If we can't read the doc, consider it invalid
+                        invalid_ids.add(doc_id)
+
+            if verbosity >= 1:
+                print(f"  Found {len(invalid_ids)} records with invalid/missing JSON")
+
+            if not invalid_ids:
+                print(f"\n✓ No invalid records found in {dest_db}, nothing to recompute")
+                return
+
+            # Filter to only invalid records using Spark
+            from pyspark.sql.functions import col
+            invalid_ids_broadcast = spark.sparkContext.broadcast(invalid_ids)
+
+            def in_invalid(doc_id):
+                return doc_id in invalid_ids_broadcast.value
+
+            from pyspark.sql.functions import udf
+            from pyspark.sql.types import BooleanType
+            in_invalid_udf = udf(in_invalid, BooleanType())
+
+            taxa_df = taxa_df.filter(in_invalid_udf(col("_id")))
+            filtered_count = taxa_df.count()
+
+            if verbosity >= 1:
+                print(f"  Filtered to {filtered_count} invalid records to recompute")
+
+            loaded_count = filtered_count
+
+            if loaded_count == 0:
+                print(f"\n⚠ No matching taxa found in source for invalid records")
+                return
+
+        # Skip existing records if requested (unless --force)
+        if skip_existing and not force:
             if verbosity >= 1:
                 print(f"\nChecking for existing records in {dest_db}...")
 
@@ -346,7 +429,21 @@ def main():
         description='Convert taxa descriptions to structured JSON using a fine-tuned Mistral model',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+Work Control Options (from env_config):
+  --dry-run             Preview what would be done without saving
+  --skip-existing       Skip records already in destination database
+  --force               Process even if output exists (overrides --skip-existing)
+  --limit N             Process at most N records
+  --doc-id ID1,ID2,...  Process only specific document IDs (comma-separated)
+  --incremental         Save each record immediately (crash-resistant)
+
 Environment Variables:
+  DRY_RUN=1             Same as --dry-run
+  SKIP_EXISTING=1       Same as --skip-existing
+  FORCE=1               Same as --force
+  LIMIT=N               Same as --limit N
+  DOC_IDS=id1,id2,...   Same as --doc-id
+  INCREMENTAL=1         Same as --incremental
   COUCHDB_URL           CouchDB URL (default: http://localhost:5984)
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
@@ -480,6 +577,15 @@ Examples:
     checkpoint_path = args.checkpoint or config.get('checkpoint_path')
     verbosity = args.verbosity if args.verbosity is not None else config['verbosity']
 
+    # Merge work control options from command-line args and env_config
+    # Command-line args take precedence over env_config
+    dry_run = args.dry_run or config.get('dry_run', False)
+    skip_existing = args.skip_existing or config.get('skip_existing', False)
+    incremental = args.incremental or config.get('incremental', False)
+    force = config.get('force', False)  # Only from env_config (no command-line arg)
+    limit = args.limit if args.limit is not None else config.get('limit')
+    doc_ids = config.get('doc_ids')  # Only from env_config (via --doc-id command line)
+
     # Run translation
     try:
         translate_taxa_to_json(
@@ -489,12 +595,14 @@ Examples:
             checkpoint_path=checkpoint_path,
             pattern=args.pattern,
             batch_size=args.batch_size,
-            limit=args.limit,
+            limit=limit,
             verbosity=verbosity,
             validate=not args.no_validate,
-            dry_run=args.dry_run,
-            incremental=args.incremental,
-            skip_existing=args.skip_existing
+            dry_run=dry_run,
+            incremental=incremental,
+            skip_existing=skip_existing,
+            doc_ids=doc_ids,
+            force=force,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

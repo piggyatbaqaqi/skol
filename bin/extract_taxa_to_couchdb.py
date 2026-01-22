@@ -615,7 +615,13 @@ class TaxonExtractor:
         results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(self._save_schema)
         return results_df
 
-    def run_pipeline(self, pattern: str = "*.txt.ann", doc_id: Optional[str] = None) -> DataFrame:
+    def run_pipeline(
+        self,
+        pattern: str = "*.txt.ann",
+        doc_ids: Optional[list] = None,
+        dry_run: bool = False,
+        limit: Optional[int] = None,
+    ) -> DataFrame:
         """
         Run the complete pipeline: load, extract, and save taxa.
 
@@ -627,7 +633,9 @@ class TaxonExtractor:
 
         Args:
             pattern: Pattern for attachment names (default: "*.txt.ann")
-            doc_id: If specified, only process this single ingest document ID
+            doc_ids: If specified, only process these ingest document IDs
+            dry_run: If True, extract taxa but don't save to CouchDB
+            limit: If specified, process at most this many documents
 
         Returns:
             DataFrame with columns: doc_id, success, error_message
@@ -637,23 +645,46 @@ class TaxonExtractor:
             >>> results.filter("success = true").count()
             >>> results.filter("success = false").show()
             >>> # Process single document
-            >>> results = extractor.run_pipeline(doc_id="my_document_id")
+            >>> results = extractor.run_pipeline(doc_ids=["my_document_id"])
+            >>> # Dry run
+            >>> results = extractor.run_pipeline(dry_run=True)
         """
+        from pyspark.sql.functions import col
+
         # Step 1: Load annotated documents from CouchDB
         annotated_df = self.load_annotated_documents(pattern)
 
-        # Filter to single document if doc_id specified
-        if doc_id:
-            from pyspark.sql.functions import col
-            annotated_df = annotated_df.filter(col("doc_id") == doc_id)
+        # Filter to specific documents if doc_ids specified
+        if doc_ids:
+            annotated_df = annotated_df.filter(col("doc_id").isin(doc_ids))
             if self.verbosity >= 1:
                 count = annotated_df.count()
-                print(f"Filtered to doc_id={doc_id}: {count} attachment(s)")
+                print(f"Filtered to {len(doc_ids)} doc_id(s): {count} attachment(s)")
+
+        # Apply limit if specified
+        if limit is not None:
+            # Get distinct doc_ids and limit them
+            distinct_doc_ids = annotated_df.select("doc_id").distinct().limit(limit)
+            annotated_df = annotated_df.join(distinct_doc_ids, "doc_id")
+            if self.verbosity >= 1:
+                count = annotated_df.count()
+                print(f"Limited to {limit} documents: {count} attachment(s)")
 
         # Step 2: Extract taxa from annotated documents
         taxa_df = self.extract_taxa(annotated_df)
 
-        # Step 3: Save taxa to CouchDB
+        # Step 3: Handle dry run or save taxa to CouchDB
+        if dry_run:
+            # Dry run - just show what would be saved
+            if self.verbosity >= 1:
+                taxa_count = taxa_df.count()
+                print(f"\n[DRY RUN] Would save {taxa_count} taxa to {self.taxon_db_name}")
+                if self.verbosity >= 2:
+                    print("\n[DRY RUN] Sample taxa:")
+                    taxa_df.select("_id", "taxon", "source").show(5, truncate=50)
+            # Return empty results DataFrame for dry run
+            return self.spark.createDataFrame([], self._save_schema)
+
         results_df = self.save_taxa(taxa_df)
 
         return results_df
@@ -681,17 +712,21 @@ Configuration (via environment variables or command-line arguments):
   --taxon-password        Password for taxon database
   --pattern               Pattern for attachment names (default: *.txt.ann)
 
+Work Control Options (from env_config):
+  --dry-run               Preview what would be extracted without saving
+  --limit N               Process at most N documents
+  --doc-id ID1,ID2,...    Process only specific document IDs (comma-separated)
+
+Environment Variables:
+  DRY_RUN=1               Same as --dry-run
+  LIMIT=N                 Same as --limit N
+  DOC_IDS=id1,id2,...     Same as --doc-id
+
 Note: All database configuration can be set via command-line arguments to env_config.
       Example: python extract_taxa_to_couchdb.py --ingest-database mydb --taxon-database mytaxa
 
 Script-specific Options:
 """
-    )
-    parser.add_argument(
-        "--doc-id",
-        type=str,
-        default=None,
-        help="Process only this specific ingest document ID (skip all others)"
     )
     parser.add_argument(
         "--debug-trace",
@@ -756,8 +791,21 @@ Script-specific Options:
         verbosity=config['verbosity']
     )
 
-    # Run pipeline
-    results = extractor.run_pipeline(pattern=config['pattern'], doc_id=args.doc_id)
+    # Run pipeline with standard options from env_config
+    if config['verbosity'] >= 1:
+        if config.get('dry_run'):
+            print("[DRY RUN MODE]")
+        if config.get('doc_ids'):
+            print(f"Processing specific doc_ids: {config['doc_ids']}")
+        if config.get('limit'):
+            print(f"Limiting to {config['limit']} documents")
+
+    results = extractor.run_pipeline(
+        pattern=config['pattern'],
+        doc_ids=config.get('doc_ids'),
+        dry_run=config.get('dry_run', False),
+        limit=config.get('limit'),
+    )
 
     # Show results
     if config['verbosity'] >= 1:

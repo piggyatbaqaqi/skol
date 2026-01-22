@@ -12,6 +12,15 @@ Usage:
 Example:
     python train_classifier.py --model logistic_sections --verbosity 2
     python train_classifier.py --read-text --save-text lazy
+
+    # Skip if model already exists in Redis
+    python train_classifier.py --skip-existing
+
+    # Force retrain even if model exists
+    python train_classifier.py --force
+
+    # Preview what would be trained without saving
+    python train_classifier.py --dry-run
 """
 
 import argparse
@@ -96,7 +105,10 @@ def train_classifier(
     redis_client: redis.Redis,
     read_text_override: Optional[bool] = None,
     save_text_override: Optional[str] = None,
-    expire_override: Optional[str] = None
+    expire_override: Optional[str] = None,
+    dry_run: bool = False,
+    skip_existing: bool = False,
+    force: bool = False,
 ) -> None:
     """
     Train a classifier model and save it to Redis.
@@ -109,6 +121,9 @@ def train_classifier(
         read_text_override: Optional read_text parameter override
         save_text_override: Optional save_text parameter override ('eager', 'lazy', or None)
         expire_override: Optional Redis expiration time override in HH:MM:SS format (None = no expiration)
+        dry_run: If True, preview without training or saving
+        skip_existing: If True, skip if model already exists in Redis
+        force: If True, train even if model exists (overrides skip_existing)
     """
     # Apply overrides if provided and use config verbosity
     model_config = model_config.copy()
@@ -144,7 +159,37 @@ def train_classifier(
     print(f"Redis key: {classifier_model_name}")
     print(f"CouchDB: {couchdb_url}")
     print(f"Training database: {model_config.get('couchdb_training_database')}")
+    if dry_run:
+        print(f"Mode: DRY RUN (no changes will be saved)")
+    if skip_existing and not force:
+        print(f"Mode: SKIP EXISTING (skip if model exists in Redis)")
+    if force:
+        print(f"Mode: FORCE (train even if model exists)")
     print()
+
+    # Check if model already exists in Redis (unless --force)
+    model_exists = redis_client.exists(classifier_model_name)
+    if skip_existing and not force and model_exists:
+        print(f"✓ Model already exists in Redis: {classifier_model_name}")
+        print("  Use --force to retrain anyway")
+        return
+
+    if model_exists and not force:
+        print(f"⚠ Warning: Model will overwrite existing key: {classifier_model_name}")
+
+    # Handle dry-run mode
+    if dry_run:
+        print(f"\n[DRY RUN] Would train model with configuration:")
+        print(f"  Model type: {model_config.get('model_type', 'N/A')}")
+        print(f"  Extraction mode: {model_config.get('extraction_mode', 'N/A')}")
+        print(f"  Word vocab size: {model_config.get('word_vocab_size', 'N/A')}")
+        print(f"  Suffix vocab size: {model_config.get('suffix_vocab_size', 'N/A')}")
+        print(f"  Max iterations: {model_config.get('maxIter', 'N/A')}")
+        print(f"  Regularization: {model_config.get('regParam', 'N/A')}")
+        print(f"\n[DRY RUN] Would save to Redis key: {classifier_model_name}")
+        if redis_expire is not None:
+            print(f"[DRY RUN] With expiration: {redis_expire} seconds")
+        return
 
     # Create Spark session
     print("Initializing Spark session...")
@@ -213,7 +258,15 @@ def main():
 Available Models:
   """ + '\n  '.join([f"{k}: {v.get('name', k)}" for k, v in MODEL_CONFIGS.items()]) + """
 
+Work Control Options:
+  --dry-run             Preview what would be trained without saving
+  --skip-existing       Skip if model already exists in Redis
+  --force               Train even if model exists (overrides --skip-existing)
+
 Environment Variables:
+  DRY_RUN=1             Same as --dry-run
+  SKIP_EXISTING=1       Same as --skip-existing
+  FORCE=1               Same as --force
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
   COUCHDB_PASSWORD      CouchDB password (default: SU2orange!)
@@ -313,7 +366,10 @@ Environment Variables:
             redis_client=redis_client,
             read_text_override=args.read_text or None,
             save_text_override=args.save_text,
-            expire_override=args.expire
+            expire_override=args.expire,
+            dry_run=config.get('dry_run', False),
+            skip_existing=config.get('skip_existing', False),
+            force=config.get('force', False),
         )
     except KeyboardInterrupt:
         print("\n\n✗ Training interrupted by user")

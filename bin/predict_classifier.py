@@ -8,17 +8,29 @@ documents in CouchDB, and saves the predictions back to CouchDB as .ann files.
 Usage:
     python predict_classifier.py [--model MODEL_NAME] [--verbosity LEVEL]
                                 [--read-text] [--save-text {eager,lazy}]
-                                [--pattern PATTERN] [--batch-size SIZE]
+                                [--couchdb-pattern PATTERN] [--prediction-batch-size SIZE]
 
 Example:
     python predict_classifier.py --model logistic_sections --verbosity 2
-    python predict_classifier.py --pattern "*.pdf" --batch-size 96
+    python predict_classifier.py --couchdb-pattern "*.pdf" --prediction-batch-size 96
+
+    # Skip documents that already have .ann attachments
+    python predict_classifier.py --skip-existing
+
+    # Process only specific documents
+    python predict_classifier.py --doc-id doc1,doc2,doc3
+
+    # Preview what would be done without saving
+    python predict_classifier.py --dry-run
+
+    # Process at most 10 documents
+    python predict_classifier.py --limit 10
 """
 
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 import redis
 from pyspark.sql import SparkSession
@@ -82,7 +94,12 @@ def predict_and_save(
     config: Dict[str, Any],
     redis_client: redis.Redis,
     read_text_override: bool = False,
-    save_text_override: str = None
+    save_text_override: str = None,
+    dry_run: bool = False,
+    skip_existing: bool = False,
+    force: bool = False,
+    limit: Optional[int] = None,
+    doc_ids: Optional[List[str]] = None,
 ) -> None:
     """
     Load classifier from Redis, make predictions, and save to CouchDB.
@@ -94,6 +111,11 @@ def predict_and_save(
         redis_client: Redis client instance
         read_text_override: Optional read_text parameter override
         save_text_override: Optional save_text parameter override
+        dry_run: If True, preview without saving changes
+        skip_existing: If True, skip documents that already have .ann attachments
+        force: If True, process even if output exists (overrides skip_existing)
+        limit: If set, process at most this many documents
+        doc_ids: If set, only process these specific document IDs
     """
     # Apply overrides and use config verbosity
     model_config = model_config.copy()
@@ -128,6 +150,16 @@ def predict_and_save(
     print(f"Database: {config['ingest_db_name']}")
     print(f"Pattern: {pattern}")
     print(f"Batch size: {batch_size}")
+    if dry_run:
+        print(f"Mode: DRY RUN (no changes will be saved)")
+    if skip_existing and not force:
+        print(f"Mode: SKIP EXISTING (skip documents with .ann attachments)")
+    if force:
+        print(f"Mode: FORCE (process all, ignore existing)")
+    if limit:
+        print(f"Limit: {limit} documents")
+    if doc_ids:
+        print(f"Document IDs: {', '.join(doc_ids[:5])}{'...' if len(doc_ids) > 5 else ''}")
     print()
 
     # Check if model exists in Redis
@@ -174,13 +206,61 @@ def predict_and_save(
         print("\nLoading documents from CouchDB...")
         raw_df = classifier.load_raw()
 
+        # Filter by doc_ids if specified
+        if doc_ids:
+            from pyspark.sql.functions import col
+            doc_ids_set = set(doc_ids)
+            raw_df = raw_df.filter(col("doc_id").isin(list(doc_ids_set)))
+            if model_config.get('verbosity', 1) >= 1:
+                print(f"  Filtered to {len(doc_ids)} specified document(s)")
+
+        # Skip existing documents with .ann attachments (unless --force)
+        if skip_existing and not force:
+            import couchdb
+            couch_server = couchdb.Server(couchdb_url)
+            if config['couchdb_username'] and config['couchdb_password']:
+                couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+            db = couch_server[config['ingest_db_name']]
+
+            # Get doc_ids that already have .ann attachments
+            existing_ann_docs = set()
+            for doc_id in db:
+                try:
+                    doc = db[doc_id]
+                    attachments = doc.get('_attachments', {})
+                    if any(att.endswith('.ann') for att in attachments.keys()):
+                        existing_ann_docs.add(doc_id)
+                except Exception:
+                    continue
+
+            if existing_ann_docs:
+                from pyspark.sql.functions import col, udf
+                from pyspark.sql.types import BooleanType
+
+                existing_broadcast = spark.sparkContext.broadcast(existing_ann_docs)
+
+                def not_in_existing(doc_id):
+                    return doc_id not in existing_broadcast.value
+
+                not_existing_udf = udf(not_in_existing, BooleanType())
+                raw_df = raw_df.filter(not_existing_udf(col("doc_id")))
+
+                if model_config.get('verbosity', 1) >= 1:
+                    print(f"  Skipping {len(existing_ann_docs)} documents with existing .ann attachments")
+
+        # Apply limit if specified
+        if limit:
+            raw_df = raw_df.limit(limit)
+            if model_config.get('verbosity', 1) >= 1:
+                print(f"  Limited to {limit} documents")
+
         # Only count if verbosity >= 2 (expensive operation)
         if model_config.get('verbosity', 1) >= 2:
             doc_count = raw_df.count()
-            print(f"✓ Loaded {doc_count} documents")
+            print(f"✓ {doc_count} documents to process")
 
             if doc_count == 0:
-                print("\n⚠ No documents found matching pattern. Nothing to predict.")
+                print("\n⚠ No documents found matching criteria. Nothing to predict.")
                 return
         else:
             print("✓ Documents loaded (use --verbosity 2 to see count)")
@@ -201,14 +281,26 @@ def predict_and_save(
                 "doc_id", "line_number", "attachment_name", "predicted_label", "value"
             ).show(5, truncate=50)
 
-        # Save results back to CouchDB
-        print("\nSaving predictions to CouchDB as .ann attachments...")
-        classifier.save_annotated(predictions)
+        # Save results back to CouchDB (unless dry_run)
+        if dry_run:
+            print("\n[DRY RUN] Would save predictions to CouchDB as .ann attachments")
+            # Show what would be saved
+            if model_config.get('verbosity', 1) >= 1:
+                print("\n[DRY RUN] Sample predictions that would be saved:")
+                predictions.select(
+                    "doc_id", "line_number", "attachment_name", "predicted_label", "value"
+                ).show(10, truncate=50)
+        else:
+            print("\nSaving predictions to CouchDB as .ann attachments...")
+            classifier.save_annotated(predictions)
 
         print(f"\n{'='*70}")
-        print("Prediction Complete!")
+        print("Prediction Complete!" + (" (DRY RUN)" if dry_run else ""))
         print(f"{'='*70}")
-        print(f"✓ Predictions saved to CouchDB")
+        if dry_run:
+            print(f"[DRY RUN] Would save predictions to CouchDB")
+        else:
+            print(f"✓ Predictions saved to CouchDB")
         print(f"  Database: {config['ingest_db_name']}")
         if model_config.get('verbosity', 1) >= 2:
             # We have not calculated doc_count for lower verbosity.
@@ -234,6 +326,13 @@ def main():
 Available Models:
   """ + '\n  '.join([f"{k}: {v.get('name', k)}" for k, v in MODEL_CONFIGS.items()]) + """
 
+Work Control Options:
+  --dry-run               Preview what would be done without saving changes
+  --skip-existing         Skip documents that already have .ann attachments
+  --force                 Process even if .ann exists (overrides --skip-existing)
+  --limit N               Process at most N documents
+  --doc-id ID[,ID,...]    Process only specific document ID(s), comma-separated
+
 Configuration (via environment variables or command-line arguments):
   --couchdb-host          CouchDB host (default: 127.0.0.1:5984)
   --couchdb-username      CouchDB username (default: admin)
@@ -248,6 +347,13 @@ Configuration (via environment variables or command-line arguments):
   --cores                 Number of Spark cores (default: 4)
   --spark-driver-memory   Spark driver memory (default: 4g)
   --spark-executor-memory Spark executor memory (default: 4g)
+
+Environment Variables for Work Control:
+  DRY_RUN=1               Same as --dry-run
+  SKIP_EXISTING=1         Same as --skip-existing
+  FORCE=1                 Same as --force
+  LIMIT=N                 Same as --limit N
+  DOC_IDS=id1,id2,...     Same as --doc-id
 
 Note: Command-line arguments override environment variables.
       Use --couchdb-pattern instead of --pattern
@@ -328,7 +434,12 @@ Note: Command-line arguments override environment variables.
             config=config,
             redis_client=redis_client,
             read_text_override=args.read_text,
-            save_text_override=args.save_text
+            save_text_override=args.save_text,
+            dry_run=config.get('dry_run', False),
+            skip_existing=config.get('skip_existing', False),
+            force=config.get('force', False),
+            limit=config.get('limit'),
+            doc_ids=config.get('doc_ids'),
         )
     except KeyboardInterrupt:
         print("\n\n✗ Prediction interrupted by user")

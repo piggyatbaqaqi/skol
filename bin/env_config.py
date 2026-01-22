@@ -13,7 +13,24 @@ Configuration priority (highest to lowest):
 import argparse
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+
+
+def _parse_optional_int(value: Optional[str]) -> Optional[int]:
+    """Parse an optional integer from string, returning None if empty or invalid."""
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def _parse_doc_ids(value: Optional[str]) -> Optional[List[str]]:
+    """Parse a comma-separated list of document IDs, returning None if empty."""
+    if not value:
+        return None
+    return [doc_id.strip() for doc_id in value.split(',') if doc_id.strip()]
 
 
 def get_env_config() -> Dict[str, Any]:
@@ -89,6 +106,14 @@ def get_env_config() -> Dict[str, Any]:
 
         # General settings
         'verbosity': int(os.environ.get('VERBOSITY', '1')),
+
+        # Work-skipping and partial computation options
+        'dry_run': os.environ.get('DRY_RUN', '').lower() in ('1', 'true', 'yes'),
+        'skip_existing': os.environ.get('SKIP_EXISTING', '').lower() in ('1', 'true', 'yes'),
+        'force': os.environ.get('FORCE', '').lower() in ('1', 'true', 'yes'),
+        'incremental': os.environ.get('INCREMENTAL', '').lower() in ('1', 'true', 'yes'),
+        'limit': _parse_optional_int(os.environ.get('LIMIT')),
+        'doc_ids': _parse_doc_ids(os.environ.get('DOC_IDS')),
     }
 
     # Parse command-line arguments to override config
@@ -118,6 +143,20 @@ def get_env_config() -> Dict[str, Any]:
     # Path arguments
     parser.add_argument('--annotated-path', type=str, default=None, dest='annotated_path')
 
+    # Work-skipping and partial computation options
+    parser.add_argument('--dry-run', action='store_true', default=None, dest='dry_run',
+                        help='Preview what would be done without making changes')
+    parser.add_argument('--skip-existing', action='store_true', default=None, dest='skip_existing',
+                        help='Skip records/documents that already have output')
+    parser.add_argument('--force', action='store_true', default=None, dest='force',
+                        help='Process even if output already exists (overrides --skip-existing)')
+    parser.add_argument('--incremental', action='store_true', default=None, dest='incremental',
+                        help='Save each record as it completes (crash-resistant)')
+    parser.add_argument('--limit', type=int, default=None, dest='limit',
+                        help='Process at most N records')
+    parser.add_argument('--doc-id', '--doc-ids', type=str, default=None, dest='doc_ids',
+                        help='Process only specific document ID(s), comma-separated')
+
     # Parse known args (ignore unknown args to avoid breaking scripts with their own arguments)
     args, _ = parser.parse_known_args()
 
@@ -126,6 +165,9 @@ def get_env_config() -> Dict[str, Any]:
         if value is not None:
             if key == 'annotated_path':
                 base_config[key] = Path(value)
+            elif key == 'doc_ids':
+                # Parse comma-separated doc IDs from command line
+                base_config[key] = _parse_doc_ids(value)
             else:
                 base_config[key] = value
 
