@@ -40,7 +40,7 @@ echo "Installing all packages from local wheels..."
 ${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 
 echo "Installing ML dependencies..."
-${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch
+${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes
 
 # Set ownership of venv to skol user
 chown -R skol:skol ${SKOL_VENV}
