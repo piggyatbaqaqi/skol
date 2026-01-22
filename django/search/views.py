@@ -174,6 +174,8 @@ class SearchView(APIView):
                     result_dict['PageNumber'] = row['page_number']
                 if 'pdf_page' in row.index:
                     result_dict['PDFPage'] = row['pdf_page']
+                if 'pdf_label' in row.index:
+                    result_dict['PDFLabel'] = row['pdf_label']
 
                 results.append(result_dict)
 
