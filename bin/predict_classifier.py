@@ -5,6 +5,10 @@ Predict Labels Using SKOL Classifier from Redis
 This standalone program loads a trained classifier from Redis, applies it to
 documents in CouchDB, and saves the predictions back to CouchDB as .ann files.
 
+Before applying the ML model, documents are pre-filtered by checking for common
+taxonomy abbreviations (sp., var., gen., etc.). Documents are marked with a
+'taxonomy' field in CouchDB to speed up future processing.
+
 Usage:
     python predict_classifier.py [--model MODEL_NAME] [--verbosity LEVEL]
                                 [--read-text] [--save-text {eager,lazy}]
@@ -25,6 +29,10 @@ Example:
 
     # Process at most 10 documents
     python predict_classifier.py --limit 10
+
+Environment Variables:
+    TAXONOMY_ABBREVS - Comma-separated list of taxonomy abbreviations to check
+                       (default: comb.,fam.,gen.,ined.,var.,subg.,subsp.,sp.,f.,nov.,spec.,ssp.)
 """
 
 import argparse
@@ -82,6 +90,99 @@ def make_spark_session(config: Dict[str, Any]) -> SparkSession:
         .config("spark.driver.memory", config['spark_driver_memory']) \
         .config("spark.executor.memory", config['spark_executor_memory']) \
         .getOrCreate()
+
+
+def mark_taxonomy_documents(
+    doc_ids: List[str],
+    config: Dict[str, Any],
+    verbosity: int = 1
+) -> Dict[str, bool]:
+    """
+    Check documents for taxonomy abbreviations and mark them in CouchDB.
+
+    This performs a fast pre-filter by searching for common taxonomy abbreviations
+    (like 'sp.', 'var.', 'gen.', etc.) in document text. Documents are marked with
+    a 'taxonomy' field (true/false) in CouchDB.
+
+    Args:
+        doc_ids: List of document IDs to check
+        config: Environment configuration
+        verbosity: Verbosity level
+
+    Returns:
+        Dictionary mapping doc_id to taxonomy flag (True if contains abbreviations)
+    """
+    import couchdb
+    import re
+
+    abbrevs = config['taxonomy_abbrevs']
+
+    # Compile regex pattern for efficient single-pass checking
+    # Remove trailing periods and escape special regex characters
+    abbrev_parts = [re.escape(abbrev.rstrip('.')) for abbrev in abbrevs]
+    # Create pattern that matches any abbreviation followed by a period
+    # Use word boundary at start to avoid partial matches
+    abbrev_pattern = re.compile(r'\b(' + '|'.join(abbrev_parts) + r')\.')
+
+    if verbosity >= 1:
+        print(f"\nChecking {len(doc_ids)} documents for taxonomy abbreviations...")
+        if verbosity >= 2:
+            print(f"  Abbreviations: {', '.join(abbrevs)}")
+
+    # Connect to CouchDB
+    couch_server = couchdb.Server(config['couchdb_url'])
+    if config['couchdb_username'] and config['couchdb_password']:
+        couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+    db = couch_server[config['ingest_db_name']]
+
+    taxonomy_flags = {}
+    marked_count = 0
+
+    for doc_id in doc_ids:
+        try:
+            doc = db[doc_id]
+
+            # Get text content from attachments
+            text_content = ""
+            attachments = doc.get('_attachments', {})
+
+            # Check .txt attachment first (if exists)
+            for att_name in attachments.keys():
+                if att_name.endswith('.txt'):
+                    try:
+                        att_content = db.get_attachment(doc_id, att_name)
+                        if att_content:
+                            text_content = att_content.decode('utf-8', errors='ignore')
+                            break
+                    except Exception:
+                        continue
+
+            # If no .txt, we'll skip for now (PDF extraction is expensive)
+            # The taxonomy flag will be set during prediction if needed
+            if not text_content:
+                continue
+
+            # Check for taxonomy abbreviations (single pass with regex)
+            has_taxonomy = bool(abbrev_pattern.search(text_content))
+            taxonomy_flags[doc_id] = has_taxonomy
+
+            # Update document if flag changed
+            if 'taxonomy' not in doc or doc['taxonomy'] != has_taxonomy:
+                doc['taxonomy'] = has_taxonomy
+                db.save(doc)
+                marked_count += 1
+
+        except Exception as e:
+            if verbosity >= 2:
+                print(f"  Error checking {doc_id}: {e}")
+            continue
+
+    if verbosity >= 1:
+        taxonomy_count = sum(1 for v in taxonomy_flags.values() if v)
+        print(f"  Found {taxonomy_count} documents with taxonomy abbreviations")
+        print(f"  Updated {marked_count} documents with taxonomy flag")
+
+    return taxonomy_flags
 
 
 # ============================================================================
@@ -202,57 +303,172 @@ def predict_and_save(
 
         print(f"✓ Model loaded from Redis: {classifier_model_name}")
 
-        # Load raw data
-        print("\nLoading documents from CouchDB...")
-        raw_df = classifier.load_raw()
+        # For section mode, we need to filter doc_ids BEFORE loading to avoid extracting all PDFs
+        # Discover and filter doc_ids if needed
+        filtered_doc_ids = doc_ids  # Start with user-specified doc_ids (if any)
 
-        # Filter by doc_ids if specified
-        if doc_ids:
-            from pyspark.sql.functions import col
-            doc_ids_set = set(doc_ids)
-            raw_df = raw_df.filter(col("doc_id").isin(list(doc_ids_set)))
-            if model_config.get('verbosity', 1) >= 1:
-                print(f"  Filtered to {len(doc_ids)} specified document(s)")
-
-        # Skip existing documents with .ann attachments (unless --force)
-        if skip_existing and not force:
+        if not filtered_doc_ids or skip_existing or limit:
+            # Need to discover/filter doc_ids before loading
             import couchdb
             couch_server = couchdb.Server(couchdb_url)
             if config['couchdb_username'] and config['couchdb_password']:
                 couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
             db = couch_server[config['ingest_db_name']]
 
-            # Get doc_ids that already have .ann attachments
-            existing_ann_docs = set()
-            for doc_id in db:
-                try:
-                    doc = db[doc_id]
-                    attachments = doc.get('_attachments', {})
-                    if any(att.endswith('.ann') for att in attachments.keys()):
-                        existing_ann_docs.add(doc_id)
-                except Exception:
-                    continue
+            # If no doc_ids specified, discover all PDFs
+            if not filtered_doc_ids:
+                if model_config.get('verbosity', 1) >= 1:
+                    print("\nDiscovering PDF documents in database...")
+                all_doc_ids = []
+                for doc_id in db:
+                    try:
+                        doc = db[doc_id]
+                        attachments = doc.get('_attachments', {})
+                        if any(att.endswith('.pdf') for att in attachments.keys()):
+                            all_doc_ids.append(doc_id)
+                    except Exception:
+                        continue
+                filtered_doc_ids = all_doc_ids
+                if model_config.get('verbosity', 1) >= 1:
+                    print(f"  Found {len(filtered_doc_ids)} documents with PDF attachments")
 
-            if existing_ann_docs:
-                from pyspark.sql.functions import col, udf
-                from pyspark.sql.types import BooleanType
+            # Skip existing documents with .ann attachments (unless --force)
+            if skip_existing and not force:
+                if model_config.get('verbosity', 1) >= 1:
+                    print(f"\nFiltering out documents with existing .ann attachments...")
+                existing_ann_docs = set()
+                for doc_id in db:
+                    try:
+                        doc = db[doc_id]
+                        attachments = doc.get('_attachments', {})
+                        if any(att.endswith('.ann') for att in attachments.keys()):
+                            existing_ann_docs.add(doc_id)
+                    except Exception:
+                        continue
 
-                existing_broadcast = spark.sparkContext.broadcast(existing_ann_docs)
-
-                def not_in_existing(doc_id):
-                    return doc_id not in existing_broadcast.value
-
-                not_existing_udf = udf(not_in_existing, BooleanType())
-                raw_df = raw_df.filter(not_existing_udf(col("doc_id")))
+                original_count = len(filtered_doc_ids)
+                filtered_doc_ids = [d for d in filtered_doc_ids if d not in existing_ann_docs]
 
                 if model_config.get('verbosity', 1) >= 1:
-                    print(f"  Skipping {len(existing_ann_docs)} documents with existing .ann attachments")
+                    skipped = original_count - len(filtered_doc_ids)
+                    print(f"  Skipping {skipped} documents with existing .ann attachments")
+                    print(f"  Remaining: {len(filtered_doc_ids)} documents to process")
 
-        # Apply limit if specified
-        if limit:
-            raw_df = raw_df.limit(limit)
+            # Apply limit if specified
+            if limit and len(filtered_doc_ids) > limit:
+                if model_config.get('verbosity', 1) >= 1:
+                    print(f"\nLimiting to {limit} documents (from {len(filtered_doc_ids)})")
+                filtered_doc_ids = filtered_doc_ids[:limit]
+
+        # Check if we have any documents to process
+        if not filtered_doc_ids:
+            print("\n⚠ No documents found matching criteria. Nothing to predict.")
+            return
+
+        # Mark documents with taxonomy flag based on abbreviation presence
+        taxonomy_flags = mark_taxonomy_documents(
+            filtered_doc_ids,
+            config,
+            verbosity=model_config.get('verbosity', 1)
+        )
+
+        # Filter out documents without taxonomy abbreviations (unless --force)
+        if not force:
+            original_count = len(filtered_doc_ids)
+            # Keep only documents that have taxonomy abbreviations OR don't have .txt yet (will check after PDF extraction)
+            filtered_doc_ids = [
+                doc_id for doc_id in filtered_doc_ids
+                if taxonomy_flags.get(doc_id, True)  # True means not checked yet (no .txt)
+            ]
+
             if model_config.get('verbosity', 1) >= 1:
-                print(f"  Limited to {limit} documents")
+                skipped = original_count - len(filtered_doc_ids)
+                if skipped > 0:
+                    print(f"\nFiltering out documents without taxonomy abbreviations...")
+                    print(f"  Skipping {skipped} documents without taxonomy markers")
+                    print(f"  Remaining: {len(filtered_doc_ids)} documents to process")
+        else:
+            if model_config.get('verbosity', 1) >= 1:
+                no_taxonomy_count = sum(1 for v in taxonomy_flags.values() if v is False)
+                if no_taxonomy_count > 0:
+                    print(f"\n[FORCE MODE] Processing {no_taxonomy_count} documents without taxonomy markers")
+
+        # Check if we have any documents to process after taxonomy filtering
+        if not filtered_doc_ids:
+            print("\n⚠ No documents with taxonomy abbreviations found. Nothing to predict.")
+            print("  Use --force to process all documents regardless of taxonomy markers.")
+            return
+
+        # Recreate classifier with filtered doc_ids
+        if model_config.get('verbosity', 1) >= 1:
+            print(f"\nProcessing {len(filtered_doc_ids)} documents")
+
+        classifier = SkolClassifierV2(
+            spark=spark,
+
+            # Input configuration
+            input_source='couchdb',
+            couchdb_url=couchdb_url,
+            couchdb_database=config['ingest_db_name'],
+            couchdb_username=config['couchdb_username'],
+            couchdb_password=config['couchdb_password'],
+            couchdb_pattern=pattern,
+            couchdb_doc_ids=filtered_doc_ids,  # Pass filtered doc_ids
+
+            # Output configuration
+            output_dest='couchdb',
+            output_couchdb_suffix='.ann',
+
+            # Model I/O
+            auto_load_model=True,
+            model_storage='redis',
+            redis_client=redis_client,
+            redis_key=classifier_model_name,
+
+            # Model configuration
+            **model_config
+        )
+
+        # Load raw data (now only from filtered doc_ids)
+        # This step extracts PDFs to .txt attachments
+        print("\nLoading documents from CouchDB...")
+        raw_df = classifier.load_raw()
+
+        # Re-check taxonomy for documents that now have .txt (after PDF extraction)
+        # Only check documents that weren't checked before (not in taxonomy_flags dict)
+        if not force:
+            docs_to_recheck = [doc_id for doc_id in filtered_doc_ids if doc_id not in taxonomy_flags]
+
+            if docs_to_recheck and model_config.get('verbosity', 1) >= 1:
+                print(f"\nRe-checking {len(docs_to_recheck)} documents for taxonomy abbreviations after PDF extraction...")
+
+            # Mark documents again (this time they should have .txt attachments)
+            if docs_to_recheck:
+                new_taxonomy_flags = mark_taxonomy_documents(
+                    docs_to_recheck,
+                    config,
+                    verbosity=model_config.get('verbosity', 1)
+                )
+
+                # Update taxonomy_flags with new results
+                taxonomy_flags.update(new_taxonomy_flags)
+
+                # Filter raw_df to exclude sections from documents without taxonomy markers
+                docs_without_taxonomy = [
+                    doc_id for doc_id in filtered_doc_ids
+                    if taxonomy_flags.get(doc_id, False) is False
+                ]
+
+                if docs_without_taxonomy:
+                    if model_config.get('verbosity', 1) >= 1:
+                        print(f"  Filtering out {len(docs_without_taxonomy)} documents without taxonomy markers")
+
+                    # Filter DataFrame to exclude these documents
+                    from pyspark.sql.functions import col
+                    raw_df = raw_df.filter(~col("doc_id").isin(docs_without_taxonomy))
+
+                    # Update filtered_doc_ids to reflect final set
+                    filtered_doc_ids = [d for d in filtered_doc_ids if d not in docs_without_taxonomy]
 
         # Only count if verbosity >= 2 (expensive operation)
         if model_config.get('verbosity', 1) >= 2:

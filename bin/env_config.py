@@ -95,6 +95,13 @@ def get_env_config() -> Dict[str, Any]:
         'num_workers': int(os.environ.get('NUM_WORKERS', '4')),
         'union_batch_size': int(os.environ.get('UNION_BATCH_SIZE', '1000')),
 
+        # Taxonomy abbreviations for pre-filtering documents
+        'taxonomy_abbrevs': os.environ.get(
+            'TAXONOMY_ABBREVS',
+            'comb.,fam.,gen.,nom.,ined.,var.,subg.,subsp.,sp.,f.,syn.,'
+            'nov.,spec.,ssp.,spp.,sensu,s.l.,s.s.,s.str.,cf.,aff.,incertae,sed.'
+        ).split(','),
+
         # Data paths
         'annotated_path': Path(os.environ.get('ANNOTATED_PATH', Path.cwd().parent / "data" / "annotated")),
 
