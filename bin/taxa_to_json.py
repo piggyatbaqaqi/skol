@@ -32,6 +32,9 @@ Example:
 
     # Skip records that already exist in destination (for cheap restarts)
     python taxa_to_json.py --skip-existing --incremental
+
+    # Recompute only records with invalid/missing JSON (after model update)
+    python taxa_to_json.py --recompute-invalid --incremental
 """
 
 import argparse
@@ -436,6 +439,7 @@ Work Control Options (from env_config):
   --limit N             Process at most N records
   --doc-id ID1,ID2,...  Process only specific document IDs (comma-separated)
   --incremental         Save each record immediately (crash-resistant)
+  --recompute-invalid   Only process records with invalid/missing JSON in destination
 
 Environment Variables:
   DRY_RUN=1             Same as --dry-run
@@ -482,6 +486,9 @@ Examples:
 
   # Combination: debug with limit and incremental saving
   python taxa_to_json.py --limit 10 --incremental --verbosity 2
+
+  # Recompute only records with invalid/missing JSON (after model update)
+  python taxa_to_json.py --recompute-invalid --incremental
 """
     )
 
@@ -558,6 +565,12 @@ Examples:
     )
 
     parser.add_argument(
+        '--recompute-invalid',
+        action='store_true',
+        help='Only process records with invalid/missing JSON in destination database'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -585,6 +598,7 @@ Examples:
     force = config.get('force', False)  # Only from env_config (no command-line arg)
     limit = args.limit if args.limit is not None else config.get('limit')
     doc_ids = config.get('doc_ids')  # Only from env_config (via --doc-id command line)
+    recompute_invalid = args.recompute_invalid
 
     # Run translation
     try:
@@ -603,6 +617,7 @@ Examples:
             skip_existing=skip_existing,
             doc_ids=doc_ids,
             force=force,
+            recompute_invalid=recompute_invalid,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")
