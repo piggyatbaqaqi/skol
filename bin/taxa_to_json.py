@@ -29,6 +29,9 @@ Example:
 
     # Save each record as soon as it's translated (recommended for long jobs)
     python taxa_to_json.py --incremental
+
+    # Skip records that already exist in destination (for cheap restarts)
+    python taxa_to_json.py --skip-existing --incremental
 """
 
 import argparse
@@ -72,7 +75,8 @@ def translate_taxa_to_json(
     verbosity: int = 1,
     validate: bool = True,
     dry_run: bool = False,
-    incremental: bool = False
+    incremental: bool = False,
+    skip_existing: bool = False
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -89,6 +93,7 @@ def translate_taxa_to_json(
         validate: If True, validate JSON output
         dry_run: If True, show what would be done without actually saving
         incremental: If True, save each record as it's translated (recommended)
+        skip_existing: If True, skip records that already exist in destination database
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -117,6 +122,8 @@ def translate_taxa_to_json(
         print(f"Mode: DRY RUN (no changes will be saved)")
     if incremental:
         print(f"Mode: INCREMENTAL (save each record immediately)")
+    if skip_existing:
+        print(f"Mode: SKIP EXISTING (skip records already in destination)")
     print()
 
     # Initialize Spark
@@ -168,6 +175,51 @@ def translate_taxa_to_json(
 
         if verbosity >= 1:
             print(f"✓ Loaded {loaded_count} taxa")
+
+        # Skip existing records if requested
+        if skip_existing:
+            if verbosity >= 1:
+                print(f"\nChecking for existing records in {dest_db}...")
+
+            import couchdb
+            server = couchdb.Server(couchdb_url)
+            if username and password:
+                server.resource.credentials = (username, password)
+
+            # Get existing doc IDs from destination database
+            existing_ids = set()
+            if dest_db in server:
+                dest_db_conn = server[dest_db]
+                for doc_id in dest_db_conn:
+                    existing_ids.add(doc_id)
+
+            if verbosity >= 1:
+                print(f"  Found {len(existing_ids)} existing records in destination")
+
+            # Filter out existing records using Spark
+            from pyspark.sql.functions import col
+            existing_ids_broadcast = spark.sparkContext.broadcast(existing_ids)
+
+            def not_in_existing(doc_id):
+                return doc_id not in existing_ids_broadcast.value
+
+            from pyspark.sql.functions import udf
+            from pyspark.sql.types import BooleanType
+            not_existing_udf = udf(not_in_existing, BooleanType())
+
+            taxa_df = taxa_df.filter(not_existing_udf(col("_id")))
+            filtered_count = taxa_df.count()
+            skipped_count = loaded_count - filtered_count
+
+            if verbosity >= 1:
+                print(f"  Skipping {skipped_count} existing records")
+                print(f"  Processing {filtered_count} new records")
+
+            loaded_count = filtered_count
+
+            if loaded_count == 0:
+                print(f"\n✓ All records already exist in {dest_db}, nothing to process")
+                return
 
         # Apply limit if specified
         if limit and limit < loaded_count:
@@ -328,6 +380,9 @@ Examples:
   # Incremental mode: save each record immediately (recommended for long jobs)
   python taxa_to_json.py --incremental
 
+  # Skip records already in destination (for cheap restarts)
+  python taxa_to_json.py --skip-existing --incremental
+
   # Combination: debug with limit and incremental saving
   python taxa_to_json.py --limit 10 --incremental --verbosity 2
 """
@@ -400,6 +455,12 @@ Examples:
     )
 
     parser.add_argument(
+        '--skip-existing',
+        action='store_true',
+        help='Skip records that already exist in destination database (for cheap restarts)'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -432,7 +493,8 @@ Examples:
             verbosity=verbosity,
             validate=not args.no_validate,
             dry_run=args.dry_run,
-            incremental=args.incremental
+            incremental=args.incremental,
+            skip_existing=args.skip_existing
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")
