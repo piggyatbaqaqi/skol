@@ -39,6 +39,9 @@ ${SKOL_VENV}/bin/pip install --upgrade pip
 echo "Installing all packages from local wheels..."
 ${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 
+echo "Installing ML dependencies..."
+${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch
+
 # Set ownership of venv to skol user
 chown -R skol:skol ${SKOL_VENV}
 
@@ -107,7 +110,7 @@ chmod 755 ${SKOL_HOME}/bin/with_skol
 chown skol:skol ${SKOL_HOME}/bin/with_skol
 
 # Create symlinks for each command in /opt/skol/bin
-for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa; do
+for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json; do
     ln -sf with_skol ${SKOL_HOME}/bin/${cmd}
 done
 
@@ -116,7 +119,7 @@ chown -R skol:skol ${SKOL_HOME}/bin
 
 echo "SKOL installation complete."
 echo "Commands available in ${SKOL_HOME}/bin/:"
-echo "  ingest, train_classifier, predict_classifier, extract_taxa_to_couchdb, embed_taxa"
+echo "  ingest, train_classifier, predict_classifier, extract_taxa_to_couchdb, embed_taxa, taxa_to_json"
 echo "Or use: ${SKOL_HOME}/bin/with_skol <command>"
 
 #DEBHELPER#
