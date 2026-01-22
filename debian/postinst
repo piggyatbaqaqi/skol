@@ -50,6 +50,28 @@ cat > ${SKOL_HOME}/bin/with_skol << 'EOF'
 # Can be invoked directly: with_skol python script.py
 # Or via symlink: if symlinked as 'foo', runs foo.py
 
+. ~skol/.skol_env
+export MAILTO
+export COUCHDB_USER
+export COUCHDB_PASSWORD
+export COUCHDB_URL
+export INGEST_DATABASE
+export TAXON_DATABASE
+export LOGDIR
+export VERBOSITY
+
+# Redis Configuration
+export REDIS_HOST
+export REDIS_PORT
+
+# Email configuration
+export EMAIL_HOST
+export EMAIL_PORT
+export EMAIL_HOST_USER
+export EMAIL_HOST_PASSWORD
+export EMAIL_USE_TLS
+export DEFAULT_FROM_EMAIL
+
 export SKOL_HOME=/opt/skol
 export SKOL_DATA=/opt/skol/data
 export SKOL_MODELS=/opt/skol/models
