@@ -171,7 +171,7 @@ def regenerate_txt_files(
                     doc,
                     text_bytes,
                     filename=txt_attachment,
-                    content_type='text/plain'
+                    content_type='text/plain; charset=utf-8'
                 )
 
                 page_count = text.count('--- PDF Page ')

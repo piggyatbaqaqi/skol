@@ -615,7 +615,7 @@ class TaxonExtractor:
         results_df = taxa_df.rdd.mapPartitions(save_partition).toDF(self._save_schema)
         return results_df
 
-    def run_pipeline(self, pattern: str = "*.txt.ann") -> DataFrame:
+    def run_pipeline(self, pattern: str = "*.txt.ann", doc_id: Optional[str] = None) -> DataFrame:
         """
         Run the complete pipeline: load, extract, and save taxa.
 
@@ -627,6 +627,7 @@ class TaxonExtractor:
 
         Args:
             pattern: Pattern for attachment names (default: "*.txt.ann")
+            doc_id: If specified, only process this single ingest document ID
 
         Returns:
             DataFrame with columns: doc_id, success, error_message
@@ -635,9 +636,19 @@ class TaxonExtractor:
             >>> results = extractor.run_pipeline()
             >>> results.filter("success = true").count()
             >>> results.filter("success = false").show()
+            >>> # Process single document
+            >>> results = extractor.run_pipeline(doc_id="my_document_id")
         """
         # Step 1: Load annotated documents from CouchDB
         annotated_df = self.load_annotated_documents(pattern)
+
+        # Filter to single document if doc_id specified
+        if doc_id:
+            from pyspark.sql.functions import col
+            annotated_df = annotated_df.filter(col("doc_id") == doc_id)
+            if self.verbosity >= 1:
+                count = annotated_df.count()
+                print(f"Filtered to doc_id={doc_id}: {count} attachment(s)")
 
         # Step 2: Extract taxa from annotated documents
         taxa_df = self.extract_taxa(annotated_df)
@@ -675,6 +686,12 @@ Note: All database configuration can be set via command-line arguments to env_co
 
 Script-specific Options:
 """
+    )
+    parser.add_argument(
+        "--doc-id",
+        type=str,
+        default=None,
+        help="Process only this specific ingest document ID (skip all others)"
     )
     parser.add_argument(
         "--debug-trace",
@@ -740,7 +757,7 @@ Script-specific Options:
     )
 
     # Run pipeline
-    results = extractor.run_pipeline(pattern=config['pattern'])
+    results = extractor.run_pipeline(pattern=config['pattern'], doc_id=args.doc_id)
 
     # Show results
     if config['verbosity'] >= 1:

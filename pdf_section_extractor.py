@@ -233,7 +233,9 @@ class PDFSectionExtractor:
                 "text",
                 flags=fitz.TEXT_PRESERVE_WHITESPACE | fitz.TEXT_DEHYPHENATE
             )
-            full_text += f"\n--- PDF Page {page_num+1} Label {page.get_label()} ---\n"
+            # Get page label from PDF metadata, fall back to page number if empty
+            page_label = page.get_label() or str(page_num + 1)
+            full_text += f"\n--- PDF Page {page_num+1} Label {page_label} ---\n"
             full_text += text
 
         if self.verbosity >= 2:
@@ -277,8 +279,8 @@ class PDFSectionExtractor:
                 if not full_text.endswith('\n'):
                     full_text += '\n'
                 full_text += '\n'
-            pdf_label = "i"  # Default label; could be improved to match actual labels
-            full_text += f"--- PDF Page {page_num} Label {pdf_label} ---\n"
+            # Use page number as label for text files (no PDF metadata available)
+            full_text += f"--- PDF Page {page_num} Label {page_num} ---\n"
             full_text += page_content
 
         if self.verbosity >= 2:
@@ -1189,7 +1191,7 @@ class PDFSectionExtractor:
             doc,
             text_bytes,
             filename=txt_attachment_name,
-            content_type='text/plain'
+            content_type='text/plain; charset=utf-8'
         )
 
         if self.verbosity >= 1:

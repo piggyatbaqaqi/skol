@@ -296,7 +296,7 @@ class JournalIngestor:
                     doc,
                     content,
                     filename='article.txt.ann',
-                    content_type='text/plain'
+                    content_type='text/plain; charset=utf-8'
                 )
 
             # Attach PDF if available locally

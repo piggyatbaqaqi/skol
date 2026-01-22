@@ -85,6 +85,7 @@ class FileObject(ABC):
                 constants.pdf_page_pattern, l_str.strip()
             ):
                 self._pdf_page = int(pdf_page_match.group(1))
+                self._pdf_label = pdf_page_match.group(3)  # May be None if no label
                 # Create a special Line object for the page marker
                 # This line will be preserved in output but not classified
                 l = Line(l_str, self, is_page_marker=True)

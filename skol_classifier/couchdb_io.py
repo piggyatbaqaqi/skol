@@ -265,7 +265,7 @@ class CouchDBConnection:
                         doc,
                         row.final_aggregated_pg.encode('utf-8'),
                         filename=new_attachment_name,
-                        content_type='text/plain'
+                        content_type='text/plain; charset=utf-8'
                     )
 
                     success = True
@@ -426,7 +426,7 @@ class CouchDBConnection:
                                 doc,
                                 processed.encode('utf-8'),
                                 filename=new_attachment_name,
-                                content_type='text/plain'
+                                content_type='text/plain; charset=utf-8'
                             )
 
                             yield Row(

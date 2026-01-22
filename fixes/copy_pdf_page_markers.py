@@ -442,7 +442,7 @@ def fix_document(db, doc_info: dict, dry_run: bool = True) -> bool:
             doc,
             updated_ann.encode('utf-8'),
             filename=ann_name,
-            content_type='text/plain'
+            content_type='text/plain; charset=utf-8'
         )
 
         print(f"    ✓ Updated {ann_name} with {expected_count} page markers")

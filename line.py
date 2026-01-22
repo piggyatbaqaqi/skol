@@ -51,6 +51,7 @@ class Line(object):
             self._line_number = fileobj.line_number
             self._page_number = fileobj.page_number
             self._pdf_page = fileobj.pdf_page
+            self._pdf_label = fileobj.pdf_label
             self._empirical_page_number = fileobj.empirical_page_number
 
             # Check if fileobj has CouchDB metadata (duck typing)
