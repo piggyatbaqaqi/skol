@@ -65,6 +65,7 @@ ml = [
     "spark-nlp",
 ]
 pdf = [
+    "PyMuPDF>=1.23.0",
     "pymupdf4llm>=0.2.0",
     "pytesseract",
 ]

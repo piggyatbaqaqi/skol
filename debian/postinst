@@ -42,6 +42,9 @@ ${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 echo "Installing ML dependencies..."
 ${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes
 
+echo "Installing PDF extraction dependencies..."
+${SKOL_VENV}/bin/pip install PyMuPDF
+
 # Set ownership of venv to skol user
 chown -R skol:skol ${SKOL_VENV}
 
