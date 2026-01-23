@@ -157,11 +157,18 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                 taxon.add_description(pp)
                 continue
             if pp.top_label() == nomenclature:
-                if taxon and taxon.has_description() and taxon.has_nomenclature():
-                    yield taxon
-                taxon = Taxon()
-                taxon.add_nomenclature(pp)
-                state = 'Look for Nomenclatures'
+                if taxon.has_description():
+                    # We have a complete taxon, yield it and start a new one
+                    if taxon.has_nomenclature():
+                        yield taxon
+                    taxon = Taxon()
+                    taxon.add_nomenclature(pp)
+                    state = 'Look for Nomenclatures'
+                else:
+                    # No description yet - add this nomenclature to the current taxon
+                    # This handles cases where multiple nomenclature blocks appear
+                    # before the description
+                    taxon.add_nomenclature(pp)
                 continue
 
             if taxon.been_too_long(pp):
