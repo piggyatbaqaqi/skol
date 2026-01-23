@@ -327,6 +327,8 @@
 
         <h1>SKOL Semantic Search</h1>
         <p class="subtitle">Search taxonomic descriptions using semantic similarity</p>
+        <p style="margin-bottom: 5px;">Try this:</p>
+        <div id="example-code-block" data-text="campanulate pileus, stipe stains blue when cut"></div>
 
         <div class="search-form">
             <form id="searchForm">
@@ -530,5 +532,9 @@
         // Load embeddings when page loads
         loadEmbeddings();
     </script>
+
+    <!-- Code Block Component -->
+    {% load static %}
+    <script src="{% static 'js/code-block.bundle.js' %}"></script>
 </body>
 </html>

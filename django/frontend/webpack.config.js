@@ -6,9 +6,12 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const reactPdfPath = path.resolve(__dirname, '../../../react-pdf/packages/react-pdf');
 
 module.exports = {
-  entry: './src/index.js',
+  entry: {
+    'pdf-viewer': './src/index.js',
+    'code-block': './src/codeBlockEntry.js',
+  },
   output: {
-    filename: 'pdf-viewer.bundle.js',
+    filename: '[name].bundle.js',
     path: path.resolve(__dirname, '../static/js'),
     clean: false, // Don't clean the directory (other files may exist)
   },
