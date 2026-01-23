@@ -532,6 +532,206 @@ def predict_and_save(
 # Main Program
 # ============================================================================
 
+def update_taxonomy_flags_only(
+    config: Dict[str, Any],
+    dry_run: bool = False,
+    limit: Optional[int] = None,
+    doc_ids: Optional[List[str]] = None,
+) -> None:
+    """
+    Update taxonomy flags for all documents without running predictions.
+
+    This scans all documents with article.txt attachments and sets the
+    'taxonomy' field based on whether they contain taxonomy abbreviations.
+
+    Args:
+        config: Environment configuration
+        dry_run: If True, preview without saving changes
+        limit: If set, process at most this many documents
+        doc_ids: If set, only process these specific document IDs
+    """
+    import couchdb
+    import re
+
+    verbosity = config.get('verbosity', 1)
+    abbrevs = config['taxonomy_abbrevs']
+
+    print(f"\n{'='*70}")
+    print("Update Taxonomy Flags")
+    print(f"{'='*70}")
+    print(f"CouchDB: {config['couchdb_url']}")
+    print(f"Database: {config['ingest_db_name']}")
+    print(f"Abbreviations: {', '.join(abbrevs[:10])}{'...' if len(abbrevs) > 10 else ''}")
+    if dry_run:
+        print("Mode: DRY RUN (no changes will be saved)")
+    if limit:
+        print(f"Limit: {limit} documents")
+    if doc_ids:
+        print(f"Document IDs: {', '.join(doc_ids[:5])}{'...' if len(doc_ids) > 5 else ''}")
+    print()
+
+    # Compile regex pattern for efficient single-pass checking
+    abbrev_parts = [re.escape(abbrev.rstrip('.')) for abbrev in abbrevs]
+    abbrev_pattern = re.compile(r'\b(' + '|'.join(abbrev_parts) + r')\.')
+
+    # Connect to CouchDB
+    couch_server = couchdb.Server(config['couchdb_url'])
+    if config['couchdb_username'] and config['couchdb_password']:
+        couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+
+    if config['ingest_db_name'] not in couch_server:
+        print(f"Error: Database '{config['ingest_db_name']}' not found")
+        sys.exit(1)
+
+    db = couch_server[config['ingest_db_name']]
+
+    # Get list of document IDs to process
+    if doc_ids:
+        all_doc_ids = doc_ids
+    else:
+        print("Discovering documents in database...")
+        all_doc_ids = [doc_id for doc_id in db if not doc_id.startswith('_design/')]
+        print(f"  Found {len(all_doc_ids)} documents")
+
+    # Apply limit
+    if limit and len(all_doc_ids) > limit:
+        print(f"  Limiting to {limit} documents")
+        all_doc_ids = all_doc_ids[:limit]
+
+    # Process documents
+    print(f"\nScanning {len(all_doc_ids)} documents for taxonomy abbreviations...")
+
+    total_docs = 0
+    docs_with_txt = 0
+    already_correct = 0
+    needs_true = 0
+    needs_false = 0
+    errors = 0
+
+    docs_to_update = []
+
+    for doc_id in all_doc_ids:
+        total_docs += 1
+        if verbosity >= 1 and total_docs % 1000 == 0:
+            print(f"  Scanned {total_docs} documents...")
+
+        try:
+            doc = db[doc_id]
+            current_value = doc.get('taxonomy')
+
+            # Check if document has article.txt attachment
+            attachments = doc.get('_attachments', {})
+            if 'article.txt' not in attachments:
+                # No article.txt - skip (we can't determine taxonomy without text)
+                continue
+
+            docs_with_txt += 1
+
+            # Fetch article.txt content
+            try:
+                article_content = db.get_attachment(doc_id, 'article.txt')
+                if article_content is None:
+                    continue
+
+                if hasattr(article_content, 'read'):
+                    text = article_content.read()
+                    if isinstance(text, bytes):
+                        text = text.decode('utf-8', errors='ignore')
+                else:
+                    text = str(article_content)
+
+            except Exception as e:
+                if verbosity >= 2:
+                    print(f"  Error reading article.txt for {doc_id}: {e}")
+                errors += 1
+                continue
+
+            # Check for taxonomy abbreviations
+            has_taxonomy = bool(abbrev_pattern.search(text))
+
+            if has_taxonomy and current_value is not True:
+                needs_true += 1
+                doc['taxonomy'] = True
+                docs_to_update.append(doc)
+                if verbosity >= 2:
+                    print(f"  {doc_id}: will set taxonomy=True")
+            elif not has_taxonomy and current_value is True:
+                needs_false += 1
+                doc['taxonomy'] = False
+                docs_to_update.append(doc)
+                if verbosity >= 2:
+                    print(f"  {doc_id}: will set taxonomy=False")
+            else:
+                already_correct += 1
+
+        except Exception as e:
+            if verbosity >= 2:
+                print(f"  Error reading {doc_id}: {e}")
+            errors += 1
+            continue
+
+    print()
+    print(f"  Total documents scanned: {total_docs}")
+    print(f"  Documents with article.txt: {docs_with_txt}")
+    print(f"  Already correct: {already_correct}")
+    print(f"  Need to set True: {needs_true}")
+    print(f"  Need to set False: {needs_false}")
+    print(f"  Errors: {errors}")
+    print(f"  Total to update: {len(docs_to_update)}")
+    print()
+
+    if not docs_to_update:
+        print("No updates needed. All documents have correct taxonomy values.")
+        return
+
+    # Apply updates
+    if dry_run:
+        print("DRY RUN - No changes will be saved")
+        if verbosity >= 1:
+            print("  Documents that would be updated:")
+            for doc in docs_to_update[:20]:
+                print(f"    {doc['_id']}: taxonomy -> {doc['taxonomy']}")
+            if len(docs_to_update) > 20:
+                print(f"    ... and {len(docs_to_update) - 20} more")
+    else:
+        batch_size = 500
+        print(f"Updating {len(docs_to_update)} documents in batches of {batch_size}...")
+        success_count = 0
+        error_count = 0
+
+        for i in range(0, len(docs_to_update), batch_size):
+            batch = docs_to_update[i:i + batch_size]
+            try:
+                results = db.update(batch)
+                batch_success = sum(1 for ok, _, _ in results if ok)
+                batch_errors = len(batch) - batch_success
+                success_count += batch_success
+                error_count += batch_errors
+
+                if verbosity >= 1:
+                    print(f"  Batch {i // batch_size + 1}: {batch_success} updated, {batch_errors} errors")
+
+            except Exception as e:
+                error_count += len(batch)
+                print(f"  Batch {i // batch_size + 1}: Error - {e}")
+
+        print()
+        print(f"Successfully updated: {success_count}")
+        print(f"Errors: {error_count}")
+
+    # Summary
+    print(f"\n{'='*70}")
+    print("Summary")
+    print(f"{'='*70}")
+    print(f"Documents set to taxonomy=True: {needs_true}")
+    print(f"Documents set to taxonomy=False: {needs_false}")
+    print(f"Documents updated: {len(docs_to_update) if not dry_run else 0}")
+    if dry_run:
+        print("\nThis was a dry run. No changes were saved.")
+        print("Remove --dry-run to actually update the documents.")
+    print()
+
+
 def main():
     """Main entry point for the prediction program."""
     # Parse command-line arguments
@@ -548,6 +748,12 @@ Work Control Options:
   --force                 Process even if .ann exists (overrides --skip-existing)
   --limit N               Process at most N documents
   --doc-id ID[,ID,...]    Process only specific document ID(s), comma-separated
+
+Taxonomy-Only Mode:
+  --update-taxonomy-flag-only
+                          Only update taxonomy flags without running predictions.
+                          Scans article.txt attachments for taxonomy abbreviations
+                          and sets the 'taxonomy' field accordingly.
 
 Configuration (via environment variables or command-line arguments):
   --couchdb-host          CouchDB host (default: 127.0.0.1:5984)
@@ -604,6 +810,12 @@ Note: Command-line arguments override environment variables.
         help='List available model configurations and exit'
     )
 
+    parser.add_argument(
+        '--update-taxonomy-flag-only',
+        action='store_true',
+        help='Only update taxonomy flags without running predictions'
+    )
+
     args, _ = parser.parse_known_args()
 
     # List models if requested
@@ -619,6 +831,25 @@ Note: Command-line arguments override environment variables.
 
     # Get configuration
     config = get_env_config()
+
+    # Handle --update-taxonomy-flag-only mode
+    if args.update_taxonomy_flag_only:
+        try:
+            update_taxonomy_flags_only(
+                config=config,
+                dry_run=config.get('dry_run', False),
+                limit=config.get('limit'),
+                doc_ids=config.get('doc_ids'),
+            )
+        except KeyboardInterrupt:
+            print("\n\n✗ Operation interrupted by user")
+            sys.exit(130)
+        except Exception as e:
+            print(f"\n✗ Operation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+        return
 
     # Get model configuration
     model_config = MODEL_CONFIGS.get(args.model_name)
