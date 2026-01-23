@@ -1,9 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SKOL Semantic Search</title>
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <style>
         * {
             margin: 0;
@@ -535,7 +537,6 @@
     </script>
 
     <!-- Code Block Component -->
-    {% load static %}
     <script src="{% static 'js/code-block.bundle.js' %}"></script>
 </body>
 </html>
