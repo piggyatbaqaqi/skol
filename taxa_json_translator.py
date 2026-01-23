@@ -951,7 +951,8 @@ Result:
                     try:
                         source = data.get('source', {})
                         source_doc_id = str(source.get('doc_id', 'unknown'))
-                        source_url = source.get('url')
+                        # Use human_url to match extract_taxa_to_couchdb.py doc ID generation
+                        source_url = source.get('human_url')
                         line_number = data.get('line_number')
 
                         # Generate deterministic document ID
