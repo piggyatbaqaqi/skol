@@ -295,6 +295,11 @@
             issues with paragraph-level annotations, enabling
             supervised learning for the classification models.
         </p>
+        <p>
+            View detailed statistics about all ingestion sources,
+            including publication information and record counts, on our
+            <a href="{% url 'sources' %}">Sources page</a>.
+        </p>
 
         <h2>Technology Stack</h2>
         <div class="tech-stack">
@@ -356,6 +361,7 @@
         <div class="footer">
             <a href="{{ SCRIPT_NAME }}/">Search</a>
             <a href="{% url 'about' %}">About</a>
+            <a href="{% url 'sources' %}">Sources</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'contact:feedback' %}">Feedback</a>
             <p style="margin-top: 15px;">&copy; 2019-2026 SKOL Project Contributors. Licensed under GPLv3.</p>
