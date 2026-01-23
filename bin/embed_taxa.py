@@ -65,22 +65,23 @@ def compute_and_save_embeddings(
     # Build Redis URL
     redis_url = f"redis://{config['redis_host']}:{config['redis_port']}"
 
-    print(f"\n{'='*70}")
-    print(f"Computing Taxa Embeddings")
-    print(f"{'='*70}")
-    print(f"CouchDB: {couchdb_url}")
-    print(f"Database: {config['taxon_db_name']}")
-    print(f"Redis: {redis_url}")
-    print(f"Embedding key: {config['embedding_name']}")
-    if embedding_expire:
-        print(f"Expiration: {embedding_expire} seconds ({embedding_expire / 86400:.1f} days)")
-    else:
-        print(f"Expiration: None (never expires)")
-    if dry_run:
-        print(f"Mode: DRY RUN (no changes will be saved)")
-    if force:
-        print(f"Mode: FORCE (recompute even if exists)")
-    print()
+    if verbosity >= 2:
+        print(f"\n{'='*70}")
+        print(f"Computing Taxa Embeddings")
+        print(f"{'='*70}")
+        print(f"CouchDB: {couchdb_url}")
+        print(f"Database: {config['taxon_db_name']}")
+        print(f"Redis: {redis_url}")
+        print(f"Embedding key: {config['embedding_name']}")
+        if embedding_expire:
+            print(f"Expiration: {embedding_expire} seconds ({embedding_expire / 86400:.1f} days)")
+        else:
+            print(f"Expiration: None (never expires)")
+        if dry_run:
+            print(f"Mode: DRY RUN (no changes will be saved)")
+        if force:
+            print(f"Mode: FORCE (recompute even if exists)")
+        print()
 
     # Connect to Redis
     redis_client = redis.Redis(
@@ -114,7 +115,8 @@ def compute_and_save_embeddings(
             couchdb_url=couchdb_url,
             username=config['couchdb_username'],
             password=config['couchdb_password'],
-            db_name=config['taxon_db_name']
+            db_name=config['taxon_db_name'],
+            verbosity=verbosity
         )
         descriptions = skol_taxa.get_descriptions()
 

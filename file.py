@@ -26,6 +26,7 @@ class File(FileObject):
         self._line_number = 0
         self._page_number = 1
         self._pdf_page = 0
+        self._pdf_label = None
         self._empirical_page_number = None
 
         if filename:
