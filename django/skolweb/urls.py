@@ -70,10 +70,10 @@ def sources_view(request):
         # Fallback if module isn't available
         PublicationRegistry = None
 
-    # Get database settings
-    db_host = getattr(settings, 'COUCHDB_HOST', '127.0.0.1:5984')
+    # Get database settings (use same names as search/views.py)
+    couchdb_url = getattr(settings, 'COUCHDB_URL', 'http://127.0.0.1:5984')
     db_name = getattr(settings, 'INGESTION_DB_NAME', 'skol_dev')
-    db_user = getattr(settings, 'COUCHDB_USER', 'admin')
+    db_user = getattr(settings, 'COUCHDB_USERNAME', 'admin')
     db_password = getattr(settings, 'COUCHDB_PASSWORD', '')
 
     context = {
@@ -85,7 +85,6 @@ def sources_view(request):
 
     try:
         # Connect to CouchDB
-        couchdb_url = f"http://{db_host}"
         server = couchdb.Server(couchdb_url)
         if db_user and db_password:
             server.resource.credentials = (db_user, db_password)
@@ -108,34 +107,34 @@ def sources_view(request):
             try:
                 doc = db[doc_id]
 
-                # Get the publication source from the document
-                pub_source = doc.get('publication')
-                if not pub_source:
-                    pub_source = 'unknown'
+                # Get the journal name from the document
+                journal_name = doc.get('journal')
+                if not journal_name:
+                    journal_name = 'Unknown'
 
-                # Initialize stats for this source if not seen before
-                if pub_source not in source_stats:
-                    source_stats[pub_source] = {
+                # Initialize stats for this journal if not seen before
+                if journal_name not in source_stats:
+                    source_stats[journal_name] = {
                         'total': 0,
                         'taxonomy': 0,
                     }
 
                 # Increment total count
-                source_stats[pub_source]['total'] += 1
+                source_stats[journal_name]['total'] += 1
 
                 # Check if document has taxonomy
                 if doc.get('taxonomy') is True:
-                    source_stats[pub_source]['taxonomy'] += 1
+                    source_stats[journal_name]['taxonomy'] += 1
 
             except Exception as e:
                 # Skip documents we can't read
                 continue
 
         # Build display list with publication details
-        for pub_key, stats in source_stats.items():
+        for journal_name, stats in source_stats.items():
             source_info = {
-                'key': pub_key,
-                'name': pub_key,  # Default to key
+                'key': journal_name,
+                'name': journal_name,  # Default to journal name
                 'publisher': 'Unknown',
                 'website': None,
                 'total_records': stats['total'],
@@ -145,21 +144,25 @@ def sources_view(request):
 
             # Try to get additional information from PublicationRegistry
             if PublicationRegistry:
-                pub_config = PublicationRegistry.get(pub_key)
+                # Look up by journal name
+                pub_config = PublicationRegistry.get_by_journal(journal_name)
                 if pub_config:
-                    source_info['name'] = pub_config.get('name', pub_key)
+                    source_info['name'] = pub_config.get('name', journal_name)
                     source_info['publisher'] = pub_config.get('source', 'Unknown')
-
-                    # Try to extract website from various URL fields
-                    for url_field in ['rss_url', 'index_url', 'archives_url', 'issues_url', 'url_prefix']:
-                        if url_field in pub_config and pub_config[url_field]:
-                            url = pub_config[url_field]
-                            # Extract domain from URL
-                            from urllib.parse import urlparse
-                            parsed = urlparse(url)
-                            if parsed.netloc:
-                                source_info['website'] = f"{parsed.scheme}://{parsed.netloc}"
-                                break
+                    # Use the address field if available
+                    if pub_config.get('address'):
+                        source_info['website'] = pub_config['address']
+                    else:
+                        # Fallback: try to extract website from various URL fields
+                        for url_field in ['rss_url', 'index_url', 'archives_url', 'issues_url', 'url_prefix']:
+                            if url_field in pub_config and pub_config[url_field]:
+                                url = pub_config[url_field]
+                                # Extract domain from URL
+                                from urllib.parse import urlparse
+                                parsed = urlparse(url)
+                                if parsed.netloc:
+                                    source_info['website'] = f"{parsed.scheme}://{parsed.netloc}"
+                                    break
 
             context['sources'].append(source_info)
             context['total_records'] += stats['total']

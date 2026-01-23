@@ -46,6 +46,8 @@ class PublicationRegistry:
     SOURCES: Dict[str, Dict[str, Any]] = {
         'fuse-rss': {
             'name': 'Fungal Systematics and Evolution',
+            'journal': 'Fungal Systematics and Evolution',
+            'address': 'https://api.ingentaconnect.com/content/wfbi/fuse',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
@@ -53,6 +55,8 @@ class PublicationRegistry:
         },
         'fuse': {
             'name': 'Fungal Systematics and Evolution',
+            'journal': 'Fungal Systematics and Evolution',
+            'address': 'https://api.ingentaconnect.com/content/wfbi/fuse',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
@@ -60,6 +64,8 @@ class PublicationRegistry:
         },
         'mycotaxon-rss': {
             'name': 'Mycotaxon',
+            'journal': 'Mycotaxon',
+            'address': 'https://api.ingentaconnect.com/content/mtax/mt',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
@@ -67,6 +73,8 @@ class PublicationRegistry:
         },
         'mycotaxon': {
             'name': 'Mycotaxon',
+            'journal': 'Mycotaxon',
+            'address': 'https://api.ingentaconnect.com/content/mtax/mt',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
@@ -76,6 +84,8 @@ class PublicationRegistry:
         },
         'studies-in-mycology': {
             'name': 'Studies in Mycology',
+            'journal': 'Studies in Mycology',
+            'address': 'https://api.ingentaconnect.com/content/wfbi/sim',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
@@ -83,6 +93,8 @@ class PublicationRegistry:
         },
         'studies-in-mycology-rss': {
             'name': 'Studies in Mycology',
+            'journal': 'Studies in Mycology',
+            'address': 'https://api.ingentaconnect.com/content/wfbi/sim',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
@@ -90,6 +102,8 @@ class PublicationRegistry:
         },
         'persoonia': {
             'name': 'Persoonia',
+            'journal': 'Persoonia',
+            'address': 'https://api.ingentaconnect.com/content/wfbi/pimj',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
@@ -99,6 +113,8 @@ class PublicationRegistry:
         },
         'persoonia-rss': {
             'name': 'Persoonia',
+            'journal': 'Persoonia',
+            'address': 'https://api.ingentaconnect.com/content/wfbi/pimj',
             'source': 'ingenta',
             'ingestor_class': 'IngentaIngestor',
             'mode': 'rss',
@@ -106,6 +122,8 @@ class PublicationRegistry:
         },
         'ingenta-local': {
             'name': 'Ingenta Local BibTeX Files',
+            'journal': None,  # Multiple journals
+            'address': 'https://www.ingentaconnect.com',
             'source': 'ingenta',
             'ingestor_class': 'LocalIngentaIngestor',
             'mode': 'local',
@@ -115,6 +133,8 @@ class PublicationRegistry:
             # Currently blocked by technical measures at mdpi.com.
             'blocked': True,
             'name': 'Journal of Fungi',
+            'journal': 'Journal of Fungi',
+            'address': 'https://www.mdpi.com/journal/jof',
             'source': 'mdpi',
             'ingestor_class': 'MdpiIngestor',
             'mode': 'rss',
@@ -126,6 +146,8 @@ class PublicationRegistry:
             # Currently blocked by technical measures at mdpi.com.
             'blocked': True,
             'name': 'Journal of Fungi',
+            'journal': 'Journal of Fungi',
+            'address': 'https://www.mdpi.com/journal/jof',
             'source': 'mdpi',
             'ingestor_chttps://doi.org/10.3390/jof5020045lass': 'MdpiIngestor',
             'mode': 'index',
@@ -136,6 +158,8 @@ class PublicationRegistry:
         'jof-crossref': {
             # https://www.mdpi.com/journal/jof
             'name': 'Journal of Fungi',
+            'journal': 'Journal of Fungi',
+            'address': 'https://www.mdpi.com/journal/jof',
             'source': 'crossref',
             'ingestor_class': 'CrossrefIngestor',
             'mode': 'api',
@@ -147,6 +171,8 @@ class PublicationRegistry:
         'mycologie-crossref': {
             # https://sciencepress.mnhn.fr/en/articles/mycologie
             'name': 'Cryptogamie, Mycologie',
+            'journal': 'Cryptogamie, Mycologie',
+            'address': 'https://sciencepress.mnhn.fr/en/articles/mycologie',
             'source': 'crossref',
             'ingestor_class': 'CrossrefIngestor',
             'mode': 'api',
@@ -158,6 +184,8 @@ class PublicationRegistry:
         'mycoscience-crossref': {
             # https://mycoscience.org/
             'name': 'Mycoscience: An open access journal of the Mycological Society of Japan',
+            'journal': 'Mycoscience',
+            'address': 'https://mycoscience.org',
             'source': 'crossref',
             'ingestor_class': 'CrossrefIngestor',
             'mode': 'api',
@@ -169,6 +197,8 @@ class PublicationRegistry:
         'mycologia-crossref': {
             # https://www.tandfonline.com/journals/umyc20
             'name': 'Mycologia (Taylor & Francis)',
+            'journal': 'Mycologia',
+            'address': 'https://www.tandfonline.com/journals/umyc20',
             'source': 'crossref',
             'ingestor_class': 'CrossrefIngestor',
             'mode': 'api',
@@ -180,6 +210,8 @@ class PublicationRegistry:
         'mycology-crossref': {
             # https://www.tandfonline.com/journals/tmyc20
             'name': 'Mycology: An International Journal on Fungal Biology (Taylor & Francis)',
+            'journal': 'Mycology',
+            'address': 'https://www.tandfonline.com/journals/tmyc20',
             'source': 'crossref',
             'ingestor_class': 'CrossrefIngestor',
             'mode': 'api',
@@ -200,8 +232,10 @@ class PublicationRegistry:
         #     'max_articles': None,  # None = all articles
         #     'allow_scihub': True,  # An OA journal.
         # },
-       'mykoweb-journals': {
+        'mykoweb-journals': {
             'name': 'Mykoweb Journals (Mycotaxon, Persoonia, Sydowia)',
+            'journal': None,  # Multiple journals
+            'address': 'https://mykoweb.com/systematics/journals',
             'source': 'mykoweb-journals',
             'ingestor_class': 'LocalMykowebJournalsIngestor',
             'mode': 'local',
@@ -211,6 +245,8 @@ class PublicationRegistry:
         },
         'mykoweb-literature': {
             'name': 'Mykoweb Literature/Books',
+            'journal': None,  # Books, not a journal
+            'address': 'https://mykoweb.com/systematics/literature',
             'source': 'mykoweb-literature',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -220,6 +256,8 @@ class PublicationRegistry:
         },
         'mykoweb-caf': {
             'name': 'Mykoweb CAF PDFs',
+            'journal': None,  # Collection, not a journal
+            'address': 'https://mykoweb.com/CAF',
             'source': 'mykoweb-caf',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -229,6 +267,8 @@ class PublicationRegistry:
         },
         'mykoweb-crepidotus': {
             'name': 'Mykoweb Crepidotus',
+            'journal': None,  # Collection, not a journal
+            'address': 'https://mykoweb.com/Crepidotus',
             'source': 'mykoweb-crepidotus',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -238,6 +278,8 @@ class PublicationRegistry:
         },
         'mykoweb-oldbooks': {
             'name': 'Mykoweb Old Books',
+            'journal': None,  # Books, not a journal
+            'address': 'https://mykoweb.com/OldBooks',
             'source': 'mykoweb-oldbooks',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -247,6 +289,8 @@ class PublicationRegistry:
         },
         'mykoweb-gsmnp': {
             'name': 'Mykoweb GSMNP',
+            'journal': None,  # Collection, not a journal
+            'address': 'https://mykoweb.com/GSMNP',
             'source': 'mykoweb-gsmnp',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -256,6 +300,8 @@ class PublicationRegistry:
         },
         'mykoweb-pholiota': {
             'name': 'Mykoweb Pholiota',
+            'journal': None,  # Collection, not a journal
+            'address': 'https://mykoweb.com/Pholiota',
             'source': 'mykoweb-pholiota',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -265,6 +311,8 @@ class PublicationRegistry:
         },
         'mykoweb-misc': {
             'name': 'Mykoweb Misc',
+            'journal': None,  # Misc collection, not a journal
+            'address': 'https://mykoweb.com/misc',
             'source': 'mykoweb-misc',
             'ingestor_class': 'LocalMykowebLiteratureIngestor',
             'mode': 'local',
@@ -274,6 +322,8 @@ class PublicationRegistry:
         },
         'mycosphere': {
             'name': 'Mycosphere',
+            'journal': 'Mycosphere',
+            'address': 'https://mycosphere.org',
             'source': 'mycosphere',
             'ingestor_class': 'MycosphereIngestor',
             'mode': 'web',
@@ -281,6 +331,8 @@ class PublicationRegistry:
         },
         'oajmms': {
             'name': 'Open Access Journal of Mycology & Mycological Sciences',
+            'journal': 'Open Access Journal of Mycology & Mycological Sciences',
+            'address': 'https://www.medwinpublishers.com/OAJMMS',
             'source': 'medwin-publishers',
             'ingestor_class': 'MedwinPublishersIngestor',
             'mode': 'web',
@@ -290,6 +342,8 @@ class PublicationRegistry:
         },
         'mycokeys': {
             'name': 'MycoKeys: A peer reviewed open access journal',
+            'journal': 'MycoKeys',
+            'address': 'https://mycokeys.pensoft.net',
             'source': 'pensoft',
             'ingestor_class': 'PensoftIngestor',
             'mode': 'web',
@@ -303,6 +357,8 @@ class PublicationRegistry:
         },
         'imafungus': {
             'name': 'IMA Fungus: The Global Mycological Journal',
+            'journal': 'IMA Fungus',
+            'address': 'https://imafungus.pensoft.net',
             'source': 'pensoft',
             'ingestor_class': 'PensoftIngestor',
             'mode': 'web',
@@ -316,6 +372,8 @@ class PublicationRegistry:
             # Currently blocked by technical measures at tandfonline.com.
             'blocked': True,
             'name': 'Mycology (Taylor & Francis)',
+            'journal': 'Mycology',
+            'address': 'https://www.tandfonline.com/loi/tmyc20',
             'source': 'mycology-taylor-francis',
             'ingestor_class': 'TaylorFrancisIngestor',
             'mode': 'web',
@@ -326,6 +384,8 @@ class PublicationRegistry:
         },
         'sydowia-ia': {
             'name': 'Sydowia (Internet Archive)',
+            'journal': 'Sydowia',
+            'address': 'https://archive.org/details/pub_sydowia',
             'source': 'internet-archive',
             'ingestor_class': 'InternetArchiveIngestor',
             'mode': 'web',
@@ -337,6 +397,8 @@ class PublicationRegistry:
         },
         'jmycology-ia': {
             'name': 'Journal of Mycology (Internet Archive)',
+            'journal': 'Journal of Mycology',
+            'address': 'https://archive.org/details/jstor_jmycology',
             'source': 'internet-archive',
             'ingestor_class': 'InternetArchiveIngestor',
             'mode': 'web',
@@ -421,3 +483,25 @@ class PublicationRegistry:
             Dictionary of default configuration values
         """
         return cls.DEFAULTS.copy()
+
+    @classmethod
+    def get_by_journal(cls, journal_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a publication configuration by journal name.
+
+        This is used to match documents (which have a 'journal' field) to their
+        source configuration.
+
+        Args:
+            journal_name: The journal name from a document (e.g., 'Mycotaxon')
+
+        Returns:
+            Publication configuration dict, or None if not found
+        """
+        for key, config in cls.SOURCES.items():
+            if config.get('journal') == journal_name:
+                cfg = cls.DEFAULTS.copy()
+                cfg.update(config)
+                cfg['key'] = key  # Include the source key for reference
+                return cfg
+        return None
