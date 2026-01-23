@@ -223,12 +223,16 @@
                 <div class="stat-value">{{ sources|length }}</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Total Records</div>
+                <div class="stat-label">Total Documents</div>
                 <div class="stat-value">{{ total_records|default:"0" }}</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Records with Taxonomy</div>
-                <div class="stat-value">{{ total_taxonomy_records|default:"0" }}</div>
+                <div class="stat-label">Taxonomy Documents</div>
+                <div class="stat-value">{{ total_taxonomy_documents|default:"0" }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Taxa Records</div>
+                <div class="stat-value">{{ total_taxa_records|default:"0" }}</div>
             </div>
         </div>
 
@@ -239,8 +243,9 @@
                     <th>Publication</th>
                     <th>Publisher/Source</th>
                     <th>Website</th>
-                    <th style="text-align: right;">Total Records</th>
-                    <th style="text-align: right;">Taxonomy Records</th>
+                    <th style="text-align: right;">Total Documents</th>
+                    <th style="text-align: right;">Taxonomy Documents</th>
+                    <th style="text-align: right;">Taxa Documents</th>
                 </tr>
             </thead>
             <tbody>
@@ -263,6 +268,9 @@
                     <td style="text-align: right;">
                         <span class="stat-badge">{{ source.taxonomy_records }}</span>
                         <span class="percentage">({{ source.taxonomy_percentage }}%)</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <span class="stat-badge">{{ source.taxa_records }}</span>
                     </td>
                 </tr>
                 {% endfor %}
