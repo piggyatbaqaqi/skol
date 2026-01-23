@@ -234,6 +234,24 @@ Examples:
         help='Expiration time in seconds, or "None" for no expiration (default: 172800 = 2 days)'
     )
 
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Preview what would be computed without saving'
+    )
+
+    parser.add_argument(
+        '--skip-existing',
+        action='store_true',
+        help='Skip if embeddings already exist (default behavior)'
+    )
+
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Recompute embeddings even if they already exist in Redis'
+    )
+
     args, _ = parser.parse_known_args()
 
     # Get configuration
@@ -245,10 +263,11 @@ Examples:
     # - If user provided --expire N: args.expire == N, use that value
     expire_override = getattr(args, 'expire', None)
 
-    # Use env_config values for work control options (args.force overrides if explicitly set)
+    # Merge work control options from command-line args and env_config
+    # Command-line args take precedence over env_config
+    dry_run = args.dry_run or config.get('dry_run', False)
+    skip_existing = args.skip_existing or config.get('skip_existing', True)  # Default to True for this script
     force = args.force or config.get('force', False)
-    dry_run = config.get('dry_run', False)
-    skip_existing = config.get('skip_existing', True)  # Default to True for this script
 
     # Run embedding computation
     try:
