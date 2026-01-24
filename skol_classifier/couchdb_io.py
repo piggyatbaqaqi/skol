@@ -330,7 +330,8 @@ class CouchDBConnection:
         self,
         df: DataFrame,
         suffix: str = ".ann",
-        verbosity: int = 1
+        verbosity: int = 1,
+        incremental: bool = False
     ) -> DataFrame:
         """
         Save annotated predictions to CouchDB using foreachPartition.
@@ -342,6 +343,7 @@ class CouchDBConnection:
             df: DataFrame with columns: doc_id, attachment_name, final_aggregated_pg
             suffix: Suffix to append to attachment names
             verbosity: Logging level (0=none, 1=warnings, 2=info, 3=debug)
+            incremental: If True, use immediate writes (crash-resistant but slower)
 
         Returns:
             DataFrame with doc_id, attachment_name, and success columns
@@ -353,6 +355,8 @@ class CouchDBConnection:
 
         instr.log(2, "\n" + "="*70)
         instr.log(2, "save_distributed: Starting CouchDB save operation")
+        if incremental:
+            instr.log(2, "  Mode: INCREMENTAL (immediate writes)")
         instr.log(2, "="*70)
 
         # Analyze input DataFrame
@@ -362,6 +366,12 @@ class CouchDBConnection:
         # Create new connection instance with same params for workers
         # IMPORTANT: Keep conn_params minimal to reduce closure size
         conn_params = (self.couchdb_url, self.database, self.username, self.password)
+
+        if incremental:
+            # Incremental mode: use foreachPartition for immediate writes
+            # This writes each document as soon as it's processed, making the
+            # operation crash-resistant and providing real-time progress visibility
+            return self._save_incremental(df, suffix, verbosity, conn_params)
 
         def save_partition(partition):
             # Each worker creates its own connection
@@ -384,6 +394,100 @@ class CouchDBConnection:
             print(instr.get_metrics_summary())
 
         return result_df
+
+    def _save_incremental(
+        self,
+        df: DataFrame,
+        suffix: str,
+        verbosity: int,
+        conn_params: tuple
+    ) -> DataFrame:
+        """
+        Save predictions incrementally using foreachPartition with immediate writes.
+
+        Each document's .ann attachment is saved immediately after processing,
+        making the operation crash-resistant. Progress is visible in real-time.
+
+        Args:
+            df: DataFrame with doc_id, attachment_name, final_aggregated_pg columns
+            suffix: Suffix to append to attachment names
+            verbosity: Logging verbosity
+            conn_params: Tuple of (couchdb_url, database, username, password)
+
+        Returns:
+            DataFrame with save results (success/failure per document)
+        """
+        from pyspark.sql import Row
+        from pyspark.sql.types import StructType, StructField, StringType, BooleanType
+        import sys
+
+        # Accumulator-like tracking via broadcast or print statements
+        # Since we can't easily return data from foreachPartition,
+        # we'll collect the data first and process iteratively
+
+        # Collect all rows to driver (for incremental processing)
+        # This is acceptable because we want immediate, sequential writes
+        rows = df.collect()
+        total = len(rows)
+
+        if verbosity >= 1:
+            print(f"  Processing {total} documents incrementally...")
+
+        # Connect to CouchDB on the driver
+        db = self.db
+        results = []
+        success_count = 0
+        failure_count = 0
+
+        for i, row in enumerate(rows):
+            success = False
+            try:
+                doc = db[row.doc_id]
+
+                # Update human_url field if provided
+                if hasattr(row, 'human_url') and row.human_url:
+                    doc['url'] = row.human_url
+                    db.save(doc)
+                    doc = db[row.doc_id]
+
+                # Create new attachment name
+                new_attachment_name = f"{row.attachment_name}{suffix}"
+
+                # Save immediately
+                db.put_attachment(
+                    doc,
+                    row.final_aggregated_pg.encode('utf-8'),
+                    filename=new_attachment_name,
+                    content_type='text/plain; charset=utf-8'
+                )
+                success = True
+                success_count += 1
+
+                if verbosity >= 2:
+                    print(f"    [{i+1}/{total}] Saved {row.doc_id}/{new_attachment_name}")
+
+            except Exception as e:
+                failure_count += 1
+                if verbosity >= 1:
+                    print(f"    [{i+1}/{total}] ERROR saving {row.doc_id}: {e}")
+
+            results.append(Row(
+                doc_id=row.doc_id,
+                attachment_name=row.attachment_name,
+                success=success
+            ))
+
+            # Progress indicator every 10 documents
+            if verbosity >= 1 and (i + 1) % 10 == 0:
+                print(f"    Progress: {i+1}/{total} ({success_count} saved, {failure_count} failed)")
+                sys.stdout.flush()
+
+        if verbosity >= 1:
+            print(f"  ✓ Incremental save complete: {success_count} saved, {failure_count} failed")
+
+        # Convert results back to DataFrame
+        spark = df.sparkSession
+        return spark.createDataFrame(results, self.SAVE_SCHEMA)
 
     def process_partition_with_func(
         self,

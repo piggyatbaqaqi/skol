@@ -222,6 +222,7 @@ class SkolClassifierV2:
         max_weight: float = 100.0,
         verbosity: int = 1,
         union_batch_size: int = 1000,
+        incremental: bool = False,  # If True, save each document immediately (crash-resistant)
         **model_params: Any
     ):
         # Core
@@ -278,6 +279,7 @@ class SkolClassifierV2:
         self.model_params['verbosity'] = verbosity
         self.verbosity = verbosity
         self.union_batch_size = union_batch_size
+        self.incremental = incremental
 
         # Internal state
         self._feature_extractor: Optional[FeatureExtractor] = None
@@ -1223,7 +1225,8 @@ class SkolClassifierV2:
             suffix=self.output_couchdb_suffix,
             coalesce_labels=self.coalesce_labels,
             line_level=self.line_level,
-            verbosity=self.verbosity
+            verbosity=self.verbosity,
+            incremental=self.incremental
         )
 
     def _format_as_strings(self, predictions: DataFrame) -> List[str]:

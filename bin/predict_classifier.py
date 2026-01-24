@@ -199,6 +199,7 @@ def predict_and_save(
     dry_run: bool = False,
     skip_existing: bool = False,
     force: bool = False,
+    incremental: bool = False,
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
 ) -> None:
@@ -215,6 +216,7 @@ def predict_and_save(
         dry_run: If True, preview without saving changes
         skip_existing: If True, skip documents that already have .ann attachments
         force: If True, process even if output exists (overrides skip_existing)
+        incremental: If True, save each .ann immediately (crash-resistant)
         limit: If set, process at most this many documents
         doc_ids: If set, only process these specific document IDs
     """
@@ -236,6 +238,7 @@ def predict_and_save(
     model_config['prediction_batch_size'] = batch_size
     model_config['num_workers'] = config['num_workers']
     model_config['union_batch_size'] = config['union_batch_size']
+    model_config['incremental'] = incremental
 
     # Build Redis key for model
     classifier_model_name = f"skol:classifier:model:{model_name}_{config['model_version']}"
@@ -257,6 +260,8 @@ def predict_and_save(
         print(f"Mode: SKIP EXISTING (skip documents with .ann attachments)")
     if force:
         print(f"Mode: FORCE (process all, ignore existing)")
+    if incremental:
+        print(f"Mode: INCREMENTAL (save each .ann immediately)")
     if limit:
         print(f"Limit: {limit} documents")
     if doc_ids:
@@ -746,6 +751,7 @@ Work Control Options:
   --dry-run               Preview what would be done without saving changes
   --skip-existing         Skip documents that already have .ann attachments
   --force                 Process even if .ann exists (overrides --skip-existing)
+  --incremental           Save each .ann immediately as it completes (crash-resistant)
   --limit N               Process at most N documents
   --doc-id ID[,ID,...]    Process only specific document ID(s), comma-separated
 
@@ -774,6 +780,7 @@ Environment Variables for Work Control:
   DRY_RUN=1               Same as --dry-run
   SKIP_EXISTING=1         Same as --skip-existing
   FORCE=1                 Same as --force
+  INCREMENTAL=1           Same as --incremental
   LIMIT=N                 Same as --limit N
   DOC_IDS=id1,id2,...     Same as --doc-id
 
@@ -885,6 +892,7 @@ Note: Command-line arguments override environment variables.
             dry_run=config.get('dry_run', False),
             skip_existing=config.get('skip_existing', False),
             force=config.get('force', False),
+            incremental=config.get('incremental', False),
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
         )

@@ -313,7 +313,8 @@ class CouchDBOutputWriter:
         suffix: str = ".ann",
         coalesce_labels: bool = False,
         line_level: bool = False,
-        verbosity: int = 1
+        verbosity: int = 1,
+        incremental: bool = False
     ) -> None:
         """
         Save predictions to CouchDB as attachments.
@@ -324,6 +325,7 @@ class CouchDBOutputWriter:
             coalesce_labels: Whether to coalesce consecutive labels
             line_level: Whether data is line-level
             verbosity: Logging level for instrumentation (0=none, 1=warnings, 2=info, 3=debug)
+            incremental: If True, save each document immediately (crash-resistant)
         """
         from .instrumentation import SparkInstrumentation
 
@@ -431,10 +433,17 @@ class CouchDBOutputWriter:
         # Use CouchDB connection to save
         # IMPORTANT: save_distributed returns a DataFrame - we must trigger an action
         # to actually execute the save operation (Spark transformations are lazy)
-        result_df = self.conn.save_distributed(predictions, suffix=suffix, verbosity=verbosity)
+        result_df = self.conn.save_distributed(
+            predictions, suffix=suffix, verbosity=verbosity, incremental=incremental
+        )
 
-        # Trigger execution and get save statistics
-        results = result_df.collect()
+        if incremental:
+            # Incremental mode already collected and saved - result_df is final
+            results = result_df.collect()
+        else:
+            # Batch mode - trigger execution now
+            results = result_df.collect()
+
         total_saved = len(results)
         successful = sum(1 for r in results if r.success)
         failed = total_saved - successful
