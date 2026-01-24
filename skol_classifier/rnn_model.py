@@ -14,6 +14,10 @@ import os
 # Configure TensorFlow GPU settings BEFORE importing TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
 
+# Disable XLA JIT compilation to avoid JIT compilation errors on some GPU configurations
+# This prevents "JIT compilation failed" errors with operations like tf.sign() in LSTM layers
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=-1'
+
 from pyspark.ml import Transformer
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
@@ -266,16 +270,26 @@ def build_bilstm_model(
 
     except Exception as e:
         error_msg = str(e)
-        if 'CUDA_ERROR' in error_msg or 'INVALID_PTX' in error_msg or 'INVALID_HANDLE' in error_msg:
+        is_gpu_error = (
+            'CUDA_ERROR' in error_msg or
+            'INVALID_PTX' in error_msg or
+            'INVALID_HANDLE' in error_msg or
+            'JIT compilation failed' in error_msg or
+            'XLA' in error_msg
+        )
+        if is_gpu_error:
             raise RuntimeError(
-                f"Failed to build model due to GPU error: {error_msg}\n\n"
-                "Your GPU may not be fully supported by this TensorFlow version.\n"
-                "To fix this, restart your Python session and set this environment variable "
+                f"Failed to build model due to GPU/JIT error: {error_msg}\n\n"
+                "Your GPU may not be fully supported by this TensorFlow version,\n"
+                "or XLA JIT compilation failed.\n\n"
+                "To fix this, restart your Python session and set these environment variables "
                 "BEFORE importing skol_classifier:\n\n"
                 "    import os\n"
                 "    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Force CPU-only mode\n"
+                "    os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=-1'  # Disable XLA JIT\n"
                 "    # Now import skol_classifier\n\n"
-                "Or run your script with: CUDA_VISIBLE_DEVICES='' python your_script.py\n"
+                "Or run your script with:\n"
+                "    CUDA_VISIBLE_DEVICES='' TF_XLA_FLAGS='--tf_xla_auto_jit=-1' python your_script.py\n"
             ) from e
         else:
             # Re-raise other errors as-is
