@@ -7,12 +7,22 @@ TaxonExtractor.load_taxa().
 
 The TaxaJSONTranslator class encapsulates model loading, inference, and DataFrame
 processing, optimized for batch processing of taxa descriptions.
+
+Constrained Decoding Support:
+    The translator supports constrained decoding using the Outlines library, which
+    guarantees valid JSON output conforming to a schema. Enable with:
+        translator = TaxaJSONTranslator(..., use_constrained_decoding=True)
+
+    This addresses common problems with free-form generation:
+    - Low structural success rate (<50% valid JSON)
+    - Schema violations (leaf nodes not being arrays)
+    - Vocabulary inconsistency
 """
 
 import json
 import io
 import multiprocessing as mp
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import torch
 from transformers import (
@@ -197,6 +207,122 @@ Result:
         result_queue.put(('error', str(e) + "\n" + traceback.format_exc()))
 
 
+def _constrained_inference_worker(descriptions, model_config, batch_size, result_queue, streaming=False):
+    """
+    Worker function that runs constrained model inference in an isolated subprocess.
+
+    Uses the Outlines library for constrained JSON generation, guaranteeing
+    valid JSON output that conforms to the TaxonomySchema.
+
+    Must be defined at module level for pickling with 'spawn' context.
+
+    Args:
+        descriptions: List of dicts with '_id', 'taxon', 'description' keys
+        model_config: Dict with model configuration
+        batch_size: Number of descriptions per batch (for progress reporting)
+        result_queue: Queue to send results back
+        streaming: If True, send each result immediately; if False, batch all results
+    """
+    try:
+        # Import inside subprocess to avoid Spark context
+        import json as json_module
+        from skol.constrained_decoder import ConstrainedDecoder, TaxonomySchema
+
+        print("    Loading constrained decoder...")
+
+        # Create schema with configured depth
+        schema = TaxonomySchema(
+            max_depth=model_config.get('max_depth', 4),
+            min_depth=model_config.get('min_depth', 2)
+        )
+
+        # Determine backend: use 'outlines' if available, otherwise error
+        backend = model_config.get('backend', 'outlines')
+
+        # Create decoder
+        decoder = ConstrainedDecoder(
+            model_name=model_config['base_model_id'],
+            backend=backend,
+            schema=schema,
+            device=model_config['device'],
+            system_prompt=model_config.get('prompt', '')
+        )
+
+        # Load model
+        decoder.load_model(
+            model_kwargs={
+                'load_in_4bit': model_config['load_in_4bit'],
+                'trust_remote_code': True,
+            }
+        )
+        print("    ✓ Constrained decoder ready")
+
+        # Process descriptions
+        results = {}
+        total = len(descriptions)
+        for i, item in enumerate(descriptions):
+            doc_id = item['_id']
+            description = item['description']
+
+            # Progress reporting
+            if i % batch_size == 0:
+                batch_num = i // batch_size + 1
+                total_batches = (total + batch_size - 1) // batch_size
+                print(f"    Batch {batch_num}/{total_batches}")
+
+            try:
+                # Extract features using constrained generation
+                json_obj = decoder.extract_features(description)
+                json_str = json_module.dumps(json_obj, ensure_ascii=False)
+
+                if streaming:
+                    # Send result immediately with full item data for saving
+                    result_queue.put(('result', {
+                        '_id': doc_id,
+                        'taxon': item.get('taxon', ''),
+                        'description': description,
+                        'source': item.get('source', {}),
+                        'line_number': item.get('line_number'),
+                        'paragraph_number': item.get('paragraph_number'),
+                        'page_number': item.get('page_number'),
+                        'empirical_page_number': item.get('empirical_page_number'),
+                        'features_json': json_str,
+                        'index': i,
+                        'total': total
+                    }))
+                else:
+                    results[doc_id] = json_str
+
+            except Exception as e:
+                print(f"    Warning: Error processing {doc_id}: {e}")
+                if streaming:
+                    result_queue.put(('result', {
+                        '_id': doc_id,
+                        'taxon': item.get('taxon', ''),
+                        'description': description,
+                        'source': item.get('source', {}),
+                        'line_number': item.get('line_number'),
+                        'paragraph_number': item.get('paragraph_number'),
+                        'page_number': item.get('page_number'),
+                        'empirical_page_number': item.get('empirical_page_number'),
+                        'features_json': '{}',
+                        'index': i,
+                        'total': total,
+                        'error': str(e)
+                    }))
+                else:
+                    results[doc_id] = "{}"
+
+        if streaming:
+            result_queue.put(('done', None))
+        else:
+            result_queue.put(('success', results))
+
+    except Exception as e:
+        import traceback
+        result_queue.put(('error', str(e) + "\n" + traceback.format_exc()))
+
+
 class TaxaJSONTranslator:
     """
     Translates taxa descriptions to structured JSON using a fine-tuned Mistral model.
@@ -274,7 +400,10 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         load_in_4bit: bool = True,
         use_auth_token: bool = True,
         username: Optional[str] = None,
-        password: Optional[str] = None
+        password: Optional[str] = None,
+        use_constrained_decoding: bool = False,
+        schema_max_depth: int = 4,
+        schema_min_depth: int = 2
     ):
         """
         Initialize the TaxaJSONTranslator.
@@ -292,6 +421,10 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
             use_auth_token: Whether to use Hugging Face authentication
             username: Optional username for couchdb authentication
             password: Optional password for couchdb authentication
+            use_constrained_decoding: If True, use Outlines for constrained JSON generation
+                                      (guarantees valid JSON conforming to TaxonomySchema)
+            schema_max_depth: Maximum nesting depth for constrained decoding (2-4, default 4)
+            schema_min_depth: Minimum nesting depth for constrained decoding (default 2)
         """
         self.spark = spark
         self.couchdb_url = couchdb_url
@@ -305,6 +438,9 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         self.use_auth_token = use_auth_token
         self.username = username
         self.password = password
+        self.use_constrained_decoding = use_constrained_decoding
+        self.schema_max_depth = schema_max_depth
+        self.schema_min_depth = schema_min_depth
 
         # Model and tokenizer (lazy loaded)
         self._model = None
@@ -319,6 +455,10 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         print(f"  Checkpoint: {checkpoint_path or 'None (using base model)'}")
         print(f"  Device: {device}")
         print(f"  4-bit quantization: {load_in_4bit}")
+        if use_constrained_decoding:
+            print(f"  Constrained decoding: ENABLED (schema depth {schema_min_depth}-{schema_max_depth})")
+        else:
+            print(f"  Constrained decoding: disabled")
 
     def load_taxa(
         self,
@@ -744,7 +884,8 @@ Result:
     def _run_inference_subprocess(
         self,
         descriptions: list,
-        batch_size: int
+        batch_size: int,
+        streaming: bool = False
     ) -> dict:
         """
         Run model inference in a subprocess isolated from Spark.
@@ -755,9 +896,10 @@ Result:
         Args:
             descriptions: List of dicts with '_id' and 'description' keys
             batch_size: Number of descriptions to process per batch
+            streaming: If True, return the queue for streaming results
 
         Returns:
-            Dict mapping doc_id to JSON string
+            Dict mapping doc_id to JSON string (or queue if streaming)
         """
         import queue
 
@@ -773,16 +915,32 @@ Result:
             'use_auth_token': self.use_auth_token,
         }
 
+        # Add constrained decoding config if enabled
+        if self.use_constrained_decoding:
+            model_config['max_depth'] = self.schema_max_depth
+            model_config['min_depth'] = self.schema_min_depth
+            model_config['backend'] = 'outlines'
+
         # Use spawn to ensure clean subprocess without Spark daemon threads
         ctx = mp.get_context('spawn')
         result_queue = ctx.Queue()
 
+        # Choose worker function based on decoding mode
+        if self.use_constrained_decoding:
+            worker_fn = _constrained_inference_worker
+        else:
+            worker_fn = _inference_worker
+
         # Start subprocess using module-level function (required for pickling with spawn)
         proc = ctx.Process(
-            target=_inference_worker,
-            args=(descriptions, model_config, batch_size, result_queue)
+            target=worker_fn,
+            args=(descriptions, model_config, batch_size, result_queue, streaming)
         )
         proc.start()
+
+        if streaming:
+            # Return queue and process for caller to handle
+            return result_queue, proc
 
         # Wait for result
         try:
@@ -905,29 +1063,14 @@ Result:
             except:
                 return False
 
-        # Step 3: Capture model config for subprocess
-        model_config = {
-            'base_model_id': self.base_model_id,
-            'checkpoint_path': self.checkpoint_path,
-            'max_length': self.max_length,
-            'max_new_tokens': self.max_new_tokens,
-            'prompt': self.prompt,
-            'device': self.device,
-            'load_in_4bit': self.load_in_4bit,
-            'use_auth_token': self.use_auth_token,
-        }
-
-        # Step 4: Start subprocess with streaming=True
+        # Step 3: Start subprocess with streaming=True
         if verbosity >= 1:
-            print("  Starting model inference subprocess...")
-        ctx = mp.get_context('spawn')
-        result_queue = ctx.Queue()
+            mode_str = "constrained" if self.use_constrained_decoding else "standard"
+            print(f"  Starting {mode_str} model inference subprocess...")
 
-        proc = ctx.Process(
-            target=_inference_worker,
-            args=(descriptions, model_config, batch_size, result_queue, True)  # streaming=True
+        result_queue, proc = self._run_inference_subprocess(
+            descriptions, batch_size, streaming=True
         )
-        proc.start()
 
         # Step 5: Process results as they arrive
         success_count = 0

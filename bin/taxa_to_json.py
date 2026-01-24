@@ -83,6 +83,9 @@ def translate_taxa_to_json(
     doc_ids: Optional[list] = None,
     force: bool = False,
     recompute_invalid: bool = False,
+    use_constrained_decoding: bool = False,
+    schema_max_depth: int = 4,
+    schema_min_depth: int = 2,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -99,10 +102,13 @@ def translate_taxa_to_json(
         validate: If True, validate JSON output
         dry_run: If True, show what would be done without actually saving
         incremental: If True, save each record as it's translated (recommended)
-        skip_existing: If True, skip records that already exist in destination database
+        skip_existing: If True, skip records already in destination database
         doc_ids: If specified, only process these specific document IDs
-        force: If True, process even if output already exists (overrides skip_existing)
-        recompute_invalid: If True, only process records with invalid/missing JSON in destination
+        force: If True, process even if output exists (overrides skip_existing)
+        recompute_invalid: If True, only process records with invalid JSON
+        use_constrained_decoding: If True, use Outlines for guaranteed valid JSON
+        schema_max_depth: Maximum nesting depth for constrained decoding (2-4)
+        schema_min_depth: Minimum nesting depth for constrained decoding
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -138,7 +144,9 @@ def translate_taxa_to_json(
     if doc_ids:
         print(f"Processing specific doc_ids: {len(doc_ids)} documents")
     if recompute_invalid:
-        print(f"Mode: RECOMPUTE INVALID (only process records with invalid/missing JSON)")
+        print("Mode: RECOMPUTE INVALID (only process records with invalid JSON)")
+    if use_constrained_decoding:
+        print(f"Constrained decoding: ENABLED (depth {schema_min_depth}-{schema_max_depth})")
     print()
 
     # Initialize Spark
@@ -174,7 +182,10 @@ def translate_taxa_to_json(
             password=password,
             checkpoint_path=checkpoint_path,
             device="cuda",
-            load_in_4bit=True
+            load_in_4bit=True,
+            use_constrained_decoding=use_constrained_decoding,
+            schema_max_depth=schema_max_depth,
+            schema_min_depth=schema_min_depth
         )
 
         # Load taxa from source database
@@ -433,13 +444,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Work Control Options (from env_config):
-  --dry-run             Preview what would be done without saving
-  --skip-existing       Skip records already in destination database
-  --force               Process even if output exists (overrides --skip-existing)
-  --limit N             Process at most N records
-  --doc-id ID1,ID2,...  Process only specific document IDs (comma-separated)
-  --incremental         Save each record immediately (crash-resistant)
-  --recompute-invalid   Only process records with invalid/missing JSON in destination
+  --dry-run                  Preview what would be done without saving
+  --skip-existing            Skip records already in destination database
+  --force                    Process even if output exists
+  --limit N                  Process at most N records
+  --doc-id ID1,ID2,...       Process only specific document IDs
+  --incremental              Save each record immediately (crash-resistant)
+  --recompute-invalid        Only process records with invalid JSON
+  --use-constrained-decoding Use Outlines for guaranteed valid JSON output
 
 Environment Variables:
   DRY_RUN=1             Same as --dry-run
@@ -567,7 +579,31 @@ Examples:
     parser.add_argument(
         '--recompute-invalid',
         action='store_true',
-        help='Only process records with invalid/missing JSON in destination database'
+        help='Only process records with invalid/missing JSON in destination'
+    )
+
+    parser.add_argument(
+        '--use-constrained-decoding',
+        action='store_true',
+        help='Use Outlines for constrained JSON generation (guarantees valid JSON)'
+    )
+
+    parser.add_argument(
+        '--schema-max-depth',
+        type=int,
+        default=4,
+        choices=[2, 3, 4],
+        metavar='N',
+        help='Maximum nesting depth for constrained decoding (2-4, default: 4)'
+    )
+
+    parser.add_argument(
+        '--schema-min-depth',
+        type=int,
+        default=2,
+        choices=[2, 3, 4],
+        metavar='N',
+        help='Minimum nesting depth for constrained decoding (2-4, default: 2)'
     )
 
     parser.add_argument(
@@ -599,6 +635,15 @@ Examples:
     limit = args.limit if args.limit is not None else config.get('limit')
     doc_ids = config.get('doc_ids')  # Only from env_config (via --doc-id command line)
     recompute_invalid = args.recompute_invalid
+    use_constrained_decoding = args.use_constrained_decoding
+    schema_max_depth = args.schema_max_depth
+    schema_min_depth = args.schema_min_depth
+
+    # Validate schema depth parameters
+    if schema_min_depth > schema_max_depth:
+        print(f"Error: --schema-min-depth ({schema_min_depth}) cannot be greater "
+              f"than --schema-max-depth ({schema_max_depth})")
+        sys.exit(1)
 
     # Run translation
     try:
@@ -618,6 +663,9 @@ Examples:
             doc_ids=doc_ids,
             force=force,
             recompute_invalid=recompute_invalid,
+            use_constrained_decoding=use_constrained_decoding,
+            schema_max_depth=schema_max_depth,
+            schema_min_depth=schema_min_depth,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")
