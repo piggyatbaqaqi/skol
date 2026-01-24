@@ -119,10 +119,10 @@ def mark_taxonomy_documents(
 
     # Compile regex pattern for efficient single-pass checking
     # Remove trailing periods and escape special regex characters
-    abbrev_parts = [re.escape(abbrev.rstrip('.')) for abbrev in abbrevs]
+    abbrev_parts = [re.escape(abbrev) for abbrev in abbrevs]
     # Create pattern that matches any abbreviation followed by a period
-    # Use word boundary at start to avoid partial matches
-    abbrev_pattern = re.compile(r'\b(' + '|'.join(abbrev_parts) + r')\.')
+    # Use word boundary at start and end to avoid partial matches
+    abbrev_pattern = re.compile(r'\b(' + '|'.join(abbrev_parts) + r')\b')
 
     if verbosity >= 1:
         print(f"\nChecking {len(doc_ids)} documents for taxonomy abbreviations...")

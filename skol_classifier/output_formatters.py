@@ -429,7 +429,20 @@ class CouchDBOutputWriter:
         instr.log(2, "  Calling save_distributed...")
 
         # Use CouchDB connection to save
-        self.conn.save_distributed(predictions, suffix=suffix, verbosity=verbosity)
+        # IMPORTANT: save_distributed returns a DataFrame - we must trigger an action
+        # to actually execute the save operation (Spark transformations are lazy)
+        result_df = self.conn.save_distributed(predictions, suffix=suffix, verbosity=verbosity)
+
+        # Trigger execution and get save statistics
+        results = result_df.collect()
+        total_saved = len(results)
+        successful = sum(1 for r in results if r.success)
+        failed = total_saved - successful
+
+        if verbosity >= 1:
+            print(f"  Saved {successful}/{total_saved} attachments to CouchDB")
+            if failed > 0:
+                print(f"  WARNING: {failed} attachments failed to save")
 
         instr.log(2, "✓ CouchDBOutputWriter.save_annotated complete")
         instr.log(2, "="*70 + "\n")
