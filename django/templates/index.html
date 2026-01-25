@@ -687,27 +687,6 @@
             font-style: italic;
             padding: 10px 0;
         }
-
-        /* Save Collection Bar */
-        .save-collection-bar {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px 20px;
-            background: #f0f4ff;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .save-collection-bar button {
-            white-space: nowrap;
-        }
-
-        .save-hint {
-            color: #666;
-            font-size: 0.9em;
-        }
     </style>
 </head>
 <body>
@@ -814,14 +793,6 @@
         <div id="success" class="success" style="display: none;"></div>
 
         <div id="results" class="results"></div>
-
-        {% if user.is_authenticated %}
-        <!-- Save Collection Button (visible when collection is active) -->
-        <div id="saveCollectionBar" class="save-collection-bar" style="display: none;">
-            <button type="button" id="saveCollectionBtn" onclick="saveCollection()">Save Collection</button>
-            <span class="save-hint">Saves description and identifiers to the active collection</span>
-        </div>
-        {% endif %}
 
         <div class="footer">
             <a href="{% url 'about' %}">About</a>
@@ -1034,10 +1005,6 @@
                 identifiersSection.style.display = 'block';
                 updateIdentifiersDisplay();
             }
-
-            // Show save bar
-            const saveBar = document.getElementById('saveCollectionBar');
-            if (saveBar) saveBar.style.display = 'flex';
         }
 
         // Hide collection-related UI elements
@@ -1050,9 +1017,6 @@
 
             const identifiersSection = document.getElementById('identifiersSection');
             if (identifiersSection) identifiersSection.style.display = 'none';
-
-            const saveBar = document.getElementById('saveCollectionBar');
-            if (saveBar) saveBar.style.display = 'none';
         }
 
         // Update the identifiers display
@@ -1148,48 +1112,6 @@
 
                 await loadActiveCollection();
                 showSuccess('Identifier deleted');
-
-            } catch (error) {
-                showError(error.message);
-            }
-        }
-
-        // Save collection (update description)
-        async function saveCollection() {
-            if (!activeCollectionId) {
-                alert('Please select a collection first');
-                return;
-            }
-
-            const description = document.getElementById('prompt').value;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCSRFToken()
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        name: activeCollectionData.name,
-                        description: description
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to save collection');
-                }
-
-                // Update local data with response (which has the saved description)
-                activeCollectionData = data;
-                showSuccess('Collection saved!');
-
-                // Update UI but skip overwriting the prompt (user's text stays)
-                showCollectionUI(true);
-                loadCollections();
 
             } catch (error) {
                 showError(error.message);
@@ -1358,11 +1280,26 @@
             }
         });
 
-        // Save search to collection history (called automatically after search)
+        // Save search to collection (updates description AND adds to history)
         async function saveSearchToHistory(searchData) {
             if (!activeCollectionId || !searchData) return;
 
             try {
+                // First, update the collection's description
+                await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        name: activeCollectionData.name,
+                        description: searchData.prompt
+                    })
+                });
+
+                // Then, add to search history
                 const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/searches/`, {
                     method: 'POST',
                     headers: {
@@ -1388,11 +1325,12 @@
                     return;
                 }
 
-                // Silently update collection data
+                // Update local collection data (skip overwriting prompt)
                 await loadActiveCollection();
+                showCollectionUI(true);
 
             } catch (error) {
-                console.error('Error saving search to history:', error);
+                console.error('Error saving search to collection:', error);
             }
         }
 
@@ -1411,7 +1349,7 @@
             // Show result count and collection status
             let collectionStatus = '';
             if (IS_AUTHENTICATED && activeCollectionId) {
-                collectionStatus = `<span style="color: #667eea; font-size: 0.9em;">Saved to collection history</span>`;
+                collectionStatus = `<span style="color: #667eea; font-size: 0.9em;">Saved to collection</span>`;
             }
 
             resultsDiv.innerHTML = `
