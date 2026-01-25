@@ -17,6 +17,7 @@ from skol.constrained_decoder import (
     ConstrainedDecoder,
     MockBackend,
     VocabularyNormalizer,
+    generate_variable_depth_schema,
 )
 
 
@@ -37,14 +38,17 @@ class TestTaxonomySchema(unittest.TestCase):
 
     def test_invalid_depth_raises_error(self):
         """Test that invalid depth parameters raise ValueError."""
+        # min_depth > max_depth
         with self.assertRaises(ValueError):
             TaxonomySchema(min_depth=5, max_depth=4)
 
+        # min_depth < 2
         with self.assertRaises(ValueError):
             TaxonomySchema(min_depth=1, max_depth=4)
 
+        # max_depth > 6
         with self.assertRaises(ValueError):
-            TaxonomySchema(min_depth=2, max_depth=5)
+            TaxonomySchema(min_depth=2, max_depth=7)
 
     def test_json_schema_structure(self):
         """Test that generated JSON schema has correct structure."""
@@ -143,6 +147,89 @@ class TestTaxonomySchema(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             schema.validate(invalid_data)
+
+    def test_extended_depth_5(self):
+        """Test schema supports depth 5."""
+        schema = TaxonomySchema(max_depth=5, min_depth=2)
+        self.assertEqual(schema.max_depth, 5)
+
+        json_schema = schema.to_json_schema()
+        self.assertIn('level5', json_schema['$defs'])
+
+        # Valid data at depth 5
+        valid_data = {
+            "a": {"b": {"c": {"d": ["value"]}}}
+        }
+        self.assertTrue(schema.validate(valid_data))
+
+    def test_extended_depth_6(self):
+        """Test schema supports depth 6."""
+        schema = TaxonomySchema(max_depth=6, min_depth=2)
+        self.assertEqual(schema.max_depth, 6)
+
+        json_schema = schema.to_json_schema()
+        self.assertIn('level6', json_schema['$defs'])
+
+        # Valid data at depth 6
+        valid_data = {
+            "a": {"b": {"c": {"d": {"e": ["value"]}}}}
+        }
+        self.assertTrue(schema.validate(valid_data))
+
+
+class TestGenerateVariableDepthSchema(unittest.TestCase):
+    """Test the standalone generate_variable_depth_schema function."""
+
+    def test_basic_schema_generation(self):
+        """Test basic schema generation."""
+        schema = generate_variable_depth_schema(3)
+
+        self.assertIn('$schema', schema)
+        self.assertIn('$defs', schema)
+        self.assertEqual(schema['type'], 'object')
+        self.assertIn('level1', schema['$defs'])
+        self.assertIn('level2', schema['$defs'])
+        self.assertIn('level3', schema['$defs'])
+
+    def test_depth_6_schema(self):
+        """Test generating schema with depth 6."""
+        schema = generate_variable_depth_schema(6)
+
+        # Should have all 6 levels
+        for i in range(1, 7):
+            self.assertIn(f'level{i}', schema['$defs'])
+
+        # Deepest level should be array only
+        level6 = schema['$defs']['level6']
+        self.assertEqual(level6['type'], 'array')
+        self.assertEqual(level6['items']['type'], 'string')
+
+    def test_intermediate_levels_have_oneOf(self):
+        """Test that intermediate levels can be array or object."""
+        schema = generate_variable_depth_schema(4)
+
+        # Levels 1-3 should have oneOf (array or object)
+        for level in ['level1', 'level2', 'level3']:
+            self.assertIn('oneOf', schema['$defs'][level])
+
+        # Level 4 (deepest) should be array only
+        self.assertEqual(schema['$defs']['level4']['type'], 'array')
+
+    def test_invalid_depth_raises_error(self):
+        """Test that invalid depth raises ValueError."""
+        with self.assertRaises(ValueError):
+            generate_variable_depth_schema(0)
+
+        with self.assertRaises(ValueError):
+            generate_variable_depth_schema(7)
+
+    def test_depth_1_schema(self):
+        """Test generating schema with minimum depth 1."""
+        schema = generate_variable_depth_schema(1)
+
+        self.assertIn('level1', schema['$defs'])
+        # Only level is array only
+        self.assertEqual(schema['$defs']['level1']['type'], 'array')
 
 
 class TestMockBackend(unittest.TestCase):

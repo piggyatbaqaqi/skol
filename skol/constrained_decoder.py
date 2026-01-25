@@ -6,7 +6,7 @@ features from taxonomic descriptions using small language models (SLMs).
 
 The implementation follows the approach described in docs/slm_optimization_discussion.md:
 - Uses Outlines library for constrained decoding
-- Enforces variable-depth JSON schema (2-4 levels with arrays at leaves)
+- Enforces variable-depth JSON schema (2-6 levels with arrays at leaves)
 - Guarantees valid JSON output conforming to the schema
 
 Classes:
@@ -35,11 +35,11 @@ class TaxonomySchema:
     """
     Generate JSON schemas for variable-depth taxonomy feature extraction.
 
-    The schema allows for 2-4 levels of nesting, with string arrays at leaf nodes.
+    The schema allows for 2-6 levels of nesting, with string arrays at leaf nodes.
     At each level, the model can choose to terminate with an array or continue nesting.
 
     Attributes:
-        max_depth: Maximum nesting depth (2-4, default 4)
+        max_depth: Maximum nesting depth (2-6, default 4)
         min_depth: Minimum nesting depth (default 2)
 
     Example schema output (max_depth=3):
@@ -54,9 +54,9 @@ class TaxonomySchema:
     min_depth: int = 2
 
     def __post_init__(self):
-        if not 2 <= self.min_depth <= self.max_depth <= 4:
+        if not 2 <= self.min_depth <= self.max_depth <= 6:
             raise ValueError(
-                f"Depth must satisfy 2 <= min_depth <= max_depth <= 4, "
+                f"Depth must satisfy 2 <= min_depth <= max_depth <= 6, "
                 f"got min_depth={self.min_depth}, max_depth={self.max_depth}"
             )
 
@@ -163,6 +163,68 @@ class TaxonomySchema:
             return True
 
         raise ValueError(f"Invalid type at depth {depth}: {type(data)}")
+
+
+def generate_variable_depth_schema(max_depth: int) -> Dict[str, Any]:
+    """
+    Generate JSON schema supporting 1 to max_depth levels.
+
+    This is a standalone function that generates a variable-depth schema
+    without the min_depth constraint of TaxonomySchema. Useful for simpler
+    use cases where any depth is acceptable.
+
+    Args:
+        max_depth: Maximum nesting depth (1-6)
+
+    Returns:
+        JSON Schema dictionary with $defs for each level
+
+    Example:
+        >>> schema = generate_variable_depth_schema(6)
+        >>> # Schema allows structures from depth 1 to 6
+    """
+    if not 1 <= max_depth <= 6:
+        raise ValueError(f"max_depth must be between 1 and 6, got {max_depth}")
+
+    schema: Dict[str, Any] = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {},
+        "type": "object",
+    }
+
+    # Build from deepest level up
+    for level in range(max_depth, 0, -1):
+        level_name = f"level{level}"
+
+        if level == max_depth:
+            # Deepest level is always an array
+            schema["$defs"][level_name] = {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 1,
+            }
+        else:
+            # Other levels can be array OR object containing next level
+            next_level = f"level{level + 1}"
+            schema["$defs"][level_name] = {
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 1,
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": {"$ref": f"#/$defs/{next_level}"},
+                        "minProperties": 1,
+                    },
+                ]
+            }
+
+    schema["additionalProperties"] = {"$ref": "#/$defs/level1"}
+    schema["minProperties"] = 1
+
+    return schema
 
 
 class DecoderBackend(ABC):
