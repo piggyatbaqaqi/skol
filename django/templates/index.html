@@ -1022,10 +1022,10 @@
             const descNote = document.getElementById('descriptionNote');
             if (descNote) descNote.style.display = 'inline';
 
-            // Load description into prompt field if collection has a description
-            // Skip this when called after a save operation
-            if (!skipPromptUpdate && activeCollectionData.description) {
-                document.getElementById('prompt').value = activeCollectionData.description;
+            // Load description into prompt field when switching collections
+            // Skip this when called after a save operation (to preserve user's edits)
+            if (!skipPromptUpdate) {
+                document.getElementById('prompt').value = activeCollectionData.description || '';
             }
 
             // Show identifiers section
@@ -1344,6 +1344,11 @@
 
                 displayResults(data);
 
+                // Automatically save search to active collection if one is selected
+                if (activeCollectionId && data.results && data.results.length > 0) {
+                    await saveSearchToHistory(data);
+                }
+
             } catch (error) {
                 document.getElementById('error').textContent = error.message;
                 document.getElementById('error').style.display = 'block';
@@ -1353,17 +1358,9 @@
             }
         });
 
-        // Save search to active collection
-        async function saveSearchToActiveCollection() {
-            if (!activeCollectionId) {
-                alert('Please select a collection first');
-                return;
-            }
-
-            if (!currentSearchData) {
-                alert('No search data to save');
-                return;
-            }
+        // Save search to collection history (called automatically after search)
+        async function saveSearchToHistory(searchData) {
+            if (!activeCollectionId || !searchData) return;
 
             try {
                 const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/searches/`, {
@@ -1374,10 +1371,10 @@
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({
-                        prompt: currentSearchData.prompt,
-                        embedding_name: currentSearchData.embedding_name,
-                        k: currentSearchData.k,
-                        result_references: currentSearchData.results.map(r => ({
+                        prompt: searchData.prompt,
+                        embedding_name: searchData.embedding_name,
+                        k: searchData.k,
+                        result_references: searchData.results.map(r => ({
                             similarity: r.Similarity,
                             title: r.Title,
                             taxa_id: r.PDFDocId || null
@@ -1387,15 +1384,15 @@
 
                 if (!response.ok) {
                     const data = await response.json();
-                    throw new Error(data.error || 'Failed to save search');
+                    console.error('Failed to save search to history:', data.error);
+                    return;
                 }
 
-                showSuccess('Search saved to collection!');
+                // Silently update collection data
                 await loadActiveCollection();
-                loadCollections();
 
             } catch (error) {
-                showError(error.message);
+                console.error('Error saving search to history:', error);
             }
         }
 
@@ -1403,7 +1400,7 @@
         function displayResults(data) {
             const resultsDiv = document.getElementById('results');
 
-            // Store search data for saving
+            // Store search data for reference
             currentSearchData = data;
 
             if (!data.results || data.results.length === 0) {
@@ -1411,18 +1408,16 @@
                 return;
             }
 
-            // Build save search button if authenticated and collection is active
-            let saveSearchButton = '';
+            // Show result count and collection status
+            let collectionStatus = '';
             if (IS_AUTHENTICATED && activeCollectionId) {
-                saveSearchButton = `<button class="save-collection-btn" onclick="saveSearchToActiveCollection()">Save Search to Collection</button>`;
-            } else if (IS_AUTHENTICATED) {
-                saveSearchButton = `<span style="color: #999; font-size: 0.9em;">Select a collection above to save searches</span>`;
+                collectionStatus = `<span style="color: #667eea; font-size: 0.9em;">Saved to collection history</span>`;
             }
 
             resultsDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <span style="color: #666;">Found ${data.results.length} results</span>
-                    ${saveSearchButton}
+                    ${collectionStatus}
                 </div>
             `;
 

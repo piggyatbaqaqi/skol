@@ -2,6 +2,7 @@
 REST API views for SKOL semantic search.
 """
 import logging
+import math
 import traceback
 
 from rest_framework.views import APIView
@@ -55,6 +56,19 @@ class EmbeddingListView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+def clean_float(value):
+    """Convert a float value to JSON-safe format, replacing NaN/Inf with None."""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        if math.isnan(f) or math.isinf(f):
+            return None
+        return f
+    except (ValueError, TypeError):
+        return None
 
 
 class SearchView(APIView):
@@ -146,7 +160,7 @@ class SearchView(APIView):
                 # Build result dictionary from the embedding row data
                 # For SKOL_TAXA, all data is already in the embeddings DataFrame
                 result_dict = {
-                    'Similarity': float(similarity),
+                    'Similarity': clean_float(similarity),
                     'Title': row.get('taxon', ''),
                     'Description': row.get('description', ''),
                     'Feed': row.get('source', ''),
@@ -167,13 +181,13 @@ class SearchView(APIView):
                     if isinstance(src, dict):
                         result_dict['Source'] = src
                 if 'line_number' in row.index:
-                    result_dict['LineNumber'] = row['line_number']
+                    result_dict['LineNumber'] = clean_float(row['line_number'])
                 if 'paragraph_number' in row.index:
-                    result_dict['ParagraphNumber'] = row['paragraph_number']
+                    result_dict['ParagraphNumber'] = clean_float(row['paragraph_number'])
                 if 'page_number' in row.index:
-                    result_dict['PageNumber'] = row['page_number']
+                    result_dict['PageNumber'] = clean_float(row['page_number'])
                 if 'pdf_page' in row.index:
-                    result_dict['PDFPage'] = row['pdf_page']
+                    result_dict['PDFPage'] = clean_float(row['pdf_page'])
                 if 'pdf_label' in row.index:
                     result_dict['PDFLabel'] = row['pdf_label']
 
