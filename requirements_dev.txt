@@ -3,3 +3,4 @@ stdeb
 debhelper
 build
 mypy
+pytest-django

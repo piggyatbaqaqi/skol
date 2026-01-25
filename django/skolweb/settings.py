@@ -145,8 +145,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
-    # Allow unauthenticated access to API endpoints (no CSRF required)
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    # Enable session authentication for collection endpoints
+    # Existing search/embedding endpoints remain public (they use AllowAny)
+    # Collection views override with IsAuthenticated
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],

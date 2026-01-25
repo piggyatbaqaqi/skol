@@ -3,16 +3,27 @@ URL configuration for search app.
 """
 from django.urls import path
 from .views import (
+    # Existing views
     SearchView,
     EmbeddingListView,
     TaxaInfoView,
     PDFAttachmentView,
     PDFFromTaxaView,
+    # Collection views
+    IdentifierTypeListView,
+    CollectionListCreateView,
+    CollectionDetailView,
+    CollectionByUserView,
+    SearchHistoryListCreateView,
+    SearchHistoryDetailView,
+    ExternalIdentifierListCreateView,
+    ExternalIdentifierDetailView,
 )
 
 app_name = 'search'
 
 urlpatterns = [
+    # Existing endpoints
     path('embeddings/', EmbeddingListView.as_view(), name='embeddings'),
     path('search/', SearchView.as_view(), name='search'),
     # Taxa document info
@@ -24,4 +35,24 @@ urlpatterns = [
          PDFAttachmentView.as_view(), name='pdf-attachment-named'),
     path('taxa/<str:taxa_id>/pdf/',
          PDFFromTaxaView.as_view(), name='taxa-pdf'),
+
+    # Identifier types (reference data)
+    path('identifier-types/', IdentifierTypeListView.as_view(), name='identifier-types'),
+
+    # Collections
+    path('collections/', CollectionListCreateView.as_view(), name='collection-list-create'),
+    path('collections/<int:collection_id>/', CollectionDetailView.as_view(), name='collection-detail'),
+    path('collections/user/<str:username>/', CollectionByUserView.as_view(), name='collection-by-user'),
+
+    # Search history within collections
+    path('collections/<int:collection_id>/searches/',
+         SearchHistoryListCreateView.as_view(), name='search-history-list-create'),
+    path('collections/<int:collection_id>/searches/<int:search_id>/',
+         SearchHistoryDetailView.as_view(), name='search-history-detail'),
+
+    # External identifiers within collections
+    path('collections/<int:collection_id>/identifiers/',
+         ExternalIdentifierListCreateView.as_view(), name='identifier-list-create'),
+    path('collections/<int:collection_id>/identifiers/<int:identifier_id>/',
+         ExternalIdentifierDetailView.as_view(), name='identifier-detail'),
 ]

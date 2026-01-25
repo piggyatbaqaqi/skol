@@ -47,6 +47,30 @@ def pdf_viewer(request, taxa_id=None):
     return render(request, 'pdf_viewer.html', context)
 
 
+def collections_view(request):
+    """
+    Display the user's collections page.
+    Requires authentication.
+    """
+    if not request.user.is_authenticated:
+        from django.shortcuts import redirect
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    return render(request, 'collections.html', {})
+
+
+def collection_detail_view(request, collection_id):
+    """
+    Display a specific collection's detail page.
+    Requires authentication.
+    """
+    if not request.user.is_authenticated:
+        from django.shortcuts import redirect
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+    return render(request, 'collection_detail.html', {
+        'collection_id': collection_id,
+    })
+
+
 def sources_view(request):
     """
     Display ingestion source statistics.
@@ -214,4 +238,6 @@ urlpatterns = [
     path('pdf/', pdf_viewer, name='pdf-viewer'),
     path('pdf/taxa/<str:taxa_id>/', pdf_viewer, name='pdf-viewer-taxa'),
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('collections/', collections_view, name='collections'),
+    path('collections/<int:collection_id>/', collection_detail_view, name='collection-detail-page'),
 ]

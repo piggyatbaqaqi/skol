@@ -394,3 +394,274 @@ class PDFFromTaxaView(APIView):
                 {'error': f'Failed to fetch PDF: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# ============================================================================
+# Collection Views
+# ============================================================================
+
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType
+from .serializers import (
+    CollectionListSerializer,
+    CollectionDetailSerializer,
+    CollectionCreateSerializer,
+    CollectionUpdateSerializer,
+    SearchHistorySerializer,
+    ExternalIdentifierSerializer,
+    ExternalIdentifierCreateSerializer,
+    IdentifierTypeSerializer,
+)
+
+
+class IdentifierTypeListView(APIView):
+    """
+    GET /api/identifier-types/
+    List all available identifier types.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        identifier_types = IdentifierType.objects.all()
+        serializer = IdentifierTypeSerializer(identifier_types, many=True)
+        return Response({
+            'identifier_types': serializer.data,
+            'count': len(serializer.data)
+        })
+
+
+class CollectionListCreateView(APIView):
+    """
+    GET /api/collections/
+    List all collections for the logged-in user.
+
+    POST /api/collections/
+    Create a new collection for the logged-in user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        collections = Collection.objects.filter(owner=request.user)
+        serializer = CollectionListSerializer(collections, many=True)
+        return Response({
+            'collections': serializer.data,
+            'count': len(serializer.data)
+        })
+
+    def post(self, request):
+        serializer = CollectionCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            collection = serializer.save(owner=request.user)
+            return Response(
+                CollectionDetailSerializer(collection).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CollectionDetailView(APIView):
+    """
+    GET /api/collections/<collection_id>/
+    Retrieve a collection (any authenticated user can view).
+
+    PUT /api/collections/<collection_id>/
+    Update collection name/description (owner only).
+
+    DELETE /api/collections/<collection_id>/
+    Delete a collection (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, collection_id):
+        return get_object_or_404(Collection, collection_id=collection_id)
+
+    def get(self, request, collection_id):
+        collection = self.get_object(collection_id)
+        serializer = CollectionDetailSerializer(collection)
+        return Response(serializer.data)
+
+    def put(self, request, collection_id):
+        collection = self.get_object(collection_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to edit this collection'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = CollectionUpdateSerializer(collection, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_collection = serializer.save()
+            return Response(CollectionDetailSerializer(updated_collection).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, collection_id):
+        collection = self.get_object(collection_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to delete this collection'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        collection.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CollectionByUserView(APIView):
+    """
+    GET /api/collections/user/<username>/
+    List all collections for a specific user (public viewing).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        collections = Collection.objects.filter(owner__username=username)
+        serializer = CollectionListSerializer(collections, many=True)
+        return Response({
+            'collections': serializer.data,
+            'count': len(serializer.data),
+            'username': username
+        })
+
+
+class SearchHistoryListCreateView(APIView):
+    """
+    GET /api/collections/<collection_id>/searches/
+    List search history for a collection.
+
+    POST /api/collections/<collection_id>/searches/
+    Add a search to the collection's history (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_collection(self, collection_id):
+        return get_object_or_404(Collection, collection_id=collection_id)
+
+    def get(self, request, collection_id):
+        collection = self.get_collection(collection_id)
+        searches = collection.search_history.all()
+        serializer = SearchHistorySerializer(searches, many=True)
+        return Response({
+            'searches': serializer.data,
+            'count': len(serializer.data),
+            'collection_id': collection_id
+        })
+
+    def post(self, request, collection_id):
+        collection = self.get_collection(collection_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to add searches to this collection'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = SearchHistorySerializer(data=request.data)
+        if serializer.is_valid():
+            search = serializer.save(
+                collection=collection,
+                result_count=len(request.data.get('result_references', []))
+            )
+            return Response(
+                SearchHistorySerializer(search).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SearchHistoryDetailView(APIView):
+    """
+    GET /api/collections/<collection_id>/searches/<search_id>/
+    Retrieve a specific search history entry.
+
+    DELETE /api/collections/<collection_id>/searches/<search_id>/
+    Delete a search history entry (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_objects(self, collection_id, search_id):
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        search = get_object_or_404(SearchHistory, id=search_id, collection=collection)
+        return collection, search
+
+    def get(self, request, collection_id, search_id):
+        collection, search = self.get_objects(collection_id, search_id)
+        return Response(SearchHistorySerializer(search).data)
+
+    def delete(self, request, collection_id, search_id):
+        collection, search = self.get_objects(collection_id, search_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to delete this search'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        search.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ExternalIdentifierListCreateView(APIView):
+    """
+    GET /api/collections/<collection_id>/identifiers/
+    List external identifiers for a collection.
+
+    POST /api/collections/<collection_id>/identifiers/
+    Add an external identifier to the collection (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_collection(self, collection_id):
+        return get_object_or_404(Collection, collection_id=collection_id)
+
+    def get(self, request, collection_id):
+        collection = self.get_collection(collection_id)
+        identifiers = collection.external_identifiers.all()
+        serializer = ExternalIdentifierSerializer(identifiers, many=True)
+        return Response({
+            'identifiers': serializer.data,
+            'count': len(serializer.data),
+            'collection_id': collection_id
+        })
+
+    def post(self, request, collection_id):
+        collection = self.get_collection(collection_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to add identifiers to this collection'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = ExternalIdentifierCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            identifier = serializer.save(collection=collection)
+            return Response(
+                ExternalIdentifierSerializer(identifier).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExternalIdentifierDetailView(APIView):
+    """
+    GET /api/collections/<collection_id>/identifiers/<identifier_id>/
+    Retrieve a specific external identifier.
+
+    DELETE /api/collections/<collection_id>/identifiers/<identifier_id>/
+    Delete an external identifier (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_objects(self, collection_id, identifier_id):
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        identifier = get_object_or_404(
+            ExternalIdentifier, id=identifier_id, collection=collection
+        )
+        return collection, identifier
+
+    def get(self, request, collection_id, identifier_id):
+        collection, identifier = self.get_objects(collection_id, identifier_id)
+        return Response(ExternalIdentifierSerializer(identifier).data)
+
+    def delete(self, request, collection_id, identifier_id):
+        collection, identifier = self.get_objects(collection_id, identifier_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to delete this identifier'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        identifier.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
