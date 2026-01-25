@@ -88,6 +88,14 @@ COUCHDB_USER=admin
 COUCHDB_PASSWORD=
 # Optionally set COUCHDB_URL to override host:port
 # COUCHDB_URL=http://localhost:5984
+
+# PostgreSQL configuration (optional - uses SQLite by default)
+# To use PostgreSQL, uncomment and configure POSTGRES_HOST
+# POSTGRES_HOST=localhost
+# POSTGRES_PORT=5432
+# POSTGRES_DB=skol
+# POSTGRES_USER=skol
+# POSTGRES_PASSWORD=
 EOF
 fi
 chown skol:skol ${SKOL_HOME}/django/skol-django.env

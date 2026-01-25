@@ -73,13 +73,29 @@ WSGI_APPLICATION = 'skolweb.wsgi.application'
 
 
 # Database
-# Using SQLite for simplicity - no database models needed for this app
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Supports SQLite (default) or PostgreSQL (when POSTGRES_HOST is set)
+_postgres_host = os.environ.get('POSTGRES_HOST', '')
+
+if _postgres_host:
+    # PostgreSQL configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB', 'skol'),
+            'USER': os.environ.get('POSTGRES_USER', 'skol'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'HOST': _postgres_host,
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        }
     }
-}
+else:
+    # SQLite configuration (default for development)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': SKOL_DJANGO_ROOT / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
