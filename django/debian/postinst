@@ -93,12 +93,29 @@ fi
 chown skol:skol ${SKOL_HOME}/django/skol-django.env
 chmod 640 ${SKOL_HOME}/django/skol-django.env
 
+# Run database migrations
+echo "Running database migrations..."
+cd ${SKOL_HOME}/django
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py migrate --noinput
+echo "Database migrations complete."
+
+# Collect static files
+echo "Collecting static files..."
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py collectstatic --noinput
+echo "Static files collected."
+
 # Install systemd service
 if [ -d /run/systemd/system ]; then
     cp /usr/share/skol-django/skol-django.service /etc/systemd/system/
     systemctl daemon-reload
     systemctl enable skol-django.service
-    echo "SKOL Django service installed. Start with: systemctl start skol-django"
+    # Restart service if it was already running (upgrade case)
+    if systemctl is-active --quiet skol-django.service; then
+        echo "Restarting SKOL Django service..."
+        systemctl restart skol-django.service
+    else
+        echo "SKOL Django service installed. Start with: systemctl start skol-django"
+    fi
 fi
 
 echo "SKOL Django installation complete."
