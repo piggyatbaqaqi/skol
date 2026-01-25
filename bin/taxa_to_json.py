@@ -38,6 +38,7 @@ Example:
 """
 
 import argparse
+import os
 import sys
 from typing import Dict, Any, Optional
 from pathlib import Path
@@ -86,6 +87,8 @@ def translate_taxa_to_json(
     use_constrained_decoding: bool = False,
     schema_max_depth: int = 4,
     schema_min_depth: int = 2,
+    use_ontology_context: bool = False,
+    ontology_dir: Optional[str] = None,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -107,8 +110,10 @@ def translate_taxa_to_json(
         force: If True, process even if output exists (overrides skip_existing)
         recompute_invalid: If True, only process records with invalid JSON
         use_constrained_decoding: If True, use Outlines for guaranteed valid JSON
-        schema_max_depth: Maximum nesting depth for constrained decoding (2-4)
+        schema_max_depth: Maximum nesting depth for constrained decoding (2-6)
         schema_min_depth: Minimum nesting depth for constrained decoding
+        use_ontology_context: If True, inject PATO/FAO ontology context into prompts
+        ontology_dir: Directory containing pato.obo and fao.obo files
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -147,6 +152,9 @@ def translate_taxa_to_json(
         print("Mode: RECOMPUTE INVALID (only process records with invalid JSON)")
     if use_constrained_decoding:
         print(f"Constrained decoding: ENABLED (depth {schema_min_depth}-{schema_max_depth})")
+    if use_ontology_context:
+        ont_dir = ontology_dir or os.environ.get('ONTOLOGY_DIR', '/opt/skol/data/ontologies')
+        print(f"Ontology context: ENABLED (from {ont_dir})")
     print()
 
     # Initialize Spark
@@ -185,7 +193,9 @@ def translate_taxa_to_json(
             load_in_4bit=True,
             use_constrained_decoding=use_constrained_decoding,
             schema_max_depth=schema_max_depth,
-            schema_min_depth=schema_min_depth
+            schema_min_depth=schema_min_depth,
+            use_ontology_context=use_ontology_context,
+            ontology_dir=ontology_dir
         )
 
         # Load taxa from source database
@@ -592,18 +602,32 @@ Examples:
         '--schema-max-depth',
         type=int,
         default=4,
-        choices=[2, 3, 4],
+        choices=[2, 3, 4, 5, 6],
         metavar='N',
-        help='Maximum nesting depth for constrained decoding (2-4, default: 4)'
+        help='Maximum nesting depth for constrained decoding (2-6, default: 4)'
     )
 
     parser.add_argument(
         '--schema-min-depth',
         type=int,
         default=2,
-        choices=[2, 3, 4],
+        choices=[2, 3, 4, 5, 6],
         metavar='N',
-        help='Minimum nesting depth for constrained decoding (2-4, default: 2)'
+        help='Minimum nesting depth for constrained decoding (2-6, default: 2)'
+    )
+
+    parser.add_argument(
+        '--use-ontology-context',
+        action='store_true',
+        help='Inject PATO/FAO ontology context into prompts for guided vocabulary'
+    )
+
+    parser.add_argument(
+        '--ontology-dir',
+        type=str,
+        default=None,
+        metavar='PATH',
+        help='Directory containing pato.obo and fao.obo (default: $ONTOLOGY_DIR or /opt/skol/data/ontologies/)'
     )
 
     parser.add_argument(
@@ -638,6 +662,8 @@ Examples:
     use_constrained_decoding = args.use_constrained_decoding
     schema_max_depth = args.schema_max_depth
     schema_min_depth = args.schema_min_depth
+    use_ontology_context = args.use_ontology_context
+    ontology_dir = args.ontology_dir
 
     # Validate schema depth parameters
     if schema_min_depth > schema_max_depth:
@@ -666,6 +692,8 @@ Examples:
             use_constrained_decoding=use_constrained_decoding,
             schema_max_depth=schema_max_depth,
             schema_min_depth=schema_min_depth,
+            use_ontology_context=use_ontology_context,
+            ontology_dir=ontology_dir,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

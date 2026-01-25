@@ -61,6 +61,10 @@ setup(
     },
     data_files=[
         ("share/skol", ["debian/skol.service"]),
+        ("share/skol/ontologies", [
+            "data/ontologies/pato.obo",
+            "data/ontologies/fao.obo",
+        ]),
     ],
     classifiers=[
         "Development Status :: 4 - Beta",

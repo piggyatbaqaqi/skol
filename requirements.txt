@@ -35,3 +35,4 @@ ninja
 wrapt
 peft
 pronto
+outlines

@@ -25,3 +25,4 @@ include paragraph.py
 include skol_compat.py
 include taxon.py
 include tokenizer.py
+recursive-include data/ontologies *.obo *.owl

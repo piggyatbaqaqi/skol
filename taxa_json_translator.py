@@ -22,6 +22,7 @@ Constrained Decoding Support:
 import json
 import io
 import multiprocessing as mp
+import os
 from typing import Optional, Dict, Any, List
 
 import torch
@@ -95,8 +96,20 @@ def _inference_worker(descriptions, model_config, batch_size, result_queue, stre
         print("    ✓ Model ready")
 
         # Helper to make prompt
-        def make_prompt(description):
-            return f"""<s>[INST]{model_config['prompt']}
+        def make_prompt(description, ontology_context=None):
+            if ontology_context:
+                return f"""<s>[INST]{model_config['prompt']}
+
+## Ontology Vocabulary
+{ontology_context}
+
+## Species Description
+{description}[/INST]
+
+Result:
+"""
+            else:
+                return f"""<s>[INST]{model_config['prompt']}
 
 ## Species Description
 {description}[/INST]
@@ -134,6 +147,7 @@ Result:
         for i, item in enumerate(descriptions):
             doc_id = item['_id']
             description = item['description']
+            ontology_context = item.get('ontology_context')
 
             # Progress reporting
             if i % batch_size == 0:
@@ -142,7 +156,7 @@ Result:
                 print(f"    Batch {batch_num}/{total_batches}")
 
             try:
-                prompt = make_prompt(description)
+                prompt = make_prompt(description, ontology_context)
                 model_input = tokenizer(prompt, return_tensors="pt").to(model_config['device'])
 
                 with torch.no_grad():
@@ -263,6 +277,7 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
         for i, item in enumerate(descriptions):
             doc_id = item['_id']
             description = item['description']
+            ontology_context = item.get('ontology_context')
 
             # Progress reporting
             if i % batch_size == 0:
@@ -271,8 +286,18 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
                 print(f"    Batch {batch_num}/{total_batches}")
 
             try:
+                # Build prompt with ontology context if available
+                if ontology_context:
+                    full_description = f"""## Ontology Vocabulary
+{ontology_context}
+
+## Species Description
+{description}"""
+                else:
+                    full_description = description
+
                 # Extract features using constrained generation
-                json_obj = decoder.extract_features(description)
+                json_obj = decoder.extract_features(full_description)
                 json_str = json_module.dumps(json_obj, ensure_ascii=False)
 
                 if streaming:
@@ -356,7 +381,8 @@ class TaxaJSONTranslator:
     # Task: Extract Taxonomic Features from Species Description
 
 ## Objective
-Extract features, subfeatures, optional subsubfeatures, and their values from the provided species description and format them as structured JSON.
+Extract entities, sub entities, optional subsubentities, attributes, and values etc.,
+and their values from the provided species description and format them as structured JSON.
 
 ## Pre-processing Steps
 1. If any paragraph is in Latin, translate it to English first
@@ -365,10 +391,11 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 ## Output Format Requirements
 
 ### JSON Structure
-- **Level 1 (Top level)**: Feature names (keys)
-- **Level 2**: Subfeature names (keys)
-- **Level 3 (Optional)**: Subsubfeature names (keys)
-- **Add additional levels as needed for deeper nesting**
+- **Level 1 entities (Top level)**: entity names (keys)
+- **Level 2 subentities**: Subentity names (keys)
+- **Level 3 (Optional)**: Subsubentity names (keys)
+- **Add additional levels as needed for deeper entity nesting**
+- **Attributes**: Attribute names (keys) under their respective entities/subentities**
 - **Innermost level**: Arrays of string values
 
 ### Critical Rules
@@ -403,7 +430,9 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         password: Optional[str] = None,
         use_constrained_decoding: bool = False,
         schema_max_depth: int = 4,
-        schema_min_depth: int = 2
+        schema_min_depth: int = 2,
+        use_ontology_context: bool = False,
+        ontology_dir: Optional[str] = None
     ):
         """
         Initialize the TaxaJSONTranslator.
@@ -423,8 +452,10 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
             password: Optional password for couchdb authentication
             use_constrained_decoding: If True, use Outlines for constrained JSON generation
                                       (guarantees valid JSON conforming to TaxonomySchema)
-            schema_max_depth: Maximum nesting depth for constrained decoding (2-4, default 4)
+            schema_max_depth: Maximum nesting depth for constrained decoding (2-6, default 4)
             schema_min_depth: Minimum nesting depth for constrained decoding (default 2)
+            use_ontology_context: If True, inject PATO/FAO ontology context into prompts
+            ontology_dir: Directory containing pato.obo and fao.obo files
         """
         self.spark = spark
         self.couchdb_url = couchdb_url
@@ -441,6 +472,8 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
         self.use_constrained_decoding = use_constrained_decoding
         self.schema_max_depth = schema_max_depth
         self.schema_min_depth = schema_min_depth
+        self.use_ontology_context = use_ontology_context
+        self.ontology_dir = ontology_dir
 
         # Model and tokenizer (lazy loaded)
         self._model = None
@@ -448,6 +481,10 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
 
         # Track last loaded database for save_taxa default
         self._last_loaded_db_name = None
+
+        # Ontology context builder (lazy loaded)
+        self._ontology_registry = None
+        self._ontology_context_builder = None
 
         print(f"TaxaJSONTranslator initialized")
         print(f"  CouchDB URL: {couchdb_url}")
@@ -459,6 +496,112 @@ Extract features, subfeatures, optional subsubfeatures, and their values from th
             print(f"  Constrained decoding: ENABLED (schema depth {schema_min_depth}-{schema_max_depth})")
         else:
             print(f"  Constrained decoding: disabled")
+        if use_ontology_context:
+            print(f"  Ontology context: ENABLED")
+
+    def _get_ontology_context_builder(self):
+        """
+        Get or lazily initialize the ontology context builder.
+
+        Returns:
+            OntologyContextBuilder instance or None if not enabled
+        """
+        if not self.use_ontology_context:
+            return None
+
+        if self._ontology_context_builder is not None:
+            return self._ontology_context_builder
+
+        from pathlib import Path
+        from skol.ontology import OntologyRegistry, OntologyContextBuilder
+
+        print("  Loading ontology context builder...")
+
+        # Determine ontology directory
+        if self.ontology_dir:
+            ont_dir = Path(self.ontology_dir)
+        elif os.environ.get('ONTOLOGY_DIR'):
+            ont_dir = Path(os.environ['ONTOLOGY_DIR'])
+        else:
+            # Default: /opt/skol/data/ontologies or data/ontologies/ relative to project root
+            default_installed = Path('/opt/skol/data/ontologies')
+            if default_installed.exists():
+                ont_dir = default_installed
+            else:
+                ont_dir = Path(__file__).parent / "data" / "ontologies"
+
+        self._ontology_registry = OntologyRegistry()
+
+        # Load PATO (quality ontology)
+        pato_path = ont_dir / "pato.obo"
+        if pato_path.exists():
+            print(f"    Loading PATO from {pato_path}...")
+            self._ontology_registry.register("pato", str(pato_path), category="base")
+            print(f"    ✓ PATO: {len(self._ontology_registry.get('pato'))} terms")
+        else:
+            print(f"    ⚠ PATO not found at {pato_path}")
+
+        # Load FAO (fungal anatomy ontology)
+        fao_path = ont_dir / "fao.obo"
+        if fao_path.exists():
+            print(f"    Loading FAO from {fao_path}...")
+            self._ontology_registry.register("fao", str(fao_path), category="base")
+            print(f"    ✓ FAO: {len(self._ontology_registry.get('fao'))} terms")
+        else:
+            print(f"    ⚠ FAO not found at {fao_path}")
+
+        self._ontology_context_builder = OntologyContextBuilder(self._ontology_registry)
+        print("  ✓ Ontology context builder ready")
+
+        return self._ontology_context_builder
+
+    def _build_ontology_context(self, description: str) -> str:
+        """
+        Build ontology context for a description.
+
+        Args:
+            description: The taxonomic description text
+
+        Returns:
+            Formatted ontology context string or empty string if not enabled
+        """
+        builder = self._get_ontology_context_builder()
+        if builder is None:
+            return ""
+
+        return builder.build_context(
+            description,
+            anatomy_ontology="fao",
+            quality_ontology="pato",
+            top_k_per_ontology=15,
+            max_context_chars=2000
+        )
+
+    def _add_ontology_context_to_descriptions(self, descriptions: list) -> list:
+        """
+        Add ontology context to each description dict.
+
+        Args:
+            descriptions: List of dicts with 'description' key
+
+        Returns:
+            List with 'ontology_context' key added to each dict
+        """
+        if not self.use_ontology_context:
+            return descriptions
+
+        print("  Building ontology context for descriptions...")
+        total = len(descriptions)
+
+        for i, desc_dict in enumerate(descriptions):
+            if i % 10 == 0:
+                print(f"    Progress: {i}/{total}")
+            desc_dict['ontology_context'] = self._build_ontology_context(
+                desc_dict['description']
+            )
+
+        print(f"  ✓ Built ontology context for {total} descriptions")
+        return descriptions
 
     def load_taxa(
         self,
@@ -855,6 +998,9 @@ Result:
         total = len(descriptions)
         print(f"  ✓ Collected {total} descriptions")
 
+        # Step 1b: Add ontology context if enabled
+        descriptions = self._add_ontology_context_to_descriptions(descriptions)
+
         # Step 2: Run model inference in a subprocess to isolate from Spark daemon
         # This is necessary because Spark's Python daemon processes can conflict
         # with CUDA operations. Using a subprocess works in both local and distributed modes.
@@ -1027,6 +1173,9 @@ Result:
         total = len(descriptions)
         if verbosity >= 1:
             print(f"  ✓ Collected {total} descriptions")
+
+        # Step 1b: Add ontology context if enabled
+        descriptions = self._add_ontology_context_to_descriptions(descriptions)
 
         # Step 2: Connect to CouchDB
         if verbosity >= 1:

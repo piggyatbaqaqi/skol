@@ -19,10 +19,17 @@ fi
 
 # Create /opt/skol directory structure
 mkdir -p ${SKOL_HOME}/bin
-mkdir -p ${SKOL_HOME}/data
+mkdir -p ${SKOL_HOME}/data/ontologies
 mkdir -p ${SKOL_HOME}/models
 chown -R skol:skol ${SKOL_HOME}
 chmod 755 ${SKOL_HOME}
+
+# Install ontology files
+if [ -d /usr/share/skol/ontologies ]; then
+    echo "Installing ontology files..."
+    cp -f /usr/share/skol/ontologies/*.obo ${SKOL_HOME}/data/ontologies/ 2>/dev/null || true
+    chown -R skol:skol ${SKOL_HOME}/data/ontologies
+fi
 
 # Create log directory
 mkdir -p /var/log/skol
@@ -36,11 +43,25 @@ ${PYTHON} -m venv ${SKOL_VENV}
 echo "Upgrading pip..."
 ${SKOL_VENV}/bin/pip install --upgrade pip
 
+# Install Rust via rustup (required for outlines package)
+# The apt rustc/cargo packages are too old (need Rust 1.82+ for edition2024)
+if [ ! -f ${SKOL_HOME}/.cargo/bin/rustc ]; then
+    echo "Installing Rust toolchain via rustup..."
+    export RUSTUP_HOME=${SKOL_HOME}/.rustup
+    export CARGO_HOME=${SKOL_HOME}/.cargo
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+    chown -R skol:skol ${SKOL_HOME}/.rustup ${SKOL_HOME}/.cargo
+fi
+export PATH="${SKOL_HOME}/.cargo/bin:${PATH}"
+
 echo "Installing all packages from local wheels..."
 ${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 
 echo "Installing ML dependencies..."
 ${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes
+
+echo "Installing constrained decoding dependencies..."
+${SKOL_VENV}/bin/pip install outlines pronto
 
 echo "Installing PDF extraction dependencies..."
 ${SKOL_VENV}/bin/pip install PyMuPDF
@@ -81,8 +102,11 @@ export DEFAULT_FROM_EMAIL
 export SKOL_HOME=/opt/skol
 export SKOL_DATA=/opt/skol/data
 export SKOL_MODELS=/opt/skol/models
+export ONTOLOGY_DIR=/opt/skol/data/ontologies
+export RUSTUP_HOME=/opt/skol/.rustup
+export CARGO_HOME=/opt/skol/.cargo
 export VIRTUAL_ENV=/opt/skol/venv
-export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+export PATH="${CARGO_HOME}/bin:${VIRTUAL_ENV}/bin:${PATH}"
 unset PYTHONHOME
 
 # Add skol bin directory to Python path for imports
