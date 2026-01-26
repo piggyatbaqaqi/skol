@@ -95,6 +95,7 @@ def translate_taxa_to_json(
     graceful_degradation: bool = False,
     preserve_threshold: float = 0.5,
     include_annotations: bool = False,
+    timeout: int = 600,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -384,7 +385,8 @@ def translate_taxa_to_json(
                 description_col="description",
                 batch_size=batch_size,
                 validate=validate,
-                verbosity=verbosity
+                verbosity=verbosity,
+                timeout=timeout
             )
             # Results summary is printed by translate_and_save_streaming
 
@@ -1010,6 +1012,14 @@ Examples:
     )
 
     parser.add_argument(
+        '--timeout',
+        type=int,
+        default=int(os.environ.get('TAXA_TIMEOUT', '600')),
+        metavar='SECONDS',
+        help='Timeout per record in seconds (default: $TAXA_TIMEOUT or 600 = 10 minutes)'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -1049,6 +1059,7 @@ Examples:
     graceful_degradation = args.graceful_degradation
     preserve_threshold = args.preserve_threshold
     include_annotations = args.include_annotations
+    timeout = args.timeout
 
     # Validate schema depth parameters
     if schema_min_depth > schema_max_depth:
@@ -1085,6 +1096,7 @@ Examples:
             graceful_degradation=graceful_degradation,
             preserve_threshold=preserve_threshold,
             include_annotations=include_annotations,
+            timeout=timeout,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

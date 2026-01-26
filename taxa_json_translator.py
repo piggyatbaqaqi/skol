@@ -1109,7 +1109,8 @@ Result:
         description_col: str = "description",
         batch_size: int = 10,
         validate: bool = True,
-        verbosity: int = 1
+        verbosity: int = 1,
+        timeout: int = 600
     ) -> dict:
         """
         Translate descriptions and save to CouchDB incrementally as each record completes.
@@ -1222,6 +1223,21 @@ Result:
             descriptions, batch_size, streaming=True
         )
 
+        # Step 4: Wait briefly to check for immediate startup failures
+        import time
+        time.sleep(2)  # Give subprocess time to crash if it's going to
+        if not proc.is_alive():
+            exit_code = proc.exitcode
+            print(f"  ✗ Model subprocess failed to start (exit code {exit_code})")
+            print("    The model loading likely failed. Common causes:")
+            print("    - Missing dependencies (outlines, torch, transformers)")
+            print("    - Insufficient GPU memory")
+            print("    - CUDA/GPU driver issues")
+            print("    - Model not found or download failed")
+            print("\n    Try running with verbose output or check the constrained_decoder directly:")
+            print("    python -c 'from skol.constrained_decoder import ConstrainedDecoder; print(\"OK\")'")
+            return 0, len(descriptions)
+
         # Step 5: Process results as they arrive
         success_count = 0
         failure_count = 0
@@ -1233,9 +1249,17 @@ Result:
         try:
             while True:
                 try:
-                    status, data = result_queue.get(timeout=600)  # 10 min timeout per record
+                    status, data = result_queue.get(timeout=timeout)  # Configurable timeout per record
                     consecutive_timeouts = 0  # Reset on successful receive
                 except queue.Empty:
+                    # Check if subprocess crashed
+                    if not proc.is_alive():
+                        exit_code = proc.exitcode
+                        print(f"  ✗ Model subprocess crashed with exit code {exit_code}")
+                        print("    This usually indicates a problem loading the model.")
+                        print("    Check GPU memory, CUDA availability, or model dependencies.")
+                        break
+
                     consecutive_timeouts += 1
                     print(f"  ⚠ Timeout waiting for result (timeout #{consecutive_timeouts})")
                     if consecutive_timeouts >= max_consecutive_timeouts:
