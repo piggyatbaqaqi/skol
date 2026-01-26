@@ -9,6 +9,7 @@ module.exports = {
   entry: {
     'pdf-viewer': './src/index.js',
     'code-block': './src/codeBlockEntry.js',
+    'vocab-tree': './src/vocabTreeEntry.js',
   },
   output: {
     filename: '[name].bundle.js',
