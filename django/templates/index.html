@@ -417,6 +417,76 @@
             font-size: 0.9em;
         }
 
+        /* Settings hamburger menu */
+        .settings-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .settings-btn {
+            background: transparent;
+            color: #667eea;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 1.4em;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+            line-height: 1;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: #f5f5f5;
+            border-color: #667eea;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .settings-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: white;
+            min-width: 280px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            margin-top: 5px;
+            padding: 15px;
+        }
+
+        .settings-menu.show {
+            display: block;
+        }
+
+        .settings-menu-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .settings-menu .form-group {
+            margin-bottom: 15px;
+        }
+
+        .settings-menu .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-menu label {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .settings-menu select,
+        .settings-menu input {
+            font-size: 0.9em;
+            padding: 8px 10px;
+        }
+
         /* Modal styles */
         .modal-overlay {
             display: none;
@@ -734,6 +804,22 @@
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:logout' %}">Logout</a>
+            <div class="settings-dropdown">
+                <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9776;</button>
+                <div id="settingsMenu" class="settings-menu">
+                    <div class="settings-menu-header">Search Settings</div>
+                    <div class="form-group">
+                        <label for="embedding">Embedding Model</label>
+                        <select id="embedding" name="embedding" required>
+                            <option value="">Loading embeddings...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="k">Number of Results (k)</label>
+                        <input type="number" id="k" name="k" value="3" min="1" max="20" required>
+                    </div>
+                </div>
+            </div>
         </div>
         {% else %}
         <div class="user-navbar">
@@ -741,6 +827,22 @@
             <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:login' %}">Login</a>
             <a href="{% url 'accounts:register' %}">Register</a>
+            <div class="settings-dropdown">
+                <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9776;</button>
+                <div id="settingsMenu" class="settings-menu">
+                    <div class="settings-menu-header">Search Settings</div>
+                    <div class="form-group">
+                        <label for="embedding">Embedding Model</label>
+                        <select id="embedding" name="embedding" required>
+                            <option value="">Loading embeddings...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="k">Number of Results (k)</label>
+                        <input type="number" id="k" name="k" value="3" min="1" max="20" required>
+                    </div>
+                </div>
+            </div>
         </div>
         {% endif %}
 
@@ -780,20 +882,6 @@
                              data-api-base-url="{{ SCRIPT_NAME }}/api"
                              data-description-target="#prompt">
                         </div>
-                    </div>
-                </div>
-
-                <div class="inline-group">
-                    <div class="form-group">
-                        <label for="embedding">Embedding Model</label>
-                        <select id="embedding" name="embedding" required>
-                            <option value="">Loading embeddings...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="k">Number of Results (k)</label>
-                        <input type="number" id="k" name="k" value="3" min="1" max="20" required>
                     </div>
                 </div>
 
@@ -1177,13 +1265,27 @@
         function toggleCollectionsMenu() {
             const menu = document.getElementById('collectionsMenu');
             menu.classList.toggle('show');
+            // Close settings menu when opening collections
+            document.getElementById('settingsMenu')?.classList.remove('show');
         }
 
-        // Close collections menu when clicking outside
+        // Toggle settings menu
+        function toggleSettingsMenu() {
+            const menu = document.getElementById('settingsMenu');
+            menu.classList.toggle('show');
+            // Close collections menu when opening settings
+            document.getElementById('collectionsMenu')?.classList.remove('show');
+        }
+
+        // Close dropdown menus when clicking outside
         document.addEventListener('click', function(event) {
-            const dropdown = document.querySelector('.collections-dropdown');
-            if (dropdown && !dropdown.contains(event.target)) {
+            const collectionsDropdown = document.querySelector('.collections-dropdown');
+            if (collectionsDropdown && !collectionsDropdown.contains(event.target)) {
                 document.getElementById('collectionsMenu')?.classList.remove('show');
+            }
+            const settingsDropdown = document.querySelector('.settings-dropdown');
+            if (settingsDropdown && !settingsDropdown.contains(event.target)) {
+                document.getElementById('settingsMenu')?.classList.remove('show');
             }
         });
 
