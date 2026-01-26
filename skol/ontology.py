@@ -1248,3 +1248,536 @@ def print_coverage_report(
 
     lines.append("=" * 60)
     return "\n".join(lines)
+
+
+# =============================================================================
+# Phase 6: Graceful Degradation for Novel Terms
+# =============================================================================
+
+from enum import Enum
+
+
+class ConfidenceLevel(Enum):
+    """
+    Confidence level for term mappings.
+
+    Used to distinguish how confident we are in a term's ontology mapping.
+    """
+    HIGH = "high"          # Similarity >= threshold (safe to normalize)
+    MEDIUM = "medium"      # Similarity in [0.5, threshold) (use with caution)
+    LOW = "low"            # Similarity in [0.3, 0.5) (probably wrong)
+    NOVEL = "novel"        # Similarity < 0.3 (no meaningful match)
+
+
+@dataclass
+class AnnotatedTerm:
+    """
+    A term with confidence annotation for graceful degradation.
+
+    This preserves both the original term and any mapping information,
+    allowing downstream processes to decide how to handle uncertain mappings.
+
+    Attributes:
+        original: The original term from the description
+        normalized: The mapped ontology term (if confident enough)
+        confidence: Confidence level of the mapping
+        similarity: Cosine similarity to best ontology match
+        ontology_source: Which ontology the match came from
+        ontology_term_id: The ID of the matched ontology term
+        preserve_original: Whether to keep the original term in output
+    """
+    original: str
+    normalized: str
+    confidence: ConfidenceLevel
+    similarity: float
+    ontology_source: Optional[str] = None
+    ontology_term_id: Optional[str] = None
+    preserve_original: bool = False
+
+    def to_output(self, include_annotation: bool = False) -> Union[str, Dict[str, Any]]:
+        """
+        Convert to output format.
+
+        Args:
+            include_annotation: If True, return dict with metadata
+
+        Returns:
+            String (normalized term) or dict with annotations
+        """
+        if include_annotation or self.preserve_original:
+            result: Dict[str, Any] = {
+                "term": self.normalized,
+                "confidence": self.confidence.value,
+            }
+            if self.preserve_original and self.original != self.normalized:
+                result["original"] = self.original
+            if self.ontology_source:
+                result["ontology"] = self.ontology_source
+            return result
+        return self.normalized
+
+
+class GracefulDegradationHandler:
+    """
+    Handle novel terms gracefully without losing information.
+
+    This class implements Phase 6 of the SLM optimization approach.
+    It classifies terms by confidence level and preserves original terms
+    when ontology mappings are uncertain.
+
+    Key Principles:
+    1. Never lose information
+    2. Never force bad mappings
+    3. Distinguish confidence levels
+    4. Preserve original terms with annotations when uncertain
+
+    Example:
+        >>> handler = GracefulDegradationHandler(registry)
+        >>> annotated = handler.annotate_term("subcanaliculate")
+        >>> print(f"Confidence: {annotated.confidence.value}")
+        Confidence: novel
+        >>> print(f"Preserved: {annotated.preserve_original}")
+        Preserved: True
+    """
+
+    # Default thresholds for confidence levels
+    HIGH_THRESHOLD = 0.85
+    MEDIUM_THRESHOLD = 0.5
+    LOW_THRESHOLD = 0.3
+
+    def __init__(
+        self,
+        registry: OntologyRegistry,
+        high_threshold: float = 0.85,
+        medium_threshold: float = 0.5,
+        low_threshold: float = 0.3,
+        preserve_below: Optional[float] = None
+    ):
+        """
+        Initialize the handler.
+
+        Args:
+            registry: OntologyRegistry with loaded ontologies
+            high_threshold: Threshold for HIGH confidence (default 0.85)
+            medium_threshold: Threshold for MEDIUM confidence (default 0.5)
+            low_threshold: Threshold for LOW confidence (default 0.3)
+            preserve_below: Preserve original term if similarity below this
+                           (default: same as medium_threshold)
+        """
+        self.registry = registry
+        self.high_threshold = high_threshold
+        self.medium_threshold = medium_threshold
+        self.low_threshold = low_threshold
+        self.preserve_below = preserve_below if preserve_below is not None else medium_threshold
+        self._cache: Dict[str, AnnotatedTerm] = {}
+
+    def _get_confidence_level(self, similarity: float) -> ConfidenceLevel:
+        """Determine confidence level from similarity score."""
+        if similarity >= self.high_threshold:
+            return ConfidenceLevel.HIGH
+        elif similarity >= self.medium_threshold:
+            return ConfidenceLevel.MEDIUM
+        elif similarity >= self.low_threshold:
+            return ConfidenceLevel.LOW
+        else:
+            return ConfidenceLevel.NOVEL
+
+    def _find_best_match(
+        self,
+        term: str
+    ) -> Tuple[str, float, Optional[str], Optional[str]]:
+        """Find the best matching ontology term."""
+        best_match = term
+        best_sim = 0.0
+        best_source = None
+        best_id = None
+
+        for ont_name, index in self.registry.ontologies.items():
+            if not index.terms:
+                continue
+
+            results = index.search(term, top_k=1)
+            if results:
+                ont_term, similarity = results[0]
+                if similarity > best_sim:
+                    best_sim = similarity
+                    best_match = ont_term.name
+                    best_source = ont_name
+                    best_id = ont_term.id
+
+        return best_match, best_sim, best_source, best_id
+
+    def annotate_term(self, term: str) -> AnnotatedTerm:
+        """
+        Annotate a term with confidence information.
+
+        Args:
+            term: The term to annotate
+
+        Returns:
+            AnnotatedTerm with confidence and mapping information
+        """
+        cache_key = term.lower().strip()
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        best_match, similarity, source, term_id = self._find_best_match(term)
+        confidence = self._get_confidence_level(similarity)
+
+        # Determine whether to preserve original
+        preserve = similarity < self.preserve_below
+
+        # For high confidence, use the normalized term
+        # For low confidence, keep the original
+        if confidence == ConfidenceLevel.HIGH:
+            normalized = best_match
+        elif confidence == ConfidenceLevel.MEDIUM:
+            # Use normalized but flag for review
+            normalized = best_match
+        else:
+            # Keep original for low/novel
+            normalized = term
+
+        annotated = AnnotatedTerm(
+            original=term,
+            normalized=normalized,
+            confidence=confidence,
+            similarity=similarity,
+            ontology_source=source,
+            ontology_term_id=term_id,
+            preserve_original=preserve
+        )
+
+        self._cache[cache_key] = annotated
+        return annotated
+
+    def annotate_batch(self, terms: List[str]) -> List[AnnotatedTerm]:
+        """Annotate multiple terms."""
+        return [self.annotate_term(term) for term in terms]
+
+    def get_novel_terms(self, terms: List[str]) -> List[AnnotatedTerm]:
+        """Get terms classified as NOVEL (no good ontology match)."""
+        annotated = self.annotate_batch(terms)
+        return [a for a in annotated if a.confidence == ConfidenceLevel.NOVEL]
+
+    def get_uncertain_terms(self, terms: List[str]) -> List[AnnotatedTerm]:
+        """Get terms below HIGH confidence."""
+        annotated = self.annotate_batch(terms)
+        return [a for a in annotated if a.confidence != ConfidenceLevel.HIGH]
+
+    def summarize(self, terms: List[str]) -> Dict[str, Any]:
+        """
+        Summarize the confidence distribution for a set of terms.
+
+        Args:
+            terms: List of terms to analyze
+
+        Returns:
+            Dict with counts and percentages by confidence level
+        """
+        annotated = self.annotate_batch(terms)
+        total = len(annotated)
+
+        counts = {
+            ConfidenceLevel.HIGH: 0,
+            ConfidenceLevel.MEDIUM: 0,
+            ConfidenceLevel.LOW: 0,
+            ConfidenceLevel.NOVEL: 0,
+        }
+
+        for a in annotated:
+            counts[a.confidence] += 1
+
+        return {
+            "total": total,
+            "high": {"count": counts[ConfidenceLevel.HIGH],
+                     "percent": counts[ConfidenceLevel.HIGH] / total * 100 if total else 0},
+            "medium": {"count": counts[ConfidenceLevel.MEDIUM],
+                       "percent": counts[ConfidenceLevel.MEDIUM] / total * 100 if total else 0},
+            "low": {"count": counts[ConfidenceLevel.LOW],
+                    "percent": counts[ConfidenceLevel.LOW] / total * 100 if total else 0},
+            "novel": {"count": counts[ConfidenceLevel.NOVEL],
+                      "percent": counts[ConfidenceLevel.NOVEL] / total * 100 if total else 0},
+        }
+
+    def clear_cache(self) -> None:
+        """Clear the annotation cache."""
+        self._cache.clear()
+
+
+class RobustOntologyPipeline:
+    """
+    Full pipeline for vocabulary processing with graceful degradation.
+
+    Combines normalization (Phase 4) with graceful degradation (Phase 6)
+    to provide a robust vocabulary handling system.
+
+    Example:
+        >>> pipeline = RobustOntologyPipeline(registry)
+        >>> result = pipeline.process_json(features, include_annotations=True)
+        >>> print(result["_metadata"]["confidence_summary"])
+    """
+
+    def __init__(
+        self,
+        registry: OntologyRegistry,
+        normalization_threshold: float = 0.85,
+        preserve_threshold: float = 0.5
+    ):
+        """
+        Initialize the pipeline.
+
+        Args:
+            registry: OntologyRegistry with loaded ontologies
+            normalization_threshold: Threshold for confident normalization
+            preserve_threshold: Threshold below which to preserve original
+        """
+        self.registry = registry
+        self.normalizer = ThresholdGatedNormalizer(
+            registry,
+            threshold=normalization_threshold
+        )
+        self.degradation_handler = GracefulDegradationHandler(
+            registry,
+            high_threshold=normalization_threshold,
+            preserve_below=preserve_threshold
+        )
+
+    def process_term(
+        self,
+        term: str,
+        include_annotation: bool = False
+    ) -> Union[str, Dict[str, Any]]:
+        """
+        Process a single term through the pipeline.
+
+        Args:
+            term: Term to process
+            include_annotation: If True, return dict with metadata
+
+        Returns:
+            Processed term (string or dict)
+        """
+        annotated = self.degradation_handler.annotate_term(term)
+        return annotated.to_output(include_annotation=include_annotation)
+
+    def process_json(
+        self,
+        data: Dict[str, Any],
+        normalize_keys: bool = True,
+        normalize_values: bool = True,
+        include_annotations: bool = False,
+        include_metadata: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Process a nested JSON structure through the pipeline.
+
+        Args:
+            data: Nested feature dictionary
+            normalize_keys: Whether to process dictionary keys
+            normalize_values: Whether to process string values
+            include_annotations: If True, include term-level annotations
+            include_metadata: If True, add _metadata with summary
+
+        Returns:
+            Processed JSON with optional annotations and metadata
+        """
+        all_terms: List[str] = []
+
+        def process_recursive(obj: Any) -> Any:
+            if isinstance(obj, str):
+                if normalize_values:
+                    all_terms.append(obj)
+                    return self.process_term(obj, include_annotations)
+                return obj
+
+            elif isinstance(obj, dict):
+                new_dict = {}
+                for key, value in obj.items():
+                    if normalize_keys:
+                        all_terms.append(key)
+                        new_key = self.process_term(key, include_annotations)
+                        # If key became a dict, extract the term
+                        if isinstance(new_key, dict):
+                            new_key = new_key.get("term", key)
+                    else:
+                        new_key = key
+
+                    new_dict[new_key] = process_recursive(value)
+                return new_dict
+
+            elif isinstance(obj, list):
+                return [process_recursive(item) for item in obj]
+
+            else:
+                return obj
+
+        result = process_recursive(data)
+
+        if include_metadata:
+            # Add metadata about the processing
+            summary = self.degradation_handler.summarize(all_terms)
+            novel_terms = self.degradation_handler.get_novel_terms(all_terms)
+
+            result["_metadata"] = {
+                "confidence_summary": summary,
+                "novel_terms": [
+                    {"term": a.original, "similarity": a.similarity}
+                    for a in novel_terms
+                ],
+                "processing": {
+                    "normalization_threshold": self.normalizer.threshold,
+                    "preserve_threshold": self.degradation_handler.preserve_below,
+                }
+            }
+
+        return result
+
+    def analyze_and_report(self, data: Dict[str, Any]) -> str:
+        """
+        Analyze vocabulary and generate a detailed report.
+
+        Args:
+            data: Feature dictionary to analyze
+
+        Returns:
+            Formatted report string
+        """
+        # Extract all terms
+        analyzer = VocabularyAnalyzer(self.registry)
+        terms = analyzer.extract_terms(data)
+
+        # Get confidence summary
+        summary = self.degradation_handler.summarize(terms)
+        novel = self.degradation_handler.get_novel_terms(terms)
+        uncertain = self.degradation_handler.get_uncertain_terms(terms)
+
+        lines = [
+            "=" * 60,
+            "GRACEFUL DEGRADATION ANALYSIS",
+            "=" * 60,
+            f"Total terms: {summary['total']}",
+            "",
+            "CONFIDENCE DISTRIBUTION:",
+            f"  HIGH (≥{self.degradation_handler.high_threshold:.0%}):    "
+            f"{summary['high']['count']:3d} ({summary['high']['percent']:.1f}%)",
+            f"  MEDIUM ({self.degradation_handler.medium_threshold:.0%}-"
+            f"{self.degradation_handler.high_threshold:.0%}): "
+            f"{summary['medium']['count']:3d} ({summary['medium']['percent']:.1f}%)",
+            f"  LOW ({self.degradation_handler.low_threshold:.0%}-"
+            f"{self.degradation_handler.medium_threshold:.0%}):    "
+            f"{summary['low']['count']:3d} ({summary['low']['percent']:.1f}%)",
+            f"  NOVEL (<{self.degradation_handler.low_threshold:.0%}):   "
+            f"{summary['novel']['count']:3d} ({summary['novel']['percent']:.1f}%)",
+        ]
+
+        if novel:
+            lines.extend([
+                "",
+                "-" * 60,
+                "NOVEL TERMS (no good ontology match):",
+                "-" * 60,
+            ])
+            for annotated in novel[:20]:
+                lines.append(f"  • {annotated.original} (sim: {annotated.similarity:.3f})")
+            if len(novel) > 20:
+                lines.append(f"  ... and {len(novel) - 20} more")
+
+        if uncertain and len(uncertain) > len(novel):
+            medium_low = [a for a in uncertain if a.confidence != ConfidenceLevel.NOVEL]
+            if medium_low:
+                lines.extend([
+                    "",
+                    "-" * 60,
+                    "UNCERTAIN MAPPINGS (MEDIUM/LOW confidence):",
+                    "-" * 60,
+                ])
+                for annotated in medium_low[:15]:
+                    lines.append(
+                        f"  ~ {annotated.original:25} → {annotated.normalized:20} "
+                        f"({annotated.confidence.value}, {annotated.similarity:.3f})"
+                    )
+                if len(medium_low) > 15:
+                    lines.append(f"  ... and {len(medium_low) - 15} more")
+
+        lines.extend([
+            "",
+            "-" * 60,
+            "RECOMMENDATIONS:",
+            "-" * 60,
+        ])
+
+        if summary['novel']['percent'] > 20:
+            lines.append("  ⚠ High novel term rate (>20%). Consider:")
+            lines.append("    - Adding domain-specific ontologies")
+            lines.append("    - Creating custom vocabulary mappings")
+        elif summary['novel']['percent'] > 5:
+            lines.append("  ~ Moderate novel term rate (5-20%).")
+            lines.append("    Novel terms will be preserved with annotations.")
+        else:
+            lines.append("  ✓ Low novel term rate (<5%). Vocabulary coverage is good.")
+
+        if summary['medium']['percent'] + summary['low']['percent'] > 15:
+            lines.append("  ⚠ Many uncertain mappings. Review MEDIUM/LOW terms above.")
+
+        lines.append("=" * 60)
+        return "\n".join(lines)
+
+
+def annotate_json_output(
+    data: Dict[str, Any],
+    handler: GracefulDegradationHandler,
+    annotate_keys: bool = True,
+    annotate_values: bool = True,
+    include_term_annotations: bool = False
+) -> Tuple[Dict[str, Any], Dict[str, AnnotatedTerm]]:
+    """
+    Apply graceful degradation to a nested JSON structure.
+
+    This is similar to normalize_json_output but uses confidence-based
+    handling instead of simple threshold gating.
+
+    Args:
+        data: Nested feature dictionary
+        handler: GracefulDegradationHandler instance
+        annotate_keys: Whether to process dictionary keys
+        annotate_values: Whether to process string values
+        include_term_annotations: If True, include inline annotations
+
+    Returns:
+        Tuple of (processed_data, annotation_log)
+    """
+    log: Dict[str, AnnotatedTerm] = {}
+
+    def process_recursive(obj: Any) -> Any:
+        if isinstance(obj, str):
+            if annotate_values:
+                annotated = handler.annotate_term(obj)
+                log[obj] = annotated
+                return annotated.to_output(include_annotation=include_term_annotations)
+            return obj
+
+        elif isinstance(obj, dict):
+            new_dict = {}
+            for key, value in obj.items():
+                if annotate_keys:
+                    annotated = handler.annotate_term(key)
+                    log[key] = annotated
+                    new_key = annotated.to_output(include_annotation=include_term_annotations)
+                    # If key became a dict, extract the term
+                    if isinstance(new_key, dict):
+                        new_key = new_key.get("term", key)
+                else:
+                    new_key = key
+
+                new_dict[new_key] = process_recursive(value)
+            return new_dict
+
+        elif isinstance(obj, list):
+            return [process_recursive(item) for item in obj]
+
+        else:
+            return obj
+
+    result = process_recursive(data)
+    return result, log

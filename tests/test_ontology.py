@@ -32,6 +32,12 @@ from skol.ontology import (
     VocabularyAnalyzer,
     normalize_json_output,
     print_coverage_report,
+    # Phase 6: Graceful Degradation
+    ConfidenceLevel,
+    AnnotatedTerm,
+    GracefulDegradationHandler,
+    RobustOntologyPipeline,
+    annotate_json_output,
 )
 
 
@@ -1017,6 +1023,393 @@ class TestPrintCoverageReport(unittest.TestCase):
 
         self.assertIn("VOCABULARY COVERAGE ANALYSIS", report)
         self.assertNotIn("TERM DETAILS", report)
+
+
+# =============================================================================
+# Phase 6: Graceful Degradation Tests
+# =============================================================================
+
+
+class TestConfidenceLevel(unittest.TestCase):
+    """Test ConfidenceLevel enum."""
+
+    def test_confidence_levels_exist(self):
+        """Test that all confidence levels are defined."""
+        self.assertEqual(ConfidenceLevel.HIGH.value, "high")
+        self.assertEqual(ConfidenceLevel.MEDIUM.value, "medium")
+        self.assertEqual(ConfidenceLevel.LOW.value, "low")
+        self.assertEqual(ConfidenceLevel.NOVEL.value, "novel")
+
+
+class TestAnnotatedTerm(unittest.TestCase):
+    """Test AnnotatedTerm dataclass."""
+
+    def test_annotated_term_creation(self):
+        """Test creating an annotated term."""
+        term = AnnotatedTerm(
+            original="convex cap",
+            normalized="convex",
+            confidence=ConfidenceLevel.HIGH,
+            similarity=0.92,
+            ontology_source="pato",
+            ontology_term_id="PATO:0001234",
+            preserve_original=False
+        )
+
+        self.assertEqual(term.original, "convex cap")
+        self.assertEqual(term.normalized, "convex")
+        self.assertEqual(term.confidence, ConfidenceLevel.HIGH)
+        self.assertFalse(term.preserve_original)
+
+    def test_to_output_simple(self):
+        """Test output without annotations."""
+        term = AnnotatedTerm(
+            original="test",
+            normalized="normalized_test",
+            confidence=ConfidenceLevel.HIGH,
+            similarity=0.9,
+            preserve_original=False
+        )
+
+        output = term.to_output(include_annotation=False)
+        self.assertEqual(output, "normalized_test")
+
+    def test_to_output_with_annotation(self):
+        """Test output with annotations."""
+        term = AnnotatedTerm(
+            original="test",
+            normalized="normalized_test",
+            confidence=ConfidenceLevel.MEDIUM,
+            similarity=0.7,
+            ontology_source="pato",
+            preserve_original=True
+        )
+
+        output = term.to_output(include_annotation=True)
+
+        self.assertIsInstance(output, dict)
+        self.assertEqual(output["term"], "normalized_test")
+        self.assertEqual(output["confidence"], "medium")
+        self.assertEqual(output["original"], "test")
+        self.assertEqual(output["ontology"], "pato")
+
+    def test_to_output_preserves_original(self):
+        """Test that preserve_original triggers annotation."""
+        term = AnnotatedTerm(
+            original="novel_term",
+            normalized="novel_term",
+            confidence=ConfidenceLevel.NOVEL,
+            similarity=0.2,
+            preserve_original=True
+        )
+
+        # Even without include_annotation, preserve_original triggers dict output
+        output = term.to_output(include_annotation=False)
+        self.assertIsInstance(output, dict)
+
+
+class TestGracefulDegradationHandler(unittest.TestCase):
+    """Test GracefulDegradationHandler class."""
+
+    def setUp(self):
+        """Set up registry with mock data."""
+        self.registry = OntologyRegistry()
+
+        index = OntologyIndex(name="test")
+        index.category = "base"
+
+        self.mock_terms = [
+            OntologyTerm(
+                id="TEST:0001", name="convex", definition="Convex shape",
+                depth=2, ancestors=["shape"], embedding=np.array([1.0, 0.0, 0.0])
+            ),
+            OntologyTerm(
+                id="TEST:0002", name="brown", definition="Brown color",
+                depth=2, ancestors=["color"], embedding=np.array([0.0, 1.0, 0.0])
+            ),
+        ]
+
+        index.terms = self.mock_terms
+        index.term_embeddings = np.stack([t.embedding for t in self.mock_terms])
+
+        for term in self.mock_terms:
+            index._term_lookup[term.id] = term
+            index._term_lookup[term.name.lower()] = term
+
+        self.mock_encoder = MagicMock()
+        index._encoder = self.mock_encoder
+
+        self.registry.register_index("test", index)
+        self.registry._encoder = self.mock_encoder
+
+    def test_handler_creation(self):
+        """Test creating a handler."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        self.assertEqual(handler.high_threshold, 0.85)
+        self.assertEqual(handler.medium_threshold, 0.5)
+        self.assertEqual(handler.low_threshold, 0.3)
+
+    def test_confidence_level_high(self):
+        """Test HIGH confidence classification."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        level = handler._get_confidence_level(0.9)
+        self.assertEqual(level, ConfidenceLevel.HIGH)
+
+    def test_confidence_level_medium(self):
+        """Test MEDIUM confidence classification."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        level = handler._get_confidence_level(0.6)
+        self.assertEqual(level, ConfidenceLevel.MEDIUM)
+
+    def test_confidence_level_low(self):
+        """Test LOW confidence classification."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        level = handler._get_confidence_level(0.4)
+        self.assertEqual(level, ConfidenceLevel.LOW)
+
+    def test_confidence_level_novel(self):
+        """Test NOVEL confidence classification."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        level = handler._get_confidence_level(0.2)
+        self.assertEqual(level, ConfidenceLevel.NOVEL)
+
+    def test_annotate_term_high_confidence(self):
+        """Test annotating a term with high confidence match."""
+        self.mock_encoder.encode.return_value = np.array([0.99, 0.01, 0.0])
+
+        handler = GracefulDegradationHandler(self.registry)
+        annotated = handler.annotate_term("convex shape")
+
+        self.assertEqual(annotated.confidence, ConfidenceLevel.HIGH)
+        self.assertEqual(annotated.normalized, "convex")
+        self.assertFalse(annotated.preserve_original)
+
+    def test_annotate_term_novel(self):
+        """Test annotating a novel term."""
+        # Use an embedding orthogonal to all ontology terms for very low similarity
+        self.mock_encoder.encode.return_value = np.array([0.0, 0.0, 1.0])
+
+        handler = GracefulDegradationHandler(self.registry)
+        annotated = handler.annotate_term("subcanaliculate")
+
+        # With orthogonal embedding, similarity should be ~0, hence NOVEL
+        self.assertEqual(annotated.confidence, ConfidenceLevel.NOVEL)
+        self.assertEqual(annotated.normalized, "subcanaliculate")  # Preserved
+        self.assertTrue(annotated.preserve_original)
+
+    def test_annotate_batch(self):
+        """Test batch annotation."""
+        self.mock_encoder.encode.return_value = np.array([0.5, 0.5, 0.0])
+
+        handler = GracefulDegradationHandler(self.registry)
+        results = handler.annotate_batch(["term1", "term2", "term3"])
+
+        self.assertEqual(len(results), 3)
+        self.assertIsInstance(results[0], AnnotatedTerm)
+
+    def test_get_novel_terms(self):
+        """Test getting novel terms."""
+        # Use orthogonal embedding for very low similarity (< 0.3 threshold)
+        self.mock_encoder.encode.return_value = np.array([0.0, 0.0, 1.0])
+
+        handler = GracefulDegradationHandler(self.registry)
+        novel = handler.get_novel_terms(["novel1", "novel2"])
+
+        self.assertEqual(len(novel), 2)
+        self.assertTrue(all(a.confidence == ConfidenceLevel.NOVEL for a in novel))
+
+    def test_summarize(self):
+        """Test confidence summary."""
+        call_count = [0]
+        def mock_encode(text):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return np.array([0.99, 0.01, 0.0])  # HIGH
+            elif call_count[0] == 2:
+                return np.array([0.6, 0.4, 0.0])   # MEDIUM
+            else:
+                return np.array([0.1, 0.1, 0.1])   # NOVEL
+
+        self.mock_encoder.encode.side_effect = mock_encode
+
+        handler = GracefulDegradationHandler(self.registry)
+        summary = handler.summarize(["high", "medium", "novel"])
+
+        self.assertEqual(summary["total"], 3)
+        self.assertIn("high", summary)
+        self.assertIn("medium", summary)
+        self.assertIn("novel", summary)
+
+    def test_clear_cache(self):
+        """Test clearing cache."""
+        self.mock_encoder.encode.return_value = np.array([0.5, 0.5, 0.0])
+
+        handler = GracefulDegradationHandler(self.registry)
+        handler.annotate_term("test")
+
+        self.assertEqual(len(handler._cache), 1)
+
+        handler.clear_cache()
+
+        self.assertEqual(len(handler._cache), 0)
+
+
+class TestRobustOntologyPipeline(unittest.TestCase):
+    """Test RobustOntologyPipeline class."""
+
+    def setUp(self):
+        """Set up registry with mock data."""
+        self.registry = OntologyRegistry()
+
+        index = OntologyIndex(name="test")
+        index.category = "base"
+        index.terms = [
+            OntologyTerm(
+                id="TEST:0001", name="convex", definition="Convex",
+                depth=1, ancestors=[], embedding=np.array([1.0, 0.0])
+            ),
+        ]
+        index.term_embeddings = np.stack([t.embedding for t in index.terms])
+
+        mock_encoder = MagicMock()
+        mock_encoder.encode.return_value = np.array([0.9, 0.1])
+        index._encoder = mock_encoder
+
+        self.registry.register_index("test", index)
+        self.registry._encoder = mock_encoder
+
+    def test_pipeline_creation(self):
+        """Test creating a pipeline."""
+        pipeline = RobustOntologyPipeline(self.registry)
+
+        self.assertIsNotNone(pipeline.normalizer)
+        self.assertIsNotNone(pipeline.degradation_handler)
+
+    def test_process_term_simple(self):
+        """Test processing a single term."""
+        pipeline = RobustOntologyPipeline(self.registry)
+        result = pipeline.process_term("test term", include_annotation=False)
+
+        # Result should be a string (the term or its mapping)
+        self.assertIsInstance(result, str)
+
+    def test_process_term_with_annotation(self):
+        """Test processing a term with annotation."""
+        pipeline = RobustOntologyPipeline(self.registry)
+        result = pipeline.process_term("test term", include_annotation=True)
+
+        # Result should be a dict with annotation
+        self.assertIsInstance(result, dict)
+        self.assertIn("term", result)
+        self.assertIn("confidence", result)
+
+    def test_process_json(self):
+        """Test processing JSON structure."""
+        pipeline = RobustOntologyPipeline(self.registry)
+
+        data = {"pileus": {"shape": ["convex"]}}
+        result = pipeline.process_json(data, include_metadata=True)
+
+        self.assertIn("_metadata", result)
+        self.assertIn("confidence_summary", result["_metadata"])
+
+    def test_process_json_without_metadata(self):
+        """Test processing JSON without metadata."""
+        pipeline = RobustOntologyPipeline(self.registry)
+
+        data = {"key": ["value"]}
+        result = pipeline.process_json(data, include_metadata=False)
+
+        self.assertNotIn("_metadata", result)
+
+    def test_analyze_and_report(self):
+        """Test generating analysis report."""
+        pipeline = RobustOntologyPipeline(self.registry)
+
+        data = {"pileus": {"shape": ["convex"]}}
+        report = pipeline.analyze_and_report(data)
+
+        self.assertIn("GRACEFUL DEGRADATION ANALYSIS", report)
+        self.assertIn("CONFIDENCE DISTRIBUTION", report)
+
+
+class TestAnnotateJsonOutput(unittest.TestCase):
+    """Test annotate_json_output function."""
+
+    def setUp(self):
+        """Set up mock handler."""
+        self.registry = OntologyRegistry()
+
+        index = OntologyIndex(name="test")
+        index.category = "base"
+        index.terms = [
+            OntologyTerm(
+                id="TEST:0001", name="convex", definition="Convex",
+                depth=1, ancestors=[], embedding=np.array([1.0, 0.0])
+            ),
+        ]
+        index.term_embeddings = np.stack([t.embedding for t in index.terms])
+
+        mock_encoder = MagicMock()
+        mock_encoder.encode.return_value = np.array([0.9, 0.1])
+        index._encoder = mock_encoder
+
+        self.registry.register_index("test", index)
+        self.registry._encoder = mock_encoder
+
+    def test_annotate_values_only(self):
+        """Test annotating only values."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        data = {"shape": ["convex"]}
+        result, log = annotate_json_output(
+            data, handler,
+            annotate_keys=False,
+            annotate_values=True
+        )
+
+        self.assertIn("shape", result)  # Key unchanged
+        self.assertIn("convex", log)    # Value was processed
+
+    def test_annotate_preserves_structure(self):
+        """Test that annotation preserves structure."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        data = {
+            "level1": {
+                "level2": ["value"]
+            }
+        }
+
+        # Don't annotate keys to preserve structure
+        result, log = annotate_json_output(
+            data, handler,
+            annotate_keys=False,
+            annotate_values=True
+        )
+
+        # Keys should be preserved as-is
+        self.assertIn("level1", result)
+        self.assertIn("level2", result["level1"])
+        # Values should be processed
+        self.assertIn("value", log)
+
+    def test_annotate_returns_log(self):
+        """Test that annotation returns a log of all terms."""
+        handler = GracefulDegradationHandler(self.registry)
+
+        data = {"key": ["value1", "value2"]}
+        result, log = annotate_json_output(data, handler)
+
+        # All terms should be in the log
+        self.assertIn("key", log)
+        self.assertIn("value1", log)
+        self.assertIn("value2", log)
 
 
 if __name__ == '__main__':

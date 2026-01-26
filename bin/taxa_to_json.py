@@ -92,6 +92,9 @@ def translate_taxa_to_json(
     normalize_vocabulary: bool = False,
     normalization_threshold: float = 0.85,
     analyze_coverage: bool = False,
+    graceful_degradation: bool = False,
+    preserve_threshold: float = 0.5,
+    include_annotations: bool = False,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -120,6 +123,9 @@ def translate_taxa_to_json(
         normalize_vocabulary: If True, apply threshold-gated vocabulary normalization
         normalization_threshold: Similarity threshold for normalization (0.0-1.0)
         analyze_coverage: If True, analyze and report vocabulary coverage
+        graceful_degradation: If True, enable graceful degradation for novel terms
+        preserve_threshold: Threshold below which to preserve original terms
+        include_annotations: If True, include confidence annotations in output
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -165,6 +171,10 @@ def translate_taxa_to_json(
         print(f"Vocabulary normalization: ENABLED (threshold={normalization_threshold})")
     if analyze_coverage:
         print(f"Coverage analysis: ENABLED")
+    if graceful_degradation:
+        print(f"Graceful degradation: ENABLED (preserve_threshold={preserve_threshold})")
+        if include_annotations:
+            print(f"  Include annotations: YES")
     print()
 
     # Initialize Spark
@@ -464,6 +474,20 @@ def translate_taxa_to_json(
             verbosity=verbosity
         )
 
+    # Run graceful degradation analysis if requested
+    if graceful_degradation and not dry_run:
+        run_graceful_degradation_analysis(
+            couchdb_url=couchdb_url,
+            username=username,
+            password=password,
+            dest_db=dest_db,
+            ontology_dir=ontology_dir,
+            normalization_threshold=normalization_threshold,
+            preserve_threshold=preserve_threshold,
+            limit=limit,
+            verbosity=verbosity
+        )
+
 
 def run_coverage_analysis(
     couchdb_url: str,
@@ -610,6 +634,151 @@ def run_coverage_analysis(
         print(f"\n  {analysis.novel} novel terms detected that may need:")
         print("    - Custom ontology additions")
         print("    - Manual review for domain-specific vocabulary")
+
+
+def run_graceful_degradation_analysis(
+    couchdb_url: str,
+    username: str,
+    password: str,
+    dest_db: str,
+    ontology_dir: Optional[str] = None,
+    normalization_threshold: float = 0.85,
+    preserve_threshold: float = 0.5,
+    limit: Optional[int] = None,
+    verbosity: int = 1
+) -> None:
+    """
+    Analyze vocabulary with graceful degradation and generate detailed report.
+
+    Args:
+        couchdb_url: CouchDB server URL
+        username: CouchDB username
+        password: CouchDB password
+        dest_db: Database containing extracted features
+        ontology_dir: Directory containing ontology files
+        normalization_threshold: Threshold for HIGH confidence
+        preserve_threshold: Threshold below which to preserve originals
+        limit: Maximum number of documents to analyze
+        verbosity: Verbosity level
+    """
+    import json
+    import couchdb
+
+    from skol.ontology import (
+        OntologyRegistry,
+        RobustOntologyPipeline,
+    )
+
+    print(f"\n{'='*70}")
+    print("Graceful Degradation Analysis")
+    print(f"{'='*70}")
+
+    # Determine ontology directory
+    if ontology_dir:
+        ont_dir = Path(ontology_dir)
+    elif os.environ.get('ONTOLOGY_DIR'):
+        ont_dir = Path(os.environ['ONTOLOGY_DIR'])
+    else:
+        default_installed = Path('/opt/skol/data/ontologies')
+        if default_installed.exists():
+            ont_dir = default_installed
+        else:
+            ont_dir = Path(__file__).parent.parent / "data" / "ontologies"
+
+    print(f"Ontology directory: {ont_dir}")
+    print(f"Normalization threshold: {normalization_threshold}")
+    print(f"Preserve threshold: {preserve_threshold}")
+
+    # Check for ontology files
+    pato_path = ont_dir / "pato.obo"
+    fao_path = ont_dir / "fao.obo"
+
+    if not pato_path.exists() and not fao_path.exists():
+        print(f"✗ No ontology files found in {ont_dir}")
+        return
+
+    # Load ontologies
+    print("\nLoading ontologies...")
+    registry = OntologyRegistry()
+
+    if pato_path.exists():
+        print(f"  Loading PATO from {pato_path}...")
+        registry.register("pato", str(pato_path), category="base")
+        print(f"  ✓ PATO: {len(registry.get('pato'))} terms")
+
+    if fao_path.exists():
+        print(f"  Loading FAO from {fao_path}...")
+        registry.register("fao", str(fao_path), category="base")
+        print(f"  ✓ FAO: {len(registry.get('fao'))} terms")
+
+    # Create pipeline
+    pipeline = RobustOntologyPipeline(
+        registry,
+        normalization_threshold=normalization_threshold,
+        preserve_threshold=preserve_threshold
+    )
+
+    # Connect to CouchDB
+    print(f"\nConnecting to {dest_db}...")
+    server = couchdb.Server(couchdb_url)
+    server.resource.credentials = (username, password)
+
+    if dest_db not in server:
+        print(f"✗ Database '{dest_db}' not found")
+        return
+
+    db = server[dest_db]
+
+    # Fetch documents with json_annotated
+    print("Fetching extracted features...")
+    all_features = []
+    count = 0
+
+    for doc_id in db:
+        if limit and count >= limit:
+            break
+
+        doc = db[doc_id]
+        json_annotated = doc.get('json_annotated')
+
+        if json_annotated and isinstance(json_annotated, dict):
+            all_features.append(json_annotated)
+            count += 1
+
+    print(f"  ✓ Loaded {len(all_features)} documents with extracted features")
+
+    if not all_features:
+        print("✗ No documents with json_annotated found")
+        return
+
+    # Analyze each document and combine
+    print("\nAnalyzing vocabulary with graceful degradation...")
+
+    # Use the first document for detailed analysis
+    if all_features:
+        sample_report = pipeline.analyze_and_report(all_features[0])
+        print()
+        print(sample_report)
+
+    # If multiple documents, show aggregate stats
+    if len(all_features) > 1:
+        print(f"\n{'='*60}")
+        print(f"AGGREGATE ANALYSIS ({len(all_features)} documents)")
+        print("=" * 60)
+
+        from skol.ontology import VocabularyAnalyzer
+        analyzer = VocabularyAnalyzer(registry)
+
+        all_terms = []
+        for features in all_features:
+            all_terms.extend(analyzer.extract_terms(features))
+
+        aggregate_summary = pipeline.degradation_handler.summarize(all_terms)
+        print(f"Total terms across all documents: {aggregate_summary['total']}")
+        print(f"  HIGH:   {aggregate_summary['high']['count']:5d} ({aggregate_summary['high']['percent']:.1f}%)")
+        print(f"  MEDIUM: {aggregate_summary['medium']['count']:5d} ({aggregate_summary['medium']['percent']:.1f}%)")
+        print(f"  LOW:    {aggregate_summary['low']['count']:5d} ({aggregate_summary['low']['percent']:.1f}%)")
+        print(f"  NOVEL:  {aggregate_summary['novel']['count']:5d} ({aggregate_summary['novel']['percent']:.1f}%)")
 
 
 # ============================================================================
@@ -821,6 +990,26 @@ Examples:
     )
 
     parser.add_argument(
+        '--graceful-degradation',
+        action='store_true',
+        help='Enable graceful degradation for novel terms (preserve originals with annotations)'
+    )
+
+    parser.add_argument(
+        '--preserve-threshold',
+        type=float,
+        default=0.5,
+        metavar='THRESH',
+        help='Preserve original term if similarity below this threshold (0.0-1.0, default: 0.5)'
+    )
+
+    parser.add_argument(
+        '--include-annotations',
+        action='store_true',
+        help='Include confidence annotations in output (requires --graceful-degradation)'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -857,6 +1046,9 @@ Examples:
     normalize_vocabulary = args.normalize_vocabulary
     normalization_threshold = args.normalization_threshold
     analyze_coverage = args.analyze_coverage
+    graceful_degradation = args.graceful_degradation
+    preserve_threshold = args.preserve_threshold
+    include_annotations = args.include_annotations
 
     # Validate schema depth parameters
     if schema_min_depth > schema_max_depth:
@@ -890,6 +1082,9 @@ Examples:
             normalize_vocabulary=normalize_vocabulary,
             normalization_threshold=normalization_threshold,
             analyze_coverage=analyze_coverage,
+            graceful_degradation=graceful_degradation,
+            preserve_threshold=preserve_threshold,
+            include_annotations=include_annotations,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")
