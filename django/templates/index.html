@@ -1206,6 +1206,8 @@
 
             const name = document.getElementById('collectionName').value;
             const notes = document.getElementById('collectionNotes').value;
+            // Preserve any existing description text - it becomes part of the new collection
+            const description = document.getElementById('prompt').value;
 
             try {
                 const response = await fetch(`${API_BASE}/api/collections/`, {
@@ -1215,7 +1217,7 @@
                         'X-CSRFToken': getCSRFToken()
                     },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ name, notes })
+                    body: JSON.stringify({ name, notes, description })
                 });
 
                 const data = await response.json();
