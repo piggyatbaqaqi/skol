@@ -36,3 +36,4 @@ wrapt
 peft
 pronto
 outlines
+datasets

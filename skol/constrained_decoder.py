@@ -121,6 +121,57 @@ class TaxonomySchema:
         """Return the JSON schema as a formatted string."""
         return json.dumps(self.to_json_schema(), indent=2)
 
+    def to_json_schema_inlined(self) -> Dict[str, Any]:
+        """
+        Generate a JSON Schema with all definitions inlined (no $ref).
+
+        Outlines has a $ref recursion limit of 3, so for deeper schemas
+        we need to inline all the definitions. This produces a larger
+        but equivalent schema.
+
+        Returns:
+            JSON Schema dictionary with inlined definitions
+        """
+        def build_level(level: int) -> Dict[str, Any]:
+            """Recursively build the schema for a given level."""
+            if level == self.max_depth:
+                # Deepest level is always an array of strings
+                return {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": 1,
+                }
+            elif level >= self.min_depth:
+                # Can terminate with array or continue nesting
+                return {
+                    "oneOf": [
+                        {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "minItems": 1,
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": build_level(level + 1),
+                            "minProperties": 1,
+                        },
+                    ]
+                }
+            else:
+                # Must continue nesting (below min_depth)
+                return {
+                    "type": "object",
+                    "additionalProperties": build_level(level + 1),
+                    "minProperties": 1,
+                }
+
+        return {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "additionalProperties": build_level(1),
+            "minProperties": 1,
+        }
+
     def validate(self, data: Dict[str, Any]) -> bool:
         """
         Validate that data conforms to the schema.
@@ -288,7 +339,7 @@ class OutlinesBackend(DecoderBackend):
 
         Args:
             prompt: Input prompt describing the specimen
-            schema: JSON Schema to constrain output
+            schema: JSON Schema to constrain output (as dict, will be converted to string)
             **kwargs: Additional generation arguments
 
         Returns:
@@ -299,7 +350,9 @@ class OutlinesBackend(DecoderBackend):
 
         import outlines
 
-        generator = outlines.generate.json(self._model, schema)
+        # Outlines requires JSON Schema as a string, not a dictionary
+        schema_str = json.dumps(schema)
+        generator = outlines.generate.json(self._model, schema_str)
         result = generator(prompt, **kwargs)
 
         return result
@@ -435,7 +488,8 @@ Values should be descriptive terms, not measurements."""
             Nested dictionary of extracted features
         """
         prompt = self._build_prompt(description, few_shot_examples)
-        json_schema = self.schema.to_json_schema()
+        # Use inlined schema to avoid Outlines $ref recursion limit
+        json_schema = self.schema.to_json_schema_inlined()
 
         backend = self._get_backend()
         result = backend.generate(prompt, json_schema, **kwargs)

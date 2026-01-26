@@ -403,6 +403,7 @@ and their values from the provided species description and format them as struct
 2. Arrays only appear at the deepest/innermost level of nesting
 3. All intermediate levels are objects (dictionaries), not arrays
 4. When you encounter comma-separated values, split them into separate array elements
+5. Only extract terms that appear in the description. Do not infer or add terms not mentioned.
 
 ## Instructions
 1. Read the entire species description carefully
