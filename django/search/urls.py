@@ -18,6 +18,10 @@ from .views import (
     SearchHistoryDetailView,
     ExternalIdentifierListCreateView,
     ExternalIdentifierDetailView,
+    # Vocabulary tree views
+    VocabTreeView,
+    VocabTreeVersionsView,
+    VocabTreeChildrenView,
 )
 
 app_name = 'search'
@@ -55,4 +59,9 @@ urlpatterns = [
          ExternalIdentifierListCreateView.as_view(), name='identifier-list-create'),
     path('collections/<int:collection_id>/identifiers/<int:identifier_id>/',
          ExternalIdentifierDetailView.as_view(), name='identifier-detail'),
+
+    # Vocabulary tree endpoints
+    path('vocab-tree/', VocabTreeView.as_view(), name='vocab-tree'),
+    path('vocab-tree/versions/', VocabTreeVersionsView.as_view(), name='vocab-tree-versions'),
+    path('vocab-tree/children/', VocabTreeChildrenView.as_view(), name='vocab-tree-children'),
 ]

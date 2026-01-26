@@ -679,3 +679,296 @@ class ExternalIdentifierDetailView(APIView):
             )
         identifier.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ============================================================================
+# Vocabulary Tree Views
+# ============================================================================
+
+import json
+
+
+class VocabTreeView(APIView):
+    """
+    API endpoint to retrieve vocabulary trees from Redis.
+
+    GET /api/vocab-tree/
+    Returns the latest vocabulary tree.
+
+    Query parameters:
+        - version: Specific version string (e.g., "2026_01_26_10_30")
+        - path: Dot-separated path to get children at a specific location
+                (e.g., "pileus.shape" returns children under pileus > shape)
+        - depth: Maximum depth to return (default: unlimited)
+
+    Response format:
+        {
+            "version": "2026_01_26_10_30",
+            "created_at": "2026-01-26T10:30:00",
+            "tree": { ... },  // Full tree or subtree based on path
+            "stats": { ... }  // Tree statistics
+        }
+    """
+
+    def get(self, request):
+        try:
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+
+            version = request.GET.get('version')
+            path = request.GET.get('path', '')
+            max_depth = request.GET.get('depth')
+
+            # Determine which key to fetch
+            if version:
+                key = f"skol:ui:menus_{version}"
+            else:
+                # Get the latest version
+                latest_key = r.get("skol:ui:menus_latest")
+                if not latest_key:
+                    return Response(
+                        {'error': 'No vocabulary tree available'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+                key = latest_key
+
+            # Fetch the tree data
+            tree_json = r.get(key)
+            if not tree_json:
+                return Response(
+                    {'error': f'Vocabulary tree not found: {key}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            data = json.loads(tree_json)
+            tree = data.get('tree', {})
+            stats = data.get('stats', {})
+
+            # Navigate to specific path if requested
+            if path:
+                path_parts = path.split('.')
+                current = tree
+                for part in path_parts:
+                    part_lower = part.lower()
+                    if isinstance(current, dict) and part_lower in current:
+                        current = current[part_lower]
+                    else:
+                        return Response(
+                            {'error': f'Path not found: {path}'},
+                            status=status.HTTP_404_NOT_FOUND
+                        )
+                tree = current
+
+            # Limit depth if requested
+            if max_depth:
+                try:
+                    max_depth = int(max_depth)
+                    tree = self._limit_depth(tree, max_depth)
+                except ValueError:
+                    pass
+
+            return Response({
+                'version': data.get('version'),
+                'created_at': data.get('created_at'),
+                'path': path or None,
+                'tree': tree,
+                'stats': stats
+            })
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse vocab tree JSON: {e}")
+            return Response(
+                {'error': 'Invalid vocabulary tree data'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch vocab tree: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def _limit_depth(self, tree, max_depth, current_depth=0):
+        """Recursively limit tree depth."""
+        if current_depth >= max_depth:
+            if isinstance(tree, dict) and tree:
+                return {"...": f"{len(tree)} children"}
+            return tree
+
+        if isinstance(tree, dict):
+            return {
+                k: self._limit_depth(v, max_depth, current_depth + 1)
+                for k, v in tree.items()
+            }
+        return tree
+
+
+class VocabTreeVersionsView(APIView):
+    """
+    API endpoint to list available vocabulary tree versions.
+
+    GET /api/vocab-tree/versions/
+    Returns list of available versions with their metadata.
+    """
+
+    def get(self, request):
+        try:
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+
+            # Find all vocab tree keys
+            keys = r.keys('skol:ui:menus_*')
+
+            # Filter out the "latest" pointer
+            version_keys = [k for k in keys if k != 'skol:ui:menus_latest']
+
+            # Get metadata for each version
+            versions = []
+            for key in sorted(version_keys, reverse=True):  # Newest first
+                try:
+                    tree_json = r.get(key)
+                    if tree_json:
+                        data = json.loads(tree_json)
+                        versions.append({
+                            'key': key,
+                            'version': data.get('version'),
+                            'created_at': data.get('created_at'),
+                            'stats': data.get('stats', {})
+                        })
+                except (json.JSONDecodeError, TypeError):
+                    # Skip malformed entries
+                    versions.append({
+                        'key': key,
+                        'version': key.replace('skol:ui:menus_', ''),
+                        'created_at': None,
+                        'stats': {}
+                    })
+
+            # Get the current "latest" pointer
+            latest = r.get('skol:ui:menus_latest')
+
+            return Response({
+                'versions': versions,
+                'count': len(versions),
+                'latest': latest
+            })
+
+        except Exception as e:
+            logger.error(f"Failed to list vocab tree versions: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class VocabTreeChildrenView(APIView):
+    """
+    API endpoint to get children at a specific path in the vocabulary tree.
+
+    GET /api/vocab-tree/children/
+    Returns list of child keys at the specified path.
+
+    Query parameters:
+        - path: Dot-separated path (e.g., "pileus.shape")
+                If omitted, returns top-level keys.
+        - version: Specific version (default: latest)
+
+    Response format:
+        {
+            "path": "pileus.shape",
+            "children": ["convex", "flat", "umbonate", ...],
+            "count": 15,
+            "has_grandchildren": {"convex": true, "flat": false, ...}
+        }
+    """
+
+    def get(self, request):
+        try:
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+
+            version = request.GET.get('version')
+            path = request.GET.get('path', '')
+
+            # Determine which key to fetch
+            if version:
+                key = f"skol:ui:menus_{version}"
+            else:
+                latest_key = r.get("skol:ui:menus_latest")
+                if not latest_key:
+                    return Response(
+                        {'error': 'No vocabulary tree available'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+                key = latest_key
+
+            # Fetch the tree
+            tree_json = r.get(key)
+            if not tree_json:
+                return Response(
+                    {'error': f'Vocabulary tree not found: {key}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            data = json.loads(tree_json)
+            tree = data.get('tree', {})
+
+            # Navigate to path
+            current = tree
+            if path:
+                path_parts = path.split('.')
+                for part in path_parts:
+                    part_lower = part.lower()
+                    if isinstance(current, dict) and part_lower in current:
+                        current = current[part_lower]
+                    else:
+                        return Response(
+                            {'error': f'Path not found: {path}'},
+                            status=status.HTTP_404_NOT_FOUND
+                        )
+
+            # Get children
+            if not isinstance(current, dict):
+                return Response({
+                    'path': path or None,
+                    'children': [],
+                    'count': 0,
+                    'has_grandchildren': {},
+                    'is_leaf': True
+                })
+
+            children = sorted(current.keys())
+            has_grandchildren = {
+                child: isinstance(current[child], dict) and bool(current[child])
+                for child in children
+            }
+
+            return Response({
+                'path': path or None,
+                'children': children,
+                'count': len(children),
+                'has_grandchildren': has_grandchildren,
+                'is_leaf': False
+            })
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse vocab tree JSON: {e}")
+            return Response(
+                {'error': 'Invalid vocabulary tree data'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Failed to get vocab tree children: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
