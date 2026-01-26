@@ -137,7 +137,7 @@ chmod 755 ${SKOL_HOME}/bin/with_skol
 chown skol:skol ${SKOL_HOME}/bin/with_skol
 
 # Create symlinks for each command in /opt/skol/bin
-for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json; do
+for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree; do
     ln -sf with_skol ${SKOL_HOME}/bin/${cmd}
 done
 
@@ -146,7 +146,8 @@ chown -R skol:skol ${SKOL_HOME}/bin
 
 echo "SKOL installation complete."
 echo "Commands available in ${SKOL_HOME}/bin/:"
-echo "  ingest, train_classifier, predict_classifier, extract_taxa_to_couchdb, embed_taxa, taxa_to_json"
+echo "  ingest, train_classifier, predict_classifier, extract_taxa_to_couchdb,"
+echo "  embed_taxa, taxa_to_json, build_vocab_tree"
 echo "Or use: ${SKOL_HOME}/bin/with_skol <command>"
 
 #DEBHELPER#
