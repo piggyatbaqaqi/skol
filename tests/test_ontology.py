@@ -25,6 +25,13 @@ from skol.ontology import (
     OntologyContextBuilder,
     OntologyGuidedGenerator,
     load_mock_registry,
+    # Phase 4: Vocabulary Normalization
+    NormalizationResult,
+    CoverageAnalysis,
+    ThresholdGatedNormalizer,
+    VocabularyAnalyzer,
+    normalize_json_output,
+    print_coverage_report,
 )
 
 
@@ -584,6 +591,432 @@ class TestIntegrationWithRealEncoder(unittest.TestCase):
         top_term, top_score = results[0]
         self.assertEqual(top_term.name, "round shape")
         self.assertGreater(top_score, 0)
+
+
+# =============================================================================
+# Phase 4: Vocabulary Normalization Tests
+# =============================================================================
+
+
+class TestNormalizationResult(unittest.TestCase):
+    """Test NormalizationResult dataclass."""
+
+    def test_result_creation_normalized(self):
+        """Test creating a normalized result."""
+        result = NormalizationResult(
+            original="convex cap",
+            normalized="convex",
+            similarity=0.92,
+            was_normalized=True,
+            ontology_source="pato",
+            ontology_term_id="PATO:0001234"
+        )
+
+        self.assertEqual(result.original, "convex cap")
+        self.assertEqual(result.normalized, "convex")
+        self.assertTrue(result.was_normalized)
+        self.assertEqual(result.ontology_source, "pato")
+
+    def test_result_creation_not_normalized(self):
+        """Test creating a result where term was not normalized."""
+        result = NormalizationResult(
+            original="subcanaliculate",
+            normalized="subcanaliculate",
+            similarity=0.45,
+            was_normalized=False
+        )
+
+        self.assertEqual(result.original, result.normalized)
+        self.assertFalse(result.was_normalized)
+        self.assertIsNone(result.ontology_source)
+
+
+class TestCoverageAnalysis(unittest.TestCase):
+    """Test CoverageAnalysis dataclass."""
+
+    def test_analysis_creation(self):
+        """Test creating a coverage analysis."""
+        details = [
+            ("convex", "convex", 0.95),
+            ("brown", "brown", 0.88),
+            ("subcanaliculate", "(no match)", 0.32),
+        ]
+
+        analysis = CoverageAnalysis(
+            total_terms=3,
+            well_covered=2,
+            partially_covered=0,
+            novel=1,
+            coverage_ratio=2/3,
+            term_details=details
+        )
+
+        self.assertEqual(analysis.total_terms, 3)
+        self.assertEqual(analysis.well_covered, 2)
+        self.assertEqual(analysis.novel, 1)
+        self.assertAlmostEqual(analysis.coverage_ratio, 0.667, places=2)
+
+
+class TestThresholdGatedNormalizer(unittest.TestCase):
+    """Test ThresholdGatedNormalizer class."""
+
+    def setUp(self):
+        """Set up registry with mock data for normalization tests."""
+        self.registry = OntologyRegistry()
+
+        # Create mock index with embeddings
+        index = OntologyIndex(name="test")
+        index.category = "base"
+
+        # Create terms with specific embeddings for predictable similarity
+        self.mock_terms = [
+            OntologyTerm(
+                id="TEST:0001", name="convex", definition="Convex shape",
+                depth=2, ancestors=["shape"], embedding=np.array([1.0, 0.0, 0.0])
+            ),
+            OntologyTerm(
+                id="TEST:0002", name="brown", definition="Brown color",
+                depth=2, ancestors=["color"], embedding=np.array([0.0, 1.0, 0.0])
+            ),
+            OntologyTerm(
+                id="TEST:0003", name="smooth", definition="Smooth texture",
+                depth=2, ancestors=["texture"], embedding=np.array([0.0, 0.0, 1.0])
+            ),
+        ]
+
+        index.terms = self.mock_terms
+        index.term_embeddings = np.stack([t.embedding for t in self.mock_terms])
+
+        # Build lookup
+        for term in self.mock_terms:
+            index._term_lookup[term.id] = term
+            index._term_lookup[term.name.lower()] = term
+
+        # Mock encoder to return predictable embeddings
+        self.mock_encoder = MagicMock()
+        index._encoder = self.mock_encoder
+
+        self.registry.register_index("test", index)
+        self.registry._encoder = self.mock_encoder
+
+    def test_normalizer_creation(self):
+        """Test creating a normalizer."""
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+
+        self.assertEqual(normalizer.threshold, 0.85)
+        self.assertEqual(normalizer.min_similarity, 0.5)
+
+    def test_normalize_high_similarity(self):
+        """Test normalizing a term with high similarity (above threshold)."""
+        # Make encoder return embedding very similar to "convex"
+        self.mock_encoder.encode.return_value = np.array([0.99, 0.01, 0.0])
+
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+        result = normalizer.normalize("convex shape")
+
+        self.assertTrue(result.was_normalized)
+        self.assertEqual(result.normalized, "convex")
+        self.assertGreater(result.similarity, 0.85)
+
+    def test_normalize_low_similarity(self):
+        """Test normalizing a term with low similarity (below threshold)."""
+        # Make encoder return embedding not similar to any term
+        self.mock_encoder.encode.return_value = np.array([0.33, 0.33, 0.33])
+
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+        result = normalizer.normalize("subcanaliculate")
+
+        self.assertFalse(result.was_normalized)
+        self.assertEqual(result.normalized, "subcanaliculate")  # Preserved
+
+    def test_normalize_caching(self):
+        """Test that normalization results are cached."""
+        self.mock_encoder.encode.return_value = np.array([0.99, 0.01, 0.0])
+
+        normalizer = ThresholdGatedNormalizer(self.registry)
+
+        # First call
+        result1 = normalizer.normalize("test term")
+        # Second call with same term
+        result2 = normalizer.normalize("test term")
+
+        # Encoder should only be called once due to caching
+        self.assertEqual(self.mock_encoder.encode.call_count, 1)
+        self.assertEqual(result1.normalized, result2.normalized)
+
+    def test_normalize_batch(self):
+        """Test batch normalization."""
+        self.mock_encoder.encode.return_value = np.array([0.99, 0.01, 0.0])
+
+        normalizer = ThresholdGatedNormalizer(self.registry)
+        results = normalizer.normalize_batch(["term1", "term2", "term3"])
+
+        self.assertEqual(len(results), 3)
+        self.assertIsInstance(results[0], NormalizationResult)
+
+    def test_analyze_coverage(self):
+        """Test coverage analysis."""
+        # Set up encoder to return different similarities
+        call_count = [0]
+        def mock_encode(text):
+            call_count[0] += 1
+            # First term: high similarity
+            if call_count[0] == 1:
+                return np.array([0.99, 0.01, 0.0])
+            # Second term: medium similarity
+            elif call_count[0] == 2:
+                return np.array([0.7, 0.3, 0.0])
+            # Third term: low similarity
+            else:
+                return np.array([0.33, 0.33, 0.33])
+
+        self.mock_encoder.encode.side_effect = mock_encode
+
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+        analysis = normalizer.analyze_coverage(["high", "medium", "low"])
+
+        self.assertEqual(analysis.total_terms, 3)
+        # Results depend on embedding similarities
+
+    def test_clear_cache(self):
+        """Test clearing the normalization cache."""
+        self.mock_encoder.encode.return_value = np.array([0.99, 0.01, 0.0])
+
+        normalizer = ThresholdGatedNormalizer(self.registry)
+        normalizer.normalize("test")
+
+        self.assertEqual(len(normalizer._cache), 1)
+
+        normalizer.clear_cache()
+
+        self.assertEqual(len(normalizer._cache), 0)
+
+
+class TestVocabularyAnalyzer(unittest.TestCase):
+    """Test VocabularyAnalyzer class."""
+
+    def setUp(self):
+        """Set up registry with mock data."""
+        self.registry = OntologyRegistry()
+
+        index = OntologyIndex(name="test")
+        index.category = "base"
+        index.terms = [
+            OntologyTerm(
+                id="TEST:0001", name="pileus", definition="Cap",
+                depth=1, ancestors=[], embedding=np.array([1.0, 0.0])
+            ),
+        ]
+        index.term_embeddings = np.stack([t.embedding for t in index.terms])
+
+        mock_encoder = MagicMock()
+        mock_encoder.encode.return_value = np.array([0.9, 0.1])
+        index._encoder = mock_encoder
+
+        self.registry.register_index("test", index)
+        self.registry._encoder = mock_encoder
+
+    def test_extract_terms_from_dict(self):
+        """Test extracting terms from nested dict."""
+        analyzer = VocabularyAnalyzer(self.registry)
+
+        data = {
+            "pileus": {
+                "shape": ["convex", "flat"],
+                "color": ["brown"]
+            }
+        }
+
+        terms = analyzer.extract_terms(data)
+
+        self.assertIn("pileus", terms)
+        self.assertIn("shape", terms)
+        self.assertIn("convex", terms)
+        self.assertIn("flat", terms)
+        self.assertIn("color", terms)
+        self.assertIn("brown", terms)
+
+    def test_extract_terms_from_list(self):
+        """Test extracting terms from list."""
+        analyzer = VocabularyAnalyzer(self.registry)
+
+        data = ["term1", "term2", "term3"]
+        terms = analyzer.extract_terms(data)
+
+        self.assertEqual(len(terms), 3)
+
+    def test_extract_terms_from_string(self):
+        """Test extracting terms from single string."""
+        analyzer = VocabularyAnalyzer(self.registry)
+
+        terms = analyzer.extract_terms("single term")
+
+        self.assertEqual(terms, ["single term"])
+
+    def test_analyze_json(self):
+        """Test analyzing JSON features."""
+        analyzer = VocabularyAnalyzer(self.registry)
+
+        data = {
+            "pileus": {
+                "shape": ["convex"]
+            }
+        }
+
+        analysis = analyzer.analyze_json(data)
+
+        self.assertIsInstance(analysis, CoverageAnalysis)
+        self.assertGreater(analysis.total_terms, 0)
+
+    def test_get_novel_terms(self):
+        """Test getting novel/poorly-covered terms."""
+        # Mock encoder to return low similarity
+        self.registry._encoder.encode.return_value = np.array([0.1, 0.1])
+
+        analyzer = VocabularyAnalyzer(self.registry, threshold=0.85)
+
+        data = {"pileus": {"novel_term": ["value"]}}
+        novel = analyzer.get_novel_terms(data)
+
+        # Should find some novel terms
+        self.assertIsInstance(novel, list)
+
+
+class TestNormalizeJsonOutput(unittest.TestCase):
+    """Test normalize_json_output function."""
+
+    def setUp(self):
+        """Set up mock normalizer."""
+        self.registry = OntologyRegistry()
+
+        index = OntologyIndex(name="test")
+        index.category = "base"
+        index.terms = [
+            OntologyTerm(
+                id="TEST:0001", name="convex", definition="Convex",
+                depth=1, ancestors=[], embedding=np.array([1.0, 0.0])
+            ),
+        ]
+        index.term_embeddings = np.stack([t.embedding for t in index.terms])
+
+        mock_encoder = MagicMock()
+        # Return high similarity for "convex", low for others
+        def mock_encode(text):
+            if "convex" in text.lower():
+                return np.array([0.99, 0.01])
+            return np.array([0.5, 0.5])
+        mock_encoder.encode.side_effect = mock_encode
+        index._encoder = mock_encoder
+
+        self.registry.register_index("test", index)
+        self.registry._encoder = mock_encoder
+
+    def test_normalize_values_only(self):
+        """Test normalizing only values."""
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+
+        data = {"shape": ["convex shape"]}
+
+        normalized, log = normalize_json_output(
+            data, normalizer,
+            normalize_keys=False,
+            normalize_values=True
+        )
+
+        # Keys should be unchanged
+        self.assertIn("shape", normalized)
+        # Values should be in the log (the original value, not the key)
+        self.assertIn("convex shape", log)
+
+    def test_normalize_keys_only(self):
+        """Test normalizing only keys."""
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+
+        data = {"convex_key": ["value"]}
+
+        normalized, log = normalize_json_output(
+            data, normalizer,
+            normalize_keys=True,
+            normalize_values=False
+        )
+
+        # Original key should be logged
+        self.assertIn("convex_key", log)
+
+    def test_normalize_nested_structure(self):
+        """Test normalizing deeply nested structure."""
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+
+        data = {
+            "level1": {
+                "level2": {
+                    "level3": ["value"]
+                }
+            }
+        }
+
+        normalized, log = normalize_json_output(data, normalizer)
+
+        # Should process all levels
+        self.assertIn("level1", normalized)
+        self.assertIn("level2", normalized["level1"])
+
+    def test_normalize_preserves_structure(self):
+        """Test that normalization preserves the structure."""
+        normalizer = ThresholdGatedNormalizer(self.registry, threshold=0.85)
+
+        data = {
+            "key1": ["val1", "val2"],
+            "key2": {"nested": ["val3"]}
+        }
+
+        normalized, _ = normalize_json_output(data, normalizer)
+
+        # Structure should be preserved
+        self.assertIsInstance(normalized["key1"], list)
+        self.assertIsInstance(normalized["key2"], dict)
+        self.assertIsInstance(normalized["key2"]["nested"], list)
+
+
+class TestPrintCoverageReport(unittest.TestCase):
+    """Test print_coverage_report function."""
+
+    def test_report_generation(self):
+        """Test generating a coverage report."""
+        analysis = CoverageAnalysis(
+            total_terms=10,
+            well_covered=7,
+            partially_covered=2,
+            novel=1,
+            coverage_ratio=0.7,
+            term_details=[
+                ("convex", "convex", 0.95),
+                ("brown", "brown", 0.88),
+                ("novel", "(no match)", 0.32),
+            ]
+        )
+
+        report = print_coverage_report(analysis, show_details=True, max_details=10)
+
+        self.assertIn("VOCABULARY COVERAGE ANALYSIS", report)
+        self.assertIn("Total unique terms: 10", report)
+        self.assertIn("Coverage ratio: 70.0%", report)
+
+    def test_report_without_details(self):
+        """Test generating a report without term details."""
+        analysis = CoverageAnalysis(
+            total_terms=5,
+            well_covered=3,
+            partially_covered=1,
+            novel=1,
+            coverage_ratio=0.6,
+            term_details=[]
+        )
+
+        report = print_coverage_report(analysis, show_details=False)
+
+        self.assertIn("VOCABULARY COVERAGE ANALYSIS", report)
+        self.assertNotIn("TERM DETAILS", report)
 
 
 if __name__ == '__main__':

@@ -642,7 +642,7 @@ class OntologyGuidedGenerator:
         >>> generator = OntologyGuidedGenerator(decoder, registry, schema)
         >>> result = generator.generate("Pileus convex, brown, 5cm diameter")
     """
-
+    # TODO(piggy): More than one level of anatomical terms may be appropriate.
     DEFAULT_PROMPT_TEMPLATE = """Extract structured features from a biological species description.
 
 {ontology_context}
@@ -654,6 +654,7 @@ RULES:
 4. Level 4+ should contain arrays of observed values
 5. Follow the hierarchy patterns shown above
 6. Use consistent terminology from the provided vocabularies
+
 
 DESCRIPTION:
 {description}
@@ -801,3 +802,449 @@ def load_mock_registry() -> OntologyRegistry:
     registry.register_index("fao", mock_fao)
 
     return registry
+
+
+# =============================================================================
+# Phase 4: Vocabulary Normalization
+# =============================================================================
+
+
+@dataclass
+class NormalizationResult:
+    """
+    Result of normalizing a single term.
+
+    Attributes:
+        original: The original term before normalization
+        normalized: The normalized term (may be same as original)
+        similarity: Cosine similarity to best ontology match
+        was_normalized: Whether the term was actually changed
+        ontology_source: Which ontology the match came from (if normalized)
+        ontology_term_id: The ID of the matched ontology term (if normalized)
+    """
+    original: str
+    normalized: str
+    similarity: float
+    was_normalized: bool
+    ontology_source: Optional[str] = None
+    ontology_term_id: Optional[str] = None
+
+
+@dataclass
+class CoverageAnalysis:
+    """
+    Analysis of vocabulary coverage for a set of terms.
+
+    Attributes:
+        total_terms: Total unique terms analyzed
+        well_covered: Terms with similarity >= threshold
+        partially_covered: Terms with similarity in [0.5, threshold)
+        novel: Terms with similarity < 0.5
+        coverage_ratio: Fraction of well-covered terms
+        term_details: List of (term, best_match, similarity) for each term
+    """
+    total_terms: int
+    well_covered: int
+    partially_covered: int
+    novel: int
+    coverage_ratio: float
+    term_details: List[Tuple[str, str, float]]
+
+
+class ThresholdGatedNormalizer:
+    """
+    Normalize vocabulary only when confident.
+
+    This implements Phase 4 of the SLM optimization approach. Terms are only
+    mapped to ontology vocabulary when the similarity exceeds a threshold.
+    Below-threshold terms are preserved as-is to avoid false mappings.
+
+    Key Principle: Never force bad mappings. Terms below similarity threshold
+    are preserved as-is.
+
+    Example:
+        >>> normalizer = ThresholdGatedNormalizer(registry, threshold=0.85)
+        >>> result = normalizer.normalize("convex cap")
+        >>> print(f"{result.original} -> {result.normalized} ({result.similarity:.2f})")
+        convex cap -> convex (0.92)
+    """
+
+    def __init__(
+        self,
+        registry: OntologyRegistry,
+        threshold: float = 0.85,
+        min_similarity: float = 0.5
+    ):
+        """
+        Initialize the normalizer.
+
+        Args:
+            registry: OntologyRegistry with loaded ontologies
+            threshold: Minimum similarity to accept a mapping (default 0.85)
+            min_similarity: Minimum similarity to consider partial coverage
+        """
+        self.registry = registry
+        self.threshold = threshold
+        self.min_similarity = min_similarity
+        self._cache: Dict[str, NormalizationResult] = {}
+
+    @property
+    def encoder(self):
+        """Get the shared encoder from the registry."""
+        return self.registry.encoder
+
+    def normalize(self, term: str) -> NormalizationResult:
+        """
+        Normalize term if confident match exists.
+
+        Args:
+            term: The term to normalize
+
+        Returns:
+            NormalizationResult with normalized term and metadata
+        """
+        # Check cache first
+        cache_key = term.lower().strip()
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        best_match, best_sim, source, term_id = self._find_best_match(term)
+
+        if best_sim >= self.threshold:
+            result = NormalizationResult(
+                original=term,
+                normalized=best_match,
+                similarity=best_sim,
+                was_normalized=True,
+                ontology_source=source,
+                ontology_term_id=term_id
+            )
+        else:
+            # Keep original term
+            result = NormalizationResult(
+                original=term,
+                normalized=term,
+                similarity=best_sim,
+                was_normalized=False,
+                ontology_source=source if best_sim >= self.min_similarity else None,
+                ontology_term_id=term_id if best_sim >= self.min_similarity else None
+            )
+
+        self._cache[cache_key] = result
+        return result
+
+    def _find_best_match(
+        self,
+        term: str
+    ) -> Tuple[str, float, Optional[str], Optional[str]]:
+        """
+        Find the best matching ontology term across all registered ontologies.
+
+        Args:
+            term: The term to match
+
+        Returns:
+            Tuple of (best_match_name, similarity, ontology_name, term_id)
+        """
+        best_match = term
+        best_sim = 0.0
+        best_source = None
+        best_id = None
+
+        for ont_name, index in self.registry.ontologies.items():
+            if not index.terms:
+                continue
+
+            results = index.search(term, top_k=1)
+            if results:
+                ont_term, similarity = results[0]
+                if similarity > best_sim:
+                    best_sim = similarity
+                    best_match = ont_term.name
+                    best_source = ont_name
+                    best_id = ont_term.id
+
+        return best_match, best_sim, best_source, best_id
+
+    def normalize_batch(
+        self,
+        terms: List[str]
+    ) -> List[NormalizationResult]:
+        """
+        Normalize multiple terms efficiently.
+
+        Args:
+            terms: List of terms to normalize
+
+        Returns:
+            List of NormalizationResult objects
+        """
+        return [self.normalize(term) for term in terms]
+
+    def analyze_coverage(self, terms: List[str]) -> CoverageAnalysis:
+        """
+        Analyze vocabulary coverage for a set of terms.
+
+        Args:
+            terms: List of terms to analyze
+
+        Returns:
+            CoverageAnalysis with coverage statistics
+        """
+        unique_terms = list(set(t.lower().strip() for t in terms if t.strip()))
+
+        well_covered = 0
+        partially_covered = 0
+        novel = 0
+        details = []
+
+        for term in unique_terms:
+            result = self.normalize(term)
+
+            if result.similarity >= self.threshold:
+                well_covered += 1
+            elif result.similarity >= self.min_similarity:
+                partially_covered += 1
+            else:
+                novel += 1
+
+            details.append((
+                result.original,
+                result.normalized if result.was_normalized else "(no match)",
+                result.similarity
+            ))
+
+        # Sort by similarity (lowest first to highlight gaps)
+        details.sort(key=lambda x: x[2])
+
+        total = len(unique_terms) if unique_terms else 1  # Avoid division by zero
+        return CoverageAnalysis(
+            total_terms=len(unique_terms),
+            well_covered=well_covered,
+            partially_covered=partially_covered,
+            novel=novel,
+            coverage_ratio=well_covered / total,
+            term_details=details
+        )
+
+    def clear_cache(self) -> None:
+        """Clear the normalization cache."""
+        self._cache.clear()
+
+
+class VocabularyAnalyzer:
+    """
+    Analyze vocabulary in extracted JSON features.
+
+    Extracts all unique terms from a nested JSON structure and analyzes
+    their coverage against registered ontologies.
+
+    Example:
+        >>> analyzer = VocabularyAnalyzer(registry)
+        >>> features = {"pileus": {"shape": ["convex"], "color": ["brown"]}}
+        >>> analysis = analyzer.analyze_json(features)
+        >>> print(f"Coverage: {analysis.coverage_ratio:.1%}")
+    """
+
+    def __init__(
+        self,
+        registry: OntologyRegistry,
+        threshold: float = 0.85
+    ):
+        """
+        Initialize the analyzer.
+
+        Args:
+            registry: OntologyRegistry with loaded ontologies
+            threshold: Similarity threshold for "well-covered"
+        """
+        self.registry = registry
+        self.normalizer = ThresholdGatedNormalizer(registry, threshold=threshold)
+
+    def extract_terms(self, data: Any, terms: Optional[List[str]] = None) -> List[str]:
+        """
+        Recursively extract all string terms from a nested structure.
+
+        Args:
+            data: Nested dict/list/str structure
+            terms: Accumulator list (used internally)
+
+        Returns:
+            List of all string terms found
+        """
+        if terms is None:
+            terms = []
+
+        if isinstance(data, str):
+            terms.append(data)
+        elif isinstance(data, dict):
+            for key, value in data.items():
+                terms.append(key)  # Keys are also vocabulary
+                self.extract_terms(value, terms)
+        elif isinstance(data, list):
+            for item in data:
+                self.extract_terms(item, terms)
+
+        return terms
+
+    def analyze_json(self, data: Dict[str, Any]) -> CoverageAnalysis:
+        """
+        Analyze vocabulary coverage in JSON feature data.
+
+        Args:
+            data: Nested feature dictionary
+
+        Returns:
+            CoverageAnalysis with statistics
+        """
+        terms = self.extract_terms(data)
+        return self.normalizer.analyze_coverage(terms)
+
+    def analyze_batch(
+        self,
+        data_list: List[Dict[str, Any]]
+    ) -> CoverageAnalysis:
+        """
+        Analyze vocabulary coverage across multiple JSON outputs.
+
+        Args:
+            data_list: List of feature dictionaries
+
+        Returns:
+            Aggregated CoverageAnalysis
+        """
+        all_terms = []
+        for data in data_list:
+            all_terms.extend(self.extract_terms(data))
+        return self.normalizer.analyze_coverage(all_terms)
+
+    def get_novel_terms(
+        self,
+        data: Dict[str, Any],
+        threshold: Optional[float] = None
+    ) -> List[Tuple[str, float]]:
+        """
+        Get terms with low ontology coverage.
+
+        Args:
+            data: Feature dictionary
+            threshold: Override default threshold (default: use normalizer's)
+
+        Returns:
+            List of (term, similarity) tuples for poorly-covered terms
+        """
+        thresh = threshold if threshold is not None else self.normalizer.threshold
+        terms = self.extract_terms(data)
+        novel = []
+
+        for term in set(terms):
+            result = self.normalizer.normalize(term)
+            if result.similarity < thresh:
+                novel.append((term, result.similarity))
+
+        return sorted(novel, key=lambda x: x[1])
+
+
+def normalize_json_output(
+    data: Dict[str, Any],
+    normalizer: ThresholdGatedNormalizer,
+    normalize_keys: bool = True,
+    normalize_values: bool = True
+) -> Tuple[Dict[str, Any], Dict[str, NormalizationResult]]:
+    """
+    Apply vocabulary normalization to a nested JSON structure.
+
+    This function walks the JSON structure and normalizes terms according
+    to the threshold-gated normalizer. Keys and/or values can be normalized.
+
+    Args:
+        data: Nested feature dictionary to normalize
+        normalizer: ThresholdGatedNormalizer instance
+        normalize_keys: Whether to normalize dictionary keys
+        normalize_values: Whether to normalize string values
+
+    Returns:
+        Tuple of (normalized_data, normalization_log)
+        where normalization_log maps original terms to their NormalizationResult
+    """
+    log: Dict[str, NormalizationResult] = {}
+
+    def normalize_recursive(obj: Any) -> Any:
+        if isinstance(obj, str):
+            if normalize_values:
+                result = normalizer.normalize(obj)
+                log[obj] = result
+                return result.normalized
+            return obj
+
+        elif isinstance(obj, dict):
+            new_dict = {}
+            for key, value in obj.items():
+                if normalize_keys:
+                    key_result = normalizer.normalize(key)
+                    log[key] = key_result
+                    new_key = key_result.normalized
+                else:
+                    new_key = key
+
+                new_dict[new_key] = normalize_recursive(value)
+            return new_dict
+
+        elif isinstance(obj, list):
+            return [normalize_recursive(item) for item in obj]
+
+        else:
+            return obj
+
+    normalized = normalize_recursive(data)
+    return normalized, log
+
+
+def print_coverage_report(
+    analysis: CoverageAnalysis,
+    show_details: bool = True,
+    max_details: int = 20
+) -> str:
+    """
+    Format a coverage analysis as a readable report.
+
+    Args:
+        analysis: CoverageAnalysis to report
+        show_details: Whether to show individual term details
+        max_details: Maximum number of terms to show in details
+
+    Returns:
+        Formatted report string
+    """
+    lines = [
+        "=" * 60,
+        "VOCABULARY COVERAGE ANALYSIS",
+        "=" * 60,
+        f"Total unique terms: {analysis.total_terms}",
+        f"Well-covered (≥threshold): {analysis.well_covered} "
+        f"({analysis.well_covered/analysis.total_terms*100:.1f}%)",
+        f"Partially covered: {analysis.partially_covered} "
+        f"({analysis.partially_covered/analysis.total_terms*100:.1f}%)",
+        f"Novel/unmatched: {analysis.novel} "
+        f"({analysis.novel/analysis.total_terms*100:.1f}%)",
+        "",
+        f"Coverage ratio: {analysis.coverage_ratio:.1%}",
+    ]
+
+    if show_details and analysis.term_details:
+        lines.extend([
+            "",
+            "-" * 60,
+            "TERM DETAILS (sorted by similarity, lowest first):",
+            "-" * 60,
+        ])
+
+        for term, match, sim in analysis.term_details[:max_details]:
+            status = "✓" if sim >= 0.85 else "~" if sim >= 0.5 else "✗"
+            lines.append(f"  {status} {term:30} → {match:20} ({sim:.3f})")
+
+        if len(analysis.term_details) > max_details:
+            lines.append(f"  ... and {len(analysis.term_details) - max_details} more")
+
+    lines.append("=" * 60)
+    return "\n".join(lines)

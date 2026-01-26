@@ -89,6 +89,9 @@ def translate_taxa_to_json(
     schema_min_depth: int = 2,
     use_ontology_context: bool = False,
     ontology_dir: Optional[str] = None,
+    normalize_vocabulary: bool = False,
+    normalization_threshold: float = 0.85,
+    analyze_coverage: bool = False,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -114,6 +117,9 @@ def translate_taxa_to_json(
         schema_min_depth: Minimum nesting depth for constrained decoding
         use_ontology_context: If True, inject PATO/FAO ontology context into prompts
         ontology_dir: Directory containing pato.obo and fao.obo files
+        normalize_vocabulary: If True, apply threshold-gated vocabulary normalization
+        normalization_threshold: Similarity threshold for normalization (0.0-1.0)
+        analyze_coverage: If True, analyze and report vocabulary coverage
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -155,6 +161,10 @@ def translate_taxa_to_json(
     if use_ontology_context:
         ont_dir = ontology_dir or os.environ.get('ONTOLOGY_DIR', '/opt/skol/data/ontologies')
         print(f"Ontology context: ENABLED (from {ont_dir})")
+    if normalize_vocabulary:
+        print(f"Vocabulary normalization: ENABLED (threshold={normalization_threshold})")
+    if analyze_coverage:
+        print(f"Coverage analysis: ENABLED")
     print()
 
     # Initialize Spark
@@ -441,6 +451,166 @@ def translate_taxa_to_json(
         if verbosity >= 1:
             print("✓ Spark stopped")
 
+    # Run coverage analysis if requested
+    if analyze_coverage and not dry_run:
+        run_coverage_analysis(
+            couchdb_url=couchdb_url,
+            username=username,
+            password=password,
+            dest_db=dest_db,
+            ontology_dir=ontology_dir,
+            threshold=normalization_threshold,
+            limit=limit,
+            verbosity=verbosity
+        )
+
+
+def run_coverage_analysis(
+    couchdb_url: str,
+    username: str,
+    password: str,
+    dest_db: str,
+    ontology_dir: Optional[str] = None,
+    threshold: float = 0.85,
+    limit: Optional[int] = None,
+    verbosity: int = 1
+) -> None:
+    """
+    Analyze vocabulary coverage of extracted JSON features against ontologies.
+
+    Args:
+        couchdb_url: CouchDB server URL
+        username: CouchDB username
+        password: CouchDB password
+        dest_db: Database containing extracted features
+        ontology_dir: Directory containing ontology files
+        threshold: Similarity threshold for "well-covered"
+        limit: Maximum number of documents to analyze
+        verbosity: Verbosity level
+    """
+    import json
+    import couchdb
+
+    from skol.ontology import (
+        OntologyRegistry,
+        VocabularyAnalyzer,
+        print_coverage_report
+    )
+
+    print(f"\n{'='*70}")
+    print("Vocabulary Coverage Analysis")
+    print(f"{'='*70}")
+
+    # Determine ontology directory
+    if ontology_dir:
+        ont_dir = Path(ontology_dir)
+    elif os.environ.get('ONTOLOGY_DIR'):
+        ont_dir = Path(os.environ['ONTOLOGY_DIR'])
+    else:
+        default_installed = Path('/opt/skol/data/ontologies')
+        if default_installed.exists():
+            ont_dir = default_installed
+        else:
+            ont_dir = Path(__file__).parent.parent / "data" / "ontologies"
+
+    print(f"Ontology directory: {ont_dir}")
+
+    # Check for ontology files
+    pato_path = ont_dir / "pato.obo"
+    fao_path = ont_dir / "fao.obo"
+
+    if not pato_path.exists() and not fao_path.exists():
+        print(f"✗ No ontology files found in {ont_dir}")
+        print("  Coverage analysis requires at least one ontology file (pato.obo or fao.obo)")
+        return
+
+    # Load ontologies
+    print("\nLoading ontologies...")
+    registry = OntologyRegistry()
+
+    if pato_path.exists():
+        print(f"  Loading PATO from {pato_path}...")
+        registry.register("pato", str(pato_path), category="base")
+        print(f"  ✓ PATO: {len(registry.get('pato'))} terms")
+
+    if fao_path.exists():
+        print(f"  Loading FAO from {fao_path}...")
+        registry.register("fao", str(fao_path), category="base")
+        print(f"  ✓ FAO: {len(registry.get('fao'))} terms")
+
+    # Create analyzer
+    analyzer = VocabularyAnalyzer(registry, threshold=threshold)
+
+    # Connect to CouchDB
+    print(f"\nConnecting to {dest_db}...")
+    server = couchdb.Server(couchdb_url)
+    server.resource.credentials = (username, password)
+
+    if dest_db not in server:
+        print(f"✗ Database '{dest_db}' not found")
+        return
+
+    db = server[dest_db]
+
+    # Fetch documents with json_annotated
+    print("Fetching extracted features...")
+    all_features = []
+    count = 0
+
+    for doc_id in db:
+        if limit and count >= limit:
+            break
+
+        doc = db[doc_id]
+        json_annotated = doc.get('json_annotated')
+
+        if json_annotated and isinstance(json_annotated, dict):
+            all_features.append(json_annotated)
+            count += 1
+
+        if count % 100 == 0 and verbosity >= 1:
+            print(f"  Fetched {count} documents...")
+
+    print(f"  ✓ Loaded {len(all_features)} documents with extracted features")
+
+    if not all_features:
+        print("✗ No documents with json_annotated found")
+        return
+
+    # Run analysis
+    print("\nAnalyzing vocabulary coverage...")
+    analysis = analyzer.analyze_batch(all_features)
+
+    # Print report
+    print()
+    report = print_coverage_report(
+        analysis,
+        show_details=verbosity >= 1,
+        max_details=30 if verbosity >= 2 else 15
+    )
+    print(report)
+
+    # Recommendations
+    print("\n" + "-" * 60)
+    print("RECOMMENDATIONS:")
+    print("-" * 60)
+
+    if analysis.coverage_ratio >= 0.9:
+        print("✓ Coverage is excellent (≥90%). Vocabulary normalization optional.")
+    elif analysis.coverage_ratio >= 0.7:
+        print("~ Coverage is moderate (70-90%). Consider vocabulary normalization.")
+        print("  Run with --normalize-vocabulary to apply threshold-gated normalization.")
+    else:
+        print("✗ Coverage is low (<70%). Vocabulary normalization recommended.")
+        print("  Consider:")
+        print("    1. Adding domain-specific ontologies (e.g., lichen anatomy)")
+        print("    2. Running with --normalize-vocabulary --normalization-threshold 0.8")
+
+    if analysis.novel > 0:
+        print(f"\n  {analysis.novel} novel terms detected that may need:")
+        print("    - Custom ontology additions")
+        print("    - Manual review for domain-specific vocabulary")
+
 
 # ============================================================================
 # Main Program
@@ -631,6 +801,26 @@ Examples:
     )
 
     parser.add_argument(
+        '--normalize-vocabulary',
+        action='store_true',
+        help='Apply threshold-gated vocabulary normalization to extracted features'
+    )
+
+    parser.add_argument(
+        '--normalization-threshold',
+        type=float,
+        default=0.85,
+        metavar='THRESH',
+        help='Similarity threshold for vocabulary normalization (0.0-1.0, default: 0.85)'
+    )
+
+    parser.add_argument(
+        '--analyze-coverage',
+        action='store_true',
+        help='Analyze and report vocabulary coverage against ontologies (no normalization applied)'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -664,6 +854,9 @@ Examples:
     schema_min_depth = args.schema_min_depth
     use_ontology_context = args.use_ontology_context
     ontology_dir = args.ontology_dir
+    normalize_vocabulary = args.normalize_vocabulary
+    normalization_threshold = args.normalization_threshold
+    analyze_coverage = args.analyze_coverage
 
     # Validate schema depth parameters
     if schema_min_depth > schema_max_depth:
@@ -694,6 +887,9 @@ Examples:
             schema_min_depth=schema_min_depth,
             use_ontology_context=use_ontology_context,
             ontology_dir=ontology_dir,
+            normalize_vocabulary=normalize_vocabulary,
+            normalization_threshold=normalization_threshold,
+            analyze_coverage=analyze_coverage,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")
