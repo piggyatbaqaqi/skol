@@ -887,6 +887,64 @@ class TestVocabularyAnalyzer(unittest.TestCase):
         # Should find some novel terms
         self.assertIsInstance(novel, list)
 
+    def test_extract_terms_filters_punctuation(self):
+        """Test that extract_terms filters out punctuation and JSON syntax."""
+        analyzer = VocabularyAnalyzer(self.registry)
+
+        # Data containing JSON syntax fragments that should be filtered
+        data = {
+            "pileus": {
+                "shape": ["convex", "]", "]: [", "[", ",", "  "],
+                "color": ["brown", "-", "[]"]
+            }
+        }
+
+        terms = analyzer.extract_terms(data)
+
+        # Valid terms should be present (lowercase)
+        self.assertIn("pileus", terms)
+        self.assertIn("shape", terms)
+        self.assertIn("convex", terms)
+        self.assertIn("color", terms)
+        self.assertIn("brown", terms)
+
+        # Punctuation/syntax should be filtered out
+        self.assertNotIn("]", terms)
+        self.assertNotIn("]: [", terms)
+        self.assertNotIn("[", terms)
+        self.assertNotIn(",", terms)
+        self.assertNotIn("-", terms)
+        self.assertNotIn("[]", terms)
+        self.assertNotIn("  ", terms)
+
+    def test_extract_terms_normalizes_case(self):
+        """Test that extract_terms normalizes terms to lowercase."""
+        analyzer = VocabularyAnalyzer(self.registry)
+
+        data = {
+            "Pileus": {
+                "Shape": ["Convex", "FLAT"],
+                "Color": ["Brown", "YELLOW"]
+            }
+        }
+
+        terms = analyzer.extract_terms(data)
+
+        # All terms should be lowercase
+        self.assertIn("pileus", terms)
+        self.assertIn("shape", terms)
+        self.assertIn("convex", terms)
+        self.assertIn("flat", terms)
+        self.assertIn("color", terms)
+        self.assertIn("brown", terms)
+        self.assertIn("yellow", terms)
+
+        # Original case versions should NOT be present
+        self.assertNotIn("Pileus", terms)
+        self.assertNotIn("Shape", terms)
+        self.assertNotIn("Convex", terms)
+        self.assertNotIn("FLAT", terms)
+
 
 class TestNormalizeJsonOutput(unittest.TestCase):
     """Test normalize_json_output function."""

@@ -1227,13 +1227,23 @@ Result:
         failure_count = 0
         validation_failures = 0
 
+        consecutive_timeouts = 0
+        max_consecutive_timeouts = 3  # Stop after 3 consecutive timeouts
+
         try:
             while True:
                 try:
                     status, data = result_queue.get(timeout=600)  # 10 min timeout per record
+                    consecutive_timeouts = 0  # Reset on successful receive
                 except queue.Empty:
-                    print("  ⚠ Timeout waiting for result")
-                    break
+                    consecutive_timeouts += 1
+                    print(f"  ⚠ Timeout waiting for result (timeout #{consecutive_timeouts})")
+                    if consecutive_timeouts >= max_consecutive_timeouts:
+                        print(f"  ✗ Stopping after {max_consecutive_timeouts} consecutive timeouts")
+                        break
+                    # Skip this record and continue waiting for the next
+                    failure_count += 1
+                    continue
 
                 if status == 'done':
                     break

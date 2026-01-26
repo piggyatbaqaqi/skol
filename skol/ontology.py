@@ -1065,21 +1065,50 @@ class VocabularyAnalyzer:
         """
         Recursively extract all string terms from a nested structure.
 
+        Filters out:
+        - Strings that are entirely punctuation/symbols
+        - JSON syntax fragments (brackets, colons, etc.)
+        - Very short strings (1-2 chars) that are just punctuation
+
+        Normalizes terms to lowercase for consistent matching.
+
         Args:
             data: Nested dict/list/str structure
             terms: Accumulator list (used internally)
 
         Returns:
-            List of all string terms found
+            List of all string terms found (normalized to lowercase)
         """
+        import re
+
         if terms is None:
             terms = []
 
+        def is_valid_term(s: str) -> bool:
+            """Check if a string is a valid vocabulary term (not punctuation/syntax)."""
+            if not s or not s.strip():
+                return False
+            stripped = s.strip()
+            # Skip strings that are entirely punctuation, brackets, or whitespace
+            # This catches things like "]", "]: [", ",", etc.
+            if re.match(r'^[\[\]{}():,;\s\-\.]+$', stripped):
+                return False
+            # Must contain at least one alphanumeric character
+            if not re.search(r'[a-zA-Z0-9]', stripped):
+                return False
+            return True
+
+        def normalize_term(s: str) -> str:
+            """Normalize a term: lowercase and strip whitespace."""
+            return s.strip().lower()
+
         if isinstance(data, str):
-            terms.append(data)
+            if is_valid_term(data):
+                terms.append(normalize_term(data))
         elif isinstance(data, dict):
             for key, value in data.items():
-                terms.append(key)  # Keys are also vocabulary
+                if is_valid_term(key):
+                    terms.append(normalize_term(key))  # Keys are also vocabulary
                 self.extract_terms(value, terms)
         elif isinstance(data, list):
             for item in data:
