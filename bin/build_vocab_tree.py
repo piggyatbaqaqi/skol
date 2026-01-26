@@ -411,10 +411,19 @@ def save_to_redis(
     else:
         r.set(key, json_str)
 
-    # Also update the "latest" pointer (with same TTL if set)
+    # Verify the data was actually saved before updating the pointer
+    if not r.exists(key):
+        raise RuntimeError(f"Failed to save vocabulary tree to Redis key: {key}")
+
+    # Update the "latest" pointer
+    # IMPORTANT: If data has TTL, pointer must have same TTL so they expire together.
+    # A dangling pointer (pointing to expired data) causes confusing errors.
     latest_key = "skol:ui:menus_latest"
     if ttl:
         r.set(latest_key, key, ex=ttl)
+        if verbosity >= 1:
+            print(f"  WARNING: TTL is set. Both data and pointer will expire in {ttl}s.")
+            print("           Run without --ttl for a persistent vocabulary tree.")
     else:
         r.set(latest_key, key)
 

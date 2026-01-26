@@ -6,7 +6,7 @@
  * reaching a leaf node. Selected terms can be added to a description
  * text field.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Select from 'react-select';
 import './VocabTreeWidget.css';
 
@@ -67,6 +67,9 @@ const VocabTreeWidget = ({
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
 
+  // Store the original top-level data for resets
+  const topLevelDataRef = useRef(null);
+
   /**
    * Fetch children at a given path from the vocab tree API
    */
@@ -92,12 +95,15 @@ const VocabTreeWidget = ({
       setError(null);
       try {
         const data = await fetchChildren('');
-        setLevels([{
+        const topLevel = {
           path: '',
           children: data.children,
           hasGrandchildren: data.has_grandchildren,
           isLeaf: data.is_leaf
-        }]);
+        };
+        // Store for later resets
+        topLevelDataRef.current = topLevel;
+        setLevels([topLevel]);
       } catch (err) {
         console.error('Failed to load vocabulary tree:', err);
         setError(err.message);
@@ -187,9 +193,9 @@ const VocabTreeWidget = ({
 
     // Clear selections after adding
     setSelections([]);
-    // Reset to just top level
-    if (levels.length > 1) {
-      setLevels([levels[0]]);
+    // Reset to just top level using stored original data
+    if (topLevelDataRef.current) {
+      setLevels([topLevelDataRef.current]);
     }
   };
 
@@ -198,8 +204,9 @@ const VocabTreeWidget = ({
    */
   const handleClear = () => {
     setSelections([]);
-    if (levels.length > 1) {
-      setLevels([levels[0]]);
+    // Reset to just top level using stored original data
+    if (topLevelDataRef.current) {
+      setLevels([topLevelDataRef.current]);
     }
   };
 
