@@ -687,6 +687,30 @@
             font-style: italic;
             padding: 10px 0;
         }
+
+        /* Vocab Tree Widget Integration */
+        #vocab-tree-container {
+            flex-shrink: 0;
+        }
+
+        #vocab-tree-container .vocab-tree-widget {
+            background: #f0f4ff;
+            border-color: #667eea;
+        }
+
+        #vocab-tree-container .vocab-tree-add-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #vocab-tree-container .vocab-tree-add-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4292 100%);
+        }
+
+        @media (max-width: 900px) {
+            #vocab-tree-container {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -749,7 +773,14 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="prompt">Description Text {% if user.is_authenticated %}<span id="descriptionNote" class="field-note" style="display: none;">(linked to collection)</span>{% endif %}</label>
-                    <textarea id="prompt" name="prompt" placeholder="Enter a taxonomic description to search for similar entries..." required></textarea>
+                    <div style="display: flex; gap: 20px; align-items: flex-start;">
+                        <textarea id="prompt" name="prompt" placeholder="Enter a taxonomic description to search for similar entries..." required style="flex: 1;"></textarea>
+                        <div id="vocab-tree-container"
+                             data-vocab-tree-widget
+                             data-api-base-url="{{ SCRIPT_NAME }}/api"
+                             data-description-target="#prompt">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="inline-group">
@@ -1442,5 +1473,8 @@
 
     <!-- Code Block Component -->
     <script src="{% static 'js/code-block.bundle.js' %}"></script>
+
+    <!-- Vocabulary Tree Widget -->
+    <script src="{% static 'js/vocab-tree.bundle.js' %}"></script>
 </body>
 </html>
