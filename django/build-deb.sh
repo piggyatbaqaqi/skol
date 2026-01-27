@@ -70,10 +70,19 @@ cp dist/*.whl staging${WHEEL_DIR}/
 # Copy service file to staging area
 cp debian/skol-django.service staging${SERVICE_DIR}/
 
-# Copy templates and static directories
-echo "Copying templates and static files..."
+# Copy Django application files
+echo "Copying Django application files..."
+cp manage.py staging${DJANGO_ROOT}/
+cp -r skolweb staging${DJANGO_ROOT}/
+cp -r search staging${DJANGO_ROOT}/
+cp -r accounts staging${DJANGO_ROOT}/
+cp -r contact staging${DJANGO_ROOT}/
 cp -r templates staging${DJANGO_ROOT}/
 cp -r static staging${DJANGO_ROOT}/
+
+# Remove __pycache__ directories and .pyc files
+find staging${DJANGO_ROOT} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find staging${DJANGO_ROOT} -type f -name "*.pyc" -delete 2>/dev/null || true
 
 # Build the deb using fpm from the staging directory
 # --no-auto-depends prevents fpm from generating dependencies automatically

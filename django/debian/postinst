@@ -26,6 +26,7 @@ chmod 755 /var/log/skol
 mkdir -p ${SKOL_HOME}
 mkdir -p ${SKOL_HOME}/bin
 mkdir -p ${SKOL_HOME}/django
+mkdir -p ${SKOL_HOME}/staticfiles
 chown -R skol:skol ${SKOL_HOME}
 
 # Create Python virtual environment for Django and install dependencies

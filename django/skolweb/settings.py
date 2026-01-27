@@ -131,6 +131,8 @@ FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME', None)
 _script_name = FORCE_SCRIPT_NAME or ''
 STATIC_URL = f'{_script_name}/static/'
 STATICFILES_DIRS = [SKOL_DJANGO_ROOT / 'static']
+# Where collectstatic gathers files for production serving
+STATIC_ROOT = Path(os.environ.get('STATIC_ROOT', '/opt/skol/staticfiles'))
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
