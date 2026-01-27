@@ -624,21 +624,32 @@ Examples:
         help='Also save tree to a JSON file'
     )
     parser.add_argument(
+        '--verbosity',
+        type=int,
+        default=None,
+        help='Verbosity level (0=quiet, 1=normal, 2=verbose)'
+    )
+    parser.add_argument(
         '-v', '--verbose',
         action='count',
-        default=1,
+        default=0,
         help='Increase verbosity (can be repeated)'
     )
     parser.add_argument(
         '-q', '--quiet',
         action='store_true',
-        help='Suppress output'
+        help='Suppress output (same as --verbosity 0)'
     )
 
     args = parser.parse_args()
 
-    # Set verbosity
-    verbosity = 0 if args.quiet else args.verbose
+    # Set verbosity: --verbosity takes precedence, then -q, then -v
+    if args.verbosity is not None:
+        verbosity = args.verbosity
+    elif args.quiet:
+        verbosity = 0
+    else:
+        verbosity = 1 + args.verbose  # Base level 1, plus any -v flags
 
     try:
         # Build the tree
