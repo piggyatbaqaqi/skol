@@ -200,11 +200,15 @@ def predict_and_save(
     skip_existing: bool = False,
     force: bool = False,
     incremental: bool = False,
+    incremental_batch_size: int = 50,
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
 ) -> None:
     """
     Load classifier from Redis, make predictions, and save to CouchDB.
+
+    When incremental=True, processes documents in batches and saves after each
+    batch completes. This prevents OOM errors and allows resumption after crashes.
 
     Args:
         model_name: Name of the model configuration to use
@@ -216,7 +220,8 @@ def predict_and_save(
         dry_run: If True, preview without saving changes
         skip_existing: If True, skip documents that already have .ann attachments
         force: If True, process even if output exists (overrides skip_existing)
-        incremental: If True, save each .ann immediately (crash-resistant)
+        incremental: If True, process in batches and save after each batch
+        incremental_batch_size: Number of documents per batch when incremental=True
         limit: If set, process at most this many documents
         doc_ids: If set, only process these specific document IDs
     """
@@ -404,128 +409,214 @@ def predict_and_save(
             print("  Use --force to process all documents regardless of taxonomy markers.")
             return
 
-        # Recreate classifier with filtered doc_ids
-        if model_config.get('verbosity', 1) >= 1:
-            print(f"\nProcessing {len(filtered_doc_ids)} documents")
+        total_docs = len(filtered_doc_ids)
+        verbosity = model_config.get('verbosity', 1)
 
-        classifier = SkolClassifierV2(
-            spark=spark,
+        # Process in batches when incremental mode is enabled
+        if incremental:
+            print(f"\n{'='*70}")
+            print(f"INCREMENTAL MODE: Processing {total_docs} documents in batches of {incremental_batch_size}")
+            print(f"{'='*70}")
 
-            # Input configuration
-            input_source='couchdb',
-            couchdb_url=couchdb_url,
-            couchdb_database=config['ingest_db_name'],
-            couchdb_username=config['couchdb_username'],
-            couchdb_password=config['couchdb_password'],
-            couchdb_pattern=pattern,
-            couchdb_doc_ids=filtered_doc_ids,  # Pass filtered doc_ids
+            total_processed = 0
+            total_saved = 0
+            total_errors = 0
+            batch_num = 0
 
-            # Output configuration
-            output_dest='couchdb',
-            output_couchdb_suffix='.ann',
+            # Split filtered_doc_ids into batches
+            for batch_start in range(0, total_docs, incremental_batch_size):
+                batch_num += 1
+                batch_doc_ids = filtered_doc_ids[batch_start:batch_start + incremental_batch_size]
+                batch_size_actual = len(batch_doc_ids)
 
-            # Model I/O
-            auto_load_model=True,
-            model_storage='redis',
-            redis_client=redis_client,
-            redis_key=classifier_model_name,
+                print(f"\n--- Batch {batch_num}: documents {batch_start + 1}-{batch_start + batch_size_actual} of {total_docs} ---")
 
-            # Model configuration
-            **model_config
-        )
+                try:
+                    # Create classifier for this batch only
+                    batch_classifier = SkolClassifierV2(
+                        spark=spark,
+                        input_source='couchdb',
+                        couchdb_url=couchdb_url,
+                        couchdb_database=config['ingest_db_name'],
+                        couchdb_username=config['couchdb_username'],
+                        couchdb_password=config['couchdb_password'],
+                        couchdb_pattern=pattern,
+                        couchdb_doc_ids=batch_doc_ids,
+                        output_dest='couchdb',
+                        output_couchdb_suffix='.ann',
+                        auto_load_model=True,
+                        model_storage='redis',
+                        redis_client=redis_client,
+                        redis_key=classifier_model_name,
+                        **model_config
+                    )
 
-        # Load raw data (now only from filtered doc_ids)
-        # This step extracts PDFs to .txt attachments
-        print("\nLoading documents from CouchDB...")
-        raw_df = classifier.load_raw()
+                    # Load raw data for this batch
+                    if verbosity >= 1:
+                        print(f"  Loading {batch_size_actual} documents...")
+                    batch_raw_df = batch_classifier.load_raw()
 
-        # Re-check taxonomy for documents that now have .txt (after PDF extraction)
-        # Only check documents that weren't checked before (not in taxonomy_flags dict)
-        if not force:
-            docs_to_recheck = [doc_id for doc_id in filtered_doc_ids if doc_id not in taxonomy_flags]
+                    # Re-check taxonomy for documents that weren't checked before
+                    if not force:
+                        docs_to_recheck = [doc_id for doc_id in batch_doc_ids if doc_id not in taxonomy_flags]
+                        if docs_to_recheck:
+                            new_taxonomy_flags = mark_taxonomy_documents(
+                                docs_to_recheck, config, verbosity=0  # Quiet for batches
+                            )
+                            taxonomy_flags.update(new_taxonomy_flags)
 
-            if docs_to_recheck and model_config.get('verbosity', 1) >= 1:
-                print(f"\nRe-checking {len(docs_to_recheck)} documents for taxonomy abbreviations after PDF extraction...")
+                            # Filter out documents without taxonomy markers
+                            docs_without_taxonomy = [
+                                doc_id for doc_id in batch_doc_ids
+                                if taxonomy_flags.get(doc_id, False) is False
+                            ]
+                            if docs_without_taxonomy:
+                                from pyspark.sql.functions import col
+                                batch_raw_df = batch_raw_df.filter(~col("doc_id").isin(docs_without_taxonomy))
+                                if verbosity >= 2:
+                                    print(f"  Filtered out {len(docs_without_taxonomy)} docs without taxonomy")
 
-            # Mark documents again (this time they should have .txt attachments)
-            if docs_to_recheck:
-                new_taxonomy_flags = mark_taxonomy_documents(
-                    docs_to_recheck,
-                    config,
-                    verbosity=model_config.get('verbosity', 1)
-                )
+                    # Make predictions for this batch
+                    if verbosity >= 1:
+                        print(f"  Making predictions...")
+                    batch_predictions = batch_classifier.predict(batch_raw_df)
 
-                # Update taxonomy_flags with new results
-                taxonomy_flags.update(new_taxonomy_flags)
+                    # Save immediately (unless dry_run)
+                    if dry_run:
+                        if verbosity >= 1:
+                            print(f"  [DRY RUN] Would save predictions")
+                    else:
+                        if verbosity >= 1:
+                            print(f"  Saving to CouchDB...")
+                        batch_classifier.save_annotated(batch_predictions)
 
-                # Filter raw_df to exclude sections from documents without taxonomy markers
-                docs_without_taxonomy = [
-                    doc_id for doc_id in filtered_doc_ids
-                    if taxonomy_flags.get(doc_id, False) is False
-                ]
+                    total_processed += batch_size_actual
+                    total_saved += batch_size_actual
+                    print(f"  ✓ Batch {batch_num} complete ({total_processed}/{total_docs} total)")
 
-                if docs_without_taxonomy:
-                    if model_config.get('verbosity', 1) >= 1:
-                        print(f"  Filtering out {len(docs_without_taxonomy)} documents without taxonomy markers")
+                    # Explicitly unpersist to free memory
+                    batch_raw_df.unpersist()
+                    batch_predictions.unpersist()
 
-                    # Filter DataFrame to exclude these documents
-                    from pyspark.sql.functions import col
-                    raw_df = raw_df.filter(~col("doc_id").isin(docs_without_taxonomy))
+                except Exception as e:
+                    total_errors += batch_size_actual
+                    print(f"  ✗ Batch {batch_num} failed: {e}")
+                    if verbosity >= 2:
+                        import traceback
+                        traceback.print_exc()
+                    continue
 
-                    # Update filtered_doc_ids to reflect final set
-                    filtered_doc_ids = [d for d in filtered_doc_ids if d not in docs_without_taxonomy]
+            # Final summary for incremental mode
+            print(f"\n{'='*70}")
+            print("Incremental Processing Complete!" + (" (DRY RUN)" if dry_run else ""))
+            print(f"{'='*70}")
+            print(f"  Total batches: {batch_num}")
+            print(f"  Documents processed: {total_processed}")
+            print(f"  Documents saved: {total_saved if not dry_run else 0}")
+            print(f"  Errors: {total_errors}")
+            print(f"  Database: {config['ingest_db_name']}")
 
-        # Only count if verbosity >= 2 (expensive operation)
-        if model_config.get('verbosity', 1) >= 2:
-            doc_count = raw_df.count()
-            print(f"✓ {doc_count} documents to process")
-
-            if doc_count == 0:
-                print("\n⚠ No documents found matching criteria. Nothing to predict.")
-                return
         else:
-            print("✓ Documents loaded (use --verbosity 2 to see count)")
+            # Non-incremental mode: process all at once (original behavior)
+            if verbosity >= 1:
+                print(f"\nProcessing {total_docs} documents (non-incremental mode)")
+                print("  TIP: Use --incremental for crash-resistant batch processing")
 
-        # Show sample
-        if model_config.get('verbosity', 1) >= 2:
-            print("\nSample documents:")
-            raw_df.show(5, truncate=50)
+            classifier = SkolClassifierV2(
+                spark=spark,
+                input_source='couchdb',
+                couchdb_url=couchdb_url,
+                couchdb_database=config['ingest_db_name'],
+                couchdb_username=config['couchdb_username'],
+                couchdb_password=config['couchdb_password'],
+                couchdb_pattern=pattern,
+                couchdb_doc_ids=filtered_doc_ids,
+                output_dest='couchdb',
+                output_couchdb_suffix='.ann',
+                auto_load_model=True,
+                model_storage='redis',
+                redis_client=redis_client,
+                redis_key=classifier_model_name,
+                **model_config
+            )
 
-        # Make predictions
-        print("\nMaking predictions...")
-        predictions = classifier.predict(raw_df)
+            # Load raw data
+            print("\nLoading documents from CouchDB...")
+            raw_df = classifier.load_raw()
 
-        # Show sample predictions
-        if model_config.get('verbosity', 1) >= 1:
-            print("\nSample predictions:")
-            predictions.select(
-                "doc_id", "line_number", "attachment_name", "predicted_label", "value"
-            ).show(5, truncate=50)
+            # Re-check taxonomy for documents that now have .txt (after PDF extraction)
+            if not force:
+                docs_to_recheck = [doc_id for doc_id in filtered_doc_ids if doc_id not in taxonomy_flags]
 
-        # Save results back to CouchDB (unless dry_run)
-        if dry_run:
-            print("\n[DRY RUN] Would save predictions to CouchDB as .ann attachments")
-            # Show what would be saved
-            if model_config.get('verbosity', 1) >= 1:
-                print("\n[DRY RUN] Sample predictions that would be saved:")
+                if docs_to_recheck and verbosity >= 1:
+                    print(f"\nRe-checking {len(docs_to_recheck)} documents for taxonomy abbreviations...")
+
+                if docs_to_recheck:
+                    new_taxonomy_flags = mark_taxonomy_documents(
+                        docs_to_recheck, config, verbosity=verbosity
+                    )
+                    taxonomy_flags.update(new_taxonomy_flags)
+
+                    docs_without_taxonomy = [
+                        doc_id for doc_id in filtered_doc_ids
+                        if taxonomy_flags.get(doc_id, False) is False
+                    ]
+
+                    if docs_without_taxonomy:
+                        if verbosity >= 1:
+                            print(f"  Filtering out {len(docs_without_taxonomy)} documents without taxonomy markers")
+                        from pyspark.sql.functions import col
+                        raw_df = raw_df.filter(~col("doc_id").isin(docs_without_taxonomy))
+                        filtered_doc_ids = [d for d in filtered_doc_ids if d not in docs_without_taxonomy]
+
+            # Count if verbose
+            if verbosity >= 2:
+                doc_count = raw_df.count()
+                print(f"✓ {doc_count} documents to process")
+                if doc_count == 0:
+                    print("\n⚠ No documents found matching criteria. Nothing to predict.")
+                    return
+            else:
+                print("✓ Documents loaded (use --verbosity 2 to see count)")
+
+            # Show sample
+            if verbosity >= 2:
+                print("\nSample documents:")
+                raw_df.show(5, truncate=50)
+
+            # Make predictions
+            print("\nMaking predictions...")
+            predictions = classifier.predict(raw_df)
+
+            # Show sample predictions
+            if verbosity >= 1:
+                print("\nSample predictions:")
                 predictions.select(
                     "doc_id", "line_number", "attachment_name", "predicted_label", "value"
-                ).show(10, truncate=50)
-        else:
-            print("\nSaving predictions to CouchDB as .ann attachments...")
-            classifier.save_annotated(predictions)
+                ).show(5, truncate=50)
 
-        print(f"\n{'='*70}")
-        print("Prediction Complete!" + (" (DRY RUN)" if dry_run else ""))
-        print(f"{'='*70}")
-        if dry_run:
-            print(f"[DRY RUN] Would save predictions to CouchDB")
-        else:
-            print(f"✓ Predictions saved to CouchDB")
-        print(f"  Database: {config['ingest_db_name']}")
-        if model_config.get('verbosity', 1) >= 2:
-            # We have not calculated doc_count for lower verbosity.
-            print(f"  Documents processed: {doc_count}")
+            # Save results
+            if dry_run:
+                print("\n[DRY RUN] Would save predictions to CouchDB as .ann attachments")
+                if verbosity >= 1:
+                    print("\n[DRY RUN] Sample predictions that would be saved:")
+                    predictions.select(
+                        "doc_id", "line_number", "attachment_name", "predicted_label", "value"
+                    ).show(10, truncate=50)
+            else:
+                print("\nSaving predictions to CouchDB as .ann attachments...")
+                classifier.save_annotated(predictions)
+
+            print(f"\n{'='*70}")
+            print("Prediction Complete!" + (" (DRY RUN)" if dry_run else ""))
+            print(f"{'='*70}")
+            if dry_run:
+                print(f"[DRY RUN] Would save predictions to CouchDB")
+            else:
+                print(f"✓ Predictions saved to CouchDB")
+            print(f"  Database: {config['ingest_db_name']}")
+            if verbosity >= 2:
+                print(f"  Documents processed: {doc_count}")
 
     finally:
         # Clean up Spark session
@@ -751,7 +842,9 @@ Work Control Options:
   --dry-run               Preview what would be done without saving changes
   --skip-existing         Skip documents that already have .ann attachments
   --force                 Process even if .ann exists (overrides --skip-existing)
-  --incremental           Save each .ann immediately as it completes (crash-resistant)
+  --incremental           Process in batches, saving after each (crash-resistant)
+  --incremental-batch-size N
+                          Documents per batch when --incremental is set (default: 50)
   --limit N               Process at most N documents
   --doc-id ID[,ID,...]    Process only specific document ID(s), comma-separated
 
@@ -893,6 +986,7 @@ Note: Command-line arguments override environment variables.
             skip_existing=config.get('skip_existing', False),
             force=config.get('force', False),
             incremental=config.get('incremental', False),
+            incremental_batch_size=config.get('incremental_batch_size', 50),
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
         )

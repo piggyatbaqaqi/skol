@@ -94,6 +94,7 @@ def get_env_config() -> Dict[str, Any]:
         'prediction_batch_size': int(os.environ.get('PREDICTION_BATCH_SIZE', '24')),
         'num_workers': int(os.environ.get('NUM_WORKERS', '4')),
         'union_batch_size': int(os.environ.get('UNION_BATCH_SIZE', '1000')),
+        'incremental_batch_size': int(os.environ.get('INCREMENTAL_BATCH_SIZE', '50')),
 
         # Taxonomy abbreviations for pre-filtering documents
         'taxonomy_abbrevs': os.environ.get(
@@ -143,7 +144,7 @@ def get_env_config() -> Dict[str, Any]:
         parser.add_argument(arg_name, type=str, default=None, dest=key)
 
     # Integer arguments
-    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size']:
+    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size', 'incremental_batch_size']:
         arg_name = '--' + key.replace('_', '-')
         parser.add_argument(arg_name, type=int, default=None, dest=key)
 
