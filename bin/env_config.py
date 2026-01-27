@@ -120,6 +120,7 @@ def get_env_config() -> Dict[str, Any]:
         'skip_existing': os.environ.get('SKIP_EXISTING', '').lower() in ('1', 'true', 'yes'),
         'force': os.environ.get('FORCE', '').lower() in ('1', 'true', 'yes'),
         'incremental': os.environ.get('INCREMENTAL', '').lower() in ('1', 'true', 'yes'),
+        'taxonomy_filter': os.environ.get('TAXONOMY_FILTER', '').lower() in ('1', 'true', 'yes'),
         'limit': _parse_optional_int(os.environ.get('LIMIT')),
         'doc_ids': _parse_doc_ids(os.environ.get('DOC_IDS')),
     }
@@ -160,6 +161,8 @@ def get_env_config() -> Dict[str, Any]:
                         help='Process even if output already exists (overrides --skip-existing)')
     parser.add_argument('--incremental', action='store_true', default=None, dest='incremental',
                         help='Save each record as it completes (crash-resistant)')
+    parser.add_argument('--taxonomy-filter', action='store_true', default=None, dest='taxonomy_filter',
+                        help='Only process documents with taxonomy abbreviations')
     parser.add_argument('--limit', type=int, default=None, dest='limit',
                         help='Process at most N records')
     parser.add_argument('--doc-id', '--doc-ids', type=str, default=None, dest='doc_ids',

@@ -201,6 +201,7 @@ def predict_and_save(
     force: bool = False,
     incremental: bool = False,
     incremental_batch_size: int = 50,
+    taxonomy_filter: bool = False,
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
 ) -> None:
@@ -222,6 +223,7 @@ def predict_and_save(
         force: If True, process even if output exists (overrides skip_existing)
         incremental: If True, process in batches and save after each batch
         incremental_batch_size: Number of documents per batch when incremental=True
+        taxonomy_filter: If True, filter to only documents with taxonomy abbreviations
         limit: If set, process at most this many documents
         doc_ids: If set, only process these specific document IDs
     """
@@ -267,6 +269,8 @@ def predict_and_save(
         print(f"Mode: FORCE (process all, ignore existing)")
     if incremental:
         print(f"Mode: INCREMENTAL (save each .ann immediately)")
+    if taxonomy_filter:
+        print(f"Mode: TAXONOMY FILTER (only docs with taxonomy abbreviations)")
     if limit:
         print(f"Limit: {limit} documents")
     if doc_ids:
@@ -375,15 +379,17 @@ def predict_and_save(
             print("\n⚠ No documents found matching criteria. Nothing to predict.")
             return
 
-        # Mark documents with taxonomy flag based on abbreviation presence
-        taxonomy_flags = mark_taxonomy_documents(
-            filtered_doc_ids,
-            config,
-            verbosity=model_config.get('verbosity', 1)
-        )
+        # Taxonomy filtering (only when --taxonomy-filter is set)
+        taxonomy_flags = {}
+        if taxonomy_filter and not force:
+            # Mark documents with taxonomy flag based on abbreviation presence
+            taxonomy_flags = mark_taxonomy_documents(
+                filtered_doc_ids,
+                config,
+                verbosity=model_config.get('verbosity', 1)
+            )
 
-        # Filter out documents without taxonomy abbreviations (unless --force)
-        if not force:
+            # Filter out documents without taxonomy abbreviations
             original_count = len(filtered_doc_ids)
             # Keep only documents that have taxonomy abbreviations OR don't have .txt yet (will check after PDF extraction)
             filtered_doc_ids = [
@@ -397,17 +403,12 @@ def predict_and_save(
                     print(f"\nFiltering out documents without taxonomy abbreviations...")
                     print(f"  Skipping {skipped} documents without taxonomy markers")
                     print(f"  Remaining: {len(filtered_doc_ids)} documents to process")
-        else:
-            if model_config.get('verbosity', 1) >= 1:
-                no_taxonomy_count = sum(1 for v in taxonomy_flags.values() if v is False)
-                if no_taxonomy_count > 0:
-                    print(f"\n[FORCE MODE] Processing {no_taxonomy_count} documents without taxonomy markers")
 
-        # Check if we have any documents to process after taxonomy filtering
-        if not filtered_doc_ids:
-            print("\n⚠ No documents with taxonomy abbreviations found. Nothing to predict.")
-            print("  Use --force to process all documents regardless of taxonomy markers.")
-            return
+            # Check if we have any documents to process after taxonomy filtering
+            if not filtered_doc_ids:
+                print("\n⚠ No documents with taxonomy abbreviations found. Nothing to predict.")
+                print("  Remove --taxonomy-filter to process all documents.")
+                return
 
         total_docs = len(filtered_doc_ids)
         verbosity = model_config.get('verbosity', 1)
@@ -456,8 +457,8 @@ def predict_and_save(
                         print(f"  Loading {batch_size_actual} documents...")
                     batch_raw_df = batch_classifier.load_raw()
 
-                    # Re-check taxonomy for documents that weren't checked before
-                    if not force:
+                    # Re-check taxonomy for documents that weren't checked before (only if taxonomy_filter)
+                    if taxonomy_filter and not force:
                         docs_to_recheck = [doc_id for doc_id in batch_doc_ids if doc_id not in taxonomy_flags]
                         if docs_to_recheck:
                             new_taxonomy_flags = mark_taxonomy_documents(
@@ -545,7 +546,8 @@ def predict_and_save(
             raw_df = classifier.load_raw()
 
             # Re-check taxonomy for documents that now have .txt (after PDF extraction)
-            if not force:
+            # Only if taxonomy_filter is enabled
+            if taxonomy_filter and not force:
                 docs_to_recheck = [doc_id for doc_id in filtered_doc_ids if doc_id not in taxonomy_flags]
 
                 if docs_to_recheck and verbosity >= 1:
@@ -845,6 +847,7 @@ Work Control Options:
   --incremental           Process in batches, saving after each (crash-resistant)
   --incremental-batch-size N
                           Documents per batch when --incremental is set (default: 50)
+  --taxonomy-filter       Only process documents with taxonomy abbreviations
   --limit N               Process at most N documents
   --doc-id ID[,ID,...]    Process only specific document ID(s), comma-separated
 
@@ -874,6 +877,7 @@ Environment Variables for Work Control:
   SKIP_EXISTING=1         Same as --skip-existing
   FORCE=1                 Same as --force
   INCREMENTAL=1           Same as --incremental
+  TAXONOMY_FILTER=1       Same as --taxonomy-filter
   LIMIT=N                 Same as --limit N
   DOC_IDS=id1,id2,...     Same as --doc-id
 
@@ -987,6 +991,7 @@ Note: Command-line arguments override environment variables.
             force=config.get('force', False),
             incremental=config.get('incremental', False),
             incremental_batch_size=config.get('incremental_batch_size', 50),
+            taxonomy_filter=config.get('taxonomy_filter', False),
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
         )
