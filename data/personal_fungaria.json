@@ -1,0 +1,20 @@
+[
+    {
+        "code": "YARROLL",
+        "organization": "La Monte Yarroll Personal Collection",
+        "specimenTotal": 50,
+        "currentStatus": "Active",
+        "taxonomicCoverage": "Macrofungi of Western Pennsylvania",
+        "geography": "Western Pennsylvania, U.S.A.",
+        "contact": {
+            "firstName": "La Monte",
+            "lastName": "Yarroll"
+            "email": "piggy.yarroll+fungarium@gmail.com",
+        },
+        "address": {
+            "physicalCity": "Pittsburgh",
+            "physicalState": "Pennsylvania",
+            "physicalCountry": "U.S.A."
+        }
+    }
+]

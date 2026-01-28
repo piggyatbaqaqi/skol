@@ -48,7 +48,7 @@ services:
   redis:
     image: docker.io/redis:7.4
     restart: always
-    command: redis-server /usr/local/etc/redis/redis.conf
+    command: redis-server
     hostname: redis
     ports:
       - "127.0.0.1:6380:6379"
