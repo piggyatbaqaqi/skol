@@ -190,6 +190,8 @@ class SearchView(APIView):
                     result_dict['PDFPage'] = clean_float(row['pdf_page'])
                 if 'pdf_label' in row.index:
                     result_dict['PDFLabel'] = row['pdf_label']
+                if 'taxon_id' in row.index:
+                    result_dict['taxon_id'] = row['taxon_id']
 
                 results.append(result_dict)
 
