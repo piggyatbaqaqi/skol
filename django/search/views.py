@@ -445,6 +445,108 @@ class IdentifierTypeListView(APIView):
         })
 
 
+class FungariaListView(APIView):
+    """
+    GET /api/fungaria/
+    List fungaria from Redis that have fungi collections (numFungi > 0).
+
+    Returns simplified list for dropdown selection with code, organization,
+    and URL information for building links.
+
+    Query parameters:
+        - search: Filter by code or organization name (case-insensitive)
+        - limit: Maximum number of results (default: 100)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+
+            raw = r.get('skol:fungaria')
+            if not raw:
+                return Response({
+                    'fungaria': [],
+                    'count': 0,
+                    'error': 'Fungaria registry not loaded. Run manage_fungaria download.'
+                })
+
+            import json
+            data = json.loads(raw)
+            institutions = data.get('institutions', {})
+
+            # Filter to those with fungi collections
+            fungaria = []
+            search_query = request.GET.get('search', '').lower()
+            limit = int(request.GET.get('limit', 100))
+
+            for code, inst in institutions.items():
+                # Check if has fungi collection
+                collections_summary = inst.get('collectionsSummary', {})
+                if isinstance(collections_summary, dict):
+                    num_fungi = collections_summary.get('numFungi', 0)
+                    if not num_fungi or num_fungi <= 0:
+                        continue
+                else:
+                    continue
+
+                # Apply search filter
+                org = inst.get('organization', '')
+                if search_query:
+                    if search_query not in code.lower() and search_query not in org.lower():
+                        continue
+
+                # Build URL info
+                contact = inst.get('contact', {})
+                collection_url = ''
+                web_url = ''
+                if isinstance(contact, dict):
+                    collection_url = contact.get('collectionUrl', '')
+                    web_url = contact.get('webUrl', '')
+
+                # Get location
+                addr = inst.get('address', {})
+                location = ''
+                if isinstance(addr, dict):
+                    city = addr.get('physicalCity') or addr.get('city', '')
+                    state = addr.get('physicalState') or addr.get('state', '')
+                    country = addr.get('physicalCountry') or addr.get('country', '')
+                    location = ', '.join(filter(None, [city, state, country]))
+
+                fungaria.append({
+                    'code': code,
+                    'organization': org,
+                    'num_fungi': num_fungi,
+                    'location': location,
+                    'collection_url': collection_url,  # f-string with {id}
+                    'web_url': web_url,  # fallback URL
+                })
+
+            # Sort by organization name
+            fungaria.sort(key=lambda x: x['organization'].lower())
+
+            # Apply limit
+            if limit and len(fungaria) > limit:
+                fungaria = fungaria[:limit]
+
+            return Response({
+                'fungaria': fungaria,
+                'count': len(fungaria),
+                'total_in_registry': len(institutions)
+            })
+
+        except Exception as e:
+            logger.error(f"Failed to fetch fungaria: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class CollectionListCreateView(APIView):
     """
     GET /api/collections/

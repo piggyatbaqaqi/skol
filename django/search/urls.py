@@ -11,6 +11,7 @@ from .views import (
     PDFFromTaxaView,
     # Collection views
     IdentifierTypeListView,
+    FungariaListView,
     CollectionListCreateView,
     CollectionDetailView,
     CollectionByUserView,
@@ -42,6 +43,9 @@ urlpatterns = [
 
     # Identifier types (reference data)
     path('identifier-types/', IdentifierTypeListView.as_view(), name='identifier-types'),
+
+    # Fungaria list (for fungarium identifier dropdown)
+    path('fungaria/', FungariaListView.as_view(), name='fungaria-list'),
 
     # Collections
     path('collections/', CollectionListCreateView.as_view(), name='collection-list-create'),

@@ -27,14 +27,44 @@ class ExternalIdentifierSerializer(serializers.ModelSerializer):
         read_only=True
     )
     url = serializers.CharField(read_only=True)
+    # For fungarium identifiers, include the fungarium organization name
+    fungarium_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ExternalIdentifier
         fields = [
             'id', 'identifier_type', 'identifier_type_code',
-            'identifier_type_name', 'value', 'notes', 'url', 'created_at'
+            'identifier_type_name', 'value', 'fungarium_code',
+            'fungarium_name', 'notes', 'url', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at', 'url']
+        read_only_fields = ['id', 'created_at', 'url', 'fungarium_name']
+
+    def get_fungarium_name(self, obj) -> str:
+        """Get the fungarium organization name from Redis."""
+        if not obj.fungarium_code:
+            return ''
+        try:
+            import json
+            from django.conf import settings
+            import redis
+
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+            raw = r.get('skol:fungaria')
+            if not raw:
+                return ''
+
+            data = json.loads(raw)
+            institutions = data.get('institutions', {})
+            inst = institutions.get(obj.fungarium_code)
+            if inst:
+                return inst.get('organization', '')
+            return ''
+        except Exception:
+            return ''
 
 
 class ExternalIdentifierCreateSerializer(serializers.ModelSerializer):
@@ -48,7 +78,19 @@ class ExternalIdentifierCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExternalIdentifier
-        fields = ['identifier_type_code', 'value', 'notes']
+        fields = ['identifier_type_code', 'value', 'fungarium_code', 'notes']
+
+    def validate(self, data):
+        """Validate that fungarium_code is provided for fungarium identifiers."""
+        identifier_type = data.get('identifier_type')
+        fungarium_code = data.get('fungarium_code', '')
+
+        if identifier_type and identifier_type.code == 'fungarium':
+            if not fungarium_code:
+                raise serializers.ValidationError({
+                    'fungarium_code': 'Fungarium code is required for fungarium identifiers.'
+                })
+        return data
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):

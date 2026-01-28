@@ -896,8 +896,11 @@
             <h3>External Identifiers</h3>
             <div id="identifiersList" class="identifiers-list"></div>
             <div class="add-identifier-form">
-                <select id="newIdentifierType">
+                <select id="newIdentifierType" onchange="onIdentifierTypeChange()">
                     <option value="">Select type...</option>
+                </select>
+                <select id="newFungariumCode" style="display: none;">
+                    <option value="">Select fungarium...</option>
                 </select>
                 <input type="text" id="newIdentifierValue" placeholder="Identifier value (e.g., 336010515)">
                 <button type="button" class="btn-small" onclick="addIdentifier()">Add</button>
@@ -957,6 +960,7 @@
         let currentSearchData = null;
         let userCollections = [];
         let identifierTypes = [];
+        let fungariaList = [];
         let activeCollectionId = null;
         let activeCollectionData = null;
 
@@ -1059,6 +1063,48 @@
                 identifierTypes.map(t => `<option value="${t.code}">${escapeHtml(t.name)}</option>`).join('');
         }
 
+        // Load fungaria list
+        async function loadFungaria() {
+            if (!IS_AUTHENTICATED) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/fungaria/`, {
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+                fungariaList = data.fungaria || [];
+                updateFungariumDropdown();
+            } catch (error) {
+                console.error('Error loading fungaria:', error);
+            }
+        }
+
+        // Update fungarium dropdown
+        function updateFungariumDropdown() {
+            const select = document.getElementById('newFungariumCode');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">Select fungarium...</option>' +
+                fungariaList.map(f => `<option value="${f.code}">${escapeHtml(f.code)} - ${escapeHtml(f.organization)}</option>`).join('');
+        }
+
+        // Handle identifier type change - show/hide fungarium dropdown
+        function onIdentifierTypeChange() {
+            const typeSelect = document.getElementById('newIdentifierType');
+            const fungariumSelect = document.getElementById('newFungariumCode');
+
+            if (typeSelect.value === 'fungarium') {
+                fungariumSelect.style.display = 'block';
+                // Load fungaria if not already loaded
+                if (fungariaList.length === 0) {
+                    loadFungaria();
+                }
+            } else {
+                fungariumSelect.style.display = 'none';
+                fungariumSelect.value = '';
+            }
+        }
+
         // Handle collection selection change
         async function onCollectionChange() {
             const select = document.getElementById('activeCollection');
@@ -1151,17 +1197,28 @@
                 return;
             }
 
-            list.innerHTML = identifiers.map(i => `
-                <div class="identifier-row">
-                    <div style="display: flex; align-items: center;">
-                        <span class="identifier-type-badge">${escapeHtml(i.identifier_type_name)}</span>
-                        <span class="identifier-value">
-                            <a href="${escapeHtml(i.url)}" target="_blank">${escapeHtml(i.value)}</a>
-                        </span>
+            list.innerHTML = identifiers.map(i => {
+                // For fungarium identifiers, show the fungarium code and name
+                let displayType = i.identifier_type_name;
+                if (i.fungarium_code) {
+                    displayType = i.fungarium_code;
+                    if (i.fungarium_name) {
+                        displayType += ` (${i.fungarium_name})`;
+                    }
+                }
+
+                return `
+                    <div class="identifier-row">
+                        <div style="display: flex; align-items: center;">
+                            <span class="identifier-type-badge">${escapeHtml(displayType)}</span>
+                            <span class="identifier-value">
+                                ${i.url ? `<a href="${escapeHtml(i.url)}" target="_blank">${escapeHtml(i.value)}</a>` : escapeHtml(i.value)}
+                            </span>
+                        </div>
+                        <button class="delete-btn" onclick="deleteIdentifier(${i.id})">Delete</button>
                     </div>
-                    <button class="delete-btn" onclick="deleteIdentifier(${i.id})">Delete</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Add a new identifier
@@ -1172,11 +1229,29 @@
             }
 
             const typeCode = document.getElementById('newIdentifierType').value;
+            const fungariumCode = document.getElementById('newFungariumCode').value;
             const value = document.getElementById('newIdentifierValue').value.trim();
 
             if (!typeCode || !value) {
                 alert('Please select a type and enter a value');
                 return;
+            }
+
+            // For fungarium identifiers, require fungarium code
+            if (typeCode === 'fungarium' && !fungariumCode) {
+                alert('Please select a fungarium');
+                return;
+            }
+
+            // Build request body
+            const requestBody = {
+                identifier_type_code: typeCode,
+                value: value
+            };
+
+            // Include fungarium_code if this is a fungarium identifier
+            if (typeCode === 'fungarium' && fungariumCode) {
+                requestBody.fungarium_code = fungariumCode;
             }
 
             try {
@@ -1187,10 +1262,7 @@
                         'X-CSRFToken': getCSRFToken()
                     },
                     credentials: 'same-origin',
-                    body: JSON.stringify({
-                        identifier_type_code: typeCode,
-                        value: value
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
@@ -1200,6 +1272,8 @@
 
                 // Clear form
                 document.getElementById('newIdentifierType').value = '';
+                document.getElementById('newFungariumCode').value = '';
+                document.getElementById('newFungariumCode').style.display = 'none';
                 document.getElementById('newIdentifierValue').value = '';
 
                 // Reload collection to get updated identifiers

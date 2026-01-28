@@ -147,6 +147,9 @@ class ExternalIdentifier(models.Model):
 
     Allows users to link their collection to observations or records
     in external systems like iNaturalist, Mushroom Observer, or GenBank.
+
+    For Fungarium identifiers, the fungarium_code field stores the Index
+    Herbariorum code (e.g., 'NY', 'K', 'BPI') and value stores the accession number.
     """
     collection = models.ForeignKey(
         Collection,
@@ -159,18 +162,71 @@ class ExternalIdentifier(models.Model):
         related_name='identifiers'
     )
     value = models.CharField(max_length=255)  # The actual ID value
+    fungarium_code = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        help_text='Index Herbariorum code for fungarium identifiers'
+    )
     notes = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['identifier_type__name', 'value']
         # Prevent duplicate identifiers of same type in same collection
-        unique_together = ['collection', 'identifier_type', 'value']
+        unique_together = ['collection', 'identifier_type', 'value', 'fungarium_code']
 
     def __str__(self) -> str:
+        if self.fungarium_code:
+            return f"{self.fungarium_code}: {self.value}"
         return f"{self.identifier_type.code}: {self.value}"
 
     @property
     def url(self) -> str:
-        """Build the full URL for this identifier."""
+        """Build the full URL for this identifier.
+
+        For fungarium identifiers, URL is built from Redis data.
+        Returns empty string if URL cannot be determined.
+        """
+        if self.identifier_type.code == 'fungarium' and self.fungarium_code:
+            return self._build_fungarium_url()
         return self.identifier_type.build_url(self.value)
+
+    def _build_fungarium_url(self) -> str:
+        """Build URL for fungarium identifier from Redis data."""
+        import json
+        from django.conf import settings
+        import redis
+
+        try:
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+            raw = r.get('skol:fungaria')
+            if not raw:
+                return ''
+
+            data = json.loads(raw)
+            institutions = data.get('institutions', {})
+            inst = institutions.get(self.fungarium_code)
+
+            if not inst:
+                return ''
+
+            contact = inst.get('contact', {})
+            if isinstance(contact, dict):
+                # Check for collectionUrl (f-string with {id})
+                collection_url = contact.get('collectionUrl', '')
+                if collection_url and '{id}' in collection_url:
+                    return collection_url.replace('{id}', self.value)
+
+                # Fall back to webUrl (no substitution)
+                web_url = contact.get('webUrl', '')
+                if web_url:
+                    return web_url
+
+            return ''
+        except Exception:
+            return ''
