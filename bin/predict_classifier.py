@@ -113,18 +113,33 @@ def redownload_pdf_from_url(
             if verbosity >= 2:
                 print(f"    Failed to delete {att_name}: {e}")
 
+    # Helper to save download error to document
+    def save_download_error(error_msg: str):
+        """Save download error to document's download_error field."""
+        try:
+            # Refresh doc to get latest revision
+            fresh_doc = db[doc_id]
+            fresh_doc['download_error'] = error_msg
+            db.save(fresh_doc)
+        except Exception:
+            pass  # Best effort
+
     # Download fresh PDF
     try:
         response = requests.get(pdf_url, timeout=60, stream=False)
         if response.status_code != 200:
+            error_msg = f"HTTP {response.status_code}"
             if verbosity >= 1:
-                print(f"    Failed to download PDF: HTTP {response.status_code}")
+                print(f"    Failed to download PDF: {error_msg}")
+            save_download_error(error_msg)
             return False
 
         pdf_content = response.content
         if len(pdf_content) < 100:
+            error_msg = f"PDF too small ({len(pdf_content)} bytes)"
             if verbosity >= 1:
                 print(f"    Downloaded PDF too small ({len(pdf_content)} bytes)")
+            save_download_error(error_msg)
             return False
 
         # Save new PDF attachment
@@ -135,17 +150,30 @@ def redownload_pdf_from_url(
             'application/pdf'
         )
 
+        # Clear any previous download error on success
+        try:
+            fresh_doc = db[doc_id]
+            if 'download_error' in fresh_doc:
+                del fresh_doc['download_error']
+                db.save(fresh_doc)
+        except Exception:
+            pass  # Best effort
+
         if verbosity >= 1:
             print(f"    ✓ Re-downloaded PDF ({len(pdf_content)} bytes)")
         return True
 
     except requests.RequestException as e:
+        error_msg = str(e)
         if verbosity >= 1:
-            print(f"    Failed to download PDF: {e}")
+            print(f"    Failed to download PDF: {error_msg}")
+        save_download_error(error_msg)
         return False
     except Exception as e:
+        error_msg = f"Save failed: {e}"
         if verbosity >= 1:
             print(f"    Failed to save PDF attachment: {e}")
+        save_download_error(error_msg)
         return False
 
 

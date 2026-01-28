@@ -568,10 +568,32 @@ class Ingestor(ABC):
                 # Download PDF from URL with rate limiting
                 if self.verbosity >= 3:
                     print(f"  Downloading PDF from: {pdf_url}")
-                response = self._get_with_rate_limit(pdf_url, stream=False)
+                try:
+                    response = self._get_with_rate_limit(pdf_url, stream=False)
+                except Exception as e:
+                    # Network error (connection, timeout, etc.)
+                    error_type = type(e).__name__
+                    if self.verbosity >= 1:
+                        print(f"  Failed to download PDF: {pdf_url} ({error_type})")
+                    try:
+                        fresh_doc = self.db[doc['_id']]
+                        fresh_doc['download_error'] = error_type
+                        self.db.save(fresh_doc)
+                    except Exception as save_e:
+                        if self.verbosity >= 2:
+                            print(f"  Warning: Could not save download_error: {save_e}")
+                    continue
                 if response.status_code != 200:
                     if self.verbosity >= 1:
                         print(f"  Failed to download PDF: {pdf_url} (status code {response.status_code})")
+                    # Save download error to document
+                    try:
+                        fresh_doc = self.db[doc['_id']]
+                        fresh_doc['download_error'] = f"HTTP {response.status_code}"
+                        self.db.save(fresh_doc)
+                    except Exception as e:
+                        if self.verbosity >= 2:
+                            print(f"  Warning: Could not save download_error: {e}")
                     continue
                 pdf_doc = response.content
 
@@ -585,6 +607,15 @@ class Ingestor(ABC):
                 attachment_filename,
                 attachment_content_type
             )
+
+            # Clear download_error on successful download
+            try:
+                fresh_doc = self.db[doc['_id']]
+                if 'download_error' in fresh_doc:
+                    del fresh_doc['download_error']
+                    self.db.save(fresh_doc)
+            except Exception:
+                pass  # Best effort
 
             if self.verbosity >= 3:
                 print("-" * 10)
