@@ -507,16 +507,32 @@ class TaxonExtractor:
                 print(f"Error getting document IDs from CouchDB: {e}")
             return []
 
-    def save_taxa(self, taxa_df: DataFrame) -> DataFrame:
+    def save_taxa(self, taxa_df: DataFrame, deduplicate: bool = True) -> DataFrame:
         """
         Save taxa DataFrame to CouchDB taxon database.
 
         Args:
             taxa_df: DataFrame with taxa information
+            deduplicate: If True, deduplicate by _id before saving (default: True)
 
         Returns:
             DataFrame with save results (doc_id, success, error_message)
         """
+        from pyspark.sql.functions import col, row_number
+        from pyspark.sql.window import Window
+
+        # Deduplicate by _id to prevent conflicts from duplicate taxa
+        if deduplicate and "_id" in taxa_df.columns:
+            original_count = taxa_df.count()
+            # Keep only the first occurrence of each _id
+            window = Window.partitionBy("_id").orderBy(col("line_number"))
+            taxa_df = taxa_df.withColumn("_row_num", row_number().over(window)) \
+                            .filter(col("_row_num") == 1) \
+                            .drop("_row_num")
+            deduped_count = taxa_df.count()
+            if self.verbosity >= 1 and original_count != deduped_count:
+                print(f"  Deduplicated: {original_count} -> {deduped_count} taxa ({original_count - deduped_count} duplicates removed)")
+
         # Extract to local variables to avoid serializing self
         couchdb_url = self.taxon_couchdb_url
         db_name = self.taxon_db_name
@@ -526,6 +542,8 @@ class TaxonExtractor:
 
         def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
             """Save taxa to CouchDB for an entire partition (idempotent)."""
+            MAX_RETRIES = 3
+
             # Connect to CouchDB once per partition
             try:
                 server = couchdb.Server(couchdb_url)
@@ -573,22 +591,38 @@ class TaxonExtractor:
                                 logger.info(f"[TRACE] taxon_doc before save: _id={doc_id}, "
                                            f"source={taxon_doc.get('source')}")
 
-                        # Check if document already exists (idempotent)
-                        if doc_id in db:
-                            # Document exists - update it
-                            existing_doc = db[doc_id]
-                            taxon_doc['_id'] = doc_id
-                            taxon_doc['_rev'] = existing_doc['_rev']
-                        else:
-                            # New document - create it
-                            taxon_doc['_id'] = doc_id
+                        # Retry loop to handle concurrent update conflicts
+                        for attempt in range(MAX_RETRIES):
+                            try:
+                                # Check if document already exists (idempotent)
+                                if doc_id in db:
+                                    # Document exists - update it with latest _rev
+                                    existing_doc = db[doc_id]
+                                    taxon_doc['_id'] = doc_id
+                                    taxon_doc['_rev'] = existing_doc['_rev']
+                                else:
+                                    # New document - create it
+                                    taxon_doc['_id'] = doc_id
+                                    # Remove _rev if present from previous attempt
+                                    taxon_doc.pop('_rev', None)
 
-                        db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
-                        success = True
+                                db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
+                                success = True
 
-                        if DEBUG_TRACE:
-                            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
-                                logger.info(f"[TRACE] Successfully saved taxon: {doc_id}")
+                                if DEBUG_TRACE:
+                                    if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
+                                        logger.info(f"[TRACE] Successfully saved taxon: {doc_id}")
+
+                                break  # Success, exit retry loop
+
+                            except couchdb.ResourceConflict:
+                                # Conflict - another process updated the document
+                                if attempt < MAX_RETRIES - 1:
+                                    if verbosity >= 2:
+                                        print(f"  Conflict on {doc_id}, retrying ({attempt + 1}/{MAX_RETRIES})...")
+                                    continue  # Retry with fresh _rev
+                                else:
+                                    raise  # Max retries exceeded, propagate error
 
                     except Exception as e:  # pyright: ignore[reportUnknownExceptionType]
                         error_msg = str(e)
