@@ -1,0 +1,84 @@
+/**
+ * CollectionSelect Styles
+ */
+
+.collection-select {
+  min-width: 200px;
+}
+
+/* Custom option styling */
+.collection-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.collection-option.focused {
+  background-color: #f0f4ff;
+}
+
+.collection-option.selected {
+  background-color: #667eea;
+}
+
+.collection-option.selected .collection-name,
+.collection-option.selected .collection-id {
+  color: white;
+}
+
+.collection-option .collection-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.collection-option .collection-id {
+  color: #999;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+/* Single value display */
+.collection-single-value {
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Error state */
+.collection-select-error {
+  padding: 8px 12px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #c33;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.collection-select-error button {
+  padding: 4px 10px;
+  background: #c33;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.collection-select-error button:hover {
+  background: #a22;
+}
+
+/* Container styling */
+.collection-select-container {
+  display: inline-block;
+  min-width: 220px;
+}

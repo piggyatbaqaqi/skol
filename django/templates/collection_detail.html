@@ -418,10 +418,15 @@
             <h2>Add External Identifier</h2>
             <form id="addIdentifierForm">
                 <div class="form-group">
-                    <label for="identifierType">Identifier Type</label>
-                    <select id="identifierType" required onchange="onIdentifierTypeChange()">
-                        <option value="">Loading...</option>
-                    </select>
+                    <label>Identifier Type</label>
+                    <input type="hidden" id="identifierType" name="identifier_type">
+                    <div id="identifierTypeSelectContainer"
+                         data-identifier-type-select
+                         data-api-base-url="{{ SCRIPT_NAME }}/api"
+                         data-value-input="#identifierType"
+                         data-on-change="onIdentifierTypeChange"
+                         data-placeholder="Select identifier type...">
+                    </div>
                 </div>
                 <div class="form-group" id="fungariumCodeGroup" style="display: none;">
                     <label>Fungarium</label>
@@ -456,7 +461,6 @@
         const CURRENT_USERNAME = '{{ user.username }}';
 
         let collection = null;
-        let identifierTypes = [];
         let isOwner = false;
 
         // CSRF token for requests
@@ -505,38 +509,13 @@
             }
         }
 
-        // Load identifier types
-        async function loadIdentifierTypes() {
-            if (!IS_AUTHENTICATED) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/identifier-types/`, {
-                    credentials: 'same-origin'
-                });
-                const data = await response.json();
-                identifierTypes = data.identifier_types || [];
-                updateIdentifierTypeSelect();
-            } catch (error) {
-                console.error('Error loading identifier types:', error);
-            }
-        }
-
-        // Update identifier type dropdown
-        function updateIdentifierTypeSelect() {
-            const select = document.getElementById('identifierType');
-            if (!select) return;
-
-            select.innerHTML = '<option value="">Select type...</option>' +
-                identifierTypes.map(t => `<option value="${t.code}">${escapeHtml(t.name)}</option>`).join('');
-        }
-
         // Handle identifier type change - show/hide fungarium dropdown
-        function onIdentifierTypeChange() {
-            const typeSelect = document.getElementById('identifierType');
+        // Called by the React IdentifierTypeSelect component
+        function onIdentifierTypeChange(typeCode) {
             const fungariumGroup = document.getElementById('fungariumCodeGroup');
             const fungariumInput = document.getElementById('fungariumCode');
 
-            if (typeSelect.value === 'fungarium') {
+            if (typeCode === 'fungarium') {
                 fungariumGroup.style.display = 'block';
                 // Initialize the React component if not already done
                 if (window.initFungariumSelects) {
@@ -883,12 +862,10 @@
 
         // Load data on page load
         loadCollection();
-        if (IS_AUTHENTICATED) {
-            loadIdentifierTypes();
-        }
     </script>
 
-    <!-- Fungarium Select Widget -->
+    <!-- React Select Widgets -->
+    <script src="{% static 'js/identifier-type-select.bundle.js' %}"></script>
     <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
 </body>
 </html>

@@ -857,10 +857,16 @@
         <div id="collectionPanel" class="collection-panel">
             <div class="collection-panel-header">
                 <div class="collection-selector">
-                    <label for="activeCollection">Active Collection:</label>
-                    <select id="activeCollection" onchange="onCollectionChange()">
-                        <option value="">No collection selected</option>
-                    </select>
+                    <label>Active Collection:</label>
+                    <input type="hidden" id="activeCollection">
+                    <div id="activeCollectionSelectContainer"
+                         data-collection-select
+                         data-api-base-url="{{ SCRIPT_NAME }}/api"
+                         data-value-input="#activeCollection"
+                         data-on-change="onCollectionChange"
+                         data-placeholder="Select collection..."
+                         style="min-width: 220px;">
+                    </div>
                     <button type="button" class="btn-small" onclick="showNewCollectionModal()">+ New</button>
                 </div>
                 <div id="collectionInfo" class="collection-info" style="display: none;">
@@ -896,9 +902,15 @@
             <h3>External Identifiers</h3>
             <div id="identifiersList" class="identifiers-list"></div>
             <div class="add-identifier-form">
-                <select id="newIdentifierType" onchange="onIdentifierTypeChange()">
-                    <option value="">Select type...</option>
-                </select>
+                <input type="hidden" id="newIdentifierType">
+                <div id="newIdentifierTypeSelectContainer"
+                     data-identifier-type-select
+                     data-api-base-url="{{ SCRIPT_NAME }}/api"
+                     data-value-input="#newIdentifierType"
+                     data-on-change="onIdentifierTypeChange"
+                     data-placeholder="Select type..."
+                     style="min-width: 180px;">
+                </div>
                 <input type="hidden" id="newFungariumCode">
                 <div id="newFungariumSelectContainer"
                      data-fungarium-select
@@ -963,8 +975,6 @@
 
         // Store current search data and active collection
         let currentSearchData = null;
-        let userCollections = [];
-        let identifierTypes = [];
         let activeCollectionId = null;
         let activeCollectionData = null;
 
@@ -1010,70 +1020,13 @@
             }
         }
 
-        // Load user's collections
-        async function loadCollections() {
-            if (!IS_AUTHENTICATED) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/collections/`, {
-                    credentials: 'same-origin'
-                });
-                const data = await response.json();
-                userCollections = data.collections || [];
-                updateCollectionsMenu();
-                updateActiveCollectionDropdown();
-            } catch (error) {
-                console.error('Error loading collections:', error);
-            }
-        }
-
-        // Load identifier types
-        async function loadIdentifierTypes() {
-            if (!IS_AUTHENTICATED) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/identifier-types/`, {
-                    credentials: 'same-origin'
-                });
-                const data = await response.json();
-                identifierTypes = data.identifier_types || [];
-                updateIdentifierTypeDropdown();
-            } catch (error) {
-                console.error('Error loading identifier types:', error);
-            }
-        }
-
-        // Update the active collection dropdown
-        function updateActiveCollectionDropdown() {
-            const select = document.getElementById('activeCollection');
-            if (!select) return;
-
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">No collection selected</option>' +
-                userCollections.map(c => `<option value="${c.collection_id}">${escapeHtml(c.name)}</option>`).join('');
-
-            // Restore previous selection if still valid
-            if (currentValue && userCollections.some(c => c.collection_id == currentValue)) {
-                select.value = currentValue;
-            }
-        }
-
-        // Update identifier type dropdown in add form
-        function updateIdentifierTypeDropdown() {
-            const select = document.getElementById('newIdentifierType');
-            if (!select) return;
-
-            select.innerHTML = '<option value="">Select type...</option>' +
-                identifierTypes.map(t => `<option value="${t.code}">${escapeHtml(t.name)}</option>`).join('');
-        }
-
         // Handle identifier type change - show/hide fungarium dropdown
-        function onIdentifierTypeChange() {
-            const typeSelect = document.getElementById('newIdentifierType');
+        // Called by the React IdentifierTypeSelect component
+        function onIdentifierTypeChange(typeCode) {
             const fungariumContainer = document.getElementById('newFungariumSelectContainer');
             const fungariumInput = document.getElementById('newFungariumCode');
 
-            if (typeSelect.value === 'fungarium') {
+            if (typeCode === 'fungarium') {
                 fungariumContainer.style.display = 'block';
                 // Initialize the React component if not already done
                 if (window.initFungariumSelects) {
@@ -1086,10 +1039,8 @@
         }
 
         // Handle collection selection change
-        async function onCollectionChange() {
-            const select = document.getElementById('activeCollection');
-            const collectionId = select.value;
-
+        // Called by the React CollectionSelect component
+        async function onCollectionChange(collectionId) {
             if (!collectionId) {
                 activeCollectionId = null;
                 activeCollectionData = null;
@@ -1293,26 +1244,37 @@
         }
 
         // Update collections dropdown menu in navbar
-        function updateCollectionsMenu() {
+        async function updateCollectionsMenu() {
             const menuList = document.getElementById('collectionsMenuList');
             if (!menuList) return;
 
-            if (userCollections.length === 0) {
-                menuList.innerHTML = '<div class="no-collections">No collections yet. Create one to save your searches!</div>';
-                return;
-            }
+            try {
+                const response = await fetch(`${API_BASE}/api/collections/`, {
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+                const collections = data.collections || [];
 
-            menuList.innerHTML = userCollections.slice(0, 5).map(c => `
-                <a href="${API_BASE}/collections/${c.collection_id}/" class="collection-menu-item" style="display: block; text-decoration: none; color: inherit;">
-                    <div class="collection-name">${escapeHtml(c.name)}</div>
-                    <div class="collection-meta">${c.search_count || 0} searches, ${c.identifier_count || 0} identifiers</div>
-                </a>
-            `).join('');
+                if (collections.length === 0) {
+                    menuList.innerHTML = '<div class="no-collections">No collections yet. Create one to save your searches!</div>';
+                    return;
+                }
 
-            if (userCollections.length > 5) {
-                menuList.innerHTML += `<div class="collection-menu-item" style="text-align: center; color: #666;">
-                    <a href="${API_BASE}/collections/">View all ${userCollections.length} collections</a>
-                </div>`;
+                menuList.innerHTML = collections.slice(0, 5).map(c => `
+                    <a href="${API_BASE}/collections/${c.collection_id}/" class="collection-menu-item" style="display: block; text-decoration: none; color: inherit;">
+                        <div class="collection-name">${escapeHtml(c.name)}</div>
+                        <div class="collection-meta">${c.search_count || 0} searches, ${c.identifier_count || 0} identifiers</div>
+                    </a>
+                `).join('');
+
+                if (collections.length > 5) {
+                    menuList.innerHTML += `<div class="collection-menu-item" style="text-align: center; color: #666;">
+                        <a href="${API_BASE}/collections/">View all ${collections.length} collections</a>
+                    </div>`;
+                }
+            } catch (error) {
+                console.error('Error loading collections menu:', error);
+                menuList.innerHTML = '<div class="no-collections">Error loading collections</div>';
             }
         }
 
@@ -1386,14 +1348,18 @@
                 hideNewCollectionModal();
                 showSuccess(`Collection "${name}" created successfully!`);
 
-                // Reload collections and select the new one
-                await loadCollections();
+                // Refresh the collections dropdown and navbar menu
+                if (window.refreshCollectionSelect) {
+                    await window.refreshCollectionSelect();
+                }
+                await updateCollectionsMenu();
 
                 // Select the newly created collection
-                const select = document.getElementById('activeCollection');
-                if (select) {
-                    select.value = data.collection_id;
-                    await onCollectionChange();
+                const collectionInput = document.getElementById('activeCollection');
+                if (collectionInput) {
+                    collectionInput.value = data.collection_id;
+                    collectionInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    await onCollectionChange(data.collection_id);
                 }
 
             } catch (error) {
@@ -1625,8 +1591,7 @@
         // Load data when page loads
         loadEmbeddings();
         if (IS_AUTHENTICATED) {
-            loadCollections();
-            loadIdentifierTypes();
+            updateCollectionsMenu();
         }
     </script>
 
@@ -1635,6 +1600,10 @@
 
     <!-- Vocabulary Tree Widget -->
     <script src="{% static 'js/vocab-tree.bundle.js' %}"></script>
+
+    <!-- React Select Widgets -->
+    <script src="{% static 'js/collection-select.bundle.js' %}"></script>
+    <script src="{% static 'js/identifier-type-select.bundle.js' %}"></script>
 
     <!-- Fungarium Select Widget -->
     <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>

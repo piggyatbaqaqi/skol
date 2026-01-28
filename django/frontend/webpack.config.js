@@ -7,6 +7,8 @@ module.exports = {
     'code-block': './src/codeBlockEntry.js',
     'vocab-tree': './src/vocabTreeEntry.js',
     'fungarium-select': './src/fungariumSelectEntry.js',
+    'identifier-type-select': './src/identifierTypeSelectEntry.js',
+    'collection-select': './src/collectionSelectEntry.js',
   },
   output: {
     filename: '[name].bundle.js',

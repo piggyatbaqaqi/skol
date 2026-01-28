@@ -1,0 +1,34 @@
+/**
+ * IdentifierTypeSelect Styles
+ */
+
+.identifier-type-select {
+  min-width: 180px;
+}
+
+/* Error state */
+.identifier-type-select-error {
+  padding: 8px 12px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #c33;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.identifier-type-select-error button {
+  padding: 4px 10px;
+  background: #c33;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.identifier-type-select-error button:hover {
+  background: #a22;
+}
