@@ -1,0 +1,56 @@
+# Edit this file to introduce tasks to be run by cron.
+# 
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+# 
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+# 
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+# 
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+# 
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+
+MAILTO=piggy.yarroll+skol@gmail.com
+COUCHDB_USER="admin"
+COUCHDB_PASSWORD="greatlyimprovedpassword"
+COUCHDB_URL="http://localhost:5984"
+INGEST_DATABASE="skol_dev"
+TAXON_DATABASE="skol_taxa_dev"
+LOGDIR=/var/log/skol
+VERBOSITY=1
+REDIS_PORT=6380
+SKIP_EXISTING=1
+
+# For more information see the manual pages of crontab(5) and cron(8)
+# 
+# m h  dom mon dow user command
+30 0 * * * skol time /opt/skol/bin/train_classifier > ${LOGDIR}/train-classifier-log 2>&1
+0 1 * * 0 skol time /opt/skol/bin/ingest --publication fuse-rss > ${LOGDIR}/ingest-fuse-rss.log 2>&1
+0 2 * * 0 skol time /opt/skol/bin/ingest --publication mycotaxon-rss > ${LOGDIR}/ingest-mycotaxon-rss.log 2>&1
+0 3 * * 0 skol time /opt/skol/bin/ingest --publication studies-in-mycology-rss > ${LOGDIR}/ingest-studies-in-mycology-rss.log 2>&1
+0 4 * * 0 skol time /opt/skol/bin/ingest --publication persoonia-rss > ${LOGDIR}/ingest-persoonia-rss.log 2>&1
+0 5 * * 0 skol time /opt/skol/bin/ingest --publication jof-crossref > ${LOGDIR}/ingest-jof-crossref.log 2>&1
+0 6 * * 0 skol time /opt/skol/bin/ingest --publication mycologie-crossref > ${LOGDIR}/ingest-mycologie-crossref.log 2>&1
+0 7 * * 0 skol time /opt/skol/bin/ingest --publication mycoscience-crossref > ${LOGDIR}/ingest-mycoscience-crossref.log 2>&1
+0 8 * * 0 skol time /opt/skol/bin/ingest --publication mycologia-crossref > ${LOGDIR}/ingest-mycologia-crossref.log 2>&1
+0 9 * * 0 skol time /opt/skol/bin/ingest --publication mycology-crossref > ${LOGDIR}/ingest-mycology-crossref.log 2>&1
+0 10 * * 0 skol time /opt/skol/bin/ingest --publication mycosphere > ${LOGDIR}/ingest-mycosphere.log 2>&1
+0 11 * * 0 skol time /opt/skol/bin/ingest --publication oajmms > ${LOGDIR}/ingest-oajmms.log 2>&1
+0 12 * * 0 skol time /opt/skol/bin/ingest --publication mycokeys > ${LOGDIR}/ingest-mycokeys.log 2>&1
+0 13 * * 0 skol time /opt/skol/bin/ingest --publication imafungus > ${LOGDIR}/ingest-imafungus.log 2>&1
+0 0 * * * skol time /opt/skol/bin/predict_classifier --cores=2 --batch-size=24 --spark-driver-memory=8g --spark-executor-memory=8g --union-batch-size=1000 --verbosity=2 --save-text=lazy --incremental --incremental-batch-size=50 > ${LOGDIR}/predict-classifier.log 2>&1
+0 4 * * * skol time /opt/skol/bin/extract_taxa_to_couchdb --verbosity=2 > ${LOGDIR}/extract-taxa-to-couchdb.log 2>&1
+0 6 * * * skol time /opt/skol/bin/embed_taxa --verbosity=2 > ${LOGDIR}/embed-taxa.log 2>&1
+0 22 * * 1,3,5 skol time /opt/skol/bin/taxa_to_json --verbosity=2 > ${LOGDIR}/taxa-to-json.log 2>&1
+0 22 * * 0,2,4,6 skol time /opt/skol/bin/build_vocab_tree --verbosity=2 --db=skol_taxa_full > ${LOGDIR}/build-vocab-tree.log 2>&1
+*/5 * * * * skol /usr/bin/redis-cli -p ${REDIS_PORT} save
+# Update fungaria registry from Index Herbariorum monthly (1st of each month at 3am)
+0 3 1 * * skol time /opt/skol/bin/manage_fungaria download > ${LOGDIR}/manage-fungaria.log 2>&1

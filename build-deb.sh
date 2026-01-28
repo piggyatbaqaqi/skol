@@ -37,6 +37,11 @@ cp dist/*.whl staging${WHEEL_DIR}/
 echo "Copying bin scripts..."
 cp bin/*.py staging/opt/skol/bin/
 
+# Copy cron job to /etc/cron.d/
+echo "Copying cron configuration..."
+mkdir -p staging/etc/cron.d
+cp debian/skol.cron staging/etc/cron.d/skol
+
 # Build the deb using fpm from the staging directory
 # --no-auto-depends prevents fpm from generating dependencies automatically
 fpm -s dir -t deb \
