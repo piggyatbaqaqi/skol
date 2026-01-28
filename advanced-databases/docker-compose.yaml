@@ -48,11 +48,13 @@ services:
   redis:
     image: docker.io/redis:7.4
     restart: always
+    command: redis-server /usr/local/etc/redis/redis.conf
     hostname: redis
     ports:
       - "127.0.0.1:6380:6379"
     volumes:
       - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
 
   #couchdb_skol#
   couchdb_skol:
