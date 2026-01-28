@@ -424,10 +424,14 @@
                     </select>
                 </div>
                 <div class="form-group" id="fungariumCodeGroup" style="display: none;">
-                    <label for="fungariumCode">Fungarium</label>
-                    <select id="fungariumCode">
-                        <option value="">Loading fungaria...</option>
-                    </select>
+                    <label>Fungarium</label>
+                    <input type="hidden" id="fungariumCode" name="fungarium_code">
+                    <div id="fungariumSelectContainer"
+                         data-fungarium-select
+                         data-api-base-url="{{ SCRIPT_NAME }}/api"
+                         data-value-input="#fungariumCode"
+                         data-placeholder="Search fungaria...">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="identifierValue">Identifier Value</label>
@@ -453,7 +457,6 @@
 
         let collection = null;
         let identifierTypes = [];
-        let fungariaList = [];
         let isOwner = false;
 
         // CSRF token for requests
@@ -527,48 +530,21 @@
                 identifierTypes.map(t => `<option value="${t.code}">${escapeHtml(t.name)}</option>`).join('');
         }
 
-        // Load fungaria list
-        async function loadFungaria() {
-            if (!IS_AUTHENTICATED) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/fungaria/`, {
-                    credentials: 'same-origin'
-                });
-                const data = await response.json();
-                fungariaList = data.fungaria || [];
-                updateFungariumSelect();
-            } catch (error) {
-                console.error('Error loading fungaria:', error);
-            }
-        }
-
-        // Update fungarium dropdown
-        function updateFungariumSelect() {
-            const select = document.getElementById('fungariumCode');
-            if (!select) return;
-
-            select.innerHTML = '<option value="">Select fungarium...</option>' +
-                fungariaList.map(f => `<option value="${f.code}">${escapeHtml(f.code)} - ${escapeHtml(f.organization)}</option>`).join('');
-        }
-
         // Handle identifier type change - show/hide fungarium dropdown
         function onIdentifierTypeChange() {
             const typeSelect = document.getElementById('identifierType');
             const fungariumGroup = document.getElementById('fungariumCodeGroup');
-            const fungariumSelect = document.getElementById('fungariumCode');
+            const fungariumInput = document.getElementById('fungariumCode');
 
             if (typeSelect.value === 'fungarium') {
                 fungariumGroup.style.display = 'block';
-                fungariumSelect.required = true;
-                // Load fungaria if not already loaded
-                if (fungariaList.length === 0) {
-                    loadFungaria();
+                // Initialize the React component if not already done
+                if (window.initFungariumSelects) {
+                    window.initFungariumSelects();
                 }
             } else {
                 fungariumGroup.style.display = 'none';
-                fungariumSelect.required = false;
-                fungariumSelect.value = '';
+                fungariumInput.value = '';
             }
         }
 
@@ -739,9 +715,9 @@
         function hideIdentifierModal() {
             document.getElementById('addIdentifierModal').classList.remove('show');
             document.getElementById('addIdentifierForm').reset();
-            // Reset fungarium dropdown visibility
+            // Reset fungarium dropdown visibility and value
             document.getElementById('fungariumCodeGroup').style.display = 'none';
-            document.getElementById('fungariumCode').required = false;
+            document.getElementById('fungariumCode').value = '';
         }
 
         // Edit collection
@@ -911,5 +887,8 @@
             loadIdentifierTypes();
         }
     </script>
+
+    <!-- Fungarium Select Widget -->
+    <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
 </body>
 </html>

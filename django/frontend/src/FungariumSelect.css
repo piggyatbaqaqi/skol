@@ -1,0 +1,128 @@
+/**
+ * FungariumSelect Styles
+ *
+ * Styling for the searchable fungarium dropdown component.
+ */
+
+.fungarium-select {
+  min-width: 200px;
+}
+
+/* Custom option styling */
+.fungarium-option {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.fungarium-option.focused {
+  background-color: #f0f4ff;
+}
+
+.fungarium-option.selected {
+  background-color: #667eea;
+}
+
+.fungarium-option.selected .fungarium-code,
+.fungarium-option.selected .fungarium-org,
+.fungarium-option.selected .fungarium-location {
+  color: white;
+}
+
+.fungarium-code {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.fungarium-org {
+  color: #666;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.fungarium-location {
+  color: #999;
+  font-size: 12px;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* Single value display */
+.fungarium-single-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fungarium-single-value .fungarium-code {
+  font-weight: 600;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.fungarium-single-value .fungarium-org {
+  color: #666;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Error state */
+.fungarium-select-error {
+  padding: 8px 12px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #c33;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fungarium-select-error button {
+  padding: 4px 10px;
+  background: #c33;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.fungarium-select-error button:hover {
+  background: #a22;
+}
+
+/* Container styling for when used inline */
+.fungarium-select-container {
+  display: inline-block;
+  min-width: 280px;
+}
+
+/* Label styling */
+.fungarium-select-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .fungarium-select {
+    min-width: 100%;
+  }
+
+  .fungarium-select-container {
+    width: 100%;
+    min-width: 100%;
+  }
+}

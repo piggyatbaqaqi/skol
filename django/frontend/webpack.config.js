@@ -6,6 +6,7 @@ module.exports = {
     'pdf-viewer': './src/index.js',
     'code-block': './src/codeBlockEntry.js',
     'vocab-tree': './src/vocabTreeEntry.js',
+    'fungarium-select': './src/fungariumSelectEntry.js',
   },
   output: {
     filename: '[name].bundle.js',

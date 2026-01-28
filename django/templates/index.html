@@ -899,9 +899,14 @@
                 <select id="newIdentifierType" onchange="onIdentifierTypeChange()">
                     <option value="">Select type...</option>
                 </select>
-                <select id="newFungariumCode" style="display: none;">
-                    <option value="">Select fungarium...</option>
-                </select>
+                <input type="hidden" id="newFungariumCode">
+                <div id="newFungariumSelectContainer"
+                     data-fungarium-select
+                     data-api-base-url="{{ SCRIPT_NAME }}/api"
+                     data-value-input="#newFungariumCode"
+                     data-placeholder="Search fungaria..."
+                     style="display: none; min-width: 280px;">
+                </div>
                 <input type="text" id="newIdentifierValue" placeholder="Identifier value (e.g., 336010515)">
                 <button type="button" class="btn-small" onclick="addIdentifier()">Add</button>
             </div>
@@ -960,7 +965,6 @@
         let currentSearchData = null;
         let userCollections = [];
         let identifierTypes = [];
-        let fungariaList = [];
         let activeCollectionId = null;
         let activeCollectionData = null;
 
@@ -1063,45 +1067,21 @@
                 identifierTypes.map(t => `<option value="${t.code}">${escapeHtml(t.name)}</option>`).join('');
         }
 
-        // Load fungaria list
-        async function loadFungaria() {
-            if (!IS_AUTHENTICATED) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/fungaria/`, {
-                    credentials: 'same-origin'
-                });
-                const data = await response.json();
-                fungariaList = data.fungaria || [];
-                updateFungariumDropdown();
-            } catch (error) {
-                console.error('Error loading fungaria:', error);
-            }
-        }
-
-        // Update fungarium dropdown
-        function updateFungariumDropdown() {
-            const select = document.getElementById('newFungariumCode');
-            if (!select) return;
-
-            select.innerHTML = '<option value="">Select fungarium...</option>' +
-                fungariaList.map(f => `<option value="${f.code}">${escapeHtml(f.code)} - ${escapeHtml(f.organization)}</option>`).join('');
-        }
-
         // Handle identifier type change - show/hide fungarium dropdown
         function onIdentifierTypeChange() {
             const typeSelect = document.getElementById('newIdentifierType');
-            const fungariumSelect = document.getElementById('newFungariumCode');
+            const fungariumContainer = document.getElementById('newFungariumSelectContainer');
+            const fungariumInput = document.getElementById('newFungariumCode');
 
             if (typeSelect.value === 'fungarium') {
-                fungariumSelect.style.display = 'block';
-                // Load fungaria if not already loaded
-                if (fungariaList.length === 0) {
-                    loadFungaria();
+                fungariumContainer.style.display = 'block';
+                // Initialize the React component if not already done
+                if (window.initFungariumSelects) {
+                    window.initFungariumSelects();
                 }
             } else {
-                fungariumSelect.style.display = 'none';
-                fungariumSelect.value = '';
+                fungariumContainer.style.display = 'none';
+                fungariumInput.value = '';
             }
         }
 
@@ -1273,7 +1253,7 @@
                 // Clear form
                 document.getElementById('newIdentifierType').value = '';
                 document.getElementById('newFungariumCode').value = '';
-                document.getElementById('newFungariumCode').style.display = 'none';
+                document.getElementById('newFungariumSelectContainer').style.display = 'none';
                 document.getElementById('newIdentifierValue').value = '';
 
                 // Reload collection to get updated identifiers
@@ -1655,5 +1635,8 @@
 
     <!-- Vocabulary Tree Widget -->
     <script src="{% static 'js/vocab-tree.bundle.js' %}"></script>
+
+    <!-- Fungarium Select Widget -->
+    <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
 </body>
 </html>

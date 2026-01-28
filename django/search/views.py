@@ -448,14 +448,14 @@ class IdentifierTypeListView(APIView):
 class FungariaListView(APIView):
     """
     GET /api/fungaria/
-    List fungaria from Redis that have fungi collections (numFungi > 0).
+    List all fungaria/herbaria from Redis (Index Herbariorum registry).
 
     Returns simplified list for dropdown selection with code, organization,
     and URL information for building links.
 
     Query parameters:
         - search: Filter by code or organization name (case-insensitive)
-        - limit: Maximum number of results (default: 100)
+        - limit: Maximum number of results (default: 0 = no limit)
     """
     permission_classes = [IsAuthenticated]
 
@@ -479,26 +479,22 @@ class FungariaListView(APIView):
             data = json.loads(raw)
             institutions = data.get('institutions', {})
 
-            # Filter to those with fungi collections
             fungaria = []
             search_query = request.GET.get('search', '').lower()
-            limit = int(request.GET.get('limit', 100))
+            limit = int(request.GET.get('limit', 0))
 
             for code, inst in institutions.items():
-                # Check if has fungi collection
-                collections_summary = inst.get('collectionsSummary', {})
-                if isinstance(collections_summary, dict):
-                    num_fungi = collections_summary.get('numFungi', 0)
-                    if not num_fungi or num_fungi <= 0:
-                        continue
-                else:
-                    continue
-
                 # Apply search filter
                 org = inst.get('organization', '')
                 if search_query:
                     if search_query not in code.lower() and search_query not in org.lower():
                         continue
+
+                # Get fungi count if available
+                collections_summary = inst.get('collectionsSummary', {})
+                num_fungi = 0
+                if isinstance(collections_summary, dict):
+                    num_fungi = collections_summary.get('numFungi', 0) or 0
 
                 # Build URL info
                 contact = inst.get('contact', {})
@@ -526,11 +522,11 @@ class FungariaListView(APIView):
                     'web_url': web_url,  # fallback URL
                 })
 
-            # Sort by organization name
-            fungaria.sort(key=lambda x: x['organization'].lower())
+            # Sort by code
+            fungaria.sort(key=lambda x: x['code'].upper())
 
-            # Apply limit
-            if limit and len(fungaria) > limit:
+            # Apply limit if specified
+            if limit > 0 and len(fungaria) > limit:
                 fungaria = fungaria[:limit]
 
             return Response({
