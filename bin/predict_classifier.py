@@ -51,6 +51,103 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from skol_classifier.classifier_v2 import SkolClassifierV2
 from env_config import get_env_config
 
+import couchdb
+import requests
+from io import BytesIO
+
+
+# ============================================================================
+# PDF Re-download Functions
+# ============================================================================
+
+def redownload_pdf_from_url(
+    doc_id: str,
+    db: couchdb.Database,
+    verbosity: int = 1
+) -> bool:
+    """
+    Re-download the PDF for a document from its pdf_url field.
+
+    This deletes any existing article.pdf and article.txt and article.txt.ann attachments,
+    then downloads a fresh copy from the pdf_url.
+
+    Args:
+        doc_id: Document ID in CouchDB
+        db: CouchDB database instance
+        verbosity: Verbosity level
+
+    Returns:
+        True if PDF was successfully re-downloaded, False otherwise
+    """
+    try:
+        doc = db[doc_id]
+    except couchdb.ResourceNotFound:
+        if verbosity >= 1:
+            print(f"    Document {doc_id} not found")
+        return False
+
+    pdf_url = doc.get('pdf_url')
+    if not pdf_url:
+        if verbosity >= 1:
+            print(f"    Document {doc_id} has no pdf_url field")
+        return False
+
+    if verbosity >= 2:
+        print(f"    Re-downloading PDF from: {pdf_url}")
+
+    # Delete existing attachments
+    attachments = doc.get('_attachments', {})
+    attachments_to_delete = []
+    for att_name in list(attachments.keys()):
+        if att_name in ('article.pdf', 'article.txt', 'article.txt.ann'):
+            attachments_to_delete.append(att_name)
+
+    for att_name in attachments_to_delete:
+        try:
+            db.delete_attachment(doc, att_name)
+            # Refresh doc after deletion
+            doc = db[doc_id]
+            if verbosity >= 2:
+                print(f"    Deleted existing {att_name}")
+        except Exception as e:
+            if verbosity >= 2:
+                print(f"    Failed to delete {att_name}: {e}")
+
+    # Download fresh PDF
+    try:
+        response = requests.get(pdf_url, timeout=60, stream=False)
+        if response.status_code != 200:
+            if verbosity >= 1:
+                print(f"    Failed to download PDF: HTTP {response.status_code}")
+            return False
+
+        pdf_content = response.content
+        if len(pdf_content) < 100:
+            if verbosity >= 1:
+                print(f"    Downloaded PDF too small ({len(pdf_content)} bytes)")
+            return False
+
+        # Save new PDF attachment
+        db.put_attachment(
+            doc,
+            BytesIO(pdf_content),
+            'article.pdf',
+            'application/pdf'
+        )
+
+        if verbosity >= 1:
+            print(f"    ✓ Re-downloaded PDF ({len(pdf_content)} bytes)")
+        return True
+
+    except requests.RequestException as e:
+        if verbosity >= 1:
+            print(f"    Failed to download PDF: {e}")
+        return False
+    except Exception as e:
+        if verbosity >= 1:
+            print(f"    Failed to save PDF attachment: {e}")
+        return False
+
 
 # ============================================================================
 # Model Configurations
@@ -204,6 +301,7 @@ def predict_and_save(
     taxonomy_filter: bool = False,
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
+    retry_failed_extraction: bool = False,
 ) -> None:
     """
     Load classifier from Redis, make predictions, and save to CouchDB.
@@ -226,6 +324,7 @@ def predict_and_save(
         taxonomy_filter: If True, filter to only documents with taxonomy abbreviations
         limit: If set, process at most this many documents
         doc_ids: If set, only process these specific document IDs
+        retry_failed_extraction: If True, re-download PDF and retry on extraction failure
     """
     # Apply overrides and use config verbosity
     model_config = model_config.copy()
@@ -275,6 +374,8 @@ def predict_and_save(
         print(f"Limit: {limit} documents")
     if doc_ids:
         print(f"Document IDs: {', '.join(doc_ids[:5])}{'...' if len(doc_ids) > 5 else ''}")
+    if retry_failed_extraction:
+        print(f"Mode: RETRY FAILED (re-download PDF and retry on extraction failure)")
     print()
 
     # Check if model exists in Redis
@@ -422,7 +523,19 @@ def predict_and_save(
             total_processed = 0
             total_saved = 0
             total_errors = 0
+            total_retried = 0
             batch_num = 0
+
+            # Track documents that have already been retried (to prevent infinite loops)
+            retried_doc_ids = set()
+
+            # Connect to CouchDB for retry operations
+            couch_db = None
+            if retry_failed_extraction:
+                couch_server = couchdb.Server(couchdb_url)
+                if config['couchdb_username'] and config['couchdb_password']:
+                    couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+                couch_db = couch_server[config['ingest_db_name']]
 
             # Split filtered_doc_ids into batches
             for batch_start in range(0, total_docs, incremental_batch_size):
@@ -456,6 +569,71 @@ def predict_and_save(
                     if verbosity >= 1:
                         print(f"  Loading {batch_size_actual} documents...")
                     batch_raw_df = batch_classifier.load_raw()
+
+                    # Check for failed extractions and retry if enabled
+                    if retry_failed_extraction and couch_db is not None:
+                        # Get list of successfully extracted doc_ids
+                        extracted_doc_ids = set(
+                            row.doc_id for row in batch_raw_df.select("doc_id").distinct().collect()
+                        )
+                        # Find documents that failed extraction
+                        failed_doc_ids = [
+                            doc_id for doc_id in batch_doc_ids
+                            if doc_id not in extracted_doc_ids and doc_id not in retried_doc_ids
+                        ]
+
+                        if failed_doc_ids:
+                            if verbosity >= 1:
+                                print(f"  Found {len(failed_doc_ids)} documents with failed extraction, attempting retry...")
+
+                            # Re-download PDFs for failed documents
+                            redownloaded_doc_ids = []
+                            for doc_id in failed_doc_ids:
+                                retried_doc_ids.add(doc_id)  # Mark as retried
+                                if verbosity >= 2:
+                                    print(f"  Retrying {doc_id}...")
+                                if redownload_pdf_from_url(doc_id, couch_db, verbosity):
+                                    redownloaded_doc_ids.append(doc_id)
+
+                            # Retry extraction for successfully re-downloaded documents
+                            if redownloaded_doc_ids:
+                                if verbosity >= 1:
+                                    print(f"  Re-extracting {len(redownloaded_doc_ids)} documents...")
+
+                                # Create a new classifier just for the retry documents
+                                retry_classifier = SkolClassifierV2(
+                                    spark=spark,
+                                    input_source='couchdb',
+                                    couchdb_url=couchdb_url,
+                                    couchdb_database=config['ingest_db_name'],
+                                    couchdb_username=config['couchdb_username'],
+                                    couchdb_password=config['couchdb_password'],
+                                    couchdb_pattern=pattern,
+                                    couchdb_doc_ids=redownloaded_doc_ids,
+                                    output_dest='couchdb',
+                                    output_couchdb_suffix='.ann',
+                                    auto_load_model=True,
+                                    model_storage='redis',
+                                    redis_client=redis_client,
+                                    redis_key=classifier_model_name,
+                                    **model_config
+                                )
+
+                                try:
+                                    retry_raw_df = retry_classifier.load_raw()
+                                    retry_count = retry_raw_df.select("doc_id").distinct().count()
+                                    if retry_count > 0:
+                                        if verbosity >= 1:
+                                            print(f"  ✓ Successfully re-extracted {retry_count} documents")
+                                        # Union retry results with main batch
+                                        batch_raw_df = batch_raw_df.union(retry_raw_df)
+                                        total_retried += retry_count
+                                    else:
+                                        if verbosity >= 1:
+                                            print(f"  ✗ Retry extraction yielded no documents")
+                                except Exception as retry_e:
+                                    if verbosity >= 1:
+                                        print(f"  ✗ Retry extraction failed: {retry_e}")
 
                     # Re-check taxonomy for documents that weren't checked before (only if taxonomy_filter)
                     if taxonomy_filter and not force:
@@ -514,6 +692,8 @@ def predict_and_save(
             print(f"  Total batches: {batch_num}")
             print(f"  Documents processed: {total_processed}")
             print(f"  Documents saved: {total_saved if not dry_run else 0}")
+            if retry_failed_extraction:
+                print(f"  Documents retried: {total_retried}")
             print(f"  Errors: {total_errors}")
             print(f"  Database: {config['ingest_db_name']}")
 
@@ -544,6 +724,81 @@ def predict_and_save(
             # Load raw data
             print("\nLoading documents from CouchDB...")
             raw_df = classifier.load_raw()
+
+            # Check for failed extractions and retry if enabled
+            if retry_failed_extraction:
+                # Connect to CouchDB for retry operations
+                couch_server = couchdb.Server(couchdb_url)
+                if config['couchdb_username'] and config['couchdb_password']:
+                    couch_server.resource.credentials = (
+                        config['couchdb_username'],
+                        config['couchdb_password']
+                    )
+                couch_db = couch_server[config['ingest_db_name']]
+
+                # Get list of successfully extracted doc_ids
+                extracted_doc_ids = set(
+                    row.doc_id for row in
+                    raw_df.select("doc_id").distinct().collect()
+                )
+                # Find documents that failed extraction
+                failed_doc_ids = [
+                    doc_id for doc_id in filtered_doc_ids
+                    if doc_id not in extracted_doc_ids
+                ]
+
+                if failed_doc_ids:
+                    if verbosity >= 1:
+                        print(f"\nFound {len(failed_doc_ids)} documents "
+                              "with failed extraction, attempting retry...")
+
+                    # Re-download PDFs for failed documents
+                    redownloaded_doc_ids = []
+                    for doc_id in failed_doc_ids:
+                        if verbosity >= 2:
+                            print(f"  Retrying {doc_id}...")
+                        if redownload_pdf_from_url(doc_id, couch_db, verbosity):
+                            redownloaded_doc_ids.append(doc_id)
+
+                    # Retry extraction for successfully re-downloaded documents
+                    if redownloaded_doc_ids:
+                        if verbosity >= 1:
+                            print(f"  Re-extracting "
+                                  f"{len(redownloaded_doc_ids)} documents...")
+
+                        # Create a new classifier just for the retry documents
+                        retry_classifier = SkolClassifierV2(
+                            spark=spark,
+                            input_source='couchdb',
+                            couchdb_url=couchdb_url,
+                            couchdb_database=config['ingest_db_name'],
+                            couchdb_username=config['couchdb_username'],
+                            couchdb_password=config['couchdb_password'],
+                            couchdb_pattern=pattern,
+                            couchdb_doc_ids=redownloaded_doc_ids,
+                            output_dest='couchdb',
+                            output_couchdb_suffix='.ann',
+                            auto_load_model=True,
+                            model_storage='redis',
+                            redis_client=redis_client,
+                            redis_key=classifier_model_name,
+                            **model_config
+                        )
+
+                        try:
+                            retry_raw_df = retry_classifier.load_raw()
+                            retry_count = (
+                                retry_raw_df.select("doc_id").distinct().count()
+                            )
+                            if retry_count > 0:
+                                if verbosity >= 1:
+                                    print(f"  ✓ Successfully re-extracted "
+                                          f"{retry_count} documents")
+                                # Union retry results with main batch
+                                raw_df = raw_df.union(retry_raw_df)
+                        except Exception as retry_e:
+                            if verbosity >= 1:
+                                print(f"  ✗ Retry extraction failed: {retry_e}")
 
             # Re-check taxonomy for documents that now have .txt (after PDF extraction)
             # Only if taxonomy_filter is enabled
@@ -848,6 +1103,8 @@ Work Control Options:
   --incremental-batch-size N
                           Documents per batch when --incremental is set (default: 50)
   --taxonomy-filter       Only process documents with taxonomy abbreviations
+  --retry-failed-extraction
+                          Re-download PDF and retry on extraction failure (once per doc)
   --limit N               Process at most N documents
   --doc-id ID[,ID,...]    Process only specific document ID(s), comma-separated
 
@@ -918,6 +1175,12 @@ Note: Command-line arguments override environment variables.
         '--update-taxonomy-flag-only',
         action='store_true',
         help='Only update taxonomy flags without running predictions'
+    )
+
+    parser.add_argument(
+        '--retry-failed-extraction',
+        action='store_true',
+        help='Re-download PDF from pdf_url and retry on extraction failure'
     )
 
     args, _ = parser.parse_known_args()
@@ -994,6 +1257,7 @@ Note: Command-line arguments override environment variables.
             taxonomy_filter=config.get('taxonomy_filter', False),
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
+            retry_failed_extraction=args.retry_failed_extraction,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Prediction interrupted by user")
