@@ -7,9 +7,7 @@ interface for different data source ingestors.
 
 import os
 import time
-import random
 from abc import ABC, abstractmethod
-from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -22,6 +20,8 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 from uuid import uuid5, NAMESPACE_URL
+
+from .rate_limited_client import RateLimitedHttpClient
 
 
 class Ingestor(ABC):
@@ -38,10 +38,7 @@ class Ingestor(ABC):
     robot_parser: RobotFileParser
     verbosity: int
     local_pdf_map: Dict[str, str]
-    rate_limit_min_ms: int
-    rate_limit_max_ms: int
-    last_fetch_time: Optional[float]
-    suppressed_domains: Dict[str, str]
+    http_client: RateLimitedHttpClient
 
     def __init__(
         self,
@@ -55,6 +52,7 @@ class Ingestor(ABC):
         max_retries: int = 3,
         retry_base_wait_time: int = 60,
         retry_backoff_multiplier: float = 2.0,
+        http_client: Optional[RateLimitedHttpClient] = None,
         **kwargs: Any
     ) -> None:
         """
@@ -75,6 +73,7 @@ class Ingestor(ABC):
             max_retries: Maximum retry attempts for 429 rate limit errors (default: 3)
             retry_base_wait_time: Initial wait time in seconds for exponential backoff (default: 60)
             retry_backoff_multiplier: Multiplier for exponential backoff (default: 2.0)
+            http_client: Optional pre-configured RateLimitedHttpClient instance
             **kwargs: Additional parameters (ignored by base class, used by subclasses)
         """
         self.db = db
@@ -82,14 +81,28 @@ class Ingestor(ABC):
         self.robot_parser = robot_parser
         self.verbosity = verbosity
         self.local_pdf_map = local_pdf_map if local_pdf_map is not None else {}
+
+        # Use provided http_client or create a new one
+        if http_client is not None:
+            self.http_client = http_client
+        else:
+            self.http_client = RateLimitedHttpClient(
+                user_agent=user_agent,
+                robot_parser=robot_parser,
+                verbosity=verbosity,
+                rate_limit_min_ms=rate_limit_min_ms,
+                rate_limit_max_ms=rate_limit_max_ms,
+                max_retries=max_retries,
+                retry_base_wait_time=retry_base_wait_time,
+                retry_backoff_multiplier=retry_backoff_multiplier,
+            )
+
+        # Backward compatibility: expose rate limit settings as properties
         self.rate_limit_min_ms = rate_limit_min_ms
         self.rate_limit_max_ms = rate_limit_max_ms
         self.max_retries = max_retries
         self.retry_base_wait_time = retry_base_wait_time
         self.retry_backoff_multiplier = retry_backoff_multiplier
-        self.last_fetch_time = None
-        self.suppressed_domains = {}  # Dict[domain, reason] for 403 forbidden domains
-        self._session = requests.Session()
 
     @abstractmethod
     def ingest(self) -> None:
@@ -103,276 +116,49 @@ class Ingestor(ABC):
         """
         raise NotImplementedError("Subclasses must implement ingest()")
 
+    # -------------------------------------------------------------------------
+    # Backward compatibility properties (delegate to http_client)
+    # -------------------------------------------------------------------------
+
+    @property
+    def last_fetch_time(self) -> Optional[float]:
+        """Last fetch time (delegated to http_client)."""
+        return self.http_client.last_fetch_time
+
+    @last_fetch_time.setter
+    def last_fetch_time(self, value: Optional[float]) -> None:
+        self.http_client.last_fetch_time = value
+
+    @property
+    def suppressed_domains(self) -> Dict[str, str]:
+        """Suppressed domains (delegated to http_client)."""
+        return self.http_client.suppressed_domains
+
+    # -------------------------------------------------------------------------
+    # Rate limiting methods (delegate to http_client)
+    # -------------------------------------------------------------------------
+
     def _apply_rate_limit(self) -> None:
-        """
-        Apply rate limiting before making an HTTP request.
-
-        Uses Crawl-Delay from robots.txt if available, otherwise uses a
-        random delay between configured min/max bounds.
-        """
-        if self.last_fetch_time is None:
-            return
-
-        # Check if robots.txt specifies a Crawl-Delay
-        crawl_delay = self.robot_parser.crawl_delay(self.user_agent)
-
-        if crawl_delay is not None:
-            # Use Crawl-Delay from robots.txt (in seconds)
-            # crawl_delay can be int, float, or string - convert to float
-            delay_seconds = float(crawl_delay)
-            if self.verbosity >= 3:
-                print(f"  Using Crawl-Delay from robots.txt: {delay_seconds}s")
-        else:
-            # Use random delay between configured bounds (convert ms to seconds)
-            delay_seconds = random.uniform(
-                self.rate_limit_min_ms / 1000.0,
-                self.rate_limit_max_ms / 1000.0
-            )
-            if self.verbosity >= 3:
-                print(f"  Using random delay: {delay_seconds:.2f}s")
-
-        # Calculate time since last fetch
-        elapsed = time.time() - self.last_fetch_time
-        sleep_time = delay_seconds - elapsed
-
-        if sleep_time > 0:
-            if self.verbosity >= 3:
-                print(f"  Sleeping for {sleep_time:.2f}s")
-            time.sleep(sleep_time)
+        """Apply rate limiting before making an HTTP request."""
+        self.http_client._apply_rate_limit()
 
     def _check_suppression(self, url: str) -> Optional[requests.Response]:
-        """
-        Check if the domain of the given URL is suppressed.
-
-        Args:
-            url: URL to check
-
-        Returns:
-            Mock 403 Response if domain is suppressed, None otherwise
-        """
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc
-
-        if domain in self.suppressed_domains:
-            if self.verbosity >= 2:
-                reason = self.suppressed_domains[domain]
-                print(f"  Skipping suppressed domain: {domain} ({reason})")
-
-            # Return a mock 403 response
-            mock_response = requests.Response()
-            mock_response.status_code = 403
-            mock_response.url = url
-            mock_response._content = b''
-            return mock_response
-
-        return None
+        """Check if the domain of the given URL is suppressed."""
+        return self.http_client._check_suppression(url)
 
     def _get_with_rate_limit(self, url: str, **kwargs: Any) -> requests.Response:
-        """
-        Wrapper for requests.get() that respects rate limiting.
-
-        Handles HTTP 429 (Too Many Requests) responses by checking the
-        Retry-After header and waiting the specified duration before retrying.
-
-        Args:
-            url: URL to fetch
-            **kwargs: Additional arguments to pass to requests.get()
-
-        Returns:
-            Response object from requests.get()
-        """
-        # Check if domain is suppressed (returns mock 403 if suppressed)
-        suppression_response = self._check_suppression(url)
-        if suppression_response is not None:
-            return suppression_response
-
-        self._apply_rate_limit()
-
-        if self.verbosity >= 3:
-            print(f"  Fetching: {url}")
-
-        # Record fetch time before making request
-        self.last_fetch_time = time.time()
-
-        # Ensure User-Agent header is set
-        headers = kwargs.get('headers', {})
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = self.user_agent
-            kwargs['headers'] = headers
-
-        response = self._session.get(url, **kwargs)
-
-        # Log rate limit info if available (for debugging)
-        if self.verbosity >= 4:
-            rate_limit_headers = {
-                'RateLimit-Limit': response.headers.get('RateLimit-Limit'),
-                'RateLimit-Remaining': response.headers.get('RateLimit-Remaining'),
-                'RateLimit-Reset': response.headers.get('RateLimit-Reset'),
-                'X-RateLimit-Limit': response.headers.get('X-RateLimit-Limit'),
-                'X-RateLimit-Remaining': (
-                    response.headers.get('X-RateLimit-Remaining')
-                ),
-                'X-RateLimit-Reset': response.headers.get('X-RateLimit-Reset'),
-            }
-            present_headers = {
-                k: v for k, v in rate_limit_headers.items() if v
-            }
-            if present_headers:
-                print(f"  Rate limit headers: {present_headers}")
-
-        # Handle HTTP 429 (Too Many Requests) with various headers
-        if response.status_code == 429:
-            wait_seconds = None
-            header_used = None
-
-            # 1. Check Retry-After header (RFC 7231)
-            retry_after = response.headers.get('Retry-After')
-            if retry_after:
-                try:
-                    # Try parsing as integer (seconds)
-                    wait_seconds = int(retry_after)
-                    header_used = 'Retry-After'
-                except ValueError:
-                    # Try parsing as HTTP date
-                    try:
-                        from email.utils import parsedate_to_datetime
-                        retry_time = parsedate_to_datetime(retry_after)
-                        wait_seconds = (
-                            retry_time - datetime.now(retry_time.tzinfo)
-                        ).total_seconds()
-                        wait_seconds = max(0, wait_seconds)
-                        header_used = 'Retry-After'
-                    except (ValueError, TypeError):
-                        wait_seconds = None
-
-            # 2. Check RateLimit-Reset or X-RateLimit-Reset (IETF draft)
-            if wait_seconds is None:
-                reset_header = (
-                    response.headers.get('RateLimit-Reset') or
-                    response.headers.get('X-RateLimit-Reset')
-                )
-                if reset_header:
-                    try:
-                        reset_value = int(reset_header)
-                        # Could be either:
-                        # - Unix timestamp (> 1000000000)
-                        # - Seconds until reset (< 1000000000)
-                        current_time = time.time()
-                        if reset_value > 1000000000:
-                            # Unix timestamp
-                            wait_seconds = max(0, reset_value - current_time)
-                        else:
-                            # Seconds until reset
-                            wait_seconds = reset_value
-                        header_used = (
-                            'RateLimit-Reset'
-                            if 'RateLimit-Reset' in response.headers
-                            else 'X-RateLimit-Reset'
-                        )
-                    except (ValueError, TypeError):
-                        wait_seconds = None
-
-            # 3. Default if no headers found or parsing failed
-            if wait_seconds is None:
-                wait_seconds = 60
-                header_used = 'default'
-                if self.verbosity >= 1:
-                    print(
-                        "  Warning: No rate limit headers found, "
-                        "using 60s default"
-                    )
-                    print("  All response headers:")
-                    for header_name, header_value in response.headers.items():
-                        print(f"    {header_name}: {header_value}")
-
-            if self.verbosity >= 1:
-                msg = (
-                    f"  HTTP 429 (Too Many Requests) - "
-                    f"waiting {wait_seconds:.0f}s before retry "
-                    f"(from {header_used})"
-                )
-                print(msg)
-
-            time.sleep(wait_seconds)
-
-            # Update last fetch time after the wait
-            self.last_fetch_time = time.time()
-
-            # Retry the request
-            if self.verbosity >= 3:
-                print(f"  Retrying: {url}")
-
-            response = requests.get(url, **kwargs)
-
-        # Handle HTTP 403 (Forbidden) - add domain to suppression list
-        if response.status_code == 403:
-            self._register_suppression(url)
-
-        # Log non-200 status codes
-        if response.status_code != 200:
-            if self.verbosity >= 1:
-                msg = (
-                    f"  Warning: Received status code "
-                    f"{response.status_code} for URL: {url}"
-                )
-                print(msg)
-
-        return response
+        """Wrapper for requests.get() that respects rate limiting."""
+        return self.http_client.get(url, **kwargs)
 
     def _register_suppression(self, url: str) -> None:
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc
-
-        if domain not in self.suppressed_domains:
-            reason = f"403 Forbidden at {time.strftime('%Y-%m-%d %H:%M:%S')}"
-            self.suppressed_domains[domain] = reason
-
-            if self.verbosity >= 1:
-                print(f"  Domain suppressed due to 403 Forbidden: {domain}")
+        """Register a domain as suppressed due to 403 Forbidden."""
+        self.http_client._register_suppression(url)
 
     def _retry_with_backoff(self, func, *args, operation_name: str = "operation", **kwargs):
-        """
-        Execute a function with exponential backoff retry logic for rate limit errors.
-
-        Args:
-            func: Callable to execute
-            *args: Positional arguments to pass to func
-            operation_name: Name of the operation for logging (default: "operation")
-            **kwargs: Keyword arguments to pass to func
-
-        Returns:
-            Result of func() or None if all retries fail
-        """
-        for attempt in range(self.max_retries):
-            try:
-                result = func(*args, **kwargs)
-                # Success - update last fetch time and return
-                self.last_fetch_time = time.time()
-                return result
-            except Exception as e:
-                error_msg = str(e).lower()
-                # Check if error is rate-limit related
-                is_rate_limit = (
-                    '429' in error_msg or
-                    'too many requests' in error_msg or
-                    'rate limit' in error_msg
-                )
-
-                if is_rate_limit and attempt < self.max_retries - 1:
-                    # Calculate exponential backoff wait time
-                    wait_time = self.retry_base_wait_time * (self.retry_backoff_multiplier ** attempt)
-                    if self.verbosity >= 2:
-                        print(f"  {operation_name} hit rate limit, waiting {wait_time:.0f}s (attempt {attempt + 1}/{self.max_retries})")
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    # Not a rate limit error, or we've exhausted retries
-                    if self.verbosity >= 3:
-                        error_type = "rate limit" if is_rate_limit else "error"
-                        print(f"  {operation_name} {error_type}: {e}")
-                    return None
-
-        return None
+        """Execute a function with exponential backoff retry logic."""
+        return self.http_client.retry_with_backoff(
+            func, *args, operation_name=operation_name, **kwargs
+        )
 
     def _fetch_page(self, url: str) -> Optional[BeautifulSoup]:
         """

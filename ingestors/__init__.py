@@ -12,6 +12,7 @@ from .local_mykoweb import LocalMykowebJournalsIngestor
 from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
 from .mycosphere import MycosphereIngestor
 from .publications import PublicationRegistry
+from .rate_limited_client import RateLimitedHttpClient
 
 __all__ = [
     'Ingestor',
@@ -21,4 +22,5 @@ __all__ = [
     'LocalMykowebLiteratureIngestor',
     'MycosphereIngestor',
     'PublicationRegistry',
+    'RateLimitedHttpClient',
 ]

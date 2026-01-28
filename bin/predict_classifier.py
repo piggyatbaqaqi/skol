@@ -50,9 +50,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.classifier_v2 import SkolClassifierV2
 from env_config import get_env_config
+from ingestors import RateLimitedHttpClient
 
 import couchdb
-import requests
 from io import BytesIO
 
 
@@ -63,7 +63,8 @@ from io import BytesIO
 def redownload_pdf_from_url(
     doc_id: str,
     db: couchdb.Database,
-    verbosity: int = 1
+    verbosity: int = 1,
+    http_client: Optional[RateLimitedHttpClient] = None
 ) -> bool:
     """
     Re-download the PDF for a document from its pdf_url field.
@@ -75,6 +76,7 @@ def redownload_pdf_from_url(
         doc_id: Document ID in CouchDB
         db: CouchDB database instance
         verbosity: Verbosity level
+        http_client: Optional RateLimitedHttpClient for rate-limited downloads
 
     Returns:
         True if PDF was successfully re-downloaded, False otherwise
@@ -126,7 +128,18 @@ def redownload_pdf_from_url(
 
     # Download fresh PDF
     try:
-        response = requests.get(pdf_url, timeout=60, stream=False)
+        # Use http_client if provided, otherwise create a simple one
+        if http_client is not None:
+            response = http_client.get(pdf_url, stream=False)
+        else:
+            # Create a simple client for one-off downloads
+            client = RateLimitedHttpClient(
+                user_agent='SKOL-Classifier/1.0',
+                verbosity=verbosity,
+                timeout=60
+            )
+            response = client.get(pdf_url, stream=False)
+
         if response.status_code != 200:
             error_msg = f"HTTP {response.status_code}"
             if verbosity >= 1:
@@ -163,16 +176,10 @@ def redownload_pdf_from_url(
             print(f"    ✓ Re-downloaded PDF ({len(pdf_content)} bytes)")
         return True
 
-    except requests.RequestException as e:
+    except Exception as e:
         error_msg = str(e)
         if verbosity >= 1:
             print(f"    Failed to download PDF: {error_msg}")
-        save_download_error(error_msg)
-        return False
-    except Exception as e:
-        error_msg = f"Save failed: {e}"
-        if verbosity >= 1:
-            print(f"    Failed to save PDF attachment: {e}")
         save_download_error(error_msg)
         return False
 
@@ -557,13 +564,20 @@ def predict_and_save(
             # Track documents that have already been retried (to prevent infinite loops)
             retried_doc_ids = set()
 
-            # Connect to CouchDB for retry operations
+            # Connect to CouchDB and create HTTP client for retry operations
             couch_db = None
+            http_client = None
             if retry_failed_extraction:
                 couch_server = couchdb.Server(couchdb_url)
                 if config['couchdb_username'] and config['couchdb_password']:
                     couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
                 couch_db = couch_server[config['ingest_db_name']]
+                # Create shared HTTP client for rate-limited downloads
+                http_client = RateLimitedHttpClient(
+                    user_agent='SKOL-Classifier/1.0',
+                    verbosity=verbosity,
+                    timeout=60
+                )
 
             # Split filtered_doc_ids into batches
             for batch_start in range(0, total_docs, incremental_batch_size):
@@ -620,7 +634,7 @@ def predict_and_save(
                                 retried_doc_ids.add(doc_id)  # Mark as retried
                                 if verbosity >= 2:
                                     print(f"  Retrying {doc_id}...")
-                                if redownload_pdf_from_url(doc_id, couch_db, verbosity):
+                                if redownload_pdf_from_url(doc_id, couch_db, verbosity, http_client):
                                     redownloaded_doc_ids.append(doc_id)
 
                             # Retry extraction for successfully re-downloaded documents
@@ -764,6 +778,13 @@ def predict_and_save(
                     )
                 couch_db = couch_server[config['ingest_db_name']]
 
+                # Create shared HTTP client for rate-limited downloads
+                http_client = RateLimitedHttpClient(
+                    user_agent='SKOL-Classifier/1.0',
+                    verbosity=verbosity,
+                    timeout=60
+                )
+
                 # Get list of successfully extracted doc_ids
                 extracted_doc_ids = set(
                     row.doc_id for row in
@@ -785,7 +806,7 @@ def predict_and_save(
                     for doc_id in failed_doc_ids:
                         if verbosity >= 2:
                             print(f"  Retrying {doc_id}...")
-                        if redownload_pdf_from_url(doc_id, couch_db, verbosity):
+                        if redownload_pdf_from_url(doc_id, couch_db, verbosity, http_client):
                             redownloaded_doc_ids.append(doc_id)
 
                     # Retry extraction for successfully re-downloaded documents
