@@ -155,6 +155,15 @@ def redownload_pdf_from_url(
             save_download_error(error_msg)
             return False
 
+        # Validate PDF magic bytes - must start with %PDF
+        if not pdf_content.startswith(b'%PDF'):
+            preview = pdf_content[:20].hex() if len(pdf_content) >= 20 else pdf_content.hex()
+            error_msg = f"Invalid PDF (missing %PDF header, starts with: {preview[:40]})"
+            if verbosity >= 1:
+                print(f"    Invalid PDF (not %PDF): starts with {preview[:40]}")
+            save_download_error(error_msg)
+            return False
+
         # Save new PDF attachment
         db.put_attachment(
             doc,

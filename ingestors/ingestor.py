@@ -383,6 +383,22 @@ class Ingestor(ABC):
                     continue
                 pdf_doc = response.content
 
+            # Validate PDF magic bytes - must start with %PDF
+            if not pdf_doc.startswith(b'%PDF'):
+                if self.verbosity >= 1:
+                    # Show first 20 bytes for debugging
+                    preview = pdf_doc[:20].hex() if len(pdf_doc) >= 20 else pdf_doc.hex()
+                    print(f"  Invalid PDF (not %PDF): {pdf_url} (starts with: {preview})")
+                # Save download error to document
+                try:
+                    fresh_doc = self.db[doc['_id']]
+                    fresh_doc['download_error'] = 'Invalid PDF (missing %PDF header)'
+                    self.db.save(fresh_doc)
+                except Exception as e:
+                    if self.verbosity >= 2:
+                        print(f"  Warning: Could not save download_error: {e}")
+                continue
+
             attachment_filename = 'article.pdf'
             attachment_content_type = 'application/pdf'
             attachment_file = BytesIO(pdf_doc)
