@@ -1470,7 +1470,11 @@
                         result_references: searchData.results.map(r => ({
                             similarity: r.Similarity,
                             title: r.Title,
-                            taxa_id: r.PDFDocId || null
+                            // Store taxon_id for widget retrieval, fall back to PDFDocId
+                            taxon_id: r.taxon_id || r.PDFDocId || null,
+                            // Also store PDF source info for direct linking
+                            pdf_db_name: r.PDFDbName || null,
+                            pdf_doc_id: r.PDFDocId || null
                         }))
                     })
                 });
@@ -1490,7 +1494,7 @@
             }
         }
 
-        // Display search results
+        // Display search results using TaxonResultWidget
         function displayResults(data) {
             const resultsDiv = document.getElementById('results');
 
@@ -1500,6 +1504,11 @@
             if (!data.results || data.results.length === 0) {
                 resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
                 return;
+            }
+
+            // Initialize TaxonResultWidget if available
+            if (typeof TaxonResultWidget !== 'undefined') {
+                TaxonResultWidget.init({ apiBase: API_BASE });
             }
 
             // Show result count and collection status
@@ -1516,53 +1525,66 @@
             `;
 
             data.results.forEach((result, index) => {
-                const card = document.createElement('div');
-                card.className = 'result-card';
+                // Use TaxonResultWidget if available, otherwise fall back to inline rendering
+                if (typeof TaxonResultWidget !== 'undefined') {
+                    const card = TaxonResultWidget.createCard(result, {
+                        index: index,
+                        showJson: true,
+                        descriptionLength: 500
+                    });
+                    // Use result-card class for consistent styling
+                    card.className = 'result-card';
+                    resultsDiv.appendChild(card);
+                } else {
+                    // Fallback rendering (original code)
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
 
-                const similarity = (result.Similarity * 100).toFixed(1);
+                    const similarity = (result.Similarity * 100).toFixed(1);
 
-                // Build PDF viewer URL if source metadata is available
-                let pdfLink = '';
-                let pageFragment = '';
+                    // Build PDF viewer URL if source metadata is available
+                    let pdfLink = '';
+                    let pageFragment = '';
 
-                // Determine page label/number for direct linking: prefer pdf_label, then pdf_page
-                if (result.PDFLabel) {
-                    pageFragment = `#page=${encodeURIComponent(result.PDFLabel)}`;
-                } else if (result.PDFPage) {
-                    pageFragment = `#page=${result.PDFPage}`;
-                }
-
-                if (result.PDFDbName && result.PDFDocId) {
-                    let pdfUrl = `${API_BASE}/pdf/?db=${encodeURIComponent(result.PDFDbName)}&doc_id=${encodeURIComponent(result.PDFDocId)}`;
-                    if (result.PDFPage) {
-                        pdfUrl += `&page=${result.PDFPage}`;
+                    // Determine page label/number for direct linking: prefer pdf_label, then pdf_page
+                    if (result.PDFLabel) {
+                        pageFragment = `#page=${encodeURIComponent(result.PDFLabel)}`;
+                    } else if (result.PDFPage) {
+                        pageFragment = `#page=${result.PDFPage}`;
                     }
-                    pdfUrl += pageFragment;
-                    pdfLink = `<a href="${pdfUrl}" class="view-pdf-btn" target="_blank">View PDF</a>`;
+
+                    if (result.PDFDbName && result.PDFDocId) {
+                        let pdfUrl = `${API_BASE}/pdf/?db=${encodeURIComponent(result.PDFDbName)}&doc_id=${encodeURIComponent(result.PDFDocId)}`;
+                        if (result.PDFPage) {
+                            pdfUrl += `&page=${result.PDFPage}`;
+                        }
+                        pdfUrl += pageFragment;
+                        pdfLink = `<a href="${pdfUrl}" class="view-pdf-btn" target="_blank">View PDF</a>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="result-header">
+                            <div class="result-title">${escapeHtml(result.Title || 'Untitled')}</div>
+                            <div class="similarity-badge">${similarity}%</div>
+                        </div>
+                        <div class="result-meta">
+                            ${result.Feed ? `<div class="meta-item"><span class="meta-label">Feed:</span>${escapeHtml(typeof result.Feed === 'object' ? JSON.stringify(result.Feed) : result.Feed)}</div>` : ''}
+                            ${result.PDFPage ? `<div class="meta-item"><span class="meta-label">PDF Page:</span>${result.PDFPage}</div>` : ''}
+                            ${result.LineNumber ? `<div class="meta-item"><span class="meta-label">Line:</span>${result.LineNumber}</div>` : ''}
+                        </div>
+                        ${result.Description ? `<div class="result-description">${escapeHtml(result.Description).substring(0, 500)}${result.Description.length > 500 ? '...' : ''}</div>` : ''}
+                        <div class="result-actions">
+                            ${pdfLink}
+                            ${result.URL ? `<a href="${escapeHtml(result.URL)}${pageFragment}" target="_blank" class="view-pdf-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">View Source</a>` : ''}
+                            <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
+                        </div>
+                        <div id="json-${index}" class="result-json" style="display: none;">
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+
+                    resultsDiv.appendChild(card);
                 }
-
-                card.innerHTML = `
-                    <div class="result-header">
-                        <div class="result-title">${escapeHtml(result.Title || 'Untitled')}</div>
-                        <div class="similarity-badge">${similarity}%</div>
-                    </div>
-                    <div class="result-meta">
-                        ${result.Feed ? `<div class="meta-item"><span class="meta-label">Feed:</span>${escapeHtml(typeof result.Feed === 'object' ? JSON.stringify(result.Feed) : result.Feed)}</div>` : ''}
-                        ${result.PDFPage ? `<div class="meta-item"><span class="meta-label">PDF Page:</span>${result.PDFPage}</div>` : ''}
-                        ${result.LineNumber ? `<div class="meta-item"><span class="meta-label">Line:</span>${result.LineNumber}</div>` : ''}
-                    </div>
-                    ${result.Description ? `<div class="result-description">${escapeHtml(result.Description).substring(0, 500)}${result.Description.length > 500 ? '...' : ''}</div>` : ''}
-                    <div class="result-actions">
-                        ${pdfLink}
-                        ${result.URL ? `<a href="${escapeHtml(result.URL)}${pageFragment}" target="_blank" class="view-pdf-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">View Source</a>` : ''}
-                        <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
-                    </div>
-                    <div id="json-${index}" class="result-json" style="display: none;">
-                        <pre>${JSON.stringify(result, null, 2)}</pre>
-                    </div>
-                `;
-
-                resultsDiv.appendChild(card);
             });
         }
 
@@ -1607,5 +1629,8 @@
 
     <!-- Fungarium Select Widget -->
     <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
+
+    <!-- Taxon Result Widget -->
+    <script src="{% static 'js/taxon-result-widget.js' %}"></script>
 </body>
 </html>

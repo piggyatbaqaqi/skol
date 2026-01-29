@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collection - SKOL</title>
     <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/taxon-result-widget.css' %}">
     <style>
         * {
             margin: 0;
@@ -166,6 +167,29 @@
         .search-results-preview {
             font-size: 0.9em;
             color: #666;
+        }
+
+        .search-results-container {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .search-results-container .taxon-result-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            box-shadow: none;
+        }
+
+        .search-results-container .taxon-result-card:hover {
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .search-results-container .taxon-result-loading,
+        .search-results-container .taxon-result-error {
+            box-shadow: none;
+            border: 1px solid #e0e0e0;
         }
 
         .search-actions {
@@ -568,6 +592,9 @@
             `;
 
             document.getElementById('collectionContent').innerHTML = html;
+
+            // Render taxon results after DOM is updated
+            renderSearchHistoryResults();
         }
 
         // Display search history
@@ -576,7 +603,7 @@
                 return '<div class="empty-state">No searches saved yet. Use the main search page to save searches to this collection.</div>';
             }
 
-            return collection.search_history.map(s => `
+            return collection.search_history.map((s, searchIndex) => `
                 <div class="search-item">
                     <div class="search-prompt">${escapeHtml(s.prompt)}</div>
                     <div class="search-meta">
@@ -586,8 +613,8 @@
                         <span>${formatDate(s.created_at)}</span>
                     </div>
                     ${s.result_references && s.result_references.length > 0 ? `
-                        <div class="search-results-preview">
-                            Results: ${s.result_references.slice(0, 3).map(r => escapeHtml(r.title || 'Untitled')).join(', ')}${s.result_references.length > 3 ? '...' : ''}
+                        <div class="search-results-container" id="search-results-${searchIndex}" data-search-index="${searchIndex}">
+                            <div class="taxon-result-loading">Loading results...</div>
                         </div>
                     ` : ''}
                     ${isOwner ? `
@@ -597,6 +624,45 @@
                     ` : ''}
                 </div>
             `).join('');
+        }
+
+        // Render taxon results for all search history items
+        async function renderSearchHistoryResults() {
+            if (!collection.search_history || collection.search_history.length === 0) {
+                return;
+            }
+
+            // Initialize the widget if available
+            if (typeof TaxonResultWidget !== 'undefined') {
+                TaxonResultWidget.init({ apiBase: API_BASE });
+            } else {
+                console.warn('TaxonResultWidget not loaded');
+                return;
+            }
+
+            // Render results for each search
+            for (let i = 0; i < collection.search_history.length; i++) {
+                const search = collection.search_history[i];
+                const container = document.getElementById(`search-results-${i}`);
+
+                if (!container || !search.result_references || search.result_references.length === 0) {
+                    continue;
+                }
+
+                // Clear loading state
+                container.innerHTML = '';
+
+                // Render each result using the widget
+                try {
+                    await TaxonResultWidget.renderAll(container, search.result_references, {
+                        compact: true,
+                        clear: false
+                    });
+                } catch (error) {
+                    console.error(`Error rendering results for search ${i}:`, error);
+                    container.innerHTML = `<div class="taxon-result-error">Failed to load results: ${TaxonResultWidget.escapeHtml(error.message)}</div>`;
+                }
+            }
         }
 
         // Display identifiers
@@ -867,5 +933,8 @@
     <!-- React Select Widgets -->
     <script src="{% static 'js/identifier-type-select.bundle.js' %}"></script>
     <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
+
+    <!-- Taxon Result Widget -->
+    <script src="{% static 'js/taxon-result-widget.js' %}"></script>
 </body>
 </html>

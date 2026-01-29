@@ -71,6 +71,59 @@ def clean_float(value):
         return None
 
 
+def clean_value(value):
+    """
+    Convert any value to JSON-safe format.
+
+    Handles numpy types, NaN, Inf, and converts them to JSON-serializable types.
+    """
+    import numpy as np
+    import pandas as pd
+
+    # Handle None
+    if value is None:
+        return None
+
+    # Handle pandas NA
+    if pd.isna(value):
+        return None
+
+    # Handle numpy types
+    if isinstance(value, (np.floating, float)):
+        f = float(value)
+        if math.isnan(f) or math.isinf(f):
+            return None
+        return f
+    if isinstance(value, (np.integer, int)):
+        return int(value)
+    if isinstance(value, (np.bool_, bool)):
+        return bool(value)
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+
+    # Handle strings (check for nan string representation)
+    if isinstance(value, str):
+        return value
+
+    # Handle dicts recursively
+    if isinstance(value, dict):
+        return {k: clean_value(v) for k, v in value.items()}
+
+    # Handle lists recursively
+    if isinstance(value, (list, tuple)):
+        return [clean_value(v) for v in value]
+
+    # Try to convert to native Python type
+    try:
+        # Check if it's a numpy scalar
+        if hasattr(value, 'item'):
+            return clean_value(value.item())
+    except (ValueError, TypeError):
+        pass
+
+    return value
+
+
 class SearchView(APIView):
     """
     API endpoint to perform semantic search using SKOL embeddings.
@@ -159,39 +212,42 @@ class SearchView(APIView):
 
                 # Build result dictionary from the embedding row data
                 # For SKOL_TAXA, all data is already in the embeddings DataFrame
+                # Use clean_value() for all fields to ensure JSON serialization
                 result_dict = {
-                    'Similarity': clean_float(similarity),
-                    'Title': row.get('taxon', ''),
-                    'Description': row.get('description', ''),
-                    'Feed': row.get('source', ''),
-                    'URL': row.get('filename', ''),
+                    'Similarity': clean_value(similarity),
+                    'Title': clean_value(row.get('taxon', '')),
+                    'Description': clean_value(row.get('description', '')),
+                    'Feed': clean_value(row.get('source', '')),
+                    'URL': clean_value(row.get('filename', '')),
                 }
 
                 # Add optional metadata fields if they exist
                 if 'source_metadata' in row.index:
                     src_meta = row['source_metadata']
                     if isinstance(src_meta, dict):
-                        result_dict['SourceMetadata'] = src_meta
+                        result_dict['SourceMetadata'] = clean_value(src_meta)
                         # Extract PDF source info for direct PDF access
                         if 'db_name' in src_meta and 'doc_id' in src_meta:
-                            result_dict['PDFDbName'] = src_meta['db_name']
-                            result_dict['PDFDocId'] = src_meta['doc_id']
+                            result_dict['PDFDbName'] = clean_value(src_meta['db_name'])
+                            result_dict['PDFDocId'] = clean_value(src_meta['doc_id'])
                 if 'source' in row.index:
                     src = row['source']
                     if isinstance(src, dict):
-                        result_dict['Source'] = src
+                        result_dict['Source'] = clean_value(src)
                 if 'line_number' in row.index:
-                    result_dict['LineNumber'] = clean_float(row['line_number'])
+                    result_dict['LineNumber'] = clean_value(row['line_number'])
                 if 'paragraph_number' in row.index:
-                    result_dict['ParagraphNumber'] = clean_float(row['paragraph_number'])
+                    result_dict['ParagraphNumber'] = clean_value(row['paragraph_number'])
                 if 'page_number' in row.index:
-                    result_dict['PageNumber'] = clean_float(row['page_number'])
+                    result_dict['PageNumber'] = clean_value(row['page_number'])
                 if 'pdf_page' in row.index:
-                    result_dict['PDFPage'] = clean_float(row['pdf_page'])
+                    result_dict['PDFPage'] = clean_value(row['pdf_page'])
                 if 'pdf_label' in row.index:
-                    result_dict['PDFLabel'] = row['pdf_label']
+                    result_dict['PDFLabel'] = clean_value(row['pdf_label'])
+                if 'empirical_page_number' in row.index:
+                    result_dict['EmpiricalPageNumber'] = clean_value(row['empirical_page_number'])
                 if 'taxon_id' in row.index:
-                    result_dict['taxon_id'] = row['taxon_id']
+                    result_dict['taxon_id'] = clean_value(row['taxon_id'])
 
                 results.append(result_dict)
 
@@ -225,6 +281,18 @@ class TaxaInfoView(APIView):
 
     GET /api/taxa/<taxa_id>/
     Returns: Taxa document with source information for PDF retrieval
+
+    Response format matches search result format for use with TaxonResultWidget:
+    {
+        "taxon_id": "...",
+        "Title": "Taxon name",
+        "Description": "...",
+        "PDFDbName": "...",
+        "PDFDocId": "...",
+        "PDFPage": 42,
+        "LineNumber": 100,
+        ...
+    }
     """
 
     def get(self, request, taxa_id, taxa_db='skol_taxa_dev'):
@@ -237,6 +305,15 @@ class TaxaInfoView(APIView):
             taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
             response = requests.get(taxa_url, auth=auth, timeout=30)
 
+            # If not found and taxa_id doesn't have prefix, try with taxon_ prefix
+            # This handles legacy embeddings that don't include the prefix
+            if response.status_code == 404 and not taxa_id.startswith('taxon_'):
+                taxa_url_with_prefix = f"{couchdb_url}/{taxa_db}/taxon_{taxa_id}"
+                response = requests.get(taxa_url_with_prefix, auth=auth, timeout=30)
+                if response.status_code == 200:
+                    # Update taxa_id to include the prefix for consistency
+                    taxa_id = f"taxon_{taxa_id}"
+
             if response.status_code == 404:
                 return Response(
                     {'error': f'Taxa document not found: {taxa_id}'},
@@ -246,18 +323,40 @@ class TaxaInfoView(APIView):
             response.raise_for_status()
             taxa_doc = response.json()
 
-            # Return taxa info with source details
-            return Response({
-                'taxa_id': taxa_id,
+            # Extract source metadata for PDF linking
+            source = taxa_doc.get('source', {})
+            pdf_db_name = None
+            pdf_doc_id = None
+            url = None
+
+            if isinstance(source, dict):
+                pdf_db_name = source.get('db_name')
+                pdf_doc_id = source.get('doc_id')
+                url = source.get('url', '')
+
+            # Return taxa info in search result format for widget compatibility
+            result = {
+                'taxon_id': taxa_id,
                 'taxa_db': taxa_db,
-                'taxon': taxa_doc.get('taxon', ''),
-                'description': taxa_doc.get('description', ''),
-                'source': taxa_doc.get('source', {}),
-                'line_number': taxa_doc.get('line_number'),
-                'paragraph_number': taxa_doc.get('paragraph_number'),
-                'page_number': taxa_doc.get('page_number'),
-                'pdf_page': taxa_doc.get('pdf_page'),
-            })
+                # Search result compatible fields
+                'Title': taxa_doc.get('taxon', ''),
+                'Description': taxa_doc.get('description', ''),
+                'Feed': 'CouchDB Taxa',
+                'URL': url,
+                'Source': source,
+                # PDF linking fields
+                'PDFDbName': pdf_db_name,
+                'PDFDocId': pdf_doc_id,
+                'PDFPage': clean_value(taxa_doc.get('pdf_page')),
+                'PDFLabel': clean_value(taxa_doc.get('pdf_label')),
+                # Position metadata
+                'LineNumber': clean_value(taxa_doc.get('line_number')),
+                'ParagraphNumber': clean_value(taxa_doc.get('paragraph_number')),
+                'PageNumber': clean_value(taxa_doc.get('page_number')),
+                'EmpiricalPageNumber': clean_value(taxa_doc.get('empirical_page_number')),
+            }
+
+            return Response(result)
 
         except requests.exceptions.RequestException as e:
             logger.error(f"CouchDB request failed for taxa {taxa_id}: {e}")
