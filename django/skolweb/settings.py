@@ -32,8 +32,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # Required by allauth
     'rest_framework',
     'corsheaders',
+    # allauth apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.orcid',
+    # project apps
     'search',
     'accounts',
     'contact',
@@ -46,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Required by allauth
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -204,6 +214,55 @@ LOGIN_URL = f'{_script_name}/accounts/login/'
 LOGIN_REDIRECT_URL = f'{_script_name}/'
 LOGOUT_REDIRECT_URL = f'{_script_name}/'
 PASSWORD_RESET_TIMEOUT = 259200  # 3 days in seconds
+
+# django.contrib.sites configuration (required by allauth)
+SITE_ID = 1
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default Django backend
+    'allauth.account.auth_backends.AuthenticationBackend',  # allauth backend
+]
+
+# django-allauth configuration
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Match existing email verification
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # Allow login with either
+ACCOUNT_USERNAME_REQUIRED = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+# Custom adapter to link social accounts to existing users by email
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
+
+# OAuth provider configuration (credentials from environment variables)
+SOCIALACCOUNT_PROVIDERS = {
+    'github': {
+        'APP': {
+            'client_id': os.environ.get('GITHUB_CLIENT_ID', ''),
+            'secret': os.environ.get('GITHUB_CLIENT_SECRET', ''),
+        },
+        'SCOPE': ['read:user', 'user:email'],
+    },
+    'google': {
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    },
+    'orcid': {
+        'APP': {
+            'client_id': os.environ.get('ORCID_CLIENT_ID', ''),
+            'secret': os.environ.get('ORCID_CLIENT_SECRET', ''),
+        },
+        # Use production ORCID (not sandbox)
+        'BASE_DOMAIN': 'orcid.org',
+        'MEMBER_API': False,  # Public API is sufficient for authentication
+    },
+}
 
 # Logging Configuration
 LOGGING = {

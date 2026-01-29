@@ -231,7 +231,8 @@ def sources_view(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('search.urls')),
-    path('accounts/', include('accounts.urls')),
+    path('accounts/', include('accounts.urls')),  # Custom accounts (login, register, etc.)
+    path('accounts/', include('allauth.urls')),   # allauth OAuth callbacks (github/, google/, orcid/)
     path('contact/', include('contact.urls')),
     path('about/', TemplateView.as_view(template_name='about.html'), name='about'),
     path('sources/', sources_view, name='sources'),

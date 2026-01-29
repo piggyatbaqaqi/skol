@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -176,3 +177,23 @@ def resend_verification(request):
         return redirect('accounts:login')
 
     return render(request, 'accounts/resend_verification.html')
+
+
+@login_required
+def social_connections(request):
+    """
+    Display and manage connected social accounts.
+
+    Shows which OAuth providers (GitHub, Google, ORCID) are connected
+    to the user's account, and allows them to connect/disconnect providers.
+    """
+    # Import here to avoid circular imports and handle case when allauth not installed
+    try:
+        from allauth.socialaccount.models import SocialAccount
+        social_accounts = SocialAccount.objects.filter(user=request.user)
+    except ImportError:
+        social_accounts = []
+
+    return render(request, 'accounts/social_connections.html', {
+        'social_accounts': social_accounts,
+    })

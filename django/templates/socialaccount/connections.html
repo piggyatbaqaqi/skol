@@ -1,0 +1,178 @@
+{% extends "accounts/base.html" %}
+{% load socialaccount %}
+
+{% block title %}Connected Accounts - SKOL{% endblock %}
+
+{% block content %}
+<h1>Connected Accounts</h1>
+<p class="subtitle">Manage your OAuth login providers</p>
+
+{% if form.accounts %}
+<div class="connections-section">
+    <h2>Your Connected Accounts</h2>
+
+    <form method="post" action="{% url 'socialaccount_connections' %}">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="connected-list">
+            {% for account in form.accounts %}
+                <div class="connection-item">
+                    <div class="connection-info">
+                        <input type="radio" name="account" value="{{ account.id }}" id="account_{{ account.id }}">
+                        <label for="account_{{ account.id }}" class="provider-badge provider-{{ account.provider }}">
+                            {% if account.provider == 'github' %}
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                GitHub
+                            {% elif account.provider == 'google' %}
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                Google
+                            {% elif account.provider == 'orcid' %}
+                                <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.025-5.325 5.025h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 4.022-2.484 4.022-3.722 0-1.209-.741-3.722-3.853-3.722h-2.466z"/></svg>
+                                ORCID
+                            {% else %}
+                                {{ account.get_provider.name }}
+                            {% endif %}
+                        </label>
+                        <span class="connection-uid">{{ account.uid }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 15px;">
+            <button type="submit" name="action_remove" class="btn-disconnect">Remove Selected</button>
+        </div>
+    </form>
+</div>
+{% else %}
+<div class="no-connections">
+    <p>No social accounts connected yet.</p>
+</div>
+{% endif %}
+
+<div class="connections-section">
+    <h2>Connect New Account</h2>
+    <p>Add additional login methods to your account:</p>
+
+    {% get_providers as socialaccount_providers %}
+    <div class="social-buttons" style="margin-top: 15px;">
+        {% for provider in socialaccount_providers %}
+            {% if provider.id == 'github' %}
+                <a href="{% provider_login_url provider.id process='connect' %}" class="btn-social btn-github">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    Connect GitHub
+                </a>
+            {% elif provider.id == 'google' %}
+                <a href="{% provider_login_url provider.id process='connect' %}" class="btn-social btn-google">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Connect Google
+                </a>
+            {% elif provider.id == 'orcid' %}
+                <a href="{% provider_login_url provider.id process='connect' %}" class="btn-social btn-orcid">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.025-5.325 5.025h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 4.022-2.484 4.022-3.722 0-1.209-.741-3.722-3.853-3.722h-2.466z"/></svg>
+                    Connect ORCID
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="links">
+    <p><a href="{% url 'accounts:login' %}">Back to login</a></p>
+    <p><a href="{% url 'home' %}">Back to search</a></p>
+</div>
+
+<style>
+    .connections-section {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .connections-section h2 {
+        font-size: 1.2em;
+        color: #333;
+        margin-bottom: 15px;
+    }
+
+    .connected-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .connection-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .connection-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .provider-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        color: white;
+        cursor: pointer;
+    }
+
+    .provider-github {
+        background: #24292e;
+    }
+
+    .provider-google {
+        background: #4285f4;
+    }
+
+    .provider-orcid {
+        background: #a6ce39;
+    }
+
+    .connection-uid {
+        color: #666;
+        font-size: 0.85em;
+    }
+
+    .btn-disconnect {
+        padding: 8px 16px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-disconnect:hover {
+        background: #c82333;
+    }
+
+    .no-connections {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+        color: #666;
+    }
+</style>
+{% endblock %}

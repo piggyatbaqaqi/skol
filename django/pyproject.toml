@@ -37,6 +37,7 @@ dependencies = [
     "Django>=4.2,<5.0",
     "djangorestframework>=3.14.0",
     "django-cors-headers>=4.0.0",
+    "django-allauth>=0.57.0",
     "redis>=4.5.0",
 ]
 

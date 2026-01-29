@@ -1,0 +1,17 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Login Cancelled - SKOL{% endblock %}
+
+{% block content %}
+<h1>Login Cancelled</h1>
+<p class="subtitle">Social login was cancelled</p>
+
+<div class="info">
+    <p>You cancelled the login process. No changes were made to your account.</p>
+</div>
+
+<div class="links">
+    <p><a href="{% url 'accounts:login' %}">Try again</a></p>
+    <p><a href="{% url 'home' %}">Back to search</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Authentication Error - SKOL{% endblock %}
+
+{% block content %}
+<h1>Authentication Error</h1>
+<p class="subtitle">Something went wrong</p>
+
+<div class="error">
+    <p>An error occurred while trying to authenticate with the social provider.</p>
+    <p>This could happen if:</p>
+    <ul style="margin: 10px 0 0 20px; text-align: left;">
+        <li>The authentication was denied or timed out</li>
+        <li>The email address is already associated with another account</li>
+        <li>There was a temporary issue with the provider</li>
+    </ul>
+</div>
+
+<div class="links">
+    <p><a href="{% url 'accounts:login' %}">Try again</a></p>
+    <p><a href="{% url 'accounts:register' %}">Create an account with email</a></p>
+    <p><a href="{% url 'home' %}">Back to search</a></p>
+</div>
+{% endblock %}
