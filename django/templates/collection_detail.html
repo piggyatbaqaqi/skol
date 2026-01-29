@@ -656,7 +656,8 @@
                 try {
                     await TaxonResultWidget.renderAll(container, search.result_references, {
                         compact: true,
-                        clear: false
+                        clear: false,
+                        showJson: true
                     });
                 } catch (error) {
                     console.error(`Error rendering results for search ${i}:`, error);
