@@ -702,7 +702,7 @@ class PDFSectionExtractor:
             if self._is_likely_header(line, next_line):
                 # Save current paragraph if exists
                 if current_paragraph:
-                    para_text = ' '.join(current_paragraph).strip()
+                    para_text = '\n'.join(current_paragraph).strip()
                     if len(para_text) >= min_paragraph_length:
                         # Check if this is a figure caption
                         if self._is_figure_caption(para_text):
@@ -759,7 +759,7 @@ class PDFSectionExtractor:
             # Blank line indicates paragraph break
             elif self._is_blank_or_whitespace(line):
                 if current_paragraph:
-                    para_text = ' '.join(current_paragraph).strip()
+                    para_text = '\n'.join(current_paragraph).strip()
                     if len(para_text) >= min_paragraph_length:
                         # Check if this is a figure caption
                         if self._is_figure_caption(para_text):
@@ -803,7 +803,7 @@ class PDFSectionExtractor:
 
         # Don't forget the last paragraph
         if current_paragraph:
-            para_text = ' '.join(current_paragraph).strip()
+            para_text = '\n'.join(current_paragraph).strip()
             if len(para_text) >= min_paragraph_length:
                 # Check if this is a figure caption
                 if self._is_figure_caption(para_text):
