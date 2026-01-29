@@ -1102,6 +1102,65 @@
                 identifiersSection.style.display = 'block';
                 updateIdentifiersDisplay();
             }
+
+            // Display most recent search results if available (and not skipping prompt update)
+            if (!skipPromptUpdate) {
+                displayMostRecentSearchResults();
+            }
+        }
+
+        // Display the most recent search results from the active collection
+        async function displayMostRecentSearchResults() {
+            if (!activeCollectionData) return;
+
+            const searchHistory = activeCollectionData.search_history || [];
+            if (searchHistory.length === 0) return;
+
+            // Get the most recent search (first in array, ordered by created_at descending)
+            const mostRecentSearch = searchHistory[0];
+            if (!mostRecentSearch.result_references || mostRecentSearch.result_references.length === 0) {
+                return;
+            }
+
+            const resultsDiv = document.getElementById('results');
+            if (!resultsDiv) return;
+
+            // Initialize TaxonResultWidget if available
+            if (typeof TaxonResultWidget !== 'undefined') {
+                TaxonResultWidget.init({ apiBase: API_BASE });
+            } else {
+                console.warn('TaxonResultWidget not loaded');
+                return;
+            }
+
+            // Show loading state
+            resultsDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <span style="color: #666;">Loading ${mostRecentSearch.result_references.length} results from collection...</span>
+                    <span style="color: #667eea; font-size: 0.9em;">From: ${escapeHtml(mostRecentSearch.prompt.substring(0, 50))}${mostRecentSearch.prompt.length > 50 ? '...' : ''}</span>
+                </div>
+            `;
+
+            try {
+                // Render results using the widget (it will fetch full data for each taxon_id)
+                await TaxonResultWidget.renderAll(resultsDiv, mostRecentSearch.result_references, {
+                    showJson: true,
+                    descriptionLength: 500,
+                    clear: false  // Don't clear the header we just added
+                });
+
+                // Update header after results are loaded
+                const headerHtml = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <span style="color: #666;">Found ${mostRecentSearch.result_references.length} results</span>
+                        <span style="color: #667eea; font-size: 0.9em;">From collection search: "${escapeHtml(mostRecentSearch.prompt.substring(0, 50))}${mostRecentSearch.prompt.length > 50 ? '...' : ''}"</span>
+                    </div>
+                `;
+                resultsDiv.insertAdjacentHTML('afterbegin', headerHtml);
+            } catch (error) {
+                console.error('Error loading search results:', error);
+                resultsDiv.innerHTML = `<div class="no-results">Failed to load search results: ${escapeHtml(error.message)}</div>`;
+            }
         }
 
         // Hide collection-related UI elements
