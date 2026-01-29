@@ -151,8 +151,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
 
 # HTTPS/Proxy settings
-# When behind a reverse proxy (Apache/nginx), trust the X-Forwarded-Proto header
+# When behind a reverse proxy (Apache/nginx), trust the X-Forwarded headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
 # Set these to True in production when using HTTPS
 CSRF_COOKIE_SECURE = os.environ.get('SKOL_HTTPS', 'False') == 'True'
