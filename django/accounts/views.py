@@ -15,6 +15,31 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _build_verification_url(request, uid, token):
+    """Build verification URL that works behind reverse proxy."""
+    from django.conf import settings
+    from django.urls import reverse
+
+    # Get the verification path
+    path = reverse('accounts:verify_email', kwargs={'uidb64': uid, 'token': token})
+
+    # Check for FORCE_SCRIPT_NAME (URL prefix like /skol)
+    script_name = getattr(settings, 'FORCE_SCRIPT_NAME', '') or ''
+
+    # Determine protocol and domain
+    use_https = getattr(settings, 'SKOL_HTTPS', False)
+    if isinstance(use_https, str):
+        use_https = use_https.lower() in ('true', '1', 'yes')
+    protocol = 'https' if use_https else 'http'
+
+    # Get domain from Site framework (should be configured correctly)
+    current_site = get_current_site(request)
+    domain = current_site.domain
+
+    # Build full URL
+    return f"{protocol}://{domain}{script_name}{path}"
+
+
 def register(request):
     """User registration view with email verification."""
     if request.user.is_authenticated:
@@ -34,7 +59,7 @@ def register(request):
             token = email_verification_token.make_token(user)
 
             # Build verification URL
-            verify_url = f"http://{current_site.domain}/accounts/verify-email/{uid}/{token}/"
+            verify_url = _build_verification_url(request, uid, token)
 
             # Render email templates
             context = {
@@ -139,7 +164,7 @@ def resend_verification(request):
             token = email_verification_token.make_token(user)
 
             # Build verification URL
-            verify_url = f"http://{current_site.domain}/accounts/verify-email/{uid}/{token}/"
+            verify_url = _build_verification_url(request, uid, token)
 
             # Render email templates
             context = {
@@ -196,4 +221,60 @@ def social_connections(request):
 
     return render(request, 'accounts/social_connections.html', {
         'social_accounts': social_accounts,
+    })
+
+
+@login_required
+def account_settings(request):
+    """
+    Account settings page for managing password and connected social accounts.
+    """
+    from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
+
+    # Get social accounts if allauth is installed
+    try:
+        from allauth.socialaccount.models import SocialAccount
+        social_accounts = SocialAccount.objects.filter(user=request.user)
+    except ImportError:
+        social_accounts = []
+
+    # Check if user has a usable password (social-only users may not)
+    has_usable_password = request.user.has_usable_password()
+
+    password_form = None
+    set_password_form = None
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'change_password' and has_usable_password:
+            password_form = PasswordChangeForm(request.user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                # Keep user logged in after password change
+                from django.contrib.auth import update_session_auth_hash
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Your password has been changed successfully.')
+                return redirect('accounts:account_settings')
+
+        elif action == 'set_password' and not has_usable_password:
+            set_password_form = SetPasswordForm(request.user, request.POST)
+            if set_password_form.is_valid():
+                user = set_password_form.save()
+                from django.contrib.auth import update_session_auth_hash
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Your password has been set successfully.')
+                return redirect('accounts:account_settings')
+
+    # Initialize empty forms for GET requests
+    if password_form is None and has_usable_password:
+        password_form = PasswordChangeForm(request.user)
+    if set_password_form is None and not has_usable_password:
+        set_password_form = SetPasswordForm(request.user)
+
+    return render(request, 'accounts/account_settings.html', {
+        'social_accounts': social_accounts,
+        'has_usable_password': has_usable_password,
+        'password_form': password_form,
+        'set_password_form': set_password_form,
     })

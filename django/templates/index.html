@@ -804,6 +804,7 @@
             </div>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
+            <a href="{% url 'accounts:account_settings' %}">Account</a>
             <a href="{% url 'accounts:logout' %}">Logout</a>
             <div class="settings-dropdown">
                 <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9776;</button>

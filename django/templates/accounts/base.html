@@ -316,6 +316,10 @@
             <a href="{{ SCRIPT_NAME }}/">Home</a>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'accounts:account_settings' %}">Account</a>
+            <a href="{% url 'accounts:logout' %}">Logout</a>
+            {% endif %}
         </div>
 
         {% if messages %}

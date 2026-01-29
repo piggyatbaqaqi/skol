@@ -43,4 +43,7 @@ urlpatterns = [
 
     # Social account connections
     path('connections/', views.social_connections, name='social_connections'),
+
+    # Account settings
+    path('settings/', views.account_settings, name='account_settings'),
 ]
