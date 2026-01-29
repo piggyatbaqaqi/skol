@@ -33,6 +33,8 @@ Example:
 Environment Variables:
     TAXONOMY_ABBREVS - Comma-separated list of taxonomy abbreviations to check
                        (default: comb.,fam.,gen.,ined.,var.,subg.,subsp.,sp.,f.,nov.,spec.,ssp.)
+    SKIP_TAXONOMY_CHECK - Set to 'true' to disable taxonomy abbreviation checking entirely
+                          (all documents will be treated as having taxonomy abbreviations)
 """
 
 import argparse
@@ -253,8 +255,17 @@ def mark_taxonomy_documents(
     Returns:
         Dictionary mapping doc_id to taxonomy flag (True if contains abbreviations)
     """
+    import os
     import couchdb
     import re
+
+    # Check if taxonomy checking is disabled
+    if os.environ.get('SKIP_TAXONOMY_CHECK', '').lower() in ('1', 'true', 'yes'):
+        if verbosity >= 1:
+            print(f"\n⚠ Taxonomy abbreviation checking DISABLED (SKIP_TAXONOMY_CHECK=true)")
+            print(f"  Treating all {len(doc_ids)} documents as having taxonomy abbreviations")
+        # Return all documents as having taxonomy (so none are filtered out)
+        return {doc_id: True for doc_id in doc_ids}
 
     abbrevs = config['taxonomy_abbrevs']
 
