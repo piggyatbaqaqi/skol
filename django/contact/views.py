@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.utils.html import mark_safe
 
 from .forms import ContactForm, FeedbackForm
 from .github import get_github_token, create_github_issue, format_feedback_issue
@@ -112,8 +113,10 @@ def feedback_view(request):
                     )
                     messages.success(
                         request,
-                        f'Your feedback has been submitted as GitHub issue. '
-                        f'<a href="{result["issue_url"]}" target="_blank">View issue</a>'
+                        mark_safe(
+                            f'Your feedback has been submitted as GitHub issue. '
+                            f'<a href="{result["issue_url"]}" target="_blank">View issue</a>'
+                        )
                     )
                     return redirect('contact:feedback_success')
                 else:
