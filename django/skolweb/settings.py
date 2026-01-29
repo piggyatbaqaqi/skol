@@ -153,7 +153,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 # HTTPS/Proxy settings
 # When behind a reverse proxy (Apache/nginx), trust the X-Forwarded headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
+# USE_X_FORWARDED_HOST disabled - using ProxyPreserveHost On instead
+# USE_X_FORWARDED_HOST = True
 
 # Set these to True in production when using HTTPS
 CSRF_COOKIE_SECURE = os.environ.get('SKOL_HTTPS', 'False') == 'True'
@@ -233,6 +234,7 @@ ACCOUNT_USERNAME_REQUIRED = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_STORE_TOKENS = True  # Store OAuth tokens for API access (e.g., GitHub issues)
 
 # Custom adapter to link social accounts to existing users by email
 SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
