@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 
 from .forms import ContactForm, FeedbackForm
+from .github import get_github_token, create_github_issue, format_feedback_issue
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,10 @@ def feedback_view(request):
     if referer:
         initial['page_url'] = referer
 
+    # Check if user has GitHub credentials for issue creation
+    github_token = get_github_token(request.user)
+    has_github = github_token is not None
+
     if request.method == 'POST':
         form = FeedbackForm(request.POST)
         if form.is_valid():
@@ -88,7 +93,36 @@ def feedback_view(request):
             page_url = form.cleaned_data.get('page_url', '')
             reply_to = form.cleaned_data.get('email')
 
-            # Build email body
+            # Try to create GitHub issue if user has linked GitHub account
+            if github_token:
+                title, body, labels = format_feedback_issue(
+                    feedback_type=feedback_type,
+                    message=message,
+                    page_url=page_url,
+                    user=request.user,
+                    email=reply_to,
+                )
+
+                result = create_github_issue(github_token, title, body, labels)
+
+                if result['success']:
+                    logger.info(
+                        f"Feedback submitted as GitHub issue #{result['issue_number']}: "
+                        f"type={feedback_type}, user={request.user.username}"
+                    )
+                    messages.success(
+                        request,
+                        f'Your feedback has been submitted as GitHub issue. '
+                        f'<a href="{result["issue_url"]}" target="_blank">View issue</a>'
+                    )
+                    return redirect('contact:feedback_success')
+                else:
+                    # Fall back to email if GitHub fails
+                    logger.warning(
+                        f"GitHub issue creation failed, falling back to email: {result['error']}"
+                    )
+
+            # Fall back to email submission
             body_parts = [
                 f'Feedback Type: {feedback_type}',
                 f'Page URL: {page_url or "Not specified"}',
@@ -114,7 +148,6 @@ def feedback_view(request):
             subject = f'[SKOL Feedback] {type_labels.get(feedback_type, "Feedback")}'
 
             try:
-                # Debug: log email settings
                 logger.debug(
                     f"Email config: HOST={settings.EMAIL_HOST}, PORT={settings.EMAIL_PORT}, "
                     f"USER={settings.EMAIL_HOST_USER}, TLS={settings.EMAIL_USE_TLS}, "
@@ -143,7 +176,10 @@ def feedback_view(request):
     else:
         form = FeedbackForm(initial=initial)
 
-    return render(request, 'contact/feedback.html', {'form': form})
+    return render(request, 'contact/feedback.html', {
+        'form': form,
+        'has_github': has_github,
+    })
 
 
 def contact_success_view(request):

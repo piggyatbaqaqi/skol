@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.orcid',
-    'allauth.socialaccount.providers.inaturalist',
     # project apps
     'search',
     'accounts',
@@ -245,7 +244,7 @@ SOCIALACCOUNT_PROVIDERS = {
             'client_id': os.environ.get('GITHUB_CLIENT_ID', ''),
             'secret': os.environ.get('GITHUB_CLIENT_SECRET', ''),
         },
-        'SCOPE': ['read:user', 'user:email'],
+        'SCOPE': ['read:user', 'user:email', 'public_repo'],
     },
     'google': {
         'APP': {
@@ -263,12 +262,6 @@ SOCIALACCOUNT_PROVIDERS = {
         # Use production ORCID (not sandbox)
         'BASE_DOMAIN': 'orcid.org',
         'MEMBER_API': False,  # Public API is sufficient for authentication
-    },
-    'inaturalist': {
-        'APP': {
-            'client_id': os.environ.get('INATURALIST_CLIENT_ID', ''),
-            'secret': os.environ.get('INATURALIST_CLIENT_SECRET', ''),
-        },
     },
 }
 
