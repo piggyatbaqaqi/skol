@@ -36,6 +36,8 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
+from taxon import get_ingest_field
+
 
 def _inference_worker(descriptions, model_config, batch_size, result_queue, streaming=False):
     """
@@ -1165,6 +1167,7 @@ Result:
                 'taxon': row['taxon'],
                 'description': row[description_col],
                 'source': dict(row['source']) if row['source'] else {},
+                'ingest': dict(row['ingest']) if row.get('ingest') else None,
                 'line_number': row['line_number'],
                 'paragraph_number': row['paragraph_number'],
                 'page_number': row['page_number'],
@@ -1488,11 +1491,11 @@ Result:
                     doc_id = "unknown"
 
                     try:
-                        # Extract source metadata from row
-                        source_dict = row.source if hasattr(row, 'source') else {}
-                        source = dict(source_dict) if isinstance(source_dict, dict) else {}
-                        source_doc_id = str(source.get('doc_id', 'unknown'))
-                        source_url = source.get('url')
+                        # Convert row to dict for get_ingest_field()
+                        row_dict = row.asDict()
+                        # Use ingest field names via get_ingest_field()
+                        source_doc_id = str(get_ingest_field(row_dict, '_id', default='unknown'))
+                        source_url = get_ingest_field(row_dict, 'url')
                         line_number = row.line_number if hasattr(row, 'line_number') else 0
 
                         # Generate deterministic document ID

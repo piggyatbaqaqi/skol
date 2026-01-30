@@ -676,6 +676,11 @@ class SearchView(APIView):
                     src = row['source']
                     if isinstance(src, dict):
                         result_dict['Source'] = clean_value(src)
+                # Also include ingest field if present (new format)
+                if 'ingest' in row.index:
+                    ingest = row['ingest']
+                    if isinstance(ingest, dict):
+                        result_dict['Ingest'] = clean_value(ingest)
                 if 'line_number' in row.index:
                     result_dict['LineNumber'] = clean_value(row['line_number'])
                 if 'paragraph_number' in row.index:

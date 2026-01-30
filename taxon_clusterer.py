@@ -20,6 +20,8 @@ from scipy.spatial.distance import cosine
 from neo4j import GraphDatabase
 from dataclasses import dataclass
 
+from taxon import get_ingest_field
+
 
 
 @dataclass
@@ -145,10 +147,15 @@ class TaxonClusterer:
             for _, row in data.iterrows():
                 metadata = {}
 
-                # Flatten source dict for neo4j storage.
-                if 'source' in data.columns:
+                # Flatten source/ingest dict for neo4j storage.
+                # Use ingest (new format) if present, fall back to source (old format)
+                row_dict = row.to_dict()
+                if 'ingest' in data.columns and isinstance(row['ingest'], dict):
+                    ingest = row['ingest']
+                    for key in ingest.keys():
+                        metadata[f'ingest_{key}'] = ingest[key]
+                if 'source' in data.columns and isinstance(row['source'], dict):
                     source = row['source']
-                    assert isinstance(source, dict), "Source field must be dict"
                     for key in source.keys():
                         metadata[f'source_{key}'] = source[key]
 

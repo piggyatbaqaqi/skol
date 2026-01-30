@@ -29,7 +29,7 @@ from env_config import get_env_config
 
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
-from taxon import group_paragraphs, Taxon
+from taxon import group_paragraphs, Taxon, get_ingest_field
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -168,16 +168,17 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
         taxon_dict = taxon.as_row()
 
         if DEBUG_TRACE:
-            source_doc_id = taxon_dict.get('source', {}).get('doc_id')
+            # Use ingest field names for consistency
+            source_doc_id = get_ingest_field(taxon_dict, '_id')
             if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
                 logger.info(f"[TRACE] convert_taxa_to_rows: doc_id={source_doc_id}, "
-                           f"human_url={taxon_dict.get('source', {}).get('human_url')}, "
-                           f"pdf_url={taxon_dict.get('source', {}).get('pdf_url')}")
+                           f"human_url={get_ingest_field(taxon_dict, 'url')}, "
+                           f"pdf_url={get_ingest_field(taxon_dict, 'pdf_url')}")
 
         if '_id' not in taxon_dict:
             taxon_dict['_id'] = generate_taxon_doc_id(
-                taxon_dict['source']['doc_id'],
-                taxon_dict['source'].get('human_url'),
+                get_ingest_field(taxon_dict, '_id', default='unknown'),
+                get_ingest_field(taxon_dict, 'url'),
                 taxon_dict['line_number'] or 0
             )
         if 'json_annotated' not in taxon_dict:
@@ -582,18 +583,18 @@ class TaxonExtractor:
                     doc_id = "unknown"
 
                     try:
-                        # Extract source metadata from row
-                        source_dict = row.source if hasattr(row, 'source') else {}  # type: ignore[reportUnknownMemberType]
-                        source: Dict[str, Any] = dict(source_dict) if isinstance(source_dict, dict) else {}  # type: ignore[reportUnknownArgumentType]
-                        source_doc_id: str = str(source.get('doc_id', 'unknown'))
-                        source_url: Optional[str] = source.get('human_url')  # type: ignore[reportUnknownArgumentType]  # FIXED: was 'url', should be 'human_url'
+                        # Convert row to dict for get_ingest_field()
+                        row_dict = row.asDict()
+                        # Use ingest field names via get_ingest_field()
+                        source_doc_id: str = str(get_ingest_field(row_dict, '_id', default='unknown'))
+                        source_url: Optional[str] = get_ingest_field(row_dict, 'url')
                         line_number: Any = row.line_number if hasattr(row, 'line_number') else 0  # type: ignore[reportUnknownMemberType]
 
                         if DEBUG_TRACE:
                             if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
                                 logger.info(f"[TRACE] save_partition: doc_id={source_doc_id}, "
-                                           f"human_url={source.get('human_url')}, "
-                                           f"pdf_url={source.get('pdf_url')}")
+                                           f"url={source_url}, "
+                                           f"pdf_url={get_ingest_field(row_dict, 'pdf_url')}")
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
@@ -602,13 +603,13 @@ class TaxonExtractor:
                             int(line_number) if line_number else 0
                         )
 
-                        # Convert row to dict for CouchDB storage
-                        taxon_doc = row.asDict()
+                        # Use row_dict (already converted above) for CouchDB storage
+                        taxon_doc = row_dict
 
                         if DEBUG_TRACE:
                             if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
                                 logger.info(f"[TRACE] taxon_doc before save: _id={doc_id}, "
-                                           f"source={taxon_doc.get('source')}")
+                                           f"ingest={taxon_doc.get('ingest')}")
 
                         # Retry loop to handle concurrent update conflicts
                         for attempt in range(MAX_RETRIES):
