@@ -188,6 +188,21 @@ class BuildEmbeddingView(APIView):
             # with any CUDA state initialized by Django/gunicorn)
             logger.info(f"Starting embedding build: {embedding_name} (force={force})")
 
+            # Use Redis lock to prevent concurrent builds
+            lock_key = 'skol:build:embedding:lock'
+            lock_ttl = 660  # 11 minutes (slightly longer than timeout)
+
+            # Try to acquire lock (SETNX = SET if Not eXists)
+            lock_acquired = r.set(lock_key, 'building', nx=True, ex=lock_ttl)
+
+            if not lock_acquired:
+                logger.info(f"Embedding build already in progress (lock key exists)")
+                return Response({
+                    'status': 'building',
+                    'embedding_name': embedding_name,
+                    'message': 'Embedding build already in progress. Please wait and try again.'
+                }, status=status.HTTP_409_CONFLICT)
+
             try:
                 import subprocess
                 import os
@@ -197,6 +212,7 @@ class BuildEmbeddingView(APIView):
                 embed_script = bin_path / 'embed_taxa.py'
 
                 if not embed_script.exists():
+                    r.delete(lock_key)  # Release lock on error
                     return Response({
                         'status': 'error',
                         'embedding_name': embedding_name,
@@ -238,7 +254,7 @@ class BuildEmbeddingView(APIView):
                     return Response({
                         'status': 'error',
                         'embedding_name': embedding_name,
-                        'message': f'embed_taxa.py failed with exit code {result.returncode}',
+                        'message': f'embed_taxa.py failed with code {result.returncode}',
                         'stdout': result.stdout,
                         'stderr': result.stderr,
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -256,14 +272,14 @@ class BuildEmbeddingView(APIView):
                     return Response({
                         'status': 'complete',
                         'embedding_name': embedding_name,
-                        'message': f'Embedding built successfully with {count} entries',
+                        'message': f'Embedding built with {count} entries',
                         'embedding_count': count
                     }, status=status.HTTP_201_CREATED)
                 else:
                     return Response({
                         'status': 'error',
                         'embedding_name': embedding_name,
-                        'message': 'Embedding build completed but not found in Redis',
+                        'message': 'Build completed but not found in Redis',
                         'stdout': result.stdout,
                         'stderr': result.stderr,
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -283,6 +299,10 @@ class BuildEmbeddingView(APIView):
                     'embedding_name': embedding_name,
                     'message': f'Failed to run embed_taxa.py: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            finally:
+                # Always release the lock
+                r.delete(lock_key)
 
         except Exception as e:
             logger.error(f"Error building embedding: {e}")
@@ -418,6 +438,20 @@ class BuildVocabTreeView(APIView):
             # Running as subprocess avoids any potential module import issues
             logger.info(f"Starting vocab tree build from {db_name} (force={force})")
 
+            # Use Redis lock to prevent concurrent builds
+            lock_key = 'skol:build:vocab_tree:lock'
+            lock_ttl = 360  # 6 minutes (slightly longer than timeout)
+
+            # Try to acquire lock (SETNX = SET if Not eXists)
+            lock_acquired = r.set(lock_key, 'building', nx=True, ex=lock_ttl)
+
+            if not lock_acquired:
+                logger.info("Vocab tree build already in progress (lock exists)")
+                return Response({
+                    'status': 'building',
+                    'message': 'Vocab tree build already in progress. Try again.'
+                }, status=status.HTTP_409_CONFLICT)
+
             try:
                 import subprocess
                 import os
@@ -427,6 +461,7 @@ class BuildVocabTreeView(APIView):
                 build_script = bin_path / 'build_vocab_tree.py'
 
                 if not build_script.exists():
+                    r.delete(lock_key)  # Release lock on error
                     return Response({
                         'status': 'error',
                         'message': f'build_vocab_tree.py not found at {build_script}'
@@ -501,7 +536,7 @@ class BuildVocabTreeView(APIView):
                 logger.error("build_vocab_tree.py timed out after 5 minutes")
                 return Response({
                     'status': 'error',
-                    'message': 'Vocabulary tree build timed out after 5 minutes'
+                    'message': 'Vocab tree build timed out after 5 minutes'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             except Exception as e:
@@ -510,6 +545,10 @@ class BuildVocabTreeView(APIView):
                     'status': 'error',
                     'message': f'Failed to run build_vocab_tree.py: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            finally:
+                # Always release the lock
+                r.delete(lock_key)
 
         except Exception as e:
             logger.error(f"Error building vocab tree: {e}")
