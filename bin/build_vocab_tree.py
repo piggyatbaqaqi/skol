@@ -40,6 +40,14 @@ import couchdb
 import redis
 
 
+# ============================================================================
+# Locking Constants (shared with Django views)
+# ============================================================================
+
+LOCK_KEY = 'skol:build:vocab_tree:lock'
+LOCK_TTL = 360  # 6 minutes
+
+
 class VocabularyTree:
     """
     A tree data structure for organizing JSON vocabulary by levels.
@@ -488,6 +496,64 @@ def load_from_redis(
     return tree, metadata
 
 
+def acquire_lock(
+    redis_host: str = "localhost",
+    redis_port: int = 6379,
+    verbosity: int = 1
+) -> Optional[redis.Redis]:
+    """
+    Acquire the build lock to prevent concurrent builds.
+
+    Args:
+        redis_host: Redis host
+        redis_port: Redis port
+        verbosity: Verbosity level
+
+    Returns:
+        Redis client if lock acquired
+
+    Raises:
+        SystemExit: If lock cannot be acquired (another build in progress)
+    """
+    redis_client = redis.Redis(
+        host=redis_host,
+        port=redis_port,
+        decode_responses=True
+    )
+
+    # Try to acquire lock (SETNX = SET if Not eXists)
+    lock_acquired = redis_client.set(LOCK_KEY, 'building', nx=True, ex=LOCK_TTL)
+
+    if not lock_acquired:
+        if verbosity >= 1:
+            print(f"✓ Another vocab tree build is already in progress (lock: {LOCK_KEY})")
+            print("  Exiting gracefully. Try again later or check the other process.")
+        sys.exit(0)  # Exit with success - not an error, just already running
+
+    if verbosity >= 2:
+        print(f"✓ Acquired build lock: {LOCK_KEY} (TTL: {LOCK_TTL}s)")
+
+    return redis_client
+
+
+def release_lock(redis_client: redis.Redis, verbosity: int = 1) -> None:
+    """
+    Release the build lock.
+
+    Args:
+        redis_client: Redis client
+        verbosity: Verbosity level
+    """
+    try:
+        redis_client.delete(LOCK_KEY)
+        if verbosity >= 2:
+            print(f"✓ Released build lock: {LOCK_KEY}")
+    except Exception as e:
+        # Don't fail if we can't release - TTL will handle it
+        if verbosity >= 1:
+            print(f"⚠ Could not release lock (will auto-expire): {e}")
+
+
 def print_tree_sample(tree: VocabularyTree, max_items: int = 10) -> None:
     """
     Print a sample of the tree structure for verification.
@@ -651,6 +717,16 @@ Examples:
     else:
         verbosity = 1 + args.verbose  # Base level 1, plus any -v flags
 
+    # Acquire build lock (exits gracefully if another build is running)
+    # Skip lock for dry-run since we're not actually saving anything
+    lock_client = None
+    if not args.dry_run:
+        lock_client = acquire_lock(
+            redis_host=args.redis_host,
+            redis_port=args.redis_port,
+            verbosity=verbosity
+        )
+
     try:
         # Build the tree
         if verbosity >= 1:
@@ -717,6 +793,11 @@ Examples:
             import traceback
             traceback.print_exc()
         return 1
+
+    finally:
+        # Always release the lock
+        if lock_client:
+            release_lock(lock_client, verbosity)
 
 
 if __name__ == "__main__":

@@ -183,44 +183,43 @@ class BuildEmbeddingView(APIView):
                     'embedding_count': count
                 })
 
-            # Trigger the embedding build as a subprocess
-            # Running as subprocess ensures clean CUDA context (avoids conflicts
-            # with any CUDA state initialized by Django/gunicorn)
+            # Trigger the embedding build as a background subprocess
+            # Running in background avoids proxy timeout issues
             logger.info(f"Starting embedding build: {embedding_name} (force={force})")
 
-            # Use Redis lock to prevent concurrent builds
+            # Check if a build is already in progress (lock managed by subprocess)
             lock_key = 'skol:build:embedding:lock'
-            lock_ttl = 660  # 11 minutes (slightly longer than timeout)
 
-            # Try to acquire lock (SETNX = SET if Not eXists)
-            lock_acquired = r.set(lock_key, 'building', nx=True, ex=lock_ttl)
-
-            if not lock_acquired:
-                logger.info(f"Embedding build already in progress (lock key exists)")
+            if r.exists(lock_key):
+                logger.info("Embedding build already in progress (lock exists)")
                 return Response({
                     'status': 'building',
                     'embedding_name': embedding_name,
-                    'message': 'Embedding build already in progress. Please wait and try again.'
+                    'message': 'Build in progress. Poll GET to check status.'
                 }, status=status.HTTP_409_CONFLICT)
 
+            # Start the subprocess - it will acquire its own lock
             try:
                 import subprocess
                 import os
                 from pathlib import Path
 
                 bin_path = Path(settings.SKOL_BIN_PATH)
-                embed_script = bin_path / 'embed_taxa.py'
+                # Use the with_skol symlink which activates conda environment
+                embed_script = bin_path / 'embed_taxa'
 
                 if not embed_script.exists():
-                    r.delete(lock_key)  # Release lock on error
-                    return Response({
-                        'status': 'error',
-                        'embedding_name': embedding_name,
-                        'message': f'embed_taxa.py not found at {embed_script}'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    # Fall back to .py if symlink doesn't exist
+                    embed_script = bin_path / 'embed_taxa.py'
+                    if not embed_script.exists():
+                        return Response({
+                            'status': 'error',
+                            'embedding_name': embedding_name,
+                            'message': f'embed_taxa not found at {bin_path}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Build command
-                cmd = ['python3', str(embed_script)]
+                cmd = [str(embed_script), '--verbosity=2']
                 if force:
                     cmd.append('--force')
 
@@ -232,77 +231,52 @@ class BuildEmbeddingView(APIView):
                 env['REDIS_HOST'] = settings.REDIS_HOST
                 env['REDIS_PORT'] = str(settings.REDIS_PORT)
                 env['EMBEDDING_NAME'] = embedding_name
-                # Use the taxa database from settings
-                env['TAXON_DB_NAME'] = getattr(settings, 'TAXON_DB_NAME', 'skol_taxa_dev')
-
-                logger.info(f"Running command: {' '.join(cmd)}")
-
-                # Run the subprocess
-                result = subprocess.run(
-                    cmd,
-                    env=env,
-                    capture_output=True,
-                    text=True,
-                    timeout=600,  # 10 minute timeout
+                env['TAXON_DB_NAME'] = getattr(
+                    settings, 'TAXON_DB_NAME', 'skol_taxa_dev'
                 )
 
-                logger.info(f"embed_taxa.py stdout:\n{result.stdout}")
-                if result.stderr:
-                    logger.warning(f"embed_taxa.py stderr:\n{result.stderr}")
+                # Log file for output
+                log_file = '/var/log/skol/embed-taxa-api.log'
 
-                if result.returncode != 0:
-                    return Response({
-                        'status': 'error',
-                        'embedding_name': embedding_name,
-                        'message': f'embed_taxa.py failed with code {result.returncode}',
-                        'stdout': result.stdout,
-                        'stderr': result.stderr,
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.info(f"Running command: {' '.join(cmd)}")
+                logger.info(f"Output will be logged to: {log_file}")
 
-                # Verify it was created
-                if r.exists(embedding_name):
-                    import pickle
-                    data = r.get(embedding_name)
-                    count = len(pickle.loads(data)) if data else 0
+                # Run in background with output to log file
+                # The lock will expire after TTL if process hangs
+                with open(log_file, 'a') as log_f:
+                    log_f.write(f"\n{'='*70}\n")
+                    log_f.write(f"API-triggered build at {__import__('datetime').datetime.now()}\n")
+                    log_f.write(f"Command: {' '.join(cmd)}\n")
+                    log_f.write(f"{'='*70}\n")
+                    log_f.flush()
 
-                    logger.info(
-                        f"Embedding build complete: {embedding_name} ({count} entries)"
+                    # Start process in background (don't wait)
+                    process = subprocess.Popen(
+                        cmd,
+                        env=env,
+                        stdout=log_f,
+                        stderr=subprocess.STDOUT,
+                        start_new_session=True,  # Detach from parent
                     )
 
-                    return Response({
-                        'status': 'complete',
-                        'embedding_name': embedding_name,
-                        'message': f'Embedding built with {count} entries',
-                        'embedding_count': count
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({
-                        'status': 'error',
-                        'embedding_name': embedding_name,
-                        'message': 'Build completed but not found in Redis',
-                        'stdout': result.stdout,
-                        'stderr': result.stderr,
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.info(f"Started embed_taxa process with PID {process.pid}")
 
-            except subprocess.TimeoutExpired:
-                logger.error("embed_taxa.py timed out after 10 minutes")
+                # Return immediately - don't wait for completion
+                # Lock will auto-expire via TTL when build finishes or times out
                 return Response({
-                    'status': 'error',
+                    'status': 'building',
                     'embedding_name': embedding_name,
-                    'message': 'Embedding build timed out after 10 minutes'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    'message': f'Build started (PID {process.pid}). Poll GET to check.',
+                    'log_file': log_file,
+                }, status=status.HTTP_202_ACCEPTED)
 
             except Exception as e:
-                logger.error(f"Failed to run embed_taxa.py: {e}")
+                logger.error(f"Failed to start embed_taxa: {e}")
                 return Response({
                     'status': 'error',
                     'embedding_name': embedding_name,
-                    'message': f'Failed to run embed_taxa.py: {str(e)}'
+                    'message': f'Failed to start embed_taxa: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            finally:
-                # Always release the lock
-                r.delete(lock_key)
 
         except Exception as e:
             logger.error(f"Error building embedding: {e}")
@@ -434,45 +408,42 @@ class BuildVocabTreeView(APIView):
                         'stats': stats
                     })
 
-            # Trigger the vocab tree build as a subprocess
-            # Running as subprocess avoids any potential module import issues
+            # Trigger the vocab tree build as a background subprocess
             logger.info(f"Starting vocab tree build from {db_name} (force={force})")
 
-            # Use Redis lock to prevent concurrent builds
+            # Check if a build is already in progress (lock managed by subprocess)
             lock_key = 'skol:build:vocab_tree:lock'
-            lock_ttl = 360  # 6 minutes (slightly longer than timeout)
 
-            # Try to acquire lock (SETNX = SET if Not eXists)
-            lock_acquired = r.set(lock_key, 'building', nx=True, ex=lock_ttl)
-
-            if not lock_acquired:
+            if r.exists(lock_key):
                 logger.info("Vocab tree build already in progress (lock exists)")
                 return Response({
                     'status': 'building',
-                    'message': 'Vocab tree build already in progress. Try again.'
+                    'message': 'Build in progress. Poll GET to check status.'
                 }, status=status.HTTP_409_CONFLICT)
 
+            # Start the subprocess - it will acquire its own lock
             try:
                 import subprocess
                 import os
                 from pathlib import Path
 
                 bin_path = Path(settings.SKOL_BIN_PATH)
-                build_script = bin_path / 'build_vocab_tree.py'
+                # Use the with_skol symlink which activates conda environment
+                build_script = bin_path / 'build_vocab_tree'
 
                 if not build_script.exists():
-                    r.delete(lock_key)  # Release lock on error
-                    return Response({
-                        'status': 'error',
-                        'message': f'build_vocab_tree.py not found at {build_script}'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    # Fall back to .py if symlink doesn't exist
+                    build_script = bin_path / 'build_vocab_tree.py'
+                    if not build_script.exists():
+                        return Response({
+                            'status': 'error',
+                            'message': f'build_vocab_tree not found at {bin_path}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Build command
-                # Note: build_vocab_tree.py uses --db flag, and always rebuilds
-                cmd = ['python3', str(build_script), '--db', db_name]
+                cmd = [str(build_script), '--db', db_name, '--verbosity=2']
 
-                # Set environment variables to pass configuration
-                # build_vocab_tree.py expects COUCHDB_URL (full URL)
+                # Set environment variables
                 env = os.environ.copy()
                 env['COUCHDB_URL'] = settings.COUCHDB_URL
                 env['COUCHDB_USER'] = settings.COUCHDB_USERNAME
@@ -480,75 +451,44 @@ class BuildVocabTreeView(APIView):
                 env['REDIS_HOST'] = settings.REDIS_HOST
                 env['REDIS_PORT'] = str(settings.REDIS_PORT)
 
+                # Log file for output
+                log_file = '/var/log/skol/build-vocab-tree-api.log'
+
                 logger.info(f"Running command: {' '.join(cmd)}")
+                logger.info(f"Output will be logged to: {log_file}")
 
-                # Run the subprocess
-                result = subprocess.run(
-                    cmd,
-                    env=env,
-                    capture_output=True,
-                    text=True,
-                    timeout=300,  # 5 minute timeout
-                )
+                # Run in background with output to log file
+                with open(log_file, 'a') as log_f:
+                    log_f.write(f"\n{'='*70}\n")
+                    log_f.write(f"API-triggered build at {__import__('datetime').datetime.now()}\n")
+                    log_f.write(f"Command: {' '.join(cmd)}\n")
+                    log_f.write(f"{'='*70}\n")
+                    log_f.flush()
 
-                logger.info(f"build_vocab_tree.py stdout:\n{result.stdout}")
-                if result.stderr:
-                    logger.warning(f"build_vocab_tree.py stderr:\n{result.stderr}")
+                    process = subprocess.Popen(
+                        cmd,
+                        env=env,
+                        stdout=log_f,
+                        stderr=subprocess.STDOUT,
+                        start_new_session=True,
+                    )
 
-                if result.returncode != 0:
-                    return Response({
-                        'status': 'error',
-                        'message': f'build_vocab_tree.py failed with exit code {result.returncode}',
-                        'stdout': result.stdout,
-                        'stderr': result.stderr,
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.info(f"Started build_vocab_tree process with PID {process.pid}")
 
-                # Fetch the new tree stats
-                latest_key = r.get("skol:ui:menus_latest")
-                if latest_key and r.exists(latest_key):
-                    import json
-                    tree_json = r.get(latest_key)
-                    if tree_json:
-                        data = json.loads(tree_json)
-                        stats = data.get('stats', {})
-
-                        logger.info(
-                            f"Vocab tree build complete: {latest_key} "
-                            f"({stats.get('total_nodes', 0)} nodes)"
-                        )
-
-                        return Response({
-                            'status': 'complete',
-                            'redis_key': latest_key,
-                            'message': f'Vocabulary tree built successfully with '
-                                       f'{stats.get("total_nodes", 0)} nodes',
-                            'stats': stats
-                        }, status=status.HTTP_201_CREATED)
-
+                # Return immediately - don't wait for completion
+                # Lock will auto-expire via TTL when build finishes or times out
                 return Response({
-                    'status': 'error',
-                    'message': 'Vocab tree build completed but not found in Redis',
-                    'stdout': result.stdout,
-                    'stderr': result.stderr,
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            except subprocess.TimeoutExpired:
-                logger.error("build_vocab_tree.py timed out after 5 minutes")
-                return Response({
-                    'status': 'error',
-                    'message': 'Vocab tree build timed out after 5 minutes'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    'status': 'building',
+                    'message': f'Build started (PID {process.pid}). Poll GET to check.',
+                    'log_file': log_file,
+                }, status=status.HTTP_202_ACCEPTED)
 
             except Exception as e:
-                logger.error(f"Failed to run build_vocab_tree.py: {e}")
+                logger.error(f"Failed to start build_vocab_tree: {e}")
                 return Response({
                     'status': 'error',
-                    'message': f'Failed to run build_vocab_tree.py: {str(e)}'
+                    'message': f'Failed to start build_vocab_tree: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            finally:
-                # Always release the lock
-                r.delete(lock_key)
 
         except Exception as e:
             logger.error(f"Error building vocab tree: {e}")

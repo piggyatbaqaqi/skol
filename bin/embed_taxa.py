@@ -34,6 +34,14 @@ from env_config import get_env_config
 
 
 # ============================================================================
+# Locking Constants (shared with Django views)
+# ============================================================================
+
+LOCK_KEY = 'skol:build:embedding:lock'
+LOCK_TTL = 660  # 11 minutes
+
+
+# ============================================================================
 # Embedding Functions
 # ============================================================================
 
@@ -182,6 +190,59 @@ def compute_and_save_embeddings(
 # Main Program
 # ============================================================================
 
+def acquire_lock(config: Dict[str, Any], verbosity: int = 1) -> redis.Redis:
+    """
+    Acquire the build lock to prevent concurrent builds.
+
+    Args:
+        config: Environment configuration with Redis settings
+        verbosity: Verbosity level
+
+    Returns:
+        Redis client if lock acquired, None if another build is running
+
+    Raises:
+        SystemExit: If lock cannot be acquired (another build in progress)
+    """
+    redis_client = redis.Redis(
+        host=config['redis_host'],
+        port=config['redis_port'],
+        decode_responses=True
+    )
+
+    # Try to acquire lock (SETNX = SET if Not eXists)
+    lock_acquired = redis_client.set(LOCK_KEY, 'building', nx=True, ex=LOCK_TTL)
+
+    if not lock_acquired:
+        if verbosity >= 1:
+            print(f"✓ Another embedding build is already in progress (lock: {LOCK_KEY})")
+            print("  Exiting gracefully. Try again later or check the other process.")
+        sys.exit(0)  # Exit with success - not an error, just already running
+
+    if verbosity >= 2:
+        print(f"✓ Acquired build lock: {LOCK_KEY} (TTL: {LOCK_TTL}s)")
+
+    return redis_client
+
+
+def release_lock(redis_client: redis.Redis, verbosity: int = 1) -> None:
+    """
+    Release the build lock.
+
+    Args:
+        redis_client: Redis client
+        verbosity: Verbosity level
+    """
+    try:
+        redis_client.delete(LOCK_KEY)
+        if verbosity >= 2:
+            print(f"✓ Released build lock: {LOCK_KEY}")
+    except Exception as e:
+        # Don't fail if we can't release - TTL will handle it
+        if verbosity >= 1:
+            print(f"⚠ Could not release lock (will auto-expire): {e}")
+
+
 def main():
     """Main entry point for the embedding program."""
     # Parse command-line arguments
@@ -271,12 +332,20 @@ Examples:
     skip_existing = args.skip_existing or config.get('skip_existing', True)  # Default to True for this script
     force = args.force or config.get('force', False)
 
+    verbosity = config['verbosity']
+
+    # Acquire build lock (exits gracefully if another build is running)
+    # Skip lock for dry-run since we're not actually building anything
+    redis_client = None
+    if not dry_run:
+        redis_client = acquire_lock(config, verbosity)
+
     # Run embedding computation
     try:
         compute_and_save_embeddings(
             config=config,
             force=force,
-            verbosity=config['verbosity'],
+            verbosity=verbosity,
             expire_override=expire_override,
             dry_run=dry_run,
             skip_existing=skip_existing,
@@ -289,6 +358,10 @@ Examples:
         import traceback
         traceback.print_exc()
         sys.exit(1)
+    finally:
+        # Always release the lock
+        if redis_client:
+            release_lock(redis_client, verbosity)
 
 
 if __name__ == '__main__':
