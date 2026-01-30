@@ -174,10 +174,10 @@ class BuildEmbeddingView(APIView):
                 # Python 3.11+ compatibility
                 import skol_compat  # noqa: F401
 
-                # Import from bin directory
+                # Import from bin directory (use configured path)
                 import sys
                 from pathlib import Path
-                bin_path = Path(__file__).resolve().parent.parent.parent / 'bin'
+                bin_path = Path(settings.SKOL_BIN_PATH)
                 logger.info(f"Looking for bin directory at: {bin_path}")
                 logger.info(f"bin_path exists: {bin_path.exists()}")
                 if bin_path.exists():
@@ -359,7 +359,7 @@ class BuildVocabTreeView(APIView):
                 # Import the vocab tree building functions
                 import sys
                 from pathlib import Path
-                bin_path = Path(__file__).resolve().parent.parent.parent / 'bin'
+                bin_path = Path(settings.SKOL_BIN_PATH)
                 if str(bin_path) not in sys.path:
                     sys.path.insert(0, str(bin_path))
 
