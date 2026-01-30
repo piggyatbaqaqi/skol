@@ -194,6 +194,9 @@ REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
 # Embedding configuration
 EMBEDDING_NAME = os.environ.get('EMBEDDING_NAME', 'skol:embedding:v1.1')
 
+# Taxa database for embeddings
+TAXON_DB_NAME = os.environ.get('TAXON_DB_NAME', 'skol_taxa_dev')
+
 # Vocabulary tree configuration
 VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_taxa_full_dev')
 

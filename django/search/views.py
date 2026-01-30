@@ -166,47 +166,65 @@ class BuildEmbeddingView(APIView):
                     'embedding_count': count
                 })
 
-            # Trigger the embedding build
+            # Trigger the embedding build as a subprocess
+            # Running as subprocess ensures clean CUDA context (avoids conflicts
+            # with any CUDA state initialized by Django/gunicorn)
             logger.info(f"Starting embedding build: {embedding_name} (force={force})")
 
             try:
-                # Import the embedding computation function
-                # Python 3.11+ compatibility
-                import skol_compat  # noqa: F401
-
-                # Import from bin directory (use configured path)
-                import sys
+                import subprocess
+                import os
                 from pathlib import Path
+
                 bin_path = Path(settings.SKOL_BIN_PATH)
-                logger.info(f"Looking for bin directory at: {bin_path}")
-                logger.info(f"bin_path exists: {bin_path.exists()}")
-                if bin_path.exists():
-                    logger.info(f"bin_path contents: {list(bin_path.iterdir())[:10]}")
-                if str(bin_path) not in sys.path:
-                    sys.path.insert(0, str(bin_path))
+                embed_script = bin_path / 'embed_taxa.py'
 
-                from embed_taxa import compute_and_save_embeddings
-                from env_config import get_env_config
+                if not embed_script.exists():
+                    return Response({
+                        'status': 'error',
+                        'embedding_name': embedding_name,
+                        'message': f'embed_taxa.py not found at {embed_script}'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                # Build config from Django settings and environment
-                config = get_env_config()
+                # Build command
+                cmd = ['python3', str(embed_script)]
+                if force:
+                    cmd.append('--force')
 
-                # Override with Django settings where available
-                config['redis_host'] = settings.REDIS_HOST
-                config['redis_port'] = settings.REDIS_PORT
-                config['couchdb_host'] = f"{settings.COUCHDB_HOST}:{settings.COUCHDB_PORT}"
-                config['couchdb_username'] = settings.COUCHDB_USERNAME
-                config['couchdb_password'] = settings.COUCHDB_PASSWORD
-                config['embedding_name'] = embedding_name
+                # Set environment variables to pass configuration
+                env = os.environ.copy()
+                env['COUCHDB_HOST'] = f"{settings.COUCHDB_HOST}:{settings.COUCHDB_PORT}"
+                env['COUCHDB_USER'] = settings.COUCHDB_USERNAME
+                env['COUCHDB_PASSWORD'] = settings.COUCHDB_PASSWORD
+                env['REDIS_HOST'] = settings.REDIS_HOST
+                env['REDIS_PORT'] = str(settings.REDIS_PORT)
+                env['EMBEDDING_NAME'] = embedding_name
+                # Use the taxa database from settings
+                env['TAXON_DB_NAME'] = getattr(settings, 'TAXON_DB_NAME', 'skol_taxa_dev')
 
-                # Run the embedding computation
-                compute_and_save_embeddings(
-                    config=config,
-                    force=force,
-                    verbosity=1,
-                    dry_run=False,
-                    skip_existing=not force,
+                logger.info(f"Running command: {' '.join(cmd)}")
+
+                # Run the subprocess
+                result = subprocess.run(
+                    cmd,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=600,  # 10 minute timeout
                 )
+
+                logger.info(f"embed_taxa.py stdout:\n{result.stdout}")
+                if result.stderr:
+                    logger.warning(f"embed_taxa.py stderr:\n{result.stderr}")
+
+                if result.returncode != 0:
+                    return Response({
+                        'status': 'error',
+                        'embedding_name': embedding_name,
+                        'message': f'embed_taxa.py failed with exit code {result.returncode}',
+                        'stdout': result.stdout,
+                        'stderr': result.stderr,
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Verify it was created
                 if r.exists(embedding_name):
@@ -228,15 +246,25 @@ class BuildEmbeddingView(APIView):
                     return Response({
                         'status': 'error',
                         'embedding_name': embedding_name,
-                        'message': 'Embedding build completed but not found in Redis'
+                        'message': 'Embedding build completed but not found in Redis',
+                        'stdout': result.stdout,
+                        'stderr': result.stderr,
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            except ImportError as e:
-                logger.error(f"Failed to import embedding modules: {e}")
+            except subprocess.TimeoutExpired:
+                logger.error("embed_taxa.py timed out after 10 minutes")
                 return Response({
                     'status': 'error',
                     'embedding_name': embedding_name,
-                    'message': f'Failed to import embedding modules: {str(e)}'
+                    'message': 'Embedding build timed out after 10 minutes'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except Exception as e:
+                logger.error(f"Failed to run embed_taxa.py: {e}")
+                return Response({
+                    'status': 'error',
+                    'embedding_name': embedding_name,
+                    'message': f'Failed to run embed_taxa.py: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
@@ -352,64 +380,101 @@ class BuildVocabTreeView(APIView):
                         'stats': stats
                     })
 
-            # Trigger the vocab tree build
+            # Trigger the vocab tree build as a subprocess
+            # Running as subprocess avoids any potential module import issues
             logger.info(f"Starting vocab tree build from {db_name} (force={force})")
 
             try:
-                # Import the vocab tree building functions
-                import sys
+                import subprocess
+                import os
                 from pathlib import Path
+
                 bin_path = Path(settings.SKOL_BIN_PATH)
-                if str(bin_path) not in sys.path:
-                    sys.path.insert(0, str(bin_path))
+                build_script = bin_path / 'build_vocab_tree.py'
 
-                from build_vocab_tree import build_vocabulary_tree, save_to_redis
+                if not build_script.exists():
+                    return Response({
+                        'status': 'error',
+                        'message': f'build_vocab_tree.py not found at {build_script}'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                # Build CouchDB URL
-                couchdb_url = settings.COUCHDB_URL
+                # Build command
+                # Note: build_vocab_tree.py uses --db flag, and always rebuilds
+                cmd = ['python3', str(build_script), '--db', db_name]
 
-                # Build the vocabulary tree
-                tree = build_vocabulary_tree(
-                    couchdb_url=couchdb_url,
-                    db_name=db_name,
-                    username=settings.COUCHDB_USERNAME,
-                    password=settings.COUCHDB_PASSWORD,
-                    verbosity=1
+                # Set environment variables to pass configuration
+                # build_vocab_tree.py expects COUCHDB_URL (full URL)
+                env = os.environ.copy()
+                env['COUCHDB_URL'] = settings.COUCHDB_URL
+                env['COUCHDB_USER'] = settings.COUCHDB_USERNAME
+                env['COUCHDB_PASSWORD'] = settings.COUCHDB_PASSWORD
+                env['REDIS_HOST'] = settings.REDIS_HOST
+                env['REDIS_PORT'] = str(settings.REDIS_PORT)
+
+                logger.info(f"Running command: {' '.join(cmd)}")
+
+                # Run the subprocess
+                result = subprocess.run(
+                    cmd,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=300,  # 5 minute timeout
                 )
 
-                # Save to Redis
-                redis_key = save_to_redis(
-                    tree=tree,
-                    redis_host=settings.REDIS_HOST,
-                    redis_port=settings.REDIS_PORT,
-                    verbosity=1
-                )
+                logger.info(f"build_vocab_tree.py stdout:\n{result.stdout}")
+                if result.stderr:
+                    logger.warning(f"build_vocab_tree.py stderr:\n{result.stderr}")
 
-                # Get stats for response
-                stats = {
-                    "total_nodes": tree.stats["total_nodes"],
-                    "max_depth": tree.stats["max_depth"],
-                    "leaf_count": tree.stats["leaf_count"],
-                }
+                if result.returncode != 0:
+                    return Response({
+                        'status': 'error',
+                        'message': f'build_vocab_tree.py failed with exit code {result.returncode}',
+                        'stdout': result.stdout,
+                        'stderr': result.stderr,
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                logger.info(
-                    f"Vocab tree build complete: {redis_key} "
-                    f"({stats['total_nodes']} nodes)"
-                )
+                # Fetch the new tree stats
+                latest_key = r.get("skol:ui:menus_latest")
+                if latest_key and r.exists(latest_key):
+                    import json
+                    tree_json = r.get(latest_key)
+                    if tree_json:
+                        data = json.loads(tree_json)
+                        stats = data.get('stats', {})
 
-                return Response({
-                    'status': 'complete',
-                    'redis_key': redis_key,
-                    'message': f'Vocabulary tree built successfully with '
-                               f'{stats["total_nodes"]} nodes',
-                    'stats': stats
-                }, status=status.HTTP_201_CREATED)
+                        logger.info(
+                            f"Vocab tree build complete: {latest_key} "
+                            f"({stats.get('total_nodes', 0)} nodes)"
+                        )
 
-            except ImportError as e:
-                logger.error(f"Failed to import vocab tree modules: {e}")
+                        return Response({
+                            'status': 'complete',
+                            'redis_key': latest_key,
+                            'message': f'Vocabulary tree built successfully with '
+                                       f'{stats.get("total_nodes", 0)} nodes',
+                            'stats': stats
+                        }, status=status.HTTP_201_CREATED)
+
                 return Response({
                     'status': 'error',
-                    'message': f'Failed to import vocab tree modules: {str(e)}'
+                    'message': 'Vocab tree build completed but not found in Redis',
+                    'stdout': result.stdout,
+                    'stderr': result.stderr,
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except subprocess.TimeoutExpired:
+                logger.error("build_vocab_tree.py timed out after 5 minutes")
+                return Response({
+                    'status': 'error',
+                    'message': 'Vocabulary tree build timed out after 5 minutes'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except Exception as e:
+                logger.error(f"Failed to run build_vocab_tree.py: {e}")
+                return Response({
+                    'status': 'error',
+                    'message': f'Failed to run build_vocab_tree.py: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
