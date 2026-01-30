@@ -1327,6 +1327,116 @@ class ExternalIdentifierDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class GuestCollectionImportView(APIView):
+    """
+    POST /api/collections/import-guest/
+    Import a guest collection from localStorage into a real collection.
+
+    This endpoint is called after login/registration to migrate any
+    collection data that was stored in the browser while the user
+    was not logged in.
+
+    Request body:
+    {
+        "name": "Collection Name",
+        "description": "Working description",
+        "notes": "Optional notes",
+        "search_history": [
+            {
+                "prompt": "search text",
+                "embedding_name": "embed_name",
+                "k": 3,
+                "result_references": [...],
+                "created_at": "2024-01-01T00:00:00Z"
+            }
+        ],
+        "external_identifiers": [
+            {
+                "identifier_type_code": "inat",
+                "value": "12345",
+                "fungarium_code": "",
+                "notes": ""
+            }
+        ]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+
+        # Validate basic structure
+        if not isinstance(data, dict):
+            return Response(
+                {'error': 'Invalid data format'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Create the collection
+        collection = Collection.objects.create(
+            owner=request.user,
+            name=data.get('name', 'Guest Collection'),
+            description=data.get('description', ''),
+            notes=data.get('notes', '')
+        )
+
+        # Import search history
+        search_history = data.get('search_history', [])
+        imported_searches = 0
+        for search in search_history:
+            if not isinstance(search, dict):
+                continue
+            try:
+                SearchHistory.objects.create(
+                    collection=collection,
+                    prompt=search.get('prompt', ''),
+                    embedding_name=search.get('embedding_name', 'unknown'),
+                    k=search.get('k', 3),
+                    result_references=search.get('result_references', []),
+                    result_count=len(search.get('result_references', []))
+                )
+                imported_searches += 1
+            except Exception as e:
+                logger.warning(f"Failed to import search history entry: {e}")
+
+        # Import external identifiers
+        external_ids = data.get('external_identifiers', [])
+        imported_identifiers = 0
+        for identifier in external_ids:
+            if not isinstance(identifier, dict):
+                continue
+            try:
+                identifier_type_code = identifier.get('identifier_type_code', '')
+                if not identifier_type_code:
+                    continue
+
+                # Look up identifier type
+                try:
+                    identifier_type = IdentifierType.objects.get(code=identifier_type_code)
+                except IdentifierType.DoesNotExist:
+                    logger.warning(f"Unknown identifier type: {identifier_type_code}")
+                    continue
+
+                ExternalIdentifier.objects.create(
+                    collection=collection,
+                    identifier_type=identifier_type,
+                    value=identifier.get('value', ''),
+                    fungarium_code=identifier.get('fungarium_code', ''),
+                    notes=identifier.get('notes', '')
+                )
+                imported_identifiers += 1
+            except Exception as e:
+                logger.warning(f"Failed to import external identifier: {e}")
+
+        return Response({
+            'success': True,
+            'collection_id': collection.collection_id,
+            'name': collection.name,
+            'imported_searches': imported_searches,
+            'imported_identifiers': imported_identifiers
+        }, status=status.HTTP_201_CREATED)
+
+
 # ============================================================================
 # Vocabulary Tree Views
 # ============================================================================

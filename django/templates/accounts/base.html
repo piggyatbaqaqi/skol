@@ -463,5 +463,80 @@
         }
     })();
     </script>
+
+    <!-- Guest Collection Script -->
+    <script src="{% static 'js/guest-collection.js' %}"></script>
+
+    {% if user.is_authenticated %}
+    <script>
+    (function() {
+        // Migrate guest collection to user account after login/registration
+        const API_BASE = '{{ SCRIPT_NAME }}';
+
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        async function migrateGuestCollection() {
+            // Check if GuestCollection module is available and has data
+            if (typeof GuestCollection === 'undefined') return;
+            if (!GuestCollection.hasData()) return;
+
+            // Check if we've already tried migration this session
+            if (sessionStorage.getItem('guest_collection_migration_attempted')) return;
+            sessionStorage.setItem('guest_collection_migration_attempted', 'true');
+
+            try {
+                const result = await GuestCollection.migrateToAccount(API_BASE, getCSRFToken);
+                if (result && result.success) {
+                    console.log('Guest collection migrated successfully:', result);
+                    // Show success message
+                    const msgList = document.querySelector('.messagelist');
+                    if (msgList) {
+                        const li = document.createElement('li');
+                        li.className = 'success';
+                        li.textContent = `Your saved searches have been imported to collection "${result.name}".`;
+                        msgList.appendChild(li);
+                    } else {
+                        // Create message list if not exists
+                        const container = document.querySelector('.container');
+                        const navbar = document.querySelector('.page-navbar');
+                        const msgList = document.createElement('ul');
+                        msgList.className = 'messagelist';
+                        const li = document.createElement('li');
+                        li.className = 'success';
+                        li.textContent = `Your saved searches have been imported to collection "${result.name}".`;
+                        msgList.appendChild(li);
+                        if (navbar && navbar.nextSibling) {
+                            container.insertBefore(msgList, navbar.nextSibling);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to migrate guest collection:', error);
+            }
+        }
+
+        // Run migration on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', migrateGuestCollection);
+        } else {
+            migrateGuestCollection();
+        }
+    })();
+    </script>
+    {% endif %}
 </body>
 </html>

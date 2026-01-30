@@ -670,6 +670,37 @@
             font-size: 0.9em;
         }
 
+        .dismiss-btn {
+            background: transparent;
+            border: 1px solid #666;
+            color: #666;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            cursor: pointer;
+        }
+
+        .dismiss-btn:hover {
+            background: #f0f0f0;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .guest-notice {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .field-note {
             font-weight: normal;
             font-size: 0.85em;
@@ -1491,6 +1522,42 @@
             errorDiv.style.display = 'block';
         }
 
+        // Show guest collection notice (for non-authenticated users)
+        function showGuestCollectionNotice() {
+            // Only show notice once per session to avoid being annoying
+            if (sessionStorage.getItem('guest_collection_notice_shown')) {
+                return;
+            }
+
+            const notice = document.createElement('div');
+            notice.className = 'guest-notice';
+            notice.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Search saved locally!</strong>
+                        <span>Create an account to save your collection permanently.</span>
+                    </div>
+                    <div>
+                        <a href="${API_BASE}/accounts/register/" class="btn-small" style="margin-right: 8px;">Sign Up</a>
+                        <button type="button" class="dismiss-btn" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
+                    </div>
+                </div>
+            `;
+            notice.style.cssText = `
+                background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+                border: 1px solid #81c784;
+                padding: 15px 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            `;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.insertBefore(notice, resultsDiv.firstChild);
+
+            sessionStorage.setItem('guest_collection_notice_shown', 'true');
+        }
+
         // Handle form submission
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1508,7 +1575,7 @@
 
             try {
                 // Save description to collection BEFORE search (so it's saved even if search fails)
-                if (activeCollectionId && prompt) {
+                if (IS_AUTHENTICATED && activeCollectionId && prompt) {
                     try {
                         await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
                             method: 'PUT',
@@ -1525,6 +1592,9 @@
                     } catch (descError) {
                         console.warn('Could not save description to collection:', descError);
                     }
+                } else if (!IS_AUTHENTICATED && prompt && typeof GuestCollection !== 'undefined') {
+                    // Save to guest collection (localStorage) for non-authenticated users
+                    GuestCollection.updateDescription(prompt);
                 }
 
                 const response = await fetch(`${API_BASE}/api/search/`, {
@@ -1550,8 +1620,12 @@
                 displayResults(data);
 
                 // Save search results to history (description already saved above)
-                if (activeCollectionId && data.results && data.results.length > 0) {
+                if (IS_AUTHENTICATED && activeCollectionId && data.results && data.results.length > 0) {
                     await saveSearchResultsToHistory(data);
+                } else if (!IS_AUTHENTICATED && data.results && data.results.length > 0 && typeof GuestCollection !== 'undefined') {
+                    // Save to guest collection for non-authenticated users
+                    GuestCollection.addSearch(data);
+                    showGuestCollectionNotice();
                 }
 
             } catch (error) {
@@ -1723,10 +1797,35 @@
             return div.innerHTML;
         }
 
+        // Migrate guest collection for newly authenticated users
+        async function migrateGuestCollection() {
+            if (!IS_AUTHENTICATED) return;
+            if (typeof GuestCollection === 'undefined') return;
+            if (!GuestCollection.hasData()) return;
+
+            // Check if we've already tried migration this session
+            if (sessionStorage.getItem('guest_collection_migration_attempted')) return;
+            sessionStorage.setItem('guest_collection_migration_attempted', 'true');
+
+            try {
+                const result = await GuestCollection.migrateToAccount(API_BASE, getCSRFToken);
+                if (result && result.success) {
+                    console.log('Guest collection migrated successfully:', result);
+                    showSuccess(`Your saved searches have been imported to collection "${result.name}".`);
+                    // Refresh collections menu
+                    updateCollectionsMenu();
+                }
+            } catch (error) {
+                console.error('Failed to migrate guest collection:', error);
+            }
+        }
+
         // Load data when page loads
         loadEmbeddings();
         if (IS_AUTHENTICATED) {
             updateCollectionsMenu();
+            // Check for guest collection to migrate
+            migrateGuestCollection();
         }
     </script>
 
@@ -1745,5 +1844,8 @@
 
     <!-- Taxon Result Widget -->
     <script src="{% static 'js/taxon-result-widget.js' %}"></script>
+
+    <!-- Guest Collection (localStorage for non-logged-in users) -->
+    <script src="{% static 'js/guest-collection.js' %}"></script>
 </body>
 </html>

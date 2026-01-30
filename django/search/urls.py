@@ -20,6 +20,7 @@ from .views import (
     SearchHistoryDetailView,
     ExternalIdentifierListCreateView,
     ExternalIdentifierDetailView,
+    GuestCollectionImportView,
     # Vocabulary tree views
     VocabTreeView,
     VocabTreeVersionsView,
@@ -54,6 +55,7 @@ urlpatterns = [
     path('collections/', CollectionListCreateView.as_view(), name='collection-list-create'),
     path('collections/<int:collection_id>/', CollectionDetailView.as_view(), name='collection-detail'),
     path('collections/user/<str:username>/', CollectionByUserView.as_view(), name='collection-by-user'),
+    path('collections/import-guest/', GuestCollectionImportView.as_view(), name='collection-import-guest'),
 
     # Search history within collections
     path('collections/<int:collection_id>/searches/',

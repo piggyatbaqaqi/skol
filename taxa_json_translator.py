@@ -1162,12 +1162,14 @@ Result:
         # Convert to pure Python list of dicts
         descriptions = []
         for row in rows:
+            # Use getattr for optional ingest field (PySpark Row doesn't have .get())
+            ingest_val = getattr(row, 'ingest', None)
             item = {
                 '_id': row['_id'],
                 'taxon': row['taxon'],
                 'description': row[description_col],
                 'source': dict(row['source']) if row['source'] else {},
-                'ingest': dict(row['ingest']) if row.get('ingest') else None,
+                'ingest': dict(ingest_val) if ingest_val else None,
                 'line_number': row['line_number'],
                 'paragraph_number': row['paragraph_number'],
                 'page_number': row['page_number'],
