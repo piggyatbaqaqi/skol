@@ -238,11 +238,13 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',  # allauth backend
 ]
 
-# django-allauth configuration
-ACCOUNT_EMAIL_REQUIRED = True
+# django-allauth configuration (updated for allauth 0.63+)
+# ACCOUNT_LOGIN_METHODS replaces ACCOUNT_AUTHENTICATION_METHOD
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}  # Allow login with either
+# ACCOUNT_SIGNUP_FIELDS replaces ACCOUNT_EMAIL_REQUIRED and ACCOUNT_USERNAME_REQUIRED
+# Asterisk (*) means the field is required
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Match existing email verification
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # Allow login with either
-ACCOUNT_USERNAME_REQUIRED = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
