@@ -147,17 +147,11 @@ class TaxonClusterer:
             for _, row in data.iterrows():
                 metadata = {}
 
-                # Flatten source/ingest dict for neo4j storage.
-                # Use ingest (new format) if present, fall back to source (old format)
-                row_dict = row.to_dict()
+                # Flatten ingest dict for neo4j storage
                 if 'ingest' in data.columns and isinstance(row['ingest'], dict):
                     ingest = row['ingest']
                     for key in ingest.keys():
                         metadata[f'ingest_{key}'] = ingest[key]
-                if 'source' in data.columns and isinstance(row['source'], dict):
-                    source = row['source']
-                    for key in source.keys():
-                        metadata[f'source_{key}'] = source[key]
 
                 # Add other metadata fields
                 if 'filename' in data.columns:

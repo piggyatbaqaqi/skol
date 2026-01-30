@@ -181,7 +181,7 @@ Result:
                         '_id': doc_id,
                         'taxon': item.get('taxon', ''),
                         'description': description,
-                        'source': item.get('source', {}),
+                        'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
                         'paragraph_number': item.get('paragraph_number'),
                         'page_number': item.get('page_number'),
@@ -200,7 +200,7 @@ Result:
                         '_id': doc_id,
                         'taxon': item.get('taxon', ''),
                         'description': description,
-                        'source': item.get('source', {}),
+                        'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
                         'paragraph_number': item.get('paragraph_number'),
                         'page_number': item.get('page_number'),
@@ -308,7 +308,7 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
                         '_id': doc_id,
                         'taxon': item.get('taxon', ''),
                         'description': description,
-                        'source': item.get('source', {}),
+                        'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
                         'paragraph_number': item.get('paragraph_number'),
                         'page_number': item.get('page_number'),
@@ -327,7 +327,7 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
                         '_id': doc_id,
                         'taxon': item.get('taxon', ''),
                         'description': description,
-                        'source': item.get('source', {}),
+                        'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
                         'paragraph_number': item.get('paragraph_number'),
                         'page_number': item.get('page_number'),
@@ -653,7 +653,7 @@ and their values from the provided species description and format them as struct
             StructField("_id", StringType(), False),
             StructField("taxon", StringType(), False),
             StructField("description", StringType(), False),
-            StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
+            StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), True),
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
             StructField("page_number", IntegerType(), True),
@@ -707,7 +707,7 @@ and their values from the provided species description and format them as struct
                                 '_id': doc.get('_id', doc_id),
                                 'taxon': doc.get('taxon', ''),
                                 'description': doc.get('description', ''),
-                                'source': doc.get('source', {}),
+                                'ingest': doc.get('ingest', {}),
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
                                 'page_number': doc.get('page_number'),
@@ -1155,7 +1155,7 @@ Result:
         if verbosity >= 1:
             print("  Collecting data from Spark...")
         rows = taxa_df.select(
-            "_id", "taxon", description_col, "source",
+            "_id", "taxon", description_col, "ingest",
             "line_number", "paragraph_number", "page_number", "empirical_page_number"
         ).collect()
 
@@ -1168,8 +1168,7 @@ Result:
                 '_id': row['_id'],
                 'taxon': row['taxon'],
                 'description': row[description_col],
-                'source': dict(row['source']) if row['source'] else {},
-                'ingest': dict(ingest_val) if ingest_val else None,
+                'ingest': dict(ingest_val) if ingest_val else {},
                 'line_number': row['line_number'],
                 'paragraph_number': row['paragraph_number'],
                 'page_number': row['page_number'],
@@ -1281,16 +1280,17 @@ Result:
                 elif status == 'result':
                     # Process and save this record
                     try:
-                        source = data.get('source', {})
-                        source_doc_id = str(source.get('doc_id', 'unknown'))
-                        # Use human_url to match extract_taxa_to_couchdb.py doc ID generation
-                        source_url = source.get('human_url')
+                        ingest = data.get('ingest', {})
+                        # Use ingest field names: _id instead of doc_id, url instead of human_url
+                        ingest_doc_id = str(ingest.get('_id', 'unknown'))
+                        # Use url to match extract_taxa_to_couchdb.py doc ID generation
+                        ingest_url = ingest.get('url')
                         line_number = data.get('line_number')
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
-                            source_doc_id,
-                            source_url if isinstance(source_url, str) else None,
+                            ingest_doc_id,
+                            ingest_url if isinstance(ingest_url, str) else None,
                             line_number
                         )
 
@@ -1312,7 +1312,7 @@ Result:
                             '_id': doc_id,
                             'taxon': data.get('taxon', ''),
                             'description': data.get('description', ''),
-                            'source': source,
+                            'ingest': ingest,
                             'line_number': line_number,
                             'paragraph_number': data.get('paragraph_number'),
                             'page_number': data.get('page_number'),

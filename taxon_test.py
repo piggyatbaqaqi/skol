@@ -274,9 +274,8 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dictionaries1[1]['body'], 'desc_from_doc_a\n')
         self.assertEqual(dictionaries1[1]['label'], 'Description')
 
-        # Verify first taxon is from doc_a
-        taxon1_row = taxa[0].as_row()
-        self.assertEqual(taxon1_row['source']['doc_id'], 'doc_a')
+        # Verify first taxon is from doc_a (using doc_id() method)
+        self.assertEqual(taxa[0].doc_id(), 'doc_a')
 
         # Second taxon: from document B
         dictionaries2 = list(taxa[1].dictionaries())
@@ -286,9 +285,8 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dictionaries2[1]['body'], 'desc2_from_doc_b\n')
         self.assertEqual(dictionaries2[1]['label'], 'Description')
 
-        # Verify second taxon is from doc_b
-        taxon2_row = taxa[1].as_row()
-        self.assertEqual(taxon2_row['source']['doc_id'], 'doc_b')
+        # Verify second taxon is from doc_b (using doc_id() method)
+        self.assertEqual(taxa[1].doc_id(), 'doc_b')
 
         # Ensure desc_from_doc_b was NOT associated with nom_from_doc_a
         # (it should have been skipped due to document boundary)

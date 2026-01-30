@@ -170,11 +170,11 @@ def sources_view(request):
                     continue
                 try:
                     taxa_doc = taxa_db[taxa_doc_id]
-                    # Get the source doc_id from the taxa document
-                    source_info = taxa_doc.get('source', {})
-                    source_doc_id = source_info.get('doc_id')
-                    if source_doc_id and source_doc_id in doc_to_journal:
-                        journal_name = doc_to_journal[source_doc_id]
+                    # Get the ingest doc_id from the taxa document
+                    ingest = taxa_doc.get('ingest', {})
+                    ingest_doc_id = ingest.get('_id')
+                    if ingest_doc_id and ingest_doc_id in doc_to_journal:
+                        journal_name = doc_to_journal[ingest_doc_id]
                         source_stats[journal_name]['taxa'] += 1
                 except Exception:
                     continue

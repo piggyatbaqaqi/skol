@@ -59,68 +59,29 @@ class TestGetIngestField(unittest.TestCase):
             'https://example.com/article.pdf'
         )
 
-    def test_source_only_doc_id(self):
-        """Test record with only source field (old format) - get _id."""
-        record = {
-            'source': {
-                'doc_id': 'doc456',
-                'human_url': 'https://example.com/old-article',
-                'pdf_url': 'https://example.com/old-article.pdf',
-            }
-        }
-        # Using ingest field name '_id' should map to source.doc_id
-        self.assertEqual(get_ingest_field(record, '_id'), 'doc456')
-
-    def test_source_only_human_url(self):
-        """Test record with only source field (old format) - get url."""
-        record = {
-            'source': {
-                'doc_id': 'doc456',
-                'human_url': 'https://example.com/old-article',
-                'pdf_url': 'https://example.com/old-article.pdf',
-            }
-        }
-        # Using ingest field name 'url' should map to source.human_url
+    def test_no_ingest_returns_default(self):
+        """Test record without ingest field returns default."""
+        record = {}
+        self.assertIsNone(get_ingest_field(record, '_id'))
         self.assertEqual(
-            get_ingest_field(record, 'url'),
-            'https://example.com/old-article'
+            get_ingest_field(record, '_id', default='unknown'),
+            'unknown'
         )
 
-    def test_source_only_pdf_url(self):
-        """Test record with only source field (old format) - get pdf_url."""
-        record = {
-            'source': {
-                'doc_id': 'doc456',
-                'human_url': 'https://example.com/old-article',
-                'pdf_url': 'https://example.com/old-article.pdf',
-            }
-        }
-        # pdf_url is the same in both formats
-        self.assertEqual(
-            get_ingest_field(record, 'pdf_url'),
-            'https://example.com/old-article.pdf'
-        )
-
-    def test_both_formats_ingest_takes_precedence(self):
-        """Test record with both ingest and source - ingest takes precedence."""
+    def test_ingest_with_all_fields(self):
+        """Test record with all expected ingest fields."""
         record = {
             'ingest': {
-                '_id': 'new_doc_id',
-                'url': 'https://new.com/article',
-                'pdf_url': 'https://new.com/article.pdf',
-            },
-            'source': {
-                'doc_id': 'old_doc_id',
-                'human_url': 'https://old.com/article',
-                'pdf_url': 'https://old.com/article.pdf',
+                '_id': 'doc123',
+                'url': 'https://example.com/article',
+                'pdf_url': 'https://example.com/article.pdf',
             }
         }
-        # Should get values from ingest, not source
-        self.assertEqual(get_ingest_field(record, '_id'), 'new_doc_id')
-        self.assertEqual(get_ingest_field(record, 'url'), 'https://new.com/article')
+        self.assertEqual(get_ingest_field(record, '_id'), 'doc123')
+        self.assertEqual(get_ingest_field(record, 'url'), 'https://example.com/article')
         self.assertEqual(
             get_ingest_field(record, 'pdf_url'),
-            'https://new.com/article.pdf'
+            'https://example.com/article.pdf'
         )
 
     def test_missing_field_returns_default(self):
@@ -166,19 +127,15 @@ class TestGetIngestField(unittest.TestCase):
             2023
         )
 
-    def test_none_ingest_falls_back_to_source(self):
-        """Test that None ingest value falls back to source."""
+    def test_none_ingest_returns_default(self):
+        """Test that None ingest value returns default."""
         record = {
             'ingest': None,
-            'source': {
-                'doc_id': 'doc456',
-                'human_url': 'https://example.com/article',
-            }
         }
-        self.assertEqual(get_ingest_field(record, '_id'), 'doc456')
+        self.assertIsNone(get_ingest_field(record, '_id'))
         self.assertEqual(
-            get_ingest_field(record, 'url'),
-            'https://example.com/article'
+            get_ingest_field(record, '_id', default='unknown'),
+            'unknown'
         )
 
 
@@ -304,9 +261,8 @@ class TestTaxonIngestOutput(unittest.TestCase):
         self.assertIn('ingest', taxon_row)
         self.assertEqual(taxon_row['ingest'], ingest)
 
-        # Check that source is still present (Phase 1 - dual format)
-        self.assertIn('source', taxon_row)
-        self.assertEqual(taxon_row['source']['doc_id'], 'doc123')
+        # Source field has been removed (Phase 4 complete)
+        self.assertNotIn('source', taxon_row)
 
     def test_as_row_ingest_none_when_not_provided(self):
         """Test that as_row() has None ingest when not provided."""
@@ -334,13 +290,11 @@ class TestTaxonIngestOutput(unittest.TestCase):
 
         taxon_row = taxa[0].as_row()
 
-        # ingest should be None but present
+        # ingest should be empty dict when not provided
         self.assertIn('ingest', taxon_row)
-        self.assertIsNone(taxon_row['ingest'])
 
-        # source should still be populated from other metadata
-        self.assertIn('source', taxon_row)
-        self.assertEqual(taxon_row['source']['doc_id'], 'doc123')
+        # Source field has been removed (Phase 4 complete)
+        self.assertNotIn('source', taxon_row)
 
 
 if __name__ == '__main__':

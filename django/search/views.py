@@ -770,16 +770,16 @@ class TaxaInfoView(APIView):
             response.raise_for_status()
             taxa_doc = response.json()
 
-            # Extract source metadata for PDF linking
-            source = taxa_doc.get('source', {})
+            # Extract ingest metadata for PDF linking
+            ingest = taxa_doc.get('ingest', {})
             pdf_db_name = None
             pdf_doc_id = None
             url = None
 
-            if isinstance(source, dict):
-                pdf_db_name = source.get('db_name')
-                pdf_doc_id = source.get('doc_id')
-                url = source.get('url', '')
+            if isinstance(ingest, dict):
+                pdf_db_name = ingest.get('db_name')
+                pdf_doc_id = ingest.get('_id')
+                url = ingest.get('url', '')
 
             # Return taxa info in search result format for widget compatibility
             result = {
@@ -901,25 +901,25 @@ class PDFFromTaxaView(APIView):
             taxa_response.raise_for_status()
             taxa_doc = taxa_response.json()
 
-            # Get source information
-            source = taxa_doc.get('source', {})
-            source_db = source.get('db_name')
-            source_doc_id = source.get('doc_id')
+            # Get ingest information
+            ingest = taxa_doc.get('ingest', {})
+            ingest_db = ingest.get('db_name')
+            ingest_doc_id = ingest.get('_id')
 
-            if not source_db or not source_doc_id:
+            if not ingest_db or not ingest_doc_id:
                 return Response(
-                    {'error': 'Taxa document does not have source information'},
+                    {'error': 'Taxa document does not have ingest information'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Fetch the PDF attachment from the source document
+            # Fetch the PDF attachment from the ingest document
             attachment_name = 'article.pdf'
-            attachment_url = f"{couchdb_url}/{source_db}/{source_doc_id}/{attachment_name}"
+            attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{attachment_name}"
             pdf_response = requests.get(attachment_url, auth=auth, timeout=60, stream=True)
 
             if pdf_response.status_code == 404:
                 return Response(
-                    {'error': f'PDF attachment not found in source document: {source_db}/{source_doc_id}'},
+                    {'error': f'PDF attachment not found in ingest document: {ingest_db}/{ingest_doc_id}'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 

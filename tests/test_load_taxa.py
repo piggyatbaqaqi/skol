@@ -73,7 +73,7 @@ def test_load_taxa():
             all_taxa.printSchema()
 
             print("\nSample taxa:")
-            all_taxa.select("taxon", "source").show(5, truncate=50)
+            all_taxa.select("taxon", "ingest").show(5, truncate=50)
         else:
             print("⚠ No taxa found in database")
             print("  This is expected if no taxa have been saved yet")
@@ -105,7 +105,7 @@ def test_load_taxa():
         print("-" * 70)
 
         expected_cols = {
-            "taxon", "description", "source",
+            "taxon", "description", "ingest",
             "line_number", "paragraph_number",
             "page_number", "empirical_page_number"
         }

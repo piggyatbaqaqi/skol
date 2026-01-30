@@ -137,11 +137,12 @@ def extract_taxa_from_partition(
         if taxon.has_nomenclature():
             if DEBUG_TRACE:
                 taxon_row = taxon.as_row()
-                source_doc_id = taxon_row.get('source', {}).get('doc_id')
-                if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
-                    logger.info(f"[TRACE] Taxon extracted: doc_id={source_doc_id}, "
-                               f"human_url={taxon_row.get('source', {}).get('human_url')}, "
-                               f"pdf_url={taxon_row.get('source', {}).get('pdf_url')}")
+                ingest = taxon_row.get('ingest') or {}
+                doc_id = ingest.get('_id')
+                if DEBUG_DOC_ID is None or doc_id == DEBUG_DOC_ID:
+                    logger.info(f"[TRACE] Taxon extracted: doc_id={doc_id}, "
+                               f"human_url={ingest.get('url')}, "
+                               f"pdf_url={ingest.get('pdf_url')}")
             yield taxon
 
 
@@ -156,11 +157,10 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
         PySpark Row objects with fields:
             - taxon: String of concatenated nomenclature paragraphs
             - description: String of concatenated description paragraphs
-            - source: Dict with keys doc_id, human_url, pdf_url, db_name
+            - ingest: Full ingest document (contains _id, url, pdf_url, etc.)
             - line_number: Line number of first nomenclature paragraph
             - paragraph_number: Paragraph number of first nomenclature paragraph
-            - page_number: Page number of first nomenclature paragraph
-            - pdf_page: PDF page number (same as page_number)
+            - pdf_page: PDF page number
             - pdf_label: Human-readable PDF page label.
             - empirical_page_number: Empirical page number of first nomenclature paragraph
     """
@@ -187,9 +187,9 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
         row = Row(**taxon_dict)
 
         if DEBUG_TRACE:
-            source_doc_id = taxon_dict.get('source', {}).get('doc_id')
-            if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
-                logger.info(f"[TRACE] Row created: source={row.source}")
+            doc_id = get_ingest_field(taxon_dict, '_id')
+            if DEBUG_DOC_ID is None or doc_id == DEBUG_DOC_ID:
+                logger.info(f"[TRACE] Row created: ingest={row.ingest}")
 
         yield row
 
@@ -268,12 +268,10 @@ class TaxonExtractor:
         self.verbosity = verbosity
 
         # Schema for extracted taxa
-        # Phase 1: Both source and ingest present for backward compatibility
+        # All metadata is in the ingest field
         self._extract_schema = StructType([
             StructField("taxon", StringType(), False),
             StructField("description", StringType(), False),
-            StructField("source", MapType(StringType(), StringType(),
-                                          valueContainsNull=True), True),
             StructField("ingest", MapType(StringType(), StringType(),
                                           valueContainsNull=True), True),
             StructField("line_number", IntegerType(), True),
@@ -418,29 +416,13 @@ class TaxonExtractor:
                         if doc_id in db:
                             doc = db[doc_id]
 
-                            # Handle both old and new formats
-                            ingest = doc.get('ingest')
-                            source = doc.get('source')
-
-                            # If we have ingest but no source, synthesize source
-                            # for backward compatibility
-                            if ingest is not None and source is None:
-                                source = {
-                                    'doc_id': ingest.get('_id', 'unknown'),
-                                    'human_url': ingest.get('url'),
-                                    'pdf_url': ingest.get('pdf_url'),
-                                    'db_name': ingest.get('db_name', 'unknown'),
-                                }
-
                             # Convert CouchDB document to Row
                             taxon_data = {
                                 'taxon': doc.get('taxon', ''),
                                 'description': doc.get('description', ''),
-                                'source': source or {},
-                                'ingest': ingest,
+                                'ingest': doc.get('ingest'),
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
-                                'page_number': doc.get('page_number'),
                                 'pdf_page': doc.get('pdf_page'),
                                 'empirical_page_number': doc.get('empirical_page_number')
                             }
@@ -729,7 +711,7 @@ class TaxonExtractor:
                 print(f"\n[DRY RUN] Would save {taxa_count} taxa to {self.taxon_db_name}")
                 if self.verbosity >= 2:
                     print("\n[DRY RUN] Sample taxa:")
-                    taxa_df.select("_id", "taxon", "source").show(5, truncate=50)
+                    taxa_df.select("_id", "taxon", "ingest").show(5, truncate=50)
             # Return empty results DataFrame for dry run
             return self.spark.createDataFrame([], self._save_schema)
 
