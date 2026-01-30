@@ -136,12 +136,29 @@ class BuildEmbeddingView(APIView):
         """Trigger embedding build if not exists."""
         logger.info("BuildEmbeddingView.post() called")
         try:
-            # Get parameters
-            force = request.data.get('force', False)
-            embedding_name = request.data.get(
-                'embedding_name',
-                getattr(settings, 'EMBEDDING_NAME', 'skol:embedding:v1.1')
+            # Check if user is admin (staff or superuser)
+            is_admin = (
+                request.user.is_authenticated and
+                (request.user.is_staff or request.user.is_superuser)
             )
+
+            # Get parameters - force and embedding_name only allowed for admins
+            default_embedding = getattr(settings, 'EMBEDDING_NAME', 'skol:embedding:v1.1')
+
+            if is_admin:
+                force = request.data.get('force', False)
+                embedding_name = request.data.get('embedding_name', default_embedding)
+            else:
+                # Non-admins can only trigger builds with defaults
+                force = False
+                embedding_name = default_embedding
+                # Log if they tried to use restricted parameters
+                if request.data.get('force') or request.data.get('embedding_name'):
+                    logger.info(
+                        f"Non-admin user attempted to use restricted parameters "
+                        f"(force={request.data.get('force')}, "
+                        f"embedding_name={request.data.get('embedding_name')})"
+                    )
 
             r = redis.Redis(
                 host=settings.REDIS_HOST,
@@ -347,12 +364,29 @@ class BuildVocabTreeView(APIView):
     def post(self, request):
         """Trigger vocabulary tree build if not exists."""
         try:
-            # Get parameters
-            force = request.data.get('force', False)
-            db_name = request.data.get(
-                'db_name',
-                getattr(settings, 'VOCAB_TREE_DB', 'skol_taxa_full_dev')
+            # Check if user is admin (staff or superuser)
+            is_admin = (
+                request.user.is_authenticated and
+                (request.user.is_staff or request.user.is_superuser)
             )
+
+            # Get parameters - force and db_name only allowed for admins
+            default_db = getattr(settings, 'VOCAB_TREE_DB', 'skol_taxa_full_dev')
+
+            if is_admin:
+                force = request.data.get('force', False)
+                db_name = request.data.get('db_name', default_db)
+            else:
+                # Non-admins can only trigger builds with defaults
+                force = False
+                db_name = default_db
+                # Log if they tried to use restricted parameters
+                if request.data.get('force') or request.data.get('db_name'):
+                    logger.info(
+                        f"Non-admin user attempted to use restricted parameters "
+                        f"(force={request.data.get('force')}, "
+                        f"db_name={request.data.get('db_name')})"
+                    )
 
             r = redis.Redis(
                 host=settings.REDIS_HOST,
