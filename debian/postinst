@@ -34,7 +34,13 @@ fi
 # Create log directory
 mkdir -p /var/log/skol
 chown skol:skol /var/log/skol
-chmod 755 /var/log/skol
+chmod 775 /var/log/skol
+
+# Add www-data to skol group so Django can write to log directory
+if getent passwd www-data > /dev/null 2>&1; then
+    usermod -a -G skol www-data
+    echo "Added www-data to skol group for log file access"
+fi
 
 # Create Python virtual environment and install dependencies
 echo "Creating Python 3.13 virtual environment at ${SKOL_VENV}..."
