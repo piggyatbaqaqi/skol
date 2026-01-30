@@ -20,11 +20,8 @@ def _build_verification_url(request, uid, token):
     from django.conf import settings
     from django.urls import reverse
 
-    # Get the verification path
+    # Get the verification path - reverse() already includes FORCE_SCRIPT_NAME
     path = reverse('accounts:verify_email', kwargs={'uidb64': uid, 'token': token})
-
-    # Check for FORCE_SCRIPT_NAME (URL prefix like /skol)
-    script_name = getattr(settings, 'FORCE_SCRIPT_NAME', '') or ''
 
     # Determine protocol and domain
     use_https = getattr(settings, 'SKOL_HTTPS', False)
@@ -36,8 +33,8 @@ def _build_verification_url(request, uid, token):
     current_site = get_current_site(request)
     domain = current_site.domain
 
-    # Build full URL
-    return f"{protocol}://{domain}{script_name}{path}"
+    # Build full URL - don't add script_name since reverse() already includes it
+    return f"{protocol}://{domain}{path}"
 
 
 def register(request):

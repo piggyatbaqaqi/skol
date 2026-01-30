@@ -20,13 +20,11 @@ class CouchDBConnection:
     """
 
     # Shared schema definitions (DRY principle)
+    # All metadata (doc_id, url, pdf_url) is inside 'ingest' - no redundant columns
     LOAD_SCHEMA = StructType([
-        StructField("doc_id", StringType(), False),
-        StructField("human_url", StringType(), True),
-        StructField("pdf_url", StringType(), True),
         StructField("attachment_name", StringType(), False),
         StructField("value", StringType(), False),
-        StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), True),
+        StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), False),
     ])
 
     SAVE_SCHEMA = StructType([
@@ -184,8 +182,9 @@ class CouchDBConnection:
             partition: Iterator of Rows with doc_id and attachment_name
 
         Yields:
-            Rows with doc_id, human_url, pdf_url, attachment_name, value, and ingest.
+            Rows with attachment_name, value, and ingest.
             The ingest field contains the full ingest document (without _attachments/_rev).
+            All metadata (doc_id as _id, url, pdf_url) is accessed from ingest.
         """
         # Connect to CouchDB once per partition
         try:
@@ -212,9 +211,6 @@ class CouchDBConnection:
                                     ingest_record[k] = str(v) if v is not None else None
 
                             yield Row(
-                                doc_id=row.doc_id,
-                                human_url=doc.get('url', None),
-                                pdf_url=doc.get('pdf_url', None),
                                 attachment_name=row.attachment_name,
                                 value=content,
                                 ingest=ingest_record

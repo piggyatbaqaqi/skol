@@ -490,17 +490,37 @@
         }
 
         async function migrateGuestCollection() {
-            // Check if GuestCollection module is available and has data
-            if (typeof GuestCollection === 'undefined') return;
-            if (!GuestCollection.hasData()) return;
+            // Debug logging
+            console.log('Migration check starting...');
+            console.log('GuestCollection defined:', typeof GuestCollection !== 'undefined');
 
-            // Check if we've already tried migration this session
-            if (sessionStorage.getItem('guest_collection_migration_attempted')) return;
-            sessionStorage.setItem('guest_collection_migration_attempted', 'true');
+            // Check if GuestCollection module is available and has data
+            if (typeof GuestCollection === 'undefined') {
+                console.log('GuestCollection not defined, skipping migration');
+                return;
+            }
+
+            const guestData = GuestCollection.get();
+            console.log('Guest collection data:', guestData);
+            console.log('Has data:', GuestCollection.hasData());
+
+            if (!GuestCollection.hasData()) {
+                console.log('No guest data to migrate');
+                return;
+            }
+
+            // Check if we've already SUCCESSFULLY migrated this session
+            if (sessionStorage.getItem('guest_collection_migrated')) {
+                console.log('Migration already completed this session');
+                return;
+            }
+            console.log('Attempting migration...');
 
             try {
                 const result = await GuestCollection.migrateToAccount(API_BASE, getCSRFToken);
                 if (result && result.success) {
+                    // Only set flag after SUCCESS
+                    sessionStorage.setItem('guest_collection_migrated', 'true');
                     console.log('Guest collection migrated successfully:', result);
                     // Show success message
                     const msgList = document.querySelector('.messagelist');

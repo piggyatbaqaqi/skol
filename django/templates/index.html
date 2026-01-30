@@ -999,6 +999,8 @@
         </div>
     </div>
 
+    <!-- Guest Collection must load before main script (which uses it for migration) -->
+    <script src="{% static 'js/guest-collection.js' %}"></script>
 
     <script>
         // Base path for API calls - derived from Django's FORCE_SCRIPT_NAME setting
@@ -1799,21 +1801,38 @@
 
         // Migrate guest collection for newly authenticated users
         async function migrateGuestCollection() {
+            console.log('Index.html migration check...');
+            console.log('IS_AUTHENTICATED:', IS_AUTHENTICATED);
             if (!IS_AUTHENTICATED) return;
+
+            console.log('GuestCollection defined:', typeof GuestCollection !== 'undefined');
             if (typeof GuestCollection === 'undefined') return;
+
+            const guestData = GuestCollection.get();
+            console.log('Guest collection data:', guestData);
+            console.log('Has data:', GuestCollection.hasData());
             if (!GuestCollection.hasData()) return;
 
-            // Check if we've already tried migration this session
-            if (sessionStorage.getItem('guest_collection_migration_attempted')) return;
-            sessionStorage.setItem('guest_collection_migration_attempted', 'true');
+            // Check if we've already SUCCESSFULLY migrated this session
+            if (sessionStorage.getItem('guest_collection_migrated')) {
+                console.log('Migration already completed this session');
+                return;
+            }
+            console.log('Attempting migration to API...');
 
             try {
+                console.log('Calling migrateToAccount with API_BASE:', API_BASE);
                 const result = await GuestCollection.migrateToAccount(API_BASE, getCSRFToken);
+                console.log('Migration result:', result);
                 if (result && result.success) {
+                    // Only set flag after SUCCESS
+                    sessionStorage.setItem('guest_collection_migrated', 'true');
                     console.log('Guest collection migrated successfully:', result);
                     showSuccess(`Your saved searches have been imported to collection "${result.name}".`);
                     // Refresh collections menu
                     updateCollectionsMenu();
+                } else {
+                    console.log('Migration returned but not successful:', result);
                 }
             } catch (error) {
                 console.error('Failed to migrate guest collection:', error);
@@ -1826,6 +1845,36 @@
             updateCollectionsMenu();
             // Check for guest collection to migrate
             migrateGuestCollection();
+        } else {
+            // Auto-save description to guest collection for non-authenticated users
+            // Use debounce to avoid saving on every keystroke
+            let saveTimeout = null;
+            const promptTextarea = document.getElementById('prompt');
+            if (promptTextarea && typeof GuestCollection !== 'undefined') {
+                // Load existing guest collection description if any
+                const guestData = GuestCollection.get();
+                if (guestData && guestData.description && !promptTextarea.value) {
+                    promptTextarea.value = guestData.description;
+                }
+
+                // Save on input with debounce
+                promptTextarea.addEventListener('input', function() {
+                    if (saveTimeout) clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        if (this.value.trim()) {
+                            GuestCollection.updateDescription(this.value);
+                        }
+                    }, 1000); // Save after 1 second of no typing
+                });
+
+                // Also save on blur (when user clicks away)
+                promptTextarea.addEventListener('blur', function() {
+                    if (saveTimeout) clearTimeout(saveTimeout);
+                    if (this.value.trim()) {
+                        GuestCollection.updateDescription(this.value);
+                    }
+                });
+            }
         }
     </script>
 
@@ -1844,8 +1893,5 @@
 
     <!-- Taxon Result Widget -->
     <script src="{% static 'js/taxon-result-widget.js' %}"></script>
-
-    <!-- Guest Collection (localStorage for non-logged-in users) -->
-    <script src="{% static 'js/guest-collection.js' %}"></script>
 </body>
 </html>

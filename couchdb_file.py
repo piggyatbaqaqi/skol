@@ -119,12 +119,13 @@ def read_couchdb_partition(
 
     Args:
         partition: Iterator of PySpark Rows with columns:
-            - doc_id: CouchDB document ID
-            - human_url: Optional human-readable URL
-            - pdf_url: Optional PDF URL
             - attachment_name: Attachment filename
             - value: Text content from attachment
-            - ingest: Optional full ingest document
+            - ingest: Full ingest document containing all metadata:
+                - _id: CouchDB document ID
+                - url: Human-readable URL
+                - pdf_url: PDF URL
+                - (other ingest fields)
         db_name: Database name to store in metadata (ingest_db_name)
 
     Yields:
@@ -136,7 +137,7 @@ def read_couchdb_partition(
         >>> from pyspark.sql.functions import col
         >>> from couchdb_file import read_couchdb_partition
         >>>
-        >>> # Assume df has columns: doc_id, attachment_name, value
+        >>> # Assume df has columns: attachment_name, value, ingest
         >>> def process_partition(partition):
         ...     lines = read_couchdb_partition(partition, "mycobank")
         ...     # Process lines with finder.parse_annotated()
@@ -145,15 +146,18 @@ def read_couchdb_partition(
         >>> result = df.rdd.mapPartitions(process_partition)
     """
     for row in partition:
-        # Extract metadata from row if available
-        human_url = getattr(row, 'human_url', None)
-        pdf_url = getattr(row, 'pdf_url', None)
-        ingest = getattr(row, 'ingest', None)
+        # Extract ingest dict - all metadata comes from here
+        ingest = getattr(row, 'ingest', None) or {}
+
+        # Extract metadata from ingest using canonical field names
+        doc_id = ingest.get('_id', 'unknown')
+        human_url = ingest.get('url')
+        pdf_url = ingest.get('pdf_url')
 
         # Create CouchDBFile object from row data
         file_obj = CouchDBFile(
             content=row.value,
-            doc_id=row.doc_id,
+            doc_id=doc_id,
             attachment_name=row.attachment_name,
             db_name=db_name,
             human_url=human_url,

@@ -322,18 +322,12 @@ class TaxonExtractor:
             DataFrame with taxa information (taxon, description, source, line numbers, etc.)
         """
         # Select only the columns we need for extraction
-        # This prevents column count mismatch errors when receiving prediction outputs
-        required_cols = ["doc_id", "value"]
+        # All metadata (doc_id, url, pdf_url) comes from the ingest column
+        required_cols = ["value", "ingest"]
 
-        # Add attachment_name if it exists (from CouchDB), otherwise we'll handle it
+        # Add attachment_name if it exists (from CouchDB)
         if "attachment_name" in annotated_df.columns:
             required_cols.append("attachment_name")
-
-        # Add URL columns if they exist (needed for proper source metadata)
-        if "human_url" in annotated_df.columns:
-            required_cols.append("human_url")
-        if "pdf_url" in annotated_df.columns:
-            required_cols.append("pdf_url")
 
         # Select only required columns to avoid schema mismatch
         annotated_df_filtered = annotated_df.select(*required_cols)
