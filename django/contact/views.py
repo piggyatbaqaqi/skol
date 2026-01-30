@@ -1,4 +1,5 @@
 """Views for contact and feedback forms."""
+import json
 import logging
 
 from django.conf import settings
@@ -93,6 +94,15 @@ def feedback_view(request):
             message = form.cleaned_data['message']
             page_url = form.cleaned_data.get('page_url', '')
             reply_to = form.cleaned_data.get('email')
+            browser_info_raw = form.cleaned_data.get('browser_info', '')
+
+            # Parse browser info JSON
+            browser_info = None
+            if browser_info_raw:
+                try:
+                    browser_info = json.loads(browser_info_raw)
+                except json.JSONDecodeError:
+                    logger.warning("Failed to parse browser_info JSON")
 
             # Try to create GitHub issue if user has linked GitHub account
             if github_token:
@@ -102,6 +112,7 @@ def feedback_view(request):
                     page_url=page_url,
                     user=request.user,
                     email=reply_to,
+                    browser_info=browser_info,
                 )
 
                 result = create_github_issue(github_token, title, body, labels)
@@ -139,6 +150,25 @@ def feedback_view(request):
                 body_parts.append(f'User: {request.user.username}')
             if reply_to:
                 body_parts.append(f'Reply-To: {reply_to}')
+
+            # Add browser environment info
+            if browser_info:
+                body_parts.extend(['', 'Browser Environment:'])
+                if browser_info.get('browser'):
+                    body_parts.append(f"  Browser: {browser_info.get('browser')}")
+                if browser_info.get('os'):
+                    os_str = browser_info.get('os')
+                    if browser_info.get('osVersion'):
+                        os_str += f" {browser_info.get('osVersion')}"
+                    body_parts.append(f"  OS: {os_str}")
+                body_parts.append(f"  Mobile: {'Yes' if browser_info.get('isMobile') else 'No'}")
+                body_parts.append(f"  Screen: {browser_info.get('screenWidth')}x{browser_info.get('screenHeight')}")
+                body_parts.append(f"  Viewport: {browser_info.get('viewportWidth')}x{browser_info.get('viewportHeight')}")
+                body_parts.append(f"  Touch: {'Yes' if browser_info.get('touchSupport') else 'No'}")
+                if browser_info.get('connectionType'):
+                    body_parts.append(f"  Connection: {browser_info.get('connectionType')}")
+                body_parts.append(f"  User Agent: {browser_info.get('userAgent', 'N/A')}")
+
             body = '\n'.join(body_parts)
 
             # Create subject based on feedback type

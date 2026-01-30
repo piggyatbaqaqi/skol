@@ -69,3 +69,7 @@ class FeedbackForm(forms.Form):
             'placeholder': 'Please describe the issue or suggestion...'
         })
     )
+    browser_info = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'browser_info'})
+    )

@@ -103,9 +103,18 @@ def create_github_issue(token, title, body, labels=None):
         }
 
 
-def format_feedback_issue(feedback_type, message, page_url=None, user=None, email=None):
+def format_feedback_issue(feedback_type, message, page_url=None, user=None,
+                          email=None, browser_info=None):
     """
     Format feedback data into a GitHub issue title and body.
+
+    Args:
+        feedback_type: Type of feedback (bug, feature, usability, other)
+        message: The feedback message
+        page_url: URL of the page where feedback originated
+        user: Django user object (optional)
+        email: Reply-to email address (optional)
+        browser_info: Dict of browser/device environment info (optional)
 
     Returns:
         tuple of (title, body, labels)
@@ -132,6 +141,62 @@ def format_feedback_issue(feedback_type, message, page_url=None, user=None, emai
         body_parts.append(f'- **User:** {user.username}')
     if email:
         body_parts.append(f'- **Email:** {email}')
+
+    # Add browser environment section
+    if browser_info:
+        body_parts.extend(['', '## Environment', ''])
+
+        # OS and browser
+        if browser_info.get('browser'):
+            body_parts.append(f"- **Browser:** {browser_info.get('browser')}")
+        if browser_info.get('os'):
+            os_str = browser_info.get('os')
+            if browser_info.get('osVersion'):
+                os_str += f" {browser_info.get('osVersion')}"
+            body_parts.append(f"- **OS:** {os_str}")
+
+        # Device type
+        is_mobile = browser_info.get('isMobile', False)
+        body_parts.append(f"- **Device:** {'Mobile' if is_mobile else 'Desktop'}")
+
+        # Screen and viewport
+        if browser_info.get('screenWidth') and browser_info.get('screenHeight'):
+            body_parts.append(
+                f"- **Screen:** {browser_info.get('screenWidth')}x"
+                f"{browser_info.get('screenHeight')}"
+            )
+        if browser_info.get('viewportWidth') and browser_info.get('viewportHeight'):
+            body_parts.append(
+                f"- **Viewport:** {browser_info.get('viewportWidth')}x"
+                f"{browser_info.get('viewportHeight')}"
+            )
+
+        # Touch support
+        if browser_info.get('touchSupport'):
+            touch_points = browser_info.get('maxTouchPoints', 0)
+            body_parts.append(f"- **Touch:** Yes ({touch_points} touch points)")
+
+        # Connection type (useful for mobile debugging)
+        if browser_info.get('connectionType'):
+            body_parts.append(f"- **Connection:** {browser_info.get('connectionType')}")
+
+        # Pixel ratio (important for retina/mobile displays)
+        if browser_info.get('devicePixelRatio'):
+            body_parts.append(
+                f"- **Pixel Ratio:** {browser_info.get('devicePixelRatio')}"
+            )
+
+        # Full user agent in collapsible section
+        if browser_info.get('userAgent'):
+            body_parts.extend([
+                '',
+                '<details>',
+                '<summary>Full User Agent</summary>',
+                '',
+                f"`{browser_info.get('userAgent')}`",
+                '',
+                '</details>',
+            ])
 
     body_parts.extend([
         '',

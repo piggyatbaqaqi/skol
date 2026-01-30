@@ -19,8 +19,9 @@
 </div>
 {% endif %}
 
-<form method="post">
+<form method="post" id="feedback-form">
     {% csrf_token %}
+    {{ form.browser_info }}
 
     {% if not has_github %}
     <div class="form-group">
@@ -65,4 +66,91 @@
     {% endif %}
     <p><a href="{{ SCRIPT_NAME }}/">Back to Home</a></p>
 </div>
+
+<script>
+(function() {
+    // Collect browser and environment information
+    function collectBrowserInfo() {
+        const info = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            languages: navigator.languages ? navigator.languages.join(', ') : navigator.language,
+            screenWidth: screen.width,
+            screenHeight: screen.height,
+            screenColorDepth: screen.colorDepth,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+            maxTouchPoints: navigator.maxTouchPoints || 0,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timezoneOffset: new Date().getTimezoneOffset(),
+            cookiesEnabled: navigator.cookieEnabled,
+            online: navigator.onLine,
+        };
+
+        // Connection info (if available)
+        if (navigator.connection) {
+            info.connectionType = navigator.connection.effectiveType || 'unknown';
+            info.connectionDownlink = navigator.connection.downlink;
+            info.connectionSaveData = navigator.connection.saveData || false;
+        }
+
+        // Device memory (if available)
+        if (navigator.deviceMemory) {
+            info.deviceMemory = navigator.deviceMemory + ' GB';
+        }
+
+        // Hardware concurrency (CPU cores)
+        if (navigator.hardwareConcurrency) {
+            info.cpuCores = navigator.hardwareConcurrency;
+        }
+
+        // Parse user agent for readable browser/OS info
+        const ua = navigator.userAgent;
+        if (/Android/i.test(ua)) {
+            info.os = 'Android';
+            const match = ua.match(/Android\s([0-9.]+)/);
+            if (match) info.osVersion = match[1];
+        } else if (/iPhone|iPad|iPod/i.test(ua)) {
+            info.os = 'iOS';
+            const match = ua.match(/OS\s([0-9_]+)/);
+            if (match) info.osVersion = match[1].replace(/_/g, '.');
+        } else if (/Windows/i.test(ua)) {
+            info.os = 'Windows';
+        } else if (/Mac OS X/i.test(ua)) {
+            info.os = 'macOS';
+        } else if (/Linux/i.test(ua)) {
+            info.os = 'Linux';
+        }
+
+        // Browser detection
+        if (/Firefox/i.test(ua)) {
+            info.browser = 'Firefox';
+        } else if (/Edg/i.test(ua)) {
+            info.browser = 'Edge';
+        } else if (/Chrome/i.test(ua) && !/Chromium/i.test(ua)) {
+            info.browser = 'Chrome';
+        } else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) {
+            info.browser = 'Safari';
+        } else if (/Opera|OPR/i.test(ua)) {
+            info.browser = 'Opera';
+        }
+
+        // Mobile detection
+        info.isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+
+        return info;
+    }
+
+    // Populate the hidden field on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const browserInfoField = document.getElementById('browser_info');
+        if (browserInfoField) {
+            browserInfoField.value = JSON.stringify(collectBrowserInfo());
+        }
+    });
+})();
+</script>
 {% endblock %}
