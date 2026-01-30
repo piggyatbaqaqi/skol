@@ -4,3 +4,4 @@
 * New markdown documents live in docs/ unless otherwise requested.
 * Functional tests live in tests/ and need not be pytest compatible.
 * All pulldown menus use react-select.
+* Check every change into git with useful comments.
