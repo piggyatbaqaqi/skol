@@ -1507,6 +1507,26 @@
             document.getElementById('searchButton').disabled = true;
 
             try {
+                // Save description to collection BEFORE search (so it's saved even if search fails)
+                if (activeCollectionId && prompt) {
+                    try {
+                        await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({
+                                name: activeCollectionData.name,
+                                description: prompt
+                            })
+                        });
+                    } catch (descError) {
+                        console.warn('Could not save description to collection:', descError);
+                    }
+                }
+
                 const response = await fetch(`${API_BASE}/api/search/`, {
                     method: 'POST',
                     headers: {
@@ -1529,9 +1549,9 @@
 
                 displayResults(data);
 
-                // Automatically save search to active collection if one is selected
+                // Save search results to history (description already saved above)
                 if (activeCollectionId && data.results && data.results.length > 0) {
-                    await saveSearchToHistory(data);
+                    await saveSearchResultsToHistory(data);
                 }
 
             } catch (error) {
@@ -1543,26 +1563,12 @@
             }
         });
 
-        // Save search to collection (updates description AND adds to history)
-        async function saveSearchToHistory(searchData) {
+        // Save search results to collection history (description is saved separately before search)
+        async function saveSearchResultsToHistory(searchData) {
             if (!activeCollectionId || !searchData) return;
 
             try {
-                // First, update the collection's description
-                await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCSRFToken()
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        name: activeCollectionData.name,
-                        description: searchData.prompt
-                    })
-                });
-
-                // Then, add to search history
+                // Add to search history
                 const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/searches/`, {
                     method: 'POST',
                     headers: {
