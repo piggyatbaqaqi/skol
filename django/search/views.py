@@ -178,6 +178,10 @@ class BuildEmbeddingView(APIView):
                 import sys
                 from pathlib import Path
                 bin_path = Path(__file__).resolve().parent.parent.parent / 'bin'
+                logger.info(f"Looking for bin directory at: {bin_path}")
+                logger.info(f"bin_path exists: {bin_path.exists()}")
+                if bin_path.exists():
+                    logger.info(f"bin_path contents: {list(bin_path.iterdir())[:10]}")
                 if str(bin_path) not in sys.path:
                     sys.path.insert(0, str(bin_path))
 
