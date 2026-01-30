@@ -267,10 +267,14 @@ class TaxonExtractor:
         self.verbosity = verbosity
 
         # Schema for extracted taxa
+        # Phase 1: Both source and ingest present for backward compatibility
         self._extract_schema = StructType([
             StructField("taxon", StringType(), False),
             StructField("description", StringType(), False),
-            StructField("source", MapType(StringType(), StringType(), valueContainsNull=True), False),
+            StructField("source", MapType(StringType(), StringType(),
+                                          valueContainsNull=True), True),
+            StructField("ingest", MapType(StringType(), StringType(),
+                                          valueContainsNull=True), True),
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
             StructField("pdf_page", IntegerType(), True),
@@ -419,11 +423,26 @@ class TaxonExtractor:
                         if doc_id in db:
                             doc = db[doc_id]
 
+                            # Handle both old and new formats
+                            ingest = doc.get('ingest')
+                            source = doc.get('source')
+
+                            # If we have ingest but no source, synthesize source
+                            # for backward compatibility
+                            if ingest is not None and source is None:
+                                source = {
+                                    'doc_id': ingest.get('_id', 'unknown'),
+                                    'human_url': ingest.get('url'),
+                                    'pdf_url': ingest.get('pdf_url'),
+                                    'db_name': ingest.get('db_name', 'unknown'),
+                                }
+
                             # Convert CouchDB document to Row
                             taxon_data = {
                                 'taxon': doc.get('taxon', ''),
                                 'description': doc.get('description', ''),
-                                'source': doc.get('source', {}),
+                                'source': source or {},
+                                'ingest': ingest,
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
                                 'page_number': doc.get('page_number'),

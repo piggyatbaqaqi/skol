@@ -1,7 +1,7 @@
 """Handle individual text lines."""
 
 import regex as re  # type: ignore
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from fileobj import FileObject
 
@@ -23,6 +23,7 @@ class Line(object):
     _db_name: Optional[str]
     _human_url: Optional[str]
     _pdf_url: Optional[str]
+    _ingest: Optional[Dict[str, Any]]
 
     _TABLE = [
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
@@ -45,6 +46,7 @@ class Line(object):
         self._db_name = None
         self._human_url = None
         self._pdf_url = None
+        self._ingest = None
 
         if fileobj:
             self._filename = fileobj.filename
@@ -65,6 +67,8 @@ class Line(object):
                 self._human_url = fileobj.human_url
             if hasattr(fileobj, 'pdf_url'):
                 self._pdf_url = fileobj.pdf_url
+            if hasattr(fileobj, 'ingest'):
+                self._ingest = fileobj.ingest
 
         had_label_start = self.strip_label_start()
 
@@ -234,3 +238,8 @@ class Line(object):
     def pdf_url(self) -> Optional[str]:
         """PDF URL from the source (optional)."""
         return self._pdf_url
+
+    @property
+    def ingest(self) -> Optional[Dict[str, Any]]:
+        """Full ingest document (without _attachments/_rev)."""
+        return self._ingest

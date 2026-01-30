@@ -1,10 +1,66 @@
 """Represent Nomenclature paragraphs and matching Descriptions."""
 import itertools
-from typing import Dict, Iterable, Iterator, List
+from typing import Any, Dict, Iterable, Iterator, List, Optional
 
 from paragraph import Paragraph
 from label import Label
 from line import Line
+
+
+def get_ingest_field(record: Dict[str, Any], *keys: str, default: Any = None) -> Any:
+    """
+    Get a field from a taxa record using INGEST field names.
+
+    Callers should always use original ingest field names:
+    - '_id' for document ID (not 'doc_id')
+    - 'url' for human URL (not 'human_url')
+    - 'pdf_url' for PDF URL
+
+    Tries 'ingest' first (new format), falls back to 'source' (old format)
+    with automatic name translation for backward compatibility.
+
+    Args:
+        record: Taxa record dict (may have 'ingest', 'source', or both)
+        *keys: Field path using INGEST names (e.g., 'url', '_id', 'pdf_url')
+        default: Value to return if field not found
+
+    Returns:
+        Field value or default
+
+    Examples:
+        get_ingest_field(record, '_id')      # Gets ingest._id or source.doc_id
+        get_ingest_field(record, 'url')      # Gets ingest.url or source.human_url
+        get_ingest_field(record, 'pdf_url')  # Gets ingest.pdf_url or source.pdf_url
+    """
+    # Try ingest first (new format) - use keys directly
+    ingest = record.get('ingest')
+    if ingest is not None:
+        result: Any = ingest
+        for key in keys:
+            if not isinstance(result, dict):
+                result = None
+                break
+            result = result.get(key)
+            if result is None:
+                break
+        if result is not None:
+            return result
+
+    # Fall back to source (old format) - translate ingest names to source names
+    source = record.get('source')
+    if source is not None and keys:
+        # Map ingest field names → source field names
+        ingest_to_source: Dict[str, str] = {
+            '_id': 'doc_id',
+            'url': 'human_url',
+            'pdf_url': 'pdf_url',
+        }
+        mapped_key = ingest_to_source.get(keys[0], keys[0])
+        if isinstance(source, dict):
+            return source.get(mapped_key, default)
+
+    return default
+
 
 class Taxon(object):
     FIELDNAMES = [
@@ -81,8 +137,9 @@ class Taxon(object):
         source_pdf_url = first_line.pdf_url
         source_db_name = first_line.db_name or "unknown"
         line_number = first_line.line_number
+        ingest = first_line.ingest
 
-        retval: Dict[str, None | str | int | Dict[str, None | str]] = {
+        retval: Dict[str, None | str | int | Dict[str, Any]] = {
             'taxon': "\n".join((str(pp) for pp in self._nomenclatures)),
             'description': "\n".join((str(pp) for pp in self._descriptions)),
             'source': {
@@ -91,6 +148,7 @@ class Taxon(object):
                 'pdf_url': source_pdf_url,
                 'db_name': source_db_name,
             },
+            'ingest': ingest,
             'line_number': line_number,
             'paragraph_number': pp.paragraph_number,
             # pdf_page comes from "--- PDF Page N Label L---" markers in text (from pdf_section_extractor.py)

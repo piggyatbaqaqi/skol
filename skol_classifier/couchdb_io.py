@@ -2,11 +2,11 @@
 CouchDB I/O utilities for SKOL classifier using distributed foreachPartition
 """
 
-from typing import List, Optional, Iterator
+from typing import Any, Dict, List, Optional, Iterator
 from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.functions import col, lit
 from pyspark.sql.types import (
-    StringType, StructType, StructField, BooleanType
+    StringType, StructType, StructField, BooleanType, MapType
 )
 import couchdb
 
@@ -22,10 +22,11 @@ class CouchDBConnection:
     # Shared schema definitions (DRY principle)
     LOAD_SCHEMA = StructType([
         StructField("doc_id", StringType(), False),
-        StructField("human_url", StringType(), False),
+        StructField("human_url", StringType(), True),
         StructField("pdf_url", StringType(), True),
         StructField("attachment_name", StringType(), False),
         StructField("value", StringType(), False),
+        StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), True),
     ])
 
     SAVE_SCHEMA = StructType([
@@ -183,7 +184,8 @@ class CouchDBConnection:
             partition: Iterator of Rows with doc_id and attachment_name
 
         Yields:
-            Rows with doc_id, human_url, attachment_name, and value (content).
+            Rows with doc_id, human_url, pdf_url, attachment_name, value, and ingest.
+            The ingest field contains the full ingest document (without _attachments/_rev).
         """
         # Connect to CouchDB once per partition
         try:
@@ -202,12 +204,20 @@ class CouchDBConnection:
                         if attachment:
                             content = attachment.read().decode('utf-8', errors='ignore')
 
+                            # Create ingest record without attachments and _rev
+                            # Convert all values to strings for MapType compatibility
+                            ingest_record: Dict[str, Optional[str]] = {}
+                            for k, v in doc.items():
+                                if k not in ('_attachments', '_rev'):
+                                    ingest_record[k] = str(v) if v is not None else None
+
                             yield Row(
                                 doc_id=row.doc_id,
                                 human_url=doc.get('url', None),
                                 pdf_url=doc.get('pdf_url', None),
                                 attachment_name=row.attachment_name,
-                                value=content
+                                value=content,
+                                ingest=ingest_record
                             )
                 except Exception as e:
                     # Log error but continue processing

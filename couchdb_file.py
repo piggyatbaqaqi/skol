@@ -1,6 +1,6 @@
 """CouchDB-aware file reading for annotated documents in PySpark."""
 
-from typing import Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 from pyspark.sql import Row
 
 from line import Line
@@ -21,6 +21,7 @@ class CouchDBFile(FileObject):
     _db_name: str
     _human_url: Optional[str]
     _pdf_url: Optional[str]
+    _ingest: Optional[Dict[str, Any]]
     _content_lines: List[str]
 
     def __init__(
@@ -30,7 +31,8 @@ class CouchDBFile(FileObject):
         attachment_name: str,
         db_name: str,
         human_url: Optional[str] = None,
-        pdf_url: Optional[str] = None
+        pdf_url: Optional[str] = None,
+        ingest: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Initialize CouchDBFile from attachment content.
@@ -42,12 +44,14 @@ class CouchDBFile(FileObject):
             db_name: Database name where document is stored (ingest_db_name)
             human_url: Optional human-readable URL from the CouchDB document
             pdf_url: Optional PDF URL from the CouchDB document
+            ingest: Optional full ingest document (without _attachments/_rev)
         """
         self._doc_id = doc_id
         self._attachment_name = attachment_name
         self._db_name = db_name
         self._human_url = human_url
         self._pdf_url = pdf_url
+        self._ingest = ingest
         self._line_number = 0
         self._page_number = 1
         self._pdf_page = 0  # Will be updated when PDF page markers are encountered
@@ -96,6 +100,11 @@ class CouchDBFile(FileObject):
         """PDF URL from the CouchDB document."""
         return self._pdf_url
 
+    @property
+    def ingest(self) -> Optional[Dict[str, Any]]:
+        """Full ingest document (without _attachments/_rev)."""
+        return self._ingest
+
 
 def read_couchdb_partition(
     partition: Iterator[Row],
@@ -115,11 +124,12 @@ def read_couchdb_partition(
             - pdf_url: Optional PDF URL
             - attachment_name: Attachment filename
             - value: Text content from attachment
+            - ingest: Optional full ingest document
         db_name: Database name to store in metadata (ingest_db_name)
 
     Yields:
         Line objects with content and CouchDB metadata (doc_id, human_url,
-        pdf_url, attachment_name, db_name)
+        pdf_url, attachment_name, db_name, ingest)
 
     Example:
         >>> # In a PySpark context
@@ -135,9 +145,10 @@ def read_couchdb_partition(
         >>> result = df.rdd.mapPartitions(process_partition)
     """
     for row in partition:
-        # Extract URLs from row if available
+        # Extract metadata from row if available
         human_url = getattr(row, 'human_url', None)
         pdf_url = getattr(row, 'pdf_url', None)
+        ingest = getattr(row, 'ingest', None)
 
         # Create CouchDBFile object from row data
         file_obj = CouchDBFile(
@@ -146,7 +157,8 @@ def read_couchdb_partition(
             attachment_name=row.attachment_name,
             db_name=db_name,
             human_url=human_url,
-            pdf_url=pdf_url
+            pdf_url=pdf_url,
+            ingest=ingest
         )
 
         # Yield all lines from this file
