@@ -6,6 +6,7 @@ from .views import (
     # Existing views
     SearchView,
     EmbeddingListView,
+    BuildEmbeddingView,
     TaxaInfoView,
     PDFAttachmentView,
     PDFFromTaxaView,
@@ -23,6 +24,7 @@ from .views import (
     VocabTreeView,
     VocabTreeVersionsView,
     VocabTreeChildrenView,
+    BuildVocabTreeView,
 )
 
 app_name = 'search'
@@ -30,6 +32,7 @@ app_name = 'search'
 urlpatterns = [
     # Existing endpoints
     path('embeddings/', EmbeddingListView.as_view(), name='embeddings'),
+    path('embeddings/build/', BuildEmbeddingView.as_view(), name='embeddings-build'),
     path('search/', SearchView.as_view(), name='search'),
     # Taxa document info
     path('taxa/<str:taxa_id>/', TaxaInfoView.as_view(), name='taxa-info'),
@@ -68,4 +71,5 @@ urlpatterns = [
     path('vocab-tree/', VocabTreeView.as_view(), name='vocab-tree'),
     path('vocab-tree/versions/', VocabTreeVersionsView.as_view(), name='vocab-tree-versions'),
     path('vocab-tree/children/', VocabTreeChildrenView.as_view(), name='vocab-tree-children'),
+    path('vocab-tree/build/', BuildVocabTreeView.as_view(), name='vocab-tree-build'),
 ]

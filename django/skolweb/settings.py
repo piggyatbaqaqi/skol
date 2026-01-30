@@ -191,6 +191,12 @@ REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
 
+# Embedding configuration
+EMBEDDING_NAME = os.environ.get('EMBEDDING_NAME', 'skol:embedding:v1.1')
+
+# Vocabulary tree configuration
+VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_taxa_full_dev')
+
 # CouchDB configuration
 COUCHDB_HOST = os.environ.get('COUCHDB_HOST', 'localhost')
 COUCHDB_PORT = int(os.environ.get('COUCHDB_PORT', '5984'))

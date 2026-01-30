@@ -32,6 +32,7 @@ class EmbeddingListView(APIView):
     """
 
     def get(self, request):
+        logger.info("EmbeddingListView.get() called")
         try:
             # Connect to Redis
             r = redis.Redis(
@@ -42,6 +43,7 @@ class EmbeddingListView(APIView):
 
             # Get all keys matching the pattern
             keys = r.keys('skol:embedding:*')
+            logger.info(f"Found {len(keys)} embeddings: {keys}")
 
             # Sort keys
             keys.sort()
@@ -56,6 +58,364 @@ class EmbeddingListView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class BuildEmbeddingView(APIView):
+    """
+    API endpoint to trigger building embedding model if it doesn't exist.
+
+    GET /api/embeddings/build/
+    Check if the configured embedding exists.
+
+    POST /api/embeddings/build/
+    Trigger building the embedding model if it doesn't already exist.
+
+    Request body (optional):
+        {
+            "force": false,  // Set to true to rebuild even if exists
+            "embedding_name": "skol:embedding:v1.1"  // Optional override
+        }
+
+    Returns:
+        {
+            "status": "exists" | "building" | "complete" | "error",
+            "embedding_name": "skol:embedding:v1.1",
+            "message": "...",
+            "embedding_count": 1234  // Number of embeddings (if exists/complete)
+        }
+    """
+
+    def get(self, request):
+        """Check if embedding exists."""
+        try:
+            # Get embedding name from query param or use default
+            embedding_name = request.GET.get(
+                'embedding_name',
+                getattr(settings, 'EMBEDDING_NAME', 'skol:embedding:v1.1')
+            )
+
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=False
+            )
+
+            exists = r.exists(embedding_name)
+
+            if exists:
+                # Get embedding count by loading and checking size
+                import pickle
+                data = r.get(embedding_name)
+                if data:
+                    df = pickle.loads(data)
+                    count = len(df)
+                else:
+                    count = 0
+
+                return Response({
+                    'status': 'exists',
+                    'embedding_name': embedding_name,
+                    'message': f'Embedding exists with {count} entries',
+                    'embedding_count': count
+                })
+            else:
+                return Response({
+                    'status': 'not_found',
+                    'embedding_name': embedding_name,
+                    'message': 'Embedding does not exist. POST to this endpoint to build it.'
+                })
+
+        except Exception as e:
+            logger.error(f"Error checking embedding status: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request):
+        """Trigger embedding build if not exists."""
+        logger.info("BuildEmbeddingView.post() called")
+        try:
+            # Get parameters
+            force = request.data.get('force', False)
+            embedding_name = request.data.get(
+                'embedding_name',
+                getattr(settings, 'EMBEDDING_NAME', 'skol:embedding:v1.1')
+            )
+
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=False
+            )
+
+            # Check if already exists
+            exists = r.exists(embedding_name)
+
+            if exists and not force:
+                # Get embedding count
+                import pickle
+                data = r.get(embedding_name)
+                count = len(pickle.loads(data)) if data else 0
+
+                return Response({
+                    'status': 'exists',
+                    'embedding_name': embedding_name,
+                    'message': f'Embedding already exists with {count} entries. '
+                               f'Use force=true to rebuild.',
+                    'embedding_count': count
+                })
+
+            # Trigger the embedding build
+            logger.info(f"Starting embedding build: {embedding_name} (force={force})")
+
+            try:
+                # Import the embedding computation function
+                # Python 3.11+ compatibility
+                import skol_compat  # noqa: F401
+
+                # Import from bin directory
+                import sys
+                from pathlib import Path
+                bin_path = Path(__file__).resolve().parent.parent.parent / 'bin'
+                if str(bin_path) not in sys.path:
+                    sys.path.insert(0, str(bin_path))
+
+                from embed_taxa import compute_and_save_embeddings
+                from env_config import get_env_config
+
+                # Build config from Django settings and environment
+                config = get_env_config()
+
+                # Override with Django settings where available
+                config['redis_host'] = settings.REDIS_HOST
+                config['redis_port'] = settings.REDIS_PORT
+                config['couchdb_host'] = f"{settings.COUCHDB_HOST}:{settings.COUCHDB_PORT}"
+                config['couchdb_username'] = settings.COUCHDB_USERNAME
+                config['couchdb_password'] = settings.COUCHDB_PASSWORD
+                config['embedding_name'] = embedding_name
+
+                # Run the embedding computation
+                compute_and_save_embeddings(
+                    config=config,
+                    force=force,
+                    verbosity=1,
+                    dry_run=False,
+                    skip_existing=not force,
+                )
+
+                # Verify it was created
+                if r.exists(embedding_name):
+                    import pickle
+                    data = r.get(embedding_name)
+                    count = len(pickle.loads(data)) if data else 0
+
+                    logger.info(
+                        f"Embedding build complete: {embedding_name} ({count} entries)"
+                    )
+
+                    return Response({
+                        'status': 'complete',
+                        'embedding_name': embedding_name,
+                        'message': f'Embedding built successfully with {count} entries',
+                        'embedding_count': count
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'status': 'error',
+                        'embedding_name': embedding_name,
+                        'message': 'Embedding build completed but not found in Redis'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except ImportError as e:
+                logger.error(f"Failed to import embedding modules: {e}")
+                return Response({
+                    'status': 'error',
+                    'embedding_name': embedding_name,
+                    'message': f'Failed to import embedding modules: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            logger.error(f"Error building embedding: {e}")
+            tb = traceback.format_exc()
+            logger.error(tb)
+            return Response({
+                'status': 'error',
+                'embedding_name': embedding_name if 'embedding_name' in locals() else 'unknown',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BuildVocabTreeView(APIView):
+    """
+    API endpoint to trigger building vocabulary tree if it doesn't exist.
+
+    GET /api/vocab-tree/build/
+    Check if the vocabulary tree exists.
+
+    POST /api/vocab-tree/build/
+    Trigger building the vocabulary tree if it doesn't already exist.
+
+    Request body (optional):
+        {
+            "force": false,  // Set to true to rebuild even if exists
+            "db_name": "skol_taxa_full_dev"  // Optional database override
+        }
+
+    Returns:
+        {
+            "status": "exists" | "complete" | "error",
+            "redis_key": "skol:ui:menus_2026_01_29_...",
+            "message": "...",
+            "stats": {...}  // Tree statistics (if exists/complete)
+        }
+    """
+
+    def get(self, request):
+        """Check if vocabulary tree exists."""
+        try:
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+
+            # Check for latest pointer
+            latest_key = r.get("skol:ui:menus_latest")
+
+            if latest_key and r.exists(latest_key):
+                # Get stats from the tree
+                import json
+                tree_json = r.get(latest_key)
+                if tree_json:
+                    data = json.loads(tree_json)
+                    stats = data.get('stats', {})
+                    version = data.get('version', 'unknown')
+
+                    return Response({
+                        'status': 'exists',
+                        'redis_key': latest_key,
+                        'version': version,
+                        'message': f'Vocabulary tree exists with {stats.get("total_nodes", 0)} nodes',
+                        'stats': stats
+                    })
+
+            return Response({
+                'status': 'not_found',
+                'message': 'Vocabulary tree does not exist. POST to this endpoint to build it.'
+            })
+
+        except Exception as e:
+            logger.error(f"Error checking vocab tree status: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request):
+        """Trigger vocabulary tree build if not exists."""
+        try:
+            # Get parameters
+            force = request.data.get('force', False)
+            db_name = request.data.get(
+                'db_name',
+                getattr(settings, 'VOCAB_TREE_DB', 'skol_taxa_full_dev')
+            )
+
+            r = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True
+            )
+
+            # Check if already exists
+            latest_key = r.get("skol:ui:menus_latest")
+            exists = latest_key and r.exists(latest_key)
+
+            if exists and not force:
+                import json
+                tree_json = r.get(latest_key)
+                if tree_json:
+                    data = json.loads(tree_json)
+                    stats = data.get('stats', {})
+
+                    return Response({
+                        'status': 'exists',
+                        'redis_key': latest_key,
+                        'message': f'Vocabulary tree already exists with '
+                                   f'{stats.get("total_nodes", 0)} nodes. '
+                                   f'Use force=true to rebuild.',
+                        'stats': stats
+                    })
+
+            # Trigger the vocab tree build
+            logger.info(f"Starting vocab tree build from {db_name} (force={force})")
+
+            try:
+                # Import the vocab tree building functions
+                import sys
+                from pathlib import Path
+                bin_path = Path(__file__).resolve().parent.parent.parent / 'bin'
+                if str(bin_path) not in sys.path:
+                    sys.path.insert(0, str(bin_path))
+
+                from build_vocab_tree import build_vocabulary_tree, save_to_redis
+
+                # Build CouchDB URL
+                couchdb_url = settings.COUCHDB_URL
+
+                # Build the vocabulary tree
+                tree = build_vocabulary_tree(
+                    couchdb_url=couchdb_url,
+                    db_name=db_name,
+                    username=settings.COUCHDB_USERNAME,
+                    password=settings.COUCHDB_PASSWORD,
+                    verbosity=1
+                )
+
+                # Save to Redis
+                redis_key = save_to_redis(
+                    tree=tree,
+                    redis_host=settings.REDIS_HOST,
+                    redis_port=settings.REDIS_PORT,
+                    verbosity=1
+                )
+
+                # Get stats for response
+                stats = {
+                    "total_nodes": tree.stats["total_nodes"],
+                    "max_depth": tree.stats["max_depth"],
+                    "leaf_count": tree.stats["leaf_count"],
+                }
+
+                logger.info(
+                    f"Vocab tree build complete: {redis_key} "
+                    f"({stats['total_nodes']} nodes)"
+                )
+
+                return Response({
+                    'status': 'complete',
+                    'redis_key': redis_key,
+                    'message': f'Vocabulary tree built successfully with '
+                               f'{stats["total_nodes"]} nodes',
+                    'stats': stats
+                }, status=status.HTTP_201_CREATED)
+
+            except ImportError as e:
+                logger.error(f"Failed to import vocab tree modules: {e}")
+                return Response({
+                    'status': 'error',
+                    'message': f'Failed to import vocab tree modules: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            logger.error(f"Error building vocab tree: {e}")
+            tb = traceback.format_exc()
+            logger.error(tb)
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def clean_float(value):

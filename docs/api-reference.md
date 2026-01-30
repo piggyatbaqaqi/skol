@@ -26,6 +26,46 @@ List available embedding models stored in Redis.
 }
 ```
 
+### GET /api/embeddings/build/
+
+Check if the configured embedding model exists.
+
+**Query Parameters:** `embedding_name` (optional)
+
+**Response:**
+```json
+{
+    "status": "exists",
+    "embedding_name": "skol:embedding:v1.1",
+    "message": "Embedding exists with 1234 entries",
+    "embedding_count": 1234
+}
+```
+
+### POST /api/embeddings/build/
+
+Trigger building the embedding model if it doesn't exist. This loads taxa descriptions from CouchDB, computes sBERT embeddings, and saves them to Redis.
+
+**Request:**
+```json
+{
+    "force": false,
+    "embedding_name": "skol:embedding:v1.1"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "complete",
+    "embedding_name": "skol:embedding:v1.1",
+    "message": "Embedding built successfully with 1234 entries",
+    "embedding_count": 1234
+}
+```
+
+**Status values:** `exists`, `complete`, `error`
+
 ### POST /api/search/
 
 Perform semantic search against taxa descriptions.
@@ -100,6 +140,53 @@ Get children at a specific path (optimized for cascading menus).
 
 **Query Parameters:** `path`, `version`
 
+### GET /api/vocab-tree/build/
+
+Check if the vocabulary tree exists in Redis.
+
+**Response:**
+```json
+{
+    "status": "exists",
+    "redis_key": "skol:ui:menus_2026_01_29_12_30",
+    "version": "2026_01_29_12_30",
+    "message": "Vocabulary tree exists with 5432 nodes",
+    "stats": {
+        "total_nodes": 5432,
+        "max_depth": 5,
+        "leaf_count": 3210
+    }
+}
+```
+
+### POST /api/vocab-tree/build/
+
+Trigger building the vocabulary tree if it doesn't exist. This reads JSON representations from CouchDB and builds a hierarchical vocabulary structure for UI menus.
+
+**Request:**
+```json
+{
+    "force": false,
+    "db_name": "skol_taxa_full_dev"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "complete",
+    "redis_key": "skol:ui:menus_2026_01_29_12_30",
+    "message": "Vocabulary tree built successfully with 5432 nodes",
+    "stats": {
+        "total_nodes": 5432,
+        "max_depth": 5,
+        "leaf_count": 3210
+    }
+}
+```
+
+**Status values:** `exists`, `complete`, `error`
+
 See [api-vocab-tree.md](api-vocab-tree.md) for detailed documentation.
 
 ---
@@ -111,6 +198,30 @@ Research collection management for organizing searches.
 ### GET /api/identifier-types/
 
 List available external identifier types (iNat, MO, GenBank, etc.).
+
+### GET /api/fungaria/
+
+List fungaria/herbaria from Index Herbariorum registry (for fungarium identifier dropdown).
+
+**Query Parameters:** `search` (filter by code/name), `limit`
+
+**Response:**
+```json
+{
+    "fungaria": [
+        {
+            "code": "NY",
+            "organization": "New York Botanical Garden",
+            "num_fungi": 850000,
+            "location": "New York, NY, USA",
+            "collection_url": "https://...",
+            "web_url": "https://..."
+        }
+    ],
+    "count": 50,
+    "total_in_registry": 3500
+}
+```
 
 ### Collections CRUD
 

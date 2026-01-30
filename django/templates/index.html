@@ -998,11 +998,12 @@
 
         // Load available embeddings on page load
         async function loadEmbeddings() {
+            const select = document.getElementById('embedding');
+
             try {
                 const response = await fetch(`${API_BASE}/api/embeddings/`);
                 const data = await response.json();
 
-                const select = document.getElementById('embedding');
                 select.innerHTML = '';
 
                 if (data.embeddings && data.embeddings.length > 0) {
@@ -1013,11 +1014,57 @@
                         select.appendChild(option);
                     });
                 } else {
-                    select.innerHTML = '<option value="">No embeddings found</option>';
+                    // No embeddings found - trigger build
+                    select.innerHTML = '<option value="">Building embeddings...</option>';
+                    console.log('No embeddings found, triggering build...');
+                    await triggerEmbeddingBuild();
                 }
             } catch (error) {
                 console.error('Error loading embeddings:', error);
-                document.getElementById('embedding').innerHTML = '<option value="">Error loading embeddings</option>';
+                select.innerHTML = '<option value="">Error loading embeddings</option>';
+            }
+        }
+
+        // Trigger embedding build if none exist
+        async function triggerEmbeddingBuild() {
+            const select = document.getElementById('embedding');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/embeddings/build/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'complete' || data.status === 'exists') {
+                    console.log('Embedding build complete:', data.message);
+                    // Reload embeddings list
+                    const listResponse = await fetch(`${API_BASE}/api/embeddings/`);
+                    const listData = await listResponse.json();
+
+                    select.innerHTML = '';
+                    if (listData.embeddings && listData.embeddings.length > 0) {
+                        listData.embeddings.forEach(embedding => {
+                            const option = document.createElement('option');
+                            option.value = embedding;
+                            option.textContent = embedding;
+                            select.appendChild(option);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">No embeddings available</option>';
+                    }
+                } else {
+                    console.error('Embedding build failed:', data.message);
+                    select.innerHTML = `<option value="">Build failed: ${data.message}</option>`;
+                }
+            } catch (error) {
+                console.error('Error triggering embedding build:', error);
+                select.innerHTML = '<option value="">Build error - check server logs</option>';
             }
         }
 

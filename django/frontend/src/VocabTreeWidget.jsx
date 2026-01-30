@@ -66,6 +66,7 @@ const VocabTreeWidget = ({
   const [selections, setSelections] = useState([]);
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
+  const [building, setBuilding] = useState(false);
 
   // Store the original top-level data for resets
   const topLevelDataRef = useRef(null);
@@ -87,10 +88,41 @@ const VocabTreeWidget = ({
   }, [apiBaseUrl, version]);
 
   /**
+   * Trigger building the vocabulary tree if it doesn't exist
+   */
+  const triggerBuild = useCallback(async () => {
+    setBuilding(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiBaseUrl}/vocab-tree/build/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+      });
+      const data = await response.json();
+
+      if (data.status === 'complete' || data.status === 'exists') {
+        // Tree built/exists, try loading again
+        setBuilding(false);
+        return true;
+      } else {
+        throw new Error(data.message || 'Failed to build vocabulary tree');
+      }
+    } catch (err) {
+      console.error('Failed to build vocabulary tree:', err);
+      setError(`Build failed: ${err.message}`);
+      setBuilding(false);
+      return false;
+    }
+  }, [apiBaseUrl]);
+
+  /**
    * Load top-level terms on mount
    */
   useEffect(() => {
-    const loadTopLevel = async () => {
+    const loadTopLevel = async (retryAfterBuild = false) => {
       setLoading(prev => ({ ...prev, 0: true }));
       setError(null);
       try {
@@ -104,14 +136,27 @@ const VocabTreeWidget = ({
         // Store for later resets
         topLevelDataRef.current = topLevel;
         setLevels([topLevel]);
+        setBuilding(false);
       } catch (err) {
         console.error('Failed to load vocabulary tree:', err);
+
+        // If this is the first attempt, try to build the tree
+        if (!retryAfterBuild) {
+          console.log('Vocabulary tree not found, triggering build...');
+          const buildSuccess = await triggerBuild();
+          if (buildSuccess) {
+            // Retry loading after successful build
+            loadTopLevel(true);
+            return;
+          }
+        }
+
         setError(err.message);
       }
       setLoading(prev => ({ ...prev, 0: false }));
     };
     loadTopLevel();
-  }, [fetchChildren]);
+  }, [fetchChildren, triggerBuild]);
 
   /**
    * Handle selection at a specific level
@@ -227,6 +272,15 @@ const VocabTreeWidget = ({
     if (level.isLeaf) return 'Select value...';
     return 'Select...';
   };
+
+  if (building) {
+    return (
+      <div className="vocab-tree-widget vocab-tree-building">
+        <p>Building vocabulary tree...</p>
+        <p className="vocab-tree-building-note">This may take a moment.</p>
+      </div>
+    );
+  }
 
   if (error && levels.length === 0) {
     return (
