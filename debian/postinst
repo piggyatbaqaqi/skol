@@ -64,7 +64,7 @@ echo "Installing all packages from local wheels..."
 ${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 
 echo "Installing ML dependencies..."
-${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes
+${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes pyarrow
 
 echo "Installing constrained decoding dependencies..."
 ${SKOL_VENV}/bin/pip install outlines pronto datasets
