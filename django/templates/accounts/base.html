@@ -332,6 +332,43 @@
             transform: none;
             box-shadow: none;
         }
+
+        /* Password toggle styles */
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            flex: 1;
+            padding-right: 45px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: #333;
+        }
+
+        .password-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -365,5 +402,66 @@
             <p>&copy; 2019-2026 SKOL Project Contributors. Licensed under GPLv3.</p>
         </div>
     </div>
+
+    <script>
+    (function() {
+        // SVG icons for password toggle
+        const eyeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        const eyeSlashIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+        function initPasswordToggles() {
+            // Find all password inputs
+            const passwordInputs = document.querySelectorAll('input[type="password"]');
+
+            passwordInputs.forEach(function(input) {
+                // Skip if already wrapped
+                if (input.parentElement.classList.contains('password-wrapper')) {
+                    return;
+                }
+
+                // Create wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'password-wrapper';
+
+                // Insert wrapper before input
+                input.parentNode.insertBefore(wrapper, input);
+
+                // Move input into wrapper
+                wrapper.appendChild(input);
+
+                // Create toggle button
+                const toggleBtn = document.createElement('button');
+                toggleBtn.type = 'button';
+                toggleBtn.className = 'password-toggle';
+                toggleBtn.setAttribute('aria-label', 'Toggle password visibility');
+                toggleBtn.innerHTML = eyeSlashIcon;  // Default: password hidden, show eye-slash
+
+                // Add toggle button to wrapper
+                wrapper.appendChild(toggleBtn);
+
+                // Add click handler
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        toggleBtn.innerHTML = eyeIcon;  // Password visible, show eye
+                        toggleBtn.setAttribute('aria-label', 'Hide password');
+                    } else {
+                        input.type = 'password';
+                        toggleBtn.innerHTML = eyeSlashIcon;  // Password hidden, show eye-slash
+                        toggleBtn.setAttribute('aria-label', 'Show password');
+                    }
+                });
+            });
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPasswordToggles);
+        } else {
+            initPasswordToggles();
+        }
+    })();
+    </script>
 </body>
 </html>
