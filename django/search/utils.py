@@ -38,5 +38,7 @@ def get_redis_client(decode_responses: bool = False, db: int = 0) -> redis.Redis
     if getattr(settings, 'REDIS_TLS', False):
         kwargs['ssl'] = True
         kwargs['ssl_ca_certs'] = '/etc/ssl/certs/ca-certificates.crt'
+        # Don't verify hostname (cert is for synoptickeyof.life but we connect to localhost)
+        kwargs['ssl_check_hostname'] = False
 
     return redis.Redis(**kwargs)

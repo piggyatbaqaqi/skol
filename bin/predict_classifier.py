@@ -51,7 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.classifier_v2 import SkolClassifierV2
-from env_config import get_env_config
+from env_config import get_env_config, create_redis_client
 from ingestors import RateLimitedHttpClient
 
 import couchdb
@@ -1294,14 +1294,10 @@ Note: Command-line arguments override environment variables.
         print(f"  Available models: {', '.join(MODEL_CONFIGS.keys())}")
         sys.exit(1)
 
-    # Connect to Redis
+    # Connect to Redis (respects REDIS_TLS and REDIS_PASSWORD settings)
     print(f"Connecting to Redis at {config['redis_host']}:{config['redis_port']}...")
     try:
-        redis_client = redis.Redis(
-            host=config['redis_host'],
-            port=config['redis_port'],
-            decode_responses=False  # We need bytes for model serialization
-        )
+        redis_client = create_redis_client(decode_responses=False)  # Bytes for model serialization
         # Test connection
         redis_client.ping()
         print("✓ Connected to Redis")

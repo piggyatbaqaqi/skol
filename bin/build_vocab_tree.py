@@ -34,10 +34,16 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import couchdb
 import redis
+
+# Add bin directory to path for env_config
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from env_config import create_redis_client
 
 
 # ============================================================================
@@ -382,11 +388,11 @@ def save_to_redis(
 
     key = f"skol:ui:menus_{version}"
 
-    # Connect to Redis
+    # Connect to Redis (respects REDIS_TLS settings from env_config)
     if verbosity >= 1:
         print(f"\nConnecting to Redis at {redis_host}:{redis_port}...")
 
-    r = redis.Redis(
+    r = create_redis_client(
         host=redis_host,
         port=redis_port,
         db=redis_db,
@@ -461,7 +467,7 @@ def load_from_redis(
     Returns:
         Tuple of (VocabularyTree, metadata dict)
     """
-    r = redis.Redis(
+    r = create_redis_client(
         host=redis_host,
         port=redis_port,
         db=redis_db,
@@ -515,7 +521,7 @@ def acquire_lock(
     Raises:
         SystemExit: If lock cannot be acquired (another build in progress)
     """
-    redis_client = redis.Redis(
+    redis_client = create_redis_client(
         host=redis_host,
         port=redis_port,
         decode_responses=True
