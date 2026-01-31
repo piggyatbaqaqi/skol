@@ -75,12 +75,11 @@ services:
       - "127.0.0.1:5984:5984"
       - "::1:5984:5984"
       - "6984:6984"
-    secrets:
-      - couchdb_password
+    env_file:
+      - /home/skol/.skol_env
     environment:
-      # Use these variables to set up the admin user and password
+      # COUCHDB_USER and COUCHDB_PASSWORD are read from .skol_env
       - COUCHDB_USER=admin
-      - COUCHDB_PASSWORD=/run/secrets/couchdb_password
     volumes:
       - /data/skol/couchdb/data:/opt/couchdb/data
       - /etc/letsencrypt:/etc/letsencrypt
@@ -107,6 +106,3 @@ networks:
         - subnet: 10.10.10.0/24
           gateway: 10.10.10.1
 
-secrets:
-  couchdb_password:
-    file: /home/skol/.couchdb_password
