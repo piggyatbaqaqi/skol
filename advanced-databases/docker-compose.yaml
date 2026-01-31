@@ -43,8 +43,8 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /etc/ssl:/etc/ssl:ro
       - /usr/share/ca-certificates:/usr/share/ca-certificates:ro
-      - ./neo4j/conf:/var/lib/neo4j/conf:ro
-      - ./neo4j/certificates:/var/lib/neo4j/certificates:ro
+      - /opt/skol/advanced-databases/neo4j/conf:/var/lib/neo4j/conf:ro
+      - /opt/skol/advanced-databases/neo4j/certificates:/var/lib/neo4j/certificates:ro
 
   #redis#
   redis:
@@ -61,8 +61,8 @@ services:
       # - "6379:6379"
     volumes:
       - /data/skol/redis/data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf.template:ro
-      - ./redis-entrypoint.sh:/usr/local/bin/redis-entrypoint.sh:ro
+      - /opt/skol/advanced-databases/redis.conf:/usr/local/etc/redis/redis.conf.template:ro
+      - /opt/skol/advanced-databases/redis-entrypoint.sh:/usr/local/bin/redis-entrypoint.sh:ro
       # TLS certificates
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /etc/ssl:/etc/ssl:ro
@@ -82,9 +82,9 @@ services:
       - COUCHDB_USER=admin
     volumes:
       - /data/skol/couchdb/data:/opt/couchdb/data
+      - /data/skol/couchdb/etc:/opt/couchdb/etc
       - /etc/letsencrypt:/etc/letsencrypt
       - /etc/ssl:/etc/ssl
-      - ./couchdb/etc:/opt/couchdb/etc
 
 ##### networks #####
 networks:

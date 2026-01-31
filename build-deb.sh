@@ -42,6 +42,34 @@ echo "Copying cron configuration..."
 mkdir -p staging/etc/cron.d
 cp debian/skol.cron staging/etc/cron.d/skol
 
+# Copy advanced-databases directory (docker-compose, redis config, neo4j config)
+# This removes the runtime dependency on the git repository
+echo "Copying advanced-databases configuration..."
+mkdir -p staging/opt/skol/advanced-databases
+cp advanced-databases/docker-compose.yaml staging/opt/skol/advanced-databases/
+cp advanced-databases/redis.conf staging/opt/skol/advanced-databases/
+cp advanced-databases/redis-entrypoint.sh staging/opt/skol/advanced-databases/
+chmod +x staging/opt/skol/advanced-databases/redis-entrypoint.sh
+
+# Copy Neo4j config (static, read-only)
+if [ -d advanced-databases/neo4j ]; then
+    cp -a advanced-databases/neo4j staging/opt/skol/advanced-databases/
+fi
+
+# Copy CouchDB config templates (for initialization on first install)
+# These go to /usr/share/skol for copying to /data/skol on first install
+echo "Copying CouchDB config templates..."
+mkdir -p staging/usr/share/skol/couchdb/etc/local.d
+mkdir -p staging/usr/share/skol/couchdb/etc/default.d
+if [ -d advanced-databases/couchdb/etc ]; then
+    # Copy config files but exclude docker.ini (contains hashed passwords)
+    cp -a advanced-databases/couchdb/etc/local.ini staging/usr/share/skol/couchdb/etc/ 2>/dev/null || true
+    cp -a advanced-databases/couchdb/etc/default.ini staging/usr/share/skol/couchdb/etc/ 2>/dev/null || true
+    cp -a advanced-databases/couchdb/etc/vm.args staging/usr/share/skol/couchdb/etc/ 2>/dev/null || true
+    # Copy README but not docker.ini (which has runtime secrets)
+    cp -a advanced-databases/couchdb/etc/local.d/README staging/usr/share/skol/couchdb/etc/local.d/ 2>/dev/null || true
+fi
+
 # Build the deb using fpm from the staging directory
 # --no-auto-depends prevents fpm from generating dependencies automatically
 fpm -s dir -t deb \

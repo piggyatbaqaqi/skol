@@ -147,19 +147,20 @@ def run_component(
         # Use the wrapper (handles env vars)
         cmd = [str(wrapper)]
 
-    # Add component-specific args
-    cmd.extend(config['args'])
-
-    if extra_args:
-        cmd.extend(extra_args)
-
-    # Add verbosity based on script's style
+    # Add verbosity FIRST (before subcommands like 'download')
+    # This is required for scripts using argparse subparsers
     if verbosity >= 2:
         verbosity_style = config.get('verbosity_style', 'flag')
         if verbosity_style == 'flag':
             cmd.extend(['--verbosity', '2'])
         elif verbosity_style == 'count':
             cmd.extend(['-v', '-v'])  # -v -v for level 2
+
+    # Add component-specific args (may include subcommands)
+    cmd.extend(config['args'])
+
+    if extra_args:
+        cmd.extend(extra_args)
 
     if dry_run:
         print(f"  [DRY RUN] Would run: {' '.join(cmd)}")
