@@ -210,7 +210,7 @@ def main() -> int:
 
     parsed = parser.parse_args(pre_delimiter)
 
-    verbosity = 0 if parsed.quiet else parsed.verbose
+    verbosity = 0 if parsed.quiet else parsed.verbosity
 
     # Validate files exist (at least warn)
     missing = [f for f in parsed.files if not f.exists()]
