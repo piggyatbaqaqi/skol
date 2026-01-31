@@ -138,7 +138,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # JSON translation settings (for taxa_to_json.py)
         'source_db': _get_env('SOURCE_DB', 'skol_taxa_dev'),
-        'dest_db': _get_env('DEST_DB', 'skol_taxa_full'),
+        'dest_db': _get_env('DEST_DB', 'skol_taxa_full_dev'),
         'checkpoint_path': _get_env('CHECKPOINT_PATH', ''),
 
         # Training database settings

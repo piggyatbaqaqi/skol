@@ -1138,7 +1138,7 @@ Result:
             >>> taxa_df = translator.load_taxa(db_name="skol_taxa_dev")
             >>> results = translator.translate_and_save_streaming(
             ...     taxa_df,
-            ...     db_name="skol_taxa_full",
+            ...     db_name="skol_taxa_full_dev",
             ...     verbosity=2
             ... )
             >>> print(f"Saved {results['success_count']} of {results['total']}")

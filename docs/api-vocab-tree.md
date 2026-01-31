@@ -178,7 +178,7 @@ Vocabulary trees are built using the `build_vocab_tree` command:
 /opt/skol/bin/build_vocab_tree
 
 # Build from a specific database
-/opt/skol/bin/build_vocab_tree --db skol_taxa_full
+/opt/skol/bin/build_vocab_tree --db skol_taxa_full_dev
 
 # Build with a custom version string
 /opt/skol/bin/build_vocab_tree --version my_custom_version

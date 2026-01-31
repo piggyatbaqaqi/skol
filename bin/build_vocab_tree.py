@@ -19,7 +19,7 @@ Examples:
     python bin/build_vocab_tree.py
 
     # Specify database
-    python bin/build_vocab_tree.py --db skol_taxa_full
+    python bin/build_vocab_tree.py --db skol_taxa_full_dev
 
     # Custom Redis connection
     python bin/build_vocab_tree.py --redis-host localhost --redis-port 6379
@@ -606,7 +606,7 @@ def main():
         epilog="""
 Examples:
   %(prog)s                          # Use defaults
-  %(prog)s --db skol_taxa_full      # Specify database
+  %(prog)s --db skol_taxa_full_dev      # Specify database
   %(prog)s --dry-run                # Build tree but don't save
   %(prog)s --show-sample            # Display tree sample after building
         """

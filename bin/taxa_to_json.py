@@ -59,7 +59,7 @@ from env_config import get_env_config
 # ============================================================================
 
 DEFAULT_SOURCE_DB = 'skol_taxa_dev'
-DEFAULT_DEST_DB = 'skol_taxa_full'
+DEFAULT_DEST_DB = 'skol_taxa_full_dev'
 DEFAULT_BATCH_SIZE = 10
 DEFAULT_PATTERN = '*'
 
@@ -816,7 +816,7 @@ Environment Variables:
   COUCHDB_USER          CouchDB username (default: admin)
   COUCHDB_PASSWORD      CouchDB password
   SOURCE_DB             Source taxa database (default: skol_taxa_dev)
-  DEST_DB               Destination taxa database (default: skol_taxa_full)
+  DEST_DB               Destination taxa database (default: skol_taxa_full_dev)
   CHECKPOINT_PATH       Path to model checkpoint
   SPARK_CORES           Number of Spark cores (default: 4)
   SPARK_DRIVER_MEMORY   Spark driver memory (default: 4g)

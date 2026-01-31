@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Fix skol_taxa_full Document IDs
+Fix skol_taxa_full_dev Document IDs
 
-This script corrects document IDs in skol_taxa_full that were created with
+This script corrects document IDs in skol_taxa_full_dev that were created with
 the wrong hash (using 'url' field which was None, instead of 'human_url').
 
 The fix:
-1. Reads all existing records from skol_taxa_full
+1. Reads all existing records from skol_taxa_full_dev
 2. Recalculates the correct document ID using human_url
 3. Creates a new document with the correct ID (preserving all data)
 4. Deletes the old document with the wrong ID
@@ -64,16 +64,16 @@ def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> 
 
 def fix_taxa_ids(
     config: dict,
-    db_name: str = 'skol_taxa_full',
+    db_name: str = 'skol_taxa_full_dev',
     dry_run: bool = False,
     verbosity: int = 1
 ) -> dict:
     """
-    Fix document IDs in skol_taxa_full.
+    Fix document IDs in skol_taxa_full_dev.
 
     Args:
         config: Environment configuration
-        db_name: Database name to fix (default: skol_taxa_full)
+        db_name: Database name to fix (default: skol_taxa_full_dev)
         dry_run: If True, show what would be done without making changes
         verbosity: Verbosity level (0=silent, 1=info, 2=debug)
 
@@ -214,7 +214,7 @@ def fix_taxa_ids(
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Fix document IDs in skol_taxa_full',
+        description='Fix document IDs in skol_taxa_full_dev',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 This script fixes document IDs that were incorrectly generated using
@@ -240,8 +240,8 @@ Examples:
     parser.add_argument(
         '--db-name',
         type=str,
-        default='skol_taxa_full',
-        help='Database name to fix (default: skol_taxa_full)'
+        default='skol_taxa_full_dev',
+        help='Database name to fix (default: skol_taxa_full_dev)'
     )
 
     parser.add_argument(

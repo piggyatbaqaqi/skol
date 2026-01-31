@@ -122,7 +122,7 @@ Or for direct document access:
 
 ## Data Model
 
-Taxa documents in `skol_taxa_dev` or `skol_taxa_full` have a `source` field:
+Taxa documents in `skol_taxa_dev` or `skol_taxa_full_dev` have a `source` field:
 
 ```json
 {
