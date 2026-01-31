@@ -75,6 +75,8 @@ def install_packages(
             print(f"[watch_install] Postinstall failed with exit code {e.returncode}",
                   file=sys.stderr)
             return False
+        if verbosity >= 1:
+            print(f"[watch_install] Postinstall completed successfully.")
 
     return True
 
@@ -195,7 +197,7 @@ def main() -> int:
         help='Installation command (default: "dpkg -i")',
     )
     parser.add_argument(
-        '-v', '--verbose',
+        '-v', '--verbosity',
         action='count',
         default=1,
         help='Increase verbosity',
