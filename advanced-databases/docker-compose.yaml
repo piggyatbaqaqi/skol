@@ -7,8 +7,10 @@ services:
     restart: always
     hostname: redisinsight
     environment:
+      # Redis connection (TLS enabled)
       REDIS_PORT: "6379"
       REDIS_HOST: "redis"
+      # RedisInsight web interface TLS
       RI_SERVER_TLS_KEY: /etc/letsencrypt/live/synoptickeyof.life/privkey.pem
       RI_SERVER_TLS_CERT: /etc/letsencrypt/live/synoptickeyof.life/fullchain.pem
     ports:
@@ -48,13 +50,22 @@ services:
   redis:
     image: docker.io/redis:7.4
     restart: always
-    command: redis-server
     hostname: redis
+    entrypoint: ["/usr/local/bin/redis-entrypoint.sh"]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
+      # TLS port exposed to localhost only (current setup)
       - "127.0.0.1:6380:6379"
+      # Future: Uncomment to expose to other hosts for replication
+      # - "6379:6379"
     volumes:
       - redis-data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis.conf:/usr/local/etc/redis/redis.conf.template:ro
+      - ./redis-entrypoint.sh:/usr/local/bin/redis-entrypoint.sh:ro
+      # TLS certificates
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/ssl:/etc/ssl:ro
 
   #couchdb_skol#
   couchdb_skol:

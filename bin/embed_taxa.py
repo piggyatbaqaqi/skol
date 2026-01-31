@@ -30,7 +30,7 @@ import skol_compat  # noqa: F401 (imported for side effects)
 
 from dr_drafts_mycosearch.data import SKOL_TAXA
 from dr_drafts_mycosearch.compute_embeddings import EmbeddingsComputer
-from env_config import get_env_config
+from env_config import get_env_config, create_redis_client, build_redis_url
 
 
 # ============================================================================
@@ -70,8 +70,8 @@ def compute_and_save_embeddings(
     # Build CouchDB URL
     couchdb_url = f"http://{config['couchdb_host']}"
 
-    # Build Redis URL
-    redis_url = f"redis://{config['redis_host']}:{config['redis_port']}"
+    # Build Redis URL (respects REDIS_TLS setting)
+    redis_url = build_redis_url()
 
     if verbosity >= 2:
         print(f"\n{'='*70}")
@@ -91,12 +91,8 @@ def compute_and_save_embeddings(
             print(f"Mode: FORCE (recompute even if exists)")
         print()
 
-    # Connect to Redis
-    redis_client = redis.Redis(
-        host=config['redis_host'],
-        port=config['redis_port'],
-        decode_responses=False  # We need bytes for embedding serialization
-    )
+    # Connect to Redis (respects REDIS_TLS and REDIS_PASSWORD settings)
+    redis_client = create_redis_client(decode_responses=False)
 
     # Test Redis connection
     try:
@@ -164,6 +160,8 @@ def compute_and_save_embeddings(
         embedder = EmbeddingsComputer(
             idir='/dev/null',  # Not used when providing descriptions directly
             redis_url=redis_url,
+            redis_username=config['redis_username'],
+            redis_password=config['redis_password'],
             redis_expire=embedding_expire,
             embedding_name=config['embedding_name'],
         )
@@ -204,11 +202,8 @@ def acquire_lock(config: Dict[str, Any], verbosity: int = 1) -> redis.Redis:
     Raises:
         SystemExit: If lock cannot be acquired (another build in progress)
     """
-    redis_client = redis.Redis(
-        host=config['redis_host'],
-        port=config['redis_port'],
-        decode_responses=True
-    )
+    # Use create_redis_client for proper TLS and auth configuration
+    redis_client = create_redis_client(decode_responses=True)
 
     # Try to acquire lock (SETNX = SET if Not eXists)
     lock_acquired = redis_client.set(LOCK_KEY, 'building', nx=True, ex=LOCK_TTL)

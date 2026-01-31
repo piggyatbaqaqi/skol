@@ -195,15 +195,10 @@ class ExternalIdentifier(models.Model):
     def _build_fungarium_url(self) -> str:
         """Build URL for fungarium identifier from Redis data."""
         import json
-        from django.conf import settings
-        import redis
+        from .utils import get_redis_client
 
         try:
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
             raw = r.get('skol:fungaria')
             if not raw:
                 return ''

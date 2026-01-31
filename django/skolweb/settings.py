@@ -189,7 +189,17 @@ REST_FRAMEWORK = {
 # Redis configuration
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
-REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+REDIS_USERNAME = os.environ.get('REDIS_USERNAME', 'admin')
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+REDIS_TLS = os.environ.get('REDIS_TLS', '').lower() in ('1', 'true', 'yes')
+# Build URL with proper scheme (rediss:// for TLS)
+_redis_scheme = 'rediss' if REDIS_TLS else 'redis'
+if REDIS_USERNAME and REDIS_PASSWORD:
+    REDIS_URL = f'{_redis_scheme}://{REDIS_USERNAME}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
+elif REDIS_PASSWORD:
+    REDIS_URL = f'{_redis_scheme}://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
+else:
+    REDIS_URL = f'{_redis_scheme}://{REDIS_HOST}:{REDIS_PORT}'
 
 # Embedding configuration
 EMBEDDING_NAME = os.environ.get('EMBEDDING_NAME', 'skol:embedding:v1.1')

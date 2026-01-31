@@ -78,7 +78,10 @@ def get_env_config() -> Dict[str, Any]:
         # Redis settings
         'redis_host': os.environ.get('REDIS_HOST', 'localhost'),
         'redis_port': int(os.environ.get('REDIS_PORT', '6379')),
-        'redis_url': os.environ.get('REDIS_URL', f"redis://{os.environ.get('REDIS_HOST', 'localhost')}:{os.environ.get('REDIS_PORT', '6379')}"),
+        'redis_username': os.environ.get('REDIS_USERNAME', 'admin'),
+        'redis_password': os.environ.get('REDIS_PASSWORD', ''),
+        'redis_tls': os.environ.get('REDIS_TLS', '').lower() in ('1', 'true', 'yes'),
+        'redis_url': os.environ.get('REDIS_URL', ''),  # Built dynamically if not set
 
         # Model settings
         'model_version': os.environ.get('MODEL_VERSION', 'v2.0'),
@@ -135,7 +138,7 @@ def get_env_config() -> Dict[str, Any]:
         'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
         'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'taxon_db_name',
         'training_database',
-        'redis_host', 'redis_url',
+        'redis_host', 'redis_url', 'redis_username', 'redis_password',
         'model_version', 'classifier_model_expire',
         'embedding_name',
         'couchdb_pattern', 'pattern',
@@ -207,13 +210,16 @@ def get_redis_config() -> Dict[str, Any]:
     Get Redis-specific configuration.
 
     Returns:
-        Dictionary with Redis connection settings
+        Dictionary with Redis connection settings including TLS and auth
     """
     config = get_env_config()
     return {
         'host': config['redis_host'],
         'port': config['redis_port'],
-        'url': config['redis_url'],
+        'username': config['redis_username'],
+        'password': config['redis_password'],
+        'tls': config['redis_tls'],
+        'url': config['redis_url'] or build_redis_url(),
     }
 
 
@@ -255,18 +261,110 @@ def build_couchdb_url(host: Optional[str] = None, username: Optional[str] = None
     return f"http://{host}"
 
 
-def build_redis_url(host: Optional[str] = None, port: Optional[int] = None) -> str:
+def build_redis_url(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    tls: Optional[bool] = None
+) -> str:
     """
     Build a Redis URL from components.
 
     Args:
         host: Redis host (default: from environment)
         port: Redis port (default: from environment)
+        username: Redis username (default: from environment)
+        password: Redis password (default: from environment)
+        tls: Use TLS (rediss://) (default: from environment)
 
     Returns:
-        Redis URL string
+        Redis URL string (redis:// or rediss:// for TLS)
     """
     config = get_env_config()
     host = host or config['redis_host']
     port = port or config['redis_port']
-    return f"redis://{host}:{port}"
+    username = username if username is not None else config['redis_username']
+    password = password if password is not None else config['redis_password']
+    use_tls = tls if tls is not None else config['redis_tls']
+
+    # Use rediss:// for TLS connections
+    scheme = 'rediss' if use_tls else 'redis'
+
+    # Build URL with optional authentication
+    if username and password:
+        return f"{scheme}://{username}:{password}@{host}:{port}"
+    elif password:
+        return f"{scheme}://:{password}@{host}:{port}"
+    else:
+        return f"{scheme}://{host}:{port}"
+
+
+def create_redis_client(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    tls: Optional[bool] = None,
+    db: int = 0,
+    decode_responses: bool = False
+):
+    """
+    Create a Redis client with proper TLS and authentication configuration.
+
+    This is the recommended way to create Redis connections in SKOL.
+    It handles TLS certificates and authentication automatically based on
+    environment configuration.
+
+    Args:
+        host: Redis host (default: from REDIS_HOST env var)
+        port: Redis port (default: from REDIS_PORT env var)
+        username: Redis username (default: from REDIS_USERNAME env var)
+        password: Redis password (default: from REDIS_PASSWORD env var)
+        tls: Use TLS (default: from REDIS_TLS env var)
+        db: Redis database number (default: 0)
+        decode_responses: Whether to decode responses as strings (default: False)
+
+    Returns:
+        redis.Redis: Configured Redis client
+
+    Example:
+        >>> from env_config import create_redis_client
+        >>> r = create_redis_client()
+        >>> r.set('key', 'value')
+        >>> r.get('key')
+    """
+    import redis
+    import ssl
+
+    config = get_env_config()
+    host = host or config['redis_host']
+    port = port or config['redis_port']
+    username = username if username is not None else config['redis_username']
+    password = password if password is not None else config['redis_password']
+    use_tls = tls if tls is not None else config['redis_tls']
+
+    # Build connection kwargs
+    kwargs: Dict[str, Any] = {
+        'host': host,
+        'port': port,
+        'db': db,
+        'decode_responses': decode_responses,
+    }
+
+    # Add authentication if configured
+    if username:
+        kwargs['username'] = username
+    if password:
+        kwargs['password'] = password
+
+    # Configure TLS if enabled
+    if use_tls:
+        # Create SSL context that verifies server certificates
+        ssl_context = ssl.create_default_context()
+        # Use system CA certificates
+        ssl_context.load_default_certs()
+        kwargs['ssl'] = True
+        kwargs['ssl_ca_certs'] = '/etc/ssl/certs/ca-certificates.crt'
+
+    return redis.Redis(**kwargs)

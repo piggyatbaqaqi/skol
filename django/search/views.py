@@ -14,6 +14,8 @@ import redis
 import requests
 from requests.auth import HTTPBasicAuth
 
+from .utils import get_redis_client
+
 logger = logging.getLogger(__name__)
 
 # Note: dr_drafts_mycosearch and skol packages are installed via pip
@@ -35,11 +37,7 @@ class EmbeddingListView(APIView):
         logger.info("EmbeddingListView.get() called")
         try:
             # Connect to Redis
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             # Get all keys matching the pattern
             keys = r.keys('skol:embedding:*')
@@ -94,11 +92,7 @@ class BuildEmbeddingView(APIView):
                 getattr(settings, 'EMBEDDING_NAME', 'skol:embedding:v1.1')
             )
 
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=False
-            )
+            r = get_redis_client(decode_responses=False)
 
             exists = r.exists(embedding_name)
 
@@ -160,11 +154,7 @@ class BuildEmbeddingView(APIView):
                         f"embedding_name={request.data.get('embedding_name')})"
                     )
 
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=False
-            )
+            r = get_redis_client(decode_responses=False)
 
             # Check if already exists
             exists = r.exists(embedding_name)
@@ -317,11 +307,7 @@ class BuildVocabTreeView(APIView):
     def get(self, request):
         """Check if vocabulary tree exists."""
         try:
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             # Check for latest pointer
             latest_key = r.get("skol:ui:menus_latest")
@@ -382,11 +368,7 @@ class BuildVocabTreeView(APIView):
                         f"db_name={request.data.get('db_name')})"
                     )
 
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             # Check if already exists
             latest_key = r.get("skol:ui:menus_latest")
@@ -1009,11 +991,7 @@ class FungariaListView(APIView):
 
     def get(self, request):
         try:
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             raw = r.get('skol:fungaria')
             if not raw:
@@ -1468,11 +1446,7 @@ class VocabTreeView(APIView):
 
     def get(self, request):
         try:
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             version = request.GET.get('version')
             path = request.GET.get('path', '')
@@ -1572,11 +1546,7 @@ class VocabTreeVersionsView(APIView):
 
     def get(self, request):
         try:
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             # Find all vocab tree keys
             keys = r.keys('skol:ui:menus_*')
@@ -1646,11 +1616,7 @@ class VocabTreeChildrenView(APIView):
 
     def get(self, request):
         try:
-            r = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
+            r = get_redis_client(decode_responses=True)
 
             version = request.GET.get('version')
             path = request.GET.get('path', '')
