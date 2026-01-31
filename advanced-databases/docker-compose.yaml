@@ -52,8 +52,8 @@ services:
     restart: always
     hostname: redis
     entrypoint: ["/usr/local/bin/redis-entrypoint.sh"]
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    env_file:
+      - /home/skol/.skol_env
     ports:
       # TLS port exposed to localhost only (current setup)
       - "127.0.0.1:6380:6379"
