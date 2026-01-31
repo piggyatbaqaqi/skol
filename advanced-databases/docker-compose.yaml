@@ -60,7 +60,7 @@ services:
       # Future: Uncomment to expose to other hosts for replication
       # - "6379:6379"
     volumes:
-      - redis-data:/data
+      - /data/skol/redis/data:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf.template:ro
       - ./redis-entrypoint.sh:/usr/local/bin/redis-entrypoint.sh:ro
       # TLS certificates
@@ -89,8 +89,6 @@ services:
 ##### volumes #####
 volumes:
   neo4j-data:
-    driver: local
-  redis-data:
     driver: local
   metastore-postgresql:
     driver: local
