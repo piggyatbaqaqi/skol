@@ -639,6 +639,14 @@ Local File Format:
     p_clear.add_argument('-y', '--yes', action='store_true',
                         help='Skip confirmation prompt')
 
+    # Global options
+    parser.add_argument(
+        '--verbosity',
+        type=int,
+        default=None,
+        help='Verbosity level (0=quiet, 1=normal, 2=verbose)'
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -648,6 +656,10 @@ Local File Format:
 
     # Get configuration
     config = get_env_config()
+
+    # Apply verbosity override from command line
+    if args.verbosity is not None:
+        config['verbosity'] = args.verbosity
 
     # Dispatch to command handler
     handlers = {

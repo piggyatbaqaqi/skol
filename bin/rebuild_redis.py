@@ -48,29 +48,33 @@ COMPONENTS = {
     'classifier': {
         'name': 'Classifier Model',
         'keys': ['skol:classifier:model:*'],
-        'script': 'train_classifier.py',
+        'script': 'train_classifier',  # Use wrapper name (no .py)
         'args': [],
+        'verbosity_style': 'flag',  # --verbosity N
         'description': 'Train the text classifier model (slow, requires Spark)',
     },
     'embeddings': {
         'name': 'Taxa Embeddings',
         'keys': ['skol:embedding:*'],
-        'script': 'embed_taxa.py',
+        'script': 'embed_taxa',
         'args': ['--force'],  # Force rebuild even if exists
+        'verbosity_style': 'flag',  # --verbosity N
         'description': 'Compute embeddings for taxa descriptions',
     },
     'vocab_tree': {
         'name': 'Vocabulary Tree',
         'keys': ['skol:ui:menus_*', 'skol:ui:menus_latest'],
-        'script': 'build_vocab_tree.py',
+        'script': 'build_vocab_tree',
         'args': [],
+        'verbosity_style': 'flag',  # --verbosity N
         'description': 'Build vocabulary tree for UI menus',
     },
     'fungaria': {
         'name': 'Fungaria Registry',
         'keys': ['skol:fungaria'],
-        'script': 'manage_fungaria.py',
+        'script': 'manage_fungaria',
         'args': ['download'],
+        'verbosity_style': 'flag',  # --verbosity N
         'description': 'Download Index Herbariorum institution list',
     },
 }
@@ -110,7 +114,10 @@ def run_component(
     extra_args: Optional[List[str]] = None
 ) -> bool:
     """
-    Run a component's build script.
+    Run a component's build script via the with_skol wrapper.
+
+    The wrapper ensures environment variables from .skol_env are properly
+    exported (CouchDB credentials, Redis settings, etc.).
 
     Args:
         component: Component name
@@ -123,20 +130,36 @@ def run_component(
         True if successful, False otherwise
     """
     config = COMPONENTS[component]
-    script = bin_dir / config['script']
+    script_name = config['script']
 
-    if not script.exists():
-        print(f"  ✗ Script not found: {script}")
-        return False
+    # Use the wrapper script (symlink to with_skol)
+    # This ensures .skol_env is sourced and env vars are exported
+    wrapper = bin_dir / script_name
+    if not wrapper.exists():
+        # Fall back to .py file if wrapper doesn't exist (development mode)
+        wrapper = bin_dir / f"{script_name}.py"
+        if not wrapper.exists():
+            print(f"  ✗ Script not found: {wrapper}")
+            return False
+        # In dev mode, run Python directly
+        cmd = [sys.executable, str(wrapper)]
+    else:
+        # Use the wrapper (handles env vars)
+        cmd = [str(wrapper)]
 
-    # Build command
-    cmd = [sys.executable, str(script)] + config['args']
+    # Add component-specific args
+    cmd.extend(config['args'])
+
     if extra_args:
         cmd.extend(extra_args)
 
-    # Add verbosity flag if supported
+    # Add verbosity based on script's style
     if verbosity >= 2:
-        cmd.extend(['--verbosity', '2'])
+        verbosity_style = config.get('verbosity_style', 'flag')
+        if verbosity_style == 'flag':
+            cmd.extend(['--verbosity', '2'])
+        elif verbosity_style == 'count':
+            cmd.extend(['-v', '-v'])  # -v -v for level 2
 
     if dry_run:
         print(f"  [DRY RUN] Would run: {' '.join(cmd)}")
