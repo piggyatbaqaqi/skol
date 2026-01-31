@@ -42,6 +42,11 @@ echo "Copying cron configuration..."
 mkdir -p staging/etc/cron.d
 cp debian/skol.cron staging/etc/cron.d/skol
 
+# Copy ontology files
+echo "Copying ontology files..."
+mkdir -p staging/usr/share/skol/ontologies
+cp data/ontologies/*.obo staging/usr/share/skol/ontologies/
+
 # Copy advanced-databases directory (docker-compose, redis config, neo4j config)
 # This removes the runtime dependency on the git repository
 echo "Copying advanced-databases configuration..."
@@ -69,6 +74,10 @@ if [ -d advanced-databases/couchdb/etc ]; then
     # Copy README but not docker.ini (which has runtime secrets)
     cp -a advanced-databases/couchdb/etc/local.d/README staging/usr/share/skol/couchdb/etc/local.d/ 2>/dev/null || true
 fi
+
+# Copy environment template file
+echo "Copying environment template..."
+cp skol_env.example staging/opt/skol/
 
 # Build the deb using fpm from the staging directory
 # --no-auto-depends prevents fpm from generating dependencies automatically

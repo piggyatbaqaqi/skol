@@ -4,6 +4,11 @@
 
 # Environment variables (contains sensitive credentials)
 .env
+.skol_env
+*/.skol_env
+
+# CouchDB credentials (auto-generated, contains password hashes)
+**/docker.ini
 
 # Python cache
 __pycache__/

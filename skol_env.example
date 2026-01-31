@@ -1,0 +1,65 @@
+# SKOL Environment Configuration
+# Copy this file to /home/skol/.skol_env and fill in your values
+# chmod 600 /home/skol/.skol_env
+
+# =============================================================================
+# CouchDB Configuration
+# =============================================================================
+COUCHDB_USER=admin
+COUCHDB_PASSWORD=CHANGEME_couchdb_password
+
+# URL for CouchDB access (plain HTTP for localhost, container handles TLS)
+COUCHDB_URL=http://localhost:5984
+
+# Database names
+INGEST_DATABASE=skol_dev
+TAXON_DATABASE=taxa
+
+# =============================================================================
+# Redis Configuration
+# =============================================================================
+REDIS_HOST=localhost
+REDIS_PORT=6380
+REDIS_USERNAME=default
+REDIS_PASSWORD=CHANGEME_redis_password
+
+# Enable TLS for Redis connections (true/false)
+REDIS_TLS=true
+
+# =============================================================================
+# Email Configuration (for notifications and error reports)
+# =============================================================================
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your_email@example.com
+EMAIL_HOST_PASSWORD=CHANGEME_email_password
+EMAIL_USE_TLS=true
+DEFAULT_FROM_EMAIL=skol@example.com
+
+# Email address for cron job notifications
+MAILTO=admin@example.com
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+LOGDIR=/var/log/skol
+VERBOSITY=1
+
+# =============================================================================
+# Model Configuration
+# =============================================================================
+# Classifier model expiration time in Redis (empty = no expiration)
+# Format: HH:MM:SS or empty string
+CLASSIFIER_MODEL_EXPIRE=
+
+# =============================================================================
+# Django Configuration (for web interface)
+# =============================================================================
+# Generate with: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+DJANGO_SECRET_KEY=CHANGEME_django_secret_key
+
+# Set to False in production
+DJANGO_DEBUG=False
+
+# Comma-separated list of allowed hosts
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.example.com
