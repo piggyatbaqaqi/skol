@@ -7,13 +7,82 @@ variables with sensible defaults, used by all bin scripts.
 Configuration priority (highest to lowest):
 1. Command-line arguments
 2. Environment variables
-3. Default values
+3. /home/skol/.skol_env file
+4. Default values
 """
 
 import argparse
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional, List
+
+# Cache for .skol_env file contents
+_skol_env_cache: Optional[Dict[str, str]] = None
+
+
+def _load_skol_env() -> Dict[str, str]:
+    """
+    Load configuration from /home/skol/.skol_env file.
+
+    This file uses VAR=value syntax (compatible with shell source but not exported).
+    We parse it to provide fallback values when environment variables aren't set.
+
+    Returns:
+        Dictionary of key-value pairs from the file
+    """
+    global _skol_env_cache
+    if _skol_env_cache is not None:
+        return _skol_env_cache
+
+    _skol_env_cache = {}
+    skol_env_path = Path('/home/skol/.skol_env')
+
+    if skol_env_path.exists():
+        try:
+            with open(skol_env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    # Skip comments and empty lines
+                    if not line or line.startswith('#'):
+                        continue
+                    # Parse VAR=value (handle quoted values)
+                    if '=' in line:
+                        key, _, value = line.partition('=')
+                        key = key.strip()
+                        value = value.strip()
+                        # Remove surrounding quotes if present
+                        if (value.startswith('"') and value.endswith('"')) or \
+                           (value.startswith("'") and value.endswith("'")):
+                            value = value[1:-1]
+                        _skol_env_cache[key] = value
+        except (IOError, OSError):
+            pass  # File not readable, use defaults
+
+    return _skol_env_cache
+
+
+def _get_env(key: str, default: str = '') -> str:
+    """
+    Get environment variable with fallback to .skol_env file.
+
+    Args:
+        key: Environment variable name
+        default: Default value if not found anywhere
+
+    Returns:
+        Value from environment, .skol_env file, or default
+    """
+    # First check environment
+    value = os.environ.get(key)
+    if value is not None:
+        return value
+
+    # Then check .skol_env file
+    skol_env = _load_skol_env()
+    if key in skol_env:
+        return skol_env[key]
+
+    return default
 
 
 def _parse_optional_int(value: Optional[str]) -> Optional[int]:
@@ -44,88 +113,88 @@ def get_env_config() -> Dict[str, Any]:
     Returns:
         Dictionary of configuration values for all SKOL components
     """
-    # First, get base configuration from environment variables and defaults
+    # First, get base configuration from environment variables, .skol_env file, or defaults
     base_config = {
         # CouchDB connection settings
-        'couchdb_url': os.environ.get('COUCHDB_URL', 'http://localhost:5984'),
-        'couchdb_host': os.environ.get('COUCHDB_HOST', '127.0.0.1:5984'),
-        'couchdb_username': os.environ.get('COUCHDB_USER', 'admin'),
-        'couchdb_password': os.environ.get('COUCHDB_PASSWORD', 'SU2orange!'),
-        'couchdb_database': os.environ.get('COUCHDB_DATABASE', 'skol_dev'),
+        'couchdb_url': _get_env('COUCHDB_URL', 'http://localhost:5984'),
+        'couchdb_host': _get_env('COUCHDB_HOST', '127.0.0.1:5984'),
+        'couchdb_username': _get_env('COUCHDB_USER', 'admin'),
+        'couchdb_password': _get_env('COUCHDB_PASSWORD', 'SU2orange!'),
+        'couchdb_database': _get_env('COUCHDB_DATABASE', 'skol_dev'),
 
         # Ingest database settings (for extract_taxa_to_couchdb.py)
-        'ingest_url': os.environ.get('INGEST_URL', os.environ.get('COUCHDB_URL', 'http://localhost:5984')),
-        'ingest_database': os.environ.get('INGEST_DATABASE'),
-        'ingest_username': os.environ.get('INGEST_USERNAME', os.environ.get('COUCHDB_USER')),
-        'ingest_password': os.environ.get('INGEST_PASSWORD', os.environ.get('COUCHDB_PASSWORD')),
-        'ingest_db_name': os.environ.get('INGEST_DB_NAME', 'skol_dev'),
+        'ingest_url': _get_env('INGEST_URL', _get_env('COUCHDB_URL', 'http://localhost:5984')),
+        'ingest_database': _get_env('INGEST_DATABASE', ''),
+        'ingest_username': _get_env('INGEST_USERNAME', _get_env('COUCHDB_USER', '')),
+        'ingest_password': _get_env('INGEST_PASSWORD', _get_env('COUCHDB_PASSWORD', '')),
+        'ingest_db_name': _get_env('INGEST_DB_NAME', 'skol_dev'),
 
         # Taxon database settings (for extract_taxa_to_couchdb.py)
-        'taxon_url': os.environ.get('TAXON_URL'),
-        'taxon_database': os.environ.get('TAXON_DATABASE'),
-        'taxon_username': os.environ.get('TAXON_USERNAME'),
-        'taxon_password': os.environ.get('TAXON_PASSWORD'),
-        'taxon_db_name': os.environ.get('TAXON_DB_NAME', 'skol_taxa_dev'),
+        'taxon_url': _get_env('TAXON_URL', ''),
+        'taxon_database': _get_env('TAXON_DATABASE', ''),
+        'taxon_username': _get_env('TAXON_USERNAME', ''),
+        'taxon_password': _get_env('TAXON_PASSWORD', ''),
+        'taxon_db_name': _get_env('TAXON_DB_NAME', 'skol_taxa_dev'),
 
         # JSON translation settings (for taxa_to_json.py)
-        'source_db': os.environ.get('SOURCE_DB', 'skol_taxa_dev'),
-        'dest_db': os.environ.get('DEST_DB', 'skol_taxa_full'),
-        'checkpoint_path': os.environ.get('CHECKPOINT_PATH'),
+        'source_db': _get_env('SOURCE_DB', 'skol_taxa_dev'),
+        'dest_db': _get_env('DEST_DB', 'skol_taxa_full'),
+        'checkpoint_path': _get_env('CHECKPOINT_PATH', ''),
 
         # Training database settings
-        'training_database': os.environ.get('TRAINING_DATABASE', 'skol_training'),
+        'training_database': _get_env('TRAINING_DATABASE', 'skol_training'),
 
         # Redis settings
-        'redis_host': os.environ.get('REDIS_HOST', 'localhost'),
-        'redis_port': int(os.environ.get('REDIS_PORT', '6379')),
-        'redis_username': os.environ.get('REDIS_USERNAME', 'admin'),
-        'redis_password': os.environ.get('REDIS_PASSWORD', ''),
-        'redis_tls': os.environ.get('REDIS_TLS', '').lower() in ('1', 'true', 'yes'),
-        'redis_url': os.environ.get('REDIS_URL', ''),  # Built dynamically if not set
+        'redis_host': _get_env('REDIS_HOST', 'localhost'),
+        'redis_port': int(_get_env('REDIS_PORT', '6379')),
+        'redis_username': _get_env('REDIS_USERNAME', 'admin'),
+        'redis_password': _get_env('REDIS_PASSWORD', ''),
+        'redis_tls': _get_env('REDIS_TLS', '').lower() in ('1', 'true', 'yes'),
+        'redis_url': _get_env('REDIS_URL', ''),  # Built dynamically if not set
 
         # Model settings
-        'model_version': os.environ.get('MODEL_VERSION', 'v2.0'),
-        'classifier_model_expire': os.environ.get('MODEL_EXPIRE', None),
+        'model_version': _get_env('MODEL_VERSION', 'v2.0'),
+        'classifier_model_expire': _get_env('MODEL_EXPIRE', ''),
 
         # Embedding settings
-        'embedding_name': os.environ.get('EMBEDDING_NAME', 'skol:embedding:v1.1'),
-        'embedding_expire': int(os.environ.get('EMBEDDING_EXPIRE', str(60 * 60 * 24 * 2))),  # 2 days default
+        'embedding_name': _get_env('EMBEDDING_NAME', 'skol:embedding:v1.1'),
+        'embedding_expire': int(_get_env('EMBEDDING_EXPIRE', str(60 * 60 * 24 * 2))),  # 2 days default
 
         # Prediction settings
-        'couchdb_pattern': os.environ.get('COUCHDB_PATTERN', '*.txt'),
-        'pattern': os.environ.get('PATTERN', '*.txt.ann'),
-        'prediction_batch_size': int(os.environ.get('PREDICTION_BATCH_SIZE', '24')),
-        'num_workers': int(os.environ.get('NUM_WORKERS', '4')),
-        'union_batch_size': int(os.environ.get('UNION_BATCH_SIZE', '1000')),
-        'incremental_batch_size': int(os.environ.get('INCREMENTAL_BATCH_SIZE', '50')),
+        'couchdb_pattern': _get_env('COUCHDB_PATTERN', '*.txt'),
+        'pattern': _get_env('PATTERN', '*.txt.ann'),
+        'prediction_batch_size': int(_get_env('PREDICTION_BATCH_SIZE', '24')),
+        'num_workers': int(_get_env('NUM_WORKERS', '4')),
+        'union_batch_size': int(_get_env('UNION_BATCH_SIZE', '1000')),
+        'incremental_batch_size': int(_get_env('INCREMENTAL_BATCH_SIZE', '50')),
 
         # Taxonomy abbreviations for pre-filtering documents
-        'taxonomy_abbrevs': os.environ.get(
+        'taxonomy_abbrevs': _get_env(
             'TAXONOMY_ABBREVS',
             'comb.,fam.,gen.,nom.,ined.,var.,subg.,subsp.,sp.,f.,syn.,'
             'nov.,spec.,ssp.,spp.,sensu,s.l.,s.s.,s.str.,cf.,aff.,incertae,sed.'
         ).split(','),
 
         # Data paths
-        'annotated_path': Path(os.environ.get('ANNOTATED_PATH', Path.cwd().parent / "data" / "annotated")),
+        'annotated_path': Path(_get_env('ANNOTATED_PATH', str(Path.cwd().parent / "data" / "annotated"))),
 
         # Spark settings
-        'cores': int(os.environ.get('SPARK_CORES', '4')),
-        'bahir_package': os.environ.get('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
-        'spark_driver_memory': os.environ.get('SPARK_DRIVER_MEMORY', '4g'),
-        'spark_executor_memory': os.environ.get('SPARK_EXECUTOR_MEMORY', '4g'),
+        'cores': int(_get_env('SPARK_CORES', '4')),
+        'bahir_package': _get_env('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
+        'spark_driver_memory': _get_env('SPARK_DRIVER_MEMORY', '4g'),
+        'spark_executor_memory': _get_env('SPARK_EXECUTOR_MEMORY', '4g'),
 
         # General settings
-        'verbosity': int(os.environ.get('VERBOSITY', '1')),
+        'verbosity': int(_get_env('VERBOSITY', '1')),
 
         # Work-skipping and partial computation options
-        'dry_run': os.environ.get('DRY_RUN', '').lower() in ('1', 'true', 'yes'),
-        'skip_existing': os.environ.get('SKIP_EXISTING', '').lower() in ('1', 'true', 'yes'),
-        'force': os.environ.get('FORCE', '').lower() in ('1', 'true', 'yes'),
-        'incremental': os.environ.get('INCREMENTAL', '').lower() in ('1', 'true', 'yes'),
-        'taxonomy_filter': os.environ.get('TAXONOMY_FILTER', '').lower() in ('1', 'true', 'yes'),
-        'limit': _parse_optional_int(os.environ.get('LIMIT')),
-        'doc_ids': _parse_doc_ids(os.environ.get('DOC_IDS')),
+        'dry_run': _get_env('DRY_RUN', '').lower() in ('1', 'true', 'yes'),
+        'skip_existing': _get_env('SKIP_EXISTING', '').lower() in ('1', 'true', 'yes'),
+        'force': _get_env('FORCE', '').lower() in ('1', 'true', 'yes'),
+        'incremental': _get_env('INCREMENTAL', '').lower() in ('1', 'true', 'yes'),
+        'taxonomy_filter': _get_env('TAXONOMY_FILTER', '').lower() in ('1', 'true', 'yes'),
+        'limit': _parse_optional_int(_get_env('LIMIT', '')),
+        'doc_ids': _parse_doc_ids(_get_env('DOC_IDS', '')),
     }
 
     # Parse command-line arguments to override config
@@ -335,7 +404,6 @@ def create_redis_client(
         >>> r.get('key')
     """
     import redis
-    import ssl
 
     config = get_env_config()
     host = host or config['redis_host']
@@ -360,11 +428,9 @@ def create_redis_client(
 
     # Configure TLS if enabled
     if use_tls:
-        # Create SSL context that verifies server certificates
-        ssl_context = ssl.create_default_context()
-        # Use system CA certificates
-        ssl_context.load_default_certs()
         kwargs['ssl'] = True
         kwargs['ssl_ca_certs'] = '/etc/ssl/certs/ca-certificates.crt'
+        # Don't verify hostname (cert is for synoptickeyof.life but we connect to localhost)
+        kwargs['ssl_check_hostname'] = False
 
     return redis.Redis(**kwargs)

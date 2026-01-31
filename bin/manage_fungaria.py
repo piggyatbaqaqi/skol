@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # Add bin directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import get_env_config
+from env_config import get_env_config, create_redis_client
 
 # ============================================================================
 # Constants
@@ -144,12 +144,8 @@ def get_institution_by_code(code: str, verbosity: int = 1) -> Optional[Dict[str,
 # ============================================================================
 
 def get_redis_client(config: Dict[str, Any]) -> redis.Redis:
-    """Create and return a Redis client."""
-    return redis.Redis(
-        host=config['redis_host'],
-        port=config['redis_port'],
-        decode_responses=True
-    )
+    """Create and return a Redis client with TLS and auth support."""
+    return create_redis_client(decode_responses=True)
 
 
 def save_to_redis(
