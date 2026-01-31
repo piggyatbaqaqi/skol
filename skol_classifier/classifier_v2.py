@@ -937,6 +937,8 @@ class SkolClassifierV2:
 
         df = conn.load_distributed(self.spark, pattern)
 
+        # Note: load_distributed extracts doc_id and human_url from ingest map
+
         # Parse annotations using unified AnnotatedTextParser
         from .preprocessing import AnnotatedTextParser
 

@@ -139,6 +139,9 @@ def train_classifier(
 
     # Determine Redis expiration time
     expire_time = config.get('classifier_model_expire')
+    # Convert empty string to None (no expiration)
+    if expire_time == '':
+        expire_time = None
     if expire_override is not None:
         if expire_override.lower() == 'none':
             expire_time = None

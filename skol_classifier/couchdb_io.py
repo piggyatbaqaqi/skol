@@ -330,6 +330,12 @@ class CouchDBConnection:
         # Apply mapPartitions using shared schema
         result_df = doc_df.rdd.mapPartitions(fetch_partition).toDF(self.LOAD_SCHEMA)
 
+        # Extract doc_id and human_url from ingest map for backwards compatibility
+        # Many consumers expect these as top-level columns
+        from pyspark.sql.functions import col
+        result_df = result_df.withColumn("doc_id", col("ingest._id")) \
+                             .withColumn("human_url", col("ingest.url"))
+
         return result_df
 
     def save_distributed(
