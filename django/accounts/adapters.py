@@ -5,8 +5,12 @@ These adapters customize the social account authentication behavior,
 particularly for linking social accounts to existing users.
 """
 
+import logging
+
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth import get_user_model
+
+logger = logging.getLogger(__name__)
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -28,10 +32,14 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         # If the social account is already linked to a user, nothing to do
         if sociallogin.is_existing:
+            logger.info(f"Social account already linked to user: {sociallogin.user}")
             return
 
         # Get email from the social account
         email = None
+        logger.info(f"pre_social_login called for provider: {sociallogin.account.provider}")
+        logger.info(f"extra_data: {sociallogin.account.extra_data}")
+        logger.info(f"email_addresses: {sociallogin.email_addresses}")
 
         # Try to get email from account data
         if sociallogin.account.extra_data:
@@ -49,18 +57,20 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                 email = sociallogin.email_addresses[0].email
 
         if not email:
+            logger.warning("No email found in social login data")
             return
+
+        logger.info(f"Looking up user with email: {email}")
 
         # Find existing user with this email
         User = get_user_model()
         try:
             user = User.objects.get(email__iexact=email)
+            logger.info(f"Found existing user: {user.username} (email: {user.email})")
             # Connect the social account to the existing user
             sociallogin.connect(request, user)
+            logger.info(f"Successfully connected social account to {user.username}")
         except User.DoesNotExist:
-            # No existing user with this email, proceed with normal signup
-            pass
+            logger.info(f"No existing user with email {email}, will create new account")
         except User.MultipleObjectsReturned:
-            # Multiple users with same email (shouldn't happen, but handle it)
-            # Let allauth handle this case normally
-            pass
+            logger.warning(f"Multiple users found with email {email}")

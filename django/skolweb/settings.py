@@ -258,6 +258,7 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Match existing email verification
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Trust OAuth provider's email verification
 SOCIALACCOUNT_STORE_TOKENS = True  # Store OAuth tokens for API access (e.g., GitHub issues)
 
 # Custom adapter to link social accounts to existing users by email

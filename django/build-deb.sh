@@ -20,11 +20,23 @@ PACKAGE="skol-django"
 WHEEL_DIR="/opt/skol/wheels"
 SERVICE_DIR="/usr/share/skol-django"
 
+# Build number management - increments with each build
+BUILD_NUMBER_FILE=".build-number"
+if [ -f "$BUILD_NUMBER_FILE" ]; then
+    BUILD_NUMBER=$(cat "$BUILD_NUMBER_FILE")
+else
+    BUILD_NUMBER=0
+fi
+BUILD_NUMBER=$((BUILD_NUMBER + 1))
+echo "$BUILD_NUMBER" > "$BUILD_NUMBER_FILE"
+
+FULL_VERSION="${VERSION}-${BUILD_NUMBER}"
+
 # Path to local react-pdf (neighbor directory to skol)
 # From django, go up 2 levels to piggyatbaqaqi, then into react-pdf
 REACT_PDF_DIR="$(cd "$(dirname "$0")/../.." && pwd)/react-pdf"
 
-echo "=== Building Debian package with fpm ==="
+echo "=== Building Debian package with fpm (${PACKAGE} ${FULL_VERSION}) ==="
 
 # Verify react-pdf source exists
 if [ ! -d "$REACT_PDF_DIR/packages/react-pdf/src" ]; then
@@ -88,7 +100,7 @@ find staging${DJANGO_ROOT} -type f -name "*.pyc" -delete 2>/dev/null || true
 # --no-auto-depends prevents fpm from generating dependencies automatically
 fpm -s dir -t deb \
     --name "$PACKAGE" \
-    --version "$VERSION" \
+    --version "$FULL_VERSION" \
     --license "GPL-3.0-or-later" \
     --description "Django web application for SKOL taxonomic search and user management" \
     --maintainer "La Monte Henry Piggy Yarroll <piggy@piggy.com>" \
@@ -103,7 +115,7 @@ fpm -s dir -t deb \
     --deb-group root \
     --after-install debian/postinst \
     --before-remove debian/prerm \
-    --package "deb_dist/${PACKAGE}_${VERSION}_all.deb" \
+    --package "deb_dist/${PACKAGE}_${FULL_VERSION}_all.deb" \
     -C staging \
     .
 
