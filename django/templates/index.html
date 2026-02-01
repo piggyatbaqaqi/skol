@@ -1309,16 +1309,29 @@
 
         // Handle collection selection change
         // Called by the React CollectionSelect component
-        async function onCollectionChange(collectionId) {
+        async function onCollectionChange(collectionId, updateUrl = true) {
             if (!collectionId) {
                 activeCollectionId = null;
                 activeCollectionData = null;
                 hideCollectionUI();
+                // Remove collection from URL
+                if (updateUrl) {
+                    const url = new URL(window.location);
+                    url.searchParams.delete('collection');
+                    window.history.replaceState({}, '', url);
+                }
                 return;
             }
 
             activeCollectionId = collectionId;
             await loadActiveCollection();
+
+            // Update URL with collection ID (so refresh/share works)
+            if (updateUrl) {
+                const url = new URL(window.location);
+                url.searchParams.set('collection', collectionId);
+                window.history.replaceState({}, '', url);
+            }
         }
 
         // Load the active collection's full data
@@ -2040,12 +2053,34 @@
             }
         }
 
+        // Load collection from URL parameter if present
+        async function loadCollectionFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const collectionId = urlParams.get('collection');
+            if (collectionId) {
+                // Wait for React components to be ready (loaded after inline script)
+                setTimeout(async () => {
+                    // Set the hidden input value
+                    const collectionInput = document.getElementById('activeCollection');
+                    if (collectionInput) {
+                        collectionInput.value = collectionId;
+                        // Trigger the React component to update its display
+                        collectionInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    // Load the collection (updateUrl=false to avoid re-setting the URL)
+                    await onCollectionChange(collectionId, false);
+                }, 100);
+            }
+        }
+
         // Load data when page loads
         loadEmbeddings();
         if (IS_AUTHENTICATED) {
             updateCollectionsMenu();
             // Check for guest collection to migrate
             migrateGuestCollection();
+            // Load collection from URL if specified
+            loadCollectionFromUrl();
         } else {
             // Auto-save description to guest collection for non-authenticated users
             // Use debounce to avoid saving on every keystroke
