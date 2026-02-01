@@ -823,12 +823,189 @@
                 max-width: 100%;
             }
         }
+
+        /* Mobile hamburger menu */
+        .mobile-menu-btn {
+            display: none;
+            background: transparent;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 1.4em;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .mobile-menu-btn:hover {
+            background: #f0f4ff;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Slide-in menu overlay */
+        .mobile-menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 3000;
+        }
+
+        .mobile-menu-overlay.show {
+            display: block;
+        }
+
+        /* Slide-in menu panel */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            z-index: 3001;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .mobile-menu.show {
+            left: 0;
+        }
+
+        .mobile-menu-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-menu-header .user-info {
+            font-weight: 600;
+        }
+
+        .mobile-menu-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .mobile-menu-close:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .mobile-menu-items {
+            padding: 10px 0;
+        }
+
+        .mobile-menu-items a,
+        .mobile-menu-items button {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            border: none;
+            background: transparent;
+            text-align: left;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .mobile-menu-items a:hover,
+        .mobile-menu-items button:hover {
+            background: #f5f5f5;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .mobile-menu-items .menu-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 10px 20px;
+        }
+
+        .mobile-menu-items .menu-section-title {
+            padding: 10px 20px 5px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Mobile: hide desktop navbar items, show hamburger */
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .user-navbar {
+                justify-content: space-between;
+            }
+
+            .user-navbar > *:not(.mobile-menu-btn) {
+                display: none;
+            }
+
+            .user-navbar .settings-dropdown {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Mobile slide-in menu -->
+        <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+        <div id="mobileMenu" class="mobile-menu">
+            <div class="mobile-menu-header">
+                {% if user.is_authenticated %}
+                <span class="user-info">{{ user.username }}</span>
+                {% else %}
+                <span class="user-info">Menu</span>
+                {% endif %}
+                <button class="mobile-menu-close" onclick="closeMobileMenu()">&times;</button>
+            </div>
+            <div class="mobile-menu-items">
+                {% if user.is_authenticated %}
+                <div class="menu-section-title">Account</div>
+                <a href="{% url 'accounts:account_settings' %}">Account Settings</a>
+                <a href="{% url 'accounts:logout' %}">Logout</a>
+                <div class="menu-divider"></div>
+                <div class="menu-section-title">Collections</div>
+                <a href="{% url 'collections' %}">My Collections</a>
+                <button onclick="showNewCollectionModal(); closeMobileMenu();">+ New Collection</button>
+                <div class="menu-divider"></div>
+                {% else %}
+                <div class="menu-section-title">Account</div>
+                <a href="{% url 'accounts:login' %}">Login</a>
+                <a href="{% url 'accounts:register' %}">Register</a>
+                <div class="menu-divider"></div>
+                {% endif %}
+                <div class="menu-section-title">Help</div>
+                <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}">Feedback</a>
+                <a href="{% url 'contact:contact' %}">Contact</a>
+                <a href="{% url 'about' %}">About</a>
+                <a href="{% url 'sources' %}">Sources</a>
+            </div>
+        </div>
+
         {% if user.is_authenticated %}
         <div class="user-navbar">
+            <button class="mobile-menu-btn" onclick="openMobileMenu()" title="Menu">&#9776;</button>
             <span>Welcome, <strong>{{ user.username }}</strong></span>
             <div class="collections-dropdown">
                 <button class="collections-btn" onclick="toggleCollectionsMenu()">My Collections</button>
@@ -848,7 +1025,7 @@
             <a href="{% url 'accounts:account_settings' %}">Account</a>
             <a href="{% url 'accounts:logout' %}">Logout</a>
             <div class="settings-dropdown">
-                <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9776;</button>
+                <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9881;</button>
                 <div id="settingsMenu" class="settings-menu">
                     <div class="settings-menu-header">Search Settings</div>
                     <div class="form-group">
@@ -866,12 +1043,13 @@
         </div>
         {% else %}
         <div class="user-navbar">
+            <button class="mobile-menu-btn" onclick="openMobileMenu()" title="Menu">&#9776;</button>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:login' %}">Login</a>
             <a href="{% url 'accounts:register' %}">Register</a>
             <div class="settings-dropdown">
-                <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9776;</button>
+                <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9881;</button>
                 <div id="settingsMenu" class="settings-menu">
                     <div class="settings-menu-header">Search Settings</div>
                     <div class="form-group">
@@ -1442,6 +1620,19 @@
             menu.classList.toggle('show');
             // Close collections menu when opening settings
             document.getElementById('collectionsMenu')?.classList.remove('show');
+        }
+
+        // Mobile menu functions
+        function openMobileMenu() {
+            document.getElementById('mobileMenu').classList.add('show');
+            document.getElementById('mobileMenuOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('show');
+            document.getElementById('mobileMenuOverlay').classList.remove('show');
+            document.body.style.overflow = ''; // Restore scrolling
         }
 
         // Close dropdown menus when clicking outside
