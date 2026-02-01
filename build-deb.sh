@@ -36,6 +36,7 @@ cp dist/*.whl staging${WHEEL_DIR}/
 # Copy bin/*.py scripts to staging area
 echo "Copying bin scripts..."
 cp bin/*.py staging/opt/skol/bin/
+chmod 755 staging/opt/skol/bin/*.py
 
 # Copy cron job to /etc/cron.d/
 echo "Copying cron configuration..."
