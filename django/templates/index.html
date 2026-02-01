@@ -808,9 +808,19 @@
             background: linear-gradient(135deg, #5a6fd6 0%, #6a4292 100%);
         }
 
+        /* Mobile: stack textarea and vocab widget vertically */
         @media (max-width: 900px) {
+            .form-group > div[style*="display: flex"] {
+                flex-direction: column !important;
+            }
+
             #vocab-tree-container {
-                display: none;
+                width: 100%;
+                margin-top: 15px;
+            }
+
+            #vocab-tree-container .vocab-tree-widget {
+                max-width: 100%;
             }
         }
     </style>
