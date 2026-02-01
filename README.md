@@ -239,7 +239,8 @@ All commands are available in `/opt/skol/bin/`:
 | `taxa_to_json` | Export taxa to JSON format |
 | `build_vocab_tree` | Build vocabulary tree for UI menus |
 | `manage_fungaria` | Manage Index Herbariorum data |
-| `watch_install` | Watch for new documents to process |
+| `watch_install` | Watch specific deb files and install on change |
+| `watch_incremental` | Watch glob patterns and install new package versions |
 | `rebuild_redis` | Rebuild all Redis keys |
 
 Use the wrapper for custom commands:
