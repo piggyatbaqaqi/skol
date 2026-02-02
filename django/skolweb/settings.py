@@ -100,10 +100,21 @@ if _postgres_host:
     }
 else:
     # SQLite configuration (default for development)
+    # In production, use shared location that persists across version upgrades
+    _sqlite_path = os.environ.get('SQLITE_DATABASE_PATH')
+    if _sqlite_path:
+        _db_path = Path(_sqlite_path)
+    else:
+        # Default: /opt/skol/data/django/db.sqlite3 in production, BASE_DIR in dev
+        _skol_data = Path('/opt/skol/data/django')
+        if _skol_data.exists():
+            _db_path = _skol_data / 'db.sqlite3'
+        else:
+            _db_path = BASE_DIR / 'db.sqlite3'
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': SKOL_DJANGO_ROOT / 'db.sqlite3',
+            'NAME': _db_path,
         }
     }
 

@@ -20,16 +20,19 @@ After installation, the directory structure looks like:
 ├── versions/                           # skol package versions
 │   ├── 0.1.0-5/
 │   │   ├── bin/                        # Python scripts
-│   │   ├── advanced-databases/         # Docker configs
 │   │   └── skol_env.example
 │   └── 0.1.0-6/
 │       └── ...
 ├── bin -> versions/0.1.0-6/bin         # Symlink to active version
-├── advanced-databases -> versions/0.1.0-6/advanced-databases
+├── advanced-databases/                 # Docker configs (NOT versioned, persists)
+├── config/                             # Shared config (persists across upgrades)
+│   └── skol-django.env                 # Django environment config
 ├── wheels/                             # Shared wheel files
 ├── venv/                               # Shared Python virtual environment
 ├── data/                               # Shared data directory
-│   └── ontologies/
+│   ├── ontologies/
+│   └── django/
+│       └── db.sqlite3                  # Django database (persists across upgrades)
 ├── models/                             # Shared ML models
 │
 ├── django-versions/                    # skol-django versions
@@ -84,9 +87,8 @@ skol-switch-version skol
 You can also switch versions manually:
 
 ```bash
-# Switch skol
+# Switch skol (only bin is versioned; advanced-databases persists)
 ln -sfn /opt/skol/versions/0.1.0-5/bin /opt/skol/bin
-ln -sfn /opt/skol/versions/0.1.0-5/advanced-databases /opt/skol/advanced-databases
 
 # Switch django (and restart service)
 ln -sfn /opt/skol/django-versions/0.1.0-3 /opt/skol/django
@@ -229,14 +231,96 @@ This combination ensures atomic switching even when the target is already a syml
 | Resource | Location | Versioned? |
 |----------|----------|------------|
 | Python scripts | `/opt/skol/versions/X/bin/` | Yes |
-| Docker configs | `/opt/skol/versions/X/advanced-databases/` | Yes |
 | Django app | `/opt/skol/django-versions/X/` | Yes |
+| Docker configs | `/opt/skol/advanced-databases/` | No (shared) |
+| Config files | `/opt/skol/config/` | No (shared) |
+| Django database | `/opt/skol/data/django/db.sqlite3` | No (shared) |
 | Wheels | `/opt/skol/wheels/` | No (shared) |
 | Virtual envs | `/opt/skol/venv/`, `/opt/skol/django-venv/` | No (shared) |
 | Data files | `/opt/skol/data/` | No (shared) |
+| Database runtime | `/data/skol/{couchdb,redis,neo4j}/` | No (persistent) |
 | Models | `/opt/skol/models/` | No (shared) |
 | Ontologies | `/usr/share/skol/ontologies/` | No (system) |
 | Cron jobs | `/etc/cron.d/skol` | No (system) |
+
+### Shared Configuration
+
+Configuration files are stored in `/opt/skol/config/` to persist across version upgrades. This directory is created during installation and user customizations are preserved.
+
+**skol-django.env** - Django environment configuration:
+```
+/opt/skol/config/skol-django.env
+```
+
+The postinst script will:
+1. Create the config directory if it doesn't exist
+2. Migrate config from old version-specific locations (if present)
+3. Create a default config only if no config file exists
+4. Preserve existing user customizations on upgrade
+
+Default settings include `FORCE_SCRIPT_NAME=/skol` for the common deployment pattern at a subpath.
+
+To customize Django settings:
+```bash
+sudo -u skol nano /opt/skol/config/skol-django.env
+systemctl restart skol-django
+```
+
+### Django Database
+
+The Django SQLite database is stored in a shared location to persist across version upgrades:
+```
+/opt/skol/data/django/db.sqlite3
+```
+
+The postinst script will:
+1. Create the data directory if it doesn't exist
+2. Migrate the database from old version-specific locations (if present)
+3. Preserve existing database on upgrade
+
+This ensures Django users, sessions, and other database content survive version upgrades.
+
+To use PostgreSQL instead (recommended for production), set `POSTGRES_HOST` in `/opt/skol/config/skol-django.env`.
+
+### Docker Configuration (advanced-databases)
+
+The `advanced-databases` directory is NOT versioned. It persists at `/opt/skol/advanced-databases/` across upgrades, preserving your Docker configuration customizations.
+
+**Structure:**
+```
+/opt/skol/advanced-databases/
+├── docker-compose.yaml      # Main Docker Compose file
+├── redis.conf               # Redis configuration
+├── redis-entrypoint.sh      # Redis startup script
+├── neo4j/
+│   ├── conf/                # Neo4j configuration
+│   └── certificates/        # Neo4j TLS certificates
+└── couchdb/
+    └── etc/                 # CouchDB configuration templates
+```
+
+**Runtime data** is stored separately in `/data/skol/`:
+```
+/data/skol/
+├── couchdb/
+│   ├── data/               # CouchDB databases
+│   └── etc/                # CouchDB runtime config (including credentials)
+├── redis/
+│   └── data/               # Redis persistence
+└── neo4j/
+    └── data/               # Neo4j database
+```
+
+On upgrade, new files from the package are copied to `advanced-databases/` only if they don't already exist (using `cp -n`). This ensures your customizations are preserved while new files are added.
+
+To manually update a file from a new package version:
+```bash
+# Check what's in the new version
+ls /opt/skol/versions/<version>/advanced-databases/
+
+# Copy specific file if needed
+cp /opt/skol/versions/<version>/advanced-databases/docker-compose.yaml /opt/skol/advanced-databases/
+```
 
 ### Service Considerations
 

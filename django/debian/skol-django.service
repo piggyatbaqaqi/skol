@@ -17,8 +17,9 @@ StandardOutput=append:/var/log/skol/skol-django.log
 StandardError=append:/var/log/skol/skol-django.log
 
 # Environment - load from file for customization
+# Config file is in shared location to persist across version upgrades
 # The - prefix makes the file optional (won't fail if missing)
-EnvironmentFile=/opt/skol/django/skol-django.env
+EnvironmentFile=-/opt/skol/config/skol-django.env
 EnvironmentFile=-/home/skol/.skol_env
 Environment=DJANGO_SETTINGS_MODULE=skolweb.settings
 Environment=PYTHONUNBUFFERED=1

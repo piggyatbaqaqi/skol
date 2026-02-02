@@ -22,9 +22,9 @@ from pathlib import Path
 PACKAGE_CONFIG = {
     'skol': {
         'versions_dir': '/opt/skol/versions',
+        # Note: advanced-databases is NOT versioned - it's a persistent directory
         'symlinks': [
             ('/opt/skol/bin', 'bin'),
-            ('/opt/skol/advanced-databases', 'advanced-databases'),
         ],
     },
     'django': {

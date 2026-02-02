@@ -9,9 +9,9 @@ SKOL_HOME=/opt/skol
 SKOL_VENV=${SKOL_HOME}/venv
 PYTHON=python3.13
 
-# Symlink targets
+# Symlink target (bin only - advanced-databases is not versioned)
 BIN_SYMLINK="${SKOL_HOME}/bin"
-ADVANCED_DB_SYMLINK="${SKOL_HOME}/advanced-databases"
+ADVANCED_DB_DIR="${SKOL_HOME}/advanced-databases"
 
 # Create skol group if it doesn't exist
 if ! getent group skol > /dev/null 2>&1; then
@@ -33,17 +33,23 @@ mkdir -p ${SKOL_HOME}/wheels
 chown -R skol:skol ${SKOL_HOME}
 chmod 755 ${SKOL_HOME}
 
-# Migrate old non-versioned layout if needed (but don't switch symlinks yet)
+# Migrate old non-versioned bin layout if needed
 if [ -d "$BIN_SYMLINK" ] && [ ! -L "$BIN_SYMLINK" ]; then
     BACKUP="${SKOL_HOME}/bin.old-$(date +%Y%m%d%H%M%S)"
     mv "$BIN_SYMLINK" "$BACKUP"
     echo "Migrated old ${BIN_SYMLINK} to $BACKUP"
 fi
 
-if [ -d "$ADVANCED_DB_SYMLINK" ] && [ ! -L "$ADVANCED_DB_SYMLINK" ]; then
-    BACKUP="${SKOL_HOME}/advanced-databases.old-$(date +%Y%m%d%H%M%S)"
-    mv "$ADVANCED_DB_SYMLINK" "$BACKUP"
-    echo "Migrated old ${ADVANCED_DB_SYMLINK} to $BACKUP"
+# If advanced-databases is a symlink (from old versioned layout), convert to regular directory
+if [ -L "$ADVANCED_DB_DIR" ]; then
+    # Copy contents from symlink target to create a real directory
+    SYMLINK_TARGET=$(readlink -f "$ADVANCED_DB_DIR")
+    rm "$ADVANCED_DB_DIR"
+    mkdir -p "$ADVANCED_DB_DIR"
+    if [ -d "$SYMLINK_TARGET" ]; then
+        cp -a "$SYMLINK_TARGET"/* "$ADVANCED_DB_DIR"/ 2>/dev/null || true
+    fi
+    echo "Converted advanced-databases from symlink to regular directory"
 fi
 
 # NOTE: Symlink switch is deferred until the end to minimize issues
@@ -219,11 +225,26 @@ done
 chown -R skol:skol ${INSTALL_DIR}/bin
 
 # ============================================================
-# ATOMIC SWITCH: Now that everything is ready, switch symlinks
+# Update advanced-databases directory (non-versioned, preserves customizations)
+# ============================================================
+mkdir -p "$ADVANCED_DB_DIR"
+# Copy new files from package, but don't overwrite existing files
+# This preserves user customizations while adding new files
+if [ -d "${INSTALL_DIR}/advanced-databases" ]; then
+    echo "Updating advanced-databases directory..."
+    # Use cp -n (no-clobber) to not overwrite existing files
+    cp -rn "${INSTALL_DIR}/advanced-databases"/* "$ADVANCED_DB_DIR"/ 2>/dev/null || true
+    # Ensure subdirectories exist
+    mkdir -p "$ADVANCED_DB_DIR/neo4j/conf"
+    mkdir -p "$ADVANCED_DB_DIR/neo4j/certificates"
+    chown -R skol:skol "$ADVANCED_DB_DIR"
+fi
+
+# ============================================================
+# ATOMIC SWITCH: Now that everything is ready, switch bin symlink
 # ============================================================
 echo "Switching to new version..."
 ln -sfn "${INSTALL_DIR}/bin" "$BIN_SYMLINK"
-ln -sfn "${INSTALL_DIR}/advanced-databases" "$ADVANCED_DB_SYMLINK"
 echo "Activated skol ${VERSION}"
 
 # Create command symlinks in /usr/local/bin pointing to the main symlink
@@ -240,9 +261,9 @@ echo "  watch_incremental, rebuild_redis"
 echo "Or use: ${BIN_SYMLINK}/with_skol <command>"
 echo ""
 echo "Database services:"
-echo "  docker-compose.yaml: ${ADVANCED_DB_SYMLINK}/"
+echo "  docker-compose.yaml: ${ADVANCED_DB_DIR}/"
 echo "  Runtime data:        /data/skol/{couchdb,redis,neo4j}/"
-echo "  Start services:      cd ${ADVANCED_DB_SYMLINK} && docker compose up -d"
+echo "  Start services:      cd ${ADVANCED_DB_DIR} && docker compose up -d"
 echo ""
 echo "Cron jobs installed to /etc/cron.d/skol"
 echo ""

@@ -31,19 +31,18 @@ if [ -d "${INSTALL_DIR}" ]; then
     rm -rf "${INSTALL_DIR}"
 fi
 
-# If this was the active version, clear the symlinks
+# If this was the active version, clear the bin symlink
+# Note: advanced-databases is a regular directory, not versioned
 CURRENT_BIN=$(readlink "${SKOL_HOME}/bin" 2>/dev/null || true)
 if [ "$CURRENT_BIN" = "${INSTALL_DIR}/bin" ]; then
     rm -f "${SKOL_HOME}/bin"
-    rm -f "${SKOL_HOME}/advanced-databases"
-    echo "Cleared symlinks (this was the active version)"
+    echo "Cleared bin symlink (this was the active version)"
 
     # Try to activate another version if available
     LATEST=$(ls -d ${SKOL_HOME}/versions/*/ 2>/dev/null | sort -V | tail -1)
     if [ -n "$LATEST" ]; then
         LATEST_VERSION=$(basename "$LATEST")
         ln -sfn "${SKOL_HOME}/versions/${LATEST_VERSION}/bin" "${SKOL_HOME}/bin"
-        ln -sfn "${SKOL_HOME}/versions/${LATEST_VERSION}/advanced-databases" "${SKOL_HOME}/advanced-databases"
         echo "Activated fallback version: ${LATEST_VERSION}"
     fi
 fi
