@@ -290,12 +290,13 @@ class TaxonExtractor:
             StructField("error_message", StringType(), False),
         ])
 
-    def load_annotated_documents(self, pattern: str = "*.txt.ann") -> DataFrame:
+    def load_annotated_documents(self, pattern: str = "*.ann") -> DataFrame:
         """
         Load annotated documents from CouchDB ingest database.
 
         Args:
-            pattern: Pattern for attachment names (default: "*.txt.ann")
+            pattern: Pattern for attachment names (default: "*.ann")
+                    Matches both article.txt.ann and article.pdf.ann
 
         Returns:
             DataFrame with columns: doc_id, attachment_name, value
@@ -647,7 +648,7 @@ class TaxonExtractor:
 
     def run_pipeline(
         self,
-        pattern: str = "*.txt.ann",
+        pattern: str = "*.ann",
         doc_ids: Optional[list] = None,
         dry_run: bool = False,
         limit: Optional[int] = None,
@@ -662,7 +663,8 @@ class TaxonExtractor:
         4. Returns a DataFrame with success/failure results
 
         Args:
-            pattern: Pattern for attachment names (default: "*.txt.ann")
+            pattern: Pattern for attachment names (default: "*.ann")
+                    Matches both article.txt.ann and article.pdf.ann
             doc_ids: If specified, only process these ingest document IDs
             dry_run: If True, extract taxa but don't save to CouchDB
             limit: If specified, process at most this many documents
@@ -740,7 +742,7 @@ Configuration (via environment variables or command-line arguments):
   --taxon-database        Name of taxon database
   --taxon-username        Username for taxon database
   --taxon-password        Password for taxon database
-  --pattern               Pattern for attachment names (default: *.txt.ann)
+  --pattern               Pattern for attachment names (default: *.ann, matches both .txt.ann and .pdf.ann)
 
 Work Control Options (from env_config):
   --dry-run               Preview what would be extracted without saving

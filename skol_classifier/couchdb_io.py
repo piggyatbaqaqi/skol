@@ -122,13 +122,13 @@ class CouchDBConnection:
         Get a list of documents with text attachments from CouchDB.
 
         This only fetches document metadata (not content) to create a DataFrame
-        that can be processed in parallel. Creates ONE ROW per attachment, so if
-        a document has multiple attachments matching the pattern, it will have
-        multiple rows in the resulting DataFrame.
+        that can be processed in parallel. For annotation files (*.ann pattern),
+        only ONE attachment per document is returned, preferring .pdf.ann over
+        .txt.ann when both exist.
 
         Args:
             spark: SparkSession
-            pattern: Pattern for attachment names (e.g., "*.txt")
+            pattern: Pattern for attachment names (e.g., "*.txt", "*.ann")
 
         Returns:
             DataFrame with columns: doc_id, attachment_name
@@ -137,8 +137,14 @@ class CouchDBConnection:
         # Connect to CouchDB (driver only)
         db = self.db
 
+        # For *.ann pattern, we need to deduplicate per document
+        # Prefer .pdf.ann over .txt.ann (PDF is the canonical source)
+        is_ann_pattern = pattern == "*.ann"
+
         # Get all documents with attachments matching pattern
-        doc_list = []
+        # Use dict to deduplicate by doc_id for annotation files
+        doc_attachments: dict = {}  # doc_id -> list of matching attachments
+
         for doc_id in db:
             try:
                 doc = db[doc_id]
@@ -148,17 +154,42 @@ class CouchDBConnection:
                 for att_name in attachments.keys():
                     # Check if attachment matches pattern
                     # Pattern matching: "*.txt" matches files ending with .txt
+                    matched = False
                     if pattern == "*.txt" and att_name.endswith('.txt'):
-                        doc_list.append((doc_id, att_name))
+                        matched = True
                     elif pattern == "*.*" or pattern == "*":
                         # Match all attachments
-                        doc_list.append((doc_id, att_name))
+                        matched = True
                     elif pattern.startswith("*.") and att_name.endswith(pattern[1:]):
                         # Generic pattern matching for *.ext
-                        doc_list.append((doc_id, att_name))
+                        matched = True
+
+                    if matched:
+                        if doc_id not in doc_attachments:
+                            doc_attachments[doc_id] = []
+                        doc_attachments[doc_id].append(att_name)
             except Exception:
                 # Skip documents we can't read
                 continue
+
+        # Build final list, deduplicating for *.ann pattern
+        doc_list = []
+        for doc_id, att_names in doc_attachments.items():
+            if is_ann_pattern and len(att_names) > 1:
+                # Prefer .pdf.ann over .txt.ann
+                pdf_ann = [a for a in att_names if a.endswith('.pdf.ann')]
+                txt_ann = [a for a in att_names if a.endswith('.txt.ann')]
+                if pdf_ann:
+                    doc_list.append((doc_id, pdf_ann[0]))
+                elif txt_ann:
+                    doc_list.append((doc_id, txt_ann[0]))
+                else:
+                    # Neither .pdf.ann nor .txt.ann, just pick first
+                    doc_list.append((doc_id, att_names[0]))
+            else:
+                # Single attachment or not *.ann pattern - include all
+                for att_name in att_names:
+                    doc_list.append((doc_id, att_name))
 
         # Create DataFrame with document IDs and attachment names
         schema = StructType([

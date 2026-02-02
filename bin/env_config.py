@@ -162,7 +162,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Prediction settings
         'couchdb_pattern': _get_env('COUCHDB_PATTERN', '*.txt'),
-        'pattern': _get_env('PATTERN', '*.txt.ann'),
+        'pattern': _get_env('PATTERN', '*.ann'),  # Matches both .txt.ann and .pdf.ann
         'prediction_batch_size': int(_get_env('PREDICTION_BATCH_SIZE', '24')),
         'num_workers': int(_get_env('NUM_WORKERS', '4')),
         'union_batch_size': int(_get_env('UNION_BATCH_SIZE', '1000')),
