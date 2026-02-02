@@ -35,16 +35,15 @@ mkdir -p ${SKOL_HOME}/bin
 mkdir -p ${SKOL_HOME}/staticfiles
 chown -R skol:skol ${SKOL_HOME}
 
-# Migrate old non-versioned layout if needed
+# Migrate old non-versioned layout if needed (but don't switch yet)
 if [ -d "$DJANGO_SYMLINK" ] && [ ! -L "$DJANGO_SYMLINK" ]; then
     BACKUP="${SKOL_HOME}/django.old-$(date +%Y%m%d%H%M%S)"
     mv "$DJANGO_SYMLINK" "$BACKUP"
     echo "Migrated old ${DJANGO_SYMLINK} to $BACKUP"
 fi
 
-# Create atomic symlink to new version
-ln -sfn "$INSTALL_DIR" "$DJANGO_SYMLINK"
-echo "Activated skol-django ${VERSION}"
+# NOTE: Symlink switch is deferred until the end to minimize downtime
+# The old version continues serving while we prepare the new one
 
 # Create Python virtual environment for Django and install dependencies
 echo "Creating Python 3.13 virtual environment at ${SKOL_DJANGO_VENV}..."
@@ -76,10 +75,32 @@ EOF
 chmod 755 ${SKOL_HOME}/bin/with_skol_django
 chown skol:skol ${SKOL_HOME}/bin/with_skol_django
 
+# Create a temporary wrapper that points to the NEW version for setup tasks
+# This allows migrations/collectstatic to run against the new code
+cat > ${SKOL_HOME}/bin/with_skol_django_new << EOF
+#!/bin/bash
+export SKOL_HOME=/opt/skol
+export SKOL_DATA=/opt/skol/data
+export SKOL_MODELS=/opt/skol/models
+export SKOL_DJANGO_ROOT=${INSTALL_DIR}
+export VIRTUAL_ENV=/opt/skol/django-venv
+export PATH="\${VIRTUAL_ENV}/bin:\${PATH}"
+export DJANGO_SETTINGS_MODULE=skolweb.settings
+unset PYTHONHOME
+exec "\$@"
+EOF
+chmod 755 ${SKOL_HOME}/bin/with_skol_django_new
+chown skol:skol ${SKOL_HOME}/bin/with_skol_django_new
+
 # Create environment file for systemd service customization
-# Only create if it doesn't exist (preserve user customizations on upgrade)
-if [ ! -f ${DJANGO_SYMLINK}/skol-django.env ]; then
-cat > ${DJANGO_SYMLINK}/skol-django.env << 'EOF'
+# Write to the new version directory, not the symlink
+if [ ! -f ${INSTALL_DIR}/skol-django.env ]; then
+    # Check if there's an existing env file to copy from the current version
+    if [ -L "$DJANGO_SYMLINK" ] && [ -f "${DJANGO_SYMLINK}/skol-django.env" ]; then
+        echo "Copying existing environment configuration to new version..."
+        cp "${DJANGO_SYMLINK}/skol-django.env" "${INSTALL_DIR}/skol-django.env"
+    else
+        cat > ${INSTALL_DIR}/skol-django.env << 'ENVEOF'
 # SKOL Django Environment Configuration
 # Edit this file to customize the Django environment
 
@@ -114,23 +135,37 @@ COUCHDB_PASSWORD=
 # POSTGRES_DB=skol
 # POSTGRES_USER=skol
 # POSTGRES_PASSWORD=
-EOF
+ENVEOF
+    fi
 fi
-chown skol:skol ${DJANGO_SYMLINK}/skol-django.env
-chmod 640 ${DJANGO_SYMLINK}/skol-django.env
+chown skol:skol ${INSTALL_DIR}/skol-django.env
+chmod 640 ${INSTALL_DIR}/skol-django.env
 
-# Run database migrations
+# Run database migrations against the NEW version
 echo "Running database migrations..."
-cd ${DJANGO_SYMLINK}
-sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py migrate --noinput
+cd ${INSTALL_DIR}
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django_new python manage.py migrate --noinput
 echo "Database migrations complete."
 
-# Collect static files
+# Collect static files from the NEW version
 echo "Collecting static files..."
-sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py collectstatic --noinput
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django_new python manage.py collectstatic --noinput
 echo "Static files collected."
 
-# Install systemd service
+# Clean up temporary wrapper
+rm -f ${SKOL_HOME}/bin/with_skol_django_new
+
+# Set ownership of the new version directory
+chown -R skol:skol ${INSTALL_DIR}
+
+# ============================================================
+# ATOMIC SWITCH: Now that everything is ready, switch symlink
+# ============================================================
+echo "Switching to new version..."
+ln -sfn "$INSTALL_DIR" "$DJANGO_SYMLINK"
+echo "Activated skol-django ${VERSION}"
+
+# Install systemd service and restart
 if [ -d /run/systemd/system ]; then
     cp /usr/share/skol-django/skol-django.service /etc/systemd/system/
     systemctl daemon-reload

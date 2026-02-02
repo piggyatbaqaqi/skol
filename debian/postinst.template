@@ -33,7 +33,7 @@ mkdir -p ${SKOL_HOME}/wheels
 chown -R skol:skol ${SKOL_HOME}
 chmod 755 ${SKOL_HOME}
 
-# Migrate old non-versioned layout if needed
+# Migrate old non-versioned layout if needed (but don't switch symlinks yet)
 if [ -d "$BIN_SYMLINK" ] && [ ! -L "$BIN_SYMLINK" ]; then
     BACKUP="${SKOL_HOME}/bin.old-$(date +%Y%m%d%H%M%S)"
     mv "$BIN_SYMLINK" "$BACKUP"
@@ -46,10 +46,8 @@ if [ -d "$ADVANCED_DB_SYMLINK" ] && [ ! -L "$ADVANCED_DB_SYMLINK" ]; then
     echo "Migrated old ${ADVANCED_DB_SYMLINK} to $BACKUP"
 fi
 
-# Create atomic symlinks to new version
-ln -sfn "${INSTALL_DIR}/bin" "$BIN_SYMLINK"
-ln -sfn "${INSTALL_DIR}/advanced-databases" "$ADVANCED_DB_SYMLINK"
-echo "Activated skol ${VERSION}"
+# NOTE: Symlink switch is deferred until the end to minimize issues
+# The old version continues working while we prepare the new one
 
 # Install ontology files
 if [ -d /usr/share/skol/ontologies ]; then
@@ -219,6 +217,14 @@ done
 
 # Set ownership of version-specific bin directory
 chown -R skol:skol ${INSTALL_DIR}/bin
+
+# ============================================================
+# ATOMIC SWITCH: Now that everything is ready, switch symlinks
+# ============================================================
+echo "Switching to new version..."
+ln -sfn "${INSTALL_DIR}/bin" "$BIN_SYMLINK"
+ln -sfn "${INSTALL_DIR}/advanced-databases" "$ADVANCED_DB_SYMLINK"
+echo "Activated skol ${VERSION}"
 
 # Create command symlinks in /usr/local/bin pointing to the main symlink
 COMMANDS="skol skol-couch-init skol-vocab-tree watch_incremental skol-switch-version"

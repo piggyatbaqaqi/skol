@@ -137,9 +137,17 @@ When installing on a system with the old non-versioned layout:
 
 When installing a new version:
 
-1. Installs to a new version-specific directory
-2. Updates symlinks to point to the new version
-3. Previous version directory remains (for potential rollback)
+1. Installs files to a new version-specific directory (dpkg extracts the package)
+2. Runs all setup tasks against the NEW version directory:
+   - Creates/updates Python virtual environment
+   - Installs packages from wheels
+   - Runs database migrations
+   - Collects static files
+3. **Atomic switch**: Only after setup is complete, updates symlink to the new version
+4. Restarts the service (for skol-django)
+5. Previous version directory remains (for potential rollback)
+
+The key insight is that the **old version continues serving requests** while the new version is being prepared. Downtime is minimized to just the service restart time.
 
 ### Removal
 
