@@ -32,6 +32,9 @@ echo "$BUILD_NUMBER" > "$BUILD_NUMBER_FILE"
 
 FULL_VERSION="${VERSION}-${BUILD_NUMBER}"
 
+# Version-specific installation directory
+VERSION_DIR="/opt/skol/django-versions/${FULL_VERSION}"
+
 # Path to local react-pdf (neighbor directory to skol)
 # From django, go up 2 levels to piggyatbaqaqi, then into react-pdf
 REACT_PDF_DIR="$(cd "$(dirname "$0")/../.." && pwd)/react-pdf"
@@ -50,11 +53,10 @@ echo "Found react-pdf source at $REACT_PDF_DIR"
 rm -rf dist/ build/ *.egg-info deb_dist/ staging/
 
 # Create output and staging directories
-DJANGO_ROOT="/opt/skol/django"
 mkdir -p deb_dist
 mkdir -p staging${WHEEL_DIR}
 mkdir -p staging${SERVICE_DIR}
-mkdir -p staging${DJANGO_ROOT}
+mkdir -p staging${VERSION_DIR}
 
 # Build the React frontend (compiles react-pdf from source via webpack)
 echo "Building React PDF viewer..."
@@ -84,17 +86,24 @@ cp debian/skol-django.service staging${SERVICE_DIR}/
 
 # Copy Django application files
 echo "Copying Django application files..."
-cp manage.py staging${DJANGO_ROOT}/
-cp -r skolweb staging${DJANGO_ROOT}/
-cp -r search staging${DJANGO_ROOT}/
-cp -r accounts staging${DJANGO_ROOT}/
-cp -r contact staging${DJANGO_ROOT}/
-cp -r templates staging${DJANGO_ROOT}/
-cp -r static staging${DJANGO_ROOT}/
+cp manage.py staging${VERSION_DIR}/
+cp -r skolweb staging${VERSION_DIR}/
+cp -r search staging${VERSION_DIR}/
+cp -r accounts staging${VERSION_DIR}/
+cp -r contact staging${VERSION_DIR}/
+cp -r templates staging${VERSION_DIR}/
+cp -r static staging${VERSION_DIR}/
 
 # Remove __pycache__ directories and .pyc files
-find staging${DJANGO_ROOT} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-find staging${DJANGO_ROOT} -type f -name "*.pyc" -delete 2>/dev/null || true
+find staging${VERSION_DIR} -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find staging${VERSION_DIR} -type f -name "*.pyc" -delete 2>/dev/null || true
+
+# Inject version into postinst and prerm templates
+echo "Injecting version ${FULL_VERSION} into debian scripts..."
+mkdir -p staging_scripts
+sed "s/__VERSION__/${FULL_VERSION}/g" debian/postinst.template > staging_scripts/postinst
+sed "s/__VERSION__/${FULL_VERSION}/g" debian/prerm.template > staging_scripts/prerm
+chmod 755 staging_scripts/postinst staging_scripts/prerm
 
 # Build the deb using fpm from the staging directory
 # --no-auto-depends prevents fpm from generating dependencies automatically
@@ -113,14 +122,14 @@ fpm -s dir -t deb \
     --depends skol \
     --deb-user root \
     --deb-group root \
-    --after-install debian/postinst \
-    --before-remove debian/prerm \
+    --after-install staging_scripts/postinst \
+    --before-remove staging_scripts/prerm \
     --package "deb_dist/${PACKAGE}_${FULL_VERSION}_all.deb" \
     -C staging \
     .
 
 # Clean up staging
-rm -rf staging/
+rm -rf staging/ staging_scripts/
 
 echo "=== Done ==="
 echo "Debian package created:"

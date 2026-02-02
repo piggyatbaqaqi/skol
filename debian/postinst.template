@@ -1,0 +1,248 @@
+#!/bin/bash
+set -e
+
+# Version injected at build time
+VERSION="__VERSION__"
+INSTALL_DIR="/opt/skol/versions/${VERSION}"
+
+SKOL_HOME=/opt/skol
+SKOL_VENV=${SKOL_HOME}/venv
+PYTHON=python3.13
+
+# Symlink targets
+BIN_SYMLINK="${SKOL_HOME}/bin"
+ADVANCED_DB_SYMLINK="${SKOL_HOME}/advanced-databases"
+
+# Create skol group if it doesn't exist
+if ! getent group skol > /dev/null 2>&1; then
+    groupadd --system skol
+    echo "Created group 'skol'"
+fi
+
+# Create skol user if it doesn't exist
+if ! getent passwd skol > /dev/null 2>&1; then
+    useradd --system --gid skol --home-dir ${SKOL_HOME} --shell /bin/false skol
+    echo "Created user 'skol'"
+fi
+
+# Create /opt/skol directory structure (for shared data)
+mkdir -p ${SKOL_HOME}
+mkdir -p ${SKOL_HOME}/data/ontologies
+mkdir -p ${SKOL_HOME}/models
+mkdir -p ${SKOL_HOME}/wheels
+chown -R skol:skol ${SKOL_HOME}
+chmod 755 ${SKOL_HOME}
+
+# Migrate old non-versioned layout if needed
+if [ -d "$BIN_SYMLINK" ] && [ ! -L "$BIN_SYMLINK" ]; then
+    BACKUP="${SKOL_HOME}/bin.old-$(date +%Y%m%d%H%M%S)"
+    mv "$BIN_SYMLINK" "$BACKUP"
+    echo "Migrated old ${BIN_SYMLINK} to $BACKUP"
+fi
+
+if [ -d "$ADVANCED_DB_SYMLINK" ] && [ ! -L "$ADVANCED_DB_SYMLINK" ]; then
+    BACKUP="${SKOL_HOME}/advanced-databases.old-$(date +%Y%m%d%H%M%S)"
+    mv "$ADVANCED_DB_SYMLINK" "$BACKUP"
+    echo "Migrated old ${ADVANCED_DB_SYMLINK} to $BACKUP"
+fi
+
+# Create atomic symlinks to new version
+ln -sfn "${INSTALL_DIR}/bin" "$BIN_SYMLINK"
+ln -sfn "${INSTALL_DIR}/advanced-databases" "$ADVANCED_DB_SYMLINK"
+echo "Activated skol ${VERSION}"
+
+# Install ontology files
+if [ -d /usr/share/skol/ontologies ]; then
+    echo "Installing ontology files..."
+    cp -f /usr/share/skol/ontologies/*.obo ${SKOL_HOME}/data/ontologies/ 2>/dev/null || true
+    chown -R skol:skol ${SKOL_HOME}/data/ontologies
+fi
+
+# Create log directory
+mkdir -p /var/log/skol
+chown skol:skol /var/log/skol
+chmod 775 /var/log/skol
+
+# Create /data/skol directory structure for database storage
+# These directories store persistent data outside the git repository
+SKOL_DATA_ROOT=/data/skol
+mkdir -p ${SKOL_DATA_ROOT}/couchdb/data
+mkdir -p ${SKOL_DATA_ROOT}/couchdb/etc/local.d
+mkdir -p ${SKOL_DATA_ROOT}/redis/data
+mkdir -p ${SKOL_DATA_ROOT}/neo4j/data
+
+# Initialize CouchDB config if not present (preserves existing config on upgrade)
+if [ ! -f ${SKOL_DATA_ROOT}/couchdb/etc/local.ini ]; then
+    echo "Initializing CouchDB configuration..."
+    if [ -d /usr/share/skol/couchdb/etc ]; then
+        cp -a /usr/share/skol/couchdb/etc/* ${SKOL_DATA_ROOT}/couchdb/etc/
+    else
+        # Create minimal local.ini if template not available
+        cat > ${SKOL_DATA_ROOT}/couchdb/etc/local.ini << 'COUCHDB_CONF'
+; CouchDB Configuration Settings
+; Custom settings - will not be overwritten on upgrade
+
+[couchdb]
+;max_document_size = 4294967296 ; bytes
+
+[chttpd]
+;port = 5984
+;bind_address = 127.0.0.1
+
+[admins]
+; Set admin password in local.d/docker.ini or here
+; admin = password
+COUCHDB_CONF
+    fi
+fi
+
+# Set ownership for database directories
+# CouchDB runs as uid 5984, Redis as 999, Neo4j as 7474
+chown -R 5984:5984 ${SKOL_DATA_ROOT}/couchdb
+chown -R 999:999 ${SKOL_DATA_ROOT}/redis
+chown -R 7474:7474 ${SKOL_DATA_ROOT}/neo4j
+
+echo "Database directories initialized at ${SKOL_DATA_ROOT}"
+
+# Add www-data to skol group so Django can write to log directory
+if getent passwd www-data > /dev/null 2>&1; then
+    usermod -a -G skol www-data
+    echo "Added www-data to skol group for log file access"
+fi
+
+# Create Python virtual environment and install dependencies
+echo "Creating Python 3.13 virtual environment at ${SKOL_VENV}..."
+${PYTHON} -m venv ${SKOL_VENV}
+
+echo "Upgrading pip..."
+${SKOL_VENV}/bin/pip install --upgrade pip
+
+# Install Rust via rustup (required for outlines package)
+# The apt rustc/cargo packages are too old (need Rust 1.82+ for edition2024)
+if [ ! -f ${SKOL_HOME}/.cargo/bin/rustc ]; then
+    echo "Installing Rust toolchain via rustup..."
+    export RUSTUP_HOME=${SKOL_HOME}/.rustup
+    export CARGO_HOME=${SKOL_HOME}/.cargo
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+    chown -R skol:skol ${SKOL_HOME}/.rustup ${SKOL_HOME}/.cargo
+fi
+export PATH="${SKOL_HOME}/.cargo/bin:${PATH}"
+
+echo "Installing all packages from local wheels..."
+${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
+
+echo "Installing ML dependencies..."
+${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes pyarrow
+
+echo "Installing constrained decoding dependencies..."
+${SKOL_VENV}/bin/pip install outlines pronto datasets
+
+echo "Installing PDF extraction dependencies..."
+${SKOL_VENV}/bin/pip install PyMuPDF
+
+# Set ownership of venv to skol user
+chown -R skol:skol ${SKOL_VENV}
+
+# Create with_skol wrapper script that activates the venv
+cat > ${INSTALL_DIR}/bin/with_skol << 'EOF'
+#!/bin/bash
+# Wrapper script to run skol commands with proper environment
+# Can be invoked directly: with_skol python script.py
+# Or via symlink: if symlinked as 'foo', runs foo.py
+
+. ~skol/.skol_env
+export MAILTO
+export COUCHDB_USER
+export COUCHDB_PASSWORD
+export COUCHDB_URL
+export INGEST_DATABASE
+export TAXON_DATABASE
+export LOGDIR
+export VERBOSITY
+
+# Redis Configuration
+export REDIS_HOST
+export REDIS_PORT
+export REDIS_USERNAME
+export REDIS_PASSWORD
+export REDIS_TLS
+
+# Email configuration
+export EMAIL_HOST
+export EMAIL_PORT
+export EMAIL_HOST_USER
+export EMAIL_HOST_PASSWORD
+export EMAIL_USE_TLS
+export DEFAULT_FROM_EMAIL
+
+export SKOL_HOME=/opt/skol
+export SKOL_DATA=/opt/skol/data
+export SKOL_MODELS=/opt/skol/models
+export ONTOLOGY_DIR=/opt/skol/data/ontologies
+export RUSTUP_HOME=/opt/skol/.rustup
+export CARGO_HOME=/opt/skol/.cargo
+export VIRTUAL_ENV=/opt/skol/venv
+export PATH="${CARGO_HOME}/bin:${VIRTUAL_ENV}/bin:${PATH}"
+unset PYTHONHOME
+
+# Add skol bin directory to Python path for imports
+export PYTHONPATH="${SKOL_HOME}/bin:${PYTHONPATH}"
+
+# PySpark 4.x requires Java 17+
+# Find Java 17+ installation
+for java_dir in /usr/lib/jvm/java-21-openjdk-amd64 /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-17-openjdk; do
+    if [ -d "$java_dir" ]; then
+        export JAVA_HOME="$java_dir"
+        export PATH="${JAVA_HOME}/bin:${PATH}"
+        break
+    fi
+done
+
+# Get the name this script was invoked as
+SCRIPT_NAME=$(basename "$0")
+
+# If invoked as 'with_skol', run the command as-is
+if [ "$SCRIPT_NAME" = "with_skol" ]; then
+    exec "$@"
+else
+    # Invoked via symlink - run the corresponding .py file
+    exec python "${SKOL_HOME}/bin/${SCRIPT_NAME}.py" "$@"
+fi
+EOF
+chmod 755 ${INSTALL_DIR}/bin/with_skol
+chown skol:skol ${INSTALL_DIR}/bin/with_skol
+
+# Create symlinks for each command in the version-specific bin directory
+for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree manage_fungaria watch_install watch_incremental rebuild_redis; do
+    ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}
+done
+
+# Set ownership of version-specific bin directory
+chown -R skol:skol ${INSTALL_DIR}/bin
+
+# Create command symlinks in /usr/local/bin pointing to the main symlink
+COMMANDS="skol skol-couch-init skol-vocab-tree watch_incremental skol-switch-version"
+for cmd in $COMMANDS; do
+    ln -sf "${BIN_SYMLINK}/${cmd}" "/usr/local/bin/${cmd}"
+done
+
+echo "SKOL ${VERSION} installation complete."
+echo "Commands available via ${BIN_SYMLINK}/:"
+echo "  ingest, train_classifier, predict_classifier, extract_taxa_to_couchdb,"
+echo "  embed_taxa, taxa_to_json, build_vocab_tree, manage_fungaria, watch_install,"
+echo "  watch_incremental, rebuild_redis"
+echo "Or use: ${BIN_SYMLINK}/with_skol <command>"
+echo ""
+echo "Database services:"
+echo "  docker-compose.yaml: ${ADVANCED_DB_SYMLINK}/"
+echo "  Runtime data:        /data/skol/{couchdb,redis,neo4j}/"
+echo "  Start services:      cd ${ADVANCED_DB_SYMLINK} && docker compose up -d"
+echo ""
+echo "Cron jobs installed to /etc/cron.d/skol"
+echo ""
+echo "Version rollback: skol-switch-version skol <version>"
+echo "Available versions: ls /opt/skol/versions/"
+
+#DEBHELPER#
+
+exit 0

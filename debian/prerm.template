@@ -1,0 +1,53 @@
+#!/bin/bash
+set -e
+
+# Version injected at build time
+VERSION="__VERSION__"
+INSTALL_DIR="/opt/skol/versions/${VERSION}"
+
+SKOL_HOME=/opt/skol
+SKOL_VENV=${SKOL_HOME}/venv
+
+# Remove command symlinks in /usr/local/bin
+for cmd in skol skol-couch-init skol-vocab-tree watch_incremental skol-switch-version; do
+    rm -f /usr/local/bin/${cmd} 2>/dev/null || true
+done
+
+# Only remove venv if no other versions are installed
+OTHER_VERSIONS=$(ls -d ${SKOL_HOME}/versions/*/ 2>/dev/null | grep -v "${VERSION}" | wc -l)
+if [ "$OTHER_VERSIONS" -eq 0 ]; then
+    # Remove the with_skol wrapper (it's in the version directory, will be removed with it)
+
+    # Remove the virtual environment only if this is the last version
+    if [ -d "${SKOL_VENV}" ]; then
+        echo "Removing Python virtual environment (last version being removed)..."
+        rm -rf "${SKOL_VENV}"
+    fi
+fi
+
+# Remove this version's directory
+if [ -d "${INSTALL_DIR}" ]; then
+    echo "Removing version ${VERSION}..."
+    rm -rf "${INSTALL_DIR}"
+fi
+
+# If this was the active version, clear the symlinks
+CURRENT_BIN=$(readlink "${SKOL_HOME}/bin" 2>/dev/null || true)
+if [ "$CURRENT_BIN" = "${INSTALL_DIR}/bin" ]; then
+    rm -f "${SKOL_HOME}/bin"
+    rm -f "${SKOL_HOME}/advanced-databases"
+    echo "Cleared symlinks (this was the active version)"
+
+    # Try to activate another version if available
+    LATEST=$(ls -d ${SKOL_HOME}/versions/*/ 2>/dev/null | sort -V | tail -1)
+    if [ -n "$LATEST" ]; then
+        LATEST_VERSION=$(basename "$LATEST")
+        ln -sfn "${SKOL_HOME}/versions/${LATEST_VERSION}/bin" "${SKOL_HOME}/bin"
+        ln -sfn "${SKOL_HOME}/versions/${LATEST_VERSION}/advanced-databases" "${SKOL_HOME}/advanced-databases"
+        echo "Activated fallback version: ${LATEST_VERSION}"
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0

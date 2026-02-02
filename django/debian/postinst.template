@@ -1,0 +1,155 @@
+#!/bin/bash
+set -e
+
+# Version injected at build time
+VERSION="__VERSION__"
+INSTALL_DIR="/opt/skol/django-versions/${VERSION}"
+
+SKOL_HOME=/opt/skol
+SKOL_DJANGO_VENV=${SKOL_HOME}/django-venv
+PYTHON=python3.13
+
+# Symlink target
+DJANGO_SYMLINK="${SKOL_HOME}/django"
+
+# Create skol group if it doesn't exist
+if ! getent group skol > /dev/null 2>&1; then
+    groupadd --system skol
+    echo "Created group 'skol'"
+fi
+
+# Create skol user if it doesn't exist
+if ! getent passwd skol > /dev/null 2>&1; then
+    useradd --system --gid skol --home-dir ${SKOL_HOME} --shell /bin/false skol
+    echo "Created user 'skol'"
+fi
+
+# Create log directory
+mkdir -p /var/log/skol
+chown skol:skol /var/log/skol
+chmod 755 /var/log/skol
+
+# Create opt directory for skol (including bin for wrapper scripts)
+mkdir -p ${SKOL_HOME}
+mkdir -p ${SKOL_HOME}/bin
+mkdir -p ${SKOL_HOME}/staticfiles
+chown -R skol:skol ${SKOL_HOME}
+
+# Migrate old non-versioned layout if needed
+if [ -d "$DJANGO_SYMLINK" ] && [ ! -L "$DJANGO_SYMLINK" ]; then
+    BACKUP="${SKOL_HOME}/django.old-$(date +%Y%m%d%H%M%S)"
+    mv "$DJANGO_SYMLINK" "$BACKUP"
+    echo "Migrated old ${DJANGO_SYMLINK} to $BACKUP"
+fi
+
+# Create atomic symlink to new version
+ln -sfn "$INSTALL_DIR" "$DJANGO_SYMLINK"
+echo "Activated skol-django ${VERSION}"
+
+# Create Python virtual environment for Django and install dependencies
+echo "Creating Python 3.13 virtual environment at ${SKOL_DJANGO_VENV}..."
+${PYTHON} -m venv ${SKOL_DJANGO_VENV}
+
+echo "Upgrading pip..."
+${SKOL_DJANGO_VENV}/bin/pip install --upgrade pip
+
+echo "Installing all packages from local wheels..."
+${SKOL_DJANGO_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
+
+# Set ownership of venv to skol user
+chown -R skol:skol ${SKOL_DJANGO_VENV}
+
+# Create with_skol_django wrapper script that activates the venv
+cat > ${SKOL_HOME}/bin/with_skol_django << 'EOF'
+#!/bin/bash
+# Wrapper script to run skol-django commands with proper environment
+export SKOL_HOME=/opt/skol
+export SKOL_DATA=/opt/skol/data
+export SKOL_MODELS=/opt/skol/models
+export SKOL_DJANGO_ROOT=/opt/skol/django
+export VIRTUAL_ENV=/opt/skol/django-venv
+export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+export DJANGO_SETTINGS_MODULE=skolweb.settings
+unset PYTHONHOME
+exec "$@"
+EOF
+chmod 755 ${SKOL_HOME}/bin/with_skol_django
+chown skol:skol ${SKOL_HOME}/bin/with_skol_django
+
+# Create environment file for systemd service customization
+# Only create if it doesn't exist (preserve user customizations on upgrade)
+if [ ! -f ${DJANGO_SYMLINK}/skol-django.env ]; then
+cat > ${DJANGO_SYMLINK}/skol-django.env << 'EOF'
+# SKOL Django Environment Configuration
+# Edit this file to customize the Django environment
+
+# Set to True when running behind HTTPS reverse proxy
+SKOL_HTTPS=False
+
+# Comma-separated list of trusted origins for CSRF protection
+# Example: https://skol.example.com,https://www.skol.example.com
+CSRF_TRUSTED_ORIGINS=
+
+# URL path prefix when running at a subpath (e.g., /skol)
+# Leave empty if running at the root of a domain
+# Example: FORCE_SCRIPT_NAME=/skol
+FORCE_SCRIPT_NAME=
+
+# Redis configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# CouchDB configuration for PDF attachment retrieval
+COUCHDB_HOST=localhost
+COUCHDB_PORT=5984
+COUCHDB_USER=admin
+COUCHDB_PASSWORD=
+# Optionally set COUCHDB_URL to override host:port
+# COUCHDB_URL=http://localhost:5984
+
+# PostgreSQL configuration (optional - uses SQLite by default)
+# To use PostgreSQL, uncomment and configure POSTGRES_HOST
+# POSTGRES_HOST=localhost
+# POSTGRES_PORT=5432
+# POSTGRES_DB=skol
+# POSTGRES_USER=skol
+# POSTGRES_PASSWORD=
+EOF
+fi
+chown skol:skol ${DJANGO_SYMLINK}/skol-django.env
+chmod 640 ${DJANGO_SYMLINK}/skol-django.env
+
+# Run database migrations
+echo "Running database migrations..."
+cd ${DJANGO_SYMLINK}
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py migrate --noinput
+echo "Database migrations complete."
+
+# Collect static files
+echo "Collecting static files..."
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py collectstatic --noinput
+echo "Static files collected."
+
+# Install systemd service
+if [ -d /run/systemd/system ]; then
+    cp /usr/share/skol-django/skol-django.service /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable skol-django.service
+    # Restart service if it was already running (upgrade case)
+    if systemctl is-active --quiet skol-django.service; then
+        echo "Restarting SKOL Django service..."
+        systemctl restart skol-django.service
+    else
+        echo "SKOL Django service installed. Start with: systemctl start skol-django"
+    fi
+fi
+
+echo "SKOL Django ${VERSION} installation complete."
+echo "Use '/opt/skol/bin/with_skol_django <command>' to run django commands."
+echo ""
+echo "Version rollback: skol-switch-version django <version>"
+echo "Available versions: ls /opt/skol/django-versions/"
+
+#DEBHELPER#
+
+exit 0
