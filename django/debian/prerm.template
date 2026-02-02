@@ -9,55 +9,67 @@ SKOL_HOME=/opt/skol
 SKOL_DJANGO_VENV=${SKOL_HOME}/django-venv
 DJANGO_SYMLINK="${SKOL_HOME}/django"
 
-# Stop and disable the service before removal
-if [ -d /run/systemd/system ]; then
-    systemctl stop skol-django.service 2>/dev/null || true
-    systemctl disable skol-django.service 2>/dev/null || true
-    rm -f /etc/systemd/system/skol-django.service
-    systemctl daemon-reload
-fi
+# Check what action is being performed
+# $1 is: remove, upgrade, deconfigure, or failed-upgrade
+ACTION="$1"
 
-# Only remove venv if no other versions are installed
-OTHER_VERSIONS=$(ls -d ${SKOL_HOME}/django-versions/*/ 2>/dev/null | grep -v "${VERSION}" | wc -l)
-if [ "$OTHER_VERSIONS" -eq 0 ]; then
-    # Remove the wrapper script
-    rm -f ${SKOL_HOME}/bin/with_skol_django 2>/dev/null || true
-
-    # Remove the virtual environment only if this is the last version
-    if [ -d "${SKOL_DJANGO_VENV}" ]; then
-        echo "Removing Python virtual environment (last version being removed)..."
-        rm -rf "${SKOL_DJANGO_VENV}"
+# On upgrade, we keep old versions for rollback - only clean up on remove
+if [ "$ACTION" = "remove" ]; then
+    # Stop and disable the service before removal
+    if [ -d /run/systemd/system ]; then
+        systemctl stop skol-django.service 2>/dev/null || true
+        systemctl disable skol-django.service 2>/dev/null || true
+        rm -f /etc/systemd/system/skol-django.service
+        systemctl daemon-reload
     fi
-fi
 
-# Remove this version's directory
-if [ -d "${INSTALL_DIR}" ]; then
-    echo "Removing version ${VERSION}..."
-    rm -rf "${INSTALL_DIR}"
-fi
+    # Only remove venv if no other versions are installed
+    OTHER_VERSIONS=$(ls -d ${SKOL_HOME}/django-versions/*/ 2>/dev/null | grep -v "${VERSION}" | wc -l)
+    if [ "$OTHER_VERSIONS" -eq 0 ]; then
+        # Remove the wrapper script
+        rm -f ${SKOL_DJANGO_VENV}/bin/with_skol_django 2>/dev/null || true
 
-# If this was the active version, clear the symlink
-CURRENT_DJANGO=$(readlink "${DJANGO_SYMLINK}" 2>/dev/null || true)
-if [ "$CURRENT_DJANGO" = "${INSTALL_DIR}" ]; then
-    rm -f "${DJANGO_SYMLINK}"
-    echo "Cleared symlink (this was the active version)"
-
-    # Try to activate another version if available
-    LATEST=$(ls -d ${SKOL_HOME}/django-versions/*/ 2>/dev/null | sort -V | tail -1)
-    if [ -n "$LATEST" ]; then
-        LATEST_VERSION=$(basename "$LATEST")
-        ln -sfn "${SKOL_HOME}/django-versions/${LATEST_VERSION}" "${DJANGO_SYMLINK}"
-        echo "Activated fallback version: ${LATEST_VERSION}"
-
-        # Re-enable and start the service with the fallback version
-        if [ -d /run/systemd/system ]; then
-            cp /usr/share/skol-django/skol-django.service /etc/systemd/system/
-            systemctl daemon-reload
-            systemctl enable skol-django.service
-            systemctl start skol-django.service
-            echo "Restarted service with fallback version"
+        # Remove the virtual environment only if this is the last version
+        if [ -d "${SKOL_DJANGO_VENV}" ]; then
+            echo "Removing Python virtual environment (last version being removed)..."
+            rm -rf "${SKOL_DJANGO_VENV}"
         fi
     fi
+
+    # Remove this version's directory
+    if [ -d "${INSTALL_DIR}" ]; then
+        echo "Removing version ${VERSION}..."
+        rm -rf "${INSTALL_DIR}"
+    fi
+
+    # If this was the active version, clear the symlink
+    CURRENT_DJANGO=$(readlink "${DJANGO_SYMLINK}" 2>/dev/null || true)
+    if [ "$CURRENT_DJANGO" = "${INSTALL_DIR}" ]; then
+        rm -f "${DJANGO_SYMLINK}"
+        echo "Cleared symlink (this was the active version)"
+
+        # Try to activate another version if available
+        LATEST=$(ls -d ${SKOL_HOME}/django-versions/*/ 2>/dev/null | sort -V | tail -1)
+        if [ -n "$LATEST" ]; then
+            LATEST_VERSION=$(basename "$LATEST")
+            ln -sfn "${SKOL_HOME}/django-versions/${LATEST_VERSION}" "${DJANGO_SYMLINK}"
+            echo "Activated fallback version: ${LATEST_VERSION}"
+
+            # Re-enable and start the service with the fallback version
+            if [ -d /run/systemd/system ]; then
+                cp /usr/share/skol-django/skol-django.service /etc/systemd/system/
+                systemctl daemon-reload
+                systemctl enable skol-django.service
+                systemctl start skol-django.service
+                echo "Restarted service with fallback version"
+            fi
+        fi
+    fi
+fi
+
+# On upgrade, do nothing - keep old version for rollback
+if [ "$ACTION" = "upgrade" ]; then
+    echo "Upgrading skol-django - keeping version ${VERSION} for rollback"
 fi
 
 #DEBHELPER#

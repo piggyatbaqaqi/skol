@@ -59,8 +59,10 @@ ${SKOL_DJANGO_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
 # Set ownership of venv to skol user
 chown -R skol:skol ${SKOL_DJANGO_VENV}
 
-# Create with_skol_django wrapper script that activates the venv
-cat > ${SKOL_HOME}/bin/with_skol_django << 'EOF'
+# Create with_skol_django wrapper script in the persistent venv bin directory
+# Note: /opt/skol/bin is a symlink to versioned skol package, so we use django-venv/bin
+WRAPPER_PATH="${SKOL_DJANGO_VENV}/bin/with_skol_django"
+cat > "$WRAPPER_PATH" << 'EOF'
 #!/bin/bash
 # Wrapper script to run skol-django commands with proper environment
 export SKOL_HOME=/opt/skol
@@ -73,12 +75,13 @@ export DJANGO_SETTINGS_MODULE=skolweb.settings
 unset PYTHONHOME
 exec "$@"
 EOF
-chmod 755 ${SKOL_HOME}/bin/with_skol_django
-chown skol:skol ${SKOL_HOME}/bin/with_skol_django
+chmod 755 "$WRAPPER_PATH"
+chown skol:skol "$WRAPPER_PATH"
 
 # Create a temporary wrapper that points to the NEW version for setup tasks
 # This allows migrations/collectstatic to run against the new code
-cat > ${SKOL_HOME}/bin/with_skol_django_new << EOF
+TEMP_WRAPPER="${SKOL_DJANGO_VENV}/bin/with_skol_django_new"
+cat > "$TEMP_WRAPPER" << EOF
 #!/bin/bash
 export SKOL_HOME=/opt/skol
 export SKOL_DATA=/opt/skol/data
@@ -90,8 +93,8 @@ export DJANGO_SETTINGS_MODULE=skolweb.settings
 unset PYTHONHOME
 exec "\$@"
 EOF
-chmod 755 ${SKOL_HOME}/bin/with_skol_django_new
-chown skol:skol ${SKOL_HOME}/bin/with_skol_django_new
+chmod 755 "$TEMP_WRAPPER"
+chown skol:skol "$TEMP_WRAPPER"
 
 # Create shared config directory
 mkdir -p ${SKOL_HOME}/config
@@ -188,19 +191,23 @@ fi
 # Run database migrations against the NEW version
 echo "Running database migrations..."
 cd ${INSTALL_DIR}
-sudo -u skol ${SKOL_HOME}/bin/with_skol_django_new python manage.py migrate --noinput
+sudo -u skol ${SKOL_DJANGO_VENV}/bin/with_skol_django_new python manage.py migrate --noinput
 echo "Database migrations complete."
 
 # Collect static files from the NEW version
 echo "Collecting static files..."
-sudo -u skol ${SKOL_HOME}/bin/with_skol_django_new python manage.py collectstatic --noinput
+sudo -u skol ${SKOL_DJANGO_VENV}/bin/with_skol_django_new python manage.py collectstatic --noinput
 echo "Static files collected."
 
 # Clean up temporary wrapper
-rm -f ${SKOL_HOME}/bin/with_skol_django_new
+rm -f ${SKOL_DJANGO_VENV}/bin/with_skol_django_new
 
-# Set ownership of the new version directory
+# Set ownership and permissions of the new version directory
 chown -R skol:skol ${INSTALL_DIR}
+# Ensure files are readable (directories 755, files 644, preserve execute bit)
+find ${INSTALL_DIR} -type d -exec chmod 755 {} \;
+find ${INSTALL_DIR} -type f -exec chmod 644 {} \;
+chmod 755 ${INSTALL_DIR}/manage.py
 
 # ============================================================
 # ATOMIC SWITCH: Now that everything is ready, switch symlink
@@ -224,7 +231,7 @@ if [ -d /run/systemd/system ]; then
 fi
 
 echo "SKOL Django ${VERSION} installation complete."
-echo "Use '/opt/skol/bin/with_skol_django <command>' to run django commands."
+echo "Use '/opt/skol/django-venv/bin/with_skol_django <command>' to run django commands."
 echo ""
 echo "Version rollback: skol-switch-version django <version>"
 echo "Available versions: ls /opt/skol/django-versions/"

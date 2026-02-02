@@ -221,8 +221,13 @@ for cmd in ingest train_classifier predict_classifier extract_taxa_to_couchdb em
     ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}
 done
 
-# Set ownership of version-specific bin directory
-chown -R skol:skol ${INSTALL_DIR}/bin
+# Set ownership and permissions of version-specific directories
+chown -R skol:skol ${INSTALL_DIR}
+# Ensure files are readable (directories 755, files 644)
+find ${INSTALL_DIR} -type d -exec chmod 755 {} \;
+find ${INSTALL_DIR} -type f -exec chmod 644 {} \;
+# Make scripts executable
+find ${INSTALL_DIR}/bin -type f -exec chmod 755 {} \;
 
 # ============================================================
 # Update advanced-databases directory (non-versioned, preserves customizations)

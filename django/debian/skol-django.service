@@ -8,7 +8,7 @@ Type=simple
 User=skol
 Group=skol
 WorkingDirectory=/opt/skol/django
-ExecStart=/opt/skol/bin/with_skol_django skol-django runserver 127.0.0.1:8000
+ExecStart=/opt/skol/django-venv/bin/with_skol_django skol-django runserver 127.0.0.1:8000
 Restart=on-failure
 RestartSec=5
 
