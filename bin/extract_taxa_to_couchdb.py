@@ -652,6 +652,8 @@ class TaxonExtractor:
         doc_ids: Optional[list] = None,
         dry_run: bool = False,
         limit: Optional[int] = None,
+        incremental: bool = False,
+        incremental_batch_size: int = 50,
     ) -> DataFrame:
         """
         Run the complete pipeline: load, extract, and save taxa.
@@ -662,12 +664,17 @@ class TaxonExtractor:
         3. Saves Taxa to taxon CouchDB database with idempotent keys
         4. Returns a DataFrame with success/failure results
 
+        When incremental=True, processes documents in batches and saves after each
+        batch completes. This prevents losing progress on crashes.
+
         Args:
             pattern: Pattern for attachment names (default: "*.ann")
                     Matches both article.txt.ann and article.pdf.ann
             doc_ids: If specified, only process these ingest document IDs
             dry_run: If True, extract taxa but don't save to CouchDB
             limit: If specified, process at most this many documents
+            incremental: If True, process in batches and save after each batch
+            incremental_batch_size: Number of documents per batch when incremental=True
 
         Returns:
             DataFrame with columns: doc_id, success, error_message
@@ -680,8 +687,11 @@ class TaxonExtractor:
             >>> results = extractor.run_pipeline(doc_ids=["my_document_id"])
             >>> # Dry run
             >>> results = extractor.run_pipeline(dry_run=True)
+            >>> # Incremental (crash-resistant)
+            >>> results = extractor.run_pipeline(incremental=True, incremental_batch_size=25)
         """
         from pyspark.sql.functions import col
+        from pyspark.sql import Row
 
         # Step 1: Load annotated documents from CouchDB
         annotated_df = self.load_annotated_documents(pattern)
@@ -701,6 +711,94 @@ class TaxonExtractor:
             if self.verbosity >= 1:
                 count = annotated_df.count()
                 print(f"Limited to {limit} documents: {count} attachment(s)")
+
+        # Incremental mode: process in batches, saving after each
+        if incremental:
+            # Get list of distinct doc_ids to process
+            all_doc_ids = [row.doc_id for row in annotated_df.select("doc_id").distinct().collect()]
+            total_docs = len(all_doc_ids)
+
+            if self.verbosity >= 1:
+                print(f"\n{'='*70}")
+                print(f"INCREMENTAL MODE: Processing {total_docs} documents in batches of {incremental_batch_size}")
+                print(f"{'='*70}")
+
+            # Accumulate results across batches
+            all_results = []
+            total_taxa = 0
+            total_saved = 0
+            total_errors = 0
+            batch_num = 0
+
+            # Process in batches
+            for batch_start in range(0, total_docs, incremental_batch_size):
+                batch_num += 1
+                batch_doc_ids = all_doc_ids[batch_start:batch_start + incremental_batch_size]
+                batch_size_actual = len(batch_doc_ids)
+
+                if self.verbosity >= 1:
+                    print(f"\n--- Batch {batch_num}: documents {batch_start + 1}-{batch_start + batch_size_actual} of {total_docs} ---")
+
+                try:
+                    # Filter to this batch's documents
+                    batch_df = annotated_df.filter(col("doc_id").isin(batch_doc_ids))
+
+                    # Extract taxa for this batch
+                    taxa_df = self.extract_taxa(batch_df)
+                    batch_taxa_count = taxa_df.count()
+                    total_taxa += batch_taxa_count
+
+                    if self.verbosity >= 1:
+                        print(f"  Extracted {batch_taxa_count} taxa")
+
+                    if dry_run:
+                        if self.verbosity >= 1:
+                            print(f"  [DRY RUN] Would save {batch_taxa_count} taxa")
+                    else:
+                        # Save this batch
+                        batch_results = self.save_taxa(taxa_df)
+                        batch_successes = batch_results.filter("success = true").count()
+                        batch_failures = batch_results.filter("success = false").count()
+
+                        total_saved += batch_successes
+                        total_errors += batch_failures
+
+                        if self.verbosity >= 1:
+                            print(f"  Saved: {batch_successes}, Errors: {batch_failures}")
+
+                        # Collect results for final DataFrame
+                        all_results.extend(batch_results.collect())
+
+                except Exception as e:
+                    if self.verbosity >= 1:
+                        print(f"  ERROR in batch {batch_num}: {e}")
+                    total_errors += batch_size_actual
+                    # Add error results for this batch
+                    for doc_id in batch_doc_ids:
+                        all_results.append(Row(doc_id=doc_id, success=False, error_message=str(e)))
+
+            # Final summary
+            if self.verbosity >= 1:
+                print(f"\n{'='*70}")
+                print("Incremental Processing Complete!" + (" (DRY RUN)" if dry_run else ""))
+                print(f"{'='*70}")
+                print(f"  Total batches: {batch_num}")
+                print(f"  Documents processed: {total_docs}")
+                print(f"  Taxa extracted: {total_taxa}")
+                if not dry_run:
+                    print(f"  Taxa saved: {total_saved}")
+                    print(f"  Errors: {total_errors}")
+
+            # Return combined results DataFrame
+            if dry_run or not all_results:
+                return self.spark.createDataFrame([], self._save_schema)
+            return self.spark.createDataFrame(all_results, self._save_schema)
+
+        # Non-incremental mode: process all at once (original behavior)
+        if self.verbosity >= 1:
+            total_docs = annotated_df.select("doc_id").distinct().count()
+            print(f"\nProcessing {total_docs} documents (non-incremental mode)")
+            print("  TIP: Use --incremental for crash-resistant batch processing")
 
         # Step 2: Extract taxa from annotated documents
         taxa_df = self.extract_taxa(annotated_df)
@@ -746,11 +844,16 @@ Configuration (via environment variables or command-line arguments):
 
 Work Control Options (from env_config):
   --dry-run               Preview what would be extracted without saving
+  --incremental           Process in batches, saving after each (crash-resistant)
+  --incremental-batch-size N
+                          Documents per batch when --incremental is set (default: 50)
   --limit N               Process at most N documents
   --doc-id ID1,ID2,...    Process only specific document IDs (comma-separated)
 
 Environment Variables:
   DRY_RUN=1               Same as --dry-run
+  INCREMENTAL=1           Same as --incremental
+  INCREMENTAL_BATCH_SIZE=N  Same as --incremental-batch-size
   LIMIT=N                 Same as --limit N
   DOC_IDS=id1,id2,...     Same as --doc-id
 
@@ -827,6 +930,8 @@ Script-specific Options:
     if config['verbosity'] >= 1:
         if config.get('dry_run'):
             print("[DRY RUN MODE]")
+        if config.get('incremental'):
+            print(f"[INCREMENTAL MODE] Batch size: {config.get('incremental_batch_size', 50)}")
         if config.get('doc_ids'):
             print(f"Processing specific doc_ids: {config['doc_ids']}")
         if config.get('limit'):
@@ -837,6 +942,8 @@ Script-specific Options:
         doc_ids=config.get('doc_ids'),
         dry_run=config.get('dry_run', False),
         limit=config.get('limit'),
+        incremental=config.get('incremental', False),
+        incremental_batch_size=config.get('incremental_batch_size', 50),
     )
 
     # Show results
