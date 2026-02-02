@@ -74,6 +74,17 @@ else
     echo "Warning: frontend directory not found, skipping React build"
 fi
 
+# Check that all migrations are up to date
+# This catches missing migrations at build time rather than at install time
+echo "Checking Django migrations are up to date..."
+if python3 manage.py makemigrations --check --dry-run 2>/dev/null; then
+    echo "All migrations are up to date."
+else
+    echo "ERROR: There are model changes without migrations!"
+    echo "Run 'python manage.py makemigrations' and commit the migration files."
+    exit 1
+fi
+
 # Build the wheel
 echo "Building Python wheel..."
 python3 -m build --wheel --outdir dist/
