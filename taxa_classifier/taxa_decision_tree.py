@@ -460,6 +460,233 @@ class TaxaDecisionTreeClassifier:
             if importances[idx] > 0
         ]
 
+    def tree_to_json(
+        self,
+        max_depth: Optional[int] = None,
+        min_samples: int = 1,
+        include_samples: bool = True,
+        include_class_distribution: bool = False
+    ) -> Dict[str, Any]:
+        """Extract the decision tree structure as JSON.
+
+        This allows end users to understand the decision process and identify
+        which features (words/ngrams) are most important for classification.
+
+        Args:
+            max_depth: Maximum depth to export (None for full tree)
+            min_samples: Minimum samples at a node to include it
+            include_samples: Include sample counts at each node
+            include_class_distribution: Include full class distribution at leaves
+
+        Returns:
+            JSON-serializable dict representing the decision tree structure.
+            Each node contains:
+            - For decision nodes:
+                - 'feature': The word/ngram used for splitting
+                - 'threshold': TF-IDF threshold value
+                - 'samples': Number of training samples (if include_samples)
+                - 'left': Left child (feature <= threshold)
+                - 'right': Right child (feature > threshold)
+            - For leaf nodes:
+                - 'prediction': Predicted taxa ID
+                - 'confidence': Confidence score (proportion of majority class)
+                - 'samples': Number of training samples (if include_samples)
+                - 'class_distribution': Full class distribution (if include_class_distribution)
+
+        Example:
+            >>> tree_json = classifier.tree_to_json(max_depth=3)
+            >>> import json
+            >>> print(json.dumps(tree_json, indent=2))
+        """
+        if self.vectorizer is None or self.classifier is None:
+            raise ValueError("Model not trained. Call fit() first.")
+
+        tree = self.classifier.tree_
+        feature_names = self.vectorizer.get_feature_names_out()
+
+        def build_node(node_id: int, current_depth: int = 0) -> Optional[Dict[str, Any]]:
+            """Recursively build tree node structure."""
+            # Check depth limit
+            if max_depth is not None and current_depth > max_depth:
+                return None
+
+            # Check sample count
+            n_samples = int(tree.n_node_samples[node_id])
+            if n_samples < min_samples:
+                return None
+
+            # Get class distribution at this node
+            class_counts = tree.value[node_id][0]
+            majority_class_idx = int(np.argmax(class_counts))
+            majority_count = int(class_counts[majority_class_idx])
+            confidence = majority_count / n_samples if n_samples > 0 else 0
+
+            # Check if this is a leaf node
+            left_child = tree.children_left[node_id]
+            right_child = tree.children_right[node_id]
+            is_leaf = left_child == right_child  # Both are -1 for leaves
+
+            if is_leaf:
+                # Leaf node
+                node = {
+                    'type': 'leaf',
+                    'prediction': self.taxa_mapping.get(majority_class_idx, f'class_{majority_class_idx}'),
+                    'confidence': round(confidence, 4)
+                }
+
+                if include_samples:
+                    node['samples'] = n_samples
+
+                if include_class_distribution:
+                    # Include top classes with their counts
+                    distribution = []
+                    sorted_indices = np.argsort(class_counts)[::-1]
+                    for idx in sorted_indices[:5]:  # Top 5 classes
+                        count = int(class_counts[idx])
+                        if count > 0:
+                            distribution.append({
+                                'taxa_id': self.taxa_mapping.get(int(idx), f'class_{idx}'),
+                                'count': count,
+                                'proportion': round(count / n_samples, 4)
+                            })
+                    node['class_distribution'] = distribution
+
+                return node
+            else:
+                # Decision node
+                feature_idx = tree.feature[node_id]
+                threshold = tree.threshold[node_id]
+
+                # Get feature name
+                if feature_idx >= 0 and feature_idx < len(feature_names):
+                    feature_name = feature_names[feature_idx]
+                else:
+                    feature_name = f'feature_{feature_idx}'
+
+                node = {
+                    'type': 'decision',
+                    'feature': feature_name,
+                    'threshold': round(float(threshold), 6),
+                    'question': f'Does the description contain "{feature_name}" (TF-IDF > {threshold:.4f})?'
+                }
+
+                if include_samples:
+                    node['samples'] = n_samples
+
+                # Build child nodes
+                left_node = build_node(left_child, current_depth + 1)
+                right_node = build_node(right_child, current_depth + 1)
+
+                # Label children with interpretable names
+                node['no'] = left_node  # feature <= threshold (absent or low)
+                node['yes'] = right_node  # feature > threshold (present or high)
+
+                return node
+
+        # Build tree starting from root (node 0)
+        tree_structure = build_node(0)
+
+        # Add metadata
+        result = {
+            'metadata': {
+                'n_classes': int(len(self.taxa_mapping)),
+                'n_features': int(len(feature_names)),
+                'tree_depth': int(self.classifier.get_depth()),
+                'tree_leaves': int(self.classifier.get_n_leaves()),
+                'exported_max_depth': max_depth
+            },
+            'tree': tree_structure
+        }
+
+        return result
+
+    def tree_to_rules(
+        self,
+        max_rules: int = 100,
+        min_confidence: float = 0.5,
+        min_samples: int = 1
+    ) -> List[Dict[str, Any]]:
+        """Extract decision rules from the tree as a list.
+
+        This provides a flattened view of the decision paths, making it easier
+        to understand what features lead to specific predictions.
+
+        Args:
+            max_rules: Maximum number of rules to return
+            min_confidence: Minimum confidence for a rule to be included
+            min_samples: Minimum samples at leaf for rule to be included
+
+        Returns:
+            List of rules, each containing:
+            - 'conditions': List of conditions (feature comparisons)
+            - 'prediction': Predicted taxa ID
+            - 'confidence': Confidence score
+            - 'samples': Number of training samples
+
+        Example:
+            >>> rules = classifier.tree_to_rules(max_rules=10)
+            >>> for rule in rules:
+            ...     print(f"IF {' AND '.join(rule['conditions'])} THEN {rule['prediction']}")
+        """
+        if self.vectorizer is None or self.classifier is None:
+            raise ValueError("Model not trained. Call fit() first.")
+
+        tree = self.classifier.tree_
+        feature_names = self.vectorizer.get_feature_names_out()
+        rules = []
+
+        def extract_rules(node_id: int, conditions: List[str]):
+            """Recursively extract rules from tree paths."""
+            if len(rules) >= max_rules:
+                return
+
+            n_samples = int(tree.n_node_samples[node_id])
+            if n_samples < min_samples:
+                return
+
+            left_child = tree.children_left[node_id]
+            right_child = tree.children_right[node_id]
+            is_leaf = left_child == right_child
+
+            if is_leaf:
+                # Extract rule from leaf
+                class_counts = tree.value[node_id][0]
+                majority_class_idx = int(np.argmax(class_counts))
+                majority_count = int(class_counts[majority_class_idx])
+                confidence = majority_count / n_samples if n_samples > 0 else 0
+
+                if confidence >= min_confidence:
+                    rules.append({
+                        'conditions': conditions.copy() if conditions else ['(no conditions)'],
+                        'prediction': self.taxa_mapping.get(majority_class_idx, f'class_{majority_class_idx}'),
+                        'confidence': round(confidence, 4),
+                        'samples': n_samples
+                    })
+            else:
+                # Decision node - recurse
+                feature_idx = tree.feature[node_id]
+                threshold = tree.threshold[node_id]
+
+                if feature_idx >= 0 and feature_idx < len(feature_names):
+                    feature_name = feature_names[feature_idx]
+                else:
+                    feature_name = f'feature_{feature_idx}'
+
+                # Left branch: feature <= threshold (low/absent)
+                left_conditions = conditions + [f'"{feature_name}" is LOW (≤{threshold:.4f})']
+                extract_rules(left_child, left_conditions)
+
+                # Right branch: feature > threshold (high/present)
+                right_conditions = conditions + [f'"{feature_name}" is HIGH (>{threshold:.4f})']
+                extract_rules(right_child, right_conditions)
+
+        extract_rules(0, [])
+
+        # Sort by confidence descending
+        rules.sort(key=lambda r: (-r['confidence'], -r['samples']))
+
+        return rules[:max_rules]
+
     def save_model(self, filepath: str) -> None:
         """Save the trained model to disk.
 
