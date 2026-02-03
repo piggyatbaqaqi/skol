@@ -46,24 +46,20 @@ def validate_annotation(content: str, doc_id: str, att_name: str) -> Tuple[bool,
     Returns:
         Tuple of (is_valid, error_message_or_None)
     """
-    try:
-        # Import the line parsing module
-        from line import lineify
+    from line import Line
 
-        # Create mock source info for line parsing
-        lines = content.split('\n')
+    lines = content.split('\n')
 
-        # lineify expects an iterable of strings and builds Line objects
-        # It will raise ValueError if annotation markup is malformed
-        line_objects = list(lineify(lines, source=f"{doc_id}/{att_name}"))
+    for line_num, line_text in enumerate(lines, 1):
+        try:
+            # Line constructor validates annotation markup and raises ValueError
+            # if markers like [@ or #Label*] are malformed
+            line_obj = Line(line_text)
+        except ValueError as e:
+            # Malformed annotation - return the error with line context
+            return False, f"{doc_id}/{att_name}:{line_num}: {e}"
 
-        return True, None
-
-    except ValueError as e:
-        return False, str(e)
-    except Exception as e:
-        # Other errors - might be valid but can't parse
-        return False, f"Unexpected error: {e}"
+    return True, None
 
 
 def process_document(
