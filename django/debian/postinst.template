@@ -71,6 +71,9 @@ export SKOL_MODELS=/opt/skol/models
 export SKOL_DJANGO_ROOT=/opt/skol/django
 export VIRTUAL_ENV=/opt/skol/django-venv
 export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+# CRITICAL: Add SKOL_DJANGO_ROOT to PYTHONPATH so Python imports the deployed
+# version of skolweb instead of the one in site-packages from the wheel
+export PYTHONPATH="${SKOL_DJANGO_ROOT}:${PYTHONPATH}"
 export DJANGO_SETTINGS_MODULE=skolweb.settings
 unset PYTHONHOME
 exec "$@"
@@ -89,6 +92,9 @@ export SKOL_MODELS=/opt/skol/models
 export SKOL_DJANGO_ROOT=${INSTALL_DIR}
 export VIRTUAL_ENV=/opt/skol/django-venv
 export PATH="\${VIRTUAL_ENV}/bin:\${PATH}"
+# CRITICAL: Add SKOL_DJANGO_ROOT to PYTHONPATH so Python imports the deployed
+# version of skolweb instead of the one in site-packages from the wheel
+export PYTHONPATH="\${SKOL_DJANGO_ROOT}:\${PYTHONPATH}"
 export DJANGO_SETTINGS_MODULE=skolweb.settings
 unset PYTHONHOME
 exec "\$@"
