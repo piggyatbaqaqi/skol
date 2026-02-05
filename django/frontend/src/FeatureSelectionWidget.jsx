@@ -376,8 +376,13 @@ const FeatureSelectionWidget = ({
       const end = textarea.selectionEnd;
       const value = textarea.value;
 
-      textarea.value = value.substring(0, start) + text + value.substring(end);
-      textarea.selectionStart = textarea.selectionEnd = start + text.length;
+      // If text before cursor doesn't end with ";" (and optional whitespace), prepend "; "
+      const before = value.substring(0, start);
+      const separator = before.length > 0 && !/;\s*$/.test(before) ? '; ' : '';
+      const insert = separator + text;
+
+      textarea.value = value.substring(0, start) + insert + value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + insert.length;
       textarea.focus();
 
       const event = new Event('input', { bubbles: true });
