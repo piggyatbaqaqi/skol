@@ -15,6 +15,14 @@ import VocabTreeWidget from './VocabTreeWidget';
 import './FeatureSelectionWidget.css';
 
 /**
+ * Read the Django CSRF token from the cookie.
+ */
+function getCSRFToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]*)/);
+  return match ? match[1] : '';
+}
+
+/**
  * FeatureBrowserPanel - displays ranked features as checkboxes
  *
  * @param {Object} props
@@ -262,7 +270,11 @@ const FeatureSelectionWidget = ({
     try {
       const response = await fetch(`${apiBaseUrl}/${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken(),
+        },
+        credentials: 'same-origin',
         body: JSON.stringify({ taxa_ids: ids, top_n: 30, max_depth: 10 }),
       });
 
