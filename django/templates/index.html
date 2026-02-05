@@ -790,21 +790,18 @@
             padding: 10px 0;
         }
 
-        /* Vocab Tree Widget Integration */
-        #vocab-tree-container {
+        /* Feature Selection Widget Integration */
+        #feature-selection-container {
             flex-shrink: 0;
         }
 
-        #vocab-tree-container .vocab-tree-widget {
-            background: #f0f4ff;
-            border-color: #667eea;
-        }
-
-        #vocab-tree-container .vocab-tree-add-btn {
+        #feature-selection-container .vocab-tree-add-btn,
+        #feature-selection-container .feature-add-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        #vocab-tree-container .vocab-tree-add-btn:hover:not(:disabled) {
+        #feature-selection-container .vocab-tree-add-btn:hover:not(:disabled),
+        #feature-selection-container .feature-add-btn:hover:not(:disabled) {
             background: linear-gradient(135deg, #5a6fd6 0%, #6a4292 100%);
         }
 
@@ -814,12 +811,13 @@
                 flex-direction: column !important;
             }
 
-            #vocab-tree-container {
+            #feature-selection-container {
                 width: 100%;
                 margin-top: 15px;
             }
 
-            #vocab-tree-container .vocab-tree-widget {
+            #feature-selection-container .vocab-tree-widget,
+            #feature-selection-container .feature-selection-widget {
                 max-width: 100%;
             }
         }
@@ -1104,8 +1102,8 @@
                     <label for="prompt">Description Text {% if user.is_authenticated %}<span id="descriptionNote" class="field-note" style="display: none;">(linked to collection)</span>{% endif %}</label>
                     <div style="display: flex; gap: 20px; align-items: flex-start;">
                         <textarea id="prompt" name="prompt" placeholder="Enter a taxonomic description to search for similar entries..." required style="flex: 1;"></textarea>
-                        <div id="vocab-tree-container"
-                             data-vocab-tree-widget
+                        <div id="feature-selection-container"
+                             data-feature-selection-widget
                              data-api-base-url="{{ SCRIPT_NAME }}/api"
                              data-description-target="#prompt">
                         </div>
@@ -1774,6 +1772,51 @@
             sessionStorage.setItem('guest_collection_notice_shown', 'true');
         }
 
+        // Trigger a deeper search (higher k) and store taxa IDs in cookie
+        // for the feature selection widget to consume
+        function triggerDeeperSearch(prompt, embedding, k) {
+            const deeperK = Math.max(k, 6);
+            fetch(`${API_BASE}/api/search/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    prompt: prompt,
+                    embedding_name: embedding,
+                    k: deeperK
+                })
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.results && data.results.length > 0) {
+                    const taxaIds = data.results
+                        .map(r => r.taxon_id)
+                        .filter(Boolean);
+                    if (taxaIds.length > 0) {
+                        const cookieData = {
+                            taxa_ids: taxaIds,
+                            prompt: prompt.substring(0, 50),
+                            timestamp: Date.now()
+                        };
+                        document.cookie = 'skol_deeper_search=' +
+                            encodeURIComponent(JSON.stringify(cookieData)) +
+                            '; max-age=3600; path=/; SameSite=Lax';
+                        document.dispatchEvent(
+                            new CustomEvent('deeper-search-complete', {
+                                detail: cookieData
+                            })
+                        );
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn('Deeper search failed (non-critical):', err);
+            });
+        }
+
         // Handle form submission
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1834,6 +1877,9 @@
                 }
 
                 displayResults(data);
+
+                // Trigger deeper search for feature selection widget
+                triggerDeeperSearch(prompt, embedding, k);
 
                 // Save search results to history (description already saved above)
                 if (IS_AUTHENTICATED && activeCollectionId && data.results && data.results.length > 0) {
@@ -2117,8 +2163,8 @@
     <!-- Code Block Component -->
     <script src="{% static 'js/code-block.bundle.js' %}"></script>
 
-    <!-- Vocabulary Tree Widget -->
-    <script src="{% static 'js/vocab-tree.bundle.js' %}"></script>
+    <!-- Feature Selection Widget (includes Vocabulary Tree) -->
+    <script src="{% static 'js/feature-selection.bundle.js' %}"></script>
 
     <!-- React Select Widgets -->
     <script src="{% static 'js/collection-select.bundle.js' %}"></script>

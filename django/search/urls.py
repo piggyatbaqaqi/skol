@@ -26,6 +26,9 @@ from .views import (
     VocabTreeVersionsView,
     VocabTreeChildrenView,
     BuildVocabTreeView,
+    # Classifier views
+    TextClassifierView,
+    JsonClassifierView,
 )
 
 app_name = 'search'
@@ -74,4 +77,8 @@ urlpatterns = [
     path('vocab-tree/versions/', VocabTreeVersionsView.as_view(), name='vocab-tree-versions'),
     path('vocab-tree/children/', VocabTreeChildrenView.as_view(), name='vocab-tree-children'),
     path('vocab-tree/build/', BuildVocabTreeView.as_view(), name='vocab-tree-build'),
+
+    # Classifier endpoints
+    path('classifier/text/', TextClassifierView.as_view(), name='classifier-text'),
+    path('classifier/json/', JsonClassifierView.as_view(), name='classifier-json'),
 ]

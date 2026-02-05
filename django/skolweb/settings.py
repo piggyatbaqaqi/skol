@@ -224,6 +224,10 @@ VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_taxa_full_dev')
 # Path to SKOL bin scripts (embed_taxa.py, build_vocab_tree.py, etc.)
 SKOL_BIN_PATH = os.environ.get('SKOL_BIN_PATH', '/opt/skol/bin')
 
+# Path to the skol source root (parent of django/ directory)
+# Used for importing taxa_classifier and other non-Django modules
+SKOL_ROOT_PATH = os.environ.get('SKOL_ROOT_PATH', str(Path(BASE_DIR).parent))
+
 # CouchDB configuration
 COUCHDB_HOST = os.environ.get('COUCHDB_HOST', 'localhost')
 COUCHDB_PORT = int(os.environ.get('COUCHDB_PORT', '5984'))

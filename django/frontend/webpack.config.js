@@ -9,6 +9,7 @@ module.exports = {
     'fungarium-select': './src/fungariumSelectEntry.js',
     'identifier-type-select': './src/identifierTypeSelectEntry.js',
     'collection-select': './src/collectionSelectEntry.js',
+    'feature-selection': './src/featureSelectionEntry.js',
   },
   output: {
     filename: '[name].bundle.js',

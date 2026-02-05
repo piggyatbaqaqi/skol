@@ -21,6 +21,8 @@ The application consists of:
    - `/api/taxa/<taxa_id>/` - Get taxa document info
    - `/api/taxa/<taxa_id>/pdf/` - Get PDF from taxa source
    - `/api/pdf/<db>/<doc_id>/` - Direct PDF attachment access
+   - `/api/classifier/text/` - Text feature classifier (TF-IDF on descriptions)
+   - `/api/classifier/json/` - JSON feature classifier (TF-IDF on structured annotations)
 
 2. **Web Interface** (`templates/index.html`):
    - Input text box for description
@@ -153,6 +155,97 @@ Performs semantic search using the specified embedding model.
     "k": 3
 }
 ```
+
+### Text Feature Classifier
+
+**POST** `/api/classifier/text/`
+
+Trains a decision tree classifier on taxa descriptions using TF-IDF encoding and returns ranked feature importances. Uses the `skol_taxa_dev` CouchDB database.
+
+**Request:**
+```json
+{
+    "taxa_ids": ["taxon_001...", "taxon_002...", "taxon_003..."],
+    "top_n": 30,
+    "max_depth": 10
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `taxa_ids` | array | (required) | List of taxon document IDs to train on |
+| `top_n` | int | 30 | Number of top features to return |
+| `max_depth` | int | 10 | Maximum depth for decision tree and JSON export |
+
+**Response:**
+```json
+{
+    "features": [
+        {
+            "name": "brown",
+            "importance": 0.25,
+            "display_text": "brown"
+        },
+        {
+            "name": "spores globose",
+            "importance": 0.18,
+            "display_text": "spores globose"
+        }
+    ],
+    "metadata": {
+        "n_classes": 5,
+        "n_features": 1200,
+        "tree_depth": 8,
+        "taxa_count": 6
+    },
+    "tree_json": {
+        "metadata": { "..." : "..." },
+        "tree": { "..." : "..." }
+    }
+}
+```
+
+### JSON Feature Classifier
+
+**POST** `/api/classifier/json/`
+
+Trains a decision tree classifier on structured JSON annotations using TF-IDF on flattened key=value tokens. Uses the `skol_taxa_full_dev` CouchDB database.
+
+**Request:** Same format as Text Feature Classifier.
+
+**Response:**
+```json
+{
+    "features": [
+        {
+            "name": "taxon_name_genus=Aspergillus",
+            "importance": 0.30,
+            "display_text": "taxon name genus Aspergillus"
+        },
+        {
+            "name": "morphology_spore_shape=globose",
+            "importance": 0.20,
+            "display_text": "morphology spore shape globose"
+        }
+    ],
+    "metadata": {
+        "n_classes": 5,
+        "n_features": 800,
+        "tree_depth": 6,
+        "taxa_count": 6
+    },
+    "tree_json": {
+        "metadata": { "..." : "..." },
+        "tree": { "..." : "..." }
+    }
+}
+```
+
+Note: For the JSON classifier, `display_text` converts the raw feature name from `key=value` format to natural language by replacing `=` and `_` with spaces.
+
+**Error responses (both endpoints):**
+- `400` - Missing or empty `taxa_ids`, or fewer than 2 valid documents
+- `500` - Classifier training failure or CouchDB connection error
 
 ## Web Interface
 

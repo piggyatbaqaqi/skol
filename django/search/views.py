@@ -1694,3 +1694,160 @@ class VocabTreeChildrenView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class TextClassifierView(APIView):
+    """REST interface for TaxaDecisionTreeClassifier (description text features).
+
+    POST /api/classifier/text/
+    Body: { taxa_ids: [...], top_n: 30, max_depth: 10 }
+    Response: {
+        features: [{name, importance, display_text}, ...],
+        metadata: {n_classes, n_features, tree_depth, taxa_count},
+        tree_json: {...}
+    }
+    """
+
+    def post(self, request):
+        taxa_ids = request.data.get('taxa_ids', [])
+        top_n = request.data.get('top_n', 30)
+        max_depth = request.data.get('max_depth', 10)
+
+        if not taxa_ids or not isinstance(taxa_ids, list):
+            return Response(
+                {'error': 'taxa_ids must be a non-empty list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Lazy import to avoid loading ML dependencies at startup
+            import sys
+            skol_root = settings.SKOL_ROOT_PATH
+            if skol_root not in sys.path:
+                sys.path.insert(0, skol_root)
+            from taxa_classifier.taxa_decision_tree import TaxaDecisionTreeClassifier
+
+            classifier = TaxaDecisionTreeClassifier(
+                couchdb_url=settings.COUCHDB_URL,
+                database='skol_taxa_dev',
+                username=settings.COUCHDB_USERNAME,
+                password=settings.COUCHDB_PASSWORD,
+                max_depth=max_depth,
+                verbosity=0,
+            )
+
+            stats = classifier.fit(taxa_ids=taxa_ids, test_size=0.0)
+            importances = classifier.get_feature_importances(top_n=top_n)
+            tree_json = classifier.tree_to_json(max_depth=max_depth)
+
+            features = [
+                {
+                    'name': name,
+                    'importance': float(importance),
+                    'display_text': name,
+                }
+                for name, importance in importances
+            ]
+
+            return Response({
+                'features': features,
+                'metadata': {
+                    'n_classes': stats['n_classes'],
+                    'n_features': stats['n_features'],
+                    'tree_depth': stats['tree_depth'],
+                    'taxa_count': len(taxa_ids),
+                },
+                'tree_json': tree_json,
+            })
+
+        except ValueError as e:
+            logger.warning(f"Text classifier validation error: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Text classifier error: {e}\n{traceback.format_exc()}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class JsonClassifierView(APIView):
+    """REST interface for TaxaJsonClassifier (structured JSON annotation features).
+
+    POST /api/classifier/json/
+    Body: { taxa_ids: [...], top_n: 30, max_depth: 10 }
+    Response: {
+        features: [{name, importance, display_text}, ...],
+        metadata: {n_classes, n_features, tree_depth, taxa_count},
+        tree_json: {...}
+    }
+    """
+
+    def post(self, request):
+        taxa_ids = request.data.get('taxa_ids', [])
+        top_n = request.data.get('top_n', 30)
+        max_depth = request.data.get('max_depth', 10)
+
+        if not taxa_ids or not isinstance(taxa_ids, list):
+            return Response(
+                {'error': 'taxa_ids must be a non-empty list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Lazy import to avoid loading ML dependencies at startup
+            import sys
+            skol_root = settings.SKOL_ROOT_PATH
+            if skol_root not in sys.path:
+                sys.path.insert(0, skol_root)
+            from taxa_classifier.taxa_json_classifier import TaxaJsonClassifier
+
+            classifier = TaxaJsonClassifier(
+                couchdb_url=settings.COUCHDB_URL,
+                database='skol_taxa_full_dev',
+                username=settings.COUCHDB_USERNAME,
+                password=settings.COUCHDB_PASSWORD,
+                max_depth=max_depth,
+                verbosity=0,
+            )
+
+            stats = classifier.fit(taxa_ids=taxa_ids, test_size=0.0)
+            importances = classifier.get_feature_importances(top_n=top_n)
+            tree_json = classifier.tree_to_json(max_depth=max_depth)
+
+            features = [
+                {
+                    'name': name,
+                    'importance': float(importance),
+                    # Convert key=value to "key value" with _ replaced by spaces
+                    'display_text': name.replace('=', ' ').replace('_', ' '),
+                }
+                for name, importance in importances
+            ]
+
+            return Response({
+                'features': features,
+                'metadata': {
+                    'n_classes': stats['n_classes'],
+                    'n_features': stats['n_features'],
+                    'tree_depth': stats['tree_depth'],
+                    'taxa_count': len(taxa_ids),
+                },
+                'tree_json': tree_json,
+            })
+
+        except ValueError as e:
+            logger.warning(f"JSON classifier validation error: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"JSON classifier error: {e}\n{traceback.format_exc()}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
