@@ -232,12 +232,27 @@ COUCHDB_PASSWORD = os.environ.get('COUCHDB_PASSWORD', 'SU2orange!')
 COUCHDB_URL = os.environ.get('COUCHDB_URL', f'http://{COUCHDB_HOST}:{COUCHDB_PORT}')
 
 # Email Configuration
+# Set USE_LOCAL_SMTP=true to use localhost SMTP (port 25, no auth, no TLS)
+# This is useful for servers with a local mail transfer agent (postfix, sendmail)
+USE_LOCAL_SMTP = os.environ.get('USE_LOCAL_SMTP', '').lower() in ('1', 'true', 'yes')
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+
+if USE_LOCAL_SMTP:
+    # Local SMTP configuration (e.g., postfix on localhost)
+    EMAIL_HOST = 'localhost'
+    EMAIL_PORT = 25
+    EMAIL_HOST_USER = ''
+    EMAIL_HOST_PASSWORD = ''
+    EMAIL_USE_TLS = False
+else:
+    # Remote SMTP configuration (e.g., Gmail, SendGrid)
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@skol.example.com')
 
 # Contact/Feedback Email Recipients
