@@ -167,7 +167,9 @@ Trains a decision tree classifier on taxa descriptions using TF-IDF encoding and
 {
     "taxa_ids": ["taxon_001...", "taxon_002...", "taxon_003..."],
     "top_n": 30,
-    "max_depth": 10
+    "max_depth": 10,
+    "min_df": 1,
+    "max_df": 1.0
 }
 ```
 
@@ -176,6 +178,8 @@ Trains a decision tree classifier on taxa descriptions using TF-IDF encoding and
 | `taxa_ids` | array | (required) | List of taxon document IDs to train on |
 | `top_n` | int | 30 | Number of top features to return |
 | `max_depth` | int | 10 | Maximum depth for decision tree and JSON export |
+| `min_df` | int | 1 | Minimum document frequency for TF-IDF terms |
+| `max_df` | float | 1.0 | Maximum document frequency fraction (0.0-1.0) for TF-IDF terms |
 
 **Response:**
 ```json

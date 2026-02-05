@@ -151,6 +151,7 @@ const FeatureBrowserPanel = ({
 
       <div className="feature-actions">
         <button
+          type="button"
           className="feature-add-btn"
           onClick={onAddToDescription}
           disabled={selectedFeatures.size === 0}
@@ -176,12 +177,14 @@ const TABS = [
  * @param {Function} props.onAddToDescription - Callback when "Add" is clicked
  * @param {React.RefObject} props.descriptionRef - Ref to description textarea
  * @param {string} props.version - Optional vocab tree version
+ * @param {string} props.settingsSelector - CSS selector for settings container to observe
  */
 const FeatureSelectionWidget = ({
   apiBaseUrl = '/api',
   onAddToDescription,
   descriptionRef,
   version,
+  settingsSelector,
 }) => {
   const [activeTab, setActiveTab] = useState('vocabulary');
 
@@ -204,6 +207,23 @@ const FeatureSelectionWidget = ({
 
   // Track which classifiers have been fetched for the current taxa set
   const fetchedForRef = useRef({ text: null, json: null });
+
+  /**
+   * Read classifier settings from DOM inputs (settings menu).
+   * Falls back to sensible defaults if inputs are not found.
+   */
+  const readClassifierSettings = useCallback(() => {
+    const topNEl = document.getElementById('featureTopN');
+    const minDfEl = document.getElementById('featureMinDf');
+    const maxDfEl = document.getElementById('featureMaxDf');
+    const maxDepthEl = document.getElementById('featureMaxDepth');
+    return {
+      top_n: topNEl ? parseInt(topNEl.value, 10) || 30 : 30,
+      min_df: minDfEl ? parseInt(minDfEl.value, 10) || 1 : 1,
+      max_df: maxDfEl ? parseFloat(maxDfEl.value) || 1.0 : 1.0,
+      max_depth: maxDepthEl ? parseInt(maxDepthEl.value, 10) || 10 : 10,
+    };
+  }, []);
 
   /**
    * Read taxa IDs from the deeper search cookie
@@ -268,6 +288,7 @@ const FeatureSelectionWidget = ({
     setErr(null);
 
     try {
+      const settings = readClassifierSettings();
       const response = await fetch(`${apiBaseUrl}/${endpoint}`, {
         method: 'POST',
         headers: {
@@ -275,7 +296,13 @@ const FeatureSelectionWidget = ({
           'X-CSRFToken': getCSRFToken(),
         },
         credentials: 'same-origin',
-        body: JSON.stringify({ taxa_ids: ids, top_n: 30, max_depth: 10 }),
+        body: JSON.stringify({
+          taxa_ids: ids,
+          top_n: settings.top_n,
+          max_depth: settings.max_depth,
+          min_df: settings.min_df,
+          max_df: settings.max_df,
+        }),
       });
 
       if (!response.ok) {
@@ -293,7 +320,7 @@ const FeatureSelectionWidget = ({
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, readClassifierSettings]);
 
   /**
    * Fetch features when switching to a feature tab (lazy loading)
@@ -394,6 +421,7 @@ const FeatureSelectionWidget = ({
       <div role="tablist" aria-label="Feature selection mode" className="feature-tabs">
         {TABS.map(tab => (
           <button
+            type="button"
             key={tab.id}
             id={`tab-${tab.id}`}
             ref={el => { tabRefs.current[tab.id] = el; }}

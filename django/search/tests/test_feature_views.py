@@ -255,7 +255,7 @@ class TestTextClassifierViewFunctional(TestCase):
 
     @patch('search.views.settings')
     def test_custom_parameters_passed_through(self, mock_settings) -> None:
-        """Custom top_n and max_depth should be passed to classifier."""
+        """Custom top_n, max_depth, min_df, max_df should be passed to classifier."""
         mock_settings.SKOL_ROOT_PATH = '/fake/path'
         mock_settings.COUCHDB_URL = 'http://localhost:5984'
         mock_settings.COUCHDB_USERNAME = 'admin'
@@ -276,6 +276,8 @@ class TestTextClassifierViewFunctional(TestCase):
                     'taxa_ids': ['id1', 'id2'],
                     'top_n': 15,
                     'max_depth': 7,
+                    'min_df': 2,
+                    'max_df': 0.8,
                 }),
                 content_type='application/json',
             )
@@ -283,8 +285,38 @@ class TestTextClassifierViewFunctional(TestCase):
         assert response.status_code == 200
         ctor_kwargs = mock_cls.call_args[1]
         assert ctor_kwargs['max_depth'] == 7
+        assert ctor_kwargs['min_df'] == 2
+        assert ctor_kwargs['max_df'] == 0.8
         mock_classifier.get_feature_importances.assert_called_once_with(top_n=15)
         mock_classifier.tree_to_json.assert_called_once_with(max_depth=7)
+
+    @patch('search.views.settings')
+    def test_default_min_df_max_df(self, mock_settings) -> None:
+        """Default min_df should be 1 and max_df should be 1.0."""
+        mock_settings.SKOL_ROOT_PATH = '/fake/path'
+        mock_settings.COUCHDB_URL = 'http://localhost:5984'
+        mock_settings.COUCHDB_USERNAME = 'admin'
+        mock_settings.COUCHDB_PASSWORD = 'password'
+
+        mock_classifier = _mock_text_classifier()
+        mock_cls = MagicMock(return_value=mock_classifier)
+
+        with patch.dict('sys.modules', {
+            'taxa_classifier': MagicMock(),
+            'taxa_classifier.taxa_decision_tree': MagicMock(
+                TaxaDecisionTreeClassifier=mock_cls
+            ),
+        }):
+            response = self.client.post(
+                self.url,
+                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                content_type='application/json',
+            )
+
+        assert response.status_code == 200
+        ctor_kwargs = mock_cls.call_args[1]
+        assert ctor_kwargs['min_df'] == 1
+        assert ctor_kwargs['max_df'] == 1.0
 
     @patch('search.views.settings')
     def test_classifier_uses_correct_database(self, mock_settings) -> None:

@@ -1036,6 +1036,23 @@
                         <label for="k">Number of Results (k)</label>
                         <input type="number" id="k" name="k" value="3" min="1" max="20" required>
                     </div>
+                    <div class="settings-menu-header" style="margin-top: 8px;">Feature Settings</div>
+                    <div class="form-group">
+                        <label for="featureTopN">Feature Count</label>
+                        <input type="number" id="featureTopN" value="30" min="5" max="100" title="Number of top features to return from the classifier">
+                    </div>
+                    <div class="form-group">
+                        <label for="featureMaxDepth">Tree Depth</label>
+                        <input type="number" id="featureMaxDepth" value="10" min="1" max="50" title="Maximum depth for the decision tree">
+                    </div>
+                    <div class="form-group">
+                        <label for="featureMinDf">Min Doc Frequency</label>
+                        <input type="number" id="featureMinDf" value="1" min="1" max="10" title="Minimum number of documents a term must appear in">
+                    </div>
+                    <div class="form-group">
+                        <label for="featureMaxDf">Max Doc Frequency</label>
+                        <input type="number" id="featureMaxDf" value="1.0" min="0.1" max="1.0" step="0.05" title="Maximum fraction of documents a term can appear in (1.0 = no limit)">
+                    </div>
                 </div>
             </div>
         </div>
@@ -1059,6 +1076,23 @@
                     <div class="form-group">
                         <label for="k">Number of Results (k)</label>
                         <input type="number" id="k" name="k" value="3" min="1" max="20" required>
+                    </div>
+                    <div class="settings-menu-header" style="margin-top: 8px;">Feature Settings</div>
+                    <div class="form-group">
+                        <label for="featureTopN">Feature Count</label>
+                        <input type="number" id="featureTopN" value="30" min="5" max="100" title="Number of top features to return from the classifier">
+                    </div>
+                    <div class="form-group">
+                        <label for="featureMaxDepth">Tree Depth</label>
+                        <input type="number" id="featureMaxDepth" value="10" min="1" max="50" title="Maximum depth for the decision tree">
+                    </div>
+                    <div class="form-group">
+                        <label for="featureMinDf">Min Doc Frequency</label>
+                        <input type="number" id="featureMinDf" value="1" min="1" max="10" title="Minimum number of documents a term must appear in">
+                    </div>
+                    <div class="form-group">
+                        <label for="featureMaxDf">Max Doc Frequency</label>
+                        <input type="number" id="featureMaxDf" value="1.0" min="0.1" max="1.0" step="0.05" title="Maximum fraction of documents a term can appear in (1.0 = no limit)">
                     </div>
                 </div>
             </div>

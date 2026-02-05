@@ -1700,7 +1700,7 @@ class TextClassifierView(APIView):
     """REST interface for TaxaDecisionTreeClassifier (description text features).
 
     POST /api/classifier/text/
-    Body: { taxa_ids: [...], top_n: 30, max_depth: 10 }
+    Body: { taxa_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
     Response: {
         features: [{name, importance, display_text}, ...],
         metadata: {n_classes, n_features, tree_depth, taxa_count},
@@ -1712,6 +1712,8 @@ class TextClassifierView(APIView):
         taxa_ids = request.data.get('taxa_ids', [])
         top_n = request.data.get('top_n', 30)
         max_depth = request.data.get('max_depth', 10)
+        min_df = request.data.get('min_df', 1)
+        max_df = request.data.get('max_df', 1.0)
 
         if not taxa_ids or not isinstance(taxa_ids, list):
             return Response(
@@ -1733,6 +1735,8 @@ class TextClassifierView(APIView):
                 username=settings.COUCHDB_USERNAME,
                 password=settings.COUCHDB_PASSWORD,
                 max_depth=max_depth,
+                min_df=min_df,
+                max_df=max_df,
                 verbosity=0,
             )
 
@@ -1778,7 +1782,7 @@ class JsonClassifierView(APIView):
     """REST interface for TaxaJsonClassifier (structured JSON annotation features).
 
     POST /api/classifier/json/
-    Body: { taxa_ids: [...], top_n: 30, max_depth: 10 }
+    Body: { taxa_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
     Response: {
         features: [{name, importance, display_text}, ...],
         metadata: {n_classes, n_features, tree_depth, taxa_count},
@@ -1790,6 +1794,8 @@ class JsonClassifierView(APIView):
         taxa_ids = request.data.get('taxa_ids', [])
         top_n = request.data.get('top_n', 30)
         max_depth = request.data.get('max_depth', 10)
+        min_df = request.data.get('min_df', 1)
+        max_df = request.data.get('max_df', 1.0)
 
         if not taxa_ids or not isinstance(taxa_ids, list):
             return Response(
@@ -1811,6 +1817,8 @@ class JsonClassifierView(APIView):
                 username=settings.COUCHDB_USERNAME,
                 password=settings.COUCHDB_PASSWORD,
                 max_depth=max_depth,
+                min_df=min_df,
+                max_df=max_df,
                 verbosity=0,
             )
 
