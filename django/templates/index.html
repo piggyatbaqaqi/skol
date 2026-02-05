@@ -1038,6 +1038,10 @@
                     </div>
                     <div class="settings-menu-header" style="margin-top: 8px;">Feature Settings</div>
                     <div class="form-group">
+                        <label for="featureTaxaCount">Taxa for Features</label>
+                        <input type="number" id="featureTaxaCount" value="6" min="2" max="50" title="Number of taxa to retrieve for building feature lists">
+                    </div>
+                    <div class="form-group">
                         <label for="featureTopN">Feature Count</label>
                         <input type="number" id="featureTopN" value="30" min="5" max="100" title="Number of top features to return from the classifier">
                     </div>
@@ -1078,6 +1082,10 @@
                         <input type="number" id="k" name="k" value="3" min="1" max="20" required>
                     </div>
                     <div class="settings-menu-header" style="margin-top: 8px;">Feature Settings</div>
+                    <div class="form-group">
+                        <label for="featureTaxaCount">Taxa for Features</label>
+                        <input type="number" id="featureTaxaCount" value="6" min="2" max="50" title="Number of taxa to retrieve for building feature lists">
+                    </div>
                     <div class="form-group">
                         <label for="featureTopN">Feature Count</label>
                         <input type="number" id="featureTopN" value="30" min="5" max="100" title="Number of top features to return from the classifier">
@@ -1809,7 +1817,8 @@
         // Trigger a deeper search (higher k) and store taxa IDs in cookie
         // for the feature selection widget to consume
         function triggerDeeperSearch(prompt, embedding, k) {
-            const deeperK = Math.max(k, 6);
+            const taxaCountEl = document.getElementById('featureTaxaCount');
+            const deeperK = taxaCountEl ? parseInt(taxaCountEl.value, 10) || 6 : Math.max(k, 6);
             fetch(`${API_BASE}/api/search/`, {
                 method: 'POST',
                 headers: {
