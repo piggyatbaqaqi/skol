@@ -114,6 +114,8 @@ include = [
     "training.*",
     "yedda_parser",
     "yedda_parser.*",
+    "taxa_classifier",
+    "taxa_classifier.*",
     "bin",
 ]
 exclude = [
