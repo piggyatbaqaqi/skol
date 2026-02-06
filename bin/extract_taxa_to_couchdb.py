@@ -10,6 +10,7 @@ This module provides a UDF-based PySpark pipeline that:
 """
 
 import hashlib
+import os
 import sys
 import logging
 from pathlib import Path
@@ -479,6 +480,54 @@ class TaxonExtractor:
 
         return taxa_df
 
+    def get_existing_ingest_doc_ids(self) -> set:
+        """
+        Get set of ingest document IDs that already have taxa in the taxon database.
+
+        This queries the taxon database and collects all unique ingest._id values,
+        which represent ingest documents that have already been processed.
+
+        Returns:
+            Set of ingest document IDs that have existing taxa
+        """
+        try:
+            server = couchdb.Server(self.taxon_couchdb_url)
+            if self.taxon_username and self.taxon_password:
+                server.resource.credentials = (self.taxon_username, self.taxon_password)
+
+            # Check if database exists
+            if self.taxon_db_name not in server:
+                if self.verbosity >= 1:
+                    print(f"Taxon database {self.taxon_db_name} does not exist yet")
+                return set()
+
+            db = server[self.taxon_db_name]
+
+            # Collect unique ingest._id values from all taxa documents
+            existing_ids: set = set()
+            for doc_id in db:
+                if doc_id.startswith('_design/'):
+                    continue
+                try:
+                    doc = db[doc_id]
+                    ingest = doc.get('ingest')
+                    if ingest and isinstance(ingest, dict):
+                        ingest_id = ingest.get('_id')
+                        if ingest_id:
+                            existing_ids.add(ingest_id)
+                except Exception:
+                    pass  # Skip documents we can't read
+
+            if self.verbosity >= 1:
+                print(f"Found {len(existing_ids)} ingest documents with existing taxa")
+
+            return existing_ids
+
+        except Exception as e:
+            if self.verbosity >= 1:
+                print(f"Error querying existing taxa: {e}")
+            return set()
+
     def _get_matching_doc_ids(self, pattern: str) -> list:
         """
         Get list of document IDs matching the pattern from CouchDB.
@@ -674,6 +723,7 @@ class TaxonExtractor:
         limit: Optional[int] = None,
         incremental: bool = False,
         incremental_batch_size: int = 50,
+        skip_existing: bool = False,
     ) -> DataFrame:
         """
         Run the complete pipeline: load, extract, and save taxa.
@@ -695,6 +745,7 @@ class TaxonExtractor:
             limit: If specified, process at most this many documents
             incremental: If True, process in batches and save after each batch
             incremental_batch_size: Number of documents per batch when incremental=True
+            skip_existing: If True, skip ingest documents that already have taxa
 
         Returns:
             DataFrame with columns: doc_id, success, error_message
@@ -709,6 +760,8 @@ class TaxonExtractor:
             >>> results = extractor.run_pipeline(dry_run=True)
             >>> # Incremental (crash-resistant)
             >>> results = extractor.run_pipeline(incremental=True, incremental_batch_size=25)
+            >>> # Skip documents that already have taxa
+            >>> results = extractor.run_pipeline(skip_existing=True)
         """
         from pyspark.sql.functions import col
         from pyspark.sql import Row
@@ -722,6 +775,17 @@ class TaxonExtractor:
             if self.verbosity >= 1:
                 count = annotated_df.count()
                 print(f"Filtered to {len(doc_ids)} doc_id(s): {count} attachment(s)")
+
+        # Skip documents that already have taxa
+        if skip_existing:
+            existing_ids = self.get_existing_ingest_doc_ids()
+            if existing_ids:
+                before_count = annotated_df.select("doc_id").distinct().count()
+                annotated_df = annotated_df.filter(~col("doc_id").isin(existing_ids))
+                after_count = annotated_df.select("doc_id").distinct().count()
+                skipped = before_count - after_count
+                if self.verbosity >= 1:
+                    print(f"Skipped {skipped} documents with existing taxa ({after_count} remaining)")
 
         # Apply limit if specified
         if limit is not None:
@@ -869,6 +933,7 @@ Work Control Options (from env_config):
                           Documents per batch when --incremental is set (default: 50)
   --limit N               Process at most N documents
   --doc-id ID1,ID2,...    Process only specific document IDs (comma-separated)
+  --skip-existing         Skip ingest documents that already have taxa extracted
 
 Environment Variables:
   DRY_RUN=1               Same as --dry-run
@@ -876,6 +941,7 @@ Environment Variables:
   INCREMENTAL_BATCH_SIZE=N  Same as --incremental-batch-size
   LIMIT=N                 Same as --limit N
   DOC_IDS=id1,id2,...     Same as --doc-id
+  SKIP_EXISTING=1         Same as --skip-existing
 
 Note: All database configuration can be set via command-line arguments to env_config.
       Example: python extract_taxa_to_couchdb.py --ingest-database mydb --taxon-database mytaxa
@@ -893,6 +959,12 @@ Script-specific Options:
         type=str,
         default=None,
         help="Only trace this specific document ID (optional, for focused debugging)"
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        default=None,
+        help="Skip ingest documents that already have taxa extracted"
     )
 
     args, _ = parser.parse_known_args()
@@ -947,11 +1019,18 @@ Script-specific Options:
     )
 
     # Run pipeline with standard options from env_config
+    # Handle --skip-existing (command line or environment variable)
+    skip_existing = args.skip_existing
+    if skip_existing is None:
+        skip_existing = os.environ.get('SKIP_EXISTING', '').lower() in ('1', 'true', 'yes')
+
     if config['verbosity'] >= 1:
         if config.get('dry_run'):
             print("[DRY RUN MODE]")
         if config.get('incremental'):
             print(f"[INCREMENTAL MODE] Batch size: {config.get('incremental_batch_size', 50)}")
+        if skip_existing:
+            print("[SKIP EXISTING] Skipping documents with existing taxa")
         if config.get('doc_ids'):
             print(f"Processing specific doc_ids: {config['doc_ids']}")
         if config.get('limit'):
@@ -964,6 +1043,7 @@ Script-specific Options:
         limit=config.get('limit'),
         incremental=config.get('incremental', False),
         incremental_batch_size=config.get('incremental_batch_size', 50),
+        skip_existing=skip_existing,
     )
 
     # Show results
