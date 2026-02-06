@@ -38,4 +38,5 @@ peft
 pronto
 outlines
 datasets
+beautifulsoup4
 feedparser

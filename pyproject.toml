@@ -73,6 +73,7 @@ pdf = [
     "pytesseract",
 ]
 ingest = [
+    "beautifulsoup4",
     "feedparser",
     "habanero",
     "paperscraper",

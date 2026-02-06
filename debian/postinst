@@ -113,6 +113,9 @@ ${SKOL_VENV}/bin/pip install outlines pronto datasets
 echo "Installing PDF extraction dependencies..."
 ${SKOL_VENV}/bin/pip install PyMuPDF
 
+echo "Installing ingest dependencies..."
+${SKOL_VENV}/bin/pip install beautifulsoup4 feedparser habanero
+
 # Set ownership of venv to skol user
 chown -R skol:skol ${SKOL_VENV}
 
