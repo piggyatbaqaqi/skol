@@ -146,7 +146,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Redis settings
         'redis_host': _get_env('REDIS_HOST', 'localhost'),
-        'redis_port': int(_get_env('REDIS_PORT', '6379')),
+        'redis_port': int(_get_env('REDIS_PORT', '6380')),
         'redis_username': _get_env('REDIS_USERNAME', 'admin'),
         'redis_password': _get_env('REDIS_PASSWORD', ''),
         'redis_tls': _get_env('REDIS_TLS', '').lower() in ('1', 'true', 'yes'),

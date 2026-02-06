@@ -199,7 +199,7 @@ REST_FRAMEWORK = {
 
 # Redis configuration
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
+REDIS_PORT = int(os.environ.get('REDIS_PORT', '6380'))
 REDIS_USERNAME = os.environ.get('REDIS_USERNAME', 'admin')
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
 REDIS_TLS = os.environ.get('REDIS_TLS', '').lower() in ('1', 'true', 'yes')

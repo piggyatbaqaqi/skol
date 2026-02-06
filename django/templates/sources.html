@@ -210,6 +210,9 @@
 
         <h1>Ingestion Sources</h1>
         <p class="subtitle">Publications and data sources indexed by SKOL</p>
+        {% if cached_at %}
+        <p style="color: #999; font-size: 0.85em; margin-bottom: 20px;">Last updated: {{ cached_at }}</p>
+        {% endif %}
 
         {% if error %}
         <div class="error">
