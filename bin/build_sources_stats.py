@@ -91,6 +91,11 @@ def build_sources_stats(
     doc_to_journal: Dict[str, str] = {}
     doc_count = 0
 
+    # Get normalize function if available
+    normalize_fn = None
+    if PublicationRegistry:
+        normalize_fn = PublicationRegistry.normalize_journal_name
+
     for doc_id in db:
         # Skip design documents
         if doc_id.startswith('_design/'):
@@ -107,6 +112,10 @@ def build_sources_stats(
             journal_name = doc.get('journal')
             if not journal_name:
                 journal_name = 'Unknown'
+
+            # Normalize journal name to canonical form
+            if normalize_fn:
+                journal_name = normalize_fn(journal_name)
 
             # Map doc_id to journal for taxa lookup
             doc_to_journal[doc_id] = journal_name

@@ -22,6 +22,19 @@ class PublicationRegistry:
         'rate_limit_max_ms': 5000,  # Maximum delay between requests (milliseconds)
     }
 
+    # Journal name aliases: maps variant/misspelled names to canonical names
+    # Used by normalize_journal_name() to consolidate statistics
+    JOURNAL_NAME_ALIASES: Dict[str, str] = {
+        # Cryptogamie Mycologie variants
+        'Cryptogamie Mycologie': 'Cryptogamie, Mycologie',
+        'Cryptogamie. Mycologie': 'Cryptogamie, Mycologie',
+        # HTML entity encoding issues
+        'Open Access Journal of Mycology &amp; Mycological Sciences': 'Open Access Journal of Mycology & Mycological Sciences',
+        # Long form to short form
+        'Persoonia - Molecular Phylogeny and Evolution of Fungi': 'Persoonia',
+        'Mycology: An International Journal on Fungal Biology': 'Mycology: An International Journal on Fungal Biology (Taylor & Francis)',
+    }
+
     # Robots.txt URLs for each source
     ROBOTS_URLS: Dict[str, str] = {
         'crossref': 'https://api.crossref.org/robots.txt',
@@ -498,10 +511,38 @@ class PublicationRegistry:
         Returns:
             Publication configuration dict, or None if not found
         """
+        # Try normalized name first
+        normalized = cls.normalize_journal_name(journal_name)
         for key, config in cls.SOURCES.items():
-            if config.get('journal') == journal_name:
+            if config.get('journal') == normalized:
                 cfg = cls.DEFAULTS.copy()
                 cfg.update(config)
                 cfg['key'] = key  # Include the source key for reference
                 return cfg
+        # Fall back to original name
+        if normalized != journal_name:
+            for key, config in cls.SOURCES.items():
+                if config.get('journal') == journal_name:
+                    cfg = cls.DEFAULTS.copy()
+                    cfg.update(config)
+                    cfg['key'] = key
+                    return cfg
         return None
+
+    @classmethod
+    def normalize_journal_name(cls, journal_name: str) -> str:
+        """
+        Normalize a journal name to its canonical form.
+
+        This handles misspellings, variant punctuation, HTML entity encoding,
+        and long-form names that should be consolidated with short forms.
+
+        Args:
+            journal_name: The journal name to normalize
+
+        Returns:
+            The canonical journal name (or the original if no alias exists)
+        """
+        if journal_name in cls.JOURNAL_NAME_ALIASES:
+            return cls.JOURNAL_NAME_ALIASES[journal_name]
+        return journal_name
