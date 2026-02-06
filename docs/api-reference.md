@@ -104,7 +104,28 @@ Perform semantic search against taxa descriptions.
 
 ### GET /api/taxa/{taxa_id}/
 
-Get taxa document information.
+Get taxa document information including source PDF details.
+
+**Query Parameters:** `taxa_db` (default: `'skol_taxa_dev'`)
+
+**Response:**
+```json
+{
+    "taxon_id": "taxon_abc123",
+    "taxa_db": "skol_taxa_dev",
+    "Title": "Amanita muscaria",
+    "Description": "Pileus convex to plane...",
+    "Feed": "CouchDB Taxa",
+    "URL": "https://...",
+    "PDFDbName": "skol_dev",
+    "PDFDocId": "doc_xyz789",
+    "PDFPage": 42,
+    "PDFLabel": "42",
+    "LineNumber": 100,
+    "ParagraphNumber": 5,
+    "EmpiricalPageNumber": "127"
+}
+```
 
 ### GET /api/pdf/{db_name}/{doc_id}/
 
@@ -117,6 +138,38 @@ Retrieve specific PDF attachment by name.
 ### GET /api/taxa/{taxa_id}/pdf/
 
 Retrieve PDF for a taxa document's source reference.
+
+### GET /api/taxa/{taxa_id}/context/
+
+Retrieve windowed source text with highlight markers for the Source Context Viewer. Supports scrolling through Nomenclature and Description spans.
+
+**Query Parameters:**
+- `field`: `'nomenclature'` or `'description'` (default: `'description'`)
+- `span_index`: Which span to show (default: `0`)
+- `context_chars`: Characters of context before/after span (default: `500`)
+- `taxa_db`: Database name (default: `'skol_taxa_dev'`)
+
+**Response:**
+```json
+{
+    "source_text": "...text with <mark>highlighted</mark> region...",
+    "highlight_start": 234,
+    "highlight_end": 567,
+    "has_gap_before": false,
+    "has_gap_after": true,
+    "gap_size_before": 0,
+    "gap_size_after": 150,
+    "prev_span_index": null,
+    "next_span_index": 1,
+    "pdf_page": 35,
+    "pdf_label": "35",
+    "empirical_page": "127",
+    "total_spans": 2,
+    "span_index": 0
+}
+```
+
+**Navigation:** Use `prev_span_index` and `next_span_index` to scroll through spans. Gap indicators show when there's intervening text between spans.
 
 ---
 
@@ -188,6 +241,78 @@ Trigger building the vocabulary tree if it doesn't exist. This reads JSON repres
 **Status values:** `exists`, `complete`, `error`
 
 See [api-vocab-tree.md](api-vocab-tree.md) for detailed documentation.
+
+---
+
+## Classifiers
+
+Decision tree classifiers for distinguishing taxa based on their features.
+
+### POST /api/classifier/text/
+
+Build a decision tree classifier using TF-IDF features from description text.
+
+**Request:**
+```json
+{
+    "taxa_ids": ["taxon_abc123", "taxon_def456", ...],
+    "top_n": 30,
+    "max_depth": 10,
+    "min_df": 1,
+    "max_df": 1.0
+}
+```
+
+**Response:**
+```json
+{
+    "features": [
+        {"name": "pileus", "importance": 0.15, "display_text": "pileus"},
+        {"name": "convex", "importance": 0.12, "display_text": "convex"}
+    ],
+    "metadata": {
+        "n_classes": 5,
+        "n_features": 150,
+        "tree_depth": 8,
+        "taxa_count": 5
+    },
+    "tree_json": { ... }
+}
+```
+
+### POST /api/classifier/json/
+
+Build a decision tree classifier using structured JSON annotation features (key=value pairs from `json_annotated` field).
+
+**Request:**
+```json
+{
+    "taxa_ids": ["taxon_abc123", "taxon_def456", ...],
+    "top_n": 30,
+    "max_depth": 10,
+    "min_df": 1,
+    "max_df": 1.0
+}
+```
+
+**Response:**
+```json
+{
+    "features": [
+        {"name": "pileus_shape=convex", "importance": 0.18, "display_text": "pileus shape convex"},
+        {"name": "stipe_color=white", "importance": 0.14, "display_text": "stipe color white"}
+    ],
+    "metadata": {
+        "n_classes": 5,
+        "n_features": 85,
+        "tree_depth": 6,
+        "taxa_count": 5
+    },
+    "tree_json": { ... }
+}
+```
+
+**Note:** The JSON classifier uses the `skol_taxa_full_dev` database which contains structured annotations.
 
 ---
 
