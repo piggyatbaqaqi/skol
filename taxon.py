@@ -111,15 +111,19 @@ class Taxon(object):
             return ingest.get('url')
         return None
 
-    def as_row(self) -> Dict[str, None | str | int | Dict[str, None | str | int]]:
-        '''Convert this Taxon to a dictionary suitable for output.'''
+    def as_row(self) -> Dict[str, None | str | int | List | Dict[str, Any]]:
+        '''Convert this Taxon to a dictionary suitable for output.
+
+        Includes nomenclature_spans and description_spans for the
+        Source Context Viewer feature.
+        '''
 
         # Pull fields from self._nomenclatures[0]
         pp = self._nomenclatures[0]
         first_line = pp.first_line
         assert first_line is not None, "Nomenclature paragraph must have at least one line"
 
-        retval: Dict[str, None | str | int | Dict[str, Any]] = {
+        retval: Dict[str, None | str | int | List | Dict[str, Any]] = {
             'taxon': "\n".join((str(pp) for pp in self._nomenclatures)),
             'description': "\n".join((str(pp) for pp in self._descriptions)),
             'ingest': first_line.ingest,
@@ -130,6 +134,9 @@ class Taxon(object):
             'pdf_page': pp.pdf_page,
             'pdf_label': pp.pdf_label,
             'empirical_page_number': str(pp.empirical_page_number) if pp.empirical_page_number is not None else None,
+            # Span arrays for Source Context Viewer - serialize Span objects to dicts for CouchDB
+            'nomenclature_spans': [p.as_span().as_dict() for p in self._nomenclatures],
+            'description_spans': [p.as_span().as_dict() for p in self._descriptions],
         }
         return retval
 

@@ -17,6 +17,9 @@ class Line(object):
     _empirical_page_number: Optional[str]
     _file = None
     _is_page_marker: bool  # True if this line is a PDF page marker
+    # Character offsets for span tracking
+    _start_char: int
+    _end_char: int
     # CouchDB metadata (optional)
     _doc_id: Optional[str]
     _attachment_name: Optional[str]
@@ -29,7 +32,9 @@ class Line(object):
         'table', 'tab.', 'tab', 'tbl.', 'tbl',
     ]
 
-    def __init__(self, line: str, fileobj: Optional[FileObject] = None, is_page_marker: bool = False) -> None:
+    def __init__(self, line: str, fileobj: Optional[FileObject] = None,
+                 is_page_marker: bool = False,
+                 start_char: int = 0, end_char: int = 0) -> None:
         self._value = line.strip(' \n')
         self._filename = None
         self._page_number = None
@@ -40,6 +45,9 @@ class Line(object):
         self._label_start = False
         self._label_end = None
         self._is_page_marker = is_page_marker  # Mark if this is a PDF page marker
+        # Character offsets for span tracking
+        self._start_char = start_char
+        self._end_char = end_char
         # Initialize optional CouchDB metadata
         self._doc_id = None
         self._attachment_name = None
@@ -130,6 +138,16 @@ class Line(object):
     def is_page_marker(self) -> bool:
         """True if this line is a PDF page marker (--- PDF Page N Label L ---)."""
         return self._is_page_marker
+
+    @property
+    def start_char(self) -> int:
+        """Character offset of line start in source text."""
+        return self._start_char
+
+    @property
+    def end_char(self) -> int:
+        """Character offset of line end in source text."""
+        return self._end_char
 
     def strip_label_start(self) -> bool:
         """Strip label start marker from line. Returns True if a label was stripped."""

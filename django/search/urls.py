@@ -29,6 +29,8 @@ from .views import (
     # Classifier views
     TextClassifierView,
     JsonClassifierView,
+    # Source context viewer
+    SourceContextView,
 )
 
 app_name = 'search'
@@ -81,4 +83,7 @@ urlpatterns = [
     # Classifier endpoints
     path('classifier/text/', TextClassifierView.as_view(), name='classifier-text'),
     path('classifier/json/', JsonClassifierView.as_view(), name='classifier-json'),
+
+    # Source context viewer endpoint
+    path('taxa/<str:taxa_id>/context/', SourceContextView.as_view(), name='taxa-context'),
 ]

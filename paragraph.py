@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from label import Label
 from line import Line
+from span import Span
 
 class Paragraph(object):
     short_line: int
@@ -408,6 +409,30 @@ class Paragraph(object):
     @property
     def labels(self) -> List[Label]:
         return self._labels[:]
+
+    def as_span(self) -> Span:
+        """
+        Export paragraph position info as a Span object.
+
+        Creates a Span with all position metadata needed for
+        the Source Context Viewer to locate and highlight this
+        paragraph in the source article.txt.
+
+        Returns:
+            Span object with paragraph position information
+        """
+        first = self.first_line
+        last = self.last_line
+        return Span(
+            paragraph_number=self._paragraph_number,
+            start_line=first.line_number if first else 0,
+            end_line=last.line_number if last else 0,
+            start_char=first.start_char if first else 0,
+            end_char=last.end_char if last else 0,
+            pdf_page=self.pdf_page,
+            pdf_label=self.pdf_label,
+            empirical_page=self.empirical_page_number,
+        )
 
 
 def to_dataframe(paragraphs: List[Paragraph], suppress_text=False):

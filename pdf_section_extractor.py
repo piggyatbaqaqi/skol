@@ -28,7 +28,7 @@ Usage:
 import os
 import re
 from typing import List, Optional, Dict, Any
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, quote
 from io import BytesIO
 import couchdb
 
@@ -112,12 +112,18 @@ class PDFSectionExtractor:
             print(f"Connected to CouchDB at {self.couchdb_url}")
 
     def _build_auth_url(self) -> str:
-        """Build CouchDB URL with embedded credentials."""
+        """Build CouchDB URL with embedded credentials.
+
+        URL-encodes username and password to handle special characters like @, :, etc.
+        """
         if not self.username or not self.password:
             return self.couchdb_url
 
         parsed = urlparse(self.couchdb_url)
-        netloc_with_auth = f"{self.username}:{self.password}@{parsed.hostname}"
+        # URL-encode username and password to handle special characters (e.g., @ in password)
+        encoded_user = quote(self.username, safe='')
+        encoded_pass = quote(self.password, safe='')
+        netloc_with_auth = f"{encoded_user}:{encoded_pass}@{parsed.hostname}"
         if parsed.port:
             netloc_with_auth += f":{parsed.port}"
 

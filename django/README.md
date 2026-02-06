@@ -251,6 +251,48 @@ Note: For the JSON classifier, `display_text` converts the raw feature name from
 - `400` - Missing or empty `taxa_ids`, or fewer than 2 valid documents
 - `500` - Classifier training failure or CouchDB connection error
 
+### Source Context Viewer
+
+**GET** `/api/taxa/<taxa_id>/context/`
+
+Retrieves windowed source text with highlight markers for viewing nomenclature or description in context. Useful for seeing truncated content or detecting gaps in coalesced descriptions.
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `field` | string | "description" | Which field to show context for ("nomenclature" or "description") |
+| `span_index` | int | 0 | Which span to display (for multi-span fields) |
+| `context_chars` | int | 500 | Characters of context before/after the highlighted span |
+| `taxa_db` | string | "skol_taxa_dev" | Database containing the taxa document |
+
+**Response:**
+```json
+{
+    "source_text": "...text with <mark>highlighted</mark> region...",
+    "highlight_start": 234,
+    "highlight_end": 567,
+    "has_gap_before": false,
+    "has_gap_after": true,
+    "gap_size_before": 0,
+    "gap_size_after": 150,
+    "prev_span_index": null,
+    "next_span_index": 1,
+    "pdf_page": 35,
+    "pdf_label": "35",
+    "empirical_page": "127",
+    "total_spans": 2,
+    "span_index": 0
+}
+```
+
+**Gap Detection:** The response includes `has_gap_before` and `has_gap_after` flags indicating if there are gaps between this span and adjacent spans. Gap sizes are measured in characters.
+
+**Error responses:**
+- `400` - Invalid field or span_index
+- `404` - Taxa document not found, no spans available, or article.txt missing
+- `500` - CouchDB connection error
+
 ## Web Interface
 
 Access the web interface at `http://127.0.0.1:8000/`

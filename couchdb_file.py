@@ -57,6 +57,7 @@ class CouchDBFile(FileObject):
         self._pdf_page = 0  # Will be updated when PDF page markers are encountered
         self._pdf_label = None  # Will be updated when PDF page markers are encountered
         self._empirical_page_number = None
+        self._char_offset = 0  # Cumulative character position for span tracking
 
         # Split content into lines
         self._content_lines = content.split('\n')

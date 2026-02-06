@@ -28,6 +28,7 @@ class File(FileObject):
         self._pdf_page = 0
         self._pdf_label = None
         self._empirical_page_number = None
+        self._char_offset = 0
 
         if filename:
             self._file = open(filename, 'r', encoding='utf-8')

@@ -1859,3 +1859,179 @@ class JsonClassifierView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class SourceContextView(APIView):
+    """
+    Retrieve windowed source text with highlight markers for the Source Context Viewer.
+
+    GET /api/taxa/<taxa_id>/context/
+    Query params:
+      - field: 'nomenclature' or 'description' (default: 'description')
+      - span_index: which span to show (default: 0)
+      - context_chars: characters of context before/after span (default: 500)
+      - taxa_db: database name (default: 'skol_taxa_dev')
+
+    Response:
+      {
+        "source_text": "...text with <mark>highlighted</mark> region...",
+        "highlight_start": 234,
+        "highlight_end": 567,
+        "has_gap_before": false,
+        "has_gap_after": true,
+        "gap_size_before": 0,
+        "gap_size_after": 150,
+        "prev_span_index": null,
+        "next_span_index": 1,
+        "pdf_page": 35,
+        "pdf_label": "35",
+        "empirical_page": "127",
+        "total_spans": 2
+      }
+    """
+
+    def get(self, request, taxa_id):
+        try:
+            # Parse query parameters
+            field = request.GET.get('field', 'description')
+            span_index = int(request.GET.get('span_index', 0))
+            context_chars = int(request.GET.get('context_chars', 500))
+            taxa_db = request.GET.get('taxa_db', 'skol_taxa_dev')
+
+            if field not in ('nomenclature', 'description'):
+                return Response(
+                    {'error': f'Invalid field: {field}. Must be "nomenclature" or "description"'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Build CouchDB URL
+            couchdb_url = settings.COUCHDB_URL
+            auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
+
+            # Fetch the taxa document
+            taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
+            taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
+
+            if taxa_response.status_code == 404:
+                return Response(
+                    {'error': f'Taxa document not found: {taxa_id}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            taxa_response.raise_for_status()
+            taxa_doc = taxa_response.json()
+
+            # Get spans for the requested field
+            spans_key = f'{field}_spans'
+            spans = taxa_doc.get(spans_key, [])
+
+            if not spans:
+                return Response(
+                    {'error': f'No {field} spans found in taxa document'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if span_index < 0 or span_index >= len(spans):
+                return Response(
+                    {'error': f'Invalid span_index {span_index}. Document has {len(spans)} spans.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            current_span = spans[span_index]
+
+            # Get ingest information
+            ingest = taxa_doc.get('ingest', {})
+            ingest_db = ingest.get('db_name')
+            ingest_doc_id = ingest.get('_id')
+
+            if not ingest_db or not ingest_doc_id:
+                return Response(
+                    {'error': 'Taxa document does not have ingest information'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Fetch article.txt from the ingest document
+            attachment_name = 'article.txt'
+            attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{attachment_name}"
+            text_response = requests.get(attachment_url, auth=auth, timeout=60)
+
+            if text_response.status_code == 404:
+                return Response(
+                    {'error': f'article.txt not found in ingest document: {ingest_db}/{ingest_doc_id}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            text_response.raise_for_status()
+            article_text = text_response.text
+
+            # Get span character offsets
+            start_char = current_span.get('start_char', 0)
+            end_char = current_span.get('end_char', len(article_text))
+
+            # Calculate window boundaries with context
+            window_start = max(0, start_char - context_chars)
+            window_end = min(len(article_text), end_char + context_chars)
+
+            # Extract the window text
+            window_text = article_text[window_start:window_end]
+
+            # Calculate highlight positions relative to window
+            highlight_start = start_char - window_start
+            highlight_end = end_char - window_start
+
+            # Insert highlight markers
+            highlighted_text = (
+                window_text[:highlight_start]
+                + '<mark>'
+                + window_text[highlight_start:highlight_end]
+                + '</mark>'
+                + window_text[highlight_end:]
+            )
+
+            # Detect gaps using character offset discontinuity
+            has_gap_before = False
+            gap_size_before = 0
+            has_gap_after = False
+            gap_size_after = 0
+
+            if span_index > 0:
+                prev_span = spans[span_index - 1]
+                prev_end = prev_span.get('end_char', 0)
+                gap_size_before = max(0, start_char - prev_end)
+                has_gap_before = gap_size_before > 0
+
+            if span_index < len(spans) - 1:
+                next_span = spans[span_index + 1]
+                next_start = next_span.get('start_char', 0)
+                gap_size_after = max(0, next_start - end_char)
+                has_gap_after = gap_size_after > 0
+
+            return Response({
+                'source_text': highlighted_text,
+                'highlight_start': highlight_start,
+                'highlight_end': highlight_end,
+                'has_gap_before': has_gap_before,
+                'has_gap_after': has_gap_after,
+                'gap_size_before': gap_size_before,
+                'gap_size_after': gap_size_after,
+                'prev_span_index': span_index - 1 if span_index > 0 else None,
+                'next_span_index': span_index + 1 if span_index < len(spans) - 1 else None,
+                'pdf_page': current_span.get('pdf_page'),
+                'pdf_label': current_span.get('pdf_label'),
+                'empirical_page': current_span.get('empirical_page'),
+                'total_spans': len(spans),
+                'span_index': span_index,
+            })
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"CouchDB request failed for taxa {taxa_id} context: {e}")
+            return Response(
+                {'error': f'Failed to fetch context: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Source context error: {e}\n{traceback.format_exc()}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

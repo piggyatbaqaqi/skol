@@ -17,7 +17,7 @@ from typing import Iterator, Optional, Dict, Any
 
 import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
-from pyspark.sql.types import StructType, StructField, StringType, BooleanType, MapType, IntegerType
+from pyspark.sql.types import StructType, StructField, StringType, BooleanType, MapType, IntegerType, ArrayType
 
 # Add parent directory to path for skol modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -269,6 +269,19 @@ class TaxonExtractor:
 
         # Schema for extracted taxa
         # All metadata is in the ingest field
+
+        # Span schema for nomenclature_spans and description_spans arrays
+        span_schema = StructType([
+            StructField("paragraph_number", IntegerType(), True),
+            StructField("start_line", IntegerType(), True),
+            StructField("end_line", IntegerType(), True),
+            StructField("start_char", IntegerType(), True),
+            StructField("end_char", IntegerType(), True),
+            StructField("pdf_page", IntegerType(), True),
+            StructField("pdf_label", StringType(), True),
+            StructField("empirical_page", StringType(), True),
+        ])
+
         self._extract_schema = StructType([
             StructField("taxon", StringType(), False),
             StructField("description", StringType(), False),
@@ -279,6 +292,8 @@ class TaxonExtractor:
             StructField("pdf_page", IntegerType(), True),
             StructField("pdf_label", StringType(), True),
             StructField("empirical_page_number", StringType(), True),
+            StructField("nomenclature_spans", ArrayType(span_schema), True),
+            StructField("description_spans", ArrayType(span_schema), True),
             StructField("_id", StringType(), True),
             StructField("json_annotated", StringType(), True)
         ])
@@ -425,7 +440,12 @@ class TaxonExtractor:
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
                                 'pdf_page': doc.get('pdf_page'),
-                                'empirical_page_number': doc.get('empirical_page_number')
+                                'pdf_label': doc.get('pdf_label'),
+                                'empirical_page_number': doc.get('empirical_page_number'),
+                                'nomenclature_spans': doc.get('nomenclature_spans'),
+                                'description_spans': doc.get('description_spans'),
+                                '_id': doc.get('_id'),
+                                'json_annotated': doc.get('json_annotated'),
                             }
 
                             yield Row(**taxon_data)

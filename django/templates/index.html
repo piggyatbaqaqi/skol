@@ -2070,6 +2070,20 @@
                             ${result.URL ? `<a href="${escapeHtml(result.URL)}${pageFragment}" target="_blank" class="view-pdf-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">View Source</a>` : ''}
                             <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
                         </div>
+                        ${result.taxon_id ? `
+                        <div class="source-context-viewers" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <div data-source-context-viewer
+                                 data-taxa-id="${escapeHtml(result.taxon_id)}"
+                                 data-field="nomenclature"
+                                 data-api-base-url="${API_BASE}">
+                            </div>
+                            <div data-source-context-viewer
+                                 data-taxa-id="${escapeHtml(result.taxon_id)}"
+                                 data-field="description"
+                                 data-api-base-url="${API_BASE}">
+                            </div>
+                        </div>
+                        ` : ''}
                         <div id="json-${index}" class="result-json" style="display: none;">
                             <pre>${JSON.stringify(result, null, 2)}</pre>
                         </div>
@@ -2078,6 +2092,9 @@
                     resultsDiv.appendChild(card);
                 }
             });
+
+            // Initialize source context viewers after results are rendered
+            document.dispatchEvent(new CustomEvent('source-context-init'));
         }
 
         // Toggle JSON display
@@ -2215,6 +2232,9 @@
 
     <!-- Fungarium Select Widget -->
     <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
+
+    <!-- Source Context Viewer Widget -->
+    <script src="{% static 'js/source-context.bundle.js' %}"></script>
 
     <!-- Taxon Result Widget -->
     <script src="{% static 'js/taxon-result-widget.js' %}"></script>

@@ -9,7 +9,7 @@ class FileObject(ABC):
     Abstract base class for file-like objects.
 
     Provides common functionality for reading files and tracking
-    line numbers, page numbers, and empirical page numbers.
+    line numbers, page numbers, character offsets, and empirical page numbers.
     """
 
     _line_number: int
@@ -17,6 +17,7 @@ class FileObject(ABC):
     _pdf_page: int
     _pdf_label: Optional[str]
     _empirical_page_number: Optional[str]
+    _char_offset: int  # Cumulative character position in source text
 
     def _set_empirical_page(self, l: str, first: bool = False) -> None:
         """
@@ -58,6 +59,7 @@ class FileObject(ABC):
 
         This template method handles common line processing logic:
         - Tracking line and page numbers
+        - Tracking character offsets for span highlighting
         - Detecting page breaks (form feed characters)
         - Detecting PDF page markers (--- PDF Page N Label L ---)
         - Extracting empirical page numbers
@@ -68,6 +70,11 @@ class FileObject(ABC):
         """
         from line  import Line # Import here to avoid circular imports
         for l_str in self._get_content_iterator():
+            # Capture character offset at start of this line
+            line_start_char = self._char_offset
+            # Increment offset by line length (including any newline)
+            self._char_offset += len(l_str)
+
             self._line_number += 1
 
             # First line of first page does not have a form feed
@@ -88,12 +95,14 @@ class FileObject(ABC):
                 self._pdf_label = pdf_page_match.group(3)  # May be None if no label
                 # Create a special Line object for the page marker
                 # This line will be preserved in output but not classified
-                l = Line(l_str, self, is_page_marker=True)
+                l = Line(l_str, self, is_page_marker=True,
+                         start_char=line_start_char, end_char=self._char_offset)
                 yield l
                 continue
 
-            # Create Line object with file metadata
-            l = Line(l_str, self)
+            # Create Line object with file metadata and character offsets
+            l = Line(l_str, self,
+                     start_char=line_start_char, end_char=self._char_offset)
             yield l
 
     @property
@@ -120,6 +129,11 @@ class FileObject(ABC):
     def empirical_page_number(self) -> Optional[str]:
         """Empirical page number extracted from document."""
         return self._empirical_page_number
+
+    @property
+    def char_offset(self) -> int:
+        """Current cumulative character offset in source text."""
+        return self._char_offset
 
     @property
     @abstractmethod

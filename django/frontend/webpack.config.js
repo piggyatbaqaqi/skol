@@ -10,6 +10,7 @@ module.exports = {
     'identifier-type-select': './src/identifierTypeSelectEntry.js',
     'collection-select': './src/collectionSelectEntry.js',
     'feature-selection': './src/featureSelectionEntry.js',
+    'source-context': './src/sourceContextEntry.js',
   },
   output: {
     filename: '[name].bundle.js',
