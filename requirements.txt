@@ -38,3 +38,4 @@ peft
 pronto
 outlines
 datasets
+feedparser

@@ -6,3 +6,4 @@
 * All pulldown menus use react-select.
 * Check every change into git with useful comments.
 * Every program in bin that generates a redis key should be added to the bin/rebuild_redis script.
+* A missing package on production is a packaging error.

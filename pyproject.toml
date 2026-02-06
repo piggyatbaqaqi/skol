@@ -48,6 +48,8 @@ dependencies = [
     "scikit-learn>=1.0.0",
     "tqdm",
     "python-dateutil>=2.9.0",
+    # Required by ingestors package which is part of core distribution
+    "bibtexparser>=2.0.0b3",
 ]
 
 [project.optional-dependencies]
@@ -71,9 +73,10 @@ pdf = [
     "pytesseract",
 ]
 ingest = [
+    "feedparser",
     "habanero",
     "paperscraper",
-    "bibtexparser>=2.0.0b3",
+    # bibtexparser moved to core dependencies (required by ingestors package)
 ]
 mcp = [
     "mcp>=1.22.0",
