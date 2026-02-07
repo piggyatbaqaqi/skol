@@ -151,8 +151,10 @@ py-modules = [
     "paragraph",
     "pdf_section_extractor",
     "skol_compat",
+    "span",
     "taxa_json_translator",
     "taxon",
+    "taxon_clusterer",
     "tokenizer",
 ]
 
