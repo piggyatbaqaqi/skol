@@ -118,6 +118,10 @@ class Taxon(object):
         Source Context Viewer feature.
         '''
 
+        def span_to_string_dict(span_dict: Dict[str, Any]) -> Dict[str, str]:
+            """Convert span dict values to strings for MapType schema."""
+            return {k: str(v) if v is not None else 'None' for k, v in span_dict.items()}
+
         # Pull fields from self._nomenclatures[0]
         pp = self._nomenclatures[0]
         first_line = pp.first_line
@@ -134,9 +138,10 @@ class Taxon(object):
             'pdf_page': pp.pdf_page,
             'pdf_label': pp.pdf_label,
             'empirical_page_number': str(pp.empirical_page_number) if pp.empirical_page_number is not None else None,
-            # Span arrays for Source Context Viewer - serialize Span objects to dicts for CouchDB
-            'nomenclature_spans': [p.as_span().as_dict() for p in self._nomenclatures],
-            'description_spans': [p.as_span().as_dict() for p in self._descriptions],
+            # Span arrays for Source Context Viewer - serialize as string dicts for MapType schema
+            # (StructType converts dicts to Row objects which serialize as arrays)
+            'nomenclature_spans': [span_to_string_dict(p.as_span().as_dict()) for p in self._nomenclatures],
+            'description_spans': [span_to_string_dict(p.as_span().as_dict()) for p in self._descriptions],
         }
         return retval
 

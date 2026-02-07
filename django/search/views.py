@@ -772,7 +772,7 @@ class TaxaInfoView(APIView):
                 'Description': taxa_doc.get('description', ''),
                 'Feed': 'CouchDB Taxa',
                 'URL': url,
-                'Source': source,
+                'Source': ingest,
                 # PDF linking fields
                 'PDFDbName': pdf_db_name,
                 'PDFDocId': pdf_doc_id,
@@ -1861,6 +1861,34 @@ class JsonClassifierView(APIView):
             )
 
 
+def parse_span(span):
+    """
+    Parse a span that may be stored as either a dict or an array.
+
+    Array format (from Spark StructType serialization):
+      [paragraph_number, start_line, end_line, start_char, end_char,
+       pdf_page, pdf_label, empirical_page]
+
+    Returns a dict with named fields.
+    """
+    if isinstance(span, dict):
+        return span
+    elif isinstance(span, (list, tuple)) and len(span) >= 5:
+        return {
+            'paragraph_number': span[0],
+            'start_line': span[1],
+            'end_line': span[2],
+            'start_char': span[3],
+            'end_char': span[4],
+            'pdf_page': span[5] if len(span) > 5 else None,
+            'pdf_label': span[6] if len(span) > 6 else None,
+            'empirical_page': span[7] if len(span) > 7 else None,
+        }
+    else:
+        # Unknown format, return empty dict
+        return {}
+
+
 class SourceContextView(APIView):
     """
     Retrieve windowed source text with highlight markers for the Source Context Viewer.
@@ -1937,7 +1965,7 @@ class SourceContextView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            current_span = spans[span_index]
+            current_span = parse_span(spans[span_index])
 
             # Get ingest information
             ingest = taxa_doc.get('ingest', {})

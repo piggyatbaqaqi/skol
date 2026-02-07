@@ -39,6 +39,68 @@ logger = logging.getLogger(__name__)
 DEBUG_TRACE = False
 DEBUG_DOC_ID = None
 
+
+def row_to_dict_recursive(obj: Any) -> Any:
+    """
+    Recursively convert PySpark Row objects to dictionaries.
+
+    PySpark's Row.asDict() doesn't recursively convert nested Row objects,
+    leaving them to serialize as arrays/tuples instead of dictionaries.
+    This function ensures all nested structures are proper Python dicts/lists.
+
+    Args:
+        obj: Any object - Row, list, dict, or primitive
+
+    Returns:
+        The object with all Row instances converted to dicts
+    """
+    if isinstance(obj, Row):
+        return {key: row_to_dict_recursive(value) for key, value in obj.asDict().items()}
+    elif isinstance(obj, list):
+        return [row_to_dict_recursive(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: row_to_dict_recursive(value) for key, value in obj.items()}
+    else:
+        return obj
+
+
+def restore_span_types(span: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Restore proper types for span fields after MapType string conversion.
+
+    MapType(StringType(), StringType()) converts all values to strings.
+    This restores integer fields to int and handles None values.
+
+    Args:
+        span: Span dictionary with string values
+
+    Returns:
+        Span dictionary with proper types
+    """
+    int_fields = ['paragraph_number', 'start_line', 'end_line', 'start_char', 'end_char', 'pdf_page']
+    str_fields = ['pdf_label', 'empirical_page']
+
+    result = {}
+    for field in int_fields:
+        value = span.get(field)
+        if value is not None and value != 'None':
+            try:
+                result[field] = int(value)
+            except (ValueError, TypeError):
+                result[field] = None
+        else:
+            result[field] = None
+
+    for field in str_fields:
+        value = span.get(field)
+        if value is not None and value != 'None':
+            result[field] = str(value)
+        else:
+            result[field] = None
+
+    return result
+
+
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
     """
     Generate a unique, deterministic document ID for a taxon.
@@ -270,18 +332,9 @@ class TaxonExtractor:
 
         # Schema for extracted taxa
         # All metadata is in the ingest field
-
-        # Span schema for nomenclature_spans and description_spans arrays
-        span_schema = StructType([
-            StructField("paragraph_number", IntegerType(), True),
-            StructField("start_line", IntegerType(), True),
-            StructField("end_line", IntegerType(), True),
-            StructField("start_char", IntegerType(), True),
-            StructField("end_char", IntegerType(), True),
-            StructField("pdf_page", IntegerType(), True),
-            StructField("pdf_label", StringType(), True),
-            StructField("empirical_page", StringType(), True),
-        ])
+        # Span schema uses MapType to preserve dictionary structure in CouchDB
+        # (StructType converts dicts to Row objects which serialize as arrays)
+        span_map_schema = MapType(StringType(), StringType(), valueContainsNull=True)
 
         self._extract_schema = StructType([
             StructField("taxon", StringType(), False),
@@ -293,8 +346,8 @@ class TaxonExtractor:
             StructField("pdf_page", IntegerType(), True),
             StructField("pdf_label", StringType(), True),
             StructField("empirical_page_number", StringType(), True),
-            StructField("nomenclature_spans", ArrayType(span_schema), True),
-            StructField("description_spans", ArrayType(span_schema), True),
+            StructField("nomenclature_spans", ArrayType(span_map_schema), True),
+            StructField("description_spans", ArrayType(span_map_schema), True),
             StructField("_id", StringType(), True),
             StructField("json_annotated", StringType(), True)
         ])
@@ -629,8 +682,16 @@ class TaxonExtractor:
                     doc_id = "unknown"
 
                     try:
-                        # Convert row to dict for get_ingest_field()
-                        row_dict = row.asDict()
+                        # Convert row to dict, recursively handling nested Row objects
+                        row_dict = row_to_dict_recursive(row)
+
+                        # Restore proper types for span fields (MapType stores as strings)
+                        for span_field in ['nomenclature_spans', 'description_spans']:
+                            if span_field in row_dict and row_dict[span_field]:
+                                row_dict[span_field] = [
+                                    restore_span_types(span) for span in row_dict[span_field]
+                                ]
+
                         # Use ingest field names via get_ingest_field()
                         source_doc_id: str = str(get_ingest_field(row_dict, '_id', default='unknown'))
                         source_url: Optional[str] = get_ingest_field(row_dict, 'url')
