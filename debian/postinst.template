@@ -133,8 +133,8 @@ fi
 export PATH="${SKOL_HOME}/.cargo/bin:${PATH}"
 
 echo "Installing all packages from local wheels..."
-${SKOL_VENV}/bin/pip install --force-reinstall --no-deps ${SKOL_HOME}/wheels/*.whl
-${SKOL_VENV}/bin/pip install ${SKOL_HOME}/wheels/*.whl
+${SKOL_VENV}/bin/pip install --force-reinstall --no-deps --no-cache-dir ${SKOL_HOME}/wheels/*.whl
+${SKOL_VENV}/bin/pip install --no-cache-dir ${SKOL_HOME}/wheels/*.whl
 
 echo "Installing ML dependencies..."
 ${SKOL_VENV}/bin/pip install transformers accelerate huggingface-hub peft torch protobuf sentencepiece bitsandbytes pyarrow

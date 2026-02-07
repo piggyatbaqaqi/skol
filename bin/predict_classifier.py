@@ -56,6 +56,128 @@ from ingestors import RateLimitedHttpClient
 
 import couchdb
 from io import BytesIO
+import re
+
+
+# ============================================================================
+# YEDDA Annotation Detection and Removal
+# ============================================================================
+
+# Regex pattern to match complete YEDDA annotations: [@text#label*]
+# Captures the text portion so we can preserve it
+YEDDA_FULL_PATTERN = re.compile(r'\[@([^#\]]+)#[^\]]*\*\]')
+
+# Pattern to match orphan '[@' that don't have proper closing
+YEDDA_OPEN_PATTERN = re.compile(r'\[@')
+
+
+def strip_yedda_annotations(text: str) -> tuple:
+    """
+    Detect and remove YEDDA annotations from text.
+
+    This handles two cases:
+    1. Complete annotations [@text#label*] - the text is preserved, annotation removed
+    2. Orphan '[@' without proper closing - removed entirely (likely PDF corruption)
+
+    Args:
+        text: Input text that may contain YEDDA annotations
+
+    Returns:
+        Tuple of (cleaned_text, full_annotation_count, orphan_count)
+    """
+    if not text or '[@' not in text:
+        return text, 0, 0
+
+    # First pass: strip complete annotations, preserving the text content
+    full_matches = YEDDA_FULL_PATTERN.findall(text)
+    full_count = len(full_matches)
+    if full_count > 0:
+        text = YEDDA_FULL_PATTERN.sub(r'\1', text)
+
+    # Second pass: strip any remaining orphan '[@' (corruption artifacts)
+    orphan_matches = YEDDA_OPEN_PATTERN.findall(text)
+    orphan_count = len(orphan_matches)
+    if orphan_count > 0:
+        text = YEDDA_OPEN_PATTERN.sub('', text)
+
+    return text, full_count, orphan_count
+
+
+def clean_yedda_from_dataframe(
+    df,
+    text_column: str = 'value',
+    verbosity: int = 1
+):
+    """
+    Clean YEDDA annotations from a Spark DataFrame's text column.
+
+    Args:
+        df: Spark DataFrame with text data
+        text_column: Name of the column containing text
+        verbosity: Verbosity level for logging
+
+    Returns:
+        Cleaned DataFrame with annotations removed
+    """
+    from pyspark.sql.functions import udf, col
+    from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+    # Define return schema for UDF
+    result_schema = StructType([
+        StructField("cleaned_text", StringType(), True),
+        StructField("full_count", IntegerType(), True),
+        StructField("orphan_count", IntegerType(), True)
+    ])
+
+    # Create UDF
+    @udf(result_schema)
+    def strip_annotations_udf(text):
+        if text is None:
+            return {"cleaned_text": None, "full_count": 0, "orphan_count": 0}
+        cleaned, full_count, orphan_count = strip_yedda_annotations(text)
+        return {"cleaned_text": cleaned, "full_count": full_count, "orphan_count": orphan_count}
+
+    # Apply UDF and expand result
+    df_with_clean = df.withColumn("_yedda_result", strip_annotations_udf(col(text_column)))
+
+    # Check if any documents had annotations
+    docs_with_full = df_with_clean.filter(
+        col("_yedda_result.full_count") > 0
+    ).select("doc_id", "_yedda_result.full_count").collect()
+
+    docs_with_orphan = df_with_clean.filter(
+        col("_yedda_result.orphan_count") > 0
+    ).select("doc_id", "_yedda_result.orphan_count").collect()
+
+    if docs_with_full or docs_with_orphan:
+        if verbosity >= 1:
+            if docs_with_full:
+                total_full = sum(row.full_count for row in docs_with_full)
+                print(f"\n⚠ Found complete YEDDA annotations in {len(docs_with_full)} documents "
+                      f"({total_full} annotations) - stripped, text preserved")
+                if verbosity >= 2:
+                    for row in docs_with_full[:5]:
+                        print(f"    {row.doc_id}: {row.full_count} complete annotations")
+                    if len(docs_with_full) > 5:
+                        print(f"    ... and {len(docs_with_full) - 5} more")
+
+            if docs_with_orphan:
+                total_orphan = sum(row.orphan_count for row in docs_with_orphan)
+                print(f"\n⚠ Found orphan '[@' markers in {len(docs_with_orphan)} documents "
+                      f"({total_orphan} occurrences) - likely PDF corruption, removed")
+                if verbosity >= 2:
+                    for row in docs_with_orphan[:5]:
+                        print(f"    {row.doc_id}: {row.orphan_count} orphan markers")
+                    if len(docs_with_orphan) > 5:
+                        print(f"    ... and {len(docs_with_orphan) - 5} more")
+
+    # Replace original text column with cleaned text
+    df_cleaned = df_with_clean.withColumn(
+        text_column,
+        col("_yedda_result.cleaned_text")
+    ).drop("_yedda_result")
+
+    return df_cleaned
 
 
 # ============================================================================
@@ -477,58 +599,72 @@ def predict_and_save(
         # Discover and filter doc_ids if needed
         filtered_doc_ids = doc_ids  # Start with user-specified doc_ids (if any)
 
-        if not filtered_doc_ids or skip_existing or limit:
-            # Need to discover/filter doc_ids before loading
+        # Only connect to CouchDB if we need to discover or filter documents
+        need_db_connection = (not filtered_doc_ids) or skip_existing or limit
+        db = None
+
+        if need_db_connection:
             import couchdb
             couch_server = couchdb.Server(couchdb_url)
             if config['couchdb_username'] and config['couchdb_password']:
                 couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
             db = couch_server[config['ingest_db_name']]
 
-            # If no doc_ids specified, discover all PDFs
-            if not filtered_doc_ids:
-                if model_config.get('verbosity', 1) >= 1:
-                    print("\nDiscovering PDF documents in database...")
-                all_doc_ids = []
-                for doc_id in db:
-                    try:
-                        doc = db[doc_id]
-                        attachments = doc.get('_attachments', {})
-                        if any(att.endswith('.pdf') for att in attachments.keys()):
-                            all_doc_ids.append(doc_id)
-                    except Exception:
-                        continue
-                filtered_doc_ids = all_doc_ids
-                if model_config.get('verbosity', 1) >= 1:
-                    print(f"  Found {len(filtered_doc_ids)} documents with PDF attachments")
+        # If no doc_ids specified, discover all PDFs (full database scan)
+        if not filtered_doc_ids:
+            if model_config.get('verbosity', 1) >= 1:
+                print("\nDiscovering PDF documents in database...")
+            all_doc_ids = []
+            for doc_id in db:
+                try:
+                    doc = db[doc_id]
+                    attachments = doc.get('_attachments', {})
+                    if any(att.endswith('.pdf') for att in attachments.keys()):
+                        all_doc_ids.append(doc_id)
+                except Exception:
+                    continue
+            filtered_doc_ids = all_doc_ids
+            if model_config.get('verbosity', 1) >= 1:
+                print(f"  Found {len(filtered_doc_ids)} documents with PDF attachments")
 
-            # Skip existing documents with .ann attachments (unless --force)
-            if skip_existing and not force:
-                if model_config.get('verbosity', 1) >= 1:
-                    print(f"\nFiltering out documents with existing .ann attachments...")
-                existing_ann_docs = set()
-                for doc_id in db:
-                    try:
-                        doc = db[doc_id]
-                        attachments = doc.get('_attachments', {})
-                        if any(att.endswith('.ann') for att in attachments.keys()):
-                            existing_ann_docs.add(doc_id)
-                    except Exception:
-                        continue
+        # Skip existing documents with .ann attachments (unless --force)
+        # Only check the documents we're actually processing, not the entire database
+        if skip_existing and not force and filtered_doc_ids:
+            if model_config.get('verbosity', 1) >= 1:
+                print(f"\nFiltering out documents with existing .ann attachments...")
 
-                original_count = len(filtered_doc_ids)
-                filtered_doc_ids = [d for d in filtered_doc_ids if d not in existing_ann_docs]
+            # Ensure we have a db connection for checking
+            if db is None:
+                import couchdb
+                couch_server = couchdb.Server(couchdb_url)
+                if config['couchdb_username'] and config['couchdb_password']:
+                    couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+                db = couch_server[config['ingest_db_name']]
 
-                if model_config.get('verbosity', 1) >= 1:
-                    skipped = original_count - len(filtered_doc_ids)
-                    print(f"  Skipping {skipped} documents with existing .ann attachments")
-                    print(f"  Remaining: {len(filtered_doc_ids)} documents to process")
+            # Only check the specific documents we're processing
+            existing_ann_docs = set()
+            for doc_id in filtered_doc_ids:
+                try:
+                    doc = db[doc_id]
+                    attachments = doc.get('_attachments', {})
+                    if any(att.endswith('.ann') for att in attachments.keys()):
+                        existing_ann_docs.add(doc_id)
+                except Exception:
+                    continue
 
-            # Apply limit if specified
-            if limit and len(filtered_doc_ids) > limit:
-                if model_config.get('verbosity', 1) >= 1:
-                    print(f"\nLimiting to {limit} documents (from {len(filtered_doc_ids)})")
-                filtered_doc_ids = filtered_doc_ids[:limit]
+            original_count = len(filtered_doc_ids)
+            filtered_doc_ids = [d for d in filtered_doc_ids if d not in existing_ann_docs]
+
+            if model_config.get('verbosity', 1) >= 1:
+                skipped = original_count - len(filtered_doc_ids)
+                print(f"  Skipping {skipped} documents with existing .ann attachments")
+                print(f"  Remaining: {len(filtered_doc_ids)} documents to process")
+
+        # Apply limit if specified
+        if limit and len(filtered_doc_ids) > limit:
+            if model_config.get('verbosity', 1) >= 1:
+                print(f"\nLimiting to {limit} documents (from {len(filtered_doc_ids)})")
+            filtered_doc_ids = filtered_doc_ids[:limit]
 
         # Check if we have any documents to process
         if not filtered_doc_ids:
@@ -632,6 +768,11 @@ def predict_and_save(
                         print(f"  Loading {batch_size_actual} documents...")
                     batch_raw_df = batch_classifier.load_raw()
 
+                    # Strip any YEDDA annotations from text (corrupted PDFs)
+                    batch_raw_df = clean_yedda_from_dataframe(
+                        batch_raw_df, text_column='value', verbosity=verbosity
+                    )
+
                     # Check for failed extractions and retry if enabled
                     if retry_failed_extraction and couch_db is not None:
                         # Get list of successfully extracted doc_ids
@@ -683,6 +824,10 @@ def predict_and_save(
 
                                 try:
                                     retry_raw_df = retry_classifier.load_raw()
+                                    # Strip any YEDDA annotations from retry data
+                                    retry_raw_df = clean_yedda_from_dataframe(
+                                        retry_raw_df, text_column='value', verbosity=verbosity
+                                    )
                                     retry_count = retry_raw_df.select("doc_id").distinct().count()
                                     if retry_count > 0:
                                         if verbosity >= 1:
@@ -692,7 +837,7 @@ def predict_and_save(
                                         total_retried += retry_count
                                     else:
                                         if verbosity >= 1:
-                                            print(f"  ✗ Retry extraction yielded no documents")
+                                            print("  ✗ Retry extraction yielded no documents")
                                 except Exception as retry_e:
                                     if verbosity >= 1:
                                         print(f"  ✗ Retry extraction failed: {retry_e}")
@@ -787,6 +932,11 @@ def predict_and_save(
             print("\nLoading documents from CouchDB...")
             raw_df = classifier.load_raw()
 
+            # Strip any YEDDA annotations from text (corrupted PDFs)
+            raw_df = clean_yedda_from_dataframe(
+                raw_df, text_column='value', verbosity=verbosity
+            )
+
             # Check for failed extractions and retry if enabled
             if retry_failed_extraction:
                 # Connect to CouchDB for retry operations
@@ -856,6 +1006,10 @@ def predict_and_save(
 
                         try:
                             retry_raw_df = retry_classifier.load_raw()
+                            # Strip any YEDDA annotations from retry data
+                            retry_raw_df = clean_yedda_from_dataframe(
+                                retry_raw_df, text_column='value', verbosity=verbosity
+                            )
                             retry_count = (
                                 retry_raw_df.select("doc_id").distinct().count()
                             )
