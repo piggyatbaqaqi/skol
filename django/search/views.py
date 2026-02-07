@@ -763,6 +763,10 @@ class TaxaInfoView(APIView):
                 pdf_doc_id = ingest.get('_id')
                 url = ingest.get('url', '')
 
+            # Default PDFDbName to 'skol_dev' when not available in ingest
+            if not pdf_db_name:
+                pdf_db_name = 'skol_dev'
+
             # Return taxa info in search result format for widget compatibility
             result = {
                 'taxon_id': taxa_id,
@@ -1969,12 +1973,12 @@ class SourceContextView(APIView):
 
             # Get ingest information
             ingest = taxa_doc.get('ingest', {})
-            ingest_db = ingest.get('db_name')
+            ingest_db = ingest.get('db_name') or 'skol_dev'  # Default to skol_dev
             ingest_doc_id = ingest.get('_id')
 
-            if not ingest_db or not ingest_doc_id:
+            if not ingest_doc_id:
                 return Response(
-                    {'error': 'Taxa document does not have ingest information'},
+                    {'error': 'Taxa document does not have ingest._id information'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
