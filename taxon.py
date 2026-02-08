@@ -142,6 +142,9 @@ class Taxon(object):
             # (StructType converts dicts to Row objects which serialize as arrays)
             'nomenclature_spans': [span_to_string_dict(p.as_span().as_dict()) for p in self._nomenclatures],
             'description_spans': [span_to_string_dict(p.as_span().as_dict()) for p in self._descriptions],
+            # Attachment name for Source Context Viewer (e.g., "article.pdf.ann")
+            # Used to read the correct file that matches span offsets
+            'attachment_name': first_line.attachment_name,
         }
         return retval
 

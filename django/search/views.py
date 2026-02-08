@@ -1982,14 +1982,32 @@ class SourceContextView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Fetch article.txt from the ingest document
-            attachment_name = 'article.txt'
-            attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{attachment_name}"
-            text_response = requests.get(attachment_url, auth=auth, timeout=60)
+            # Fetch annotated file from the ingest document
+            # Spans are computed from .ann files, so we must read from .ann for correct offsets
+            # Use stored attachment_name if available, otherwise guess
+            stored_attachment = taxa_doc.get('attachment_name')
+            text_response = None
+            attachment_name = None
 
-            if text_response.status_code == 404:
+            if stored_attachment:
+                # Use the stored attachment name directly
+                attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{stored_attachment}"
+                text_response = requests.get(attachment_url, auth=auth, timeout=60)
+                if text_response.status_code == 200:
+                    attachment_name = stored_attachment
+
+            if attachment_name is None:
+                # Fall back to guessing: try article.pdf.ann first, then article.txt.ann
+                for ann_name in ['article.pdf.ann', 'article.txt.ann']:
+                    attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{ann_name}"
+                    text_response = requests.get(attachment_url, auth=auth, timeout=60)
+                    if text_response.status_code == 200:
+                        attachment_name = ann_name
+                        break
+
+            if text_response is None or text_response.status_code == 404:
                 return Response(
-                    {'error': f'article.txt not found in ingest document: {ingest_db}/{ingest_doc_id}'},
+                    {'error': f'No .ann file found in ingest document: {ingest_db}/{ingest_doc_id}'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
