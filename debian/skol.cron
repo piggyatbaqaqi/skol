@@ -49,7 +49,7 @@ SKIP_EXISTING=1
 0 0 * * * skol time /opt/skol/bin/predict_classifier --cores=2 --batch-size=24 --spark-driver-memory=8g --spark-executor-memory=8g --union-batch-size=1000 --verbosity=2 --save-text=lazy --incremental --incremental-batch-size=50 --retry-failed-extraction > ${LOGDIR}/predict-classifier.log 2>&1
 0 4 * * * skol time /opt/skol/bin/extract_taxa_to_couchdb --verbosity=2 > ${LOGDIR}/extract-taxa-to-couchdb.log 2>&1
 0 6 * * * skol time /opt/skol/bin/embed_taxa --verbosity=2 > ${LOGDIR}/embed-taxa.log 2>&1
-0 22 * * 1,3,5 skol time /opt/skol/bin/taxa_to_json --verbosity=2 --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200 > ${LOGDIR}/taxa-to-json.log 2>&1
+0 22 * * * skol time /opt/skol/bin/taxa_to_json --verbosity=2 --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200 > ${LOGDIR}/taxa-to-json.log 2>&1
 0 22 * * 0,2,4,6 skol time /opt/skol/bin/build_vocab_tree --verbosity=2 --db=skol_taxa_full_dev > ${LOGDIR}/build-vocab-tree.log 2>&1
 # Update sources statistics for the ingestion sources page daily at 7am
 0 7 * * * skol time /opt/skol/bin/build_sources_stats --verbosity=2 > ${LOGDIR}/build-sources-stats.log 2>&1
