@@ -138,9 +138,11 @@ def remove_unmarked_attachments(
                     content = db.get_attachment(doc, att_name)
                     if content is None:
                         continue
-                    # Decode if bytes
+                    # Read from file-like object if needed
+                    if hasattr(content, 'read'):
+                        content = content.read()
+                    # Decode bytes to string
                     if isinstance(content, bytes):
-                        content = content.read() if hasattr(content, 'read') else content
                         content = content.decode('utf-8', errors='replace')
                 except Exception as e:
                     if verbosity >= 2:
