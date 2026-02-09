@@ -231,9 +231,9 @@ def main():
 
     # Get environment configuration
     env_config = get_env_config()
-    couchdb_url = env_config.get('COUCHDB_URL', 'http://localhost:5984')
-    couchdb_user = env_config.get('COUCHDB_USER', '')
-    couchdb_password = env_config.get('COUCHDB_PASSWORD', '')
+    couchdb_url = env_config['couchdb_url']
+    couchdb_user = env_config['couchdb_username']
+    couchdb_password = env_config['couchdb_password']
 
     # Connect to CouchDB
     import couchdb
