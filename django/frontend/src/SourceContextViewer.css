@@ -9,7 +9,54 @@
   margin-top: 8px;
 }
 
-/* Toggle button */
+/* Inline mode - for embedding in text sections */
+.source-context-inline {
+  margin-top: 0;
+}
+
+.source-context-inline .source-context-header {
+  display: inline;
+  float: right;
+  margin-left: 8px;
+}
+
+.source-context-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #4a9eff;
+  background: transparent;
+  border: 1px solid #4a9eff;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.source-context-toggle-btn:hover {
+  background: #4a9eff;
+  color: white;
+}
+
+.source-context-toggle-btn:focus-visible {
+  outline: 2px solid #4a9eff;
+  outline-offset: 1px;
+}
+
+.source-context-toggle-btn[aria-expanded="true"] {
+  background: #4a9eff;
+  color: white;
+}
+
+/* Original text display */
+.source-context-original-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Legacy toggle button (for backwards compatibility) */
 .source-context-toggle {
   display: inline-flex;
   align-items: center;

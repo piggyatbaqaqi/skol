@@ -10,7 +10,8 @@
  *        data-field="description"
  *        data-api-base-url="/skol/api"
  *        data-context-chars="500"
- *        data-taxa-db="skol_taxa_dev">
+ *        data-taxa-db="skol_taxa_dev"
+ *        data-original-text="The original text to display">
  *   </div>
  *
  *   <script src="{% static 'js/source-context.bundle.js' %}"></script>
@@ -26,16 +27,25 @@ function initSourceContextViewers() {
   const containers = document.querySelectorAll('[data-source-context-viewer]');
 
   containers.forEach((container) => {
+    // Skip if already initialized
+    if (container.dataset.initialized === 'true') {
+      return;
+    }
+
     const taxaId = container.dataset.taxaId;
     const field = container.dataset.field || 'description';
     const apiBaseUrl = container.dataset.apiBaseUrl || '/api';
     const contextChars = parseInt(container.dataset.contextChars, 10) || 500;
     const taxaDb = container.dataset.taxaDb || 'skol_taxa_dev';
+    const originalText = container.dataset.originalText || '';
 
     if (!taxaId) {
       console.error('SourceContextViewer: missing data-taxa-id attribute');
       return;
     }
+
+    // Mark as initialized to prevent re-initialization
+    container.dataset.initialized = 'true';
 
     const root = createRoot(container);
     root.render(
@@ -45,6 +55,7 @@ function initSourceContextViewers() {
         apiBaseUrl={apiBaseUrl}
         contextChars={contextChars}
         taxaDb={taxaDb}
+        originalText={originalText}
       />
     );
   });

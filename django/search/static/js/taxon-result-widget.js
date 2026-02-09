@@ -142,14 +142,6 @@ const TaxonResultWidget = (function() {
             metaItems.push(`<div class="meta-item"><span class="meta-label">Journal Page:</span>${escapeHtml(result.EmpiricalPageNumber)}</div>`);
         }
 
-        // Build description
-        let description = '';
-        if (result.Description && !options.compact) {
-            const maxLen = options.descriptionLength || 500;
-            const truncated = result.Description.length > maxLen;
-            description = `<div class="result-description">${escapeHtml(result.Description).substring(0, maxLen)}${truncated ? '...' : ''}</div>`;
-        }
-
         // Build JSON toggle (optional)
         let jsonToggle = '';
         let jsonContent = '';
@@ -158,40 +150,53 @@ const TaxonResultWidget = (function() {
             jsonContent = `<div id="taxon-json-${options.index}" class="result-json" style="display: none;"><pre>${JSON.stringify(result, null, 2)}</pre></div>`;
         }
 
-        // Build source context viewers (if taxon_id is available)
-        let sourceContextViewers = '';
+        // Build inline source context viewer for nomenclature (Title)
+        const apiUrl = apiBase ? `${apiBase}/api` : '/api';
+        let titleContent = '';
         if (result.taxon_id) {
-            // apiBase is the SCRIPT_NAME (e.g., /skol), need to add /api for API endpoints
-            const apiUrl = apiBase ? `${apiBase}/api` : '/api';
-            sourceContextViewers = `
-                <div class="source-context-viewers" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-                    <div data-source-context-viewer
-                         data-taxa-id="${escapeHtml(result.taxon_id)}"
-                         data-field="nomenclature"
-                         data-api-base-url="${apiUrl}">
-                    </div>
-                    <div data-source-context-viewer
-                         data-taxa-id="${escapeHtml(result.taxon_id)}"
-                         data-field="description"
-                         data-api-base-url="${apiUrl}">
-                    </div>
+            titleContent = `
+                <div data-source-context-viewer
+                     data-taxa-id="${escapeHtml(result.taxon_id)}"
+                     data-field="nomenclature"
+                     data-api-base-url="${apiUrl}"
+                     data-original-text="${escapeHtml(result.Title || 'Untitled')}">
                 </div>
             `;
+        } else {
+            titleContent = escapeHtml(result.Title || 'Untitled');
+        }
+
+        // Build inline source context viewer for description
+        let descriptionContent = '';
+        if (result.Description && !options.compact) {
+            if (result.taxon_id) {
+                descriptionContent = `
+                    <div class="result-description" data-source-context-viewer
+                         data-taxa-id="${escapeHtml(result.taxon_id)}"
+                         data-field="description"
+                         data-api-base-url="${apiUrl}"
+                         data-original-text="${escapeHtml(result.Description)}">
+                    </div>
+                `;
+            } else {
+                const maxLen = options.descriptionLength || 500;
+                const truncated = result.Description.length > maxLen;
+                descriptionContent = `<div class="result-description">${escapeHtml(result.Description).substring(0, maxLen)}${truncated ? '...' : ''}</div>`;
+            }
         }
 
         card.innerHTML = `
             <div class="result-header">
-                <div class="result-title">${escapeHtml(result.Title || 'Untitled')}</div>
+                <div class="result-title">${titleContent}</div>
                 ${similarityPercent !== null ? `<div class="similarity-badge">${similarityPercent}%</div>` : ''}
             </div>
             ${metaItems.length > 0 ? `<div class="result-meta">${metaItems.join('')}</div>` : ''}
-            ${description}
+            ${descriptionContent}
             <div class="result-actions">
                 ${pdfLink}
                 ${sourceLink}
                 ${jsonToggle}
             </div>
-            ${sourceContextViewers}
             ${jsonContent}
         `;
 
