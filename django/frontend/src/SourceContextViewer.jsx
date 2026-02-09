@@ -2,9 +2,7 @@
  * SourceContextViewer - Inline toggle between text and source context
  *
  * Displays either the original text or a windowed view into the source with:
- * - Highlighted nomenclature or description text
- * - Gap indicators for coalesced content
- * - Navigation between multiple spans
+ * - All spans highlighted in a single window
  * - Toggle button to switch between text and context views
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -41,20 +39,18 @@ const SourceContextViewer = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [context, setContext] = useState(null);
-  const [spanIndex, setSpanIndex] = useState(0);
   const contentRef = useRef(null);
 
   /**
    * Fetch context from the API
    */
-  const fetchContext = useCallback(async (index) => {
+  const fetchContext = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams({
         field,
-        span_index: index.toString(),
         context_chars: contextChars.toString(),
         taxa_db: taxaDb,
       });
@@ -77,7 +73,6 @@ const SourceContextViewer = ({
 
       const data = await response.json();
       setContext(data);
-      setSpanIndex(data.span_index);
     } catch (err) {
       console.error('Failed to fetch source context:', err);
       setError(err.message);
@@ -91,31 +86,13 @@ const SourceContextViewer = ({
    */
   const handleToggle = useCallback(() => {
     if (!showContext && !context && !loading) {
-      fetchContext(0);
+      fetchContext();
     }
     setShowContext((prev) => !prev);
   }, [showContext, context, loading, fetchContext]);
 
   /**
-   * Navigate to previous span
-   */
-  const handlePrevSpan = useCallback(() => {
-    if (context && context.prev_span_index !== null) {
-      fetchContext(context.prev_span_index);
-    }
-  }, [context, fetchContext]);
-
-  /**
-   * Navigate to next span
-   */
-  const handleNextSpan = useCallback(() => {
-    if (context && context.next_span_index !== null) {
-      fetchContext(context.next_span_index);
-    }
-  }, [context, fetchContext]);
-
-  /**
-   * Scroll to highlight when content loads
+   * Scroll to first highlight when content loads
    */
   useEffect(() => {
     if (showContext && context && contentRef.current) {
@@ -187,53 +164,17 @@ const SourceContextViewer = ({
                 )}
                 {context.total_spans > 1 && (
                   <span className="source-context-span-info">
-                    {spanIndex + 1}/{context.total_spans}
+                    {context.total_spans} spans
                   </span>
                 )}
               </div>
 
-              {/* Gap indicator before */}
-              {context.has_gap_before && (
-                <div className="source-context-gap">
-                  [{context.gap_size_before} chars omitted]
-                </div>
-              )}
-
-              {/* Source text content */}
+              {/* Source text content with all spans highlighted */}
               <div
                 ref={contentRef}
                 className="source-context-content"
                 dangerouslySetInnerHTML={{ __html: context.source_text }}
               />
-
-              {/* Gap indicator after */}
-              {context.has_gap_after && (
-                <div className="source-context-gap">
-                  [{context.gap_size_after} chars omitted]
-                </div>
-              )}
-
-              {/* Navigation buttons for multiple spans */}
-              {context.total_spans > 1 && (
-                <div className="source-context-nav">
-                  <button
-                    type="button"
-                    className="source-context-nav-btn"
-                    onClick={handlePrevSpan}
-                    disabled={context.prev_span_index === null}
-                  >
-                    Prev
-                  </button>
-                  <button
-                    type="button"
-                    className="source-context-nav-btn"
-                    onClick={handleNextSpan}
-                    disabled={context.next_span_index === null}
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>

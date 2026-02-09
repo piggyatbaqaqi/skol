@@ -1,0 +1,31 @@
+(skol) piggy@puchpuchobs:~/src/github.com/piggyatbaqaqi/skol$ ./fixes/remove_malformed_ann.py 
+
+======================================================================
+Remove Malformed Annotation Attachments
+======================================================================
+Database: skol_dev
+CouchDB: http://localhost:5984
+Pattern: *.ann
+Mode: LIVE
+======================================================================
+
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+Scanning for documents with *.ann attachments...
+Found 12375 document(s) to check
+
+[6210/12375] 7e96cad7f9a45979839131cb6646c101
+  Removed article.pdf.ann: 7e96cad7f9a45979839131cb6646c101/article.pdf.ann:2955: Label open not at start of line: None:0: start: False end: None value: 'Zmllbon~[@agrsci. mtibo. it'
+[9159/12375] b9a091f800405673a734970a2e94077b
+  Removed article.pdf.ann: b9a091f800405673a734970a2e94077b/article.pdf.ann:363: Label open not at start of line: None:0: start: False end: None value: '~ days, 62nm at 25C , 67rrrn at 30C , reverse becoming progressivel y reddish with production or dli"fusible p[@nent [most abundantly'
+[12152/12375] fb4f7bf49631579aa19aa5968a59eba0
+  Removed article.pdf.ann: fb4f7bf49631579aa19aa5968a59eba0/article.pdf.ann:11524: Label open not at start of line: None:0: start: True end: None value: ' lizlreny@ma ik~ucas.ac. al ·Ruo[@sun.im. ac.crJ'
+
+======================================================================
+Summary
+======================================================================
+Documents scanned: 12375
+Attachments checked: 14305
+Malformed attachments removed: 3
+
+(skol) piggy@puchpuchobs:~/src/github.com/piggyatbaqaqi/skol$ 

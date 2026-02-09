@@ -1897,28 +1897,22 @@ class SourceContextView(APIView):
     """
     Retrieve windowed source text with highlight markers for the Source Context Viewer.
 
+    Shows all spans for a field in a single window, from the start of the first span
+    to the end of the last span, with all spans highlighted.
+
     GET /api/taxa/<taxa_id>/context/
     Query params:
       - field: 'nomenclature' or 'description' (default: 'description')
-      - span_index: which span to show (default: 0)
-      - context_chars: characters of context before/after span (default: 500)
+      - context_chars: characters of context before/after span range (default: 500)
       - taxa_db: database name (default: 'skol_taxa_dev')
 
     Response:
       {
-        "source_text": "...text with <mark>highlighted</mark> region...",
-        "highlight_start": 234,
-        "highlight_end": 567,
-        "has_gap_before": false,
-        "has_gap_after": true,
-        "gap_size_before": 0,
-        "gap_size_after": 150,
-        "prev_span_index": null,
-        "next_span_index": 1,
+        "source_text": "...text with <mark>highlighted</mark> regions...",
+        "total_spans": 2,
         "pdf_page": 35,
         "pdf_label": "35",
-        "empirical_page": "127",
-        "total_spans": 2
+        "empirical_page": "127"
       }
     """
 
@@ -1926,7 +1920,6 @@ class SourceContextView(APIView):
         try:
             # Parse query parameters
             field = request.GET.get('field', 'description')
-            span_index = int(request.GET.get('span_index', 0))
             context_chars = int(request.GET.get('context_chars', 500))
             taxa_db = request.GET.get('taxa_db', 'skol_taxa_dev')
 
@@ -1955,21 +1948,16 @@ class SourceContextView(APIView):
 
             # Get spans for the requested field
             spans_key = f'{field}_spans'
-            spans = taxa_doc.get(spans_key, [])
+            raw_spans = taxa_doc.get(spans_key, [])
 
-            if not spans:
+            if not raw_spans:
                 return Response(
                     {'error': f'No {field} spans found in taxa document'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            if span_index < 0 or span_index >= len(spans):
-                return Response(
-                    {'error': f'Invalid span_index {span_index}. Document has {len(spans)} spans.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            current_span = parse_span(spans[span_index])
+            # Parse all spans
+            spans = [parse_span(s) for s in raw_spans]
 
             # Get ingest information
             ingest = taxa_doc.get('ingest', {})
@@ -2014,63 +2002,62 @@ class SourceContextView(APIView):
             text_response.raise_for_status()
             article_text = text_response.text
 
-            # Get span character offsets
-            start_char = current_span.get('start_char', 0)
-            end_char = current_span.get('end_char', len(article_text))
+            # Find the overall range: from start of first span to end of last span
+            first_span_start = min(s.get('start_char', 0) for s in spans)
+            last_span_end = max(s.get('end_char', len(article_text)) for s in spans)
 
             # Calculate window boundaries with context
-            window_start = max(0, start_char - context_chars)
-            window_end = min(len(article_text), end_char + context_chars)
+            window_start = max(0, first_span_start - context_chars)
+            window_end = min(len(article_text), last_span_end + context_chars)
 
             # Extract the window text
             window_text = article_text[window_start:window_end]
 
-            # Calculate highlight positions relative to window
-            highlight_start = start_char - window_start
-            highlight_end = end_char - window_start
+            # Build list of highlight regions (relative to window)
+            # Sort spans by start_char to process in order
+            sorted_spans = sorted(spans, key=lambda s: s.get('start_char', 0))
 
-            # Insert highlight markers
-            highlighted_text = (
-                window_text[:highlight_start]
-                + '<mark>'
-                + window_text[highlight_start:highlight_end]
-                + '</mark>'
-                + window_text[highlight_end:]
-            )
+            # Insert highlight markers for all spans
+            # Work backwards to avoid offset issues when inserting tags
+            highlights = []
+            for span in sorted_spans:
+                start = span.get('start_char', 0) - window_start
+                end = span.get('end_char', 0) - window_start
+                # Clamp to window boundaries
+                start = max(0, min(start, len(window_text)))
+                end = max(0, min(end, len(window_text)))
+                if start < end:
+                    highlights.append((start, end))
 
-            # Detect gaps using character offset discontinuity
-            has_gap_before = False
-            gap_size_before = 0
-            has_gap_after = False
-            gap_size_after = 0
+            # Merge overlapping highlights
+            merged_highlights = []
+            for start, end in highlights:
+                if merged_highlights and start <= merged_highlights[-1][1]:
+                    # Overlapping or adjacent - merge
+                    merged_highlights[-1] = (merged_highlights[-1][0], max(end, merged_highlights[-1][1]))
+                else:
+                    merged_highlights.append((start, end))
 
-            if span_index > 0:
-                prev_span = spans[span_index - 1]
-                prev_end = prev_span.get('end_char', 0)
-                gap_size_before = max(0, start_char - prev_end)
-                has_gap_before = gap_size_before > 0
+            # Insert <mark> tags working backwards to preserve offsets
+            highlighted_text = window_text
+            for start, end in reversed(merged_highlights):
+                highlighted_text = (
+                    highlighted_text[:start]
+                    + '<mark>'
+                    + highlighted_text[start:end]
+                    + '</mark>'
+                    + highlighted_text[end:]
+                )
 
-            if span_index < len(spans) - 1:
-                next_span = spans[span_index + 1]
-                next_start = next_span.get('start_char', 0)
-                gap_size_after = max(0, next_start - end_char)
-                has_gap_after = gap_size_after > 0
+            # Get metadata from first span (for page info)
+            first_span = spans[0]
 
             return Response({
                 'source_text': highlighted_text,
-                'highlight_start': highlight_start,
-                'highlight_end': highlight_end,
-                'has_gap_before': has_gap_before,
-                'has_gap_after': has_gap_after,
-                'gap_size_before': gap_size_before,
-                'gap_size_after': gap_size_after,
-                'prev_span_index': span_index - 1 if span_index > 0 else None,
-                'next_span_index': span_index + 1 if span_index < len(spans) - 1 else None,
-                'pdf_page': current_span.get('pdf_page'),
-                'pdf_label': current_span.get('pdf_label'),
-                'empirical_page': current_span.get('empirical_page'),
                 'total_spans': len(spans),
-                'span_index': span_index,
+                'pdf_page': first_span.get('pdf_page'),
+                'pdf_label': first_span.get('pdf_label'),
+                'empirical_page': first_span.get('empirical_page'),
             })
 
         except requests.exceptions.RequestException as e:
