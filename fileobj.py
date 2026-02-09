@@ -72,8 +72,11 @@ class FileObject(ABC):
         for l_str in self._get_content_iterator():
             # Capture character offset at start of this line
             line_start_char = self._char_offset
-            # Increment offset by line length (including any newline)
-            self._char_offset += len(l_str)
+            # Calculate end_char (position after last char of line content)
+            line_end_char = line_start_char + len(l_str)
+            # Update cumulative offset: content length + 1 for newline
+            # (newlines are stripped by split('\n') but exist in source file)
+            self._char_offset = line_end_char + 1
 
             self._line_number += 1
 
@@ -96,13 +99,13 @@ class FileObject(ABC):
                 # Create a special Line object for the page marker
                 # This line will be preserved in output but not classified
                 l = Line(l_str, self, is_page_marker=True,
-                         start_char=line_start_char, end_char=self._char_offset)
+                         start_char=line_start_char, end_char=line_end_char)
                 yield l
                 continue
 
             # Create Line object with file metadata and character offsets
             l = Line(l_str, self,
-                     start_char=line_start_char, end_char=self._char_offset)
+                     start_char=line_start_char, end_char=line_end_char)
             yield l
 
     @property

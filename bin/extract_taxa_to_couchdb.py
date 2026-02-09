@@ -348,6 +348,7 @@ class TaxonExtractor:
             StructField("empirical_page_number", StringType(), True),
             StructField("nomenclature_spans", ArrayType(span_map_schema), True),
             StructField("description_spans", ArrayType(span_map_schema), True),
+            StructField("attachment_name", StringType(), True),
             StructField("_id", StringType(), True),
             StructField("json_annotated", StringType(), True)
         ])
@@ -498,6 +499,7 @@ class TaxonExtractor:
                                 'empirical_page_number': doc.get('empirical_page_number'),
                                 'nomenclature_spans': doc.get('nomenclature_spans'),
                                 'description_spans': doc.get('description_spans'),
+                                'attachment_name': doc.get('attachment_name'),
                                 '_id': doc.get('_id'),
                                 'json_annotated': doc.get('json_annotated'),
                             }
