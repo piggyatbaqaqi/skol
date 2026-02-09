@@ -37,8 +37,11 @@ from typing import Any, Dict, List, Optional, Union
 
 # Add parent directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
+# Add parent directory to path for ingestors module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from env_config import get_env_config
+from ingestors.timestamps import set_timestamps
 
 # Span field names in order (matches StructType definition)
 SPAN_FIELDS = [
@@ -238,6 +241,7 @@ def fix_span_format(
                 convert_document_spans(doc)
 
                 # Save the updated document
+                set_timestamps(doc)  # is_new=False for existing doc
                 db.save(doc)
 
             results['fixed'] += 1

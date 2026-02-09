@@ -13,6 +13,7 @@ from .local_mykoweb_literature import LocalMykowebLiteratureIngestor
 from .mycosphere import MycosphereIngestor
 from .publications import PublicationRegistry
 from .rate_limited_client import RateLimitedHttpClient
+from .timestamps import set_timestamps, get_iso_timestamp
 
 __all__ = [
     'Ingestor',
@@ -23,4 +24,6 @@ __all__ = [
     'MycosphereIngestor',
     'PublicationRegistry',
     'RateLimitedHttpClient',
+    'set_timestamps',
+    'get_iso_timestamp',
 ]

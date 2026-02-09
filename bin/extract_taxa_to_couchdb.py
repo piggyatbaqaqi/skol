@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.couchdb_io import CouchDBConnection
 from env_config import get_env_config
+from ingestors.timestamps import set_timestamps
 
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
@@ -724,7 +725,8 @@ class TaxonExtractor:
                         for attempt in range(MAX_RETRIES):
                             try:
                                 # Check if document already exists (idempotent)
-                                if doc_id in db:
+                                is_new_doc = doc_id not in db
+                                if not is_new_doc:
                                     # Document exists - update it with latest _rev
                                     existing_doc = db[doc_id]
                                     taxon_doc['_id'] = doc_id
@@ -735,6 +737,7 @@ class TaxonExtractor:
                                     # Remove _rev if present from previous attempt
                                     taxon_doc.pop('_rev', None)
 
+                                set_timestamps(taxon_doc, is_new=is_new_doc)
                                 db.save(taxon_doc)  # pyright: ignore[reportUnknownMemberType]
                                 success = True
 

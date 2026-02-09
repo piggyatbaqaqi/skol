@@ -34,6 +34,7 @@ except ImportError:
     save_pdf = None  # Optional fallback
 
 from .ingestor import Ingestor
+from .timestamps import set_timestamps
 
 
 class CrossrefIngestor(Ingestor):
@@ -268,6 +269,7 @@ class CrossrefIngestor(Ingestor):
             }
 
             # Save document
+            set_timestamps(doc, is_new=True)
             _doc_id, _doc_rev = self.db.save(doc)
 
         # Download PDF using TDM links, pypaperretriever, or paperscraper

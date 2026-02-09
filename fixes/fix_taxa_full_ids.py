@@ -33,8 +33,11 @@ from typing import Optional
 
 # Add parent directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
+# Add parent directory to path for ingestors module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from env_config import get_env_config
+from ingestors.timestamps import set_timestamps
 
 
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
@@ -174,7 +177,8 @@ def fix_taxa_ids(
                 del new_doc['_rev']
 
             # Check if correct ID already exists (shouldn't happen, but be safe)
-            if correct_doc_id in db:
+            is_new_doc = correct_doc_id not in db
+            if not is_new_doc:
                 # Update existing document
                 existing = db[correct_doc_id]
                 new_doc['_rev'] = existing['_rev']
@@ -182,6 +186,7 @@ def fix_taxa_ids(
                     print(f"           (updating existing document)")
 
             # Save new document
+            set_timestamps(new_doc, is_new=is_new_doc)
             db.save(new_doc)
 
             # Delete old document

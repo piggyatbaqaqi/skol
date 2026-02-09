@@ -46,6 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config
+from ingestors.timestamps import set_timestamps
 
 
 # Rate limit tracking per domain
@@ -286,6 +287,7 @@ def process_document(
             error = "Failed to resolve DOI"
             if not dry_run:
                 doc['download_error'] = error
+                set_timestamps(doc)
                 db.save(doc)
             return False, error
         download_url = resolved
@@ -308,6 +310,7 @@ def process_document(
         try:
             fresh_doc = db[doc_id]
             fresh_doc['download_error'] = error
+            set_timestamps(fresh_doc)
             db.save(fresh_doc)
         except Exception as save_e:
             if verbosity >= 2:
@@ -328,6 +331,7 @@ def process_document(
         fresh_doc = db[doc_id]
         if 'download_error' in fresh_doc:
             del fresh_doc['download_error']
+            set_timestamps(fresh_doc)
             db.save(fresh_doc)
 
         if verbosity >= 2:

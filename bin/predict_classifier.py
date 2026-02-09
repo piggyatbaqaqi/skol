@@ -53,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from skol_classifier.classifier_v2 import SkolClassifierV2
 from env_config import get_env_config, create_redis_client
 from ingestors import RateLimitedHttpClient
+from ingestors.timestamps import set_timestamps
 
 import couchdb
 from io import BytesIO
@@ -246,6 +247,7 @@ def redownload_pdf_from_url(
             # Refresh doc to get latest revision
             fresh_doc = db[doc_id]
             fresh_doc['download_error'] = error_msg
+            set_timestamps(fresh_doc)
             db.save(fresh_doc)
         except Exception:
             pass  # Best effort
@@ -301,6 +303,7 @@ def redownload_pdf_from_url(
             fresh_doc = db[doc_id]
             if 'download_error' in fresh_doc:
                 del fresh_doc['download_error']
+                set_timestamps(fresh_doc)
                 db.save(fresh_doc)
         except Exception:
             pass  # Best effort
@@ -443,6 +446,7 @@ def mark_taxonomy_documents(
             # Update document if flag changed
             if 'taxonomy' not in doc or doc['taxonomy'] != has_taxonomy:
                 doc['taxonomy'] = has_taxonomy
+                set_timestamps(doc)
                 db.save(doc)
                 marked_count += 1
 

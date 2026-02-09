@@ -22,6 +22,7 @@ except ImportError as exc:
     ) from exc
 
 from .ingestor import Ingestor
+from .timestamps import set_timestamps
 
 
 class InternetArchiveIngestor(Ingestor):
@@ -265,6 +266,7 @@ class InternetArchiveIngestor(Ingestor):
 
         # Save document to CouchDB if it's new
         if not doc_exists:
+            set_timestamps(doc, is_new=True)
             _doc_id, _doc_rev = self.db.save(doc)
 
         # Download and attach files

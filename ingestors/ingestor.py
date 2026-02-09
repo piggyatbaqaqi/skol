@@ -22,6 +22,7 @@ from bs4 import BeautifulSoup
 from uuid import uuid5, NAMESPACE_URL
 
 from .rate_limited_client import RateLimitedHttpClient
+from .timestamps import set_timestamps
 
 
 class Ingestor(ABC):
@@ -339,6 +340,7 @@ class Ingestor(ABC):
 
             # Save document to CouchDB if it's new
             if not doc_exists:
+                set_timestamps(doc, is_new=True)
                 _doc_id, _doc_rev = self.db.save(doc)
 
             # Fetch PDF - check local first, then download if needed
@@ -364,6 +366,7 @@ class Ingestor(ABC):
                     try:
                         fresh_doc = self.db[doc['_id']]
                         fresh_doc['download_error'] = error_type
+                        set_timestamps(fresh_doc)  # is_new=False for existing doc
                         self.db.save(fresh_doc)
                     except Exception as save_e:
                         if self.verbosity >= 2:
@@ -376,6 +379,7 @@ class Ingestor(ABC):
                     try:
                         fresh_doc = self.db[doc['_id']]
                         fresh_doc['download_error'] = f"HTTP {response.status_code}"
+                        set_timestamps(fresh_doc)
                         self.db.save(fresh_doc)
                     except Exception as e:
                         if self.verbosity >= 2:
@@ -393,6 +397,7 @@ class Ingestor(ABC):
                 try:
                     fresh_doc = self.db[doc['_id']]
                     fresh_doc['download_error'] = 'Invalid PDF (missing %PDF header)'
+                    set_timestamps(fresh_doc)
                     self.db.save(fresh_doc)
                 except Exception as e:
                     if self.verbosity >= 2:
@@ -415,6 +420,7 @@ class Ingestor(ABC):
                 fresh_doc = self.db[doc['_id']]
                 if 'download_error' in fresh_doc:
                     del fresh_doc['download_error']
+                    set_timestamps(fresh_doc)
                     self.db.save(fresh_doc)
             except Exception:
                 pass  # Best effort
