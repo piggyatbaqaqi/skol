@@ -989,8 +989,8 @@
                 <div class="menu-divider"></div>
                 {% else %}
                 <div class="menu-section-title">Account</div>
-                <a href="{% url 'accounts:login' %}?next={{ request.path }}">Login</a>
-                <a href="{% url 'accounts:register' %}?next={{ request.path }}">Register</a>
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}" onclick="saveGuestDescriptionBeforeNav()">Login</a>
+                <a href="{% url 'accounts:register' %}?next={{ request.path }}" onclick="saveGuestDescriptionBeforeNav()">Register</a>
                 <div class="menu-divider"></div>
                 {% endif %}
                 <div class="menu-section-title">Help</div>
@@ -1065,8 +1065,8 @@
             <button class="mobile-menu-btn" onclick="openMobileMenu()" title="Menu">&#9776;</button>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
-            <a href="{% url 'accounts:login' %}?next={{ request.path }}">Login</a>
-            <a href="{% url 'accounts:register' %}?next={{ request.path }}">Register</a>
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}" onclick="saveGuestDescriptionBeforeNav()">Login</a>
+            <a href="{% url 'accounts:register' %}?next={{ request.path }}" onclick="saveGuestDescriptionBeforeNav()">Register</a>
             <div class="settings-dropdown">
                 <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9881;</button>
                 <div id="settingsMenu" class="settings-menu">
@@ -1688,6 +1688,18 @@
             document.body.style.overflow = ''; // Restore scrolling
         }
 
+        // Save guest description to localStorage before navigating to login/register
+        // This ensures the description is saved even if blur event doesn't fire on mobile
+        function saveGuestDescriptionBeforeNav() {
+            if (typeof GuestCollection !== 'undefined') {
+                const promptTextarea = document.getElementById('prompt');
+                if (promptTextarea && promptTextarea.value.trim()) {
+                    GuestCollection.updateDescription(promptTextarea.value);
+                    console.log('Saved guest description before navigation');
+                }
+            }
+        }
+
         // Close dropdown menus when clicking outside
         document.addEventListener('click', function(event) {
             const collectionsDropdown = document.querySelector('.collections-dropdown');
@@ -2149,8 +2161,12 @@
                     sessionStorage.setItem('guest_collection_migrated', 'true');
                     console.log('Guest collection migrated successfully:', result);
                     showSuccess(`Your saved searches have been imported to collection "${result.name}".`);
-                    // Refresh collections menu
-                    updateCollectionsMenu();
+                    // Refresh collections menu and activate the new collection
+                    await updateCollectionsMenu();
+                    // Set the newly created collection as active (this loads the description into the textarea)
+                    if (result.collection_id) {
+                        await onCollectionChange(result.collection_id);
+                    }
                 } else {
                     console.log('Migration returned but not successful:', result);
                 }
