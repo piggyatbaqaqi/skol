@@ -110,6 +110,8 @@ skol-embed-taxa = "bin.embed_taxa:main"
 
 [tool.setuptools.packages.find]
 include = [
+    "skol",
+    "skol.*",
     "skol_classifier",
     "skol_classifier.*",
     "ingestors",
