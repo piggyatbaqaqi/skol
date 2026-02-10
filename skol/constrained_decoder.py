@@ -327,6 +327,25 @@ class OutlinesBackend(DecoderBackend):
         if device:
             model_kwargs['device_map'] = device
 
+        # Handle quantization config - newer transformers requires BitsAndBytesConfig
+        load_in_4bit = model_kwargs.pop('load_in_4bit', False)
+        load_in_8bit = model_kwargs.pop('load_in_8bit', False)
+
+        if load_in_4bit or load_in_8bit:
+            try:
+                from transformers import BitsAndBytesConfig
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=load_in_4bit,
+                    load_in_8bit=load_in_8bit,
+                )
+                model_kwargs['quantization_config'] = quantization_config
+            except ImportError:
+                # Fall back to direct kwargs for older transformers versions
+                if load_in_4bit:
+                    model_kwargs['load_in_4bit'] = True
+                if load_in_8bit:
+                    model_kwargs['load_in_8bit'] = True
+
         self._model = outlines.models.transformers(
             model_name,
             model_kwargs=model_kwargs,
