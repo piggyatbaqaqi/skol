@@ -12,6 +12,7 @@ setup(
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     license="GPL-3.0-or-later",
     packages=find_packages(include=[
+        "skol", "skol.*",
         "skol_classifier", "skol_classifier.*",
         "ingestors", "ingestors.*",
         "training", "training.*",
