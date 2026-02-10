@@ -395,7 +395,7 @@
             <a href="{% url 'accounts:logout' %}">Logout</a>
             {% else %}
             <a href="{% url 'home' %}">Search</a>
-            <a href="{% url 'accounts:login' %}">Login</a>
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}">Login</a>
             {% endif %}
         </div>
 

@@ -989,8 +989,8 @@
                 <div class="menu-divider"></div>
                 {% else %}
                 <div class="menu-section-title">Account</div>
-                <a href="{% url 'accounts:login' %}">Login</a>
-                <a href="{% url 'accounts:register' %}">Register</a>
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}">Login</a>
+                <a href="{% url 'accounts:register' %}?next={{ request.path }}">Register</a>
                 <div class="menu-divider"></div>
                 {% endif %}
                 <div class="menu-section-title">Help</div>
@@ -1065,8 +1065,8 @@
             <button class="mobile-menu-btn" onclick="openMobileMenu()" title="Menu">&#9776;</button>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
-            <a href="{% url 'accounts:login' %}">Login</a>
-            <a href="{% url 'accounts:register' %}">Register</a>
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}">Login</a>
+            <a href="{% url 'accounts:register' %}?next={{ request.path }}">Register</a>
             <div class="settings-dropdown">
                 <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9881;</button>
                 <div id="settingsMenu" class="settings-menu">
