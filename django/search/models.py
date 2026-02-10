@@ -6,6 +6,8 @@ Includes models for user collections, search history, and external identifiers.
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
+from datetime import timedelta
 import random
 from typing import Optional, List
 
@@ -86,6 +88,17 @@ class Collection(models.Model):
         default="",
         help_text="Collection-level notes/metadata"
     )
+    nomenclature = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Best guess taxon name for this collection"
+    )
+    embargo_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Collection is private until this date (null=public)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -104,6 +117,18 @@ class Collection(models.Model):
         if not self.collection_id:
             self.collection_id = generate_collection_id()
         super().save(*args, **kwargs)
+
+    @property
+    def is_embargoed(self) -> bool:
+        """Check if collection is currently embargoed (private)."""
+        if self.embargo_until is None:
+            return False
+        return self.embargo_until > timezone.now()
+
+    @property
+    def is_public(self) -> bool:
+        """Check if collection is publicly visible."""
+        return not self.is_embargoed
 
 
 class SearchHistory(models.Model):
@@ -225,3 +250,66 @@ class ExternalIdentifier(models.Model):
             return ''
         except Exception:
             return ''
+
+
+class UserSettings(models.Model):
+    """
+    User-specific settings for search and collection behavior.
+
+    Settings include:
+    - Default embargo period for new collections
+    - Search preferences (embedding model, result count)
+    - Feature display settings
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='settings'
+    )
+
+    # Embargo settings
+    default_embargo_days = models.PositiveIntegerField(
+        default=0,
+        help_text="Default embargo period in days (0=public immediately)"
+    )
+
+    # Search settings
+    default_embedding = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text="Preferred embedding model for search"
+    )
+    default_k = models.PositiveIntegerField(
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text="Default number of search results"
+    )
+
+    # Feature settings
+    feature_taxa_count = models.PositiveIntegerField(
+        default=6,
+        validators=[MinValueValidator(2), MaxValueValidator(50)],
+        help_text="Number of taxa to retrieve for feature lists"
+    )
+    feature_max_tree_depth = models.PositiveIntegerField(
+        default=10,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="Maximum depth for feature tree display"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "User Settings"
+        verbose_name_plural = "User Settings"
+
+    def __str__(self) -> str:
+        return f"Settings for {self.user.username}"
+
+    def get_embargo_date(self):
+        """Calculate embargo date based on default_embargo_days."""
+        if self.default_embargo_days == 0:
+            return None
+        return timezone.now() + timedelta(days=self.default_embargo_days)

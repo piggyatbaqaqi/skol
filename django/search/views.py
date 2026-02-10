@@ -678,6 +678,25 @@ class SearchView(APIView):
                 if 'taxon_id' in row.index:
                     result_dict['taxon_id'] = clean_value(row['taxon_id'])
 
+                    # Detect collection results vs taxa results
+                    taxon_id = row['taxon_id']
+                    if isinstance(taxon_id, str) and taxon_id.startswith('collection_'):
+                        result_dict['ResultType'] = 'collection'
+                        # Extract collection_id from taxon_id
+                        try:
+                            collection_id_str = taxon_id.replace('collection_', '')
+                            result_dict['CollectionId'] = int(collection_id_str)
+                        except (ValueError, AttributeError):
+                            result_dict['CollectionId'] = None
+
+                        # Add owner info if present
+                        if 'owner' in row.index:
+                            owner = row['owner']
+                            if isinstance(owner, dict):
+                                result_dict['Owner'] = clean_value(owner)
+                    else:
+                        result_dict['ResultType'] = 'taxon'
+
                 results.append(result_dict)
 
             return Response({
@@ -2072,3 +2091,39 @@ class SourceContextView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class UserSettingsView(APIView):
+    """
+    GET/PUT user settings for search and embargo preferences.
+
+    GET /api/user-settings/
+    Returns the user's settings or creates defaults if none exist.
+
+    PUT /api/user-settings/
+    Updates user settings (partial update supported).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get user settings."""
+        from .models import UserSettings
+        from .serializers import UserSettingsSerializer
+
+        settings, created = UserSettings.objects.get_or_create(user=request.user)
+        serializer = UserSettingsSerializer(settings)
+        return Response(serializer.data)
+
+    def put(self, request):
+        """Update user settings."""
+        from .models import UserSettings
+        from .serializers import UserSettingsSerializer
+
+        settings, created = UserSettings.objects.get_or_create(user=request.user)
+        serializer = UserSettingsSerializer(settings, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -28,9 +28,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
 import skol_compat  # noqa: F401 (imported for side effects)
 
-from dr_drafts_mycosearch.data import SKOL_TAXA
+from dr_drafts_mycosearch.data import SKOL_TAXA, SKOL_COLLECTIONS
 from dr_drafts_mycosearch.compute_embeddings import EmbeddingsComputer
 from env_config import get_env_config, create_redis_client, build_redis_url
+import pandas as pd
 
 
 # ============================================================================
@@ -52,6 +53,7 @@ def compute_and_save_embeddings(
     expire_override: int = None,
     dry_run: bool = False,
     skip_existing: bool = True,
+    include_collections: bool = True,
 ) -> None:
     """
     Load taxa descriptions from CouchDB, compute embeddings, and save to Redis.
@@ -63,6 +65,7 @@ def compute_and_save_embeddings(
         expire_override: Optional expiration time override (seconds)
         dry_run: If True, show what would be computed without saving
         skip_existing: If True, skip if embeddings already exist (default behavior)
+        include_collections: If True, include user collections in embeddings
     """
     # Determine expiration time
     embedding_expire = expire_override if expire_override is not None else config['embedding_expire']
@@ -126,6 +129,41 @@ def compute_and_save_embeddings(
 
         if verbosity >= 1:
             print(f"✓ Loaded {len(descriptions)} taxa descriptions")
+
+        # Load collections if enabled
+        if include_collections:
+            collections_db = config.get('collections_db_name', 'skol_collections_dev')
+            if verbosity >= 1:
+                print(f"\nLoading user collections from {collections_db}...")
+
+            try:
+                skol_collections = SKOL_COLLECTIONS(
+                    couchdb_url=couchdb_url,
+                    username=config['couchdb_username'],
+                    password=config['couchdb_password'],
+                    db_name=collections_db,
+                    verbosity=verbosity
+                )
+                collection_descriptions = skol_collections.get_descriptions()
+
+                if len(collection_descriptions) > 0:
+                    if verbosity >= 1:
+                        print(f"✓ Loaded {len(collection_descriptions)} collection descriptions")
+
+                    # Concatenate taxa and collections
+                    descriptions = pd.concat(
+                        [descriptions, collection_descriptions],
+                        ignore_index=True
+                    )
+                    if verbosity >= 1:
+                        print(f"✓ Combined total: {len(descriptions)} descriptions")
+                else:
+                    if verbosity >= 1:
+                        print("  No public collections found")
+
+            except Exception as e:
+                if verbosity >= 1:
+                    print(f"⚠ Could not load collections (continuing with taxa only): {e}")
 
         if len(descriptions) == 0:
             print("\n⚠ No descriptions found. Nothing to embed.")
@@ -310,6 +348,19 @@ Examples:
         help='Recompute embeddings even if they already exist in Redis'
     )
 
+    parser.add_argument(
+        '--include-collections',
+        action='store_true',
+        default=True,
+        help='Include user collections in embeddings (default: True)'
+    )
+
+    parser.add_argument(
+        '--no-collections',
+        action='store_true',
+        help='Exclude user collections from embeddings'
+    )
+
     args, _ = parser.parse_known_args()
 
     # Get configuration
@@ -326,6 +377,7 @@ Examples:
     dry_run = args.dry_run or config.get('dry_run', False)
     skip_existing = args.skip_existing or config.get('skip_existing', True)  # Default to True for this script
     force = args.force or config.get('force', False)
+    include_collections = not args.no_collections  # Default True unless --no-collections
 
     verbosity = config['verbosity']
 
@@ -344,6 +396,7 @@ Examples:
             expire_override=expire_override,
             dry_run=dry_run,
             skip_existing=skip_existing,
+            include_collections=include_collections,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Embedding computation interrupted by user")

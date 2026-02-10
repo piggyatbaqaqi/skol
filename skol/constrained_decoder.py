@@ -333,12 +333,19 @@ class OutlinesBackend(DecoderBackend):
 
         if load_in_4bit or load_in_8bit:
             try:
+                import torch
                 from transformers import BitsAndBytesConfig
                 quantization_config = BitsAndBytesConfig(
                     load_in_4bit=load_in_4bit,
                     load_in_8bit=load_in_8bit,
+                    # Memory optimizations for 4-bit
+                    bnb_4bit_compute_dtype=torch.float16 if load_in_4bit else None,
+                    bnb_4bit_use_double_quant=load_in_4bit,  # Double quant saves ~0.4GB
                 )
                 model_kwargs['quantization_config'] = quantization_config
+                # Additional memory optimizations
+                model_kwargs.setdefault('low_cpu_mem_usage', True)
+                model_kwargs.setdefault('torch_dtype', torch.float16)
             except ImportError:
                 # Fall back to direct kwargs for older transformers versions
                 if load_in_4bit:

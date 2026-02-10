@@ -3,7 +3,9 @@ Django REST Framework serializers for the Collections feature.
 """
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType
+from django.utils import timezone
+from datetime import timedelta
+from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType, UserSettings
 
 
 class IdentifierTypeSerializer(serializers.ModelSerializer):
@@ -106,14 +108,18 @@ class CollectionListSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
     search_count = serializers.SerializerMethodField()
     identifier_count = serializers.SerializerMethodField()
+    is_embargoed = serializers.BooleanField(read_only=True)
+    is_public = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Collection
         fields = [
-            'collection_id', 'name', 'description', 'notes', 'owner_username',
+            'collection_id', 'name', 'description', 'notes', 'nomenclature',
+            'embargo_until', 'is_embargoed', 'is_public', 'owner_username',
             'search_count', 'identifier_count', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['collection_id', 'created_at', 'updated_at']
+        read_only_fields = ['collection_id', 'created_at', 'updated_at',
+                           'is_embargoed', 'is_public']
 
     def get_search_count(self, obj: Collection) -> int:
         """Get the count of search history entries."""
@@ -130,15 +136,19 @@ class CollectionDetailSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
     search_history = SearchHistorySerializer(many=True, read_only=True)
     external_identifiers = ExternalIdentifierSerializer(many=True, read_only=True)
+    is_embargoed = serializers.BooleanField(read_only=True)
+    is_public = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Collection
         fields = [
-            'collection_id', 'name', 'description', 'notes', 'owner_username',
+            'collection_id', 'name', 'description', 'notes', 'nomenclature',
+            'embargo_until', 'is_embargoed', 'is_public', 'owner_username',
             'search_history', 'external_identifiers',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['collection_id', 'created_at', 'updated_at']
+        read_only_fields = ['collection_id', 'created_at', 'updated_at',
+                           'is_embargoed', 'is_public']
 
 
 class CollectionCreateSerializer(serializers.ModelSerializer):
@@ -146,12 +156,55 @@ class CollectionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ['name', 'description', 'notes']
+        fields = ['name', 'description', 'notes', 'nomenclature', 'embargo_until']
+
+    def validate_embargo_until(self, value):
+        """Validate embargo_until is null or within 1 year."""
+        if value is None:
+            return value
+        max_embargo = timezone.now() + timedelta(days=365)
+        if value > max_embargo:
+            raise serializers.ValidationError(
+                "Embargo date cannot be more than 1 year in the future."
+            )
+        return value
 
 
 class CollectionUpdateSerializer(serializers.ModelSerializer):
-    """Serializer for updating collections (name/description/notes)."""
+    """Serializer for updating collections."""
 
     class Meta:
         model = Collection
-        fields = ['name', 'description', 'notes']
+        fields = ['name', 'description', 'notes', 'nomenclature', 'embargo_until']
+
+    def validate_embargo_until(self, value):
+        """Validate embargo_until is null or within 1 year."""
+        if value is None:
+            return value
+        max_embargo = timezone.now() + timedelta(days=365)
+        if value > max_embargo:
+            raise serializers.ValidationError(
+                "Embargo date cannot be more than 1 year in the future."
+            )
+        return value
+
+
+class UserSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for user settings."""
+
+    class Meta:
+        model = UserSettings
+        fields = [
+            'default_embargo_days', 'default_embedding', 'default_k',
+            'feature_taxa_count', 'feature_max_tree_depth',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+    def validate_default_embargo_days(self, value):
+        """Validate embargo days is within 1 year."""
+        if value > 365:
+            raise serializers.ValidationError(
+                "Default embargo cannot be more than 365 days."
+            )
+        return value

@@ -1216,8 +1216,18 @@
                     <input type="text" id="collectionName" name="name" placeholder="My Research Collection" required>
                 </div>
                 <div class="form-group">
+                    <label for="collectionNomenclature">Taxon Name (Best Guess)</label>
+                    <input type="text" id="collectionNomenclature" name="nomenclature" placeholder="e.g., Russula emetica">
+                    <small style="color: #666; font-size: 0.85em;">Your best guess for the taxon name. Used in search results.</small>
+                </div>
+                <div class="form-group">
                     <label for="collectionNotes">Notes (optional)</label>
                     <textarea id="collectionNotes" name="notes" placeholder="Notes about this collection..." style="min-height: 60px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="collectionEmbargo">Embargo Until (optional)</label>
+                    <input type="date" id="collectionEmbargo" name="embargo_until">
+                    <small style="color: #666; font-size: 0.85em;">Collection is private until this date. Leave empty for public.</small>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="modal-cancel-btn" onclick="hideNewCollectionModal()">Cancel</button>
@@ -1730,9 +1740,18 @@
             e.preventDefault();
 
             const name = document.getElementById('collectionName').value;
+            const nomenclature = document.getElementById('collectionNomenclature').value;
             const notes = document.getElementById('collectionNotes').value;
+            const embargoInput = document.getElementById('collectionEmbargo').value;
             // Preserve any existing description text - it becomes part of the new collection
             const description = document.getElementById('prompt').value;
+
+            // Build request body
+            const body = { name, notes, description, nomenclature };
+            if (embargoInput) {
+                // Convert date to ISO datetime (end of day in UTC)
+                body.embargo_until = new Date(embargoInput + 'T23:59:59Z').toISOString();
+            }
 
             try {
                 const response = await fetch(`${API_BASE}/api/collections/`, {
@@ -1742,7 +1761,7 @@
                         'X-CSRFToken': getCSRFToken()
                     },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ name, notes, description })
+                    body: JSON.stringify(body)
                 });
 
                 const data = await response.json();

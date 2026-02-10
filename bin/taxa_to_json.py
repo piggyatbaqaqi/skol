@@ -73,6 +73,7 @@ def translate_taxa_to_json(
     source_db: str,
     dest_db: str,
     checkpoint_path: Optional[str] = None,
+    base_model_id: Optional[str] = None,
     pattern: str = '*',
     batch_size: int = 10,
     limit: Optional[int] = None,
@@ -204,20 +205,25 @@ def translate_taxa_to_json(
         if verbosity >= 1:
             print("\nInitializing TaxaJSONTranslator...")
 
-        translator = TaxaJSONTranslator(
-            spark=spark,
-            couchdb_url=couchdb_url,
-            username=username,
-            password=password,
-            checkpoint_path=checkpoint_path,
-            device="cuda",
-            load_in_4bit=True,
-            use_constrained_decoding=use_constrained_decoding,
-            schema_max_depth=schema_max_depth,
-            schema_min_depth=schema_min_depth,
-            use_ontology_context=use_ontology_context,
-            ontology_dir=ontology_dir
-        )
+        # Build translator kwargs
+        translator_kwargs = {
+            'spark': spark,
+            'couchdb_url': couchdb_url,
+            'username': username,
+            'password': password,
+            'checkpoint_path': checkpoint_path,
+            'device': "cuda",
+            'load_in_4bit': True,
+            'use_constrained_decoding': use_constrained_decoding,
+            'schema_max_depth': schema_max_depth,
+            'schema_min_depth': schema_min_depth,
+            'use_ontology_context': use_ontology_context,
+            'ontology_dir': ontology_dir,
+        }
+        if base_model_id:
+            translator_kwargs['base_model_id'] = base_model_id
+
+        translator = TaxaJSONTranslator(**translator_kwargs)
 
         # Load taxa from source database
         if verbosity >= 1:
@@ -880,6 +886,14 @@ Examples:
     )
 
     parser.add_argument(
+        '--base-model',
+        type=str,
+        default=os.environ.get('SKOL_BASE_MODEL'),
+        metavar='MODEL_ID',
+        help='HuggingFace model ID (default: mistralai/Mistral-7B-Instruct-v0.3, or $SKOL_BASE_MODEL)'
+    )
+
+    parser.add_argument(
         '--pattern',
         type=str,
         default=DEFAULT_PATTERN,
@@ -1037,6 +1051,7 @@ Examples:
     source_db = args.source_db or config.get('source_db') or DEFAULT_SOURCE_DB
     dest_db = args.dest_db or config.get('dest_db') or DEFAULT_DEST_DB
     checkpoint_path = args.checkpoint or config.get('checkpoint_path')
+    base_model_id = args.base_model  # From --base-model or $SKOL_BASE_MODEL
     verbosity = args.verbosity if args.verbosity is not None else config['verbosity']
 
     # Merge work control options from command-line args and env_config
@@ -1074,6 +1089,7 @@ Examples:
             source_db=source_db,
             dest_db=dest_db,
             checkpoint_path=checkpoint_path,
+            base_model_id=base_model_id,
             pattern=args.pattern,
             batch_size=args.batch_size,
             limit=limit,

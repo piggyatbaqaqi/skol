@@ -31,6 +31,8 @@ from .views import (
     JsonClassifierView,
     # Source context viewer
     SourceContextView,
+    # User settings
+    UserSettingsView,
 )
 
 app_name = 'search'
@@ -86,4 +88,7 @@ urlpatterns = [
 
     # Source context viewer endpoint
     path('taxa/<str:taxa_id>/context/', SourceContextView.as_view(), name='taxa-context'),
+
+    # User settings
+    path('user-settings/', UserSettingsView.as_view(), name='user-settings'),
 ]
