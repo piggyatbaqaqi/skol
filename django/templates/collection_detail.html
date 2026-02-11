@@ -55,6 +55,20 @@
             line-height: 1.6;
         }
 
+        .collection-nomenclature {
+            color: #333;
+            font-size: 1.2em;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .collection-nomenclature .label {
+            font-style: normal;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.85em;
+        }
+
         .user-navbar {
             display: flex;
             justify-content: flex-end;
@@ -197,6 +211,37 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 10px;
+        }
+
+        /* Nomenclature change event styles */
+        .nomenclature-event {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e8f4f8 100%);
+            border: 2px solid #a8d4e6;
+            border-left: 4px solid #667eea;
+        }
+
+        .nomenclature-event-label {
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .nomenclature-value {
+            font-size: 1.1em;
+            font-style: italic;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .event-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 8px;
         }
 
         /* Identifier styles */
@@ -425,6 +470,10 @@
                     <input type="text" id="editName" name="name" required>
                 </div>
                 <div class="form-group">
+                    <label for="editNomenclature">Nomenclature (Taxon Name)</label>
+                    <input type="text" id="editNomenclature" name="nomenclature" placeholder="Best guess taxon name (e.g., Russula emetica)">
+                </div>
+                <div class="form-group">
                     <label for="editNotes">Notes</label>
                     <textarea id="editNotes" name="notes" placeholder="Notes about this collection..."></textarea>
                 </div>
@@ -568,17 +617,18 @@
                     <div>
                         <h1>${escapeHtml(collection.name)}${ownerBadge}</h1>
                         <div class="collection-id">ID: ${collection.collection_id} | Owner: ${escapeHtml(collection.owner_username)}</div>
+                        ${collection.nomenclature ? `<div class="collection-nomenclature"><span class="label">Nomenclature:</span> ${escapeHtml(collection.nomenclature)}</div>` : ''}
                         ${collection.notes ? `<p class="collection-description">${escapeHtml(collection.notes)}</p>` : ''}
                     </div>
                     ${ownerActions}
                 </div>
 
-                <!-- Search History Section -->
+                <!-- Collection History Section -->
                 <div class="section">
                     <div class="section-header">
-                        <h2>Search History (${collection.search_history?.length || 0})</h2>
+                        <h2>Collection History (${collection.search_history?.length || 0})</h2>
                     </div>
-                    ${displaySearchHistory()}
+                    ${displayCollectionHistory()}
                 </div>
 
                 <!-- External Identifiers Section -->
@@ -597,36 +647,57 @@
             renderSearchHistoryResults();
         }
 
-        // Display search history
-        function displaySearchHistory() {
+        // Display collection history (handles both 'search' and 'nomenclature_change' event types)
+        function displayCollectionHistory() {
             if (!collection.search_history || collection.search_history.length === 0) {
-                return '<div class="empty-state">No searches saved yet. Use the main search page to save searches to this collection.</div>';
+                return '<div class="empty-state">No history yet. Use the main search page to save searches to this collection.</div>';
             }
 
-            return collection.search_history.map((s, searchIndex) => `
-                <div class="search-item">
-                    <div class="search-prompt">${escapeHtml(s.prompt)}</div>
-                    <div class="search-meta">
-                        <span>Model: ${escapeHtml(s.embedding_name)}</span>
-                        <span>k=${s.k}</span>
-                        <span>${s.result_count} results</span>
-                        <span>${formatDate(s.created_at)}</span>
+            return collection.search_history.map((s, searchIndex) => {
+                // Handle nomenclature change events
+                if (s.event_type === 'nomenclature_change') {
+                    return `
+                        <div class="search-item nomenclature-event">
+                            <div class="nomenclature-event-label">Nomenclature Changed</div>
+                            <div class="nomenclature-value">${escapeHtml(s.nomenclature || 'Unknown')}</div>
+                            <div class="event-meta">
+                                <span>${formatDate(s.created_at)}</span>
+                            </div>
+                            ${isOwner ? `
+                                <div class="search-actions">
+                                    <button class="btn-danger btn-small" onclick="deleteSearch(${s.id})">Delete</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                // Handle search events (default)
+                return `
+                    <div class="search-item">
+                        <div class="search-prompt">${escapeHtml(s.prompt)}</div>
+                        <div class="search-meta">
+                            <span>Model: ${escapeHtml(s.embedding_name)}</span>
+                            <span>k=${s.k}</span>
+                            <span>${s.result_count} results</span>
+                            <span>${formatDate(s.created_at)}</span>
+                        </div>
+                        ${s.result_references && s.result_references.length > 0 ? `
+                            <div class="search-results-container" id="search-results-${searchIndex}" data-search-index="${searchIndex}">
+                                <div class="taxon-result-loading">Loading results...</div>
+                            </div>
+                        ` : ''}
+                        ${isOwner ? `
+                            <div class="search-actions">
+                                <button class="btn-danger btn-small" onclick="deleteSearch(${s.id})">Delete</button>
+                            </div>
+                        ` : ''}
                     </div>
-                    ${s.result_references && s.result_references.length > 0 ? `
-                        <div class="search-results-container" id="search-results-${searchIndex}" data-search-index="${searchIndex}">
-                            <div class="taxon-result-loading">Loading results...</div>
-                        </div>
-                    ` : ''}
-                    ${isOwner ? `
-                        <div class="search-actions">
-                            <button class="btn-danger btn-small" onclick="deleteSearch(${s.id})">Delete</button>
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // Render taxon results for all search history items
+        // Render taxon results for all search history items (skips nomenclature_change events)
         async function renderSearchHistoryResults() {
             if (!collection.search_history || collection.search_history.length === 0) {
                 return;
@@ -640,9 +711,15 @@
                 return;
             }
 
-            // Render results for each search
+            // Render results for each search event (skip nomenclature_change events)
             for (let i = 0; i < collection.search_history.length; i++) {
                 const search = collection.search_history[i];
+
+                // Skip nomenclature change events - they have no results
+                if (search.event_type === 'nomenclature_change') {
+                    continue;
+                }
+
                 const container = document.getElementById(`search-results-${i}`);
 
                 if (!container || !search.result_references || search.result_references.length === 0) {
@@ -743,6 +820,7 @@
         // Show edit modal
         function showEditModal() {
             document.getElementById('editName').value = collection.name;
+            document.getElementById('editNomenclature').value = collection.nomenclature || '';
             document.getElementById('editNotes').value = collection.notes || '';
             document.getElementById('editCollectionModal').classList.add('show');
         }
@@ -771,6 +849,7 @@
             e.preventDefault();
 
             const name = document.getElementById('editName').value;
+            const nomenclature = document.getElementById('editNomenclature').value;
             const notes = document.getElementById('editNotes').value;
 
             try {
@@ -781,7 +860,7 @@
                         'X-CSRFToken': getCSRFToken()
                     },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ name, notes })
+                    body: JSON.stringify({ name, nomenclature, notes })
                 });
 
                 if (!response.ok) {

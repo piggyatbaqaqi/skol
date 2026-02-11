@@ -96,10 +96,26 @@ class SearchHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SearchHistory
         fields = [
-            'id', 'prompt', 'embedding_name', 'k',
-            'result_references', 'result_count', 'created_at'
+            'id', 'event_type', 'prompt', 'embedding_name', 'k',
+            'result_references', 'result_count', 'nomenclature', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class NomenclatureChangeSerializer(serializers.ModelSerializer):
+    """Serializer for creating nomenclature change events."""
+
+    class Meta:
+        model = SearchHistory
+        fields = ['nomenclature']
+
+    def create(self, validated_data):
+        validated_data['event_type'] = 'nomenclature_change'
+        validated_data['prompt'] = ''
+        validated_data['embedding_name'] = ''
+        validated_data['result_references'] = []
+        validated_data['result_count'] = 0
+        return super().create(validated_data)
 
 
 class CollectionListSerializer(serializers.ModelSerializer):

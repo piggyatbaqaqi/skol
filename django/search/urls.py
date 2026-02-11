@@ -18,6 +18,7 @@ from .views import (
     CollectionByUserView,
     SearchHistoryListCreateView,
     SearchHistoryDetailView,
+    NomenclatureChangeView,
     ExternalIdentifierListCreateView,
     ExternalIdentifierDetailView,
     GuestCollectionImportView,
@@ -69,6 +70,10 @@ urlpatterns = [
          SearchHistoryListCreateView.as_view(), name='search-history-list-create'),
     path('collections/<int:collection_id>/searches/<int:search_id>/',
          SearchHistoryDetailView.as_view(), name='search-history-detail'),
+
+    # Nomenclature change events
+    path('collections/<int:collection_id>/nomenclature-changes/',
+         NomenclatureChangeView.as_view(), name='nomenclature-change'),
 
     # External identifiers within collections
     path('collections/<int:collection_id>/identifiers/',

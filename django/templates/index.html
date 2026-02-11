@@ -1602,8 +1602,14 @@
         }
 
         // Save nomenclature to collection (debounced, called from input handler)
+        // Also records a nomenclature change event in the history when value changes
         async function saveNomenclature(value) {
             if (!activeCollectionId || !activeCollectionData) return;
+
+            // Track previous value to detect real changes
+            const previousValue = activeCollectionData.nomenclature || '';
+            const valueChanged = value !== previousValue;
+            console.log('saveNomenclature:', { value, previousValue, valueChanged });
 
             try {
                 const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
@@ -1628,6 +1634,32 @@
                     if (indicator) {
                         indicator.classList.add('show');
                         setTimeout(() => indicator.classList.remove('show'), 2000);
+                    }
+
+                    // Record nomenclature change event in history if value actually changed
+                    if (valueChanged && value.trim()) {
+                        console.log('Recording nomenclature change event:', value);
+                        try {
+                            const historyResponse = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/nomenclature-changes/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCSRFToken()
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({ nomenclature: value })
+                            });
+                            if (historyResponse.ok) {
+                                console.log('Nomenclature change event recorded successfully');
+                            } else {
+                                const errorData = await historyResponse.json().catch(() => ({}));
+                                console.warn('Nomenclature change API error:', historyResponse.status, errorData);
+                            }
+                        } catch (historyError) {
+                            console.warn('Could not record nomenclature change:', historyError);
+                        }
+                    } else {
+                        console.log('Skipping nomenclature change event:', { valueChanged, valueTrimmed: value.trim() });
                     }
                 }
             } catch (error) {

@@ -133,24 +133,45 @@ class Collection(models.Model):
 
 class SearchHistory(models.Model):
     """
-    Records each search performed within a collection.
+    Records events within a collection: searches and nomenclature changes.
 
     Stores the search prompt, timestamp, and serialized result references
     for later review. Results are stored as JSON references to allow
     retrieval without duplicating CouchDB data.
+
+    For nomenclature changes, stores the new nomenclature value.
     """
+    EVENT_TYPE_CHOICES = [
+        ('search', 'Search'),
+        ('nomenclature_change', 'Nomenclature Change'),
+    ]
+
     collection = models.ForeignKey(
         Collection,
         on_delete=models.CASCADE,
         related_name='search_history'
     )
-    prompt = models.TextField()
-    embedding_name = models.CharField(max_length=255)
+    event_type = models.CharField(
+        max_length=30,
+        choices=EVENT_TYPE_CHOICES,
+        default='search',
+        help_text="Type of history event"
+    )
+    # Search-specific fields (nullable for non-search events)
+    prompt = models.TextField(blank=True, default='')
+    embedding_name = models.CharField(max_length=255, blank=True, default='')
     k = models.PositiveIntegerField(default=3)
     # Store result references as JSON (not full results, to save space)
     # Format: [{"similarity": 0.95, "taxa_id": "...", "title": "..."}, ...]
     result_references = models.JSONField(default=list)
     result_count = models.PositiveIntegerField(default=0)
+    # Nomenclature change field
+    nomenclature = models.CharField(
+        max_length=500,
+        blank=True,
+        default='',
+        help_text="Nomenclature value at time of change (for nomenclature_change events)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -162,6 +183,8 @@ class SearchHistory(models.Model):
         ]
 
     def __str__(self) -> str:
+        if self.event_type == 'nomenclature_change':
+            return f"Nomenclature: {self.nomenclature[:50]} ({self.created_at})"
         prompt_preview = f"{self.prompt[:50]}..." if len(self.prompt) > 50 else self.prompt
         return f"Search: {prompt_preview} ({self.created_at})"
 

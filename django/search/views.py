@@ -1006,6 +1006,7 @@ from .serializers import (
     CollectionCreateSerializer,
     CollectionUpdateSerializer,
     SearchHistorySerializer,
+    NomenclatureChangeSerializer,
     ExternalIdentifierSerializer,
     ExternalIdentifierCreateSerializer,
     IdentifierTypeSerializer,
@@ -1284,6 +1285,36 @@ class SearchHistoryDetailView(APIView):
             )
         search.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NomenclatureChangeView(APIView):
+    """
+    POST /api/collections/<collection_id>/nomenclature-changes/
+    Record a nomenclature change event in the collection's history.
+
+    Request body:
+    {
+        "nomenclature": "Amanita muscaria"
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id):
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to modify this collection'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = NomenclatureChangeSerializer(data=request.data)
+        if serializer.is_valid():
+            event = serializer.save(collection=collection)
+            return Response(
+                SearchHistorySerializer(event).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ExternalIdentifierListCreateView(APIView):
