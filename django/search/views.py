@@ -3,6 +3,7 @@ REST API views for SKOL semantic search.
 """
 import logging
 import math
+import os
 import traceback
 
 from rest_framework.views import APIView
@@ -749,13 +750,17 @@ class TaxaInfoView(APIView):
             couchdb_url = settings.COUCHDB_URL
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
 
+            # Determine the correct database based on document ID prefix
+            if taxa_id.startswith('collection_'):
+                taxa_db = os.environ.get('COLLECTIONS_DB_NAME', 'skol_collections_dev')
+
             # Fetch the taxa document
             taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
             response = requests.get(taxa_url, auth=auth, timeout=30)
 
             # If not found and taxa_id doesn't have prefix, try with taxon_ prefix
             # This handles legacy embeddings that don't include the prefix
-            if response.status_code == 404 and not taxa_id.startswith('taxon_'):
+            if response.status_code == 404 and not taxa_id.startswith('taxon_') and not taxa_id.startswith('collection_'):
                 taxa_url_with_prefix = f"{couchdb_url}/{taxa_db}/taxon_{taxa_id}"
                 response = requests.get(taxa_url_with_prefix, auth=auth, timeout=30)
                 if response.status_code == 200:
@@ -771,6 +776,9 @@ class TaxaInfoView(APIView):
             response.raise_for_status()
             taxa_doc = response.json()
 
+            # Check if this is a collection document
+            is_collection = taxa_id.startswith('collection_')
+
             # Extract ingest metadata for PDF linking
             ingest = taxa_doc.get('ingest', {})
             pdf_db_name = None
@@ -783,30 +791,52 @@ class TaxaInfoView(APIView):
                 url = ingest.get('url', '')
 
             # Default PDFDbName to 'skol_dev' when not available in ingest
-            if not pdf_db_name:
+            if not pdf_db_name and not is_collection:
                 pdf_db_name = 'skol_dev'
 
-            # Return taxa info in search result format for widget compatibility
-            result = {
-                'taxon_id': taxa_id,
-                'taxa_db': taxa_db,
-                # Search result compatible fields
-                'Title': taxa_doc.get('taxon', ''),
-                'Description': taxa_doc.get('description', ''),
-                'Feed': 'CouchDB Taxa',
-                'URL': url,
-                'Source': ingest,
-                # PDF linking fields
-                'PDFDbName': pdf_db_name,
-                'PDFDocId': pdf_doc_id,
-                'PDFPage': clean_value(taxa_doc.get('pdf_page')),
-                'PDFLabel': clean_value(taxa_doc.get('pdf_label')),
-                # Position metadata
-                'LineNumber': clean_value(taxa_doc.get('line_number')),
-                'ParagraphNumber': clean_value(taxa_doc.get('paragraph_number')),
-                'PageNumber': clean_value(taxa_doc.get('page_number')),
-                'EmpiricalPageNumber': clean_value(taxa_doc.get('empirical_page_number')),
-            }
+            if is_collection:
+                # Return collection info in search result format
+                collection_meta = taxa_doc.get('collection', {})
+                owner = taxa_doc.get('owner', {})
+                result = {
+                    'taxon_id': taxa_id,
+                    'taxa_db': taxa_db,
+                    'ResultType': 'collection',
+                    # Search result compatible fields
+                    'Title': taxa_doc.get('taxon', ''),  # nomenclature
+                    'Description': taxa_doc.get('description', ''),
+                    'Feed': 'User Collection',
+                    # Collection-specific fields
+                    'CollectionId': collection_meta.get('collection_id'),
+                    'CollectionName': collection_meta.get('name', ''),
+                    'Notes': collection_meta.get('notes', ''),
+                    'EmbargoUntil': collection_meta.get('embargo_until'),
+                    # Owner info
+                    'Owner': owner,
+                }
+            else:
+                # Return taxa info in search result format for widget compatibility
+                result = {
+                    'taxon_id': taxa_id,
+                    'taxa_db': taxa_db,
+                    'ResultType': 'taxon',
+                    # Search result compatible fields
+                    'Title': taxa_doc.get('taxon', ''),
+                    'Description': taxa_doc.get('description', ''),
+                    'Feed': 'CouchDB Taxa',
+                    'URL': url,
+                    'Source': ingest,
+                    # PDF linking fields
+                    'PDFDbName': pdf_db_name,
+                    'PDFDocId': pdf_doc_id,
+                    'PDFPage': clean_value(taxa_doc.get('pdf_page')),
+                    'PDFLabel': clean_value(taxa_doc.get('pdf_label')),
+                    # Position metadata
+                    'LineNumber': clean_value(taxa_doc.get('line_number')),
+                    'ParagraphNumber': clean_value(taxa_doc.get('paragraph_number')),
+                    'PageNumber': clean_value(taxa_doc.get('page_number')),
+                    'EmpiricalPageNumber': clean_value(taxa_doc.get('empirical_page_number')),
+                }
 
             return Response(result)
 
