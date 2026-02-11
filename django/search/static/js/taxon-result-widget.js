@@ -166,6 +166,11 @@ const TaxonResultWidget = (function() {
             titleContent = escapeHtml(result.Title || 'Untitled');
         }
 
+        // Build copy-to-nomenclature button (only shown if nomenclatureInput exists)
+        const resultTitle = result.Title || 'Untitled';
+        const copyBtnId = options.index !== undefined ? `copy-nom-btn-${options.index}` : `copy-nom-btn-${Date.now()}`;
+        const copyToNomBtn = `<button type="button" class="copy-nomenclature-btn" id="${copyBtnId}" data-title="${escapeHtml(resultTitle)}" style="display: none;">Copy</button>`;
+
         // Build inline source context viewer for description
         let descriptionContent = '';
         if (result.Description && !options.compact) {
@@ -187,7 +192,7 @@ const TaxonResultWidget = (function() {
 
         card.innerHTML = `
             <div class="result-header">
-                <div class="result-title">${titleContent}</div>
+                <div class="result-title">${titleContent}${copyToNomBtn}</div>
                 ${similarityPercent !== null ? `<div class="similarity-badge">${similarityPercent}%</div>` : ''}
             </div>
             ${metaItems.length > 0 ? `<div class="result-meta">${metaItems.join('')}</div>` : ''}
@@ -199,6 +204,27 @@ const TaxonResultWidget = (function() {
             </div>
             ${jsonContent}
         `;
+
+        // Set up copy-to-nomenclature button if nomenclature input exists
+        const copyBtn = card.querySelector(`#${copyBtnId}`);
+        if (copyBtn && document.getElementById('nomenclatureInput')) {
+            copyBtn.style.display = 'inline-block';
+            copyBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const title = this.getAttribute('data-title');
+                if (typeof copyToNomenclature === 'function') {
+                    const success = copyToNomenclature(title);
+                    if (success) {
+                        this.textContent = 'Copied!';
+                        this.classList.add('copied');
+                        setTimeout(() => {
+                            this.textContent = 'Copy';
+                            this.classList.remove('copied');
+                        }, 2000);
+                    }
+                }
+            });
+        }
 
         // Add JSON toggle handler if needed
         if (options.showJson && options.index !== undefined) {

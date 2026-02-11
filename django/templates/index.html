@@ -707,6 +707,78 @@
             color: #667eea;
         }
 
+        /* Nomenclature Field Styles */
+        .nomenclature-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #d0d8f0;
+        }
+
+        .nomenclature-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nomenclature-row label {
+            margin: 0;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .nomenclature-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .nomenclature-row input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .nomenclature-save-indicator {
+            font-size: 0.85em;
+            color: #28a745;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .nomenclature-save-indicator.show {
+            opacity: 1;
+        }
+
+        /* Copy to Nomenclature Button */
+        .copy-nomenclature-btn {
+            background: transparent;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            margin-left: 8px;
+        }
+
+        .copy-nomenclature-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .copy-nomenclature-btn.copied {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
         /* Identifiers Section Styles */
         .identifiers-section {
             background: #f9f9f9;
@@ -1134,6 +1206,14 @@
                     <a id="collectionDetailLink" href="#" target="_blank" class="collection-link">View Details</a>
                 </div>
             </div>
+            <!-- Nomenclature field (visible when collection is active) -->
+            <div id="nomenclatureSection" class="nomenclature-section" style="display: none;">
+                <div class="nomenclature-row">
+                    <label for="nomenclatureInput">Nomenclature:</label>
+                    <input type="text" id="nomenclatureInput" placeholder="Best guess taxon name (e.g., Amanita muscaria)" />
+                    <span id="nomenclatureSaveIndicator" class="nomenclature-save-indicator">Saved</span>
+                </div>
+            </div>
         </div>
         {% endif %}
 
@@ -1428,6 +1508,17 @@
                 document.getElementById('prompt').value = activeCollectionData.description || '';
             }
 
+            // Show and load nomenclature
+            const nomenclatureSection = document.getElementById('nomenclatureSection');
+            const nomenclatureInput = document.getElementById('nomenclatureInput');
+            if (nomenclatureSection && nomenclatureInput) {
+                nomenclatureSection.style.display = 'block';
+                // Load nomenclature, defaulting to "Unknown" if empty
+                if (!skipPromptUpdate) {
+                    nomenclatureInput.value = activeCollectionData.nomenclature || 'Unknown';
+                }
+            }
+
             // Show identifiers section
             const identifiersSection = document.getElementById('identifiersSection');
             if (identifiersSection) {
@@ -1503,8 +1594,80 @@
             const descNote = document.getElementById('descriptionNote');
             if (descNote) descNote.style.display = 'none';
 
+            const nomenclatureSection = document.getElementById('nomenclatureSection');
+            if (nomenclatureSection) nomenclatureSection.style.display = 'none';
+
             const identifiersSection = document.getElementById('identifiersSection');
             if (identifiersSection) identifiersSection.style.display = 'none';
+        }
+
+        // Save nomenclature to collection (debounced, called from input handler)
+        async function saveNomenclature(value) {
+            if (!activeCollectionId || !activeCollectionData) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        name: activeCollectionData.name,
+                        description: activeCollectionData.description,
+                        nomenclature: value
+                    })
+                });
+
+                if (response.ok) {
+                    // Update local data
+                    activeCollectionData.nomenclature = value;
+                    // Show saved indicator
+                    const indicator = document.getElementById('nomenclatureSaveIndicator');
+                    if (indicator) {
+                        indicator.classList.add('show');
+                        setTimeout(() => indicator.classList.remove('show'), 2000);
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not save nomenclature:', error);
+            }
+        }
+
+        // Copy a title to the nomenclature field (called from search results)
+        function copyToNomenclature(title) {
+            const nomenclatureInput = document.getElementById('nomenclatureInput');
+            if (!nomenclatureInput) {
+                console.warn('Nomenclature input not found');
+                return false;
+            }
+
+            nomenclatureInput.value = title;
+            // Trigger save
+            saveNomenclature(title);
+            // Scroll to show the nomenclature field
+            nomenclatureInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Brief highlight effect
+            nomenclatureInput.style.backgroundColor = '#e8f5e9';
+            setTimeout(() => {
+                nomenclatureInput.style.backgroundColor = '';
+            }, 1000);
+            return true;
+        }
+
+        // Handler for inline copy button (used in fallback rendering)
+        function handleCopyToNomenclature(btn) {
+            const title = btn.getAttribute('data-title');
+            const success = copyToNomenclature(title);
+            if (success) {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }
         }
 
         // Update the identifiers display
@@ -1907,9 +2070,11 @@
             document.getElementById('searchButton').disabled = true;
 
             try {
-                // Save description to collection BEFORE search (so it's saved even if search fails)
+                // Save description and nomenclature to collection BEFORE search (so it's saved even if search fails)
                 if (IS_AUTHENTICATED && activeCollectionId && prompt) {
                     try {
+                        const nomenclatureInput = document.getElementById('nomenclatureInput');
+                        const nomenclature = nomenclatureInput ? nomenclatureInput.value : activeCollectionData.nomenclature;
                         await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
                             method: 'PUT',
                             headers: {
@@ -1919,9 +2084,13 @@
                             credentials: 'same-origin',
                             body: JSON.stringify({
                                 name: activeCollectionData.name,
-                                description: prompt
+                                description: prompt,
+                                nomenclature: nomenclature
                             })
                         });
+                        // Update local data
+                        activeCollectionData.description = prompt;
+                        activeCollectionData.nomenclature = nomenclature;
                     } catch (descError) {
                         console.warn('Could not save description to collection:', descError);
                     }
@@ -2085,9 +2254,16 @@
                         pdfLink = `<a href="${pdfUrl}" class="view-pdf-btn" target="_blank">View PDF</a>`;
                     }
 
+                    // Build copy button for fallback rendering
+                    const resultTitle = result.Title || 'Untitled';
+                    const showCopyBtn = IS_AUTHENTICATED && document.getElementById('nomenclatureInput');
+                    const copyBtnHtml = showCopyBtn
+                        ? `<button type="button" class="copy-nomenclature-btn" data-title="${escapeHtml(resultTitle)}" onclick="handleCopyToNomenclature(this)">Copy</button>`
+                        : '';
+
                     card.innerHTML = `
                         <div class="result-header">
-                            <div class="result-title">${escapeHtml(result.Title || 'Untitled')}</div>
+                            <div class="result-title">${escapeHtml(result.Title || 'Untitled')}${copyBtnHtml}</div>
                             <div class="similarity-badge">${similarity}%</div>
                         </div>
                         <div class="result-meta">
@@ -2222,6 +2398,24 @@
             migrateGuestCollection();
             // Load collection from URL if specified
             loadCollectionFromUrl();
+
+            // Set up nomenclature auto-save with debounce
+            let nomenclatureSaveTimeout = null;
+            const nomenclatureInput = document.getElementById('nomenclatureInput');
+            if (nomenclatureInput) {
+                nomenclatureInput.addEventListener('input', function() {
+                    if (nomenclatureSaveTimeout) clearTimeout(nomenclatureSaveTimeout);
+                    nomenclatureSaveTimeout = setTimeout(() => {
+                        saveNomenclature(this.value);
+                    }, 1000); // Save after 1 second of no typing
+                });
+
+                // Also save on blur (when user clicks away)
+                nomenclatureInput.addEventListener('blur', function() {
+                    if (nomenclatureSaveTimeout) clearTimeout(nomenclatureSaveTimeout);
+                    saveNomenclature(this.value);
+                });
+            }
         } else {
             // Auto-save description to guest collection for non-authenticated users
             // Use debounce to avoid saving on every keystroke
