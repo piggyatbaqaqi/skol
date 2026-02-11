@@ -279,6 +279,8 @@ const TaxonResultWidget = (function() {
             if (data.title || data.similarity !== undefined) {
                 // We have enough data from the stored reference to show something useful
                 const fallbackData = {
+                    taxon_id: data.taxon_id,
+                    error: error.message,
                     Title: data.title || 'Unknown Taxon',
                     Similarity: data.similarity,
                     Description: '(Full details unavailable - taxon record may have been updated)',
