@@ -27,6 +27,7 @@ const CommentThread = ({
     >
       <CommentNode
         comment={node}
+        currentUserId={currentUserId}
         isAuthor={isAuthor}
         isOwner={isOwner}
         isAdmin={isAdmin}

@@ -305,6 +305,16 @@ def flag_comment(doc_id: str, user_id: int) -> Dict[str, Any]:
     return dict(doc)
 
 
+def unflag_comment(doc_id: str) -> Dict[str, Any]:
+    """Clear all flags from a comment (admin/owner moderation)."""
+    db = get_comments_db()
+    doc = db[doc_id]
+    doc['flagged_by'] = []
+    db.save(doc)
+    logger.info("Comment %s unflagged", doc_id)
+    return dict(doc)
+
+
 def hide_comment(doc_id: str, user_id: int) -> Dict[str, Any]:
     """Hide a comment (admin/owner moderation)."""
     db = get_comments_db()

@@ -159,6 +159,12 @@
   font-weight: 500;
 }
 
+.comment-flagged-badge {
+  color: #e67e22;
+  font-weight: 500;
+  font-size: 11px;
+}
+
 /* Comment body */
 .comment-body {
   font-size: 14px;
@@ -240,6 +246,20 @@
 .comment-actions button:hover {
   color: #4a9eff;
   background: rgba(74, 158, 255, 0.08);
+}
+
+.comment-actions button.comment-action-active {
+  color: #e67e22;
+  cursor: default;
+}
+
+.comment-actions button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.comment-actions button:disabled:hover {
+  background: none;
 }
 
 /* Comment form */

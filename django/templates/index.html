@@ -1066,6 +1066,7 @@
                 <div class="menu-divider"></div>
                 {% endif %}
                 <div class="menu-section-title">Help</div>
+                <a href="{% url 'help' %}">Help</a>
                 <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}">Feedback</a>
                 <a href="{% url 'contact:contact' %}">Contact</a>
                 <a href="{% url 'about' %}">About</a>
@@ -1090,6 +1091,7 @@
                     <button class="new-collection-btn" onclick="showNewCollectionModal()">+ New Collection</button>
                 </div>
             </div>
+            <a href="{% url 'help' %}">Help</a>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:account_settings' %}">Account</a>
@@ -1135,6 +1137,7 @@
         {% else %}
         <div class="user-navbar">
             <button class="mobile-menu-btn" onclick="openMobileMenu()" title="Menu">&#9776;</button>
+            <a href="{% url 'help' %}">Help</a>
             <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}" id="feedbackLink">Feedback</a>
             <a href="{% url 'contact:contact' %}">Contact</a>
             <a href="{% url 'accounts:login' %}?next={{ request.path }}" onclick="saveGuestDescriptionBeforeNav()">Login</a>

@@ -45,6 +45,7 @@ async function apiAction(url, method, onRefresh) {
 
 const CommentNode = ({
   comment,
+  currentUserId,
   isAuthor,
   isOwner,
   isAdmin,
@@ -62,6 +63,10 @@ const CommentNode = ({
 
   const isDeleted = comment.deleted;
   const isEdited = comment.updated_at !== comment.created_at;
+  const flagCount = comment.flagged_by ? comment.flagged_by.length : 0;
+  const isFlaggedByMe = comment.flagged_by && currentUserId
+    ? comment.flagged_by.includes(currentUserId)
+    : false;
 
   const handleDelete = () => {
     if (!window.confirm('Delete this comment?')) return;
@@ -73,9 +78,18 @@ const CommentNode = ({
   };
 
   const handleFlag = () => {
+    if (!window.confirm('Flag this comment as inappropriate?\n\nOnly an admin can remove this flag.')) return;
     apiAction(
       `${apiBaseUrl}/collections/${collectionId}/comments/${comment._id}/flag/`,
       'POST',
+      onRefresh,
+    );
+  };
+
+  const handleUnflag = () => {
+    apiAction(
+      `${apiBaseUrl}/collections/${collectionId}/comments/${comment._id}/flag/`,
+      'DELETE',
       onRefresh,
     );
   };
@@ -148,6 +162,11 @@ const CommentNode = ({
         {comment.hidden && (
           <span className="comment-hidden-badge">[hidden]</span>
         )}
+        {flagCount > 0 && canModerate && (
+          <span className="comment-flagged-badge" title={`Flagged by ${flagCount} user${flagCount !== 1 ? 's' : ''}`}>
+            flagged ({flagCount})
+          </span>
+        )}
       </div>
 
       {!editing ? (
@@ -218,7 +237,17 @@ const CommentNode = ({
           {(isAuthor || canModerate) && (
             <button onClick={handleDelete}>Delete</button>
           )}
-          <button onClick={handleFlag}>Flag</button>
+          <button
+            className={isFlaggedByMe ? 'comment-action-active' : ''}
+            onClick={handleFlag}
+            disabled={isFlaggedByMe}
+            title={isFlaggedByMe ? 'You have flagged this comment' : 'Flag for moderator attention'}
+          >
+            {isFlaggedByMe ? 'Flagged' : 'Flag'}
+          </button>
+          {canModerate && flagCount > 0 && (
+            <button onClick={handleUnflag}>Unflag</button>
+          )}
           {canModerate && !comment.hidden && (
             <button onClick={handleHide}>Hide</button>
           )}

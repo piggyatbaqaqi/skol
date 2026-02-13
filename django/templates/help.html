@@ -1,0 +1,250 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - Synoptic Key of Life</title>
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .page-navbar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.9em;
+        }
+
+        .page-navbar a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .page-navbar a:hover {
+            color: #764ba2;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+        }
+
+        h2 {
+            color: #444;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        p {
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        ol, ul {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        ol ol {
+            margin-top: 8px;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #764ba2;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin: 20px 0 30px;
+        }
+
+        .toc ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .toc li {
+            margin-bottom: 4px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            margin: 0 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-navbar">
+            <a href="{{ SCRIPT_NAME }}/">Home</a>
+            <a href="{% url 'about' %}">About</a>
+            <a href="{% url 'contact:feedback' %}?url={{ request.build_absolute_uri }}">Feedback</a>
+            <a href="{% url 'contact:contact' %}">Contact</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'accounts:logout' %}">Logout</a>
+            {% else %}
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}">Login</a>
+            {% endif %}
+        </div>
+
+        <h1>Help</h1>
+
+        <div class="toc">
+            <ul>
+                <li><a href="#how-to-describe">How to Describe a Mushroom</a></li>
+            </ul>
+        </div>
+
+        <h2 id="how-to-describe">How to Describe a Mushroom</h2>
+
+        <p>Welcome to the Synoptic Key of Life! The Synoptic Key is meant to
+        guide you through creating a technical description of your
+        collection. These instructions are for mushrooms with a cap and
+        stem. They are somewhat generalizable to other macrofungi (mushrooms
+        big enough to see with the bare eye).</p>
+
+        <p>The general plan is to start at the top of the mushroom and work
+        our way down to the base. Once we've described all the macro features,
+        we follow the same plan for microscopic features.</p>
+
+        <p>You should be able to get reasonable results with non-technical
+        language since the search is based on semantics (meaning). As you gain
+        experience with making descriptions, you'll want to learn the technical
+        terms, both for better results, and to understand the descriptions the
+        tool returns to you.</p>
+
+        <div class="highlight-box">
+            <p><strong>Tip:</strong> The Vocabulary feature tool is the only one populated at the start
+            of writing a description. It provides a huge nested menu of feature
+            descriptions and is kind of noisy. But if you have a term in mind, you
+            may find some help here.</p>
+        </div>
+
+        <p>Once you have a partial description, press the Search button. This
+        should populate the two feature selection tools based on decision
+        trees, the Text Features and JSON Features. These provide hints about
+        what you might want to look at next to narrow your search.</p>
+
+        <p>Many older descriptions
+        use <a href="https://www.gutenberg.org/ebooks/63087">Color Standards
+        and Color Nomenclature by Robert Ridgway</a> to identify colors. You
+        can use these colors too.</p>
+
+        <h3>Outline of a Mushroom Field Description</h3>
+        <ol>
+            <li>Cap color and texture</li>
+            <li>If there are spots on the cap, can you remove them?</li>
+            <li>Gills or pores
+                <ol>
+                    <li>If there are gills, are they distant or crowded?</li>
+                    <li>If there are pores, how many per mm?</li>
+                    <li>Any color changes or oozing liquids when bruised or scratched?</li>
+                </ol>
+            </li>
+            <li>Stipe (stem)
+                <ol>
+                    <li>What color?</li>
+                    <li>Any color changes when bruised or scratched?</li>
+                    <li>Is there a ring? Is it movable?</li>
+                    <li>What is the stipe shape? Equal, tapered up, tapered down, spindle-shaped?</li>
+                    <li>Are there ornaments on the stipe?
+                        <ol>
+                            <li>Striate (grooves)?</li>
+                            <li>Glandular dots?</li>
+                            <li>Scabers?</li>
+                        </ol>
+                    </li>
+                    <li>Describe the base of the stipe.
+                        <ol>
+                            <li>Bulbous?</li>
+                            <li>Is there a cup?</li>
+                            <li>Is it covered in fuzz? What color?</li>
+                            <li>Other ornaments?</li>
+                        </ol>
+                    </li>
+                </ol>
+            </li>
+            <li>Is there a deep root or other structure underground?</li>
+            <li>Smell the cap, gills or pores, stipe, and base of the stipe.</li>
+            <li>Collect a spore print. What color is it?</li>
+        </ol>
+
+        <div class="footer">
+            <a href="{{ SCRIPT_NAME }}/">Search</a>
+            <a href="{% url 'help' %}">Help</a>
+            <a href="{% url 'about' %}">About</a>
+            <a href="{% url 'sources' %}">Sources</a>
+            <a href="{% url 'contact:contact' %}">Contact</a>
+            <a href="{% url 'contact:feedback' %}">Feedback</a>
+            <p style="margin-top: 15px;">&copy; 2019-2026 SKOL Project Contributors. Licensed under GPLv3.</p>
+        </div>
+    </div>
+</body>
+</html>

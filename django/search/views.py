@@ -2348,7 +2348,8 @@ class CommentDetailView(APIView):
 
 class CommentFlagView(APIView):
     """
-    POST /api/collections/<collection_id>/comments/<comment_id>/flag/
+    POST   /api/collections/<collection_id>/comments/<comment_id>/flag/
+    DELETE /api/collections/<collection_id>/comments/<comment_id>/flag/
     """
     permission_classes = [IsAuthenticated]
 
@@ -2358,6 +2359,24 @@ class CommentFlagView(APIView):
         result = comment_service.flag_comment(
             comment_id, request.user.id
         )
+        return Response(result)
+
+    def delete(self, request, collection_id, comment_id):
+        from . import comment_service
+        from .models import Collection
+
+        collection = get_object_or_404(
+            Collection, collection_id=collection_id
+        )
+        is_admin = request.user.is_staff or request.user.is_superuser
+        is_owner = collection.owner_id == request.user.id
+        if not (is_admin or is_owner):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        result = comment_service.unflag_comment(comment_id)
         return Response(result)
 
 

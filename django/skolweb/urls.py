@@ -233,6 +233,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),   # allauth OAuth callbacks (github/, google/, orcid/)
     path('contact/', include('contact.urls')),
     path('about/', TemplateView.as_view(template_name='about.html'), name='about'),
+    path('help/', TemplateView.as_view(template_name='help.html'), name='help'),
     path('sources/', sources_view, name='sources'),
     path('pdf/', pdf_viewer, name='pdf-viewer'),
     path('pdf/taxa/<str:taxa_id>/', pdf_viewer, name='pdf-viewer-taxa'),
