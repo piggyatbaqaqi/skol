@@ -11,6 +11,7 @@ module.exports = {
     'collection-select': './src/collectionSelectEntry.js',
     'feature-selection': './src/featureSelectionEntry.js',
     'source-context': './src/sourceContextEntry.js',
+    'discussion': './src/discussionEntry.js',
   },
   output: {
     filename: '[name].bundle.js',

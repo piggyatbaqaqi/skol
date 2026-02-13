@@ -1237,6 +1237,15 @@
         </div>
 
         {% if user.is_authenticated %}
+        <!-- Discussion Widget (visible when collection is active) -->
+        <div id="discussionSection" style="display: none;">
+            <div id="discussion-container"
+                 data-discussion-widget
+                 data-api-base-url="{{ SCRIPT_NAME }}/api"
+                 data-collection-id="">
+            </div>
+        </div>
+
         <!-- Identifiers Section (visible when collection is active) -->
         <div id="identifiersSection" class="identifiers-section" style="display: none;">
             <h3>External Identifiers</h3>
@@ -1526,6 +1535,16 @@
                 updateIdentifiersDisplay();
             }
 
+            // Show discussion widget
+            const discussionSection = document.getElementById('discussionSection');
+            if (discussionSection) {
+                discussionSection.style.display = 'block';
+                const container = document.getElementById('discussion-container');
+                if (container) {
+                    container.dataset.collectionId = activeCollectionData.collection_id;
+                }
+            }
+
             // Display most recent search results if available (and not skipping prompt update)
             if (!skipPromptUpdate) {
                 displayMostRecentSearchResults();
@@ -1599,6 +1618,9 @@
 
             const identifiersSection = document.getElementById('identifiersSection');
             if (identifiersSection) identifiersSection.style.display = 'none';
+
+            const discussionSection = document.getElementById('discussionSection');
+            if (discussionSection) discussionSection.style.display = 'none';
         }
 
         // Save nomenclature to collection (debounced, called from input handler)
@@ -2447,6 +2469,17 @@
                     if (nomenclatureSaveTimeout) clearTimeout(nomenclatureSaveTimeout);
                     saveNomenclature(this.value);
                 });
+
+                // Listen for nomenclature updates from discussion widget
+                document.addEventListener('nomenclature-updated', function(e) {
+                    const newNomenclature = e.detail && e.detail.nomenclature;
+                    if (newNomenclature) {
+                        nomenclatureInput.value = newNomenclature;
+                        if (activeCollectionData) {
+                            activeCollectionData.nomenclature = newNomenclature;
+                        }
+                    }
+                });
             }
         } else {
             // Auto-save description to guest collection for non-authenticated users
@@ -2496,6 +2529,9 @@
 
     <!-- Source Context Viewer Widget -->
     <script src="{% static 'js/source-context.bundle.js' %}"></script>
+
+    <!-- Discussion Widget -->
+    <script src="{% static 'js/discussion.bundle.js' %}"></script>
 
     <!-- Taxon Result Widget -->
     <script src="{% static 'js/taxon-result-widget.js' %}"></script>

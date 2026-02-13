@@ -26,6 +26,9 @@ def get_couchdb_config():
         'history_db': os.environ.get(
             'COLLECTIONS_HISTORY_DB_NAME', 'skol_collections_history_dev'
         ),
+        'comments_db': os.environ.get(
+            'COMMENTS_DB_NAME', 'skol_comments_dev'
+        ),
     }
 
 

@@ -54,6 +54,9 @@ export VIRTUAL_ENV=/opt/skol/django-venv
 export PATH="${VIRTUAL_ENV}/bin:${PATH}"
 export DJANGO_SETTINGS_MODULE=skolweb.settings
 unset PYTHONHOME
+# Source environment files for CouchDB credentials etc.
+[ -f /opt/skol/django/skol-django.env ] && set -a && . /opt/skol/django/skol-django.env && set +a
+[ -f /home/skol/.skol_env ] && set -a && . /home/skol/.skol_env && set +a
 exec "$@"
 EOF
 chmod 755 ${SKOL_HOME}/bin/with_skol_django
@@ -107,6 +110,11 @@ echo "Running database migrations..."
 cd ${SKOL_HOME}/django
 sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py migrate --noinput
 echo "Database migrations complete."
+
+# Set up CouchDB comment views (creates database and design docs)
+echo "Setting up comment discussion views..."
+sudo -u skol ${SKOL_HOME}/bin/with_skol_django python manage.py setup_comment_views --warm || echo "Warning: setup_comment_views failed (CouchDB may not be running yet)"
+echo "Comment views setup complete."
 
 # Collect static files
 echo "Collecting static files..."

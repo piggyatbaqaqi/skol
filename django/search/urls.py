@@ -34,6 +34,13 @@ from .views import (
     SourceContextView,
     # User settings
     UserSettingsView,
+    # Comment/Discussion views
+    CommentListCreateView,
+    CommentCountView,
+    CommentDetailView,
+    CommentFlagView,
+    CommentHideView,
+    CommentCopyNomenclatureView,
 )
 
 app_name = 'search'
@@ -96,4 +103,40 @@ urlpatterns = [
 
     # User settings
     path('user-settings/', UserSettingsView.as_view(), name='user-settings'),
+
+    # Comments/Discussion
+    path(
+        'collections/<int:collection_id>/comments/',
+        CommentListCreateView.as_view(),
+        name='comment-list-create',
+    ),
+    path(
+        'collections/<int:collection_id>/comments/count/',
+        CommentCountView.as_view(),
+        name='comment-count',
+    ),
+    path(
+        'collections/<int:collection_id>/comments/'
+        '<str:comment_id>/',
+        CommentDetailView.as_view(),
+        name='comment-detail',
+    ),
+    path(
+        'collections/<int:collection_id>/comments/'
+        '<str:comment_id>/flag/',
+        CommentFlagView.as_view(),
+        name='comment-flag',
+    ),
+    path(
+        'collections/<int:collection_id>/comments/'
+        '<str:comment_id>/hide/',
+        CommentHideView.as_view(),
+        name='comment-hide',
+    ),
+    path(
+        'collections/<int:collection_id>/comments/'
+        '<str:comment_id>/copy-nomenclature/',
+        CommentCopyNomenclatureView.as_view(),
+        name='comment-copy-nomenclature',
+    ),
 ]

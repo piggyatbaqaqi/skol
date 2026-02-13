@@ -1,0 +1,420 @@
+/**
+ * DiscussionWidget Styles
+ *
+ * Threaded comment/discussion system for collections.
+ * Follows patterns from SourceContextViewer.css.
+ */
+
+.discussion-widget {
+  margin-top: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Header / expand-collapse toggle */
+.discussion-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a9eff;
+  background: #fafafa;
+  border: none;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.discussion-header:hover {
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.discussion-header:focus-visible {
+  outline: 2px solid #4a9eff;
+  outline-offset: -2px;
+}
+
+.discussion-header[aria-expanded="true"] {
+  border-bottom-color: #e0e0e0;
+}
+
+.discussion-header-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* Body container */
+.discussion-body {
+  padding: 12px 14px;
+  background: white;
+}
+
+/* Scrollable comment area */
+.discussion-scroll-area {
+  max-height: 500px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.discussion-scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.discussion-scroll-area::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.discussion-scroll-area::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.discussion-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* States */
+.discussion-loading {
+  color: #666;
+  font-size: 13px;
+  padding: 12px 0;
+}
+
+.discussion-error {
+  color: #dc3545;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #fff5f5;
+  border: 1px solid #ffcccc;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.discussion-empty {
+  color: #888;
+  font-size: 13px;
+  font-style: italic;
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* Comment thread */
+.comment-thread {
+  margin-bottom: 4px;
+}
+
+/* Comment node */
+.comment-node {
+  padding: 8px 0;
+}
+
+.comment-node.comment-hidden {
+  opacity: 0.5;
+}
+
+.comment-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.comment-collapse-btn {
+  padding: 0 4px;
+  font-size: 10px;
+  color: #888;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.comment-collapse-btn:hover {
+  color: #4a9eff;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #333;
+}
+
+.comment-time {
+  color: #888;
+}
+
+.comment-edited {
+  color: #888;
+  font-style: italic;
+}
+
+.comment-hidden-badge {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+/* Comment body */
+.comment-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Nomenclature display */
+.comment-nomenclature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #555;
+}
+
+.comment-copy-nomenclature-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #4a9eff;
+  background: transparent;
+  border: 1px solid #4a9eff;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.comment-copy-nomenclature-btn:hover {
+  background: #4a9eff;
+  color: white;
+}
+
+/* Edit history dropdown */
+.comment-history {
+  margin-top: 6px;
+}
+
+.comment-history select {
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: white;
+  color: #555;
+}
+
+.comment-history-body {
+  margin-top: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  color: #666;
+  white-space: pre-wrap;
+}
+
+/* Action buttons */
+.comment-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.comment-actions button {
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #888;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.comment-actions button:hover {
+  color: #4a9eff;
+  background: rgba(74, 158, 255, 0.08);
+}
+
+/* Comment form */
+.comment-form {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.comment-form-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.comment-form-body {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  min-height: 60px;
+  box-sizing: border-box;
+}
+
+.comment-form-body:focus {
+  border-color: #4a9eff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+.comment-form-nomenclature {
+  margin-top: 6px;
+}
+
+.comment-form-nomenclature input {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.comment-form-nomenclature input:focus {
+  border-color: #4a9eff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+.comment-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comment-form-actions button {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.comment-form-actions button[type="submit"] {
+  color: white;
+  background: #4a9eff;
+  border: 1px solid #4a9eff;
+}
+
+.comment-form-actions button[type="submit"]:hover:not(:disabled) {
+  background: #3a8eef;
+}
+
+.comment-form-actions button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.comment-form-actions button[type="button"] {
+  color: #666;
+  background: white;
+  border: 1px solid #ccc;
+}
+
+.comment-form-actions button[type="button"]:hover {
+  background: #f5f5f5;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .discussion-widget {
+    border-color: #333;
+  }
+
+  .discussion-header {
+    background: #1e1e1e;
+  }
+
+  .discussion-header:hover {
+    background: #252525;
+  }
+
+  .discussion-header[aria-expanded="true"] {
+    border-bottom-color: #333;
+  }
+
+  .discussion-body {
+    background: #1a1a1a;
+  }
+
+  .discussion-error {
+    background: #3d1c1c;
+    border-color: #8b0000;
+  }
+
+  .comment-author {
+    color: #e0e0e0;
+  }
+
+  .comment-body {
+    color: #d0d0d0;
+  }
+
+  .comment-nomenclature {
+    color: #aaa;
+  }
+
+  .comment-history-body {
+    background: #252525;
+    border-color: #444;
+    color: #bbb;
+  }
+
+  .comment-history select {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #ddd;
+  }
+
+  .comment-form-body {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .comment-form-nomenclature input {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .comment-form-actions button[type="button"] {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #ccc;
+  }
+
+  .comment-thread {
+    border-left-color: #444 !important;
+  }
+
+  .discussion-scroll-area::-webkit-scrollbar-track {
+    background: #333;
+  }
+
+  .discussion-scroll-area::-webkit-scrollbar-thumb {
+    background: #555;
+  }
+
+  .discussion-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+}

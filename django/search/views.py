@@ -2188,3 +2188,271 @@ class UserSettingsView(APIView):
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ============================================================================
+# Comment/Discussion Views
+# ============================================================================
+
+class CommentListCreateView(APIView):
+    """
+    GET  /api/collections/<collection_id>/comments/
+    POST /api/collections/<collection_id>/comments/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, collection_id):
+        from .models import Collection
+        from . import comment_service
+
+        collection = get_object_or_404(
+            Collection, collection_id=collection_id
+        )
+        is_admin = request.user.is_staff or request.user.is_superuser
+        is_owner = collection.owner_id == request.user.id
+
+        comments = comment_service.get_comments_for_collection(
+            collection_id, include_hidden=(is_admin or is_owner)
+        )
+
+        # Sanitize deleted comments
+        for c in comments:
+            if c.get('deleted'):
+                c['body'] = '[deleted]'
+                c['author'] = {
+                    'user_id': None,
+                    'username': '[deleted]',
+                }
+                c['nomenclature'] = ''
+                c['edit_history'] = []
+
+        return Response({
+            'comments': comments,
+            'count': len(comments),
+            'collection_id': collection_id,
+            'current_user_id': request.user.id,
+            'is_owner': is_owner,
+            'is_admin': is_admin,
+        })
+
+    def post(self, request, collection_id):
+        from .models import Collection
+        from . import comment_service
+
+        get_object_or_404(Collection, collection_id=collection_id)
+
+        body = request.data.get('body', '').strip()
+        if not body:
+            return Response(
+                {'error': 'Comment body is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        nomenclature = request.data.get('nomenclature', '')
+        parent_path = request.data.get('parent_path', '')
+
+        comment = comment_service.create_comment(
+            collection_id=collection_id,
+            user_id=request.user.id,
+            username=request.user.username,
+            body=body,
+            nomenclature=nomenclature,
+            parent_path=parent_path,
+        )
+
+        return Response(comment, status=status.HTTP_201_CREATED)
+
+
+class CommentCountView(APIView):
+    """
+    GET /api/collections/<collection_id>/comments/count/
+
+    Lightweight endpoint for badge display. No auth required.
+    """
+
+    def get(self, request, collection_id):
+        from . import comment_service
+
+        count = comment_service.get_comment_count(collection_id)
+        return Response({
+            'count': count,
+            'collection_id': collection_id,
+        })
+
+
+class CommentDetailView(APIView):
+    """
+    PUT    /api/collections/<collection_id>/comments/<comment_id>/
+    DELETE /api/collections/<collection_id>/comments/<comment_id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, collection_id, comment_id):
+        from . import comment_service
+
+        comment = comment_service.get_comment(comment_id)
+
+        if comment.get('author', {}).get('user_id') != request.user.id:
+            return Response(
+                {'error': 'Only the author can edit this comment'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        body = request.data.get('body', '').strip()
+        if not body:
+            return Response(
+                {'error': 'Comment body is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        nomenclature = request.data.get('nomenclature', '')
+
+        try:
+            updated = comment_service.update_comment(
+                comment_id, request.user.id, body, nomenclature
+            )
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(updated)
+
+    def delete(self, request, collection_id, comment_id):
+        from .models import Collection
+        from . import comment_service
+
+        collection = get_object_or_404(
+            Collection, collection_id=collection_id
+        )
+        comment = comment_service.get_comment(comment_id)
+
+        is_author = (
+            comment.get('author', {}).get('user_id') == request.user.id
+        )
+        is_admin = request.user.is_staff or request.user.is_superuser
+        is_owner = collection.owner_id == request.user.id
+
+        if not (is_author or is_admin or is_owner):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        result = comment_service.soft_delete_comment(
+            comment_id, request.user.id
+        )
+        return Response(result)
+
+
+class CommentFlagView(APIView):
+    """
+    POST /api/collections/<collection_id>/comments/<comment_id>/flag/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id, comment_id):
+        from . import comment_service
+
+        result = comment_service.flag_comment(
+            comment_id, request.user.id
+        )
+        return Response(result)
+
+
+class CommentHideView(APIView):
+    """
+    POST   /api/collections/<cid>/comments/<comment_id>/hide/
+    DELETE /api/collections/<cid>/comments/<comment_id>/hide/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _check_permission(self, request, collection_id):
+        from .models import Collection
+        collection = get_object_or_404(
+            Collection, collection_id=collection_id
+        )
+        is_admin = request.user.is_staff or request.user.is_superuser
+        is_owner = collection.owner_id == request.user.id
+        if not (is_admin or is_owner):
+            return None
+        return collection
+
+    def post(self, request, collection_id, comment_id):
+        from . import comment_service
+
+        if not self._check_permission(request, collection_id):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        result = comment_service.hide_comment(
+            comment_id, request.user.id
+        )
+        return Response(result)
+
+    def delete(self, request, collection_id, comment_id):
+        from . import comment_service
+
+        if not self._check_permission(request, collection_id):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        result = comment_service.unhide_comment(
+            comment_id, request.user.id
+        )
+        return Response(result)
+
+
+class CommentCopyNomenclatureView(APIView):
+    """
+    POST /api/collections/<cid>/comments/<comment_id>/copy-nomenclature/
+
+    Copy a comment's nomenclature to the collection's master field.
+    Owner only.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id, comment_id):
+        from .models import Collection, SearchHistory
+        from . import comment_service
+        from .couchdb_sync import sync_collection_to_couchdb
+
+        collection = get_object_or_404(
+            Collection, collection_id=collection_id
+        )
+
+        if collection.owner_id != request.user.id:
+            return Response(
+                {'error': 'Only collection owner can copy nomenclature'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        comment = comment_service.get_comment(comment_id)
+        nomenclature = comment.get('nomenclature', '')
+
+        if not nomenclature:
+            return Response(
+                {'error': 'Comment has no nomenclature'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        collection.nomenclature = nomenclature
+        collection.save()
+
+        sync_collection_to_couchdb(collection_id)
+
+        SearchHistory.objects.create(
+            collection=collection,
+            event_type='nomenclature_change',
+            nomenclature=nomenclature,
+        )
+
+        return Response({
+            'nomenclature': nomenclature,
+            'collection_id': collection_id,
+        })

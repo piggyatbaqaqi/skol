@@ -98,6 +98,9 @@ export PATH="\${VIRTUAL_ENV}/bin:\${PATH}"
 export PYTHONPATH="\${SKOL_DJANGO_ROOT}:\${PYTHONPATH}"
 export DJANGO_SETTINGS_MODULE=skolweb.settings
 unset PYTHONHOME
+# Source environment files for CouchDB credentials etc.
+[ -f /opt/skol/config/skol-django.env ] && set -a && . /opt/skol/config/skol-django.env && set +a
+[ -f /home/skol/.skol_env ] && set -a && . /home/skol/.skol_env && set +a
 exec "\$@"
 EOF
 chmod 755 "$TEMP_WRAPPER"
@@ -205,6 +208,11 @@ echo "Database migrations complete."
 echo "Collecting static files..."
 sudo -u skol ${SKOL_DJANGO_VENV}/bin/with_skol_django_new python manage.py collectstatic --noinput
 echo "Static files collected."
+
+# Set up CouchDB comment views (creates database and design docs)
+echo "Setting up comment discussion views..."
+sudo -u skol ${SKOL_DJANGO_VENV}/bin/with_skol_django_new python manage.py setup_comment_views --warm || echo "Warning: setup_comment_views failed (CouchDB may not be running yet)"
+echo "Comment views setup complete."
 
 # Clean up temporary wrapper
 rm -f ${SKOL_DJANGO_VENV}/bin/with_skol_django_new
