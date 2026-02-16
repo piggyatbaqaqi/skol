@@ -1251,6 +1251,13 @@ class CollectionDetailView(APIView):
 
     def get(self, request, collection_id):
         collection = self.get_object(collection_id)
+        if collection.hidden:
+            is_admin = request.user.is_staff or request.user.is_superuser
+            if collection.owner != request.user and not is_admin:
+                return Response(
+                    {'error': 'Collection not found'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
         serializer = CollectionDetailSerializer(collection)
         return Response(serializer.data)
 
@@ -1260,6 +1267,11 @@ class CollectionDetailView(APIView):
             return Response(
                 {'error': 'You do not have permission to edit this collection'},
                 status=status.HTTP_403_FORBIDDEN
+            )
+        if collection.hidden:
+            return Response(
+                {'error': 'This collection has been hidden by an admin and cannot be modified'},
+                status=status.HTTP_403_FORBIDDEN,
             )
         serializer = CollectionUpdateSerializer(collection, data=request.data, partial=True)
         if serializer.is_valid():
@@ -1287,6 +1299,10 @@ class CollectionByUserView(APIView):
 
     def get(self, request, username):
         collections = Collection.objects.filter(owner__username=username)
+        is_admin = request.user.is_staff or request.user.is_superuser
+        is_own = (request.user.username == username)
+        if not (is_own or is_admin):
+            collections = collections.filter(hidden=False)
         serializer = CollectionListSerializer(collections, many=True)
         return Response({
             'collections': serializer.data,
@@ -1306,6 +1322,9 @@ class CollectionByUserIdView(APIView):
         from django.contrib.auth.models import User
         user = get_object_or_404(User, pk=user_id)
         collections = Collection.objects.filter(owner=user)
+        is_admin = request.user.is_staff or request.user.is_superuser
+        if not (request.user == user or is_admin):
+            collections = collections.filter(hidden=False)
         serializer = CollectionListSerializer(collections, many=True)
         return Response({
             'collections': serializer.data,
@@ -1341,6 +1360,40 @@ class CollectionFlagView(APIView):
         collection = get_object_or_404(Collection, collection_id=collection_id)
         collection.flagged_by = []
         collection.save(update_fields=['flagged_by'])
+        serializer = CollectionDetailSerializer(collection)
+        return Response(serializer.data)
+
+
+class CollectionHideView(APIView):
+    """
+    POST   /api/collections/<collection_id>/hide/  — admin only
+    DELETE /api/collections/<collection_id>/hide/  — admin only
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {'error': 'Only admins can hide collections'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        collection.hidden = True
+        collection.hidden_by = request.user
+        collection.save(update_fields=['hidden', 'hidden_by'])
+        serializer = CollectionDetailSerializer(collection)
+        return Response(serializer.data)
+
+    def delete(self, request, collection_id):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {'error': 'Only admins can unhide collections'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        collection.hidden = False
+        collection.hidden_by = None
+        collection.save(update_fields=['hidden', 'hidden_by'])
         serializer = CollectionDetailSerializer(collection)
         return Response(serializer.data)
 

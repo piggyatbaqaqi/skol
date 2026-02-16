@@ -61,8 +61,9 @@ const CollectionOption = ({ data, innerRef, innerProps, isFocused, isSelected })
       ref={innerRef}
       {...innerProps}
       className={`collection-option ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`}
+      style={data.hidden ? { opacity: 0.5 } : {}}
     >
-      <span className="collection-name">{data.name}</span>
+      <span className="collection-name">{data.hidden ? '\u2298 ' : ''}{data.name}</span>
       <span className="collection-id">#{data.collectionId}</span>
     </div>
   );
@@ -117,7 +118,8 @@ const CollectionSelect = ({
         name: c.name,
         collectionId: c.collection_id,
         searchCount: c.search_count,
-        identifierCount: c.identifier_count
+        identifierCount: c.identifier_count,
+        hidden: c.hidden || false
       }));
 
       setOptions(opts);

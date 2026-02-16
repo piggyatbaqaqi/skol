@@ -428,6 +428,28 @@
         .footer p {
             margin-top: 15px;
         }
+
+        .hidden-banner {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hidden-banner-text {
+            color: #856404;
+            font-weight: 600;
+        }
+
+        .hidden-banner button {
+            background: #28a745;
+            padding: 6px 16px;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
@@ -532,6 +554,7 @@
         const COLLECTION_ID = {{ collection_id }};
         const IS_AUTHENTICATED = {{ user.is_authenticated|yesno:"true,false" }};
         const CURRENT_USERNAME = '{{ user.username }}';
+        const IS_ADMIN = {{ user.is_staff|yesno:"true,false" }};
 
         let collection = null;
         let isOwner = false;
@@ -605,14 +628,42 @@
             document.title = `${collection.name} - SKOL`;
 
             const ownerBadge = isOwner ? '<span class="owner-badge">Owner</span>' : '';
-            const ownerActions = isOwner ? `
-                <div class="actions">
-                    <button class="btn-secondary btn-small" onclick="showEditModal()">Edit</button>
-                    <button class="btn-danger btn-small" onclick="deleteCollection()">Delete</button>
-                </div>
-            ` : '';
+            let ownerActions = '';
+            if (isOwner) {
+                if (collection.hidden) {
+                    // Hidden: owner can only delete
+                    ownerActions = `
+                        <div class="actions">
+                            <button class="btn-danger btn-small" onclick="deleteCollection()">Delete</button>
+                        </div>
+                    `;
+                } else {
+                    ownerActions = `
+                        <div class="actions">
+                            <button class="btn-secondary btn-small" onclick="showEditModal()">Edit</button>
+                            <button class="btn-danger btn-small" onclick="deleteCollection()">Delete</button>
+                        </div>
+                    `;
+                }
+            }
+
+            // Hidden banner
+            let hiddenBanner = '';
+            if (collection.hidden) {
+                const unhideBtn = IS_ADMIN ? `<button onclick="unhideCollection()">Unhide</button>` : '';
+                const bannerMsg = isOwner && !IS_ADMIN
+                    ? 'This collection has been hidden by an admin. You may only delete it.'
+                    : 'This collection is hidden by an admin.';
+                hiddenBanner = `
+                    <div class="hidden-banner">
+                        <span class="hidden-banner-text">${bannerMsg}</span>
+                        ${unhideBtn}
+                    </div>
+                `;
+            }
 
             let html = `
+                ${hiddenBanner}
                 <div class="header-actions">
                     <div>
                         <h1>${escapeHtml(collection.name)}${ownerBadge}</h1>
@@ -635,7 +686,7 @@
                 <div class="section">
                     <div class="section-header">
                         <h2>External Identifiers (${collection.external_identifiers?.length || 0})</h2>
-                        ${isOwner ? `<button class="btn-small" onclick="showIdentifierModal()">+ Add Identifier</button>` : ''}
+                        ${isOwner && !collection.hidden ? `<button class="btn-small" onclick="showIdentifierModal()">+ Add Identifier</button>` : ''}
                     </div>
                     ${displayIdentifiers()}
                 </div>
@@ -663,7 +714,7 @@
                             <div class="event-meta">
                                 <span>${formatDate(s.created_at)}</span>
                             </div>
-                            ${isOwner ? `
+                            ${isOwner && !collection.hidden ? `
                                 <div class="search-actions">
                                     <button class="btn-danger btn-small" onclick="deleteSearch(${s.id})">Delete</button>
                                 </div>
@@ -770,7 +821,7 @@
                             </span>
                             ${i.notes ? `<span class="identifier-notes">${escapeHtml(i.notes)}</span>` : ''}
                         </div>
-                        ${isOwner ? `<button class="btn-danger btn-small" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
+                        ${isOwner && !collection.hidden ? `<button class="btn-danger btn-small" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
                     </div>
                 `;
             }).join('');
@@ -1001,6 +1052,29 @@
                 showSuccess('Identifier deleted');
                 loadCollection();
 
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // Unhide collection (admin only)
+        async function unhideCollection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/collections/${COLLECTION_ID}/hide/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to unhide collection');
+                }
+
+                showSuccess('Collection unhidden successfully');
+                loadCollection();
             } catch (error) {
                 showError(error.message);
             }

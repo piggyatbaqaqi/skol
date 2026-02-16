@@ -104,6 +104,18 @@ class Collection(models.Model):
         blank=True,
         help_text="List of user IDs who flagged this collection as inappropriate"
     )
+    hidden = models.BooleanField(
+        default=False,
+        help_text="Admin-hidden collection: excluded from indexing, read-only for owner"
+    )
+    hidden_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='hidden_collections',
+        help_text="Admin who hid this collection"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

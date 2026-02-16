@@ -19,6 +19,7 @@ from .views import (
     CollectionByUserView,
     CollectionByUserIdView,
     CollectionFlagView,
+    CollectionHideView,
     SearchHistoryListCreateView,
     SearchHistoryDetailView,
     NomenclatureChangeView,
@@ -78,6 +79,8 @@ urlpatterns = [
     path('collections/import-guest/', GuestCollectionImportView.as_view(), name='collection-import-guest'),
     path('collections/<int:collection_id>/flag/',
          CollectionFlagView.as_view(), name='collection-flag'),
+    path('collections/<int:collection_id>/hide/',
+         CollectionHideView.as_view(), name='collection-hide'),
 
     # Search history within collections
     path('collections/<int:collection_id>/searches/',

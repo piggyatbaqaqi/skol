@@ -99,6 +99,7 @@ def sync_collection_to_couchdb(collection_id: int) -> bool:
                     collection.embargo_until.isoformat()
                     if collection.embargo_until else None
                 ),
+                'hidden': collection.hidden,
             },
 
             # Source metadata (analogous to ingest in taxa)

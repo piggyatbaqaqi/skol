@@ -725,6 +725,12 @@
             color: #e67e22;
             margin-left: 4px;
         }
+        .hidden-notice {
+            font-size: 0.8em;
+            font-weight: 500;
+            color: #e74c3c;
+            margin-left: 12px;
+        }
 
         /* Nomenclature Field Styles */
         .nomenclature-section {
@@ -1251,7 +1257,7 @@
             <form id="searchForm">
                 {% csrf_token %}
                 <div class="form-group">
-                    <label for="prompt">Description Text {% if user.is_authenticated %}<span id="descriptionNote" class="field-note" style="display: none;">(linked to collection)</span><span id="collectionFlagArea" style="display: none; margin-left: 12px;"><a href="#" id="collectionFlagLink" class="flag-link" onclick="flagCollection(); return false;">Flag</a><span id="collectionFlagBadge" class="flag-badge" style="display: none;"></span><a href="#" id="collectionUnflagLink" class="flag-link" style="display: none;" onclick="unflagCollection(); return false;">Unflag</a></span>{% endif %}</label>
+                    <label for="prompt">Description Text {% if user.is_authenticated %}<span id="descriptionNote" class="field-note" style="display: none;">(linked to collection)</span><span id="collectionFlagArea" style="display: none; margin-left: 12px;"><a href="#" id="collectionFlagLink" class="flag-link" onclick="flagCollection(); return false;">Flag</a><span id="collectionFlagBadge" class="flag-badge" style="display: none;"></span><a href="#" id="collectionUnflagLink" class="flag-link" style="display: none;" onclick="unflagCollection(); return false;">Unflag</a><a href="#" id="collectionHideLink" class="flag-link" style="display: none;" onclick="hideCollectionAction(); return false;">Hide</a><a href="#" id="collectionUnhideLink" class="flag-link" style="display: none;" onclick="unhideCollectionAction(); return false;">Unhide</a></span><span id="collectionHiddenNotice" class="hidden-notice" style="display: none;">Hidden by admin</span>{% endif %}</label>
                     <div style="display: flex; gap: 20px; align-items: flex-start;">
                         <textarea id="prompt" name="prompt" placeholder="Enter a taxonomic description to search for similar entries..." required style="flex: 1;"></textarea>
                         <div id="feature-selection-container"
@@ -1592,6 +1598,9 @@
 
             // Update collection flag UI
             updateCollectionFlagUI();
+
+            // Update collection hidden UI
+            updateCollectionHiddenUI();
         }
 
         // Display the most recent search results from the active collection
@@ -1667,6 +1676,17 @@
 
             const flagArea = document.getElementById('collectionFlagArea');
             if (flagArea) flagArea.style.display = 'none';
+
+            const hiddenNotice = document.getElementById('collectionHiddenNotice');
+            if (hiddenNotice) hiddenNotice.style.display = 'none';
+
+            // Restore fields to editable state
+            const prompt = document.getElementById('prompt');
+            if (prompt) prompt.removeAttribute('readonly');
+            const nomenclatureInput = document.getElementById('nomenclatureInput');
+            if (nomenclatureInput) nomenclatureInput.removeAttribute('readonly');
+            const searchButton = document.getElementById('searchButton');
+            if (searchButton) searchButton.disabled = false;
         }
 
         // Update collection flag UI based on activeCollectionData
@@ -1728,6 +1748,69 @@
             if (resp.ok) {
                 activeCollectionData = await resp.json();
                 updateCollectionFlagUI();
+            }
+        }
+
+        // Update collection hidden UI based on activeCollectionData
+        function updateCollectionHiddenUI() {
+            if (!activeCollectionData) return;
+            const isHidden = activeCollectionData.hidden || false;
+            const notice = document.getElementById('collectionHiddenNotice');
+            const hideLink = document.getElementById('collectionHideLink');
+            const unhideLink = document.getElementById('collectionUnhideLink');
+
+            // Hide/Unhide links (admin only)
+            if (hideLink) {
+                hideLink.style.display = (IS_ADMIN && !isHidden) ? 'inline' : 'none';
+            }
+            if (unhideLink) {
+                unhideLink.style.display = (IS_ADMIN && isHidden) ? 'inline' : 'none';
+            }
+
+            // Hidden notice (visible to owner when hidden, not to admin)
+            if (notice) {
+                notice.style.display = (isHidden && !IS_ADMIN) ? 'inline' : 'none';
+            }
+
+            // Read-only state for owner when hidden
+            const prompt = document.getElementById('prompt');
+            const nomenclatureInput = document.getElementById('nomenclatureInput');
+            const searchButton = document.getElementById('searchButton');
+            if (isHidden && !IS_ADMIN) {
+                if (prompt) prompt.setAttribute('readonly', '');
+                if (nomenclatureInput) nomenclatureInput.setAttribute('readonly', '');
+                if (searchButton) searchButton.disabled = true;
+            } else {
+                if (prompt) prompt.removeAttribute('readonly');
+                if (nomenclatureInput) nomenclatureInput.removeAttribute('readonly');
+                if (searchButton) searchButton.disabled = false;
+            }
+        }
+
+        async function hideCollectionAction() {
+            if (!activeCollectionId) return;
+            if (!window.confirm('Hide this collection?\n\nThe owner will only be able to delete it.')) return;
+            const resp = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/hide/`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+            if (resp.ok) {
+                activeCollectionData = await resp.json();
+                updateCollectionHiddenUI();
+            }
+        }
+
+        async function unhideCollectionAction() {
+            if (!activeCollectionId) return;
+            const resp = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/hide/`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+            if (resp.ok) {
+                activeCollectionData = await resp.json();
+                updateCollectionHiddenUI();
             }
         }
 
@@ -1977,8 +2060,8 @@
                 }
 
                 menuList.innerHTML = collections.slice(0, 5).map(c => `
-                    <a href="${API_BASE}/collections/${c.collection_id}/" class="collection-menu-item" style="display: block; text-decoration: none; color: inherit;">
-                        <div class="collection-name">${escapeHtml(c.name)}</div>
+                    <a href="${API_BASE}/collections/${c.collection_id}/" class="collection-menu-item" style="display: block; text-decoration: none; color: inherit;${c.hidden ? ' opacity: 0.5;' : ''}">
+                        <div class="collection-name">${c.hidden ? '⊘ ' : ''}${escapeHtml(c.name)}</div>
                         <div class="collection-meta">${c.search_count || 0} searches, ${c.identifier_count || 0} identifiers</div>
                     </a>
                 `).join('');

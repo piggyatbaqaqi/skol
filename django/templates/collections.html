@@ -153,6 +153,25 @@
             margin-top: 15px;
         }
 
+        .collection-card.collection-hidden {
+            opacity: 0.5;
+            border-color: #ccc;
+        }
+        .collection-card.collection-hidden:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: #ccc;
+        }
+        .hidden-badge {
+            background: #e74c3c;
+            color: white;
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
         .no-collections {
             text-align: center;
             padding: 60px 20px;
@@ -404,7 +423,8 @@
 
             container.innerHTML = `<div class="collections-grid">
                 ${collections.map(c => `
-                    <a href="${API_BASE}/collections/${c.collection_id}/" class="collection-card">
+                    <a href="${API_BASE}/collections/${c.collection_id}/" class="collection-card${c.hidden ? ' collection-hidden' : ''}">
+                        ${c.hidden ? '<div class="hidden-badge">Hidden</div>' : ''}
                         <div class="collection-name">${escapeHtml(c.name)}</div>
                         <div class="collection-id">ID: ${c.collection_id}</div>
                         ${c.notes ? `<div class="collection-description">${escapeHtml(c.notes).substring(0, 100)}${c.notes.length > 100 ? '...' : ''}</div>` : ''}

@@ -396,6 +396,8 @@ List fungaria/herbaria from Index Herbariorum registry (for fungarium identifier
 | `/api/collections/user-id/{user_id}/` | GET | List user's collections by numeric ID (stable across renames) |
 | `/api/collections/{id}/flag/` | POST | Flag collection as inappropriate (any authenticated user) |
 | `/api/collections/{id}/flag/` | DELETE | Remove all flags from collection (admin only) |
+| `/api/collections/{id}/hide/` | POST | Hide collection (admin only) |
+| `/api/collections/{id}/hide/` | DELETE | Unhide collection (admin only) |
 
 ### Search History
 
