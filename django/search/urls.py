@@ -17,6 +17,7 @@ from .views import (
     CollectionListCreateView,
     CollectionDetailView,
     CollectionByUserView,
+    CollectionByUserIdView,
     SearchHistoryListCreateView,
     SearchHistoryDetailView,
     NomenclatureChangeView,
@@ -72,6 +73,7 @@ urlpatterns = [
     path('collections/', CollectionListCreateView.as_view(), name='collection-list-create'),
     path('collections/<int:collection_id>/', CollectionDetailView.as_view(), name='collection-detail'),
     path('collections/user/<str:username>/', CollectionByUserView.as_view(), name='collection-by-user'),
+    path('collections/user-id/<int:user_id>/', CollectionByUserIdView.as_view(), name='collection-by-user-id'),
     path('collections/import-guest/', GuestCollectionImportView.as_view(), name='collection-import-guest'),
 
     # Search history within collections

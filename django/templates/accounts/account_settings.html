@@ -10,10 +10,68 @@
 <!-- Account Info Section -->
 <div class="settings-section">
     <h2>Account Information</h2>
-    <div class="info-row">
-        <span class="info-label">Username:</span>
-        <span class="info-value">{{ user.username }}</span>
-    </div>
+
+    <form id="username-form" method="post" action="{% url 'accounts:account_settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_username">
+
+        {% if username_form.errors %}
+        <div class="error">
+            {% for field in username_form %}
+                {% for error in field.errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="info-row">
+            <span class="info-label">Username:</span>
+            <span class="info-value" style="display: flex; align-items: center; gap: 6px;">
+                <input type="text" name="username" id="username-input"
+                       value="{{ user.username }}"
+                       class="form-input" readonly
+                       style="width: 200px; display: inline-block;">
+                <button type="button" id="username-lock-btn"
+                        class="lock-btn" title="Click to edit username"
+                        onclick="unlockUsername()">
+                    <svg id="lock-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/>
+                    </svg>
+                    <svg id="unlock-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="display:none;">
+                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/>
+                    </svg>
+                </button>
+                <button type="button" id="username-cancel-btn"
+                        class="lock-btn" title="Cancel"
+                        style="display:none;"
+                        onclick="lockUsername()">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </span>
+        </div>
+    </form>
+
+    <!-- Confirmation dialog -->
+    <dialog id="username-confirm-dialog" class="confirm-dialog">
+        <p>Are you sure you want to change your username?</p>
+        <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
+            Bookmarks and links that use your old username will stop working.
+        </p>
+        <div style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
+            <button type="button" onclick="this.closest('dialog').close('cancel')"
+                    style="padding: 6px 16px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">
+                Cancel
+            </button>
+            <button type="button" onclick="this.closest('dialog').close('confirm')"
+                    style="padding: 6px 16px; border: 1px solid #667eea; border-radius: 4px; background: #667eea; color: white; cursor: pointer;">
+                Edit Username
+            </button>
+        </div>
+    </dialog>
+
     <div class="info-row">
         <span class="info-label">Email:</span>
         <span class="info-value">{{ user.email }}</span>
@@ -317,5 +375,116 @@
         color: #555;
         margin-bottom: 12px;
     }
+
+    /* Lock/unlock button for username */
+    .lock-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: #888;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .lock-btn:hover {
+        color: #667eea;
+    }
+
+    #username-input[readonly] {
+        background: #f5f5f5;
+        color: #666;
+        border-color: transparent;
+    }
+
+    /* Confirmation dialog */
+    .confirm-dialog {
+        border: none;
+        border-radius: 8px;
+        padding: 24px;
+        max-width: 380px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .confirm-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    .confirm-dialog p:first-child {
+        font-weight: 600;
+        font-size: 1em;
+    }
 </style>
+
+<script>
+    var originalUsername = "{{ user.username|escapejs }}";
+
+    function unlockUsername() {
+        var dialog = document.getElementById('username-confirm-dialog');
+        dialog.showModal();
+        dialog.addEventListener('close', function handler() {
+            dialog.removeEventListener('close', handler);
+            if (dialog.returnValue === 'confirm') {
+                activateEdit();
+            }
+        });
+    }
+
+    function activateEdit() {
+        var input = document.getElementById('username-input');
+        var lockIcon = document.getElementById('lock-icon');
+        var unlockIcon = document.getElementById('unlock-icon');
+        var lockBtn = document.getElementById('username-lock-btn');
+        var cancelBtn = document.getElementById('username-cancel-btn');
+
+        input.removeAttribute('readonly');
+        input.style.background = '';
+        input.style.color = '';
+        input.focus();
+        input.select();
+
+        lockIcon.style.display = 'none';
+        unlockIcon.style.display = '';
+        lockBtn.title = 'Save username';
+        lockBtn.onclick = submitUsername;
+
+        cancelBtn.style.display = '';
+    }
+
+    function lockUsername() {
+        var input = document.getElementById('username-input');
+        var lockIcon = document.getElementById('lock-icon');
+        var unlockIcon = document.getElementById('unlock-icon');
+        var lockBtn = document.getElementById('username-lock-btn');
+        var cancelBtn = document.getElementById('username-cancel-btn');
+
+        input.value = originalUsername;
+        input.setAttribute('readonly', '');
+        lockIcon.style.display = '';
+        unlockIcon.style.display = 'none';
+        lockBtn.title = 'Click to edit username';
+        lockBtn.onclick = unlockUsername;
+
+        cancelBtn.style.display = 'none';
+    }
+
+    function submitUsername() {
+        var input = document.getElementById('username-input');
+        if (input.value.trim() === '' || input.value === originalUsername) {
+            lockUsername();
+            return;
+        }
+        document.getElementById('username-form').submit();
+    }
+
+    // If the page reloaded with validation errors, start in edit mode
+    {% if username_form.errors %}
+    activateEdit();
+    {% endif %}
+</script>
 {% endblock %}

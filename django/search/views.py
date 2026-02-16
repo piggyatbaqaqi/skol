@@ -1295,6 +1295,26 @@ class CollectionByUserView(APIView):
         })
 
 
+class CollectionByUserIdView(APIView):
+    """
+    GET /api/collections/user-id/<user_id>/
+    List all collections for a specific user by numeric ID (stable across renames).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        from django.contrib.auth.models import User
+        user = get_object_or_404(User, pk=user_id)
+        collections = Collection.objects.filter(owner=user)
+        serializer = CollectionListSerializer(collections, many=True)
+        return Response({
+            'collections': serializer.data,
+            'count': len(serializer.data),
+            'user_id': user_id,
+            'username': user.username
+        })
+
+
 class SearchHistoryListCreateView(APIView):
     """
     GET /api/collections/<collection_id>/searches/

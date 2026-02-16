@@ -54,3 +54,15 @@ class CustomAuthenticationForm(AuthenticationForm):
         'class': 'form-input',
         'placeholder': 'Password'
     }))
+
+
+class UsernameChangeForm(forms.ModelForm):
+    """Form for changing username on the account settings page."""
+    class Meta:
+        model = User
+        fields = ('username',)
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'form-input',
+            }),
+        }

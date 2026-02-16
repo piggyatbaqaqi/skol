@@ -392,7 +392,8 @@ List fungaria/herbaria from Index Herbariorum registry (for fungarium identifier
 | `/api/collections/{id}/` | GET | Get collection details |
 | `/api/collections/{id}/` | PUT | Update collection |
 | `/api/collections/{id}/` | DELETE | Delete collection |
-| `/api/collections/user/{username}/` | GET | List user's collections (public) |
+| `/api/collections/user/{username}/` | GET | List user's collections by username |
+| `/api/collections/user-id/{user_id}/` | GET | List user's collections by numeric ID (stable across renames) |
 
 ### Search History
 

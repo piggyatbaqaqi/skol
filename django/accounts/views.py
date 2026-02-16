@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
 from django.contrib.auth.views import PasswordResetView
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, UsernameChangeForm
 from .tokens import email_verification_token
 import logging
 
@@ -240,11 +240,24 @@ def account_settings(request):
 
     password_form = None
     set_password_form = None
+    username_form = None
 
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        if action == 'change_password' and has_usable_password:
+        if action == 'change_username':
+            username_form = UsernameChangeForm(request.POST, instance=request.user)
+            if username_form.is_valid():
+                username_form.save()
+                messages.success(request, 'Your username has been updated.')
+                return redirect('accounts:account_settings')
+            else:
+                # ModelForm._post_clean() mutates instance in memory even
+                # when validation fails; restore the DB value so the
+                # template renders the real current username.
+                request.user.refresh_from_db()
+
+        elif action == 'change_password' and has_usable_password:
             password_form = PasswordChangeForm(request.user, request.POST)
             if password_form.is_valid():
                 user = password_form.save()
@@ -264,6 +277,8 @@ def account_settings(request):
                 return redirect('accounts:account_settings')
 
     # Initialize empty forms for GET requests
+    if username_form is None:
+        username_form = UsernameChangeForm(instance=request.user)
     if password_form is None and has_usable_password:
         password_form = PasswordChangeForm(request.user)
     if set_password_form is None and not has_usable_password:
@@ -274,4 +289,5 @@ def account_settings(request):
         'has_usable_password': has_usable_password,
         'password_form': password_form,
         'set_password_form': set_password_form,
+        'username_form': username_form,
     })
