@@ -5,6 +5,7 @@ from django.urls import path
 from .views import (
     # Existing views
     SearchView,
+    NomenclatureSearchView,
     EmbeddingListView,
     BuildEmbeddingView,
     TaxaInfoView,
@@ -49,6 +50,7 @@ urlpatterns = [
     # Existing endpoints
     path('embeddings/', EmbeddingListView.as_view(), name='embeddings'),
     path('embeddings/build/', BuildEmbeddingView.as_view(), name='embeddings-build'),
+    path('search/nomenclature/', NomenclatureSearchView.as_view(), name='nomenclature-search'),
     path('search/', SearchView.as_view(), name='search'),
     # Taxa document info
     path('taxa/<str:taxa_id>/', TaxaInfoView.as_view(), name='taxa-info'),

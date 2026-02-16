@@ -4,6 +4,7 @@ REST API views for SKOL semantic search.
 import logging
 import math
 import os
+import re
 import traceback
 
 from rest_framework.views import APIView
@@ -549,6 +550,69 @@ def clean_value(value):
     return value
 
 
+def build_result_dict(row, similarity=None):
+    """Build a result dictionary from an embeddings DataFrame row.
+
+    Used by both SearchView and NomenclatureSearchView to produce
+    consistent result structures for the frontend.
+    """
+    result_dict = {
+        'Similarity': clean_value(similarity),
+        'Title': clean_value(row.get('taxon', '')),
+        'Description': clean_value(row.get('description', '')),
+        'Feed': clean_value(row.get('source', '')),
+        'URL': clean_value(row.get('filename', '')),
+    }
+
+    if 'source_metadata' in row.index:
+        src_meta = row['source_metadata']
+        if isinstance(src_meta, dict):
+            result_dict['SourceMetadata'] = clean_value(src_meta)
+            if 'db_name' in src_meta and 'doc_id' in src_meta:
+                result_dict['PDFDbName'] = clean_value(src_meta['db_name'])
+                result_dict['PDFDocId'] = clean_value(src_meta['doc_id'])
+    if 'source' in row.index:
+        src = row['source']
+        if isinstance(src, dict):
+            result_dict['Source'] = clean_value(src)
+    if 'ingest' in row.index:
+        ingest = row['ingest']
+        if isinstance(ingest, dict):
+            result_dict['Ingest'] = clean_value(ingest)
+    if 'line_number' in row.index:
+        result_dict['LineNumber'] = clean_value(row['line_number'])
+    if 'paragraph_number' in row.index:
+        result_dict['ParagraphNumber'] = clean_value(row['paragraph_number'])
+    if 'page_number' in row.index:
+        result_dict['PageNumber'] = clean_value(row['page_number'])
+    if 'pdf_page' in row.index:
+        result_dict['PDFPage'] = clean_value(row['pdf_page'])
+    if 'pdf_label' in row.index:
+        result_dict['PDFLabel'] = clean_value(row['pdf_label'])
+    if 'empirical_page_number' in row.index:
+        result_dict['EmpiricalPageNumber'] = clean_value(row['empirical_page_number'])
+    if 'taxon_id' in row.index:
+        result_dict['taxon_id'] = clean_value(row['taxon_id'])
+
+        taxon_id = row['taxon_id']
+        if isinstance(taxon_id, str) and taxon_id.startswith('collection_'):
+            result_dict['ResultType'] = 'collection'
+            try:
+                collection_id_str = taxon_id.replace('collection_', '')
+                result_dict['CollectionId'] = int(collection_id_str)
+            except (ValueError, AttributeError):
+                result_dict['CollectionId'] = None
+
+            if 'owner' in row.index:
+                owner = row['owner']
+                if isinstance(owner, dict):
+                    result_dict['Owner'] = clean_value(owner)
+        else:
+            result_dict['ResultType'] = 'taxon'
+
+    return result_dict
+
+
 class SearchView(APIView):
     """
     API endpoint to perform semantic search using SKOL embeddings.
@@ -630,75 +694,10 @@ class SearchView(APIView):
             # Get results
             results = []
             for i in range(min(k, len(experiment.nearest_neighbors))):
-                # Get the row index and similarity score
                 idx = experiment.nearest_neighbors.index[i]
                 similarity = experiment.nearest_neighbors.iloc[i]['similarity']
                 row = experiment.embeddings.loc[idx]
-
-                # Build result dictionary from the embedding row data
-                # For SKOL_TAXA, all data is already in the embeddings DataFrame
-                # Use clean_value() for all fields to ensure JSON serialization
-                result_dict = {
-                    'Similarity': clean_value(similarity),
-                    'Title': clean_value(row.get('taxon', '')),
-                    'Description': clean_value(row.get('description', '')),
-                    'Feed': clean_value(row.get('source', '')),
-                    'URL': clean_value(row.get('filename', '')),
-                }
-
-                # Add optional metadata fields if they exist
-                if 'source_metadata' in row.index:
-                    src_meta = row['source_metadata']
-                    if isinstance(src_meta, dict):
-                        result_dict['SourceMetadata'] = clean_value(src_meta)
-                        # Extract PDF source info for direct PDF access
-                        if 'db_name' in src_meta and 'doc_id' in src_meta:
-                            result_dict['PDFDbName'] = clean_value(src_meta['db_name'])
-                            result_dict['PDFDocId'] = clean_value(src_meta['doc_id'])
-                if 'source' in row.index:
-                    src = row['source']
-                    if isinstance(src, dict):
-                        result_dict['Source'] = clean_value(src)
-                # Also include ingest field if present (new format)
-                if 'ingest' in row.index:
-                    ingest = row['ingest']
-                    if isinstance(ingest, dict):
-                        result_dict['Ingest'] = clean_value(ingest)
-                if 'line_number' in row.index:
-                    result_dict['LineNumber'] = clean_value(row['line_number'])
-                if 'paragraph_number' in row.index:
-                    result_dict['ParagraphNumber'] = clean_value(row['paragraph_number'])
-                if 'page_number' in row.index:
-                    result_dict['PageNumber'] = clean_value(row['page_number'])
-                if 'pdf_page' in row.index:
-                    result_dict['PDFPage'] = clean_value(row['pdf_page'])
-                if 'pdf_label' in row.index:
-                    result_dict['PDFLabel'] = clean_value(row['pdf_label'])
-                if 'empirical_page_number' in row.index:
-                    result_dict['EmpiricalPageNumber'] = clean_value(row['empirical_page_number'])
-                if 'taxon_id' in row.index:
-                    result_dict['taxon_id'] = clean_value(row['taxon_id'])
-
-                    # Detect collection results vs taxa results
-                    taxon_id = row['taxon_id']
-                    if isinstance(taxon_id, str) and taxon_id.startswith('collection_'):
-                        result_dict['ResultType'] = 'collection'
-                        # Extract collection_id from taxon_id
-                        try:
-                            collection_id_str = taxon_id.replace('collection_', '')
-                            result_dict['CollectionId'] = int(collection_id_str)
-                        except (ValueError, AttributeError):
-                            result_dict['CollectionId'] = None
-
-                        # Add owner info if present
-                        if 'owner' in row.index:
-                            owner = row['owner']
-                            if isinstance(owner, dict):
-                                result_dict['Owner'] = clean_value(owner)
-                    else:
-                        result_dict['ResultType'] = 'taxon'
-
-                results.append(result_dict)
+                results.append(build_result_dict(row, similarity))
 
             return Response({
                 'results': results,
@@ -721,6 +720,88 @@ class SearchView(APIView):
             return Response(
                 {'error': f'Search failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class NomenclatureSearchView(APIView):
+    """
+    Regex pattern search on nomenclature (taxon) field.
+
+    GET /api/search/nomenclature/?pattern=<regex>&embedding_name=<name>&limit=20
+    """
+
+    def get(self, request):
+        pattern = request.query_params.get('pattern', '')
+        embedding_name = request.query_params.get('embedding_name')
+        limit = request.query_params.get('limit', 20)
+
+        if not pattern:
+            return Response(
+                {'error': 'pattern is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not embedding_name:
+            return Response(
+                {'error': 'embedding_name is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            limit = int(limit)
+            limit = max(1, min(limit, 200))
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'limit must be an integer'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            re.compile(pattern)
+        except re.error as e:
+            return Response(
+                {'error': f'Invalid regex pattern: {e}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            import skol_compat  # noqa: F401
+            from dr_drafts_mycosearch.sota_search import (
+                read_narrative_embeddings_from_redis,
+            )
+
+            df = read_narrative_embeddings_from_redis(
+                settings.REDIS_URL, embedding_name,
+            )
+
+            mask = df['taxon'].astype(str).str.contains(
+                pattern, regex=True, case=False, na=False,
+            )
+            matches = df[mask].head(limit)
+
+            results = []
+            for idx in matches.index:
+                row = matches.loc[idx]
+                results.append(build_result_dict(row))
+
+            return Response({
+                'results': results,
+                'count': len(results),
+                'pattern': pattern,
+                'embedding_name': embedding_name,
+            })
+
+        except ValueError as e:
+            logger.error("Nomenclature search embedding error: %s", e)
+            return Response(
+                {'error': f'Embedding error: {str(e)}'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            tb = traceback.format_exc()
+            logger.error("Nomenclature search failed: %s\n%s", e, tb)
+            return Response(
+                {'error': f'Search failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 

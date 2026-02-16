@@ -98,6 +98,41 @@ Perform semantic search against taxa descriptions.
 }
 ```
 
+### GET /api/search/nomenclature/
+
+Search taxa by regex pattern on the nomenclature (taxon) field.
+
+**Query Parameters:**
+- `pattern` (required): Regex pattern to match against nomenclature
+- `embedding_name` (required): Embedding model name (determines which dataset to search)
+- `limit` (default: `20`, max: `200`): Maximum results to return
+
+**Response:**
+```json
+{
+    "results": [
+        {
+            "Similarity": null,
+            "Title": "Amanita muscaria",
+            "Description": "...",
+            "Feed": "SKOL",
+            "URL": "...",
+            "taxon_id": "taxon_abc123",
+            "ResultType": "taxon"
+        }
+    ],
+    "count": 5,
+    "pattern": "Amanita",
+    "embedding_name": "skol:embedding:v1.1"
+}
+```
+
+**Notes:**
+- Search is case-insensitive
+- `Similarity` is always `null` (this is pattern matching, not similarity search)
+- Invalid regex patterns return `400` with an error message
+- Results use the same structure as `POST /api/search/` for frontend compatibility
+
 ---
 
 ## Taxa & PDFs
@@ -376,6 +411,90 @@ List fungaria/herbaria from Index Herbariorum registry (for fungarium identifier
 | `/api/collections/{id}/identifiers/` | POST | Add identifier |
 | `/api/collections/{id}/identifiers/{iid}/` | GET | Get identifier |
 | `/api/collections/{id}/identifiers/{iid}/` | DELETE | Delete identifier |
+
+---
+
+## Discussion / Comments (Authenticated)
+
+Threaded discussion system for collections, backed by CouchDB.
+
+### GET /api/collections/{id}/comments/
+
+Fetch all comments for a collection in tree order. Deleted comments are sanitized to show `[deleted]` with author info scrubbed.
+
+**Response includes:** `comments` (flat list in sort order), `is_owner`, `is_admin`, `current_user_id`
+
+### POST /api/collections/{id}/comments/
+
+Create a new comment.
+
+**Request:**
+```json
+{
+    "body": "This looks like Geastrum triplex.",
+    "nomenclature": "Geastrum triplex",
+    "parent_path": "/3/"
+}
+```
+
+`nomenclature` and `parent_path` are optional. Omit `parent_path` for root-level comments.
+
+### GET /api/collections/{id}/comments/count/
+
+Lightweight count of non-deleted comments. No authentication required.
+
+**Response:**
+```json
+{
+    "count": 12,
+    "collection_id": 110439105
+}
+```
+
+### PUT /api/collections/{id}/comments/{comment_id}/
+
+Edit a comment (author only). Previous version is pushed to `edit_history`.
+
+**Request:**
+```json
+{
+    "body": "Updated text",
+    "nomenclature": "Updated nomenclature"
+}
+```
+
+### DELETE /api/collections/{id}/comments/{comment_id}/
+
+Soft-delete a comment. Author, collection owner, or admin.
+
+### POST /api/collections/{id}/comments/{comment_id}/flag/
+
+Flag a comment as inappropriate (any authenticated user). Idempotent.
+
+### DELETE /api/collections/{id}/comments/{comment_id}/flag/
+
+Remove all flags from a comment (collection owner or admin only).
+
+### POST /api/collections/{id}/comments/{comment_id}/hide/
+
+Hide a flagged comment (collection owner or admin only).
+
+### DELETE /api/collections/{id}/comments/{comment_id}/hide/
+
+Unhide a comment (collection owner or admin only).
+
+### POST /api/collections/{id}/comments/{comment_id}/copy-nomenclature/
+
+Copy a comment's nomenclature to the collection's master nomenclature field (collection owner only). Syncs to CouchDB and records a nomenclature change event.
+
+**Response:**
+```json
+{
+    "status": "ok",
+    "nomenclature": "Geastrum triplex",
+    "collection_id": 110439105
+}
+```
 
 ---
 
