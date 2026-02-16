@@ -132,10 +132,11 @@ class CollectionListSerializer(serializers.ModelSerializer):
         fields = [
             'collection_id', 'name', 'description', 'notes', 'nomenclature',
             'embargo_until', 'is_embargoed', 'is_public', 'owner_username',
-            'search_count', 'identifier_count', 'created_at', 'updated_at'
+            'search_count', 'identifier_count', 'flagged_by',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['collection_id', 'created_at', 'updated_at',
-                           'is_embargoed', 'is_public']
+                           'is_embargoed', 'is_public', 'flagged_by']
 
     def get_search_count(self, obj: Collection) -> int:
         """Get the count of search history entries."""
@@ -160,11 +161,11 @@ class CollectionDetailSerializer(serializers.ModelSerializer):
         fields = [
             'collection_id', 'name', 'description', 'notes', 'nomenclature',
             'embargo_until', 'is_embargoed', 'is_public', 'owner_username',
-            'search_history', 'external_identifiers',
+            'search_history', 'external_identifiers', 'flagged_by',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['collection_id', 'created_at', 'updated_at',
-                           'is_embargoed', 'is_public']
+                           'is_embargoed', 'is_public', 'flagged_by']
 
 
 class CollectionCreateSerializer(serializers.ModelSerializer):

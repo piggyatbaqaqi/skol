@@ -1315,6 +1315,36 @@ class CollectionByUserIdView(APIView):
         })
 
 
+class CollectionFlagView(APIView):
+    """
+    POST   /api/collections/<collection_id>/flag/  — any authenticated user
+    DELETE /api/collections/<collection_id>/flag/  — admin only
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id):
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        flagged_by = collection.flagged_by or []
+        if request.user.id not in flagged_by:
+            flagged_by.append(request.user.id)
+            collection.flagged_by = flagged_by
+            collection.save(update_fields=['flagged_by'])
+        serializer = CollectionDetailSerializer(collection)
+        return Response(serializer.data)
+
+    def delete(self, request, collection_id):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {'error': 'Only admins can unflag collections'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        collection.flagged_by = []
+        collection.save(update_fields=['flagged_by'])
+        serializer = CollectionDetailSerializer(collection)
+        return Response(serializer.data)
+
+
 class SearchHistoryListCreateView(APIView):
     """
     GET /api/collections/<collection_id>/searches/

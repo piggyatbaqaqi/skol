@@ -99,6 +99,11 @@ class Collection(models.Model):
         blank=True,
         help_text="Collection is private until this date (null=public)"
     )
+    flagged_by = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of user IDs who flagged this collection as inappropriate"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

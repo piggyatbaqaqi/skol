@@ -707,6 +707,25 @@
             color: #667eea;
         }
 
+        .flag-link {
+            font-size: 0.8em;
+            font-weight: normal;
+            color: #888;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .flag-link:hover { color: #e67e22; }
+        .flag-link.flag-active {
+            color: #e67e22;
+            cursor: default;
+        }
+        .flag-badge {
+            font-size: 0.75em;
+            font-weight: 500;
+            color: #e67e22;
+            margin-left: 4px;
+        }
+
         /* Nomenclature Field Styles */
         .nomenclature-section {
             margin-top: 15px;
@@ -1232,7 +1251,7 @@
             <form id="searchForm">
                 {% csrf_token %}
                 <div class="form-group">
-                    <label for="prompt">Description Text {% if user.is_authenticated %}<span id="descriptionNote" class="field-note" style="display: none;">(linked to collection)</span>{% endif %}</label>
+                    <label for="prompt">Description Text {% if user.is_authenticated %}<span id="descriptionNote" class="field-note" style="display: none;">(linked to collection)</span><span id="collectionFlagArea" style="display: none; margin-left: 12px;"><a href="#" id="collectionFlagLink" class="flag-link" onclick="flagCollection(); return false;">Flag</a><span id="collectionFlagBadge" class="flag-badge" style="display: none;"></span><a href="#" id="collectionUnflagLink" class="flag-link" style="display: none;" onclick="unflagCollection(); return false;">Unflag</a></span>{% endif %}</label>
                     <div style="display: flex; gap: 20px; align-items: flex-start;">
                         <textarea id="prompt" name="prompt" placeholder="Enter a taxonomic description to search for similar entries..." required style="flex: 1;"></textarea>
                         <div id="feature-selection-container"
@@ -1352,6 +1371,8 @@
         // Base path for API calls - derived from Django's FORCE_SCRIPT_NAME setting
         const API_BASE = '{{ SCRIPT_NAME }}';
         const IS_AUTHENTICATED = {{ user.is_authenticated|yesno:"true,false" }};
+        const IS_ADMIN = {{ user.is_staff|yesno:"true,false" }};
+        const CURRENT_USER_ID = {{ user.id|default:"null" }};
 
         // Store current search data and active collection
         let currentSearchData = null;
@@ -1568,6 +1589,9 @@
             if (!skipPromptUpdate) {
                 displayMostRecentSearchResults();
             }
+
+            // Update collection flag UI
+            updateCollectionFlagUI();
         }
 
         // Display the most recent search results from the active collection
@@ -1640,6 +1664,71 @@
 
             const discussionSection = document.getElementById('discussionSection');
             if (discussionSection) discussionSection.style.display = 'none';
+
+            const flagArea = document.getElementById('collectionFlagArea');
+            if (flagArea) flagArea.style.display = 'none';
+        }
+
+        // Update collection flag UI based on activeCollectionData
+        function updateCollectionFlagUI() {
+            if (!activeCollectionData) return;
+            const flagArea = document.getElementById('collectionFlagArea');
+            if (!flagArea) return;
+
+            const flaggedBy = activeCollectionData.flagged_by || [];
+            const flagCount = flaggedBy.length;
+            const isFlaggedByMe = flaggedBy.includes(CURRENT_USER_ID);
+
+            flagArea.style.display = 'inline';
+
+            const flagLink = document.getElementById('collectionFlagLink');
+            if (isFlaggedByMe) {
+                flagLink.textContent = 'Flagged';
+                flagLink.classList.add('flag-active');
+                flagLink.onclick = function() { return false; };
+            } else {
+                flagLink.textContent = 'Flag';
+                flagLink.classList.remove('flag-active');
+                flagLink.onclick = function() { flagCollection(); return false; };
+            }
+
+            const badge = document.getElementById('collectionFlagBadge');
+            if (IS_ADMIN && flagCount > 0) {
+                badge.textContent = 'flagged (' + flagCount + ')';
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            const unflagLink = document.getElementById('collectionUnflagLink');
+            unflagLink.style.display = (IS_ADMIN && flagCount > 0) ? 'inline' : 'none';
+        }
+
+        async function flagCollection() {
+            if (!activeCollectionId) return;
+            if (!window.confirm('Flag this collection as inappropriate?\n\nOnly an admin can remove this flag.')) return;
+            const resp = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/flag/`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+            if (resp.ok) {
+                activeCollectionData = await resp.json();
+                updateCollectionFlagUI();
+            }
+        }
+
+        async function unflagCollection() {
+            if (!activeCollectionId) return;
+            const resp = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/flag/`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+            if (resp.ok) {
+                activeCollectionData = await resp.json();
+                updateCollectionFlagUI();
+            }
         }
 
         // Save nomenclature to collection (debounced, called from input handler)
