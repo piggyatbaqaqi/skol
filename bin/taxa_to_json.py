@@ -187,6 +187,8 @@ def translate_taxa_to_json(
     spark = SparkSession.builder \
         .appName("Taxa JSON Translation") \
         .master(f"local[{config['cores']}]") \
+        .config("spark.driver.host", "127.0.0.1") \
+        .config("spark.driver.bindAddress", "127.0.0.1") \
         .config("spark.driver.memory", config['spark_driver_memory']) \
         .config("spark.executor.memory", config['spark_executor_memory']) \
         .config("spark.network.timeout", "600s") \
