@@ -97,6 +97,7 @@ def translate_taxa_to_json(
     preserve_threshold: float = 0.5,
     include_annotations: bool = False,
     timeout: int = 600,
+    max_restarts: int = 3,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -392,7 +393,8 @@ def translate_taxa_to_json(
                 batch_size=batch_size,
                 validate=validate,
                 verbosity=verbosity,
-                timeout=timeout
+                timeout=timeout,
+                max_restarts=max_restarts,
             )
             # Results summary is printed by translate_and_save_streaming
 
@@ -1034,6 +1036,14 @@ Examples:
     )
 
     parser.add_argument(
+        '--max-restarts',
+        type=int,
+        default=3,
+        metavar='N',
+        help='Max consecutive subprocess restarts without a result before giving up (default: 3)'
+    )
+
+    parser.add_argument(
         '--verbosity',
         type=int,
         choices=[0, 1, 2],
@@ -1075,6 +1085,7 @@ Examples:
     preserve_threshold = args.preserve_threshold
     include_annotations = args.include_annotations
     timeout = args.timeout
+    max_restarts = args.max_restarts
 
     # Validate schema depth parameters
     if schema_min_depth > schema_max_depth:
@@ -1113,6 +1124,7 @@ Examples:
             preserve_threshold=preserve_threshold,
             include_annotations=include_annotations,
             timeout=timeout,
+            max_restarts=max_restarts,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

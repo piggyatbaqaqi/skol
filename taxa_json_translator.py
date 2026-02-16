@@ -1112,7 +1112,8 @@ Result:
         batch_size: int = 10,
         validate: bool = True,
         verbosity: int = 1,
-        timeout: int = 600
+        timeout: int = 600,
+        max_restarts: int = 3
     ) -> dict:
         """
         Translate descriptions and save to CouchDB incrementally as each record completes.
@@ -1130,6 +1131,12 @@ Result:
             batch_size: Batch size for progress reporting (not for saving)
             validate: If True, validate JSON before saving
             verbosity: Verbosity level (0=silent, 1=info, 2=debug)
+            timeout: Seconds to wait for each result before counting a timeout
+            max_restarts: Max consecutive subprocess restarts without a successful
+                result before giving up. When the subprocess times out
+                (3 consecutive timeouts) or crashes, it is restarted with the
+                remaining unprocessed descriptions. If max_restarts consecutive
+                restarts occur without producing any result, processing stops.
 
         Returns:
             Dict with 'success_count', 'failure_count', 'total' keys
@@ -1246,109 +1253,243 @@ Result:
         success_count = 0
         failure_count = 0
         validation_failures = 0
+        restart_count = 0
 
         consecutive_timeouts = 0
-        max_consecutive_timeouts = 3  # Stop after 3 consecutive timeouts
+        max_consecutive_timeouts = 3
+        consecutive_restarts = 0
+        processed_ids = set()
+
+        def _terminate_proc():
+            """Terminate and join the current subprocess."""
+            if proc.is_alive():
+                proc.terminate()
+            proc.join(timeout=10)
+
+        def _restart_with_remaining():
+            """
+            Restart subprocess with unprocessed descriptions.
+
+            Drops the first unprocessed description (the likely
+            cause of the timeout/crash) and restarts with the
+            rest. Returns (result_queue, proc, remaining_count)
+            on success, or None if no remaining or startup
+            failed.
+            """
+            nonlocal failure_count, restart_count
+            remaining = [
+                d for d in descriptions
+                if d['_id'] not in processed_ids
+            ]
+            if not remaining:
+                return None
+            # Drop the first description — it's the one
+            # the subprocess was stuck on
+            skipped = remaining[0]
+            taxon = skipped.get('taxon', 'unknown')
+            doc_id = skipped.get('_id', 'unknown')
+            print(
+                f"  ✗ Skipping stuck description:"
+                f" {taxon} ({doc_id})"
+            )
+            processed_ids.add(skipped['_id'])
+            failure_count += 1
+            remaining = remaining[1:]
+            if not remaining:
+                print("  No descriptions remaining.")
+                return None
+            restart_count += 1
+            n = len(remaining)
+            print(
+                f"  ↻ Restarting subprocess"
+                f" (restart #{consecutive_restarts},"
+                f" {n} remaining)"
+            )
+            rq, p = self._run_inference_subprocess(
+                remaining, batch_size, streaming=True
+            )
+            time.sleep(2)
+            if not p.is_alive():
+                ec = p.exitcode
+                print(
+                    f"  ✗ Restarted subprocess"
+                    f" failed to start (exit code {ec})"
+                )
+                return None
+            return rq, p, n
 
         try:
             while True:
                 try:
-                    status, data = result_queue.get(timeout=timeout)  # Configurable timeout per record
-                    consecutive_timeouts = 0  # Reset on successful receive
+                    status, data = result_queue.get(
+                        timeout=timeout
+                    )
+                    consecutive_timeouts = 0
                 except queue.Empty:
-                    # Check if subprocess crashed
+                    # Subprocess crashed
                     if not proc.is_alive():
                         exit_code = proc.exitcode
-                        print(f"  ✗ Model subprocess crashed with exit code {exit_code}")
-                        print("    This usually indicates a problem loading the model.")
-                        print("    Check GPU memory, CUDA availability, or model dependencies.")
-                        break
+                        print(
+                            f"  ✗ Model subprocess crashed"
+                            f" (exit code {exit_code})"
+                        )
+                        consecutive_restarts += 1
+                        if consecutive_restarts > max_restarts:
+                            print(
+                                f"  ✗ Giving up after"
+                                f" {max_restarts} consecutive"
+                                f" restarts without a result"
+                            )
+                            break
+                        result = _restart_with_remaining()
+                        if result is None:
+                            break
+                        result_queue, proc, _ = result
+                        consecutive_timeouts = 0
+                        continue
 
+                    # Timeout waiting for result
                     consecutive_timeouts += 1
-                    print(f"  ⚠ Timeout waiting for result (timeout #{consecutive_timeouts})")
+                    print(
+                        f"  ⚠ Timeout waiting for result"
+                        f" (timeout #{consecutive_timeouts})"
+                    )
                     if consecutive_timeouts >= max_consecutive_timeouts:
-                        print(f"  ✗ Stopping after {max_consecutive_timeouts} consecutive timeouts")
-                        break
-                    # Skip this record and continue waiting for the next
-                    failure_count += 1
+                        _terminate_proc()
+                        consecutive_restarts += 1
+                        if consecutive_restarts > max_restarts:
+                            print(
+                                f"  ✗ Giving up after"
+                                f" {max_restarts} consecutive"
+                                f" restarts without a result"
+                            )
+                            break
+                        result = _restart_with_remaining()
+                        if result is None:
+                            break
+                        result_queue, proc, _ = result
+                        consecutive_timeouts = 0
                     continue
 
                 if status == 'done':
                     break
                 elif status == 'error':
-                    raise RuntimeError(f"Model inference failed: {data}")
+                    raise RuntimeError(
+                        f"Model inference failed: {data}"
+                    )
                 elif status == 'result':
+                    consecutive_restarts = 0
+                    processed_ids.add(data['_id'])
                     # Process and save this record
                     try:
                         ingest = data.get('ingest', {})
-                        # Use ingest field names: _id instead of doc_id, url instead of human_url
-                        ingest_doc_id = str(ingest.get('_id', 'unknown'))
-                        # Use url to match extract_taxa_to_couchdb.py doc ID generation
+                        ingest_doc_id = str(
+                            ingest.get('_id', 'unknown')
+                        )
                         ingest_url = ingest.get('url')
                         line_number = data.get('line_number')
 
-                        # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
                             ingest_doc_id,
-                            ingest_url if isinstance(ingest_url, str) else None,
+                            ingest_url if isinstance(
+                                ingest_url, str
+                            ) else None,
                             line_number
                         )
 
-                        # Validate JSON if requested
-                        json_str = data.get('features_json', '{}')
+                        json_str = data.get(
+                            'features_json', '{}'
+                        )
                         json_valid = True
-                        if validate and not is_valid_json(json_str):
+                        if validate and not is_valid_json(
+                            json_str
+                        ):
                             json_valid = False
                             validation_failures += 1
 
-                        # Parse JSON for storage
                         try:
-                            json_annotated = json.loads(json_str)
+                            json_annotated = json.loads(
+                                json_str
+                            )
                         except json.JSONDecodeError:
                             json_annotated = {}
 
-                        # Build document
                         taxon_doc = {
                             '_id': doc_id,
                             'taxon': data.get('taxon', ''),
-                            'description': data.get('description', ''),
+                            'description': data.get(
+                                'description', ''
+                            ),
                             'ingest': ingest,
                             'line_number': line_number,
-                            'paragraph_number': data.get('paragraph_number'),
-                            'page_number': data.get('page_number'),
-                            'empirical_page_number': data.get('empirical_page_number'),
+                            'paragraph_number': data.get(
+                                'paragraph_number'
+                            ),
+                            'page_number': data.get(
+                                'page_number'
+                            ),
+                            'empirical_page_number': data.get(
+                                'empirical_page_number'
+                            ),
                             'json_annotated': json_annotated,
                             'json_valid': json_valid
                         }
 
-                        # Check if document exists (for update)
                         if doc_id in db:
                             existing_doc = db[doc_id]
-                            taxon_doc['_rev'] = existing_doc['_rev']
+                            taxon_doc['_rev'] = (
+                                existing_doc['_rev']
+                            )
 
-                        # Save to CouchDB
                         db.save(taxon_doc)
                         success_count += 1
 
-                        # Progress reporting
-                        idx = data.get('index', 0) + 1
+                        idx = success_count + failure_count
                         if verbosity >= 1:
-                            print(f"  ✓ [{idx}/{total}] Saved {doc_id[:40]}...")
+                            print(
+                                f"  ✓ [{idx}/{total}]"
+                                f" Saved {doc_id[:40]}..."
+                            )
                         if not json_valid:
-                            taxon_preview = data.get('taxon', '')[:60]
-                            desc_text = data.get('description', '')
-                            desc_preview = desc_text[:150] if len(desc_text) > 150 else desc_text
-                            print(f"    ⚠ Invalid JSON for {doc_id}")
-                            print(f"      Taxon: {taxon_preview}...")
-                            print(f"      Description: {desc_preview}...")
-                            # Log the actual generated JSON for debugging
-                            json_preview = json_str[:200] if len(json_str) > 200 else json_str
-                            print(f"      Generated: {json_preview}")
+                            taxon_preview = (
+                                data.get('taxon', '')[:60]
+                            )
+                            desc_text = data.get(
+                                'description', ''
+                            )
+                            desc_preview = (
+                                desc_text[:150]
+                                if len(desc_text) > 150
+                                else desc_text
+                            )
+                            print(
+                                f"    ⚠ Invalid JSON"
+                                f" for {doc_id}"
+                            )
+                            print(
+                                f"      Taxon:"
+                                f" {taxon_preview}..."
+                            )
+                            print(
+                                f"      Description:"
+                                f" {desc_preview}..."
+                            )
+                            json_preview = (
+                                json_str[:200]
+                                if len(json_str) > 200
+                                else json_str
+                            )
+                            print(
+                                f"      Generated:"
+                                f" {json_preview}"
+                            )
 
                     except Exception as e:
                         failure_count += 1
                         if verbosity >= 1:
-                            print(f"  ✗ Error saving record: {e}")
+                            print(
+                                f"  ✗ Error saving record: {e}"
+                            )
 
         finally:
             # Clean up subprocess
@@ -1362,15 +1503,21 @@ Result:
         print(f"{'='*70}")
         print(f"✓ Successfully saved: {success_count}")
         if validation_failures > 0:
-            print(f"⚠ Validation failures: {validation_failures} (still saved)")
+            print(
+                f"⚠ Validation failures:"
+                f" {validation_failures} (still saved)"
+            )
         if failure_count > 0:
             print(f"✗ Failed to save: {failure_count}")
+        if restart_count > 0:
+            print(f"↻ Subprocess restarts: {restart_count}")
         print(f"Total processed: {total}")
 
         return {
             'success_count': success_count,
             'failure_count': failure_count,
             'validation_failures': validation_failures,
+            'restart_count': restart_count,
             'total': total
         }
 
