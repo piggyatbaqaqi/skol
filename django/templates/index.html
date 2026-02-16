@@ -1379,6 +1379,7 @@
         const IS_AUTHENTICATED = {{ user.is_authenticated|yesno:"true,false" }};
         const IS_ADMIN = {{ user.is_staff|yesno:"true,false" }};
         const CURRENT_USER_ID = {{ user.id|default:"null" }};
+        const CURRENT_USERNAME = '{{ user.username|default:""|escapejs }}';
 
         // Store current search data and active collection
         let currentSearchData = null;
@@ -1601,6 +1602,9 @@
 
             // Update collection hidden UI
             updateCollectionHiddenUI();
+
+            // Update editability based on ownership + hidden state
+            updateCollectionEditability();
         }
 
         // Display the most recent search results from the active collection
@@ -1687,6 +1691,10 @@
             if (nomenclatureInput) nomenclatureInput.removeAttribute('readonly');
             const searchButton = document.getElementById('searchButton');
             if (searchButton) searchButton.disabled = false;
+
+            // Restore add-identifier form visibility
+            const addForm = document.querySelector('.add-identifier-form');
+            if (addForm) addForm.style.display = '';
         }
 
         // Update collection flag UI based on activeCollectionData
@@ -1771,12 +1779,21 @@
             if (notice) {
                 notice.style.display = (isHidden && !IS_ADMIN) ? 'inline' : 'none';
             }
+        }
 
-            // Read-only state for owner when hidden
+        // Update editability based on ownership AND hidden state.
+        // Non-owners (who are not admin) get read-only access to everything
+        // except the Discussion section.
+        function updateCollectionEditability() {
+            if (!activeCollectionData) return;
+            const isOwner = activeCollectionData.owner_username === CURRENT_USERNAME;
+            const isHidden = activeCollectionData.hidden || false;
+            const canEdit = (isOwner || IS_ADMIN) && (!isHidden || IS_ADMIN);
+
             const prompt = document.getElementById('prompt');
             const nomenclatureInput = document.getElementById('nomenclatureInput');
             const searchButton = document.getElementById('searchButton');
-            if (isHidden && !IS_ADMIN) {
+            if (!canEdit) {
                 if (prompt) prompt.setAttribute('readonly', '');
                 if (nomenclatureInput) nomenclatureInput.setAttribute('readonly', '');
                 if (searchButton) searchButton.disabled = true;
@@ -1785,6 +1802,15 @@
                 if (nomenclatureInput) nomenclatureInput.removeAttribute('readonly');
                 if (searchButton) searchButton.disabled = false;
             }
+
+            // Show/hide identifier add form
+            const addForm = document.querySelector('.add-identifier-form');
+            if (addForm) addForm.style.display = canEdit ? '' : 'none';
+
+            // Show/hide identifier delete buttons
+            document.querySelectorAll('#identifiersList .delete-btn').forEach(btn => {
+                btn.style.display = canEdit ? '' : 'none';
+            });
         }
 
         async function hideCollectionAction() {
@@ -1818,6 +1844,10 @@
         // Also records a nomenclature change event in the history when value changes
         async function saveNomenclature(value) {
             if (!activeCollectionId || !activeCollectionData) return;
+
+            // Only the owner (or admin) may save nomenclature
+            const isOwner = activeCollectionData.owner_username === CURRENT_USERNAME;
+            if (!isOwner && !IS_ADMIN) return;
 
             // Track previous value to detect real changes
             const previousValue = activeCollectionData.nomenclature || '';
@@ -1921,6 +1951,8 @@
             if (!list || !activeCollectionData) return;
 
             const identifiers = activeCollectionData.external_identifiers || [];
+            const isOwner = activeCollectionData.owner_username === CURRENT_USERNAME;
+            const canEdit = (isOwner || IS_ADMIN) && (!activeCollectionData.hidden || IS_ADMIN);
 
             if (identifiers.length === 0) {
                 list.innerHTML = '<div class="no-identifiers">No identifiers added yet</div>';
@@ -1945,7 +1977,7 @@
                                 ${i.url ? `<a href="${escapeHtml(i.url)}" target="_blank">${escapeHtml(i.value)}</a>` : escapeHtml(i.value)}
                             </span>
                         </div>
-                        <button class="delete-btn" onclick="deleteIdentifier(${i.id})">Delete</button>
+                        ${canEdit ? `<button class="delete-btn" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
                     </div>
                 `;
             }).join('');
@@ -2315,8 +2347,9 @@
             document.getElementById('searchButton').disabled = true;
 
             try {
-                // Save description and nomenclature to collection BEFORE search (so it's saved even if search fails)
-                if (IS_AUTHENTICATED && activeCollectionId && prompt) {
+                // Save description and nomenclature to collection BEFORE search (owner/admin only)
+                const canSave = activeCollectionData && (activeCollectionData.owner_username === CURRENT_USERNAME || IS_ADMIN);
+                if (IS_AUTHENTICATED && activeCollectionId && prompt && canSave) {
                     try {
                         const nomenclatureInput = document.getElementById('nomenclatureInput');
                         const nomenclature = nomenclatureInput ? nomenclatureInput.value : activeCollectionData.nomenclature;
