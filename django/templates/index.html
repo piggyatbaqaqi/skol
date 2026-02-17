@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SKOL Semantic Search</title>
     <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/taxon-result-widget.css' %}">
     <style>
         * {
             margin: 0;
@@ -139,21 +140,6 @@
 
         .results {
             margin-top: 30px;
-        }
-
-        .result-card {
-            background: #f9f9f9;
-            border: 1px solid #d0d0d0;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .result-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .result-header {
@@ -2675,12 +2661,11 @@
                         showJson: true,
                         descriptionLength: 500
                     });
-                    card.className = 'result-card';
                     resultsDiv.appendChild(card);
                 } else {
                     // Fallback rendering
                     const card = document.createElement('div');
-                    card.className = 'result-card';
+                    card.className = 'taxon-result-card';
 
                     const hasSimilarity = result.Similarity != null;
                     const similarity = hasSimilarity ? (result.Similarity * 100).toFixed(1) : null;
