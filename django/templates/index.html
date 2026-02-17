@@ -1279,7 +1279,7 @@
                         <input type="text" id="nomenclaturePattern" placeholder="Nomenclature regex..."
                                style="width: 200px; padding: 12px; font-size: 14px;"
                                title="Search by nomenclature pattern (regex supported)">
-                        <button type="button" id="nomenclatureSearchButton" onclick="nomenclatureSearch()">Name Search</button>
+                        <button type="button" id="nomenclatureSearchButton" onclick="nomenclatureSearch()">List Names</button>
                     </span>
                 </div>
             </form>
@@ -2413,6 +2413,16 @@
                     GuestCollection.updateDescription(prompt);
                 }
 
+                const searchBody = {
+                    prompt: prompt,
+                    embedding_name: embedding,
+                    k: k
+                };
+                const nomenPattern = document.getElementById('nomenclaturePattern').value.trim();
+                if (nomenPattern) {
+                    searchBody.nomenclature_pattern = nomenPattern;
+                }
+
                 const response = await fetch(`${API_BASE}/api/search/`, {
                     method: 'POST',
                     headers: {
@@ -2420,11 +2430,7 @@
                         'X-CSRFToken': getCSRFToken()
                     },
                     credentials: 'same-origin',
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        embedding_name: embedding,
-                        k: k
-                    })
+                    body: JSON.stringify(searchBody)
                 });
 
                 const data = await response.json();
