@@ -84,7 +84,7 @@ Perform semantic search against taxa descriptions.
 |-------|----------|-------------|
 | `prompt` | Yes | Description text to search for |
 | `embedding_name` | Yes | Embedding model name |
-| `k` | No | Number of results (default: 3, max: 100) |
+| `k` | No | Number of results (default: 3, max: 200) |
 | `nomenclature_pattern` | No | Regex to pre-filter taxa by nomenclature before similarity ranking. Case-insensitive. |
 
 When `nomenclature_pattern` is provided, only taxa whose nomenclature matches the
@@ -518,6 +518,55 @@ Copy a comment's nomenclature to the collection's master nomenclature field (col
     "collection_id": 110439105
 }
 ```
+
+---
+
+## User Settings (Authenticated)
+
+Persistent user preferences for search and display.
+
+### GET /api/user-settings/
+
+Get the current user's settings.
+
+**Response:**
+```json
+{
+    "default_embargo_days": 0,
+    "default_embedding": "",
+    "default_k": 3,
+    "results_per_page": 10,
+    "feature_taxa_count": 6,
+    "feature_max_tree_depth": 10,
+    "receive_admin_summary": false,
+    "created_at": "2026-01-15T12:00:00Z",
+    "updated_at": "2026-02-17T08:30:00Z"
+}
+```
+
+### PUT /api/user-settings/
+
+Update the current user's settings (partial updates supported).
+
+**Request:**
+```json
+{
+    "default_k": 20,
+    "results_per_page": 10
+}
+```
+
+| Field | Type | Default | Range | Description |
+|-------|------|---------|-------|-------------|
+| `default_embargo_days` | int | 0 | 0–365 | Default embargo period for new collections |
+| `default_embedding` | string | `""` | — | Preferred embedding model |
+| `default_k` | int | 3 | 1–100 | Default number of search results to fetch |
+| `results_per_page` | int | 10 | 5–50 | Number of results to display per page (client-side pagination) |
+| `feature_taxa_count` | int | 6 | 2–50 | Number of taxa for feature lists |
+| `feature_max_tree_depth` | int | 10 | 1–20 | Maximum depth for feature tree |
+| `receive_admin_summary` | bool | false | — | Opt in to daily admin summary email |
+
+Settings are created automatically on first access (get-or-create pattern).
 
 ---
 

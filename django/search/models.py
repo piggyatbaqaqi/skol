@@ -325,6 +325,11 @@ class UserSettings(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(100)],
         help_text="Default number of search results"
     )
+    results_per_page = models.PositiveIntegerField(
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(50)],
+        help_text="Number of results to display per page"
+    )
 
     # Feature settings
     feature_taxa_count = models.PositiveIntegerField(

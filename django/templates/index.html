@@ -143,10 +143,11 @@
 
         .result-card {
             background: #f9f9f9;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #d0d0d0;
             border-radius: 8px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
@@ -902,6 +903,53 @@
             background: linear-gradient(135deg, #5a6fd6 0%, #6a4292 100%);
         }
 
+        /* Pagination bar */
+        .pagination-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 0;
+            margin: 8px 0;
+            position: sticky;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
+            border-top: 1px solid #e0e0e0;
+            z-index: 10;
+        }
+
+        .pagination-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 80px;
+            min-height: 44px;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            color: #555;
+            font-weight: 500;
+            min-width: 120px;
+            text-align: center;
+        }
+
         /* Mobile: stack textarea and vocab widget vertically */
         @media (max-width: 900px) {
             .form-group > div[style*="display: flex"] {
@@ -1058,6 +1106,11 @@
             .user-navbar .settings-dropdown {
                 display: block;
             }
+
+            .pagination-btn {
+                padding: 14px 20px;
+                min-height: 48px;
+            }
         }
     </style>
 </head>
@@ -1132,8 +1185,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="k">Number of Results (k)</label>
-                        <input type="number" id="k" name="k" value="3" min="1" max="20" required>
+                        <label for="k">Total Results (k)</label>
+                        <input type="number" id="k" name="k" value="20" min="1" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resultsPerPage">Results Per Page</label>
+                        <input type="number" id="resultsPerPage" value="10" min="5" max="50" title="Number of results to show per page" onchange="saveResultsPerPage(this.value)">
                     </div>
                     <div class="form-group">
                         <label for="nomenclatureLimit">Nomenclature Results</label>
@@ -1187,8 +1244,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="k">Number of Results (k)</label>
-                        <input type="number" id="k" name="k" value="3" min="1" max="20" required>
+                        <label for="k">Total Results (k)</label>
+                        <input type="number" id="k" name="k" value="20" min="1" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resultsPerPage">Results Per Page</label>
+                        <input type="number" id="resultsPerPage" value="10" min="5" max="50" title="Number of results to show per page" onchange="saveResultsPerPage(this.value)">
                     </div>
                     <div class="form-group">
                         <label for="nomenclatureLimit">Nomenclature Results</label>
@@ -1386,8 +1447,10 @@
         const CURRENT_USER_ID = {{ user.id|default:"null" }};
         const CURRENT_USERNAME = '{{ user.username|default:""|escapejs }}';
 
-        // Store current search data and active collection
+        // Store current search data, active collection, and pagination state
         let currentSearchData = null;
+        let currentPage = 1;
+        let resultsPerPage = 10;
         let activeCollectionId = null;
         let activeCollectionData = null;
 
@@ -2130,18 +2193,35 @@
             document.getElementById('collectionsMenu')?.classList.remove('show');
         }
 
-        // Load admin summary preference from API
-        async function loadAdminSummaryPref() {
-            if (!IS_AUTHENTICATED) return;
-            try {
-                const resp = await fetch(`${API_BASE}/api/user-settings/`, { credentials: 'same-origin' });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const cb = document.getElementById('receiveAdminSummary');
-                    if (cb) cb.checked = !!data.receive_admin_summary;
+        // Load user settings from API (or sessionStorage for guests)
+        async function loadUserSettings() {
+            if (IS_AUTHENTICATED) {
+                try {
+                    const resp = await fetch(`${API_BASE}/api/user-settings/`, { credentials: 'same-origin' });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        const cb = document.getElementById('receiveAdminSummary');
+                        if (cb) cb.checked = !!data.receive_admin_summary;
+                        if (data.results_per_page) {
+                            resultsPerPage = data.results_per_page;
+                            const rppInput = document.getElementById('resultsPerPage');
+                            if (rppInput) rppInput.value = resultsPerPage;
+                        }
+                        if (data.default_k) {
+                            const kInput = document.getElementById('k');
+                            if (kInput) kInput.value = data.default_k;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load user settings:', e);
                 }
-            } catch (e) {
-                console.error('Failed to load user settings:', e);
+            } else {
+                const stored = sessionStorage.getItem('skol_results_per_page');
+                if (stored) {
+                    resultsPerPage = parseInt(stored, 10) || 10;
+                    const rppInput = document.getElementById('resultsPerPage');
+                    if (rppInput) rppInput.value = resultsPerPage;
+                }
             }
         }
 
@@ -2158,6 +2238,29 @@
                 });
             } catch (e) {
                 console.error('Failed to save admin summary preference:', e);
+            }
+        }
+
+        // Save results per page setting
+        function saveResultsPerPage(value) {
+            const val = Math.max(5, Math.min(50, parseInt(value, 10) || 10));
+            resultsPerPage = val;
+
+            if (IS_AUTHENTICATED) {
+                fetch(`${API_BASE}/api/user-settings/`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ results_per_page: val })
+                }).catch(e => console.error('Failed to save results per page:', e));
+            } else {
+                sessionStorage.setItem('skol_results_per_page', val);
+            }
+
+            // Re-render if results are displayed
+            if (currentSearchData && currentSearchData.results && currentSearchData.results.length > 0) {
+                currentPage = 1;
+                renderCurrentPage();
             }
         }
 
@@ -2321,52 +2424,6 @@
             sessionStorage.setItem('guest_collection_notice_shown', 'true');
         }
 
-        // Trigger a deeper search (higher k) and store taxa IDs in cookie
-        // for the feature selection widget to consume
-        function triggerDeeperSearch(prompt, embedding, k) {
-            const taxaCountEl = document.getElementById('featureTaxaCount');
-            const deeperK = taxaCountEl ? parseInt(taxaCountEl.value, 10) || 6 : Math.max(k, 6);
-            fetch(`${API_BASE}/api/search/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    prompt: prompt,
-                    embedding_name: embedding,
-                    k: deeperK
-                })
-            })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data.results && data.results.length > 0) {
-                    const taxaIds = data.results
-                        .map(r => r.taxon_id)
-                        .filter(Boolean);
-                    if (taxaIds.length > 0) {
-                        const cookieData = {
-                            taxa_ids: taxaIds,
-                            prompt: prompt.substring(0, 50),
-                            timestamp: Date.now()
-                        };
-                        document.cookie = 'skol_deeper_search=' +
-                            encodeURIComponent(JSON.stringify(cookieData)) +
-                            '; max-age=3600; path=/; SameSite=Lax';
-                        document.dispatchEvent(
-                            new CustomEvent('deeper-search-complete', {
-                                detail: cookieData
-                            })
-                        );
-                    }
-                }
-            })
-            .catch(err => {
-                console.warn('Deeper search failed (non-critical):', err);
-            });
-        }
-
         // Handle form submission
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -2441,8 +2498,25 @@
 
                 displayResults(data);
 
-                // Trigger deeper search for feature selection widget
-                triggerDeeperSearch(prompt, embedding, k);
+                // Extract taxa IDs for feature selection widget
+                if (data.results && data.results.length > 0) {
+                    const taxaIds = data.results.map(r => r.taxon_id).filter(Boolean);
+                    if (taxaIds.length > 0) {
+                        const cookieData = {
+                            taxa_ids: taxaIds,
+                            prompt: prompt.substring(0, 50),
+                            timestamp: Date.now()
+                        };
+                        document.cookie = 'skol_deeper_search=' +
+                            encodeURIComponent(JSON.stringify(cookieData)) +
+                            '; max-age=3600; path=/; SameSite=Lax';
+                        document.dispatchEvent(
+                            new CustomEvent('deeper-search-complete', {
+                                detail: cookieData
+                            })
+                        );
+                    }
+                }
 
                 // Save search results to history (description already saved above)
                 if (IS_AUTHENTICATED && activeCollectionId && data.results && data.results.length > 0) {
@@ -2548,24 +2622,38 @@
             }
         }
 
-        // Display search results using TaxonResultWidget
+        // Display search results with client-side pagination
         function displayResults(data) {
             const resultsDiv = document.getElementById('results');
-
-            // Store search data for reference
             currentSearchData = data;
+            currentPage = 1;
 
             if (!data.results || data.results.length === 0) {
                 resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
                 return;
             }
 
-            // Initialize TaxonResultWidget if available
             if (typeof TaxonResultWidget !== 'undefined') {
                 TaxonResultWidget.init({ apiBase: API_BASE });
             }
 
-            // Show result count and collection status
+            renderCurrentPage();
+        }
+
+        // Render the current page of results
+        function renderCurrentPage() {
+            const resultsDiv = document.getElementById('results');
+            const data = currentSearchData;
+            if (!data || !data.results) return;
+
+            const total = data.results.length;
+            const totalPages = Math.ceil(total / resultsPerPage);
+            currentPage = Math.max(1, Math.min(currentPage, totalPages));
+            const start = (currentPage - 1) * resultsPerPage;
+            const end = Math.min(start + resultsPerPage, total);
+            const pageResults = data.results.slice(start, end);
+
+            // Header with count and collection status
             let collectionStatus = '';
             if (IS_AUTHENTICATED && activeCollectionId) {
                 collectionStatus = `<span style="color: #667eea; font-size: 0.9em;">Saved to collection</span>`;
@@ -2573,35 +2661,32 @@
 
             resultsDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <span style="color: #666;">Found ${data.results.length} results</span>
+                    <span style="color: #666;">Found ${total} results (showing ${start + 1}\u2013${end})</span>
                     ${collectionStatus}
                 </div>
             `;
 
-            data.results.forEach((result, index) => {
-                // Use TaxonResultWidget if available, otherwise fall back to inline rendering
+            // Render result cards for current page
+            pageResults.forEach((result, i) => {
+                const globalIndex = start + i;
                 if (typeof TaxonResultWidget !== 'undefined') {
                     const card = TaxonResultWidget.createCard(result, {
-                        index: index,
+                        index: globalIndex,
                         showJson: true,
                         descriptionLength: 500
                     });
-                    // Use result-card class for consistent styling
                     card.className = 'result-card';
                     resultsDiv.appendChild(card);
                 } else {
-                    // Fallback rendering (original code)
+                    // Fallback rendering
                     const card = document.createElement('div');
                     card.className = 'result-card';
 
                     const hasSimilarity = result.Similarity != null;
                     const similarity = hasSimilarity ? (result.Similarity * 100).toFixed(1) : null;
 
-                    // Build PDF viewer URL if source metadata is available
                     let pdfLink = '';
                     let pageFragment = '';
-
-                    // Determine page label/number for direct linking: prefer pdf_label, then pdf_page
                     if (result.PDFLabel) {
                         pageFragment = `#page=${encodeURIComponent(result.PDFLabel)}`;
                     } else if (result.PDFPage) {
@@ -2617,7 +2702,6 @@
                         pdfLink = `<a href="${pdfUrl}" class="view-pdf-btn" target="_blank">View PDF</a>`;
                     }
 
-                    // Build copy button for fallback rendering
                     const resultTitle = result.Title || 'Untitled';
                     const showCopyBtn = IS_AUTHENTICATED && document.getElementById('nomenclatureInput');
                     const copyBtnHtml = showCopyBtn
@@ -2638,7 +2722,7 @@
                         <div class="result-actions">
                             ${pdfLink}
                             ${result.URL ? `<a href="${escapeHtml(result.URL)}${pageFragment}" target="_blank" class="view-pdf-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">View Source</a>` : ''}
-                            <button class="toggle-json" onclick="toggleJson(${index})">Show Full JSON</button>
+                            <button class="toggle-json" onclick="toggleJson(${globalIndex})">Show Full JSON</button>
                         </div>
                         ${result.taxon_id ? `
                         <div class="source-context-viewers" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
@@ -2654,7 +2738,7 @@
                             </div>
                         </div>
                         ` : ''}
-                        <div id="json-${index}" class="result-json" style="display: none;">
+                        <div id="json-${globalIndex}" class="result-json" style="display: none;">
                             <pre>${JSON.stringify(result, null, 2)}</pre>
                         </div>
                     `;
@@ -2663,8 +2747,43 @@
                 }
             });
 
+            // Sticky pagination bar (only if more than one page)
+            if (totalPages > 1) {
+                resultsDiv.appendChild(createPaginationBar(totalPages));
+            }
+
             // Initialize source context viewers after results are rendered
             document.dispatchEvent(new CustomEvent('source-context-init'));
+
+            // Scroll to top of results on page change
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Create pagination navigation bar
+        function createPaginationBar(totalPages) {
+            const bar = document.createElement('div');
+            bar.className = 'pagination-bar';
+
+            const prev = document.createElement('button');
+            prev.className = 'pagination-btn';
+            prev.textContent = 'Prev';
+            prev.disabled = (currentPage <= 1);
+            prev.addEventListener('click', () => { currentPage--; renderCurrentPage(); });
+
+            const info = document.createElement('span');
+            info.className = 'pagination-info';
+            info.textContent = `Page ${currentPage} of ${totalPages}`;
+
+            const next = document.createElement('button');
+            next.className = 'pagination-btn';
+            next.textContent = 'Next';
+            next.disabled = (currentPage >= totalPages);
+            next.addEventListener('click', () => { currentPage++; renderCurrentPage(); });
+
+            bar.appendChild(prev);
+            bar.appendChild(info);
+            bar.appendChild(next);
+            return bar;
         }
 
         // Toggle JSON display
@@ -2757,7 +2876,7 @@
         loadEmbeddings();
         if (IS_AUTHENTICATED) {
             updateCollectionsMenu();
-            loadAdminSummaryPref();
+            loadUserSettings();
             // Check for guest collection to migrate
             migrateGuestCollection();
             // Load collection from URL if specified
@@ -2792,6 +2911,7 @@
                 });
             }
         } else {
+            loadUserSettings();
             // Auto-save description to guest collection for non-authenticated users
             // Use debounce to avoid saving on every keystroke
             let saveTimeout = null;

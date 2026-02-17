@@ -663,9 +663,9 @@ class SearchView(APIView):
 
         try:
             k = int(k)
-            if k < 1 or k > 100:
+            if k < 1 or k > 200:
                 return Response(
-                    {'error': 'k must be between 1 and 100'},
+                    {'error': 'k must be between 1 and 200'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
         except (ValueError, TypeError):
