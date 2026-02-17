@@ -75,9 +75,21 @@ Perform semantic search against taxa descriptions.
 {
     "prompt": "red mushroom with white spots",
     "embedding_name": "skol:embedding:v1.1",
-    "k": 3
+    "k": 3,
+    "nomenclature_pattern": "^Amanita"
 }
 ```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `prompt` | Yes | Description text to search for |
+| `embedding_name` | Yes | Embedding model name |
+| `k` | No | Number of results (default: 3, max: 100) |
+| `nomenclature_pattern` | No | Regex to pre-filter taxa by nomenclature before similarity ranking. Case-insensitive. |
+
+When `nomenclature_pattern` is provided, only taxa whose nomenclature matches the
+regex are considered for similarity ranking. This is substantially faster than
+searching the full embedding space when restricting to a genus or family.
 
 **Response:**
 ```json
@@ -94,9 +106,15 @@ Perform semantic search against taxa descriptions.
     "count": 3,
     "prompt": "red mushroom with white spots",
     "embedding_name": "skol:embedding:v1.1",
+    "nomenclature_pattern": "^Amanita",
     "k": 3
 }
 ```
+
+**Notes:**
+- `nomenclature_pattern` is only included in the response when it was provided in the request
+- Invalid regex patterns return `400` with an error message
+- If the pattern matches no taxa, returns `{"results": [], "count": 0, ...}`
 
 ### GET /api/search/nomenclature/
 

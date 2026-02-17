@@ -647,6 +647,7 @@ class SearchView(APIView):
         prompt = request.data.get('prompt')
         embedding_name = request.data.get('embedding_name')
         k = request.data.get('k', 3)
+        nomenclature_pattern = request.data.get('nomenclature_pattern')
 
         if not prompt:
             return Response(
@@ -673,39 +674,84 @@ class SearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        if nomenclature_pattern:
+            try:
+                re.compile(nomenclature_pattern)
+            except re.error as e:
+                return Response(
+                    {'error': f'Invalid nomenclature_pattern regex: {e}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         try:
             # Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
             import skol_compat  # noqa: F401 (imported for side effects)
 
-            # Lazy import to avoid loading heavy ML dependencies at Django startup
-            from dr_drafts_mycosearch.sota_search import Experiment
+            if nomenclature_pattern:
+                # Pre-filter path: filter embeddings by nomenclature regex
+                # before computing cosine similarity (more efficient)
+                from dr_drafts_mycosearch.sota_search import (
+                    read_narrative_embeddings_from_redis,
+                    sort_by_similarity_to_prompt,
+                )
 
-            # Create experiment instance
-            experiment = Experiment(
-                prompt=prompt,
-                redis_url=settings.REDIS_URL,
-                embedding_name=embedding_name,
-                k=k
-            )
+                embeddings = read_narrative_embeddings_from_redis(
+                    settings.REDIS_URL, embedding_name,
+                )
+                mask = embeddings['taxon'].astype(str).str.contains(
+                    nomenclature_pattern, regex=True, case=False, na=False,
+                )
+                embeddings = embeddings[mask]
 
-            # Run the search
-            experiment.run()
+                if embeddings.empty:
+                    return Response({
+                        'results': [],
+                        'count': 0,
+                        'prompt': prompt,
+                        'embedding_name': embedding_name,
+                        'nomenclature_pattern': nomenclature_pattern,
+                        'k': k
+                    })
 
-            # Get results
-            results = []
-            for i in range(min(k, len(experiment.nearest_neighbors))):
-                idx = experiment.nearest_neighbors.index[i]
-                similarity = experiment.nearest_neighbors.iloc[i]['similarity']
-                row = experiment.embeddings.loc[idx]
-                results.append(build_result_dict(row, similarity))
+                nearest = sort_by_similarity_to_prompt(prompt, embeddings)
 
-            return Response({
+                results = []
+                for i in range(min(k, len(nearest))):
+                    idx = nearest.index[i]
+                    similarity = nearest.iloc[i]['similarity']
+                    row = embeddings.loc[idx]
+                    results.append(build_result_dict(row, similarity))
+
+            else:
+                # Standard path: full similarity search via Experiment
+                from dr_drafts_mycosearch.sota_search import Experiment
+
+                experiment = Experiment(
+                    prompt=prompt,
+                    redis_url=settings.REDIS_URL,
+                    embedding_name=embedding_name,
+                    k=k
+                )
+                experiment.run()
+
+                results = []
+                for i in range(min(k, len(experiment.nearest_neighbors))):
+                    idx = experiment.nearest_neighbors.index[i]
+                    similarity = experiment.nearest_neighbors.iloc[i]['similarity']
+                    row = experiment.embeddings.loc[idx]
+                    results.append(build_result_dict(row, similarity))
+
+            response_data = {
                 'results': results,
                 'count': len(results),
                 'prompt': prompt,
                 'embedding_name': embedding_name,
                 'k': k
-            })
+            }
+            if nomenclature_pattern:
+                response_data['nomenclature_pattern'] = nomenclature_pattern
+
+            return Response(response_data)
 
         except ValueError as e:
             tb = traceback.format_exc()
