@@ -216,6 +216,7 @@ class UserSettingsSerializer(serializers.ModelSerializer):
         fields = [
             'default_embargo_days', 'default_embedding', 'default_k',
             'feature_taxa_count', 'feature_max_tree_depth',
+            'receive_admin_summary',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']

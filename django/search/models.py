@@ -338,6 +338,12 @@ class UserSettings(models.Model):
         help_text="Maximum depth for feature tree display"
     )
 
+    # Email preferences
+    receive_admin_summary = models.BooleanField(
+        default=False,
+        help_text="Receive daily admin summary email"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
