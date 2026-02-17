@@ -63,3 +63,8 @@ DJANGO_DEBUG=False
 
 # Comma-separated list of allowed hosts
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.example.com
+
+# =============================================================================
+# Site URL (for links in reports and notifications)
+# =============================================================================
+SKOL_SITE_URL=https://yourdomain.example.com/skol

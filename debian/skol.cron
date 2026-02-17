@@ -19,6 +19,7 @@
 # 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
 
 MAILTO=piggy.yarroll+skol@gmail.com
+SKOL_SITE_URL="https://synoptickeyof.life/skol"
 COUCHDB_USER="admin"
 COUCHDB_PASSWORD="greatlyimprovedpassword"
 COUCHDB_URL="http://localhost:5984"
@@ -54,6 +55,8 @@ SKIP_EXISTING=1
 # Update sources statistics for the ingestion sources page daily at 7am
 0 7 * * * skol time /opt/skol/bin/build_sources_stats --verbosity=2 > ${LOGDIR}/build-sources-stats.log 2>&1
 */5 * * * * skol /usr/bin/redis-cli -p ${REDIS_PORT} save
+# Daily admin report at 6am — stdout goes to MAILTO, emails to opted-in users
+0 6 * * * skol /opt/skol/bin/daily_report --send 2>> ${LOGDIR}/daily-report.log
 # Update fungaria registry from Index Herbariorum monthly (1st of each month at 3am)
 0 3 1 * * skol time /opt/skol/bin/manage_fungaria download > ${LOGDIR}/manage-fungaria.log 2>&1
 ./

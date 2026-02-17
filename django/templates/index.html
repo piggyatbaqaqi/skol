@@ -1160,6 +1160,11 @@
                         <label for="featureMaxDf">Max Doc Frequency</label>
                         <input type="number" id="featureMaxDf" value="1.0" min="0.1" max="1.0" step="0.05" title="Maximum fraction of documents a term can appear in (1.0 = no limit)">
                     </div>
+                    <div class="settings-menu-header" style="margin-top: 8px;">Email Preferences</div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="receiveAdminSummary" style="width: auto;" onchange="saveAdminSummaryPref()">
+                        <label for="receiveAdminSummary" style="margin-bottom: 0; cursor: pointer;">Receive daily admin summary</label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2125,6 +2130,37 @@
             document.getElementById('collectionsMenu')?.classList.remove('show');
         }
 
+        // Load admin summary preference from API
+        async function loadAdminSummaryPref() {
+            if (!IS_AUTHENTICATED) return;
+            try {
+                const resp = await fetch(`${API_BASE}/api/user-settings/`, { credentials: 'same-origin' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const cb = document.getElementById('receiveAdminSummary');
+                    if (cb) cb.checked = !!data.receive_admin_summary;
+                }
+            } catch (e) {
+                console.error('Failed to load user settings:', e);
+            }
+        }
+
+        // Save admin summary preference to API
+        async function saveAdminSummaryPref() {
+            const cb = document.getElementById('receiveAdminSummary');
+            if (!cb) return;
+            try {
+                await fetch(`${API_BASE}/api/user-settings/`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ receive_admin_summary: cb.checked })
+                });
+            } catch (e) {
+                console.error('Failed to save admin summary preference:', e);
+            }
+        }
+
         // Mobile menu functions
         function openMobileMenu() {
             document.getElementById('mobileMenu').classList.add('show');
@@ -2715,6 +2751,7 @@
         loadEmbeddings();
         if (IS_AUTHENTICATED) {
             updateCollectionsMenu();
+            loadAdminSummaryPref();
             // Check for guest collection to migrate
             migrateGuestCollection();
             // Load collection from URL if specified
