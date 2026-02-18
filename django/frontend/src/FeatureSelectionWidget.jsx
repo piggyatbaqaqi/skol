@@ -202,7 +202,7 @@ const FeatureSelectionWidget = ({
   const [jsonError, setJsonError] = useState(null);
   const [jsonSelected, setJsonSelected] = useState(new Set());
 
-  // Taxa IDs from deeper search
+  // Taxa IDs from search results
   const [taxaIds, setTaxaIds] = useState(null);
 
   // Track which classifiers have been fetched for the current taxa set
@@ -226,25 +226,11 @@ const FeatureSelectionWidget = ({
   }, []);
 
   /**
-   * Read taxa IDs from the deeper search cookie
-   */
-  const readTaxaCookie = useCallback(() => {
-    const match = document.cookie.match(/(?:^|;\s*)skol_deeper_search=([^;]*)/);
-    if (!match) return null;
-    try {
-      const data = JSON.parse(decodeURIComponent(match[1]));
-      return data.taxa_ids || null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  /**
-   * Listen for deeper-search-complete events and cookie changes
+   * Listen for search-results-ready events from the basic search
    */
   useEffect(() => {
-    const handleDeeperSearch = () => {
-      const ids = readTaxaCookie();
+    const handleSearchResults = (event) => {
+      const ids = event.detail?.taxa_ids;
       if (ids && ids.length > 0) {
         setTaxaIds(ids);
         // Reset fetched tracking so tabs re-fetch
@@ -261,18 +247,12 @@ const FeatureSelectionWidget = ({
       }
     };
 
-    document.addEventListener('deeper-search-complete', handleDeeperSearch);
-
-    // Also check cookie on mount
-    const ids = readTaxaCookie();
-    if (ids && ids.length > 0) {
-      setTaxaIds(ids);
-    }
+    document.addEventListener('search-results-ready', handleSearchResults);
 
     return () => {
-      document.removeEventListener('deeper-search-complete', handleDeeperSearch);
+      document.removeEventListener('search-results-ready', handleSearchResults);
     };
-  }, [readTaxaCookie]);
+  }, []);
 
   /**
    * Fetch features from a classifier endpoint
