@@ -1166,13 +1166,13 @@
                     <div class="settings-menu-header">Search Settings</div>
                     <div class="form-group">
                         <label for="embedding">Embedding Model</label>
-                        <select id="embedding" name="embedding" required>
+                        <select id="embedding" name="embedding" required onchange="saveSetting('default_embedding', this.value)">
                             <option value="">Loading embeddings...</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="k">Total Results (k)</label>
-                        <input type="number" id="k" name="k" value="20" min="1" max="100" required>
+                        <input type="number" id="k" name="k" value="20" min="1" max="100" required onchange="saveSetting('default_k', parseInt(this.value, 10))">
                     </div>
                     <div class="form-group">
                         <label for="resultsPerPage">Results Per Page</label>
@@ -1180,28 +1180,28 @@
                     </div>
                     <div class="form-group">
                         <label for="nomenclatureLimit">Nomenclature Results</label>
-                        <input type="number" id="nomenclatureLimit" value="20" min="1" max="200" title="Maximum results for nomenclature pattern search">
+                        <input type="number" id="nomenclatureLimit" value="20" min="1" max="200" title="Maximum results for nomenclature pattern search" onchange="saveSetting('nomenclature_limit', parseInt(this.value, 10))">
                     </div>
                     <div class="settings-menu-header" style="margin-top: 8px;">Feature Settings</div>
                     <div class="form-group">
                         <label for="featureTaxaCount">Taxa for Features</label>
-                        <input type="number" id="featureTaxaCount" value="6" min="2" max="50" title="Number of taxa to retrieve for building feature lists">
+                        <input type="number" id="featureTaxaCount" value="6" min="2" max="50" title="Number of taxa to retrieve for building feature lists" onchange="saveSetting('feature_taxa_count', parseInt(this.value, 10))">
                     </div>
                     <div class="form-group">
                         <label for="featureTopN">Feature Count</label>
-                        <input type="number" id="featureTopN" value="30" min="5" max="100" title="Number of top features to return from the classifier">
+                        <input type="number" id="featureTopN" value="30" min="5" max="100" title="Number of top features to return from the classifier" onchange="saveSetting('feature_top_n', parseInt(this.value, 10))">
                     </div>
                     <div class="form-group">
                         <label for="featureMaxDepth">Tree Depth</label>
-                        <input type="number" id="featureMaxDepth" value="10" min="1" max="50" title="Maximum depth for the decision tree">
+                        <input type="number" id="featureMaxDepth" value="10" min="1" max="50" title="Maximum depth for the decision tree" onchange="saveSetting('feature_max_tree_depth', parseInt(this.value, 10))">
                     </div>
                     <div class="form-group">
                         <label for="featureMinDf">Min Doc Frequency</label>
-                        <input type="number" id="featureMinDf" value="1" min="1" max="10" title="Minimum number of documents a term must appear in">
+                        <input type="number" id="featureMinDf" value="1" min="1" max="10" title="Minimum number of documents a term must appear in" onchange="saveSetting('feature_min_df', parseInt(this.value, 10))">
                     </div>
                     <div class="form-group">
                         <label for="featureMaxDf">Max Doc Frequency</label>
-                        <input type="number" id="featureMaxDf" value="1.0" min="0.1" max="1.0" step="0.05" title="Maximum fraction of documents a term can appear in (1.0 = no limit)">
+                        <input type="number" id="featureMaxDf" value="1.0" min="0.1" max="1.0" step="0.05" title="Maximum fraction of documents a term can appear in (1.0 = no limit)" onchange="saveSetting('feature_max_df', parseFloat(this.value))">
                     </div>
                     <div class="settings-menu-header" style="margin-top: 8px;">Email Preferences</div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
@@ -2193,9 +2193,23 @@
                             const rppInput = document.getElementById('resultsPerPage');
                             if (rppInput) rppInput.value = resultsPerPage;
                         }
-                        if (data.default_k) {
-                            const kInput = document.getElementById('k');
-                            if (kInput) kInput.value = data.default_k;
+                        // Search settings
+                        const settingsMap = {
+                            default_k: 'k',
+                            default_embedding: 'embedding',
+                            nomenclature_limit: 'nomenclatureLimit',
+                            // Feature settings
+                            feature_taxa_count: 'featureTaxaCount',
+                            feature_top_n: 'featureTopN',
+                            feature_max_tree_depth: 'featureMaxDepth',
+                            feature_min_df: 'featureMinDf',
+                            feature_max_df: 'featureMaxDf',
+                        };
+                        for (const [field, inputId] of Object.entries(settingsMap)) {
+                            if (data[field] != null) {
+                                const el = document.getElementById(inputId);
+                                if (el) el.value = data[field];
+                            }
                         }
                     }
                 } catch (e) {
@@ -2209,6 +2223,17 @@
                     if (rppInput) rppInput.value = resultsPerPage;
                 }
             }
+        }
+
+        // Save a single setting to the API
+        function saveSetting(field, value) {
+            if (!IS_AUTHENTICATED) return;
+            fetch(`${API_BASE}/api/user-settings/`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+                credentials: 'same-origin',
+                body: JSON.stringify({ [field]: value })
+            }).catch(e => console.error(`Failed to save ${field}:`, e));
         }
 
         // Save admin summary preference to API

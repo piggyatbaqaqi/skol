@@ -215,8 +215,9 @@ class UserSettingsSerializer(serializers.ModelSerializer):
         model = UserSettings
         fields = [
             'default_embargo_days', 'default_embedding', 'default_k',
-            'results_per_page',
-            'feature_taxa_count', 'feature_max_tree_depth',
+            'results_per_page', 'nomenclature_limit',
+            'feature_taxa_count', 'feature_top_n',
+            'feature_max_tree_depth', 'feature_min_df', 'feature_max_df',
             'receive_admin_summary',
             'created_at', 'updated_at'
         ]

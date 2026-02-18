@@ -321,7 +321,7 @@ class UserSettings(models.Model):
         help_text="Preferred embedding model for search"
     )
     default_k = models.PositiveIntegerField(
-        default=3,
+        default=20,
         validators=[MinValueValidator(1), MaxValueValidator(100)],
         help_text="Default number of search results"
     )
@@ -330,6 +330,11 @@ class UserSettings(models.Model):
         validators=[MinValueValidator(5), MaxValueValidator(50)],
         help_text="Number of results to display per page"
     )
+    nomenclature_limit = models.PositiveIntegerField(
+        default=20,
+        validators=[MinValueValidator(1), MaxValueValidator(200)],
+        help_text="Maximum results for nomenclature pattern search"
+    )
 
     # Feature settings
     feature_taxa_count = models.PositiveIntegerField(
@@ -337,10 +342,25 @@ class UserSettings(models.Model):
         validators=[MinValueValidator(2), MaxValueValidator(50)],
         help_text="Number of taxa to retrieve for feature lists"
     )
+    feature_top_n = models.PositiveIntegerField(
+        default=30,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+        help_text="Number of top features to return from the classifier"
+    )
     feature_max_tree_depth = models.PositiveIntegerField(
         default=10,
-        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        validators=[MinValueValidator(1), MaxValueValidator(50)],
         help_text="Maximum depth for feature tree display"
+    )
+    feature_min_df = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        help_text="Minimum document frequency for feature terms"
+    )
+    feature_max_df = models.FloatField(
+        default=1.0,
+        validators=[MinValueValidator(0.1), MaxValueValidator(1.0)],
+        help_text="Maximum document frequency fraction for feature terms"
     )
 
     # Email preferences
