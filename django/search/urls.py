@@ -38,6 +38,8 @@ from .views import (
     SourceContextView,
     # User settings
     UserSettingsView,
+    # Data export
+    ExportMyDataView,
     # Comment/Discussion views
     CommentListCreateView,
     CommentCountView,
@@ -113,6 +115,13 @@ urlpatterns = [
 
     # User settings
     path('user-settings/', UserSettingsView.as_view(), name='user-settings'),
+
+    # Data export
+    path(
+        'export-my-data/',
+        ExportMyDataView.as_view(),
+        name='export-my-data',
+    ),
 
     # Comments/Discussion
     path(

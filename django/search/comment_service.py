@@ -60,6 +60,16 @@ DESIGN_DOC = {
                 '}'
             ),
         },
+        'by_author': {
+            'map': (
+                'function(doc) {'
+                '  if (doc.type === "comment"'
+                '      && doc.author && doc.author.user_id) {'
+                '    emit(doc.author.user_id, doc.collection_id);'
+                '  }'
+                '}'
+            ),
+        },
     },
 }
 
@@ -69,6 +79,14 @@ def get_comments_db():
     config = get_couchdb_config()
     server = get_couchdb_server()
     return get_or_create_database(server, config['comments_db'])
+
+
+def get_collection_ids_for_author(user_id: int) -> set:
+    """Return set of collection_ids where the user has commented."""
+    db = get_comments_db()
+    ensure_design_docs(db)
+    result = db.view('comments/by_author', key=user_id)
+    return {row.value for row in result}
 
 
 def ensure_design_docs(db=None):

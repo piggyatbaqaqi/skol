@@ -228,6 +228,18 @@
     </div>
 </div>
 
+<!-- Download My Data Section -->
+<div class="settings-section">
+    <h2>Download My Data</h2>
+    <p class="section-description">
+        Download a ZIP file containing all your data: account info, settings,
+        collections, search history, and discussion threads you've participated in.
+    </p>
+    <a href="{% url 'accounts:export_my_data' %}" class="btn-download">
+        Download My Data
+    </a>
+</div>
+
 <div class="links">
     <p><a href="{{ SCRIPT_NAME }}/">Back to search</a></p>
 </div>
@@ -400,6 +412,24 @@
         background: #f5f5f5;
         color: #666;
         border-color: transparent;
+    }
+
+    /* Download button */
+    .btn-download {
+        display: inline-block;
+        padding: 8px 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9em;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-download:hover {
+        background: #5a6fd6;
     }
 
     /* Confirmation dialog */

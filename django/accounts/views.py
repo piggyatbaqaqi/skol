@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
 from django.contrib.auth.views import PasswordResetView
+from django.http import HttpResponse
 from .forms import CustomUserCreationForm, UsernameChangeForm
 from .tokens import email_verification_token
 import logging
@@ -291,3 +292,20 @@ def account_settings(request):
         'set_password_form': set_password_form,
         'username_form': username_form,
     })
+
+
+@login_required
+def export_my_data(request):
+    """Download all user data as a ZIP file."""
+    from search.export_service import export_user_data
+
+    zip_buffer = export_user_data(request.user)
+    response = HttpResponse(
+        zip_buffer.getvalue(),
+        content_type='application/zip',
+    )
+    response['Content-Disposition'] = (
+        'attachment; filename='
+        f'"skol-export-{request.user.username}.zip"'
+    )
+    return response

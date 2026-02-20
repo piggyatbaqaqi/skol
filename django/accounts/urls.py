@@ -46,4 +46,11 @@ urlpatterns = [
 
     # Account settings
     path('settings/', views.account_settings, name='account_settings'),
+
+    # Data export
+    path(
+        'export-my-data/',
+        views.export_my_data,
+        name='export_my_data',
+    ),
 ]

@@ -2705,3 +2705,28 @@ class CommentCopyNomenclatureView(APIView):
             'nomenclature': nomenclature,
             'collection_id': collection_id,
         })
+
+
+# ============================================================================
+# Data Export
+# ============================================================================
+
+from .export_service import export_user_data
+
+
+class ExportMyDataView(APIView):
+    """
+    GET /api/export-my-data/
+    Download all user data as a ZIP file.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        zip_buffer = export_user_data(request.user)
+        response = HttpResponse(
+            zip_buffer.getvalue(), content_type='application/zip'
+        )
+        response['Content-Disposition'] = (
+            f'attachment; filename="skol-export-{request.user.username}.zip"'
+        )
+        return response
