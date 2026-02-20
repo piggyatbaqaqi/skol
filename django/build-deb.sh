@@ -39,6 +39,9 @@ VERSION_DIR="/opt/skol/django-versions/${FULL_VERSION}"
 # From django, go up 2 levels to piggyatbaqaqi, then into react-pdf
 REACT_PDF_DIR="$(cd "$(dirname "$0")/../.." && pwd)/react-pdf"
 
+# Path to local pypaperretriever wheel (neighbor directory to skol)
+PYPAPERRETRIEVER_DIST="$(cd "$(dirname "$0")/../.." && pwd)/pypaperretriever/dist"
+
 echo "=== Building Debian package with fpm (${PACKAGE} ${FULL_VERSION}) ==="
 
 # Verify react-pdf source exists
@@ -48,6 +51,14 @@ if [ ! -d "$REACT_PDF_DIR/packages/react-pdf/src" ]; then
     exit 1
 fi
 echo "Found react-pdf source at $REACT_PDF_DIR"
+
+# Verify pypaperretriever wheel exists
+if ! ls "$PYPAPERRETRIEVER_DIST"/pypaperretriever-*-py3-none-any.whl 1>/dev/null 2>&1; then
+    echo "Error: pypaperretriever wheel not found in $PYPAPERRETRIEVER_DIST"
+    echo "Build it first: cd ../../pypaperretriever && ./build-wheel.sh"
+    exit 1
+fi
+echo "Found pypaperretriever wheel in $PYPAPERRETRIEVER_DIST"
 
 # Clean previous builds
 rm -rf dist/ build/ *.egg-info deb_dist/ staging/
@@ -89,8 +100,9 @@ fi
 echo "Building Python wheel..."
 python3 -m build --wheel --outdir dist/
 
-# Copy wheel to staging area
+# Copy wheels to staging area
 cp dist/*.whl staging${WHEEL_DIR}/
+cp "$PYPAPERRETRIEVER_DIST"/pypaperretriever-*-py3-none-any.whl staging${WHEEL_DIR}/
 
 # Copy service file to staging area
 cp debian/skol-django.service staging${SERVICE_DIR}/
