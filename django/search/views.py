@@ -851,6 +851,23 @@ class NomenclatureSearchView(APIView):
             )
 
 
+def _resolve_migrated_taxa_id(taxa_id, auth):
+    """Look up a taxon ID in the migration database to find its new content-based ID.
+
+    Returns the new ID if found, or None if no mapping exists.
+    """
+    migration_db = os.environ.get('TAXA_MIGRATION_DB', 'skol_taxa_migration_dev')
+    couchdb_url = settings.COUCHDB_URL
+    try:
+        migration_url = f"{couchdb_url}/{migration_db}/{taxa_id}"
+        resp = requests.get(migration_url, auth=auth, timeout=10)
+        if resp.status_code == 200:
+            return resp.json().get('new_id')
+    except Exception:
+        pass
+    return None
+
+
 class TaxaInfoView(APIView):
     """
     API endpoint to get taxa document information including source PDF details.
@@ -893,6 +910,15 @@ class TaxaInfoView(APIView):
                 if response.status_code == 200:
                     # Update taxa_id to include the prefix for consistency
                     taxa_id = f"taxon_{taxa_id}"
+
+            # If still not found, check migration mapping for old->new ID
+            if response.status_code == 404:
+                new_id = _resolve_migrated_taxa_id(taxa_id, auth)
+                if new_id:
+                    taxa_url = f"{couchdb_url}/{taxa_db}/{new_id}"
+                    response = requests.get(taxa_url, auth=auth, timeout=30)
+                    if response.status_code == 200:
+                        taxa_id = new_id
 
             if response.status_code == 404:
                 return Response(
@@ -1053,6 +1079,15 @@ class PDFFromTaxaView(APIView):
             # Fetch the taxa document to get source info
             taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
             taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
+
+            # Check migration mapping for old->new ID
+            if taxa_response.status_code == 404:
+                new_id = _resolve_migrated_taxa_id(taxa_id, auth)
+                if new_id:
+                    taxa_url = f"{couchdb_url}/{taxa_db}/{new_id}"
+                    taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
+                    if taxa_response.status_code == 200:
+                        taxa_id = new_id
 
             if taxa_response.status_code == 404:
                 return Response(
@@ -2246,6 +2281,15 @@ class SourceContextView(APIView):
             # Fetch the taxa document
             taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
             taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
+
+            # Check migration mapping for old->new ID
+            if taxa_response.status_code == 404:
+                new_id = _resolve_migrated_taxa_id(taxa_id, auth)
+                if new_id:
+                    taxa_url = f"{couchdb_url}/{taxa_db}/{new_id}"
+                    taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
+                    if taxa_response.status_code == 200:
+                        taxa_id = new_id
 
             if taxa_response.status_code == 404:
                 return Response(

@@ -40,29 +40,22 @@ from env_config import get_env_config
 from ingestors.timestamps import set_timestamps
 
 
-def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
+def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
     """
-    Generate a deterministic document ID for a taxon record.
+    Generate a content-based, deterministic document ID for a taxon.
 
     This must match the implementation in extract_taxa_to_couchdb.py.
 
     Args:
-        doc_id: Source document ID from ingestion database
-        url: Human-readable URL (human_url field)
-        line_number: Line number of first nomenclature paragraph
+        taxon_text: The nomenclature/taxon text
+        description_text: The description text
 
     Returns:
-        Deterministic document ID in format 'taxon_<sha256_hash>'
+        Deterministic document ID in format 'taxon_<sha256_hex>'
     """
-    key_parts = [
-        doc_id,
-        url if url else "no_url",
-        str(line_number) if line_number else "0"
-    ]
-    composite_key = ":".join(key_parts)
-    hash_obj = hashlib.sha256(composite_key.encode('utf-8'))
-    doc_hash = hash_obj.hexdigest()
-    return f"taxon_{doc_hash}"
+    content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
+    hash_obj = hashlib.sha256(content.encode('utf-8'))
+    return f"taxon_{hash_obj.hexdigest()}"
 
 
 def fix_taxa_ids(
@@ -147,9 +140,8 @@ def fix_taxa_ids(
 
             # Calculate the correct document ID
             correct_doc_id = generate_taxon_doc_id(
-                source_doc_id,
-                human_url if isinstance(human_url, str) else None,
-                line_number
+                doc.get('taxon', ''),
+                doc.get('description', '')
             )
 
             # Check if ID needs fixing

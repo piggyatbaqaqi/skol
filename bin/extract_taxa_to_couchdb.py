@@ -102,34 +102,23 @@ def restore_span_types(span: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
+def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
     """
-    Generate a unique, deterministic document ID for a taxon.
+    Generate a content-based, deterministic document ID for a taxon.
 
-    This ensures idempotent writes - the same taxon from the same source
-    will always have the same document ID.
+    Identical taxon+description content always produces the same ID,
+    regardless of which ingest path produced it.
 
     Args:
-        doc_id: Source document ID from ingest database
-        url: URL from the source line
-        line_number: Line number from the source
+        taxon_text: The nomenclature/taxon text
+        description_text: The description text
 
     Returns:
-        Unique document ID as a hash string
+        Deterministic document ID as 'taxon_<sha256_hex>'
     """
-    # Create composite key
-    key_parts = [
-        doc_id,
-        url if url else "no_url",
-        str(line_number)
-    ]
-    composite_key = ":".join(key_parts)
-
-    # Generate deterministic hash
-    hash_obj = hashlib.sha256(composite_key.encode('utf-8'))
-    doc_hash = hash_obj.hexdigest()
-
-    return f"taxon_{doc_hash}"
+    content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
+    hash_obj = hashlib.sha256(content.encode('utf-8'))
+    return f"taxon_{hash_obj.hexdigest()}"
 
 
 def extract_taxa_from_partition(
@@ -241,9 +230,8 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
 
         if '_id' not in taxon_dict:
             taxon_dict['_id'] = generate_taxon_doc_id(
-                get_ingest_field(taxon_dict, '_id', default='unknown'),
-                get_ingest_field(taxon_dict, 'url'),
-                taxon_dict['line_number'] or 0
+                taxon_dict.get('taxon', ''),
+                taxon_dict.get('description', '')
             )
         if 'json_annotated' not in taxon_dict:
             taxon_dict['json_annotated'] = None
@@ -708,9 +696,8 @@ class TaxonExtractor:
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
-                            source_doc_id,
-                            source_url if isinstance(source_url, str) else None,
-                            int(line_number) if line_number else 0
+                            row_dict.get('taxon', ''),
+                            row_dict.get('description', '')
                         )
 
                         # Use row_dict (already converted above) for CouchDB storage

@@ -1206,16 +1206,10 @@ Result:
             print(f"  ✓ Connected to {db_name}")
 
         # Helper to generate deterministic doc ID
-        def generate_taxon_doc_id(doc_id: str, url, line_number) -> str:
-            key_parts = [
-                doc_id,
-                url if url else "no_url",
-                str(line_number) if line_number else "0"
-            ]
-            composite_key = ":".join(key_parts)
-            hash_obj = hashlib.sha256(composite_key.encode('utf-8'))
-            doc_hash = hash_obj.hexdigest()
-            return f"taxon_{doc_hash}"
+        def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
+            content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
+            hash_obj = hashlib.sha256(content.encode('utf-8'))
+            return f"taxon_{hash_obj.hexdigest()}"
 
         # Helper to validate JSON
         def is_valid_json(json_str: str) -> bool:
@@ -1390,11 +1384,8 @@ Result:
                         line_number = data.get('line_number')
 
                         doc_id = generate_taxon_doc_id(
-                            ingest_doc_id,
-                            ingest_url if isinstance(
-                                ingest_url, str
-                            ) else None,
-                            line_number
+                            data.get('taxon', ''),
+                            data.get('description', '')
                         )
 
                         json_str = data.get(
@@ -1605,17 +1596,11 @@ Result:
             from skol_classifier.couchdb_io import CouchDBConnection
             import hashlib
 
-            def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:
-                """Generate deterministic document ID for idempotent saves."""
-                key_parts = [
-                    doc_id,
-                    url if url else "no_url",
-                    str(line_number)
-                ]
-                composite_key = ":".join(key_parts)
-                hash_obj = hashlib.sha256(composite_key.encode('utf-8'))
-                doc_hash = hash_obj.hexdigest()
-                return f"taxon_{doc_hash}"
+            def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
+                """Generate content-based, deterministic document ID."""
+                content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
+                hash_obj = hashlib.sha256(content.encode('utf-8'))
+                return f"taxon_{hash_obj.hexdigest()}"
 
             # Create connection using CouchDBConnection API
             conn = CouchDBConnection(couchdb_url, db_name, username, password)
@@ -1649,9 +1634,8 @@ Result:
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
-                            source_doc_id,
-                            source_url if isinstance(source_url, str) else None,
-                            int(line_number) if line_number else 0
+                            row_dict.get('taxon', ''),
+                            row_dict.get('description', '')
                         )
 
                         # Convert row to dict for CouchDB storage
