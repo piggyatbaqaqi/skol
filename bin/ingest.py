@@ -31,13 +31,13 @@ if __name__ == '__main__' and __package__ is None:
     parent_dir = str(Path(__file__).resolve().parent.parent)
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
-    # Also add bin directory for env_config
+    # Also add bin directory for env_config and sibling module imports
     bin_dir = str(Path(__file__).resolve().parent)
     if bin_dir not in sys.path:
         sys.path.insert(0, bin_dir)
 
-from env_config import get_env_config
 
+from env_config import get_env_config
 import couchdb
 
 # Support both direct execution and module execution
@@ -244,6 +244,25 @@ Environment Variables for Work Control:
         help="Attempt blocked targets if set."
     )
     parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        default=bool(os.environ.get('DRY_RUN')),
+        help='Preview what would be ingested without saving (default: $DRY_RUN)'
+    )
+    parser.add_argument(
+        '--skip-existing',
+        action='store_true',
+        default=bool(os.environ.get('SKIP_EXISTING')),
+        help='Skip documents that already exist in CouchDB (default: $SKIP_EXISTING)'
+    )
+    parser.add_argument(
+        '--limit',
+        type=int,
+        default=int(os.environ['LIMIT']) if os.environ.get('LIMIT') else None,
+        metavar='N',
+        help='Process at most N items (default: $LIMIT)'
+    )
+    parser.add_argument(
         '-v', '--verbosity',
         type=int,
         default=2,
@@ -359,9 +378,7 @@ def main() -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    # Get environment configuration (includes command-line overrides)
     env_config = get_env_config()
-
     parser = create_parser()
     args = parser.parse_args()
 
