@@ -76,6 +76,7 @@ ingest = [
     "beautifulsoup4",
     "feedparser",
     "habanero",
+    "internetarchive",
     "paperscraper",
     # bibtexparser moved to core dependencies (required by ingestors package)
 ]
