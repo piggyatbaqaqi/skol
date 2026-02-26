@@ -77,10 +77,7 @@ show how each project addresses them.
 
 ## Name Navigator (IST 659: Data Administration Concepts and Database Management)
 
-*"Name Navigator" Database Application, Spring 2024. Team:
- La&nbsp;Monte&nbsp;Henry&nbsp;Piggy&nbsp;Yarroll,
- Oluwaseyi&nbsp;Durosinmi-Etti, Peter&nbsp;Le,
- Christopher&nbsp;Murphy.*
+*"Name Navigator" Database Application, Spring 2024. [@Yarroll2024IST659].*
 
 ### Project Summary
 
@@ -131,7 +128,7 @@ diagrams (G5 *Communication*) and mockups (with Balsamiq).
 
 ## Glycemic Increment (IST 736: Text Mining)
 
-*"Glycemic Increment: Individualized Medicine for Diabetics," Fall 2025. Team: J.J.&nbsp;Balasi, La&nbsp;Monte&nbsp;Henry&nbsp;Piggy&nbsp;Yarroll.*
+*"Glycemic Increment: Individualized Medicine for Diabetics," Fall 2025. [@Yarroll2026IST782].*
 
 ### Project Summary
 
@@ -187,11 +184,42 @@ values.
 
 ---
 
+## Synopitc Key of Life
+
+I managed to recruit fellow students in several classes to work on
+different aspects of my Synoptic Key of Life Project. This is an
+effort to understand the open access and public domain taxonomic
+literature in mycology. This tool guides an amateur through the
+process of creating a technical description of a collection of fungi.
+
+Here is how the various classes map onto the architecture:
+
+![Legend](images/skol_legend.png)
+![SKOL Architecture](images/skol_architecture.png)
+
+## Synoptic Key of Life II (IST 718: Big Data Analytics)
+
+*"Synoptic Key of Life II", Spring 2025. [@Yarroll2025IST718].*
+
+### Project Summary
+
+This project builds a PySpark pipeline to evaluate machine learning
+algorithms to classify nomenclature and description blocks in
+mycological journal articles. The articles were hand-annotated with
+[@yang2017yedda].
+
+### Learning Goals Addressed
+
+This project was my first foray in my Master's program into Mycology
+(G2 *insight accross contexts*). We built an assortment of
+classification models and evaluated them for the task at hand (G3
+*predictive models*). PySpark is an important library for parallel
+Python work (G1 *Data technologies*, G4 *programming*).
+
 ## Feature Extraction for Fungal Taxonomy (IST 691: Deep Learning)
 
 *"Synoptic Key of Life: Feature Extraction for Fungal Taxonomy,"
- Spring 2025. Team: La&nbsp;Monte&nbsp;Henry&nbsp;Piggy&nbsp;Yarroll,
- Padmaja&nbsp;Kurumaddali, Peter&nbsp;Le.*
+ Spring 2025. [@Yarroll2025IST691].*
 
 ### Project Summary
 
@@ -214,10 +242,10 @@ values—data suitable for building synoptic key menus.
 
 The work builds on the SKOL project's existing classification pipeline
 and annotation corpus. The team evaluated ChatGPT 4.0, Llama 3.3 70B,
-Gemma3 (27B and 12B), and Mistral 7B, ultimately fine-tuning Mistral
-7B Instruct using 16 hand-built training examples. Results were
-evaluated using Jaccard distance between generated and ground-truth
-feature/value sets.
+Gemma3 (27B and 12B), and Mistral 7B [@jiang2023mistral], ultimately
+fine-tuning Mistral 7B Instruct using 16 hand-built training
+examples. Results were evaluated using Jaccard distance between
+generated and ground-truth feature/value sets.
 
 ### Learning Goals Addressed
 
@@ -238,14 +266,11 @@ structured sections, figures, and references (G5
 *Communication*). I presented this work at MASMC 2025 (Mid Atlantic Mycology
 Conference) as a poster for a non-technical mycology audience.
 
-![SKOL System diagram](images/ist691_skol_overview.png)
-*SKOL System diagram*
-
 ---
 
 ## Mycology Literature Search (IST 664: Natural Language Processing)
 
-*"Mycology Literature Search," Fall 2024. Team: La&nbsp;Monte&nbsp;Yarroll, J.J.&nbsp;Balasi, Christopher&nbsp;Murphy, Shintaro&nbsp;Osuga.*
+*"Mycology Literature Search," Fall 2024. [@Yarroll2024IST664].*
 
 ### Project Summary
 
@@ -262,10 +287,10 @@ based on semantic similarity—not keyword matching.
 
 The key contribution is the Taxon class—a custom data structure that
 encapsulates nomenclature, descriptions, and metadata for each
-species. Taxon objects are embedded via SBERT (all-mpnet-base-v2) into
-a 768-dimensional vector space, enabling cosine similarity search
-where a user's specimen description is matched against the embedded
-literature.
+species. Taxon objects are embedded via SBERT (all-mpnet-base-v2),
+[@reimers-2019-sentence-bert] into a 768-dimensional vector space,
+enabling cosine similarity search where a user's specimen description
+is matched against the embedded literature.
 
 ### Learning Goals Addressed
 
@@ -293,14 +318,11 @@ blocks (G3 *Visualization*).
 Technologies used for this project include sentence transformers
 (SBERT), scikit-learn, pandas, and matplotlib (G4 *Programming*).
 
-![SKOL Flow Diagram](images/ist664_skol_overview.png)
-*The flow diagram above depicts the process of transferring the annotated mycology descriptions from SKOL to MycoSearch, converting them to Taxon format, and embedding the content into MycoSearch. The light blue items (2-7) are new or modified code.*
-
 ---
 
 ## SKOL IV: All the Data (IST 769: Advanced Database Management)
 
-*"SKOL IV: All the Data," Fall 2025. Solo project: La&nbsp;Monte&nbsp;Henry&nbsp;Piggy&nbsp;Yarroll.*
+*"SKOL IV: All the Data," Fall 2025. [@Yarroll2025IST769].*
 
 ### Project Summary
 
@@ -310,13 +332,14 @@ near-production system. The Jupyter notebook orchestrates web scraping
 (with robots.txt compliance), PDF text extraction and OCR, text
 classification, Taxon object construction, SBERT embedding, LLM-based
 JSON feature extraction, and hierarchical clustering—all backed by
-CouchDB for document storage, Redis for caching models and embeddings,
-PySpark for distributed processing, and Neo4j for graph-based
-exploration of taxonomic clusters.
+CouchDB [@anderson2009couchdb], for document storage, Redis [@redis] for
+caching models and embeddings, PySpark [@pedro2024] for distributed processing, and
+Neo4j [@Neo4j] for graph-based exploration of taxonomic clusters.
 
-The system ingests articles from multiple sources (Mycotaxon and
-Studies in Mycology via Ingenta Connect RSS feeds, historical works
-from MycoWeb archives), and processes them through the full pipeline.
+The system ingests articles from multiple sources (e.g. Mycotaxon
+[@mycotaxon] and Studies in Mycology [@sim2026] via Ingenta Connect
+RSS feeds, Persoonia [@persoonia], historical works from the MycoWeb
+[@mykoweb] archives), and processes them through the full pipeline.
 
 Agglomerative hierarchical clustering produces "pseudoclades",
 grouping taxa with similar descriptions, revealing biological
@@ -367,7 +390,7 @@ audience seeks and a minium of adiaphora.
 
 ## Synoptic Key of Life Website (IST 690 Independent Study)
 
-*"Building the Synoptic Key of Life website," Spring 2026. Solo project: La&nbsp;Monte&nbsp;Henry&nbsp;Piggy&nbsp;Yarroll under Dr.&nbsp;Gregory&nbsp;Block*
+*"Building the Synoptic Key of Life website," Spring 2026. [@Yarroll2026IST690] under Dr.&nbsp;Gregory&nbsp;Block*
 
 The independent study brought together all the pieces of the Synoptic
 Key of Life and deployed the https://synoptickeyof.life/skol web site.
@@ -423,7 +446,7 @@ generates 403 permission errors (G6 *Ethics*).
 I've created actionabile insights (G2) across a range of contexts:
 * Business: IST 659 Name Navigator for CRM cultural awareness
 * Individualized medicine: IST 736 Glycemic Increment for diabetic nutrition
-* Mycology/scientific research: (IST 718), IST 691, IST 664, IST 769, IST 690 — the SKOL project
+* Mycology/scientific research: IST 718, IST 691, IST 664, IST 769, IST 690 — the SKOL project.
 
 ### Transparency and Reproducibility
 
@@ -441,7 +464,10 @@ IST 690, a choice that might be controversial.
 
 ### Integrated Learning Through SKOL
 
-IST 718 → IST 664 → IST 691 → IST 769 → IST 690 form a progression: NLP foundations, deep learning for feature extraction, and production data architecture. Each course contributed essential components to the deployed system at https://synoptickeyof.life.
+IST 718 → IST 664 → IST 691 → IST 769 → IST 690 form a progression:
+NLP foundations, deep learning for feature extraction, and production
+data architecture. Each course contributed essential components to the
+deployed system at https://synoptickeyof.life.
 
 ### Strengths and Challenges
 
@@ -484,69 +510,9 @@ skills on a daily basis.
 
 ---
 
-## 8. References
-
-### Course Deliverables
-
-Yarroll, L.H.P., Durosinmi-Etti, O., Le, P., & Murphy, C. (2024). Name Navigator Database Application. Syracuse University. IST 659 Final Project.
-
-Balasi, J. & Yarroll, L.H.P. (2025). Glycemic Increment: Individualized Medicine for Diabetics. Syracuse University. IST 736 Final Project. https://github.com/piggyatbaqaqi/sugarbowl
-
-Yarroll, L.H.P., Kurumaddali, P., & Le, P. (2025). Synoptic Key of Life: Feature Extraction for Fungal Taxonomy. Syracuse University. IST 691 Final Project.
-
-Yarroll, L.H.P., Balasi, J., Murphy, C., & Osuga, S. (2024). Mycology Literature Search. Syracuse University. IST 664 Final Project. https://github.com/piggyatbaqaqi/skol/blob/main/IST664/IST664_Team3_Balasi_Murphy_Osuga_Yarroll.pdf
-
-Yarroll, L.H.P. (2025). SKOL IV: All the Data. Syracuse University. IST 769 Final Project.
-
-### Foundational Works
-
-<!-- Add references to key conceptual works that shaped learning: SBERT, Mistral, CouchDB, etc. -->
-
-### Data Sources
-
-<!-- Mycologia, Mycotaxon, Persoonia, MykoWeb, etc. -->
-
----
-
-## 9. Appendices
-
-### Folder Structure
-
-```
-Portfolio/
-├── 01_Overview/
-│   ├── overview.pdf
-│   └── resume.pdf
-│
-├── 02_IST659_Database_Management/
-│   ├── README.txt
-│   └── Naming_report.pdf
-│
-├── 03_IST736_Text_Mining/
-│   ├── README.txt
-│   ├── IST736_Balasi_Yarroll_Final_Project.pdf
-│   └── glycemic_increment.ipynb
-│
-├── 04_IST691_Deep_Learning/
-│   ├── README.txt
-│   ├── IST691_final_project_paper.pdf
-│   └── mistral_transfer_learning.ipynb
-│
-├── 05_IST664_NLP/
-│   ├── README.txt
-│   ├── IST664_Team3_Balasi_Murphy_Osuga_Yarroll.pdf
-│   └── SKOL_presentation3.pptx
-│
-├── 06_IST769_Data_Management/
-│   ├── README.txt
-│   └── ist769_skol.ipynb
-│
-└── 07_Video_Presentation/
-    └── portfolio_presentation.mp4
-```
-
----
-
 *Portfolio prepared for IST 782 — Applied Data Science Portfolio*
 *Syracuse University School of Information Studies*
 *Spring 2026*
+
+## References
+

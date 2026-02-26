@@ -1,0 +1,94 @@
+flowchart TD
+    %% ── Paul Tol "bright" qualitative palette ──────────────────
+    %% Chosen to be colorblind-friendly, not near gamut edge,
+    %% robust to projection wash-out and B&W printing.
+    classDef external fill:#BBBBBB,stroke:#888888,color:#000000
+    classDef ist718  fill:#4477AA,stroke:#2E5C8A,color:#FFFFFF
+    classDef ist664  fill:#66CCEE,stroke:#3DA8CC,color:#000000
+    classDef ist691  fill:#CCBB44,stroke:#A89930,color:#000000
+    classDef ist769  fill:#EE6677,stroke:#CC4455,color:#000000
+    classDef ist690  fill:#AA3377,stroke:#882255,color:#FFFFFF
+    classDef legend  fill:#FFFFFF,stroke:#FFFFFF,color:#000000
+
+    %% ── Legend ──────────────────────────────────────────────────
+    subgraph Legend[" "]
+        direction LR
+        Lext["External"]:::external ~~~
+        L718["IST 718"]:::ist718 ~~~
+        L664["IST 664"]:::ist664 ~~~
+        L691["IST 691"]:::ist691 ~~~
+        L769["IST 769"]:::ist769 ~~~
+        L690["IST 690"]:::ist690
+    end
+
+    %% ── Data Sources ────────────────────────────────────────────
+    JOURNALS["Journal Web Sites\n(Mycotaxon, Persoonia, MycoKeys,\nIMA Fungus, Studies in Mycology,\nMDPI J. of Fungi, MycoWeb,\nInternet Archive)"]:::external
+
+    %% ── Ingestion ───────────────────────────────────────────────
+    INGEST["Ingesters\n(RSS, Ingenta, Pensoft, MDPI,\nInternet Archive, CrossRef,\nlocal archives)"]:::ist690
+
+    %% ── Document Storage ────────────────────────────────────────
+    COUCH_ART[("CouchDB\nArticles, PDFs,\nMetadata")]:::ist769
+
+    %% ── Text Extraction ─────────────────────────────────────────
+    PDF["PDF Text Extraction\n(PyMuPDF + OCR fallback)"]:::ist769
+
+    %% ── Classification ──────────────────────────────────────────
+    CLASS["PySpark Classifier\n(Logistic Regression,\nTF-IDF + Suffix features)\nNomenclature | Description | Misc"]:::ist718
+
+    %% ── Taxon Construction ──────────────────────────────────────
+    TAXON["Build Taxons\n(Associate Nomenclatures\nwith Matching Descriptions)"]:::ist664
+
+    %% ── Embedding Branch ────────────────────────────────────────
+    SBERT["SBERT Embeddings\n(all-mpnet-base-v2\n768-dim vectors)"]:::ist664
+
+    REDIS[("Redis\nEmbedding Cache\n& Classifier Models")]:::ist769
+
+    CLUSTER["Hierarchical Clustering\n(Agglomerative)"]:::ist769
+
+    NEO4J[("Neo4j\nTaxonomy Graph\n& Pseudoclades")]:::ist769
+
+    %% ── JSON Branch ─────────────────────────────────────────────
+    JSON_EX["JSON Feature Extraction\n(Mistral SLM +\nPrompt Engineering)"]:::ist691
+
+    CONSTRAIN["Constrained Decoding\n(Outlines library +\nJSON schema)"]:::ist690
+
+    VOCAB["Vocabulary\nNormalization\n(Semantic similarity\nto ontology terms)"]:::ist690
+
+    COUCH_TAXA[("CouchDB\nTaxa Records\n& JSON Features")]:::ist769
+
+    %% ── Web Application ─────────────────────────────────────────
+    WEBAPP["Django / React Web App\nsynoptickeyof.life"]:::ist690
+
+    %% ── User-facing Features ────────────────────────────────────
+    SEARCH["Description Search\n(Cosine Similarity)"]:::ist664
+
+    DT_FEAT["Feature Suggestions\n(Decision Trees on\ntext & JSON)"]:::ist690
+
+    COLLECT["Collection Manager\n& Discussion Threads"]:::ist690
+
+    %% ── Flow ────────────────────────────────────────────────────
+    JOURNALS --> INGEST
+    INGEST --> COUCH_ART
+    COUCH_ART --> PDF
+    PDF --> CLASS
+    CLASS --> TAXON
+
+    TAXON --> SBERT
+    TAXON --> JSON_EX
+
+    SBERT --> REDIS
+    SBERT --> CLUSTER
+    CLUSTER --> NEO4J
+
+    JSON_EX --> CONSTRAIN
+    CONSTRAIN --> VOCAB
+    VOCAB --> COUCH_TAXA
+
+    REDIS --> WEBAPP
+    COUCH_TAXA --> WEBAPP
+    NEO4J -.-> WEBAPP
+
+    WEBAPP --> SEARCH
+    WEBAPP --> DT_FEAT
+    WEBAPP --> COLLECT
