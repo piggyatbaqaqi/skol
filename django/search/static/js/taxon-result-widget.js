@@ -169,7 +169,7 @@ const TaxonResultWidget = (function() {
         // Build copy-to-nomenclature button (only shown if nomenclatureInput exists)
         const resultTitle = result.Title || 'Untitled';
         const copyBtnId = options.index !== undefined ? `copy-nom-btn-${options.index}` : `copy-nom-btn-${Date.now()}`;
-        const copyToNomBtn = `<button type="button" class="copy-nomenclature-btn" id="${copyBtnId}" data-title="${escapeHtml(resultTitle)}" style="display: none;">Copy</button>`;
+        const copyToNomBtn = `<button type="button" class="copy-nomenclature-btn" id="${copyBtnId}" data-title="${escapeHtml(resultTitle)}" style="display: none;">Label Collection</button>`;
 
         // Build inline source context viewer for description
         let descriptionContent = '';
@@ -218,7 +218,7 @@ const TaxonResultWidget = (function() {
                         this.textContent = 'Copied!';
                         this.classList.add('copied');
                         setTimeout(() => {
-                            this.textContent = 'Copy';
+                            this.textContent = 'Label Collection';
                             this.classList.remove('copied');
                         }, 2000);
                     }

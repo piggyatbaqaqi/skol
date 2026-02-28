@@ -2707,7 +2707,7 @@
                     const resultTitle = result.Title || 'Untitled';
                     const showCopyBtn = IS_AUTHENTICATED && document.getElementById('nomenclatureInput');
                     const copyBtnHtml = showCopyBtn
-                        ? `<button type="button" class="copy-nomenclature-btn" data-title="${escapeHtml(resultTitle)}" onclick="handleCopyToNomenclature(this)">Copy</button>`
+                        ? `<button type="button" class="copy-nomenclature-btn" data-title="${escapeHtml(resultTitle)}" onclick="handleCopyToNomenclature(this)">Label Collection</button>`
                         : '';
 
                     card.innerHTML = `
