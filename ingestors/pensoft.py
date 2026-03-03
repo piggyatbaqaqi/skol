@@ -704,6 +704,10 @@ class PensoftIngestor(Ingestor):
                     needs_pdf = not has_pdf
                 if needs_xml:
                     needs_xml = not has_xml
+                if (needs_xml
+                        and existing_doc.get('xml_available')
+                        is False):
+                    needs_xml = False
 
                 if not needs_pdf and not needs_xml:
                     if self.verbosity >= 2:
@@ -791,21 +795,28 @@ class PensoftIngestor(Ingestor):
                                     f"  XML download failed: "
                                     f"HTTP {resp.status_code}"
                                 )
+                            doc = self.db[doc_id]
+                            doc['xml_available'] = False
+                            self.db.save(doc)
                         elif not resp.content.strip().startswith(
                             b'<'
                         ):
                             if self.verbosity >= 1:
                                 print("  Invalid XML "
                                       "(no < header)")
+                            doc = self.db[doc_id]
+                            doc['xml_available'] = False
+                            self.db.save(doc)
                         else:
                             xml_fmt = self._detect_xml_format(
                                 resp.content
                             )
                             doc = self.db[doc_id]
+                            doc['xml_available'] = True
                             if xml_fmt:
                                 doc['xml_format'] = xml_fmt
-                                self.db.save(doc)
-                                doc = self.db[doc_id]
+                            self.db.save(doc)
+                            doc = self.db[doc_id]
                             self.db.put_attachment(
                                 doc,
                                 BytesIO(resp.content),
@@ -819,3 +830,9 @@ class PensoftIngestor(Ingestor):
                     except Exception as e:
                         if self.verbosity >= 1:
                             print(f"  XML error: {e}")
+                        try:
+                            doc = self.db[doc_id]
+                            doc['xml_available'] = False
+                            self.db.save(doc)
+                        except Exception:
+                            pass

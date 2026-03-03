@@ -306,6 +306,141 @@ class TestSkipExisting(unittest.TestCase):
         self.assertFalse(any('/pdf/' in u for u in urls_fetched))
 
 
+class TestXmlAvailability(unittest.TestCase):
+    """Test that xml_available field is recorded and respected."""
+
+    def _make_response(self, content, status_code=200):
+        resp = MagicMock()
+        resp.status_code = status_code
+        resp.content = content
+        return resp
+
+    def test_skip_xml_when_marked_unavailable(self):
+        """Don't attempt XML download if xml_available is False."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=True)
+        existing = {
+            '_id': 'fake',
+            'xml_available': False,
+            '_attachments': {
+                'article.pdf': {'content_type': 'application/pdf'},
+            },
+        }
+        db.__getitem__ = MagicMock(return_value=existing)
+
+        ing = _make_ingestor(db=db)
+        ing._get_with_rate_limit = MagicMock()
+
+        documents = [{
+            'pdf_url': 'https://mycokeys.pensoft.net/article/12345/download/pdf/67890',
+            'xml_url': 'https://mycokeys.pensoft.net/article/12345/download/xml/',
+            'url': 'https://mycokeys.pensoft.net/article/12345/',
+        }]
+
+        ing._ingest_documents(documents, {}, bibtex_link='')
+        # Should not have fetched anything (PDF exists, XML marked unavailable)
+        ing._get_with_rate_limit.assert_not_called()
+
+    def test_xml_available_set_false_on_http_error(self):
+        """xml_available set to False when XML download returns HTTP error."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=False)
+
+        saved_state: Dict[str, dict] = {}
+
+        def fake_save(doc):
+            saved_state[doc['_id']] = dict(doc)
+
+        def fake_getitem(doc_id):
+            return dict(saved_state.get(doc_id, {'_id': doc_id}))
+
+        db.save = MagicMock(side_effect=fake_save)
+        db.__getitem__ = MagicMock(side_effect=fake_getitem)
+
+        ing = _make_ingestor(db=db, download_pdf=False, download_xml=True)
+        ing._get_with_rate_limit = MagicMock(
+            return_value=self._make_response(b'', status_code=404)
+        )
+
+        documents = [{
+            'xml_url': 'https://mycokeys.pensoft.net/article/12345/download/xml/',
+            'url': 'https://mycokeys.pensoft.net/article/12345/',
+        }]
+
+        ing._ingest_documents(documents, {}, bibtex_link='')
+
+        # Find the saved doc and check xml_available
+        self.assertTrue(len(saved_state) > 0)
+        doc = list(saved_state.values())[-1]
+        self.assertIs(doc['xml_available'], False)
+
+    def test_xml_available_set_false_on_invalid_content(self):
+        """xml_available set to False when response is not XML."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=False)
+
+        saved_state: Dict[str, dict] = {}
+
+        def fake_save(doc):
+            saved_state[doc['_id']] = dict(doc)
+
+        def fake_getitem(doc_id):
+            return dict(saved_state.get(doc_id, {'_id': doc_id}))
+
+        db.save = MagicMock(side_effect=fake_save)
+        db.__getitem__ = MagicMock(side_effect=fake_getitem)
+
+        ing = _make_ingestor(db=db, download_pdf=False, download_xml=True)
+        # Return HTML instead of XML
+        ing._get_with_rate_limit = MagicMock(
+            return_value=self._make_response(
+                b'This is not XML content at all'
+            )
+        )
+
+        documents = [{
+            'xml_url': 'https://mycokeys.pensoft.net/article/12345/download/xml/',
+            'url': 'https://mycokeys.pensoft.net/article/12345/',
+        }]
+
+        ing._ingest_documents(documents, {}, bibtex_link='')
+
+        doc = list(saved_state.values())[-1]
+        self.assertIs(doc['xml_available'], False)
+
+    def test_xml_available_set_true_on_success(self):
+        """xml_available set to True when XML download succeeds."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=False)
+
+        saved_state: Dict[str, dict] = {}
+
+        def fake_save(doc):
+            saved_state[doc['_id']] = dict(doc)
+
+        def fake_getitem(doc_id):
+            return dict(saved_state.get(doc_id, {'_id': doc_id}))
+
+        db.save = MagicMock(side_effect=fake_save)
+        db.__getitem__ = MagicMock(side_effect=fake_getitem)
+
+        ing = _make_ingestor(db=db, download_pdf=False, download_xml=True)
+        xml_content = b'<?xml version="1.0"?>\n<root>data</root>'
+        ing._get_with_rate_limit = MagicMock(
+            return_value=self._make_response(xml_content)
+        )
+
+        documents = [{
+            'xml_url': 'https://mycokeys.pensoft.net/article/12345/download/xml/',
+            'url': 'https://mycokeys.pensoft.net/article/12345/',
+        }]
+
+        ing._ingest_documents(documents, {}, bibtex_link='')
+
+        doc = list(saved_state.values())[-1]
+        self.assertIs(doc['xml_available'], True)
+
+
 class TestDocumentIdStability(unittest.TestCase):
     """Test that document IDs are stable and based on pdf_url."""
 
