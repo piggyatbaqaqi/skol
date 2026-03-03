@@ -367,6 +367,7 @@ class PublicationRegistry:
             'eissn': '1314-4049',
             'rate_limit_min_ms': 1000,
             'rate_limit_max_ms': 5000,
+            'download_xml': True,
         },
         'imafungus': {
             'name': 'IMA Fungus: The Global Mycological Journal',
@@ -380,6 +381,7 @@ class PublicationRegistry:
             'issues_url': 'https://imafungus.pensoft.net/issues',
             'issn': '2210-6340',
             'eissn': '2210-6359',
+            'download_xml': True,
         },
         'mycology-taylor-francis': {
             # Currently blocked by technical measures at tandfonline.com.

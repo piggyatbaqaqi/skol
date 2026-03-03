@@ -6,13 +6,16 @@ articles from Pensoft publishing platform journals.
 """
 
 import re
+from io import BytesIO
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 from datetime import datetime
+from uuid import uuid5, NAMESPACE_URL
 
 from bs4 import BeautifulSoup
 
 from .ingestor import Ingestor
+from .timestamps import set_timestamps
 
 
 class PensoftIngestor(Ingestor):
@@ -57,6 +60,8 @@ class PensoftIngestor(Ingestor):
         issn: Optional[str] = None,
         eissn: Optional[str] = None,
         issues_url: Optional[str] = None,
+        download_pdf: bool = True,
+        download_xml: bool = True,
         **kwargs: Any
     ) -> None:
         """
@@ -68,6 +73,8 @@ class PensoftIngestor(Ingestor):
             issn: Journal ISSN
             eissn: Journal eISSN
             issues_url: Issues URL to scrape from (constructed from journal_name if not provided)
+            download_pdf: Whether to download PDFs (default: True)
+            download_xml: Whether to download XML (default: True)
             **kwargs: Base class arguments (db, user_agent, robot_parser, etc.)
         """
         super().__init__(**kwargs)
@@ -75,6 +82,8 @@ class PensoftIngestor(Ingestor):
         self.journal_id = journal_id
         self.issn = issn
         self.eissn = eissn
+        self.download_pdf = download_pdf
+        self.download_xml = download_xml
 
         # Construct base URL and issues URL
         self.base_url = f'https://{journal_name}.pensoft.net'
@@ -397,6 +406,11 @@ class PensoftIngestor(Ingestor):
             if 'pdf_url' not in article and self.verbosity >= 3:
                 print(f"      Article {idx + 1}: No PDF URL found")
 
+            # XML URL follows a simpler pattern (no separate ID)
+            xml_url = (f'{self.base_url}'
+                       f'/article/{article_id}/download/xml/')
+            article['xml_url'] = xml_url
+
             articles.append(article)
 
         return articles
@@ -575,20 +589,26 @@ class PensoftIngestor(Ingestor):
             if not issue_articles:
                 continue
 
-            # Filter to only articles with PDF URLs
-            articles_with_pdfs = [a for a in issue_articles if 'pdf_url' in a]
+            # Filter: require pdf_url only if downloading PDFs
+            if self.download_pdf:
+                eligible = [
+                    a for a in issue_articles if 'pdf_url' in a
+                ]
+            else:
+                eligible = issue_articles
 
             if self.verbosity >= 2:
-                if len(articles_with_pdfs) < len(issue_articles):
-                    print(f"  {len(articles_with_pdfs)} article(s) have PDF URLs")
+                if len(eligible) < len(issue_articles):
+                    n = len(eligible)
+                    print(f"  {n} article(s) have PDF URLs")
 
             # Ingest articles
-            if articles_with_pdfs:
+            if eligible:
                 if self.verbosity >= 2:
-                    print(f"  Ingesting {len(articles_with_pdfs)} article(s)")
+                    print(f"  Ingesting {len(eligible)} article(s)")
 
                 self._ingest_documents(
-                    documents=articles_with_pdfs,
+                    documents=eligible,
                     meta={
                         'source': 'pensoft',
                         'journal': self.journal_name,
@@ -601,3 +621,201 @@ class PensoftIngestor(Ingestor):
             print(f"\n{'=' * 60}")
             print("Ingestion complete")
             print(f"{'=' * 60}")
+
+    def _detect_xml_format(self, content: bytes) -> Optional[str]:
+        """
+        Detect if XML content is JATS format.
+
+        Args:
+            content: Raw XML bytes
+
+        Returns:
+            'jats' if JATS format detected, None otherwise
+        """
+        header = content[:2000].decode('utf-8', errors='ignore')
+        if 'JATS' in header:
+            return 'jats'
+        if 'journalpublishing' in header.lower():
+            return 'jats'
+        if '<article' in header and (
+            'dtd' in header.lower() or 'xmlns' in header
+        ):
+            return 'jats'
+        return None
+
+    def _ingest_documents(
+        self,
+        documents: List[Dict[str, Any]],
+        meta: Dict[str, Any],
+        bibtex_link: str,
+    ) -> None:
+        """
+        Ingest documents with support for both PDF and XML.
+
+        Overrides the base class to handle downloading both
+        PDF and XML attachments based on download_pdf and
+        download_xml settings.
+
+        Args:
+            documents: List of article metadata dicts
+            meta: Metadata dict to attach to each document
+            bibtex_link: URL for the source page
+        """
+        for doc_dict in documents:
+            # Determine document ID URL — prefer pdf_url
+            id_url = doc_dict.get('pdf_url') or doc_dict.get(
+                'xml_url', ''
+            )
+            if not id_url:
+                continue
+
+            doc_id = uuid5(NAMESPACE_URL, id_url).hex
+            doc = {
+                '_id': doc_id,
+                'meta': meta,
+                'bibtex_url': bibtex_link,
+                'pdf_url': doc_dict.get('pdf_url', ''),
+                'xml_url': doc_dict.get('xml_url', ''),
+                'human_url': self.format_human_url(doc_dict),
+            }
+
+            # Copy all fields from source dict
+            for k, v in doc_dict.items():
+                doc[k] = v
+
+            # Check existing document
+            doc_exists = doc_id in self.db
+            needs_pdf = self.download_pdf and bool(
+                doc_dict.get('pdf_url')
+            )
+            needs_xml = self.download_xml and bool(
+                doc_dict.get('xml_url')
+            )
+
+            if doc_exists:
+                existing_doc = self.db[doc_id]
+                attachments = existing_doc.get(
+                    '_attachments', {}
+                )
+                has_pdf = 'article.pdf' in attachments
+                has_xml = 'article.xml' in attachments
+
+                if needs_pdf:
+                    needs_pdf = not has_pdf
+                if needs_xml:
+                    needs_xml = not has_xml
+
+                if not needs_pdf and not needs_xml:
+                    if self.verbosity >= 2:
+                        print(f"Skipping {id_url} "
+                              "(already complete)")
+                    continue
+
+                doc = existing_doc
+                if self.verbosity >= 2:
+                    parts = []
+                    if needs_pdf:
+                        parts.append("PDF")
+                    if needs_xml:
+                        parts.append("XML")
+                    label = ' and '.join(parts)
+                    print(f"Adding {label} to "
+                          f"existing: {id_url}")
+            else:
+                if self.verbosity >= 2:
+                    parts = []
+                    if needs_pdf:
+                        parts.append("PDF")
+                    if needs_xml:
+                        parts.append("XML")
+                    label = ' and '.join(parts)
+                    print(f"Adding ({label}): {id_url}")
+                set_timestamps(doc, is_new=True)
+                self.db.save(doc)
+
+            # Download and attach PDF
+            if needs_pdf:
+                pdf_url = doc_dict['pdf_url']
+                if not self.robot_parser.can_fetch(
+                    self.user_agent, pdf_url
+                ):
+                    if self.verbosity >= 1:
+                        print(f"  Robot denied: {pdf_url}")
+                else:
+                    try:
+                        resp = self._get_with_rate_limit(
+                            pdf_url, stream=False
+                        )
+                        if resp.status_code != 200:
+                            if self.verbosity >= 1:
+                                print(
+                                    f"  PDF download failed: "
+                                    f"HTTP {resp.status_code}"
+                                )
+                        elif not resp.content.startswith(
+                            b'%PDF'
+                        ):
+                            if self.verbosity >= 1:
+                                print("  Invalid PDF "
+                                      "(no %PDF header)")
+                        else:
+                            doc = self.db[doc_id]
+                            self.db.put_attachment(
+                                doc,
+                                BytesIO(resp.content),
+                                'article.pdf',
+                                'application/pdf',
+                            )
+                            if self.verbosity >= 3:
+                                print("  Attached PDF")
+                    except Exception as e:
+                        if self.verbosity >= 1:
+                            print(f"  PDF error: {e}")
+
+            # Download and attach XML
+            if needs_xml:
+                xml_url = doc_dict['xml_url']
+                if not self.robot_parser.can_fetch(
+                    self.user_agent, xml_url
+                ):
+                    if self.verbosity >= 1:
+                        print(f"  Robot denied: {xml_url}")
+                else:
+                    try:
+                        resp = self._get_with_rate_limit(
+                            xml_url, stream=False
+                        )
+                        if resp.status_code != 200:
+                            if self.verbosity >= 1:
+                                print(
+                                    f"  XML download failed: "
+                                    f"HTTP {resp.status_code}"
+                                )
+                        elif not resp.content.strip().startswith(
+                            b'<'
+                        ):
+                            if self.verbosity >= 1:
+                                print("  Invalid XML "
+                                      "(no < header)")
+                        else:
+                            xml_fmt = self._detect_xml_format(
+                                resp.content
+                            )
+                            doc = self.db[doc_id]
+                            if xml_fmt:
+                                doc['xml_format'] = xml_fmt
+                                self.db.save(doc)
+                                doc = self.db[doc_id]
+                            self.db.put_attachment(
+                                doc,
+                                BytesIO(resp.content),
+                                'article.xml',
+                                'application/xml',
+                            )
+                            if self.verbosity >= 3:
+                                fmt = xml_fmt or 'unknown'
+                                print(f"  Attached XML "
+                                      f"({fmt})")
+                    except Exception as e:
+                        if self.verbosity >= 1:
+                            print(f"  XML error: {e}")

@@ -269,6 +269,20 @@ Environment Variables for Work Control:
         choices=[0, 1, 2, 3],
         help='Verbosity level (default: 2)'
     )
+    parser.add_argument(
+        '--download-pdf',
+        default=None,
+        action=argparse.BooleanOptionalAction,
+        help='Download PDFs (default: per-source config). '
+             'Use --no-download-pdf to suppress.'
+    )
+    parser.add_argument(
+        '--download-xml',
+        default=None,
+        action=argparse.BooleanOptionalAction,
+        help='Download XML (default: per-source config). '
+             'Use --no-download-xml to suppress.'
+    )
 
     return parser
 
@@ -282,19 +296,23 @@ def run_ingestion(
     dry_run: bool = False,
     skip_existing: bool = False,
     limit: Optional[int] = None,
+    download_pdf: Optional[bool] = None,
+    download_xml: Optional[bool] = None,
 ) -> None:
     """
     Run a single ingestion task.
 
     Args:
         db: CouchDB database instance
-        config: Publication configuration dictionary from PublicationRegistry
+        config: Publication config from PublicationRegistry
         user_agent: User agent string
         robots_url: Custom robots.txt URL
         verbosity: Verbosity level
         dry_run: If True, preview without saving
-        skip_existing: If True, skip documents that already exist
+        skip_existing: If True, skip existing documents
         limit: If set, process at most this many items
+        download_pdf: Override PDF download (None = config)
+        download_xml: Override XML download (None = config)
     """
     # Set up robot parser
     source = config.get('source', 'unknown')
@@ -335,6 +353,12 @@ def run_ingestion(
         constructor_args['local_pdf_map'] = {
             config['url_prefix']: config['local_path_prefix']
         }
+
+    # CLI overrides for download format selection
+    if download_pdf is not None:
+        constructor_args['download_pdf'] = download_pdf
+    if download_xml is not None:
+        constructor_args['download_xml'] = download_xml
 
     # Create and run the ingestor
     ingestor = ingestor_class(**constructor_args)
@@ -434,8 +458,12 @@ def main() -> int:
                     robots_url=args.robots_url,
                     verbosity=args.verbosity,
                     dry_run=env_config.get('dry_run', False),
-                    skip_existing=env_config.get('skip_existing', False),
+                    skip_existing=env_config.get(
+                        'skip_existing', False
+                    ),
                     limit=env_config.get('limit'),
+                    download_pdf=args.download_pdf,
+                    download_xml=args.download_xml,
                 )
         elif args.publication:
             # Use predefined source
@@ -459,8 +487,12 @@ def main() -> int:
                 robots_url=args.robots_url,
                 verbosity=args.verbosity,
                 dry_run=env_config.get('dry_run', False),
-                skip_existing=env_config.get('skip_existing', False),
+                skip_existing=env_config.get(
+                    'skip_existing', False
+                ),
                 limit=env_config.get('limit'),
+                download_pdf=args.download_pdf,
+                download_xml=args.download_xml,
             )
         elif args.rss:
             # Direct RSS mode - construct config dict
@@ -478,8 +510,12 @@ def main() -> int:
                 robots_url=args.robots_url,
                 verbosity=args.verbosity,
                 dry_run=env_config.get('dry_run', False),
-                skip_existing=env_config.get('skip_existing', False),
+                skip_existing=env_config.get(
+                    'skip_existing', False
+                ),
                 limit=env_config.get('limit'),
+                download_pdf=args.download_pdf,
+                download_xml=args.download_xml,
             )
         elif args.local:
             # Direct local mode - construct config dict
@@ -498,8 +534,12 @@ def main() -> int:
                 robots_url=args.robots_url,
                 verbosity=args.verbosity,
                 dry_run=env_config.get('dry_run', False),
-                skip_existing=env_config.get('skip_existing', False),
+                skip_existing=env_config.get(
+                    'skip_existing', False
+                ),
                 limit=env_config.get('limit'),
+                download_pdf=args.download_pdf,
+                download_xml=args.download_xml,
             )
 
         if args.verbosity >= 2:
