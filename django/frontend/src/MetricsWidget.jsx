@@ -413,6 +413,9 @@ const MetricsWidget = ({
    */
   const handleDeleteSet = useCallback(async () => {
     if (!activeSet || !activeSet.id || !collectionId) return;
+    const n = measurements.length;
+    const msg = `Delete "${featureName}" set with ${n} sample${n !== 1 ? 's' : ''}? This cannot be undone.`;
+    if (!window.confirm(msg)) return;
     try {
       const response = await fetch(
         `${apiBaseUrl}/collections/${collectionId}/measurements/${activeSet.id}/`,
@@ -433,7 +436,7 @@ const MetricsWidget = ({
     } catch (err) {
       setError(err.message);
     }
-  }, [activeSet, apiBaseUrl, collectionId]);
+  }, [activeSet, apiBaseUrl, collectionId, measurements, featureName]);
 
   /**
    * Handle feature name change with debounced save
