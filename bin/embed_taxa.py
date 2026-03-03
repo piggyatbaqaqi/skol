@@ -374,9 +374,12 @@ Examples:
 
     # Handle expire argument:
     # - If user didn't provide --expire: attribute doesn't exist, use config default
-    # - If user provided --expire None: args.expire == None, explicitly set no expiration
+    # - If user provided --expire None: args.expire == None, explicitly no expiration
     # - If user provided --expire N: args.expire == N, use that value
-    expire_override = getattr(args, 'expire', None)
+    _UNSET = object()
+    expire_override = getattr(args, 'expire', _UNSET)
+    if expire_override is _UNSET:
+        expire_override = config['embedding_expire']
 
     # Merge work control options from command-line args and env_config
     # Command-line args take precedence over env_config
