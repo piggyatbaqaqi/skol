@@ -40,6 +40,9 @@ from .views import (
     UserSettingsView,
     # Data export
     ExportMyDataView,
+    # Measurement views
+    MeasurementSetListCreateView,
+    MeasurementSetDetailView,
     # Comment/Discussion views
     CommentListCreateView,
     CommentCountView,
@@ -99,6 +102,12 @@ urlpatterns = [
          ExternalIdentifierListCreateView.as_view(), name='identifier-list-create'),
     path('collections/<int:collection_id>/identifiers/<int:identifier_id>/',
          ExternalIdentifierDetailView.as_view(), name='identifier-detail'),
+
+    # Measurement sets within collections
+    path('collections/<int:collection_id>/measurements/',
+         MeasurementSetListCreateView.as_view(), name='measurement-list-create'),
+    path('collections/<int:collection_id>/measurements/<int:measurement_id>/',
+         MeasurementSetDetailView.as_view(), name='measurement-detail'),
 
     # Vocabulary tree endpoints
     path('vocab-tree/', VocabTreeView.as_view(), name='vocab-tree'),

@@ -1161,7 +1161,7 @@ class PDFFromTaxaView(APIView):
 
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType
+from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType, MeasurementSet
 from .serializers import (
     CollectionListSerializer,
     CollectionDetailSerializer,
@@ -1172,6 +1172,7 @@ from .serializers import (
     ExternalIdentifierSerializer,
     ExternalIdentifierCreateSerializer,
     IdentifierTypeSerializer,
+    MeasurementSetSerializer,
 )
 
 
@@ -2774,3 +2775,105 @@ class ExportMyDataView(APIView):
             f'attachment; filename="skol-export-{request.user.username}.zip"'
         )
         return response
+
+
+# ============================================================================
+# Measurement Set Views
+# ============================================================================
+
+class MeasurementSetListCreateView(APIView):
+    """
+    GET /api/collections/<collection_id>/measurements/
+    List all measurement sets for a collection.
+
+    POST /api/collections/<collection_id>/measurements/
+    Create a new measurement set (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_collection(self, collection_id):
+        return get_object_or_404(Collection, collection_id=collection_id)
+
+    def get(self, request, collection_id):
+        collection = self.get_collection(collection_id)
+        measurement_sets = collection.measurement_sets.all()
+        serializer = MeasurementSetSerializer(measurement_sets, many=True)
+        return Response({
+            'measurement_sets': serializer.data,
+            'count': len(serializer.data),
+            'collection_id': collection_id
+        })
+
+    def post(self, request, collection_id):
+        collection = self.get_collection(collection_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to add measurements to this collection'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = MeasurementSetSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                measurement_set = serializer.save(collection=collection)
+            except Exception as e:
+                if 'unique' in str(e).lower():
+                    return Response(
+                        {'error': f'A measurement set for "{request.data.get("feature", "spores")}" already exists in this collection'},
+                        status=status.HTTP_409_CONFLICT
+                    )
+                raise
+            return Response(
+                MeasurementSetSerializer(measurement_set).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MeasurementSetDetailView(APIView):
+    """
+    GET /api/collections/<collection_id>/measurements/<measurement_id>/
+    Retrieve a specific measurement set.
+
+    PUT /api/collections/<collection_id>/measurements/<measurement_id>/
+    Update a measurement set (owner only).
+
+    DELETE /api/collections/<collection_id>/measurements/<measurement_id>/
+    Delete a measurement set (owner only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_objects(self, collection_id, measurement_id):
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+        measurement_set = get_object_or_404(
+            MeasurementSet, id=measurement_id, collection=collection
+        )
+        return collection, measurement_set
+
+    def get(self, request, collection_id, measurement_id):
+        _, measurement_set = self.get_objects(collection_id, measurement_id)
+        return Response(MeasurementSetSerializer(measurement_set).data)
+
+    def put(self, request, collection_id, measurement_id):
+        collection, measurement_set = self.get_objects(collection_id, measurement_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to update this measurement set'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = MeasurementSetSerializer(
+            measurement_set, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, collection_id, measurement_id):
+        collection, measurement_set = self.get_objects(collection_id, measurement_id)
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to delete this measurement set'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        measurement_set.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

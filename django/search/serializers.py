@@ -5,7 +5,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType, UserSettings
+from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType, UserSettings, MeasurementSet
 
 
 class IdentifierTypeSerializer(serializers.ModelSerializer):
@@ -229,4 +229,40 @@ class UserSettingsSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Default embargo cannot be more than 365 days."
             )
+        return value
+
+
+class MeasurementSetSerializer(serializers.ModelSerializer):
+    """Serializer for measurement sets (spore dimensions, etc.)."""
+
+    class Meta:
+        model = MeasurementSet
+        fields = [
+            'id', 'feature', 'is_2d', 'report_q', 'measurements',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_measurements(self, value):
+        """Validate measurements array structure."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Measurements must be a list.")
+        for i, m in enumerate(value):
+            if not isinstance(m, dict):
+                raise serializers.ValidationError(
+                    f"Measurement {i} must be an object."
+                )
+            if 'length' not in m:
+                raise serializers.ValidationError(
+                    f"Measurement {i} must have a 'length' field."
+                )
+            if not isinstance(m['length'], (int, float)) or m['length'] <= 0:
+                raise serializers.ValidationError(
+                    f"Measurement {i} 'length' must be a positive number."
+                )
+            if ('width' in m and m['width'] is not None
+                    and (not isinstance(m['width'], (int, float)) or m['width'] <= 0)):
+                raise serializers.ValidationError(
+                    f"Measurement {i} 'width' must be a positive number."
+                )
         return value

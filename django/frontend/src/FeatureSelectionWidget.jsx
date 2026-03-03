@@ -12,6 +12,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VocabTreeWidget from './VocabTreeWidget';
+import MetricsWidget from './MetricsWidget';
 import './FeatureSelectionWidget.css';
 
 /**
@@ -167,6 +168,7 @@ const TABS = [
   { id: 'vocabulary', label: 'Vocabulary' },
   { id: 'text-features', label: 'Text Features' },
   { id: 'json-features', label: 'JSON Features' },
+  { id: 'metrics', label: 'Metrics' },
 ];
 
 /**
@@ -178,6 +180,7 @@ const TABS = [
  * @param {React.RefObject} props.descriptionRef - Ref to description textarea
  * @param {string} props.version - Optional vocab tree version
  * @param {string} props.settingsSelector - CSS selector for settings container to observe
+ * @param {number|string|null} props.collectionId - Active collection ID for metrics
  */
 const FeatureSelectionWidget = ({
   apiBaseUrl = '/api',
@@ -185,6 +188,7 @@ const FeatureSelectionWidget = ({
   descriptionRef,
   version,
   settingsSelector,
+  collectionId,
 }) => {
   const [activeTab, setActiveTab] = useState('vocabulary');
 
@@ -469,6 +473,16 @@ const FeatureSelectionWidget = ({
           panelId="panel-json-features"
           tabId="tab-json-features"
           label="JSON features ranked by importance"
+        />
+      )}
+
+      {/* Metrics panel */}
+      {activeTab === 'metrics' && (
+        <MetricsWidget
+          apiBaseUrl={apiBaseUrl}
+          collectionId={collectionId}
+          onAddToDescription={onAddToDescription}
+          descriptionRef={descriptionRef}
         />
       )}
     </div>

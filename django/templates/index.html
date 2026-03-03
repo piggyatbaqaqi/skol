@@ -1315,7 +1315,8 @@
                         <div id="feature-selection-container"
                              data-feature-selection-widget
                              data-api-base-url="{{ SCRIPT_NAME }}/api"
-                             data-description-target="#prompt">
+                             data-description-target="#prompt"
+                             data-collection-source="#activeCollection">
                         </div>
                     </div>
                 </div>
@@ -1553,6 +1554,9 @@
             if (!collectionId) {
                 activeCollectionId = null;
                 activeCollectionData = null;
+                document.dispatchEvent(new CustomEvent('collection-changed', {
+                    detail: { collection_id: null }
+                }));
                 hideCollectionUI();
                 // Remove collection from URL
                 if (updateUrl) {
@@ -1564,6 +1568,12 @@
             }
 
             activeCollectionId = collectionId;
+
+            // Notify React widgets of collection change (used by MetricsWidget)
+            document.dispatchEvent(new CustomEvent('collection-changed', {
+                detail: { collection_id: collectionId }
+            }));
+
             await loadActiveCollection();
 
             // Update URL with collection ID (so refresh/share works)

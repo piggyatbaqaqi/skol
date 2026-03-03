@@ -7,3 +7,4 @@
 * Check every change into git with useful comments.
 * Every program in bin that generates a redis key should be added to the bin/rebuild_redis script.
 * A missing package on production is a packaging error.
+* Update docs/api-reference.md every time we change REST APIs.

@@ -435,6 +435,64 @@ List fungaria/herbaria from Index Herbariorum registry (for fungarium identifier
 | `/api/collections/{id}/identifiers/{iid}/` | GET | Get identifier |
 | `/api/collections/{id}/identifiers/{iid}/` | DELETE | Delete identifier |
 
+### Measurement Sets
+
+Record specimen measurements (e.g., spore dimensions) for a collection. Each collection can have multiple measurement sets keyed by feature name (e.g., "spores", "basidia", "cystidia"). Raw measurements are stored as JSON; statistics are computed client-side.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/collections/{id}/measurements/` | GET | List measurement sets |
+| `/api/collections/{id}/measurements/` | POST | Create measurement set (owner only) |
+| `/api/collections/{id}/measurements/{mid}/` | GET | Get measurement set |
+| `/api/collections/{id}/measurements/{mid}/` | PUT | Update measurement set (owner only) |
+| `/api/collections/{id}/measurements/{mid}/` | DELETE | Delete measurement set (owner only) |
+
+**GET Response:**
+```json
+{
+    "measurement_sets": [
+        {
+            "id": 1,
+            "feature": "spores",
+            "is_2d": true,
+            "report_q": true,
+            "measurements": [
+                {"length": 8.5, "width": 6.5},
+                {"length": 11.2, "width": 7.8}
+            ],
+            "created_at": "2026-03-03T12:00:00Z",
+            "updated_at": "2026-03-03T12:05:00Z"
+        }
+    ],
+    "count": 1,
+    "collection_id": 110439105
+}
+```
+
+**POST/PUT Request:**
+```json
+{
+    "feature": "spores",
+    "is_2d": true,
+    "report_q": true,
+    "measurements": [
+        {"length": 8.5, "width": 6.5},
+        {"length": 11.2, "width": 7.8}
+    ]
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `feature` | string | `"spores"` | Feature name (unique per collection) |
+| `is_2d` | bool | `true` | `true` for length × width, `false` for length only |
+| `report_q` | bool | `true` | Whether to include Q (length/width ratio) in formatted output |
+| `measurements` | array | `[]` | Raw measurements: `[{"length": N, "width": N}, ...]`. Width is optional for 1D mode. |
+
+**Validation:** Each measurement must have a positive `length`. If `width` is present, it must also be positive. Duplicate feature names within a collection return `409 Conflict`.
+
+**Statistics (computed client-side):** The Metrics UI computes quartile-based statistics from raw measurements in standard mycological notation: `spores (min-) Q1 - Q3 (-max) × (min-) Q1 - Q3 (-max) µm, Q: (min-)Q1-Q3(max)`. The larger of two entered values is assigned as length.
+
 ---
 
 ## Discussion / Comments (Authenticated)

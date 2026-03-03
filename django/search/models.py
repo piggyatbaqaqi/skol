@@ -384,3 +384,48 @@ class UserSettings(models.Model):
         if self.default_embargo_days == 0:
             return None
         return timezone.now() + timedelta(days=self.default_embargo_days)
+
+
+class MeasurementSet(models.Model):
+    """
+    A set of measurements for a specific feature of a collection.
+
+    Canonical use: spore dimensions (length x width in µm).
+    Stores raw measurements as JSON for client-side statistics computation.
+    Each collection can have multiple measurement sets keyed by feature name
+    (e.g., "spores", "basidia", "cystidia").
+    """
+    collection = models.ForeignKey(
+        Collection,
+        on_delete=models.CASCADE,
+        related_name='measurement_sets'
+    )
+    feature = models.CharField(
+        max_length=100,
+        default='spores',
+        help_text='Feature name (e.g., spores, basidia, cystidia)'
+    )
+    is_2d = models.BooleanField(
+        default=True,
+        help_text='True for 2D measurements (length x width), False for 1D (length only)'
+    )
+    report_q = models.BooleanField(
+        default=True,
+        help_text='Whether to include Q (length/width ratio) in the formatted output'
+    )
+    measurements = models.JSONField(
+        default=list,
+        help_text='Raw measurements: [{"length": 8.5, "width": 6.5}, ...]'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['collection', 'feature']
+        ordering = ['feature']
+        verbose_name = "Measurement Set"
+        verbose_name_plural = "Measurement Sets"
+
+    def __str__(self) -> str:
+        n = len(self.measurements) if isinstance(self.measurements, list) else 0
+        return f"{self.feature} ({n} samples) - {self.collection}"
