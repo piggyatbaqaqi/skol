@@ -179,10 +179,14 @@ class BuildEmbeddingView(APIView):
             # Running in background avoids proxy timeout issues
             logger.info(f"Starting embedding build: {embedding_name} (force={force})")
 
-            # Check if a build is already in progress (lock managed by subprocess)
+            # Atomically acquire the build lock (SETNX) to prevent races
             lock_key = 'skol:build:embedding:lock'
+            lock_ttl = 7260  # 121 minutes, matches embed_taxa.py LOCK_TTL
 
-            if r.exists(lock_key):
+            lock_acquired = r.set(
+                lock_key, 'building', nx=True, ex=lock_ttl
+            )
+            if not lock_acquired:
                 logger.info("Embedding build already in progress (lock exists)")
                 return Response({
                     'status': 'building',
@@ -190,7 +194,7 @@ class BuildEmbeddingView(APIView):
                     'message': 'Build in progress. Poll GET to check status.'
                 }, status=status.HTTP_409_CONFLICT)
 
-            # Start the subprocess - it will acquire its own lock
+            # Start the subprocess - we already hold the lock
             try:
                 import subprocess
                 import os
@@ -210,8 +214,8 @@ class BuildEmbeddingView(APIView):
                             'message': f'embed_taxa not found at {bin_path}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                # Build command
-                cmd = [str(embed_script), '--verbosity=2']
+                # Build command — skip-lock because we already hold it
+                cmd = [str(embed_script), '--verbosity=2', '--skip-lock']
                 if force:
                     cmd.append('--force')
 

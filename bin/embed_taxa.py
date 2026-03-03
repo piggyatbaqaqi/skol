@@ -39,7 +39,7 @@ import pandas as pd
 # ============================================================================
 
 LOCK_KEY = 'skol:build:embedding:lock'
-LOCK_TTL = 660  # 11 minutes
+LOCK_TTL = 7260  # 121 minutes
 
 
 # ============================================================================
@@ -361,6 +361,12 @@ Examples:
         help='Exclude user collections from embeddings'
     )
 
+    parser.add_argument(
+        '--skip-lock',
+        action='store_true',
+        help='Skip lock acquisition (caller already holds the lock)'
+    )
+
     args, _ = parser.parse_known_args()
 
     # Get configuration
@@ -385,7 +391,11 @@ Examples:
     # Skip lock for dry-run since we're not actually building anything
     redis_client = None
     if not dry_run:
-        redis_client = acquire_lock(config, verbosity)
+        if args.skip_lock:
+            # Caller already holds the lock; get a client to release it later
+            redis_client = create_redis_client(decode_responses=True)
+        else:
+            redis_client = acquire_lock(config, verbosity)
 
     # Run embedding computation
     try:
