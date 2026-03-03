@@ -262,6 +262,16 @@ class CrossrefIngestor(Ingestor):
                 'volume': volume,
                 'issue': issue,
                 'pages': pages,
+                'abstract': work.get('abstract', ''),
+                'references': work.get('reference', []),
+                'references_count': work.get('references-count', 0),
+                'subject': work.get('subject', []),
+                'article_type': work.get('type', ''),
+                'language': work.get('language', ''),
+                'issn': work.get('ISSN', []),
+                'issn_type': work.get('issn-type', []),
+                'publisher': work.get('publisher', ''),
+                'cited_by_count': work.get('is-referenced-by-count', 0),
                 'pdf_url': url,  # DOI resolves to PDF or article page
                 'human_url': human_url,  # Publisher's human-readable URL
                 'bibtex_url': f"https://api.crossref.org/works/{doi}/transform/application/x-bibtex",
