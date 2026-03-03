@@ -62,6 +62,7 @@ class PensoftIngestor(Ingestor):
         issues_url: Optional[str] = None,
         download_pdf: bool = True,
         download_xml: bool = True,
+        recheck_xml: bool = False,
         **kwargs: Any
     ) -> None:
         """
@@ -75,6 +76,7 @@ class PensoftIngestor(Ingestor):
             issues_url: Issues URL to scrape from (constructed from journal_name if not provided)
             download_pdf: Whether to download PDFs (default: True)
             download_xml: Whether to download XML (default: True)
+            recheck_xml: Ignore xml_available=False and retry (default: False)
             **kwargs: Base class arguments (db, user_agent, robot_parser, etc.)
         """
         super().__init__(**kwargs)
@@ -84,6 +86,7 @@ class PensoftIngestor(Ingestor):
         self.eissn = eissn
         self.download_pdf = download_pdf
         self.download_xml = download_xml
+        self.recheck_xml = recheck_xml
 
         # Construct base URL and issues URL
         self.base_url = f'https://{journal_name}.pensoft.net'
@@ -705,6 +708,7 @@ class PensoftIngestor(Ingestor):
                 if needs_xml:
                     needs_xml = not has_xml
                 if (needs_xml
+                        and not self.recheck_xml
                         and existing_doc.get('xml_available')
                         is False):
                     needs_xml = False

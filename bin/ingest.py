@@ -283,6 +283,13 @@ Environment Variables for Work Control:
         help='Download XML (default: per-source config). '
              'Use --no-download-xml to suppress.'
     )
+    parser.add_argument(
+        '--recheck-xml',
+        action='store_true',
+        default=False,
+        help='Retry XML download even if previously '
+             'marked unavailable.'
+    )
 
     return parser
 
@@ -298,6 +305,7 @@ def run_ingestion(
     limit: Optional[int] = None,
     download_pdf: Optional[bool] = None,
     download_xml: Optional[bool] = None,
+    recheck_xml: bool = False,
 ) -> None:
     """
     Run a single ingestion task.
@@ -359,6 +367,8 @@ def run_ingestion(
         constructor_args['download_pdf'] = download_pdf
     if download_xml is not None:
         constructor_args['download_xml'] = download_xml
+    if recheck_xml:
+        constructor_args['recheck_xml'] = True
 
     # Create and run the ingestor
     ingestor = ingestor_class(**constructor_args)
@@ -464,6 +474,7 @@ def main() -> int:
                     limit=env_config.get('limit'),
                     download_pdf=args.download_pdf,
                     download_xml=args.download_xml,
+                    recheck_xml=args.recheck_xml,
                 )
         elif args.publication:
             # Use predefined source

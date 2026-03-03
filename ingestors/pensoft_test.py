@@ -341,6 +341,40 @@ class TestXmlAvailability(unittest.TestCase):
         # Should not have fetched anything (PDF exists, XML marked unavailable)
         ing._get_with_rate_limit.assert_not_called()
 
+    def test_recheck_xml_ignores_unavailable(self):
+        """With recheck_xml=True, retry even if xml_available is False."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=True)
+        existing = {
+            '_id': 'fake',
+            'xml_available': False,
+            '_attachments': {
+                'article.pdf': {'content_type': 'application/pdf'},
+            },
+        }
+        db.__getitem__ = MagicMock(return_value=existing)
+
+        ing = _make_ingestor(db=db, recheck_xml=True)
+
+        xml_content = b'<?xml version="1.0"?>\n<root>data</root>'
+        ing._get_with_rate_limit = MagicMock(
+            return_value=self._make_response(xml_content)
+        )
+
+        documents = [{
+            'pdf_url': 'https://mycokeys.pensoft.net/article/12345/download/pdf/67890',
+            'xml_url': 'https://mycokeys.pensoft.net/article/12345/download/xml/',
+            'url': 'https://mycokeys.pensoft.net/article/12345/',
+        }]
+
+        ing._ingest_documents(documents, {}, bibtex_link='')
+        # Should have fetched the XML URL despite xml_available=False
+        urls_fetched = [
+            c.args[0]
+            for c in ing._get_with_rate_limit.call_args_list
+        ]
+        self.assertTrue(any('/xml/' in u for u in urls_fetched))
+
     def test_xml_available_set_false_on_http_error(self):
         """xml_available set to False when XML download returns HTTP error."""
         db = MagicMock()
