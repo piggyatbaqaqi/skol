@@ -622,5 +622,384 @@ class TestFormatUrls(unittest.TestCase):
         self.assertEqual(self.ing.format_pdf_url({}), '')
 
 
+# =========================================================================
+# Crossref XML download tests (TDD — tests written before implementation)
+#
+# CrossrefIngestor should download Crossref UNIXSD XML via the servlet API
+# and store it as 'crossref.xml' (not 'article.xml', which is reserved
+# for JATS full-text XML from publishers like Pensoft).
+#
+# API endpoint:
+#   https://doi.crossref.org/servlet/query
+#       ?pid={mailto}&format=unixsd&id={DOI}
+#
+# The XML format is metadata-only (title, contributors, abstract,
+# references, dates) — no body text, figures, or tables.
+# =========================================================================
+
+# Sample Crossref UNIXSD XML for use in tests.
+_CROSSREF_XML = (
+    b'<?xml version="1.0" encoding="UTF-8"?>\n'
+    b'<crossref_result xmlns="http://www.crossref.org/qrschema/3.0">\n'
+    b'  <query_result><body><query status="resolved">\n'
+    b'    <doi>10.3390/jof9010042</doi>\n'
+    b'    <doi_record>\n'
+    b'      <crossref xmlns="http://www.crossref.org/schema/5.4.0">\n'
+    b'        <journal><journal_article>\n'
+    b'          <titles><title>A New Species</title></titles>\n'
+    b'        </journal_article></journal>\n'
+    b'      </crossref>\n'
+    b'    </doi_record>\n'
+    b'  </query></body></query_result>\n'
+    b'</crossref_result>\n'
+)
+
+
+def _make_response(content, status_code=200):
+    """Create a mock HTTP response."""
+    resp = MagicMock()
+    resp.status_code = status_code
+    resp.content = content
+    return resp
+
+
+class TestCrossrefXmlConstructor(unittest.TestCase):
+    """Test that download_xml parameter is accepted and stored."""
+
+    def test_download_xml_defaults_true(self):
+        ing = _make_ingestor()
+        self.assertTrue(ing.download_xml)
+
+    def test_download_xml_false(self):
+        ing = _make_ingestor(download_xml=False)
+        self.assertFalse(ing.download_xml)
+
+
+class TestCrossrefXmlUrlConstruction(unittest.TestCase):
+    """Test that the Crossref XML URL is constructed correctly."""
+
+    def test_xml_url_uses_servlet_endpoint(self):
+        """_download_crossref_xml should call the servlet endpoint."""
+        ing = _make_ingestor(mailto='test@example.com')
+        ing._get_with_rate_limit = MagicMock(
+            return_value=_make_response(_CROSSREF_XML)
+        )
+
+        ing._download_crossref_xml('10.3390/jof9010042')
+
+        url = ing._get_with_rate_limit.call_args.args[0]
+        self.assertIn('doi.crossref.org/servlet/query', url)
+        self.assertIn('format=unixsd', url)
+        self.assertIn('id=10.3390/jof9010042', url)
+        self.assertIn('pid=test@example.com', url)
+
+    def test_xml_url_encodes_doi(self):
+        """DOIs with special characters are included in the URL."""
+        ing = _make_ingestor()
+        ing._get_with_rate_limit = MagicMock(
+            return_value=_make_response(_CROSSREF_XML)
+        )
+
+        ing._download_crossref_xml('10.1234/special(char)')
+
+        url = ing._get_with_rate_limit.call_args.args[0]
+        self.assertIn('10.1234/special(char)', url)
+
+
+class TestCrossrefXmlFormatDetection(unittest.TestCase):
+    """Test detection of Crossref UNIXSD format vs JATS."""
+
+    def setUp(self):
+        self.ing = _make_ingestor()
+
+    def test_crossref_result_root(self):
+        """XML with <crossref_result> root is detected as 'crossref'."""
+        xml = (
+            b'<?xml version="1.0"?>\n'
+            b'<crossref_result xmlns="http://www.crossref.org/qrschema/3.0">'
+            b'</crossref_result>'
+        )
+        self.assertEqual(self.ing._detect_xml_format(xml), 'crossref')
+
+    def test_qrschema_namespace(self):
+        """XML containing qrschema namespace is detected as 'crossref'."""
+        xml = (
+            b'<?xml version="1.0"?>\n'
+            b'<result xmlns="http://www.crossref.org/qrschema/3.0"/>'
+        )
+        self.assertEqual(self.ing._detect_xml_format(xml), 'crossref')
+
+    def test_jats_still_detected(self):
+        """JATS format is still detected correctly (no regression)."""
+        xml = (
+            b'<?xml version="1.0"?>\n'
+            b'<!DOCTYPE article PUBLIC "-//NLM//DTD JATS v1.2//EN">\n'
+            b'<article>content</article>'
+        )
+        self.assertEqual(self.ing._detect_xml_format(xml), 'jats')
+
+    def test_non_crossref_non_jats(self):
+        """Unrecognized XML returns None."""
+        xml = b'<?xml version="1.0"?>\n<root><data>hello</data></root>'
+        self.assertIsNone(self.ing._detect_xml_format(xml))
+
+
+class TestCrossrefXmlDownload(unittest.TestCase):
+    """Test _download_crossref_xml method behavior."""
+
+    def test_returns_xml_bytes(self):
+        """Successful download returns raw XML bytes."""
+        ing = _make_ingestor()
+        ing._get_with_rate_limit = MagicMock(
+            return_value=_make_response(_CROSSREF_XML)
+        )
+
+        result = ing._download_crossref_xml('10.3390/jof9010042')
+        self.assertEqual(result, _CROSSREF_XML)
+
+    def test_returns_none_on_http_error(self):
+        """Returns None on non-200 HTTP status."""
+        ing = _make_ingestor()
+        ing._get_with_rate_limit = MagicMock(
+            return_value=_make_response(b'', status_code=404)
+        )
+
+        result = ing._download_crossref_xml('10.3390/jof9010042')
+        self.assertIsNone(result)
+
+    def test_returns_none_on_non_xml(self):
+        """Returns None when response is not XML."""
+        ing = _make_ingestor()
+        ing._get_with_rate_limit = MagicMock(
+            return_value=_make_response(b'This is not XML')
+        )
+
+        result = ing._download_crossref_xml('10.3390/jof9010042')
+        self.assertIsNone(result)
+
+    def test_returns_none_on_exception(self):
+        """Returns None when HTTP request raises exception."""
+        ing = _make_ingestor()
+        ing._get_with_rate_limit = MagicMock(
+            side_effect=ConnectionError("timeout")
+        )
+
+        result = ing._download_crossref_xml('10.3390/jof9010042')
+        self.assertIsNone(result)
+
+
+class TestCrossrefXmlIngestWork(unittest.TestCase):
+    """Test that _ingest_work downloads and attaches Crossref XML."""
+
+    def _setup_ingestor(self, download_xml=True, doc_exists=False,
+                        existing_attachments=None):
+        """Create ingestor with mocked DB and HTTP for XML download tests."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=doc_exists)
+
+        if doc_exists:
+            existing = {'_id': 'fake'}
+            if existing_attachments is not None:
+                existing['_attachments'] = existing_attachments
+            db.__getitem__ = MagicMock(return_value=existing)
+
+        ing = _make_ingestor(db=db, download_xml=download_xml)
+        # Stub out PDF download — we're testing XML only
+        ing._download_pdf_with_pypaperretriever = MagicMock(
+            return_value=None
+        )
+        return ing
+
+    def test_xml_downloaded_and_attached(self):
+        """When download_xml=True, crossref.xml is attached to the doc."""
+        ing = self._setup_ingestor(download_xml=True)
+        ing._download_crossref_xml = MagicMock(
+            return_value=_CROSSREF_XML
+        )
+
+        ing._ingest_work(_make_work())
+
+        ing._download_crossref_xml.assert_called_once_with(
+            '10.3390/jof9010042'
+        )
+        # Check put_attachment was called with 'crossref.xml'
+        put_calls = ing.db.put_attachment.call_args_list
+        attachment_names = [c.args[2] for c in put_calls]
+        self.assertIn('crossref.xml', attachment_names)
+
+    def test_xml_content_type_is_application_xml(self):
+        """crossref.xml attachment uses application/xml content type."""
+        ing = self._setup_ingestor(download_xml=True)
+        ing._download_crossref_xml = MagicMock(
+            return_value=_CROSSREF_XML
+        )
+
+        ing._ingest_work(_make_work())
+
+        put_calls = ing.db.put_attachment.call_args_list
+        for call in put_calls:
+            if call.args[2] == 'crossref.xml':
+                self.assertEqual(call.args[3], 'application/xml')
+                break
+        else:
+            self.fail('No put_attachment call for crossref.xml')
+
+    def test_xml_not_downloaded_when_flag_false(self):
+        """When download_xml=False, no XML download is attempted."""
+        ing = self._setup_ingestor(download_xml=False)
+        ing._download_crossref_xml = MagicMock()
+
+        ing._ingest_work(_make_work())
+
+        ing._download_crossref_xml.assert_not_called()
+
+    def test_xml_format_field_set(self):
+        """xml_format='crossref' is set on the document."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=False)
+
+        # Track saved state so we can verify xml_format
+        saved_state: Dict[str, dict] = {}
+
+        def fake_save(doc):
+            saved_state[doc['_id']] = dict(doc)
+            return (doc['_id'], 'rev')
+
+        db.save = MagicMock(side_effect=fake_save)
+
+        def fake_getitem(doc_id):
+            return dict(saved_state.get(doc_id, {'_id': doc_id}))
+
+        db.__getitem__ = MagicMock(side_effect=fake_getitem)
+
+        ing = _make_ingestor(db=db, download_xml=True)
+        ing._download_pdf_with_pypaperretriever = MagicMock(
+            return_value=None
+        )
+        ing._download_crossref_xml = MagicMock(
+            return_value=_CROSSREF_XML
+        )
+
+        ing._ingest_work(_make_work())
+
+        # Check that xml_format was saved
+        has_crossref_format = any(
+            d.get('xml_format') == 'crossref'
+            for d in saved_state.values()
+        )
+        self.assertTrue(
+            has_crossref_format,
+            'Expected xml_format="crossref" to be saved to CouchDB',
+        )
+
+    def test_attachment_name_is_crossref_xml_not_article_xml(self):
+        """Crossref XML is stored as crossref.xml, not article.xml."""
+        ing = self._setup_ingestor(download_xml=True)
+        ing._download_crossref_xml = MagicMock(
+            return_value=_CROSSREF_XML
+        )
+
+        ing._ingest_work(_make_work())
+
+        put_calls = ing.db.put_attachment.call_args_list
+        attachment_names = [c.args[2] for c in put_calls]
+        self.assertNotIn('article.xml', attachment_names)
+        self.assertIn('crossref.xml', attachment_names)
+
+    def test_xml_download_failure_does_not_block_pdf(self):
+        """Failed XML download doesn't prevent PDF from being attached."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=False)
+        db.save.return_value = ('fake_id', 'fake_rev')
+
+        ing = _make_ingestor(db=db, download_xml=True)
+        pdf_content = b'%PDF-1.4 content'
+        ing._download_pdf_with_pypaperretriever = MagicMock(
+            return_value=(pdf_content, 'article.pdf', 'application/pdf')
+        )
+        ing._download_crossref_xml = MagicMock(return_value=None)
+
+        ing._ingest_work(_make_work())
+
+        # PDF should still be attached
+        put_calls = db.put_attachment.call_args_list
+        attachment_names = [c.args[2] for c in put_calls]
+        self.assertIn('article.pdf', attachment_names)
+
+
+class TestCrossrefXmlSkipExisting(unittest.TestCase):
+    """Test skip-existing behavior with Crossref XML attachments."""
+
+    def test_skip_when_pdf_and_crossref_xml_exist(self):
+        """Skip document that has both article.pdf and crossref.xml."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=True)
+        existing = {
+            '_id': 'fake',
+            '_attachments': {
+                'article.pdf': {'content_type': 'application/pdf'},
+                'crossref.xml': {'content_type': 'application/xml'},
+            },
+        }
+        db.__getitem__ = MagicMock(return_value=existing)
+
+        ing = _make_ingestor(db=db, download_xml=True)
+        ing._download_pdf_with_pypaperretriever = MagicMock()
+        ing._download_crossref_xml = MagicMock()
+
+        ing._ingest_work(_make_work())
+
+        ing._download_pdf_with_pypaperretriever.assert_not_called()
+        ing._download_crossref_xml.assert_not_called()
+
+    def test_add_xml_to_doc_with_pdf_only(self):
+        """Download XML for doc that has PDF but not crossref.xml."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=True)
+        existing = {
+            '_id': 'fake',
+            '_attachments': {
+                'article.pdf': {'content_type': 'application/pdf'},
+            },
+        }
+        db.__getitem__ = MagicMock(return_value=existing)
+
+        ing = _make_ingestor(db=db, download_xml=True)
+        ing._download_pdf_with_pypaperretriever = MagicMock()
+        ing._download_crossref_xml = MagicMock(
+            return_value=_CROSSREF_XML
+        )
+
+        ing._ingest_work(_make_work())
+
+        # Should not re-download PDF but should download XML
+        ing._download_pdf_with_pypaperretriever.assert_not_called()
+        ing._download_crossref_xml.assert_called_once()
+
+    def test_add_pdf_to_doc_with_xml_only(self):
+        """Download PDF for doc that has crossref.xml but not article.pdf."""
+        db = MagicMock()
+        db.__contains__ = MagicMock(return_value=True)
+        existing = {
+            '_id': 'fake',
+            '_attachments': {
+                'crossref.xml': {'content_type': 'application/xml'},
+            },
+        }
+        db.__getitem__ = MagicMock(return_value=existing)
+
+        ing = _make_ingestor(db=db, download_xml=True)
+        ing._download_pdf_with_pypaperretriever = MagicMock(
+            return_value=None
+        )
+        ing._download_crossref_xml = MagicMock()
+
+        ing._ingest_work(_make_work())
+
+        # Should attempt PDF download but not re-download XML
+        ing._download_pdf_with_pypaperretriever.assert_called_once()
+        ing._download_crossref_xml.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()
