@@ -13,6 +13,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VocabTreeWidget from './VocabTreeWidget';
 import MetricsWidget from './MetricsWidget';
+import { insertIntoDescription } from './descriptionUtils';
 import './FeatureSelectionWidget.css';
 
 /**
@@ -355,22 +356,7 @@ const FeatureSelectionWidget = ({
     }
 
     if (descriptionRef?.current) {
-      const textarea = descriptionRef.current;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-
-      // If text before cursor doesn't end with ";" (and optional whitespace), prepend "; "
-      const before = value.substring(0, start);
-      const separator = before.length > 0 && !/;\s*$/.test(before) ? '; ' : '';
-      const insert = separator + text;
-
-      textarea.value = value.substring(0, start) + insert + value.substring(end);
-      textarea.selectionStart = textarea.selectionEnd = start + insert.length;
-      textarea.focus();
-
-      const event = new Event('input', { bubbles: true });
-      textarea.dispatchEvent(event);
+      insertIntoDescription(descriptionRef.current, text);
     }
 
     setSel(new Set());

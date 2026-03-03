@@ -9,6 +9,7 @@
  * The formatted summary can be inserted into the description textarea.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { insertIntoDescription } from './descriptionUtils';
 import './MetricsWidget.css';
 
 /**
@@ -474,21 +475,7 @@ const MetricsWidget = ({
     }
 
     if (descriptionRef?.current) {
-      const textarea = descriptionRef.current;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-
-      const before = value.substring(0, start);
-      const separator = before.length > 0 && !/;\s*$/.test(before) ? '; ' : '';
-      const insert = separator + insertText;
-
-      textarea.value = value.substring(0, start) + insert + value.substring(end);
-      textarea.selectionStart = textarea.selectionEnd = start + insert.length;
-      textarea.focus();
-
-      const event = new Event('input', { bubbles: true });
-      textarea.dispatchEvent(event);
+      insertIntoDescription(descriptionRef.current, insertText);
     }
   }, [measurements, is2d, reportQ, featureName, onAddToDescription, descriptionRef]);
 

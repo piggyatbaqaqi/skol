@@ -8,6 +8,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Select from 'react-select';
+import { insertIntoDescription } from './descriptionUtils';
 import './VocabTreeWidget.css';
 
 /**
@@ -222,18 +223,7 @@ const VocabTreeWidget = ({
 
     // Insert into textarea at cursor position if ref provided
     if (descriptionRef?.current) {
-      const textarea = descriptionRef.current;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-
-      textarea.value = value.substring(0, start) + text + value.substring(end);
-      textarea.selectionStart = textarea.selectionEnd = start + text.length;
-      textarea.focus();
-
-      // Trigger change event for React controlled components
-      const event = new Event('input', { bubbles: true });
-      textarea.dispatchEvent(event);
+      insertIntoDescription(descriptionRef.current, text);
     }
 
     // Clear selections after adding
