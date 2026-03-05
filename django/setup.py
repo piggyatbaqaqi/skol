@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="skol-django",
-    version="0.1.0",
+    version="0.2.0",
     description="Django web application for SKOL taxonomic search and user management",
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     license="GPL-3.0-or-later",
