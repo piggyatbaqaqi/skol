@@ -38,3 +38,6 @@ deb_dist/
 dist/
 *.egg-info/
 *.egg
+
+# Soffice locks
+.~lock.*
