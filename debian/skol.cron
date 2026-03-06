@@ -58,5 +58,4 @@ SKIP_EXISTING=1
 # Daily admin report at 6am — stdout goes to MAILTO, emails to opted-in users
 0 6 * * * skol /opt/skol/bin/daily_report --send 2>> ${LOGDIR}/daily-report.log
 # Update fungaria registry from Index Herbariorum monthly (1st of each month at 3am)
-0 3 1 * * skol time /opt/skol/bin/manage_fungaria download > ${LOGDIR}/manage-fungaria.log 2>&1
-./
+0 3 1 * * skol time /opt/skol/bin/manage_fungaria download --expire=0 > ${LOGDIR}/manage-fungaria.log 2>&1
