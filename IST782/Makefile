@@ -1,4 +1,4 @@
-IMAGES = images/skol_architecture.png images/skol_legend.png images/skol_architecture_lr_left.png images/skol_architecture_lr_right.png
+IMAGES = images/skol_architecture.png images/skol_legend.png images/skol_architecture_lr_left.png images/skol_architecture_lr_right.png images/skol_architecture_by_subproject_left.png images/skol_architecture_by_subproject_right.png
 DOCS = portfolio2.pdf
 
 .PHONY: all clean
