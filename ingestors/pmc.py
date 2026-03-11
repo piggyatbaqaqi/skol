@@ -85,14 +85,21 @@ class PmcBiocIngestor(Ingestor):
             processed += 1
 
     def _discover_pmcids(self) -> List[str]:
-        """Discover PMCIDs via E-utilities esearch, handling pagination."""
+        """Discover PMCIDs via E-utilities esearch, handling pagination.
+
+        Restricts to the Open Access subset since BioC JSON is only
+        available for OA articles.
+        """
         all_ids: List[str] = []
         retstart = 0
+        # The BioC JSON API (pmcoa.cgi) only serves OA articles,
+        # so restrict discovery to match.
+        term = f'{self.journal_search_term} AND "open access"[filter]'
 
         while True:
             params: Dict[str, Any] = {
                 "db": "pmc",
-                "term": self.journal_search_term,
+                "term": term,
                 "retmode": "json",
                 "retmax": 500,
                 "retstart": retstart,
