@@ -590,15 +590,15 @@ class TestLimitFlag(unittest.TestCase):
 
 
 class TestDocIdsFlag(unittest.TestCase):
-    """Test doc_ids flag bypasses discovery."""
+    """Test pmcids flag bypasses discovery."""
 
-    def test_doc_ids_skips_discovery(self) -> None:
-        """doc_ids processes specified PMCIDs without esearch."""
+    def test_pmcids_skips_discovery(self) -> None:
+        """pmcids processes specified PMCIDs without esearch."""
         db = MagicMock()
         db.__contains__ = MagicMock(return_value=False)
         db.save = MagicMock(return_value=("id", "rev"))
 
-        ing = _make_ingestor(db=db, doc_ids=["1234567"])
+        ing = _make_ingestor(db=db, pmcids=["1234567"])
         bioc = _make_bioc_json(pmcid="PMC1234567")
         mock_resp = _make_mock_response(json_data=bioc)
         ing.http_client.get = MagicMock(return_value=mock_resp)
@@ -609,13 +609,13 @@ class TestDocIdsFlag(unittest.TestCase):
         self.assertEqual(ing.http_client.get.call_count, 1)
         db.save.assert_called()
 
-    def test_doc_ids_processes_all_specified(self) -> None:
-        """All specified doc_ids are processed."""
+    def test_pmcids_processes_all_specified(self) -> None:
+        """All specified pmcids are processed."""
         db = MagicMock()
         db.__contains__ = MagicMock(return_value=False)
         db.save = MagicMock(return_value=("id", "rev"))
 
-        ing = _make_ingestor(db=db, doc_ids=["1111111", "2222222"])
+        ing = _make_ingestor(db=db, pmcids=["1111111", "2222222"])
         bioc = _make_bioc_json()
         mock_resp = _make_mock_response(json_data=bioc)
         ing.http_client.get = MagicMock(return_value=mock_resp)

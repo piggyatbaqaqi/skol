@@ -266,6 +266,21 @@ Environment Variables for Work Control:
         help='Process at most N items (default: $LIMIT)'
     )
     parser.add_argument(
+        '--doc-id', '--doc-ids',
+        type=str,
+        default=None,
+        dest='doc_ids',
+        help='Process only specific document ID(s), comma-separated'
+    )
+    parser.add_argument(
+        '--pmcid', '--pmcids',
+        type=str,
+        default=None,
+        dest='pmcids',
+        help='Process only specific PMC ID(s), comma-separated '
+             '(e.g. 1234567 or PMC1234567)'
+    )
+    parser.add_argument(
         '-v', '--verbosity',
         type=int,
         default=2,
@@ -325,6 +340,7 @@ def run_ingestion(
     recheck_xml: bool = False,
     download_bioc_json: Optional[bool] = None,
     recheck_bioc_json: bool = False,
+    pmcids: Optional[List[str]] = None,
 ) -> None:
     """
     Run a single ingestion task.
@@ -343,6 +359,7 @@ def run_ingestion(
         recheck_xml: Retry XML even if marked unavailable
         download_bioc_json: Override BioC JSON download (None = config)
         recheck_bioc_json: Retry BioC JSON even if marked unavailable
+        pmcids: If set, process only these source-specific IDs
     """
     # Set up robot parser
     source = config.get('source', 'unknown')
@@ -395,6 +412,8 @@ def run_ingestion(
         constructor_args['download_bioc_json'] = download_bioc_json
     if recheck_bioc_json:
         constructor_args['recheck_bioc_json'] = True
+    if pmcids is not None:
+        constructor_args['pmcids'] = pmcids
 
     # Create and run the ingestor
     ingestor = ingestor_class(**constructor_args)
@@ -451,6 +470,14 @@ def main() -> int:
     if (args.rss or args.local) and not args.source:
         parser.error("--source is required when using --rss or --local")
 
+    # Parse --pmcid into pmcids (strip optional PMC prefix)
+    pmcids = None
+    if args.pmcids:
+        pmcids = [
+            pmcid.removeprefix('PMC')
+            for pmcid in args.pmcids.split(',')
+        ]
+
     try:
         # Connect to CouchDB
         if args.verbosity >= 2:
@@ -503,6 +530,7 @@ def main() -> int:
                     recheck_xml=args.recheck_xml,
                     download_bioc_json=args.download_bioc_json,
                     recheck_bioc_json=args.recheck_bioc_json,
+                    pmcids=pmcids,
                 )
         elif args.publication:
             # Use predefined source
@@ -535,6 +563,7 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
+                pmcids=pmcids,
             )
         elif args.rss:
             # Direct RSS mode - construct config dict
@@ -561,6 +590,7 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
+                pmcids=pmcids,
             )
         elif args.local:
             # Direct local mode - construct config dict
@@ -588,6 +618,7 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
+                pmcids=pmcids,
             )
 
         if args.verbosity >= 2:

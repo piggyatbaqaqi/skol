@@ -40,7 +40,7 @@ class PmcBiocIngestor(Ingestor):
         dry_run: Optional[bool] = None,
         force: Optional[bool] = None,
         limit: Optional[int] = None,
-        doc_ids: Optional[List[str]] = None,
+        pmcids: Optional[List[str]] = None,
         skip_existing: Optional[bool] = None,
         incremental: Optional[bool] = None,
         download_bioc_json: bool = True,
@@ -55,7 +55,7 @@ class PmcBiocIngestor(Ingestor):
         self.dry_run = dry_run if dry_run is not None else config.get('dry_run', False)
         self.force = force if force is not None else config.get('force', False)
         self.limit = limit if limit is not None else config.get('limit')
-        self.doc_ids = doc_ids if doc_ids is not None else config.get('doc_ids')
+        self.pmcids = pmcids if pmcids is not None else config.get('pmcids')
         self.skip_existing = (
             skip_existing if skip_existing is not None
             else config.get('skip_existing', False)
@@ -69,7 +69,7 @@ class PmcBiocIngestor(Ingestor):
 
     def ingest(self) -> None:
         """Discover and ingest articles from PMC."""
-        pmcids = (self.doc_ids if self.doc_ids is not None
+        pmcids = (self.pmcids if self.pmcids is not None
                   else self._discover_pmcids())
 
         if self.verbosity >= 2:
