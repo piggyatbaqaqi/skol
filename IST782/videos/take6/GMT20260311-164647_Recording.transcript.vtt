@@ -1,0 +1,354 @@
+WEBVTT
+
+1
+00:00:04.080 --> 00:00:06.890
+La Monte Yarroll: I'm Lamont Henry Piggy Yarrell.
+
+2
+00:00:07.040 --> 00:00:12.049
+La Monte Yarroll: This is my Syracuse University Master's in Applied Data Science portfolio.
+
+3
+00:00:13.070 --> 00:00:15.050
+La Monte Yarroll: I'm a data hamster.
+
+4
+00:00:15.480 --> 00:00:18.139
+La Monte Yarroll: I've hoarded my own data for years.
+
+5
+00:00:18.670 --> 00:00:24.939
+La Monte Yarroll: Turning this data into actionable insights is a motivating factor in getting my degree in data science.
+
+6
+00:00:26.580 --> 00:00:30.609
+La Monte Yarroll: I'm going to discuss 3 projects that I did as part of my degree.
+
+7
+00:00:30.710 --> 00:00:36.000
+La Monte Yarroll: The Name Navigator. Sugar Bowl, in which we introduce glycemic increment.
+
+8
+00:00:36.280 --> 00:00:38.280
+La Monte Yarroll: And the synoptic Key of Life.
+
+9
+00:00:41.440 --> 00:00:47.249
+La Monte Yarroll: The Name Navigator is a SQL package to encode cultural awareness of naming practices.
+
+10
+00:00:49.720 --> 00:00:55.660
+La Monte Yarroll: This is a conceptual model. Names are made of particles, like yarl or piggy.
+
+11
+00:00:55.890 --> 00:00:59.440
+La Monte Yarroll: Each particle is represented in the target alphabet.
+
+12
+00:00:59.600 --> 00:01:04.929
+La Monte Yarroll: In a Latinized form, and in the International Phonetic Alphabet for pronunciation.
+
+13
+00:01:05.570 --> 00:01:09.260
+La Monte Yarroll: The order and use are locale-specific.
+
+14
+00:01:09.630 --> 00:01:12.919
+La Monte Yarroll: For instance, in Georgian, as spoken in Georgia.
+
+15
+00:01:13.070 --> 00:01:17.229
+La Monte Yarroll: Formal address is Baton, or Kalbaton.
+
+16
+00:01:17.400 --> 00:01:25.300
+La Monte Yarroll: Followed by… First given name. Unlike English, where it's Mr. or Ms. followed by last name.
+
+17
+00:01:27.670 --> 00:01:33.390
+La Monte Yarroll: This is the logical model, which you can compare to the conceptual model at your own leisure.
+
+18
+00:01:35.590 --> 00:01:38.510
+La Monte Yarroll: Here's an excerpt from the UI wireframe.
+
+19
+00:01:39.360 --> 00:01:45.180
+La Monte Yarroll: This shows the three encodings of my name, particles, in Georgian as spoken in Georgia.
+
+20
+00:01:45.680 --> 00:01:51.860
+La Monte Yarroll: In Georgian, all nouns end in a vowel, so Lamont becomes Lamonti.
+
+21
+00:01:52.130 --> 00:01:58.100
+La Monte Yarroll: Also, there are no diphthongs in Georgian, so Yarl becomes EAROLI.
+
+22
+00:01:58.940 --> 00:02:04.970
+La Monte Yarroll: This package is available with a permissive license for use in customer relationship management systems.
+
+23
+00:02:08.669 --> 00:02:13.759
+La Monte Yarroll: Second is the Sugar Bowl project, which we introduced the glycemic increment metric.
+
+24
+00:02:14.530 --> 00:02:18.590
+La Monte Yarroll: This is a text mining project in individualized medicine.
+
+25
+00:02:19.100 --> 00:02:21.860
+La Monte Yarroll: This is joint work with Jen Belasi.
+
+26
+00:02:22.910 --> 00:02:28.390
+La Monte Yarroll: A CGM is a medical device which records blood glucose every 5 minutes.
+
+27
+00:02:28.600 --> 00:02:32.409
+La Monte Yarroll: On the right, we see the app. The green dots are meal records.
+
+28
+00:02:32.640 --> 00:02:36.219
+La Monte Yarroll: I've been collecting data on every meal for several years now.
+
+29
+00:02:39.810 --> 00:02:46.540
+La Monte Yarroll: Here's an initial analysis of the meal descriptions. As you can see, I ate a lot of peanut butter and cheese.
+
+30
+00:02:46.890 --> 00:02:50.290
+La Monte Yarroll: Internet points to anyone who can spot my favorite restaurants.
+
+31
+00:02:53.040 --> 00:03:01.990
+La Monte Yarroll: Our goal is to predict Blood sugar consequences of the meals and portions that the patient actually consumes.
+
+32
+00:03:02.260 --> 00:03:13.389
+La Monte Yarroll: The standard metrics for this, glycemic index and glycemic load, are based on fasting conditions, standardized portions, and are normalized over a population.
+
+33
+00:03:13.820 --> 00:03:20.910
+La Monte Yarroll: By contrast, glycemic increment applies to the actual foods and portions that the patient consumes.
+
+34
+00:03:21.460 --> 00:03:25.300
+La Monte Yarroll: Glycemic increment is the area under the glucose curve
+
+35
+00:03:25.430 --> 00:03:30.700
+La Monte Yarroll: Starting at the level of the start of the meal, and continuing for several hours.
+
+36
+00:03:34.670 --> 00:03:40.619
+La Monte Yarroll: We applied text mining methods to extract terms and their glycemic increment consequences.
+
+37
+00:03:40.930 --> 00:03:47.479
+La Monte Yarroll: We can see that things like donuts, croissants, and dried fruit all cause large swings of glycemic increment.
+
+38
+00:03:47.580 --> 00:03:55.529
+La Monte Yarroll: Foods with glycemic increment near zero are peanut butter, cashews, and cottage cheese with peach preserves.
+
+39
+00:03:55.680 --> 00:04:01.430
+La Monte Yarroll: It is interesting that the small quantity of peach preserves eaten with cottage cheese has a negligible effect.
+
+40
+00:04:02.490 --> 00:04:05.389
+La Monte Yarroll: Individualized medicine is a growing field.
+
+41
+00:04:05.590 --> 00:04:18.019
+La Monte Yarroll: The availability of inexpensive sensors that can provide information from activity, blood pressure, blood oxygen, and in this case, blood glucose, have created a plethora of data.
+
+42
+00:04:18.579 --> 00:04:25.199
+La Monte Yarroll: Patients can use their own data to produce suitable guidance for controlling blood sugar through diet.
+
+43
+00:04:28.170 --> 00:04:30.659
+La Monte Yarroll: The last project is the Synoptic Key of Life.
+
+44
+00:04:31.000 --> 00:04:38.680
+La Monte Yarroll: The goal is to make species descriptions in the open access and public domain mycological literature accessible to the amateur.
+
+45
+00:04:39.000 --> 00:04:41.700
+La Monte Yarroll: We built this project over 5 courses.
+
+46
+00:04:41.920 --> 00:04:44.180
+La Monte Yarroll: These are my collaborators.
+
+47
+00:04:47.080 --> 00:04:53.289
+La Monte Yarroll: Here's an overview of the skull architecture as seen through the classes which implemented components.
+
+48
+00:04:53.660 --> 00:04:57.080
+La Monte Yarroll: I'll concentrate mainly on machine learning and AI models.
+
+49
+00:04:57.800 --> 00:05:01.089
+La Monte Yarroll: On the left, we have the websites that we scrape for articles.
+
+50
+00:05:01.500 --> 00:05:11.320
+La Monte Yarroll: This dark blue block on the right is a PySpark pipeline that builds a classifier to extract species names and their descriptions from the literature.
+
+51
+00:05:11.950 --> 00:05:17.040
+La Monte Yarroll: These names and descriptions are combined into taxa objects in the light blue box.
+
+52
+00:05:18.400 --> 00:05:21.380
+La Monte Yarroll: The tacks are then processed in two separate paths.
+
+53
+00:05:21.900 --> 00:05:28.759
+La Monte Yarroll: The upper path uses an embedding into searchable semantic space with the SBIRT small language model.
+
+54
+00:05:29.320 --> 00:05:35.049
+La Monte Yarroll: This embedding is then used to find taxa that are similar to a description provided by the user.
+
+55
+00:05:35.810 --> 00:05:50.250
+La Monte Yarroll: The lower path uses a different small language model, Mistral 7B, which translates the free-form text description into a hierarchical representation of features, subfeatures, and values.
+
+56
+00:05:51.030 --> 00:05:57.729
+La Monte Yarroll: These representations are refined through constrained decoding, which limits the output to valid JSON structures.
+
+57
+00:05:58.360 --> 00:06:03.240
+La Monte Yarroll: The vocabulary is then normalized using similarity to published ontologies.
+
+58
+00:06:04.410 --> 00:06:08.359
+La Monte Yarroll: Finally, we have the website built with Django and React.
+
+59
+00:06:11.190 --> 00:06:13.629
+La Monte Yarroll: Here's the search page from the website.
+
+60
+00:06:14.920 --> 00:06:23.069
+La Monte Yarroll: Here we have an in-progress description built by the user. On the right, we have a set of tools for refining the description.
+
+61
+00:06:26.350 --> 00:06:32.789
+La Monte Yarroll: This is a search result page. We have the full species name and the description from the literature.
+
+62
+00:06:33.090 --> 00:06:39.149
+La Monte Yarroll: We also provide links to a local PDF, if it's available, and the link back to the original source.
+
+63
+00:06:41.790 --> 00:06:50.150
+La Monte Yarroll: This is the simplest of the feature tools, which creates nested menus based on the JSON hierarchical representations of descriptions.
+
+64
+00:06:50.980 --> 00:06:55.489
+La Monte Yarroll: This is a static set of menus and is not tied to the current description.
+
+65
+00:06:58.040 --> 00:07:07.879
+La Monte Yarroll: These two tools are based on decision tree models built on the fly from the top few taxa that most closely match the current description.
+
+66
+00:07:08.520 --> 00:07:12.469
+La Monte Yarroll: The decision tree on the left is based on just the text of the taxon.
+
+67
+00:07:13.430 --> 00:07:19.510
+La Monte Yarroll: the decision… Tree on the right is based on the hierarchical JSON representation.
+
+68
+00:07:22.990 --> 00:07:29.230
+La Monte Yarroll: The final feature tool helps the user collect statistics for microscopic features, like spores.
+
+69
+00:07:29.490 --> 00:07:32.459
+La Monte Yarroll: It keeps a permanent record of every measurement.
+
+70
+00:07:32.910 --> 00:07:37.090
+La Monte Yarroll: The count of samples N turns to green once it gets to 30.
+
+71
+00:07:37.520 --> 00:07:41.630
+La Monte Yarroll: Metrics can be one-dimensional, for example, the length of parentheses.
+
+72
+00:07:41.840 --> 00:07:45.049
+La Monte Yarroll: Or two-dimensional, for example, spores.
+
+73
+00:07:45.580 --> 00:07:56.779
+La Monte Yarroll: 2D measurements can also report Q-value, which is the ratio of length to width. Q-value of 1.0 indicates round spores. Higher Q values indicate more elongated spores.
+
+74
+00:07:57.990 --> 00:08:01.900
+La Monte Yarroll: The taxonomist can add whatever measurable features they care to.
+
+75
+00:08:03.540 --> 00:08:08.379
+La Monte Yarroll: Website also includes typical features, like account and settings management.
+
+76
+00:08:09.260 --> 00:08:14.610
+La Monte Yarroll: My aspiration for the site is to get more people doing descriptive taxonomy for fungi.
+
+77
+00:08:15.330 --> 00:08:23.229
+La Monte Yarroll: The website currently is in alpha test. I have several small projects planned to improve the classifier before I go beta.
+
+78
+00:08:27.660 --> 00:08:32.340
+La Monte Yarroll: Here are a few… development themes from the Synoptic Key of Life.
+
+79
+00:08:33.720 --> 00:08:37.540
+La Monte Yarroll: I recruited and coordinated several teams of fellow students.
+
+80
+00:08:37.880 --> 00:08:43.430
+La Monte Yarroll: We planned our work and managed risk by using the XP planning game via Trello.
+
+81
+00:08:44.380 --> 00:08:52.269
+La Monte Yarroll: We used a wide range of open-source technologies, ranging from PostgreSQL to fine-tuning and SLM.
+
+82
+00:08:53.790 --> 00:08:57.219
+La Monte Yarroll: From my last two classes, I leveraged Claude Code.
+
+83
+00:08:57.360 --> 00:09:03.010
+La Monte Yarroll: I maintained engineering discipline by using test-driven development and incremental.
+
+84
+00:09:04.050 --> 00:09:08.690
+La Monte Yarroll: Regression tests, and by applying linters and type checkers.
+
+85
+00:09:09.070 --> 00:09:18.170
+La Monte Yarroll: I made key architectural decisions based on the availability of compute resources, using traditional classifiers where compute resources were constrained.
+
+86
+00:09:18.280 --> 00:09:24.420
+La Monte Yarroll: Only resorting to LLMs and SLMs where they offered comp… unique capabilities.
+
+87
+00:09:27.830 --> 00:09:31.050
+La Monte Yarroll: Here are the links for those interested in diving deeper.
+
+88
+00:09:31.660 --> 00:09:32.680
+La Monte Yarroll: Thank you.
+
