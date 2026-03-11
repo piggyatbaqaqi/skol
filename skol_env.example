@@ -40,6 +40,13 @@ DEFAULT_FROM_EMAIL=skol@example.com
 MAILTO=admin@example.com
 
 # =============================================================================
+# NCBI E-utilities Configuration
+# =============================================================================
+# API key from https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/
+# Without a key, rate limit is 3 requests/sec; with a key, 10 requests/sec
+NCBI_API_KEY=
+
+# =============================================================================
 # Logging Configuration
 # =============================================================================
 LOGDIR=/var/log/skol

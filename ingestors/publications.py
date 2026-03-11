@@ -53,6 +53,7 @@ class PublicationRegistry:
         'pensoft': 'https://pensoft.net/robots.txt',
         'mycology-taylor-francis': 'https://www.tandfonline.com/robots.txt',
         'internet-archive': 'https://archive.org/robots.txt',
+        'pmc': 'https://www.ncbi.nlm.nih.gov/robots.txt',
     }
 
     # Publication source configurations
@@ -74,6 +75,17 @@ class PublicationRegistry:
             'ingestor_class': 'IngentaIngestor',
             'mode': 'index',
             'index_url': 'https://api.ingentaconnect.com/content/wfbi/fuse?format=index',
+        },
+        'fuse-pmc': {
+            'name': 'Fungal Systematics and Evolution (PMC)',
+            'journal': 'Fungal Systematics and Evolution',
+            'address': 'https://pmc.ncbi.nlm.nih.gov/',
+            'source': 'pmc',
+            'ingestor_class': 'PmcBiocIngestor',
+            'mode': 'api',
+            'journal_search_term': '"Fungal Syst Evol"[journal]',
+            'issn': '2589-3823',
+            'eissn': '2589-3831',
         },
         'mycotaxon-rss': {
             'name': 'Mycotaxon',

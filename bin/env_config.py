@@ -184,6 +184,9 @@ def get_env_config() -> Dict[str, Any]:
         'spark_driver_memory': _get_env('SPARK_DRIVER_MEMORY', '4g'),
         'spark_executor_memory': _get_env('SPARK_EXECUTOR_MEMORY', '4g'),
 
+        # NCBI E-utilities API key (optional, increases rate limit from 3 to 10 rps)
+        'ncbi_api_key': _get_env('NCBI_API_KEY', '') or None,
+
         # General settings
         'verbosity': int(_get_env('VERBOSITY', '1')),
 
@@ -211,6 +214,7 @@ def get_env_config() -> Dict[str, Any]:
         'model_version', 'classifier_model_expire',
         'embedding_name',
         'couchdb_pattern', 'pattern',
+        'ncbi_api_key',
         'bahir_package', 'spark_driver_memory', 'spark_executor_memory'
     ]:
         arg_name = '--' + key.replace('_', '-')
