@@ -72,9 +72,14 @@ class PmcBiocIngestor(Ingestor):
         pmcids = (self.doc_ids if self.doc_ids is not None
                   else self._discover_pmcids())
 
+        if self.verbosity >= 2:
+            print(f"Found {len(pmcids)} article(s) to process")
+
         processed = 0
         for pmcid in pmcids:
             if self.limit is not None and processed >= self.limit:
+                if self.verbosity >= 2:
+                    print(f"Reached limit of {self.limit}")
                 break
             self._ingest_article(pmcid)
             processed += 1
@@ -199,27 +204,39 @@ class PmcBiocIngestor(Ingestor):
         resources (overridden by recheck_bioc_json).
         """
         doc_id = self._make_doc_id(pmcid)
+        pmc_url = self.PMC_ARTICLE_URL_TEMPLATE.format(pmcid)
 
         # Check for existing document by PMC doc ID
         existing_by_id = None
         if doc_id in self.db:
             existing_by_id = self.db[doc_id]
             if not self.force and "bioc_json" in existing_by_id:
+                if self.verbosity >= 2:
+                    print(f"Skipping PMC{pmcid} (already has bioc_json)")
                 return
             # Skip if previously marked unavailable (unless rechecking)
             if (not self.recheck_bioc_json
                     and existing_by_id.get("bioc_json_available") is False):
+                if self.verbosity >= 2:
+                    print(f"Skipping PMC{pmcid} (bioc_json unavailable)")
                 return
 
         if self.dry_run:
+            if self.verbosity >= 2:
+                print(f"Dry run: PMC{pmcid}")
             return
 
         if not self.download_bioc_json:
             return
 
+        if self.verbosity >= 3:
+            print(f"Fetching BioC JSON for PMC{pmcid}")
+
         # Fetch BioC JSON
         bioc = self._fetch_bioc_json(pmcid)
         if bioc is None:
+            if self.verbosity >= 1:
+                print(f"  BioC JSON unavailable for PMC{pmcid}")
             # Record that BioC JSON is not available
             if existing_by_id is not None:
                 existing_by_id["bioc_json_available"] = False
@@ -248,12 +265,17 @@ class PmcBiocIngestor(Ingestor):
             existing_doc["pmcid"] = metadata["pmcid"]
             existing_doc["bioc_json_available"] = True
             self.db.save(existing_doc)
+            if self.verbosity >= 2:
+                print(f"Enriched existing doc with BioC JSON: "
+                      f"PMC{pmcid}")
         elif existing_by_id is not None:
             # Update existing PMC document (force reprocess)
             existing_by_id["bioc_json"] = bioc
             existing_by_id["bioc_json_available"] = True
             set_timestamps(existing_by_id)
             self.db.save(existing_by_id)
+            if self.verbosity >= 2:
+                print(f"Updated BioC JSON: PMC{pmcid}")
         else:
             # Create new document
             doc = {
@@ -270,3 +292,6 @@ class PmcBiocIngestor(Ingestor):
             }
             set_timestamps(doc, is_new=True)
             self.db.save(doc)
+            if self.verbosity >= 2:
+                print(f"Added: PMC{pmcid} — "
+                      f"{metadata['title'][:60]}")
