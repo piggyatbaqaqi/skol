@@ -60,6 +60,9 @@ SKIP_EXISTING=1
 40 15 * * * skol time /opt/skol/bin/ingest --publication mycobiology-pmc > ${LOGDIR}/ingest-mycobiology-pmc.log 2>&1
 50 15 * * * skol time /opt/skol/bin/ingest --publication curr-med-mycol-pmc > ${LOGDIR}/ingest-curr-med-mycol-pmc.log 2>&1
 0 16 * * * skol time /opt/skol/bin/ingest --publication med-mycol-case-rep-pmc > ${LOGDIR}/ingest-med-mycol-case-rep-pmc.log 2>&1
+# Generate YEDDA training data from newly ingested articles (after PMC/Pensoft ingesters)
+0 17 * * * skol time /opt/skol/bin/bioc_to_yedda --all --output-to couchdb --skip-existing > ${LOGDIR}/bioc-to-yedda.log 2>&1
+30 17 * * * skol time /opt/skol/bin/jats_to_yedda --all --output-to couchdb --skip-existing > ${LOGDIR}/jats-to-yedda.log 2>&1
 0 0 * * * skol time /opt/skol/bin/predict_classifier --cores=2 --batch-size=24 --spark-driver-memory=8g --spark-executor-memory=8g --union-batch-size=1000 --verbosity=2 --save-text=lazy --incremental --incremental-batch-size=50 --retry-failed-extraction > ${LOGDIR}/predict-classifier.log 2>&1
 0 4 * * * skol time /opt/skol/bin/extract_taxa_to_couchdb --verbosity=2 > ${LOGDIR}/extract-taxa-to-couchdb.log 2>&1
 0 6 * * * skol time /opt/skol/bin/embed_taxa --verbosity=2 --expire None --force > ${LOGDIR}/embed-taxa.log 2>&1
