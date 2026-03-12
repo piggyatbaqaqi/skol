@@ -1165,7 +1165,10 @@ class PDFFromTaxaView(APIView):
 
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType, MeasurementSet
+from .models import (
+    Collection, SearchHistory, ExternalIdentifier,
+    IdentifierType, MeasurementSet, MeasurementUnit,
+)
 from .serializers import (
     CollectionListSerializer,
     CollectionDetailSerializer,
@@ -2881,3 +2884,17 @@ class MeasurementSetDetailView(APIView):
             )
         measurement_set.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MeasurementUnitListView(APIView):
+    """
+    GET /api/measurement-units/
+    List all available measurement units (admin-configured).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        units = MeasurementUnit.objects.values_list(
+            'symbol', flat=True
+        )
+        return Response({'units': list(units)})

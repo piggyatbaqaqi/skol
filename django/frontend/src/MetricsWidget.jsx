@@ -43,7 +43,7 @@ function fmt(n) {
 /**
  * Compute statistics and formatted text from raw measurements.
  */
-function computeStats(measurements, is2d, reportQ, featureName) {
+function computeStats(measurements, is2d, reportQ, featureName, unit) {
   const n = measurements.length;
   if (n === 0) return { text: '', n: 0 };
 
@@ -58,7 +58,7 @@ function computeStats(measurements, is2d, reportQ, featureName) {
       .sort((a, b) => a - b);
 
     if (widths.length > 0) {
-      text += ` \u00d7 (${fmt(widths[0])}-) ${fmt(percentile(widths, 25))} - ${fmt(percentile(widths, 75))} (-${fmt(widths[widths.length - 1])}) \u00b5m`;
+      text += ` \u00d7 (${fmt(widths[0])}-) ${fmt(percentile(widths, 25))} - ${fmt(percentile(widths, 75))} (-${fmt(widths[widths.length - 1])}) ${unit}`;
 
       if (reportQ) {
         const qs = measurements
@@ -71,10 +71,10 @@ function computeStats(measurements, is2d, reportQ, featureName) {
         }
       }
     } else {
-      text += ` \u00b5m`;
+      text += ` ${unit}`;
     }
   } else {
-    text += ` \u00b5m`;
+    text += ` ${unit}`;
   }
 
   return { text, n };
@@ -106,6 +106,9 @@ const MetricsWidget = ({
   // Settings
   const [is2d, setIs2d] = useState(true);
   const [reportQ, setReportQ] = useState(true);
+  const [unit, setUnit] = useState('\u00b5m');
+  // Available units from admin configuration
+  const [availableUnits, setAvailableUnits] = useState(['\u00b5m']);
   // Sample entry
   const [inputA, setInputA] = useState('');
   const [inputB, setInputB] = useState('');
@@ -122,6 +125,28 @@ const MetricsWidget = ({
   const saveTimerRef = useRef(null);
   // Ref for first input field
   const inputARef = useRef(null);
+
+  /**
+   * Fetch available measurement units from the server
+   */
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}/measurement-units/`,
+          { credentials: 'same-origin' }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.units && data.units.length > 0) {
+            setAvailableUnits(data.units);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch measurement units:', err);
+      }
+    })();
+  }, [apiBaseUrl]);
 
   /**
    * Fetch all measurement sets for the active collection
@@ -153,12 +178,14 @@ const MetricsWidget = ({
         setFeatureName(first.feature);
         setIs2d(first.is_2d);
         setReportQ(first.report_q);
+        setUnit(first.unit || '\u00b5m');
         setMeasurements(first.measurements || []);
       } else {
         setActiveSet(null);
         setFeatureName('spores');
         setIs2d(true);
         setReportQ(true);
+        setUnit('\u00b5m');
         setMeasurements([]);
       }
       loadedForRef.current = colId;
@@ -182,7 +209,7 @@ const MetricsWidget = ({
   /**
    * Save current measurement set to the server (create or update)
    */
-  const saveToServer = useCallback(async (ms, feature, d2, rq) => {
+  const saveToServer = useCallback(async (ms, feature, d2, rq, u) => {
     if (!collectionId) return;
     setSaving(true);
     try {
@@ -201,6 +228,7 @@ const MetricsWidget = ({
               feature: feature,
               is_2d: d2,
               report_q: rq,
+              unit: u,
               measurements: ms.measurements,
             }),
           }
@@ -230,6 +258,7 @@ const MetricsWidget = ({
               feature: feature,
               is_2d: d2,
               report_q: rq,
+              unit: u,
               measurements: ms ? ms.measurements : [],
             }),
           }
@@ -253,7 +282,7 @@ const MetricsWidget = ({
   /**
    * Auto-save with debounce when measurements, settings, or feature name change
    */
-  const scheduleSave = useCallback((updatedMeasurements, feature, d2, rq) => {
+  const scheduleSave = useCallback((updatedMeasurements, feature, d2, rq, u) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
     }
@@ -261,7 +290,7 @@ const MetricsWidget = ({
       const setToSave = activeSet
         ? { ...activeSet, measurements: updatedMeasurements }
         : { measurements: updatedMeasurements };
-      saveToServer(setToSave, feature, d2, rq);
+      saveToServer(setToSave, feature, d2, rq, u);
     }, 500);
   }, [activeSet, saveToServer]);
 
@@ -300,11 +329,11 @@ const MetricsWidget = ({
     setInputA('');
     setInputB('');
     setSelectedSample(null);
-    scheduleSave(updated, featureName, is2d, reportQ);
+    scheduleSave(updated, featureName, is2d, reportQ, unit);
 
     // Focus back to first input
     if (inputARef.current) inputARef.current.focus();
-  }, [inputA, inputB, is2d, measurements, featureName, reportQ, scheduleSave]);
+  }, [inputA, inputB, is2d, measurements, featureName, reportQ, unit, scheduleSave]);
 
   /**
    * Handle Enter key in input fields
@@ -345,8 +374,8 @@ const MetricsWidget = ({
     setSelectedSample(null);
     setInputA('');
     setInputB('');
-    scheduleSave(updated, featureName, is2d, reportQ);
-  }, [selectedSample, inputA, inputB, is2d, measurements, featureName, reportQ, scheduleSave]);
+    scheduleSave(updated, featureName, is2d, reportQ, unit);
+  }, [selectedSample, inputA, inputB, is2d, measurements, featureName, reportQ, unit, scheduleSave]);
 
   /**
    * Remove the selected sample
@@ -358,8 +387,8 @@ const MetricsWidget = ({
     setSelectedSample(null);
     setInputA('');
     setInputB('');
-    scheduleSave(updated, featureName, is2d, reportQ);
-  }, [selectedSample, measurements, featureName, is2d, reportQ, scheduleSave]);
+    scheduleSave(updated, featureName, is2d, reportQ, unit);
+  }, [selectedSample, measurements, featureName, is2d, reportQ, unit, scheduleSave]);
 
   /**
    * Select a sample from the dropdown to edit
@@ -389,6 +418,7 @@ const MetricsWidget = ({
       setFeatureName('spores');
       setIs2d(true);
       setReportQ(true);
+      setUnit('\u00b5m');
       setMeasurements([]);
       setSelectedSample(null);
       setInputA('');
@@ -401,6 +431,7 @@ const MetricsWidget = ({
       setFeatureName(set.feature);
       setIs2d(set.is_2d);
       setReportQ(set.report_q);
+      setUnit(set.unit || '\u00b5m');
       setMeasurements(set.measurements || []);
       setSelectedSample(null);
       setInputA('');
@@ -444,16 +475,16 @@ const MetricsWidget = ({
   const handleFeatureNameChange = useCallback((e) => {
     const name = e.target.value;
     setFeatureName(name);
-    scheduleSave(measurements, name, is2d, reportQ);
-  }, [measurements, is2d, reportQ, scheduleSave]);
+    scheduleSave(measurements, name, is2d, reportQ, unit);
+  }, [measurements, is2d, reportQ, unit, scheduleSave]);
 
   /**
    * Handle dimension toggle
    */
   const handleDimensionChange = useCallback((newIs2d) => {
     setIs2d(newIs2d);
-    scheduleSave(measurements, featureName, newIs2d, reportQ);
-  }, [measurements, featureName, reportQ, scheduleSave]);
+    scheduleSave(measurements, featureName, newIs2d, reportQ, unit);
+  }, [measurements, featureName, reportQ, unit, scheduleSave]);
 
   /**
    * Handle report Q toggle
@@ -461,14 +492,23 @@ const MetricsWidget = ({
   const handleReportQChange = useCallback((e) => {
     const newReportQ = e.target.checked;
     setReportQ(newReportQ);
-    scheduleSave(measurements, featureName, is2d, newReportQ);
-  }, [measurements, featureName, is2d, scheduleSave]);
+    scheduleSave(measurements, featureName, is2d, newReportQ, unit);
+  }, [measurements, featureName, is2d, unit, scheduleSave]);
+
+  /**
+   * Handle unit change
+   */
+  const handleUnitChange = useCallback((e) => {
+    const newUnit = e.target.value;
+    setUnit(newUnit);
+    scheduleSave(measurements, featureName, is2d, reportQ, newUnit);
+  }, [measurements, featureName, is2d, reportQ, scheduleSave]);
 
   /**
    * Add formatted statistics to the description textarea
    */
   const handleAddToDescription = useCallback(() => {
-    const { text } = computeStats(measurements, is2d, reportQ, featureName);
+    const { text } = computeStats(measurements, is2d, reportQ, featureName, unit);
     if (!text) return;
 
     const insertText = text + '; ';
@@ -480,10 +520,10 @@ const MetricsWidget = ({
     if (descriptionRef?.current) {
       insertIntoDescription(descriptionRef.current, insertText);
     }
-  }, [measurements, is2d, reportQ, featureName, onAddToDescription, descriptionRef]);
+  }, [measurements, is2d, reportQ, featureName, unit, onAddToDescription, descriptionRef]);
 
   // Compute current statistics
-  const stats = computeStats(measurements, is2d, reportQ, featureName);
+  const stats = computeStats(measurements, is2d, reportQ, featureName, unit);
 
   // No collection selected
   if (!collectionId) {
@@ -623,7 +663,16 @@ const MetricsWidget = ({
             />
           </>
         )}
-        <span className="metrics-unit">&micro;m</span>
+        <select
+          className="metrics-unit-select"
+          value={unit}
+          onChange={handleUnitChange}
+          aria-label="Unit of measurement"
+        >
+          {availableUnits.map(u => (
+            <option key={u} value={u}>{u}</option>
+          ))}
+        </select>
         {selectedSample === null ? (
           <button
             type="button"

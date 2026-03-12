@@ -43,6 +43,7 @@ from .views import (
     # Measurement views
     MeasurementSetListCreateView,
     MeasurementSetDetailView,
+    MeasurementUnitListView,
     # Comment/Discussion views
     CommentListCreateView,
     CommentCountView,
@@ -108,6 +109,10 @@ urlpatterns = [
          MeasurementSetListCreateView.as_view(), name='measurement-list-create'),
     path('collections/<int:collection_id>/measurements/<int:measurement_id>/',
          MeasurementSetDetailView.as_view(), name='measurement-detail'),
+
+    # Measurement units (admin-configured reference data)
+    path('measurement-units/',
+         MeasurementUnitListView.as_view(), name='measurement-units'),
 
     # Vocabulary tree endpoints
     path('vocab-tree/', VocabTreeView.as_view(), name='vocab-tree'),

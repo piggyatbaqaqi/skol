@@ -172,6 +172,18 @@
   flex-shrink: 0;
 }
 
+.metrics-unit-select {
+  font-size: 13px;
+  color: #495057;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 2px 2px;
+  width: 4em;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 .metrics-add-sample-btn,
 .metrics-update-sample-btn {
   width: 32px;
@@ -399,6 +411,12 @@
   .metrics-times,
   .metrics-unit {
     color: #a0aec0;
+  }
+
+  .metrics-unit-select {
+    color: #e2e8f0;
+    background: #2d3748;
+    border-color: #4a5568;
   }
 
   .metrics-radio {

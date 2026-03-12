@@ -386,6 +386,32 @@ class UserSettings(models.Model):
         return timezone.now() + timedelta(days=self.default_embargo_days)
 
 
+class MeasurementUnit(models.Model):
+    """
+    Admin-configurable unit of measurement for the MetricsWidget.
+
+    Controls which units appear in the unit dropdown. Each measurement set
+    records its own unit; changing the unit does not rescale values.
+    """
+    symbol = models.CharField(
+        max_length=20,
+        unique=True,
+        help_text='Display symbol (e.g., µm, mm, nm)'
+    )
+    sort_order = models.IntegerField(
+        default=0,
+        help_text='Display order in the dropdown (ascending)'
+    )
+
+    class Meta:
+        ordering = ['sort_order', 'symbol']
+        verbose_name = "Measurement Unit"
+        verbose_name_plural = "Measurement Units"
+
+    def __str__(self) -> str:
+        return self.symbol
+
+
 class MeasurementSet(models.Model):
     """
     A set of measurements for a specific feature of a collection.
@@ -412,6 +438,11 @@ class MeasurementSet(models.Model):
     report_q = models.BooleanField(
         default=True,
         help_text='Whether to include Q (length/width ratio) in the formatted output'
+    )
+    unit = models.CharField(
+        max_length=20,
+        default='\u00b5m',
+        help_text='Unit of measurement (e.g., µm, mm, nm)'
     )
     measurements = models.JSONField(
         default=list,

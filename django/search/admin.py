@@ -2,7 +2,7 @@
 Django admin configuration for search app models.
 """
 from django.contrib import admin
-from .models import IdentifierType, Collection, SearchHistory, ExternalIdentifier
+from .models import IdentifierType, Collection, SearchHistory, ExternalIdentifier, MeasurementUnit
 
 
 @admin.register(IdentifierType)
@@ -51,3 +51,11 @@ class ExternalIdentifierAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
     raw_id_fields = ['collection']
     ordering = ['-created_at']
+
+
+@admin.register(MeasurementUnit)
+class MeasurementUnitAdmin(admin.ModelAdmin):
+    """Admin configuration for MeasurementUnit model."""
+    list_display = ['symbol', 'sort_order']
+    list_editable = ['sort_order']
+    ordering = ['sort_order', 'symbol']
