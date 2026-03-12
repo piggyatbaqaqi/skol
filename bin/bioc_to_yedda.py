@@ -117,6 +117,21 @@ def _write_couchdb(
         print(f"Saved {doc_id} to CouchDB")
 
 
+def _output_exists(
+    doc_id: str,
+    output_to: str,
+    output_dir: str,
+    target_db: Any,
+) -> bool:
+    """Check whether output already exists for a document."""
+    if output_to == "file":
+        return (Path(output_dir) / f"{doc_id}.txt.ann").exists()
+    if output_to == "couchdb" and target_db is not None and doc_id in target_db:
+        doc = target_db[doc_id]
+        return "article.txt.ann" in doc.get("_attachments", {})
+    return False
+
+
 def _process_doc(
     doc: Dict[str, Any],
     doc_id: str,
@@ -201,11 +216,21 @@ def main() -> None:
         "(default: from TRAINING_DATABASE env).",
     )
 
-    # Controls.
+    # Work-skipping and partial computation options.
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be processed without writing.",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip documents that already have output in the target.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing output (overrides --skip-existing).",
     )
     parser.add_argument(
         "--limit",
@@ -231,8 +256,14 @@ def main() -> None:
 
     verbosity = 0 if args.quiet else args.verbose
     config = get_env_config()
-    database = args.database or config["couchdb_database"]
 
+    # Merge env_config defaults with explicit CLI flags.
+    skip_existing = args.skip_existing or config.get("skip_existing", False)
+    force = args.force or config.get("force", False)
+    dry_run = args.dry_run or config.get("dry_run", False)
+    limit = args.limit if args.limit is not None else config.get("limit")
+
+    database = args.database or config["couchdb_database"]
     source_db = _connect_db(config, database)
 
     # Target database for couchdb output.
@@ -250,25 +281,38 @@ def main() -> None:
     elif args.doc_id:
         doc_ids = [args.doc_id]
     elif args.all:
-        # Iterate all documents with bioc_json_available.
-        for row in source_db.view("_all_docs"):
-            doc_ids.append(row.id)
+        # Only include documents that have bioc_json available.
+        for row in source_db.view("_all_docs", include_docs=True):
+            doc = row.doc
+            if doc and doc.get("bioc_json_available", False):
+                doc_ids.append(row.id)
         if verbosity >= 1:
             print(
-                f"Found {len(doc_ids)} documents in {database}",
+                f"Found {len(doc_ids)} documents with bioc_json in {database}",
                 file=sys.stderr,
             )
 
-    if args.limit is not None:
-        doc_ids = doc_ids[: args.limit]
+    if limit is not None:
+        doc_ids = doc_ids[: limit]
 
     # Process.
     success = 0
     skipped = 0
     for doc_id in doc_ids:
-        if args.dry_run:
+        if dry_run:
             print(f"Would process: {doc_id}")
             continue
+
+        # Skip-existing check.
+        if skip_existing and not force:
+            if _output_exists(
+                doc_id, args.output_to, args.output_dir, target_db
+            ):
+                if verbosity >= 2:
+                    print(f"Skipping {doc_id}: output already exists",
+                          file=sys.stderr)
+                skipped += 1
+                continue
 
         try:
             doc = source_db[doc_id]
@@ -288,7 +332,7 @@ def main() -> None:
         else:
             skipped += 1
 
-    if verbosity >= 1 and not args.dry_run and len(doc_ids) > 1:
+    if verbosity >= 1 and not dry_run and len(doc_ids) > 1:
         print(
             f"\nProcessed: {success}, Skipped: {skipped}",
             file=sys.stderr,
