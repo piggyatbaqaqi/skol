@@ -187,6 +187,10 @@ def get_env_config() -> Dict[str, Any]:
         # NCBI E-utilities API key (optional, increases rate limit from 3 to 10 rps)
         'ncbi_api_key': _get_env('NCBI_API_KEY', '') or None,
 
+        # Experiment framework
+        'experiment_name': _get_env('EXPERIMENT_NAME', 'production'),
+        'experiments_database': _get_env('EXPERIMENTS_DATABASE', 'skol_experiments'),
+
         # General settings
         'verbosity': int(_get_env('VERBOSITY', '1')),
 
