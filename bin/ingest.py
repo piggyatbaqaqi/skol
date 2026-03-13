@@ -530,6 +530,7 @@ def main() -> int:
                     recheck_xml=args.recheck_xml,
                     download_bioc_json=args.download_bioc_json,
                     recheck_bioc_json=args.recheck_bioc_json,
+
                     pmcids=pmcids,
                 )
         elif args.publication:
@@ -563,6 +564,7 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
+
                 pmcids=pmcids,
             )
         elif args.rss:
@@ -590,6 +592,7 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
+
                 pmcids=pmcids,
             )
         elif args.local:
@@ -618,6 +621,7 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
+
                 pmcids=pmcids,
             )
 

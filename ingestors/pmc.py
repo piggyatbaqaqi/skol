@@ -1,12 +1,17 @@
 """
-Ingestor for PubMed Central articles via NCBI E-utilities and BioC JSON API.
+Ingestor for PubMed Central articles via NCBI E-utilities, BioC JSON API,
+and the OAI-PMH service.
 
 Discovers articles using E-utilities esearch, retrieves full text as BioC JSON
 from the PMC Open Access subset, and enriches existing documents (e.g., from
 Crossref) with PMC full text when a DOI match is found.
+
+Optionally downloads JATS XML full text via the PMC OAI-PMH service.
 """
 
 import json
+import xml.etree.ElementTree as ET
+from io import BytesIO
 from typing import Any, Dict, List, Optional
 from uuid import uuid5, NAMESPACE_URL
 
@@ -24,6 +29,8 @@ class PmcBiocIngestor(Ingestor):
     documents in CouchDB. When a DOI match is found with an existing
     document (e.g., from Crossref), the existing document is enriched
     with BioC JSON data rather than creating a duplicate.
+
+    Optionally downloads JATS XML full text via the PMC OAI-PMH service.
     """
 
     ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -31,6 +38,7 @@ class PmcBiocIngestor(Ingestor):
         "https://www.ncbi.nlm.nih.gov"
         "/research/bionlp/RESTful/pmcoa.cgi/BioC_json"
     )
+    OAI_PMH_URL = "https://pmc.ncbi.nlm.nih.gov/api/oai/v1/mh/"
     PMC_ARTICLE_URL_TEMPLATE = "https://pmc.ncbi.nlm.nih.gov/articles/PMC{}/"
 
     def __init__(
@@ -45,6 +53,8 @@ class PmcBiocIngestor(Ingestor):
         incremental: Optional[bool] = None,
         download_bioc_json: bool = True,
         recheck_bioc_json: bool = False,
+        download_xml: bool = False,
+        recheck_xml: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -66,6 +76,8 @@ class PmcBiocIngestor(Ingestor):
         )
         self.download_bioc_json = download_bioc_json
         self.recheck_bioc_json = recheck_bioc_json
+        self.download_xml = download_xml
+        self.recheck_xml = recheck_xml
 
     def ingest(self) -> None:
         """Discover and ingest articles from PMC."""
@@ -144,6 +156,101 @@ class PmcBiocIngestor(Ingestor):
         except (ValueError, json.JSONDecodeError):
             return None
 
+    def _fetch_jats_xml(self, pmcid: str) -> Optional[str]:
+        """Fetch JATS XML for a PMC article via the OAI-PMH service.
+
+        Requests the full-text JATS XML using the ``pmc`` metadata
+        prefix and extracts the ``<article>`` element from the
+        OAI-PMH envelope.
+
+        Args:
+            pmcid: Numeric PMCID (without 'PMC' prefix).
+
+        Returns:
+            JATS XML string (the ``<article>`` element), or None
+            if unavailable.
+        """
+        params = {
+            "verb": "GetRecord",
+            "identifier": f"oai:pubmedcentral.nih.gov:{pmcid}",
+            "metadataPrefix": "pmc",
+        }
+        try:
+            resp = self.http_client.get(
+                self.OAI_PMH_URL, params=params,
+            )
+        except Exception as exc:
+            if self.verbosity >= 1:
+                print(f"  OAI-PMH error for PMC{pmcid}: {exc}")
+            return None
+
+        if not resp.ok:
+            if self.verbosity >= 1:
+                print(f"  OAI-PMH unavailable for PMC{pmcid} "
+                      f"(HTTP {resp.status_code})")
+            return None
+
+        return self._extract_article_xml(resp.content, pmcid)
+
+    def _extract_article_xml(
+        self, oai_content: bytes, pmcid: str,
+    ) -> Optional[str]:
+        """Extract the JATS <article> element from an OAI-PMH response.
+
+        Args:
+            oai_content: Raw OAI-PMH XML response bytes.
+            pmcid: PMCID for error messages.
+
+        Returns:
+            JATS XML string, or None if not found or on error.
+        """
+        try:
+            root = ET.fromstring(oai_content)
+        except ET.ParseError as exc:
+            if self.verbosity >= 1:
+                print(f"  OAI-PMH XML parse error for PMC{pmcid}: "
+                      f"{exc}")
+            return None
+
+        oai_ns = "http://www.openarchives.org/OAI/2.0/"
+
+        # Check for OAI-PMH error
+        error = root.find(f"{{{oai_ns}}}error")
+        if error is not None:
+            code = error.get("code", "unknown")
+            if self.verbosity >= 1:
+                print(f"  OAI-PMH error for PMC{pmcid}: "
+                      f"{code} — {error.text}")
+            return None
+
+        # Find the <article> element inside <metadata>
+        metadata = root.find(
+            f".//{{{oai_ns}}}metadata"
+        )
+        if metadata is None:
+            if self.verbosity >= 1:
+                print(f"  No metadata in OAI-PMH response "
+                      f"for PMC{pmcid}")
+            return None
+
+        # The <article> element may be in any JATS namespace
+        article = None
+        for child in metadata:
+            local_name = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+            if local_name == "article":
+                article = child
+                break
+
+        if article is None:
+            if self.verbosity >= 1:
+                print(f"  No <article> element in OAI-PMH "
+                      f"response for PMC{pmcid}")
+            return None
+
+        return ET.tostring(
+            article, encoding="unicode", xml_declaration=False,
+        )
+
     def _extract_metadata(self, bioc: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Extract metadata from BioC JSON.
 
@@ -201,53 +308,63 @@ class PmcBiocIngestor(Ingestor):
         # TODO: implement DOI lookup via CouchDB view
         return None
 
-    def _ingest_article(self, pmcid: str) -> None:
-        """Ingest a single article by PMCID.
-
-        Skips if the document already has bioc_json (unless force
-        is set). If a DOI-matched document exists from another
-        source, enriches it instead of creating a duplicate.
-        Tracks bioc_json_available to avoid retrying known-unavailable
-        resources (overridden by recheck_bioc_json).
-        """
-        doc_id = self._make_doc_id(pmcid)
-        pmc_url = self.PMC_ARTICLE_URL_TEMPLATE.format(pmcid)
-
-        # Check for existing document by PMC doc ID
-        existing_by_id = None
-        if doc_id in self.db:
-            existing_by_id = self.db[doc_id]
-            if not self.force and "bioc_json" in existing_by_id:
-                if self.verbosity >= 2:
-                    print(f"Skipping PMC{pmcid} (already has bioc_json)")
-                return
-            # Skip if previously marked unavailable (unless rechecking)
-            if (not self.recheck_bioc_json
-                    and existing_by_id.get("bioc_json_available") is False):
-                if self.verbosity >= 2:
-                    print(f"Skipping PMC{pmcid} (bioc_json unavailable)")
-                return
-
-        if self.dry_run:
-            if self.verbosity >= 2:
-                print(f"Dry run: PMC{pmcid}")
-            return
-
+    def _needs_bioc_download(
+        self, existing: Optional[Dict[str, Any]],
+    ) -> bool:
+        """Check if BioC JSON needs to be downloaded for a document."""
         if not self.download_bioc_json:
-            return
+            return False
+        if existing is None:
+            return True
+        if self.force:
+            return True
+        if "bioc_json" in existing:
+            return False
+        if (not self.recheck_bioc_json
+                and existing.get("bioc_json_available") is False):
+            return False
+        return True
 
+    def _needs_xml_download(
+        self, existing: Optional[Dict[str, Any]],
+    ) -> bool:
+        """Check if JATS XML needs to be downloaded for a document."""
+        if not self.download_xml:
+            return False
+        if existing is None:
+            return True
+        if self.force:
+            return True
+        attachments = existing.get("_attachments", {})
+        if "article.xml" in attachments:
+            return False
+        if (not self.recheck_xml
+                and existing.get("xml_available") is False):
+            return False
+        return True
+
+    def _process_bioc_json(
+        self,
+        pmcid: str,
+        doc_id: str,
+        existing: Optional[Dict[str, Any]],
+    ) -> None:
+        """Fetch and store BioC JSON for a PMC article.
+
+        Creates or updates the CouchDB document with BioC JSON data.
+        If a DOI-matched document exists from another source (e.g.,
+        Crossref), enriches it instead of creating a duplicate.
+        """
         if self.verbosity >= 3:
             print(f"Fetching BioC JSON for PMC{pmcid}")
 
-        # Fetch BioC JSON
         bioc = self._fetch_bioc_json(pmcid)
         if bioc is None:
             if self.verbosity >= 1:
                 print(f"  BioC JSON unavailable for PMC{pmcid}")
-            # Record that BioC JSON is not available
-            if existing_by_id is not None:
-                existing_by_id["bioc_json_available"] = False
-                self.db.save(existing_by_id)
+            if existing is not None:
+                existing["bioc_json_available"] = False
+                self.db.save(existing)
             else:
                 doc: Dict[str, Any] = {
                     "_id": doc_id,
@@ -275,12 +392,12 @@ class PmcBiocIngestor(Ingestor):
             if self.verbosity >= 2:
                 print(f"Enriched existing doc with BioC JSON: "
                       f"PMC{pmcid}")
-        elif existing_by_id is not None:
+        elif existing is not None:
             # Update existing PMC document (force reprocess)
-            existing_by_id["bioc_json"] = bioc
-            existing_by_id["bioc_json_available"] = True
-            set_timestamps(existing_by_id)
-            self.db.save(existing_by_id)
+            existing["bioc_json"] = bioc
+            existing["bioc_json_available"] = True
+            set_timestamps(existing)
+            self.db.save(existing)
             if self.verbosity >= 2:
                 print(f"Updated BioC JSON: PMC{pmcid}")
         else:
@@ -302,3 +419,78 @@ class PmcBiocIngestor(Ingestor):
             if self.verbosity >= 2:
                 print(f"Added: PMC{pmcid} — "
                       f"{metadata['title'][:60]}")
+
+    def _download_and_attach_xml(
+        self, pmcid: str, doc_id: str,
+    ) -> None:
+        """Download and attach JATS XML for a PMC article.
+
+        Fetches JATS XML via the OAI-PMH service and stores it as
+        an ``article.xml`` CouchDB attachment. Tracks
+        ``xml_available`` to avoid retrying known-unavailable
+        articles.
+        """
+        if doc_id not in self.db:
+            if self.verbosity >= 1:
+                print(f"  Cannot attach XML for PMC{pmcid}: "
+                      "document not found")
+            return
+
+        if self.verbosity >= 3:
+            print(f"Fetching JATS XML for PMC{pmcid}")
+
+        xml_string = self._fetch_jats_xml(pmcid)
+        if xml_string is None:
+            doc = self.db[doc_id]
+            doc["xml_available"] = False
+            self.db.save(doc)
+            return
+
+        doc = self.db[doc_id]
+        doc["xml_available"] = True
+        doc["xml_format"] = "jats"
+        self.db.save(doc)
+        doc = self.db[doc_id]
+        self.db.put_attachment(
+            doc,
+            BytesIO(xml_string.encode("utf-8")),
+            "article.xml",
+            "application/xml",
+        )
+        if self.verbosity >= 2:
+            print(f"  Attached JATS XML for PMC{pmcid}")
+
+    def _ingest_article(self, pmcid: str) -> None:
+        """Ingest a single article by PMCID.
+
+        Determines what work is needed (BioC JSON, XML, or both)
+        and processes accordingly. Skips if the document already
+        has the requested data (unless force is set).
+        """
+        doc_id = self._make_doc_id(pmcid)
+
+        # Check for existing document
+        existing = (
+            self.db[doc_id] if doc_id in self.db else None
+        )
+
+        # Determine what work is needed
+        needs_bioc = self._needs_bioc_download(existing)
+        needs_xml = self._needs_xml_download(existing)
+
+        if not needs_bioc and not needs_xml:
+            if self.verbosity >= 2:
+                print(f"Skipping PMC{pmcid} "
+                      "(already complete)")
+            return
+
+        if self.dry_run:
+            if self.verbosity >= 2:
+                print(f"Dry run: PMC{pmcid}")
+            return
+
+        if needs_bioc:
+            self._process_bioc_json(pmcid, doc_id, existing)
+
+        if needs_xml:
+            self._download_and_attach_xml(pmcid, doc_id)

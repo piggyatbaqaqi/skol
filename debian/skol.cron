@@ -47,19 +47,22 @@ SKIP_EXISTING=1
 0 11 * * 0 skol time /opt/skol/bin/ingest --publication oajmms > ${LOGDIR}/ingest-oajmms.log 2>&1
 0 12 * * 0 skol time /opt/skol/bin/ingest --publication mycokeys > ${LOGDIR}/ingest-mycokeys.log 2>&1
 0 13 * * 0 skol time /opt/skol/bin/ingest --publication imafungus > ${LOGDIR}/ingest-imafungus.log 2>&1
-0 14 * * * skol time /opt/skol/bin/ingest --publication fuse-pmc > ${LOGDIR}/ingest-fuse-pmc.log 2>&1
-10 14 * * * skol time /opt/skol/bin/ingest --publication persoonia-pmc > ${LOGDIR}/ingest-persoonia-pmc.log 2>&1
-20 14 * * * skol time /opt/skol/bin/ingest --publication sim-pmc > ${LOGDIR}/ingest-sim-pmc.log 2>&1
-30 14 * * * skol time /opt/skol/bin/ingest --publication imafungus-pmc > ${LOGDIR}/ingest-imafungus-pmc.log 2>&1
-40 14 * * * skol time /opt/skol/bin/ingest --publication mycokeys-pmc > ${LOGDIR}/ingest-mycokeys-pmc.log 2>&1
-50 14 * * * skol time /opt/skol/bin/ingest --publication jof-pmc > ${LOGDIR}/ingest-jof-pmc.log 2>&1
-0 15 * * * skol time /opt/skol/bin/ingest --publication mycoscience-pmc > ${LOGDIR}/ingest-mycoscience-pmc.log 2>&1
-10 15 * * * skol time /opt/skol/bin/ingest --publication mycology-pmc > ${LOGDIR}/ingest-mycology-pmc.log 2>&1
-20 15 * * * skol time /opt/skol/bin/ingest --publication fungal-biol-biotechnol-pmc > ${LOGDIR}/ingest-fungal-biol-biotechnol-pmc.log 2>&1
-30 15 * * * skol time /opt/skol/bin/ingest --publication front-fungal-biol-pmc > ${LOGDIR}/ingest-front-fungal-biol-pmc.log 2>&1
-40 15 * * * skol time /opt/skol/bin/ingest --publication mycobiology-pmc > ${LOGDIR}/ingest-mycobiology-pmc.log 2>&1
-50 15 * * * skol time /opt/skol/bin/ingest --publication curr-med-mycol-pmc > ${LOGDIR}/ingest-curr-med-mycol-pmc.log 2>&1
-0 16 * * * skol time /opt/skol/bin/ingest --publication med-mycol-case-rep-pmc > ${LOGDIR}/ingest-med-mycol-case-rep-pmc.log 2>&1
+# PMC ingestors — scheduled after 9 PM ET (off-peak) to comply with NCBI policy:
+# scripts making >100 requests must run outside Mon-Fri 5 AM – 9 PM ET.
+# flock prevents concurrent PMC API requests (also required by NCBI policy).
+0 21 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication fuse-pmc > ${LOGDIR}/ingest-fuse-pmc.log 2>&1
+10 21 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication persoonia-pmc > ${LOGDIR}/ingest-persoonia-pmc.log 2>&1
+20 21 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication sim-pmc > ${LOGDIR}/ingest-sim-pmc.log 2>&1
+30 21 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication imafungus-pmc > ${LOGDIR}/ingest-imafungus-pmc.log 2>&1
+40 21 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication mycokeys-pmc > ${LOGDIR}/ingest-mycokeys-pmc.log 2>&1
+50 21 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication jof-pmc > ${LOGDIR}/ingest-jof-pmc.log 2>&1
+0 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication mycoscience-pmc > ${LOGDIR}/ingest-mycoscience-pmc.log 2>&1
+10 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication mycology-pmc > ${LOGDIR}/ingest-mycology-pmc.log 2>&1
+20 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication fungal-biol-biotechnol-pmc > ${LOGDIR}/ingest-fungal-biol-biotechnol-pmc.log 2>&1
+30 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication front-fungal-biol-pmc > ${LOGDIR}/ingest-front-fungal-biol-pmc.log 2>&1
+40 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication mycobiology-pmc > ${LOGDIR}/ingest-mycobiology-pmc.log 2>&1
+50 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication curr-med-mycol-pmc > ${LOGDIR}/ingest-curr-med-mycol-pmc.log 2>&1
+0 23 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication med-mycol-case-rep-pmc > ${LOGDIR}/ingest-med-mycol-case-rep-pmc.log 2>&1
 # Generate YEDDA training data from newly ingested articles (after PMC/Pensoft ingesters)
 0 17 * * * skol time /opt/skol/bin/bioc_to_yedda --all --output-to couchdb --skip-existing > ${LOGDIR}/bioc-to-yedda.log 2>&1
 30 17 * * * skol time /opt/skol/bin/jats_to_yedda --all --output-to couchdb --skip-existing > ${LOGDIR}/jats-to-yedda.log 2>&1
