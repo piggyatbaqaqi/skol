@@ -12,6 +12,47 @@ Most endpoints are public. Collection-related endpoints require session authenti
 
 ---
 
+## Experiments
+
+Named experiment configurations that tie together databases, Redis keys, and classifier models. Experiments are stored in the `skol_experiments` CouchDB database.
+
+### GET /api/experiments/
+
+List all available experiments.
+
+**Response:**
+```json
+{
+    "experiments": [
+        {
+            "name": "production",
+            "notes": "Current production pipeline: logistic regression on hand-annotated training data",
+            "status": "deployed"
+        },
+        {
+            "name": "jats_v1",
+            "notes": "Test JATS-derived training annotations",
+            "status": "evaluated"
+        }
+    ],
+    "count": 2
+}
+```
+
+**Experiment-aware views:** When a user selects an experiment (saved as `default_experiment` in user settings), several views automatically use the experiment's configured databases and Redis keys:
+
+| View | Experiment field used |
+|------|----------------------|
+| `GET /api/taxa/{id}/` | `databases.taxa` (taxa database) |
+| `GET /api/vocab-tree/` | `redis_keys.menus` (menus pointer key) |
+| `GET /api/vocab-tree/build/` | `redis_keys.menus`, `databases.taxa_full` |
+| `POST /api/vocab-tree/build/` | `redis_keys.menus`, `databases.taxa_full` |
+| Sources page (`/sources/`) | `databases.ingest` (ingestion database) |
+
+If no experiment is set or the experiment is not found, these views fall back to the `production` experiment defaults.
+
+---
+
 ## Semantic Search
 
 ### GET /api/embeddings/
@@ -159,7 +200,7 @@ Search taxa by regex pattern on the nomenclature (taxon) field.
 
 Get taxa document information including source PDF details.
 
-**Query Parameters:** `taxa_db` (default: `'skol_taxa_dev'`)
+**Query Parameters:** `taxa_db` (default: user's experiment `databases.taxa`, or `'skol_taxa_dev'`)
 
 **Response:**
 ```json
@@ -596,6 +637,7 @@ Get the current user's settings.
     "results_per_page": 10,
     "feature_taxa_count": 6,
     "feature_max_tree_depth": 10,
+    "default_experiment": "production",
     "receive_admin_summary": false,
     "created_at": "2026-01-15T12:00:00Z",
     "updated_at": "2026-02-17T08:30:00Z"
@@ -618,6 +660,7 @@ Update the current user's settings (partial updates supported).
 |-------|------|---------|-------|-------------|
 | `default_embargo_days` | int | 0 | 0–365 | Default embargo period for new collections |
 | `default_embedding` | string | `""` | — | Preferred embedding model |
+| `default_experiment` | string | `"production"` | — | Active experiment name (from `skol_experiments`) |
 | `default_k` | int | 3 | 1–100 | Default number of search results to fetch |
 | `results_per_page` | int | 10 | 5–50 | Number of results to display per page (client-side pagination) |
 | `feature_taxa_count` | int | 6 | 2–50 | Number of taxa for feature lists |

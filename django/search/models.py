@@ -363,6 +363,13 @@ class UserSettings(models.Model):
         help_text="Maximum document frequency fraction for feature terms"
     )
 
+    # Experiment settings
+    default_experiment = models.CharField(
+        max_length=100,
+        default='production',
+        help_text="Active experiment name from skol_experiments"
+    )
+
     # Email preferences
     receive_admin_summary = models.BooleanField(
         default=False,

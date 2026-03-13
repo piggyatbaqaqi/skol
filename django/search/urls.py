@@ -6,6 +6,7 @@ from .views import (
     # Existing views
     SearchView,
     NomenclatureSearchView,
+    ExperimentListView,
     EmbeddingListView,
     BuildEmbeddingView,
     TaxaInfoView,
@@ -56,6 +57,9 @@ from .views import (
 app_name = 'search'
 
 urlpatterns = [
+    # Experiments
+    path('experiments/', ExperimentListView.as_view(), name='experiments'),
+
     # Existing endpoints
     path('embeddings/', EmbeddingListView.as_view(), name='embeddings'),
     path('embeddings/build/', BuildEmbeddingView.as_view(), name='embeddings-build'),

@@ -235,6 +235,9 @@ COUCHDB_USERNAME = os.environ.get('COUCHDB_USER', 'admin')
 COUCHDB_PASSWORD = os.environ.get('COUCHDB_PASSWORD', 'SU2orange!')
 COUCHDB_URL = os.environ.get('COUCHDB_URL', f'http://{COUCHDB_HOST}:{COUCHDB_PORT}')
 
+# Experiment framework
+EXPERIMENTS_DATABASE = os.environ.get('EXPERIMENTS_DATABASE', 'skol_experiments')
+
 # Email Configuration
 # Set USE_LOCAL_SMTP=true to use localhost SMTP (port 25, no auth, no TLS)
 # This is useful for servers with a local mail transfer agent (postfix, sendmail)

@@ -1165,6 +1165,12 @@
                 <div id="settingsMenu" class="settings-menu">
                     <div class="settings-menu-header">Search Settings</div>
                     <div class="form-group">
+                        <label for="experiment">Experiment</label>
+                        <select id="experiment" name="experiment" onchange="switchExperiment(this.value)">
+                            <option value="production">production</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="embedding">Embedding Model</label>
                         <select id="embedding" name="embedding" required onchange="saveSetting('default_embedding', this.value)">
                             <option value="">Loading embeddings...</option>
@@ -1223,6 +1229,12 @@
                 <button class="settings-btn" onclick="toggleSettingsMenu()" title="Search Settings">&#9881;</button>
                 <div id="settingsMenu" class="settings-menu">
                     <div class="settings-menu-header">Search Settings</div>
+                    <div class="form-group">
+                        <label for="experiment">Experiment</label>
+                        <select id="experiment" name="experiment" onchange="switchExperiment(this.value)">
+                            <option value="production">production</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="embedding">Embedding Model</label>
                         <select id="embedding" name="embedding" required>
@@ -2203,6 +2215,12 @@
                             const rppInput = document.getElementById('resultsPerPage');
                             if (rppInput) rppInput.value = resultsPerPage;
                         }
+                        // Experiment setting
+                        if (data.default_experiment) {
+                            document.querySelectorAll('#experiment').forEach(el => {
+                                el.value = data.default_experiment;
+                            });
+                        }
                         // Search settings
                         const settingsMap = {
                             default_k: 'k',
@@ -2244,6 +2262,37 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({ [field]: value })
             }).catch(e => console.error(`Failed to save ${field}:`, e));
+        }
+
+        // Load available experiments and populate dropdowns
+        async function loadExperiments() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/experiments/`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const selects = document.querySelectorAll('#experiment');
+                selects.forEach(sel => {
+                    const current = sel.value;
+                    sel.innerHTML = '';
+                    (data.experiments || []).forEach(exp => {
+                        const opt = document.createElement('option');
+                        opt.value = exp.name;
+                        opt.textContent = exp.name;
+                        if (exp.notes) opt.title = exp.notes;
+                        sel.appendChild(opt);
+                    });
+                    if (current) sel.value = current;
+                });
+            } catch (e) {
+                console.error('Failed to load experiments:', e);
+            }
+        }
+
+        // Switch experiment and reload page
+        function switchExperiment(value) {
+            saveSetting('default_experiment', value);
+            // Reload after a short delay to let the setting save
+            setTimeout(() => location.reload(), 300);
         }
 
         // Save admin summary preference to API
@@ -2886,6 +2935,7 @@
 
         // Load data when page loads
         loadEmbeddings();
+        loadExperiments();
         if (IS_AUTHENTICATED) {
             updateCollectionsMenu();
             loadUserSettings();

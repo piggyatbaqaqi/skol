@@ -27,6 +27,106 @@ logger = logging.getLogger(__name__)
 # loading heavy ML dependencies (TensorFlow, transformers, etc.) at Django startup
 
 
+def get_experiment_config(experiment_name):
+    """Load experiment config from skol_experiments CouchDB database.
+
+    Returns a dict with databases and redis_keys, or None if not found.
+    """
+    try:
+        db_name = getattr(
+            settings, 'EXPERIMENTS_DATABASE', 'skol_experiments'
+        )
+        auth = HTTPBasicAuth(
+            settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD
+        )
+        url = f"{settings.COUCHDB_URL}/{db_name}/{experiment_name}"
+        resp = requests.get(url, auth=auth, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception as e:
+        logger.warning("Failed to load experiment '%s': %s",
+                        experiment_name, e)
+    return None
+
+
+def get_user_experiment(request):
+    """Get experiment config for the authenticated user.
+
+    Returns (experiment_name, experiment_doc) tuple.
+    Falls back to 'production' if user has no preference or experiment
+    is not found.
+    """
+    experiment_name = 'production'
+    if request.user.is_authenticated:
+        try:
+            from .models import UserSettings
+            user_settings = UserSettings.objects.filter(
+                user=request.user
+            ).first()
+            if user_settings and user_settings.default_experiment:
+                experiment_name = user_settings.default_experiment
+        except Exception:
+            pass
+
+    doc = get_experiment_config(experiment_name)
+    if doc is None and experiment_name != 'production':
+        doc = get_experiment_config('production')
+        experiment_name = 'production'
+    return experiment_name, doc
+
+
+class ExperimentListView(APIView):
+    """
+    API endpoint to list available experiments.
+
+    GET /api/experiments/
+    Returns: List of experiments with name, notes, and status.
+    """
+
+    def get(self, request):
+        try:
+            db_name = getattr(
+                settings, 'EXPERIMENTS_DATABASE', 'skol_experiments'
+            )
+            auth = HTTPBasicAuth(
+                settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD
+            )
+            url = (
+                f"{settings.COUCHDB_URL}/{db_name}"
+                f"/_all_docs?include_docs=true"
+            )
+            resp = requests.get(url, auth=auth, timeout=15)
+            if resp.status_code == 404:
+                return Response({
+                    'experiments': [],
+                    'count': 0,
+                })
+            resp.raise_for_status()
+            data = resp.json()
+
+            experiments = []
+            for row in data.get('rows', []):
+                doc = row.get('doc', {})
+                if doc.get('_id', '').startswith('_design/'):
+                    continue
+                experiments.append({
+                    'name': doc.get('_id'),
+                    'notes': doc.get('notes', ''),
+                    'status': doc.get('status', ''),
+                })
+
+            return Response({
+                'experiments': experiments,
+                'count': len(experiments),
+            })
+        except Exception as e:
+            logger.error("Failed to list experiments: %s", e)
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
 class EmbeddingListView(APIView):
     """
     API endpoint to list available embeddings from Redis.
@@ -310,13 +410,23 @@ class BuildVocabTreeView(APIView):
         }
     """
 
+    def _get_menus_key(self, request):
+        """Get the menus Redis pointer key for the user's experiment."""
+        _, exp = get_user_experiment(request)
+        if exp:
+            return exp.get(
+                'redis_keys', {}
+            ).get('menus', 'skol:ui:menus_latest')
+        return 'skol:ui:menus_latest'
+
     def get(self, request):
         """Check if vocabulary tree exists."""
         try:
             r = get_redis_client(decode_responses=True)
 
-            # Check for latest pointer
-            latest_key = r.get("skol:ui:menus_latest")
+            # Check for latest pointer using experiment's menus key
+            menus_pointer = self._get_menus_key(request)
+            latest_key = r.get(menus_pointer)
 
             if latest_key and r.exists(latest_key):
                 # Get stats from the tree
@@ -357,7 +467,15 @@ class BuildVocabTreeView(APIView):
             )
 
             # Get parameters - force and db_name only allowed for admins
-            default_db = getattr(settings, 'VOCAB_TREE_DB', 'skol_taxa_full_dev')
+            _, exp = get_user_experiment(request)
+            if exp:
+                default_db = exp.get(
+                    'databases', {}
+                ).get('taxa_full', 'skol_taxa_full_dev')
+            else:
+                default_db = getattr(
+                    settings, 'VOCAB_TREE_DB', 'skol_taxa_full_dev'
+                )
 
             if is_admin:
                 force = request.data.get('force', False)
@@ -377,7 +495,8 @@ class BuildVocabTreeView(APIView):
             r = get_redis_client(decode_responses=True)
 
             # Check if already exists
-            latest_key = r.get("skol:ui:menus_latest")
+            menus_pointer = self._get_menus_key(request)
+            latest_key = r.get(menus_pointer)
             exists = latest_key and r.exists(latest_key)
 
             if exists and not force:
@@ -892,11 +1011,21 @@ class TaxaInfoView(APIView):
     }
     """
 
-    def get(self, request, taxa_id, taxa_db='skol_taxa_dev'):
+    def get(self, request, taxa_id, taxa_db=None):
         try:
             # Build CouchDB URL for the taxa document
             couchdb_url = settings.COUCHDB_URL
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
+
+            # Use experiment's taxa DB if not explicitly provided
+            if taxa_db is None:
+                _, exp = get_user_experiment(request)
+                if exp:
+                    taxa_db = exp.get('databases', {}).get(
+                        'taxa', 'skol_taxa_dev'
+                    )
+                else:
+                    taxa_db = 'skol_taxa_dev'
 
             # Determine the correct database based on document ID prefix
             if taxa_id.startswith('collection_'):
@@ -1813,8 +1942,14 @@ class VocabTreeView(APIView):
             if version:
                 key = f"skol:ui:menus_{version}"
             else:
-                # Get the latest version
-                latest_key = r.get("skol:ui:menus_latest")
+                # Get the latest version using experiment's menus key
+                _, exp = get_user_experiment(request)
+                menus_pointer = 'skol:ui:menus_latest'
+                if exp:
+                    menus_pointer = exp.get(
+                        'redis_keys', {}
+                    ).get('menus', menus_pointer)
+                latest_key = r.get(menus_pointer)
                 if not latest_key:
                     return Response(
                         {'error': 'No vocabulary tree available'},

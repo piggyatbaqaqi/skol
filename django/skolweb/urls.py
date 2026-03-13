@@ -131,9 +131,21 @@ def sources_view(request):
         PublicationRegistry = None
 
     couchdb_url = getattr(settings, 'COUCHDB_URL', 'http://127.0.0.1:5984')
-    db_name = getattr(settings, 'INGESTION_DB_NAME', 'skol_dev')
     db_user = getattr(settings, 'COUCHDB_USERNAME', 'admin')
     db_password = getattr(settings, 'COUCHDB_PASSWORD', '')
+
+    # Use experiment's ingest database if available
+    db_name = getattr(settings, 'INGESTION_DB_NAME', 'skol_dev')
+    if request.user.is_authenticated:
+        try:
+            from search.views import get_user_experiment
+            _, exp = get_user_experiment(request)
+            if exp:
+                db_name = exp.get(
+                    'databases', {}
+                ).get('ingest', db_name)
+        except Exception:
+            pass
 
     try:
         server = couchdb.Server(couchdb_url)
