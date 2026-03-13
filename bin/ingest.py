@@ -322,6 +322,20 @@ Environment Variables for Work Control:
         help='Retry BioC JSON download even if previously '
              'marked unavailable.'
     )
+    parser.add_argument(
+        '--download-text',
+        default=None,
+        action=argparse.BooleanOptionalAction,
+        help='Download plaintext via efetch (default: per-source config). '
+             'Use --no-download-text to suppress.'
+    )
+    parser.add_argument(
+        '--recheck-text',
+        action='store_true',
+        default=False,
+        help='Retry plaintext download even if previously '
+             'marked unavailable.'
+    )
 
     return parser
 
@@ -340,6 +354,8 @@ def run_ingestion(
     recheck_xml: bool = False,
     download_bioc_json: Optional[bool] = None,
     recheck_bioc_json: bool = False,
+    download_text: Optional[bool] = None,
+    recheck_text: bool = False,
     pmcids: Optional[List[str]] = None,
 ) -> None:
     """
@@ -359,6 +375,8 @@ def run_ingestion(
         recheck_xml: Retry XML even if marked unavailable
         download_bioc_json: Override BioC JSON download (None = config)
         recheck_bioc_json: Retry BioC JSON even if marked unavailable
+        download_text: Override plaintext download (None = config)
+        recheck_text: Retry plaintext even if marked unavailable
         pmcids: If set, process only these source-specific IDs
     """
     # Set up robot parser
@@ -412,6 +430,10 @@ def run_ingestion(
         constructor_args['download_bioc_json'] = download_bioc_json
     if recheck_bioc_json:
         constructor_args['recheck_bioc_json'] = True
+    if download_text is not None:
+        constructor_args['download_text'] = download_text
+    if recheck_text:
+        constructor_args['recheck_text'] = True
     if pmcids is not None:
         constructor_args['pmcids'] = pmcids
 
@@ -530,7 +552,8 @@ def main() -> int:
                     recheck_xml=args.recheck_xml,
                     download_bioc_json=args.download_bioc_json,
                     recheck_bioc_json=args.recheck_bioc_json,
-
+                    download_text=args.download_text,
+                    recheck_text=args.recheck_text,
                     pmcids=pmcids,
                 )
         elif args.publication:
@@ -564,7 +587,8 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
-
+                download_text=args.download_text,
+                recheck_text=args.recheck_text,
                 pmcids=pmcids,
             )
         elif args.rss:
@@ -592,7 +616,8 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
-
+                download_text=args.download_text,
+                recheck_text=args.recheck_text,
                 pmcids=pmcids,
             )
         elif args.local:
@@ -621,7 +646,8 @@ def main() -> int:
                 recheck_xml=args.recheck_xml,
                 download_bioc_json=args.download_bioc_json,
                 recheck_bioc_json=args.recheck_bioc_json,
-
+                download_text=args.download_text,
+                recheck_text=args.recheck_text,
                 pmcids=pmcids,
             )
 

@@ -55,6 +55,8 @@ class PmcBiocIngestor(Ingestor):
         recheck_bioc_json: bool = False,
         download_xml: bool = False,
         recheck_xml: bool = False,
+        download_text: bool = False,
+        recheck_text: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -78,6 +80,8 @@ class PmcBiocIngestor(Ingestor):
         self.recheck_bioc_json = recheck_bioc_json
         self.download_xml = download_xml
         self.recheck_xml = recheck_xml
+        self.download_text = download_text
+        self.recheck_text = recheck_text
 
     def ingest(self) -> None:
         """Discover and ingest articles from PMC."""
@@ -343,6 +347,24 @@ class PmcBiocIngestor(Ingestor):
             return False
         return True
 
+    def _needs_text_download(
+        self, existing: Optional[Dict[str, Any]],
+    ) -> bool:
+        """Check if plaintext needs to be downloaded for a document."""
+        if not self.download_text:
+            return False
+        if existing is None:
+            return True
+        if self.force:
+            return True
+        attachments = existing.get("_attachments", {})
+        if "article.txt" in attachments:
+            return False
+        if (not self.recheck_text
+                and existing.get("text_available") is False):
+            return False
+        return True
+
     def _process_bioc_json(
         self,
         pmcid: str,
@@ -460,6 +482,53 @@ class PmcBiocIngestor(Ingestor):
         if self.verbosity >= 2:
             print(f"  Attached JATS XML for PMC{pmcid}")
 
+    def _download_and_attach_text(
+        self, pmcid: str, doc_id: str,
+    ) -> None:
+        """Download and attach plaintext for a PMC article.
+
+        Fetches plaintext via NCBI E-utilities efetch with
+        ``retmode=text`` and stores it as an ``article.txt`` CouchDB
+        attachment.
+        """
+        if doc_id not in self.db:
+            if self.verbosity >= 1:
+                print(f"  Cannot attach text for PMC{pmcid}: "
+                      "document not found")
+            return
+
+        if self.verbosity >= 3:
+            print(f"Fetching plaintext for PMC{pmcid}")
+
+        from ingestors.extract_plaintext import plaintext_from_efetch
+
+        try:
+            text = plaintext_from_efetch(
+                f"PMC{pmcid}",
+                api_key=self.ncbi_api_key,
+            )
+        except ValueError as exc:
+            if self.verbosity >= 1:
+                print(f"  Plaintext unavailable for PMC{pmcid}: "
+                      f"{exc}")
+            doc = self.db[doc_id]
+            doc["text_available"] = False
+            self.db.save(doc)
+            return
+
+        doc = self.db[doc_id]
+        doc["text_available"] = True
+        self.db.save(doc)
+        doc = self.db[doc_id]
+        self.db.put_attachment(
+            doc,
+            BytesIO(text.encode("utf-8")),
+            "article.txt",
+            "text/plain",
+        )
+        if self.verbosity >= 2:
+            print(f"  Attached plaintext for PMC{pmcid}")
+
     def _ingest_article(self, pmcid: str) -> None:
         """Ingest a single article by PMCID.
 
@@ -477,8 +546,9 @@ class PmcBiocIngestor(Ingestor):
         # Determine what work is needed
         needs_bioc = self._needs_bioc_download(existing)
         needs_xml = self._needs_xml_download(existing)
+        needs_text = self._needs_text_download(existing)
 
-        if not needs_bioc and not needs_xml:
+        if not needs_bioc and not needs_xml and not needs_text:
             if self.verbosity >= 2:
                 print(f"Skipping PMC{pmcid} "
                       "(already complete)")
@@ -490,6 +560,8 @@ class PmcBiocIngestor(Ingestor):
                 parts.append("BioC JSON")
             if needs_xml:
                 parts.append("XML")
+            if needs_text:
+                parts.append("text")
             print(f"Processing PMC{pmcid} "
                   f"({' + '.join(parts)})")
 
@@ -503,3 +575,6 @@ class PmcBiocIngestor(Ingestor):
 
         if needs_xml:
             self._download_and_attach_xml(pmcid, doc_id)
+
+        if needs_text:
+            self._download_and_attach_text(pmcid, doc_id)

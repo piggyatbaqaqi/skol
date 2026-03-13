@@ -614,22 +614,30 @@ def predict_and_save(
                 couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
             db = couch_server[config['ingest_db_name']]
 
-        # If no doc_ids specified, discover all PDFs (full database scan)
+        # If no doc_ids specified, discover documents with plaintext (full database scan).
+        # Requires article.txt to already exist — run bin/extract_plaintext.py first.
         if not filtered_doc_ids:
             if model_config.get('verbosity', 1) >= 1:
-                print("\nDiscovering PDF documents in database...")
+                print("\nDiscovering documents with plaintext in database...")
             all_doc_ids = []
             for doc_id in db:
                 try:
                     doc = db[doc_id]
                     attachments = doc.get('_attachments', {})
-                    if any(att.endswith('.pdf') for att in attachments.keys()):
+                    if 'article.txt' in attachments:
                         all_doc_ids.append(doc_id)
                 except Exception:
                     continue
             filtered_doc_ids = all_doc_ids
             if model_config.get('verbosity', 1) >= 1:
-                print(f"  Found {len(filtered_doc_ids)} documents with PDF attachments")
+                print(f"  Found {len(filtered_doc_ids)} documents with article.txt")
+            if not filtered_doc_ids:
+                print(
+                    "\nNo documents with article.txt found. "
+                    "Run bin/extract_plaintext.py first to extract "
+                    "plaintext from PDFs, JATS XML, or efetch.",
+                    file=sys.stderr,
+                )
 
         # Skip existing documents with .ann attachments (unless --force)
         # Only check the documents we're actually processing, not the entire database

@@ -63,6 +63,8 @@ class PensoftIngestor(Ingestor):
         download_pdf: bool = True,
         download_xml: bool = True,
         recheck_xml: bool = False,
+        download_text: bool = False,
+        recheck_text: bool = False,
         **kwargs: Any
     ) -> None:
         """
@@ -87,6 +89,8 @@ class PensoftIngestor(Ingestor):
         self.download_pdf = download_pdf
         self.download_xml = download_xml
         self.recheck_xml = recheck_xml
+        self.download_text = download_text
+        self.recheck_text = recheck_text
 
         # Construct base URL and issues URL
         self.base_url = f'https://{journal_name}.pensoft.net'
@@ -625,6 +629,47 @@ class PensoftIngestor(Ingestor):
             print("Ingestion complete")
             print(f"{'=' * 60}")
 
+    def _extract_text_from_pdf(
+        self, doc_id: str, pdf_bytes: bytes,
+    ) -> None:
+        """Extract plaintext from PDF bytes and attach as article.txt."""
+        from ingestors.extract_plaintext import plaintext_from_pdf
+
+        try:
+            text = plaintext_from_pdf(pdf_bytes)
+            if text.strip():
+                doc = self.db[doc_id]
+                doc['text_available'] = True
+                self.db.save(doc)
+                doc = self.db[doc_id]
+                self.db.put_attachment(
+                    doc,
+                    BytesIO(text.encode('utf-8')),
+                    'article.txt',
+                    'text/plain',
+                )
+                if self.verbosity >= 3:
+                    print("  Attached plaintext")
+        except Exception as e:
+            if self.verbosity >= 1:
+                print(f"  Plaintext extraction error: {e}")
+
+    def _extract_text_from_existing_pdf(
+        self, doc_id: str,
+    ) -> None:
+        """Extract plaintext from an existing article.pdf attachment."""
+        try:
+            attachment = self.db.get_attachment(
+                doc_id, 'article.pdf',
+            )
+            if attachment is None:
+                return
+            pdf_bytes = attachment.read()
+            self._extract_text_from_pdf(doc_id, pdf_bytes)
+        except Exception as e:
+            if self.verbosity >= 1:
+                print(f"  Plaintext extraction error: {e}")
+
     def _detect_xml_format(self, content: bytes) -> Optional[str]:
         """
         Detect if XML content is JATS format.
@@ -776,9 +821,22 @@ class PensoftIngestor(Ingestor):
                             )
                             if self.verbosity >= 3:
                                 print("  Attached PDF")
+                            # Extract plaintext from PDF
+                            if self.download_text:
+                                self._extract_text_from_pdf(
+                                    doc_id,
+                                    resp.content,
+                                )
                     except Exception as e:
                         if self.verbosity >= 1:
                             print(f"  PDF error: {e}")
+
+            # Extract plaintext from existing PDF
+            elif (self.download_text
+                    and doc_exists
+                    and has_pdf
+                    and 'article.txt' not in attachments):
+                self._extract_text_from_existing_pdf(doc_id)
 
             # Download and attach XML
             if needs_xml:

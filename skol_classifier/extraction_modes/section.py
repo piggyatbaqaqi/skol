@@ -23,14 +23,13 @@ class SectionExtractionMode(ExtractionMode):
         """
         Section mode does not support loading from files.
 
-        Section extraction requires PDF processing with PDFSectionExtractor,
-        which only works with CouchDB attachments.
+        Section extraction requires plaintext (article.txt) in CouchDB.
+        Run bin/extract_plaintext.py first.
         """
         raise NotImplementedError(
-            "Section-based extraction requires PDFs to be stored in CouchDB. "
-            "Please use load_raw_from_couchdb() instead. "
-            "The PDFSectionExtractor only supports loading from CouchDB "
-            "attachments."
+            "Section-based extraction requires article.txt in CouchDB. "
+            "Run bin/extract_plaintext.py first, then use "
+            "load_raw_from_couchdb()."
         )
 
     def load_raw_from_couchdb(
@@ -71,16 +70,18 @@ class SectionExtractionMode(ExtractionMode):
 
         from pdf_section_extractor import PDFSectionExtractor
 
-        # Create extractor
+        # Create extractor — read from article.txt (pre-extracted
+        # plaintext) instead of converting PDFs on the fly.
         extractor = PDFSectionExtractor(
             spark=spark,
             couchdb_url=couchdb_url,
             database=database,
             username=username,
-            password=password
+            password=password,
+            read_text=True,
         )
 
-        # Load sections from PDFs
+        # Load sections from plaintext attachments
         return extractor.extract_sections()
 
     def load_annotated_from_files(
