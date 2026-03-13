@@ -283,6 +283,7 @@ class TestCouchDBConnectionFetchPartition:
 
         # Create mock document
         mock_doc = {
+            "_id": "doc1",
             "url": "http://example.com",
             "pdf_url": "http://example.com/doc.pdf",
             "_attachments": {
@@ -312,9 +313,9 @@ class TestCouchDBConnectionFetchPartition:
         results = list(conn.fetch_partition(partition))
 
         assert len(results) == 1
-        assert results[0].doc_id == "doc1"
+        assert results[0].ingest["_id"] == "doc1"
         assert results[0].value == "This is the content."
-        assert results[0].human_url == "http://example.com"
+        assert results[0].ingest["url"] == "http://example.com"
 
 
 class TestCouchDBConnectionSavePartition:
@@ -367,11 +368,9 @@ class TestCouchDBConnectionSchemas:
         schema = CouchDBConnection.LOAD_SCHEMA
 
         field_names = [f.name for f in schema.fields]
-        assert "doc_id" in field_names
-        assert "human_url" in field_names
-        assert "pdf_url" in field_names
         assert "attachment_name" in field_names
         assert "value" in field_names
+        assert "ingest" in field_names
 
     def test_save_schema(self):
         """Test SAVE_SCHEMA has expected fields."""

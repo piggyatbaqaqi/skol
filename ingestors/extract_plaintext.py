@@ -119,9 +119,12 @@ def plaintext_from_efetch(
     pmcid: str,
     api_key: Optional[str] = None,
 ) -> str:
-    """Download plaintext from NCBI E-utilities efetch.
+    """Download JATS XML from NCBI E-utilities efetch and extract plaintext.
 
-    Fetches the full article text from PMC using ``retmode=text``.
+    PMC efetch always returns JATS XML regardless of retmode, so this
+    function downloads the XML and parses it into plaintext via
+    ``plaintext_from_jats()``.
+
     Respects NCBI rate limits: 3 requests/second without an API key,
     10 requests/second with one.
 
@@ -130,10 +133,11 @@ def plaintext_from_efetch(
         api_key: Optional NCBI API key for higher rate limits.
 
     Returns:
-        Article plaintext.
+        Article plaintext extracted from JATS XML body.
 
     Raises:
-        ValueError: If the HTTP response is non-200 or empty.
+        ValueError: If the HTTP response is non-200, empty, or lacks
+            a ``<body>`` element.
     """
     # Strip leading "PMC" if present for the id parameter.
     numeric_id = pmcid.lstrip("PMC")
@@ -141,8 +145,7 @@ def plaintext_from_efetch(
     params: Dict[str, str] = {
         "db": "pmc",
         "id": f"PMC{numeric_id}",
-        "retmode": "text",
-        "rettype": "ftp",
+        "retmode": "xml",
     }
     if api_key:
         params["api_key"] = api_key
@@ -171,8 +174,8 @@ def plaintext_from_efetch(
             f"efetch returned HTTP {response.status_code} for {pmcid}"
         )
 
-    text = response.text
-    if not text or not text.strip():
-        raise ValueError(f"efetch returned empty text for {pmcid}")
+    xml_text = response.text
+    if not xml_text or not xml_text.strip():
+        raise ValueError(f"efetch returned empty response for {pmcid}")
 
-    return text
+    return plaintext_from_jats(xml_text)

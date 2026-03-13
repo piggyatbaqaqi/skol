@@ -296,43 +296,59 @@ class TestPlaintextFromBioc(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestPlaintextFromEfetch(unittest.TestCase):
-    """Test NCBI E-utilities efetch plaintext download."""
+    """Test NCBI E-utilities efetch XML download and plaintext extraction."""
 
-    @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
-    def test_fetches_plaintext_for_pmcid(self, MockClient):
-        """Downloads plaintext from NCBI efetch for a given PMCID."""
-        from ingestors.extract_plaintext import plaintext_from_efetch
+    # Minimal JATS XML returned by efetch (wrapped in pmc-articleset).
+    _EFETCH_XML = (
+        '<pmc-articleset>'
+        f'<article xmlns:tp="{TP_NS}">'
+        '<front><article-meta></article-meta></front>'
+        '<body><sec><p>Efetch body text.</p></sec></body>'
+        '</article>'
+        '</pmc-articleset>'
+    )
 
+    def _mock_efetch(self, MockClient, xml=None, status=200):
+        """Set up a mocked RateLimitedHttpClient returning XML."""
         mock_instance = MockClient.return_value
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Full article text from efetch."
+        mock_response.status_code = status
+        mock_response.text = xml if xml is not None else self._EFETCH_XML
         mock_instance.get.return_value = mock_response
+        return mock_instance
+
+    @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
+    def test_fetches_and_parses_xml_for_pmcid(self, MockClient):
+        """Downloads JATS XML from efetch and extracts body text."""
+        from ingestors.extract_plaintext import plaintext_from_efetch
+
+        self._mock_efetch(MockClient)
 
         result = plaintext_from_efetch("PMC10858444")
 
-        self.assertEqual(result, "Full article text from efetch.")
-        # Verify the URL contains the right PMCID and retmode=text
-        call_args = mock_instance.get.call_args
-        url = call_args[0][0]
+        self.assertIn("Efetch body text.", result)
+
+    @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
+    def test_url_contains_pmcid_and_retmode_xml(self, MockClient):
+        """Efetch URL contains the PMCID and retmode=xml."""
+        from ingestors.extract_plaintext import plaintext_from_efetch
+
+        mock_instance = self._mock_efetch(MockClient)
+        plaintext_from_efetch("PMC10858444")
+
+        url = mock_instance.get.call_args[0][0]
         self.assertIn("PMC10858444", url)
-        self.assertIn("retmode=text", url)
+        self.assertIn("retmode=xml", url)
 
     @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
     def test_strips_pmc_prefix(self, MockClient):
         """PMCID with or without 'PMC' prefix works."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Article text."
-        mock_instance.get.return_value = mock_response
-
+        mock_instance = self._mock_efetch(MockClient)
         plaintext_from_efetch("10858444")
 
         url = mock_instance.get.call_args[0][0]
-        # Should include PMC prefix in the id parameter
         self.assertIn("10858444", url)
 
     @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
@@ -340,12 +356,7 @@ class TestPlaintextFromEfetch(unittest.TestCase):
         """API key is appended to the efetch URL when provided."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Text."
-        mock_instance.get.return_value = mock_response
-
+        mock_instance = self._mock_efetch(MockClient)
         plaintext_from_efetch("PMC10858444", api_key="MYKEY123")
 
         url = mock_instance.get.call_args[0][0]
@@ -356,12 +367,7 @@ class TestPlaintextFromEfetch(unittest.TestCase):
         """Without an API key, no api_key parameter appears in URL."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Text."
-        mock_instance.get.return_value = mock_response
-
+        mock_instance = self._mock_efetch(MockClient)
         plaintext_from_efetch("PMC10858444")
 
         url = mock_instance.get.call_args[0][0]
@@ -372,11 +378,7 @@ class TestPlaintextFromEfetch(unittest.TestCase):
         """Non-200 HTTP response raises ValueError."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_response.text = "Not found"
-        mock_instance.get.return_value = mock_response
+        self._mock_efetch(MockClient, xml="Not found", status=404)
 
         with self.assertRaises(ValueError) as ctx:
             plaintext_from_efetch("PMC99999999")
@@ -387,11 +389,7 @@ class TestPlaintextFromEfetch(unittest.TestCase):
         """Empty response text raises ValueError."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = ""
-        mock_instance.get.return_value = mock_response
+        self._mock_efetch(MockClient, xml="")
 
         with self.assertRaises(ValueError) as ctx:
             plaintext_from_efetch("PMC10858444")
@@ -402,55 +400,33 @@ class TestPlaintextFromEfetch(unittest.TestCase):
         """Without API key, rate limit should be 3 rps (NCBI default)."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Text."
-        mock_instance.get.return_value = mock_response
-
+        self._mock_efetch(MockClient)
         plaintext_from_efetch("PMC10858444")
 
-        # Verify RateLimitedHttpClient was configured with appropriate rate limits
-        # Without API key: 3 requests/sec = 334ms between requests
         call_kwargs = MockClient.call_args
-        rate_min = call_kwargs[1].get("rate_limit_min_ms",
-                                       call_kwargs[0][1] if len(call_kwargs[0]) > 1 else None)
-        # Should be at least 300ms (3 rps)
-        if rate_min is not None:
-            self.assertGreaterEqual(rate_min, 300)
+        rate_min = call_kwargs[1].get("rate_limit_min_ms")
+        self.assertIsNotNone(rate_min)
+        self.assertGreaterEqual(rate_min, 300)
 
     @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
     def test_rate_limit_faster_with_api_key(self, MockClient):
         """With API key, rate limit should be 10 rps (NCBI with key)."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Text."
-        mock_instance.get.return_value = mock_response
-
+        self._mock_efetch(MockClient)
         plaintext_from_efetch("PMC10858444", api_key="KEY")
 
-        # With API key: 10 requests/sec = 100ms between requests
         call_kwargs = MockClient.call_args
-        rate_min = call_kwargs[1].get("rate_limit_min_ms",
-                                       call_kwargs[0][1] if len(call_kwargs[0]) > 1 else None)
-        # Should be less than the no-key rate
-        if rate_min is not None:
-            self.assertLessEqual(rate_min, 200)
+        rate_min = call_kwargs[1].get("rate_limit_min_ms")
+        self.assertIsNotNone(rate_min)
+        self.assertLessEqual(rate_min, 200)
 
     @patch("ingestors.extract_plaintext.RateLimitedHttpClient")
     def test_uses_db_pmc(self, MockClient):
         """Efetch URL uses db=pmc for PMC articles."""
         from ingestors.extract_plaintext import plaintext_from_efetch
 
-        mock_instance = MockClient.return_value
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Text."
-        mock_instance.get.return_value = mock_response
-
+        mock_instance = self._mock_efetch(MockClient)
         plaintext_from_efetch("PMC10858444")
 
         url = mock_instance.get.call_args[0][0]
