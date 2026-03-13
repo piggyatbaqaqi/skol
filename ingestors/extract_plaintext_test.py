@@ -510,5 +510,138 @@ class TestPlaintextEdgeCases(unittest.TestCase):
         self.assertIn("µm", result)    # micro sign
 
 
+# ---------------------------------------------------------------------------
+# Tests: plaintext_from_yedda
+# ---------------------------------------------------------------------------
+
+class TestPlaintextFromYedda(unittest.TestCase):
+    """Tests for plaintext_from_yedda (tag stripping)."""
+
+    def test_strips_single_block(self):
+        """Strips tags from a single YEDDA block."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        yedda = "[@Glomus hoi S.M. Berch & Trappe#Nomenclature*]"
+        result = plaintext_from_yedda(yedda)
+        self.assertEqual(result, "Glomus hoi S.M. Berch & Trappe")
+
+    def test_multiple_blocks_separated_by_blank_lines(self):
+        """Multiple blocks are joined with blank lines."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        yedda = (
+            "[@First block text#Nomenclature*]\n\n"
+            "[@Second block text#Description*]"
+        )
+        result = plaintext_from_yedda(yedda)
+        self.assertEqual(result, "First block text\n\nSecond block text")
+
+    def test_preserves_newlines_within_block(self):
+        """Newlines within a block are preserved."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        yedda = "[@Line one\nLine two\nLine three#Description*]"
+        result = plaintext_from_yedda(yedda)
+        self.assertIn("Line one\nLine two\nLine three", result)
+
+    def test_empty_string_returns_empty(self):
+        """Empty input returns empty string."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        self.assertEqual(plaintext_from_yedda(""), "")
+
+    def test_no_yedda_blocks_returns_empty(self):
+        """Non-YEDDA text returns empty string."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        self.assertEqual(plaintext_from_yedda("Just plain text."), "")
+
+    def test_skips_empty_blocks(self):
+        """Blocks with only whitespace content are skipped."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        yedda = "[@  #Misc-exposition*]\n\n[@Actual text#Description*]"
+        result = plaintext_from_yedda(yedda)
+        self.assertEqual(result, "Actual text")
+
+    def test_unicode_preserved(self):
+        """Unicode characters are preserved through stripping."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        yedda = "[@Höhnel 1909, München#Nomenclature*]"
+        result = plaintext_from_yedda(yedda)
+        self.assertIn("Höhnel", result)
+        self.assertIn("München", result)
+
+    def test_realistic_annotation(self):
+        """Realistic multi-block YEDDA annotation."""
+        from ingestors.extract_plaintext import plaintext_from_yedda
+
+        yedda = (
+            "[@ISSN (print) 0093-4666\n"
+            "© 2011. Mycotaxon, Ltd.#Misc-exposition*]\n\n"
+            "[@Glomus hoi S.M. Berch & Trappe, Mycologia 77: 654. 1985.#Nomenclature*]\n\n"
+            "[@Key characters: Spores formed singly.#Description*]"
+        )
+        result = plaintext_from_yedda(yedda)
+        self.assertIn("ISSN (print) 0093-4666", result)
+        self.assertIn("Glomus hoi", result)
+        self.assertIn("Key characters:", result)
+        # Should have blank-line separators
+        self.assertIn("\n\n", result)
+
+
+# ---------------------------------------------------------------------------
+# Tests: count_yedda_tags
+# ---------------------------------------------------------------------------
+
+class TestCountYeddaTags(unittest.TestCase):
+    """Tests for count_yedda_tags."""
+
+    def test_counts_distinct_tags(self):
+        """Counts distinct tag types."""
+        from ingestors.extract_plaintext import count_yedda_tags
+
+        yedda = (
+            "[@Text one#Nomenclature*]\n\n"
+            "[@Text two#Description*]\n\n"
+            "[@Text three#Nomenclature*]"
+        )
+        tags, count = count_yedda_tags(yedda)
+        self.assertEqual(tags, {"Nomenclature", "Description"})
+        self.assertEqual(count, 3)
+
+    def test_empty_string(self):
+        """Empty string returns empty set and zero."""
+        from ingestors.extract_plaintext import count_yedda_tags
+
+        tags, count = count_yedda_tags("")
+        self.assertEqual(tags, set())
+        self.assertEqual(count, 0)
+
+    def test_single_block(self):
+        """Single block returns one tag."""
+        from ingestors.extract_plaintext import count_yedda_tags
+
+        tags, count = count_yedda_tags("[@Text#Etymology*]")
+        self.assertEqual(tags, {"Etymology"})
+        self.assertEqual(count, 1)
+
+    def test_many_tags(self):
+        """Multiple distinct tags are all counted."""
+        from ingestors.extract_plaintext import count_yedda_tags
+
+        yedda = "\n\n".join(
+            f"[@Text {i}#{tag}*]"
+            for i, tag in enumerate([
+                "Nomenclature", "Description", "Etymology",
+                "Key", "Misc-exposition", "Figure",
+            ])
+        )
+        tags, count = count_yedda_tags(yedda)
+        self.assertEqual(len(tags), 6)
+        self.assertEqual(count, 6)
+
+
 if __name__ == "__main__":
     unittest.main()

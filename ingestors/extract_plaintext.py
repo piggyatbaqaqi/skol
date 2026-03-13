@@ -5,14 +5,16 @@ Provides functions to extract article plaintext from:
 - JATS/TaxPub XML strings
 - BioC-JSON structures
 - NCBI E-utilities efetch API
+- YEDDA annotation strings (tag stripping)
 
 This module is the single point of entry for obtaining article.txt
 content. bin/extract_plaintext.py provides the CLI; predict_classifier
 requires article.txt to already exist.
 """
 
+import re
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlencode
 
 from ingestors.bioc_to_yedda import clean_passage_text
@@ -179,3 +181,45 @@ def plaintext_from_efetch(
         raise ValueError(f"efetch returned empty response for {pmcid}")
 
     return plaintext_from_jats(xml_text)
+
+
+# YEDDA tag pattern: [@text#Tag*]
+_YEDDA_BLOCK_RE = re.compile(r"\[@\s*(.*?)\s*#([^*]+)\*\]", re.DOTALL)
+
+
+def plaintext_from_yedda(yedda_text: str) -> str:
+    """Extract plaintext from a YEDDA annotation string by stripping tags.
+
+    Recovers the original article text from ``[@text#Tag*]`` blocks.
+    Blocks are joined by blank lines, preserving paragraph structure.
+
+    Args:
+        yedda_text: YEDDA-annotated string.
+
+    Returns:
+        Plain text with tags stripped, blocks separated by blank lines.
+    """
+    parts: List[str] = []
+    for match in _YEDDA_BLOCK_RE.finditer(yedda_text):
+        text = match.group(1).strip()
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
+def count_yedda_tags(yedda_text: str) -> Tuple[Set[str], int]:
+    """Count distinct tag types in a YEDDA annotation string.
+
+    Args:
+        yedda_text: YEDDA-annotated string.
+
+    Returns:
+        Tuple of (set of tag names, count of blocks).
+    """
+    tags: Set[str] = set()
+    block_count = 0
+    for match in _YEDDA_BLOCK_RE.finditer(yedda_text):
+        tag = match.group(2).strip()
+        tags.add(tag)
+        block_count += 1
+    return tags, block_count
