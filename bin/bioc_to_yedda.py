@@ -89,6 +89,7 @@ def _write_couchdb(
     source_doc: Dict[str, Any],
     doc_id: str,
     target_db: Any,
+    source_database: str,
     verbosity: int,
 ) -> None:
     # Create or update document in training database.
@@ -103,7 +104,7 @@ def _write_couchdb(
             target_doc[key] = source_doc[key]
 
     target_doc["source"] = "bioc_to_yedda"
-    target_doc["source_database"] = "skol_dev"
+    target_doc["source_database"] = source_database
     target_db.save(target_doc)
 
     # Attach YEDDA text.
@@ -138,6 +139,7 @@ def _process_doc(
     output_to: str,
     output_dir: str,
     target_db: Any,
+    source_database: str,
     verbosity: int,
 ) -> bool:
     """Process a single document. Returns True on success."""
@@ -159,7 +161,9 @@ def _process_doc(
     elif output_to == "file":
         _write_file(yedda_text, doc_id, output_dir, verbosity)
     elif output_to == "couchdb":
-        _write_couchdb(yedda_text, doc, doc_id, target_db, verbosity)
+        _write_couchdb(
+            yedda_text, doc, doc_id, target_db, source_database, verbosity,
+        )
 
     return True
 
@@ -326,7 +330,8 @@ def main() -> None:
             continue
 
         if _process_doc(
-            doc, doc_id, args.output_to, args.output_dir, target_db, verbosity
+            doc, doc_id, args.output_to, args.output_dir,
+            target_db, database, verbosity,
         ):
             success += 1
         else:
