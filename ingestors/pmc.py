@@ -484,6 +484,15 @@ class PmcBiocIngestor(Ingestor):
                       "(already complete)")
             return
 
+        if self.verbosity >= 2:
+            parts = []
+            if needs_bioc:
+                parts.append("BioC JSON")
+            if needs_xml:
+                parts.append("XML")
+            print(f"Processing PMC{pmcid} "
+                  f"({' + '.join(parts)})")
+
         if self.dry_run:
             if self.verbosity >= 2:
                 print(f"Dry run: PMC{pmcid}")
