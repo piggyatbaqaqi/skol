@@ -1,0 +1,149 @@
+(skol) piggy@puchpuchobs:~/src/github.com/piggyatbaqaqi/skol$ python bin/train_classifier.py --model logistic_sections --force --read-text --expire none 
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+Connecting to Redis at localhost:6380...
+✓ Connected to Redis
+
+======================================================================
+Training Model: Logistic Regression (sections, words + suffixes + sections)
+======================================================================
+Redis key: skol:classifier:model:logistic_sections_logistic_sections
+CouchDB: http://127.0.0.1:5984
+Training database: skol_training
+Mode: FORCE (train even if model exists)
+
+Initializing Spark session...
+WARNING: Using incubator modules: jdk.incubator.vector
+Warning: Ignoring non-Spark config property: cloudant.username
+Warning: Ignoring non-Spark config property: cloudant.host
+Warning: Ignoring non-Spark config property: cloudant.password
+Warning: Ignoring non-Spark config property: cloudant.protocol
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+26/03/14 17:02:12 WARN Utils: Your hostname, puchpuchobs, resolves to a loopback address: 127.0.1.1; using 10.1.10.58 instead (on interface wlp130s0f0)
+26/03/14 17:02:12 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+:: loading settings :: url = jar:file:/data/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/pyspark/jars/ivy-2.5.3.jar!/org/apache/ivy/core/settings/ivysettings.xml
+Ivy Default Cache set to: /home/piggy/.ivy2.5.2/cache
+The jars for the packages stored in: /home/piggy/.ivy2.5.2/jars
+org.apache.bahir#spark-sql-cloudant_2.12 added as a dependency
+:: resolving dependencies :: org.apache.spark#spark-submit-parent-14864f73-d18e-4266-a39d-28484221c53c;1.0
+	confs: [default]
+	found org.apache.bahir#spark-sql-cloudant_2.12;2.4.0 in central
+	found org.apache.bahir#bahir-common_2.12;2.4.0 in central
+	found org.spark-project.spark#unused;1.0.0 in central
+	found com.cloudant#cloudant-client;2.17.0 in central
+	found com.google.code.gson#gson;2.8.2 in central
+	found commons-codec#commons-codec;1.6 in central
+	found com.cloudant#cloudant-http;2.17.0 in central
+	found commons-io#commons-io;2.4 in central
+	found com.squareup.okhttp3#okhttp;3.12.2 in central
+	found com.squareup.okio#okio;1.15.0 in central
+	found com.typesafe#config;1.3.1 in central
+	found org.scalaj#scalaj-http_2.12;2.3.0 in central
+:: resolution report :: resolve 159ms :: artifacts dl 4ms
+	:: modules in use:
+	com.cloudant#cloudant-client;2.17.0 from central in [default]
+	com.cloudant#cloudant-http;2.17.0 from central in [default]
+	com.google.code.gson#gson;2.8.2 from central in [default]
+	com.squareup.okhttp3#okhttp;3.12.2 from central in [default]
+	com.squareup.okio#okio;1.15.0 from central in [default]
+	com.typesafe#config;1.3.1 from central in [default]
+	commons-codec#commons-codec;1.6 from central in [default]
+	commons-io#commons-io;2.4 from central in [default]
+	org.apache.bahir#bahir-common_2.12;2.4.0 from central in [default]
+	org.apache.bahir#spark-sql-cloudant_2.12;2.4.0 from central in [default]
+	org.scalaj#scalaj-http_2.12;2.3.0 from central in [default]
+	org.spark-project.spark#unused;1.0.0 from central in [default]
+	---------------------------------------------------------------------
+	|                  |            modules            ||   artifacts   |
+	|       conf       | number| search|dwnlded|evicted|| number|dwnlded|
+	---------------------------------------------------------------------
+	|      default     |   12  |   0   |   0   |   0   ||   12  |   0   |
+	---------------------------------------------------------------------
+:: retrieving :: org.apache.spark#spark-submit-parent-14864f73-d18e-4266-a39d-28484221c53c
+	confs: [default]
+	0 artifacts copied, 12 already retrieved (0kB/3ms)
+26/03/14 17:02:13 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+Creating classifier with SkolClassifierV2...
+
+Training model...
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/pyspark/sql/udf.py:134: UserWarning: Cannot infer the eval type from type hints. 
+  warnings.warn("Cannot infer the eval type from type hints. ", UserWarning)
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+/home/piggy/miniconda3/envs/skol/lib/python3.13/site-packages/couchdb/__init__.py:15: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __version__ = __import__('pkg_resources').get_distribution('CouchDB').version
+                                                                                
+[LogisticRegressionSkolModel] Using class weights:
+  Nomenclature         250.00
+  Description           20.00
+  Misc-exposition       20.00
+
+26/03/14 17:02:25 WARN SparkStringUtils: Truncated the string representation of a plan since it was too large. This behavior can be adjusted by setting 'spark.sql.debug.maxToStringFields'.
+[Classifier Fit] Model training completed, starting evaluation                  
+[Classifier Fit] Splitting data for evaluation (80/20)
+[Classifier Fit] Making predictions on test set
+[Classifier Fit] Predictions completed, validating output
+[Classifier Fit] Predictions count: 24614
+[Classifier Fit] Predictions columns: ['doc_id', 'human_url', 'attachment_name', 'label', 'value', 'section_name', 'words', 'word_tf', 'word_idf', 'suffixes', 'suffix_tf', 'suffix_idf', 'section_name_filled', 'section_tokens', 'section_tf', 'section_idf', 'combined_idf', 'label_indexed', 'rawPrediction', 'probability', 'prediction', 'probabilities']
+[Classifier Fit] First prediction:
+  Row(doc_id='069579ce377927d2f0d51344533b73dd', human_url='https://mykoweb.com/systematics/journals/Mycotaxon/Mycotaxon%20v117.pdf', attachment_name='article.txt.ann', label='Misc-exposition', value='ISSN (print) 0093-4666', section_name=None, words=['issn', '(print)', '0093-4666'], word_tf=SparseVector(3600, {877: 1.0, 1950: 1.0, 2009: 1.0}), word_idf=SparseVector(3600, {877: 5.7781, 1950: 6.5008, 2009: 6.5267}), suffixes=['sn', 'ssn', 'issn', 't)', 'nt)', 'int)', '66', '666', '4666'], suffix_tf=SparseVector(400, {}), suffix_idf=SparseVector(400, {}), section_name_filled='', section_tokens=[''], section_tf=SparseVector(24, {0: 1.0}), section_idf=SparseVector(24, {0: 0.0451}), combined_idf=SparseVector(4024, {877: 5.7781, 1950: 6.5008, 2009: 6.5267, 4000: 0.0451}), label_indexed=0.0, rawPrediction=DenseVector([3.9484, -1.5242, -2.4242]), probability=DenseVector([0.9941, 0.0042, 0.0017]), prediction=0.0, probabilities=[0.9941269494774755, 0.00417535037790988, 0.0016977001446147105])
+[Classifier Fit] Calculating statistics
+
+======================================================================
+Model Evaluation Statistics (Line-Level)
+======================================================================
+
+Overall Metrics:
+  Accuracy:  0.9637
+  Precision: 0.9837
+  Recall:    0.9746
+  F1 Score:  0.9644
+  Loss:      0.1522
+  Total Predictions: 24614
+
+Per-Class Metrics:
+Class                Accuracy   Precision  Recall     F1         Loss       Support   
+--------------------------------------------------------------------------------
+Misc-exposition      0.9746     0.9837     0.9746     0.9791     0.1295     21303     
+Nomenclature         0.9763     0.7589     0.9763     0.8540     0.0917     1644      
+Description          0.8122     0.9713     0.8122     0.8847     0.5024     1667      
+======================================================================
+
+[Classifier Fit] Statistics calculated, adding metadata
+[Classifier Fit] Evaluation complete, returning stats
+
+======================================================================
+Training Complete!
+======================================================================
+  Accuracy: 0.9637
+  F1 Score: 0.9644
+
+✓ Model saved to Redis with key: skol:classifier:model:logistic_sections_logistic_sections
+  Expiration: None (never expires)
+
+Spark session stopped.
