@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlencode
 
-from ingestors.jats_to_yedda import extract_text
+from ingestors.jats_to_yedda import extract_text, strip_ns
 from ingestors.rate_limited_client import RateLimitedHttpClient
 from pdf_section_extractor import PDFSectionExtractor
 
@@ -67,6 +67,7 @@ def plaintext_from_jats(xml_string: str) -> str:
         ValueError: If the XML has no ``<body>`` element.
     """
     root = ET.fromstring(xml_string)
+    strip_ns(root)
     body = root.find(".//body")
     if body is None:
         raise ValueError("JATS XML has no <body> element")

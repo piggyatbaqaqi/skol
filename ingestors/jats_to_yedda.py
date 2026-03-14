@@ -28,6 +28,29 @@ TP_PREFIX = f"{{{TP_NS}}}"
 
 # Tags to skip during text extraction (contain UUIDs, MycoBank IDs, DOIs)
 _DEFAULT_SKIP_TAGS = frozenset({"object-id"})
+
+
+def strip_ns(root: ET.Element) -> ET.Element:
+    """Strip all namespace prefixes from element tags in an ElementTree.
+
+    PMC OAI-PMH wraps JATS elements in a namespace
+    (e.g., ``{https://jats.nlm.nih.gov/ns/archiving/1.4/}body``).
+    Stripping namespaces allows ``find()``, ``iter()``, and ``findall()``
+    to match elements by local name.
+
+    Modifies the tree in place and returns the root for convenience.
+    """
+    for elem in root.iter():
+        if "}" in elem.tag:
+            elem.tag = elem.tag.split("}", 1)[1]
+        # Also strip namespaces from attribute names
+        attribs = {}
+        for key, val in elem.attrib.items():
+            if "}" in key:
+                key = key.split("}", 1)[1]
+            attribs[key] = val
+        elem.attrib = attribs
+    return root
 # Also skip fig elements when extracting parent section text
 _SKIP_TAGS_WITH_FIG = frozenset({"object-id", "fig"})
 
@@ -308,6 +331,8 @@ def jats_xml_to_tagged_blocks(xml_string: str) -> List[TaggedBlock]:
         root = ET.fromstring(xml_string)
     except ET.ParseError as exc:
         raise ValueError(f"Failed to parse JATS XML: {exc}") from exc
+
+    strip_ns(root)
 
     blocks: List[TaggedBlock] = []
 

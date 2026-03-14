@@ -335,11 +335,15 @@ def evaluate_documents(
             skipped += 1
             continue
 
-        # Get predicted annotation
-        try:
-            pred_att = predicted_db.get_attachment(row.id, "article.txt.ann")
-        except Exception:
-            pred_att = None
+        # Get predicted annotation (try .txt.ann first, then .pdf.ann)
+        pred_att = None
+        for ann_name in ("article.txt.ann", "article.pdf.ann"):
+            try:
+                pred_att = predicted_db.get_attachment(row.id, ann_name)
+            except Exception:
+                pass
+            if pred_att is not None:
+                break
 
         if pred_att is None:
             if verbosity >= 2:
@@ -565,25 +569,11 @@ def main() -> None:
     )
 
     # Resolve predicted database
-    predicted_db_name = args.predicted_db
-    experiment_doc = None
-
+    # When --experiment is used, get_env_config() already resolved ingest_db_name
     if args.experiment:
-        exp_db_name = config.get(
-            "experiments_database", "skol_experiments",
-        )
-        try:
-            exp_db = server[exp_db_name]
-            experiment_doc = exp_db[args.experiment]
-            predicted_db_name = (
-                experiment_doc.get("databases", {}).get("ingest", "skol_dev")
-            )
-        except Exception as exc:
-            print(
-                f"Error: could not load experiment '{args.experiment}': {exc}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+        predicted_db_name = config['ingest_db_name']
+    else:
+        predicted_db_name = args.predicted_db
 
     # Open databases
     try:
@@ -627,8 +617,19 @@ def main() -> None:
             print(f"\nJSON results written to {args.output}", file=sys.stderr)
 
     # Save to experiment
-    if args.save_to_experiment and experiment_doc is not None:
+    if args.save_to_experiment and args.experiment:
         from datetime import datetime, timezone
+        exp_db_name = config.get("experiments_database", "skol_experiments")
+        try:
+            exp_db = server[exp_db_name]
+            experiment_doc = exp_db[args.experiment]
+        except Exception as exc:
+            print(
+                f"Error: could not load experiment '{args.experiment}' "
+                f"for saving results: {exc}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         experiment_doc["evaluation"] = {
             "macro_f1": evaluation["macro_f1"],
             "per_tag": {

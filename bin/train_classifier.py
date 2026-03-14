@@ -151,7 +151,10 @@ def train_classifier(
     redis_expire = expire_time
 
     # Build Redis key for model
-    classifier_model_name = f"skol:classifier:model:{model_name}_{config['model_version']}"
+    if config.get('classifier_model_key'):
+        classifier_model_name = config['classifier_model_key']
+    else:
+        classifier_model_name = f"skol:classifier:model:{model_name}_{config['model_version']}"
 
     # Build CouchDB URL
     couchdb_url = f"http://{config['couchdb_host']}"

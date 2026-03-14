@@ -6,15 +6,17 @@ variables with sensible defaults, used by all bin scripts.
 
 Configuration priority (highest to lowest):
 1. Command-line arguments
-2. Environment variables
-3. /home/skol/.skol_env file
-4. Default values
+2. Experiment values (from skol_experiments CouchDB, when --experiment is set)
+3. Environment variables
+4. /home/skol/.skol_env file
+5. Default values
 """
 
 import argparse
 import os
+import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Set
 
 # Cache for .skol_env file contents
 _skol_env_cache: Optional[Dict[str, str]] = None
@@ -102,11 +104,117 @@ def _parse_doc_ids(value: Optional[str]) -> Optional[List[str]]:
     return [doc_id.strip() for doc_id in value.split(',') if doc_id.strip()]
 
 
+def _load_experiment(config: Dict[str, Any], experiment_name: str) -> Dict[str, Any]:
+    """Load an experiment document from the skol_experiments CouchDB database.
+
+    Uses lazy import of couchdb to avoid adding a hard dependency for scripts
+    that don't use experiments.
+
+    Args:
+        config: Base configuration with CouchDB connection settings.
+        experiment_name: The experiment document ID to load.
+
+    Returns:
+        The experiment document as a dict.
+
+    Raises:
+        SystemExit: If the experiment database or document is not found.
+    """
+    try:
+        import couchdb as couchdb_lib
+    except ImportError:
+        print(
+            "Error: python-couchdb is required for --experiment. "
+            "Install it with: pip install couchdb",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    db_name = config.get('experiments_database', 'skol_experiments')
+    try:
+        server = couchdb_lib.Server(config['couchdb_url'])
+        server.resource.credentials = (
+            config['couchdb_username'],
+            config['couchdb_password'],
+        )
+        if db_name not in server:
+            print(
+                f"Error: experiments database '{db_name}' not found.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        db = server[db_name]
+        doc = db.get(experiment_name)
+        if doc is None:
+            print(
+                f"Error: experiment '{experiment_name}' not found in {db_name}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        return dict(doc)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print(
+            f"Error: could not load experiment '{experiment_name}': {exc}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
+def _apply_experiment(
+    config: Dict[str, Any],
+    experiment_doc: Dict[str, Any],
+    cli_explicit_keys: Set[str],
+) -> None:
+    """Apply experiment values to config, skipping CLI-explicit keys.
+
+    Mapping from experiment document fields to config keys:
+        experiment.databases.ingest    -> ingest_db_name
+        experiment.databases.training  -> training_database
+        experiment.databases.taxa      -> taxon_db_name, source_db
+        experiment.databases.taxa_full -> dest_db
+        experiment.redis_keys.classifier_model -> classifier_model_key
+        experiment.redis_keys.embedding        -> embedding_name
+
+    Args:
+        config: The config dict to modify in place.
+        experiment_doc: The experiment document from CouchDB.
+        cli_explicit_keys: Set of config keys explicitly set via CLI args.
+    """
+    databases = experiment_doc.get('databases', {})
+    redis_keys = experiment_doc.get('redis_keys', {})
+
+    db_mapping = [
+        ('ingest', ['ingest_db_name']),
+        ('training', ['training_database']),
+        ('taxa', ['taxon_db_name', 'source_db']),
+        ('taxa_full', ['dest_db']),
+    ]
+    for exp_field, config_keys in db_mapping:
+        value = databases.get(exp_field)
+        if value:
+            for config_key in config_keys:
+                if config_key not in cli_explicit_keys:
+                    config[config_key] = value
+
+    redis_mapping = [
+        ('classifier_model', 'classifier_model_key'),
+        ('embedding', 'embedding_name'),
+    ]
+    for exp_field, config_key in redis_mapping:
+        value = redis_keys.get(exp_field)
+        if value:
+            if config_key not in cli_explicit_keys:
+                config[config_key] = value
+
+
 def get_env_config() -> Dict[str, Any]:
     """
     Get complete environment configuration from command-line args, environment variables, or defaults.
 
-    Command-line arguments take priority over environment variables, which take priority over defaults.
+    Command-line arguments take priority over experiment values, which take
+    priority over environment variables, which take priority over defaults.
     Arguments follow the pattern: --config-key for config['config_key']
     (underscores in keys become dashes in argument names)
 
@@ -154,6 +262,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Model settings
         'model_version': _get_env('MODEL_VERSION', 'v2.0'),
+        'classifier_model_key': '',  # Populated by experiment resolution
         'classifier_model_expire': _get_env('MODEL_EXPIRE', ''),
 
         # Embedding settings
@@ -188,7 +297,7 @@ def get_env_config() -> Dict[str, Any]:
         'ncbi_api_key': _get_env('NCBI_API_KEY', '') or None,
 
         # Experiment framework
-        'experiment_name': _get_env('EXPERIMENT_NAME', 'production'),
+        'experiment_name': _get_env('EXPERIMENT_NAME', ''),
         'experiments_database': _get_env('EXPERIMENTS_DATABASE', 'skol_experiments'),
 
         # General settings
@@ -251,12 +360,19 @@ def get_env_config() -> Dict[str, Any]:
     parser.add_argument('--doc-id', '--doc-ids', type=str, default=None, dest='doc_ids',
                         help='Process only specific document ID(s), comma-separated')
 
+    # Experiment flag (resolves databases and Redis keys from experiment record)
+    parser.add_argument('--experiment', type=str, default=None, dest='experiment_name',
+                        help='Experiment name — resolves databases and Redis keys from skol_experiments')
+
     # Parse known args (ignore unknown args to avoid breaking scripts with their own arguments)
     args, _ = parser.parse_known_args()
 
     # Override base config with command-line arguments (if provided)
+    # Track which keys were explicitly set via CLI so experiment values don't override them
+    cli_explicit_keys: Set[str] = set()
     for key, value in vars(args).items():
         if value is not None:
+            cli_explicit_keys.add(key)
             if key == 'annotated_path':
                 base_config[key] = Path(value)
             elif key == 'doc_ids':
@@ -264,6 +380,13 @@ def get_env_config() -> Dict[str, Any]:
                 base_config[key] = _parse_doc_ids(value)
             else:
                 base_config[key] = value
+
+    # Experiment resolution: load experiment doc and apply values for
+    # any config keys that were not explicitly set via CLI
+    experiment_name = base_config.get('experiment_name', '')
+    if experiment_name:
+        experiment_doc = _load_experiment(base_config, experiment_name)
+        _apply_experiment(base_config, experiment_doc, cli_explicit_keys)
 
     return base_config
 
