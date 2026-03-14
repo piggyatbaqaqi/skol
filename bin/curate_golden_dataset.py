@@ -140,6 +140,53 @@ def select_training_docs(
     return selected
 
 
+def subsample_training_docs(
+    selections: List[Dict[str, Any]],
+    hand_limit: int,
+    verbosity: int,
+) -> List[Dict[str, Any]]:
+    """Subsample training docs for the golden holdout set.
+
+    Uses stratified selection: sorts by tag count (descending) then doc_id,
+    and picks evenly-spaced documents so the holdout covers the full range
+    of annotation complexity.
+
+    Args:
+        selections: All qualifying training doc infos.
+        hand_limit: Maximum number to retain for golden dataset.
+        verbosity: Logging verbosity.
+
+    Returns:
+        Subsampled list of doc infos.
+    """
+    if len(selections) <= hand_limit:
+        return selections
+
+    # Sort by tag diversity (descending), then block count (descending),
+    # then doc_id for determinism.
+    sorted_sels = sorted(
+        selections,
+        key=lambda s: (-len(s["tags"]), -s["block_count"], s["doc_id"]),
+    )
+
+    # Pick evenly spaced indices through the sorted list.
+    n = len(sorted_sels)
+    step = n / hand_limit
+    sampled = [sorted_sels[int(i * step)] for i in range(hand_limit)]
+
+    if verbosity >= 1:
+        tag_counts = [len(s["tags"]) for s in sampled]
+        block_counts = [s["block_count"] for s in sampled]
+        print(
+            f"Hand-annotated holdout: {len(sampled)} of {n} "
+            f"(tag types: {min(tag_counts)}-{max(tag_counts)}, "
+            f"blocks: {min(block_counts)}-{max(block_counts)})",
+            file=sys.stderr,
+        )
+
+    return sampled
+
+
 # ---------------------------------------------------------------------------
 # Step 2: Obtain plaintext for training documents
 # ---------------------------------------------------------------------------
@@ -716,6 +763,12 @@ def main() -> None:
         help="Minimum distinct YEDDA tag types for training docs (default: 4).",
     )
     parser.add_argument(
+        "--hand-limit",
+        type=int,
+        default=30,
+        help="Max hand-annotated docs for golden holdout (default: 30).",
+    )
+    parser.add_argument(
         "--jats-limit",
         type=int,
         default=75,
@@ -771,9 +824,14 @@ def main() -> None:
             file=sys.stderr,
         )
 
-    # Step 1: Select training documents
-    training_selections = select_training_docs(
+    # Step 1: Select training documents (all qualifying)
+    all_training = select_training_docs(
         server, training_db_name, args.min_tags, verbosity,
+    )
+
+    # Step 1b: Subsample to holdout size
+    training_selections = subsample_training_docs(
+        all_training, args.hand_limit, verbosity,
     )
 
     # Step 2: Obtain plaintext for training documents
