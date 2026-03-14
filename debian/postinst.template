@@ -221,7 +221,7 @@ chmod 755 ${INSTALL_DIR}/bin/with_skol
 chown skol:skol ${INSTALL_DIR}/bin/with_skol
 
 # Create symlinks for each command in the version-specific bin directory
-for cmd in bioc_to_yedda jats_to_yedda ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis; do
+for cmd in jats_to_yedda ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis; do
     ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}
 done
 
@@ -264,7 +264,7 @@ done
 
 echo "SKOL ${VERSION} installation complete."
 echo "Commands available via ${BIN_SYMLINK}/:"
-echo "  bioc_to_yedda, jats_to_yedda, ingest, train_classifier, predict_classifier,"
+echo "  jats_to_yedda, ingest, train_classifier, predict_classifier,"
 echo "  extract_taxa_to_couchdb, embed_taxa, taxa_to_json, build_vocab_tree,"
 echo "  manage_fungaria, watch_install, watch_incremental, rebuild_redis"
 echo "Or use: ${BIN_SYMLINK}/with_skol <command>"

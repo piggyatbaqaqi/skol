@@ -52,7 +52,7 @@ try:
     from .medwin_publishers import MedwinPublishersIngestor
     from .mycosphere import MycosphereIngestor
     from .pensoft import PensoftIngestor
-    from .pmc import PmcBiocIngestor
+    from .pmc import PmcIngestor
     from .taylor_francis import TaylorFrancisIngestor
     from .publications import PublicationRegistry
 except ImportError:
@@ -66,7 +66,7 @@ except ImportError:
     from ingestors.medwin_publishers import MedwinPublishersIngestor
     from ingestors.mycosphere import MycosphereIngestor
     from ingestors.pensoft import PensoftIngestor
-    from ingestors.pmc import PmcBiocIngestor
+    from ingestors.pmc import PmcIngestor
     from ingestors.taylor_francis import TaylorFrancisIngestor
     from ingestors.publications import PublicationRegistry
 
@@ -83,7 +83,7 @@ INGESTOR_CLASSES = {
     'MedwinPublishersIngestor': MedwinPublishersIngestor,
     'MycosphereIngestor': MycosphereIngestor,
     'PensoftIngestor': PensoftIngestor,
-    'PmcBiocIngestor': PmcBiocIngestor,
+    'PmcIngestor': PmcIngestor,
     'TaylorFrancisIngestor': TaylorFrancisIngestor,
 }
 
@@ -309,20 +309,6 @@ Environment Variables for Work Control:
              'marked unavailable.'
     )
     parser.add_argument(
-        '--download-bioc-json',
-        default=None,
-        action=argparse.BooleanOptionalAction,
-        help='Download BioC JSON (default: per-source config). '
-             'Use --no-download-bioc-json to suppress.'
-    )
-    parser.add_argument(
-        '--recheck-bioc-json',
-        action='store_true',
-        default=False,
-        help='Retry BioC JSON download even if previously '
-             'marked unavailable.'
-    )
-    parser.add_argument(
         '--download-text',
         default=None,
         action=argparse.BooleanOptionalAction,
@@ -352,8 +338,6 @@ def run_ingestion(
     download_pdf: Optional[bool] = None,
     download_xml: Optional[bool] = None,
     recheck_xml: bool = False,
-    download_bioc_json: Optional[bool] = None,
-    recheck_bioc_json: bool = False,
     download_text: Optional[bool] = None,
     recheck_text: bool = False,
     pmcids: Optional[List[str]] = None,
@@ -373,8 +357,6 @@ def run_ingestion(
         download_pdf: Override PDF download (None = config)
         download_xml: Override XML download (None = config)
         recheck_xml: Retry XML even if marked unavailable
-        download_bioc_json: Override BioC JSON download (None = config)
-        recheck_bioc_json: Retry BioC JSON even if marked unavailable
         download_text: Override plaintext download (None = config)
         recheck_text: Retry plaintext even if marked unavailable
         pmcids: If set, process only these source-specific IDs
@@ -426,10 +408,6 @@ def run_ingestion(
         constructor_args['download_xml'] = download_xml
     if recheck_xml:
         constructor_args['recheck_xml'] = True
-    if download_bioc_json is not None:
-        constructor_args['download_bioc_json'] = download_bioc_json
-    if recheck_bioc_json:
-        constructor_args['recheck_bioc_json'] = True
     if download_text is not None:
         constructor_args['download_text'] = download_text
     if recheck_text:
@@ -550,8 +528,6 @@ def main() -> int:
                     download_pdf=args.download_pdf,
                     download_xml=args.download_xml,
                     recheck_xml=args.recheck_xml,
-                    download_bioc_json=args.download_bioc_json,
-                    recheck_bioc_json=args.recheck_bioc_json,
                     download_text=args.download_text,
                     recheck_text=args.recheck_text,
                     pmcids=pmcids,
@@ -585,8 +561,6 @@ def main() -> int:
                 download_pdf=args.download_pdf,
                 download_xml=args.download_xml,
                 recheck_xml=args.recheck_xml,
-                download_bioc_json=args.download_bioc_json,
-                recheck_bioc_json=args.recheck_bioc_json,
                 download_text=args.download_text,
                 recheck_text=args.recheck_text,
                 pmcids=pmcids,
@@ -614,8 +588,6 @@ def main() -> int:
                 download_pdf=args.download_pdf,
                 download_xml=args.download_xml,
                 recheck_xml=args.recheck_xml,
-                download_bioc_json=args.download_bioc_json,
-                recheck_bioc_json=args.recheck_bioc_json,
                 download_text=args.download_text,
                 recheck_text=args.recheck_text,
                 pmcids=pmcids,
@@ -644,8 +616,6 @@ def main() -> int:
                 download_pdf=args.download_pdf,
                 download_xml=args.download_xml,
                 recheck_xml=args.recheck_xml,
-                download_bioc_json=args.download_bioc_json,
-                recheck_bioc_json=args.recheck_bioc_json,
                 download_text=args.download_text,
                 recheck_text=args.recheck_text,
                 pmcids=pmcids,

@@ -3,7 +3,6 @@
 Tests for:
 - plaintext_from_pdf: PDF bytes → text via PDFSectionExtractor
 - plaintext_from_jats: JATS XML string → body text
-- plaintext_from_bioc: BioC-JSON list → passage text
 - plaintext_from_efetch: PMCID → text via NCBI E-utilities
 """
 
@@ -29,21 +28,6 @@ def _jats_article(body_xml: str) -> str:
         f"<body>{body_xml}</body>"
         "</article>"
     )
-
-
-def _bioc_json(passages):
-    """Build a minimal BioC-JSON list from a list of (section_type, text) tuples."""
-    return [{
-        "documents": [{
-            "passages": [
-                {
-                    "infons": {"section_type": sec, "type": ptype},
-                    "text": text,
-                }
-                for sec, ptype, text in passages
-            ]
-        }]
-    }]
 
 
 # ---------------------------------------------------------------------------
@@ -221,77 +205,6 @@ class TestPlaintextFromJats(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Tests: plaintext_from_bioc
-# ---------------------------------------------------------------------------
-
-class TestPlaintextFromBioc(unittest.TestCase):
-    """Test BioC-JSON to plaintext extraction."""
-
-    def test_extracts_passage_text(self):
-        """Extracts and joins passage text from BioC-JSON."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        bioc = _bioc_json([
-            ("INTRO", "paragraph", "Introduction paragraph."),
-            ("RESULTS", "paragraph", "Results paragraph."),
-        ])
-        result = plaintext_from_bioc(bioc)
-        self.assertIn("Introduction paragraph.", result)
-        self.assertIn("Results paragraph.", result)
-
-    def test_cleans_bom_characters(self):
-        """BOM characters are stripped from passage text."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        bioc = _bioc_json([
-            ("RESULTS", "paragraph", "\ufeffText with BOM."),
-        ])
-        result = plaintext_from_bioc(bioc)
-        self.assertIn("Text with BOM.", result)
-        self.assertNotIn("\ufeff", result)
-
-    def test_skips_empty_passages(self):
-        """Passages with empty text are omitted."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        bioc = _bioc_json([
-            ("RESULTS", "paragraph", "Visible text."),
-            ("RESULTS", "paragraph", ""),
-            ("RESULTS", "paragraph", "  "),
-        ])
-        result = plaintext_from_bioc(bioc)
-        self.assertIn("Visible text.", result)
-        # Should not have extra blank lines from empty passages
-        self.assertNotIn("\n\n\n", result)
-
-    def test_empty_bioc_raises_value_error(self):
-        """Empty BioC-JSON list raises ValueError."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        with self.assertRaises(ValueError):
-            plaintext_from_bioc([])
-
-    def test_no_documents_raises_value_error(self):
-        """BioC-JSON with no documents raises ValueError."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        with self.assertRaises(ValueError):
-            plaintext_from_bioc([{"documents": []}])
-
-    def test_passages_separated_by_newlines(self):
-        """Multiple passages are separated by newlines."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        bioc = _bioc_json([
-            ("INTRO", "paragraph", "First passage."),
-            ("RESULTS", "paragraph", "Second passage."),
-        ])
-        result = plaintext_from_bioc(bioc)
-        # Passages should be separate, not run together
-        self.assertNotIn("First passage.Second passage.", result)
-
-
-# ---------------------------------------------------------------------------
 # Tests: plaintext_from_efetch
 # ---------------------------------------------------------------------------
 
@@ -460,31 +373,6 @@ class TestPlaintextEdgeCases(unittest.TestCase):
         self.assertIn("Mycena", result)
         self.assertIn("Pileus 5-15 mm diam.", result)
 
-    def test_bioc_multiple_documents_uses_first(self):
-        """BioC-JSON with multiple documents uses the first one."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        bioc = [{
-            "documents": [
-                {
-                    "passages": [
-                        {"infons": {"section_type": "INTRO", "type": "paragraph"},
-                         "text": "First doc text."}
-                    ]
-                },
-                {
-                    "passages": [
-                        {"infons": {"section_type": "INTRO", "type": "paragraph"},
-                         "text": "Second doc text."}
-                    ]
-                },
-            ]
-        }]
-        result = plaintext_from_bioc(bioc)
-        self.assertIn("First doc text.", result)
-        # Second document should not be included
-        self.assertNotIn("Second doc text.", result)
-
     def test_jats_unicode_preserved(self):
         """Unicode characters (accents, special chars) are preserved."""
         from ingestors.extract_plaintext import plaintext_from_jats
@@ -497,18 +385,6 @@ class TestPlaintextEdgeCases(unittest.TestCase):
         self.assertIn("Höhnel", result)
         self.assertIn("München", result)
         self.assertIn("Réblová", result)
-
-    def test_bioc_unicode_preserved(self):
-        """Unicode is preserved in BioC passage extraction."""
-        from ingestors.extract_plaintext import plaintext_from_bioc
-
-        bioc = _bioc_json([
-            ("RESULTS", "paragraph", "Pileus 5–15 mm (en-dash), spores 3×5 µm."),
-        ])
-        result = plaintext_from_bioc(bioc)
-        self.assertIn("5–15", result)  # en-dash
-        self.assertIn("µm", result)    # micro sign
-
 
 # ---------------------------------------------------------------------------
 # Tests: plaintext_from_yedda

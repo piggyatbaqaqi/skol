@@ -2,8 +2,8 @@
 """
 Extract plaintext from articles in CouchDB and save as article.txt attachments.
 
-Supports multiple plaintext sources: PDF, JATS XML, BioC JSON, and
-NCBI E-utilities efetch. The 'auto' source tries each in priority order.
+Supports multiple plaintext sources: PDF, JATS XML, and NCBI E-utilities
+efetch. The 'auto' source tries each in priority order.
 
 Examples:
     # Extract from PDFs for all documents
@@ -35,14 +35,13 @@ if __name__ == "__main__" and __package__ is None:
 
 from env_config import get_env_config
 from ingestors.extract_plaintext import (
-    plaintext_from_bioc,
     plaintext_from_efetch,
     plaintext_from_jats,
     plaintext_from_pdf,
 )
 
 # Source priority for --source auto (highest to lowest).
-_AUTO_SOURCES = ["efetch", "pdf", "jats", "bioc"]
+_AUTO_SOURCES = ["efetch", "pdf", "jats"]
 
 
 def _connect_db(config: Dict[str, Any], database: str) -> Any:
@@ -115,22 +114,6 @@ def _extract_from_source(
             if verbosity >= 1:
                 print(
                     f"  {doc_id}: JATS extraction failed: {exc}",
-                    file=sys.stderr,
-                )
-            return None
-
-    if source == "bioc":
-        bioc_json = doc.get("bioc_json")
-        if not bioc_json:
-            if verbosity >= 2:
-                print(f"  {doc_id}: no bioc_json", file=sys.stderr)
-            return None
-        try:
-            return plaintext_from_bioc(bioc_json)
-        except ValueError as exc:
-            if verbosity >= 1:
-                print(
-                    f"  {doc_id}: BioC extraction failed: {exc}",
                     file=sys.stderr,
                 )
             return None
@@ -251,11 +234,11 @@ def main() -> None:
     # Source.
     parser.add_argument(
         "--source",
-        choices=["pdf", "jats", "bioc", "efetch", "auto"],
+        choices=["pdf", "jats", "efetch", "auto"],
         default="auto",
         help=(
             "Plaintext source (default: auto). "
-            "auto tries: efetch > pdf > jats > bioc."
+            "auto tries: efetch > pdf > jats."
         ),
     )
 

@@ -7,7 +7,6 @@ obtains plaintext, and populates golden databases:
 - skol_golden:          Union of all selected articles + article.txt
 - skol_golden_ann_hand: Hand-annotated article.txt.ann from skol_training
 - skol_golden_ann_jats: JATS-derived article.txt.ann
-- skol_golden_ann_bioc: BioC-derived article.txt.ann
 
 Examples:
     # Dry run to see what would be selected
@@ -21,7 +20,6 @@ Examples:
 """
 
 import argparse
-import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -38,14 +36,12 @@ if __name__ == "__main__" and __package__ is None:
 from env_config import get_env_config
 from ingestors.extract_plaintext import (
     count_yedda_tags,
-    plaintext_from_bioc,
     plaintext_from_efetch,
     plaintext_from_jats,
     plaintext_from_pdf,
     plaintext_from_yedda,
 )
 from ingestors.jats_to_yedda import jats_xml_to_yedda
-from ingestors.bioc_to_yedda import bioc_json_to_yedda
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +197,7 @@ def obtain_plaintext(
 ) -> Tuple[str, str]:
     """Obtain plaintext for a training document.
 
-    Priority: article.txt in training > article.pdf > JATS > BioC > efetch > YEDDA
+    Priority: article.txt in training > article.pdf > JATS > efetch > YEDDA
 
     Args:
         server: CouchDB server connection.
@@ -259,19 +255,7 @@ def obtain_plaintext(
             except ValueError:
                 pass
 
-    # 4. BioC JSON
-    bioc_json = doc.get("bioc_json")
-    if bioc_json:
-        try:
-            text = plaintext_from_bioc(bioc_json)
-            if text.strip():
-                if verbosity >= 2:
-                    print(f"  {doc_id}: from BioC", file=sys.stderr)
-                return text, "bioc"
-        except ValueError:
-            pass
-
-    # 5. E-utilities efetch
+    # 4. E-utilities efetch
     pmcid = doc.get("pmcid")
     if pmcid:
         try:
@@ -285,7 +269,7 @@ def obtain_plaintext(
         except ValueError:
             pass
 
-    # 6. Strip plaintext from YEDDA annotation (last resort)
+    # 5. Strip plaintext from YEDDA annotation (last resort)
     yedda_text = doc_info["yedda_text"]
     text = plaintext_from_yedda(yedda_text)
     if text.strip():
@@ -480,7 +464,7 @@ def _save_annotation(
         ann_db: Annotation CouchDB database.
         doc_id: Document ID.
         yedda_text: YEDDA-annotated text.
-        source: Source identifier (e.g., "hand", "jats", "bioc").
+        source: Source identifier (e.g., "hand", "jats").
         source_database: Name of the source database.
         verbosity: Logging verbosity.
     """
@@ -544,28 +528,21 @@ def populate_golden_databases(
             "skol_golden": len(training_selections) + len(jats_selections),
             "skol_golden_ann_hand": len(training_selections),
         }
-        # Count JATS/BioC annotation candidates
+        # Count JATS annotation candidates
         jats_ann = 0
-        bioc_ann = 0
         for sel in training_selections:
             doc = sel["doc"]
             if doc.get("xml_available") and doc.get("xml_format") == "jats":
                 jats_ann += 1
-            if doc.get("bioc_json"):
-                bioc_ann += 1
         for sel in jats_selections:
             jats_ann += 1  # All JATS selections have JATS XML
-            if sel["doc"].get("bioc_json"):
-                bioc_ann += 1
         counts["skol_golden_ann_jats"] = jats_ann
-        counts["skol_golden_ann_bioc"] = bioc_ann
         return counts
 
     # Create/open golden databases
     golden_db = _get_or_create_db(server, "skol_golden")
     ann_hand_db = _get_or_create_db(server, "skol_golden_ann_hand")
     ann_jats_db = _get_or_create_db(server, "skol_golden_ann_jats")
-    ann_bioc_db = _get_or_create_db(server, "skol_golden_ann_bioc")
 
     training_db = server[training_db_name]
     dev_db = server[dev_db_name]
@@ -574,7 +551,6 @@ def populate_golden_databases(
         "skol_golden": 0,
         "skol_golden_ann_hand": 0,
         "skol_golden_ann_jats": 0,
-        "skol_golden_ann_bioc": 0,
     }
 
     # Process training documents
@@ -594,7 +570,6 @@ def populate_golden_databases(
                 doc.get("xml_available")
                 and doc.get("xml_format") == "jats"
             ),
-            "bioc_available": bool(doc.get("bioc_json")),
             "has_pdf": "article.pdf" in doc.get("_attachments", {}),
             "pmcid": doc.get("pmcid"),
             "plaintext_source": pt_source,
@@ -633,22 +608,6 @@ def populate_golden_databases(
                             f"  {doc_id}: JATS→YEDDA failed: {exc}",
                             file=sys.stderr,
                         )
-
-        # Generate BioC annotation if BioC JSON available
-        if golden_sources["bioc_available"]:
-            try:
-                bioc_yedda = bioc_json_to_yedda(doc.get("bioc_json"))
-                _save_annotation(
-                    ann_bioc_db, doc_id, bioc_yedda,
-                    "bioc", training_db_name, verbosity,
-                )
-                counts["skol_golden_ann_bioc"] += 1
-            except Exception as exc:
-                if verbosity >= 1:
-                    print(
-                        f"  {doc_id}: BioC→YEDDA failed: {exc}",
-                        file=sys.stderr,
-                    )
 
     # Process JATS documents from dev
     if verbosity >= 1:
@@ -692,7 +651,6 @@ def populate_golden_databases(
         golden_sources = {
             "hand_annotated": False,
             "jats_available": True,
-            "bioc_available": bool(doc.get("bioc_json")),
             "has_pdf": "article.pdf" in doc.get("_attachments", {}),
             "pmcid": doc.get("pmcid"),
             "plaintext_source": pt_source,
@@ -720,23 +678,6 @@ def populate_golden_databases(
                     f"  {doc_id}: JATS→YEDDA failed: {exc}",
                     file=sys.stderr,
                 )
-
-        # Generate BioC annotation if available
-        bioc_json = doc.get("bioc_json")
-        if bioc_json:
-            try:
-                bioc_yedda = bioc_json_to_yedda(bioc_json)
-                _save_annotation(
-                    ann_bioc_db, doc_id, bioc_yedda,
-                    "bioc", dev_db_name, verbosity,
-                )
-                counts["skol_golden_ann_bioc"] += 1
-            except Exception as exc:
-                if verbosity >= 1:
-                    print(
-                        f"  {doc_id}: BioC→YEDDA failed: {exc}",
-                        file=sys.stderr,
-                    )
 
     return counts
 

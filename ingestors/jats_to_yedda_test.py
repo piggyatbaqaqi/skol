@@ -3,7 +3,7 @@
 import unittest
 import xml.etree.ElementTree as ET
 
-from .bioc_to_yedda import Tag
+from .yedda_tags import Tag
 from .jats_to_yedda import (
     extract_fig_blocks,
     extract_text,

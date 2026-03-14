@@ -15,7 +15,7 @@ import re
 import xml.etree.ElementTree as ET
 from typing import List, Optional, Set
 
-from ingestors.bioc_to_yedda import (
+from ingestors.yedda_tags import (
     Tag,
     TaggedBlock,
     clean_passage_text,

@@ -3,7 +3,6 @@
 Provides functions to extract article plaintext from:
 - PDF bytes (via PDFSectionExtractor)
 - JATS/TaxPub XML strings
-- BioC-JSON structures
 - NCBI E-utilities efetch API
 - YEDDA annotation strings (tag stripping)
 
@@ -14,10 +13,9 @@ requires article.txt to already exist.
 
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlencode
 
-from ingestors.bioc_to_yedda import clean_passage_text
 from ingestors.jats_to_yedda import extract_text
 from ingestors.rate_limited_client import RateLimitedHttpClient
 from pdf_section_extractor import PDFSectionExtractor
@@ -82,39 +80,6 @@ def plaintext_from_jats(xml_string: str) -> str:
             section_texts.append(text)
 
     return "\n\n".join(section_texts)
-
-
-def plaintext_from_bioc(bioc_json: List[Dict[str, Any]]) -> str:
-    """Extract plaintext from a BioC-JSON structure.
-
-    Extracts passage text from ``bioc_json[0]["documents"][0]["passages"]``,
-    cleans BOM characters and whitespace, and joins non-empty passages
-    with blank lines.
-
-    Args:
-        bioc_json: The BioC-JSON list as stored in CouchDB.
-
-    Returns:
-        Passage texts joined by blank lines.
-
-    Raises:
-        ValueError: If the BioC-JSON structure is missing expected fields.
-    """
-    if not bioc_json:
-        raise ValueError("Empty BioC-JSON list")
-    collection = bioc_json[0]
-    documents = collection.get("documents", [])
-    if not documents:
-        raise ValueError("No documents in BioC-JSON collection")
-    passages = documents[0].get("passages", [])
-
-    texts: List[str] = []
-    for passage in passages:
-        text = clean_passage_text(passage.get("text", ""))
-        if text:
-            texts.append(text)
-
-    return "\n\n".join(texts)
 
 
 def plaintext_from_efetch(

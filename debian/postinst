@@ -190,7 +190,7 @@ chmod 755 ${SKOL_HOME}/bin/with_skol
 chown skol:skol ${SKOL_HOME}/bin/with_skol
 
 # Create symlinks for each command in /opt/skol/bin
-for cmd in bioc_to_yedda jats_to_yedda ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis; do
+for cmd in jats_to_yedda ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis; do
     ln -sf with_skol ${SKOL_HOME}/bin/${cmd}
 done
 
@@ -199,7 +199,7 @@ chown -R skol:skol ${SKOL_HOME}/bin
 
 echo "SKOL installation complete."
 echo "Commands available in ${SKOL_HOME}/bin/:"
-echo "  bioc_to_yedda, jats_to_yedda, ingest, train_classifier, predict_classifier,"
+echo "  jats_to_yedda, ingest, train_classifier, predict_classifier,"
 echo "  extract_taxa_to_couchdb, embed_taxa, taxa_to_json, build_vocab_tree,"
 echo "  manage_fungaria, watch_install, watch_incremental, rebuild_redis"
 echo "Or use: ${SKOL_HOME}/bin/with_skol <command>"
