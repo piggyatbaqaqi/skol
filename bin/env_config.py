@@ -200,6 +200,7 @@ def get_env_config() -> Dict[str, Any]:
         'force': _get_env('FORCE', '').lower() in ('1', 'true', 'yes'),
         'incremental': _get_env('INCREMENTAL', '').lower() in ('1', 'true', 'yes'),
         'taxonomy_filter': _get_env('TAXONOMY_FILTER', '').lower() in ('1', 'true', 'yes'),
+        'skip_golden': _get_env('SKIP_GOLDEN', '').lower() in ('1', 'true', 'yes'),
         'limit': _parse_optional_int(_get_env('LIMIT', '')),
         'doc_ids': _parse_doc_ids(_get_env('DOC_IDS', '')),
     }
@@ -243,6 +244,8 @@ def get_env_config() -> Dict[str, Any]:
                         help='Save each record as it completes (crash-resistant)')
     parser.add_argument('--taxonomy-filter', action='store_true', default=None, dest='taxonomy_filter',
                         help='Only process documents with taxonomy abbreviations')
+    parser.add_argument('--skip-golden', action='store_true', default=None, dest='skip_golden',
+                        help='Skip documents marked as part of the golden dataset')
     parser.add_argument('--limit', type=int, default=None, dest='limit',
                         help='Process at most N records')
     parser.add_argument('--doc-id', '--doc-ids', type=str, default=None, dest='doc_ids',

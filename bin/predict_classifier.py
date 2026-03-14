@@ -480,6 +480,7 @@ def predict_and_save(
     incremental: bool = False,
     incremental_batch_size: int = 50,
     taxonomy_filter: bool = False,
+    skip_golden: bool = False,
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
     retry_failed_extraction: bool = False,
@@ -503,6 +504,7 @@ def predict_and_save(
         incremental: If True, process in batches and save after each batch
         incremental_batch_size: Number of documents per batch when incremental=True
         taxonomy_filter: If True, filter to only documents with taxonomy abbreviations
+        skip_golden: If True, skip documents marked with golden_dataset field
         limit: If set, process at most this many documents
         doc_ids: If set, only process these specific document IDs
         retry_failed_extraction: If True, re-download PDF and retry on extraction failure
@@ -604,7 +606,7 @@ def predict_and_save(
         filtered_doc_ids = doc_ids  # Start with user-specified doc_ids (if any)
 
         # Only connect to CouchDB if we need to discover or filter documents
-        need_db_connection = (not filtered_doc_ids) or skip_existing or limit
+        need_db_connection = (not filtered_doc_ids) or skip_existing or skip_golden or limit
         db = None
 
         if need_db_connection:
@@ -620,15 +622,21 @@ def predict_and_save(
             if model_config.get('verbosity', 1) >= 1:
                 print("\nDiscovering documents with plaintext in database...")
             all_doc_ids = []
+            golden_skipped = 0
             for doc_id in db:
                 try:
                     doc = db[doc_id]
+                    if skip_golden and doc.get('golden_dataset'):
+                        golden_skipped += 1
+                        continue
                     attachments = doc.get('_attachments', {})
                     if 'article.txt' in attachments:
                         all_doc_ids.append(doc_id)
                 except Exception:
                     continue
             filtered_doc_ids = all_doc_ids
+            if skip_golden and golden_skipped and model_config.get('verbosity', 1) >= 1:
+                print(f"  Skipped {golden_skipped} golden dataset documents")
             if model_config.get('verbosity', 1) >= 1:
                 print(f"  Found {len(filtered_doc_ids)} documents with article.txt")
             if not filtered_doc_ids:
@@ -1338,6 +1346,7 @@ Work Control Options:
   --incremental-batch-size N
                           Documents per batch when --incremental is set (default: 50)
   --taxonomy-filter       Only process documents with taxonomy abbreviations
+  --skip-golden           Skip documents marked as part of the golden dataset
   --retry-failed-extraction
                           Re-download PDF and retry on extraction failure (once per doc)
   --limit N               Process at most N documents
@@ -1370,6 +1379,7 @@ Environment Variables for Work Control:
   FORCE=1                 Same as --force
   INCREMENTAL=1           Same as --incremental
   TAXONOMY_FILTER=1       Same as --taxonomy-filter
+  SKIP_GOLDEN=1           Same as --skip-golden
   LIMIT=N                 Same as --limit N
   DOC_IDS=id1,id2,...     Same as --doc-id
 
@@ -1486,6 +1496,7 @@ Note: Command-line arguments override environment variables.
             incremental=config.get('incremental', False),
             incremental_batch_size=config.get('incremental_batch_size', 50),
             taxonomy_filter=config.get('taxonomy_filter', False),
+            skip_golden=config.get('skip_golden', False),
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
             retry_failed_extraction=args.retry_failed_extraction,

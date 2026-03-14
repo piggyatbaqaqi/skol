@@ -496,6 +496,40 @@ def _save_annotation(
         )
 
 
+def _mark_golden_in_dev(
+    dev_db,
+    doc_id: str,
+    golden_db_name: str,
+    verbosity: int,
+) -> bool:
+    """Set golden_dataset field on a skol_dev document.
+
+    Returns True if the document was updated.
+    """
+    try:
+        doc = dev_db[doc_id]
+    except Exception:
+        if verbosity >= 2:
+            print(
+                f"  mark: {doc_id} not found in {dev_db.name}",
+                file=sys.stderr,
+            )
+        return False
+
+    if doc.get("golden_dataset") == golden_db_name:
+        return False
+
+    doc["golden_dataset"] = golden_db_name
+    dev_db.save(doc)
+
+    if verbosity >= 2:
+        print(
+            f"  mark: {doc_id} -> golden_dataset={golden_db_name}",
+            file=sys.stderr,
+        )
+    return True
+
+
 def populate_golden_databases(
     server,
     training_db_name: str,
@@ -505,6 +539,7 @@ def populate_golden_databases(
     training_plaintexts: Dict[str, Tuple[str, str]],
     config: Dict[str, Any],
     dry_run: bool,
+    mark_dev: bool,
     verbosity: int,
 ) -> Dict[str, int]:
     """Populate all golden databases.
@@ -518,6 +553,7 @@ def populate_golden_databases(
         training_plaintexts: {doc_id: (plaintext, source)} for training docs.
         config: Environment config.
         dry_run: If True, don't write anything.
+        mark_dev: If True, set golden_dataset field on skol_dev documents.
         verbosity: Logging verbosity.
 
     Returns:
@@ -609,6 +645,22 @@ def populate_golden_databases(
                             file=sys.stderr,
                         )
 
+    # Mark skol_dev counterparts for training documents
+    if mark_dev:
+        marked = 0
+        for sel in training_selections:
+            dev_id = sel["doc"].get("skol_dev_id")
+            if dev_id:
+                if _mark_golden_in_dev(
+                    dev_db, dev_id, "skol_golden", verbosity,
+                ):
+                    marked += 1
+        if verbosity >= 1:
+            print(
+                f"Marked {marked} skol_dev docs for training selections",
+                file=sys.stderr,
+            )
+
     # Process JATS documents from dev
     if verbosity >= 1:
         print("\nPopulating from JATS articles...", file=sys.stderr)
@@ -679,6 +731,20 @@ def populate_golden_databases(
                     file=sys.stderr,
                 )
 
+    # Mark skol_dev documents for JATS selections
+    if mark_dev:
+        marked = 0
+        for sel in jats_selections:
+            if _mark_golden_in_dev(
+                dev_db, sel["doc_id"], "skol_golden", verbosity,
+            ):
+                marked += 1
+        if verbosity >= 1:
+            print(
+                f"Marked {marked} skol_dev docs for JATS selections",
+                file=sys.stderr,
+            )
+
     return counts
 
 
@@ -731,6 +797,11 @@ def main() -> None:
         "--dry-run",
         action="store_true",
         help="Show what would be done without writing.",
+    )
+    parser.add_argument(
+        "--no-mark",
+        action="store_true",
+        help="Skip marking skol_dev docs with golden_dataset field.",
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -811,12 +882,14 @@ def main() -> None:
             file=sys.stderr,
         )
 
+    mark_dev = not args.no_mark
+
     if args.dry_run:
         counts = populate_golden_databases(
             server, training_db_name, dev_db_name,
             training_selections, jats_selections,
             training_plaintexts, config, dry_run=True,
-            verbosity=verbosity,
+            mark_dev=False, verbosity=verbosity,
         )
         print("\n=== DRY RUN ===")
         print("Would create/update:")
@@ -828,7 +901,7 @@ def main() -> None:
         server, training_db_name, dev_db_name,
         training_selections, jats_selections,
         training_plaintexts, config, dry_run=False,
-        verbosity=verbosity,
+        mark_dev=mark_dev, verbosity=verbosity,
     )
 
     if verbosity >= 1:
