@@ -35,7 +35,7 @@ class INaturalistProvider(OAuth2Provider):
     oauth2_adapter_class = INaturalistOAuth2Adapter
 
     def get_default_scope(self) -> list[str]:
-        return ["login"]
+        return ["login", "write"]
 
     def extract_uid(self, data: dict) -> str:
         return str(data["id"])

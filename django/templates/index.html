@@ -1172,7 +1172,7 @@
                     </div>
                     <div class="form-group">
                         <label for="embedding">Embedding Model</label>
-                        <select id="embedding" name="embedding" required onchange="saveSetting('default_embedding', this.value)">
+                        <select id="embedding" name="embedding" onchange="saveSetting('default_embedding', this.value)">
                             <option value="">Loading embeddings...</option>
                         </select>
                     </div>
@@ -1237,7 +1237,7 @@
                     </div>
                     <div class="form-group">
                         <label for="embedding">Embedding Model</label>
-                        <select id="embedding" name="embedding" required>
+                        <select id="embedding" name="embedding">
                             <option value="">Loading embeddings...</option>
                         </select>
                     </div>
@@ -2494,6 +2494,41 @@
             sessionStorage.setItem('guest_collection_notice_shown', 'true');
         }
 
+        // Save description and nomenclature to the active collection.
+        // Called on form submit (before search) so the description is
+        // persisted even when no embedding model is available.
+        async function saveDescriptionToCollection() {
+            const prompt = document.getElementById('prompt').value;
+            const canSave = activeCollectionData && (activeCollectionData.owner_username === CURRENT_USERNAME || IS_ADMIN);
+            if (IS_AUTHENTICATED && activeCollectionId && prompt && canSave) {
+                try {
+                    const nomenclatureInput = document.getElementById('nomenclatureInput');
+                    const nomenclature = nomenclatureInput ? nomenclatureInput.value : activeCollectionData.nomenclature;
+                    await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            name: activeCollectionData.name,
+                            description: prompt,
+                            nomenclature: nomenclature
+                        })
+                    });
+                    // Update local data
+                    activeCollectionData.description = prompt;
+                    activeCollectionData.nomenclature = nomenclature;
+                } catch (descError) {
+                    console.warn('Could not save description to collection:', descError);
+                }
+            } else if (!IS_AUTHENTICATED && prompt && typeof GuestCollection !== 'undefined') {
+                // Save to guest collection (localStorage) for non-authenticated users
+                GuestCollection.updateDescription(prompt);
+            }
+        }
+
         // Handle form submission
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -2501,6 +2536,16 @@
             const prompt = document.getElementById('prompt').value;
             const embedding = document.getElementById('embedding').value;
             const k = parseInt(document.getElementById('k').value);
+
+            // Always save description, even if search cannot proceed
+            await saveDescriptionToCollection();
+
+            if (!embedding) {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = 'No embedding model selected. Description saved.';
+                errorDiv.style.display = 'block';
+                return;
+            }
 
             // Show loading, hide error and results
             document.getElementById('loading').style.display = 'block';
@@ -2510,36 +2555,6 @@
             document.getElementById('searchButton').disabled = true;
 
             try {
-                // Save description and nomenclature to collection BEFORE search (owner/admin only)
-                const canSave = activeCollectionData && (activeCollectionData.owner_username === CURRENT_USERNAME || IS_ADMIN);
-                if (IS_AUTHENTICATED && activeCollectionId && prompt && canSave) {
-                    try {
-                        const nomenclatureInput = document.getElementById('nomenclatureInput');
-                        const nomenclature = nomenclatureInput ? nomenclatureInput.value : activeCollectionData.nomenclature;
-                        await fetch(`${API_BASE}/api/collections/${activeCollectionId}/`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCSRFToken()
-                            },
-                            credentials: 'same-origin',
-                            body: JSON.stringify({
-                                name: activeCollectionData.name,
-                                description: prompt,
-                                nomenclature: nomenclature
-                            })
-                        });
-                        // Update local data
-                        activeCollectionData.description = prompt;
-                        activeCollectionData.nomenclature = nomenclature;
-                    } catch (descError) {
-                        console.warn('Could not save description to collection:', descError);
-                    }
-                } else if (!IS_AUTHENTICATED && prompt && typeof GuestCollection !== 'undefined') {
-                    // Save to guest collection (localStorage) for non-authenticated users
-                    GuestCollection.updateDescription(prompt);
-                }
-
                 const searchBody = {
                     prompt: prompt,
                     embedding_name: embedding,

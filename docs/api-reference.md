@@ -475,6 +475,12 @@ List fungaria/herbaria from Index Herbariorum registry (for fungarium identifier
 | `/api/collections/{id}/identifiers/` | POST | Add identifier |
 | `/api/collections/{id}/identifiers/{iid}/` | GET | Get identifier |
 | `/api/collections/{id}/identifiers/{iid}/` | DELETE | Delete identifier |
+| `/api/collections/{id}/post-inat-comment/` | POST | Post description as iNaturalist comment |
+
+**POST /api/collections/{id}/post-inat-comment/**: Posts the collection's
+description (and nomenclature, if present and not "Unknown") as a comment on the
+linked iNaturalist observation. Requires the user to be the collection owner with
+a connected iNaturalist account that has `write` scope.
 
 ### Measurement Sets
 

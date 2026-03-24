@@ -3033,3 +3033,135 @@ class MeasurementUnitListView(APIView):
             'symbol', flat=True
         )
         return Response({'units': list(units)})
+
+
+class PostInatCommentView(APIView):
+    """
+    POST /api/collections/<collection_id>/post-inat-comment/
+
+    Post the collection's description (and nomenclature if present
+    and not "Unknown") as a comment on the linked iNaturalist
+    observation.
+
+    Requires the user to have an iNaturalist social account connected
+    with the ``write`` scope.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id: int) -> Response:
+        import requests as http_requests
+        from allauth.socialaccount.models import (
+            SocialAccount, SocialToken,
+        )
+
+        collection = get_object_or_404(
+            Collection, collection_id=collection_id
+        )
+        if collection.owner != request.user:
+            return Response(
+                {'error': 'Only the collection owner can post comments'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Find the iNaturalist identifier on this collection
+        inat_identifier = collection.external_identifiers.filter(
+            identifier_type__code='inat'
+        ).first()
+        if not inat_identifier:
+            return Response(
+                {'error': 'No iNaturalist identifier on this collection'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        observation_id = inat_identifier.value
+
+        # Build comment body from description + nomenclature
+        body_parts: list[str] = []
+        nomenclature = (collection.nomenclature or '').strip()
+        if nomenclature and nomenclature.lower() != 'unknown':
+            body_parts.append(f'Nomenclature: {nomenclature}')
+
+        description = (collection.description or '').strip()
+        if not description:
+            return Response(
+                {'error': 'Collection has no description to post'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        body_parts.append(description)
+        comment_body = '\n\n'.join(body_parts)
+
+        # Get the user's iNaturalist OAuth token
+        try:
+            social_account = SocialAccount.objects.get(
+                user=request.user, provider='inaturalist'
+            )
+        except SocialAccount.DoesNotExist:
+            return Response(
+                {'error': 'No iNaturalist account connected'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        social_token = SocialToken.objects.filter(
+            account=social_account
+        ).first()
+        if not social_token:
+            return Response(
+                {'error': 'No iNaturalist token found; '
+                 'try reconnecting your iNaturalist account'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Exchange OAuth token for a JWT API token
+        try:
+            jwt_resp = http_requests.get(
+                'https://www.inaturalist.org/users/api_token',
+                headers={
+                    'Authorization': f'Bearer {social_token.token}',
+                },
+                timeout=15,
+            )
+            jwt_resp.raise_for_status()
+            api_token = jwt_resp.json()['api_token']
+        except (http_requests.RequestException, KeyError) as exc:
+            logger.error('Failed to get iNat API token: %s', exc)
+            return Response(
+                {'error': 'Failed to authenticate with iNaturalist; '
+                 'try reconnecting your account'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        # Post the comment
+        try:
+            comment_resp = http_requests.post(
+                'https://api.inaturalist.org/v1/comments',
+                json={
+                    'comment': {
+                        'parent_type': 'Observation',
+                        'parent_id': int(observation_id),
+                        'body': comment_body,
+                    },
+                },
+                headers={
+                    'Authorization': api_token,
+                    'Content-Type': 'application/json',
+                },
+                timeout=15,
+            )
+            comment_resp.raise_for_status()
+        except http_requests.RequestException as exc:
+            logger.error(
+                'Failed to post iNat comment on obs %s: %s',
+                observation_id, exc,
+            )
+            error_detail = ''
+            if hasattr(exc, 'response') and exc.response is not None:
+                error_detail = exc.response.text[:200]
+            return Response(
+                {'error': f'iNaturalist API error: {error_detail or exc}'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response({
+            'message': 'Comment posted to iNaturalist',
+            'observation_id': observation_id,
+        })

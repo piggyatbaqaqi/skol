@@ -256,6 +256,12 @@
             margin-bottom: 10px;
         }
 
+        .identifier-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
         .identifier-info {
             display: flex;
             align-items: center;
@@ -821,7 +827,10 @@
                             </span>
                             ${i.notes ? `<span class="identifier-notes">${escapeHtml(i.notes)}</span>` : ''}
                         </div>
-                        ${isOwner && !collection.hidden ? `<button class="btn-danger btn-small" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
+                        <div class="identifier-actions">
+                            ${isOwner && !collection.hidden && i.identifier_type_code === 'inat' && collection.description ? `<button class="btn-small" onclick="postInatComment(${i.id})" title="Post description as iNaturalist comment">Post to iNat</button>` : ''}
+                            ${isOwner && !collection.hidden ? `<button class="btn-danger btn-small" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1030,6 +1039,33 @@
         });
 
         // Delete identifier
+        async function postInatComment(identifierId) {
+            if (!confirm('Post the description (and nomenclature) as a comment on the iNaturalist observation?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/collections/${COLLECTION_ID}/post-inat-comment/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to post comment');
+                }
+
+                showSuccess('Comment posted to iNaturalist observation ' + data.observation_id);
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
         async function deleteIdentifier(identifierId) {
             if (!confirm('Delete this identifier?')) {
                 return;

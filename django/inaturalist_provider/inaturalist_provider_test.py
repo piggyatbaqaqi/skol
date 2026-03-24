@@ -103,7 +103,7 @@ class TestINaturalistProvider:
 
     def test_get_default_scope(self) -> None:
         provider = INaturalistProvider.__new__(INaturalistProvider)
-        assert provider.get_default_scope() == ["login"]
+        assert provider.get_default_scope() == ["login", "write"]
 
 
 class TestINaturalistOAuth2Adapter:

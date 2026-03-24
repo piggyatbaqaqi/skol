@@ -26,6 +26,7 @@ from .views import (
     NomenclatureChangeView,
     ExternalIdentifierListCreateView,
     ExternalIdentifierDetailView,
+    PostInatCommentView,
     GuestCollectionImportView,
     # Vocabulary tree views
     VocabTreeView,
@@ -107,6 +108,10 @@ urlpatterns = [
          ExternalIdentifierListCreateView.as_view(), name='identifier-list-create'),
     path('collections/<int:collection_id>/identifiers/<int:identifier_id>/',
          ExternalIdentifierDetailView.as_view(), name='identifier-detail'),
+
+    # Post description as iNaturalist comment
+    path('collections/<int:collection_id>/post-inat-comment/',
+         PostInatCommentView.as_view(), name='post-inat-comment'),
 
     # Measurement sets within collections
     path('collections/<int:collection_id>/measurements/',
