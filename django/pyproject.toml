@@ -66,6 +66,8 @@ include = [
     "accounts.*",
     "contact",
     "contact.*",
+    "inaturalist_provider",
+    "inaturalist_provider.*",
 ]
 
 [tool.setuptools.package-data]

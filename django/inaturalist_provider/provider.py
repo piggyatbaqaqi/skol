@@ -3,6 +3,8 @@
 from allauth.socialaccount.providers.base import ProviderAccount
 from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
 
+from inaturalist_provider.views import INaturalistOAuth2Adapter
+
 
 class INaturalistAccount(ProviderAccount):
     """Represent an iNaturalist account."""
@@ -30,6 +32,7 @@ class INaturalistProvider(OAuth2Provider):
     id = "inaturalist"
     name = "iNaturalist"
     account_class = INaturalistAccount
+    oauth2_adapter_class = INaturalistOAuth2Adapter
 
     def get_default_scope(self) -> list[str]:
         return ["login"]
