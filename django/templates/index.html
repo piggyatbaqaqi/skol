@@ -2053,7 +2053,10 @@
                                 ${i.url ? `<a href="${escapeHtml(i.url)}" target="_blank">${escapeHtml(i.value)}</a>` : escapeHtml(i.value)}
                             </span>
                         </div>
-                        ${canEdit ? `<button class="delete-btn" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            ${canEdit && i.identifier_type_code === 'inat' && activeCollectionData.description ? `<button class="btn-small" onclick="postInatComment()" title="Post description as iNaturalist comment" style="font-size: 0.8em; padding: 2px 8px;">Post to iNat</button>` : ''}
+                            ${canEdit ? `<button class="delete-btn" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -2124,6 +2127,41 @@
         }
 
         // Delete an identifier
+        async function postInatComment() {
+            if (!activeCollectionId) return;
+
+            if (!confirm('Post the description (and nomenclature) as a comment on the iNaturalist observation?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/collections/${activeCollectionId}/post-inat-comment/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to post comment');
+                }
+
+                let msg = 'Comment posted to iNaturalist observation ' + data.observation_id;
+                if (data.identification) {
+                    if (data.identification.taxon_name) {
+                        msg += ' (identified as ' + data.identification.taxon_name + ')';
+                    } else if (data.identification.warning) {
+                        msg += '. Note: ' + data.identification.warning;
+                    }
+                }
+                showSuccess(msg);
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
         async function deleteIdentifier(identifierId) {
             if (!activeCollectionId) return;
 

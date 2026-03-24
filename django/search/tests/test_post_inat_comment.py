@@ -12,6 +12,44 @@ from search.models import Collection, ExternalIdentifier, IdentifierType
 User = get_user_model()
 
 
+def _create_social_account(user: "User") -> None:
+    """Create an iNaturalist social account with token for testing."""
+    from allauth.socialaccount.models import SocialAccount, SocialToken
+
+    social_account = SocialAccount.objects.create(
+        user=user,
+        provider='inaturalist',
+        uid='12345',
+    )
+    SocialToken.objects.create(
+        account=social_account,
+        token='fake-oauth-token',
+    )
+
+
+def _mock_jwt(mock_get: MagicMock) -> None:
+    """Set up mock_get to return a JWT (no taxon lookup)."""
+    mock_jwt_resp = MagicMock()
+    mock_jwt_resp.json.return_value = {'api_token': 'fake-jwt'}
+    mock_get.return_value = mock_jwt_resp
+
+
+def _mock_jwt_and_taxon(
+    mock_get: MagicMock, taxon_id: int = 48978,
+    taxon_name: str = 'Russula emetica',
+) -> None:
+    """Set up mock_get to return JWT then taxon results."""
+    mock_jwt_resp = MagicMock()
+    mock_jwt_resp.json.return_value = {'api_token': 'fake-jwt'}
+
+    mock_taxon_resp = MagicMock()
+    mock_taxon_resp.json.return_value = {
+        'results': [{'id': taxon_id, 'name': taxon_name}],
+    }
+
+    mock_get.side_effect = [mock_jwt_resp, mock_taxon_resp]
+
+
 @pytest.mark.django_db
 class TestPostInatCommentView(TestCase):
     """Tests for POST /api/collections/<id>/post-inat-comment/."""
@@ -96,106 +134,95 @@ class TestPostInatCommentView(TestCase):
 
     @patch('requests.get')
     @patch('requests.post')
-    def test_successful_comment(
+    def test_identification_with_description_as_body(
         self, mock_post: MagicMock, mock_get: MagicMock
     ) -> None:
-        from allauth.socialaccount.models import SocialAccount, SocialToken
-
-        social_account = SocialAccount.objects.create(
-            user=self.user,
-            provider='inaturalist',
-            uid='12345',
-        )
-        SocialToken.objects.create(
-            account=social_account,
-            token='fake-oauth-token',
-        )
-
-        # Mock JWT exchange
-        mock_jwt_resp = MagicMock()
-        mock_jwt_resp.json.return_value = {'api_token': 'fake-jwt'}
-        mock_get.return_value = mock_jwt_resp
-
-        # Mock comment post
-        mock_comment_resp = MagicMock()
-        mock_post.return_value = mock_comment_resp
+        """With nomenclature, posts a single identification with
+        description as body (the 'Tell us why...' field)."""
+        _create_social_account(self.user)
+        _mock_jwt_and_taxon(mock_get)
+        mock_post.return_value = MagicMock()
 
         resp = self.client.post(self.url)
         assert resp.status_code == 200
         data = resp.json()
         assert data['observation_id'] == '336010515'
-        assert 'Comment posted' in data['message']
+        assert 'Identification posted' in data['message']
+        assert data['identification']['taxon_id'] == 48978
+        assert data['identification']['taxon_name'] == 'Russula emetica'
 
-        # Verify comment body includes nomenclature and description
-        call_kwargs = mock_post.call_args
-        comment_body = call_kwargs.kwargs['json']['comment']['body']
-        assert 'Russula emetica' in comment_body
-        assert 'Pileus convex' in comment_body
+        # Only one post call — the identification (no separate comment)
+        assert mock_post.call_count == 1
+        id_json = mock_post.call_args.kwargs['json']['identification']
+        assert id_json['observation_id'] == 336010515
+        assert id_json['taxon_id'] == 48978
+        assert id_json['body'] == 'Pileus convex, 3-5 cm broad'
 
     @patch('requests.get')
     @patch('requests.post')
     def test_comment_without_nomenclature(
         self, mock_post: MagicMock, mock_get: MagicMock
     ) -> None:
-        from allauth.socialaccount.models import SocialAccount, SocialToken
-
+        """Without nomenclature, posts a plain comment."""
         self.collection.nomenclature = ''
         self.collection.save()
 
-        social_account = SocialAccount.objects.create(
-            user=self.user,
-            provider='inaturalist',
-            uid='12345',
-        )
-        SocialToken.objects.create(
-            account=social_account,
-            token='fake-oauth-token',
-        )
-
-        mock_jwt_resp = MagicMock()
-        mock_jwt_resp.json.return_value = {'api_token': 'fake-jwt'}
-        mock_get.return_value = mock_jwt_resp
-
+        _create_social_account(self.user)
+        _mock_jwt(mock_get)
         mock_post.return_value = MagicMock()
 
         resp = self.client.post(self.url)
         assert resp.status_code == 200
+        data = resp.json()
+        assert 'Comment posted' in data['message']
+        assert 'identification' not in data
 
-        call_kwargs = mock_post.call_args
-        comment_body = call_kwargs.kwargs['json']['comment']['body']
-        assert 'Nomenclature' not in comment_body
+        # Only one post call (comment)
+        assert mock_post.call_count == 1
+        comment_body = mock_post.call_args.kwargs['json']['comment']['body']
         assert 'Pileus convex' in comment_body
 
     @patch('requests.get')
     @patch('requests.post')
-    def test_unknown_nomenclature_excluded(
+    def test_unknown_nomenclature_posts_comment(
         self, mock_post: MagicMock, mock_get: MagicMock
     ) -> None:
-        from allauth.socialaccount.models import SocialAccount, SocialToken
-
+        """'Unknown' nomenclature is treated as absent."""
         self.collection.nomenclature = 'Unknown'
         self.collection.save()
 
-        social_account = SocialAccount.objects.create(
-            user=self.user,
-            provider='inaturalist',
-            uid='12345',
-        )
-        SocialToken.objects.create(
-            account=social_account,
-            token='fake-oauth-token',
-        )
+        _create_social_account(self.user)
+        _mock_jwt(mock_get)
+        mock_post.return_value = MagicMock()
+
+        resp = self.client.post(self.url)
+        assert resp.status_code == 200
+        assert 'Comment posted' in resp.json()['message']
+        assert mock_post.call_count == 1
+
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_taxon_not_found_falls_back_to_comment(
+        self, mock_post: MagicMock, mock_get: MagicMock
+    ) -> None:
+        """When taxon lookup returns no results, falls back to comment."""
+        _create_social_account(self.user)
 
         mock_jwt_resp = MagicMock()
         mock_jwt_resp.json.return_value = {'api_token': 'fake-jwt'}
-        mock_get.return_value = mock_jwt_resp
+        mock_taxon_resp = MagicMock()
+        mock_taxon_resp.json.return_value = {'results': []}
+        mock_get.side_effect = [mock_jwt_resp, mock_taxon_resp]
 
         mock_post.return_value = MagicMock()
 
         resp = self.client.post(self.url)
         assert resp.status_code == 200
+        data = resp.json()
+        assert 'Comment posted' in data['message']
+        assert 'No taxon found' in data['identification']['warning']
 
-        call_kwargs = mock_post.call_args
-        comment_body = call_kwargs.kwargs['json']['comment']['body']
-        assert 'Nomenclature' not in comment_body
-        assert 'Unknown' not in comment_body
+        # Falls back to comment
+        assert mock_post.call_count == 1
+        comment_body = mock_post.call_args.kwargs['json']['comment']['body']
+        assert 'Pileus convex' in comment_body

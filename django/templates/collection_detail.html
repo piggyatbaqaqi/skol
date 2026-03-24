@@ -1059,7 +1059,15 @@
                     throw new Error(data.error || 'Failed to post comment');
                 }
 
-                showSuccess('Comment posted to iNaturalist observation ' + data.observation_id);
+                let msg = 'Comment posted to iNaturalist observation ' + data.observation_id;
+                if (data.identification) {
+                    if (data.identification.taxon_name) {
+                        msg += ' (identified as ' + data.identification.taxon_name + ')';
+                    } else if (data.identification.warning) {
+                        msg += '. Note: ' + data.identification.warning;
+                    }
+                }
+                showSuccess(msg);
 
             } catch (error) {
                 showError(error.message);

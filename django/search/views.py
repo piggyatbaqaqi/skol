@@ -3075,20 +3075,18 @@ class PostInatCommentView(APIView):
             )
         observation_id = inat_identifier.value
 
-        # Build comment body from description + nomenclature
-        body_parts: list[str] = []
-        nomenclature = (collection.nomenclature or '').strip()
-        if nomenclature and nomenclature.lower() != 'unknown':
-            body_parts.append(f'Nomenclature: {nomenclature}')
-
+        # Build comment body from description only
         description = (collection.description or '').strip()
         if not description:
             return Response(
                 {'error': 'Collection has no description to post'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        body_parts.append(description)
-        comment_body = '\n\n'.join(body_parts)
+        comment_body = description
+
+        nomenclature = (collection.nomenclature or '').strip()
+        if nomenclature.lower() == 'unknown':
+            nomenclature = ''
 
         # Get the user's iNaturalist OAuth token
         try:
@@ -3130,7 +3128,82 @@ class PostInatCommentView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        # Post the comment
+        inat_headers = {
+            'Authorization': api_token,
+            'Content-Type': 'application/json',
+        }
+
+        # If nomenclature is present, look up taxon and post a
+        # single identification with the description as the "body"
+        # (the "Tell us why..." field).  Otherwise fall back to a
+        # plain comment.
+        if nomenclature:
+            try:
+                taxon_resp = http_requests.get(
+                    'https://api.inaturalist.org/v1/taxa/autocomplete',
+                    params={'q': nomenclature, 'per_page': 1},
+                    timeout=15,
+                )
+                taxon_resp.raise_for_status()
+                taxon_results = taxon_resp.json().get('results', [])
+            except http_requests.RequestException as exc:
+                logger.warning(
+                    'Taxon lookup failed for "%s": %s',
+                    nomenclature, exc,
+                )
+                taxon_results = []
+
+            if taxon_results:
+                taxon_id = taxon_results[0]['id']
+                taxon_name = taxon_results[0].get(
+                    'name', nomenclature
+                )
+                try:
+                    id_resp = http_requests.post(
+                        'https://api.inaturalist.org/v1/identifications',
+                        json={
+                            'identification': {
+                                'observation_id': int(observation_id),
+                                'taxon_id': taxon_id,
+                                'body': description,
+                            },
+                        },
+                        headers=inat_headers,
+                        timeout=15,
+                    )
+                    id_resp.raise_for_status()
+                    return Response({
+                        'message':
+                            'Identification posted to iNaturalist',
+                        'observation_id': observation_id,
+                        'identification': {
+                            'taxon_id': taxon_id,
+                            'taxon_name': taxon_name,
+                        },
+                    })
+                except http_requests.RequestException as exc:
+                    logger.error(
+                        'Failed to post iNat identification for '
+                        '"%s" on obs %s: %s',
+                        nomenclature, observation_id, exc,
+                    )
+                    error_detail = ''
+                    if (hasattr(exc, 'response')
+                            and exc.response is not None):
+                        error_detail = exc.response.text[:200]
+                    return Response(
+                        {'error': 'Identification failed: '
+                         f'{error_detail or exc}'},
+                        status=status.HTTP_502_BAD_GATEWAY,
+                    )
+            else:
+                # Taxon not found — fall through to post as comment
+                logger.info(
+                    'No taxon found for "%s"; posting as comment',
+                    nomenclature,
+                )
+
+        # Post as a plain comment (no nomenclature, or taxon not found)
         try:
             comment_resp = http_requests.post(
                 'https://api.inaturalist.org/v1/comments',
@@ -3138,13 +3211,10 @@ class PostInatCommentView(APIView):
                     'comment': {
                         'parent_type': 'Observation',
                         'parent_id': int(observation_id),
-                        'body': comment_body,
+                        'body': description,
                     },
                 },
-                headers={
-                    'Authorization': api_token,
-                    'Content-Type': 'application/json',
-                },
+                headers=inat_headers,
                 timeout=15,
             )
             comment_resp.raise_for_status()
@@ -3161,7 +3231,13 @@ class PostInatCommentView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        return Response({
+        result: dict = {
             'message': 'Comment posted to iNaturalist',
             'observation_id': observation_id,
-        })
+        }
+        if nomenclature:
+            result['identification'] = {
+                'warning': f'No taxon found for "{nomenclature}"; '
+                'posted as comment instead',
+            }
+        return Response(result)
