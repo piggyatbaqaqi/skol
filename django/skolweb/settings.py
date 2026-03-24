@@ -12,7 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Fall back to BASE_DIR for development
 SKOL_DJANGO_ROOT = Path(os.environ.get('SKOL_DJANGO_ROOT', BASE_DIR))
 
-LOG_FILE_PATH = "/var/log/skol/skolweb.log"
+LOG_FILE_PATH = os.environ.get(
+    'LOG_FILE_PATH', '/var/log/skol/skolweb.log'
+)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-skol-dev-key-change-in-production'
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.orcid',
+    'inaturalist_provider',
     # project apps
     'search',
     'accounts',
@@ -322,6 +325,12 @@ SOCIALACCOUNT_PROVIDERS = {
         # Use production ORCID (not sandbox)
         'BASE_DOMAIN': 'orcid.org',
         'MEMBER_API': False,  # Public API is sufficient for authentication
+    },
+    'inaturalist': {
+        'APP': {
+            'client_id': os.environ.get('INAT_CLIENT_ID', ''),
+            'secret': os.environ.get('INAT_CLIENT_SECRET', ''),
+        },
     },
 }
 

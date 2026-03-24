@@ -243,6 +243,7 @@ urlpatterns = [
     path('api/', include('search.urls')),
     path('accounts/', include('accounts.urls')),  # Custom accounts (login, register, etc.)
     path('accounts/', include('allauth.urls')),   # allauth OAuth callbacks (github/, google/, orcid/)
+    path('accounts/', include('inaturalist_provider.urls')),  # iNaturalist OAuth2
     path('contact/', include('contact.urls')),
     path('about/', TemplateView.as_view(template_name='about.html'), name='about'),
     path('help/', TemplateView.as_view(template_name='help.html'), name='help'),

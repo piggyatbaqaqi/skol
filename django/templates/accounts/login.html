@@ -28,10 +28,10 @@
                 Sign in with ORCID
             </a>
         {% elif provider.id == 'inaturalist' %}
-            <span class="btn-social btn-inaturalist disabled" title="Coming soon">
+            <a href="{% provider_login_url provider.id %}" class="btn-social btn-inaturalist">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.383 0 0 5.383 0 12s5.383 12 12 12 12-5.383 12-12S18.617 0 12 0zm0 2.4c5.302 0 9.6 4.298 9.6 9.6s-4.298 9.6-9.6 9.6S2.4 17.302 2.4 12 6.698 2.4 12 2.4zm0 3.6c-3.314 0-6 2.686-6 6s2.686 6 6 6 6-2.686 6-6-2.686-6-6-6zm0 2.4c1.988 0 3.6 1.612 3.6 3.6s-1.612 3.6-3.6 3.6-3.6-1.612-3.6-3.6 1.612-3.6 3.6-3.6z"/></svg>
-                Sign in with iNaturalist (coming soon)
-            </span>
+                Sign in with iNaturalist
+            </a>
         {% endif %}
     {% endfor %}
 </div>
