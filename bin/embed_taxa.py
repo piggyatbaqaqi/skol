@@ -107,9 +107,27 @@ def compute_and_save_embeddings(
         sys.exit(1)
 
     # Check if embeddings already exist
-    embedding_exists = redis_client.exists(config['embedding_name'])
+    embedding_name = config['embedding_name']
+    embedding_exists = redis_client.exists(embedding_name)
+
+    # Back up existing embeddings before overwriting.
+    # The backup key uses the same skol:embedding:* pattern so the
+    # UI auto-discovers it as an available embedding (easy rollback).
+    if embedding_exists and not dry_run:
+        backup_key = f'{embedding_name}:backup'
+        existing_data: bytes | None = redis_client.get(embedding_name)  # type: ignore[assignment]
+        if existing_data:
+            # Store backup without expiration for durability
+            redis_client.set(backup_key, existing_data)
+            if verbosity >= 1:
+                size_mb = len(existing_data) / (1024 * 1024)
+                print(
+                    f"✓ Backed up existing embeddings to "
+                    f"{backup_key} ({size_mb:.1f} MB)"
+                )
+
     if skip_existing and not force and embedding_exists:
-        print(f"\n✓ Embeddings already exist in Redis: {config['embedding_name']}")
+        print(f"\n✓ Embeddings already exist in Redis: {embedding_name}")
         print(f"  Use --force to recompute them")
         return
 
