@@ -581,7 +581,7 @@ def predict_and_save(
     skip_existing: bool = False,
     force: bool = False,
     incremental: bool = False,
-    incremental_batch_size: int = 50,
+    incremental_batch_size: int = 200,
     taxonomy_filter: bool = False,
     skip_golden: bool = False,
     limit: Optional[int] = None,
