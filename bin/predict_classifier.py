@@ -332,7 +332,13 @@ MODEL_CONFIGS = {
         "extraction_mode": "section",
         "coalesce_labels": True,
         "output_format": "annotated",
-    }
+    },
+    "logistic_sections_taxpub_v1": {
+        "name": "Logistic Regression (TaxPub training, sections)",
+        "extraction_mode": "section",
+        "coalesce_labels": True,
+        "output_format": "annotated",
+    },
 }
 
 

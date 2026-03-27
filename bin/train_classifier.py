@@ -66,7 +66,26 @@ MODEL_CONFIGS = {
         "word_vocab_size": 3600,
         "suffix_vocab_size": 400,
         "section_name_vocab_size": 50,
-    }
+    },
+    "logistic_sections_taxpub_v1": {
+        "name": "Logistic Regression (TaxPub training, sections)",
+        "model_type": "logistic",
+        "verbosity": 2,
+        "input_source": "couchdb",
+        "couchdb_training_database": "skol_training_taxpub_v1",
+        "use_suffixes": True,
+        "maxIter": 100,
+        "regParam": 0.01,
+        "extraction_mode": "section",
+        "class_weights": {
+            "Nomenclature": 250.0,
+            "Description": 20.0,
+            "Misc-exposition": 20.0,
+        },
+        "word_vocab_size": 3600,
+        "suffix_vocab_size": 400,
+        "section_name_vocab_size": 50,
+    },
 }
 
 

@@ -25,7 +25,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 # Allow running as a script or as a module.
 if __name__ == "__main__" and __package__ is None:
@@ -137,6 +137,19 @@ def _get_xml_attachment(
     return xml_bytes.decode("utf-8")
 
 
+_TAXPUB_NS = "http://www.plazi.org/taxpub"
+
+
+def _has_taxpub(xml_string: str) -> bool:
+    """Check whether an XML string contains TaxPub treatment elements.
+
+    Checks for actual taxon-treatment or treatment-sec usage,
+    not just the namespace declaration (many Pensoft articles
+    declare the namespace without using treatment elements).
+    """
+    return "taxon-treatment" in xml_string
+
+
 def _process_doc(
     source_db: Any,
     doc: Dict[str, Any],
@@ -146,6 +159,7 @@ def _process_doc(
     target_db: Any,
     source_database: str,
     verbosity: int,
+    taxpub_only: bool = False,
 ) -> bool:
     """Process a single document. Returns True on success."""
     try:
@@ -155,6 +169,14 @@ def _process_doc(
     except ValueError as exc:
         if verbosity >= 1:
             print(f"Skipping {doc_id}: {exc}", file=sys.stderr)
+        return False
+
+    if taxpub_only and not _has_taxpub(xml_string):
+        if verbosity >= 2:
+            print(
+                f"Skipping {doc_id}: no TaxPub markup",
+                file=sys.stderr,
+            )
         return False
 
     try:
@@ -227,6 +249,23 @@ def main() -> None:
         ),
     )
 
+    # Filtering options.
+    parser.add_argument(
+        "--exclude-ids",
+        type=str,
+        default=None,
+        metavar="FILE",
+        help="File of doc IDs (one per line) to exclude.",
+    )
+    parser.add_argument(
+        "--taxpub-only",
+        action="store_true",
+        help=(
+            "Only process articles containing TaxPub markup "
+            "(http://www.plazi.org/taxpub namespace)."
+        ),
+    )
+
     # Work-skipping and partial computation options.
     parser.add_argument(
         "--dry-run",
@@ -282,6 +321,19 @@ def main() -> None:
     database = args.database or config["couchdb_database"]
     source_db = _connect_db(config, database)
 
+    # Load exclusion set if provided.
+    exclude_ids: Set[str] = set()
+    if args.exclude_ids:
+        with open(args.exclude_ids) as f:
+            exclude_ids = {
+                line.strip() for line in f if line.strip()
+            }
+        if verbosity >= 1:
+            print(
+                f"Loaded {len(exclude_ids)} IDs to exclude",
+                file=sys.stderr,
+            )
+
     # Target database for couchdb output.
     target_db = None
     if args.output_to == "couchdb":
@@ -292,6 +344,7 @@ def main() -> None:
 
     # Collect document IDs to process.
     doc_ids: List[str] = []
+    excluded_count = 0
     if args.doc_id:
         doc_ids = [args.doc_id]
     elif args.all:
@@ -303,13 +356,15 @@ def main() -> None:
             if (doc
                     and doc.get("xml_available", False)
                     and doc.get("xml_format") == "jats"):
+                if row.id in exclude_ids:
+                    excluded_count += 1
+                    continue
                 doc_ids.append(row.id)
         if verbosity >= 1:
-            print(
-                f"Found {len(doc_ids)} JATS XML documents "
-                f"in {database}",
-                file=sys.stderr,
-            )
+            msg = f"Found {len(doc_ids)} JATS XML documents in {database}"
+            if excluded_count:
+                msg += f" ({excluded_count} excluded)"
+            print(msg, file=sys.stderr)
 
     if limit is not None:
         doc_ids = doc_ids[:limit]
@@ -352,6 +407,7 @@ def main() -> None:
             source_db, doc, doc_id,
             args.output_to, args.output_dir,
             target_db, database, verbosity,
+            taxpub_only=args.taxpub_only,
         ):
             success += 1
         else:

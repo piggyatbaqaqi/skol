@@ -85,7 +85,201 @@ def blocks_to_char_tags(
 
 
 # ---------------------------------------------------------------------------
-# Alignment
+# Label collapsing
+# ---------------------------------------------------------------------------
+
+_KEEP_TAGS = frozenset({"Nomenclature", "Description"})
+
+
+def collapse_tag(tag: str) -> str:
+    """Collapse a fine-grained YEDDA tag to the 3-class scheme."""
+    return tag if tag in _KEEP_TAGS else "Misc-exposition"
+
+
+# ---------------------------------------------------------------------------
+# Plaintext-anchored character-level evaluation
+# ---------------------------------------------------------------------------
+
+def _normalize_ws(text: str) -> str:
+    """Collapse whitespace runs to single space and strip."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def project_blocks_to_plaintext(
+    plaintext: str,
+    blocks: List[Tuple[str, str]],
+    collapse: bool = True,
+) -> List[Optional[str]]:
+    """Project YEDDA blocks onto plaintext character positions.
+
+    For each block, find its normalized text within the normalized
+    plaintext (scanning forward) and assign the block's tag to
+    those character positions in the *original* plaintext.
+
+    Args:
+        plaintext: The raw article.txt content.
+        blocks: List of (text, tag) tuples from YEDDA.
+        collapse: If True, collapse tags to 3-class scheme.
+
+    Returns:
+        List of length len(plaintext) where each element is
+        a tag name or None (untagged).
+    """
+    tags: List[Optional[str]] = [None] * len(plaintext)
+    norm_plain = _normalize_ws(plaintext)
+
+    # Build a mapping from normalized-string positions back to
+    # original-string positions.
+    norm_to_orig: List[int] = []
+    for i, ch in enumerate(plaintext):
+        if ch.isspace():
+            # In a whitespace run, only the first space maps to
+            # the normalized single space.
+            if i == 0 or not plaintext[i - 1].isspace():
+                norm_to_orig.append(i)
+            # Subsequent whitespace chars don't appear in norm
+        else:
+            norm_to_orig.append(i)
+    # Strip leading/trailing: find where norm_plain starts/ends
+    # in the norm_to_orig mapping.
+    lstripped = len(re.match(r"\s*", plaintext).group())  # type: ignore[union-attr]
+    # Rebuild mapping for stripped+collapsed version
+    norm_to_orig = []
+    orig_idx = lstripped
+    for nch in norm_plain:
+        # Advance orig_idx to match nch
+        while orig_idx < len(plaintext):
+            if plaintext[orig_idx].isspace() and nch == " ":
+                norm_to_orig.append(orig_idx)
+                # Skip remaining whitespace in original
+                orig_idx += 1
+                while (orig_idx < len(plaintext)
+                       and plaintext[orig_idx].isspace()):
+                    orig_idx += 1
+                break
+            elif plaintext[orig_idx] == nch:
+                norm_to_orig.append(orig_idx)
+                orig_idx += 1
+                break
+            else:
+                orig_idx += 1
+
+    scan_pos = 0
+    for block_text, tag in blocks:
+        if collapse:
+            tag = collapse_tag(tag)
+        norm_block = _normalize_ws(block_text)
+        if not norm_block:
+            continue
+
+        idx = norm_plain.find(norm_block, scan_pos)
+        if idx == -1:
+            # Try from beginning as fallback (overlapping blocks)
+            idx = norm_plain.find(norm_block)
+        if idx == -1:
+            continue
+
+        # Map normalized range back to original positions
+        end_idx = idx + len(norm_block)
+        if idx < len(norm_to_orig) and end_idx <= len(norm_to_orig):
+            orig_start = norm_to_orig[idx]
+            orig_end = norm_to_orig[end_idx - 1] + 1
+            # Tag all original chars in this range
+            for j in range(orig_start, min(orig_end, len(plaintext))):
+                tags[j] = tag
+
+        scan_pos = end_idx
+
+    return tags
+
+
+def compute_char_metrics(
+    pred_tags: List[Optional[str]],
+    gold_tags: List[Optional[str]],
+) -> Dict[str, Any]:
+    """Compute character-level precision/recall/F1 per tag.
+
+    Args:
+        pred_tags: Predicted tag per character (None = untagged).
+        gold_tags: Golden tag per character (None = untagged).
+
+    Returns:
+        Dict with per-tag metrics, macro average, and accuracy.
+    """
+    assert len(pred_tags) == len(gold_tags)
+
+    tp: Counter = Counter()
+    fp: Counter = Counter()
+    fn: Counter = Counter()
+    correct = 0
+    total = 0
+
+    for p, g in zip(pred_tags, gold_tags):
+        if p is None and g is None:
+            continue
+        total += 1
+        if p == g:
+            correct += 1
+            if p is not None:
+                tp[p] += 1
+        else:
+            if p is not None:
+                fp[p] += 1
+            if g is not None:
+                fn[g] += 1
+
+    all_tags = sorted(set(tp.keys()) | set(fp.keys()) | set(fn.keys()))
+
+    metrics: Dict[str, Dict[str, float]] = {}
+    for tag in all_tags:
+        t = tp[tag]
+        f_p = fp[tag]
+        f_n = fn[tag]
+        precision = t / (t + f_p) if (t + f_p) > 0 else 0.0
+        recall = t / (t + f_n) if (t + f_n) > 0 else 0.0
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+        iou = t / (t + f_p + f_n) if (t + f_p + f_n) > 0 else 0.0
+        metrics[tag] = {
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "iou": iou,
+            "tp": t,
+            "fp": f_p,
+            "fn": f_n,
+        }
+
+    if all_tags:
+        macro_p = sum(m["precision"] for m in metrics.values()) / len(all_tags)
+        macro_r = sum(m["recall"] for m in metrics.values()) / len(all_tags)
+        macro_f1 = sum(m["f1"] for m in metrics.values()) / len(all_tags)
+        macro_iou = sum(m["iou"] for m in metrics.values()) / len(all_tags)
+    else:
+        macro_p = macro_r = macro_f1 = macro_iou = 0.0
+
+    metrics["macro_avg"] = {
+        "precision": macro_p,
+        "recall": macro_r,
+        "f1": macro_f1,
+        "iou": macro_iou,
+        "tp": sum(tp.values()),
+        "fp": sum(fp.values()),
+        "fn": sum(fn.values()),
+    }
+
+    return {
+        "tag_metrics": metrics,
+        "accuracy": correct / total if total > 0 else 0.0,
+        "total_chars": total,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Alignment (block-level, legacy)
 # ---------------------------------------------------------------------------
 
 def align_blocks(
@@ -291,16 +485,19 @@ def evaluate_documents(
     predicted_db,
     golden_db,
     verbosity: int,
+    plaintext_db=None,
 ) -> Dict[str, Any]:
     """Evaluate predicted annotations against golden annotations.
 
-    Iterates over all documents in the golden database, looks for
-    corresponding predicted annotations, and computes metrics.
+    When *plaintext_db* is provided, uses character-level evaluation
+    anchored to the shared plaintext (handles different block
+    granularity).  Otherwise falls back to block-level alignment.
 
     Args:
         predicted_db: CouchDB database with predicted article.txt.ann.
         golden_db: CouchDB database with golden article.txt.ann.
         verbosity: Logging verbosity.
+        plaintext_db: CouchDB database with article.txt (optional).
 
     Returns:
         Evaluation result dict with per-tag and aggregate metrics.
@@ -308,6 +505,9 @@ def evaluate_documents(
     all_aligned: List[Tuple[Optional[str], Optional[str], str]] = []
     all_pred_blocks: List[Tuple[str, str]] = []
     all_gold_blocks: List[Tuple[str, str]] = []
+    # Character-level accumulators
+    all_pred_chars: List[Optional[str]] = []
+    all_gold_chars: List[Optional[str]] = []
     doc_count = 0
     matched = 0
     skipped = 0
@@ -357,7 +557,21 @@ def evaluate_documents(
         pred_text = pred_att.read().decode("utf-8")
         pred_blocks = parse_yedda_blocks(pred_text)
 
-        # Align and accumulate
+        # Character-level evaluation via shared plaintext
+        if plaintext_db is not None:
+            pt_att = plaintext_db.get_attachment(row.id, "article.txt")
+            if pt_att is not None:
+                plaintext = pt_att.read().decode("utf-8")
+                p_chars = project_blocks_to_plaintext(
+                    plaintext, pred_blocks, collapse=True,
+                )
+                g_chars = project_blocks_to_plaintext(
+                    plaintext, gold_blocks, collapse=True,
+                )
+                all_pred_chars.extend(p_chars)
+                all_gold_chars.extend(g_chars)
+
+        # Block-level alignment (legacy)
         aligned = align_blocks(pred_blocks, gold_blocks)
         all_aligned.extend(aligned)
         all_pred_blocks.extend(pred_blocks)
@@ -378,20 +592,39 @@ def evaluate_documents(
             file=sys.stderr,
         )
 
-    # Compute metrics
+    # Compute block-level metrics (legacy)
     tag_metrics = compute_tag_metrics(all_aligned)
     iou_scores = compute_token_iou(all_pred_blocks, all_gold_blocks)
     confusion = compute_confusion_matrix(all_aligned)
 
-    return {
+    result: Dict[str, Any] = {
         "documents_total": doc_count,
         "documents_matched": matched,
         "documents_skipped": skipped,
-        "tag_metrics": tag_metrics,
+        "block_tag_metrics": tag_metrics,
         "token_iou": iou_scores,
         "confusion_matrix": confusion,
-        "macro_f1": tag_metrics.get("macro_avg", {}).get("f1", 0.0),
     }
+
+    # Character-level metrics (primary when plaintext available)
+    if all_pred_chars:
+        char_result = compute_char_metrics(all_pred_chars, all_gold_chars)
+        result["char_tag_metrics"] = char_result["tag_metrics"]
+        result["char_accuracy"] = char_result["accuracy"]
+        result["char_total"] = char_result["total_chars"]
+        result["tag_metrics"] = char_result["tag_metrics"]
+        result["macro_f1"] = (
+            char_result["tag_metrics"]
+            .get("macro_avg", {})
+            .get("f1", 0.0)
+        )
+    else:
+        result["tag_metrics"] = tag_metrics
+        result["macro_f1"] = (
+            tag_metrics.get("macro_avg", {}).get("f1", 0.0)
+        )
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -423,10 +656,56 @@ def format_report(
     lines.append(
         f"- **Macro F1: {evaluation['macro_f1']:.4f}**"
     )
+    if "char_accuracy" in evaluation:
+        lines.append(
+            f"- Character accuracy: {evaluation['char_accuracy']:.4f}"
+        )
+        lines.append(
+            f"- Total characters evaluated: "
+            f"{evaluation['char_total']:,}"
+        )
     lines.append("")
 
-    # Per-tag metrics table
-    lines.append("## Per-tag Metrics")
+    # Character-level metrics (primary)
+    char_metrics = evaluation.get("char_tag_metrics")
+    if char_metrics:
+        lines.append(
+            "## Character-level Metrics (3-class, collapsed)"
+        )
+        lines.append("")
+        lines.append(
+            "| Tag | Precision | Recall | F1 | IoU "
+            "| TP | FP | FN |"
+        )
+        lines.append(
+            "|-----|-----------|--------|-----|-----"
+            "|----|----|-----|"
+        )
+        for tag in sorted(char_metrics.keys()):
+            if tag == "macro_avg":
+                continue
+            m = char_metrics[tag]
+            lines.append(
+                f"| {tag} | {m['precision']:.3f} | "
+                f"{m['recall']:.3f} | {m['f1']:.3f} | "
+                f"{m['iou']:.3f} | "
+                f"{m['tp']:.0f} | {m['fp']:.0f} | "
+                f"{m['fn']:.0f} |"
+            )
+        m = char_metrics.get("macro_avg", {})
+        lines.append(
+            f"| **Macro Avg** | "
+            f"**{m.get('precision', 0):.3f}** | "
+            f"**{m.get('recall', 0):.3f}** | "
+            f"**{m.get('f1', 0):.3f}** | "
+            f"**{m.get('iou', 0):.3f}** | "
+            f"{m.get('tp', 0):.0f} | {m.get('fp', 0):.0f} | "
+            f"{m.get('fn', 0):.0f} |"
+        )
+        lines.append("")
+
+    # Block-level metrics (legacy)
+    lines.append("## Block-level Metrics (legacy)")
     lines.append("")
     lines.append(
         "| Tag | Precision | Recall | F1 | TP | FP | FN |"
@@ -435,7 +714,7 @@ def format_report(
         "|-----|-----------|--------|-----|----|----|-----|"
     )
 
-    tag_metrics = evaluation["tag_metrics"]
+    tag_metrics = evaluation.get("block_tag_metrics", evaluation["tag_metrics"])
     for tag in sorted(tag_metrics.keys()):
         if tag == "macro_avg":
             continue
@@ -531,6 +810,17 @@ def main() -> None:
         help="Database with golden article.txt.ann annotations.",
     )
 
+    # Plaintext source for character-level evaluation
+    parser.add_argument(
+        "--plaintext-db",
+        type=str,
+        default=None,
+        help=(
+            "Database with article.txt plaintext for "
+            "character-level evaluation (default: skol_golden)."
+        ),
+    )
+
     # Output
     parser.add_argument(
         "--output",
@@ -594,6 +884,20 @@ def main() -> None:
         )
         sys.exit(1)
 
+    # Open plaintext DB for character-level evaluation
+    plaintext_db_name = args.plaintext_db or "skol_golden"
+    plaintext_db = None
+    try:
+        plaintext_db = server[plaintext_db_name]
+    except Exception:
+        if verbosity >= 1:
+            print(
+                f"Warning: plaintext database "
+                f"'{plaintext_db_name}' not found; "
+                f"character-level evaluation disabled.",
+                file=sys.stderr,
+            )
+
     if verbosity >= 1:
         print(
             f"Evaluating: {predicted_db_name} vs {args.golden_db}",
@@ -601,7 +905,10 @@ def main() -> None:
         )
 
     # Run evaluation
-    evaluation = evaluate_documents(predicted_db, golden_db, verbosity)
+    evaluation = evaluate_documents(
+        predicted_db, golden_db, verbosity,
+        plaintext_db=plaintext_db,
+    )
 
     # Format and print report
     report = format_report(

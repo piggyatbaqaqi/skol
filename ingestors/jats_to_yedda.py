@@ -261,7 +261,12 @@ def _is_key_section(sec_elem: ET.Element) -> bool:
 
 
 def _has_treatments(sec_elem: ET.Element) -> bool:
-    """Check if a <sec> element contains tp:taxon-treatment elements."""
+    """Check if a <sec> element contains taxon-treatment elements.
+
+    Works on both namespace-stripped and prefixed trees.
+    """
+    for _ in sec_elem.iter("taxon-treatment"):
+        return True
     for _ in sec_elem.iter(f"{TP_PREFIX}taxon-treatment"):
         return True
     return False
