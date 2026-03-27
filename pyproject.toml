@@ -86,6 +86,13 @@ mcp = [
 neo4j = [
     "neo4j",
 ]
+# RAPIDS GPU acceleration (requires --extra-index-url=https://pypi.nvidia.com)
+gpu = [
+    "cudf-cu12",
+    "dask-cudf-cu12",
+    "cuml-cu12",
+    "cugraph-cu12",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov",
@@ -95,7 +102,7 @@ dev = [
     "mypy",
 ]
 all = [
-    "skol[ml,pdf,ingest,mcp,neo4j,dev]",
+    "skol[ml,pdf,ingest,mcp,neo4j,gpu,dev]",
 ]
 
 [project.urls]

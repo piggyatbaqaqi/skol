@@ -54,6 +54,16 @@ setup(
         "tqdm",
         "python-dateutil>=2.9.0",
     ],
+    extras_require={
+        # RAPIDS GPU acceleration
+        # Install with: pip install --extra-index-url=https://pypi.nvidia.com skol[gpu]
+        "gpu": [
+            "cudf-cu12",
+            "dask-cudf-cu12",
+            "cuml-cu12",
+            "cugraph-cu12",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "skol-ingest=bin.ingest:main",

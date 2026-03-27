@@ -8,6 +8,11 @@ numpy
 nvidia-cuda-runtime-cu12
 pandas
 pyarrow>=15.0.0
+# RAPIDS GPU-accelerated data science (requires --extra-index-url=https://pypi.nvidia.com)
+cudf-cu12
+dask-cudf-cu12
+cuml-cu12
+cugraph-cu12
 pymupdf4llm>=0.2.0
 pyspark>=4.0.0
 python-dateutil>=2.9.0
