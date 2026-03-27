@@ -470,6 +470,88 @@ def mark_taxonomy_documents(
 
 
 # ============================================================================
+# Output Database Helpers
+# ============================================================================
+
+def move_annotations_to_output_db(
+    config: Dict[str, Any],
+    doc_ids: List[str],
+    output_db_name: str,
+    verbosity: int = 1,
+) -> int:
+    """Move .ann attachments from ingest DB to a separate output DB.
+
+    Creates documents in the output DB with just the .ann attachment,
+    then removes the .ann from the ingest DB.
+
+    Args:
+        config: Environment configuration.
+        doc_ids: Document IDs to move annotations for.
+        output_db_name: Target database name.
+        verbosity: Logging verbosity.
+
+    Returns:
+        Number of annotations moved.
+    """
+    import couchdb as couchdb_lib
+
+    couchdb_url = f"http://{config['couchdb_host']}"
+    server = couchdb_lib.Server(couchdb_url)
+    if config['couchdb_username'] and config['couchdb_password']:
+        server.resource.credentials = (
+            config['couchdb_username'],
+            config['couchdb_password'],
+        )
+
+    ingest_db = server[config['ingest_db_name']]
+
+    # Create output DB if needed
+    if output_db_name not in server:
+        server.create(output_db_name)
+        if verbosity >= 1:
+            print(f"  Created output database: {output_db_name}")
+    output_db = server[output_db_name]
+
+    moved = 0
+    for doc_id in doc_ids:
+        try:
+            att = ingest_db.get_attachment(doc_id, "article.txt.ann")
+            if att is None:
+                continue
+            ann_bytes = att.read()
+
+            # Write to output DB
+            if doc_id in output_db:
+                out_doc = output_db[doc_id]
+            else:
+                out_doc = {"_id": doc_id}
+                output_db.save(out_doc)
+                out_doc = output_db[doc_id]
+
+            output_db.put_attachment(
+                out_doc, ann_bytes,
+                filename="article.txt.ann",
+                content_type="text/plain; charset=utf-8",
+            )
+
+            # Remove from ingest DB
+            ingest_doc = ingest_db[doc_id]
+            ingest_db.delete_attachment(
+                ingest_doc, "article.txt.ann",
+            )
+            moved += 1
+
+        except Exception as exc:
+            if verbosity >= 2:
+                print(
+                    f"  Warning: could not move {doc_id}: {exc}",
+                    file=sys.stderr,
+                )
+
+    return moved
+
+
+# ============================================================================
 # Prediction Functions
 # ============================================================================
 
@@ -535,6 +617,11 @@ def predict_and_save(
     model_config['union_batch_size'] = config['union_batch_size']
     model_config['incremental'] = incremental
 
+    # Resolve output database (separate from ingest if configured)
+    output_db_name = config.get('annotations_db_name', '')
+    if not output_db_name:
+        output_db_name = ''  # empty = write to ingest DB
+
     # Build Redis key for model
     if config.get('classifier_model_key'):
         classifier_model_name = config['classifier_model_key']
@@ -550,6 +637,8 @@ def predict_and_save(
     print(f"Redis key: {classifier_model_name}")
     print(f"CouchDB: {couchdb_url}")
     print(f"Database: {config['ingest_db_name']}")
+    if output_db_name:
+        print(f"Output DB: {output_db_name}")
     print(f"Pattern: {pattern}")
     print(f"Batch size: {batch_size}")
     if dry_run:
@@ -1127,6 +1216,18 @@ def predict_and_save(
             if verbosity >= 2:
                 print(f"  Documents processed: {doc_count}")
 
+        # Move annotations to output DB if configured
+        if output_db_name and not dry_run:
+            print(f"\nMoving annotations to {output_db_name}...")
+            moved = move_annotations_to_output_db(
+                config, filtered_doc_ids or [],
+                output_db_name, verbosity,
+            )
+            print(
+                f"  Saved {moved}/{len(filtered_doc_ids or [])}"
+                f" attachments to {output_db_name}"
+            )
+
     finally:
         # Clean up Spark session
         spark.stop()
@@ -1437,6 +1538,16 @@ Note: Command-line arguments override environment variables.
         help='Re-download PDF from pdf_url and retry on extraction failure'
     )
 
+    parser.add_argument(
+        '--output-database',
+        type=str,
+        default=None,
+        help=(
+            'Write .ann predictions to this database instead '
+            'of the ingest database'
+        ),
+    )
+
     args, _ = parser.parse_known_args()
 
     # List models if requested
@@ -1452,6 +1563,10 @@ Note: Command-line arguments override environment variables.
 
     # Get configuration
     config = get_env_config()
+
+    # Apply --output-database override (takes precedence over experiment)
+    if args.output_database:
+        config['annotations_db_name'] = args.output_database
 
     # Handle --update-taxonomy-flag-only mode
     if args.update_taxonomy_flag_only:

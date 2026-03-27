@@ -859,9 +859,12 @@ def main() -> None:
     )
 
     # Resolve predicted database
-    # When --experiment is used, get_env_config() already resolved ingest_db_name
+    # Prefer annotations DB if set (from experiment), fall back to ingest
     if args.experiment:
-        predicted_db_name = config['ingest_db_name']
+        predicted_db_name = (
+            config.get('annotations_db_name')
+            or config['ingest_db_name']
+        )
     else:
         predicted_db_name = args.predicted_db
 

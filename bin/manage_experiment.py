@@ -69,6 +69,7 @@ def _default_experiment(name: str) -> Dict[str, Any]:
         "databases": {
             "ingest": "skol_dev",
             "training": "skol_training",
+            "annotations": f"skol_exp_{name}_ann",
             "taxa": f"skol_exp_{name}_taxa",
             "taxa_full": f"skol_exp_{name}_taxa_full",
         },
@@ -158,6 +159,8 @@ def cmd_create(db, args) -> None:
         doc["databases"]["training"] = args.training_db
     if args.ingest_db:
         doc["databases"]["ingest"] = args.ingest_db
+    if args.annotations_db:
+        doc["databases"]["annotations"] = args.annotations_db
 
     db.save(doc)
     print(f"Created experiment '{name}'")
@@ -228,6 +231,9 @@ def cmd_update(db, args) -> None:
         changed = True
     if args.ingest_db:
         doc.setdefault("databases", {})["ingest"] = args.ingest_db
+        changed = True
+    if args.annotations_db:
+        doc.setdefault("databases", {})["annotations"] = args.annotations_db
         changed = True
 
     if changed:
@@ -320,6 +326,10 @@ def main() -> None:
         "--ingest-db", type=str,
         help="Ingest database name",
     )
+    p_create.add_argument(
+        "--annotations-db", type=str,
+        help="Annotations output database name",
+    )
 
     # list
     subparsers.add_parser("list", help="List all experiments")
@@ -338,6 +348,9 @@ def main() -> None:
     )
     p_update.add_argument("--training-db", type=str, help="Training DB")
     p_update.add_argument("--ingest-db", type=str, help="Ingest DB")
+    p_update.add_argument(
+        "--annotations-db", type=str, help="Annotations output DB",
+    )
 
     # archive
     p_archive = subparsers.add_parser("archive", help="Archive experiment")

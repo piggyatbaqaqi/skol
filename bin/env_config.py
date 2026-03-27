@@ -188,6 +188,7 @@ def _apply_experiment(
     db_mapping = [
         ('ingest', ['ingest_db_name']),
         ('training', ['training_database']),
+        ('annotations', ['annotations_db_name']),
         ('taxa', ['taxon_db_name', 'source_db']),
         ('taxa_full', ['dest_db']),
     ]
@@ -251,6 +252,9 @@ def get_env_config() -> Dict[str, Any]:
 
         # Training database settings
         'training_database': _get_env('TRAINING_DATABASE', 'skol_training'),
+
+        # Annotations output database (empty = write to ingest DB)
+        'annotations_db_name': _get_env('ANNOTATIONS_DB_NAME', ''),
 
         # Redis settings
         'redis_host': _get_env('REDIS_HOST', 'localhost'),
@@ -323,7 +327,7 @@ def get_env_config() -> Dict[str, Any]:
         'couchdb_url', 'couchdb_host', 'couchdb_username', 'couchdb_password', 'couchdb_database',
         'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
         'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'taxon_db_name',
-        'training_database',
+        'training_database', 'annotations_db_name',
         'redis_host', 'redis_url', 'redis_username', 'redis_password',
         'model_version', 'classifier_model_expire',
         'embedding_name',
