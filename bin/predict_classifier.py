@@ -512,15 +512,32 @@ def move_annotations_to_output_db(
             print(f"  Created output database: {output_db_name}")
     output_db = server[output_db_name]
 
+    # Look for any .ann attachment the classifier may have written
+    ann_names = ["article.txt.ann", "article.pdf.ann"]
+
     moved = 0
     for doc_id in doc_ids:
         try:
-            att = ingest_db.get_attachment(doc_id, "article.txt.ann")
+            ingest_doc = ingest_db.get(doc_id)
+            if ingest_doc is None:
+                continue
+
+            # Find which .ann attachment exists
+            atts = ingest_doc.get("_attachments", {})
+            found_ann = None
+            for name in ann_names:
+                if name in atts:
+                    found_ann = name
+                    break
+            if found_ann is None:
+                continue
+
+            att = ingest_db.get_attachment(doc_id, found_ann)
             if att is None:
                 continue
             ann_bytes = att.read()
 
-            # Write to output DB
+            # Write to output DB as article.txt.ann (normalized)
             if doc_id in output_db:
                 out_doc = output_db[doc_id]
             else:
@@ -536,9 +553,7 @@ def move_annotations_to_output_db(
 
             # Remove from ingest DB
             ingest_doc = ingest_db[doc_id]
-            ingest_db.delete_attachment(
-                ingest_doc, "article.txt.ann",
-            )
+            ingest_db.delete_attachment(ingest_doc, found_ann)
             moved += 1
 
         except Exception as exc:
@@ -1605,6 +1620,16 @@ Note: Command-line arguments override environment variables.
         print(f"✗ Failed to connect to Redis: {e}")
         sys.exit(1)
 
+    # Experimental runs default to incremental for progress visibility
+    incremental = config.get('incremental', False)
+    if not incremental and config.get('annotations_db_name'):
+        incremental = True
+        if config['verbosity'] >= 1:
+            print(
+                "Note: defaulting to --incremental "
+                "(output database is set)"
+            )
+
     # Run predictions
     try:
         predict_and_save(
@@ -1617,7 +1642,7 @@ Note: Command-line arguments override environment variables.
             dry_run=config.get('dry_run', False),
             skip_existing=config.get('skip_existing', False),
             force=config.get('force', False),
-            incremental=config.get('incremental', False),
+            incremental=incremental,
             incremental_batch_size=config.get('incremental_batch_size', 50),
             taxonomy_filter=config.get('taxonomy_filter', False),
             skip_golden=config.get('skip_golden', False),
