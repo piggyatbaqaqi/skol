@@ -310,9 +310,8 @@ Environment Variables:
     parser.add_argument(
         '--model',
         dest='model_name',
-        default='logistic_sections',
-        choices=list(MODEL_CONFIGS.keys()),
-        help='Model configuration to use (default: logistic_sections)'
+        default=None,
+        help='Model configuration to use (or set via --experiment model_name)'
     )
 
     parser.add_argument(
@@ -360,10 +359,13 @@ Environment Variables:
     # Get configuration
     config = get_env_config()
 
+    # Resolve model name: CLI arg > experiment model_name > default
+    model_name = args.model_name or config.get('model_name') or 'logistic_sections'
+
     # Get model configuration
-    model_config = MODEL_CONFIGS.get(args.model_name)
+    model_config = MODEL_CONFIGS.get(model_name)
     if model_config is None:
-        print(f"✗ Unknown model: {args.model_name}")
+        print(f"✗ Unknown model: {model_name}")
         print(f"  Available models: {', '.join(MODEL_CONFIGS.keys())}")
         sys.exit(1)
 
@@ -381,7 +383,7 @@ Environment Variables:
     # Train the model
     try:
         train_classifier(
-            model_name=args.model_name,
+            model_name=model_name,
             model_config=model_config,
             config=config,
             redis_client=redis_client,

@@ -176,6 +176,8 @@ def _apply_experiment(
         experiment.databases.taxa_full -> dest_db
         experiment.redis_keys.classifier_model -> classifier_model_key
         experiment.redis_keys.embedding        -> embedding_name
+        experiment.redis_keys.menus            -> menus_key
+        experiment.model_name                  -> model_name
 
     Args:
         config: The config dict to modify in place.
@@ -202,12 +204,16 @@ def _apply_experiment(
     redis_mapping = [
         ('classifier_model', 'classifier_model_key'),
         ('embedding', 'embedding_name'),
+        ('menus', 'menus_key'),
     ]
     for exp_field, config_key in redis_mapping:
         value = redis_keys.get(exp_field)
         if value:
             if config_key not in cli_explicit_keys:
                 config[config_key] = value
+
+    if experiment_doc.get('model_name') and 'model_name' not in cli_explicit_keys:
+        config['model_name'] = experiment_doc['model_name']
 
 
 def get_env_config() -> Dict[str, Any]:
@@ -330,6 +336,7 @@ def get_env_config() -> Dict[str, Any]:
         'training_database', 'annotations_db_name',
         'redis_host', 'redis_url', 'redis_username', 'redis_password',
         'model_version', 'classifier_model_expire',
+        'model_name', 'menus_key',
         'embedding_name',
         'couchdb_pattern', 'pattern',
         'ncbi_api_key',

@@ -1461,9 +1461,8 @@ Note: Command-line arguments override environment variables.
     parser.add_argument(
         '--model',
         dest='model_name',
-        default='logistic_sections',
-        choices=list(MODEL_CONFIGS.keys()),
-        help='Model configuration to use (default: logistic_sections)'
+        default=None,
+        help='Model configuration to use (or set via --experiment model_name)'
     )
 
     parser.add_argument(
@@ -1560,10 +1559,13 @@ Note: Command-line arguments override environment variables.
             sys.exit(1)
         return
 
+    # Resolve model name: CLI arg > experiment model_name > default
+    model_name = args.model_name or config.get('model_name') or 'logistic_sections'
+
     # Get model configuration
-    model_config = MODEL_CONFIGS.get(args.model_name)
+    model_config = MODEL_CONFIGS.get(model_name)
     if model_config is None:
-        print(f"✗ Unknown model: {args.model_name}")
+        print(f"✗ Unknown model: {model_name}")
         print(f"  Available models: {', '.join(MODEL_CONFIGS.keys())}")
         sys.exit(1)
 
@@ -1591,7 +1593,7 @@ Note: Command-line arguments override environment variables.
     # Run predictions
     try:
         predict_and_save(
-            model_name=args.model_name,
+            model_name=model_name,
             model_config=model_config,
             config=config,
             redis_client=redis_client,

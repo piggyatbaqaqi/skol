@@ -64,6 +64,7 @@ def _default_experiment(name: str) -> Dict[str, Any]:
     """Build a default experiment document."""
     return {
         "_id": name,
+        "model_name": "",
         "notes": "",
         "status": "draft",
         "databases": {
@@ -155,6 +156,8 @@ def cmd_create(db, args) -> None:
     doc = _default_experiment(name)
     if args.notes:
         doc["notes"] = args.notes
+    if args.model_name:
+        doc["model_name"] = args.model_name
     if args.training_db:
         doc["databases"]["training"] = args.training_db
     if args.ingest_db:
@@ -234,6 +237,9 @@ def cmd_update(db, args) -> None:
         changed = True
     if args.annotations_db:
         doc.setdefault("databases", {})["annotations"] = args.annotations_db
+        changed = True
+    if args.model_name is not None:
+        doc["model_name"] = args.model_name
         changed = True
 
     if changed:
@@ -319,6 +325,10 @@ def main() -> None:
     p_create.add_argument("--name", required=True, help="Experiment name")
     p_create.add_argument("--notes", type=str, help="Description/notes")
     p_create.add_argument(
+        "--model-name", type=str,
+        help="Model config name (e.g. logistic_sections_taxpub_v1)",
+    )
+    p_create.add_argument(
         "--training-db", type=str,
         help="Training database name",
     )
@@ -345,6 +355,10 @@ def main() -> None:
     p_update.add_argument(
         "--status", type=str,
         help=f"Set status ({', '.join(_STATUS_VALUES)})",
+    )
+    p_update.add_argument(
+        "--model-name", type=str,
+        help="Model config name (e.g. logistic_sections_taxpub_v1)",
     )
     p_update.add_argument("--training-db", type=str, help="Training DB")
     p_update.add_argument("--ingest-db", type=str, help="Ingest DB")
