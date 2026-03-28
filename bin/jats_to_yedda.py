@@ -159,7 +159,6 @@ def _process_doc(
     target_db: Any,
     source_database: str,
     verbosity: int,
-    taxpub_only: bool = False,
 ) -> bool:
     """Process a single document. Returns True on success."""
     try:
@@ -171,7 +170,7 @@ def _process_doc(
             print(f"Skipping {doc_id}: {exc}", file=sys.stderr)
         return False
 
-    if taxpub_only and not _has_taxpub(xml_string):
+    if not _has_taxpub(xml_string):
         if verbosity >= 2:
             print(
                 f"Skipping {doc_id}: no TaxPub markup",
@@ -202,7 +201,7 @@ def _process_doc(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Convert JATS/TaxPub XML to YEDDA-annotated text."
+        description="Convert TaxPub XML documents to YEDDA-annotated text."
     )
 
     # Document selection (mutually exclusive).
@@ -256,14 +255,6 @@ def main() -> None:
         default=None,
         metavar="FILE",
         help="File of doc IDs (one per line) to exclude.",
-    )
-    parser.add_argument(
-        "--taxpub-only",
-        action="store_true",
-        help=(
-            "Only process articles containing TaxPub markup "
-            "(http://www.plazi.org/taxpub namespace)."
-        ),
     )
 
     # Work-skipping and partial computation options.
@@ -370,8 +361,8 @@ def main() -> None:
             xml_fmt = doc.get("xml_format")
             if xml_fmt not in ("jats", "taxpub"):
                 continue
-            # If is_taxpub is explicitly False, skip in taxpub_only mode early
-            if args.taxpub_only and doc.get("is_taxpub") is False:
+            # Skip documents known to lack TaxPub markup.
+            if doc.get("is_taxpub") is False:
                 continue
             if row.id in exclude_ids:
                 excluded_count += 1
@@ -424,7 +415,6 @@ def main() -> None:
             source_db, doc, doc_id,
             args.output_to, args.output_dir,
             target_db, database, verbosity,
-            taxpub_only=args.taxpub_only,
         ):
             success += 1
         else:

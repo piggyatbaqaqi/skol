@@ -437,7 +437,7 @@ def _build_step_command(step_name: str, experiment_name: str) -> List[str]:
         "annotate_jats": [
             sys.executable, str(_BIN_DIR / "jats_to_yedda.py"),
             "--experiment", "{name}",
-            "--all", "--taxpub-only",
+            "--all",
             "--output-to", "couchdb",
             "--skip-existing",
         ],
@@ -483,7 +483,10 @@ def _run_step(
     cmd = _build_step_command(step_name, experiment_name)
 
     if verbosity >= 1:
-        print(f"\nRunning step {step_idx + 1}/{len(_PIPELINE_STEPS)}: {step_name}")
+        print(
+            f"\nRunning step {step_idx + 1}/"
+            f"{len(_PIPELINE_STEPS)}: {step_name}"
+        )
         if verbosity >= 2:
             print(f"  Command: {' '.join(cmd)}")
 
@@ -612,7 +615,8 @@ def cmd_runnext(db: Any, args: Any) -> None:
         else:
             statuses = ", ".join(
                 f"{s['name']}={s['status']}" for s in steps
-                if s["status"] not in _DONE_STATUSES and s["status"] != "pending"
+                if s["status"] not in _DONE_STATUSES
+                and s["status"] != "pending"
             )
             print(
                 f"No pending steps found for '{args.name}'. "
@@ -625,8 +629,11 @@ def cmd_runnext(db: Any, args: Any) -> None:
     # Check dependencies.
     err = _check_dependencies(steps, step_idx)
     if err:
-        print(f"Cannot run step {step_idx + 1} ({steps[step_idx]['name']}): {err}",
-              file=sys.stderr)
+        print(
+            f"Cannot run step {step_idx + 1} "
+            f"({steps[step_idx]['name']}): {err}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     success = _run_step(db, doc, step_idx, args.name)
@@ -656,11 +663,11 @@ def cmd_runstep(db: Any, args: Any) -> None:
             sys.exit(1)
 
         # Reload doc before each step to get latest _rev.
-        doc = db[args.name]
-        _ensure_pipeline(doc)
-        steps = doc["pipeline"]["steps"]
+        fresh_doc: Dict[str, Any] = db[args.name]
+        _ensure_pipeline(fresh_doc)
+        steps = fresh_doc["pipeline"]["steps"]
 
-        success = _run_step(db, doc, step_idx, args.name)
+        success = _run_step(db, fresh_doc, step_idx, args.name)
         if not success:
             sys.exit(1)
 
@@ -807,7 +814,10 @@ def main() -> None:
     p_runstep.add_argument("name", help="Experiment name")
     p_runstep.add_argument(
         "steps",
-        help="Comma-separated step name(s) to run (e.g. embed or evaluate,build_vocab)",
+        help=(
+            "Comma-separated step name(s) to run "
+            "(e.g. embed or evaluate,build_vocab)"
+        ),
     )
 
     # resetstep
