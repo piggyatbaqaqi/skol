@@ -848,7 +848,7 @@ def main() -> None:
         help="Comma-separated step name(s) to skip",
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     config = get_env_config()
     db = _connect_experiments_db(config)
 
