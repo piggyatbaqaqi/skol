@@ -105,7 +105,7 @@ def _write_couchdb(
         content_type="text/plain",
     )
     if verbosity >= 1:
-        print(f"Saved {doc_id} to CouchDB")
+        print(f"Saved {doc_id} to {target_db.name}")
 
 
 def _output_exists(
