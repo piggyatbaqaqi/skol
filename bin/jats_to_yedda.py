@@ -22,7 +22,6 @@ Examples:
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Set
@@ -86,7 +85,7 @@ def _write_couchdb(
     if doc_id in target_db:
         target_doc = target_db[doc_id]
     else:
-        target_doc: Dict[str, Any] = {"_id": doc_id}
+        target_doc = {"_id": doc_id}  # type: Dict[str, Any]
 
     # Copy metadata from source.
     for key in ("title", "doi", "authors", "year",
@@ -293,7 +292,7 @@ def main() -> None:
         help="Suppress output.",
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     verbosity = 0 if args.quiet else args.verbose
     config = get_env_config()
@@ -309,7 +308,11 @@ def main() -> None:
         else config.get("limit")
     )
 
-    database = args.database or config.get("ingest_db_name") or config["couchdb_database"]
+    database = (
+        args.database
+        or config.get("ingest_db_name")
+        or config["couchdb_database"]
+    )
     source_db = _connect_db(config, database)
 
     # Load exclusion set if provided.
