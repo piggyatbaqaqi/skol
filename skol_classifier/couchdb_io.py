@@ -38,23 +38,34 @@ class CouchDBConnection:
         couchdb_url: str,
         database: str,
         username: Optional[str] = None,
-        password: Optional[str] = None
+        password: Optional[str] = None,
+        output_database: Optional[str] = None,
+        output_couchdb_url: Optional[str] = None,
     ):
         """
         Initialize CouchDB connection parameters.
 
         Args:
             couchdb_url: CouchDB server URL (e.g., "http://localhost:5984")
-            database: Database name
+            database: Source (ingest) database name
             username: Optional username for authentication
             password: Optional password for authentication
+            output_database: If set, save annotations here instead of the source DB.
+                Metadata is copied from the source document so that downstream
+                consumers (e.g. extract_taxa_to_couchdb) have full provenance.
+            output_couchdb_url: CouchDB URL for the output database (defaults to
+                couchdb_url when not specified).
         """
         self.couchdb_url = couchdb_url
         self.database = database
         self.username = username
         self.password = password
+        self.output_database = output_database
+        self.output_couchdb_url = output_couchdb_url or couchdb_url
         self._server = None
         self._db = None
+        self._output_server = None
+        self._output_db = None
 
     def _connect(self):
         """
@@ -78,10 +89,25 @@ class CouchDBConnection:
 
     @property
     def db(self):
-        """Get the database object, connecting if necessary."""
+        """Get the source database object, connecting if necessary."""
         if self._db is None:
             self._connect()
         return self._db
+
+    @property
+    def output_db(self):
+        """Get the output database, creating it if it doesn't exist."""
+        if not self.output_database:
+            return self.db
+        if self._output_db is None:
+            if self._output_server is None:
+                self._output_server = couchdb.Server(self.output_couchdb_url)
+                if self.username and self.password:
+                    self._output_server.resource.credentials = (self.username, self.password)
+            if self.output_database not in self._output_server:
+                self._output_server.create(self.output_database)
+            self._output_db = self._output_server[self.output_database]
+        return self._output_db
 
     def get_all_doc_ids(self, pattern: str = "*") -> List[str]:
         """
@@ -276,7 +302,8 @@ class CouchDBConnection:
         """
         # Connect to CouchDB once per partition
         try:
-            db = self.db
+            source_db = self.db
+            target_db = self.output_db  # same as source_db when output_database is unset
 
             # Process all rows in partition with same connection
             # Note: Each row represents one (doc_id, attachment_name) pair
@@ -284,21 +311,31 @@ class CouchDBConnection:
             for row in partition:
                 success = False
                 try:
-                    doc = db[row.doc_id]
+                    source_doc = source_db[row.doc_id]
 
-                    # Update human_url field if provided
-                    if hasattr(row, 'human_url') and row.human_url:
-                        doc['url'] = row.human_url
-                        db.save(doc)
-                        # Reload doc to get updated _rev
-                        doc = db[row.doc_id]
+                    if target_db is source_db:
+                        # Writing back to ingest DB — update human_url if provided
+                        doc = source_doc
+                        if hasattr(row, 'human_url') and row.human_url:
+                            doc['url'] = row.human_url
+                            target_db.save(doc)
+                            doc = target_db[row.doc_id]
+                    else:
+                        # Writing to a separate output DB — copy source metadata
+                        if row.doc_id in target_db:
+                            doc = target_db[row.doc_id]
+                        else:
+                            doc = {k: v for k, v in source_doc.items()
+                                   if k not in ('_attachments', '_rev')}
+                            target_db.save(doc)
+                            doc = target_db[row.doc_id]
 
                     # Create new attachment name by appending suffix
                     # e.g., "article.txt" becomes "article.txt.ann"
                     new_attachment_name = f"{row.attachment_name}{suffix}"
 
                     # Save the annotated content as a new attachment
-                    db.put_attachment(
+                    target_db.put_attachment(
                         doc,
                         row.final_aggregated_pg.encode('utf-8'),
                         filename=new_attachment_name,
@@ -408,7 +445,8 @@ class CouchDBConnection:
         # Use mapPartitions for efficient batch saving
         # Create new connection instance with same params for workers
         # IMPORTANT: Keep conn_params minimal to reduce closure size
-        conn_params = (self.couchdb_url, self.database, self.username, self.password)
+        conn_params = (self.couchdb_url, self.database, self.username, self.password,
+                       self.output_database, self.output_couchdb_url)
 
         if incremental:
             # Incremental mode: use foreachPartition for immediate writes
@@ -477,7 +515,8 @@ class CouchDBConnection:
             print(f"  Processing {total} documents incrementally...")
 
         # Connect to CouchDB on the driver
-        db = self.db
+        source_db = self.db
+        target_db = self.output_db  # same as source_db when output_database is unset
         results = []
         success_count = 0
         failure_count = 0
@@ -485,19 +524,28 @@ class CouchDBConnection:
         for i, row in enumerate(rows):
             success = False
             try:
-                doc = db[row.doc_id]
+                source_doc = source_db[row.doc_id]
 
-                # Update human_url field if provided
-                if hasattr(row, 'human_url') and row.human_url:
-                    doc['url'] = row.human_url
-                    db.save(doc)
-                    doc = db[row.doc_id]
+                if target_db is source_db:
+                    doc = source_doc
+                    if hasattr(row, 'human_url') and row.human_url:
+                        doc['url'] = row.human_url
+                        target_db.save(doc)
+                        doc = target_db[row.doc_id]
+                else:
+                    if row.doc_id in target_db:
+                        doc = target_db[row.doc_id]
+                    else:
+                        doc = {k: v for k, v in source_doc.items()
+                               if k not in ('_attachments', '_rev')}
+                        target_db.save(doc)
+                        doc = target_db[row.doc_id]
 
                 # Create new attachment name
                 new_attachment_name = f"{row.attachment_name}{suffix}"
 
                 # Save immediately
-                db.put_attachment(
+                target_db.put_attachment(
                     doc,
                     row.final_aggregated_pg.encode('utf-8'),
                     filename=new_attachment_name,

@@ -5,7 +5,7 @@ This module provides classes for formatting predictions in various
 formats (YEDDA annotation format, labels only, probabilities, etc.).
 """
 
-from typing import List
+from typing import List, Optional
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, concat, lit, expr, udf, collect_list
 from pyspark.sql.types import StringType, ArrayType
@@ -289,22 +289,29 @@ class CouchDBOutputWriter:
         couchdb_url: str,
         database: str,
         username: str,
-        password: str
+        password: str,
+        output_database: Optional[str] = None,
+        output_couchdb_url: Optional[str] = None,
     ):
         """
         Initialize the writer.
 
         Args:
-            couchdb_url: CouchDB server URL
-            database: Database name
+            couchdb_url: CouchDB server URL (source/ingest)
+            database: Source database name
             username: CouchDB username
             password: CouchDB password
+            output_database: If set, write annotations here (with source metadata
+                copied) instead of back to the ingest database.
+            output_couchdb_url: URL for the output database (defaults to couchdb_url).
         """
         self.conn = CouchDBConnection(
             couchdb_url=couchdb_url,
             database=database,
             username=username,
-            password=password
+            password=password,
+            output_database=output_database,
+            output_couchdb_url=output_couchdb_url,
         )
 
     def save_annotated(

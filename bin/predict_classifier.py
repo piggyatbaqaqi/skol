@@ -473,99 +473,6 @@ def mark_taxonomy_documents(
 # Output Database Helpers
 # ============================================================================
 
-def move_annotations_to_output_db(
-    config: Dict[str, Any],
-    doc_ids: List[str],
-    output_db_name: str,
-    verbosity: int = 1,
-) -> int:
-    """Move .ann attachments from ingest DB to a separate output DB.
-
-    Creates documents in the output DB with just the .ann attachment,
-    then removes the .ann from the ingest DB.
-
-    Args:
-        config: Environment configuration.
-        doc_ids: Document IDs to move annotations for.
-        output_db_name: Target database name.
-        verbosity: Logging verbosity.
-
-    Returns:
-        Number of annotations moved.
-    """
-    import couchdb as couchdb_lib
-
-    couchdb_url = f"http://{config['couchdb_host']}"
-    server = couchdb_lib.Server(couchdb_url)
-    if config['couchdb_username'] and config['couchdb_password']:
-        server.resource.credentials = (
-            config['couchdb_username'],
-            config['couchdb_password'],
-        )
-
-    ingest_db = server[config['ingest_db_name']]
-
-    # Create output DB if needed
-    if output_db_name not in server:
-        server.create(output_db_name)
-        if verbosity >= 1:
-            print(f"  Created output database: {output_db_name}")
-    output_db = server[output_db_name]
-
-    # Look for any .ann attachment the classifier may have written
-    ann_names = ["article.txt.ann", "article.pdf.ann"]
-
-    moved = 0
-    for doc_id in doc_ids:
-        try:
-            ingest_doc = ingest_db.get(doc_id)
-            if ingest_doc is None:
-                continue
-
-            # Find which .ann attachment exists
-            atts = ingest_doc.get("_attachments", {})
-            found_ann = None
-            for name in ann_names:
-                if name in atts:
-                    found_ann = name
-                    break
-            if found_ann is None:
-                continue
-
-            att = ingest_db.get_attachment(doc_id, found_ann)
-            if att is None:
-                continue
-            ann_bytes = att.read()
-
-            # Write to output DB as article.txt.ann (normalized)
-            if doc_id in output_db:
-                out_doc = output_db[doc_id]
-            else:
-                out_doc = {"_id": doc_id}
-                output_db.save(out_doc)
-                out_doc = output_db[doc_id]
-
-            output_db.put_attachment(
-                out_doc, ann_bytes,
-                filename="article.txt.ann",
-                content_type="text/plain; charset=utf-8",
-            )
-
-            # Remove from ingest DB
-            ingest_doc = ingest_db[doc_id]
-            ingest_db.delete_attachment(ingest_doc, found_ann)
-            moved += 1
-
-        except Exception as exc:
-            if verbosity >= 2:
-                print(
-                    f"  Warning: could not move {doc_id}: {exc}",
-                    file=sys.stderr,
-                )
-
-    return moved
-
-
 # ============================================================================
 # Prediction Functions
 # ============================================================================
@@ -632,10 +539,15 @@ def predict_and_save(
     model_config['union_batch_size'] = config['union_batch_size']
     model_config['incremental'] = incremental
 
-    # Resolve output database (separate from ingest if configured)
+    # Resolve output database — required; annotations must not go to ingest DB
     output_db_name = config.get('annotations_db_name', '')
     if not output_db_name:
-        output_db_name = ''  # empty = write to ingest DB
+        print(
+            "✗ --output-database is required. "
+            "Annotations must be written to a separate database, not the ingest DB.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Build Redis key for model
     if config.get('classifier_model_key'):
@@ -701,6 +613,7 @@ def predict_and_save(
             # Output configuration
             output_dest='couchdb',
             output_couchdb_suffix='.ann',
+            output_couchdb_database=output_db_name,
 
             # Model I/O
             auto_load_model=True,
@@ -761,29 +674,28 @@ def predict_and_save(
                 )
 
         # Skip existing documents with .ann attachments (unless --force)
-        # Only check the documents we're actually processing, not the entire database
+        # Check the output DB (annotations are written there, not the ingest DB)
         if skip_existing and not force and filtered_doc_ids:
             if model_config.get('verbosity', 1) >= 1:
                 print(f"\nFiltering out documents with existing .ann attachments...")
 
-            # Ensure we have a db connection for checking
-            if db is None:
-                import couchdb
-                couch_server = couchdb.Server(couchdb_url)
-                if config['couchdb_username'] and config['couchdb_password']:
-                    couch_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
-                db = couch_server[config['ingest_db_name']]
+            import couchdb as _couchdb_skip
+            _skip_server = _couchdb_skip.Server(couchdb_url)
+            if config['couchdb_username'] and config['couchdb_password']:
+                _skip_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+            output_db_for_check = _skip_server[output_db_name] if output_db_name in _skip_server else None
 
             # Only check the specific documents we're processing
             existing_ann_docs = set()
-            for doc_id in filtered_doc_ids:
-                try:
-                    doc = db[doc_id]
-                    attachments = doc.get('_attachments', {})
-                    if any(att.endswith('.ann') for att in attachments.keys()):
-                        existing_ann_docs.add(doc_id)
-                except Exception:
-                    continue
+            if output_db_for_check is not None:
+                for doc_id in filtered_doc_ids:
+                    try:
+                        doc = output_db_for_check[doc_id]
+                        attachments = doc.get('_attachments', {})
+                        if any(att.endswith('.ann') for att in attachments.keys()):
+                            existing_ann_docs.add(doc_id)
+                    except Exception:
+                        continue
 
             original_count = len(filtered_doc_ids)
             filtered_doc_ids = [d for d in filtered_doc_ids if d not in existing_ann_docs]
@@ -889,6 +801,7 @@ def predict_and_save(
                         couchdb_doc_ids=batch_doc_ids,
                         output_dest='couchdb',
                         output_couchdb_suffix='.ann',
+                        output_couchdb_database=output_db_name,
                         auto_load_model=True,
                         model_storage='redis',
                         redis_client=redis_client,
@@ -948,6 +861,7 @@ def predict_and_save(
                                     couchdb_doc_ids=redownloaded_doc_ids,
                                     output_dest='couchdb',
                                     output_couchdb_suffix='.ann',
+                                    output_couchdb_database=output_db_name,
                                     auto_load_model=True,
                                     model_storage='redis',
                                     redis_client=redis_client,
@@ -1035,7 +949,8 @@ def predict_and_save(
             if retry_failed_extraction:
                 print(f"  Documents retried: {total_retried}")
             print(f"  Errors: {total_errors}")
-            print(f"  Database: {config['ingest_db_name']}")
+            print(f"  Ingest DB: {config['ingest_db_name']}")
+            print(f"  Output DB: {output_db_name}")
 
         else:
             # Non-incremental mode: process all at once (original behavior)
@@ -1054,6 +969,7 @@ def predict_and_save(
                 couchdb_doc_ids=filtered_doc_ids,
                 output_dest='couchdb',
                 output_couchdb_suffix='.ann',
+                output_couchdb_database=output_db_name,
                 auto_load_model=True,
                 model_storage='redis',
                 redis_client=redis_client,
@@ -1130,6 +1046,7 @@ def predict_and_save(
                             couchdb_doc_ids=redownloaded_doc_ids,
                             output_dest='couchdb',
                             output_couchdb_suffix='.ann',
+                            output_couchdb_database=output_db_name,
                             auto_load_model=True,
                             model_storage='redis',
                             redis_client=redis_client,
@@ -1228,20 +1145,9 @@ def predict_and_save(
             else:
                 print(f"✓ Predictions saved to CouchDB")
             print(f"  Database: {config['ingest_db_name']}")
+            print(f"  Output DB: {output_db_name}")
             if verbosity >= 2:
                 print(f"  Documents processed: {doc_count}")
-
-        # Move annotations to output DB if configured
-        if output_db_name and not dry_run:
-            print(f"\nMoving annotations to {output_db_name}...")
-            moved = move_annotations_to_output_db(
-                config, filtered_doc_ids or [],
-                output_db_name, verbosity,
-            )
-            print(
-                f"  Saved {moved}/{len(filtered_doc_ids or [])}"
-                f" attachments to {output_db_name}"
-            )
 
     finally:
         # Clean up Spark session

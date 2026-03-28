@@ -189,6 +189,8 @@ class SkolClassifierV2:
         output_dest: Literal['files', 'couchdb', 'strings'] = 'files',
         output_path: Optional[str] = None,
         output_couchdb_suffix: Optional[str] = '.ann',
+        output_couchdb_database: Optional[str] = None,
+        output_couchdb_url: Optional[str] = None,
 
         # Model storage configuration
         model_storage: Optional[Literal['disk', 'redis']] = None,
@@ -243,6 +245,8 @@ class SkolClassifierV2:
         self.output_dest = output_dest
         self.output_path = output_path
         self.output_couchdb_suffix = output_couchdb_suffix
+        self.output_couchdb_database = output_couchdb_database
+        self.output_couchdb_url = output_couchdb_url
 
         # Model storage configuration
         self.model_storage = model_storage
@@ -1219,7 +1223,9 @@ class SkolClassifierV2:
             couchdb_url=self.couchdb_url,
             database=self.couchdb_database,
             username=self.couchdb_username,
-            password=self.couchdb_password
+            password=self.couchdb_password,
+            output_database=self.output_couchdb_database,
+            output_couchdb_url=self.output_couchdb_url,
         )
 
         writer.save_annotated(
