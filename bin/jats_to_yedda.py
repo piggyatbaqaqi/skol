@@ -318,7 +318,7 @@ def main() -> None:
         else config.get("limit")
     )
 
-    database = args.database or config["couchdb_database"]
+    database = args.database or config.get("ingest_db_name") or config["couchdb_database"]
     source_db = _connect_db(config, database)
 
     # Load exclusion set if provided.
@@ -335,11 +335,20 @@ def main() -> None:
             )
 
     # Target database for couchdb output.
+    # In annotation mode (pipeline), write to annotations_db_name.
+    # In training-data mode (manual), fall back to training_database.
     target_db = None
     if args.output_to == "couchdb":
         target_database = (
-            args.output_database or config["training_database"]
+            args.output_database
+            or config.get("annotations_db_name")
+            or config.get("training_database")
         )
+        if not target_database:
+            parser.error(
+                "--output-database is required (or set via --experiment "
+                "annotations_db or TRAINING_DATABASE env var)"
+            )
         target_db = _connect_db(config, target_database)
 
     # Collect document IDs to process.
@@ -348,18 +357,26 @@ def main() -> None:
     if args.doc_id:
         doc_ids = [args.doc_id]
     elif args.all:
-        # Only include documents with JATS XML available.
+        # Collect documents with JATS XML available.
+        # When is_taxpub is set on a doc (post-backfill), use it to pre-filter
+        # instead of reading every XML attachment later.  Documents without the
+        # flag still pass through; taxpub_only will check the XML content.
         for row in source_db.view(
             "_all_docs", include_docs=True,
         ):
             doc = row.doc
-            if (doc
-                    and doc.get("xml_available", False)
-                    and doc.get("xml_format") == "jats"):
-                if row.id in exclude_ids:
-                    excluded_count += 1
-                    continue
-                doc_ids.append(row.id)
+            if not doc or not doc.get("xml_available", False):
+                continue
+            xml_fmt = doc.get("xml_format")
+            if xml_fmt not in ("jats", "taxpub"):
+                continue
+            # If is_taxpub is explicitly False, skip in taxpub_only mode early
+            if args.taxpub_only and doc.get("is_taxpub") is False:
+                continue
+            if row.id in exclude_ids:
+                excluded_count += 1
+                continue
+            doc_ids.append(row.id)
         if verbosity >= 1:
             msg = f"Found {len(doc_ids)} JATS XML documents in {database}"
             if excluded_count:
