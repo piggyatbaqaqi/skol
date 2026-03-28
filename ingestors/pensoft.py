@@ -672,15 +672,19 @@ class PensoftIngestor(Ingestor):
 
     def _detect_xml_format(self, content: bytes) -> Optional[str]:
         """
-        Detect if XML content is JATS format.
+        Detect if XML content is JATS or JATS/TaxPub format.
 
         Args:
             content: Raw XML bytes
 
         Returns:
-            'jats' if JATS format detected, None otherwise
+            'taxpub' if TaxPub namespace detected, 'jats' if plain JATS,
+            None if neither is detected
         """
         header = content[:2000].decode('utf-8', errors='ignore')
+        # TaxPub is a JATS profile — check for it first
+        if 'www.plazi.org/taxpub' in header:
+            return 'taxpub'
         if 'JATS' in header:
             return 'jats'
         if 'journalpublishing' in header.lower():
@@ -877,6 +881,8 @@ class PensoftIngestor(Ingestor):
                             doc['xml_available'] = True
                             if xml_fmt:
                                 doc['xml_format'] = xml_fmt
+                                doc['is_jats'] = xml_fmt in ('jats', 'taxpub')
+                                doc['is_taxpub'] = xml_fmt == 'taxpub'
                             self.db.save(doc)
                             doc = self.db[doc_id]
                             self.db.put_attachment(

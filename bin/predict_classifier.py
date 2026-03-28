@@ -494,6 +494,7 @@ def predict_and_save(
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
     retry_failed_extraction: bool = False,
+    include_jats: bool = False,
 ) -> None:
     """
     Load classifier from Redis, make predictions, and save to CouchDB.
@@ -584,6 +585,10 @@ def predict_and_save(
         print(f"Document IDs: {', '.join(doc_ids[:5])}{'...' if len(doc_ids) > 5 else ''}")
     if retry_failed_extraction:
         print(f"Mode: RETRY FAILED (re-download PDF and retry on extraction failure)")
+    if include_jats:
+        print(f"Mode: INCLUDE JATS (processing JATS/TaxPub documents)")
+    else:
+        print(f"Mode: SKIP JATS (skipping is_jats=True documents; use --include-jats to override)")
     print()
 
     # Check if model exists in Redis
@@ -649,11 +654,15 @@ def predict_and_save(
                 print("\nDiscovering documents with plaintext in database...")
             all_doc_ids = []
             golden_skipped = 0
+            jats_skipped = 0
             for doc_id in db:
                 try:
                     doc = db[doc_id]
                     if skip_golden and doc.get('golden_dataset'):
                         golden_skipped += 1
+                        continue
+                    if not include_jats and doc.get('is_jats'):
+                        jats_skipped += 1
                         continue
                     attachments = doc.get('_attachments', {})
                     if 'article.txt' in attachments:
@@ -663,6 +672,8 @@ def predict_and_save(
             filtered_doc_ids = all_doc_ids
             if skip_golden and golden_skipped and model_config.get('verbosity', 1) >= 1:
                 print(f"  Skipped {golden_skipped} golden dataset documents")
+            if not include_jats and jats_skipped and model_config.get('verbosity', 1) >= 1:
+                print(f"  Skipped {jats_skipped} JATS/TaxPub documents (use --include-jats to process)")
             if model_config.get('verbosity', 1) >= 1:
                 print(f"  Found {len(filtered_doc_ids)} documents with article.txt")
             if not filtered_doc_ids:
@@ -672,6 +683,30 @@ def predict_and_save(
                     "plaintext from PDFs, JATS XML, or efetch.",
                     file=sys.stderr,
                 )
+
+        # Skip JATS/TaxPub documents (unless --include-jats)
+        # Applies even when doc_ids were explicitly specified on the command line
+        if not include_jats and filtered_doc_ids:
+            if db is None:
+                import couchdb as _couchdb_jats
+                _jats_server = _couchdb_jats.Server(couchdb_url)
+                if config['couchdb_username'] and config['couchdb_password']:
+                    _jats_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+                db = _jats_server[config['ingest_db_name']]
+            jats_ids: set = set()
+            for doc_id in filtered_doc_ids:
+                try:
+                    if db[doc_id].get('is_jats'):
+                        jats_ids.add(doc_id)
+                except Exception:
+                    pass
+            if jats_ids:
+                filtered_doc_ids = [d for d in filtered_doc_ids if d not in jats_ids]
+                if model_config.get('verbosity', 1) >= 1:
+                    print(
+                        f"  Skipped {len(jats_ids)} JATS/TaxPub documents "
+                        f"(use --include-jats to process)"
+                    )
 
         # Skip existing documents with .ann attachments (unless --force)
         # Check the output DB (annotations are written there, not the ingest DB)
@@ -1469,6 +1504,17 @@ Note: Command-line arguments override environment variables.
         ),
     )
 
+    parser.add_argument(
+        '--include-jats',
+        action='store_true',
+        default=False,
+        help=(
+            'Include documents with is_jats=True (JATS XML or JATS/TaxPub). '
+            'By default these are skipped because their structure can be '
+            'extracted directly from XML without the classifier.'
+        ),
+    )
+
     args, _ = parser.parse_known_args()
 
     # List models if requested
@@ -1555,6 +1601,7 @@ Note: Command-line arguments override environment variables.
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
             retry_failed_extraction=args.retry_failed_extraction,
+            include_jats=args.include_jats,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Prediction interrupted by user")

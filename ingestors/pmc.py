@@ -441,6 +441,8 @@ class PmcIngestor(Ingestor):
         doc = self.db[doc_id]
         doc["xml_available"] = True
         doc["xml_format"] = "jats"
+        doc["is_jats"] = True
+        doc["is_taxpub"] = False
         # Update metadata fields (don't overwrite existing non-empty values)
         for key in ("title", "doi", "pmid", "pmcid", "license", "authors"):
             value = metadata.get(key)
