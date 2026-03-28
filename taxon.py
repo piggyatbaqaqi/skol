@@ -127,10 +127,20 @@ class Taxon(object):
         first_line = pp.first_line
         assert first_line is not None, "Nomenclature paragraph must have at least one line"
 
+        # For synthetic nomenclature stubs ("Nomen undetected"), first_line has no ingest
+        # data. Fall back to the first description paragraph's first line.
+        ingest = first_line.ingest
+        attachment_name = first_line.attachment_name
+        if ingest is None and self._descriptions:
+            desc_first_line = self._descriptions[0].first_line
+            if desc_first_line is not None:
+                ingest = desc_first_line.ingest
+                attachment_name = desc_first_line.attachment_name
+
         retval: Dict[str, None | str | int | List | Dict[str, Any]] = {
             'taxon': "\n".join((str(pp) for pp in self._nomenclatures)),
             'description': "\n".join((str(pp) for pp in self._descriptions)),
-            'ingest': first_line.ingest,
+            'ingest': ingest,
             'line_number': first_line.line_number,
             'paragraph_number': pp.paragraph_number,
             # pdf_page comes from "--- PDF Page N Label L---" markers in text (from pdf_section_extractor.py)
@@ -144,7 +154,7 @@ class Taxon(object):
             'description_spans': [span_to_string_dict(p.as_span().as_dict()) for p in self._descriptions],
             # Attachment name for Source Context Viewer (e.g., "article.pdf.ann")
             # Used to read the correct file that matches span offsets
-            'attachment_name': first_line.attachment_name,
+            'attachment_name': attachment_name,
         }
         return retval
 

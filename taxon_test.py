@@ -3,7 +3,9 @@ import textwrap
 from typing import List
 import unittest
 
+from label import Label
 from line import Line
+from paragraph import Paragraph
 from taxon import Taxon, group_paragraphs
 from finder import parse_annotated
 
@@ -14,7 +16,8 @@ def lineify(lines: List[str]) -> List[Line]:
 
 class MockFileObject:
     """Mock file object for testing with doc_id support."""
-    def __init__(self, doc_id: str = None, filename: str = "test.txt"):
+    def __init__(self, doc_id: str = None, filename: str = "test.txt",
+                 ingest: dict = None):
         self.doc_id = doc_id
         self.filename = filename
         self.line_number = 1
@@ -23,6 +26,7 @@ class MockFileObject:
         self.pdf_label = None
         self.empirical_page_number = None
         self._empirical_page_number = None
+        self.ingest = ingest
 
     def _set_empirical_page(self, line: str) -> None:
         """Mock implementation of empirical page extraction."""
@@ -385,6 +389,35 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dictionaries2[0]['body'], 'nom1\n')
         self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
         self.assertEqual(dictionaries2[1]['body'], 'desc3\n')
+
+    def test_as_row_stub_ingest_fallback(self):
+        """as_row() uses description ingest when nomenclature stub has none.
+
+        'Nomen undetected' stubs are synthetic Lines with no fileobj, so
+        first_line.ingest is None.  as_row() must fall back to the first
+        description paragraph's ingest so the Source Context Viewer can
+        locate the document.
+        """
+        fake_ingest = {'_id': 'doc123', 'url': 'http://example.com', 'pdf_url': None}
+        fileobj = MockFileObject(doc_id='doc123', ingest=fake_ingest)
+
+        desc_line = Line('[@some description text#Description*]', fileobj)
+        desc_para = Paragraph(labels=[Label('Description')], lines=[desc_line],
+                              paragraph_number=1)
+
+        nom_stub = Line('Nomen undetected')  # no fileobj — ingest is None
+        nom_para = Paragraph(labels=[Label('Nomenclature')], lines=[nom_stub],
+                             paragraph_number=1)
+
+        taxon = Taxon()
+        taxon.add_nomenclature(nom_para)
+        taxon.add_description(desc_para)
+
+        row = taxon.as_row()
+        self.assertIsNotNone(row['ingest'],
+                             "as_row() should fall back to description ingest for stub nomenclature")
+        self.assertEqual(row['ingest']['_id'], 'doc123')
+
 
 if __name__ == '__main__':
     unittest.main()
