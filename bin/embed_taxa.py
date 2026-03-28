@@ -43,6 +43,43 @@ LOCK_TTL = 7260  # 121 minutes
 
 
 # ============================================================================
+# Redis Helpers
+# ============================================================================
+
+# 64 MB chunks — well under typical TLS buffer limits
+_CHUNK_SIZE = 64 * 1024 * 1024
+
+
+def redis_set_chunked(
+    r: redis.Redis,
+    key: str,
+    data: bytes,
+    chunk_size: int = _CHUNK_SIZE,
+    expire: int | None = None,
+    verbosity: int = 1,
+) -> None:
+    """Write a large value to Redis using SETRANGE to avoid TLS limits.
+
+    Falls back to plain SET for values smaller than *chunk_size*.
+    """
+    if len(data) <= chunk_size:
+        r.set(key, data)
+    else:
+        # Delete first so SETRANGE doesn't append to old data
+        r.delete(key)
+        offset = 0
+        while offset < len(data):
+            end = min(offset + chunk_size, len(data))
+            r.setrange(key, offset, data[offset:end])
+            if verbosity >= 2:
+                pct = end * 100 // len(data)
+                print(f"  Writing {key}: {pct}%")
+            offset = end
+    if expire is not None and expire > 0:
+        r.expire(key, expire)
+
+
+# ============================================================================
 # Embedding Functions
 # ============================================================================
 
@@ -54,6 +91,8 @@ def compute_and_save_embeddings(
     dry_run: bool = False,
     skip_existing: bool = True,
     include_collections: bool = True,
+    precision: str = "float32",
+    backend: str = "torch",
 ) -> None:
     """
     Load taxa descriptions from CouchDB, compute embeddings, and save to Redis.
@@ -118,7 +157,10 @@ def compute_and_save_embeddings(
         existing_data: bytes | None = redis_client.get(embedding_name)  # type: ignore[assignment]
         if existing_data:
             # Store backup without expiration for durability
-            redis_client.set(backup_key, existing_data)
+            redis_set_chunked(
+                redis_client, backup_key, existing_data,
+                verbosity=verbosity,
+            )
             if verbosity >= 1:
                 size_mb = len(existing_data) / (1024 * 1024)
                 print(
@@ -220,9 +262,31 @@ def compute_and_save_embeddings(
             redis_password=config['redis_password'],
             redis_expire=embedding_expire,
             embedding_name=config['embedding_name'],
+            precision=precision,
+            backend=backend,
         )
 
-        embedding_result = embedder.run(descriptions)
+        try:
+            embedding_result = embedder.run(descriptions)
+        except Exception as save_err:
+            # The library's run() computes then saves via r.set().
+            # If the save fails (e.g. TLS buffer limit on large
+            # payloads), fall back to chunked SETRANGE writes.
+            if embedder.result is None:
+                raise  # Computation itself failed
+            if verbosity >= 1:
+                print(
+                    f"  Library save failed ({save_err}), "
+                    "retrying with chunked write..."
+                )
+            import pickle
+            pickled = pickle.dumps(embedder.result)
+            redis_set_chunked(
+                redis_client, config['embedding_name'],
+                pickled, expire=embedding_expire,
+                verbosity=verbosity,
+            )
+            embedding_result = embedder.result
 
         print(f"\n{'='*70}")
         print("Embedding Complete!")
@@ -385,6 +449,22 @@ Examples:
         help='Skip lock acquisition (caller already holds the lock)'
     )
 
+    parser.add_argument(
+        '--precision',
+        type=str,
+        default='float32',
+        choices=['float32', 'float16', 'int8', 'binary'],
+        help='Embedding precision (default: float32)',
+    )
+
+    parser.add_argument(
+        '--backend',
+        type=str,
+        default='torch',
+        choices=['torch', 'onnx'],
+        help='SentenceTransformer backend (default: torch)',
+    )
+
     args, _ = parser.parse_known_args()
 
     # Get configuration
@@ -428,6 +508,8 @@ Examples:
             dry_run=dry_run,
             skip_existing=skip_existing,
             include_collections=include_collections,
+            precision=args.precision,
+            backend=args.backend,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Embedding computation interrupted by user")

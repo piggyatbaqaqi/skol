@@ -33,7 +33,7 @@ const SourceContextViewer = ({
   originalText = '',
   apiBaseUrl = '/api',
   contextChars = 500,
-  taxaDb = 'skol_taxa_dev',
+  taxaDb = null,
 }) => {
   const [showContext, setShowContext] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,8 +52,10 @@ const SourceContextViewer = ({
       const params = new URLSearchParams({
         field,
         context_chars: contextChars.toString(),
-        taxa_db: taxaDb,
       });
+      if (taxaDb) {
+        params.set('taxa_db', taxaDb);
+      }
 
       const response = await fetch(
         `${apiBaseUrl}/taxa/${taxaId}/context/?${params}`,

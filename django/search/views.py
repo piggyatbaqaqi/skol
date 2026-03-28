@@ -113,6 +113,12 @@ class ExperimentListView(APIView):
                     'name': doc.get('_id'),
                     'notes': doc.get('notes', ''),
                     'status': doc.get('status', ''),
+                    'embedding': doc.get(
+                        'redis_keys', {}
+                    ).get('embedding', ''),
+                    'taxa_db': doc.get(
+                        'databases', {}
+                    ).get('taxa', ''),
                 })
 
             return Response({
@@ -2409,7 +2415,17 @@ class SourceContextView(APIView):
             # Parse query parameters
             field = request.GET.get('field', 'description')
             context_chars = int(request.GET.get('context_chars', 500))
-            taxa_db = request.GET.get('taxa_db', 'skol_taxa_dev')
+
+            # Resolve taxa DB from user's experiment
+            taxa_db = request.GET.get('taxa_db')
+            if not taxa_db:
+                _, exp = get_user_experiment(request)
+                if exp:
+                    taxa_db = exp.get(
+                        'databases', {}
+                    ).get('taxa', 'skol_taxa_dev')
+                else:
+                    taxa_db = 'skol_taxa_dev'
 
             if field not in ('nomenclature', 'description'):
                 return Response(
@@ -2457,8 +2473,8 @@ class SourceContextView(APIView):
             spans = [parse_span(s) for s in raw_spans]
 
             # Get ingest information
-            ingest = taxa_doc.get('ingest', {})
-            ingest_db = ingest.get('db_name') or 'skol_dev'  # Default to skol_dev
+            ingest = taxa_doc.get('ingest') or {}
+            ingest_db = ingest.get('db_name') or 'skol_dev'
             ingest_doc_id = ingest.get('_id')
 
             if not ingest_doc_id:

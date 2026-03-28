@@ -1039,10 +1039,10 @@ Script-specific Options:
             logger.info("[TRACE] Debug tracing enabled for all documents")
 
     # Validate required arguments
-    if not config['ingest_database']:
-        parser.error("--ingest-database is required (or set $INGEST_DATABASE)")
-    if not config['taxon_database']:
-        parser.error("--taxon-database is required (or set $TAXON_DATABASE)")
+    if not config['ingest_db_name']:
+        parser.error("--ingest-db-name is required (or set $INGEST_DB_NAME)")
+    if not config['taxon_db_name']:
+        parser.error("--taxon-db-name is required (or set $TAXON_DB_NAME)")
 
     # Default taxon credentials to ingest credentials
     taxon_url = config['taxon_url'] or config['ingest_url']
@@ -1055,14 +1055,14 @@ Script-specific Options:
         .getOrCreate()
 
     if config['verbosity'] >= 1:
-        print(f"Extracting taxa from {config['ingest_database']} to {config['taxon_database']}...")
+        print(f"Extracting taxa from {config['ingest_db_name']} to {config['taxon_db_name']}...")
 
     # Create extractor instance
     extractor = TaxonExtractor(
         spark=spark,
         ingest_couchdb_url=config['ingest_url'],
-        ingest_db_name=config['ingest_database'],
-        taxon_db_name=config['taxon_database'],
+        ingest_db_name=config['ingest_db_name'],
+        taxon_db_name=config['taxon_db_name'],
         taxon_couchdb_url=taxon_url,
         ingest_username=config['ingest_username'],
         ingest_password=config['ingest_password'],

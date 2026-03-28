@@ -51,6 +51,7 @@ setup(
         "regex>=2024.0.0",
         "requests>=2.32.0",
         "scikit-learn>=1.0.0",
+        "sentence-transformers[onnx-gpu]>=3.0.1",
         "tqdm",
         "python-dateutil>=2.9.0",
     ],

@@ -2302,6 +2302,9 @@
             }).catch(e => console.error(`Failed to save ${field}:`, e));
         }
 
+        // Map experiment name → default embedding key
+        const experimentEmbeddings = {};
+
         // Load available experiments and populate dropdowns
         async function loadExperiments() {
             try {
@@ -2318,6 +2321,9 @@
                         opt.textContent = exp.name;
                         if (exp.notes) opt.title = exp.notes;
                         sel.appendChild(opt);
+                        if (exp.embedding) {
+                            experimentEmbeddings[exp.name] = exp.embedding;
+                        }
                     });
                     if (current) sel.value = current;
                 });
@@ -2326,10 +2332,16 @@
             }
         }
 
-        // Switch experiment and reload page
+        // Switch experiment and set its default embedding
         function switchExperiment(value) {
             saveSetting('default_experiment', value);
-            // Reload after a short delay to let the setting save
+            const embedding = experimentEmbeddings[value];
+            if (embedding) {
+                saveSetting('default_embedding', embedding);
+                const embSel = document.getElementById('embedding');
+                if (embSel) embSel.value = embedding;
+            }
+            // Reload after a short delay to let settings save
             setTimeout(() => location.reload(), 300);
         }
 
@@ -2987,11 +2999,15 @@
         }
 
         // Load data when page loads
-        loadEmbeddings();
-        loadExperiments();
+        // Await embeddings and experiments before loading user settings,
+        // so the dropdowns are populated before we set saved values.
+        Promise.all([loadEmbeddings(), loadExperiments()]).then(() => {
+            if (IS_AUTHENTICATED) {
+                loadUserSettings();
+            }
+        });
         if (IS_AUTHENTICATED) {
             updateCollectionsMenu();
-            loadUserSettings();
             // Check for guest collection to migrate
             migrateGuestCollection();
             // Load collection from URL if specified

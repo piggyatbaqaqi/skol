@@ -36,7 +36,7 @@ function initSourceContextViewers() {
     const field = container.dataset.field || 'description';
     const apiBaseUrl = container.dataset.apiBaseUrl || '/api';
     const contextChars = parseInt(container.dataset.contextChars, 10) || 500;
-    const taxaDb = container.dataset.taxaDb || 'skol_taxa_dev';
+    const taxaDb = container.dataset.taxaDb || null;
     const originalText = container.dataset.originalText || '';
 
     if (!taxaId) {

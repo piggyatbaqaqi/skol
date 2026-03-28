@@ -21,7 +21,7 @@ regex>=2024.7.24
 requests>=2.32.3
 scikit-learn>=1.0.0
 scipy
-sentence-transformers>=3.0.1
+sentence-transformers[onnx-gpu]>=3.0.1
 setuptools
 spark-nlp
 tesseract>=0.1.3
