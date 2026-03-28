@@ -2852,7 +2852,7 @@
                         </div>
                         ${result.taxon_id ? (() => {
                             const syntheticNomen = ['Nomen unknown', 'Nomen undetected'];
-                            const hasNomen = !syntheticNomen.includes(result.Title);
+                            const hasNomen = !syntheticNomen.includes((result.Title || '').trim());
                             const nomenclatureViewer = hasNomen ? `
                             <div data-source-context-viewer
                                  data-taxa-id="${escapeHtml(result.taxon_id)}"

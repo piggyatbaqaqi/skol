@@ -154,7 +154,7 @@ const TaxonResultWidget = (function() {
         const apiUrl = apiBase ? `${apiBase}/api` : '/api';
         const syntheticNomen = ['Nomen unknown', 'Nomen undetected'];
         let titleContent = '';
-        if (result.taxon_id && !syntheticNomen.includes(result.Title)) {
+        if (result.taxon_id && !syntheticNomen.includes((result.Title || '').trim())) {
             titleContent = `
                 <div data-source-context-viewer
                      data-taxa-id="${escapeHtml(result.taxon_id)}"
