@@ -1,19 +1,22 @@
 """
-Convert JATS/TaxPub XML documents to YEDDA-annotated text for classifier training.
+Convert JATS/TaxPub XML documents to YEDDA-annotated text for classifier
+training.
 
-Reads JATS XML with TaxPub extension (as stored in CouchDB by PensoftIngestor)
-and produces passage-level YEDDA annotations with taxonomy-specific tags:
-Nomenclature, Description, Etymology, Holotype, Notes, Key,
-Figure-caption, and Misc-exposition.
+Reads JATS XML with TaxPub extension (as stored in CouchDB by
+PensoftIngestor) and produces passage-level YEDDA annotations with
+taxonomy-specific tags: Nomenclature, Description, Etymology, Holotype,
+Notes, Key, Figure-caption, and Misc-exposition.
 
 TaxPub provides explicit structural markup via tp:taxon-treatment,
-tp:nomenclature, and tp:treatment-sec elements, making tag assignment
-straightforward without state tracking.
+tp:nomenclature, and tp:treatment-sec elements. Some Pensoft articles
+encode the same structure with plain JATS <sec> elements and
+sec-type="taxon-treatment" / sec-type="treatment-description" attributes;
+both forms are handled.
 """
 
 import re
 import xml.etree.ElementTree as ET
-from typing import List, Optional, Set
+from typing import FrozenSet, List, Optional, Set, Union
 
 from ingestors.yedda_tags import (
     Tag,
@@ -51,6 +54,8 @@ def strip_ns(root: ET.Element) -> ET.Element:
             attribs[key] = val
         elem.attrib = attribs
     return root
+
+
 # Also skip fig elements when extracting parent section text
 _SKIP_TAGS_WITH_FIG = frozenset({"object-id", "fig"})
 
@@ -65,7 +70,7 @@ def _local_tag(elem: ET.Element) -> str:
 
 def extract_text(
     elem: ET.Element,
-    skip_tags: Optional[Set[str]] = None,
+    skip_tags: Optional[Union[Set[str], FrozenSet[str]]] = None,
 ) -> str:
     """Recursively extract text from an XML element, skipping specified tags.
 
@@ -263,13 +268,73 @@ def _is_key_section(sec_elem: ET.Element) -> bool:
 def _has_treatments(sec_elem: ET.Element) -> bool:
     """Check if a <sec> element contains taxon-treatment elements.
 
-    Works on both namespace-stripped and prefixed trees.
+    Handles three patterns:
+    - TaxPub namespace element:  <tp:taxon-treatment>
+    - Namespace-stripped element: <taxon-treatment>
+    - JATS sec-type attribute:    <sec sec-type="taxon-treatment">
     """
     for _ in sec_elem.iter("taxon-treatment"):
         return True
     for _ in sec_elem.iter(f"{TP_PREFIX}taxon-treatment"):
         return True
+    for desc in sec_elem.iter("sec"):
+        if (desc is not sec_elem
+                and desc.get("sec-type", "") == "taxon-treatment"):
+            return True
     return False
+
+
+def process_jats_treatment(treatment_sec: ET.Element) -> List[TaggedBlock]:
+    """Process a <sec sec-type="taxon-treatment"> element.
+
+    Some Pensoft articles encode taxon treatments using plain JATS <sec>
+    elements with TaxPub-style sec-type attributes instead of the TaxPub
+    namespace elements.  The structure is:
+
+        <sec sec-type="taxon-treatment">
+          <title>Taxon Name ...</title>     ← treated as Nomenclature
+          <sec sec-type="treatment-description">...</sec>
+          <sec sec-type="treatment-Holotype">...</sec>
+          <sec sec-type="treatment-etymology">...</sec>
+        </sec>
+
+    Args:
+        treatment_sec: A <sec sec-type="taxon-treatment"> XML element.
+
+    Returns:
+        List of TaggedBlock in document order.
+    """
+    blocks: List[TaggedBlock] = []
+
+    # Title of the treatment section = Nomenclature.
+    title_elem = treatment_sec.find("title")
+    if title_elem is not None:
+        text = clean_passage_text(
+            re.sub(r"\s+", " ", extract_text(title_elem, _DEFAULT_SKIP_TAGS))
+        )
+        if text:
+            blocks.append(TaggedBlock(text=text, tag=Tag.NOMENCLATURE))
+
+    # Child <sec> elements = treatment sub-sections.
+    for child in treatment_sec:
+        if _local_tag(child) != "sec":
+            continue
+        child_sec_type = child.get("sec-type", "")
+        # Strip the "treatment-" prefix so "treatment-description" →
+        # "description" which sec_type_to_tag already handles.
+        mapped = child_sec_type
+        if mapped.lower().startswith("treatment-"):
+            mapped = mapped[len("treatment-"):]
+        tag = sec_type_to_tag(mapped)
+
+        text = clean_passage_text(
+            re.sub(r"\s+", " ", extract_text(child, _SKIP_TAGS_WITH_FIG))
+        )
+        if text:
+            blocks.append(TaggedBlock(text=text, tag=tag))
+        blocks.extend(extract_fig_blocks(child))
+
+    return blocks
 
 
 def _process_body_section(sec_elem: ET.Element) -> List[TaggedBlock]:
@@ -282,6 +347,10 @@ def _process_body_section(sec_elem: ET.Element) -> List[TaggedBlock]:
     if _is_key_section(sec_elem):
         return process_key_section(sec_elem)
 
+    # JATS-style treatment: <sec sec-type="taxon-treatment">
+    if sec_elem.get("sec-type", "") == "taxon-treatment":
+        return process_jats_treatment(sec_elem)
+
     # Sections containing taxon treatments
     if _has_treatments(sec_elem):
         blocks: List[TaggedBlock] = []
@@ -291,7 +360,7 @@ def _process_body_section(sec_elem: ET.Element) -> List[TaggedBlock]:
             if local == "taxon-treatment":
                 blocks.extend(process_treatment(child))
             elif local == "sec":
-                # Recurse into nested sections
+                # Recurse — handles sec-type="taxon-treatment" children too
                 blocks.extend(_process_body_section(child))
         return blocks
 

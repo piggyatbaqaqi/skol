@@ -5,10 +5,12 @@ import xml.etree.ElementTree as ET
 
 from .yedda_tags import Tag
 from .jats_to_yedda import (
+    _has_treatments,
     extract_fig_blocks,
     extract_text,
     jats_xml_to_tagged_blocks,
     jats_xml_to_yedda,
+    process_jats_treatment,
     process_key_section,
     process_treatment,
     sec_type_to_tag,
@@ -710,6 +712,150 @@ class TestEndToEnd(unittest.TestCase):
         self.assertGreater(key_idx, last_nom_idx)
         # References should be last
         self.assertEqual(tags[-1], Tag.MISC_EXPOSITION)
+
+
+# ---------------------------------------------------------------------------
+# Tests: _has_treatments with JATS sec-type style
+# ---------------------------------------------------------------------------
+
+class TestHasTreatmentsJatsStyle(unittest.TestCase):
+    """Test _has_treatments recognises <sec sec-type="taxon-treatment">."""
+
+    def test_detects_jats_sec_type_treatment(self):
+        xml = (
+            '<sec sec-type="Taxonomy">'
+            '<sec sec-type="taxon-treatment">'
+            '<title>Fungus sp.</title>'
+            '</sec>'
+            '</sec>'
+        )
+        outer = ET.fromstring(xml)
+        self.assertTrue(_has_treatments(outer))
+
+    def test_negative_no_treatment(self):
+        xml = '<sec sec-type="Introduction"><p>Text</p></sec>'
+        sec = ET.fromstring(xml)
+        self.assertFalse(_has_treatments(sec))
+
+    def test_self_taxon_treatment_not_counted(self):
+        """_has_treatments on the treatment element itself should be False."""
+        xml = '<sec sec-type="taxon-treatment"><title>X</title></sec>'
+        sec = ET.fromstring(xml)
+        self.assertFalse(_has_treatments(sec))
+
+
+# ---------------------------------------------------------------------------
+# Tests: process_jats_treatment
+# ---------------------------------------------------------------------------
+
+_JATS_TREATMENT_XML = (
+    '<sec sec-type="taxon-treatment">'
+    '<title>Tomentella wumenshanensis C.L.Zhao</title>'
+    '<sec sec-type="treatment-Holotype">'
+    '<title>Holotype.</title>'
+    '<p>China, Yunnan Province.</p>'
+    '</sec>'
+    '<sec sec-type="treatment-etymology">'
+    '<title>Etymology.</title>'
+    '<p>Named after the mountain.</p>'
+    '</sec>'
+    '<sec sec-type="treatment-description">'
+    '<title>Description.</title>'
+    '<p>Basidiomata annual, resupinate.</p>'
+    '</sec>'
+    '</sec>'
+)
+
+
+class TestProcessJatsTreatment(unittest.TestCase):
+    """Tests for process_jats_treatment (JATS sec-type variant)."""
+
+    def _blocks(self):
+        elem = ET.fromstring(_JATS_TREATMENT_XML)
+        return process_jats_treatment(elem)
+
+    def test_first_block_is_nomenclature(self):
+        blocks = self._blocks()
+        self.assertEqual(blocks[0].tag, Tag.NOMENCLATURE)
+        self.assertIn("Tomentella", blocks[0].text)
+
+    def test_description_block(self):
+        blocks = self._blocks()
+        desc = [b for b in blocks if b.tag == Tag.DESCRIPTION]
+        self.assertEqual(len(desc), 1)
+        self.assertIn("Basidiomata", desc[0].text)
+
+    def test_holotype_block(self):
+        blocks = self._blocks()
+        holo = [b for b in blocks if b.tag == Tag.HOLOTYPE]
+        self.assertEqual(len(holo), 1)
+
+    def test_etymology_block(self):
+        blocks = self._blocks()
+        etym = [b for b in blocks if b.tag == Tag.ETYMOLOGY]
+        self.assertEqual(len(etym), 1)
+
+    def test_document_order(self):
+        blocks = self._blocks()
+        self.assertEqual(blocks[0].tag, Tag.NOMENCLATURE)
+        # Holotype, Etymology, Description follow in XML order
+        non_nom = [b.tag for b in blocks[1:]]
+        self.assertEqual(
+            non_nom, [Tag.HOLOTYPE, Tag.ETYMOLOGY, Tag.DESCRIPTION]
+        )
+
+    def test_no_title_no_nomenclature(self):
+        xml = (
+            '<sec sec-type="taxon-treatment">'
+            '<sec sec-type="treatment-description">'
+            '<p>Resupinate.</p>'
+            '</sec>'
+            '</sec>'
+        )
+        elem = ET.fromstring(xml)
+        blocks = process_jats_treatment(elem)
+        self.assertFalse(any(b.tag == Tag.NOMENCLATURE for b in blocks))
+        self.assertTrue(any(b.tag == Tag.DESCRIPTION for b in blocks))
+
+
+class TestFullPipelineJatsSecType(unittest.TestCase):
+    """Test jats_xml_to_tagged_blocks with JATS sec-type="taxon-treatment"."""
+
+    def test_produces_expected_tags(self):
+        body = (
+            '<sec sec-type="Taxonomy"><title>Taxonomy</title>'
+            + _JATS_TREATMENT_XML
+            + '</sec>'
+        )
+        xml = _wrap_article(body)
+        blocks = jats_xml_to_tagged_blocks(xml)
+        tags = {b.tag for b in blocks}
+        self.assertIn(Tag.NOMENCLATURE, tags)
+        self.assertIn(Tag.DESCRIPTION, tags)
+        self.assertIn(Tag.HOLOTYPE, tags)
+        self.assertIn(Tag.ETYMOLOGY, tags)
+
+    def test_multiple_jats_treatments(self):
+        treatment2 = (
+            '<sec sec-type="taxon-treatment">'
+            '<title>Tomentella yunnanensis C.L.Zhao</title>'
+            '<sec sec-type="treatment-description">'
+            '<p>Arachnoid basidiomata.</p>'
+            '</sec>'
+            '</sec>'
+        )
+        body = (
+            '<sec sec-type="Taxonomy"><title>Taxonomy</title>'
+            + _JATS_TREATMENT_XML
+            + treatment2
+            + '</sec>'
+        )
+        xml = _wrap_article(body)
+        blocks = jats_xml_to_tagged_blocks(xml)
+        noms = [b for b in blocks if b.tag == Tag.NOMENCLATURE]
+        self.assertEqual(len(noms), 2)
+        self.assertIn("wumenshanensis", noms[0].text)
+        self.assertIn("yunnanensis", noms[1].text)
 
 
 class TestRoundTrip(unittest.TestCase):
