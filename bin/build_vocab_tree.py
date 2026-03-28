@@ -43,7 +43,7 @@ import redis
 # Add bin directory to path for env_config
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import create_redis_client
+from env_config import get_env_config, create_redis_client
 
 
 # ============================================================================
@@ -363,6 +363,7 @@ def save_to_redis(
     redis_db: int = 0,
     redis_password: Optional[str] = None,
     version: Optional[str] = None,
+    key_override: Optional[str] = None,
     ttl: Optional[int] = None,
     verbosity: int = 1
 ) -> str:
@@ -376,17 +377,23 @@ def save_to_redis(
         redis_db: Redis database number
         redis_password: Redis password (optional)
         version: Version string for the key (default: current timestamp)
+        key_override: Full Redis key to use directly (overrides version-based key).
+                      Set from experiment redis_keys.menus when --experiment is used.
         ttl: Time-to-live in seconds (optional, None means no expiration)
         verbosity: Verbosity level
 
     Returns:
         The Redis key where the tree was saved
     """
-    # Generate version string
-    if version is None:
-        version = datetime.now().strftime("%Y_%m_%d_%H_%M")
-
-    key = f"skol:ui:menus_{version}"
+    # Determine key: explicit override takes precedence over version-based key
+    if key_override:
+        key = key_override
+        version = key_override  # for metadata
+    else:
+        # Generate version string
+        if version is None:
+            version = datetime.now().strftime("%Y_%m_%d_%H_%M")
+        key = f"skol:ui:menus_{version}"
 
     # Connect to Redis (respects REDIS_TLS settings from env_config)
     if verbosity >= 1:
@@ -615,36 +622,36 @@ Examples:
     # CouchDB options
     parser.add_argument(
         '--db', '--database',
-        default='skol_taxa_full_dev',
-        help='CouchDB database name (default: skol_taxa_full_dev)'
+        default=None,
+        help='CouchDB database name (default: from experiment taxon_db_name or skol_taxa_full_dev)'
     )
     parser.add_argument(
         '--couchdb-url',
-        default=os.environ.get('COUCHDB_URL', 'http://localhost:5984'),
-        help='CouchDB URL (default: $COUCHDB_URL or http://localhost:5984)'
+        default=None,
+        help='CouchDB URL (default: from env_config or http://localhost:5984)'
     )
     parser.add_argument(
         '--couchdb-user',
-        default=os.environ.get('COUCHDB_USER', 'admin'),
-        help='CouchDB username (default: $COUCHDB_USER or admin)'
+        default=None,
+        help='CouchDB username (default: from env_config or admin)'
     )
     parser.add_argument(
         '--couchdb-password',
-        default=os.environ.get('COUCHDB_PASSWORD', ''),
-        help='CouchDB password (default: $COUCHDB_PASSWORD)'
+        default=None,
+        help='CouchDB password (default: from env_config)'
     )
 
     # Redis options
     parser.add_argument(
         '--redis-host',
-        default=os.environ.get('REDIS_HOST', 'localhost'),
-        help='Redis host (default: $REDIS_HOST or localhost)'
+        default=None,
+        help='Redis host (default: from env_config or localhost)'
     )
     parser.add_argument(
         '--redis-port',
         type=int,
-        default=int(os.environ.get('REDIS_PORT', '6379')),
-        help='Redis port (default: $REDIS_PORT or 6379)'
+        default=None,
+        help='Redis port (default: from env_config or 6379)'
     )
     parser.add_argument(
         '--redis-db',
@@ -654,8 +661,8 @@ Examples:
     )
     parser.add_argument(
         '--redis-password',
-        default=os.environ.get('REDIS_PASSWORD'),
-        help='Redis password (default: $REDIS_PASSWORD)'
+        default=None,
+        help='Redis password (default: from env_config)'
     )
 
     # Processing options
@@ -715,6 +722,29 @@ Examples:
 
     args = parser.parse_args()
 
+    # Load experiment/environment config (supports --experiment flag).
+    config = get_env_config()
+
+    # Resolve connection args: CLI arg > env_config > hardcoded default.
+    db = args.db or config.get('taxon_db_name') or 'skol_taxa_full_dev'
+    couchdb_url = args.couchdb_url or config.get('couchdb_url') or 'http://localhost:5984'
+    couchdb_user = args.couchdb_user or config.get('couchdb_username') or 'admin'
+    couchdb_password = (
+        args.couchdb_password
+        if args.couchdb_password is not None
+        else config.get('couchdb_password', '')
+    )
+    redis_host = args.redis_host or config.get('redis_host') or 'localhost'
+    redis_port = args.redis_port or int(config.get('redis_port') or 6379)
+    redis_password = args.redis_password or config.get('redis_password')
+
+    # When --experiment provides a menus key and --version was not explicitly
+    # set, use the experiment key directly instead of constructing one from
+    # --version (which would ignore the experiment's named key).
+    menus_key_override: Optional[str] = None
+    if config.get('menus_key') and args.version is None:
+        menus_key_override = config['menus_key']
+
     # Set verbosity: --verbosity takes precedence, then -q, then -v
     if args.verbosity is not None:
         verbosity = args.verbosity
@@ -728,8 +758,8 @@ Examples:
     lock_client = None
     if not args.dry_run:
         lock_client = acquire_lock(
-            redis_host=args.redis_host,
-            redis_port=args.redis_port,
+            redis_host=redis_host,
+            redis_port=redis_port,
             verbosity=verbosity
         )
 
@@ -741,10 +771,10 @@ Examples:
             print("=" * 70)
 
         tree = build_vocabulary_tree(
-            couchdb_url=args.couchdb_url,
-            db_name=args.db,
-            username=args.couchdb_user,
-            password=args.couchdb_password,
+            couchdb_url=couchdb_url,
+            db_name=db,
+            username=couchdb_user,
+            password=couchdb_password,
             limit=args.limit,
             verbosity=verbosity
         )
@@ -761,7 +791,7 @@ Examples:
             data = tree.to_dict()
             data["version"] = args.version or datetime.now().strftime("%Y_%m_%d_%H_%M")
             data["created_at"] = datetime.now().isoformat()
-            data["source_db"] = args.db
+            data["source_db"] = db
 
             with open(args.output_json, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
@@ -773,11 +803,12 @@ Examples:
         if not args.dry_run:
             redis_key = save_to_redis(
                 tree=tree,
-                redis_host=args.redis_host,
-                redis_port=args.redis_port,
+                redis_host=redis_host,
+                redis_port=redis_port,
                 redis_db=args.redis_db,
-                redis_password=args.redis_password,
+                redis_password=redis_password,
                 version=args.version,
+                key_override=menus_key_override,
                 ttl=args.ttl,
                 verbosity=verbosity
             )
