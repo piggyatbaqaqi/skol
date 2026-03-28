@@ -122,6 +122,7 @@ def _default_experiment(name: str) -> Dict[str, Any]:
         "_id": name,
         "model_name": "",
         "notes": "",
+        "comments": "",
         "status": "draft",
         "databases": {
             "ingest": "skol_dev",
@@ -213,6 +214,8 @@ def cmd_create(db, args) -> None:
     doc = _default_experiment(name)
     if args.notes:
         doc["notes"] = args.notes
+    if args.comments:
+        doc["comments"] = args.comments
     if args.model_name:
         doc["model_name"] = args.model_name
     if args.training_db:
@@ -275,6 +278,9 @@ def cmd_update(db, args) -> None:
     changed = False
     if args.notes is not None:
         doc["notes"] = args.notes
+        changed = True
+    if args.comments is not None:
+        doc["comments"] = args.comments
         changed = True
     if args.status:
         if args.status not in _STATUS_VALUES:
@@ -743,6 +749,7 @@ def main() -> None:
     p_create = subparsers.add_parser("create", help="Create a new experiment")
     p_create.add_argument("--name", required=True, help="Experiment name")
     p_create.add_argument("--notes", type=str, help="Description/notes")
+    p_create.add_argument("--comments", type=str, help="Free-form comments")
     p_create.add_argument(
         "--model-name", type=str,
         help="Model config name (e.g. logistic_sections_taxpub_v1)",
@@ -771,6 +778,7 @@ def main() -> None:
     p_update = subparsers.add_parser("update", help="Update experiment")
     p_update.add_argument("name", help="Experiment name")
     p_update.add_argument("--notes", type=str, help="Update notes")
+    p_update.add_argument("--comments", type=str, help="Update comments")
     p_update.add_argument(
         "--status", type=str,
         help=f"Set status ({', '.join(_STATUS_VALUES)})",
