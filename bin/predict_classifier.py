@@ -494,7 +494,7 @@ def predict_and_save(
     limit: Optional[int] = None,
     doc_ids: Optional[List[str]] = None,
     retry_failed_extraction: bool = False,
-    include_jats: bool = False,
+    include_taxpub: bool = False,
 ) -> None:
     """
     Load classifier from Redis, make predictions, and save to CouchDB.
@@ -585,10 +585,10 @@ def predict_and_save(
         print(f"Document IDs: {', '.join(doc_ids[:5])}{'...' if len(doc_ids) > 5 else ''}")
     if retry_failed_extraction:
         print(f"Mode: RETRY FAILED (re-download PDF and retry on extraction failure)")
-    if include_jats:
-        print(f"Mode: INCLUDE JATS (processing JATS/TaxPub documents)")
+    if include_taxpub:
+        print(f"Mode: INCLUDE TAXPUB (processing TaxPub/Pensoft documents)")
     else:
-        print(f"Mode: SKIP JATS (skipping is_jats=True documents; use --include-jats to override)")
+        print(f"Mode: SKIP TAXPUB (skipping is_taxpub=True documents; use --include-taxpub to override)")
     print()
 
     # Check if model exists in Redis
@@ -661,7 +661,7 @@ def predict_and_save(
                     if skip_golden and doc.get('golden_dataset'):
                         golden_skipped += 1
                         continue
-                    if not include_jats and doc.get('is_jats'):
+                    if not include_taxpub and doc.get('is_taxpub'):
                         jats_skipped += 1
                         continue
                     attachments = doc.get('_attachments', {})
@@ -672,8 +672,8 @@ def predict_and_save(
             filtered_doc_ids = all_doc_ids
             if skip_golden and golden_skipped and model_config.get('verbosity', 1) >= 1:
                 print(f"  Skipped {golden_skipped} golden dataset documents")
-            if not include_jats and jats_skipped and model_config.get('verbosity', 1) >= 1:
-                print(f"  Skipped {jats_skipped} JATS/TaxPub documents (use --include-jats to process)")
+            if not include_taxpub and jats_skipped and model_config.get('verbosity', 1) >= 1:
+                print(f"  Skipped {jats_skipped} TaxPub documents (use --include-taxpub to process)")
             if model_config.get('verbosity', 1) >= 1:
                 print(f"  Found {len(filtered_doc_ids)} documents with article.txt")
             if not filtered_doc_ids:
@@ -684,28 +684,31 @@ def predict_and_save(
                     file=sys.stderr,
                 )
 
-        # Skip JATS/TaxPub documents (unless --include-jats)
-        # Applies even when doc_ids were explicitly specified on the command line
-        if not include_jats and filtered_doc_ids:
+        # Skip TaxPub documents (unless --include-taxpub)
+        # TaxPub structure is labeled by jats_to_yedda; the ML classifier is not needed.
+        # Plain JATS (PMC) is NOT skipped — jats_to_yedda produces only Misc-exposition
+        # for plain JATS and cannot assign Nomenclature/Description without TaxPub markup.
+        # Applies even when doc_ids were explicitly specified on the command line.
+        if not include_taxpub and filtered_doc_ids:
             if db is None:
-                import couchdb as _couchdb_jats
-                _jats_server = _couchdb_jats.Server(couchdb_url)
+                import couchdb as _couchdb_tp
+                _tp_server = _couchdb_tp.Server(couchdb_url)
                 if config['couchdb_username'] and config['couchdb_password']:
-                    _jats_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
-                db = _jats_server[config['ingest_db_name']]
-            jats_ids: set = set()
+                    _tp_server.resource.credentials = (config['couchdb_username'], config['couchdb_password'])
+                db = _tp_server[config['ingest_db_name']]
+            taxpub_ids: set = set()
             for doc_id in filtered_doc_ids:
                 try:
-                    if db[doc_id].get('is_jats'):
-                        jats_ids.add(doc_id)
+                    if db[doc_id].get('is_taxpub'):
+                        taxpub_ids.add(doc_id)
                 except Exception:
                     pass
-            if jats_ids:
-                filtered_doc_ids = [d for d in filtered_doc_ids if d not in jats_ids]
+            if taxpub_ids:
+                filtered_doc_ids = [d for d in filtered_doc_ids if d not in taxpub_ids]
                 if model_config.get('verbosity', 1) >= 1:
                     print(
-                        f"  Skipped {len(jats_ids)} JATS/TaxPub documents "
-                        f"(use --include-jats to process)"
+                        f"  Skipped {len(taxpub_ids)} TaxPub documents "
+                        f"(use --include-taxpub to process)"
                     )
 
         # Skip existing documents with .ann attachments (unless --force)
@@ -1505,13 +1508,16 @@ Note: Command-line arguments override environment variables.
     )
 
     parser.add_argument(
-        '--include-jats',
+        '--include-taxpub',
         action='store_true',
         default=False,
         help=(
-            'Include documents with is_jats=True (JATS XML or JATS/TaxPub). '
-            'By default these are skipped because their structure can be '
-            'extracted directly from XML without the classifier.'
+            'Include documents with is_taxpub=True (JATS/TaxPub from Pensoft). '
+            'By default these are skipped: TaxPub provides explicit structural '
+            'markup (tp:taxon-treatment, tp:nomenclature, tp:treatment-sec) that '
+            'jats_to_yedda converts directly to labeled annotations — the ML '
+            'classifier adds no value. Plain JATS (PMC) is never skipped because '
+            'jats_to_yedda only produces Misc-exposition for non-TaxPub XML.'
         ),
     )
 
@@ -1601,7 +1607,7 @@ Note: Command-line arguments override environment variables.
             limit=config.get('limit'),
             doc_ids=config.get('doc_ids'),
             retry_failed_extraction=args.retry_failed_extraction,
-            include_jats=args.include_jats,
+            include_taxpub=args.include_taxpub,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Prediction interrupted by user")

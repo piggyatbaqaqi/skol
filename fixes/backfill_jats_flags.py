@@ -7,8 +7,13 @@ the ingest database(s) to set the flags on documents ingested before the
 flag was introduced.
 
 Logic:
-  - is_jats = True when xml_format in ('jats', 'taxpub')
+  - is_jats   = True when xml_format in ('jats', 'taxpub')
   - is_taxpub = True when xml_format == 'taxpub'
+
+predict_classifier skips is_taxpub=True documents by default (use
+--include-taxpub to override).  Plain JATS (PMC, is_jats=True but
+is_taxpub=False) is never skipped: jats_to_yedda only produces
+Misc-exposition for non-TaxPub JATS, so the ML classifier is still needed.
 
 Existing documents that have neither xml_format nor xml_available are left
 unchanged (is_jats and is_taxpub will be absent / treated as False).
