@@ -427,9 +427,19 @@ def _check_dependencies(
     return None
 
 
-def _build_step_command(step_name: str, experiment_name: str) -> List[str]:
-    """Build the subprocess command list for a pipeline step."""
-    templates: Dict[str, List[str]] = {
+def _build_step_commands(
+    step_name: str,
+    experiment_name: str,
+    force: bool = False,
+) -> List[List[str]]:
+    """Build the subprocess command list(s) for a pipeline step.
+
+    Returns a list of commands to run in sequence.  Most steps have one
+    command; ``evaluate`` has two: predict on the golden set first, then
+    run the evaluation comparison.
+    """
+    # Steps with a single command template.
+    single: Dict[str, List[str]] = {
         "train": [
             sys.executable, str(_BIN_DIR / "train_classifier.py"),
             "--experiment", "{name}",
@@ -457,20 +467,38 @@ def _build_step_command(step_name: str, experiment_name: str) -> List[str]:
             "--experiment", "{name}",
             "--force",
         ],
-        "evaluate": [
-            sys.executable, str(_BIN_DIR / "evaluate_golden.py"),
-            "--experiment", "{name}",
-            "--golden-db", "skol_golden_ann_hand",
-            "--plaintext-db", "skol_golden",
-            "--save-to-experiment",
-        ],
         "build_vocab": [
             sys.executable, str(_BIN_DIR / "build_vocab_tree.py"),
             "--experiment", "{name}",
         ],
     }
-    template = templates[step_name]
-    return [arg.format(name=experiment_name) for arg in template]
+
+    def _apply(template: List[str]) -> List[str]:
+        cmd = [arg.format(name=experiment_name) for arg in template]
+        if force:
+            cmd = [
+                "--force" if arg == "--skip-existing" else arg
+                for arg in cmd
+            ]
+        return cmd
+
+    if step_name == "evaluate":
+        predict_golden: List[str] = _apply([
+            sys.executable, str(_BIN_DIR / "predict_classifier.py"),
+            "--experiment", "{name}",
+            "--golden-db", "skol_golden",
+            "--skip-existing",
+        ])
+        evaluate_cmd: List[str] = _apply([
+            sys.executable, str(_BIN_DIR / "evaluate_golden.py"),
+            "--experiment", "{name}",
+            "--golden-db", "skol_golden_ann_hand",
+            "--plaintext-db", "skol_golden",
+            "--save-to-experiment",
+        ])
+        return [predict_golden, evaluate_cmd]
+
+    return [_apply(single[step_name])]
 
 
 def _run_step(
@@ -479,6 +507,7 @@ def _run_step(
     step_idx: int,
     experiment_name: str,
     verbosity: int = 1,
+    force: bool = False,
 ) -> bool:
     """Run a pipeline step, updating CouchDB status before and after.
 
@@ -486,7 +515,7 @@ def _run_step(
     """
     step = doc["pipeline"]["steps"][step_idx]
     step_name = step["name"]
-    cmd = _build_step_command(step_name, experiment_name)
+    cmds = _build_step_commands(step_name, experiment_name, force=force)
 
     if verbosity >= 1:
         print(
@@ -494,7 +523,8 @@ def _run_step(
             f"{len(_PIPELINE_STEPS)}: {step_name}"
         )
         if verbosity >= 2:
-            print(f"  Command: {' '.join(cmd)}")
+            for cmd in cmds:
+                print(f"  Command: {' '.join(cmd)}")
 
     # Mark step as running and persist.
     step["status"] = "running"
@@ -503,13 +533,17 @@ def _run_step(
     doc["updated_at"] = _now_iso()
     db.save(doc)
 
-    # Execute the step.
-    try:
-        result = subprocess.run(cmd, check=False)
-        exit_code = result.returncode
-    except Exception as exc:
-        print(f"Error launching step: {exc}", file=sys.stderr)
-        exit_code = 1
+    # Execute the step (one or more commands in sequence).
+    exit_code = 0
+    for cmd in cmds:
+        try:
+            result = subprocess.run(cmd, check=False)
+            exit_code = result.returncode
+        except Exception as exc:
+            print(f"Error launching step: {exc}", file=sys.stderr)
+            exit_code = 1
+        if exit_code != 0:
+            break
 
     # Reload doc to get latest _rev (subprocess may have updated it).
     doc_fresh = db[doc["_id"]]
@@ -642,7 +676,9 @@ def cmd_runnext(db: Any, args: Any) -> None:
         )
         sys.exit(1)
 
-    success = _run_step(db, doc, step_idx, args.name)
+    success = _run_step(
+        db, doc, step_idx, args.name, force=getattr(args, "force", False),
+    )
     if not success:
         sys.exit(1)
 
@@ -673,7 +709,10 @@ def cmd_runstep(db: Any, args: Any) -> None:
         _ensure_pipeline(fresh_doc)
         steps = fresh_doc["pipeline"]["steps"]
 
-        success = _run_step(db, fresh_doc, step_idx, args.name)
+        success = _run_step(
+            db, fresh_doc, step_idx, args.name,
+            force=getattr(args, "force", False),
+        )
         if not success:
             sys.exit(1)
 
@@ -814,6 +853,11 @@ def main() -> None:
         "runnext", help="Run the next pending pipeline step",
     )
     p_runnext.add_argument("name", help="Experiment name")
+    p_runnext.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace --skip-existing with --force in the step command",
+    )
 
     # runstep
     p_runstep = subparsers.add_parser(
@@ -826,6 +870,11 @@ def main() -> None:
             "Comma-separated step name(s) to run "
             "(e.g. embed or evaluate,build_vocab)"
         ),
+    )
+    p_runstep.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace --skip-existing with --force in the step command",
     )
 
     # resetstep
