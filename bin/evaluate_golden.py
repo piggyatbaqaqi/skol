@@ -39,7 +39,11 @@ if __name__ == "__main__" and __package__ is None:
 from env_config import get_env_config
 
 # YEDDA block pattern: [@text#Tag*]
-_YEDDA_BLOCK_RE = re.compile(r"\[@\s*(.*?)\s*#([^*]+)\*\]", re.DOTALL)
+# Tag must be a short alphanumeric-with-hyphens name (no newlines, not too
+# long) to avoid mismatching when passage text contains '#' characters.
+_YEDDA_BLOCK_RE = re.compile(
+    r"\[@\s*(.*?)\s*#([A-Za-z][A-Za-z0-9_-]{0,49})\*\]", re.DOTALL
+)
 
 
 # ---------------------------------------------------------------------------
