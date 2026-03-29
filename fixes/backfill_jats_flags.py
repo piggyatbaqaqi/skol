@@ -9,6 +9,10 @@ flag was introduced.
 Logic:
   - is_jats   = True when xml_format in ('jats', 'taxpub')
   - is_taxpub = True when xml_format == 'taxpub'
+                   OR when xml_format == 'jats' and the article.xml
+                      attachment contains 'taxon-treatment' (covers Pensoft
+                      articles that use <sec sec-type="taxon-treatment">
+                      instead of the TaxPub namespace elements)
 
 predict_classifier skips is_taxpub=True documents by default (use
 --include-taxpub to override).  Plain JATS (PMC, is_jats=True but
@@ -70,17 +74,36 @@ def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
             continue
 
         is_jats = xml_fmt in ('jats', 'taxpub')
-        is_taxpub = xml_fmt == 'taxpub'
+
+        # For plain-JATS docs, check whether the XML content uses TaxPub
+        # treatment elements (sec-type="taxon-treatment") even without the
+        # TaxPub namespace declaration.
+        if xml_fmt == 'jats':
+            try:
+                attachment = db.get_attachment(doc_id, 'article.xml')
+                if attachment is not None:
+                    content = attachment.read()
+                    is_taxpub = b'taxon-treatment' in content
+                else:
+                    is_taxpub = False
+            except Exception:
+                is_taxpub = False
+        else:
+            is_taxpub = xml_fmt == 'taxpub'
 
         # Skip if flags already set correctly
-        if doc.get('is_jats') == is_jats and doc.get('is_taxpub') == is_taxpub:
+        if (doc.get('is_jats') == is_jats
+                and doc.get('is_taxpub') == is_taxpub):
             skipped += 1
             continue
 
         updated += 1
         if verbosity >= 2:
             action = "Would set" if dry_run else "Setting"
-            print(f"  {action} {doc_id}: is_jats={is_jats} is_taxpub={is_taxpub}")
+            print(
+                f"  {action} {doc_id}: "
+                f"is_jats={is_jats} is_taxpub={is_taxpub}"
+            )
 
         if not dry_run:
             try:
@@ -88,7 +111,10 @@ def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
                 doc['is_taxpub'] = is_taxpub
                 db.save(doc)
             except Exception as exc:
-                print(f"  ERROR saving {doc_id}: {exc}", file=sys.stderr)
+                print(
+                    f"  ERROR saving {doc_id}: {exc}",
+                    file=sys.stderr,
+                )
                 updated -= 1
 
     if verbosity >= 1:
