@@ -882,7 +882,10 @@ class PensoftIngestor(Ingestor):
                             if xml_fmt:
                                 doc['xml_format'] = xml_fmt
                                 doc['is_jats'] = xml_fmt in ('jats', 'taxpub')
-                                doc['is_taxpub'] = xml_fmt == 'taxpub'
+                                doc['is_taxpub'] = (
+                                    xml_fmt == 'taxpub'
+                                    or b'taxon-treatment' in resp.content
+                                )
                             self.db.save(doc)
                             doc = self.db[doc_id]
                             self.db.put_attachment(
