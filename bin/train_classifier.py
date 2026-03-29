@@ -59,9 +59,9 @@ MODEL_CONFIGS = {
         "regParam": 0.01,
         "extraction_mode": "section",
         "class_weights": {
-            "Nomenclature": 250.0,
-            "Description": 20.0,
-            "Misc-exposition": 20.0
+            "Nomenclature": 3.0,
+            "Description": 2.0,
+            "Misc-exposition": 1.0
         },
         "word_vocab_size": 3600,
         "suffix_vocab_size": 400,
@@ -78,9 +78,9 @@ MODEL_CONFIGS = {
         "regParam": 0.01,
         "extraction_mode": "section",
         "class_weights": {
-            "Nomenclature": 250.0,
-            "Description": 20.0,
-            "Misc-exposition": 20.0,
+            "Nomenclature": 3.0,
+            "Description": 2.0,
+            "Misc-exposition": 1.0,
         },
         "word_vocab_size": 3600,
         "suffix_vocab_size": 400,
