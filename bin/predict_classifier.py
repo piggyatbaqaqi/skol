@@ -1520,6 +1520,18 @@ Note: Command-line arguments override environment variables.
         ),
     )
 
+    parser.add_argument(
+        '--golden-db',
+        type=str,
+        default=None,
+        metavar='DATABASE',
+        help=(
+            'Restrict prediction to document IDs present in this CouchDB '
+            'database (e.g. skol_golden). Useful for evaluating a model '
+            'against the golden set without processing the whole corpus.'
+        ),
+    )
+
     args, _ = parser.parse_known_args()
 
     # List models if requested
@@ -1539,6 +1551,36 @@ Note: Command-line arguments override environment variables.
     # Apply --output-database override (takes precedence over experiment)
     if args.output_database:
         config['annotations_db_name'] = args.output_database
+
+    # --golden-db: read source documents directly from the golden plaintext
+    # database rather than the experiment's ingest DB.  The golden DB
+    # contains article.txt attachments for all golden-set documents, so we
+    # force --read-text mode and restrict prediction to those IDs.
+    if args.golden_db:
+        try:
+            golden_server = couchdb.Server(config['couchdb_url'])
+            golden_server.resource.credentials = (
+                config['couchdb_username'],
+                config['couchdb_password'],
+            )
+            golden_db_conn = golden_server[args.golden_db]
+            golden_ids = [
+                doc_id for doc_id in golden_db_conn
+                if not doc_id.startswith('_design/')
+            ]
+            if config.get('verbosity', 1) >= 1:
+                print(
+                    f"Using '{args.golden_db}' as source: "
+                    f"{len(golden_ids)} documents"
+                )
+            # Use the golden DB as source so the IDs resolve correctly.
+            config['ingest_db_name'] = args.golden_db
+            config['doc_ids'] = golden_ids
+            # Golden DB has article.txt — no PDF conversion needed.
+            args.read_text = True
+        except Exception as exc:
+            print(f"✗ Failed to read golden DB '{args.golden_db}': {exc}")
+            sys.exit(1)
 
     # Handle --update-taxonomy-flag-only mode
     if args.update_taxonomy_flag_only:
