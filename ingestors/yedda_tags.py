@@ -14,12 +14,18 @@ class Tag(str, Enum):
 
     NOMENCLATURE = "Nomenclature"
     DESCRIPTION = "Description"
+    DIAGNOSIS = "Diagnosis"
     ETYMOLOGY = "Etymology"
-    HOLOTYPE = "Holotype"
+    DISTRIBUTION = "Distribution"
+    MATERIALS_EXAMINED = "Materials-examined"
+    TYPE_DESIGNATION = "Type-designation"
+    BIOLOGY = "Biology"
     NOTES = "Notes"
     KEY = "Key"
     FIGURE_CAPTION = "Figure-caption"
     MISC_EXPOSITION = "Misc-exposition"
+    # Deprecated: retained so existing .ann files with Holotype remain parseable.
+    HOLOTYPE = "Holotype"
 
 
 @dataclasses.dataclass

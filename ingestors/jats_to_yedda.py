@@ -138,17 +138,26 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     """
     st = sec_type.lower().strip().strip("\ufeff")
 
-    if st in ("description", "diagnosis"):
+    if st == "description":
         return Tag.DESCRIPTION
 
     if st == "etymology":
         return Tag.ETYMOLOGY
 
-    if st in ("holotype", "material", "type material"):
-        return Tag.HOLOTYPE
+    if st.startswith("diagnosis"):
+        return Tag.DIAGNOSIS
 
-    if st in ("type species", "type genus"):
-        return Tag.HOLOTYPE
+    if st in ("distribution", "habitat", "habitat-distribution"):
+        return Tag.DISTRIBUTION
+
+    if st in ("holotype", "type material", "type species", "type genus"):
+        return Tag.TYPE_DESIGNATION
+
+    if st in ("material", "materials examined", "specimens examined") or "specimen examined" in st:
+        return Tag.MATERIALS_EXAMINED
+
+    if st in ("biology", "ecology", "host"):
+        return Tag.BIOLOGY
 
     if st in ("notes", "comments", "note"):
         return Tag.NOTES
@@ -180,8 +189,8 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st in _DESCRIPTION_SUBTYPES:
         return Tag.DESCRIPTION
 
-    # Anything starting with "description" or "diagnosis" (handles variants)
-    if st.startswith("description") or st.startswith("diagnosis"):
+    # Anything starting with "description" (handles variants like "description of...")
+    if st.startswith("description"):
         return Tag.DESCRIPTION
 
     return Tag.MISC_EXPOSITION

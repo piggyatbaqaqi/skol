@@ -220,25 +220,25 @@ class TestSecTypeToTag(unittest.TestCase):
         self.assertEqual(sec_type_to_tag("description"), Tag.DESCRIPTION)
 
     def test_diagnosis(self):
-        self.assertEqual(sec_type_to_tag("diagnosis"), Tag.DESCRIPTION)
+        self.assertEqual(sec_type_to_tag("diagnosis"), Tag.DIAGNOSIS)
 
     def test_etymology(self):
         self.assertEqual(sec_type_to_tag("etymology"), Tag.ETYMOLOGY)
 
     def test_holotype(self):
-        self.assertEqual(sec_type_to_tag("Holotype"), Tag.HOLOTYPE)
+        self.assertEqual(sec_type_to_tag("Holotype"), Tag.TYPE_DESIGNATION)
 
     def test_material(self):
-        self.assertEqual(sec_type_to_tag("material"), Tag.HOLOTYPE)
+        self.assertEqual(sec_type_to_tag("material"), Tag.MATERIALS_EXAMINED)
 
     def test_type_material(self):
-        self.assertEqual(sec_type_to_tag("type material"), Tag.HOLOTYPE)
+        self.assertEqual(sec_type_to_tag("type material"), Tag.TYPE_DESIGNATION)
 
     def test_type_species(self):
-        self.assertEqual(sec_type_to_tag("type species"), Tag.HOLOTYPE)
+        self.assertEqual(sec_type_to_tag("type species"), Tag.TYPE_DESIGNATION)
 
     def test_type_genus(self):
-        self.assertEqual(sec_type_to_tag("type genus"), Tag.HOLOTYPE)
+        self.assertEqual(sec_type_to_tag("type genus"), Tag.TYPE_DESIGNATION)
 
     def test_notes(self):
         self.assertEqual(sec_type_to_tag("notes"), Tag.NOTES)
@@ -269,8 +269,35 @@ class TestSecTypeToTag(unittest.TestCase):
 
     def test_additional_specimen_examined(self):
         self.assertEqual(
-            sec_type_to_tag("Additional specimen examined"), Tag.MISC_EXPOSITION
+            sec_type_to_tag("Additional specimen examined"), Tag.MATERIALS_EXAMINED
         )
+
+    def test_distribution(self):
+        self.assertEqual(sec_type_to_tag("distribution"), Tag.DISTRIBUTION)
+
+    def test_habitat(self):
+        self.assertEqual(sec_type_to_tag("habitat"), Tag.DISTRIBUTION)
+
+    def test_habitat_distribution(self):
+        self.assertEqual(sec_type_to_tag("habitat-distribution"), Tag.DISTRIBUTION)
+
+    def test_materials_examined(self):
+        self.assertEqual(sec_type_to_tag("materials examined"), Tag.MATERIALS_EXAMINED)
+
+    def test_specimens_examined(self):
+        self.assertEqual(sec_type_to_tag("specimens examined"), Tag.MATERIALS_EXAMINED)
+
+    def test_biology(self):
+        self.assertEqual(sec_type_to_tag("biology"), Tag.BIOLOGY)
+
+    def test_ecology(self):
+        self.assertEqual(sec_type_to_tag("ecology"), Tag.BIOLOGY)
+
+    def test_host(self):
+        self.assertEqual(sec_type_to_tag("host"), Tag.BIOLOGY)
+
+    def test_diagnosis_prefix_variant(self):
+        self.assertEqual(sec_type_to_tag("diagnosis of the genus"), Tag.DIAGNOSIS)
 
     def test_unknown_type(self):
         self.assertEqual(sec_type_to_tag("something else"), Tag.MISC_EXPOSITION)
@@ -379,8 +406,8 @@ class TestTreatmentProcessing(unittest.TestCase):
 
         tags = [b.tag for b in blocks]
         self.assertEqual(tags[0], Tag.NOMENCLATURE)
-        self.assertEqual(tags[1], Tag.DESCRIPTION)  # diagnosis
-        self.assertEqual(tags[2], Tag.HOLOTYPE)
+        self.assertEqual(tags[1], Tag.DIAGNOSIS)
+        self.assertEqual(tags[2], Tag.TYPE_DESIGNATION)
         self.assertEqual(tags[3], Tag.ETYMOLOGY)
         self.assertEqual(tags[4], Tag.DESCRIPTION)
         self.assertEqual(tags[5], Tag.NOTES)
@@ -676,9 +703,10 @@ class TestEndToEnd(unittest.TestCase):
             tag_counts[b.tag] = tag_counts.get(b.tag, 0) + 1
 
         self.assertEqual(tag_counts[Tag.NOMENCLATURE], 2)
-        self.assertEqual(tag_counts[Tag.DESCRIPTION], 3)  # diagnosis + Fruiting body + description
+        self.assertEqual(tag_counts[Tag.DESCRIPTION], 2)  # Fruiting body + description
+        self.assertEqual(tag_counts[Tag.DIAGNOSIS], 1)
         self.assertEqual(tag_counts[Tag.ETYMOLOGY], 1)
-        self.assertEqual(tag_counts[Tag.HOLOTYPE], 1)
+        self.assertEqual(tag_counts[Tag.TYPE_DESIGNATION], 1)
         self.assertEqual(tag_counts[Tag.NOTES], 1)
         self.assertEqual(tag_counts[Tag.KEY], 1)
         self.assertEqual(tag_counts[Tag.FIGURE_CAPTION], 1)
@@ -787,7 +815,7 @@ class TestProcessJatsTreatment(unittest.TestCase):
 
     def test_holotype_block(self):
         blocks = self._blocks()
-        holo = [b for b in blocks if b.tag == Tag.HOLOTYPE]
+        holo = [b for b in blocks if b.tag == Tag.TYPE_DESIGNATION]
         self.assertEqual(len(holo), 1)
 
     def test_etymology_block(self):
@@ -798,10 +826,10 @@ class TestProcessJatsTreatment(unittest.TestCase):
     def test_document_order(self):
         blocks = self._blocks()
         self.assertEqual(blocks[0].tag, Tag.NOMENCLATURE)
-        # Holotype, Etymology, Description follow in XML order
+        # Type-designation, Etymology, Description follow in XML order
         non_nom = [b.tag for b in blocks[1:]]
         self.assertEqual(
-            non_nom, [Tag.HOLOTYPE, Tag.ETYMOLOGY, Tag.DESCRIPTION]
+            non_nom, [Tag.TYPE_DESIGNATION, Tag.ETYMOLOGY, Tag.DESCRIPTION]
         )
 
     def test_no_title_no_nomenclature(self):
@@ -832,7 +860,7 @@ class TestFullPipelineJatsSecType(unittest.TestCase):
         tags = {b.tag for b in blocks}
         self.assertIn(Tag.NOMENCLATURE, tags)
         self.assertIn(Tag.DESCRIPTION, tags)
-        self.assertIn(Tag.HOLOTYPE, tags)
+        self.assertIn(Tag.TYPE_DESIGNATION, tags)
         self.assertIn(Tag.ETYMOLOGY, tags)
 
     def test_multiple_jats_treatments(self):
