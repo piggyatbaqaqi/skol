@@ -92,12 +92,45 @@ def blocks_to_char_tags(
 # Label collapsing
 # ---------------------------------------------------------------------------
 
-_KEEP_TAGS = frozenset({"Nomenclature", "Description"})
+def parse_collapse_spec(spec: str) -> Dict[str, str]:
+    """Parse a --collapse-tags specification string into a mapping dict.
+
+    Args:
+        spec: Comma-separated SRC:DST pairs, e.g.
+              "Diagnosis:Description,Biology:Misc-exposition".
+              Empty string returns an empty dict (no collapsing).
+
+    Returns:
+        Dict mapping source tag names to destination tag names.
+
+    Raises:
+        ValueError: If any token is missing the ':' separator.
+    """
+    if not spec.strip():
+        return {}
+    result: Dict[str, str] = {}
+    for token in spec.split(","):
+        token = token.strip()
+        if ":" not in token:
+            raise ValueError(
+                f"Invalid collapse specification {token!r}: expected SRC:DST"
+            )
+        src, dst = token.split(":", 1)
+        result[src.strip()] = dst.strip()
+    return result
 
 
-def collapse_tag(tag: str) -> str:
-    """Collapse a fine-grained YEDDA tag to the 3-class scheme."""
-    return tag if tag in _KEEP_TAGS else "Misc-exposition"
+def apply_collapse_map(tag: str, collapse_map: Dict[str, str]) -> str:
+    """Apply a collapse map to a single tag (single-step, non-recursive).
+
+    Args:
+        tag: The tag to (possibly) collapse.
+        collapse_map: Dict mapping source tags to destination tags.
+
+    Returns:
+        Mapped tag if tag is in collapse_map, otherwise tag unchanged.
+    """
+    return collapse_map.get(tag, tag)
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +145,7 @@ def _normalize_ws(text: str) -> str:
 def project_blocks_to_plaintext(
     plaintext: str,
     blocks: List[Tuple[str, str]],
-    collapse: bool = True,
+    collapse_map: Optional[Dict[str, str]] = None,
 ) -> List[Optional[str]]:
     """Project YEDDA blocks onto plaintext character positions.
 
@@ -123,12 +156,15 @@ def project_blocks_to_plaintext(
     Args:
         plaintext: The raw article.txt content.
         blocks: List of (text, tag) tuples from YEDDA.
-        collapse: If True, collapse tags to 3-class scheme.
+        collapse_map: Optional dict mapping source tags to destination
+            tags. Empty dict or None means no collapsing.
 
     Returns:
         List of length len(plaintext) where each element is
         a tag name or None (untagged).
     """
+    if collapse_map is None:
+        collapse_map = {}
     tags: List[Optional[str]] = [None] * len(plaintext)
     norm_plain = _normalize_ws(plaintext)
 
@@ -146,7 +182,9 @@ def project_blocks_to_plaintext(
             norm_to_orig.append(i)
     # Strip leading/trailing: find where norm_plain starts/ends
     # in the norm_to_orig mapping.
-    lstripped = len(re.match(r"\s*", plaintext).group())  # type: ignore[union-attr]
+    lstripped = len(  # type: ignore[union-attr]
+        re.match(r"\s*", plaintext).group()
+    )
     # Rebuild mapping for stripped+collapsed version
     norm_to_orig = []
     orig_idx = lstripped
@@ -170,8 +208,7 @@ def project_blocks_to_plaintext(
 
     scan_pos = 0
     for block_text, tag in blocks:
-        if collapse:
-            tag = collapse_tag(tag)
+        tag = apply_collapse_map(tag, collapse_map)
         norm_block = _normalize_ws(block_text)
         if not norm_block:
             continue
@@ -490,6 +527,7 @@ def evaluate_documents(
     golden_db,
     verbosity: int,
     plaintext_db=None,
+    collapse_map: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Evaluate predicted annotations against golden annotations.
 
@@ -502,6 +540,7 @@ def evaluate_documents(
         golden_db: CouchDB database with golden article.txt.ann.
         verbosity: Logging verbosity.
         plaintext_db: CouchDB database with article.txt (optional).
+        collapse_map: Optional tag collapse mapping; empty = no collapse.
 
     Returns:
         Evaluation result dict with per-tag and aggregate metrics.
@@ -567,10 +606,12 @@ def evaluate_documents(
             if pt_att is not None:
                 plaintext = pt_att.read().decode("utf-8")
                 p_chars = project_blocks_to_plaintext(
-                    plaintext, pred_blocks, collapse=True,
+                    plaintext, pred_blocks,
+                    collapse_map=collapse_map or {},
                 )
                 g_chars = project_blocks_to_plaintext(
-                    plaintext, gold_blocks, collapse=True,
+                    plaintext, gold_blocks,
+                    collapse_map=collapse_map or {},
                 )
                 all_pred_chars.extend(p_chars)
                 all_gold_chars.extend(g_chars)
@@ -674,7 +715,7 @@ def format_report(
     char_metrics = evaluation.get("char_tag_metrics")
     if char_metrics:
         lines.append(
-            "## Character-level Metrics (3-class, collapsed)"
+            "## Character-level Metrics"
         )
         lines.append("")
         lines.append(
@@ -718,7 +759,9 @@ def format_report(
         "|-----|-----------|--------|-----|----|----|-----|"
     )
 
-    tag_metrics = evaluation.get("block_tag_metrics", evaluation["tag_metrics"])
+    tag_metrics = evaluation.get(
+        "block_tag_metrics", evaluation["tag_metrics"]
+    )
     for tag in sorted(tag_metrics.keys()):
         if tag == "macro_avg":
             continue
@@ -825,6 +868,18 @@ def main() -> None:
         ),
     )
 
+    parser.add_argument(
+        "--collapse-tags",
+        type=str,
+        default="",
+        metavar="SRC:DST,...",
+        help=(
+            "Comma-separated tag collapse mappings, e.g. "
+            "Diagnosis:Description,Biology:Misc-exposition. "
+            "Default: no collapsing (evaluate all tags as-is)."
+        ),
+    )
+
     # Output
     parser.add_argument(
         "--output",
@@ -911,10 +966,24 @@ def main() -> None:
             file=sys.stderr,
         )
 
+    # Parse collapse map
+    try:
+        collapse_map = parse_collapse_spec(args.collapse_tags)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if collapse_map and verbosity >= 1:
+        print(
+            f"Collapse map: {collapse_map}",
+            file=sys.stderr,
+        )
+
     # Run evaluation
     evaluation = evaluate_documents(
         predicted_db, golden_db, verbosity,
         plaintext_db=plaintext_db,
+        collapse_map=collapse_map,
     )
 
     # Format and print report

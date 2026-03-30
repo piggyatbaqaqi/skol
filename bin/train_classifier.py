@@ -86,6 +86,37 @@ MODEL_CONFIGS = {
         "suffix_vocab_size": 400,
         "section_name_vocab_size": 50,
     },
+    "logistic_sections_v3": {
+        "name": "Logistic Regression (12-class, all sources)",
+        "model_type": "logistic",
+        "verbosity": 2,
+        "input_source": "couchdb",
+        "couchdb_training_database": "skol_training",
+        "use_suffixes": True,
+        "maxIter": 100,
+        "regParam": 0.01,
+        "extraction_mode": "section",
+        # Class weights to be recalculated from inverse label frequency
+        # after the 12-tag training corpus is generated (Phase 6).
+        # Placeholder weights mirror the 3-class inverse-frequency ratios.
+        "class_weights": {
+            "Nomenclature": 3.0,
+            "Description": 2.0,
+            "Diagnosis": 2.0,
+            "Etymology": 2.0,
+            "Distribution": 2.0,
+            "Materials-examined": 2.0,
+            "Type-designation": 2.0,
+            "Biology": 2.0,
+            "Notes": 1.5,
+            "Key": 1.5,
+            "Figure-caption": 1.5,
+            "Misc-exposition": 1.0,
+        },
+        "word_vocab_size": 3600,
+        "suffix_vocab_size": 400,
+        "section_name_vocab_size": 50,
+    },
 }
 
 

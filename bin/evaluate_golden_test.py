@@ -17,12 +17,15 @@ if bin_dir not in sys.path:
 
 from evaluate_golden import (
     align_blocks,
+    apply_collapse_map,
     blocks_to_char_tags,
     compute_confusion_matrix,
     compute_tag_metrics,
     compute_token_iou,
     format_report,
+    parse_collapse_spec,
     parse_yedda_blocks,
+    project_blocks_to_plaintext,
 )
 
 
@@ -229,6 +232,98 @@ class TestFormatReport(unittest.TestCase):
         self.assertIn("Macro F1: 0.8500", report)
         self.assertIn("Nomenclature", report)
         self.assertIn("| Tag |", report)
+
+
+class TestParseCollapseSpec(unittest.TestCase):
+    """Tests for parse_collapse_spec."""
+
+    def test_empty_string_returns_empty_dict(self) -> None:
+        self.assertEqual(parse_collapse_spec(""), {})
+
+    def test_single_mapping(self) -> None:
+        self.assertEqual(
+            parse_collapse_spec("Diagnosis:Description"),
+            {"Diagnosis": "Description"},
+        )
+
+    def test_multiple_mappings(self) -> None:
+        result = parse_collapse_spec("Diagnosis:Description,Biology:Misc-exposition")
+        self.assertEqual(result, {
+            "Diagnosis": "Description",
+            "Biology": "Misc-exposition",
+        })
+
+    def test_whitespace_stripped(self) -> None:
+        self.assertEqual(
+            parse_collapse_spec(" Diagnosis : Description "),
+            {"Diagnosis": "Description"},
+        )
+
+    def test_invalid_format_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_collapse_spec("NocolonHere")
+
+
+class TestApplyCollapseMap(unittest.TestCase):
+    """Tests for apply_collapse_map."""
+
+    def test_empty_map_returns_tag_unchanged(self) -> None:
+        self.assertEqual(apply_collapse_map("Diagnosis", {}), "Diagnosis")
+
+    def test_mapped_tag_is_collapsed(self) -> None:
+        self.assertEqual(
+            apply_collapse_map("Diagnosis", {"Diagnosis": "Description"}),
+            "Description",
+        )
+
+    def test_unmapped_tag_returned_as_is(self) -> None:
+        self.assertEqual(
+            apply_collapse_map("Nomenclature", {"Diagnosis": "Description"}),
+            "Nomenclature",
+        )
+
+    def test_chained_mapping_not_followed(self) -> None:
+        m = {"A": "B", "B": "C"}
+        self.assertEqual(apply_collapse_map("A", m), "B")
+
+
+class TestProjectBlocksToPlaintext(unittest.TestCase):
+    """Tests for project_blocks_to_plaintext collapse_map parameter."""
+
+    def test_no_collapse_preserves_new_tags(self) -> None:
+        plaintext = "Differs from X. Found in Europe."
+        blocks = [
+            ("Differs from X.", "Diagnosis"),
+            ("Found in Europe.", "Distribution"),
+        ]
+        result = project_blocks_to_plaintext(plaintext, blocks, collapse_map={})
+        self.assertIn("Diagnosis", result)
+        self.assertIn("Distribution", result)
+
+    def test_collapse_map_remaps_tags(self) -> None:
+        plaintext = "Differs from X."
+        blocks = [("Differs from X.", "Diagnosis")]
+        result = project_blocks_to_plaintext(
+            plaintext, blocks, collapse_map={"Diagnosis": "Description"}
+        )
+        self.assertIn("Description", result)
+        self.assertNotIn("Diagnosis", result)
+
+    def test_default_collapse_map_is_empty(self) -> None:
+        plaintext = "Differs from X."
+        blocks = [("Differs from X.", "Diagnosis")]
+        result = project_blocks_to_plaintext(plaintext, blocks)
+        self.assertIn("Diagnosis", result)
+
+    def test_existing_tags_still_work(self) -> None:
+        plaintext = "Amanita muscaria. Pileus red."
+        blocks = [
+            ("Amanita muscaria.", "Nomenclature"),
+            ("Pileus red.", "Description"),
+        ]
+        result = project_blocks_to_plaintext(plaintext, blocks)
+        self.assertIn("Nomenclature", result)
+        self.assertIn("Description", result)
 
 
 if __name__ == "__main__":
