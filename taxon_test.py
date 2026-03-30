@@ -12,7 +12,7 @@ from finder import parse_annotated
 
 
 def lineify(lines: List[str]) -> List[Line]:
-    return [Line(l) for l in lines]
+    return [Line(ln) for ln in lines]
 
 
 class MockFileObject:
@@ -179,7 +179,8 @@ class TestTaxon(unittest.TestCase):
         self.assertNotEqual(sn2, sn3)
         self.assertNotEqual(sn1, sn3)
 
-        # First taxon: paragraph1+3 (nomenclatures) + paragraph4+6 (descriptions)
+        # First taxon: paragraph1+3 (nomenclatures) + paragraph4+6
+        # (descriptions)
         self.assertEqual(len(dictionaries1), 4)
         self.assertTrue(
             all([d["serial_number"] == sn1 for d in dictionaries1])
@@ -195,7 +196,8 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dict2["body"], "paragraph4\n")
         self.assertEqual(dict2["label"], "Description")
 
-        # Second taxon: stub + ignored2 (bare description with no preceding nomenclature)
+        # Second taxon: stub + ignored2 (bare description with no preceding
+        # nomenclature)
         self.assertEqual(len(dictionaries2), 2)
         self.assertTrue(
             all([d["serial_number"] == sn2 for d in dictionaries2])
@@ -205,7 +207,8 @@ class TestTaxon(unittest.TestCase):
         self.assertEqual(dictionaries2[1]["body"], "ignored2\n")
         self.assertEqual(dictionaries2[1]["label"], "Description")
 
-        # Third taxon: paragraph9 (nomenclature) + paragraph12+14+15 (descriptions)
+        # Third taxon: paragraph9 (nomenclature) + paragraph12+14+15
+        # (descriptions)
         self.assertEqual(len(dictionaries3), 4)
         self.assertTrue(
             all([d["serial_number"] == sn3 for d in dictionaries3])
@@ -297,7 +300,8 @@ class TestTaxon(unittest.TestCase):
         """
         # Create test data with two different documents
         # Document A (doc_id='doc_a'): Nomenclature at paragraph 1, Description at paragraph 2
-        # Document B (doc_id='doc_b'): Description at paragraph 3, Nomenclature at paragraph 4
+        # Document B (doc_id='doc_b'): Description at paragraph 3, Nomenclature
+        # at paragraph 4
         test_data = lineify_with_doc_id(
             [
                 ("[@nom_from_doc_a#Nomenclature*]", "doc_a"),
@@ -534,7 +538,8 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
 
     def test_treatment_label_resets_misc_gap(self):
         """A treatment-section label resets the Misc-exposition gap counter."""
-        # 2 misc + Diagnosis + 2 misc: counter resets at Diagnosis → 2 at end ≤ 3
+        # 2 misc + Diagnosis + 2 misc: counter resets at Diagnosis → 2 at end ≤
+        # 3
         test_data = lineify(
             textwrap.dedent(
                 """\

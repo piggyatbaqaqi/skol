@@ -128,14 +128,15 @@ class Taxon(object):
         return bool(self._nomenclatures)
 
     def has_section(self) -> bool:
-        """Return True if at least one treatment-section paragraph is present."""
+        """Return True if at least one treatment-section paragraph is present.
+        """
         return bool(self._section_paragraphs)
 
     def has_description(self) -> bool:
         return bool(self._sections.get("Description"))
 
     def doc_id(self) -> Optional[str]:
-        """Return the doc_id from the first nomenclature paragraph, if any."""
+        """Return doc_id from the first nomenclature paragraph, if any."""
         if self._nomenclatures:
             first_line = self._nomenclatures[0].first_line
             return first_line.doc_id if first_line else None
@@ -150,7 +151,7 @@ class Taxon(object):
             yield d
 
     def human_url(self) -> Optional[str]:
-        """Return the human_url from the first nomenclature paragraph, if any."""
+        """Return human_url from the first nomenclature paragraph, if any."""
         row = self.as_row()
         ingest = row.get("ingest")
         if isinstance(ingest, dict):
