@@ -4,3 +4,4 @@ debhelper
 build
 mypy
 pytest-django
+autopep8
