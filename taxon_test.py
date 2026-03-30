@@ -1,4 +1,5 @@
-"""Tests for file.py."""
+"""Tests for taxon.py."""
+
 import textwrap
 from typing import List
 import unittest
@@ -16,8 +17,13 @@ def lineify(lines: List[str]) -> List[Line]:
 
 class MockFileObject:
     """Mock file object for testing with doc_id support."""
-    def __init__(self, doc_id: str = None, filename: str = "test.txt",
-                 ingest: dict = None):
+
+    def __init__(
+        self,
+        doc_id: str = None,
+        filename: str = "test.txt",
+        ingest: dict = None,
+    ):
         self.doc_id = doc_id
         self.filename = filename
         self.line_number = 1
@@ -31,16 +37,17 @@ class MockFileObject:
     def _set_empirical_page(self, line: str) -> None:
         """Mock implementation of empirical page extraction."""
         import regex as re
+
         match = re.search(
-            r'(^\s*(?P<leading>[mdclxvi\d]+\b))|((?P<trailing>\b[mdclxvi\d]+)\s*$)',
-            line
+            r"(^\s*(?P<leading>[mdclxvi\d]+\b))|((?P<trailing>\b[mdclxvi\d]+)\s*$)",
+            line,
         )
         if not match:
             self._empirical_page_number = None
         else:
-            self._empirical_page_number = (
-                match.group('leading') or match.group('trailing')
-            )
+            self._empirical_page_number = match.group(
+                "leading"
+            ) or match.group("trailing")
         self.empirical_page_number = self._empirical_page_number
 
 
@@ -63,10 +70,12 @@ def lineify_with_doc_id(lines: List[tuple]) -> List[Line]:
 class TestTaxon(unittest.TestCase):
 
     def setUp(self):
-        Taxon.LONG_GAP = 3  # Give up faster than in real conditions.
+        Taxon.MISC_GAP_LIMIT = 3  # Give up faster than in real conditions.
 
     def test_sunny(self):
-        test_data = lineify(textwrap.dedent("""\
+        test_data = lineify(
+            textwrap.dedent(
+                """\
         [@paragraph1#Nomenclature*]
         [@paragraph2#Misc-exposition*]
         [@paragraph3#Nomenclature*]
@@ -81,43 +90,52 @@ class TestTaxon(unittest.TestCase):
         [@paragraph13#Misc-exposition*]
         [@paragraph14#Description*]
         [@paragraph15#Description*]
-        """).split('\n'))
+        """
+            ).split("\n")
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         self.assertEqual(len(taxa), 2)
         dictionaries1 = list(taxa[0].dictionaries())
         dictionaries2 = list(taxa[1].dictionaries())
-        sn1 = dictionaries1[0]['serial_number']
-        sn2 = dictionaries2[0]['serial_number']
+        sn1 = dictionaries1[0]["serial_number"]
+        sn2 = dictionaries2[0]["serial_number"]
         self.assertNotEqual(sn1, sn2)
 
         self.assertEqual(len(dictionaries1), 4)
-        self.assertTrue(all([d['serial_number'] == sn1 for d in dictionaries1]))
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries1],
-                             [1, 3, 4, 6])
+        self.assertTrue(
+            all([d["serial_number"] == sn1 for d in dictionaries1])
+        )
+        self.assertListEqual(
+            [d["paragraph_number"] for d in dictionaries1], [1, 3, 4, 6]
+        )
 
         self.assertEqual(len(dictionaries2), 4)
-        self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries2],
-                             [9, 11, 13, 14])
+        self.assertTrue(
+            all([d["serial_number"] == sn2 for d in dictionaries2])
+        )
+        self.assertListEqual(
+            [d["paragraph_number"] for d in dictionaries2], [9, 11, 13, 14]
+        )
 
         dict0 = dictionaries1[0]
         dict2 = dictionaries1[2]
-        self.assertEqual(dict0['body'], 'paragraph1\n')
-        self.assertEqual(dict0['label'], 'Nomenclature')
-        self.assertEqual(dict2['body'], 'paragraph4\n')
-        self.assertEqual(dict2['label'], 'Description')
+        self.assertEqual(dict0["body"], "paragraph1\n")
+        self.assertEqual(dict0["label"], "Nomenclature")
+        self.assertEqual(dict2["body"], "paragraph4\n")
+        self.assertEqual(dict2["label"], "Description")
 
         dict4 = dictionaries2[0]
         dict7 = dictionaries2[3]
-        self.assertEqual(dict4['body'], 'paragraph9\n')
-        self.assertEqual(dict4['label'], 'Nomenclature')
-        self.assertEqual(dict7['body'], 'paragraph15\n')
-        self.assertEqual(dict7['label'], 'Description')
-
+        self.assertEqual(dict4["body"], "paragraph9\n")
+        self.assertEqual(dict4["label"], "Nomenclature")
+        self.assertEqual(dict7["body"], "paragraph15\n")
+        self.assertEqual(dict7["label"], "Description")
 
     def test_too_long(self):
-        test_data = lineify(textwrap.dedent("""\
+        test_data = lineify(
+            textwrap.dedent(
+                """\
         [@ignored1#Nomenclature*]
         [@filler1#Misc-exposition*]
         [@filler2#Misc-exposition*]
@@ -140,7 +158,9 @@ class TestTaxon(unittest.TestCase):
         [@paragraph13#Misc-exposition*]
         [@paragraph14#Description*]
         [@paragraph15#Description*]
-        """).split('\n'))
+        """
+            ).split("\n")
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         # Now expecting 3 taxa due to stub nomenclature creation for bare Description
@@ -152,46 +172,54 @@ class TestTaxon(unittest.TestCase):
         dictionaries1 = list(taxa[0].dictionaries())
         dictionaries2 = list(taxa[1].dictionaries())
         dictionaries3 = list(taxa[2].dictionaries())
-        sn1 = dictionaries1[0]['serial_number']
-        sn2 = dictionaries2[0]['serial_number']
-        sn3 = dictionaries3[0]['serial_number']
+        sn1 = dictionaries1[0]["serial_number"]
+        sn2 = dictionaries2[0]["serial_number"]
+        sn3 = dictionaries3[0]["serial_number"]
         self.assertNotEqual(sn1, sn2)
         self.assertNotEqual(sn2, sn3)
         self.assertNotEqual(sn1, sn3)
 
         # First taxon: paragraph1+3 (nomenclatures) + paragraph4+6 (descriptions)
         self.assertEqual(len(dictionaries1), 4)
-        self.assertTrue(all([d['serial_number'] == sn1 for d in dictionaries1]))
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries1],
-                             [6, 7, 8, 9])
+        self.assertTrue(
+            all([d["serial_number"] == sn1 for d in dictionaries1])
+        )
+        self.assertListEqual(
+            [d["paragraph_number"] for d in dictionaries1], [6, 7, 8, 9]
+        )
 
         dict0 = dictionaries1[0]
         dict2 = dictionaries1[2]
-        self.assertEqual(dict0['body'], 'paragraph1\n')
-        self.assertEqual(dict0['label'], 'Nomenclature')
-        self.assertEqual(dict2['body'], 'paragraph4\n')
-        self.assertEqual(dict2['label'], 'Description')
+        self.assertEqual(dict0["body"], "paragraph1\n")
+        self.assertEqual(dict0["label"], "Nomenclature")
+        self.assertEqual(dict2["body"], "paragraph4\n")
+        self.assertEqual(dict2["label"], "Description")
 
         # Second taxon: stub + ignored2 (bare description with no preceding nomenclature)
         self.assertEqual(len(dictionaries2), 2)
-        self.assertTrue(all([d['serial_number'] == sn2 for d in dictionaries2]))
-        self.assertEqual(dictionaries2[0]['body'], 'Nomen undetected\n')
-        self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries2[1]['body'], 'ignored2\n')
-        self.assertEqual(dictionaries2[1]['label'], 'Description')
+        self.assertTrue(
+            all([d["serial_number"] == sn2 for d in dictionaries2])
+        )
+        self.assertEqual(dictionaries2[0]["body"], "Nomen undetected\n")
+        self.assertEqual(dictionaries2[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries2[1]["body"], "ignored2\n")
+        self.assertEqual(dictionaries2[1]["label"], "Description")
 
         # Third taxon: paragraph9 (nomenclature) + paragraph12+14+15 (descriptions)
         self.assertEqual(len(dictionaries3), 4)
-        self.assertTrue(all([d['serial_number'] == sn3 for d in dictionaries3]))
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries3],
-                             [17, 19, 21, 22])
+        self.assertTrue(
+            all([d["serial_number"] == sn3 for d in dictionaries3])
+        )
+        self.assertListEqual(
+            [d["paragraph_number"] for d in dictionaries3], [17, 19, 21, 22]
+        )
 
         dict4 = dictionaries3[0]
         dict7 = dictionaries3[3]
-        self.assertEqual(dict4['body'], 'paragraph9\n')
-        self.assertEqual(dict4['label'], 'Nomenclature')
-        self.assertEqual(dict7['body'], 'paragraph15\n')
-        self.assertEqual(dict7['label'], 'Description')
+        self.assertEqual(dict4["body"], "paragraph9\n")
+        self.assertEqual(dict4["label"], "Nomenclature")
+        self.assertEqual(dict7["body"], "paragraph15\n")
+        self.assertEqual(dict7["label"], "Description")
 
     def test_fall_through_first_description(self):
         """Test fall-through case: first Description after Nomenclature is immediately added.
@@ -200,33 +228,41 @@ class TestTaxon(unittest.TestCase):
         after having collected at least one Nomenclature, the state switches to
         'Look for Descriptions' and falls through to immediately add that Description.
         """
-        test_data = lineify(textwrap.dedent("""\
+        test_data = lineify(
+            textwrap.dedent(
+                """\
         [@nom1#Nomenclature*]
         [@desc1#Description*]
         [@desc2#Description*]
-        """).split('\n'))
+        """
+            ).split("\n")
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         self.assertEqual(len(taxa), 1, "Should generate exactly one taxon")
 
         dictionaries = list(taxa[0].dictionaries())
-        self.assertEqual(len(dictionaries), 3, "Should have 1 nomenclature + 2 descriptions")
+        self.assertEqual(
+            len(dictionaries), 3, "Should have 1 nomenclature + 2 descriptions"
+        )
 
         # Verify the first description was captured (fall-through worked)
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries],
-                             [1, 2, 3])
-        self.assertEqual(dictionaries[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries[1]['label'], 'Description')
-        self.assertEqual(dictionaries[1]['body'], 'desc1\n')
+        self.assertListEqual(
+            [d["paragraph_number"] for d in dictionaries], [1, 2, 3]
+        )
+        self.assertEqual(dictionaries[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries[1]["label"], "Description")
+        self.assertEqual(dictionaries[1]["body"], "desc1\n")
 
     def test_fall_through_gap_reset(self):
-        """Test fall-through case: been_too_long() causes reset in 'Look for Nomenclatures'.
+        """Test fall-through case: gap causes reset in 'Look for Nomenclatures'.
 
-        When in 'Look for Nomenclatures' state and the gap becomes too long,
-        the taxon is reset and we continue looking for nomenclatures.
-        This prevents incomplete taxa from being yielded.
+        When in 'Look for Nomenclatures' state and the Misc-exposition gap exceeds
+        MISC_GAP_LIMIT, the taxon is reset and we continue looking for nomenclatures.
         """
-        test_data = lineify(textwrap.dedent("""\
+        test_data = lineify(
+            textwrap.dedent(
+                """\
         [@nom1#Nomenclature*]
         [@filler1#Misc-exposition*]
         [@filler2#Misc-exposition*]
@@ -234,18 +270,23 @@ class TestTaxon(unittest.TestCase):
         [@filler4#Misc-exposition*]
         [@nom2#Nomenclature*]
         [@desc1#Description*]
-        """).split('\n'))
+        """
+            ).split("\n")
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         self.assertEqual(len(taxa), 1, "Should generate exactly one taxon")
 
         dictionaries = list(taxa[0].dictionaries())
         # Should only have nom2 and desc1, not nom1 (it was reset due to gap)
-        self.assertEqual(len(dictionaries), 2, "Should have 1 nomenclature + 1 description")
-        self.assertListEqual([d['paragraph_number'] for d in dictionaries],
-                             [6, 7])
-        self.assertEqual(dictionaries[0]['body'], 'nom2\n')
-        self.assertEqual(dictionaries[1]['body'], 'desc1\n')
+        self.assertEqual(
+            len(dictionaries), 2, "Should have 1 nomenclature + 1 description"
+        )
+        self.assertListEqual(
+            [d["paragraph_number"] for d in dictionaries], [6, 7]
+        )
+        self.assertEqual(dictionaries[0]["body"], "nom2\n")
+        self.assertEqual(dictionaries[1]["body"], "desc1\n")
 
     def test_document_boundary(self):
         """Test that Nomenclature-Description associations do not cross document boundaries.
@@ -257,44 +298,52 @@ class TestTaxon(unittest.TestCase):
         # Create test data with two different documents
         # Document A (doc_id='doc_a'): Nomenclature at paragraph 1, Description at paragraph 2
         # Document B (doc_id='doc_b'): Description at paragraph 3, Nomenclature at paragraph 4
-        test_data = lineify_with_doc_id([
-            ('[@nom_from_doc_a#Nomenclature*]', 'doc_a'),
-            ('[@desc_from_doc_a#Description*]', 'doc_a'),
-            ('[@desc_from_doc_b#Description*]', 'doc_b'),  # Different doc - should NOT associate with nom_from_doc_a
-            ('[@nom_from_doc_b#Nomenclature*]', 'doc_b'),
-            ('[@desc2_from_doc_b#Description*]', 'doc_b'),
-        ])
+        test_data = lineify_with_doc_id(
+            [
+                ("[@nom_from_doc_a#Nomenclature*]", "doc_a"),
+                ("[@desc_from_doc_a#Description*]", "doc_a"),
+                ("[@desc_from_doc_b#Description*]", "doc_b"),  # Different doc
+                ("[@nom_from_doc_b#Nomenclature*]", "doc_b"),
+                ("[@desc2_from_doc_b#Description*]", "doc_b"),
+            ]
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
 
         # Should generate 2 taxa, one for each document
-        self.assertEqual(len(taxa), 2, "Should generate 2 taxa (one per document)")
+        self.assertEqual(
+            len(taxa), 2, "Should generate 2 taxa (one per document)"
+        )
 
         # First taxon: from document A
         dictionaries1 = list(taxa[0].dictionaries())
-        self.assertEqual(len(dictionaries1), 2, "First taxon should have nom + desc from doc_a")
-        self.assertEqual(dictionaries1[0]['body'], 'nom_from_doc_a\n')
-        self.assertEqual(dictionaries1[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries1[1]['body'], 'desc_from_doc_a\n')
-        self.assertEqual(dictionaries1[1]['label'], 'Description')
+        self.assertEqual(
+            len(dictionaries1),
+            2,
+            "First taxon should have nom + desc from doc_a",
+        )
+        self.assertEqual(dictionaries1[0]["body"], "nom_from_doc_a\n")
+        self.assertEqual(dictionaries1[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries1[1]["body"], "desc_from_doc_a\n")
+        self.assertEqual(dictionaries1[1]["label"], "Description")
 
-        # Verify first taxon is from doc_a (using doc_id() method)
-        self.assertEqual(taxa[0].doc_id(), 'doc_a')
+        self.assertEqual(taxa[0].doc_id(), "doc_a")
 
         # Second taxon: from document B
         dictionaries2 = list(taxa[1].dictionaries())
-        self.assertEqual(len(dictionaries2), 2, "Second taxon should have nom + desc from doc_b")
-        self.assertEqual(dictionaries2[0]['body'], 'nom_from_doc_b\n')
-        self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries2[1]['body'], 'desc2_from_doc_b\n')
-        self.assertEqual(dictionaries2[1]['label'], 'Description')
+        self.assertEqual(
+            len(dictionaries2),
+            2,
+            "Second taxon should have nom + desc from doc_b",
+        )
+        self.assertEqual(dictionaries2[0]["body"], "nom_from_doc_b\n")
+        self.assertEqual(dictionaries2[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries2[1]["body"], "desc2_from_doc_b\n")
+        self.assertEqual(dictionaries2[1]["label"], "Description")
 
-        # Verify second taxon is from doc_b (using doc_id() method)
-        self.assertEqual(taxa[1].doc_id(), 'doc_b')
+        self.assertEqual(taxa[1].doc_id(), "doc_b")
 
-        # Ensure desc_from_doc_b was NOT associated with nom_from_doc_a
-        # (it should have been skipped due to document boundary)
-        self.assertNotIn('desc_from_doc_b', [d['body'] for d in dictionaries1])
+        self.assertNotIn("desc_from_doc_b", [d["body"] for d in dictionaries1])
 
     def test_document_boundary_while_looking_for_descriptions(self):
         """Test document boundary check in 'Look for Descriptions' state.
@@ -303,35 +352,33 @@ class TestTaxon(unittest.TestCase):
         a description from a different document, the current taxon should be yielded
         and we should start fresh with the new document.
         """
-        test_data = lineify_with_doc_id([
-            ('[@nom1#Nomenclature*]', 'doc_a'),
-            ('[@desc1_a#Description*]', 'doc_a'),
-            ('[@desc2_a#Description*]', 'doc_a'),
-            ('[@desc_from_doc_b#Description*]', 'doc_b'),  # Boundary while collecting descriptions
-            ('[@nom_from_doc_b#Nomenclature*]', 'doc_b'),
-            ('[@desc2_b#Description*]', 'doc_b'),
-        ])
+        test_data = lineify_with_doc_id(
+            [
+                ("[@nom1#Nomenclature*]", "doc_a"),
+                ("[@desc1_a#Description*]", "doc_a"),
+                ("[@desc2_a#Description*]", "doc_a"),
+                ("[@desc_from_doc_b#Description*]", "doc_b"),
+                ("[@nom_from_doc_b#Nomenclature*]", "doc_b"),
+                ("[@desc2_b#Description*]", "doc_b"),
+            ]
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
 
-        # Should generate 2 taxa
         self.assertEqual(len(taxa), 2, "Should generate 2 taxa")
 
-        # First taxon: nom1 + desc1_a + desc2_a from doc_a
         dictionaries1 = list(taxa[0].dictionaries())
         self.assertEqual(len(dictionaries1), 3)
-        self.assertEqual(dictionaries1[0]['body'], 'nom1\n')
-        self.assertEqual(dictionaries1[1]['body'], 'desc1_a\n')
-        self.assertEqual(dictionaries1[2]['body'], 'desc2_a\n')
+        self.assertEqual(dictionaries1[0]["body"], "nom1\n")
+        self.assertEqual(dictionaries1[1]["body"], "desc1_a\n")
+        self.assertEqual(dictionaries1[2]["body"], "desc2_a\n")
 
-        # desc_from_doc_b should NOT be in first taxon
-        self.assertNotIn('desc_from_doc_b', [d['body'] for d in dictionaries1])
+        self.assertNotIn("desc_from_doc_b", [d["body"] for d in dictionaries1])
 
-        # Second taxon: nom_from_doc_b + desc2_b from doc_b
         dictionaries2 = list(taxa[1].dictionaries())
         self.assertEqual(len(dictionaries2), 2)
-        self.assertEqual(dictionaries2[0]['body'], 'nom_from_doc_b\n')
-        self.assertEqual(dictionaries2[1]['body'], 'desc2_b\n')
+        self.assertEqual(dictionaries2[0]["body"], "nom_from_doc_b\n")
+        self.assertEqual(dictionaries2[1]["body"], "desc2_b\n")
 
     def test_bare_description_creates_stub_nomenclature(self):
         """Test that a Description without preceding Nomenclature creates a stub.
@@ -340,24 +387,31 @@ class TestTaxon(unittest.TestCase):
         a stub Nomenclature paragraph with 'Nomen undetected' should be automatically
         created since Descriptions are more reliably detected than Nomenclatures.
         """
-        test_data = lineify(textwrap.dedent("""\
+        test_data = lineify(
+            textwrap.dedent(
+                """\
         [@desc1#Description*]
         [@desc2#Description*]
-        """).split('\n'))
+        """
+            ).split("\n")
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         self.assertEqual(len(taxa), 1, "Should generate exactly one taxon")
 
         dictionaries = list(taxa[0].dictionaries())
-        self.assertEqual(len(dictionaries), 3, "Should have 1 stub nomenclature + 2 descriptions")
+        self.assertEqual(
+            len(dictionaries),
+            3,
+            "Should have 1 stub nomenclature + 2 descriptions",
+        )
 
-        # Verify the stub nomenclature was created
-        self.assertEqual(dictionaries[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries[0]['body'], 'Nomen undetected\n')
-        self.assertEqual(dictionaries[1]['label'], 'Description')
-        self.assertEqual(dictionaries[1]['body'], 'desc1\n')
-        self.assertEqual(dictionaries[2]['label'], 'Description')
-        self.assertEqual(dictionaries[2]['body'], 'desc2\n')
+        self.assertEqual(dictionaries[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries[0]["body"], "Nomen undetected\n")
+        self.assertEqual(dictionaries[1]["label"], "Description")
+        self.assertEqual(dictionaries[1]["body"], "desc1\n")
+        self.assertEqual(dictionaries[2]["label"], "Description")
+        self.assertEqual(dictionaries[2]["body"], "desc2\n")
 
     def test_bare_description_with_nomenclature_later(self):
         """Test stub creation when bare Description comes before actual Nomenclature.
@@ -365,30 +419,32 @@ class TestTaxon(unittest.TestCase):
         First taxon should have stub + descriptions, second taxon should have
         actual nomenclature + its descriptions.
         """
-        test_data = lineify(textwrap.dedent("""\
+        test_data = lineify(
+            textwrap.dedent(
+                """\
         [@desc1#Description*]
         [@desc2#Description*]
         [@nom1#Nomenclature*]
         [@desc3#Description*]
-        """).split('\n'))
+        """
+            ).split("\n")
+        )
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         self.assertEqual(len(taxa), 2, "Should generate 2 taxa")
 
-        # First taxon: stub + desc1 + desc2
         dictionaries1 = list(taxa[0].dictionaries())
         self.assertEqual(len(dictionaries1), 3)
-        self.assertEqual(dictionaries1[0]['body'], 'Nomen undetected\n')
-        self.assertEqual(dictionaries1[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries1[1]['body'], 'desc1\n')
-        self.assertEqual(dictionaries1[2]['body'], 'desc2\n')
+        self.assertEqual(dictionaries1[0]["body"], "Nomen undetected\n")
+        self.assertEqual(dictionaries1[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries1[1]["body"], "desc1\n")
+        self.assertEqual(dictionaries1[2]["body"], "desc2\n")
 
-        # Second taxon: nom1 + desc3
         dictionaries2 = list(taxa[1].dictionaries())
         self.assertEqual(len(dictionaries2), 2)
-        self.assertEqual(dictionaries2[0]['body'], 'nom1\n')
-        self.assertEqual(dictionaries2[0]['label'], 'Nomenclature')
-        self.assertEqual(dictionaries2[1]['body'], 'desc3\n')
+        self.assertEqual(dictionaries2[0]["body"], "nom1\n")
+        self.assertEqual(dictionaries2[0]["label"], "Nomenclature")
+        self.assertEqual(dictionaries2[1]["body"], "desc3\n")
 
     def test_as_row_stub_ingest_fallback(self):
         """as_row() uses description ingest when nomenclature stub has none.
@@ -398,26 +454,232 @@ class TestTaxon(unittest.TestCase):
         description paragraph's ingest so the Source Context Viewer can
         locate the document.
         """
-        fake_ingest = {'_id': 'doc123', 'url': 'http://example.com', 'pdf_url': None}
-        fileobj = MockFileObject(doc_id='doc123', ingest=fake_ingest)
+        fake_ingest = {
+            "_id": "doc123",
+            "url": "http://example.com",
+            "pdf_url": None,
+        }
+        fileobj = MockFileObject(doc_id="doc123", ingest=fake_ingest)
 
-        desc_line = Line('[@some description text#Description*]', fileobj)
-        desc_para = Paragraph(labels=[Label('Description')], lines=[desc_line],
-                              paragraph_number=1)
+        desc_line = Line("[@some description text#Description*]", fileobj)
+        desc_para = Paragraph(
+            labels=[Label("Description")],
+            lines=[desc_line],
+            paragraph_number=1,
+        )
 
-        nom_stub = Line('Nomen undetected')  # no fileobj — ingest is None
-        nom_para = Paragraph(labels=[Label('Nomenclature')], lines=[nom_stub],
-                             paragraph_number=1)
+        nom_stub = Line("Nomen undetected")  # no fileobj — ingest is None
+        nom_para = Paragraph(
+            labels=[Label("Nomenclature")],
+            lines=[nom_stub],
+            paragraph_number=1,
+        )
 
         taxon = Taxon()
         taxon.add_nomenclature(nom_para)
-        taxon.add_description(desc_para)
+        taxon.add_section("Description", desc_para)
 
         row = taxon.as_row()
-        self.assertIsNotNone(row['ingest'],
-                             "as_row() should fall back to description ingest for stub nomenclature")
-        self.assertEqual(row['ingest']['_id'], 'doc123')
+        self.assertIsNotNone(
+            row["ingest"],
+            "as_row() should fall back to description ingest for stub",
+        )
+        self.assertEqual(row["ingest"]["_id"], "doc123")
 
 
-if __name__ == '__main__':
+class TestGroupParagraphsNewLabels(unittest.TestCase):
+    """group_paragraphs() handles the full 12-tag label set."""
+
+    def setUp(self):
+        Taxon.MISC_GAP_LIMIT = 3
+
+    def test_treatment_section_labels_keep_treatment_open(self):
+        """Diagnosis/Distribution/Biology do not increment the gap counter."""
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@Differs from A. muscaria.#Diagnosis*]
+        [@Found across Europe.#Distribution*]
+        [@Saprotrophic on oak.#Biology*]
+        [@Pileus 5 cm.#Description*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1)
+        row = taxa[0].as_row()
+        self.assertIsNotNone(row["diagnosis"])
+        self.assertIsNotNone(row["distribution"])
+        self.assertIsNotNone(row["biology"])
+
+    def test_misc_gap_limit_terminates_treatment(self):
+        """More than MISC_GAP_LIMIT consecutive Misc-exposition ends the treatment."""
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@desc1#Description*]
+        [@filler1#Misc-exposition*]
+        [@filler2#Misc-exposition*]
+        [@filler3#Misc-exposition*]
+        [@filler4#Misc-exposition*]
+        [@nom2#Nomenclature*]
+        [@desc2#Description*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 2)
+
+    def test_treatment_label_resets_misc_gap(self):
+        """A treatment-section label resets the Misc-exposition gap counter."""
+        # 2 misc + Diagnosis + 2 misc: counter resets at Diagnosis → 2 at end ≤ 3
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@desc1#Description*]
+        [@filler1#Misc-exposition*]
+        [@filler2#Misc-exposition*]
+        [@extra diag.#Diagnosis*]
+        [@filler3#Misc-exposition*]
+        [@filler4#Misc-exposition*]
+        [@desc2#Description*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1)
+
+    def test_nomenclature_yields_treatment_with_non_description_sections(self):
+        """A new Nomenclature yields the current treatment even with only Diagnosis."""
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@diag1#Diagnosis*]
+        [@nom2#Nomenclature*]
+        [@desc2#Description*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 2)
+        self.assertIsNotNone(taxa[0].as_row()["diagnosis"])
+
+    def test_all_treatment_section_labels_accepted(self):
+        """All 10 treatment-section labels are accepted without terminating."""
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@d1#Diagnosis*]
+        [@e1#Etymology*]
+        [@dist1#Distribution*]
+        [@mat1#Materials-examined*]
+        [@type1#Type-designation*]
+        [@bio1#Biology*]
+        [@n1#Notes*]
+        [@k1#Key*]
+        [@fig1#Figure-caption*]
+        [@desc1#Description*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1)
+        row = taxa[0].as_row()
+        self.assertIsNotNone(row["etymology"])
+        self.assertIsNotNone(row["materials_examined"])
+        self.assertIsNotNone(row["type_designation"])
+        self.assertIsNotNone(row["notes"])
+        self.assertIsNotNone(row["key"])
+        self.assertIsNotNone(row["figure_captions"])
+
+
+class TestTaxonNewFields(unittest.TestCase):
+    """Taxon.as_row() exposes flat fields for all 12-tag section types."""
+
+    def _make_para(
+        self, text: str, label_str: str, para_num: int = 1
+    ) -> Paragraph:
+        line = Line(f"[@{text}#{label_str}*]")
+        return Paragraph(
+            labels=[Label(label_str)], lines=[line], paragraph_number=para_num
+        )
+
+    def _taxon_with(self, sections: list) -> Taxon:
+        nom = self._make_para("Amanita muscaria", "Nomenclature", para_num=1)
+        t = Taxon()
+        t.add_nomenclature(nom)
+        for i, (text, label_str) in enumerate(sections, start=2):
+            t.add_section(
+                label_str, self._make_para(text, label_str, para_num=i)
+            )
+        return t
+
+    def test_new_section_fields_populated(self):
+        t = self._taxon_with(
+            [
+                ("Differs from X.", "Diagnosis"),
+                ("Found in Europe.", "Distribution"),
+                ("Saprotrophic.", "Biology"),
+            ]
+        )
+        row = t.as_row()
+        self.assertIn("Differs from X", row["diagnosis"])
+        self.assertIn("Found in Europe", row["distribution"])
+        self.assertIn("Saprotrophic", row["biology"])
+
+    def test_absent_sections_are_none(self):
+        t = self._taxon_with([("Pileus convex.", "Description")])
+        row = t.as_row()
+        for field in (
+            "diagnosis",
+            "etymology",
+            "distribution",
+            "materials_examined",
+            "type_designation",
+            "biology",
+            "notes",
+            "key",
+            "figure_captions",
+        ):
+            self.assertIsNone(row[field], msg=f"{field} should be None")
+
+    def test_multiple_blocks_same_section_concatenated(self):
+        t = self._taxon_with(
+            [
+                ("First diagnosis.", "Diagnosis"),
+                ("Second diagnosis.", "Diagnosis"),
+            ]
+        )
+        row = t.as_row()
+        self.assertIn("First diagnosis", row["diagnosis"])
+        self.assertIn("Second diagnosis", row["diagnosis"])
+
+    def test_span_fields_present_for_all_sections(self):
+        t = self._taxon_with([("Differs from X.", "Diagnosis")])
+        row = t.as_row()
+        for field in (
+            "diagnosis_spans",
+            "etymology_spans",
+            "distribution_spans",
+            "materials_examined_spans",
+            "type_designation_spans",
+            "biology_spans",
+            "notes_spans",
+        ):
+            self.assertIn(field, row, msg=f"{field} missing from as_row()")
+
+    def test_description_field_still_works(self):
+        """Existing 'description' field and 'description_spans' still present."""
+        t = self._taxon_with([("Pileus convex.", "Description")])
+        row = t.as_row()
+        self.assertIn("Pileus convex", row["description"])
+        self.assertIn("description_spans", row)
+
+
+if __name__ == "__main__":
     unittest.main()
