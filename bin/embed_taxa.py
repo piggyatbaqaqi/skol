@@ -80,6 +80,63 @@ def redis_set_chunked(
 
 
 # ============================================================================
+# Description-building helpers
+# ============================================================================
+
+def build_primary_descriptions(skol_taxa: "Any") -> "pd.DataFrame":
+    """Build primary embedding text: description + '\\n\\n' + diagnosis.
+
+    Falls back to description alone when diagnosis is absent, null, or empty.
+
+    Args:
+        skol_taxa: SKOL_TAXA instance with .get_descriptions() and .df.
+
+    Returns:
+        DataFrame ready for EmbeddingsComputer, with combined text in the
+        'description' column.
+    """
+    descriptions = skol_taxa.get_descriptions().copy()
+    if 'diagnosis' not in skol_taxa.df.columns:
+        return descriptions
+    diag: "pd.Series" = skol_taxa.df['diagnosis'].fillna('')
+    mask = diag.str.len() > 0
+    if mask.any():
+        desc = descriptions['description'].fillna('')
+        combined = desc.copy()
+        combined[mask] = desc[mask] + '\n\n' + diag[mask]
+        descriptions['description'] = combined
+    return descriptions
+
+
+def build_section_descriptions(
+    skol_taxa: "Any",
+    field: str,
+) -> "pd.DataFrame | None":
+    """Build a DataFrame for a single treatment section field.
+
+    Rows where the section text is null or empty are excluded.  Returns
+    None when the column is absent or every row is empty/null.
+
+    Args:
+        skol_taxa: SKOL_TAXA instance with .get_descriptions() and .df.
+        field: Column name in skol_taxa.df, e.g. 'distribution', 'biology'.
+
+    Returns:
+        DataFrame with section text in the 'description' column, or None.
+    """
+    if field not in skol_taxa.df.columns:
+        return None
+    section_text: "pd.Series" = skol_taxa.df[field].fillna('')
+    mask = section_text.str.len() > 0
+    if not mask.any():
+        return None
+    base = skol_taxa.get_descriptions().copy()
+    result = base[mask].copy()
+    result['description'] = section_text[mask].values
+    return result
+
+
+# ============================================================================
 # Embedding Functions
 # ============================================================================
 
@@ -93,6 +150,7 @@ def compute_and_save_embeddings(
     include_collections: bool = True,
     precision: str = "float32",
     backend: str = "torch",
+    section: str = "all",
 ) -> None:
     """
     Load taxa descriptions from CouchDB, compute embeddings, and save to Redis.
@@ -105,6 +163,10 @@ def compute_and_save_embeddings(
         dry_run: If True, show what would be computed without saving
         skip_existing: If True, skip if embeddings already exist (default behavior)
         include_collections: If True, include user collections in embeddings
+        section: Which section(s) to embed: 'primary', 'distribution',
+                 'biology', or 'all' (default).  'primary' uses
+                 description + diagnosis; others save to
+                 embedding_name:<section> Redis keys.
     """
     # Determine expiration time
     embedding_expire = expire_override if expire_override is not None else config['embedding_expire']
@@ -185,7 +247,8 @@ def compute_and_save_embeddings(
             db_name=config['taxon_db_name'],
             verbosity=verbosity
         )
-        descriptions = skol_taxa.get_descriptions()
+        # Primary: description + diagnosis (combined where diagnosis present).
+        descriptions = build_primary_descriptions(skol_taxa)
 
         if verbosity >= 1:
             print(f"✓ Loaded {len(descriptions)} taxa descriptions")
@@ -243,12 +306,23 @@ def compute_and_save_embeddings(
 
     # Compute embeddings
     if dry_run:
-        print(f"\n[DRY RUN] Would compute embeddings for {len(descriptions)} taxa")
-        print(f"[DRY RUN] Would save to Redis key: {config['embedding_name']}")
-        if embedding_expire:
-            print(f"[DRY RUN] With expiration: {embedding_expire} seconds")
-        if embedding_exists:
-            print(f"[DRY RUN] Would overwrite existing embeddings")
+        if section in ('primary', 'all'):
+            print(f"\n[DRY RUN] Would compute embeddings for {len(descriptions)} taxa")
+            print(f"[DRY RUN] Would save to Redis key: {config['embedding_name']}")
+            if embedding_expire:
+                print(f"[DRY RUN] With expiration: {embedding_expire} seconds")
+            if embedding_exists:
+                print(f"[DRY RUN] Would overwrite existing embeddings")
+        for sec_field in ('distribution', 'biology'):
+            if section not in ('all', sec_field):
+                continue
+            sec_df = build_section_descriptions(skol_taxa, sec_field)
+            if sec_df is not None:
+                sec_key = f"{embedding_name}:{sec_field}"
+                print(
+                    f"[DRY RUN] Would compute {len(sec_df)}"
+                    f" {sec_field} embeddings → {sec_key}"
+                )
         return
 
     if verbosity >= 1:
@@ -302,6 +376,55 @@ def compute_and_save_embeddings(
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+    # Secondary section embeddings: distribution and biology.
+    for sec_field in ('distribution', 'biology'):
+        if section not in ('all', sec_field):
+            continue
+        sec_descriptions = build_section_descriptions(skol_taxa, sec_field)
+        if sec_descriptions is None:
+            if verbosity >= 1:
+                print(f"  Skipping {sec_field} embeddings: no data in corpus")
+            continue
+        sec_key = f"{embedding_name}:{sec_field}"
+        if verbosity >= 1:
+            print(
+                f"\nComputing {sec_field} embeddings"
+                f" ({len(sec_descriptions)} rows) → {sec_key} ..."
+            )
+        try:
+            sec_embedder = EmbeddingsComputer(
+                idir='/dev/null',
+                redis_url=redis_url,
+                redis_username=config['redis_username'],
+                redis_password=config['redis_password'],
+                redis_expire=embedding_expire,
+                embedding_name=sec_key,
+                precision=precision,
+                backend=backend,
+            )
+            try:
+                sec_embedder.run(sec_descriptions)
+            except Exception as save_err:
+                if sec_embedder.result is None:
+                    raise
+                if verbosity >= 1:
+                    print(
+                        f"  Library save failed ({save_err}),"
+                        " retrying with chunked write..."
+                    )
+                import pickle
+                pickled = pickle.dumps(sec_embedder.result)
+                redis_set_chunked(
+                    redis_client, sec_key,
+                    pickled, expire=embedding_expire,
+                    verbosity=verbosity,
+                )
+            if verbosity >= 1:
+                print(f"✓ Saved {sec_field} embeddings → {sec_key}")
+        except Exception as e:
+            # Secondary failure is non-fatal: warn and continue.
+            print(f"⚠ Failed {sec_field} embeddings (continuing): {e}")
 
 
 # ============================================================================
@@ -465,6 +588,20 @@ Examples:
         help='SentenceTransformer backend (default: torch)',
     )
 
+    parser.add_argument(
+        '--section',
+        type=str,
+        default='all',
+        choices=['primary', 'distribution', 'biology', 'all'],
+        help=(
+            'Which section(s) to embed.  '
+            '"primary" embeds description+diagnosis; '
+            '"distribution" and "biology" embed those sections to '
+            'embedding_name:<section> Redis keys; '
+            '"all" runs all three (default).'
+        ),
+    )
+
     args, _ = parser.parse_known_args()
 
     # Get configuration
@@ -510,6 +647,7 @@ Examples:
             include_collections=include_collections,
             precision=args.precision,
             backend=args.backend,
+            section=args.section,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Embedding computation interrupted by user")

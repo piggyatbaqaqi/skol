@@ -2396,7 +2396,9 @@ class SourceContextView(APIView):
 
     GET /api/taxa/<taxa_id>/context/
     Query params:
-      - field: 'nomenclature' or 'description' (default: 'description')
+      - field: section name — one of: nomenclature, description, diagnosis,
+               etymology, distribution, materials_examined, type_designation,
+               biology, notes, figure_caption  (default: 'description')
       - context_chars: characters of context before/after span range (default: 500)
       - taxa_db: database name (default: 'skol_taxa_dev')
 
@@ -2427,9 +2429,17 @@ class SourceContextView(APIView):
                 else:
                     taxa_db = 'skol_taxa_dev'
 
-            if field not in ('nomenclature', 'description'):
+            _VALID_FIELDS = frozenset({
+                'nomenclature', 'description', 'diagnosis', 'etymology',
+                'distribution', 'materials_examined', 'type_designation',
+                'biology', 'notes', 'figure_caption',
+            })
+            if field not in _VALID_FIELDS:
                 return Response(
-                    {'error': f'Invalid field: {field}. Must be "nomenclature" or "description"'},
+                    {'error': (
+                        f'Invalid field: {field}. Must be one of: '
+                        + ', '.join(sorted(_VALID_FIELDS))
+                    )},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -2552,11 +2562,12 @@ class SourceContextView(APIView):
                     merged_highlights.append((start, end))
 
             # Insert <mark> tags working backwards to preserve offsets
+            mark_open = f'<mark class="section-{field}">'
             highlighted_text = window_text
             for start, end in reversed(merged_highlights):
                 highlighted_text = (
                     highlighted_text[:start]
-                    + '<mark>'
+                    + mark_open
                     + highlighted_text[start:end]
                     + '</mark>'
                     + highlighted_text[end:]
