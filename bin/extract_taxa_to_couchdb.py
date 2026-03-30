@@ -102,21 +102,38 @@ def restore_span_types(span: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
+def generate_taxon_doc_id(taxon_dict: Dict[str, Any]) -> str:
     """
     Generate a content-based, deterministic document ID for a taxon.
 
-    Identical taxon+description content always produces the same ID,
-    regardless of which ingest path produced it.
+    Identical section content always produces the same ID, regardless of
+    which ingest path produced it.  All 10 treatment section fields are
+    included in the hash in a fixed canonical order so that adding a new
+    section to a previously section-less treatment changes its ID.
+
+    Canonical field order (mirrors ``taxon._LABEL_TO_FIELD``):
+        taxon, description, diagnosis, etymology, distribution,
+        materials_examined, type_designation, biology, notes,
+        key, figure_captions
+
+    None and empty string are treated identically; whitespace is stripped.
 
     Args:
-        taxon_text: The nomenclature/taxon text
-        description_text: The description text
+        taxon_dict: Dict as returned by ``Taxon.as_row()``.
 
     Returns:
         Deterministic document ID as 'taxon_<sha256_hex>'
     """
-    content = (taxon_text or "").strip() + ":" + (description_text or "").strip()
+    _CANONICAL_FIELDS = (
+        'taxon', 'description', 'diagnosis', 'etymology', 'distribution',
+        'materials_examined', 'type_designation', 'biology', 'notes',
+        'key', 'figure_captions',
+    )
+    parts = [
+        (taxon_dict.get(field) or '').strip()
+        for field in _CANONICAL_FIELDS
+    ]
+    content = ':'.join(parts)
     hash_obj = hashlib.sha256(content.encode('utf-8'))
     return f"taxon_{hash_obj.hexdigest()}"
 
@@ -209,13 +226,34 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
     Yields:
         PySpark Row objects with fields:
             - taxon: String of concatenated nomenclature paragraphs
-            - description: String of concatenated description paragraphs
+            - description: String of concatenated description paragraphs (None if absent)
+            - diagnosis: String of concatenated diagnosis paragraphs (None if absent)
+            - etymology: String of concatenated etymology paragraphs (None if absent)
+            - distribution: String of concatenated distribution paragraphs (None if absent)
+            - materials_examined: String of concatenated materials examined paragraphs (None if absent)
+            - type_designation: String of concatenated type designation paragraphs (None if absent)
+            - biology: String of concatenated biology paragraphs (None if absent)
+            - notes: String of concatenated notes paragraphs (None if absent)
+            - key: String of concatenated key paragraphs (None if absent)
+            - figure_captions: String of concatenated figure caption paragraphs (None if absent)
             - ingest: Full ingest document (contains _id, url, pdf_url, etc.)
             - line_number: Line number of first nomenclature paragraph
             - paragraph_number: Paragraph number of first nomenclature paragraph
             - pdf_page: PDF page number
-            - pdf_label: Human-readable PDF page label.
+            - pdf_label: Human-readable PDF page label
             - empirical_page_number: Empirical page number of first nomenclature paragraph
+            - nomenclature_spans: List of span dicts for nomenclature section
+            - description_spans: List of span dicts for description section
+            - diagnosis_spans: List of span dicts for diagnosis section
+            - etymology_spans: List of span dicts for etymology section
+            - distribution_spans: List of span dicts for distribution section
+            - materials_examined_spans: List of span dicts for materials examined section
+            - type_designation_spans: List of span dicts for type designation section
+            - biology_spans: List of span dicts for biology section
+            - notes_spans: List of span dicts for notes section
+            - attachment_name: Name of the source attachment
+            - _id: Content-addressable document ID (taxon_<sha256 of all section fields>)
+            - json_annotated: JSON string of annotated paragraphs
     """
     for taxon in partition:
         taxon_dict = taxon.as_row()
@@ -229,10 +267,7 @@ def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
                            f"pdf_url={get_ingest_field(taxon_dict, 'pdf_url')}")
 
         if '_id' not in taxon_dict:
-            taxon_dict['_id'] = generate_taxon_doc_id(
-                taxon_dict.get('taxon', ''),
-                taxon_dict.get('description', '')
-            )
+            taxon_dict['_id'] = generate_taxon_doc_id(taxon_dict)
         if 'json_annotated' not in taxon_dict:
             taxon_dict['json_annotated'] = None
         # Convert dict to Row
@@ -327,7 +362,17 @@ class TaxonExtractor:
 
         self._extract_schema = StructType([
             StructField("taxon", StringType(), False),
-            StructField("description", StringType(), False),
+            # Flat section text fields (None when that section is absent).
+            StructField("description", StringType(), True),
+            StructField("diagnosis", StringType(), True),
+            StructField("etymology", StringType(), True),
+            StructField("distribution", StringType(), True),
+            StructField("materials_examined", StringType(), True),
+            StructField("type_designation", StringType(), True),
+            StructField("biology", StringType(), True),
+            StructField("notes", StringType(), True),
+            StructField("key", StringType(), True),
+            StructField("figure_captions", StringType(), True),
             StructField("ingest", MapType(StringType(), StringType(),
                                           valueContainsNull=True), True),
             StructField("line_number", IntegerType(), True),
@@ -335,8 +380,16 @@ class TaxonExtractor:
             StructField("pdf_page", IntegerType(), True),
             StructField("pdf_label", StringType(), True),
             StructField("empirical_page_number", StringType(), True),
+            # Span fields (empty list when that section is absent).
             StructField("nomenclature_spans", ArrayType(span_map_schema), True),
             StructField("description_spans", ArrayType(span_map_schema), True),
+            StructField("diagnosis_spans", ArrayType(span_map_schema), True),
+            StructField("etymology_spans", ArrayType(span_map_schema), True),
+            StructField("distribution_spans", ArrayType(span_map_schema), True),
+            StructField("materials_examined_spans", ArrayType(span_map_schema), True),
+            StructField("type_designation_spans", ArrayType(span_map_schema), True),
+            StructField("biology_spans", ArrayType(span_map_schema), True),
+            StructField("notes_spans", ArrayType(span_map_schema), True),
             StructField("attachment_name", StringType(), True),
             StructField("_id", StringType(), True),
             StructField("json_annotated", StringType(), True)
@@ -695,10 +748,7 @@ class TaxonExtractor:
                                            f"pdf_url={get_ingest_field(row_dict, 'pdf_url')}")
 
                         # Generate deterministic document ID
-                        doc_id = generate_taxon_doc_id(
-                            row_dict.get('taxon', ''),
-                            row_dict.get('description', '')
-                        )
+                        doc_id = generate_taxon_doc_id(row_dict)
 
                         # Use row_dict (already converted above) for CouchDB storage
                         taxon_doc = row_dict
