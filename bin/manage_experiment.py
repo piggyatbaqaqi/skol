@@ -96,6 +96,7 @@ _PIPELINE_STEPS = [
     "annotate_jats",
     "extract_taxa",
     "embed",
+    "annotate_spans",
     "evaluate",
     "build_vocab",
 ]
@@ -103,9 +104,9 @@ _PIPELINE_STEPS = [
 # Statuses that count as "done" for dependency purposes.
 _DONE_STATUSES = ("completed", "skipped")
 
-# Steps that must all be done before steps 5+ (evaluate, build_vocab) can run.
-# Steps 0-4 are sequential among themselves (each requires the prior one done).
-_SEQUENTIAL_COUNT = 5  # train, predict, annotate_jats, extract_taxa, embed
+# Steps that must all be done before steps 6+ (evaluate, build_vocab) can run.
+# Steps 0-5 are sequential among themselves (each requires the prior one done).
+_SEQUENTIAL_COUNT = 6  # train, predict, annotate_jats, extract_taxa, embed, annotate_spans
 
 
 def _default_pipeline() -> Dict[str, Any]:
@@ -128,6 +129,7 @@ def _default_experiment(name: str) -> Dict[str, Any]:
             "ingest": "skol_dev",
             "training": "skol_training",
             "annotations": f"skol_exp_{name}_ann",
+            "spans": f"skol_exp_{name}_ann",
             "taxa": f"skol_exp_{name}_taxa",
             "taxa_full": f"skol_exp_{name}_taxa_full",
         },
@@ -466,6 +468,11 @@ def _build_step_commands(
             sys.executable, str(_BIN_DIR / "embed_taxa.py"),
             "--experiment", "{name}",
             "--force",
+        ],
+        "annotate_spans": [
+            sys.executable, str(_BIN_DIR / "annotate_spans.py"),
+            "--experiment", "{name}",
+            "--skip-existing",
         ],
         "build_vocab": [
             sys.executable, str(_BIN_DIR / "build_vocab_tree.py"),

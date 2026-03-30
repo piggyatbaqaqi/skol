@@ -51,8 +51,9 @@ Each experiment is a CouchDB document in `skol_experiments`:
       {"name": "predict",       "status": "pending", "started_at": null, "completed_at": null},
       {"name": "annotate_jats", "status": "pending", "started_at": null, "completed_at": null},
       {"name": "extract_taxa",  "status": "pending", "started_at": null, "completed_at": null},
-      {"name": "embed",         "status": "pending", "started_at": null, "completed_at": null},
-      {"name": "evaluate",      "status": "pending", "started_at": null, "completed_at": null},
+      {"name": "embed",           "status": "pending", "started_at": null, "completed_at": null},
+      {"name": "annotate_spans",  "status": "pending", "started_at": null, "completed_at": null},
+      {"name": "evaluate",        "status": "pending", "started_at": null, "completed_at": null},
       {"name": "build_vocab",   "status": "pending", "started_at": null, "completed_at": null}
     ]
   },
@@ -134,13 +135,14 @@ Use these subcommands instead of invoking the individual scripts directly.
 ### Step order and dependencies
 
 ```
-1. train          ─┐
-2. predict         │  sequential: each requires the previous to be
-3. annotate_jats   │  completed or skipped before it can run
-4. extract_taxa    │
-5. embed          ─┘
-6. evaluate    ─┐  independent: both require steps 1-5 done,
-7. build_vocab ─┘  but can run in either order
+1. train            ─┐
+2. predict           │  sequential: each requires the previous to be
+3. annotate_jats     │  completed or skipped before it can run
+4. extract_taxa      │
+5. embed             │
+6. annotate_spans   ─┘
+7. evaluate    ─┐  independent: both require steps 1-6 done,
+8. build_vocab ─┘  but can run in either order
 ```
 
 - `predict` runs the ML classifier on non-TaxPub documents (`is_taxpub=False`)
