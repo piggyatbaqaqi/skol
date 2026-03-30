@@ -667,3 +667,123 @@ Unit: 1 point = "Use Claude Code to write an ingestor for a new website"
 
 Phase 2 is the scheduling risk — if it slips, Phase 3 and the annotate_spans pipeline step slip with it.
 Phases 1, 5, and 6 are relatively independent and could be parallelized across iterations.
+
+---
+
+## Production Deployment
+
+Production CouchDB: `https://synoptickeyof.life:5984`
+Production credentials: `/home/skol/.skol_env`
+
+**Gate rule**: No write to production until the dev environment has been verified
+and explicitly signed off by the operator.
+
+### Databases
+
+Two classes of database require different update strategies:
+
+#### Replicated directly (content is identical between dev and prod)
+
+These databases are curated in dev and pushed to prod via CouchDB replication.
+No per-document migration pass is needed.
+
+| Database | Contents |
+|---|---|
+| `skol_golden` | Golden plaintext documents |
+| `skol_golden_ann_hand` | Hand-annotated golden YEDDA |
+| `skol_golden_ann_jats` | JATS-derived golden YEDDA |
+| `skol_golden_ann_bioc` | BioC-derived golden YEDDA |
+| `skol_experiments` | Experiment configuration records |
+
+Replication command (run from dev or Fauxton):
+```bash
+# Example: replicate skol_golden to production
+curl -X POST https://synoptickeyof.life:5984/_replicate \
+  -H 'Content-Type: application/json' \
+  -u skol:<password> \
+  -d '{
+    "source": "http://localhost:5984/skol_golden",
+    "target": "https://synoptickeyof.life:5984/skol_golden",
+    "create_target": false
+  }'
+```
+
+#### Migrated in place (content diverges between dev and prod)
+
+These databases are populated independently in each environment and must be
+updated with an explicit migration pass on each host.
+
+| Database | Migration tool | Notes |
+|---|---|---|
+| `skol_training` | `bin/migrate_labels.py --database skol_training` | Tier 1 automatic relabeling |
+| `skol_training_taxpub_v1` | `bin/migrate_labels.py --database skol_training_taxpub_v1` | Same |
+| `skol_dev` (annotation attachments) | `bin/migrate_labels.py --database skol_dev` | Only `.ann` attachments are touched |
+
+### Deployment Sequence Per Phase
+
+#### Phase 1 + 6 (label expansion + Tier 1 migration)
+
+```
+DEV
+  1. Run test suite: pytest ingestors/ bin/ -v
+  2. Dry-run migration:
+       python bin/migrate_labels.py --database skol_training --dry-run -v
+       python bin/migrate_labels.py --database skol_dev --dry-run -v
+  3. Inspect dry-run output; confirm change counts and reasons look correct.
+  4. Apply migration:
+       python bin/migrate_labels.py --database skol_training -v
+       python bin/migrate_labels.py --database skol_dev -v
+  5. Re-run evaluate_golden to confirm metrics are stable or improved.
+  [SIGN-OFF REQUIRED before continuing to prod]
+
+PROD
+  6. Replicate golden databases (see above).
+  7. SSH to production host; activate skol environment.
+  8. Pull latest code (git pull).
+  9. Dry-run migration on prod databases:
+       python bin/migrate_labels.py --database skol_training --dry-run -v
+  10. Verify dry-run counts match dev (same corpus → same changes expected).
+  11. Apply migration:
+       python bin/migrate_labels.py --database skol_training -v
+```
+
+#### Phase 5 (treatment assembly — new taxon records)
+
+`extract_taxa_to_couchdb.py` is a re-runnable pipeline step; it generates new
+CouchDB taxon records with updated `_id` hashes (breaking change — see Phase 5
+document ID hash update). On production:
+
+```
+DEV
+  1. Run extract_taxa and embed_taxa against dev; verify taxon record schema.
+  2. Run evaluate_golden; confirm Macro F1 acceptable.
+  [SIGN-OFF REQUIRED]
+
+PROD
+  3. Run extract_taxa_to_couchdb.py --experiment <name> on prod.
+     Old taxon records with the 8-tag hash remain in the DB until manually
+     purged — they will not appear in search results because the classifier
+     will not emit old tag sequences.
+  4. Run embed_taxa.py --experiment <name> on prod.
+  5. Optional: purge stale taxon records via a CouchDB view query on old _id
+     prefixes after confirming new records are present.
+```
+
+#### Phase 2 (span layer — new article.spans.json attachments)
+
+`annotate_spans.py` writes new attachments and does not modify existing ones
+(use `--force` to overwrite). Safe to run on prod incrementally:
+
+```
+PROD
+  python bin/annotate_spans.py --experiment <name> --skip-existing -v
+```
+
+No sign-off gate beyond standard code review — this step is additive only.
+
+### What NOT to replicate to production
+
+- `skol_dev` — populated independently in each environment; replicating dev's
+  `skol_dev` to prod would overwrite prod ingestion history.
+- Classifier model keys in Redis — retrain on prod using `bin/train_classifier.py`
+  after the training corpus migration is complete.
