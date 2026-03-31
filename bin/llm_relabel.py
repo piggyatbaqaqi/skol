@@ -103,6 +103,10 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
      "Identification key (dichotomous or otherwise)"),
     (Tag.FIGURE_CAPTION,
      "Caption for a figure or illustration"),
+    (Tag.BIBLIOGRAPHY,
+     "Bibliographic reference list entries (literature cited section)"),
+    (Tag.TABLE,
+     "Tabular data: specimen tables, comparison tables, key tables"),
     (Tag.MISC_EXPOSITION,
      "Everything else: introduction, discussion, acknowledgements, "
      "references, transitional text"),

@@ -8,14 +8,15 @@ from ingestors.yedda_tags import Tag, TaggedBlock, tagged_blocks_to_yedda
 
 
 class TestTagEnum:
-    """The 12-tag enum."""
+    """The 14-tag enum (12 active + Holotype deprecated + Bibliography + Table)."""
 
-    def test_all_twelve_tags_present(self) -> None:
+    def test_all_active_tags_present(self) -> None:
         tag_values = {t.value for t in Tag}
         expected = {
             "Nomenclature", "Description", "Diagnosis", "Etymology",
             "Distribution", "Materials-examined", "Type-designation", "Biology",
-            "Notes", "Key", "Figure-caption", "Misc-exposition",
+            "Notes", "Key", "Figure-caption", "Bibliography", "Table",
+            "Misc-exposition",
         }
         assert expected.issubset(tag_values)
 
@@ -25,6 +26,8 @@ class TestTagEnum:
         assert Tag.MATERIALS_EXAMINED.value == "Materials-examined"
         assert Tag.TYPE_DESIGNATION.value == "Type-designation"
         assert Tag.BIOLOGY.value == "Biology"
+        assert Tag.BIBLIOGRAPHY.value == "Bibliography"
+        assert Tag.TABLE.value == "Table"
 
     def test_existing_tags_unchanged(self) -> None:
         assert Tag.NOMENCLATURE.value == "Nomenclature"
@@ -90,3 +93,17 @@ class TestTaggedBlocksToYedda:
         blocks: List[TaggedBlock] = [TaggedBlock(text="Saprotrophic on oak.", tag=Tag.BIOLOGY)]
         result = tagged_blocks_to_yedda(blocks)
         assert "[@Saprotrophic on oak.#Biology*]" in result
+
+    def test_bibliography_renders(self) -> None:
+        blocks: List[TaggedBlock] = [
+            TaggedBlock(text="Smith J. 2001. Fungi. J. Bot. 1: 1–10.", tag=Tag.BIBLIOGRAPHY)
+        ]
+        result = tagged_blocks_to_yedda(blocks)
+        assert "[@Smith J. 2001. Fungi. J. Bot. 1: 1–10.#Bibliography*]" in result
+
+    def test_table_renders(self) -> None:
+        blocks: List[TaggedBlock] = [
+            TaggedBlock(text="Table 1. Conidia dimensions.", tag=Tag.TABLE)
+        ]
+        result = tagged_blocks_to_yedda(blocks)
+        assert "[@Table 1. Conidia dimensions.#Table*]" in result

@@ -299,6 +299,21 @@ class TestSecTypeToTag(unittest.TestCase):
     def test_diagnosis_prefix_variant(self):
         self.assertEqual(sec_type_to_tag("diagnosis of the genus"), Tag.DIAGNOSIS)
 
+    def test_bibliography(self):
+        self.assertEqual(sec_type_to_tag("references"), Tag.BIBLIOGRAPHY)
+
+    def test_bibliography_alias(self):
+        self.assertEqual(sec_type_to_tag("bibliography"), Tag.BIBLIOGRAPHY)
+
+    def test_literature_cited(self):
+        self.assertEqual(sec_type_to_tag("literature cited"), Tag.BIBLIOGRAPHY)
+
+    def test_table(self):
+        self.assertEqual(sec_type_to_tag("table"), Tag.TABLE)
+
+    def test_table_prefix_variant(self):
+        self.assertEqual(sec_type_to_tag("table 1"), Tag.TABLE)
+
     def test_unknown_type(self):
         self.assertEqual(sec_type_to_tag("something else"), Tag.MISC_EXPOSITION)
 

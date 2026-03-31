@@ -193,6 +193,13 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st.startswith("description"):
         return Tag.DESCRIPTION
 
+    if st in {"references", "bibliography", "literature cited",
+              "literature", "references cited"}:
+        return Tag.BIBLIOGRAPHY
+
+    if st == "table" or st.startswith("table "):
+        return Tag.TABLE
+
     return Tag.MISC_EXPOSITION
 
 

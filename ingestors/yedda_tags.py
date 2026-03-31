@@ -23,6 +23,8 @@ class Tag(str, Enum):
     NOTES = "Notes"
     KEY = "Key"
     FIGURE_CAPTION = "Figure-caption"
+    BIBLIOGRAPHY = "Bibliography"
+    TABLE = "Table"
     MISC_EXPOSITION = "Misc-exposition"
     # Deprecated: retained so existing .ann files with Holotype remain parseable.
     HOLOTYPE = "Holotype"
