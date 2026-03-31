@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from yedda_to_brat import yedda_to_brat
+from yedda_to_brat import add_notes, yedda_to_brat
 from brat_to_yedda import brat_to_yedda
 
 
@@ -82,6 +82,74 @@ class TestYeddaToBrat(unittest.TestCase):
         end = len("Mérat 1821")  # character count
         self.assertIn(f"Nomenclature 0 {end}", ann)
         self.assertEqual(plaintext, "Mérat 1821")
+
+
+class TestAddNotes(unittest.TestCase):
+    """add_notes(): append AnnotatorNotes to brat .ann string."""
+
+    _ANN = "T1\tNomenclature 0 16\tAmanita muscaria"
+
+    def test_single_change_appended(self) -> None:
+        changes = [{"block_index": 0, "old_tag": "Holotype",
+                    "new_tag": "Type-designation", "snippet": "x"}]
+        result = add_notes(self._ANN, changes)
+        self.assertIn("#1\tAnnotatorNotes T1\twas: Holotype", result)
+
+    def test_block_index_maps_to_one_based_entity(self) -> None:
+        changes = [{"block_index": 2, "old_tag": "Misc-exposition",
+                    "new_tag": "Biology", "snippet": "x"}]
+        result = add_notes("T3\tBiology 0 5\ttext", changes)
+        self.assertIn("AnnotatorNotes T3", result)
+
+    def test_multiple_changes_all_appended(self) -> None:
+        changes = [
+            {"block_index": 0, "old_tag": "Holotype",
+             "new_tag": "Type-designation", "snippet": "a"},
+            {"block_index": 1, "old_tag": "Misc-exposition",
+             "new_tag": "Biology", "snippet": "b"},
+        ]
+        result = add_notes(self._ANN, changes)
+        self.assertIn("#1\tAnnotatorNotes T1\twas: Holotype", result)
+        self.assertIn("#2\tAnnotatorNotes T2\twas: Misc-exposition", result)
+
+    def test_empty_changes_returns_ann_unchanged(self) -> None:
+        self.assertEqual(add_notes(self._ANN, []), self._ANN)
+
+    def test_t_lines_precede_note_lines(self) -> None:
+        changes = [{"block_index": 0, "old_tag": "Holotype",
+                    "new_tag": "Type-designation", "snippet": "x"}]
+        result = add_notes(self._ANN, changes)
+        lines = result.splitlines()
+        t_indices = [i for i, ln in enumerate(lines) if ln.startswith("T")]
+        note_indices = [i for i, ln in enumerate(lines) if ln.startswith("#")]
+        self.assertTrue(all(t < n for t in t_indices for n in note_indices))
+
+
+class TestYeddaToBratWithNotes(unittest.TestCase):
+    """yedda_to_brat() with changes parameter produces AnnotatorNotes."""
+
+    _YEDDA = (
+        "[@Amanita muscaria#Nomenclature*]\n\n"
+        "[@Holotype: NY 12345.#Type-designation*]"
+    )
+
+    def test_no_changes_no_notes(self) -> None:
+        _, ann = yedda_to_brat(self._YEDDA)
+        self.assertNotIn("AnnotatorNotes", ann)
+
+    def test_with_changes_adds_notes(self) -> None:
+        changes = [{"block_index": 1, "old_tag": "Holotype",
+                    "new_tag": "Type-designation", "snippet": "x"}]
+        _, ann = yedda_to_brat(self._YEDDA, changes)
+        self.assertIn("AnnotatorNotes T2", ann)
+        self.assertIn("was: Holotype", ann)
+
+    def test_t_lines_still_present_with_notes(self) -> None:
+        changes = [{"block_index": 0, "old_tag": "Misc-exposition",
+                    "new_tag": "Nomenclature", "snippet": "x"}]
+        _, ann = yedda_to_brat(self._YEDDA, changes)
+        self.assertIn("T1\tNomenclature", ann)
+        self.assertIn("T2\tType-designation", ann)
 
 
 class TestBratToYedda(unittest.TestCase):

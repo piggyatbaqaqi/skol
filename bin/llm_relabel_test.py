@@ -345,14 +345,32 @@ class TestWriteToStaging(unittest.TestCase):
         _write_to_staging(db, "skol_training", "doc1", _ANN_12TAG, [])
         db.save.assert_not_called()
 
-    def test_always_puts_attachment(self) -> None:
+    def test_always_puts_ann_attachment(self) -> None:
         db = self._make_staging_db(doc_exists=True)
         _write_to_staging(
             db, "skol_training", "doc1", _ANN_12TAG, [{"x": 1}]
         )
-        db.put_attachment.assert_called_once()
-        _, ann_bytes, *_ = db.put_attachment.call_args[0]
-        self.assertIn(b"Type-designation", ann_bytes)
+        # Two put_attachment calls: article.txt.ann + changes.json
+        self.assertEqual(db.put_attachment.call_count, 2)
+        first_call_args = db.put_attachment.call_args_list[0][0]
+        self.assertIn(b"Type-designation", first_call_args[1])
+
+    def test_puts_changes_attachment_when_changes_present(self) -> None:
+        db = self._make_staging_db(doc_exists=True)
+        changes = [{"block_index": 0, "old_tag": "Holotype",
+                    "new_tag": "Type-designation", "snippet": "x"}]
+        _write_to_staging(db, "skol_training", "doc1", _ANN_12TAG, changes)
+        filenames = [
+            call[1].get("filename")
+            for call in db.put_attachment.call_args_list
+        ]
+        self.assertIn("changes.json", filenames)
+
+    def test_no_changes_attachment_when_no_changes(self) -> None:
+        db = self._make_staging_db(doc_exists=True)
+        _write_to_staging(db, "skol_training", "doc1", _ANN_12TAG, [])
+        # Only the .ann attachment, no changes.json
+        self.assertEqual(db.put_attachment.call_count, 1)
 
     def test_change_count_stored_on_new_doc(self) -> None:
         db = self._make_staging_db(doc_exists=False)

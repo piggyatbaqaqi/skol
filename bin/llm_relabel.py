@@ -56,6 +56,7 @@ from ingestors.yedda_tags import Tag
 
 _DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 _ANN_ATTACHMENT = "article.txt.ann"
+_CHANGES_ATTACHMENT = "changes.json"
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 2.0  # seconds
 # Blocks per API call.  Chunks of this size fit comfortably within the 8192
@@ -581,6 +582,14 @@ def _write_to_staging(
         filename=_ANN_ATTACHMENT,
         content_type="text/plain",
     )
+    if changes:
+        doc = staging_db[doc_id]  # refresh rev after ann attachment
+        staging_db.put_attachment(
+            doc,
+            json.dumps(changes, ensure_ascii=False).encode("utf-8"),
+            filename=_CHANGES_ATTACHMENT,
+            content_type="application/json",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -754,9 +763,10 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--model",
+        "--llm-model",
         default=_DEFAULT_MODEL,
         metavar="MODEL",
+        dest="model",
         help=f"Claude model ID (default: {_DEFAULT_MODEL}).",
     )
     parser.add_argument(
