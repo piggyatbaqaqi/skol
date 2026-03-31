@@ -1239,12 +1239,12 @@ class PDFFromTaxaView(APIView):
 
             # Get ingest information
             ingest = taxa_doc.get('ingest', {})
-            ingest_db = ingest.get('db_name')
+            ingest_db = ingest.get('db_name') or 'skol_dev'
             ingest_doc_id = ingest.get('_id')
 
-            if not ingest_db or not ingest_doc_id:
+            if not ingest_doc_id:
                 return Response(
-                    {'error': 'Taxa document does not have ingest information'},
+                    {'error': 'Taxa document does not have ingest._id information'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -2493,32 +2493,52 @@ class SourceContextView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Fetch annotated file from the ingest document
-            # Spans are computed from .ann files, so we must read from .ann for correct offsets
-            # Use stored attachment_name if available, otherwise guess
+            # .ann files are stored in the annotations DB (skol_exp_NAME_ann), not the ingest DB.
+            # Derive ann_db from taxa_db by convention: *_taxa → *_ann.
+            # Fall back to ingest_db for default/non-experiment setups where .ann lives
+            # alongside the original document (e.g., skol_dev).
+            if taxa_db.endswith('_taxa'):
+                ann_db = taxa_db[:-5] + '_ann'
+            else:
+                ann_db = ingest_db
+            # Build the ordered list of DBs to try: annotations DB first, then ingest DB.
+            ann_db_candidates = [ann_db] if ann_db != ingest_db else [ingest_db]
+            if ann_db != ingest_db:
+                ann_db_candidates.append(ingest_db)
+
+            # Fetch annotated file — try each candidate DB in order.
+            # Spans are computed from .ann files, so we must read from .ann for correct offsets.
+            # Use stored attachment_name if available, otherwise guess.
             stored_attachment = taxa_doc.get('attachment_name')
             text_response = None
             attachment_name = None
 
-            if stored_attachment:
-                # Use the stored attachment name directly
-                attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{stored_attachment}"
-                text_response = requests.get(attachment_url, auth=auth, timeout=60)
-                if text_response.status_code == 200:
-                    attachment_name = stored_attachment
-
-            if attachment_name is None:
-                # Fall back to guessing: try article.pdf.ann first, then article.txt.ann
-                for ann_name in ['article.pdf.ann', 'article.txt.ann']:
-                    attachment_url = f"{couchdb_url}/{ingest_db}/{ingest_doc_id}/{ann_name}"
+            for ann_db_candidate in ann_db_candidates:
+                if stored_attachment:
+                    attachment_url = (
+                        f"{couchdb_url}/{ann_db_candidate}/{ingest_doc_id}/{stored_attachment}"
+                    )
                     text_response = requests.get(attachment_url, auth=auth, timeout=60)
                     if text_response.status_code == 200:
-                        attachment_name = ann_name
+                        attachment_name = stored_attachment
                         break
+
+                if attachment_name is None:
+                    # Fall back to guessing: try article.pdf.ann first, then article.txt.ann
+                    for ann_name in ['article.pdf.ann', 'article.txt.ann']:
+                        attachment_url = (
+                            f"{couchdb_url}/{ann_db_candidate}/{ingest_doc_id}/{ann_name}"
+                        )
+                        text_response = requests.get(attachment_url, auth=auth, timeout=60)
+                        if text_response.status_code == 200:
+                            attachment_name = ann_name
+                            break
+                if attachment_name is not None:
+                    break
 
             if text_response is None or text_response.status_code == 404:
                 return Response(
-                    {'error': f'No .ann file found in ingest document: {ingest_db}/{ingest_doc_id}'},
+                    {'error': f'No .ann file found for document {ingest_doc_id} in {ann_db_candidates}'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
