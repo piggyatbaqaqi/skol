@@ -626,13 +626,34 @@ class TestRelabelAnnLcsRecovery(unittest.TestCase):
         self.assertGreater(_DEFAULT_MAX_DROP_FRACTION, 0.0)
         self.assertLess(_DEFAULT_MAX_DROP_FRACTION, 0.5)
 
-    def test_extra_blocks_always_retried(self) -> None:
-        # Model returning MORE blocks than input should retry, not use LCS
+    def test_extra_blocks_within_threshold_recovered_via_lcs(self) -> None:
+        # _ANN_8TAG has 4 blocks; 5 returned → 25% excess.
+        # With max_drop_fraction=0.30 LCS should discard the extra block
+        # and return a 4-block result.
         five_blocks = (
-            "[@A#Nomenclature*]\n\n[@B#Description*]\n\n"
-            "[@C#Diagnosis*]\n\n[@D#Etymology*]\n\n[@E#Biology*]\n"
+            "[@Amanita muscaria (L.) Lam.#Nomenclature*]\n\n"
+            "[@Pileus 5–15 cm diam., convex then flat.#Description*]\n\n"
+            "[@Holotype: NY 12345.#Type-designation*]\n\n"
+            "[@This species is common in boreal forests.#Biology*]\n\n"
+            "[@Extra hallucinated block.#Notes*]\n"
         )
         client = self._make_client(five_blocks)
+        with patch("llm_relabel.logging"):
+            new_text, _ = relabel_ann(
+                client, _ANN_8TAG, "test-model", "doc1",
+                max_drop_fraction=0.30,
+            )
+        self.assertEqual(
+            len(_YEDDA_BLOCK_RE.findall(new_text)),
+            len(_YEDDA_BLOCK_RE.findall(_ANN_8TAG)),
+        )
+
+    def test_extra_blocks_above_threshold_retried(self) -> None:
+        # _ANN_8TAG has 4 blocks; 8 returned → 100% excess, above threshold.
+        eight_blocks = "\n\n".join(
+            f"[@Block {i}#Description*]" for i in range(8)
+        ) + "\n"
+        client = self._make_client(eight_blocks)
         with patch("llm_relabel.time.sleep"):
             with self.assertRaises(RuntimeError):
                 relabel_ann(

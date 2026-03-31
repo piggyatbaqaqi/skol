@@ -67,7 +67,7 @@ _DEFAULT_CHUNK_SIZE = 150
 _MAX_BLOCKS = 5000
 # Maximum fraction of blocks the model may drop before we give up and retry
 # rather than accepting the partial result via LCS alignment.
-_DEFAULT_MAX_DROP_FRACTION = 0.10
+_DEFAULT_MAX_DROP_FRACTION = 0.25
 
 # Pricing per million tokens (as of 2026-03).
 # Only used for --estimate output; not authoritative.
@@ -309,29 +309,37 @@ def relabel_ann(
                 changes = diff_yedda(ann_text, new_text)
                 return new_text, changes
 
-            # Model returned a different number of blocks.
-            if new_count > old_count:
-                # Model hallucinated extra blocks — always retry.
-                raise ValueError(
-                    f"Block count mismatch for {doc_id}: "
-                    f"expected {old_count}, got {new_count}"
-                )
-
-            drop_fraction = (old_count - new_count) / old_count
-            if drop_fraction > max_drop_fraction:
-                # Too many blocks lost — retry in hope of a better response.
+            # Model returned a different number of blocks — attempt LCS
+            # recovery in both directions.
+            #
+            # Drops (new_count < old_count): unmatched old blocks keep their
+            # original tags.  Extra new blocks are simply ignored in both
+            # cases; LCS discards them.
+            #
+            # Splits (new_count > old_count): the model split a block at a
+            # perceived section boundary.  LCS matches each old block to the
+            # best-fitting new block; the orphaned new blocks are discarded.
+            # The net effect is that the split is silently merged back and the
+            # old block receives the tag of whichever new block it matched.
+            mismatch_fraction = abs(old_count - new_count) / old_count
+            if mismatch_fraction > max_drop_fraction:
+                # Too far from the original — retry.
                 raise ValueError(
                     f"Block count mismatch for {doc_id}: "
                     f"expected {old_count}, got {new_count} "
-                    f"({drop_fraction:.0%} dropped, limit {max_drop_fraction:.0%})"
+                    f"({mismatch_fraction:.0%} difference, "
+                    f"limit {max_drop_fraction:.0%})"
                 )
 
-            # Within acceptable drop fraction — recover via LCS alignment.
+            # Within acceptable range — recover via LCS alignment.
             aligned, n_unmatched = _lcs_align_blocks(old_blocks, new_blocks)
+            direction = (
+                "dropped" if new_count < old_count else "extra (split)"
+            )
             logging.warning(
-                "%s: LCS recovery — %d/%d blocks unmatched in model response;"
-                " original tags preserved for those blocks",
-                doc_id, n_unmatched, old_count,
+                "%s: LCS recovery — %d/%d blocks %s in model response;"
+                " original tags preserved for unmatched blocks",
+                doc_id, n_unmatched, old_count, direction,
             )
             recovered_text = _reconstruct_ann(aligned)
             changes = diff_yedda(ann_text, recovered_text)
