@@ -56,6 +56,10 @@ _DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 _ANN_ATTACHMENT = "article.txt.ann"
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 2.0  # seconds
+# Documents with more blocks than this are skipped: the output alone would
+# exceed the model's max_tokens and the prompt itself would be enormous.
+# Handle them directly in brat instead.
+_MAX_BLOCKS = 300
 
 # Pricing per million tokens (as of 2026-03).
 # Only used for --estimate output; not authoritative.
@@ -204,7 +208,7 @@ def relabel_ann(
         try:
             response = client.messages.create(
                 model=model,
-                max_tokens=4096,
+                max_tokens=8192,
                 system=_SYSTEM_PROMPT,
                 messages=messages,
             )
@@ -397,6 +401,7 @@ def process_documents(
     dry_run: bool,
     log_file: Optional[Path],
     verbosity: int,
+    max_blocks: int = _MAX_BLOCKS,
 ) -> Dict[str, int]:
     """Relabel all documents and write results to the staging database.
 
@@ -411,6 +416,7 @@ def process_documents(
         dry_run: If True, do not write to staging DB.
         log_file: Path to write JSONL change log, or None.
         verbosity: Logging verbosity.
+        max_blocks: Skip documents with more blocks than this threshold.
 
     Returns:
         Summary counts.
@@ -418,8 +424,25 @@ def process_documents(
     docs_processed = 0
     docs_changed = 0
     docs_failed = 0
+    docs_skipped = 0
     total_blocks_changed = 0
     log_entries: List[Dict[str, Any]] = []
+
+    # Pre-filter oversized documents
+    oversized = {
+        doc_id: len(_YEDDA_BLOCK_RE.findall(text))
+        for doc_id, text in ann_texts.items()
+        if len(_YEDDA_BLOCK_RE.findall(text)) > max_blocks
+    }
+    if oversized:
+        docs_skipped = len(oversized)
+        for doc_id, count in sorted(oversized.items(), key=lambda x: -x[1]):
+            print(
+                f"  SKIP {doc_id}: {count} blocks exceeds --max-blocks {max_blocks}"
+                f" — annotate directly in brat",
+                file=sys.stderr,
+            )
+        ann_texts = {k: v for k, v in ann_texts.items() if k not in oversized}
 
     def _process_one(
         item: Tuple[str, str],
@@ -484,6 +507,7 @@ def process_documents(
         "docs_processed": docs_processed,
         "docs_changed": docs_changed,
         "docs_failed": docs_failed,
+        "docs_skipped": docs_skipped,
         "total_blocks_changed": total_blocks_changed,
     }
 
@@ -554,6 +578,16 @@ def main() -> None:
         type=int,
         metavar="N",
         help="Process at most N documents.",
+    )
+    parser.add_argument(
+        "--max-blocks",
+        type=int,
+        default=_MAX_BLOCKS,
+        metavar="N",
+        help=(
+            f"Skip documents with more than N YEDDA blocks (default: {_MAX_BLOCKS}). "
+            "Oversized documents should be annotated directly in brat."
+        ),
     )
     parser.add_argument(
         "--skip-existing",
@@ -731,14 +765,20 @@ def main() -> None:
         dry_run=args.dry_run,
         log_file=log_path if not args.dry_run else None,
         verbosity=verbosity,
+        max_blocks=args.max_blocks,
     )
 
     if verbosity >= 1:
+        skipped_msg = (
+            f", {summary['docs_skipped']} skipped (too large)"
+            if summary['docs_skipped'] else ""
+        )
         print(
             f"\nDone: {summary['docs_processed']} processed, "
             f"{summary['docs_changed']} changed "
             f"({summary['total_blocks_changed']} blocks), "
-            f"{summary['docs_failed']} failed.",
+            f"{summary['docs_failed']} failed"
+            f"{skipped_msg}.",
             file=sys.stderr,
         )
 
