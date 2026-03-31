@@ -32,7 +32,9 @@ Environment variables (or ~/.skol_env):
 
 import argparse
 import concurrent.futures
+import difflib
 import json
+import logging
 import re
 import sys
 import time
@@ -62,6 +64,9 @@ _DEFAULT_CHUNK_SIZE = 150
 # Hard ceiling: documents above this block count are skipped even with
 # chunking (extreme edge case — thousands of chunks would be impractical).
 _MAX_BLOCKS = 5000
+# Maximum fraction of blocks the model may drop before we give up and retry
+# rather than accepting the partial result via LCS alignment.
+_DEFAULT_MAX_DROP_FRACTION = 0.10
 
 # Pricing per million tokens (as of 2026-03).
 # Only used for --estimate output; not authoritative.
@@ -175,6 +180,63 @@ def diff_yedda(
 
 
 # ---------------------------------------------------------------------------
+# LCS-based partial-response recovery
+# ---------------------------------------------------------------------------
+
+Block = Tuple[str, str]  # (text, tag)
+
+
+def _lcs_align_blocks(
+    old_blocks: List[Block],
+    new_blocks: List[Block],
+) -> Tuple[List[Block], int]:
+    """Align new_blocks onto old_blocks using LCS on block text.
+
+    When the model drops or merges blocks the response has fewer entries than
+    the original.  This function uses difflib.SequenceMatcher to find which
+    old blocks survived (matched by text content) and substitutes their new
+    tags, while keeping the original tag for any block the model omitted.
+
+    Args:
+        old_blocks: Original (text, tag) pairs from the source .ann.
+        new_blocks: (text, tag) pairs from the model response.
+
+    Returns:
+        Tuple of (aligned_blocks, n_unmatched) where aligned_blocks has the
+        same length as old_blocks, and n_unmatched is the count of old blocks
+        whose text was not found in the response (original tags preserved).
+    """
+    old_texts = [b[0] for b in old_blocks]
+    new_texts = [b[0] for b in new_blocks]
+
+    matcher = difflib.SequenceMatcher(
+        None, old_texts, new_texts, autojunk=False
+    )
+    old_to_new: Dict[int, int] = {}
+    for old_start, new_start, length in matcher.get_matching_blocks():
+        for k in range(length):
+            old_to_new[old_start + k] = new_start + k
+
+    aligned: List[Block] = []
+    n_unmatched = 0
+    for i, (text, old_tag) in enumerate(old_blocks):
+        if i in old_to_new:
+            aligned.append((text, new_blocks[old_to_new[i]][1]))
+        else:
+            aligned.append((text, old_tag))
+            n_unmatched += 1
+
+    return aligned, n_unmatched
+
+
+def _reconstruct_ann(blocks: List[Block]) -> str:
+    """Serialize (text, tag) pairs back to YEDDA .ann format."""
+    return (
+        "\n\n".join(f"[@{text}#{tag}*]" for text, tag in blocks) + "\n"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Single-document relabeling via Claude API
 # ---------------------------------------------------------------------------
 
@@ -183,28 +245,42 @@ def relabel_ann(
     ann_text: str,
     model: str,
     doc_id: str,
+    max_drop_fraction: float = _DEFAULT_MAX_DROP_FRACTION,
 ) -> Tuple[str, List[Dict[str, Any]]]:
     """Call the Claude API to relabel a single .ann file.
 
+    When the model returns fewer blocks than the input (a common failure
+    mode — the model merges adjacent same-tag blocks or silently drops
+    short blocks), the response is recovered via LCS alignment if the
+    fraction of dropped blocks is within max_drop_fraction.  Blocks the
+    model omitted keep their original tags and are not reported as changes.
+
     Retries up to _MAX_RETRIES times with exponential backoff on transient
-    errors.
+    errors and on above-threshold block-count mismatches.
 
     Args:
         client: anthropic.Anthropic client.
         ann_text: Original YEDDA-annotated text.
         model: Claude model ID.
         doc_id: Document ID (for error messages only).
+        max_drop_fraction: Maximum fraction of blocks the model may omit
+            before the response is rejected and retried.  Defaults to
+            _DEFAULT_MAX_DROP_FRACTION (10 %).
 
     Returns:
         Tuple of (relabeled_ann_text, changes) where changes is the diff
-        against the original.
+        against the original.  The returned ann_text always has the same
+        block count as the input.
 
     Raises:
-        RuntimeError: If all retries fail.
+        RuntimeError: If all retries fail or the model consistently drops
+            more than max_drop_fraction of blocks.
     """
     user_prompt = _build_user_prompt(ann_text)
     messages = [{"role": "user", "content": user_prompt}]
     last_exc: Optional[Exception] = None
+    old_blocks = _YEDDA_BLOCK_RE.findall(ann_text)
+    old_count = len(old_blocks)
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
@@ -215,20 +291,46 @@ def relabel_ann(
                 messages=messages,
             )
             new_text = response.content[0].text.strip()
-            # Validate: new text should have the same number of blocks
-            old_count = len(_YEDDA_BLOCK_RE.findall(ann_text))
-            new_count = len(_YEDDA_BLOCK_RE.findall(new_text))
+            new_blocks = _YEDDA_BLOCK_RE.findall(new_text)
+            new_count = len(new_blocks)
+
             if new_count == 0:
                 raise ValueError(
                     f"Response contains no YEDDA blocks for {doc_id}"
                 )
-            if new_count != old_count:
+
+            if new_count == old_count:
+                # Perfect match — fast path.
+                changes = diff_yedda(ann_text, new_text)
+                return new_text, changes
+
+            # Model returned a different number of blocks.
+            if new_count > old_count:
+                # Model hallucinated extra blocks — always retry.
                 raise ValueError(
                     f"Block count mismatch for {doc_id}: "
                     f"expected {old_count}, got {new_count}"
                 )
-            changes = diff_yedda(ann_text, new_text)
-            return new_text, changes
+
+            drop_fraction = (old_count - new_count) / old_count
+            if drop_fraction > max_drop_fraction:
+                # Too many blocks lost — retry in hope of a better response.
+                raise ValueError(
+                    f"Block count mismatch for {doc_id}: "
+                    f"expected {old_count}, got {new_count} "
+                    f"({drop_fraction:.0%} dropped, limit {max_drop_fraction:.0%})"
+                )
+
+            # Within acceptable drop fraction — recover via LCS alignment.
+            aligned, n_unmatched = _lcs_align_blocks(old_blocks, new_blocks)
+            logging.warning(
+                "%s: LCS recovery — %d/%d blocks unmatched in model response;"
+                " original tags preserved for those blocks",
+                doc_id, n_unmatched, old_count,
+            )
+            recovered_text = _reconstruct_ann(aligned)
+            changes = diff_yedda(ann_text, recovered_text)
+            return recovered_text, changes
 
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
@@ -278,6 +380,7 @@ def relabel_ann_chunked(
     model: str,
     doc_id: str,
     chunk_size: int,
+    max_drop_fraction: float = _DEFAULT_MAX_DROP_FRACTION,
 ) -> Tuple[str, List[Dict[str, Any]]]:
     """Relabel a .ann file, splitting into chunks if necessary.
 
@@ -297,6 +400,7 @@ def relabel_ann_chunked(
         model: Claude model ID.
         doc_id: Document ID (used in log messages and error strings).
         chunk_size: Maximum blocks per API call.
+        max_drop_fraction: Passed through to relabel_ann for each chunk.
 
     Returns:
         Tuple of (relabeled_ann_text, changes) where changes covers all
@@ -304,7 +408,9 @@ def relabel_ann_chunked(
     """
     chunks = chunk_ann(ann_text, chunk_size)
     if len(chunks) == 1:
-        return relabel_ann(client, ann_text, model, doc_id)
+        return relabel_ann(
+            client, ann_text, model, doc_id, max_drop_fraction
+        )
 
     relabeled_parts: List[str] = []
     all_changes: List[Dict[str, Any]] = []
@@ -312,7 +418,9 @@ def relabel_ann_chunked(
 
     for idx, chunk in enumerate(chunks):
         chunk_id = f"{doc_id} [chunk {idx + 1}/{len(chunks)}]"
-        new_chunk, changes = relabel_ann(client, chunk, model, chunk_id)
+        new_chunk, changes = relabel_ann(
+            client, chunk, model, chunk_id, max_drop_fraction
+        )
         relabeled_parts.append(new_chunk.rstrip("\n"))
         for c in changes:
             adjusted = dict(c)
@@ -488,6 +596,7 @@ def process_documents(
     verbosity: int,
     max_blocks: int = _MAX_BLOCKS,
     chunk_size: int = _DEFAULT_CHUNK_SIZE,
+    max_drop_fraction: float = _DEFAULT_MAX_DROP_FRACTION,
 ) -> Dict[str, int]:
     """Relabel all documents and write results to the staging database.
 
@@ -505,6 +614,8 @@ def process_documents(
         max_blocks: Hard ceiling; documents above this count are skipped even
             with chunking.
         chunk_size: Maximum blocks per API call; larger documents are split.
+        max_drop_fraction: Maximum fraction of blocks the model may drop
+            before the response is rejected and retried.
 
     Returns:
         Summary counts.
@@ -538,7 +649,8 @@ def process_documents(
         doc_id, ann_text = item
         try:
             new_text, changes = relabel_ann_chunked(
-                client, ann_text, model, doc_id, chunk_size
+                client, ann_text, model, doc_id,
+                chunk_size, max_drop_fraction,
             )
             return doc_id, new_text, changes, None
         except Exception as exc:  # noqa: BLE001
@@ -688,6 +800,18 @@ def main() -> None:
             f"Hard ceiling: skip documents with more than N blocks "
             f"(default: {_MAX_BLOCKS}). Chunking handles everything below "
             "this; raise only for extreme edge cases."
+        ),
+    )
+    parser.add_argument(
+        "--max-drop-fraction",
+        type=float,
+        default=_DEFAULT_MAX_DROP_FRACTION,
+        metavar="FRAC",
+        help=(
+            "Maximum fraction of blocks the model may drop before the "
+            f"response is retried (default: {_DEFAULT_MAX_DROP_FRACTION}). "
+            "Responses within this limit are recovered via LCS alignment; "
+            "dropped blocks keep their original tags."
         ),
     )
     parser.add_argument(
@@ -868,6 +992,7 @@ def main() -> None:
         verbosity=verbosity,
         max_blocks=args.max_blocks,
         chunk_size=args.chunk_size,
+        max_drop_fraction=args.max_drop_fraction,
     )
 
     if verbosity >= 1:

@@ -17,9 +17,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from llm_relabel import (
     _DEFAULT_CHUNK_SIZE,
+    _DEFAULT_MAX_DROP_FRACTION,
     _MAX_BLOCKS,
     _YEDDA_BLOCK_RE,
     _build_user_prompt,
+    _lcs_align_blocks,
+    _reconstruct_ann,
     _write_to_staging,
     chunk_ann,
     diff_yedda,
@@ -488,6 +491,136 @@ class TestRelabelAnnChunked(unittest.TestCase):
             client, ann, "test-model", "doc1", chunk_size=3
         )
         # 9 blocks / 3 per chunk = 3 API calls
+        self.assertEqual(client.messages.create.call_count, 3)
+
+
+# ---------------------------------------------------------------------------
+# _lcs_align_blocks and _reconstruct_ann
+# ---------------------------------------------------------------------------
+
+
+class TestLcsAlignBlocks(unittest.TestCase):
+
+    def test_perfect_match_no_unmatched(self) -> None:
+        blocks = [("Amanita muscaria", "Nomenclature"),
+                  ("Pileus 5–15 cm", "Description")]
+        aligned, n = _lcs_align_blocks(blocks, blocks)
+        self.assertEqual(n, 0)
+        self.assertEqual(aligned, blocks)
+
+    def test_dropped_block_keeps_original_tag(self) -> None:
+        old = [("Block A", "Description"),
+               ("Block B", "Holotype"),
+               ("Block C", "Misc-exposition")]
+        # Model dropped Block B
+        new = [("Block A", "Description"),
+               ("Block C", "Biology")]
+        aligned, n = _lcs_align_blocks(old, new)
+        self.assertEqual(n, 1)
+        # Block A unchanged, Block B kept original tag, Block C updated
+        self.assertEqual(aligned[0], ("Block A", "Description"))
+        self.assertEqual(aligned[1], ("Block B", "Holotype"))
+        self.assertEqual(aligned[2], ("Block C", "Biology"))
+
+    def test_tag_updated_for_matched_block(self) -> None:
+        old = [("text", "Holotype")]
+        new = [("text", "Type-designation")]
+        aligned, n = _lcs_align_blocks(old, new)
+        self.assertEqual(n, 0)
+        self.assertEqual(aligned[0][1], "Type-designation")
+
+    def test_all_blocks_dropped_keeps_originals(self) -> None:
+        old = [("X", "Description"), ("Y", "Misc-exposition")]
+        aligned, n = _lcs_align_blocks(old, [])
+        self.assertEqual(n, 2)
+        self.assertEqual(aligned, old)
+
+    def test_output_length_equals_old_length(self) -> None:
+        old = [("A", "T1"), ("B", "T2"), ("C", "T3"), ("D", "T4")]
+        new = [("A", "T1"), ("C", "T3")]  # B and D dropped
+        aligned, _ = _lcs_align_blocks(old, new)
+        self.assertEqual(len(aligned), len(old))
+
+
+class TestReconstructAnn(unittest.TestCase):
+
+    def test_roundtrip(self) -> None:
+        blocks: list = _YEDDA_BLOCK_RE.findall(_ANN_8TAG)
+        reconstructed = _reconstruct_ann(blocks)
+        # Re-parsing should give the same blocks
+        reparsed = _YEDDA_BLOCK_RE.findall(reconstructed)
+        self.assertEqual(blocks, reparsed)
+
+    def test_single_block(self) -> None:
+        result = _reconstruct_ann([("text here", "Nomenclature")])
+        self.assertEqual(result, "[@text here#Nomenclature*]\n")
+
+
+# ---------------------------------------------------------------------------
+# relabel_ann — LCS recovery path
+# ---------------------------------------------------------------------------
+
+
+class TestRelabelAnnLcsRecovery(unittest.TestCase):
+
+    def _make_client(self, response_text: str) -> MagicMock:
+        client = MagicMock()
+        msg = MagicMock()
+        msg.content = [MagicMock(text=response_text)]
+        client.messages.create.return_value = msg
+        return client
+
+    def test_within_threshold_recovers_via_lcs(self) -> None:
+        # _ANN_8TAG has 4 blocks; drop 1 → 25% drop.
+        # With max_drop_fraction=0.30 it should recover.
+        three_blocks = (
+            "[@Amanita muscaria (L.) Lam.#Nomenclature*]\n\n"
+            "[@Pileus 5–15 cm diam., convex then flat.#Description*]\n\n"
+            "[@Holotype: NY 12345.#Type-designation*]\n"
+        )
+        client = self._make_client(three_blocks)
+        with patch("llm_relabel.logging"):
+            new_text, changes = relabel_ann(
+                client, _ANN_8TAG, "test-model", "doc1",
+                max_drop_fraction=0.30,
+            )
+        # Output must have same block count as input
+        self.assertEqual(
+            len(_YEDDA_BLOCK_RE.findall(new_text)),
+            len(_YEDDA_BLOCK_RE.findall(_ANN_8TAG)),
+        )
+        # The Holotype→Type-designation change should be recorded
+        new_tags = {c["new_tag"] for c in changes}
+        self.assertIn("Type-designation", new_tags)
+
+    def test_above_threshold_raises(self) -> None:
+        # 1 block returned for 4-block input → 75% drop, above any threshold
+        one_block = "[@Amanita muscaria (L.) Lam.#Nomenclature*]\n"
+        client = self._make_client(one_block)
+        with patch("llm_relabel.time.sleep"):
+            with self.assertRaises(RuntimeError):
+                relabel_ann(
+                    client, _ANN_8TAG, "test-model", "doc1",
+                    max_drop_fraction=0.10,
+                )
+
+    def test_default_max_drop_fraction_constant_is_sane(self) -> None:
+        self.assertGreater(_DEFAULT_MAX_DROP_FRACTION, 0.0)
+        self.assertLess(_DEFAULT_MAX_DROP_FRACTION, 0.5)
+
+    def test_extra_blocks_always_retried(self) -> None:
+        # Model returning MORE blocks than input should retry, not use LCS
+        five_blocks = (
+            "[@A#Nomenclature*]\n\n[@B#Description*]\n\n"
+            "[@C#Diagnosis*]\n\n[@D#Etymology*]\n\n[@E#Biology*]\n"
+        )
+        client = self._make_client(five_blocks)
+        with patch("llm_relabel.time.sleep"):
+            with self.assertRaises(RuntimeError):
+                relabel_ann(
+                    client, _ANN_8TAG, "test-model", "doc1",
+                    max_drop_fraction=0.30,
+                )
         self.assertEqual(client.messages.create.call_count, 3)
 
 
