@@ -787,3 +787,48 @@ No sign-off gate beyond standard code review — this step is additive only.
   `skol_dev` to prod would overwrite prod ingestion history.
 - Classifier model keys in Redis — retrain on prod using `bin/train_classifier.py`
   after the training corpus migration is complete.
+
+---
+
+## Design Notes: Article-level Metadata and Section Headers
+
+### Article-level metadata blocks (Title, Author, Institution, Abstract, Key-words, Acknowledgements)
+
+Early hand-annotated documents contain these tags, which predate the decision to
+focus the Layer 1 YEDDA scheme strictly on treatment sections. They correctly
+collapse to `Misc-exposition` under the current 14-tag scheme.
+
+These fields do not need a trained classifier — they are keyword/regex
+extractable (Abstract always begins with "Abstract", Author/Institution cluster
+at the top of the document, Acknowledgements near the bottom). Adding them to
+the YEDDA tag set would waste classifier capacity training on patterns a
+`re.match()` would catch. The right home for them is a future particle detector
+pass or a pre-processing strip step, not Layer 1.
+
+### Section-header blocks ("Introduction", "Taxonomy", etc.)
+
+Section headers are structurally significant — a bare "Taxonomy" header before
+a Nomenclature block is a strong signal that a new treatment is starting — but
+the YEDDA layer is the wrong place to capture this. Reasons:
+
+1. A YEDDA `Section-header` block still just increments the gap counter in
+   `group_paragraphs()`; the state machine cannot act on it differently from
+   `Misc-exposition` without special-casing the tag, at which point the
+   classifier is doing work that a regex could do more reliably.
+
+2. A Layer 2 span with `label="section-header"` and the header text as its
+   content is more useful: it carries a character offset, can be consumed by
+   `group_paragraphs()` directly as a positional signal, and requires no
+   trained model to produce.
+
+**Planned work (Phase 2 / Phase 5 intersection):**
+
+- `particle_detector.py`: add a `SectionHeaderDetector` that matches lines
+  consisting entirely of a known or plausible section heading (short, title-
+  case or all-caps, no trailing punctuation). Emit `label="section-header"`,
+  `source="regex"`, `confidence=0.8`.
+- `group_paragraphs()` in `taxon.py`: when iterating blocks, check whether
+  the character range of a `Misc-exposition` block overlaps a `section-header`
+  span. If the header text is "Taxonomy", "Systematics", "New taxa", or similar,
+  treat it as a hard treatment boundary (yield current treatment, reset state)
+  rather than incrementing the gap counter.
