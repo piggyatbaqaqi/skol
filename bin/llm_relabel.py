@@ -64,7 +64,6 @@ _BACKOFF_BASE = 2.0  # seconds
 _DEFAULT_CHUNK_SIZE = 150
 # Hard ceiling: documents above this block count are skipped even with
 # chunking (extreme edge case — thousands of chunks would be impractical).
-_MAX_BLOCKS = 5000
 # Maximum fraction of blocks the model may drop before we give up and retry
 # rather than accepting the partial result via LCS alignment.
 _DEFAULT_MAX_DROP_FRACTION = 0.25
@@ -615,7 +614,6 @@ def process_documents(
     dry_run: bool,
     log_file: Optional[Path],
     verbosity: int,
-    max_blocks: int = _MAX_BLOCKS,
     chunk_size: int = _DEFAULT_CHUNK_SIZE,
     max_drop_fraction: float = _DEFAULT_MAX_DROP_FRACTION,
 ) -> Dict[str, int]:
@@ -632,8 +630,6 @@ def process_documents(
         dry_run: If True, do not write to staging DB.
         log_file: Path to write JSONL change log, or None.
         verbosity: Logging verbosity.
-        max_blocks: Hard ceiling; documents above this count are skipped even
-            with chunking.
         chunk_size: Maximum blocks per API call; larger documents are split.
         max_drop_fraction: Maximum fraction of blocks the model may drop
             before the response is rejected and retried.
@@ -647,22 +643,6 @@ def process_documents(
     docs_skipped = 0
     total_blocks_changed = 0
     log_entries: List[Dict[str, Any]] = []
-
-    # Pre-filter oversized documents
-    oversized = {
-        doc_id: len(_YEDDA_BLOCK_RE.findall(text))
-        for doc_id, text in ann_texts.items()
-        if len(_YEDDA_BLOCK_RE.findall(text)) > max_blocks
-    }
-    if oversized:
-        docs_skipped = len(oversized)
-        for doc_id, count in sorted(oversized.items(), key=lambda x: -x[1]):
-            print(
-                f"  SKIP {doc_id}: {count} blocks exceeds hard limit "
-                f"--max-blocks {max_blocks} — annotate directly in brat",
-                file=sys.stderr,
-            )
-        ann_texts = {k: v for k, v in ann_texts.items() if k not in oversized}
 
     def _process_one(
         item: Tuple[str, str],
@@ -814,17 +794,6 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--max-blocks",
-        type=int,
-        default=_MAX_BLOCKS,
-        metavar="N",
-        help=(
-            f"Hard ceiling: skip documents with more than N blocks "
-            f"(default: {_MAX_BLOCKS}). Chunking handles everything below "
-            "this; raise only for extreme edge cases."
-        ),
-    )
-    parser.add_argument(
         "--max-drop-fraction",
         type=float,
         default=_DEFAULT_MAX_DROP_FRACTION,
@@ -932,7 +901,7 @@ def main() -> None:
         sys.exit(0)
 
     # Skip documents already processed in staging DB
-    if args.skip_existing and not args.estimate:
+    if args.skip_existing:
         try:
             staging_db_existing = server[staging_db_name]
             before = len(ann_texts)
@@ -1012,7 +981,6 @@ def main() -> None:
         dry_run=args.dry_run,
         log_file=log_path if not args.dry_run else None,
         verbosity=verbosity,
-        max_blocks=args.max_blocks,
         chunk_size=args.chunk_size,
         max_drop_fraction=args.max_drop_fraction,
     )

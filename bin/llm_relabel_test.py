@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from llm_relabel import (
     _DEFAULT_CHUNK_SIZE,
     _DEFAULT_MAX_DROP_FRACTION,
-    _MAX_BLOCKS,
     _YEDDA_BLOCK_RE,
     _build_user_prompt,
     _lcs_align_blocks,
@@ -197,117 +196,6 @@ class TestRelabelAnn(unittest.TestCase):
         self.assertEqual(kwargs.get("max_tokens") or
                          client.messages.create.call_args[1].get("max_tokens"),
                          8192)
-
-
-# ---------------------------------------------------------------------------
-# process_documents — oversized document skipping
-# ---------------------------------------------------------------------------
-
-
-class TestProcessDocumentsSkipsOversized(unittest.TestCase):
-    """Oversized documents are filtered before any API call is made."""
-
-    def _make_client(self, response_text: str) -> MagicMock:
-        client = MagicMock()
-        msg = MagicMock()
-        msg.content = [MagicMock(text=response_text)]
-        client.messages.create.return_value = msg
-        return client
-
-    def _make_staging_db(self) -> MagicMock:
-        db = MagicMock()
-        db.__contains__ = MagicMock(return_value=False)
-        db.__getitem__ = MagicMock(return_value={"_id": "x", "_rev": "1"})
-        return db
-
-    def test_oversized_doc_not_sent_to_api(self) -> None:
-        big = _make_oversized_ann(_MAX_BLOCKS + 1)
-        client = self._make_client(_ANN_12TAG)
-        staging = self._make_staging_db()
-        process_documents(
-            client=client,
-            source_db=MagicMock(),
-            source_db_name="src",
-            staging_db=staging,
-            ann_texts={"big_doc": big},
-            model="test-model",
-            workers=1,
-            dry_run=True,
-            log_file=None,
-            verbosity=0,
-            max_blocks=_MAX_BLOCKS,
-        )
-        client.messages.create.assert_not_called()
-
-    def test_oversized_counted_in_skipped(self) -> None:
-        big = _make_oversized_ann(_MAX_BLOCKS + 1)
-        client = self._make_client(_ANN_12TAG)
-        staging = self._make_staging_db()
-        summary = process_documents(
-            client=client,
-            source_db=MagicMock(),
-            source_db_name="src",
-            staging_db=staging,
-            ann_texts={"big_doc": big},
-            model="test-model",
-            workers=1,
-            dry_run=True,
-            log_file=None,
-            verbosity=0,
-            max_blocks=_MAX_BLOCKS,
-        )
-        self.assertEqual(summary["docs_skipped"], 1)
-        self.assertEqual(summary["docs_processed"], 0)
-
-    def test_normal_doc_processed_alongside_oversized(self) -> None:
-        big = _make_oversized_ann(_MAX_BLOCKS + 1)
-        client = self._make_client(_ANN_8TAG)
-        staging = self._make_staging_db()
-        summary = process_documents(
-            client=client,
-            source_db=MagicMock(),
-            source_db_name="src",
-            staging_db=staging,
-            ann_texts={"big_doc": big, "small_doc": _ANN_8TAG},
-            model="test-model",
-            workers=1,
-            dry_run=True,
-            log_file=None,
-            verbosity=0,
-            max_blocks=_MAX_BLOCKS,
-        )
-        self.assertEqual(summary["docs_skipped"], 1)
-        self.assertEqual(summary["docs_processed"], 1)
-        client.messages.create.assert_called_once()
-
-    def test_custom_max_blocks_respected(self) -> None:
-        five_blocks = _make_oversized_ann(5)
-        client = self._make_client(five_blocks)
-        staging = self._make_staging_db()
-        summary = process_documents(
-            client=client,
-            source_db=MagicMock(),
-            source_db_name="src",
-            staging_db=staging,
-            ann_texts={"doc": five_blocks},
-            model="test-model",
-            workers=1,
-            dry_run=True,
-            log_file=None,
-            verbosity=0,
-            max_blocks=4,  # lower than 5
-        )
-        self.assertEqual(summary["docs_skipped"], 1)
-        client.messages.create.assert_not_called()
-
-    def test_default_max_blocks_constant_is_sane(self) -> None:
-        # Sanity-check constant is sane; large because chunking handles big docs
-        self.assertGreater(_MAX_BLOCKS, 50)
-        self.assertLess(_MAX_BLOCKS, 100_000)
-
-    def test_yedda_block_re_counts_correctly(self) -> None:
-        ann = _make_oversized_ann(10)
-        self.assertEqual(len(_YEDDA_BLOCK_RE.findall(ann)), 10)
 
 
 # ---------------------------------------------------------------------------
