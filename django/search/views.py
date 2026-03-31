@@ -2493,52 +2493,51 @@ class SourceContextView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # .ann files are stored in the annotations DB (skol_exp_NAME_ann), not the ingest DB.
-            # Derive ann_db from taxa_db by convention: *_taxa → *_ann.
-            # Fall back to ingest_db for default/non-experiment setups where .ann lives
-            # alongside the original document (e.g., skol_dev).
-            if taxa_db.endswith('_taxa'):
-                ann_db = taxa_db[:-5] + '_ann'
-            else:
-                ann_db = ingest_db
-            # Build the ordered list of DBs to try: annotations DB first, then ingest DB.
-            ann_db_candidates = [ann_db] if ann_db != ingest_db else [ingest_db]
-            if ann_db != ingest_db:
-                ann_db_candidates.append(ingest_db)
+            # .ann files are stored in annotations_db (set at extraction time by
+            # extract_taxa_to_couchdb.py).  Fall back to ingest_db for older taxa
+            # records that pre-date the separate annotations database.
+            ann_db = taxa_doc.get('annotations_db') or ingest_db
 
-            # Fetch annotated file — try each candidate DB in order.
-            # Spans are computed from .ann files, so we must read from .ann for correct offsets.
+            # Fetch annotated file from ann_db.
+            # Spans are computed from .ann offsets, so we must use the same text.
             # Use stored attachment_name if available, otherwise guess.
             stored_attachment = taxa_doc.get('attachment_name')
             text_response = None
             attachment_name = None
 
-            for ann_db_candidate in ann_db_candidates:
-                if stored_attachment:
-                    attachment_url = (
-                        f"{couchdb_url}/{ann_db_candidate}/{ingest_doc_id}/{stored_attachment}"
-                    )
-                    text_response = requests.get(attachment_url, auth=auth, timeout=60)
-                    if text_response.status_code == 200:
-                        attachment_name = stored_attachment
-                        break
+            if stored_attachment:
+                attachment_url = (
+                    f"{couchdb_url}/{ann_db}"
+                    f"/{ingest_doc_id}/{stored_attachment}"
+                )
+                text_response = requests.get(
+                    attachment_url, auth=auth, timeout=60
+                )
+                if text_response.status_code == 200:
+                    attachment_name = stored_attachment
 
-                if attachment_name is None:
-                    # Fall back to guessing: try article.pdf.ann first, then article.txt.ann
-                    for ann_name in ['article.pdf.ann', 'article.txt.ann']:
-                        attachment_url = (
-                            f"{couchdb_url}/{ann_db_candidate}/{ingest_doc_id}/{ann_name}"
-                        )
-                        text_response = requests.get(attachment_url, auth=auth, timeout=60)
-                        if text_response.status_code == 200:
-                            attachment_name = ann_name
-                            break
-                if attachment_name is not None:
-                    break
+            if attachment_name is None:
+                # Fall back: try article.pdf.ann first, then article.txt.ann
+                for ann_name in ['article.pdf.ann', 'article.txt.ann']:
+                    attachment_url = (
+                        f"{couchdb_url}/{ann_db}"
+                        f"/{ingest_doc_id}/{ann_name}"
+                    )
+                    text_response = requests.get(
+                        attachment_url, auth=auth, timeout=60
+                    )
+                    if text_response.status_code == 200:
+                        attachment_name = ann_name
+                        break
 
             if text_response is None or text_response.status_code == 404:
                 return Response(
-                    {'error': f'No .ann file found for document {ingest_doc_id} in {ann_db_candidates}'},
+                    {
+                        'error': (
+                            f'No .ann file found for document'
+                            f' {ingest_doc_id} in {ann_db}'
+                        )
+                    },
                     status=status.HTTP_404_NOT_FOUND
                 )
 

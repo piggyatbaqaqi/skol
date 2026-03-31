@@ -286,15 +286,21 @@ class TaxonExtractor:
     Extract and save Taxa from CouchDB annotated files.
 
     This class encapsulates the complete pipeline for:
-    1. Loading annotated documents from a CouchDB ingest database
+    1. Loading annotated documents from a CouchDB annotations database
     2. Extracting Taxon objects using the SKOL pipeline
     3. Saving Taxa to a CouchDB taxon database with idempotent keys
 
     Args:
         spark: SparkSession for distributed processing
         ingest_couchdb_url: URL of ingest CouchDB server
-        ingest_db_name: Name of ingest database
+        ingest_db_name: Name of ingest database (where PDFs live, e.g. skol_dev).
+            Stored in each taxa record as ``ingest.db_name`` so that views can
+            retrieve the PDF directly without guessing.
         taxon_db_name: Name of taxon database
+        annotations_db_name: Name of annotations database (where .ann files live,
+            e.g. skol_exp_NAME_ann).  Defaults to ``ingest_db_name`` for
+            backward-compatibility with setups where annotations live in the
+            ingest DB.  Stored in each taxa record as ``annotations_db``.
         taxon_couchdb_url: URL of taxon CouchDB server (defaults to ingest_couchdb_url)
         ingest_username: Optional username for ingest database
         ingest_password: Optional password for ingest database
@@ -307,8 +313,9 @@ class TaxonExtractor:
         >>> extractor = TaxonExtractor(
         ...     spark=spark,
         ...     ingest_couchdb_url="http://localhost:5984",
-        ...     ingest_db_name="mycobank_annotations",
-        ...     taxon_db_name="mycobank_taxa",
+        ...     ingest_db_name="skol_dev",
+        ...     annotations_db_name="skol_exp_myexp_ann",
+        ...     taxon_db_name="skol_exp_myexp_taxa",
         ...     ingest_username="admin",
         ...     ingest_password="secret"
         ... )
@@ -335,6 +342,7 @@ class TaxonExtractor:
         ingest_couchdb_url: str,
         ingest_db_name: str,
         taxon_db_name: str,
+        annotations_db_name: Optional[str] = None,
         taxon_couchdb_url: Optional[str] = None,
         ingest_username: Optional[str] = None,
         ingest_password: Optional[str] = None,
@@ -345,6 +353,9 @@ class TaxonExtractor:
         self.spark = spark
         self.ingest_couchdb_url = ingest_couchdb_url
         self.ingest_db_name = ingest_db_name
+        # annotations_db_name is where .ann files live; falls back to ingest_db_name
+        # for setups that have not separated annotations into their own database.
+        self.annotations_db_name: str = annotations_db_name or ingest_db_name
         self.ingest_username = ingest_username
         self.ingest_password = ingest_password
 
@@ -404,7 +415,7 @@ class TaxonExtractor:
 
     def load_annotated_documents(self, pattern: str = "*.ann") -> DataFrame:
         """
-        Load annotated documents from CouchDB ingest database.
+        Load annotated documents from the annotations database.
 
         Args:
             pattern: Pattern for attachment names (default: "*.ann")
@@ -413,13 +424,13 @@ class TaxonExtractor:
         Returns:
             DataFrame with columns: doc_id, attachment_name, value
         """
-        ingest_conn = CouchDBConnection(
+        annotations_conn = CouchDBConnection(
             self.ingest_couchdb_url,
-            self.ingest_db_name,
+            self.annotations_db_name,
             self.ingest_username,
             self.ingest_password
         )
-        return ingest_conn.load_distributed(self.spark, pattern)
+        return annotations_conn.load_distributed(self.spark, pattern)
 
     def extract_taxa(self, annotated_df: DataFrame) -> DataFrame:
         """
@@ -450,8 +461,9 @@ class TaxonExtractor:
             print(f"[TaxonExtractor] Filtered DataFrame schema:")
             annotated_df_filtered.printSchema()
 
-        # Extract to local variable to avoid serializing self
+        # Extract to local variables to avoid serializing self in the closure
         db_name = self.ingest_db_name
+        annotations_db_name = self.annotations_db_name
 
         def extract_partition(partition):  # type: ignore[reportUnknownParameterType]
             # Extract Taxon objects
@@ -752,6 +764,14 @@ class TaxonExtractor:
 
                         # Use row_dict (already converted above) for CouchDB storage
                         taxon_doc = row_dict
+
+                        # Stamp provenance: where to find the PDF and the .ann file.
+                        # Both fields are stored alongside the attachment_name so that
+                        # views can retrieve attachments without guessing DB names.
+                        ingest_data = taxon_doc.get('ingest')
+                        if isinstance(ingest_data, dict):
+                            ingest_data['db_name'] = db_name
+                        taxon_doc['annotations_db'] = annotations_db_name
 
                         if DEBUG_TRACE:
                             if DEBUG_DOC_ID is None or source_doc_id == DEBUG_DOC_ID:
@@ -1108,10 +1128,13 @@ Script-specific Options:
         print(f"Extracting taxa from {config['ingest_db_name']} to {config['taxon_db_name']}...")
 
     # Create extractor instance
+    # annotations_db_name is where .ann files live; falls back to ingest_db_name
+    # when annotations have not been separated into their own database.
     extractor = TaxonExtractor(
         spark=spark,
         ingest_couchdb_url=config['ingest_url'],
         ingest_db_name=config['ingest_db_name'],
+        annotations_db_name=config.get('annotations_db_name') or config['ingest_db_name'],
         taxon_db_name=config['taxon_db_name'],
         taxon_couchdb_url=taxon_url,
         ingest_username=config['ingest_username'],
