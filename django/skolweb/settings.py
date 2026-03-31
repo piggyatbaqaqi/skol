@@ -2,7 +2,9 @@
 Django settings for skolweb project.
 """
 
+import grp
 import os
+import pwd
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -12,9 +14,40 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Fall back to BASE_DIR for development
 SKOL_DJANGO_ROOT = Path(os.environ.get('SKOL_DJANGO_ROOT', BASE_DIR))
 
-LOG_FILE_PATH = os.environ.get(
-    'LOG_FILE_PATH', '/var/log/skol/skolweb.log'
-)
+_DEFAULT_LOG_PATH = Path('/var/log/skol/skolweb.log')
+LOG_FILE_PATH = Path(os.environ.get('LOG_FILE_PATH', str(_DEFAULT_LOG_PATH)))
+
+# Fail fast with a clear message when the log file is not writable, rather
+# than surfacing an opaque PermissionError deep inside the logging machinery.
+_log_parent = LOG_FILE_PATH.parent
+if not _log_parent.exists() or not os.access(_log_parent, os.W_OK):
+    _stat = (
+        f"{_log_parent.stat().st_uid}:{_log_parent.stat().st_gid} "
+        f"{oct(_log_parent.stat().st_mode)[-4:]}"
+        if _log_parent.exists() else "does not exist"
+    )
+    raise RuntimeError(
+        f"Log directory not writable: {_log_parent} ({_stat})\n"
+        f"Fix: sudo chown $USER {_log_parent}  "
+        f"or set LOG_FILE_PATH to a writable path."
+    )
+if LOG_FILE_PATH.exists() and not os.access(LOG_FILE_PATH, os.W_OK):
+    _st = LOG_FILE_PATH.stat()
+    try:
+        _owner = pwd.getpwuid(_st.st_uid).pw_name
+    except KeyError:
+        _owner = str(_st.st_uid)
+    try:
+        _group = grp.getgrgid(_st.st_gid).gr_name
+    except KeyError:
+        _group = str(_st.st_gid)
+    raise RuntimeError(
+        f"Log file not writable: {LOG_FILE_PATH} "
+        f"({_owner}:{_group} {oct(_st.st_mode)[-4:]})\n"
+        f"Fix: sudo chown $USER {LOG_FILE_PATH}  "
+        f"or set LOG_FILE_PATH to a writable path."
+    )
+LOG_FILE_PATH = str(LOG_FILE_PATH)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-skol-dev-key-change-in-production'
