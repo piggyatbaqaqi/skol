@@ -16,13 +16,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from llm_relabel import (
+    _DEFAULT_CHUNK_SIZE,
     _MAX_BLOCKS,
     _YEDDA_BLOCK_RE,
     _build_user_prompt,
     _write_to_staging,
+    chunk_ann,
     diff_yedda,
     process_documents,
     relabel_ann,
+    relabel_ann_chunked,
 )
 from ingestors.yedda_tags import Tag
 
@@ -295,9 +298,9 @@ class TestProcessDocumentsSkipsOversized(unittest.TestCase):
         client.messages.create.assert_not_called()
 
     def test_default_max_blocks_constant_is_sane(self) -> None:
-        # Sanity-check the constant is in a reasonable range
+        # Sanity-check constant is sane; large because chunking handles big docs
         self.assertGreater(_MAX_BLOCKS, 50)
-        self.assertLess(_MAX_BLOCKS, 1000)
+        self.assertLess(_MAX_BLOCKS, 100_000)
 
     def test_yedda_block_re_counts_correctly(self) -> None:
         ann = _make_oversized_ann(10)
@@ -360,6 +363,132 @@ class TestWriteToStaging(unittest.TestCase):
         _write_to_staging(db, "src", "doc1", _ANN_12TAG, changes)
         saved_doc = db.save.call_args[0][0]
         self.assertEqual(saved_doc["change_count"], 1)
+
+
+# ---------------------------------------------------------------------------
+# chunk_ann
+# ---------------------------------------------------------------------------
+
+
+class TestChunkAnn(unittest.TestCase):
+
+    def test_small_doc_returns_single_chunk(self) -> None:
+        chunks = chunk_ann(_ANN_8TAG, chunk_size=10)
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(chunks[0], _ANN_8TAG)
+
+    def test_chunk_size_one_returns_one_chunk_per_block(self) -> None:
+        chunks = chunk_ann(_ANN_8TAG, chunk_size=1)
+        n_blocks = len(_YEDDA_BLOCK_RE.findall(_ANN_8TAG))
+        self.assertEqual(len(chunks), n_blocks)
+
+    def test_chunks_reassemble_to_original(self) -> None:
+        ann = _make_oversized_ann(20)
+        chunks = chunk_ann(ann, chunk_size=7)
+        reassembled = "\n\n".join(c.strip() for c in chunks) + "\n"
+        # Block count must match
+        orig_blocks = _YEDDA_BLOCK_RE.findall(ann)
+        reassembled_blocks = _YEDDA_BLOCK_RE.findall(reassembled)
+        self.assertEqual(len(orig_blocks), len(reassembled_blocks))
+
+    def test_each_chunk_respects_size_limit(self) -> None:
+        ann = _make_oversized_ann(30)
+        chunk_size = 8
+        chunks = chunk_ann(ann, chunk_size=chunk_size)
+        for chunk in chunks:
+            self.assertLessEqual(
+                len(_YEDDA_BLOCK_RE.findall(chunk)), chunk_size
+            )
+
+    def test_default_chunk_size_constant_is_sane(self) -> None:
+        self.assertGreater(_DEFAULT_CHUNK_SIZE, 10)
+        self.assertLess(_DEFAULT_CHUNK_SIZE, 1000)
+
+    def test_empty_ann_returns_single_empty_chunk(self) -> None:
+        chunks = chunk_ann("", chunk_size=10)
+        self.assertEqual(len(chunks), 1)
+
+    def test_exact_chunk_size_boundary(self) -> None:
+        # 6 blocks split at chunk_size=3 should give exactly 2 chunks
+        ann = _make_oversized_ann(6)
+        chunks = chunk_ann(ann, chunk_size=3)
+        self.assertEqual(len(chunks), 2)
+        for chunk in chunks:
+            self.assertEqual(len(_YEDDA_BLOCK_RE.findall(chunk)), 3)
+
+
+# ---------------------------------------------------------------------------
+# relabel_ann_chunked
+# ---------------------------------------------------------------------------
+
+
+class TestRelabelAnnChunked(unittest.TestCase):
+
+    def _make_client(self, response_text: str) -> MagicMock:
+        client = MagicMock()
+        msg = MagicMock()
+        msg.content = [MagicMock(text=response_text)]
+        client.messages.create.return_value = msg
+        return client
+
+    def test_small_doc_returns_same_as_relabel_ann(self) -> None:
+        client = self._make_client(_ANN_12TAG)
+        new_text, changes = relabel_ann_chunked(
+            client, _ANN_8TAG, "test-model", "doc1", chunk_size=100
+        )
+        self.assertIn("Type-designation", new_text)
+        self.assertTrue(len(changes) > 0)
+
+    def test_unchanged_returns_empty_diff(self) -> None:
+        client = self._make_client(_ANN_8TAG)
+        _, changes = relabel_ann_chunked(
+            client, _ANN_8TAG, "test-model", "doc1", chunk_size=100
+        )
+        self.assertEqual(changes, [])
+
+    def test_chunked_block_indices_are_global(self) -> None:
+        """block_index in changes must be doc-global, not chunk-local."""
+        # 6-block doc chunked at 3 → 2 API calls.
+        # API swaps Description→Diagnosis in both chunks.
+        chunk1_response = (
+            "[@Block 0.#Diagnosis*]\n\n"
+            "[@Block 1.#Diagnosis*]\n\n"
+            "[@Block 2.#Diagnosis*]\n"
+        )
+        chunk2_response = (
+            "[@Block 3.#Diagnosis*]\n\n"
+            "[@Block 4.#Diagnosis*]\n\n"
+            "[@Block 5.#Diagnosis*]\n"
+        )
+
+        def _make_msg(text: str) -> MagicMock:
+            m = MagicMock()
+            m.content = [MagicMock(text=text)]
+            return m
+
+        client = MagicMock()
+        client.messages.create.side_effect = [
+            _make_msg(chunk1_response),
+            _make_msg(chunk2_response),
+        ]
+        ann = _make_oversized_ann(6)
+        _, changes = relabel_ann_chunked(
+            client, ann, "test-model", "doc1", chunk_size=3
+        )
+        indices = [c["block_index"] for c in changes]
+        # Should span 0–5 (all 6 blocks changed), not 0–2 twice
+        self.assertEqual(sorted(indices), list(range(6)))
+
+    def test_large_doc_calls_api_multiple_times(self) -> None:
+        ann = _make_oversized_ann(9)
+        client = self._make_client(
+            _make_oversized_ann(3)  # each chunk has 3 blocks
+        )
+        relabel_ann_chunked(
+            client, ann, "test-model", "doc1", chunk_size=3
+        )
+        # 9 blocks / 3 per chunk = 3 API calls
+        self.assertEqual(client.messages.create.call_count, 3)
 
 
 if __name__ == "__main__":

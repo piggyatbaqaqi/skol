@@ -56,10 +56,12 @@ _DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 _ANN_ATTACHMENT = "article.txt.ann"
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 2.0  # seconds
-# Documents with more blocks than this are skipped: the output alone would
-# exceed the model's max_tokens and the prompt itself would be enormous.
-# Handle them directly in brat instead.
-_MAX_BLOCKS = 300
+# Blocks per API call.  Chunks of this size fit comfortably within the 8192
+# output-token limit even for verbose documents.
+_DEFAULT_CHUNK_SIZE = 150
+# Hard ceiling: documents above this block count are skipped even with
+# chunking (extreme edge case — thousands of chunks would be impractical).
+_MAX_BLOCKS = 5000
 
 # Pricing per million tokens (as of 2026-03).
 # Only used for --estimate output; not authoritative.
@@ -240,6 +242,89 @@ def relabel_ann(
 
 
 # ---------------------------------------------------------------------------
+# Chunked relabeling for large documents
+# ---------------------------------------------------------------------------
+
+def chunk_ann(ann_text: str, chunk_size: int) -> List[str]:
+    """Split a YEDDA .ann text into chunks of at most chunk_size blocks.
+
+    Each chunk is a valid standalone .ann string.  The split is on block
+    boundaries only — no block is ever broken in half.
+
+    Args:
+        ann_text: Full YEDDA-annotated text.
+        chunk_size: Maximum number of YEDDA blocks per chunk.
+
+    Returns:
+        List of YEDDA strings, each containing at most chunk_size blocks.
+        Returns a single-element list when the document is already small enough.
+    """
+    matches = list(_YEDDA_BLOCK_RE.finditer(ann_text))
+    if not matches:
+        return [ann_text]
+    chunks: List[str] = []
+    for i in range(0, len(matches), chunk_size):
+        batch = matches[i:i + chunk_size]
+        chunk = "\n\n".join(
+            f"[@{m.group(1)}#{m.group(2)}*]" for m in batch
+        ) + "\n"
+        chunks.append(chunk)
+    return chunks
+
+
+def relabel_ann_chunked(
+    client: Any,
+    ann_text: str,
+    model: str,
+    doc_id: str,
+    chunk_size: int,
+) -> Tuple[str, List[Dict[str, Any]]]:
+    """Relabel a .ann file, splitting into chunks if necessary.
+
+    Documents with more blocks than chunk_size are split and each chunk is
+    sent as a separate API call.  The results are reassembled into a single
+    .ann string and the block indices in the change list are adjusted to
+    refer to the full document.
+
+    Blocks at chunk boundaries may lack context from adjacent chunks; the
+    resulting label may be less accurate than for blocks in the middle of a
+    chunk.  This is an accepted trade-off: partial labeling is more useful
+    than skipping the document entirely.
+
+    Args:
+        client: anthropic.Anthropic client.
+        ann_text: Original YEDDA-annotated text.
+        model: Claude model ID.
+        doc_id: Document ID (used in log messages and error strings).
+        chunk_size: Maximum blocks per API call.
+
+    Returns:
+        Tuple of (relabeled_ann_text, changes) where changes covers all
+        chunks with block indices relative to the full document.
+    """
+    chunks = chunk_ann(ann_text, chunk_size)
+    if len(chunks) == 1:
+        return relabel_ann(client, ann_text, model, doc_id)
+
+    relabeled_parts: List[str] = []
+    all_changes: List[Dict[str, Any]] = []
+    block_offset = 0
+
+    for idx, chunk in enumerate(chunks):
+        chunk_id = f"{doc_id} [chunk {idx + 1}/{len(chunks)}]"
+        new_chunk, changes = relabel_ann(client, chunk, model, chunk_id)
+        relabeled_parts.append(new_chunk.rstrip("\n"))
+        for c in changes:
+            adjusted = dict(c)
+            adjusted["block_index"] += block_offset
+            all_changes.append(adjusted)
+        block_offset += len(_YEDDA_BLOCK_RE.findall(chunk))
+
+    new_text = "\n\n".join(relabeled_parts) + "\n"
+    return new_text, all_changes
+
+
+# ---------------------------------------------------------------------------
 # Token estimation (no generation)
 # ---------------------------------------------------------------------------
 
@@ -402,6 +487,7 @@ def process_documents(
     log_file: Optional[Path],
     verbosity: int,
     max_blocks: int = _MAX_BLOCKS,
+    chunk_size: int = _DEFAULT_CHUNK_SIZE,
 ) -> Dict[str, int]:
     """Relabel all documents and write results to the staging database.
 
@@ -416,7 +502,9 @@ def process_documents(
         dry_run: If True, do not write to staging DB.
         log_file: Path to write JSONL change log, or None.
         verbosity: Logging verbosity.
-        max_blocks: Skip documents with more blocks than this threshold.
+        max_blocks: Hard ceiling; documents above this count are skipped even
+            with chunking.
+        chunk_size: Maximum blocks per API call; larger documents are split.
 
     Returns:
         Summary counts.
@@ -438,8 +526,8 @@ def process_documents(
         docs_skipped = len(oversized)
         for doc_id, count in sorted(oversized.items(), key=lambda x: -x[1]):
             print(
-                f"  SKIP {doc_id}: {count} blocks exceeds --max-blocks {max_blocks}"
-                f" — annotate directly in brat",
+                f"  SKIP {doc_id}: {count} blocks exceeds hard limit "
+                f"--max-blocks {max_blocks} — annotate directly in brat",
                 file=sys.stderr,
             )
         ann_texts = {k: v for k, v in ann_texts.items() if k not in oversized}
@@ -449,7 +537,9 @@ def process_documents(
     ) -> Tuple[str, Optional[str], List[Dict[str, Any]], Optional[str]]:
         doc_id, ann_text = item
         try:
-            new_text, changes = relabel_ann(client, ann_text, model, doc_id)
+            new_text, changes = relabel_ann_chunked(
+                client, ann_text, model, doc_id, chunk_size
+            )
             return doc_id, new_text, changes, None
         except Exception as exc:  # noqa: BLE001
             return doc_id, None, [], str(exc)
@@ -580,13 +670,24 @@ def main() -> None:
         help="Process at most N documents.",
     )
     parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=_DEFAULT_CHUNK_SIZE,
+        metavar="N",
+        help=(
+            f"Maximum YEDDA blocks per API call (default: {_DEFAULT_CHUNK_SIZE}). "
+            "Larger documents are split into chunks of this size."
+        ),
+    )
+    parser.add_argument(
         "--max-blocks",
         type=int,
         default=_MAX_BLOCKS,
         metavar="N",
         help=(
-            f"Skip documents with more than N YEDDA blocks (default: {_MAX_BLOCKS}). "
-            "Oversized documents should be annotated directly in brat."
+            f"Hard ceiling: skip documents with more than N blocks "
+            f"(default: {_MAX_BLOCKS}). Chunking handles everything below "
+            "this; raise only for extreme edge cases."
         ),
     )
     parser.add_argument(
@@ -766,6 +867,7 @@ def main() -> None:
         log_file=log_path if not args.dry_run else None,
         verbosity=verbosity,
         max_blocks=args.max_blocks,
+        chunk_size=args.chunk_size,
     )
 
     if verbosity >= 1:
