@@ -76,6 +76,7 @@ setup(
     },
     data_files=[
         ("share/skol", ["debian/skol.service"]),
+        ("etc/logrotate.d", ["etc/logrotate.d/skol"]),
         ("share/skol/ontologies", [
             "data/ontologies/pato.obo",
             "data/ontologies/fao.obo",
