@@ -68,12 +68,30 @@ class TestYeddaToBrat(unittest.TestCase):
         self.assertEqual(plaintext, "")
         self.assertEqual(ann, "")
 
+    def test_empty_block_skipped(self) -> None:
+        # Empty blocks produce zero-length brat spans that crash the JS renderer.
+        yedda = "[@Amanita muscaria#Nomenclature*]\n\n[@#Misc-exposition*]"
+        plaintext, ann = yedda_to_brat(yedda)
+        self.assertEqual(plaintext, "Amanita muscaria")
+        self.assertNotIn(" 0 0", ann)  # no zero-length span
+        lines = [ln for ln in ann.splitlines() if ln.startswith("T")]
+        self.assertEqual(len(lines), 1)
+
     def test_multiline_block(self) -> None:
         yedda = "[@Line one\nLine two#Description*]"
         plaintext, ann = yedda_to_brat(yedda)
         self.assertEqual(plaintext, "Line one\nLine two")
         # len("Line one\nLine two") == 17
         self.assertIn("Description 0 17", ann)
+
+    def test_multiline_block_t_line_is_single_line(self) -> None:
+        # Newlines in the text field are escaped as \n so the T-line stays
+        # on a single line and the standoff format remains parseable.
+        yedda = "[@Line one\nLine two#Description*]"
+        _, ann = yedda_to_brat(yedda)
+        t_line = next(ln for ln in ann.splitlines() if ln.startswith("T1"))
+        self.assertNotIn("\n", t_line)
+        self.assertEqual(t_line, "T1\tDescription 0 17\tLine one\\nLine two")
 
     def test_unicode_text(self) -> None:
         # Non-ASCII characters; offsets are character-based (not byte-based).

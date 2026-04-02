@@ -95,6 +95,8 @@ def yedda_to_brat(
     for match in _YEDDA_BLOCK_RE.finditer(yedda_text):
         text = match.group(1)
         tag = match.group(2).strip()
+        if not text:  # skip empty blocks — they produce zero-length brat spans
+            continue
         blocks.append((text, tag))
 
     if not blocks:
@@ -109,7 +111,8 @@ def yedda_to_brat(
     for i, (text, tag) in enumerate(blocks, start=1):
         start = offset
         end = offset + len(text)
-        ann_lines.append(f"T{i}\t{tag} {start} {end}\t{text}")
+        escaped = text.replace("\n", "\\n")
+        ann_lines.append(f"T{i}\t{tag} {start} {end}\t{escaped}")
         offset = end + 2  # skip the "\n\n" separator
 
     ann = "\n".join(ann_lines)
