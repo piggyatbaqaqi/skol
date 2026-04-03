@@ -78,8 +78,12 @@ _PRICING: Dict[str, Dict[str, float]] = {
 
 _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
     (Tag.NOMENCLATURE,
-     "Formal name statement, authorship, nomenclatural acts "
-     "(new species, new combination, etc.)"),
+     "Complete Taxonomic Citation: formal name + authorship, "
+     "nomenclatural act (sp. nov., comb. nov., etc.), synonymy "
+     "(nomenclature citations), and any immediately following "
+     "iconography / figure-plate references (e.g. 'Pl. 5, Figs. 1–3'). "
+     "Include the entire treatment header unit even if it spans several "
+     "typographic lines."),
     (Tag.DESCRIPTION,
      "Morphological description: macro/microscopic features, dimensions, "
      "colour, spore ornamentation, etc."),

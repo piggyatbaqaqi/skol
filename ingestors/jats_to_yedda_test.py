@@ -986,5 +986,102 @@ class TestEmptyAndEdgeCases(unittest.TestCase):
         self.assertEqual(blocks[0].tag, Tag.NOMENCLATURE)
 
 
+class TestFigureCitationFolding(unittest.TestCase):
+    """Figure-citation secs are folded into the preceding Nomenclature block."""
+
+    def _treatment(self, fig_sec_type: str) -> str:
+        return (
+            '<tp:taxon-treatment xmlns:tp="http://www.plazi.org/taxpub">'
+            "<tp:nomenclature>"
+            "<tp:taxon-name>Coprinus urticicola</tp:taxon-name>"
+            "</tp:nomenclature>"
+            f'<tp:treatment-sec sec-type="{fig_sec_type}">'
+            "<p>Figs. 10-14</p>"
+            "</tp:treatment-sec>"
+            '<tp:treatment-sec sec-type="description">'
+            "<p>Pileus 2-4 cm.</p>"
+            "</tp:treatment-sec>"
+            "</tp:taxon-treatment>"
+        )
+
+    def test_figure_citations_folded_into_nomenclature(self) -> None:
+        elem = ET.fromstring(self._treatment("figure-citations"))
+        blocks = process_treatment(elem)
+        nomenclature_blocks = [b for b in blocks if b.tag == Tag.NOMENCLATURE]
+        self.assertEqual(len(nomenclature_blocks), 1)
+        self.assertIn("Coprinus urticicola", nomenclature_blocks[0].text)
+        self.assertIn("Figs. 10-14", nomenclature_blocks[0].text)
+
+    def test_figure_citations_variants(self) -> None:
+        for sec_type in ("figure-citations", "figure_citations", "plates",
+                         "plate", "figures cited", "figure citation"):
+            with self.subTest(sec_type=sec_type):
+                elem = ET.fromstring(self._treatment(sec_type))
+                blocks = process_treatment(elem)
+                nom = [b for b in blocks if b.tag == Tag.NOMENCLATURE]
+                self.assertEqual(len(nom), 1)
+                self.assertIn("Figs. 10-14", nom[0].text)
+
+    def test_description_block_still_separate(self) -> None:
+        elem = ET.fromstring(self._treatment("figure-citations"))
+        blocks = process_treatment(elem)
+        desc = [b for b in blocks if b.tag == Tag.DESCRIPTION]
+        self.assertEqual(len(desc), 1)
+        self.assertIn("Pileus", desc[0].text)
+
+    def test_figure_citation_without_preceding_nomenclature(self) -> None:
+        """If there is no preceding nomenclature block, start a new one."""
+        xml = (
+            '<tp:taxon-treatment xmlns:tp="http://www.plazi.org/taxpub">'
+            '<tp:treatment-sec sec-type="figure-citations">'
+            "<p>Figs. 1-3</p>"
+            "</tp:treatment-sec>"
+            "</tp:taxon-treatment>"
+        )
+        elem = ET.fromstring(xml)
+        blocks = process_treatment(elem)
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0].tag, Tag.NOMENCLATURE)
+        self.assertIn("Figs. 1-3", blocks[0].text)
+
+    def test_jats_treatment_figure_citations_folded(self) -> None:
+        """process_jats_treatment also folds figure-citation secs."""
+        xml = (
+            '<sec sec-type="taxon-treatment">'
+            "<title>Coprinus urticicola (Berk.) Buller</title>"
+            '<sec sec-type="figure-citations"><p>Figs. 1-5</p></sec>'
+            '<sec sec-type="description"><p>Pileus 2-4 cm.</p></sec>'
+            "</sec>"
+        )
+        elem = ET.fromstring(xml)
+        blocks = process_jats_treatment(elem)
+        nom = [b for b in blocks if b.tag == Tag.NOMENCLATURE]
+        self.assertEqual(len(nom), 1)
+        self.assertIn("Coprinus urticicola", nom[0].text)
+        self.assertIn("Figs. 1-5", nom[0].text)
+
+
+class TestSecTypeToTagFigureCitations(unittest.TestCase):
+    """sec_type_to_tag maps figure-citation variants to NOMENCLATURE."""
+
+    def test_figure_citations(self) -> None:
+        self.assertEqual(sec_type_to_tag("figure-citations"), Tag.NOMENCLATURE)
+
+    def test_figure_citations_underscore(self) -> None:
+        self.assertEqual(sec_type_to_tag("figure_citations"), Tag.NOMENCLATURE)
+
+    def test_figures_cited(self) -> None:
+        self.assertEqual(sec_type_to_tag("figures cited"), Tag.NOMENCLATURE)
+
+    def test_figure_citation_singular(self) -> None:
+        self.assertEqual(sec_type_to_tag("figure citation"), Tag.NOMENCLATURE)
+
+    def test_plates(self) -> None:
+        self.assertEqual(sec_type_to_tag("plates"), Tag.NOMENCLATURE)
+
+    def test_plate(self) -> None:
+        self.assertEqual(sec_type_to_tag("plate"), Tag.NOMENCLATURE)
+
+
 if __name__ == "__main__":
     unittest.main()

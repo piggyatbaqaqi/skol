@@ -159,6 +159,10 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st in ("biology", "ecology", "host"):
         return Tag.BIOLOGY
 
+    if st in ("figure-citations", "figure_citations", "figures cited",
+              "figure citation", "plates", "plate"):
+        return Tag.NOMENCLATURE
+
     if st in ("notes", "comments", "note"):
         return Tag.NOTES
 
@@ -238,7 +242,15 @@ def process_treatment(treatment_elem: ET.Element) -> List[TaggedBlock]:
             text = clean_passage_text(
                 re.sub(r"\s+", " ", extract_text(child, _SKIP_TAGS_WITH_FIG))
             )
-            if text:
+
+            if tag == Tag.NOMENCLATURE and text:
+                # Figure-citation sec — fold into the preceding Nomenclature
+                # block so the full Taxonomic Citation stays in one block.
+                if blocks and blocks[-1].tag == Tag.NOMENCLATURE:
+                    blocks[-1].text = f"{blocks[-1].text} {text}"
+                else:
+                    blocks.append(TaggedBlock(text=text, tag=Tag.NOMENCLATURE))
+            elif text:
                 blocks.append(TaggedBlock(text=text, tag=tag))
 
             # Extract fig blocks separately
@@ -346,7 +358,15 @@ def process_jats_treatment(treatment_sec: ET.Element) -> List[TaggedBlock]:
         text = clean_passage_text(
             re.sub(r"\s+", " ", extract_text(child, _SKIP_TAGS_WITH_FIG))
         )
-        if text:
+
+        if tag == Tag.NOMENCLATURE and text:
+            # Figure-citation sec — fold into the preceding Nomenclature
+            # block so the full Taxonomic Citation stays in one block.
+            if blocks and blocks[-1].tag == Tag.NOMENCLATURE:
+                blocks[-1].text = f"{blocks[-1].text} {text}"
+            else:
+                blocks.append(TaggedBlock(text=text, tag=Tag.NOMENCLATURE))
+        elif text:
             blocks.append(TaggedBlock(text=text, tag=tag))
         blocks.extend(extract_fig_blocks(child))
 
