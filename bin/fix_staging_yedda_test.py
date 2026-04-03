@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fix_staging_yedda import (
+    _YEDDA_BLOCK_RE,
     _infer_outer_tag,
     add_page_markers,
     fix_malformed_blocks,
@@ -286,7 +287,34 @@ class TestFixYedda:
 
     def test_clean_doc_returns_unchanged(self):
         """A clean doc with no pages returns stats of all zeros."""
-        yedda = "[@Taxon name.#Nomenclature*]\n\n[@Description text.#Description*]\n"
+        yedda = (
+            "[@Taxon name.#Nomenclature*]\n\n"
+            "[@Description text.#Description*]\n"
+        )
         fixed, stats = fix_yedda(yedda, pages=None)
         assert stats["n_malformed"] == 0
         assert stats["n_page_markers"] == 0
+
+    def test_three_level_nesting_fully_unwound(self):
+        """Three levels of nesting require two passes; fix_yedda iterates."""
+        # Level 1 block swallows levels 2 and 3.
+        # After pass 1: level-1 outer text + level-2 block (which has [@) + level-3 block.
+        # After pass 2: all three blocks are clean.
+        yedda = (
+            "[@Outer text.\n\n"
+            "[@Middle text.\n\n"
+            "[@Inner text.#Notes*]"
+            "#Misc-exposition*]\n"
+        )
+        fixed, stats = fix_yedda(yedda, pages=None)
+        assert stats["n_malformed"] >= 2
+        # No block text should still contain [@
+        texts_with_nested = [
+            m.group(1)
+            for m in _YEDDA_BLOCK_RE.finditer(fixed)
+            if "[@" in m.group(1)
+        ]
+        assert not texts_with_nested
+        assert "Outer text." in fixed
+        assert "Middle text." in fixed
+        assert "Inner text." in fixed

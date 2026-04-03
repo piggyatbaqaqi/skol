@@ -22,7 +22,8 @@ Two fixes applied to each document:
 Usage::
 
     python bin/fix_staging_yedda.py [--staging-db NAME] [--dry-run] [-v]
-    python bin/fix_staging_yedda.py --doc-id ID [--staging-db NAME] [--dry-run] [-v]
+    python bin/fix_staging_yedda.py --doc-id ID [--staging-db NAME] \
+        [--dry-run] [-v]
 """
 
 import argparse
@@ -65,7 +66,8 @@ _OUTER_TAG_RULES: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"^etymology\b", re.I), "Etymology"),
     (re.compile(r"^description\b|^morphology\b", re.I), "Description"),
     (re.compile(r"^nomenclature\b|^taxonomy\b", re.I), "Nomenclature"),
-    (re.compile(r"^type\s+designation\b|^holotype\b", re.I), "Type-designation"),
+    (re.compile(r"^type\s+designation\b|^holotype\b", re.I),
+     "Type-designation"),
 ]
 
 
@@ -262,8 +264,9 @@ def fix_yedda(
 ) -> Tuple[str, Dict[str, int]]:
     """Apply all fixes to a YEDDA string.
 
-    Applies :func:`fix_malformed_blocks` first, then
-    :func:`add_page_markers` (if *pages* is provided).
+    Applies :func:`fix_malformed_blocks` repeatedly until no malformed blocks
+    remain (handles multi-level nesting), then :func:`add_page_markers` (if
+    *pages* is provided).
 
     Args:
         yedda: Raw YEDDA-annotated text.
@@ -274,11 +277,22 @@ def fix_yedda(
         Tuple of (fixed_yedda, stats) where *stats* contains:
         ``n_malformed``, ``n_page_markers``.
     """
-    fixed, n_malformed = fix_malformed_blocks(yedda)
+    fixed = yedda
+    n_malformed = 0
+    for _ in range(20):  # safety limit; nested depth never approaches 20
+        step, n = fix_malformed_blocks(fixed)
+        n_malformed += n
+        if n == 0:
+            break
+        fixed = step
+
     n_page_markers = 0
     if pages:
         fixed, n_page_markers = add_page_markers(fixed, pages)
-    return fixed, {"n_malformed": n_malformed, "n_page_markers": n_page_markers}
+    return fixed, {
+        "n_malformed": n_malformed,
+        "n_page_markers": n_page_markers,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -412,17 +426,26 @@ def main() -> None:
     parser.add_argument(
         "--staging-db",
         default="skol_staging",
-        help="CouchDB database with YEDDA annotations to fix (default: skol_staging).",
+        help=(
+            "CouchDB database with YEDDA annotations to fix"
+            " (default: skol_staging)."
+        ),
     )
     parser.add_argument(
         "--training-db",
         default="skol_training",
-        help="CouchDB database used to resolve skol_dev_id (default: skol_training).",
+        help=(
+            "CouchDB database used to resolve skol_dev_id"
+            " (default: skol_training)."
+        ),
     )
     parser.add_argument(
         "--dev-db",
         default="skol_dev",
-        help="CouchDB database with article.txt page markers (default: skol_dev).",
+        help=(
+            "CouchDB database with article.txt page markers"
+            " (default: skol_dev)."
+        ),
     )
     parser.add_argument(
         "--doc-id",
