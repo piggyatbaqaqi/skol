@@ -27,9 +27,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # brat entity line parser
 # ---------------------------------------------------------------------------
 
-# Matches: T<n>\t<Label> <start> <end>\t<text>
+# Matches: T<n>\t<Label> <start> <end>[\t<text>]  (text field is optional)
 _BRAT_ENTITY_RE = re.compile(
-    r"^T\d+\t([A-Za-z][A-Za-z0-9_-]{0,49})\s+(\d+)\s+(\d+)\t(.*)$"
+    r"^T\d+\t([A-Za-z][A-Za-z0-9_-]{0,49})\s+(\d+)\s+(\d+)(?:\t(.*))?$"
 )
 
 
@@ -43,16 +43,17 @@ def brat_to_yedda(plaintext: str, ann: str) -> str:
     Non-entity lines (``R…``, ``A…``, ``#…``) are ignored.
 
     Args:
-        plaintext: The plain text that *ann* annotates (used only for
-            character-count validation; the text in the ann line is used
-            for the YEDDA block content).
+        plaintext: The plain text that *ann* annotates.  Block text is
+            recovered via character offsets (``plaintext[start:end]``),
+            so literal newlines are preserved correctly even when the
+            ann text field uses ``\\n`` escape sequences.
         ann: brat standoff annotation string.
 
     Returns:
         YEDDA-annotated string.  Returns ``""`` if *ann* contains no
         entity lines.
     """
-    entities: List[Tuple[int, int, str, str]] = []  # (start, end, label, text)
+    entities: List[Tuple[int, int, str]] = []  # (start, end, label)
 
     for line in ann.splitlines():
         m = _BRAT_ENTITY_RE.match(line.strip())
@@ -61,15 +62,15 @@ def brat_to_yedda(plaintext: str, ann: str) -> str:
         label = m.group(1)
         start = int(m.group(2))
         end = int(m.group(3))
-        text = m.group(4)
-        entities.append((start, end, label, text))
+        entities.append((start, end, label))
 
     if not entities:
         return ""
 
     entities.sort(key=lambda e: e[0])
 
-    blocks = [f"[@{text}#{label}*]" for start, end, label, text in entities]
+    blocks = [f"[@{plaintext[start:end]}#{label}*]"
+              for start, end, label in entities]
     return "\n\n".join(blocks) + "\n"
 
 
