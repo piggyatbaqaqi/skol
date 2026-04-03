@@ -147,7 +147,7 @@ class TestFungariumDetector(unittest.TestCase):
 
 
 class TestDetectParticlesStatic(unittest.TestCase):
-    """detect_particles finds DOI, MB-number, Page-ref, GBIF-ID."""
+    """detect_particles finds DOI, MB-number, Page-ref, GBIF-ID, ISSN."""
 
     def _detect(self, text: str) -> list:
         with patch("ingestors.particle_detector._load_fungaria_codes", return_value=[]):
@@ -182,6 +182,21 @@ class TestDetectParticlesStatic(unittest.TestCase):
         spans = self._detect("GBIF: 1234567 in the database.")
         labels = [s.label for s in spans]
         self.assertIn("GBIF-ID", labels)
+
+    def test_detects_issn(self) -> None:
+        spans = self._detect("Published in ISSN 0027-5514.")
+        labels = [s.label for s in spans]
+        self.assertIn("ISSN", labels)
+
+    def test_detects_issn_with_colon(self) -> None:
+        spans = self._detect("ISSN: 0027-5514")
+        labels = [s.label for s in spans]
+        self.assertIn("ISSN", labels)
+
+    def test_detects_issn_check_digit_x(self) -> None:
+        spans = self._detect("ISSN 1234-567X")
+        labels = [s.label for s in spans]
+        self.assertIn("ISSN", labels)
 
     def test_no_match_returns_empty(self) -> None:
         spans = self._detect("Nothing special in this text.")

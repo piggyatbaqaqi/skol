@@ -5,6 +5,7 @@ Detects:
 - MycoBank (MB) numbers
 - Page references (p. / pp.)
 - GBIF identifiers
+- ISSN numbers
 - Fungarium collection codes (loaded from Redis + personal_fungaria.json)
 
 Fungarium codes are loaded from the ``skol:fungaria`` Redis key maintained
@@ -35,6 +36,7 @@ _PATTERNS: Dict[str, re.Pattern] = {  # type: ignore[type-arg]
     ),
     "Page-ref": re.compile(r'\b(?:p\.|pp\.)\s*(\d+(?:[-\u2013]\d+)?)'),
     "GBIF-ID": re.compile(r'\bGBIF[:\s]+(\d{7,})\b', re.IGNORECASE),
+    "ISSN": re.compile(r'\bISSN\s*:?\s*(\d{4}-\d{3}[\dX])\b', re.IGNORECASE),
 }
 
 # Path to the personal fungaria JSON (relative to this module's package dir)
