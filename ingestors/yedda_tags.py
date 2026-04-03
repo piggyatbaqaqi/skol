@@ -26,6 +26,9 @@ class Tag(str, Enum):
     BIBLIOGRAPHY = "Bibliography"
     TABLE = "Table"
     MISC_EXPOSITION = "Misc-exposition"
+    # Structural / pagination tags — not taxonomic content, but used in
+    # PDF-sourced annotations to mark running heads and section dividers.
+    PAGE_HEADER = "Page-header"
     # Deprecated: retained so existing .ann files with Holotype remain parseable.
     HOLOTYPE = "Holotype"
 
