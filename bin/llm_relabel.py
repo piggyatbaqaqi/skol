@@ -92,6 +92,9 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
     (Tag.MATERIALS_EXAMINED,
      "List of specimens examined; herbarium/museum accessions; "
      "collector, date, location data (typically >2 lines)"),
+    (Tag.MATERIALS_AND_METHODS,
+     "Methods section describing techniques, protocols, or procedures "
+     "used in the study — not a specimen list"),
     (Tag.TYPE_DESIGNATION,
      "Holotype/lectotype/neotype designation line — short (1-2 lines); "
      "longer specimen lists → Materials-examined instead"),
@@ -133,7 +136,7 @@ def _build_user_prompt(ann_text: str) -> str:
         f"  {tag.value}: {defn}" for tag, defn in _TAG_DEFINITIONS
     )
     return (
-        "Relabel the YEDDA-annotated text below using the 12-tag scheme.\n\n"
+        "Relabel the YEDDA-annotated text below using the 13-tag scheme.\n\n"
         "TAG DEFINITIONS:\n"
         f"{tag_lines}\n\n"
         "RULES:\n"
@@ -142,8 +145,10 @@ def _build_user_prompt(ann_text: str) -> str:
         "separated by blank lines.\n"
         "3. Holotype blocks → Type-designation (≤2 lines) or "
         "Materials-examined (>2 lines).\n"
-        "4. If a block is already correctly labeled, keep it unchanged.\n"
-        "5. Use only the 12 tags defined above.\n\n"
+        "4. Materials-and-methods describes techniques/protocols; "
+        "Materials-examined lists specific specimens.\n"
+        "5. If a block is already correctly labeled, keep it unchanged.\n"
+        "6. Use only the 13 tags defined above.\n\n"
         "INPUT:\n"
         f"{ann_text}"
     )

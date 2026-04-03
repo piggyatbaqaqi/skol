@@ -18,6 +18,7 @@ class Tag(str, Enum):
     ETYMOLOGY = "Etymology"
     DISTRIBUTION = "Distribution"
     MATERIALS_EXAMINED = "Materials-examined"
+    MATERIALS_AND_METHODS = "Materials-and-methods"
     TYPE_DESIGNATION = "Type-designation"
     BIOLOGY = "Biology"
     NOTES = "Notes"

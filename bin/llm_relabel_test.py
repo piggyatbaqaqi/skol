@@ -67,8 +67,8 @@ class TestBuildUserPrompt(unittest.TestCase):
     def test_contains_all_tags(self) -> None:
         prompt = _build_user_prompt(_ANN_8TAG)
         for tag in Tag:
-            if tag == Tag.HOLOTYPE:
-                continue  # deprecated, not in definitions
+            if tag in (Tag.HOLOTYPE, Tag.PAGE_HEADER):
+                continue  # structural/deprecated — not in LLM definitions
             self.assertIn(tag.value, prompt)
 
     def test_contains_input_text(self) -> None:
