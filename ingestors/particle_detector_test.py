@@ -211,5 +211,61 @@ class TestDetectParticlesStatic(unittest.TestCase):
         self.assertTrue(all(s.source == "regex" for s in spans))
 
 
+class TestIconographyHeader(unittest.TestCase):
+    """Iconography-header pattern detects selected-icons section headings."""
+
+    def _detect(self, text: str) -> list:
+        with patch(
+            "ingestors.particle_detector._load_fungaria_codes",
+            return_value=[],
+        ):
+            return detect_particles(text, redis_client=None)
+
+    def _labels(self, text: str) -> list:
+        return [s.label for s in self._detect(text)]
+
+    def test_selected_icons(self) -> None:
+        self.assertIn("Iconography-header", self._labels("Selected icons."))
+
+    def test_selected_icon_singular(self) -> None:
+        self.assertIn("Iconography-header", self._labels("Selected icon:"))
+
+    def test_selected_iconography(self) -> None:
+        self.assertIn(
+            "Iconography-header",
+            self._labels("Selected iconography. Bres., Fung. Trid., t. 106."),
+        )
+
+    def test_selected_illustrations(self) -> None:
+        self.assertIn(
+            "Iconography-header",
+            self._labels("Selected illustrations - Cooke, Ill. Brit. Fung."),
+        )
+
+    def test_iconography_standalone(self) -> None:
+        self.assertIn("Iconography-header", self._labels("Iconography:"))
+
+    def test_case_insensitive(self) -> None:
+        self.assertIn("Iconography-header", self._labels("SELECTED ICONS."))
+
+    def test_mid_sentence_not_matched(self) -> None:
+        # "icons" without "selected" prefix is not an iconography header
+        labels = self._labels("The icons used in this figure are standard.")
+        self.assertNotIn("Iconography-header", labels)
+
+    def test_span_covers_header_phrase(self) -> None:
+        spans = self._detect("Selected icons. - Bres., Fung. Trid., t. 106.")
+        icon_spans = [s for s in spans if s.label == "Iconography-header"]
+        self.assertEqual(len(icon_spans), 1)
+        self.assertIn("Selected icons", icon_spans[0].text)
+
+    def test_in_bibliography_block(self) -> None:
+        text = (
+            "Selected icons. - Cooke, Ill. Brit. Fung. Pl. 476 (1881); "
+            "Fries, Icon. t. 168, f. 2 (1867)."
+        )
+        self.assertIn("Iconography-header", self._labels(text))
+
+
 if __name__ == "__main__":
     unittest.main()

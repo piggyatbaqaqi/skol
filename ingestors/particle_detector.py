@@ -6,6 +6,7 @@ Detects:
 - Page references (p. / pp.)
 - GBIF identifiers
 - ISSN numbers
+- Iconography-header phrases ("Selected icons", "Iconography", etc.)
 - Fungarium collection codes (loaded from Redis + personal_fungaria.json)
 
 Fungarium codes are loaded from the ``skol:fungaria`` Redis key maintained
@@ -37,6 +38,18 @@ _PATTERNS: Dict[str, re.Pattern] = {  # type: ignore[type-arg]
     "Page-ref": re.compile(r'\b(?:p\.|pp\.)\s*(\d+(?:[-\u2013]\d+)?)'),
     "GBIF-ID": re.compile(r'\bGBIF[:\s]+(\d{7,})\b', re.IGNORECASE),
     "ISSN": re.compile(r'\bISSN\s*:?\s*(\d{4}-\d{3}[\dX])\b', re.IGNORECASE),
+    # Iconography section headers in taxonomic treatments.  These appear
+    # inside Bibliography-labeled blocks but mark iconographic reference
+    # lists that are part of the taxonomic treatment, not the main
+    # bibliography.  Matching the header phrase allows downstream consumers
+    # to distinguish the two without changing the Layer 1 label.
+    "Iconography-header": re.compile(
+        r'\b(selected\s+icons?'
+        r'|selected\s+iconograph(?:y|ies)'
+        r'|selected\s+illustrations?'
+        r'|iconograph(?:y|ies))\s*[.:\-\u2013]?',
+        re.IGNORECASE,
+    ),
 }
 
 # Path to the personal fungaria JSON (relative to this module's package dir)
