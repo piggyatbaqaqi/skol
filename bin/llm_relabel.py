@@ -113,6 +113,10 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
     (Tag.MISC_EXPOSITION,
      "Everything else: introduction, discussion, acknowledgements, "
      "references, transitional text"),
+    (Tag.PAGE_HEADER,
+     "Running head or page header from a printed journal page — "
+     "structural pagination artefact, not taxonomic content; "
+     "preserve as-is whenever present"),
 ]
 
 _SYSTEM_PROMPT = (
@@ -136,7 +140,7 @@ def _build_user_prompt(ann_text: str) -> str:
         f"  {tag.value}: {defn}" for tag, defn in _TAG_DEFINITIONS
     )
     return (
-        "Relabel the YEDDA-annotated text below using the 13-tag scheme.\n\n"
+        "Relabel the YEDDA-annotated text below using the 14-tag scheme.\n\n"
         "TAG DEFINITIONS:\n"
         f"{tag_lines}\n\n"
         "RULES:\n"
@@ -147,8 +151,10 @@ def _build_user_prompt(ann_text: str) -> str:
         "Materials-examined (>2 lines).\n"
         "4. Materials-and-methods describes techniques/protocols; "
         "Materials-examined lists specific specimens.\n"
-        "5. If a block is already correctly labeled, keep it unchanged.\n"
-        "6. Use only the 13 tags defined above.\n\n"
+        "5. Page-header blocks must always keep their Page-header tag — "
+        "never reassign them.\n"
+        "6. If a block is already correctly labeled, keep it unchanged.\n"
+        "7. Use only the 14 tags defined above.\n\n"
         "INPUT:\n"
         f"{ann_text}"
     )
