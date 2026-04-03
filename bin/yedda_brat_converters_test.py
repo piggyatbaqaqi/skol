@@ -5,13 +5,14 @@ fidelity.
 """
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from yedda_to_brat import add_notes, yedda_to_brat
+from yedda_to_brat import add_notes, write_annotation_conf, yedda_to_brat
 from brat_to_yedda import brat_to_yedda
 
 
@@ -280,6 +281,42 @@ class TestYeddaBratRoundTrip(unittest.TestCase):
         desc_pos = recovered.index("Description")
         self.assertLess(nom_pos, td_pos)
         self.assertLess(td_pos, desc_pos)
+
+
+class TestWriteAnnotationConf(unittest.TestCase):
+    """write_annotation_conf: generates annotation.conf from the Tag enum."""
+
+    def test_file_is_created(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            write_annotation_conf(Path(d))
+            self.assertTrue((Path(d) / "annotation.conf").exists())
+
+    def test_entities_section_present(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            write_annotation_conf(Path(d))
+            content = (Path(d) / "annotation.conf").read_text()
+        self.assertIn("[entities]", content)
+
+    def test_all_tag_values_listed(self) -> None:
+        from ingestors.yedda_tags import Tag
+        with tempfile.TemporaryDirectory() as d:
+            write_annotation_conf(Path(d))
+            content = (Path(d) / "annotation.conf").read_text()
+        for tag in Tag:
+            self.assertIn(tag.value, content)
+
+    def test_page_header_included(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            write_annotation_conf(Path(d))
+            content = (Path(d) / "annotation.conf").read_text()
+        self.assertIn("Page-header", content)
+
+    def test_other_sections_present(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            write_annotation_conf(Path(d))
+            content = (Path(d) / "annotation.conf").read_text()
+        for section in ("[relations]", "[events]", "[attributes]"):
+            self.assertIn(section, content)
 
 
 if __name__ == "__main__":

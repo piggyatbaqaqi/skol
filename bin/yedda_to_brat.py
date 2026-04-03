@@ -125,6 +125,23 @@ def yedda_to_brat(
 # CouchDB batch conversion
 # ---------------------------------------------------------------------------
 
+def write_annotation_conf(output_dir: Path) -> None:
+    """Write brat annotation.conf derived from the Tag enum.
+
+    The file lists every Tag value under ``[entities]``.  It is
+    regenerated on each batch export so it stays in sync with the enum.
+
+    Args:
+        output_dir: Directory to write ``annotation.conf`` into.
+    """
+    from ingestors.yedda_tags import Tag
+    lines = ["[entities]", ""]
+    for tag in Tag:
+        lines.append(tag.value)
+    lines += ["", "[relations]", "", "[events]", "", "[attributes]", ""]
+    (output_dir / "annotation.conf").write_text("\n".join(lines), encoding="utf-8")
+
+
 def convert_staging_db(
     staging_db: Any,
     output_dir: Path,
@@ -134,7 +151,8 @@ def convert_staging_db(
 
     For each document, fetches ``article.txt.ann`` and (if present)
     ``changes.json``, then writes ``{doc_id}.txt`` and ``{doc_id}.ann``
-    to output_dir.
+    to output_dir.  Also writes ``annotation.conf`` derived from the Tag
+    enum so it stays in sync with the current label set.
 
     Args:
         staging_db: CouchDB database object.
@@ -145,6 +163,7 @@ def convert_staging_db(
         Number of documents converted.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+    write_annotation_conf(output_dir)
     count = 0
     for row in staging_db.view("_all_docs", include_docs=False):
         doc_id = row.id
