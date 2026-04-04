@@ -104,6 +104,9 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
      "longer specimen lists → Materials-examined instead"),
     (Tag.BIOLOGY,
      "Ecology, host, habitat, substrate, phenology"),
+    (Tag.PHYLOGENY,
+     "Phylogenetic analysis, cladistic placement, molecular phylogeny, "
+     "or discussion of evolutionary relationships"),
     (Tag.NOTES,
      "Additional remarks, taxonomic notes, informal comments"),
     (Tag.KEY,
@@ -162,7 +165,7 @@ def _build_user_prompt(ann_text: str) -> str:
         "rather than splitting it off. This does not apply to the article "
         "title.\n"
         "7. If a block is already correctly labeled, keep it unchanged.\n"
-        "8. Use only the 14 tags defined above.\n\n"
+        "8. Use only the 15 tags defined above.\n\n"
         "INPUT:\n"
         f"{ann_text}"
     )

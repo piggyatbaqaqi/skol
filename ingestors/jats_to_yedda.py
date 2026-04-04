@@ -159,6 +159,9 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st in ("biology", "ecology", "host"):
         return Tag.BIOLOGY
 
+    if st in ("phylogeny", "phylogenetic analysis", "molecular phylogeny"):
+        return Tag.PHYLOGENY
+
     if st in ("figure-citations", "figure_citations", "figures cited",
               "figure citation", "plates", "plate"):
         return Tag.NOMENCLATURE

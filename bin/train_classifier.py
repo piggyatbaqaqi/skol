@@ -110,6 +110,7 @@ MODEL_CONFIGS = {
             "Materials-examined": 2.0,
             "Type-designation": 2.0,
             "Biology": 2.0,
+            "Phylogeny": 2.0,
             "Notes": 1.5,
             "Key": 1.5,
             "Figure-caption": 1.5,
