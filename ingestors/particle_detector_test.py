@@ -267,5 +267,50 @@ class TestIconographyHeader(unittest.TestCase):
         self.assertIn("Iconography-header", self._labels(text))
 
 
+class TestAuthorFootnote(unittest.TestCase):
+    """Author-footnote pattern detects numbered contact/affiliation markers."""
+
+    def _detect(self, text: str) -> list:
+        with patch(
+            "ingestors.particle_detector._load_fungaria_codes",
+            return_value=[],
+        ):
+            return detect_particles(text, redis_client=None)
+
+    def _labels(self, text: str) -> list:
+        return [s.label for s in self._detect(text)]
+
+    def test_single_footnote_at_line_start(self) -> None:
+        self.assertIn("Author-footnote", self._labels("1) Department of Botany"))
+
+    def test_multiple_footnotes(self) -> None:
+        text = "1) Department of Botany\n2) E-mail: foo@example.com"
+        labels = self._labels(text)
+        self.assertEqual(labels.count("Author-footnote"), 2)
+
+    def test_footnote_mid_sentence_not_matched(self) -> None:
+        # "1)" not at line start — should not match
+        labels = self._labels("See footnote 1) for details.")
+        self.assertNotIn("Author-footnote", labels)
+
+    def test_digit_zero_not_matched(self) -> None:
+        # Pattern is [1-9], so "0)" is not a valid footnote marker
+        self.assertNotIn("Author-footnote", self._labels("0) some text"))
+
+    def test_multidigit_not_matched(self) -> None:
+        # "12)" is not the pattern — only single digits
+        self.assertNotIn("Author-footnote", self._labels("12) Department"))
+
+    def test_span_covers_marker(self) -> None:
+        spans = self._detect("1) Department of Botany")
+        fn_spans = [s for s in spans if s.label == "Author-footnote"]
+        self.assertEqual(len(fn_spans), 1)
+        self.assertEqual(fn_spans[0].text, "1)")
+
+    def test_after_newline_matches(self) -> None:
+        text = "Some text above.\n2) Author address here."
+        self.assertIn("Author-footnote", self._labels(text))
+
+
 if __name__ == "__main__":
     unittest.main()

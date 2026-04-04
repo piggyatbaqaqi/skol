@@ -7,6 +7,7 @@ Detects:
 - GBIF identifiers
 - ISSN numbers
 - Iconography-header phrases ("Selected icons", "Iconography", etc.)
+- Author-footnote markers (``1)``, ``2)``, … at line start — author contact/affiliation footnotes)
 - Fungarium collection codes (loaded from Redis + personal_fungaria.json)
 
 Fungarium codes are loaded from the ``skol:fungaria`` Redis key maintained
@@ -38,6 +39,13 @@ _PATTERNS: Dict[str, re.Pattern] = {  # type: ignore[type-arg]
     "Page-ref": re.compile(r'\b(?:p\.|pp\.)\s*(\d+(?:[-\u2013]\d+)?)'),
     "GBIF-ID": re.compile(r'\bGBIF[:\s]+(\d{7,})\b', re.IGNORECASE),
     "ISSN": re.compile(r'\bISSN\s*:?\s*(\d{4}-\d{3}[\dX])\b', re.IGNORECASE),
+    # Author affiliation / contact footnotes at the bottom of the first page
+    # of a journal article.  The OCR'd text typically looks like:
+    #   "1) Department of Botany, University of ..."
+    #   "2) E-mail: author@example.com"
+    # These are structurally distinct from treatment content and can be used
+    # to detect the transition out of article-header material.
+    "Author-footnote": re.compile(r'^[1-9]\)', re.MULTILINE),
     # Iconography section headers in taxonomic treatments.  These appear
     # inside Bibliography-labeled blocks but mark iconographic reference
     # lists that are part of the taxonomic treatment, not the main
