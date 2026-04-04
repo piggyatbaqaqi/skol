@@ -296,6 +296,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Data paths
         'annotated_path': Path(_get_env('ANNOTATED_PATH', str(Path.cwd().parent / "data" / "annotated"))),
+        'brat_data_dir': Path(_get_env('BRAT_DATA_DIR', '/data/piggy/src/github.com/piggyatbaqaqi/brat/data/skol')),
 
         # Spark settings
         'cores': int(_get_env('SPARK_CORES', '4')),
@@ -352,6 +353,7 @@ def get_env_config() -> Dict[str, Any]:
 
     # Path arguments
     parser.add_argument('--annotated-path', type=str, default=None, dest='annotated_path')
+    parser.add_argument('--brat-data-dir', type=str, default=None, dest='brat_data_dir')
 
     # Work-skipping and partial computation options
     parser.add_argument('--dry-run', action='store_true', default=None, dest='dry_run',
@@ -384,7 +386,7 @@ def get_env_config() -> Dict[str, Any]:
     for key, value in vars(args).items():
         if value is not None:
             cli_explicit_keys.add(key)
-            if key == 'annotated_path':
+            if key in ('annotated_path', 'brat_data_dir'):
                 base_config[key] = Path(value)
             elif key == 'doc_ids':
                 # Parse comma-separated doc IDs from command line

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Convert brat standoff annotations back to YEDDA format.
 
-Reads a brat ``article.txt`` + ``article.ann`` pair and reconstructs the
-``[@text#Tag*]`` YEDDA blocks, sorted by character offset.
+Reads a brat ``{doc_id}.txt`` + ``{doc_id}.ann`` pair from a brat data
+directory and reconstructs the ``[@text#Tag*]`` YEDDA blocks, sorted by
+character offset.
 
 Non-entity annotation lines (relations ``R…``, attributes ``A…``,
 notes ``#…``, etc.) are silently ignored — only ``T…`` entity lines
@@ -11,15 +12,21 @@ are converted.
 Core functions are pure (no I/O) for testability.
 
 Usage:
-    python bin/brat_to_yedda.py TXT_FILE ANN_FILE [OUTPUT.ann] [--verbose]
-    python bin/brat_to_yedda.py TXT_FILE ANN_FILE --database skol_ann_reviewed [--doc-id ID]
+    # Upload directly to CouchDB (most common):
+    python bin/brat_to_yedda.py --doc-id ID --database DB [-v]
+
+    # Write to a local file instead:
+    python bin/brat_to_yedda.py --doc-id ID [--output PATH] [-v]
+
+Configuration (priority: CLI > env var > .skol_env > default):
+    --brat-data-dir / BRAT_DATA_DIR   brat data directory
 """
 
 import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Tuple
 
 _ANN_ATTACHMENT = "article.txt.ann"
 
@@ -83,82 +90,82 @@ def brat_to_yedda(plaintext: str, ann: str) -> str:
 
 def main() -> None:
     """Entry point: convert brat standoff files to a YEDDA .ann file."""
+    from env_config import get_env_config
+    config = get_env_config()
+
     parser = argparse.ArgumentParser(
-        description="Convert brat standoff annotations to YEDDA format."
+        description="Convert brat standoff annotations to YEDDA format.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("txt_file", type=Path, help="brat plain-text file.")
-    parser.add_argument("ann_file", type=Path, help="brat annotation (.ann) file.")
     parser.add_argument(
-        "output",
-        type=Path,
-        nargs="?",
-        default=None,
-        help=(
-            "Output YEDDA file (default: <txt_file>.ann beside the txt file)."
-        ),
+        "--doc-id",
+        required=True,
+        metavar="ID",
+        help="Document ID — used to locate {ID}.txt and {ID}.ann in brat-data-dir.",
     )
-    parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument(
         "--database",
         default=None,
         metavar="DB",
         help=(
             "Upload the YEDDA output as an article.txt.ann attachment to "
-            "this CouchDB database instead of writing a local file."
+            "this CouchDB database.  Mutually exclusive with --output."
         ),
     )
     parser.add_argument(
-        "--doc-id",
+        "--output",
+        type=Path,
         default=None,
-        metavar="ID",
+        metavar="PATH",
         help=(
-            "CouchDB document ID to attach to (default: stem of TXT_FILE, "
-            "e.g. '00b9a9e1...' from '00b9a9e1....txt')."
+            "Write YEDDA output to this local file.  "
+            "Default (when --database is not given): {brat-data-dir}/{doc-id}.txt.ann"
         ),
     )
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    plaintext = args.txt_file.read_text(encoding="utf-8")
-    ann = args.ann_file.read_text(encoding="utf-8")
+    if args.database and args.output:
+        parser.error("--database and --output are mutually exclusive.")
 
+    brat_dir = config["brat_data_dir"]
+    txt_file = brat_dir / f"{args.doc_id}.txt"
+    ann_file = brat_dir / f"{args.doc_id}.ann"
+
+    for path in (txt_file, ann_file):
+        if not path.exists():
+            print(f"✗ File not found: {path}", file=sys.stderr)
+            sys.exit(1)
+
+    plaintext = txt_file.read_text(encoding="utf-8")
+    ann = ann_file.read_text(encoding="utf-8")
     yedda = brat_to_yedda(plaintext, ann)
+    block_count = yedda.count("[@")
 
     if args.database:
         import couchdb
-        from env_config import get_env_config
-        config = get_env_config()
         server = couchdb.Server(config["couchdb_url"])
         server.resource.credentials = (
             config["couchdb_username"],
             config["couchdb_password"],
         )
         db = server[args.database]
-        doc_id = args.doc_id or args.txt_file.stem
-        doc = db.get(doc_id)
+        doc = db.get(args.doc_id)
         if doc is None:
-            db[doc_id] = {}
-            doc = db[doc_id]
+            db[args.doc_id] = {}
+            doc = db[args.doc_id]
         db.put_attachment(doc, yedda.encode("utf-8"), filename=_ANN_ATTACHMENT,
                           content_type="text/plain")
         if args.verbose:
-            block_count = yedda.count("[@")
             print(
                 f"Uploaded {block_count} YEDDA blocks to "
-                f"{args.database}/{doc_id}/{_ANN_ATTACHMENT}",
+                f"{args.database}/{args.doc_id}/{_ANN_ATTACHMENT}",
                 file=sys.stderr,
             )
     else:
-        if args.output is None:
-            output_path = args.txt_file.with_suffix(
-                args.txt_file.suffix + ".ann"
-            )
-        else:
-            output_path = args.output
-
+        output_path = args.output or (brat_dir / f"{args.doc_id}.txt.ann")
         output_path.write_text(yedda, encoding="utf-8")
-
         if args.verbose:
-            block_count = yedda.count("[@")
             print(
                 f"Wrote {block_count} YEDDA blocks to {output_path}",
                 file=sys.stderr,
