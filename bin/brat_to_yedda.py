@@ -12,6 +12,7 @@ Core functions are pure (no I/O) for testability.
 
 Usage:
     python bin/brat_to_yedda.py TXT_FILE ANN_FILE [OUTPUT.ann] [--verbose]
+    python bin/brat_to_yedda.py TXT_FILE ANN_FILE --database skol_ann_reviewed [--doc-id ID]
 """
 
 import argparse
@@ -19,6 +20,8 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+_ANN_ATTACHMENT = "article.txt.ann"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -95,6 +98,24 @@ def main() -> None:
         ),
     )
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument(
+        "--database",
+        default=None,
+        metavar="DB",
+        help=(
+            "Upload the YEDDA output as an article.txt.ann attachment to "
+            "this CouchDB database instead of writing a local file."
+        ),
+    )
+    parser.add_argument(
+        "--doc-id",
+        default=None,
+        metavar="ID",
+        help=(
+            "CouchDB document ID to attach to (default: stem of TXT_FILE, "
+            "e.g. '00b9a9e1...' from '00b9a9e1....txt')."
+        ),
+    )
     args = parser.parse_args()
 
     plaintext = args.txt_file.read_text(encoding="utf-8")
@@ -102,21 +123,46 @@ def main() -> None:
 
     yedda = brat_to_yedda(plaintext, ann)
 
-    if args.output is None:
-        output_path = args.txt_file.with_suffix(
-            args.txt_file.suffix + ".ann"
+    if args.database:
+        import couchdb
+        from env_config import get_env_config
+        config = get_env_config()
+        server = couchdb.Server(config["couchdb_url"])
+        server.resource.credentials = (
+            config["couchdb_username"],
+            config["couchdb_password"],
         )
+        db = server[args.database]
+        doc_id = args.doc_id or args.txt_file.stem
+        doc = db.get(doc_id)
+        if doc is None:
+            db[doc_id] = {}
+            doc = db[doc_id]
+        db.put_attachment(doc, yedda.encode("utf-8"), filename=_ANN_ATTACHMENT,
+                          content_type="text/plain")
+        if args.verbose:
+            block_count = yedda.count("[@")
+            print(
+                f"Uploaded {block_count} YEDDA blocks to "
+                f"{args.database}/{doc_id}/{_ANN_ATTACHMENT}",
+                file=sys.stderr,
+            )
     else:
-        output_path = args.output
+        if args.output is None:
+            output_path = args.txt_file.with_suffix(
+                args.txt_file.suffix + ".ann"
+            )
+        else:
+            output_path = args.output
 
-    output_path.write_text(yedda, encoding="utf-8")
+        output_path.write_text(yedda, encoding="utf-8")
 
-    if args.verbose:
-        block_count = yedda.count("[@")
-        print(
-            f"Wrote {block_count} YEDDA blocks to {output_path}",
-            file=sys.stderr,
-        )
+        if args.verbose:
+            block_count = yedda.count("[@")
+            print(
+                f"Wrote {block_count} YEDDA blocks to {output_path}",
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":
