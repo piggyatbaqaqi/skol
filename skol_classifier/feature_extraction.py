@@ -12,20 +12,22 @@ from pyspark.ml.feature import (
 )
 from pyspark.sql import DataFrame
 
-from .preprocessing import SuffixTransformer
+from .preprocessing import LineLengthTransformer, SuffixTransformer
 
 
 class FeatureExtractor:
     """
     Extracts features from text data for classification.
 
-    Supports word TF-IDF and optional suffix TF-IDF and section name TF-IDF features.
+    Supports word TF-IDF and optional suffix TF-IDF, section name TF-IDF,
+    and line-length features.
     """
 
     def __init__(
         self,
         use_suffixes: bool = True,
         use_section_names: bool = False,
+        use_line_lengths: bool = False,
         min_doc_freq: int = 2,
         input_col: str = "value",
         label_col: str = "label",
@@ -40,6 +42,7 @@ class FeatureExtractor:
         Args:
             use_suffixes: Whether to include suffix features
             use_section_names: Whether to include section name TF-IDF features
+            use_line_lengths: Whether to include max/mean line-length features
             min_doc_freq: Minimum document frequency for IDF
             input_col: Name of input text column
             label_col: Name of label column
@@ -50,6 +53,7 @@ class FeatureExtractor:
         """
         self.use_suffixes = use_suffixes
         self.use_section_names = use_section_names
+        self.use_line_lengths = use_line_lengths
         self.min_doc_freq = min_doc_freq
         self.input_col = input_col
         self.label_col = label_col
@@ -117,6 +121,14 @@ class FeatureExtractor:
             stages.extend([section_null_filler, section_tokenizer, section_count_vectorizer, section_idf])
             feature_cols.append("section_idf")
 
+        # Line-length features (optional)
+        if self.use_line_lengths:
+            line_length_transformer = LineLengthTransformer(
+                inputCol=self.input_col, outputCol="line_length_features"
+            )
+            stages.append(line_length_transformer)
+            feature_cols.append("line_length_features")
+
         # Combine features if multiple feature types are enabled
         if len(feature_cols) > 1:
             feature_combiner = VectorAssembler(
@@ -182,7 +194,7 @@ class FeatureExtractor:
             Name of the features column based on configuration
         """
         # If multiple feature types are enabled, features are combined
-        if self.use_suffixes or self.use_section_names:
+        if self.use_suffixes or self.use_section_names or self.use_line_lengths:
             return "combined_idf"
         else:
             return "word_idf"

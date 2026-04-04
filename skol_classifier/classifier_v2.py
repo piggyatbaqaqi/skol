@@ -125,6 +125,7 @@ class SkolClassifierV2:
 
     Feature Configuration:
         use_suffixes: Whether to use word suffix features
+        use_line_lengths: Whether to include max/mean line-length features (default: False)
         min_doc_freq: Minimum document frequency for word features
         word_vocab_size: Maximum vocabulary size for word features (default: 800)
         suffix_vocab_size: Maximum vocabulary size for suffix features (default: 200)
@@ -212,6 +213,7 @@ class SkolClassifierV2:
 
         # Feature configuration
         use_suffixes: bool = True,
+        use_line_lengths: bool = False,
         min_doc_freq: int = 2,
         word_vocab_size: int = 800,
         suffix_vocab_size: int = 200,
@@ -272,6 +274,7 @@ class SkolClassifierV2:
 
         # Feature configuration
         self.use_suffixes = use_suffixes
+        self.use_line_lengths = use_line_lengths
         self.min_doc_freq = min_doc_freq
         self.word_vocab_size = word_vocab_size
         self.suffix_vocab_size = suffix_vocab_size
@@ -400,6 +403,7 @@ class SkolClassifierV2:
         self._feature_extractor = FeatureExtractor(
             use_suffixes=self.use_suffixes,
             use_section_names=use_section_names,
+            use_line_lengths=self.use_line_lengths,
             min_doc_freq=self.min_doc_freq,
             word_vocab_size=self.word_vocab_size,
             suffix_vocab_size=self.suffix_vocab_size,
@@ -423,7 +427,11 @@ class SkolClassifierV2:
 
         # Calculate input_size based on vocabulary sizes
         # This ensures consistency between feature extraction and model input
-        calculated_input_size = self.word_vocab_size + (self.suffix_vocab_size if self.use_suffixes else 0)
+        calculated_input_size = (
+            self.word_vocab_size
+            + (self.suffix_vocab_size if self.use_suffixes else 0)
+            + (2 if self.use_line_lengths else 0)
+        )
 
         # Set input_size in model_params if not already specified
         if 'input_size' not in self.model_params:
@@ -1382,6 +1390,7 @@ class SkolClassifierV2:
             'config': {
                 'tokenizer': self.extraction_mode.name,
                 'use_suffixes': self.use_suffixes,
+                'use_line_lengths': self.use_line_lengths,
                 'min_doc_freq': self.min_doc_freq,
                 'model_type': self.model_type,
                 'model_params': self.model_params
@@ -1540,6 +1549,7 @@ class SkolClassifierV2:
                 'config': {
                     'tokenizer': self.extraction_mode.name,
                     'use_suffixes': self.use_suffixes,
+                    'use_line_lengths': self.use_line_lengths,
                     'min_doc_freq': self.min_doc_freq,
                     'model_type': self.model_type,
                     'model_params': actual_model_params

@@ -25,6 +25,7 @@ Example:
 
 import argparse
 from datetime import datetime
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -93,6 +94,7 @@ MODEL_CONFIGS = {
         "input_source": "couchdb",
         "couchdb_training_database": "skol_training",
         "use_suffixes": True,
+        "use_line_lengths": True,
         "maxIter": 100,
         "regParam": 0.01,
         "extraction_mode": "section",
@@ -156,6 +158,7 @@ def train_classifier(
     read_text_override: Optional[bool] = None,
     save_text_override: Optional[str] = None,
     expire_override: Optional[str] = None,
+    use_line_lengths_override: Optional[bool] = None,
     dry_run: bool = False,
     skip_existing: bool = False,
     force: bool = False,
@@ -171,6 +174,7 @@ def train_classifier(
         read_text_override: Optional read_text parameter override
         save_text_override: Optional save_text parameter override ('eager', 'lazy', or None)
         expire_override: Optional Redis expiration time override in HH:MM:SS format (None = no expiration)
+        use_line_lengths_override: If not None, overrides use_line_lengths in model config
         dry_run: If True, preview without training or saving
         skip_existing: If True, skip if model already exists in Redis
         force: If True, train even if model exists (overrides skip_existing)
@@ -186,6 +190,8 @@ def train_classifier(
         model_config['read_text'] = read_text_override
     if save_text_override is not None:
         model_config['save_text'] = save_text_override
+    if use_line_lengths_override is not None:
+        model_config['use_line_lengths'] = use_line_lengths_override
 
     # Determine Redis expiration time
     expire_time = config.get('classifier_model_expire')
@@ -240,6 +246,7 @@ def train_classifier(
         print(f"  Extraction mode: {model_config.get('extraction_mode', 'N/A')}")
         print(f"  Word vocab size: {model_config.get('word_vocab_size', 'N/A')}")
         print(f"  Suffix vocab size: {model_config.get('suffix_vocab_size', 'N/A')}")
+        print(f"  Use line lengths: {model_config.get('use_line_lengths', False)}")
         print(f"  Max iterations: {model_config.get('maxIter', 'N/A')}")
         print(f"  Regularization: {model_config.get('regParam', 'N/A')}")
         print(f"\n[DRY RUN] Would save to Redis key: {classifier_model_name}")
@@ -323,6 +330,7 @@ Environment Variables:
   DRY_RUN=1             Same as --dry-run
   SKIP_EXISTING=1       Same as --skip-existing
   FORCE=1               Same as --force
+  USE_LINE_LENGTHS=1    Same as --use-line-lengths (0/false to disable)
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
   COUCHDB_PASSWORD      CouchDB password (default: SU2orange!)
@@ -364,6 +372,14 @@ Environment Variables:
         default=None,
         metavar='HH:MM:SS',
         help='Redis key expiration time (None = never expires, default: 172800)'
+    )
+
+    parser.add_argument(
+        '--use-line-lengths',
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        dest='use_line_lengths',
+        help='Enable/disable max+mean line-length features (overrides model config and USE_LINE_LENGTHS env var)'
     )
 
     parser.add_argument(
@@ -411,6 +427,16 @@ Environment Variables:
         print(f"✗ Failed to connect to Redis: {e}")
         sys.exit(1)
 
+    # Resolve use_line_lengths: CLI > USE_LINE_LENGTHS env var > model config
+    use_line_lengths_override: Optional[bool] = None
+    env_ll = os.environ.get('USE_LINE_LENGTHS', '').lower()
+    if env_ll in ('1', 'true', 'yes'):
+        use_line_lengths_override = True
+    elif env_ll in ('0', 'false', 'no'):
+        use_line_lengths_override = False
+    if args.use_line_lengths is not None:  # CLI takes highest priority
+        use_line_lengths_override = args.use_line_lengths
+
     # Train the model
     try:
         train_classifier(
@@ -421,6 +447,7 @@ Environment Variables:
             read_text_override=args.read_text or None,
             save_text_override=args.save_text,
             expire_override=args.expire,
+            use_line_lengths_override=use_line_lengths_override,
             dry_run=config.get('dry_run', False),
             skip_existing=config.get('skip_existing', False),
             force=config.get('force', False),

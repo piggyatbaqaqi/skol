@@ -11,6 +11,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, ArrayType, StringType
 
 from .preprocessing import (
+    LineLengthTransformer,
     SuffixTransformer,
     ParagraphExtractor,
     NOMENCLATURE_RE,
@@ -125,6 +126,66 @@ class TestSuffixTransformer:
 
         assert transformer.getInputCol() == "custom_input"
         assert transformer.getOutputCol() == "custom_output"
+
+
+class TestLineLengthTransformer:
+    """Tests for LineLengthTransformer (static helper only — no Spark needed)."""
+
+    def test_empty_string_returns_zeros(self):
+        result = LineLengthTransformer.compute_line_lengths("")
+        assert list(result) == [0.0, 0.0]
+
+    def test_none_returns_zeros(self):
+        result = LineLengthTransformer.compute_line_lengths(None)
+        assert list(result) == [0.0, 0.0]
+
+    def test_whitespace_only_returns_zeros(self):
+        result = LineLengthTransformer.compute_line_lengths("   \n  \n  ")
+        assert list(result) == [0.0, 0.0]
+
+    def test_single_line(self):
+        result = LineLengthTransformer.compute_line_lengths("hello world")
+        assert result[0] == 11.0  # max
+        assert result[1] == 11.0  # mean
+
+    def test_two_lines_max_and_mean(self):
+        # line lengths 10 and 20
+        result = LineLengthTransformer.compute_line_lengths("0123456789\n01234567890123456789")
+        assert result[0] == 20.0
+        assert result[1] == 15.0
+
+    def test_blank_lines_ignored(self):
+        result = LineLengthTransformer.compute_line_lengths("abc\n\nde")
+        # non-empty lines: "abc" (3), "de" (2)
+        assert result[0] == 3.0
+        assert result[1] == 2.5
+
+    def test_params(self):
+        t = LineLengthTransformer(inputCol="text", outputCol="ll")
+        assert t.getInputCol() == "text"
+        assert t.getOutputCol() == "ll"
+
+    def test_spark_transform(self, spark):
+        from pyspark.errors.exceptions.captured import PythonException
+
+        data = [("abc\nde\nfghij",), ("x",)]
+        df = spark.createDataFrame(data, ["value"])
+        t = LineLengthTransformer(inputCol="value", outputCol="ll")
+        try:
+            result = t._transform(df).collect()
+            # Row 0: lines "abc"(3), "de"(2), "fghij"(5) → max=5, mean=10/3≈3.33
+            assert result[0]["ll"][0] == 5.0
+            assert abs(result[0]["ll"][1] - 10 / 3) < 0.01
+            # Row 1: single line "x"(1) → max=1, mean=1
+            assert result[1]["ll"][0] == 1.0
+            assert result[1]["ll"][1] == 1.0
+        except PythonException as e:
+            if "ModuleNotFoundError" in str(e) and "skol" in str(e):
+                pytest.skip(
+                    "Skipping: Package not installed. Run 'pip install -e .' "
+                    "to enable Spark UDF tests with custom transformers."
+                )
+            raise
 
 
 class TestParagraphExtractor:
