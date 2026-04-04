@@ -16,5 +16,25 @@
             "physicalState": "Pennsylvania",
             "physicalCountry": "U.S.A."
         }
+    },
+    {
+        "code": "AH",
+        "organization": "Mycological Herbarium of the University of Alcalá de Henares",
+        "specimenTotal": 45000,
+        "currentStatus": "Active",
+        "taxonomicCoverage": "Myxomycetes, Fungi, Vascular plants",
+        "geography": "Mediterranean fungi and myxomycetes, with extensive collections from Spain, the Balearic/Canary Islands, and North America",
+        "contact": {
+            "firstName": "Ricardo",
+            "lastName": "Galán"
+            "email": "ricardo.galan@uah.es",
+	    "phone": "+34 91 885 4923"
+        },
+        "address": {
+            "physicalCity": "Alcalá de Henares",
+            "physicalState": "Madrid",
+            "physicalCountry": "Spain"
+        }
     }
+
 ]
