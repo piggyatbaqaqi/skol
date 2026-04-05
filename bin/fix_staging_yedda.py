@@ -248,6 +248,43 @@ def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip())
 
 
+def strip_page_markers(yedda: str) -> Tuple[str, int]:
+    """Remove previously-inserted PDF page markers from YEDDA blocks.
+
+    Removes the ``--- PDF Page N Label L ---\\n`` prefix line from any
+    ``Page-header`` block and resets the tag to ``Misc-exposition``.
+    Blocks whose text is entirely the marker line (no content after it)
+    are discarded.
+
+    This makes :func:`add_page_markers` re-entrant: calling
+    ``strip_page_markers`` before ``add_page_markers`` lets the voting
+    algorithm re-place markers cleanly on a document that was already
+    processed by a previous run.
+
+    Args:
+        yedda: YEDDA-annotated text.
+
+    Returns:
+        Tuple of (stripped_yedda, n_stripped).
+    """
+    out_parts: List[str] = []
+    n_stripped = 0
+    for match in _YEDDA_BLOCK_RE.finditer(yedda):
+        text = match.group(1)
+        tag = match.group(2)
+        stripped = text.lstrip()
+        if tag == "Page-header" and stripped.startswith("--- PDF Page"):
+            n_stripped += 1
+            nl = stripped.find("\n")
+            remainder = stripped[nl + 1:].strip() if nl >= 0 else ""
+            if remainder:
+                out_parts.append(f"[@{remainder}#Misc-exposition*]")
+            # Blocks with no content after the marker are discarded.
+        elif text.strip():
+            out_parts.append(f"[@{text}#{tag}*]")
+    return "\n\n".join(out_parts) + ("\n" if out_parts else ""), n_stripped
+
+
 def add_page_markers(
     yedda: str,
     pages: List[Tuple[int, str, str, int, str, str]],
@@ -392,8 +429,12 @@ def fix_yedda(
     """Apply all fixes to a YEDDA string.
 
     Applies :func:`fix_malformed_blocks` repeatedly until no malformed blocks
-    remain (handles multi-level nesting), then :func:`add_page_markers` (if
-    *pages* is provided).
+    remain (handles multi-level nesting), then (if *pages* is provided)
+    calls :func:`strip_page_markers` to remove any previously-placed markers
+    before calling :func:`add_page_markers`.  Stripping first makes the
+    function re-entrant: re-running on a document that was already processed
+    re-places markers using the current algorithm rather than leaving old
+    placements in place.
 
     Args:
         yedda: Raw YEDDA-annotated text.
@@ -402,7 +443,7 @@ def fix_yedda(
 
     Returns:
         Tuple of (fixed_yedda, stats) where *stats* contains:
-        ``n_malformed``, ``n_page_markers``.
+        ``n_malformed``, ``n_stripped``, ``n_page_markers``.
     """
     fixed = yedda
     n_malformed = 0
@@ -413,11 +454,14 @@ def fix_yedda(
             break
         fixed = step
 
+    n_stripped = 0
     n_page_markers = 0
     if pages:
+        fixed, n_stripped = strip_page_markers(fixed)
         fixed, n_page_markers = add_page_markers(fixed, pages)
     return fixed, {
         "n_malformed": n_malformed,
+        "n_stripped": n_stripped,
         "n_page_markers": n_page_markers,
     }
 
@@ -430,7 +474,7 @@ def _get_pages_for_doc(
     doc_id: str,
     training_db: Any,
     dev_db: Any,
-) -> Optional[List[Tuple[int, str, str]]]:
+) -> Optional[List[Tuple[int, str, str, int, str, str]]]:
     """Look up skol_dev article.txt page markers for a skol_staging doc.
 
     Lookup chain:
@@ -481,12 +525,13 @@ def fix_staging_database(
 
     Returns:
         Summary counts: docs_processed, docs_changed, n_malformed,
-        n_page_markers.
+        n_stripped, n_page_markers.
     """
     totals: Dict[str, int] = {
         "docs_processed": 0,
         "docs_changed": 0,
         "n_malformed": 0,
+        "n_stripped": 0,
         "n_page_markers": 0,
     }
 
@@ -510,17 +555,21 @@ def fix_staging_database(
 
         new_yedda, stats = fix_yedda(yedda, pages)
 
-        if stats["n_malformed"] == 0 and stats["n_page_markers"] == 0:
+        if (stats["n_malformed"] == 0
+                and stats["n_stripped"] == 0
+                and stats["n_page_markers"] == 0):
             continue  # nothing changed
 
         totals["docs_changed"] += 1
         totals["n_malformed"] += stats["n_malformed"]
+        totals["n_stripped"] += stats["n_stripped"]
         totals["n_page_markers"] += stats["n_page_markers"]
 
         if verbosity >= 1:
             print(
                 f"  {doc_id}: "
                 f"{stats['n_malformed']} malformed fixed, "
+                f"{stats['n_stripped']} markers stripped, "
                 f"{stats['n_page_markers']} page markers added",
                 file=sys.stderr,
             )
@@ -633,6 +682,7 @@ def main() -> None:
             f"\nDone: {summary['docs_processed']} docs processed, "
             f"{summary['docs_changed']} changed, "
             f"{summary['n_malformed']} malformed blocks fixed, "
+            f"{summary['n_stripped']} markers stripped, "
             f"{summary['n_page_markers']} page markers added.",
             file=sys.stderr,
         )
