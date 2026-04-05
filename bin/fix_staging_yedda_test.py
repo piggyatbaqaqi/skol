@@ -5,10 +5,14 @@ import sys
 from pathlib import Path
 from typing import Tuple
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fix_staging_yedda import (  # noqa: E402
+    _CONTEXT_THRESHOLD,
+    _HEADER_THRESHOLD,
     _YEDDA_BLOCK_RE,
     _infer_outer_tag,
     add_page_markers,
@@ -342,15 +346,15 @@ class TestAddPageMarkers:
         """A page listed out of order cannot match a block before the
         previous match."""
         yedda = _make_yedda(
-            ("Header page 2", "Misc-exposition"),
-            ("Body.", "Description"),
-            ("Header page 3", "Misc-exposition"),
+            ("Mycologia Vol. 102 2010", "Misc-exposition"),
+            ("Body text here.", "Description"),
+            ("Persoonia European Flora", "Misc-exposition"),
         )
         # Page 3 listed first → matches block 2; page 2 block is before
         # min_block so it is skipped.
         pages = [
-            _page(3, "3", "Header page 3"),
-            _page(2, "2", "Header page 2"),
+            _page(3, "3", "Persoonia European Flora"),
+            _page(2, "2", "Mycologia Vol. 102 2010"),
         ]
         marked, n = add_page_markers(yedda, pages)
         assert "--- PDF Page 3 Label 3 ---" in marked
@@ -440,6 +444,76 @@ class TestAddPageMarkersVoting:
         """Without a header vote there is no fallback — no marker added."""
         yedda = _make_yedda(("Completely unrelated text.", "Description"))
         pages = [_page(7, "7", "Header X")]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 0
+
+
+# ---------------------------------------------------------------------------
+# add_page_markers — fuzzy (OCR-error) matching
+# ---------------------------------------------------------------------------
+
+_OCR_PAIRS = [
+    ("Mycologia 102(5) 2010",    "Mycolog1a 102(5) 2Ol0"),    # O→0, l→1
+    ("TAXON 58 (4) August 2009", "TAXON 58 (4) August 2OO9"), # O→0 ×2
+    ("278 ... Halici & Türk",    "278 ... Ha1ici & Turk"),    # l→1, ü→u
+    ("Persoonia — Vol. 25, 2010", "Persoonia - Vol. 25, 2Ol0"),  # —→-, O→0
+    ("Ann. bot. fenn. 47: 1–10", "Ann. bot. fenn. 47: 1-10"), # –→-
+]
+
+
+class TestAddPageMarkersFuzzy:
+    """Fuzzy matching: headers with typical OCR substitutions are matched."""
+
+    @pytest.mark.parametrize("clean,ocr", _OCR_PAIRS)
+    def test_ocr_header_substitutions_match(self, clean: str, ocr: str):
+        """Headers with single-character OCR substitutions score above
+        _HEADER_THRESHOLD and are matched."""
+        yedda = _make_yedda((ocr, "Misc-exposition"))
+        pages = [_page(3, "3", clean)]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 1
+
+    def test_ocr_header_in_longer_block(self):
+        """OCR header at the start of a longer block is still matched."""
+        yedda = _make_yedda((
+            "Mycolog1a 102(5) 2Ol0\n"
+            "1105-1118  BIOECOLOGY OF TWO TAXA OF AGARICUS",
+            "Misc-exposition",
+        ))
+        pages = [_page(5, "5", "Mycologia 102(5) 2010")]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 1
+
+    def test_fuzzy_context_before(self):
+        """context_before with minor OCR noise still scores a context vote."""
+        yedda = _make_yedda(
+            ("End 0f previous page c0ntent.", "Description"),
+            ("Running Head 5", "Misc-exposition"),
+        )
+        pages = [_page(
+            5, "5", "Running Head 5",
+            ctx_before="End of previous page content.",
+        )]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 1
+
+    def test_fuzzy_context_after_next_block(self):
+        """context_after with minor OCR noise in the next block counts."""
+        yedda = _make_yedda(
+            ("Running Head 5", "Misc-exposition"),
+            ("Start 0f next page b0dy text.", "Description"),
+        )
+        pages = [_page(
+            5, "5", "Running Head 5",
+            ctx_after="Start of next page body text.",
+        )]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 1
+
+    def test_completely_different_text_not_matched(self):
+        """A block that shares only a few characters is not matched."""
+        yedda = _make_yedda(("XXXXXX XXXXXX XXXXXX", "Misc-exposition"))
+        pages = [_page(3, "3", "Mycologia 102(5) 2010")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 0
 

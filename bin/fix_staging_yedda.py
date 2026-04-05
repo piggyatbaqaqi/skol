@@ -32,12 +32,28 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from rapidfuzz import fuzz as _fuzz
+
 # Number of context lines to capture on each side of a page marker
 _CONTEXT_LINES = 3
 # Fractional tolerance for line-count vote (e.g. 0.5 = within 50%)
 _LINE_COUNT_TOLERANCE = 0.50
 # Minimum votes required to accept a candidate without falling back
 _MIN_VOTES = 2
+# Fuzzy-match thresholds (rapidfuzz scores 0-100)
+# Header: compared against the first line of the candidate block.
+# Context: partial_ratio — best-window match of ctx string inside block text.
+_HEADER_THRESHOLD = 80
+_CONTEXT_THRESHOLD = 75
+# Minimum normalised header length (chars) to attempt matching.
+# Single-digit page numbers ("60", "3") match almost anything; skip them.
+_MIN_HEADER_LEN = 4
+# Hard forward-window multiplier.  The search stops once the cumulative YEDDA
+# line gap from prev_match exceeds lines_before * _MAX_JUMP_FACTOR.  YEDDA
+# non-empty lines run ~1.35× txt lines, so a factor of 4 allows ~3× the
+# expected page distance before giving up.  Prevents one bad 2-vote match
+# from consuming thousands of blocks and making subsequent pages unreachable.
+_MAX_JUMP_FACTOR = 4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -341,15 +357,31 @@ def add_page_markers(
     n_added = 0
     min_block = 0       # forward-only: each match must be >= this index
     prev_match = 0      # block index of the last matched page (for line count)
+    # Accumulated txt lines since the last successful match.  When pages are
+    # skipped (no match), lines_before keeps adding up so that the search
+    # window stays proportional to the true distance from the last anchor.
+    accum_txt: int = 0
 
     for page_num, page_label, header_text, lines_before, ctx_before, ctx_after \
             in pages:
+        # Accumulate txt-line distance from the last match regardless of
+        # whether this page's header passes the length filter.  Short-header
+        # pages still occupy space in the document, and their distance must
+        # be included so the search window stays correctly sized.
+        accum_txt += lines_before
+
         norm_header = _normalise(header_text)
         norm_ctx_before = _normalise(ctx_before)
         norm_ctx_after = _normalise(ctx_after)
-        if not norm_header:
+        if not norm_header or len(norm_header) < _MIN_HEADER_LEN:
             continue
         marker_line = f"--- PDF Page {page_num} Label {page_label} ---"
+
+        # Hard window cap: stop searching once the cumulative YEDDA line gap
+        # from prev_match exceeds the accumulated txt lines * _MAX_JUMP_FACTOR.
+        # Using accumulated (not per-page) txt lines prevents the window from
+        # shrinking when many consecutive pages fail to match.
+        max_gap = accum_txt * _MAX_JUMP_FACTOR if accum_txt > 0 else None
 
         best_fallback: Optional[int] = None   # first header-only match
 
@@ -358,12 +390,21 @@ def add_page_markers(
             if text.startswith("--- PDF Page"):
                 continue
 
-            norm_text = _normalise(text)
+            # Hard cap: exit early once the window is exhausted.
+            if max_gap is not None:
+                yedda_gap_check = cumulative[i] - cumulative[prev_match]
+                if yedda_gap_check > max_gap:
+                    break
 
-            # --- Vote A: header text ---
-            header_vote = (
-                norm_text == norm_header or norm_text.startswith(norm_header)
-            )
+            # --- Vote A: header text (fuzzy, first line of block) ---
+            # Compare the PDF header against the start of the block's first
+            # line.  Using the first line avoids false positives from the
+            # header text appearing deep in a multi-paragraph block.
+            # Window length = header + small buffer for trailing page numbers.
+            first_line = _normalise(text.split("\n")[0])
+            window = first_line[:len(norm_header) + 20]
+            header_score = _fuzz.ratio(norm_header, window)
+            header_vote = header_score >= _HEADER_THRESHOLD
             if header_vote and best_fallback is None:
                 best_fallback = i
 
@@ -377,20 +418,27 @@ def add_page_markers(
             else:
                 line_count_vote = yedda_gap == 0
 
-            # --- Vote C: context (before OR after) ---
+            # --- Vote C: context (before OR after, fuzzy partial match) ---
+            # partial_ratio finds the best-matching window of the shorter
+            # context string within the (potentially longer) block text.
             context_vote = False
             if norm_ctx_before and i > 0:
-                context_vote = norm_ctx_before in _normalise(blocks[i - 1][0])
+                score = _fuzz.partial_ratio(
+                    norm_ctx_before, _normalise(blocks[i - 1][0])
+                )
+                context_vote = score >= _CONTEXT_THRESHOLD
             if not context_vote and norm_ctx_after:
-                # Check block tail (lines after the header line).
-                tail_lines = text.splitlines()[1:]
-                tail = _normalise(" ".join(tail_lines))
-                if norm_ctx_after in tail:
+                tail = _normalise(
+                    " ".join(text.splitlines()[1:])
+                )
+                if _fuzz.partial_ratio(norm_ctx_after, tail) \
+                        >= _CONTEXT_THRESHOLD:
                     context_vote = True
                 elif i + 1 < len(blocks):
-                    context_vote = (
-                        norm_ctx_after in _normalise(blocks[i + 1][0])
+                    score = _fuzz.partial_ratio(
+                        norm_ctx_after, _normalise(blocks[i + 1][0])
                     )
+                    context_vote = score >= _CONTEXT_THRESHOLD
 
             votes = (
                 int(header_vote) + int(line_count_vote) + int(context_vote)
@@ -402,6 +450,7 @@ def add_page_markers(
                 n_added += 1
                 prev_match = i
                 min_block = i + 1
+                accum_txt = 0
                 best_fallback = None
                 break
         else:
@@ -413,6 +462,7 @@ def add_page_markers(
                 n_added += 1
                 prev_match = i
                 min_block = i + 1
+                accum_txt = 0
 
     out_parts = [f"[@{text}#{tag}*]" for text, tag in blocks]
     return "\n\n".join(out_parts) + ("\n" if out_parts else ""), n_added
