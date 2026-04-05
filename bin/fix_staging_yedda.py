@@ -32,6 +32,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+# Number of context lines to capture on each side of a page marker
+_CONTEXT_LINES = 3
+# Fractional tolerance for line-count vote (e.g. 0.5 = within 50%)
+_LINE_COUNT_TOLERANCE = 0.50
+# Minimum votes required to accept a candidate without falling back
+_MIN_VOTES = 2
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -155,7 +162,9 @@ def fix_malformed_blocks(
 # Fix 2: PDF page markers
 # ---------------------------------------------------------------------------
 
-def parse_page_markers(article_txt: str) -> List[Tuple[int, str, str]]:
+def parse_page_markers(
+    article_txt: str,
+) -> List[Tuple[int, str, str, int, str, str]]:
     """Parse PDF page boundary markers from a ``skol_dev`` ``article.txt``.
 
     ``PDFSectionExtractor`` inserts lines of the form::
@@ -165,27 +174,71 @@ def parse_page_markers(article_txt: str) -> List[Tuple[int, str, str]]:
     The first non-empty content line after each marker is treated as the
     page header text (typically a running head from the journal).
 
+    In addition to the header text, up to ``_CONTEXT_LINES`` non-empty
+    content lines are collected on each side of the marker to provide
+    voting signals for :func:`add_page_markers`.
+
     Args:
         article_txt: Full text of a ``skol_dev`` ``article.txt`` attachment.
 
     Returns:
-        List of ``(page_num, page_label, header_text)`` tuples, one per page
-        boundary found.  Pages whose first content line is empty are omitted.
+        List of ``(page_num, page_label, header_text, lines_before,
+        context_before, context_after)`` tuples, one per page boundary
+        found.  Pages whose first content line is empty are omitted.
+
+        - *lines_before*: number of ``article.txt`` lines between the
+          previous page marker and this one (0 for the first marker).
+        - *context_before*: up to ``_CONTEXT_LINES`` non-empty lines
+          immediately before the marker, joined by spaces.
+        - *context_after*: up to ``_CONTEXT_LINES`` non-empty lines
+          after the header line, joined by spaces.
     """
-    pages: List[Tuple[int, str, str]] = []
+    pages: List[Tuple[int, str, str, int, str, str]] = []
     lines = article_txt.splitlines()
+    prev_marker_idx = 0
+
     i = 0
     while i < len(lines):
         m = _PAGE_MARKER_RE.match(lines[i])
         if m:
             page_num = int(m.group(1))
             page_label = m.group(2)
-            # Find first non-empty content line after the marker.
+            lines_before = i - prev_marker_idx
+
+            # Context before: last _CONTEXT_LINES non-empty non-marker lines.
+            before: List[str] = []
+            for k in range(i - 1, -1, -1):
+                ln = lines[k].strip()
+                if ln and not _PAGE_MARKER_RE.match(lines[k]):
+                    before.append(ln)
+                    if len(before) >= _CONTEXT_LINES:
+                        break
+            context_before = " ".join(reversed(before))
+
+            # Find first non-empty content line after the marker (header).
             j = i + 1
             while j < len(lines) and not lines[j].strip():
                 j += 1
+
             if j < len(lines):
-                pages.append((page_num, page_label, lines[j].strip()))
+                header_text = lines[j].strip()
+
+                # Context after: first _CONTEXT_LINES non-empty lines after
+                # the header.
+                after: List[str] = []
+                k = j + 1
+                while k < len(lines) and len(after) < _CONTEXT_LINES:
+                    ln = lines[k].strip()
+                    if ln and not _PAGE_MARKER_RE.match(lines[k]):
+                        after.append(ln)
+                    k += 1
+                context_after = " ".join(after)
+
+                pages.append((
+                    page_num, page_label, header_text,
+                    lines_before, context_before, context_after,
+                ))
+                prev_marker_idx = i
         i += 1
     return pages
 
@@ -197,20 +250,27 @@ def _normalise(text: str) -> str:
 
 def add_page_markers(
     yedda: str,
-    pages: List[Tuple[int, str, str]],
+    pages: List[Tuple[int, str, str, int, str, str]],
 ) -> Tuple[str, int]:
     """Prefix matching blocks with ``--- PDF Page N Label L ---`` lines.
 
-    For each ``(page_num, page_label, header_text)`` in *pages*:
+    For each page in *pages*, search forward from the previous match for a
+    YEDDA block that scores at least ``_MIN_VOTES`` on three signals:
 
-    * Find the first YEDDA block *at or after the previous match* whose
-      normalised text matches *header_text* (exact match after whitespace
-      normalisation), or whose normalised text *starts with* the normalised
-      *header_text*.  Searching only forward from the previous match
-      enforces document-order monotonicity: if a page header cannot be
-      matched without violating monotonicity it is silently skipped.
-    * Prefix the block text with ``--- PDF Page N Label L ---\\n``.
-    * Relabel the block to ``Page-header``.
+    * **Header vote**: normalised block text equals or starts with the
+      normalised header text from the source ``article.txt``.
+    * **Line-count vote**: cumulative non-empty lines in YEDDA blocks
+      between the previous match and this candidate is within
+      ``_LINE_COUNT_TOLERANCE`` of *lines_before* from the source file.
+    * **Context vote**: the normalised *context_before* is a substring of
+      the preceding block's text, **or** the normalised *context_after*
+      is a substring of the candidate block's tail (lines after the first)
+      or the following block.
+
+    The first candidate reaching ``_MIN_VOTES`` wins.  If none does, the
+    first candidate with a header vote is used as a fallback (preserving
+    the original exact-match behaviour).  Searching always moves forward
+    from the previous match to guarantee document-order monotonicity.
 
     Blocks that already start with a ``--- PDF Page`` marker are skipped.
 
@@ -225,36 +285,97 @@ def add_page_markers(
     if not pages:
         return yedda, 0
 
-    # Build mutable list of (text, tag) from all parsed blocks.
-    blocks: List[List[str]] = []  # [text, tag]
+    # Build mutable list of [text, tag] from all parsed blocks.
+    blocks: List[List[str]] = []
     for match in _YEDDA_BLOCK_RE.finditer(yedda):
         text = match.group(1)
         tag = match.group(2)
         if text.strip():
             blocks.append([text, tag])
 
+    # Precompute cumulative non-empty line counts for line-count voting.
+    # cumulative[i] = total non-empty lines in blocks 0..i-1
+    cumulative: List[int] = [0] * (len(blocks) + 1)
+    for idx, blk in enumerate(blocks):
+        cumulative[idx + 1] = cumulative[idx] + sum(
+            bool(ln.strip()) for ln in blk[0].splitlines()
+        )
+
     n_added = 0
-    min_block = 0  # enforce monotonicity: each match must be at or after this index
-    for page_num, page_label, header_text in pages:
+    min_block = 0       # forward-only: each match must be >= this index
+    prev_match = 0      # block index of the last matched page (for line count)
+
+    for page_num, page_label, header_text, lines_before, ctx_before, ctx_after \
+            in pages:
         norm_header = _normalise(header_text)
+        norm_ctx_before = _normalise(ctx_before)
+        norm_ctx_after = _normalise(ctx_after)
         if not norm_header:
             continue
         marker_line = f"--- PDF Page {page_num} Label {page_label} ---"
 
+        best_fallback: Optional[int] = None   # first header-only match
+
         for i in range(min_block, len(blocks)):
-            block = blocks[i]
-            text, tag = block
-            # Skip if already marked.
+            text, _tag = blocks[i]
             if text.startswith("--- PDF Page"):
                 continue
+
             norm_text = _normalise(text)
-            # Match: exact equality or the block text starts with the header.
-            if norm_text == norm_header or norm_text.startswith(norm_header):
-                block[0] = marker_line + "\n" + text.lstrip()
-                block[1] = "Page-header"
+
+            # --- Vote A: header text ---
+            header_vote = (
+                norm_text == norm_header or norm_text.startswith(norm_header)
+            )
+            if header_vote and best_fallback is None:
+                best_fallback = i
+
+            # --- Vote B: line-count proximity ---
+            yedda_gap = cumulative[i] - cumulative[prev_match]
+            if lines_before > 0:
+                line_count_vote = (
+                    abs(yedda_gap - lines_before) / lines_before
+                    <= _LINE_COUNT_TOLERANCE
+                )
+            else:
+                line_count_vote = yedda_gap == 0
+
+            # --- Vote C: context (before OR after) ---
+            context_vote = False
+            if norm_ctx_before and i > 0:
+                context_vote = norm_ctx_before in _normalise(blocks[i - 1][0])
+            if not context_vote and norm_ctx_after:
+                # Check block tail (lines after the header line).
+                tail_lines = text.splitlines()[1:]
+                tail = _normalise(" ".join(tail_lines))
+                if norm_ctx_after in tail:
+                    context_vote = True
+                elif i + 1 < len(blocks):
+                    context_vote = (
+                        norm_ctx_after in _normalise(blocks[i + 1][0])
+                    )
+
+            votes = (
+                int(header_vote) + int(line_count_vote) + int(context_vote)
+            )
+
+            if votes >= _MIN_VOTES:
+                blocks[i][0] = marker_line + "\n" + text.lstrip()
+                blocks[i][1] = "Page-header"
                 n_added += 1
-                min_block = i + 1  # next page must match strictly after this block
-                break  # first match wins; move on to next page
+                prev_match = i
+                min_block = i + 1
+                best_fallback = None
+                break
+        else:
+            # No candidate reached _MIN_VOTES — fall back to first header match.
+            if best_fallback is not None:
+                i = best_fallback
+                blocks[i][0] = marker_line + "\n" + blocks[i][0].lstrip()
+                blocks[i][1] = "Page-header"
+                n_added += 1
+                prev_match = i
+                min_block = i + 1
 
     out_parts = [f"[@{text}#{tag}*]" for text, tag in blocks]
     return "\n\n".join(out_parts) + ("\n" if out_parts else ""), n_added
@@ -266,7 +387,7 @@ def add_page_markers(
 
 def fix_yedda(
     yedda: str,
-    pages: Optional[List[Tuple[int, str, str]]] = None,
+    pages: Optional[List[Tuple[int, str, str, int, str, str]]] = None,
 ) -> Tuple[str, Dict[str, int]]:
     """Apply all fixes to a YEDDA string.
 
