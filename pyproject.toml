@@ -228,3 +228,6 @@ exclude = [
     "build/",
     "dist/",
 ]
+
+[tool.pylint.format]
+max-line-length = 120
