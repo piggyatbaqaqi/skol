@@ -11,8 +11,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fix_staging_yedda import (  # noqa: E402
-    _CONTEXT_THRESHOLD,
-    _HEADER_THRESHOLD,
     _YEDDA_BLOCK_RE,
     _infer_outer_tag,
     add_page_markers,
@@ -51,24 +49,30 @@ def _make_yedda(*blocks: tuple) -> str:
 class TestInferOuterTag:
     def test_materials_examined(self):
         assert (
-            _infer_outer_tag("Material examined: TURKEY. ...", "Misc-exposition")
-            == "Materials-examined"
+            _infer_outer_tag(
+                "Material examined: TURKEY. ...", "Misc-exposition"
+            ) == "Materials-examined"
         )
 
     def test_materials_examined_plural(self):
         assert (
-            _infer_outer_tag("Materials examined: TURKEY. ...", "Misc-exposition")
-            == "Materials-examined"
+            _infer_outer_tag(
+                "Materials examined: TURKEY. ...", "Misc-exposition"
+            ) == "Materials-examined"
         )
 
     def test_key_to(self):
         assert (
-            _infer_outer_tag("Key to the species\n1. ...", "Page-header") == "Key"
+            _infer_outer_tag(
+                "Key to the species\n1. ...", "Page-header"
+            ) == "Key"
         )
 
     def test_notes(self):
         assert (
-            _infer_outer_tag("Notes on taxonomy.", "Misc-exposition") == "Notes"
+            _infer_outer_tag(
+                "Notes on taxonomy.", "Misc-exposition"
+            ) == "Notes"
         )
 
     def test_distribution(self):
@@ -99,14 +103,17 @@ class TestFixMalformedBlocks:
         )
         fixed, n = fix_malformed_blocks(yedda)
         assert n == 0
-        assert "[@Arthonia fuscopurpurea (Tul.) R. Sant.#Nomenclature*]" in fixed
+        assert (
+            "[@Arthonia fuscopurpurea (Tul.) R. Sant.#Nomenclature*]" in fixed
+        )
         assert "[@A description.#Description*]" in fixed
 
     def test_single_malformed_block_splits_into_two(self):
         """A block missing *] before a nested [@ splits into two blocks."""
         yedda = (
             "[@Material examined: TURKEY. (ANES 14198).\n\n"
-            "[@Stigmidium leucophlebiae Cl. Roux & Triebel#Misc-exposition*]\n\n"
+            "[@Stigmidium leucophlebiae Cl. Roux & Triebel"
+            "#Misc-exposition*]\n\n"
             "[@A description.#Notes*]\n"
         )
         fixed, n = fix_malformed_blocks(yedda)
@@ -272,26 +279,38 @@ class TestParsePageMarkers:
 # ---------------------------------------------------------------------------
 
 class TestAddPageMarkers:
-    def test_adds_marker_to_matching_block(self):
+    def test_adds_marker_via_after_vote(self):
+        """after_vote fires when the block's text begins with ctx_after."""
         yedda = _make_yedda(
             ("ISSN (print) 0093-4666", "Misc-exposition"),
-            ("278 ... Halici, Candan & Türk", "Misc-exposition"),
-            ("Article body.", "Description"),
+            (
+                "278 ... Halici, Candan & Turk\nArticle body.",
+                "Misc-exposition",
+            ),
         )
-        pages = [_page(2, "2", "278 ... Halici, Candan & Türk")]
+        # ctx_after starts with the header text (parse_page_markers behaviour).
+        pages = [_page(
+            2, "2", "278 ... Halici, Candan & Turk",
+            ctx_before="ISSN (print) 0093-4666",
+            ctx_after="278 ... Halici, Candan & Turk Article body.",
+        )]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
         assert (
-            "--- PDF Page 2 Label 2 ---\n278 ... Halici, Candan & Türk" in marked
+            "--- PDF Page 2 Label 2 ---\n278 ... Halici, Candan & Turk"
+            in marked
         )
         assert "#Page-header*]" in marked
 
     def test_relabels_to_page_header(self):
+        """Matched block tag is changed to Page-header."""
         yedda = _make_yedda(("278 ... Author", "Misc-exposition"))
-        pages = [_page(2, "2", "278 ... Author")]
+        pages = [_page(2, "2", "278 ... Author",
+                       ctx_after="278 ... Author")]
         marked, _ = add_page_markers(yedda, pages)
         assert (
-            "[@--- PDF Page 2 Label 2 ---\n278 ... Author#Page-header*]" in marked
+            "[@--- PDF Page 2 Label 2 ---\n278 ... Author#Page-header*]"
+            in marked
         )
 
     def test_already_marked_block_not_doubled(self):
@@ -299,37 +318,45 @@ class TestAddPageMarkers:
         yedda = _make_yedda(
             ("--- PDF Page 2 Label 2 ---\n278 ... Author", "Page-header"),
         )
-        pages = [_page(2, "2", "278 ... Author")]
+        pages = [_page(2, "2", "278 ... Author",
+                       ctx_after="278 ... Author")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 0
         assert marked.count("--- PDF Page 2 Label 2 ---") == 1
 
-    def test_no_match_leaves_yedda_unchanged(self):
+    def test_no_match_returns_yedda_unchanged(self):
+        """No block matches ctx_after or ctx_before → no marker added."""
         yedda = _make_yedda(("Completely different text.", "Misc-exposition"))
-        pages = [_page(2, "2", "278 ... Author")]
+        pages = [_page(2, "2", "278 ... Author",
+                       ctx_after="278 ... Author some more text")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 0
         assert "--- PDF Page" not in marked
 
-    def test_partial_match_by_starts_with(self):
-        """Block text that starts with the header text is matched."""
-        yedda = _make_yedda(
-            ("278 ... Author\nsome extra text on same block", "Misc-exposition"),
-        )
-        pages = [_page(2, "2", "278 ... Author")]
+    def test_page_skipped_if_no_context(self):
+        """Page with empty ctx_before and ctx_after is silently skipped."""
+        yedda = _make_yedda(("278 ... Author", "Misc-exposition"))
+        pages = [_page(2, "2", "278 ... Author",
+                       ctx_before="", ctx_after="")]
         marked, n = add_page_markers(yedda, pages)
-        assert n == 1
-        assert "--- PDF Page 2 Label 2 ---" in marked
+        assert n == 0
+        assert "--- PDF Page" not in marked
 
     def test_multiple_pages_multiple_matches(self):
+        """Two pages are each placed on the correct block."""
         yedda = _make_yedda(
-            ("Header page 2", "Misc-exposition"),
-            ("Body.", "Description"),
-            ("Header page 3", "Misc-exposition"),
+            ("End of page 1.", "Misc-exposition"),
+            ("Header page 2\nFirst line of page 2.", "Misc-exposition"),
+            ("End of page 2.", "Description"),
+            ("Header page 3\nFirst line of page 3.", "Misc-exposition"),
         )
         pages = [
-            _page(2, "2", "Header page 2"),
-            _page(3, "3", "Header page 3"),
+            _page(2, "2", "Header page 2",
+                  ctx_before="End of page 1.",
+                  ctx_after="Header page 2 First line of page 2."),
+            _page(3, "3", "Header page 3",
+                  ctx_before="End of page 2.",
+                  ctx_after="Header page 3 First line of page 3."),
         ]
         marked, n = add_page_markers(yedda, pages)
         assert n == 2
@@ -337,6 +364,7 @@ class TestAddPageMarkers:
         assert "--- PDF Page 3 Label 3 ---" in marked
 
     def test_empty_pages_list(self):
+        """Empty pages list leaves YEDDA unchanged."""
         yedda = _make_yedda(("Text.", "Description"))
         marked, n = add_page_markers(yedda, [])
         assert n == 0
@@ -346,15 +374,17 @@ class TestAddPageMarkers:
         """A page listed out of order cannot match a block before the
         previous match."""
         yedda = _make_yedda(
-            ("Mycologia Vol. 102 2010", "Misc-exposition"),
+            ("Mycologia Vol. 102 2010\nbody text", "Misc-exposition"),
             ("Body text here.", "Description"),
-            ("Persoonia European Flora", "Misc-exposition"),
+            ("Persoonia European Flora\nbody text", "Misc-exposition"),
         )
         # Page 3 listed first → matches block 2; page 2 block is before
         # min_block so it is skipped.
         pages = [
-            _page(3, "3", "Persoonia European Flora"),
-            _page(2, "2", "Mycologia Vol. 102 2010"),
+            _page(3, "3", "Persoonia European Flora",
+                  ctx_after="Persoonia European Flora body text"),
+            _page(2, "2", "Mycologia Vol. 102 2010",
+                  ctx_after="Mycologia Vol. 102 2010 body text"),
         ]
         marked, n = add_page_markers(yedda, pages)
         assert "--- PDF Page 3 Label 3 ---" in marked
@@ -369,83 +399,218 @@ class TestAddPageMarkers:
 class TestAddPageMarkersVoting:
     """Tests for the 3-vote scoring system."""
 
-    def test_line_count_vote_breaks_tie(self):
-        """Two blocks share the same header text.  The one whose cumulative
-        YEDDA line gap matches lines_before wins."""
-        # Block 0: 100 non-empty lines; block 1: correct header at gap≈100;
-        # block 2: same header text but only 1 further line.
-        early_body = "\n".join(f"Line {i}" for i in range(100))
+    def test_line_count_breaks_tie(self):
+        """When two blocks both score after_vote, the one whose cumulative
+        YEDDA line gap matches lines_before wins (2 votes vs 1)."""
+        # Block 0: same header text as block 2, but too close to the start.
+        # Block 1: 98 lines of body, pushing block 2 to the right distance.
+        # Block 2: correct position — after_vote + line_count_vote = 2 votes.
+        early_body = "\n".join(f"Line {i}" for i in range(98))
         yedda = _make_yedda(
-            (early_body, "Description"),               # 100 lines
-            ("Running Head 279", "Misc-exposition"),   # correct position
-            ("Running Head 279", "Misc-exposition"),   # false positive
+            ("Running Head 279", "Misc-exposition"),  # block 0: too early
+            (early_body, "Description"),              # block 1: 98 lines
+            ("Running Head 279", "Misc-exposition"),  # block 2: correct
         )
-        pages = [_page(5, "5", "Running Head 279", lines_before=100)]
+        pages = [_page(5, "5", "Running Head 279",
+                       lines_before=100,
+                       ctx_after="Running Head 279")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
-        marked_texts = [
-            m.group(1)
-            for m in _YEDDA_BLOCK_RE.finditer(marked)
-            if m.group(1).startswith("--- PDF Page")
+        # Verify the marker landed on block 2, not block 0.  Block 0 should
+        # be unchanged (no "--- PDF Page" prefix).
+        block_texts = [m.group(1) for m in _YEDDA_BLOCK_RE.finditer(marked)]
+        page_header_blocks = [
+            t for t in block_texts if t.startswith("--- PDF Page")
         ]
-        assert len(marked_texts) == 1
-        assert "Running Head 279" in marked_texts[0]
+        assert len(page_header_blocks) == 1
+        # The preceding body block must appear between the two Running Head
+        # blocks, confirming it's the second one that was marked.
+        first_head_idx = next(
+            i for i, t in enumerate(block_texts)
+            if "Running Head 279" in t and not t.startswith("--- PDF Page")
+        )
+        marked_head_idx = next(
+            i for i, t in enumerate(block_texts)
+            if t.startswith("--- PDF Page")
+        )
+        assert first_head_idx < marked_head_idx
 
-    def test_context_before_vote(self):
-        """context_before appearing in the preceding block contributes a vote."""
+    def test_before_vote_fires(self):
+        """ctx_before found in character window before block → before_vote."""
         yedda = _make_yedda(
             ("End of previous page content.", "Description"),
             ("Running Head 5", "Misc-exposition"),
         )
-        pages = [_page(
-            5, "5", "Running Head 5",
-            ctx_before="End of previous page content.",
-        )]
+        pages = [_page(5, "5", "Running Head 5",
+                       ctx_before="End of previous page content.")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
         assert "--- PDF Page 5 Label 5 ---" in marked
 
-    def test_context_after_vote_in_next_block(self):
-        """context_after appearing in the following block contributes a vote."""
+    def test_after_vote_anchored_fires(self):
+        """ctx_after (starting with the header) matches the block start."""
         yedda = _make_yedda(
-            ("Running Head 5", "Misc-exposition"),
-            ("Start of next page body text.", "Description"),
+            ("Running Head 5\nFirst body line.", "Misc-exposition"),
         )
-        pages = [_page(
-            5, "5", "Running Head 5",
-            ctx_after="Start of next page body text.",
-        )]
+        # ctx_after starts with the header (parse_page_markers behaviour).
+        pages = [_page(5, "5", "Running Head 5",
+                       ctx_after="Running Head 5 First body line.")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
         assert "--- PDF Page 5 Label 5 ---" in marked
 
-    def test_context_after_vote_in_block_tail(self):
-        """context_after in the same block (after the header line) counts."""
+    def test_after_vote_anchored_no_false_positive(self):
+        """Block BEFORE the correct one does not score after_vote because its
+        after_window does not begin with ctx_after."""
         yedda = _make_yedda(
-            ("Running Head 5\nFirst line of page body.", "Misc-exposition"),
+            ("End of previous page text.", "Description"),    # block 0
+            ("Start of new page here.", "Misc-exposition"),   # block 1
         )
-        pages = [_page(
-            5, "5", "Running Head 5",
-            ctx_after="First line of page body.",
-        )]
+        pages = [_page(5, "5", "Start of new page here.",
+                       ctx_after="Start of new page here.")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
+        # Marker must be on block 1, not block 0.
+        block_texts = [m.group(1) for m in _YEDDA_BLOCK_RE.finditer(marked)]
+        assert block_texts[0] == "End of previous page text."
+        assert block_texts[1].startswith("--- PDF Page 5")
 
-    def test_fallback_when_no_two_vote_match(self):
-        """When no candidate scores >= _MIN_VOTES the first header match wins."""
+    def test_fallback_when_one_vote(self):
+        """A single context vote is enough to place the marker via fallback."""
         yedda = _make_yedda(("Header X", "Misc-exposition"))
-        # lines_before=999 → line-count vote fails; no context either
-        pages = [_page(7, "7", "Header X", lines_before=999)]
+        # lines_before=999 → line-count vote fails; only after_vote fires.
+        pages = [_page(7, "7", "Header X",
+                       lines_before=999,
+                       ctx_after="Header X")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
         assert "--- PDF Page 7 Label 7 ---" in marked
 
-    def test_no_match_without_header_vote(self):
-        """Without a header vote there is no fallback — no marker added."""
+    def test_no_match_without_context_vote(self):
+        """No context vote on any candidate → no marker placed."""
         yedda = _make_yedda(("Completely unrelated text.", "Description"))
-        pages = [_page(7, "7", "Header X")]
-        marked, n = add_page_markers(yedda, pages)
+        pages = [_page(7, "7", "Header X",
+                       ctx_after="Header X some more text")]
+        _, n = add_page_markers(yedda, pages)
         assert n == 0
+
+    def test_orphan_block_spanned_by_window(self):
+        """A short orphan block between context text and the target block does
+        not prevent before_vote from firing (character window spans it)."""
+        yedda = _make_yedda(
+            ("Long page body ending here.", "Notes"),     # block 0
+            ("8", "Misc-exposition"),                     # block 1: orphan
+            ("New page content starts here.", "Misc-exposition"),  # block 2
+        )
+        pages = [_page(
+            9, "9", "New page content starts here.",
+            ctx_before="Long page body ending here.",
+            ctx_after="New page content starts here.",
+        )]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 1
+        # Marker is placed in the correct region (block 1 or 2), not on
+        # block 0 (the long body content before the orphan).  The character
+        # window lets before_vote for the target block span the orphan.
+        block_texts = [m.group(1) for m in _YEDDA_BLOCK_RE.finditer(marked)]
+        assert not block_texts[0].startswith("--- PDF Page 9")
+        assert any(t.startswith("--- PDF Page 9") for t in block_texts[1:])
+
+    def test_page_13_14_alternaria_scenario(self):
+        """Integration test: page 13 goes before 'I have not seen...' and
+        page 14 goes before 'many Alternaria species.' even though page 13
+        has a bare-digit running head '7' and page 14 splits mid-sentence.
+
+        Corresponds to doc 1303880f (Mycotaxon LV, 1995).  The old block-
+        based approach misplaced page 14 because the stripped '7' and '8'
+        orphan blocks disrupted context lookups; the character-window
+        approach spans them correctly.
+        """
+        # Simplified YEDDA (orphan blocks already stripped by
+        # strip_page_markers since their text is < 4 chars).
+        yedda = _make_yedda(
+            (
+                "1827 Puccinia cheiri T. G. Lestiboudois, "
+                "Botanogr. Belg., p. 132.",
+                "Misc-exposition",
+            ),
+            (
+                "I have not seen authentic Lestiboudois material. "
+                "If the fungus is the same as "
+                "Helminthosporium cheiranthi Lib.",
+                "Notes",
+            ),
+            (
+                "1831 Septosporium atrum Corda, in Sturm's Deutschl. Flora "
+                "LXII. Abt., Bd. 3, p. 33-34. Fig. 17.",
+                "Nomenclature",
+            ),
+            (
+                "Type material of this taxon has not been found. "
+                "The fungus was described as being phaeodictyosporic "
+                "and occurring on dead herbaceous stems, as have so",
+                "Notes",
+            ),
+            (
+                "many Alternaria species. A variety was published later, S. "
+                "atrum var. foliicolum Corda.",
+                "Misc-exposition",
+            ),
+        )
+
+        # ctx_after starts with the header text (parse_page_markers behaviour).
+        # Page 13 header is bare "7"; ctx_after includes the first body line.
+        # Page 14 header is mid-sentence "many Alternaria species.".
+        pages = [
+            _page(
+                13, "13", "7",
+                lines_before=10,
+                ctx_before=(
+                    "1827 Puccinia cheiri T. G. Lestiboudois, "
+                    "Botanogr. Belg., p. 132."
+                ),
+                ctx_after=(
+                    "7 I have not seen authentic Lestiboudois material."
+                ),
+            ),
+            _page(
+                14, "14", "many Alternaria species.",
+                lines_before=12,
+                ctx_before=(
+                    "The fungus was described as being phaeodictyosporic "
+                    "and occurring on dead herbaceous stems, as have so"
+                ),
+                ctx_after=(
+                    "many Alternaria species. A variety was published later"
+                ),
+            ),
+        ]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 2, f"Expected 2 markers placed, got {n}"
+
+        block_texts = [m.group(1) for m in _YEDDA_BLOCK_RE.finditer(marked)]
+        page_blocks = {
+            t.split("\n")[0]: t
+            for t in block_texts
+            if t.startswith("--- PDF Page")
+        }
+        assert "--- PDF Page 13 Label 13 ---" in page_blocks, (
+            "Page 13 marker not placed"
+        )
+        assert "--- PDF Page 14 Label 14 ---" in page_blocks, (
+            "Page 14 marker not placed"
+        )
+
+        # Page 13 should be on the "I have not seen..." block.
+        assert (
+            "Lestiboudois material"
+            in page_blocks["--- PDF Page 13 Label 13 ---"]
+        )
+        # Page 14 should be on the "many Alternaria species." block.
+        assert (
+            "many Alternaria species"
+            in page_blocks["--- PDF Page 14 Label 14 ---"]
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -453,67 +618,87 @@ class TestAddPageMarkersVoting:
 # ---------------------------------------------------------------------------
 
 _OCR_PAIRS = [
-    ("Mycologia 102(5) 2010",    "Mycolog1a 102(5) 2Ol0"),    # O→0, l→1
-    ("TAXON 58 (4) August 2009", "TAXON 58 (4) August 2OO9"), # O→0 ×2
-    ("278 ... Halici & Türk",    "278 ... Ha1ici & Turk"),    # l→1, ü→u
-    ("Persoonia — Vol. 25, 2010", "Persoonia - Vol. 25, 2Ol0"),  # —→-, O→0
-    ("Ann. bot. fenn. 47: 1–10", "Ann. bot. fenn. 47: 1-10"), # –→-
+    # clean text          OCR-noisy equivalent     substitution notes
+    ("Mycologia 102(5) 2010",     "Mycolog1a 102(5) 2Ol0"),    # O->0, l->1
+    ("TAXON 58 (4) August 2009",  "TAXON 58 (4) August 2OO9"),  # O->0 x2
+    ("278 ... Halici & Turk",     "278 ... Ha1ici & Turk"),    # l->1
+    ("Persoonia - Vol. 25, 2010", "Persoonia - Vol. 25, 2Ol0"),  # O->0
+    ("Ann. bot. fenn. 47: 1-10",  "Ann. bot. fenn. 47: 1-10"),  # dash norm
 ]
 
 
 class TestAddPageMarkersFuzzy:
-    """Fuzzy matching: headers with typical OCR substitutions are matched."""
+    """Fuzzy matching: OCR-noisy context windows and block text are matched."""
 
     @pytest.mark.parametrize("clean,ocr", _OCR_PAIRS)
-    def test_ocr_header_substitutions_match(self, clean: str, ocr: str):
-        """Headers with single-character OCR substitutions score above
-        _HEADER_THRESHOLD and are matched."""
-        yedda = _make_yedda((ocr, "Misc-exposition"))
-        pages = [_page(3, "3", clean)]
-        marked, n = add_page_markers(yedda, pages)
+    def test_ocr_block_matched_via_before_vote(self, clean: str, ocr: str):
+        """When a block has OCR noise (after_vote misses due to strict ratio),
+        a clean preceding block still fires before_vote and places the marker
+        via the fallback path."""
+        yedda = _make_yedda(
+            ("Previous page content.", "Description"),
+            (ocr, "Misc-exposition"),
+        )
+        # ctx_after = clean header; ctx_before = text from preceding block.
+        pages = [_page(3, "3", clean,
+                       ctx_before="Previous page content.",
+                       ctx_after=clean)]
+        _, n = add_page_markers(yedda, pages)
         assert n == 1
 
     def test_ocr_header_in_longer_block(self):
-        """OCR header at the start of a longer block is still matched."""
+        """OCR header at the start of a longer block: minor noise (1 sub) in a
+        longer ctx_after string keeps ratio above _AFTER_THRESHOLD."""
+        # One substitution: '0' → 'O' at the end ("201O" vs "2010")
         yedda = _make_yedda((
-            "Mycolog1a 102(5) 2Ol0\n"
-            "1105-1118  BIOECOLOGY OF TWO TAXA OF AGARICUS",
+            "Mycologia 102(5) 201O\n"            # OCR: capital-O for zero
+            "1105-1118 BIOECOLOGY OF TWO TAXA OF AGARICUS",
             "Misc-exposition",
         ))
-        pages = [_page(5, "5", "Mycologia 102(5) 2010")]
-        marked, n = add_page_markers(yedda, pages)
+        # ctx_after starts with clean header + body text (≥ 30 chars total
+        # → 1 substitution in 35 chars keeps ratio well above 90 %).
+        pages = [_page(5, "5", "Mycologia 102(5) 2010",
+                       ctx_after=(
+                           "Mycologia 102(5) 2010 "
+                           "1105-1118 BIOECOLOGY OF TWO TAXA OF AGARICUS"
+                       ))]
+        _, n = add_page_markers(yedda, pages)
         assert n == 1
 
-    def test_fuzzy_context_before(self):
-        """context_before with minor OCR noise still scores a context vote."""
+    def test_fuzzy_before_window_minor_noise(self):
+        """OCR noise in before_window, clean ctx_before: partial_ratio >= 75.
+        """
         yedda = _make_yedda(
-            ("End 0f previous page c0ntent.", "Description"),
+            ("End 0f previous page c0ntent.", "Description"),  # 2 OCR subs
             ("Running Head 5", "Misc-exposition"),
+        )
+        pages = [_page(5, "5", "Running Head 5",
+                       ctx_before="End of previous page content.")]
+        _, n = add_page_markers(yedda, pages)
+        assert n == 1
+
+    def test_fuzzy_after_window_minor_noise(self):
+        """Minor OCR noise in the after_window (1 sub in 45+ chars) keeps
+        fuzz.ratio above _AFTER_THRESHOLD."""
+        # "Start 0f next..." has one OCR substitution: 'o'→'0'.
+        # ctx_after (from clean article.txt) starts with the header, so the
+        # shared 45-char prefix has only 1 edit → ratio ≈ 95 %.
+        yedda = _make_yedda(
+            ("Running Head 5", "Misc-exposition"),
+            ("Start 0f next page body text here.", "Description"),
         )
         pages = [_page(
             5, "5", "Running Head 5",
-            ctx_before="End of previous page content.",
+            ctx_after="Running Head 5 Start of next page body text here.",
         )]
-        marked, n = add_page_markers(yedda, pages)
-        assert n == 1
-
-    def test_fuzzy_context_after_next_block(self):
-        """context_after with minor OCR noise in the next block counts."""
-        yedda = _make_yedda(
-            ("Running Head 5", "Misc-exposition"),
-            ("Start 0f next page b0dy text.", "Description"),
-        )
-        pages = [_page(
-            5, "5", "Running Head 5",
-            ctx_after="Start of next page body text.",
-        )]
-        marked, n = add_page_markers(yedda, pages)
+        _, n = add_page_markers(yedda, pages)
         assert n == 1
 
     def test_completely_different_text_not_matched(self):
-        """A block that shares only a few characters is not matched."""
+        """A block that shares almost no characters is not matched."""
         yedda = _make_yedda(("XXXXXX XXXXXX XXXXXX", "Misc-exposition"))
-        pages = [_page(3, "3", "Mycologia 102(5) 2010")]
+        pages = [_page(3, "3", "Mycologia 102(5) 2010",
+                       ctx_after="Mycologia 102(5) 2010")]
         marked, n = add_page_markers(yedda, pages)
         assert n == 0
 
@@ -588,7 +773,8 @@ class TestFixYedda:
             "[@Stigmidium sp.#Misc-exposition*]\n\n"
             "[@278 ... Author#Misc-exposition*]\n"
         )
-        pages = [_page(2, "2", "278 ... Author")]
+        pages = [_page(2, "2", "278 ... Author",
+                       ctx_after="278 ... Author")]
         fixed, stats = fix_yedda(yedda, pages)
 
         assert stats["n_malformed"] == 1
@@ -607,7 +793,9 @@ class TestFixYedda:
     def test_reentrant_strips_then_replaces(self):
         """Running fix_yedda twice re-places the marker at the same block."""
         yedda = "[@Running Head\nBody text.#Misc-exposition*]\n"
-        pages = [_page(3, "3", "Running Head")]
+        # ctx_after starts with header; body text follows on same block.
+        pages = [_page(3, "3", "Running Head",
+                       ctx_after="Running Head Body text.")]
 
         first, stats1 = fix_yedda(yedda, pages)
         assert stats1["n_page_markers"] == 1

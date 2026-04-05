@@ -40,16 +40,22 @@ _CONTEXT_LINES = 3
 _LINE_COUNT_TOLERANCE = 0.50
 # Minimum votes required to accept a candidate without falling back
 _MIN_VOTES = 2
-# Fuzzy-match thresholds (rapidfuzz scores 0-100)
-# Header: compared against the first line of the candidate block.
-# Context: partial_ratio — best-window match of ctx string inside block text.
-_HEADER_THRESHOLD = 80
+# Fuzzy-match threshold (rapidfuzz scores 0-100) for context window votes.
+# partial_ratio — best-window match of the context string inside the YEDDA
+# character window.
 _CONTEXT_THRESHOLD = 75
-# Minimum normalised header length (chars) to attempt matching.
-# Single-digit page numbers ("60", "3") match almost anything; skip them.
-_MIN_HEADER_LEN = 4
+# Threshold for the after-context vote, which uses fuzz.ratio on an
+# equal-length prefix of the after window (anchored start comparison).
+# Higher than _CONTEXT_THRESHOLD because anchoring is stricter and because
+# ctx_after always starts with the page's first-content line (the header).
+_AFTER_THRESHOLD = 90
+# Number of characters of stripped YEDDA text to extract before and after the
+# candidate insertion point when computing context votes.  At ~70 chars per
+# line this covers roughly 5-6 lines on each side, comfortably spanning
+# single orphan blocks left by a previous strip_page_markers pass.
+_CTX_CHARS = 400
 # Hard forward-window multiplier.  The search stops once the cumulative YEDDA
-# line gap from prev_match exceeds lines_before * _MAX_JUMP_FACTOR.  YEDDA
+# line gap from prev_match exceeds accum_txt * _MAX_JUMP_FACTOR.  YEDDA
 # non-empty lines run ~1.35× txt lines, so a factor of 4 allows ~3× the
 # expected page distance before giving up.  Prevents one bad 2-vote match
 # from consuming thousands of blocks and making subsequent pages unreachable.
@@ -239,11 +245,14 @@ def parse_page_markers(
             if j < len(lines):
                 header_text = lines[j].strip()
 
-                # Context after: first _CONTEXT_LINES non-empty lines after
-                # the header.
-                after: List[str] = []
+                # Context after: the header line itself followed by the
+                # next _CONTEXT_LINES non-empty lines.  Including the
+                # header at the start lets add_page_markers use an
+                # anchored prefix comparison — only the YEDDA block that
+                # *begins* with the page's first content will score high.
+                after: List[str] = [header_text]
                 k = j + 1
-                while k < len(lines) and len(after) < _CONTEXT_LINES:
+                while k < len(lines) and len(after) <= _CONTEXT_LINES:
                     ln = lines[k].strip()
                     if ln and not _PAGE_MARKER_RE.match(lines[k]):
                         after.append(ln)
@@ -293,9 +302,15 @@ def strip_page_markers(yedda: str) -> Tuple[str, int]:
             n_stripped += 1
             nl = stripped.find("\n")
             remainder = stripped[nl + 1:].strip() if nl >= 0 else ""
-            if remainder:
+            # Discard bare running-head page numbers (< 4 chars after
+            # stripping).  These arise when a previous run placed a page
+            # marker on a short OCR page number such as "7" or "8".
+            # Keeping them creates orphan single-char blocks that sit
+            # between context-bearing blocks and their natural successors,
+            # disrupting character-window context matching.
+            if remainder and len(remainder) >= 4:
                 out_parts.append(f"[@{remainder}#Misc-exposition*]")
-            # Blocks with no content after the marker are discarded.
+            # Blocks with no content (or too-short content) are discarded.
         elif text.strip():
             out_parts.append(f"[@{text}#{tag}*]")
     return "\n\n".join(out_parts) + ("\n" if out_parts else ""), n_stripped
@@ -310,20 +325,29 @@ def add_page_markers(
     For each page in *pages*, search forward from the previous match for a
     YEDDA block that scores at least ``_MIN_VOTES`` on three signals:
 
-    * **Header vote**: normalised block text equals or starts with the
-      normalised header text from the source ``article.txt``.
-    * **Line-count vote**: cumulative non-empty lines in YEDDA blocks
-      between the previous match and this candidate is within
-      ``_LINE_COUNT_TOLERANCE`` of *lines_before* from the source file.
-    * **Context vote**: the normalised *context_before* is a substring of
-      the preceding block's text, **or** the normalised *context_after*
-      is a substring of the candidate block's tail (lines after the first)
-      or the following block.
+    * **Before-context vote**: the normalised *context_before* (last few lines
+      before the page marker in ``article.txt``) scores above
+      ``_CONTEXT_THRESHOLD`` against the ``_CTX_CHARS``-character window of
+      YEDDA plaintext immediately *before* the candidate insertion point.
+    * **After-context vote**: the normalised *context_after* (first few lines
+      after the marker) scores above ``_CONTEXT_THRESHOLD`` against the
+      ``_CTX_CHARS``-character window of YEDDA plaintext immediately *after*
+      the candidate insertion point.
+    * **Line-count vote**: cumulative non-empty lines in YEDDA blocks between
+      the previous match and this candidate is within
+      ``_LINE_COUNT_TOLERANCE`` of the accumulated *lines_before* distance
+      from the source file (summed across any skipped pages since the last
+      match).
+
+    Using character windows rather than adjacent-block comparisons makes the
+    votes robust to orphan blocks (stripped bare-digit running heads),
+    sentence fragments split across page boundaries, and variable block
+    granularity.  The header text from ``article.txt`` need not correspond to
+    a YEDDA block boundary at all.
 
     The first candidate reaching ``_MIN_VOTES`` wins.  If none does, the
-    first candidate with a header vote is used as a fallback (preserving
-    the original exact-match behaviour).  Searching always moves forward
-    from the previous match to guarantee document-order monotonicity.
+    first candidate with any context vote is used as a fallback.  Searching
+    always moves forward from the previous match to guarantee monotonicity.
 
     Blocks that already start with a ``--- PDF Page`` marker are skipped.
 
@@ -354,36 +378,46 @@ def add_page_markers(
             bool(ln.strip()) for ln in blk[0].splitlines()
         )
 
+    # Precompute a stripped-plaintext string and per-block character offsets
+    # for the character-window context votes.  Each block contributes its
+    # normalised text followed by a single space separator.
+    plain_parts: List[str] = []
+    block_char_starts: List[int] = []
+    pos = 0
+    for blk_text, _blk_tag in blocks:
+        block_char_starts.append(pos)
+        norm_part = _normalise(blk_text)
+        plain_parts.append(norm_part)
+        pos += len(norm_part) + 1   # +1 for the space separator
+    plain_yedda = " ".join(plain_parts)
+    block_char_starts.append(pos)  # sentinel: end of string
+
     n_added = 0
     min_block = 0       # forward-only: each match must be >= this index
     prev_match = 0      # block index of the last matched page (for line count)
-    # Accumulated txt lines since the last successful match.  When pages are
-    # skipped (no match), lines_before keeps adding up so that the search
-    # window stays proportional to the true distance from the last anchor.
+    # Accumulated txt lines since the last successful match.  Sums
+    # lines_before across skipped pages so the line-count vote and window cap
+    # stay proportional to the true distance from the last anchor.
     accum_txt: int = 0
 
-    for page_num, page_label, header_text, lines_before, ctx_before, ctx_after \
+    for page_num, page_label, _header_text, lines_before, ctx_before, ctx_after \
             in pages:
-        # Accumulate txt-line distance from the last match regardless of
-        # whether this page's header passes the length filter.  Short-header
-        # pages still occupy space in the document, and their distance must
-        # be included so the search window stays correctly sized.
         accum_txt += lines_before
 
-        norm_header = _normalise(header_text)
         norm_ctx_before = _normalise(ctx_before)
         norm_ctx_after = _normalise(ctx_after)
-        if not norm_header or len(norm_header) < _MIN_HEADER_LEN:
+        # Skip pages with no context signals at all (cannot place without any
+        # text evidence — e.g. a page whose content section is empty).
+        if not norm_ctx_before and not norm_ctx_after:
             continue
+
         marker_line = f"--- PDF Page {page_num} Label {page_label} ---"
 
         # Hard window cap: stop searching once the cumulative YEDDA line gap
         # from prev_match exceeds the accumulated txt lines * _MAX_JUMP_FACTOR.
-        # Using accumulated (not per-page) txt lines prevents the window from
-        # shrinking when many consecutive pages fail to match.
         max_gap = accum_txt * _MAX_JUMP_FACTOR if accum_txt > 0 else None
 
-        best_fallback: Optional[int] = None   # first header-only match
+        best_fallback: Optional[int] = None   # first block with any context vote
 
         for i in range(min_block, len(blocks)):
             text, _tag = blocks[i]
@@ -392,57 +426,55 @@ def add_page_markers(
 
             # Hard cap: exit early once the window is exhausted.
             if max_gap is not None:
-                yedda_gap_check = cumulative[i] - cumulative[prev_match]
-                if yedda_gap_check > max_gap:
+                if cumulative[i] - cumulative[prev_match] > max_gap:
                     break
 
-            # --- Vote A: header text (fuzzy, first line of block) ---
-            # Compare the PDF header against the start of the block's first
-            # line.  Using the first line avoids false positives from the
-            # header text appearing deep in a multi-paragraph block.
-            # Window length = header + small buffer for trailing page numbers.
-            first_line = _normalise(text.split("\n")[0])
-            window = first_line[:len(norm_header) + 20]
-            header_score = _fuzz.ratio(norm_header, window)
-            header_vote = header_score >= _HEADER_THRESHOLD
-            if header_vote and best_fallback is None:
+            # --- Vote A: before-context (character window) ---
+            # Extract _CTX_CHARS of plaintext immediately before block i's
+            # start.  Spans across block boundaries and orphan blocks.
+            char_pos = block_char_starts[i]
+            before_window = plain_yedda[max(0, char_pos - _CTX_CHARS):char_pos]
+            before_vote = (
+                bool(norm_ctx_before)
+                and _fuzz.partial_ratio(norm_ctx_before, before_window)
+                >= _CONTEXT_THRESHOLD
+            )
+
+            # --- Vote B: after-context (anchored prefix) ---
+            # ctx_after starts with the page's first-content line (header),
+            # so comparing it against an equal-length prefix of after_window
+            # checks whether block i *begins* with the new page's text.
+            # fuzz.ratio (not partial_ratio) is used to anchor the comparison
+            # to the start of the window, preventing preceding blocks whose
+            # after_window merely *contains* the next page's text from scoring
+            # high.  _AFTER_THRESHOLD is stricter than _CONTEXT_THRESHOLD to
+            # account for this tighter matching criterion.
+            after_window = plain_yedda[char_pos:char_pos + _CTX_CHARS]
+            if norm_ctx_after:
+                after_prefix = after_window[:len(norm_ctx_after)]
+                after_vote = (
+                    _fuzz.ratio(norm_ctx_after, after_prefix)
+                    >= _AFTER_THRESHOLD
+                )
+            else:
+                after_vote = False
+
+            if (before_vote or after_vote) and best_fallback is None:
                 best_fallback = i
 
-            # --- Vote B: line-count proximity ---
+            # --- Vote C: line-count proximity ---
+            # Compare the YEDDA line gap from the last match against the
+            # accumulated article.txt line distance (accum_txt).
             yedda_gap = cumulative[i] - cumulative[prev_match]
-            if lines_before > 0:
+            if accum_txt > 0:
                 line_count_vote = (
-                    abs(yedda_gap - lines_before) / lines_before
+                    abs(yedda_gap - accum_txt) / accum_txt
                     <= _LINE_COUNT_TOLERANCE
                 )
             else:
                 line_count_vote = yedda_gap == 0
 
-            # --- Vote C: context (before OR after, fuzzy partial match) ---
-            # partial_ratio finds the best-matching window of the shorter
-            # context string within the (potentially longer) block text.
-            context_vote = False
-            if norm_ctx_before and i > 0:
-                score = _fuzz.partial_ratio(
-                    norm_ctx_before, _normalise(blocks[i - 1][0])
-                )
-                context_vote = score >= _CONTEXT_THRESHOLD
-            if not context_vote and norm_ctx_after:
-                tail = _normalise(
-                    " ".join(text.splitlines()[1:])
-                )
-                if _fuzz.partial_ratio(norm_ctx_after, tail) \
-                        >= _CONTEXT_THRESHOLD:
-                    context_vote = True
-                elif i + 1 < len(blocks):
-                    score = _fuzz.partial_ratio(
-                        norm_ctx_after, _normalise(blocks[i + 1][0])
-                    )
-                    context_vote = score >= _CONTEXT_THRESHOLD
-
-            votes = (
-                int(header_vote) + int(line_count_vote) + int(context_vote)
-            )
+            votes = int(before_vote) + int(after_vote) + int(line_count_vote)
 
             if votes >= _MIN_VOTES:
                 blocks[i][0] = marker_line + "\n" + text.lstrip()
@@ -454,7 +486,7 @@ def add_page_markers(
                 best_fallback = None
                 break
         else:
-            # No candidate reached _MIN_VOTES — fall back to first header match.
+            # No candidate reached _MIN_VOTES — fall back to first context match.
             if best_fallback is not None:
                 i = best_fallback
                 blocks[i][0] = marker_line + "\n" + blocks[i][0].lstrip()
