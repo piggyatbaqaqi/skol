@@ -400,8 +400,8 @@ def add_page_markers(
     # stay proportional to the true distance from the last anchor.
     accum_txt: int = 0
 
-    for page_num, page_label, _header_text, lines_before, ctx_before, ctx_after \
-            in pages:
+    for (page_num, page_label, _header_text,
+         lines_before, ctx_before, ctx_after) in pages:
         accum_txt += lines_before
 
         norm_ctx_before = _normalise(ctx_before)
@@ -417,11 +417,19 @@ def add_page_markers(
         # from prev_match exceeds the accumulated txt lines * _MAX_JUMP_FACTOR.
         max_gap = accum_txt * _MAX_JUMP_FACTOR if accum_txt > 0 else None
 
-        best_fallback: Optional[int] = None   # first block with any context vote
+        # First block with any context vote (fallback candidate).
+        best_fallback: Optional[int] = None
 
         for i in range(min_block, len(blocks)):
             text, _tag = blocks[i]
             if text.startswith("--- PDF Page"):
+                continue
+            # Skip very-short blocks (orphan running-head digits such as
+            # "7" or "8").  Their after_window inherits the successor
+            # block's text, so they would score spuriously high on
+            # after_vote even though they are not the page-start block.
+            # This mirrors the strip_page_markers discard threshold.
+            if len(text.strip()) < 4:
                 continue
 
             # Hard cap: exit early once the window is exhausted.
@@ -486,7 +494,8 @@ def add_page_markers(
                 best_fallback = None
                 break
         else:
-            # No candidate reached _MIN_VOTES — fall back to first context match.
+            # No candidate reached _MIN_VOTES; fall back to first
+            # context match.
             if best_fallback is not None:
                 i = best_fallback
                 blocks[i][0] = marker_line + "\n" + blocks[i][0].lstrip()

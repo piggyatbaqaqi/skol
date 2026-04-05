@@ -509,12 +509,40 @@ class TestAddPageMarkersVoting:
         )]
         marked, n = add_page_markers(yedda, pages)
         assert n == 1
-        # Marker is placed in the correct region (block 1 or 2), not on
-        # block 0 (the long body content before the orphan).  The character
-        # window lets before_vote for the target block span the orphan.
+        # Marker lands on block 2 (the real content), NOT on block 1 (orphan
+        # "8") even though block 1's after_window starts with ctx_after.
         block_texts = [m.group(1) for m in _YEDDA_BLOCK_RE.finditer(marked)]
         assert not block_texts[0].startswith("--- PDF Page 9")
-        assert any(t.startswith("--- PDF Page 9") for t in block_texts[1:])
+        assert not block_texts[1].startswith("--- PDF Page 9")
+        assert block_texts[2].startswith("--- PDF Page 9")
+
+    def test_short_orphan_not_placement_candidate(self):
+        """A block with < 4 chars (orphan running-head digit) is skipped as a
+        placement candidate even when its after_window scores high on
+        after_vote.  This mirrors doc 1303880f page 14, where ctx_after starts
+        with 'many Alternaria species.' and the orphan '8' block precedes it."""
+        yedda = _make_yedda(
+            ("Type material has not been found.", "Notes"),    # block 0
+            ("8", "Misc-exposition"),                          # block 1: orphan
+            (
+                "many Alternaria species. A variety was "
+                "published later.",
+                "Misc-exposition",
+            ),                                                 # block 2: target
+        )
+        # ctx_after starts with the running-head "8" then the body text.
+        pages = [_page(
+            14, "14", "8",
+            ctx_before="Type material has not been found.",
+            ctx_after="8 many Alternaria species. A variety was published",
+        )]
+        marked, n = add_page_markers(yedda, pages)
+        assert n == 1
+        block_texts = [m.group(1) for m in _YEDDA_BLOCK_RE.finditer(marked)]
+        # Orphan "8" block must NOT receive the marker.
+        assert not block_texts[1].startswith("--- PDF Page 14")
+        # Correct content block receives the marker.
+        assert block_texts[2].startswith("--- PDF Page 14")
 
     def test_page_13_14_alternaria_scenario(self):
         """Integration test: page 13 goes before 'I have not seen...' and
@@ -726,6 +754,23 @@ class TestStripPageMarkers:
         stripped, n = strip_page_markers(yedda)
         assert n == 0
         assert stripped == yedda
+
+    def test_short_remnant_discarded(self):
+        """A Page-header whose remainder after stripping the marker is < 4
+        chars (orphan running-head digit) is discarded entirely."""
+        yedda = _make_yedda(
+            ("--- PDF Page 7 Label 7 ---\n7", "Page-header"),
+            ("Body content starts here.", "Description"),
+        )
+        stripped, n = strip_page_markers(yedda)
+        assert n == 1
+        assert "--- PDF Page" not in stripped
+        # The orphan "7" must not appear as a standalone block.
+        block_texts = [
+            m.group(1) for m in _YEDDA_BLOCK_RE.finditer(stripped)
+        ]
+        assert all(t.strip() != "7" for t in block_texts)
+        assert "Body content starts here." in stripped
 
     def test_marker_only_block_discarded(self):
         """A Page-header with no content after the marker line is dropped."""
