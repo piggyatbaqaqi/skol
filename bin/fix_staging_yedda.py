@@ -203,9 +203,12 @@ def add_page_markers(
 
     For each ``(page_num, page_label, header_text)`` in *pages*:
 
-    * Find the first YEDDA block whose normalised text matches
-      *header_text* (exact match after whitespace normalisation), or whose
-      normalised text *starts with* the normalised *header_text*.
+    * Find the first YEDDA block *at or after the previous match* whose
+      normalised text matches *header_text* (exact match after whitespace
+      normalisation), or whose normalised text *starts with* the normalised
+      *header_text*.  Searching only forward from the previous match
+      enforces document-order monotonicity: if a page header cannot be
+      matched without violating monotonicity it is silently skipped.
     * Prefix the block text with ``--- PDF Page N Label L ---\\n``.
     * Relabel the block to ``Page-header``.
 
@@ -231,13 +234,15 @@ def add_page_markers(
             blocks.append([text, tag])
 
     n_added = 0
+    min_block = 0  # enforce monotonicity: each match must be at or after this index
     for page_num, page_label, header_text in pages:
         norm_header = _normalise(header_text)
         if not norm_header:
             continue
         marker_line = f"--- PDF Page {page_num} Label {page_label} ---"
 
-        for block in blocks:
+        for i in range(min_block, len(blocks)):
+            block = blocks[i]
             text, tag = block
             # Skip if already marked.
             if text.startswith("--- PDF Page"):
@@ -248,6 +253,7 @@ def add_page_markers(
                 block[0] = marker_line + "\n" + text.lstrip()
                 block[1] = "Page-header"
                 n_added += 1
+                min_block = i + 1  # next page must match strictly after this block
                 break  # first match wins; move on to next page
 
     out_parts = [f"[@{text}#{tag}*]" for text, tag in blocks]
