@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
-"""Rebuild a YEDDA annotation file using a new complete plaintext source.
+"""Rebuild YEDDA annotation files using a new complete plaintext source.
 
-When a YEDDA file (e.g. from skol_ann_reviewed) is missing text blocks that
-appear in a more-complete corresponding plaintext (e.g. skol_training/article.txt),
-this script:
+For each document that has an ``article.txt.ann`` in ``--yedda-db`` and
+an ``article.txt`` in ``--plaintext-db``, this script:
 
   1. Parses the old YEDDA into (text, label) blocks.
-  2. Locates each block's text in the new plaintext using exact substring search.
-     If the block starts with a ``--- PDF Page N Label L ---`` marker (which was
-     embedded in the old YEDDA but is now a standalone line), the marker is
-     stripped before searching and the search text is the block body only.
+  2. Locates each block's text in the new plaintext using exact substring
+     search, with fallbacks for blocks whose text begins with a PDF
+     page-marker line or has minor whitespace differences.
   3. Sorts located blocks by their position in the new text.
   4. Fills gaps between located blocks:
        - Lines matching ``--- PDF Page N Label L ---`` → Page-header blocks.
        - Other non-empty text segments → To-review blocks.
   5. Appends any unlocatable blocks as To-review blocks at the end.
+  6. Writes the rebuilt ``article.txt.ann`` to ``--output-db`` under the same
+     ``_id``.
 
 Usage::
 
-    python fixes/fix_missing_yedda.py OLD.ann NEW.txt OUTPUT.ann
-    python fixes/fix_missing_yedda.py --dry-run OLD.ann NEW.txt
-
-Options:
-    --dry-run   Print summary without writing OUTPUT.ann.
+    python fixes/fix_missing_yedda.py \\
+        --plaintext-db skol_training \\
+        --yedda-db skol_ann_reviewed \\
+        --output-db skol_ann_fixed \\
+        [--doc-id DOC_ID] [--dry-run] [-v]
 """
 
 import argparse
@@ -31,8 +31,13 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
+
+from env_config import get_env_config  # type: ignore[import]
+
 # ---------------------------------------------------------------------------
-# Regex patterns (shared with fix_staging_yedda.py / migrate_labels.py)
+# Regex patterns
 # ---------------------------------------------------------------------------
 
 _YEDDA_BLOCK_RE = re.compile(
@@ -43,8 +48,11 @@ _PAGE_MARKER_RE = re.compile(
     r"^---\s+PDF\s+Page\s+(\d+)\s+Label\s+(\S+)\s+---\s*$"
 )
 
+_TXT_ATTACHMENT = "article.txt"
+_ANN_ATTACHMENT = "article.txt.ann"
+
 # ---------------------------------------------------------------------------
-# Core helpers
+# Core helpers (file-format logic; no CouchDB dependency)
 # ---------------------------------------------------------------------------
 
 Block = Tuple[str, str]  # (text, label)
@@ -56,9 +64,9 @@ def parse_yedda(text: str) -> List[Block]:
 
 
 def _strip_leading_page_marker(text: str) -> Tuple[Optional[str], str]:
-    """If text starts with a PDF page marker line, return (marker, rest).
+    """If text starts with a PDF page marker line return (marker, rest).
 
-    Returns (None, text) if no leading marker.
+    Returns (None, text) if there is no leading marker.
     """
     first_nl = text.find("\n")
     first_line = text[:first_nl] if first_nl >= 0 else text
@@ -75,30 +83,29 @@ def find_block_in_text(
 ) -> Tuple[int, int, str]:
     """Locate block_text in haystack starting at search_from.
 
-    Handles blocks whose text begins with a PDF page marker (strips the marker
-    before searching, since in the new text page markers are standalone lines).
+    Tries, in order:
+      1. Exact substring match.
+      2. Match after stripping a leading PDF page-marker line.
+      3. Match with whitespace normalised (runs of whitespace → single space).
 
     Returns:
-        (start, end, effective_text) where effective_text is the portion of
-        block_text that was actually found (may differ if a leading page marker
-        was stripped).  Returns (-1, -1, '') if not found.
+        (start, end, effective_text) on success, or (-1, -1, '') if not found.
     """
-    # First try exact match.
+    # 1. Exact match.
     pos = haystack.find(block_text, search_from)
     if pos >= 0:
         return pos, pos + len(block_text), block_text
 
-    # Try stripping a leading PDF page marker.
+    # 2. Strip leading page marker and retry.
     marker, body = _strip_leading_page_marker(block_text)
     if marker is not None and body:
         pos = haystack.find(body, search_from)
         if pos >= 0:
             return pos, pos + len(body), body
 
-    # Try with normalised internal whitespace (collapse runs of whitespace).
-    norm_needle = re.sub(r"\s+", " ", block_text).strip()
-    # Build a regex that matches the normalised version.
-    escaped = re.escape(norm_needle).replace(r"\ ", r"\s+")
+    # 3. Normalised-whitespace regex match.
+    norm = re.sub(r"\s+", " ", block_text).strip()
+    escaped = re.escape(norm).replace(r"\ ", r"\s+")
     try:
         m = re.search(escaped, haystack[search_from:], re.DOTALL)
     except re.error:
@@ -112,10 +119,10 @@ def find_block_in_text(
 
 
 def split_gap(gap_text: str) -> List[Block]:
-    """Convert a gap (unannotated text) into Page-header and To-review blocks.
+    """Convert unannotated gap text into Page-header and To-review blocks.
 
-    Lines matching the PDF page marker pattern become Page-header blocks.
-    Remaining non-empty text segments become To-review blocks.
+    PDF page-marker lines become Page-header blocks; remaining non-empty
+    text segments become To-review blocks.
     """
     blocks: List[Block] = []
     current_lines: List[str] = []
@@ -142,78 +149,67 @@ def blocks_to_yedda(blocks: List[Block]) -> str:
     return "\n\n".join(f"[@{text}#{label}*]" for text, label in blocks) + "\n"
 
 
-# ---------------------------------------------------------------------------
-# Main logic
-# ---------------------------------------------------------------------------
-
 def rebuild_yedda(
     old_yedda: str,
     new_text: str,
     *,
     verbose: bool = False,
 ) -> Tuple[str, int, int]:
-    """Rebuild YEDDA from old_yedda blocks anchored into new_text.
+    """Rebuild YEDDA by anchoring old blocks into new_text.
 
     Returns:
         (new_yedda_string, placed_count, unplaced_count)
     """
     old_blocks = parse_yedda(old_yedda)
 
-    # Locate each old block in new_text, left-to-right.
     placed: List[Tuple[int, int, str, str]] = []  # (start, end, text, label)
     unplaced: List[Block] = []
     cursor = 0
 
     for i, (text, label) in enumerate(old_blocks):
-        start, end, eff_text = find_block_in_text(text, new_text, cursor)
+        start, end, eff = find_block_in_text(text, new_text, cursor)
         if start >= 0:
-            placed.append((start, end, eff_text, label))
+            placed.append((start, end, eff, label))
             cursor = end
             if verbose:
                 print(
-                    f"  [{i}] {label!r}: found at [{start},{end})"
-                    f"  {repr(eff_text[:40])}"
+                    f"    [{i}] {label!r}: [{start},{end})  "
+                    f"{repr(eff[:40])}"
                 )
         else:
             unplaced.append((text, label))
             print(
-                f"  WARNING [{i}] {label!r}: not found — "
+                f"    WARNING [{i}] {label!r}: not found — "
                 f"{repr(text[:60])}",
                 file=sys.stderr,
             )
 
-    # Sort placed blocks by position (should already be ordered, but be safe).
     placed.sort(key=lambda t: t[0])
 
-    # Assemble output blocks.
     out_blocks: List[Block] = []
     prev_end = 0
 
     for start, end, text, label in placed:
         if start > prev_end:
-            gap = new_text[prev_end:start]
-            gap_blocks = split_gap(gap)
+            gap_blocks = split_gap(new_text[prev_end:start])
             if verbose and gap_blocks:
                 print(
-                    f"  gap [{prev_end},{start}): "
+                    f"    gap [{prev_end},{start}): "
                     f"{len(gap_blocks)} block(s) inserted"
                 )
             out_blocks.extend(gap_blocks)
         out_blocks.append((text, label))
         prev_end = end
 
-    # Trailing text after the last placed block.
     if prev_end < len(new_text):
-        trailing = new_text[prev_end:]
-        trailing_blocks = split_gap(trailing)
-        if verbose and trailing_blocks:
+        trailing = split_gap(new_text[prev_end:])
+        if verbose and trailing:
             print(
-                f"  trailing [{prev_end},{len(new_text)}): "
-                f"{len(trailing_blocks)} block(s) inserted"
+                f"    trailing [{prev_end},{len(new_text)}): "
+                f"{len(trailing)} block(s) inserted"
             )
-        out_blocks.extend(trailing_blocks)
+        out_blocks.extend(trailing)
 
-    # Append unplaced blocks at the end as To-review.
     for text, label in unplaced:
         out_blocks.append((text, "To-review"))
 
@@ -221,33 +217,124 @@ def rebuild_yedda(
 
 
 # ---------------------------------------------------------------------------
+# CouchDB helpers
+# ---------------------------------------------------------------------------
+
+def _get_attachment_text(db, doc_id: str, filename: str) -> Optional[str]:
+    """Return UTF-8 text of a CouchDB attachment, or None if absent."""
+    try:
+        data = db.get_attachment(doc_id, filename)
+        if data is None:
+            return None
+        return data.read().decode("utf-8")  # type: ignore[return-value]
+    except Exception:
+        return None
+
+
+def _put_attachment_text(db, doc_id: str, filename: str, text: str) -> None:
+    """Write a UTF-8 text attachment, creating the document if necessary."""
+    if doc_id not in db:
+        db[doc_id] = {}
+    doc = db[doc_id]
+    db.put_attachment(
+        doc,
+        text.encode("utf-8"),
+        filename=filename,
+        content_type="text/plain; charset=utf-8",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Per-document processing
+# ---------------------------------------------------------------------------
+
+def process_document(
+    doc_id: str,
+    plaintext_db,
+    yedda_db,
+    output_db,
+    *,
+    dry_run: bool = False,
+    verbose: bool = False,
+) -> Tuple[bool, int, int]:
+    """Process one document.
+
+    Returns:
+        (success, placed_count, unplaced_count)
+    """
+    old_yedda = _get_attachment_text(yedda_db, doc_id, _ANN_ATTACHMENT)
+    if old_yedda is None:
+        print(f"  {doc_id}: no {_ANN_ATTACHMENT} in yedda-db — skipped",
+              file=sys.stderr)
+        return False, 0, 0
+
+    new_text = _get_attachment_text(plaintext_db, doc_id, _TXT_ATTACHMENT)
+    if new_text is None:
+        print(f"  {doc_id}: no {_TXT_ATTACHMENT} in plaintext-db — skipped",
+              file=sys.stderr)
+        return False, 0, 0
+
+    new_yedda, placed, unplaced = rebuild_yedda(
+        old_yedda, new_text, verbose=verbose
+    )
+
+    if dry_run:
+        print(
+            f"  {doc_id}: placed={placed} unplaced={unplaced} "
+            f"output={len(new_yedda)}B  (dry run)"
+        )
+    else:
+        _put_attachment_text(output_db, doc_id, _ANN_ATTACHMENT, new_yedda)
+        print(
+            f"  {doc_id}: placed={placed} unplaced={unplaced} "
+            f"→ {_ANN_ATTACHMENT} written to output-db"
+        )
+
+    return True, placed, unplaced
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+def main() -> int:
+    config = get_env_config()
+
     parser = argparse.ArgumentParser(
-        description="Rebuild a YEDDA annotation file from a new complete plaintext."
+        description=(
+            "Rebuild YEDDA annotation files by anchoring old blocks into a "
+            "new complete plaintext."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
     )
     parser.add_argument(
-        "old_ann",
-        metavar="OLD.ann",
-        help="Old YEDDA annotation file (with missing blocks).",
+        "--plaintext-db",
+        required=True,
+        metavar="DB",
+        help="CouchDB database containing article.txt attachments.",
     )
     parser.add_argument(
-        "new_txt",
-        metavar="NEW.txt",
-        help="New complete plaintext file (with PDF page markers).",
+        "--yedda-db",
+        required=True,
+        metavar="DB",
+        help="CouchDB database containing old article.txt.ann attachments.",
     )
     parser.add_argument(
-        "output",
-        metavar="OUTPUT.ann",
-        nargs="?",
-        help="Output YEDDA file. Required unless --dry-run.",
+        "--output-db",
+        required=True,
+        metavar="DB",
+        help="CouchDB database to receive rebuilt article.txt.ann attachments.",
+    )
+    parser.add_argument(
+        "--doc-id",
+        metavar="ID",
+        help="Process only this document ID (default: all docs in yedda-db).",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print summary without writing output.",
+        help="Print summary without writing to output-db.",
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -256,37 +343,63 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not args.dry_run and args.output is None:
-        parser.error("OUTPUT.ann is required unless --dry-run is specified.")
+    import couchdb  # type: ignore[import]
 
-    old_ann_path = Path(args.old_ann)
-    new_txt_path = Path(args.new_txt)
+    server = couchdb.Server(config["couchdb_url"])
+    if config.get("couchdb_username") and config.get("couchdb_password"):
+        server.resource.credentials = (
+            config["couchdb_username"],
+            config["couchdb_password"],
+        )
 
-    old_yedda = old_ann_path.read_text(encoding="utf-8")
-    new_text = new_txt_path.read_text(encoding="utf-8")
+    plaintext_db = server[args.plaintext_db]
+    yedda_db = server[args.yedda_db]
+    output_db = server[args.output_db] if not args.dry_run else None
 
-    print(f"Old YEDDA: {old_ann_path.name}  ({len(old_yedda)} bytes)")
-    print(f"New text:  {new_txt_path.name}  ({len(new_text)} bytes)")
+    # Collect doc IDs to process.
+    if args.doc_id:
+        doc_ids = [args.doc_id]
+    else:
+        doc_ids = [
+            row.id
+            for row in yedda_db.view("_all_docs")
+            if not row.id.startswith("_")
+        ]
 
-    new_yedda, placed, unplaced = rebuild_yedda(
-        old_yedda, new_text, verbose=args.verbose
-    )
-
-    total = placed + unplaced
     print(
-        f"\nBlocks placed: {placed}/{total}  "
-        f"unplaced: {unplaced}/{total}"
+        f"plaintext-db : {args.plaintext_db}\n"
+        f"yedda-db     : {args.yedda_db}\n"
+        f"output-db    : {args.output_db}\n"
+        f"documents    : {len(doc_ids)}\n"
+        f"mode         : {'dry run' if args.dry_run else 'apply'}\n"
     )
-    print(f"Output size: {len(new_yedda)} bytes")
 
-    if args.dry_run:
-        print("(dry run — no output written)")
-        return
+    total_placed = total_unplaced = success = errors = 0
 
-    out_path = Path(args.output)
-    out_path.write_text(new_yedda, encoding="utf-8")
-    print(f"Written: {out_path}")
+    for doc_id in doc_ids:
+        if args.verbose:
+            print(f"{doc_id}:")
+        ok, placed, unplaced = process_document(
+            doc_id,
+            plaintext_db=plaintext_db,
+            yedda_db=yedda_db,
+            output_db=output_db,
+            dry_run=args.dry_run,
+            verbose=args.verbose,
+        )
+        if ok:
+            success += 1
+            total_placed += placed
+            total_unplaced += unplaced
+        else:
+            errors += 1
+
+    print(
+        f"\nDone: {success} processed, {errors} skipped\n"
+        f"Total blocks placed={total_placed} unplaced={total_unplaced}"
+    )
+    return 0 if errors == 0 else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
