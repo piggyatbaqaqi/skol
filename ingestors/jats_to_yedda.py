@@ -147,20 +147,20 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st.startswith("diagnosis"):
         return Tag.DIAGNOSIS
 
-    if st in ("distribution", "habitat", "habitat-distribution"):
-        return Tag.DISTRIBUTION
-
     if st in ("holotype", "type material", "type species", "type genus"):
         return Tag.TYPE_DESIGNATION
 
     if st in ("material", "materials examined", "specimens examined") or "specimen examined" in st:
         return Tag.MATERIALS_EXAMINED
 
-    if st in ("biology", "ecology", "host"):
+    if st in ("biology", "ecology", "host", "distribution", "habitat", "habitat-distribution"):
         return Tag.BIOLOGY
 
     if st in ("phylogeny", "phylogenetic analysis", "molecular phylogeny"):
         return Tag.PHYLOGENY
+
+    if st in ("new-combinations"):
+        retur Tag.NEW_COMBINATIONS
 
     if st in ("figure-citations", "figure_citations", "figures cited",
               "figure citation", "plates", "plate"):

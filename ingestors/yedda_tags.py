@@ -22,6 +22,7 @@ class Tag(str, Enum):
     TYPE_DESIGNATION = "Type-designation"
     BIOLOGY = "Biology"
     PHYLOGENY = "Phylogeny"
+    NEW_COMBINATIONS = "New-combinations"
     NOTES = "Notes"
     KEY = "Key"
     FIGURE_CAPTION = "Figure-caption"

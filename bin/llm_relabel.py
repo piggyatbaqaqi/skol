@@ -107,6 +107,8 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
     (Tag.PHYLOGENY,
      "Phylogenetic analysis, cladistic placement, molecular phylogeny, "
      "or discussion of evolutionary relationships"),
+    (Tag.NEW_COMBINATIONS,
+     "Lists or prose of subtaxa being moved to a new taxon."),
     (Tag.NOTES,
      "Additional remarks, taxonomic notes, informal comments"),
     (Tag.KEY,
