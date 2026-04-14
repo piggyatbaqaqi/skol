@@ -140,11 +140,16 @@ def build_section_descriptions(
 # Embedding Functions
 # ============================================================================
 
+# Sentinel: distinguishes "caller never provided expire_override" from an
+# explicit None (which means "no expiration").
+_UNSET_EXPIRE: object = object()
+
+
 def compute_and_save_embeddings(
     config: Dict[str, Any],
     force: bool = False,
     verbosity: int = 1,
-    expire_override: int = None,
+    expire_override: "int | None | object" = _UNSET_EXPIRE,
     dry_run: bool = False,
     skip_existing: bool = True,
     include_collections: bool = True,
@@ -168,8 +173,16 @@ def compute_and_save_embeddings(
                  description + diagnosis; others save to
                  embedding_name:<section> Redis keys.
     """
-    # Determine expiration time
-    embedding_expire = expire_override if expire_override is not None else config['embedding_expire']
+    # Determine expiration time.
+    # expire_override=None means "no expiration" (caller explicitly requested
+    # it); only fall back to the config default when it was never provided
+    # (signalled by the _UNSET_EXPIRE sentinel from main()).
+    _raw_expire: "int | None" = (
+        config['embedding_expire']
+        if expire_override is _UNSET_EXPIRE
+        else expire_override  # type: ignore[assignment]
+    )
+    embedding_expire: "int | None" = _raw_expire
 
     # Build CouchDB URL
     couchdb_url = f"http://{config['couchdb_host']}"
