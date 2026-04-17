@@ -17,6 +17,8 @@ Usage (file mode):
 
 Usage (CouchDB batch mode):
     python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR [-v]
+    python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR --doc-id ID [-v]
+    python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR --id-file FILE [-v]
 """
 
 import argparse
@@ -146,8 +148,9 @@ def convert_staging_db(
     staging_db: Any,
     output_dir: Path,
     verbose: bool = False,
+    ids: Optional[List[str]] = None,
 ) -> int:
-    """Convert all documents in a staging DB to brat standoff files.
+    """Convert documents in a staging DB to brat standoff files.
 
     For each document, fetches ``article.txt.ann`` and (if present)
     ``changes.json``, then writes ``{doc_id}.txt`` and ``{doc_id}.ann``
@@ -158,6 +161,7 @@ def convert_staging_db(
         staging_db: CouchDB database object.
         output_dir: Directory to write brat files into.
         verbose: Print progress to stderr.
+        ids: If given, only convert these document IDs; otherwise convert all.
 
     Returns:
         Number of documents converted.
@@ -165,10 +169,17 @@ def convert_staging_db(
     output_dir.mkdir(parents=True, exist_ok=True)
     write_annotation_conf(output_dir)
     count = 0
-    for row in staging_db.view("_all_docs", include_docs=False):
-        doc_id = row.id
-        if doc_id.startswith("_"):
-            continue
+
+    if ids is not None:
+        doc_ids: List[str] = ids
+    else:
+        doc_ids = [
+            row.id
+            for row in staging_db.view("_all_docs", include_docs=False)
+            if not row.id.startswith("_")
+        ]
+
+    for doc_id in doc_ids:
 
         ann_att = staging_db.get_attachment(doc_id, _ANN_ATTACHMENT)
         if ann_att is None:
@@ -246,6 +257,26 @@ def main() -> None:
         metavar="DIR",
         help="Output directory (batch mode).",
     )
+    parser.add_argument(
+        "--doc-id",
+        metavar="ID",
+        action="append",
+        dest="doc_ids",
+        default=[],
+        help=(
+            "Convert only this document ID (batch mode; "
+            "may be repeated for multiple IDs)."
+        ),
+    )
+    parser.add_argument(
+        "--id-file",
+        metavar="FILE",
+        type=Path,
+        help=(
+            "File containing document IDs to convert, one per line "
+            "(batch mode; combined with any --doc-id values)."
+        ),
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -262,7 +293,21 @@ def main() -> None:
             config["couchdb_password"],
         )
         staging_db = server[args.staging_db]
-        n = convert_staging_db(staging_db, args.output_dir, args.verbose)
+
+        # Collect explicit IDs from --doc-id and --id-file; None means "all".
+        requested: Optional[List[str]] = None
+        if args.doc_ids or args.id_file:
+            requested = list(args.doc_ids)
+            if args.id_file:
+                requested += [
+                    line.strip()
+                    for line in args.id_file.read_text(encoding="utf-8").splitlines()
+                    if line.strip() and not line.startswith("#")
+                ]
+
+        n = convert_staging_db(
+            staging_db, args.output_dir, args.verbose, ids=requested
+        )
         if args.verbose:
             print(f"Converted {n} document(s) to {args.output_dir}",
                   file=sys.stderr)
