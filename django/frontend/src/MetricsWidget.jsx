@@ -601,11 +601,11 @@ const MetricsWidget = ({
 
       {/* Sample count */}
       <div className="metrics-n-row">
-        <span className={`metrics-n ${stats.n < 30 ? 'metrics-n-warn' : 'metrics-n-ok'}`}>
+        <span className={`metrics-n ${stats.n < 20 ? 'metrics-n-warn' : 'metrics-n-ok'}`}>
           n = {stats.n}
         </span>
-        {stats.n > 0 && stats.n < 30 && (
-          <span className="metrics-n-hint">(target: 30)</span>
+        {stats.n > 0 && stats.n < 20 && (
+          <span className="metrics-n-hint">(target: 20)</span>
         )}
         {saving && <span className="metrics-saving">Saving...</span>}
       </div>

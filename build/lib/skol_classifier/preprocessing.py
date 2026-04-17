@@ -10,6 +10,7 @@ from pyspark.ml.util import DefaultParamsReadable, DefaultParamsWritable
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import udf, col, explode, collect_list, regexp_extract
 from pyspark.sql.types import ArrayType, StringType
+from pyspark.ml.linalg import VectorUDT
 
 
 SUFFIXES=r'(ae}al|am|an|ar|ba|be|bi|ca|ch|ci|ck|da|di|ea|ed|ei|en|er|es|ev|gi|ha|he|ia|ic|id|ii|is|ix|íz|la|le|li|ll|ma|me|na|nd|ni|ns|o|oa|oé|of|oi|on|or|os|ox|pa|ph|ps|ra|re|ri|rt|sa|se|si|ta|te|ti|ts|ty|ua|ud|um|up|us|va|vá|xa|ya|yi|ys|za|zi)'
@@ -120,6 +121,37 @@ class SuffixTransformer(Transformer, HasInputCol, HasOutputCol, DefaultParamsRea
                 f"Column '{input_col}' is not an array type but a "
                 f"{type(df.schema[input_col].dataType)}."
             )
+
+
+class LineLengthTransformer(Transformer, HasInputCol, HasOutputCol, DefaultParamsReadable, DefaultParamsWritable):
+    """Computes max and mean non-empty line length from a raw text block.
+
+    Outputs a DenseVector([max_line_len, mean_line_len]) suitable for
+    inclusion in a VectorAssembler.  Short max/mean values signal table
+    content (OCR'd table cells produce narrow lines).
+    """
+
+    def __init__(self, inputCol: str = "value", outputCol: str = "line_length_features"):
+        super(LineLengthTransformer, self).__init__()
+        self._setDefault(inputCol="value", outputCol="line_length_features")
+        self.setParams(inputCol=inputCol, outputCol=outputCol)
+
+    def setParams(self, inputCol: str = "value", outputCol: str = "line_length_features"):
+        return self._set(inputCol=inputCol, outputCol=outputCol)
+
+    @staticmethod
+    def compute_line_lengths(text: Optional[str]):
+        from pyspark.ml.linalg import Vectors
+        if not text:
+            return Vectors.dense([0.0, 0.0])
+        lengths = [len(ln) for ln in text.split('\n') if ln.strip()]
+        if not lengths:
+            return Vectors.dense([0.0, 0.0])
+        return Vectors.dense([float(max(lengths)), float(sum(lengths) / len(lengths))])
+
+    def _transform(self, df: DataFrame) -> DataFrame:
+        fn = udf(self.compute_line_lengths, VectorUDT())
+        return df.withColumn(self.getOutputCol(), fn(col(self.getInputCol())))
 
 
 class ParagraphExtractor:
@@ -330,6 +362,7 @@ def AnnotatedTextParser(
 
 __all__ = [
     'SuffixTransformer',
+    'LineLengthTransformer',
     'ParagraphExtractor',
     'AnnotatedTextParser',
     'SUFFIXES',
