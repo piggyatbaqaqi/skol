@@ -17,8 +17,10 @@ Usage (file mode):
 
 Usage (CouchDB batch mode):
     python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR [-v]
-    python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR --doc-id ID [-v]
-    python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR --id-file FILE [-v]
+    python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR \
+        --doc-id ID [-v]
+    python bin/yedda_to_brat.py --staging-db NAME --output-dir DIR \
+        --id-file FILE [-v]
 """
 
 import argparse
@@ -41,6 +43,19 @@ _CHANGES_ATTACHMENT = "changes.json"
 _YEDDA_BLOCK_RE = re.compile(
     r"\[@\s*(.*?)\s*#([A-Za-z][A-Za-z0-9_-]{0,49})\*\]", re.DOTALL
 )
+
+
+def _strip_line_leading_ws(text: str) -> str:
+    """Strip leading whitespace from each line of a block text.
+
+    When a YEDDA block contains internal newlines followed by indentation
+    (e.g. ``\\n\\t`` from OCR formatting), brat splits the annotation into
+    per-line fragments and warns if a fragment starts with whitespace because
+    the fragment then falls outside its designated display chunk.  Stripping
+    the indentation from continuation lines prevents those warnings without
+    affecting section-label semantics.
+    """
+    return "\n".join(line.lstrip() for line in text.split("\n"))
 
 
 def add_notes(
@@ -95,7 +110,7 @@ def yedda_to_brat(
     """
     blocks: List[Tuple[str, str]] = []
     for match in _YEDDA_BLOCK_RE.finditer(yedda_text):
-        text = match.group(1)
+        text = _strip_line_leading_ws(match.group(1))
         tag = match.group(2).strip()
         if not text:  # skip empty blocks — they produce zero-length brat spans
             continue
@@ -141,7 +156,8 @@ def write_annotation_conf(output_dir: Path) -> None:
     for tag in Tag:
         lines.append(tag.value)
     lines += ["", "[relations]", "", "[events]", "", "[attributes]", ""]
-    (output_dir / "annotation.conf").write_text("\n".join(lines), encoding="utf-8")
+    conf = output_dir / "annotation.conf"
+    conf.write_text("\n".join(lines), encoding="utf-8")
 
 
 def convert_staging_db(
@@ -299,9 +315,10 @@ def main() -> None:
         if args.doc_ids or args.id_file:
             requested = list(args.doc_ids)
             if args.id_file:
+                raw = args.id_file.read_text(encoding="utf-8").splitlines()
                 requested += [
                     line.strip()
-                    for line in args.id_file.read_text(encoding="utf-8").splitlines()
+                    for line in raw
                     if line.strip() and not line.startswith("#")
                 ]
 
