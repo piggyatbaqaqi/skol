@@ -92,7 +92,8 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
     (Tag.ETYMOLOGY,
      "Derivation or meaning of the scientific name"),
     (Tag.DISTRIBUTION,
-     "Geographic range, locality data, distributional statements"),
+     "Deprecated; use Biology instead. Geographic range, locality data,"
+     " distributional statements"),
     (Tag.MATERIALS_EXAMINED,
      "List of specimens examined; herbarium/museum accessions; "
      "collector, date, location data (typically >2 lines)"),
@@ -103,14 +104,15 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
      "Holotype/lectotype/neotype designation line — short (1-2 lines); "
      "longer specimen lists → Materials-examined instead"),
     (Tag.BIOLOGY,
-     "Ecology, host, habitat, substrate, phenology"),
+     "Ecology, host, habitat, substrate, phenology, Geographic range,"
+     " locality data, distributional statements"),
     (Tag.PHYLOGENY,
      "Phylogenetic analysis, cladistic placement, molecular phylogeny, "
      "or discussion of evolutionary relationships"),
     (Tag.NEW_COMBINATIONS,
      "Lists or prose of subtaxa being moved to a new taxon."),
     (Tag.NOTES,
-     "Additional remarks, taxonomic notes, informal comments"),
+     "Additional remarks, taxonomic notes, informal comments inside the Taxonomic part."),
     (Tag.KEY,
      "Identification key (dichotomous or otherwise)"),
     (Tag.FIGURE_CAPTION,
@@ -119,6 +121,11 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
      "Bibliographic reference list entries (literature cited section)"),
     (Tag.TABLE,
      "Tabular data: specimen tables, comparison tables, key tables"),
+    (Tag.INDEX,
+     "Indexes that are not part of the taxonomic treatment. Inside"
+     " a taxonomic treatment use Table."),
+    (Tag.TOC,
+     "Table of contents."),
     (Tag.MISC_EXPOSITION,
      "Everything else: introduction, discussion, acknowledgements, "
      "references, transitional text"),
@@ -126,6 +133,9 @@ _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
      "Running head or page header from a printed journal page — "
      "structural pagination artefact, not taxonomic content; "
      "preserve as-is whenever present"),
+    (Tag.FIX,
+     "The item requires human attention to label correctly."
+     " Do not use this tag."),
 ]
 
 _SYSTEM_PROMPT = (

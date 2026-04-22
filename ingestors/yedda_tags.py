@@ -16,7 +16,6 @@ class Tag(str, Enum):
     DESCRIPTION = "Description"
     DIAGNOSIS = "Diagnosis"
     ETYMOLOGY = "Etymology"
-    DISTRIBUTION = "Distribution"
     MATERIALS_EXAMINED = "Materials-examined"
     MATERIALS_AND_METHODS = "Materials-and-methods"
     TYPE_DESIGNATION = "Type-designation"
@@ -28,12 +27,17 @@ class Tag(str, Enum):
     FIGURE_CAPTION = "Figure-caption"
     BIBLIOGRAPHY = "Bibliography"
     TABLE = "Table"
+    INDEX = "Index"
+    TOC = "ToC-entry"
     MISC_EXPOSITION = "Misc-exposition"
+    FIX = "FIX"
     # Structural / pagination tags — not taxonomic content, but used in
     # PDF-sourced annotations to mark running heads and section dividers.
     PAGE_HEADER = "Page-header"
     # Deprecated: retained so existing .ann files with Holotype remain parseable.
     HOLOTYPE = "Holotype"
+    # Deprecated: Replace with BIOLOGY.
+    DISTRIBUTION = "Distribution"
 
 
 @dataclasses.dataclass
