@@ -2493,6 +2493,25 @@
             document.getElementById('newCollectionForm').reset();
         }
 
+        // Log "Add to Description" events from the feature-selection widget.
+        document.addEventListener('feature-selection-add', (e) => {
+            if (!IS_AUTHENTICATED || !activeCollectionId) return;
+            const { text, source } = e.detail || {};
+            if (!text) return;
+            fetch(
+                `${API_BASE}/api/collections/${activeCollectionId}/description-add/`,
+                {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken(),
+                    },
+                    body: JSON.stringify({ text, source: source || 'unknown' }),
+                }
+            ).catch(() => {/* logging failure is non-fatal */});
+        });
+
         // Import modal
         function showImportModal() {
             document.getElementById('importModal').classList.add('show');

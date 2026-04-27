@@ -84,9 +84,9 @@ function initFeatureSelectionWidgets() {
     }
 
     // Callback to handle adding text to description
-    const handleAddToDescription = (text) => {
+    const handleAddToDescription = (text, source = 'unknown') => {
       const event = new CustomEvent('feature-selection-add', {
-        detail: { text },
+        detail: { text, source },
         bubbles: true,
       });
       container.dispatchEvent(event);

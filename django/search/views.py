@@ -1186,6 +1186,11 @@ class PDFAttachmentView(APIView):
     """
 
     def get(self, request, db_name, doc_id, attachment_name='article.pdf'):
+        UsageEvent.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            event_type='pdf_viewed',
+            payload={'db_name': db_name, 'doc_id': doc_id},
+        )
         try:
             # Build CouchDB URL for the attachment
             couchdb_url = settings.COUCHDB_URL
@@ -1335,7 +1340,7 @@ from django.shortcuts import get_object_or_404
 from django.db import models
 from .models import (
     Collection, SearchHistory, ExternalIdentifier,
-    IdentifierType, MeasurementSet, MeasurementUnit,
+    IdentifierType, MeasurementSet, MeasurementUnit, UsageEvent,
 )
 from .serializers import (
     CollectionListSerializer,
@@ -2473,6 +2478,19 @@ class SourceContextView(APIView):
     """
 
     def get(self, request, taxa_id):
+        collection_id = request.GET.get('collection_id')
+        collection = None
+        if collection_id:
+            try:
+                collection = Collection.objects.get(collection_id=collection_id)
+            except Collection.DoesNotExist:
+                pass
+        UsageEvent.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            collection=collection,
+            event_type='source_context_viewed',
+            payload={'taxa_id': taxa_id},
+        )
         try:
             # Parse query parameters
             field = request.GET.get('field', 'description')
@@ -3042,6 +3060,11 @@ class ExportMyDataView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        UsageEvent.objects.create(
+            user=request.user,
+            event_type='user_data_exported',
+            payload={},
+        )
         zip_buffer = export_user_data(request.user)
         response = HttpResponse(
             zip_buffer.getvalue(), content_type='application/zip'
@@ -3603,6 +3626,11 @@ class ProjectExportView(APIView):
             creator__username=username,
             slug=slug,
         )
+        UsageEvent.objects.create(
+            user=request.user,
+            event_type='project_exported',
+            payload={'namespaced_slug': f'{username}/{slug}'},
+        )
         zip_buffer = export_project_data(project)
         filename = f"skol-project-{username}-{slug}.zip"
         response = HttpResponse(
@@ -3612,6 +3640,46 @@ class ProjectExportView(APIView):
             f'attachment; filename="{filename}"'
         )
         return response
+
+
+class DescriptionAddView(APIView):
+    """
+    POST /api/collections/<collection_id>/description-add/
+
+    Log a description_add UsageEvent when a user clicks "Add to Description"
+    in any of the four feature-selection tabs.
+
+    Request body::
+
+        {
+            "text":   "<text that was appended to the description>",
+            "source": "vocabulary|text-features|json-features|metrics"
+        }
+
+    ``source`` defaults to ``"unknown"`` if omitted.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, collection_id: int):
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+
+        text = request.data.get('text')
+        if not text:
+            return Response(
+                {'detail': "'text' is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        source = request.data.get('source', 'unknown')
+
+        UsageEvent.objects.create(
+            user=request.user,
+            collection=collection,
+            event_type='description_add',
+            payload={'text': text, 'source': source},
+        )
+        return Response(status=status.HTTP_201_CREATED)
 
 
 class ImportView(APIView):

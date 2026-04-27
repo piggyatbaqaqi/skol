@@ -684,3 +684,49 @@ class CollectionProjectRemoval(models.Model):
             f"{self.collection} removed from {self.project} "
             f"by {self.removed_by} at {self.removed_at}"
         )
+
+
+class UsageEvent(models.Model):
+    """Site-wide usage log for understanding how features are used.
+
+    Events tied to a collection are included in per-collection exports.
+    All events for a user are included in the Download My Data export.
+    """
+
+    EVENT_TYPES: list = [
+        ('description_add', 'Description Add'),
+        ('source_context_viewed', 'Source Context Viewed'),
+        ('pdf_viewed', 'PDF Viewed'),
+        ('nomenclature_accepted', 'Nomenclature Accepted'),
+        ('project_exported', 'Project Exported'),
+        ('user_data_exported', 'User Data Exported'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='usage_events',
+    )
+    collection = models.ForeignKey(
+        'Collection',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='events',
+    )
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, db_index=True)
+    payload = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['event_type', 'created_at']),
+        ]
+        verbose_name = 'Usage event'
+        verbose_name_plural = 'Usage events'
+
+    def __str__(self) -> str:
+        return f"{self.event_type} by {self.user} at {self.created_at}"

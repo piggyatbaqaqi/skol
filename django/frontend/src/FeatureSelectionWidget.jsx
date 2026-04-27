@@ -343,6 +343,7 @@ const FeatureSelectionWidget = ({
     const features = type === 'text' ? textFeatures : jsonFeatures;
     const selected = type === 'text' ? textSelected : jsonSelected;
     const setSel = type === 'text' ? setTextSelected : setJsonSelected;
+    const source = type === 'text' ? 'text-features' : 'json-features';
 
     if (!features || selected.size === 0) return;
 
@@ -352,7 +353,7 @@ const FeatureSelectionWidget = ({
     const text = texts.join(' ') + ' ';
 
     if (onAddToDescription) {
-      onAddToDescription(text);
+      onAddToDescription(text, source);
     }
 
     if (descriptionRef?.current) {
@@ -423,7 +424,7 @@ const FeatureSelectionWidget = ({
         {activeTab === 'vocabulary' && (
           <VocabTreeWidget
             apiBaseUrl={apiBaseUrl}
-            onAddToDescription={onAddToDescription}
+            onAddToDescription={(text) => onAddToDescription && onAddToDescription(text, 'vocabulary')}
             descriptionRef={descriptionRef}
             version={version}
           />
@@ -467,7 +468,7 @@ const FeatureSelectionWidget = ({
         <MetricsWidget
           apiBaseUrl={apiBaseUrl}
           collectionId={collectionId}
-          onAddToDescription={onAddToDescription}
+          onAddToDescription={(text) => onAddToDescription && onAddToDescription(text, 'metrics')}
           descriptionRef={descriptionRef}
         />
       )}

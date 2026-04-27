@@ -17,8 +17,27 @@ from .comment_service import (
     get_collection_ids_for_author,
     get_comments_for_collection,
 )
+from .models import UsageEvent
 
 logger = logging.getLogger(__name__)
+
+
+def _serialize_usage_events(
+    qs: Any,
+) -> List[Dict[str, Any]]:
+    """Serialize a UsageEvent queryset to a list of dicts."""
+    return [
+        {
+            'id': evt.id,
+            'event_type': evt.event_type,
+            'payload': evt.payload,
+            'created_at': (
+                evt.created_at.isoformat() if evt.created_at else None
+            ),
+            'user': evt.user.username if evt.user else None,
+        }
+        for evt in qs
+    ]
 
 
 def _serialize_user(user: User) -> Dict[str, Any]:
@@ -92,18 +111,30 @@ def _serialize_collections(user: User) -> List[Dict[str, Any]]:
                 'created_at': ei.created_at.isoformat() if ei.created_at else None,
             })
 
+        events = _serialize_usage_events(
+            coll.events.order_by('-created_at')
+        )
+
         result.append({
             'collection_id': coll.collection_id,
             'name': coll.name,
             'description': coll.description,
             'notes': coll.notes,
             'nomenclature': coll.nomenclature,
-            'embargo_until': coll.embargo_until.isoformat() if coll.embargo_until else None,
+            'embargo_until': (
+                coll.embargo_until.isoformat()
+                if coll.embargo_until else None
+            ),
             'hidden': coll.hidden,
-            'created_at': coll.created_at.isoformat() if coll.created_at else None,
-            'updated_at': coll.updated_at.isoformat() if coll.updated_at else None,
+            'created_at': (
+                coll.created_at.isoformat() if coll.created_at else None
+            ),
+            'updated_at': (
+                coll.updated_at.isoformat() if coll.updated_at else None
+            ),
             'search_history': searches,
             'external_identifiers': identifiers,
+            'usage_events': events,
         })
 
     return result
@@ -178,11 +209,16 @@ def export_user_data(user: User) -> io.BytesIO:
     buf = io.BytesIO()
 
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # 1. User record + settings
+        # 1. User record + settings + site-wide events (no collection FK)
         user_data = _serialize_user(user)
         settings_data = _serialize_user_settings(user)
         if settings_data is not None:
             user_data['settings'] = settings_data
+        user_data['usage_events'] = _serialize_usage_events(
+            UsageEvent.objects.filter(
+                user=user, collection__isnull=True,
+            ).order_by('-created_at')
+        )
         zf.writestr('user.json', json.dumps(user_data, indent=2))
 
         # 2. Collections (one file per collection)

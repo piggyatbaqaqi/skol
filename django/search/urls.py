@@ -59,6 +59,7 @@ from .views import (
     ProjectCollectionMembershipView,
     ProjectExportView,
     ImportView,
+    DescriptionAddView,
 )
 
 app_name = 'search'
@@ -118,6 +119,13 @@ urlpatterns = [
     # Post description as iNaturalist comment
     path('collections/<int:collection_id>/post-inat-comment/',
          PostInatCommentView.as_view(), name='post-inat-comment'),
+
+    # Usage event logging
+    path(
+        'collections/<int:collection_id>/description-add/',
+        DescriptionAddView.as_view(),
+        name='description-add',
+    ),
 
     # Measurement sets within collections
     path('collections/<int:collection_id>/measurements/',
