@@ -244,6 +244,7 @@ Retrieve windowed source text with highlight markers for the Source Context View
 - `span_index`: Which span to show (default: `0`)
 - `context_chars`: Characters of context before/after span (default: `500`)
 - `taxa_db`: Database name (default: `'skol_taxa_dev'`)
+- `collection_id`: If provided, the resulting `source_context_viewed` usage event is associated with this collection.
 
 **Response:**
 ```json
@@ -854,6 +855,79 @@ Remove a collection from a project. Requires authentication.
 An audit log record is created automatically.
 
 **Response:** `200 OK`
+
+---
+
+## Usage Events
+
+The server records usage events to understand how site features are used.
+Events are included in data exports: collection-scoped events appear in
+`collections/<id>.json` under `usage_events`; user-scoped events (those
+without a collection) appear in `user.json` under `usage_events`.
+
+### Event types
+
+| `event_type` | Trigger | Collection scoped? |
+|---|---|---|
+| `description_add` | User clicks "Add to Description" in any feature tab | Yes |
+| `source_context_viewed` | `GET /api/taxa/{id}/context/` | Yes, if `collection_id` query param supplied |
+| `pdf_viewed` | `GET /api/pdf/…` | No |
+| `project_exported` | `GET /api/projects/{username}/{slug}/export/` | No |
+| `user_data_exported` | `GET /api/export-my-data/` | No |
+
+All server-side events are logged automatically. The only client-initiated
+logging endpoint is `description_add`.
+
+### POST /api/collections/{id}/description-add/
+
+Log a `description_add` event. Requires authentication. Called automatically
+by the UI whenever any of the four "Add to Description" tools is used.
+
+**Request:**
+```json
+{
+    "text":   "pileus convex; stipe white; ",
+    "source": "vocabulary"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `text` | string | Yes | Text appended to the description textarea |
+| `source` | string | No | Which tab triggered the add: `vocabulary`, `text-features`, `json-features`, or `metrics`. Defaults to `unknown`. |
+
+**Response:** `201 Created` (empty body)
+
+**Errors:** `400` if `text` is missing; `403` if unauthenticated; `404` if collection not found.
+
+### Usage event schema (in exports)
+
+```json
+{
+    "id": 42,
+    "event_type": "description_add",
+    "payload": {
+        "text": "pileus convex; ",
+        "source": "vocabulary"
+    },
+    "created_at": "2026-04-27T14:00:00Z",
+    "user": "alice"
+}
+```
+
+### GET /api/export-my-data/
+
+Download all user data as a ZIP archive. Requires authentication.
+Automatically logs a `user_data_exported` event.
+
+The archive contains:
+- `user.json` — user record, settings, and non-collection usage events
+- `collections/<id>.json` — full collection records including `usage_events`
+- `couchdb_collections/<id>.json` — CouchDB treatment docs where available
+- `comment_threads/collection_<id>_comments.json` — comment threads
+
+**Response:** `200 OK` with `Content-Type: application/zip` and
+`Content-Disposition: attachment; filename="skol-export-<username>.zip"`.
 
 ---
 
