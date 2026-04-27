@@ -117,7 +117,8 @@ Perform semantic search against taxa descriptions.
     "prompt": "red mushroom with white spots",
     "embedding_name": "skol:embedding:v1.1",
     "k": 3,
-    "nomenclature_pattern": "^Amanita"
+    "nomenclature_pattern": "^Amanita",
+    "project_slugs": ["jsmith/field-guide"]
 }
 ```
 
@@ -127,6 +128,7 @@ Perform semantic search against taxa descriptions.
 | `embedding_name` | Yes | Embedding model name |
 | `k` | No | Number of results (default: 3, max: 200) |
 | `nomenclature_pattern` | No | Regex to pre-filter taxa by nomenclature before similarity ranking. Case-insensitive. |
+| `project_slugs` | No | List of namespaced project slugs (`username/slug`). When provided, collection-type results are restricted to collections belonging to any of the listed projects. Taxon results are unaffected. Unknown slugs are silently ignored. An empty list applies no filter. |
 
 When `nomenclature_pattern` is provided, only taxa whose nomenclature matches the
 regex are considered for similarity ranking. This is substantially faster than
@@ -645,6 +647,7 @@ Get the current user's settings.
     "feature_max_tree_depth": 10,
     "default_experiment": "production",
     "receive_admin_summary": false,
+    "default_project_slugs": ["jsmith/field-guide"],
     "created_at": "2026-01-15T12:00:00Z",
     "updated_at": "2026-02-17T08:30:00Z"
 }
@@ -672,8 +675,124 @@ Update the current user's settings (partial updates supported).
 | `feature_taxa_count` | int | 6 | 2–50 | Number of taxa for feature lists |
 | `feature_max_tree_depth` | int | 10 | 1–20 | Maximum depth for feature tree |
 | `receive_admin_summary` | bool | false | — | Opt in to daily admin summary email |
+| `default_project_slugs` | string[] | `[]` | — | Namespaced slugs of projects to auto-add new collections to |
 
 Settings are created automatically on first access (get-or-create pattern).
+
+When `default_project_slugs` is included in a PUT body, the list replaces the
+user's current default projects (unknown slugs are silently ignored). Omitting
+the key leaves existing defaults unchanged.
+
+---
+
+## Projects
+
+Projects are public namespaced groupings of collections.  Any authenticated
+user may create projects, and any authenticated user may add or remove
+collections (democratic governance model).  Only site admins can delete
+projects.
+
+Slugs are namespaced per creator: `username/slug` (e.g. `jsmith/field-guide`).
+
+### GET /api/projects/
+
+List all projects site-wide (public).
+
+**Query parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| `q` | Search by project name or creator username (case-insensitive substring) |
+| `collection_id` | Return only projects that contain the given collection ID |
+
+**Response:**
+```json
+{
+    "projects": [
+        {
+            "id": 1,
+            "name": "Field Guide",
+            "slug": "field-guide",
+            "namespaced_slug": "jsmith/field-guide",
+            "creator_username": "jsmith",
+            "description": "A guide to local fungi",
+            "collection_count": 12,
+            "created_at": "2026-03-01T10:00:00Z"
+        }
+    ],
+    "count": 1
+}
+```
+
+### POST /api/projects/
+
+Create a new project. Requires authentication.
+
+**Request:**
+```json
+{
+    "name": "Field Guide",
+    "description": "A guide to local fungi"
+}
+```
+
+**Response:** `201 Created` — the created project object (same schema as list item).
+
+The slug is auto-generated from the name (e.g. `"Field Guide"` → `field-guide`).
+Collisions within the same creator namespace append `-2`, `-3`, etc.
+
+### GET /api/projects/{username}/{slug}/
+
+Retrieve a single project with its current collection memberships (public).
+
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "Field Guide",
+    "slug": "field-guide",
+    "namespaced_slug": "jsmith/field-guide",
+    "creator_username": "jsmith",
+    "description": "A guide to local fungi",
+    "collection_count": 1,
+    "created_at": "2026-03-01T10:00:00Z",
+    "memberships": [
+        {
+            "collection_id": 42,
+            "collection_name": "Amanita muscaria",
+            "added_by_username": "jsmith",
+            "added_at": "2026-03-05T14:00:00Z"
+        }
+    ]
+}
+```
+
+### GET /api/projects/{username}/{slug}/export/
+
+Export a project as a ZIP archive.  Requires authentication.
+
+The archive contains:
+- `project.json` — project metadata, current memberships, and removal audit log
+- `collections/<id>.json` — full collection records for each current member
+- `couchdb_collections/<id>.json` — CouchDB treatment docs where available
+
+**Response:** `200 OK` with `Content-Type: application/zip` and
+`Content-Disposition: attachment; filename="<slug>.zip"`.
+
+### POST /api/projects/{username}/{slug}/collections/{collection_id}/
+
+Add a collection to a project. Requires authentication. Idempotent.
+
+**Response:**
+- `201 Created` — collection was added
+- `200 OK` — collection was already a member
+
+### DELETE /api/projects/{username}/{slug}/collections/{collection_id}/
+
+Remove a collection from a project. Requires authentication.
+An audit log record is created automatically.
+
+**Response:** `200 OK`
 
 ---
 

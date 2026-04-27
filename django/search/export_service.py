@@ -205,3 +205,118 @@ def export_user_data(user: User) -> io.BytesIO:
 
     buf.seek(0)
     return buf
+
+
+def export_project_data(project) -> io.BytesIO:
+    """Export a project as an in-memory ZIP file.
+
+    The archive contains:
+    - ``project.json``     — project metadata + audit log of add/remove events
+    - ``collections/<id>.json`` — full collection record (same schema as
+      export_user_data) for every collection currently in the project
+    - ``couchdb_collections/<id>.json`` — CouchDB treatment docs where available
+
+    Args:
+        project: A ``Project`` model instance.
+
+    Returns:
+        io.BytesIO containing the ZIP archive.
+    """
+    from .models import CollectionProject, CollectionProjectRemoval
+
+    buf = io.BytesIO()
+
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        # 1. Project metadata
+        memberships = CollectionProject.objects.filter(
+            project=project
+        ).select_related('collection', 'added_by').order_by('added_at')
+
+        removals = CollectionProjectRemoval.objects.filter(
+            project=project
+        ).select_related(
+            'collection', 'removed_by', 'original_added_by'
+        ).order_by('removed_at')
+
+        project_data: Dict[str, Any] = {
+            'name': project.name,
+            'slug': project.slug,
+            'namespaced_slug': f"{project.creator.username}/{project.slug}",
+            'creator_username': project.creator.username,
+            'description': project.description,
+            'created_at': (
+                project.created_at.isoformat() if project.created_at else None
+            ),
+            'current_memberships': [
+                {
+                    'collection_id': m.collection.collection_id,
+                    'collection_name': m.collection.name,
+                    'added_by': m.added_by.username if m.added_by else None,
+                    'added_at': m.added_at.isoformat() if m.added_at else None,
+                }
+                for m in memberships
+            ],
+            'removal_log': [
+                {
+                    'collection_id': r.collection.collection_id,
+                    'collection_name': r.collection.name,
+                    'removed_by': r.removed_by.username if r.removed_by else None,
+                    'removed_at': (
+                        r.removed_at.isoformat() if r.removed_at else None
+                    ),
+                    'original_added_by': (
+                        r.original_added_by.username
+                        if r.original_added_by else None
+                    ),
+                    'original_added_at': (
+                        r.original_added_at.isoformat()
+                        if r.original_added_at else None
+                    ),
+                }
+                for r in removals
+            ],
+        }
+        zf.writestr('project.json', json.dumps(project_data, indent=2))
+
+        # 2. Full collection records
+        collection_ids_in_project = [
+            m.collection.collection_id for m in memberships
+        ]
+        for cid in sorted(collection_ids_in_project):
+            try:
+                from django.contrib.auth.models import User as DjangoUser
+                from .models import Collection
+                coll = Collection.objects.get(collection_id=cid)
+                coll_data = _serialize_collections(coll.owner)
+                # Filter to just this collection
+                match = next(
+                    (c for c in coll_data if c['collection_id'] == cid), None
+                )
+                if match:
+                    zf.writestr(
+                        f"collections/{cid}.json",
+                        json.dumps(match, indent=2),
+                    )
+            except Exception:
+                logger.warning("Could not serialize collection %s", cid)
+
+        # 3. CouchDB treatment documents
+        config = get_couchdb_config()
+        try:
+            server = get_couchdb_server()
+            if config['collections_db'] in server:
+                db = server[config['collections_db']]
+                for cid in sorted(collection_ids_in_project):
+                    doc_id = f"collection_{cid}"
+                    if doc_id in db:
+                        doc = dict(db[doc_id])
+                        doc.pop('_rev', None)
+                        zf.writestr(
+                            f"couchdb_collections/{doc['_id']}.json",
+                            json.dumps(doc, indent=2),
+                        )
+        except Exception:
+            logger.warning("Could not connect to CouchDB for project export")
+
+    buf.seek(0)
+    return buf

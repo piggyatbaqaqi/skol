@@ -53,6 +53,11 @@ from .views import (
     CommentFlagView,
     CommentHideView,
     CommentCopyNomenclatureView,
+    # Project views
+    ProjectListCreateView,
+    ProjectDetailView,
+    ProjectCollectionMembershipView,
+    ProjectExportView,
 )
 
 app_name = 'search'
@@ -180,5 +185,28 @@ urlpatterns = [
         '<str:comment_id>/copy-nomenclature/',
         CommentCopyNomenclatureView.as_view(),
         name='comment-copy-nomenclature',
+    ),
+
+    # Projects
+    path(
+        'projects/',
+        ProjectListCreateView.as_view(),
+        name='project-list-create',
+    ),
+    path(
+        'projects/<str:username>/<slug:slug>/',
+        ProjectDetailView.as_view(),
+        name='project-detail',
+    ),
+    path(
+        'projects/<str:username>/<slug:slug>/export/',
+        ProjectExportView.as_view(),
+        name='project-export',
+    ),
+    path(
+        'projects/<str:username>/<slug:slug>/'
+        'collections/<int:collection_id>/',
+        ProjectCollectionMembershipView.as_view(),
+        name='project-collection-membership',
     ),
 ]

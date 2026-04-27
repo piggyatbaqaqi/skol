@@ -1,7 +1,8 @@
 """
 Database models for the search app.
 
-Includes models for user collections, search history, and external identifiers.
+Includes models for user collections, search history, external identifiers,
+and projects (named groups of collections).
 """
 from django.db import models
 from django.contrib.auth.models import User
@@ -9,6 +10,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
 import random
+import re
 from typing import Optional, List
 
 
@@ -376,6 +378,18 @@ class UserSettings(models.Model):
         help_text="Receive daily admin summary email"
     )
 
+    # Project defaults: new collections are automatically added to these projects.
+    # Applies only to collections created *after* this setting is saved.
+    default_projects = models.ManyToManyField(
+        'Project',
+        blank=True,
+        related_name='default_for_users',
+        help_text=(
+            "Projects that new collections are automatically added to. "
+            "Does not apply retroactively to existing collections."
+        ),
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -467,3 +481,169 @@ class MeasurementSet(models.Model):
     def __str__(self) -> str:
         n = len(self.measurements) if isinstance(self.measurements, list) else 0
         return f"{self.feature} ({n} samples) - {self.collection}"
+
+
+# ===========================================================================
+# Projects
+# ===========================================================================
+
+def _generate_slug(name: str) -> str:
+    """Convert a project name to a URL-safe slug.
+
+    Lowercases, collapses non-alphanumeric runs to ``-``, strips leading/
+    trailing ``-``.  Raises ``ValueError`` if the result contains no
+    alphanumeric character.
+    """
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    if not any(c.isalnum() for c in slug):
+        raise ValueError(
+            f"Project name {name!r} produces an empty slug. "
+            "The name must contain at least one alphanumeric character."
+        )
+    return slug
+
+
+class Project(models.Model):
+    """A named group of collections (e.g. all collections for a field guide).
+
+    Governance rules
+    ----------------
+    * Anyone can create a project.
+    * Anyone can add or remove any collection from any project.
+    * All add/remove events are audited in CollectionProject /
+      CollectionProjectRemoval.
+    * The creator is permanently recorded but has no special operational powers.
+    * Only admins can delete a project.
+    * All projects are public.
+
+    Namespacing
+    -----------
+    Slugs are unique per creator (``unique_together = ['creator', 'slug']``).
+    Two different users may each have a project whose slug is
+    ``french-guiana-fungi``.  In URLs the project is identified by
+    ``username/slug``, e.g. ``?project=jsmith/french-guiana-fungi``.
+    """
+
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, allow_unicode=False)
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name='created_projects',
+    )
+    description = models.TextField(blank=True, default='')
+    collections = models.ManyToManyField(
+        'Collection',
+        through='CollectionProject',
+        related_name='projects',
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['creator', 'slug']]
+        ordering = ['creator__username', 'slug']
+        verbose_name = 'Project'
+        verbose_name_plural = 'Projects'
+
+    def __str__(self) -> str:
+        return f"{self.creator.username}/{self.slug}"
+
+    @staticmethod
+    def generate_slug(name: str) -> str:
+        """Public wrapper around ``_generate_slug``; raises ValueError on bad names."""
+        return _generate_slug(name)
+
+    def save(self, *args, **kwargs) -> None:
+        """Auto-generate slug from name if not provided; resolve collisions."""
+        if not self.slug:
+            base = _generate_slug(self.name)
+            slug = base
+            counter = 2
+            qs = Project.objects.filter(creator=self.creator)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            while qs.filter(slug=slug).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+
+class CollectionProject(models.Model):
+    """Through-table linking a Collection to a Project.
+
+    Records who added the collection and when.  Removed memberships are
+    archived in ``CollectionProjectRemoval`` before the row is deleted.
+    """
+
+    collection = models.ForeignKey(
+        Collection,
+        on_delete=models.CASCADE,
+        related_name='collection_projects',
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='collection_projects',
+    )
+    added_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='project_additions',
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['collection', 'project']]
+        ordering = ['-added_at']
+        verbose_name = 'Collection–Project membership'
+        verbose_name_plural = 'Collection–Project memberships'
+
+    def __str__(self) -> str:
+        return f"{self.collection} in {self.project}"
+
+
+class CollectionProjectRemoval(models.Model):
+    """Permanent audit log of collection removals from projects.
+
+    A row is created here *before* the corresponding CollectionProject row is
+    deleted, capturing the original ``added_by`` and ``added_at`` values.
+    """
+
+    collection = models.ForeignKey(
+        Collection,
+        on_delete=models.CASCADE,
+        related_name='project_removals',
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='collection_removals',
+    )
+    removed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='project_removals',
+    )
+    removed_at = models.DateTimeField(auto_now_add=True)
+    original_added_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='project_removals_as_adder',
+    )
+    original_added_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-removed_at']
+        verbose_name = 'Collection–Project removal log'
+        verbose_name_plural = 'Collection–Project removal logs'
+
+    def __str__(self) -> str:
+        return (
+            f"{self.collection} removed from {self.project} "
+            f"by {self.removed_by} at {self.removed_at}"
+        )

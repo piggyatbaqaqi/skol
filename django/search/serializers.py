@@ -5,7 +5,16 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-from .models import Collection, SearchHistory, ExternalIdentifier, IdentifierType, UserSettings, MeasurementSet
+from .models import (
+    Collection,
+    SearchHistory,
+    ExternalIdentifier,
+    IdentifierType,
+    UserSettings,
+    MeasurementSet,
+    Project,
+    CollectionProject,
+)
 
 
 class IdentifierTypeSerializer(serializers.ModelSerializer):
@@ -266,4 +275,104 @@ class MeasurementSetSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f"Measurement {i} 'width' must be a positive number."
                 )
+        return value
+
+
+# ===========================================================================
+# Project serializers
+# ===========================================================================
+
+class ProjectSerializer(serializers.ModelSerializer):
+    """Read serializer for Project (list and detail)."""
+
+    creator_username = serializers.CharField(
+        source='creator.username', read_only=True
+    )
+    collection_count = serializers.SerializerMethodField()
+    namespaced_slug = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = [
+            'id', 'name', 'slug', 'namespaced_slug',
+            'creator_username', 'description',
+            'collection_count', 'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_collection_count(self, obj: Project) -> int:
+        return obj.collections.count()
+
+    def get_namespaced_slug(self, obj: Project) -> str:
+        return f"{obj.creator.username}/{obj.slug}"
+
+
+class ProjectCreateSerializer(serializers.ModelSerializer):
+    """Write serializer for Project creation."""
+
+    class Meta:
+        model = Project
+        fields = ['name', 'description']
+
+    def validate_name(self, value: str) -> str:
+        """Ensure name produces a valid slug."""
+        try:
+            Project.generate_slug(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        return value
+
+
+class CollectionProjectSerializer(serializers.ModelSerializer):
+    """Serializer for membership records returned on project detail."""
+
+    added_by_username = serializers.CharField(
+        source='added_by.username', read_only=True
+    )
+    collection_name = serializers.CharField(
+        source='collection.name', read_only=True
+    )
+    collection_id = serializers.IntegerField(
+        source='collection.collection_id', read_only=True
+    )
+
+    class Meta:
+        model = CollectionProject
+        fields = [
+            'collection_id', 'collection_name',
+            'added_by_username', 'added_at',
+        ]
+        read_only_fields = fields
+
+
+class UserSettingsWithProjectsSerializer(serializers.ModelSerializer):
+    """Serializer for user settings including default_projects list."""
+
+    default_project_slugs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserSettings
+        fields = [
+            'default_embargo_days', 'default_embedding', 'default_k',
+            'results_per_page', 'nomenclature_limit',
+            'feature_taxa_count', 'feature_top_n',
+            'feature_max_tree_depth', 'feature_min_df', 'feature_max_df',
+            'default_experiment',
+            'receive_admin_summary',
+            'default_project_slugs',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'default_project_slugs']
+
+    def get_default_project_slugs(self, obj: UserSettings):
+        return [
+            f"{p.creator.username}/{p.slug}"
+            for p in obj.default_projects.select_related('creator').all()
+        ]
+
+    def validate_default_embargo_days(self, value: int) -> int:
+        if value > 365:
+            raise serializers.ValidationError(
+                "Default embargo cannot be more than 365 days."
+            )
         return value

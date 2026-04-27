@@ -771,12 +771,34 @@ class SearchView(APIView):
         }
     """
 
+    def _resolve_project_slugs(self, project_slugs):
+        """Return a set of collection_ids for the given namespaced project slugs.
+
+        Each slug is 'username/project-slug'. Unknown slugs are silently ignored.
+        Returns None when project_slugs is empty or not provided (no filter).
+        """
+        if not project_slugs:
+            return None
+        from .models import CollectionProject
+        allowed: set = set()
+        for ns_slug in project_slugs:
+            if '/' not in ns_slug:
+                continue
+            username, slug = ns_slug.split('/', 1)
+            cids = CollectionProject.objects.filter(
+                project__creator__username=username,
+                project__slug=slug,
+            ).values_list('collection__collection_id', flat=True)
+            allowed.update(cids)
+        return allowed
+
     def post(self, request):
         # Validate request
         prompt = request.data.get('prompt')
         embedding_name = request.data.get('embedding_name')
         k = request.data.get('k', 3)
         nomenclature_pattern = request.data.get('nomenclature_pattern')
+        project_slugs = request.data.get('project_slugs') or []
 
         if not prompt:
             return Response(
@@ -869,6 +891,15 @@ class SearchView(APIView):
                     similarity = experiment.nearest_neighbors.iloc[i]['similarity']
                     row = experiment.embeddings.loc[idx]
                     results.append(build_result_dict(row, similarity))
+
+            # Post-filter by project if project_slugs were supplied
+            allowed_collection_ids = self._resolve_project_slugs(project_slugs)
+            if allowed_collection_ids is not None:
+                results = [
+                    r for r in results
+                    if r.get('ResultType') != 'collection'
+                    or r.get('CollectionId') in allowed_collection_ids
+                ]
 
             response_data = {
                 'results': results,
@@ -1298,8 +1329,9 @@ class PDFFromTaxaView(APIView):
 # Collection Views
 # ============================================================================
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
+from django.db import models
 from .models import (
     Collection, SearchHistory, ExternalIdentifier,
     IdentifierType, MeasurementSet, MeasurementUnit,
@@ -1440,6 +1472,33 @@ class CollectionListCreateView(APIView):
 
     def get(self, request):
         collections = Collection.objects.filter(owner=request.user)
+
+        # Optional ?project=username/slug filter (repeatable; OR semantics).
+        project_params = request.query_params.getlist('project')
+        if project_params:
+            project_ids = []
+            for ns in project_params:
+                parts = ns.split('/', 1)
+                if len(parts) == 2:
+                    username, slug = parts
+                    try:
+                        from .models import Project
+                        p = Project.objects.get(
+                            creator__username=username, slug=slug
+                        )
+                        project_ids.append(p.pk)
+                    except Project.DoesNotExist:
+                        pass
+            if project_ids:
+                from .models import CollectionProject
+                member_ids = CollectionProject.objects.filter(
+                    project_id__in=project_ids
+                ).values_list('collection_id', flat=True)
+                collections = collections.filter(id__in=member_ids)
+            else:
+                # All requested projects unknown → empty result.
+                collections = collections.none()
+
         serializer = CollectionListSerializer(collections, many=True)
         return Response({
             'collections': serializer.data,
@@ -2623,34 +2682,61 @@ class UserSettingsView(APIView):
 
     GET /api/user-settings/
     Returns the user's settings or creates defaults if none exist.
+    Includes ``default_project_slugs`` list (format: ``username/slug``).
 
     PUT /api/user-settings/
     Updates user settings (partial update supported).
+    To update default projects include ``default_project_slugs`` as a list
+    of ``username/slug`` strings.  Invalid or unknown slugs are silently
+    ignored so that a deleted project does not break the save.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """Get user settings."""
         from .models import UserSettings
-        from .serializers import UserSettingsSerializer
+        from .serializers import UserSettingsWithProjectsSerializer
 
-        settings, created = UserSettings.objects.get_or_create(user=request.user)
-        serializer = UserSettingsSerializer(settings)
+        settings, _ = UserSettings.objects.get_or_create(user=request.user)
+        serializer = UserSettingsWithProjectsSerializer(settings)
         return Response(serializer.data)
 
     def put(self, request):
-        """Update user settings."""
-        from .models import UserSettings
-        from .serializers import UserSettingsSerializer
+        """Update user settings, including optional default_project_slugs."""
+        from .models import UserSettings, Project
+        from .serializers import UserSettingsWithProjectsSerializer
 
-        settings, created = UserSettings.objects.get_or_create(user=request.user)
-        serializer = UserSettingsSerializer(settings, data=request.data, partial=True)
+        settings, _ = UserSettings.objects.get_or_create(user=request.user)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
+        # Handle default_project_slugs separately (M2M, not a model field).
+        slugs = request.data.pop('default_project_slugs', None)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserSettingsWithProjectsSerializer(
+            settings, data=request.data, partial=True
+        )
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer.save()
+
+        if slugs is not None:
+            projects = []
+            for ns in slugs:
+                parts = str(ns).split('/', 1)
+                if len(parts) == 2:
+                    try:
+                        p = Project.objects.get(
+                            creator__username=parts[0], slug=parts[1]
+                        )
+                        projects.append(p)
+                    except Project.DoesNotExist:
+                        pass
+            settings.default_projects.set(projects)
+
+        return Response(
+            UserSettingsWithProjectsSerializer(settings).data
+        )
 
 
 # ============================================================================
@@ -3287,3 +3373,186 @@ class PostInatCommentView(APIView):
                 'posted as comment instead',
             }
         return Response(result)
+
+
+# ============================================================================
+# Project Views
+# ============================================================================
+
+class ProjectListCreateView(APIView):
+    """
+    GET  /api/projects/          — list all projects (public, supports ?q=)
+    POST /api/projects/          — create a new project (auth required)
+    """
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    def get(self, request):
+        from .models import Project
+        from .serializers import ProjectSerializer
+
+        qs = Project.objects.select_related('creator').all()
+        q = request.query_params.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                models.Q(name__icontains=q) |
+                models.Q(creator__username__icontains=q)
+            )
+        collection_id = request.query_params.get('collection_id', '').strip()
+        if collection_id:
+            from .models import CollectionProject
+            project_ids = CollectionProject.objects.filter(
+                collection__collection_id=collection_id
+            ).values_list('project_id', flat=True)
+            qs = qs.filter(id__in=project_ids)
+        serializer = ProjectSerializer(qs, many=True)
+        return Response({
+            'projects': serializer.data,
+            'count': qs.count(),
+        })
+
+    def post(self, request):
+        from .models import Project
+        from .serializers import ProjectCreateSerializer, ProjectSerializer
+
+        serializer = ProjectCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        project = serializer.save(creator=request.user)
+        return Response(
+            ProjectSerializer(project).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ProjectDetailView(APIView):
+    """
+    GET /api/projects/<username>/<slug>/
+    Retrieve a project and its current collection memberships.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, username, slug):
+        from .models import Project
+        from .serializers import ProjectSerializer, CollectionProjectSerializer
+
+        project = get_object_or_404(
+            Project.objects.select_related('creator'),
+            creator__username=username,
+            slug=slug,
+        )
+        data = ProjectSerializer(project).data
+        memberships = project.collection_projects.select_related(
+            'collection', 'added_by'
+        ).all()
+        data['memberships'] = CollectionProjectSerializer(
+            memberships, many=True
+        ).data
+        return Response(data)
+
+
+class ProjectCollectionMembershipView(APIView):
+    """
+    POST   /api/projects/<username>/<slug>/collections/<collection_id>/
+           Add a collection to a project.
+
+    DELETE /api/projects/<username>/<slug>/collections/<collection_id>/
+           Remove a collection from a project (creates audit log).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_project(self, username, slug):
+        from .models import Project
+        return get_object_or_404(
+            Project.objects.select_related('creator'),
+            creator__username=username,
+            slug=slug,
+        )
+
+    def post(self, request, username, slug, collection_id):
+        from .models import Collection, CollectionProject
+
+        project = self._get_project(username, slug)
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+
+        cp, created = CollectionProject.objects.get_or_create(
+            collection=collection,
+            project=project,
+            defaults={'added_by': request.user},
+        )
+        if created:
+            return Response(
+                {
+                    'detail': 'Collection added to project.',
+                    'added_by': request.user.username,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {'detail': 'Collection is already a member of this project.'},
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, username, slug, collection_id):
+        from .models import Collection, CollectionProject, CollectionProjectRemoval
+
+        project = self._get_project(username, slug)
+        collection = get_object_or_404(Collection, collection_id=collection_id)
+
+        try:
+            cp = CollectionProject.objects.get(
+                collection=collection, project=project
+            )
+        except CollectionProject.DoesNotExist:
+            return Response(
+                {'detail': 'Collection is not a member of this project.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        CollectionProjectRemoval.objects.create(
+            collection=collection,
+            project=project,
+            removed_by=request.user,
+            original_added_by=cp.added_by,
+            original_added_at=cp.added_at,
+        )
+        cp.delete()
+        return Response(
+            {'detail': 'Collection removed from project.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ProjectExportView(APIView):
+    """
+    GET /api/projects/<username>/<slug>/export/
+    Export a project as a ZIP of JSON files.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username, slug):
+        from .models import Project
+        from .export_service import export_project_data
+
+        project = get_object_or_404(
+            Project.objects.select_related('creator'),
+            creator__username=username,
+            slug=slug,
+        )
+        zip_buffer = export_project_data(project)
+        filename = f"skol-project-{username}-{slug}.zip"
+        response = HttpResponse(
+            zip_buffer.getvalue(), content_type='application/zip'
+        )
+        response['Content-Disposition'] = (
+            f'attachment; filename="{filename}"'
+        )
+        return response

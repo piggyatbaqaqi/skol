@@ -1,0 +1,109 @@
+/**
+ * ProjectMemberships Styles
+ *
+ * Panel shown on the collection detail page that lists the projects
+ * this collection belongs to and lets authorised users add/remove it.
+ */
+
+.project-memberships {
+  margin-top: 16px;
+}
+
+.project-memberships-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+/* List of current memberships */
+.project-membership-list {
+  list-style: none;
+  margin: 0 0 10px 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.project-membership-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0f4ff;
+  border: 1px solid #c5d0f5;
+  border-radius: 14px;
+  padding: 3px 10px 3px 12px;
+  font-size: 13px;
+  color: #4a5fd4;
+  font-weight: 500;
+}
+
+.project-membership-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aab4e8;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  display: flex;
+  align-items: center;
+}
+
+.project-membership-remove:hover {
+  color: #c33;
+}
+
+.project-memberships-empty {
+  color: #bbb;
+  font-size: 13px;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+/* Add-to-project row */
+.project-memberships-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.project-memberships-add .project-select {
+  flex: 1;
+  min-width: 160px;
+}
+
+.project-memberships-add-btn {
+  padding: 6px 14px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.project-memberships-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.project-memberships-add-btn:hover:not(:disabled) {
+  background: #5568e0;
+}
+
+/* Inline error/status */
+.project-memberships-status {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.project-memberships-status.error {
+  color: #c33;
+}
+
+.project-memberships-status.success {
+  color: #2a7a2a;
+}

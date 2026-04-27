@@ -479,6 +479,14 @@
             <div class="empty-state">Loading collection...</div>
         </div>
 
+        <!-- Project Memberships widget — mounted once by React -->
+        <div id="projectMembershipsMount"
+             data-project-memberships
+             data-api-base-url="{{ SCRIPT_NAME }}/api"
+             data-collection-id="{{ collection_id }}"
+             data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}">
+        </div>
+
         <div class="footer">
             <a href="{% url 'home' %}">Search</a>
             <a href="{% url 'collections' %}">Collections</a>
@@ -1131,6 +1139,7 @@
     <!-- React Select Widgets -->
     <script src="{% static 'js/identifier-type-select.bundle.js' %}"></script>
     <script src="{% static 'js/fungarium-select.bundle.js' %}"></script>
+    <script src="{% static 'js/project-memberships.bundle.js' %}"></script>
 
     <!-- Taxon Result Widget -->
     <script src="{% static 'js/taxon-result-widget.js' %}"></script>

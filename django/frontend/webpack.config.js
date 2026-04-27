@@ -12,6 +12,8 @@ module.exports = {
     'feature-selection': './src/featureSelectionEntry.js',
     'source-context': './src/sourceContextEntry.js',
     'discussion': './src/discussionEntry.js',
+    'project-select': './src/projectSelectEntry.js',
+    'project-memberships': './src/projectMembershipsEntry.js',
   },
   output: {
     filename: '[name].bundle.js',

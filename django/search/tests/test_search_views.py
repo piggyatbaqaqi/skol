@@ -1,5 +1,5 @@
 """
-Tests for SearchView nomenclature_pattern pre-filter.
+Tests for SearchView nomenclature_pattern pre-filter and project_slugs filter.
 
 Run with: python manage.py test search.tests.test_search_views
 """
@@ -8,8 +8,11 @@ from unittest.mock import patch, MagicMock
 
 import numpy as np
 import pandas as pd
+from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.urls import reverse
+
+from search.models import Collection, CollectionProject, Project
 
 
 def _make_mock_embeddings():
@@ -31,6 +34,21 @@ def _make_mock_embeddings():
     # Add 4 fake embedding columns
     for i in range(4):
         data[f'F{i}'] = np.random.rand(3)
+    return pd.DataFrame(data)
+
+
+def _make_collection_embeddings(collection_ids):
+    """Build mock embeddings with collection-type taxon_ids."""
+    n = len(collection_ids)
+    data = {
+        'taxon': [f'Collection taxon {cid}' for cid in collection_ids],
+        'description': [f'Description for {cid}' for cid in collection_ids],
+        'source': ['SKOL_COLLECTIONS'] * n,
+        'filename': [f'f{cid}' for cid in collection_ids],
+        'taxon_id': [f'collection_{cid}' for cid in collection_ids],
+    }
+    for i in range(4):
+        data[f'F{i}'] = np.random.rand(n)
     return pd.DataFrame(data)
 
 
@@ -145,3 +163,89 @@ class TestSearchViewNomenclaturePattern(TestCase):
         # NOT contain nomenclature_pattern key
         data = response.json()
         assert 'nomenclature_pattern' not in data
+
+
+class TestSearchViewProjectFilter(TestCase):
+    """Tests for the project_slugs post-filter on POST /api/search/."""
+
+    def setUp(self) -> None:
+        self.client = Client()
+        self.url = reverse('search:search')
+        self.user = User.objects.create_user('jsmith', 'j@example.com', 'pw')
+        self.project = Project.objects.create(name='Field Guide', creator=self.user)
+        # Two collections: coll_a in the project, coll_b not
+        self.coll_a = Collection.objects.create(owner=self.user, name='Coll A')
+        self.coll_b = Collection.objects.create(owner=self.user, name='Coll B')
+        CollectionProject.objects.create(
+            collection=self.coll_a, project=self.project, added_by=self.user
+        )
+
+    def _post_search(self, project_slugs):
+        """Helper: POST /api/search/ with mocked Experiment and project_slugs."""
+        coll_ids = [self.coll_a.collection_id, self.coll_b.collection_id]
+        mock_embeddings = _make_collection_embeddings(coll_ids)
+        mock_nearest = _make_mock_nearest(mock_embeddings)
+
+        mock_exp = MagicMock()
+        mock_exp.nearest_neighbors = mock_nearest
+        mock_exp.embeddings = mock_embeddings
+
+        with patch('search.views.settings') as mock_settings, \
+             patch('dr_drafts_mycosearch.sota_search.Experiment', return_value=mock_exp) as _mock_cls:
+            mock_settings.REDIS_URL = 'redis://localhost:6379'
+            body = {
+                'prompt': 'brown cap',
+                'embedding_name': 'skol:embedding:v1.1',
+                'k': 10,
+            }
+            if project_slugs is not None:
+                body['project_slugs'] = project_slugs
+            return self.client.post(
+                self.url,
+                data=json.dumps(body),
+                content_type='application/json',
+            )
+
+    def test_no_project_filter_returns_both_collections(self) -> None:
+        """Without project_slugs, all collection results are returned."""
+        response = self._post_search(None)
+        assert response.status_code == 200
+        data = response.json()
+        collection_ids = [r['CollectionId'] for r in data['results'] if 'CollectionId' in r]
+        assert self.coll_a.collection_id in collection_ids
+        assert self.coll_b.collection_id in collection_ids
+
+    def test_project_filter_keeps_member_collection(self) -> None:
+        """project_slugs retains collections that are in the project."""
+        slug = f'jsmith/{self.project.slug}'
+        response = self._post_search([slug])
+        assert response.status_code == 200
+        data = response.json()
+        collection_ids = [r['CollectionId'] for r in data['results'] if 'CollectionId' in r]
+        assert self.coll_a.collection_id in collection_ids
+
+    def test_project_filter_removes_nonmember_collection(self) -> None:
+        """project_slugs drops collection results not in any selected project."""
+        slug = f'jsmith/{self.project.slug}'
+        response = self._post_search([slug])
+        assert response.status_code == 200
+        data = response.json()
+        collection_ids = [r['CollectionId'] for r in data['results'] if 'CollectionId' in r]
+        assert self.coll_b.collection_id not in collection_ids
+
+    def test_unknown_project_slug_drops_all_collection_results(self) -> None:
+        """An unrecognised slug resolves to zero collection IDs — all filtered out."""
+        response = self._post_search(['jsmith/nonexistent'])
+        assert response.status_code == 200
+        data = response.json()
+        collection_ids = [r['CollectionId'] for r in data['results'] if 'CollectionId' in r]
+        assert not collection_ids
+
+    def test_empty_project_slugs_list_applies_no_filter(self) -> None:
+        """An empty project_slugs list is treated as 'no filter'."""
+        response = self._post_search([])
+        assert response.status_code == 200
+        data = response.json()
+        collection_ids = [r['CollectionId'] for r in data['results'] if 'CollectionId' in r]
+        assert self.coll_a.collection_id in collection_ids
+        assert self.coll_b.collection_id in collection_ids

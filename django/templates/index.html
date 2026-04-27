@@ -1345,6 +1345,19 @@
             </form>
         </div>
 
+        <!-- Project facet: filter results to collections in selected projects -->
+        <div id="projectFacetBar" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+            <label style="font-size: 13px; color: #666; white-space: nowrap;">Filter by project:</label>
+            <div id="projectFacetSelectContainer"
+                 data-project-select
+                 data-api-base-url="{{ SCRIPT_NAME }}/api"
+                 data-is-multi="true"
+                 data-placeholder="All projects..."
+                 style="min-width: 280px; flex: 1; max-width: 480px;">
+            </div>
+            <span id="projectFacetBadge" style="display: none; font-size: 12px; color: #667eea; font-weight: 500;"></span>
+        </div>
+
         {% if user.is_authenticated %}
         <!-- Discussion Widget (visible when collection is active) -->
         <div id="discussionSection" style="display: none;">
@@ -1445,6 +1458,21 @@
         const IS_ADMIN = {{ user.is_staff|yesno:"true,false" }};
         const CURRENT_USER_ID = {{ user.id|default:"null" }};
         const CURRENT_USERNAME = '{{ user.username|default:""|escapejs }}';
+
+        // Project facet: populated by the ProjectSelect React widget via
+        // the "project-select-change" CustomEvent.
+        let activeProjectSlugs = [];
+
+        document.addEventListener('project-select-change', (e) => {
+            activeProjectSlugs = Array.isArray(e.detail.value) ? e.detail.value : [];
+            const badge = document.getElementById('projectFacetBadge');
+            if (activeProjectSlugs.length > 0) {
+                badge.textContent = `(${activeProjectSlugs.length} project${activeProjectSlugs.length > 1 ? 's' : ''} active)`;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
 
         // Store current search data, active collection, and pagination state
         let currentSearchData = null;
@@ -2614,6 +2642,9 @@
                 if (nomenPattern) {
                     searchBody.nomenclature_pattern = nomenPattern;
                 }
+                if (activeProjectSlugs.length > 0) {
+                    searchBody.project_slugs = activeProjectSlugs;
+                }
 
                 const response = await fetch(`${API_BASE}/api/search/`, {
                     method: 'POST',
@@ -3087,6 +3118,7 @@
 
     <!-- React Select Widgets -->
     <script src="{% static 'js/collection-select.bundle.js' %}"></script>
+    <script src="{% static 'js/project-select.bundle.js' %}"></script>
     <script src="{% static 'js/identifier-type-select.bundle.js' %}"></script>
 
     <!-- Fungarium Select Widget -->
