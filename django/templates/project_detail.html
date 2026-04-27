@@ -157,6 +157,38 @@
 
         .loading { color: #aaa; font-size: 14px; }
         .error-message { color: #c33; font-size: 14px; }
+
+        /* Notes history log */
+        .notes-log-entry {
+            margin-bottom: 16px;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            overflow: hidden;
+            font-size: 13px;
+        }
+        .notes-log-header {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            padding: 6px 10px;
+            background: #f7f7f7;
+            border-bottom: 1px solid #e8e8e8;
+            color: #666;
+        }
+        .notes-log-author { font-weight: 600; color: #444; }
+        .notes-log-time { font-size: 12px; color: #aaa; }
+        .notes-log-diff {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 8px 10px;
+            overflow-x: auto;
+            white-space: pre;
+            background: #fafafa;
+        }
+        .notes-log-diff .diff-add { color: #1a7f1a; background: #f0fff0; display: block; }
+        .notes-log-diff .diff-remove { color: #b00; background: #fff0f0; display: block; }
+        .notes-log-diff .diff-meta { color: #888; display: block; }
     </style>
 </head>
 <body>
@@ -200,6 +232,11 @@
         <div class="collection-count" id="collection-count" style="display:none"></div>
         <ul class="collection-list" id="collection-list"></ul>
         <div class="error-message" id="collections-error" style="display:none">Could not load collections.</div>
+    </div>
+
+    <div class="section" id="notes-log-section" style="display:none">
+        <div class="section-label">Notes history</div>
+        <div id="notes-log-list"></div>
     </div>
 
 </div>
@@ -252,6 +289,7 @@
             renderNotes();
 
             renderCollections(data.memberships || []);
+            renderNotesLog(data.notes_log || []);
         } catch (e) {
             document.getElementById('project-name').textContent = 'Error loading project';
             document.getElementById('collections-loading').style.display = 'none';
@@ -267,6 +305,52 @@
         } else {
             display.textContent = 'No notes yet.';
             display.classList.add('empty');
+        }
+    }
+
+    function renderNotesLog(entries) {
+        if (!entries || entries.length === 0) return;
+        const section = document.getElementById('notes-log-section');
+        const list = document.getElementById('notes-log-list');
+        section.style.display = '';
+
+        // Most recent first (API already orders by -changed_at).
+        for (const entry of entries) {
+            const div = document.createElement('div');
+            div.className = 'notes-log-entry';
+
+            const header = document.createElement('div');
+            header.className = 'notes-log-header';
+
+            const author = document.createElement('span');
+            author.className = 'notes-log-author';
+            author.textContent = entry.changed_by_username || '(unknown)';
+
+            const time = document.createElement('span');
+            time.className = 'notes-log-time';
+            time.textContent = formatDate(entry.changed_at);
+            time.title = entry.changed_at;
+
+            header.appendChild(author);
+            header.appendChild(time);
+            div.appendChild(header);
+
+            const diffEl = document.createElement('div');
+            diffEl.className = 'notes-log-diff';
+            for (const line of entry.diff.split('\n')) {
+                const span = document.createElement('span');
+                if (line.startsWith('+') && !line.startsWith('+++')) {
+                    span.className = 'diff-add';
+                } else if (line.startsWith('-') && !line.startsWith('---')) {
+                    span.className = 'diff-remove';
+                } else if (line.startsWith('@') || line.startsWith('---') || line.startsWith('+++')) {
+                    span.className = 'diff-meta';
+                }
+                span.textContent = line;
+                diffEl.appendChild(span);
+            }
+            div.appendChild(diffEl);
+            list.appendChild(div);
         }
     }
 
@@ -362,6 +446,17 @@
                 const data = await resp.json();
                 currentNotes = data.notes || '';
                 renderNotes();
+                // Refresh log by re-fetching the full project data.
+                const refreshResp = await fetch(
+                    `${apiBase}/projects/${username}/${slug}/`,
+                    {credentials: 'same-origin'}
+                );
+                if (refreshResp.ok) {
+                    const refreshData = await refreshResp.json();
+                    document.getElementById('notes-log-list').innerHTML = '';
+                    document.getElementById('notes-log-section').style.display = 'none';
+                    renderNotesLog(refreshData.notes_log || []);
+                }
                 statusEl.textContent = 'Saved.';
                 statusEl.className = 'success';
                 setTimeout(closeEditor, 800);

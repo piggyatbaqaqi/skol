@@ -764,9 +764,22 @@ Retrieve a single project with its current collection memberships (public).
             "added_by_username": "jsmith",
             "added_at": "2026-03-05T14:00:00Z"
         }
+    ],
+    "notes_log": [
+        {
+            "id": 7,
+            "changed_by_username": "jsmith",
+            "changed_at": "2026-04-10T09:15:00Z",
+            "diff": "--- notes (before)\n+++ notes (after)\n@@ -0,0 +1 @@\n+Started at the 2026 NAMA foray."
+        }
     ]
 }
 ```
+
+`notes_log` is ordered most-recent-first.  Each entry records the username,
+timestamp, and the change as a unified diff (output of Python's
+`difflib.unified_diff`).  A log entry is only created when the value actually
+changes; a no-op PATCH to `notes` produces no entry.
 
 ### PATCH /api/projects/{username}/{slug}/
 

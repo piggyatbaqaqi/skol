@@ -14,6 +14,7 @@ from .models import (
     MeasurementSet,
     Project,
     CollectionProject,
+    ProjectNotesLog,
 )
 
 
@@ -305,6 +306,19 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_namespaced_slug(self, obj: Project) -> str:
         return f"{obj.creator.username}/{obj.slug}"
+
+
+class ProjectNotesLogSerializer(serializers.ModelSerializer):
+    """Read serializer for ProjectNotesLog entries."""
+
+    changed_by_username = serializers.CharField(
+        source='changed_by.username', read_only=True
+    )
+
+    class Meta:
+        model = ProjectNotesLog
+        fields = ['id', 'changed_by_username', 'changed_at', 'diff']
+        read_only_fields = fields
 
 
 class ProjectCreateSerializer(serializers.ModelSerializer):

@@ -606,6 +606,42 @@ class CollectionProject(models.Model):
         return f"{self.collection} in {self.project}"
 
 
+class ProjectNotesLog(models.Model):
+    """Audit log of changes to a project's notes field.
+
+    A row is created every time the ``notes`` field changes value via the PATCH
+    API.  The diff is stored in unified-diff format (output of
+    ``difflib.unified_diff``).
+    """
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='notes_log',
+    )
+    changed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='project_notes_changes',
+    )
+    changed_at = models.DateTimeField(auto_now_add=True)
+    diff = models.TextField(
+        help_text='Unified diff of the notes change (old → new).'
+    )
+
+    class Meta:
+        ordering = ['-changed_at']
+        verbose_name = 'Project notes log entry'
+        verbose_name_plural = 'Project notes log entries'
+
+    def __str__(self) -> str:
+        return (
+            f"{self.project} notes changed by {self.changed_by} "
+            f"at {self.changed_at}"
+        )
+
+
 class CollectionProjectRemoval(models.Model):
     """Permanent audit log of collection removals from projects.
 

@@ -3447,7 +3447,11 @@ class ProjectDetailView(APIView):
 
     def get(self, request, username, slug):
         from .models import Project
-        from .serializers import ProjectSerializer, CollectionProjectSerializer
+        from .serializers import (
+            ProjectSerializer,
+            CollectionProjectSerializer,
+            ProjectNotesLogSerializer,
+        )
 
         project = get_object_or_404(
             Project.objects.select_related('creator'),
@@ -3461,10 +3465,15 @@ class ProjectDetailView(APIView):
         data['memberships'] = CollectionProjectSerializer(
             memberships, many=True
         ).data
+        notes_log = project.notes_log.select_related('changed_by').all()
+        data['notes_log'] = ProjectNotesLogSerializer(
+            notes_log, many=True
+        ).data
         return Response(data)
 
     def patch(self, request, username, slug):
-        from .models import Project
+        import difflib
+        from .models import Project, ProjectNotesLog
         from .serializers import ProjectSerializer
 
         project = get_object_or_404(
@@ -3473,15 +3482,33 @@ class ProjectDetailView(APIView):
             slug=slug,
         )
         _PATCHABLE = {'notes', 'description'}
-        changed = False
-        for field in _PATCHABLE:
-            if field in request.data:
-                setattr(project, field, request.data[field])
-                changed = True
-        if changed:
-            project.save(update_fields=list(
-                _PATCHABLE & set(request.data.keys())
-            ))
+        update_fields = list(_PATCHABLE & set(request.data.keys()))
+        if not update_fields:
+            return Response(ProjectSerializer(project).data)
+
+        # Capture old notes before mutating, to compute diff.
+        old_notes: str = project.notes
+
+        for field in update_fields:
+            setattr(project, field, request.data[field])
+        project.save(update_fields=update_fields)
+
+        # Write audit log entry if notes changed.
+        if 'notes' in update_fields:
+            new_notes: str = project.notes
+            if old_notes != new_notes:
+                diff = ''.join(difflib.unified_diff(
+                    old_notes.splitlines(keepends=True),
+                    new_notes.splitlines(keepends=True),
+                    fromfile='notes (before)',
+                    tofile='notes (after)',
+                ))
+                ProjectNotesLog.objects.create(
+                    project=project,
+                    changed_by=request.user,
+                    diff=diff,
+                )
+
         return Response(ProjectSerializer(project).data)
 
 

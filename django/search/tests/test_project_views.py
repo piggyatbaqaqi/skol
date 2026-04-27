@@ -9,7 +9,7 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 
-from search.models import Collection, Project, CollectionProject, CollectionProjectRemoval
+from search.models import Collection, Project, CollectionProject, CollectionProjectRemoval, ProjectNotesLog
 
 
 class TestProjectListCreateView(TestCase):
@@ -212,6 +212,69 @@ class TestProjectDetailView(TestCase):
         assert response.status_code == 200
         self.project.refresh_from_db()
         assert self.project.creator == self.user  # unchanged
+
+    def test_patch_notes_creates_log_entry(self) -> None:
+        """Patching notes creates a ProjectNotesLog entry with the user and diff."""
+        self.client.login(username="jsmith", password="pw")
+        self.client.patch(
+            self.url,
+            data=json.dumps({"notes": "First version."}),
+            content_type="application/json",
+        )
+        assert ProjectNotesLog.objects.filter(project=self.project).count() == 1
+        entry = ProjectNotesLog.objects.get(project=self.project)
+        assert entry.changed_by == self.user
+        assert "+First version." in entry.diff
+
+    def test_patch_notes_second_edit_records_diff(self) -> None:
+        """Second edit records a diff showing both removal and addition."""
+        self.project.notes = "Old notes."
+        self.project.save()
+        self.client.login(username="jsmith", password="pw")
+        self.client.patch(
+            self.url,
+            data=json.dumps({"notes": "New notes."}),
+            content_type="application/json",
+        )
+        entry = ProjectNotesLog.objects.filter(project=self.project).latest("changed_at")
+        assert "-Old notes." in entry.diff
+        assert "+New notes." in entry.diff
+
+    def test_patch_notes_no_log_when_unchanged(self) -> None:
+        """No log entry is created when notes value does not change."""
+        self.project.notes = "Same."
+        self.project.save()
+        self.client.login(username="jsmith", password="pw")
+        self.client.patch(
+            self.url,
+            data=json.dumps({"notes": "Same."}),
+            content_type="application/json",
+        )
+        assert ProjectNotesLog.objects.filter(project=self.project).count() == 0
+
+    def test_patch_description_does_not_create_notes_log(self) -> None:
+        """Patching description alone does not create a ProjectNotesLog entry."""
+        self.client.login(username="jsmith", password="pw")
+        self.client.patch(
+            self.url,
+            data=json.dumps({"description": "A new description."}),
+            content_type="application/json",
+        )
+        assert ProjectNotesLog.objects.filter(project=self.project).count() == 0
+
+    def test_get_includes_notes_log(self) -> None:
+        """GET response includes notes_log array."""
+        ProjectNotesLog.objects.create(
+            project=self.project,
+            changed_by=self.user,
+            diff="--- \n+++ \n+Hello.",
+        )
+        response = self.client.get(self.url)
+        data = response.json()
+        assert "notes_log" in data
+        assert len(data["notes_log"]) == 1
+        assert data["notes_log"][0]["changed_by_username"] == "jsmith"
+        assert "+Hello." in data["notes_log"][0]["diff"]
 
 
 class TestProjectCollectionAddRemoveView(TestCase):
