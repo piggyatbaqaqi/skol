@@ -10,6 +10,7 @@ import traceback
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from django.conf import settings
 from django.http import HttpResponse
 import redis
@@ -3611,3 +3612,185 @@ class ProjectExportView(APIView):
             f'attachment; filename="{filename}"'
         )
         return response
+
+
+class ImportView(APIView):
+    """
+    POST /api/import/
+
+    Accept a SKOL export ZIP and import its contents.  The ZIP type is
+    detected automatically:
+
+    * ``project.json`` present → project import
+    * ``user.json`` present    → user-data import (not yet supported)
+    * Neither                  → 400 Unknown format
+
+    Multipart form field: ``file`` (the ZIP).
+
+    Response (project import)::
+
+        {
+            "type": "project",
+            "project_name": "My Project",
+            "namespaced_slug": "jsmith/my-project",
+            "project_url": "/projects/jsmith/my-project/",
+            "collections_imported": 3,
+            "collections_linked": 1
+        }
+    """
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        import io
+        import json
+        import zipfile
+
+        uploaded = request.FILES.get('file')
+        if not uploaded:
+            return Response(
+                {'detail': 'No file provided.  Send a ZIP as form field "file".'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        raw = uploaded.read()
+        try:
+            zf = zipfile.ZipFile(io.BytesIO(raw))
+        except zipfile.BadZipFile:
+            return Response(
+                {'detail': 'Uploaded file is not a valid ZIP archive.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        names = set(zf.namelist())
+
+        if 'project.json' in names:
+            return self._import_project(request, zf)
+
+        if 'user.json' in names:
+            return Response(
+                {'detail': 'User-data exports are not yet importable.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                'detail': (
+                    'Unknown export format: ZIP must contain project.json '
+                    '(project export) or user.json (user-data export).'
+                )
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ------------------------------------------------------------------
+    # Project import
+    # ------------------------------------------------------------------
+
+    def _import_project(self, request, zf: 'zipfile.ZipFile'):
+        import json
+        from django.contrib.auth.models import User as DjangoUser
+        from .models import Collection, Project, CollectionProject
+
+        project_data = json.loads(zf.read('project.json'))
+
+        # Resolve creator: use original if they exist, else importing user.
+        creator_username = project_data.get('creator_username', '')
+        try:
+            creator = DjangoUser.objects.get(username=creator_username)
+        except DjangoUser.DoesNotExist:
+            creator = request.user
+
+        # Resolve slug collision for this creator.
+        base_slug = project_data.get('slug') or Project.generate_slug(
+            project_data['name']
+        )
+        slug = base_slug
+        counter = 2
+        existing_qs = Project.objects.filter(creator=creator)
+        while existing_qs.filter(slug=slug).exists():
+            slug = f'{base_slug}-{counter}'
+            counter += 1
+
+        project = Project.objects.create(
+            name=project_data['name'],
+            slug=slug,
+            creator=creator,
+            description=project_data.get('description', ''),
+            notes=project_data.get('notes', ''),
+        )
+
+        # Import collections.
+        membership_ids = {
+            m['collection_id']
+            for m in project_data.get('current_memberships', [])
+        }
+        imported = 0
+        linked = 0
+
+        for cid in membership_ids:
+            try:
+                coll = Collection.objects.get(collection_id=cid)
+                linked += 1
+            except Collection.DoesNotExist:
+                coll = self._create_collection(
+                    request, zf, cid, creator_username
+                )
+                if coll is None:
+                    continue
+                imported += 1
+
+            CollectionProject.objects.get_or_create(
+                collection=coll,
+                project=project,
+                defaults={'added_by': request.user},
+            )
+
+        project_url = (
+            f'{request.META.get("SCRIPT_NAME", "")}'
+            f'/projects/{creator.username}/{slug}/'
+        )
+        return Response({
+            'type': 'project',
+            'project_name': project.name,
+            'namespaced_slug': f'{creator.username}/{slug}',
+            'project_url': project_url,
+            'collections_imported': imported,
+            'collections_linked': linked,
+        })
+
+    def _create_collection(
+        self,
+        request,
+        zf: 'zipfile.ZipFile',
+        collection_id: int,
+        original_creator_username: str,
+    ):
+        """Create a Collection from the ZIP's collections/<id>.json entry."""
+        import json
+        from django.contrib.auth.models import User as DjangoUser
+        from .models import Collection
+
+        path = f'collections/{collection_id}.json'
+        if path not in set(zf.namelist()):
+            return None
+
+        coll_data = json.loads(zf.read(path))
+
+        # Use original owner if they exist on this instance.
+        try:
+            owner = DjangoUser.objects.get(
+                username=original_creator_username
+            )
+        except DjangoUser.DoesNotExist:
+            owner = request.user
+
+        return Collection.objects.create(
+            collection_id=collection_id,
+            owner=owner,
+            name=coll_data.get('name', f'Collection {collection_id}'),
+            description=coll_data.get('description', ''),
+            notes=coll_data.get('notes', ''),
+            nomenclature=coll_data.get('nomenclature', ''),
+        )

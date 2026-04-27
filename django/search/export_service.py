@@ -244,6 +244,7 @@ def export_project_data(project) -> io.BytesIO:
             'namespaced_slug': f"{project.creator.username}/{project.slug}",
             'creator_username': project.creator.username,
             'description': project.description,
+            'notes': project.notes,
             'created_at': (
                 project.created_at.isoformat() if project.created_at else None
             ),

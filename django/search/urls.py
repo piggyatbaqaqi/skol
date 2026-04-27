@@ -58,6 +58,7 @@ from .views import (
     ProjectDetailView,
     ProjectCollectionMembershipView,
     ProjectExportView,
+    ImportView,
 )
 
 app_name = 'search'
@@ -209,4 +210,5 @@ urlpatterns = [
         ProjectCollectionMembershipView.as_view(),
         name='project-collection-membership',
     ),
+    path('import/', ImportView.as_view(), name='import'),
 ]

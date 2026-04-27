@@ -807,6 +807,39 @@ The archive contains:
 **Response:** `200 OK` with `Content-Type: application/zip` and
 `Content-Disposition: attachment; filename="<slug>.zip"`.
 
+### POST /api/import/
+
+Import a SKOL export ZIP. Requires authentication.
+
+Upload via `multipart/form-data` with field `file` containing the ZIP.
+
+The endpoint auto-detects the archive type:
+- `project.json` present → project import
+- `user.json` present → 400 (not yet supported)
+- Neither → 400 Unknown format
+
+**Request:** `multipart/form-data`, field `file` (ZIP binary).
+
+**Response (project import) `200 OK`:**
+```json
+{
+    "type": "project",
+    "project_name": "My Project",
+    "namespaced_slug": "alice/my-project",
+    "project_url": "/projects/alice/my-project/",
+    "collections_imported": 2,
+    "collections_linked": 1
+}
+```
+
+- `collections_imported` — collections that did not exist locally and were created.
+- `collections_linked` — collections that already existed and were linked to the new project.
+- If the original project creator's username exists on this instance, they become the creator; otherwise the importing user is the creator.
+- If the slug already belongs to the resolved creator, a numeric suffix is appended (`-2`, `-3`, …).
+- Existing collections are linked but their data is never overwritten.
+
+**Error responses:** `400 Bad Request` (no file, invalid ZIP, unknown format), `403 Forbidden` (unauthenticated).
+
 ### POST /api/projects/{username}/{slug}/collections/{collection_id}/
 
 Add a collection to a project. Requires authentication. Idempotent.
