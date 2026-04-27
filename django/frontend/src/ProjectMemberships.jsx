@@ -34,14 +34,42 @@ const creatableStyles = {
   placeholder: (base) => ({ ...base, color: '#999', fontSize: 13 }),
 };
 
-const ProjectMemberships = ({ apiBaseUrl = '/api', collectionId, authenticated = false }) => {
+const ProjectMemberships = ({
+  apiBaseUrl = '/api',
+  collectionId: collectionIdProp,
+  authenticated = false,
+  listenForCollectionChange = false,
+}) => {
+  // In "listen" mode the collection ID comes from the collection-changed event;
+  // null means no collection is active (component renders nothing).
+  const [collectionId, setCollectionId] = useState(
+    listenForCollectionChange ? null : collectionIdProp
+  );
+
+  useEffect(() => {
+    if (!listenForCollectionChange) return;
+    const handler = (e) => setCollectionId(e.detail.collection_id || null);
+    document.addEventListener('collection-changed', handler);
+    return () => document.removeEventListener('collection-changed', handler);
+  }, [listenForCollectionChange]);
+
   const [memberships, setMemberships] = useState([]);   // [{slug, name}, ...]
-  const [loading, setLoading]         = useState(true);
+  const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState(null);
   const [addOption, setAddOption]     = useState(null);  // react-select option or null
   const [projectOptions, setProjectOptions] = useState([]); // all projects as options
   const [adding, setAdding]           = useState(false);
   const [status, setStatus]           = useState(null); // {type:'success'|'error', msg}
+
+  // In listen mode, reset state whenever the collection switches.
+  useEffect(() => {
+    if (listenForCollectionChange) {
+      setMemberships([]);
+      setAddOption(null);
+      setStatus(null);
+      setError(null);
+    }
+  }, [collectionId, listenForCollectionChange]);
 
   // ---- helpers --------------------------------------------------------
 
@@ -60,6 +88,7 @@ const ProjectMemberships = ({ apiBaseUrl = '/api', collectionId, authenticated =
   // ---- fetch current memberships -------------------------------------
 
   const fetchMemberships = useCallback(async () => {
+    if (!collectionId) return;
     setLoading(true);
     setError(null);
     try {
@@ -187,6 +216,9 @@ const ProjectMemberships = ({ apiBaseUrl = '/api', collectionId, authenticated =
   };
 
   // ---- render --------------------------------------------------------
+
+  // In listen mode, render nothing until a collection is selected.
+  if (listenForCollectionChange && !collectionId) return null;
 
   if (loading) return <div className="project-memberships"><span style={{ color: '#aaa', fontSize: 13 }}>Loading projects…</span></div>;
   if (error)   return <div className="project-memberships"><span style={{ color: '#c33', fontSize: 13 }}>Could not load projects.</span></div>;

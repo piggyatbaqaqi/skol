@@ -1314,6 +1314,14 @@
                     <span id="nomenclatureSaveIndicator" class="nomenclature-save-indicator">Saved</span>
                 </div>
             </div>
+            <!-- Project membership bar (visible when collection is active) -->
+            <div id="collectionProjectsContainer"
+                 data-project-memberships
+                 data-api-base-url="{{ SCRIPT_NAME }}/api"
+                 data-listen-collection-changed="true"
+                 data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
+                 style="margin-top: 10px;">
+            </div>
         </div>
         {% endif %}
 
@@ -3119,6 +3127,7 @@
     <!-- React Select Widgets -->
     <script src="{% static 'js/collection-select.bundle.js' %}"></script>
     <script src="{% static 'js/project-select.bundle.js' %}"></script>
+    <script src="{% static 'js/project-memberships.bundle.js' %}"></script>
     <script src="{% static 'js/identifier-type-select.bundle.js' %}"></script>
 
     <!-- Fungarium Select Widget -->

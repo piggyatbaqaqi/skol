@@ -23,10 +23,13 @@ function initProjectMemberships() {
     if (container.dataset.projectMembershipsInitialized === 'true') return;
 
     const apiBaseUrl = container.dataset.apiBaseUrl || '/api';
-    const collectionId = parseInt(container.dataset.collectionId, 10);
+    const listenForCollectionChange = container.dataset.listenCollectionChanged === 'true';
+    const collectionId = listenForCollectionChange
+      ? null
+      : parseInt(container.dataset.collectionId, 10);
     const authenticated = container.dataset.authenticated === 'true';
 
-    if (!collectionId) {
+    if (!listenForCollectionChange && !collectionId) {
       console.warn('ProjectMemberships: missing data-collection-id');
       return;
     }
@@ -37,6 +40,7 @@ function initProjectMemberships() {
         apiBaseUrl={apiBaseUrl}
         collectionId={collectionId}
         authenticated={authenticated}
+        listenForCollectionChange={listenForCollectionChange}
       />
     );
 
