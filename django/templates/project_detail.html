@@ -189,6 +189,31 @@
         .notes-log-diff .diff-add { color: #1a7f1a; background: #f0fff0; display: block; }
         .notes-log-diff .diff-remove { color: #b00; background: #fff0f0; display: block; }
         .notes-log-diff .diff-meta { color: #888; display: block; }
+
+        /* Export buttons */
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 14px;
+            background: #f7f7f7;
+            color: #444;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .export-btn:hover {
+            background: #eee;
+            border-color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -238,6 +263,20 @@
         <div class="section-label">Notes history</div>
         <div id="notes-log-list"></div>
     </div>
+
+    {% if user.is_authenticated %}
+    <div class="section">
+        <div class="section-label">Export</div>
+        <div class="export-buttons">
+            <a class="export-btn"
+               href="{{ SCRIPT_NAME }}/api/projects/{{ project_name }}/export/"
+               download>
+                ↓ JSON
+            </a>
+            {# Future: GBIF DwC-A and Plazi/TaxPub XML buttons go here #}
+        </div>
+    </div>
+    {% endif %}
 
 </div>
 
