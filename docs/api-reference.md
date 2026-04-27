@@ -754,6 +754,7 @@ Retrieve a single project with its current collection memberships (public).
     "namespaced_slug": "jsmith/field-guide",
     "creator_username": "jsmith",
     "description": "A guide to local fungi",
+    "notes": "Started at the 2026 NAMA foray.",
     "collection_count": 1,
     "created_at": "2026-03-01T10:00:00Z",
     "memberships": [
@@ -766,6 +767,20 @@ Retrieve a single project with its current collection memberships (public).
     ]
 }
 ```
+
+### PATCH /api/projects/{username}/{slug}/
+
+Update mutable text fields on a project. Requires authentication.
+
+Accepted fields: `notes`, `description`. Unknown fields are silently ignored.
+The project's `name`, `slug`, and `creator` cannot be changed via this endpoint.
+
+**Request body:**
+```json
+{ "notes": "Updated field notes." }
+```
+
+**Response:** `200 OK` with the updated project object (same schema as GET above).
 
 ### GET /api/projects/{username}/{slug}/export/
 

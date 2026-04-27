@@ -295,7 +295,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             'id', 'name', 'slug', 'namespaced_slug',
-            'creator_username', 'description',
+            'creator_username', 'description', 'notes',
             'collection_count', 'created_at',
         ]
         read_only_fields = fields

@@ -532,6 +532,7 @@ class Project(models.Model):
         related_name='created_projects',
     )
     description = models.TextField(blank=True, default='')
+    notes = models.TextField(blank=True, default='')
     collections = models.ManyToManyField(
         'Collection',
         through='CollectionProject',

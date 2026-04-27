@@ -168,6 +168,51 @@ class TestProjectDetailView(TestCase):
         response = self.client.get(self.url)
         assert response.json()["collection_count"] == 1
 
+    def test_patch_notes_authenticated(self) -> None:
+        """Authenticated user can update project notes."""
+        self.client.login(username="jsmith", password="pw")
+        response = self.client.patch(
+            self.url,
+            data=json.dumps({"notes": "Some field notes."}),
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        assert response.json()["notes"] == "Some field notes."
+        self.project.refresh_from_db()
+        assert self.project.notes == "Some field notes."
+
+    def test_patch_description_authenticated(self) -> None:
+        """Authenticated user can update project description."""
+        self.client.login(username="jsmith", password="pw")
+        response = self.client.patch(
+            self.url,
+            data=json.dumps({"description": "A longer description."}),
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        assert response.json()["description"] == "A longer description."
+
+    def test_patch_unauthenticated_returns_403(self) -> None:
+        """Unauthenticated PATCH returns 403."""
+        response = self.client.patch(
+            self.url,
+            data=json.dumps({"notes": "sneaky"}),
+            content_type="application/json",
+        )
+        assert response.status_code == 403
+
+    def test_patch_ignores_unknown_fields(self) -> None:
+        """PATCH with unknown fields returns 200 and ignores unknown keys."""
+        self.client.login(username="jsmith", password="pw")
+        response = self.client.patch(
+            self.url,
+            data=json.dumps({"notes": "ok", "creator": "hacker"}),
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        self.project.refresh_from_db()
+        assert self.project.creator == self.user  # unchanged
+
 
 class TestProjectCollectionAddRemoveView(TestCase):
     """Tests for POST/DELETE /api/projects/<username>/<slug>/collections/<collection_id>/."""
@@ -421,3 +466,28 @@ class TestProjectExportView(TestCase):
         )
         response = self.client.get(url)
         assert response.status_code == 404
+
+
+class TestProjectDetailPageView(TestCase):
+    """Tests for the project HTML detail page view."""
+
+    def setUp(self) -> None:
+        self.client = Client()
+        self.user = User.objects.create_user("jsmith", "j@example.com", "pw")
+        Project.objects.create(name="Test Project", creator=self.user)
+        self.url = reverse(
+            "project-detail-page",
+            kwargs={"username": "jsmith", "slug": "test-project"},
+        )
+
+    def test_page_accessible_unauthenticated(self) -> None:
+        """Project detail page is public."""
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert b"project_username" in response.content or b"jsmith" in response.content
+
+    def test_page_accessible_authenticated(self) -> None:
+        """Project detail page works when logged in."""
+        self.client.login(username="jsmith", password="pw")
+        response = self.client.get(self.url)
+        assert response.status_code == 200

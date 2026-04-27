@@ -62,6 +62,7 @@ const ProjectMemberships = ({
   const [adding, setAdding]           = useState(false);
   const [status, setStatus]           = useState(null); // {type:'success'|'error', msg}
   const [statusVisible, setStatusVisible] = useState(false);
+  const [armedSlug, setArmedSlug]     = useState(null); // slug of pill in confirm-remove state
 
   // In listen mode, reset state whenever the collection switches.
   useEffect(() => {
@@ -70,8 +71,21 @@ const ProjectMemberships = ({
       setAddOption(null);
       setStatus(null);
       setError(null);
+      setArmedSlug(null);
     }
   }, [collectionId, listenForCollectionChange]);
+
+  // Dismiss armed remove state when clicking outside any membership pill.
+  useEffect(() => {
+    if (!armedSlug) return;
+    const handler = (e) => {
+      if (!e.target.closest('.project-membership-item')) {
+        setArmedSlug(null);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [armedSlug]);
 
   // ---- helpers --------------------------------------------------------
 
@@ -93,6 +107,12 @@ const ProjectMemberships = ({
       username: namespacedSlug.slice(0, idx),
       slug: namespacedSlug.slice(idx + 1),
     };
+  };
+
+  // Build URL for the project detail page from its namespaced slug.
+  const projectPageUrl = (namespacedSlug) => {
+    const base = apiBaseUrl.replace(/\/api$/, '');
+    return `${base}/projects/${namespacedSlug}/`;
   };
 
   // ---- fetch current memberships -------------------------------------
@@ -206,6 +226,7 @@ const ProjectMemberships = ({
   const handleRemove = async (namespacedSlug) => {
     const parts = splitSlug(namespacedSlug);
     if (!parts) return;
+    setArmedSlug(null);
     clearStatus();
     try {
       const url = `${apiBaseUrl}/projects/${parts.username}/${parts.slug}/collections/${collectionId}/`;
@@ -245,16 +266,41 @@ const ProjectMemberships = ({
           <ul className="project-membership-list">
             {memberships.map((m) => (
               <li key={m.slug} className="project-membership-item">
-                <span>{m.name}</span>
+                <a
+                  href={projectPageUrl(m.slug)}
+                  className="project-membership-link"
+                  title={`Open project ${m.name}`}
+                >
+                  {m.name}
+                </a>
                 {authenticated && (
-                  <button
-                    className="project-membership-remove"
-                    title={`Remove from ${m.name}`}
-                    onClick={() => handleRemove(m.slug)}
-                    aria-label={`Remove from ${m.name}`}
-                  >
-                    ×
-                  </button>
+                  armedSlug === m.slug ? (
+                    <>
+                      <button
+                        className="project-membership-confirm-remove"
+                        onClick={() => handleRemove(m.slug)}
+                        aria-label={`Confirm remove from ${m.name}`}
+                      >
+                        Remove?
+                      </button>
+                      <button
+                        className="project-membership-cancel-remove"
+                        onClick={(e) => { e.stopPropagation(); setArmedSlug(null); }}
+                        aria-label="Cancel"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="project-membership-remove"
+                      title={`Remove from ${m.name}`}
+                      onClick={(e) => { e.stopPropagation(); setArmedSlug(m.slug); }}
+                      aria-label={`Remove from ${m.name}`}
+                    >
+                      ×
+                    </button>
+                  )
                 )}
               </li>
             ))}
@@ -306,16 +352,41 @@ const ProjectMemberships = ({
         <ul className="project-membership-list">
           {memberships.map((m) => (
             <li key={m.slug} className="project-membership-item">
-              <span>{m.name}</span>
+              <a
+                href={projectPageUrl(m.slug)}
+                className="project-membership-link"
+                title={`Open project ${m.name}`}
+              >
+                {m.name}
+              </a>
               {authenticated && (
-                <button
-                  className="project-membership-remove"
-                  title={`Remove from ${m.name}`}
-                  onClick={() => handleRemove(m.slug)}
-                  aria-label={`Remove from ${m.name}`}
-                >
-                  ×
-                </button>
+                armedSlug === m.slug ? (
+                  <>
+                    <button
+                      className="project-membership-confirm-remove"
+                      onClick={() => handleRemove(m.slug)}
+                      aria-label={`Confirm remove from ${m.name}`}
+                    >
+                      Remove?
+                    </button>
+                    <button
+                      className="project-membership-cancel-remove"
+                      onClick={(e) => { e.stopPropagation(); setArmedSlug(null); }}
+                      aria-label="Cancel"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="project-membership-remove"
+                    title={`Remove from ${m.name}`}
+                    onClick={(e) => { e.stopPropagation(); setArmedSlug(m.slug); }}
+                    aria-label={`Remove from ${m.name}`}
+                  >
+                    ×
+                  </button>
+                )
               )}
             </li>
           ))}

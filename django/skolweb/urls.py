@@ -71,6 +71,16 @@ def collection_detail_view(request, collection_id):
     })
 
 
+def project_detail_view(request, username, slug):
+    """Display the project detail page (public)."""
+    import json
+    return render(request, 'project_detail.html', {
+        'project_username': json.dumps(username),
+        'project_slug': json.dumps(slug),
+        'project_name': f'{username}/{slug}',
+    })
+
+
 def sources_view(request):
     """
     Display ingestion source statistics.
@@ -253,4 +263,5 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('collections/', collections_view, name='collections'),
     path('collections/<int:collection_id>/', collection_detail_view, name='collection-detail-page'),
+    path('projects/<str:username>/<slug:slug>/', project_detail_view, name='project-detail-page'),
 ]

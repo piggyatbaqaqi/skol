@@ -1,0 +1,381 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ project_name }} - SKOL</title>
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        h1 { color: #333; font-size: 1.8em; margin-bottom: 4px; }
+
+        .meta {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .section:last-child { border-bottom: none; }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #999;
+            margin-bottom: 6px;
+        }
+
+        .section-text {
+            font-size: 14px;
+            color: #444;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* Notes editor */
+        #notes-display { cursor: pointer; }
+        #notes-display:hover { background: #fafafa; border-radius: 4px; }
+        #notes-display.empty { color: #bbb; font-style: italic; }
+
+        #notes-editor { display: none; }
+        #notes-editor textarea {
+            width: 100%;
+            min-height: 100px;
+            font-size: 14px;
+            color: #444;
+            line-height: 1.6;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 10px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        #notes-editor textarea:focus { outline: none; border-color: #667eea; }
+        .notes-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568e0; }
+        .btn-secondary { background: #eee; color: #555; }
+        .btn-secondary:hover { background: #ddd; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #notes-status {
+            font-size: 12px;
+            margin-top: 6px;
+            min-height: 1em;
+        }
+        #notes-status.success { color: #2a7a2a; }
+        #notes-status.error { color: #c33; }
+
+        /* Collections table */
+        .collection-count {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .collection-list {
+            list-style: none;
+        }
+        .collection-item {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+        }
+        .collection-item:last-child { border-bottom: none; }
+
+        .collection-name {
+            flex: 1;
+            color: #333;
+            font-weight: 500;
+        }
+        .collection-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .collection-link:hover { text-decoration: underline; }
+
+        .collection-added {
+            font-size: 12px;
+            color: #bbb;
+            white-space: nowrap;
+        }
+
+        .empty-message {
+            color: #bbb;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        .loading { color: #aaa; font-size: 14px; }
+        .error-message { color: #c33; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <a class="back-link" href="{{ SCRIPT_NAME }}/">← Back to search</a>
+
+    <h1 id="project-name">Loading…</h1>
+    <div class="meta" id="project-meta"></div>
+
+    <div class="section" id="description-section" style="display:none">
+        <div class="section-label">Description</div>
+        <div class="section-text" id="description-text"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-label">
+            Notes
+            {% if user.is_authenticated %}
+            <span id="notes-edit-hint" style="font-weight:400;text-transform:none;letter-spacing:0;color:#aaa;font-size:11px;margin-left:6px;">click to edit</span>
+            {% endif %}
+        </div>
+
+        <div id="notes-display" class="section-text empty">No notes yet.</div>
+
+        {% if user.is_authenticated %}
+        <div id="notes-editor">
+            <textarea id="notes-textarea" placeholder="Add notes about this project…"></textarea>
+            <div class="notes-actions">
+                <button class="btn btn-primary" id="notes-save">Save</button>
+                <button class="btn btn-secondary" id="notes-cancel">Cancel</button>
+            </div>
+            <div id="notes-status"></div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <div class="section-label">Collections</div>
+        <div class="loading" id="collections-loading">Loading collections…</div>
+        <div class="collection-count" id="collection-count" style="display:none"></div>
+        <ul class="collection-list" id="collection-list"></ul>
+        <div class="error-message" id="collections-error" style="display:none">Could not load collections.</div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    const apiBase = {{ SCRIPT_NAME|default:"''"|safe }} + '/api';
+    const username = {{ project_username|safe }};
+    const slug = {{ project_slug|safe }};
+    const authenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
+    let currentNotes = '';
+
+    function getCsrfToken() {
+        const name = 'csrftoken';
+        for (const c of document.cookie.split(';')) {
+            const [k, v] = c.trim().split('=');
+            if (k === name) return decodeURIComponent(v);
+        }
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function formatDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+    }
+
+    async function load() {
+        try {
+            const resp = await fetch(
+                `${apiBase}/projects/${username}/${slug}/`,
+                {credentials: 'same-origin'}
+            );
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            document.title = data.name + ' - SKOL';
+            document.getElementById('project-name').textContent = data.name;
+            document.getElementById('project-meta').textContent =
+                `Created by ${data.creator_username} · ${formatDate(data.created_at)}`;
+
+            if (data.description) {
+                document.getElementById('description-text').textContent = data.description;
+                document.getElementById('description-section').style.display = '';
+            }
+
+            currentNotes = data.notes || '';
+            renderNotes();
+
+            renderCollections(data.memberships || []);
+        } catch (e) {
+            document.getElementById('project-name').textContent = 'Error loading project';
+            document.getElementById('collections-loading').style.display = 'none';
+            document.getElementById('collections-error').style.display = '';
+        }
+    }
+
+    function renderNotes() {
+        const display = document.getElementById('notes-display');
+        if (currentNotes) {
+            display.textContent = currentNotes;
+            display.classList.remove('empty');
+        } else {
+            display.textContent = 'No notes yet.';
+            display.classList.add('empty');
+        }
+    }
+
+    function renderCollections(memberships) {
+        const loading = document.getElementById('collections-loading');
+        const countEl = document.getElementById('collection-count');
+        const list = document.getElementById('collection-list');
+
+        loading.style.display = 'none';
+        countEl.style.display = '';
+
+        if (memberships.length === 0) {
+            countEl.textContent = 'No collections yet.';
+            return;
+        }
+
+        countEl.textContent = `${memberships.length} collection${memberships.length !== 1 ? 's' : ''}`;
+
+        for (const m of memberships) {
+            const c = m.collection;
+            const li = document.createElement('li');
+            li.className = 'collection-item';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'collection-name';
+            nameSpan.textContent = c.name || `Collection ${c.collection_id}`;
+            li.appendChild(nameSpan);
+
+            const addedSpan = document.createElement('span');
+            addedSpan.className = 'collection-added';
+            addedSpan.textContent = `Added ${formatDate(m.added_at)}`;
+            li.appendChild(addedSpan);
+
+            const link = document.createElement('a');
+            link.className = 'collection-link';
+            link.href = `${window.location.origin}{% url 'collection-detail-page' collection_id=0 %}`.replace('/0/', `/${c.collection_id}/`);
+            link.textContent = 'View details';
+            li.appendChild(link);
+
+            list.appendChild(li);
+        }
+    }
+
+    // Notes editing (authenticated only)
+    if (authenticated) {
+        const display = document.getElementById('notes-display');
+        const editor = document.getElementById('notes-editor');
+        const textarea = document.getElementById('notes-textarea');
+        const saveBtn = document.getElementById('notes-save');
+        const cancelBtn = document.getElementById('notes-cancel');
+        const statusEl = document.getElementById('notes-status');
+        const editHint = document.getElementById('notes-edit-hint');
+
+        function openEditor() {
+            display.style.display = 'none';
+            if (editHint) editHint.style.display = 'none';
+            textarea.value = currentNotes;
+            editor.style.display = '';
+            textarea.focus();
+        }
+
+        function closeEditor() {
+            editor.style.display = 'none';
+            if (editHint) editHint.style.display = '';
+            display.style.display = '';
+            statusEl.textContent = '';
+            statusEl.className = '';
+        }
+
+        display.addEventListener('click', openEditor);
+
+        cancelBtn.addEventListener('click', closeEditor);
+
+        saveBtn.addEventListener('click', async () => {
+            const newNotes = textarea.value;
+            saveBtn.disabled = true;
+            statusEl.textContent = 'Saving…';
+            statusEl.className = '';
+            try {
+                const resp = await fetch(
+                    `${apiBase}/projects/${username}/${slug}/`,
+                    {
+                        method: 'PATCH',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCsrfToken(),
+                        },
+                        body: JSON.stringify({notes: newNotes}),
+                    }
+                );
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                currentNotes = data.notes || '';
+                renderNotes();
+                statusEl.textContent = 'Saved.';
+                statusEl.className = 'success';
+                setTimeout(closeEditor, 800);
+            } catch (e) {
+                statusEl.textContent = 'Save failed. Please try again.';
+                statusEl.className = 'error';
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    }
+
+    load();
+})();
+</script>
+</body>
+</html>

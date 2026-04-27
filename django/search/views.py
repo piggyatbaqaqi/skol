@@ -3432,11 +3432,18 @@ class ProjectListCreateView(APIView):
 
 class ProjectDetailView(APIView):
     """
-    GET /api/projects/<username>/<slug>/
-    Retrieve a project and its current collection memberships.
+    GET   /api/projects/<username>/<slug>/
+          Retrieve a project and its current collection memberships.
+
+    PATCH /api/projects/<username>/<slug>/
+          Update mutable text fields (``notes``, ``description``).
+          Requires authentication.  Ignores unknown fields.
     """
 
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'PATCH':
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get(self, request, username, slug):
         from .models import Project
@@ -3455,6 +3462,27 @@ class ProjectDetailView(APIView):
             memberships, many=True
         ).data
         return Response(data)
+
+    def patch(self, request, username, slug):
+        from .models import Project
+        from .serializers import ProjectSerializer
+
+        project = get_object_or_404(
+            Project.objects.select_related('creator'),
+            creator__username=username,
+            slug=slug,
+        )
+        _PATCHABLE = {'notes', 'description'}
+        changed = False
+        for field in _PATCHABLE:
+            if field in request.data:
+                setattr(project, field, request.data[field])
+                changed = True
+        if changed:
+            project.save(update_fields=list(
+                _PATCHABLE & set(request.data.keys())
+            ))
+        return Response(ProjectSerializer(project).data)
 
 
 class ProjectCollectionMembershipView(APIView):
