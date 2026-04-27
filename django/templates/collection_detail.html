@@ -676,6 +676,8 @@
                 `;
             }
 
+            const searchUrl = `${API_BASE}/?collection=${collection.collection_id}`;
+
             let html = `
                 ${hiddenBanner}
                 <div class="header-actions">
@@ -684,8 +686,12 @@
                         <div class="collection-id">ID: ${collection.collection_id} | Owner: ${escapeHtml(collection.owner_username)}</div>
                         ${collection.nomenclature ? `<div class="collection-nomenclature"><span class="label">Nomenclature:</span> ${escapeHtml(collection.nomenclature)}</div>` : ''}
                         ${collection.notes ? `<p class="collection-description">${escapeHtml(collection.notes)}</p>` : ''}
+                        ${collection.description ? `<div style="margin-top:10px"><span style="font-size:0.8em;font-weight:600;color:#667eea;text-transform:uppercase;letter-spacing:0.05em">Description</span><p class="collection-description" style="margin-top:4px;white-space:pre-wrap">${escapeHtml(collection.description)}</p></div>` : ''}
                     </div>
-                    ${ownerActions}
+                    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                        <a href="${searchUrl}" style="display:inline-block;padding:6px 12px;font-size:0.85em;font-weight:600;background:#f0f0f0;color:#333;border:1px solid #ddd;border-radius:6px;text-decoration:none;white-space:nowrap">Open in search →</a>
+                        ${ownerActions}
+                    </div>
                 </div>
 
                 <!-- Collection History Section -->
