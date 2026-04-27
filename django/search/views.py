@@ -3702,44 +3702,38 @@ class ImportView(APIView):
         except DjangoUser.DoesNotExist:
             creator = request.user
 
-        # Resolve slug collision for this creator.
-        base_slug = project_data.get('slug') or Project.generate_slug(
+        # Upsert: if the same creator/slug already exists, update it.
+        slug = project_data.get('slug') or Project.generate_slug(
             project_data['name']
         )
-        slug = base_slug
-        counter = 2
-        existing_qs = Project.objects.filter(creator=creator)
-        while existing_qs.filter(slug=slug).exists():
-            slug = f'{base_slug}-{counter}'
-            counter += 1
-
-        project = Project.objects.create(
-            name=project_data['name'],
-            slug=slug,
+        project, _ = Project.objects.update_or_create(
             creator=creator,
-            description=project_data.get('description', ''),
-            notes=project_data.get('notes', ''),
+            slug=slug,
+            defaults={
+                'name': project_data['name'],
+                'description': project_data.get('description', ''),
+                'notes': project_data.get('notes', ''),
+            },
         )
 
-        # Import collections.
+        # Import / update collections.
         membership_ids = {
             m['collection_id']
             for m in project_data.get('current_memberships', [])
         }
-        imported = 0
-        linked = 0
+        created = 0
+        updated = 0
 
         for cid in membership_ids:
-            try:
-                coll = Collection.objects.get(collection_id=cid)
-                linked += 1
-            except Collection.DoesNotExist:
-                coll = self._create_collection(
-                    request, zf, cid, creator_username
-                )
-                if coll is None:
-                    continue
-                imported += 1
+            coll, was_created = self._upsert_collection(
+                request, zf, cid, creator_username
+            )
+            if coll is None:
+                continue
+            if was_created:
+                created += 1
+            else:
+                updated += 1
 
             CollectionProject.objects.get_or_create(
                 collection=coll,
@@ -3756,41 +3750,51 @@ class ImportView(APIView):
             'project_name': project.name,
             'namespaced_slug': f'{creator.username}/{slug}',
             'project_url': project_url,
-            'collections_imported': imported,
-            'collections_linked': linked,
+            'collections_created': created,
+            'collections_updated': updated,
         })
 
-    def _create_collection(
+    def _upsert_collection(
         self,
         request,
         zf: 'zipfile.ZipFile',
         collection_id: int,
         original_creator_username: str,
     ):
-        """Create a Collection from the ZIP's collections/<id>.json entry."""
+        """
+        Create or update a Collection from the ZIP's collections/<id>.json.
+
+        Returns (collection, created) tuple, or (None, False) if no data found.
+        """
         import json
         from django.contrib.auth.models import User as DjangoUser
         from .models import Collection
 
         path = f'collections/{collection_id}.json'
         if path not in set(zf.namelist()):
-            return None
+            # No ZIP data: try to fetch existing record so it can be linked.
+            try:
+                return Collection.objects.get(collection_id=collection_id), False
+            except Collection.DoesNotExist:
+                return None, False
 
         coll_data = json.loads(zf.read(path))
 
         # Use original owner if they exist on this instance.
         try:
-            owner = DjangoUser.objects.get(
-                username=original_creator_username
-            )
+            owner = DjangoUser.objects.get(username=original_creator_username)
         except DjangoUser.DoesNotExist:
             owner = request.user
 
-        return Collection.objects.create(
+        fields = {
+            'owner': owner,
+            'name': coll_data.get('name', f'Collection {collection_id}'),
+            'description': coll_data.get('description', ''),
+            'notes': coll_data.get('notes', ''),
+            'nomenclature': coll_data.get('nomenclature', ''),
+        }
+        coll, created = Collection.objects.update_or_create(
             collection_id=collection_id,
-            owner=owner,
-            name=coll_data.get('name', f'Collection {collection_id}'),
-            description=coll_data.get('description', ''),
-            notes=coll_data.get('notes', ''),
-            nomenclature=coll_data.get('nomenclature', ''),
+            defaults=fields,
         )
+        return coll, created

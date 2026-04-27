@@ -163,18 +163,26 @@ class TestImportView(TestCase):
         assert project.description == 'A field guide.'
         assert project.notes == 'Started 2026.'
 
-    def test_import_project_slug_collision_resolved(self) -> None:
-        """If slug already exists for that creator, import picks test-project-2."""
+    def test_reimport_updates_existing_project(self) -> None:
+        """Re-importing the same creator/slug updates the existing project record."""
         self.client.login(username='importer', password='pw')
-        # First import creates test-project
-        self.client.post(self.url, {'file': _uploaded(_project_zip())})
-        # Second import with same slug gets a suffix
-        self.client.post(self.url, {'file': _uploaded(_project_zip())})
-        slugs = list(
-            Project.objects.filter(creator=self.user).values_list('slug', flat=True)
-        )
-        assert 'test-project' in slugs
-        assert 'test-project-2' in slugs
+        self.client.post(self.url, {'file': _uploaded(_project_zip(
+            description='Original desc.', notes='Original notes.',
+        ))})
+        project = Project.objects.get(name='Test Project', creator=self.user)
+        original_pk = project.pk
+
+        # Re-import with updated metadata.
+        self.client.post(self.url, {'file': _uploaded(_project_zip(
+            description='Updated desc.', notes='Updated notes.',
+        ))})
+
+        # Still only one project record.
+        assert Project.objects.filter(creator=self.user, slug='test-project').count() == 1
+        project.refresh_from_db()
+        assert project.pk == original_pk
+        assert project.description == 'Updated desc.'
+        assert project.notes == 'Updated notes.'
 
     def test_import_project_creates_new_collection(self) -> None:
         """Collections from the ZIP that don't exist locally are created."""
@@ -190,27 +198,32 @@ class TestImportView(TestCase):
             project=project, collection__collection_id=123456789
         ).exists()
 
-    def test_import_project_links_existing_collection_without_overwriting(self) -> None:
-        """If a collection_id already exists, it is linked but its data unchanged."""
+    def test_reimport_updates_existing_collection(self) -> None:
+        """If a collection_id already exists, its data is updated from the ZIP."""
         existing = Collection.objects.create(
             owner=self.user, collection_id=111111111, name='Original Name',
+            description='old desc', notes='old notes', nomenclature='Old taxon',
         )
         self.client.login(username='importer', password='pw')
-        colls = [{'collection_id': 111111111, 'name': 'New Name', 'description': '',
-                   'notes': '', 'nomenclature': '', 'hidden': False,
+        colls = [{'collection_id': 111111111, 'name': 'New Name',
+                   'description': 'new desc', 'notes': 'new notes',
+                   'nomenclature': 'New taxon', 'hidden': False,
                    'embargo_until': None, 'search_history': [],
                    'external_identifiers': []}]
         self.client.post(self.url, {'file': _uploaded(_project_zip(collections=colls))})
         existing.refresh_from_db()
-        assert existing.name == 'Original Name'  # not overwritten
+        assert existing.name == 'New Name'
+        assert existing.description == 'new desc'
+        assert existing.notes == 'new notes'
+        assert existing.nomenclature == 'New taxon'
         project = Project.objects.get(name='Test Project')
         assert CollectionProject.objects.filter(
             project=project, collection=existing
         ).exists()
 
     def test_import_response_includes_counts(self) -> None:
-        """Response includes collections_imported and collections_linked counts."""
-        existing = Collection.objects.create(
+        """Response includes collections_created and collections_updated counts."""
+        Collection.objects.create(
             owner=self.user, collection_id=222222222, name='Pre-existing',
         )
         self.client.login(username='importer', password='pw')
@@ -226,5 +239,5 @@ class TestImportView(TestCase):
             self.url, {'file': _uploaded(_project_zip(collections=colls))}
         )
         data = response.json()
-        assert data['collections_imported'] == 1
-        assert data['collections_linked'] == 1
+        assert data['collections_created'] == 1
+        assert data['collections_updated'] == 1
