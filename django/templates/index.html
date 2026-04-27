@@ -1315,12 +1315,13 @@
                 </div>
             </div>
             <!-- Project membership bar (visible when collection is active) -->
-            <div id="collectionProjectsContainer"
-                 data-project-memberships
-                 data-api-base-url="{{ SCRIPT_NAME }}/api"
-                 data-listen-collection-changed="true"
-                 data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
-                 style="margin-top: 10px;">
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #d0d8f0;">
+                <div id="collectionProjectsContainer"
+                     data-project-memberships
+                     data-api-base-url="{{ SCRIPT_NAME }}/api"
+                     data-listen-collection-changed="true"
+                     data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}">
+                </div>
             </div>
         </div>
         {% endif %}

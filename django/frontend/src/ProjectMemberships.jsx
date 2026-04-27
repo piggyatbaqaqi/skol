@@ -39,6 +39,7 @@ const ProjectMemberships = ({
   collectionId: collectionIdProp,
   authenticated = false,
   listenForCollectionChange = false,
+  compact = false,
 }) => {
   // In "listen" mode the collection ID comes from the collection-changed event;
   // null means no collection is active (component renders nothing).
@@ -60,6 +61,7 @@ const ProjectMemberships = ({
   const [projectOptions, setProjectOptions] = useState([]); // all projects as options
   const [adding, setAdding]           = useState(false);
   const [status, setStatus]           = useState(null); // {type:'success'|'error', msg}
+  const [statusVisible, setStatusVisible] = useState(false);
 
   // In listen mode, reset state whenever the collection switches.
   useEffect(() => {
@@ -73,7 +75,15 @@ const ProjectMemberships = ({
 
   // ---- helpers --------------------------------------------------------
 
-  const clearStatus = () => setStatus(null);
+  const clearStatus = () => { setStatus(null); setStatusVisible(false); };
+
+  // In compact mode, show status briefly then fade out.
+  useEffect(() => {
+    if (!compact || !status) return;
+    setStatusVisible(true);
+    const t = setTimeout(clearStatus, 3000);
+    return () => clearTimeout(t);
+  }, [status, compact]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parse username/slug from namespaced slug
   const splitSlug = (namespacedSlug) => {
@@ -223,6 +233,69 @@ const ProjectMemberships = ({
   if (loading) return <div className="project-memberships"><span style={{ color: '#aaa', fontSize: 13 }}>Loading projects…</span></div>;
   if (error)   return <div className="project-memberships"><span style={{ color: '#c33', fontSize: 13 }}>Could not load projects.</span></div>;
 
+  // ---- compact single-line render ------------------------------------
+  if (compact) {
+    return (
+      <div className="project-memberships-compact">
+        <label className="project-memberships-compact-label">Projects:</label>
+
+        {memberships.length === 0 ? (
+          <span className="project-memberships-compact-empty">Not in any project.</span>
+        ) : (
+          <ul className="project-membership-list">
+            {memberships.map((m) => (
+              <li key={m.slug} className="project-membership-item">
+                <span>{m.name}</span>
+                {authenticated && (
+                  <button
+                    className="project-membership-remove"
+                    title={`Remove from ${m.name}`}
+                    onClick={() => handleRemove(m.slug)}
+                    aria-label={`Remove from ${m.name}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {authenticated && (
+          <>
+            <div className="project-memberships-compact-select">
+              <CreatableSelect
+                options={projectOptions}
+                value={addOption}
+                onChange={setAddOption}
+                onCreateOption={handleCreate}
+                isDisabled={adding}
+                isClearable
+                placeholder="Add or create project…"
+                formatCreateLabel={(input) => `Create "${input}"`}
+                styles={creatableStyles}
+                classNamePrefix="project"
+                noOptionsMessage={() => 'Type a name to create'}
+              />
+            </div>
+            <button
+              className="project-memberships-add-btn"
+              onClick={handleAdd}
+              disabled={!addOption || adding}
+            >
+              {adding ? '…' : 'Add'}
+            </button>
+          </>
+        )}
+
+        <span className={`project-memberships-compact-status ${status ? status.type : ''} ${statusVisible ? 'visible' : ''}`}>
+          {status ? status.msg : ''}
+        </span>
+      </div>
+    );
+  }
+
+  // ---- full stacked render -------------------------------------------
   return (
     <div className="project-memberships">
       <div className="project-memberships-title">Projects</div>

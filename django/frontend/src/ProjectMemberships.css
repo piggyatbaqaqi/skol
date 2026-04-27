@@ -107,3 +107,65 @@
 .project-memberships-status.success {
   color: #2a7a2a;
 }
+
+/* ------------------------------------------------------------------ */
+/* Compact single-line variant (used inside the collection panel)      */
+/* ------------------------------------------------------------------ */
+
+.project-memberships-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.project-memberships-compact-label {
+  margin: 0;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  font-size: 1em;
+}
+
+.project-memberships-compact .project-membership-list {
+  margin: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.project-memberships-compact .project-membership-item {
+  font-size: 12px;
+  padding: 2px 8px 2px 10px;
+}
+
+.project-memberships-compact-empty {
+  color: #bbb;
+  font-size: 13px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.project-memberships-compact-select {
+  flex: 1;
+  min-width: 180px;
+  max-width: 300px;
+}
+
+.project-memberships-compact-status {
+  font-size: 0.85em;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.project-memberships-compact-status.visible {
+  opacity: 1;
+}
+
+.project-memberships-compact-status.error {
+  color: #c33;
+}
+
+.project-memberships-compact-status.success {
+  color: #28a745;
+}

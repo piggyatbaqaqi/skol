@@ -41,6 +41,7 @@ function initProjectMemberships() {
         collectionId={collectionId}
         authenticated={authenticated}
         listenForCollectionChange={listenForCollectionChange}
+        compact={listenForCollectionChange}
       />
     );
 
