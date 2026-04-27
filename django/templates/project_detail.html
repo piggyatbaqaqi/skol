@@ -370,13 +370,12 @@
         countEl.textContent = `${memberships.length} collection${memberships.length !== 1 ? 's' : ''}`;
 
         for (const m of memberships) {
-            const c = m.collection;
             const li = document.createElement('li');
             li.className = 'collection-item';
 
             const nameSpan = document.createElement('span');
             nameSpan.className = 'collection-name';
-            nameSpan.textContent = c.name || `Collection ${c.collection_id}`;
+            nameSpan.textContent = m.collection_name || `Collection ${m.collection_id}`;
             li.appendChild(nameSpan);
 
             const addedSpan = document.createElement('span');
@@ -386,7 +385,7 @@
 
             const link = document.createElement('a');
             link.className = 'collection-link';
-            link.href = `${window.location.origin}{% url 'collection-detail-page' collection_id=0 %}`.replace('/0/', `/${c.collection_id}/`);
+            link.href = `${window.location.origin}{% url 'collection-detail-page' collection_id=0 %}`.replace('/0/', `/${m.collection_id}/`);
             link.textContent = 'View details';
             li.appendChild(link);
 
