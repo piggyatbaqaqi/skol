@@ -354,7 +354,15 @@ def main() -> int:
 
     plaintext_db = server[args.plaintext_db]
     yedda_db = server[args.yedda_db]
-    output_db = server[args.output_db] if not args.dry_run else None
+    if not args.dry_run:
+        try:
+            output_db = server[args.output_db]
+        except couchdb.http.ResourceNotFound:
+            output_db = server.create(args.output_db)
+            if args.verbosity >= 1:
+                print(f"Created database: {args.output_db}")
+    else:
+        output_db = None
 
     # Collect doc IDs to process.
     if args.doc_id:
