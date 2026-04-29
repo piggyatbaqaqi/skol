@@ -359,7 +359,7 @@ def main() -> int:
             output_db = server[args.output_db]
         except couchdb.http.ResourceNotFound:
             output_db = server.create(args.output_db)
-            if args.verbosity >= 1:
+            if args.verbose:
                 print(f"Created database: {args.output_db}")
     else:
         output_db = None
