@@ -239,8 +239,18 @@ class PDFSectionExtractor:
                 "text",
                 flags=fitz.TEXT_PRESERVE_WHITESPACE | fitz.TEXT_DEHYPHENATE
             )
-            # Get page label from PDF metadata, fall back to page number if empty
-            page_label = page.get_label() or str(page_num + 1)
+            # Get page label from PDF metadata, fall back to page number if empty.
+            # Some non-standard PDFs raise AssertionError inside get_label()
+            # (PyMuPDF _as_pdf_document assertion); fall back gracefully.
+            try:
+                page_label = page.get_label() or str(page_num + 1)
+            except (AssertionError, Exception) as exc:
+                if self.verbosity >= 1:
+                    print(
+                        f"  Warning: get_label() failed on page {page_num + 1}"
+                        f" ({type(exc).__name__}); using page number"
+                    )
+                page_label = str(page_num + 1)
             full_text += f"\n--- PDF Page {page_num+1} Label {page_label} ---\n"
             full_text += text
 
