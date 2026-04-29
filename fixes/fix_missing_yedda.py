@@ -26,15 +26,17 @@ Usage::
 """
 
 import argparse
+import difflib
 import re
 import sys
+import unicodedata
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
 
-from env_config import get_env_config  # type: ignore[import]
+from env_config import get_env_config  # type: ignore[import]  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Regex patterns
@@ -76,6 +78,26 @@ def _strip_leading_page_marker(text: str) -> Tuple[Optional[str], str]:
     return None, text
 
 
+_FUZZY_THRESHOLD = 0.95  # minimum SequenceMatcher ratio to accept a match
+_FUZZY_SLOP = 20         # extra chars on each side of the candidate window
+
+
+def _nfkc_map(text: str) -> Tuple[str, List[int]]:
+    """Return (nfkc_text, orig_offsets).
+
+    ``orig_offsets[i]`` is the index in *text* of the original character
+    whose NFKC expansion produced ``nfkc_text[i]``.  Useful for mapping a
+    match position in normalised space back to the original string.
+    """
+    parts: List[str] = []
+    orig: List[int] = []
+    for i, ch in enumerate(text):
+        n = unicodedata.normalize("NFKC", ch)
+        parts.append(n)
+        orig.extend([i] * len(n))
+    return "".join(parts), orig
+
+
 def find_block_in_text(
     block_text: str,
     haystack: str,
@@ -87,6 +109,12 @@ def find_block_in_text(
       1. Exact substring match.
       2. Match after stripping a leading PDF page-marker line.
       3. Match with whitespace normalised (runs of whitespace → single space).
+      4. NFKC-normalised exact match (handles typographic ligatures such as
+         ﬁ → fi and fullwidth / halfwidth variants).
+      5. difflib fuzzy match on original text (handles single-character OCR
+         substitutions that are not resolved by NFKC).  Uses NFKC to locate
+         a candidate region, then scores with SequenceMatcher against the
+         original haystack so returned offsets require no remapping.
 
     Returns:
         (start, end, effective_text) on success, or (-1, -1, '') if not found.
@@ -115,7 +143,64 @@ def find_block_in_text(
         end = search_from + m.end()
         return start, end, haystack[start:end]
 
-    return -1, -1, ""
+    # 4. NFKC-normalised exact match.
+    #    Build a position map for the search region so we can recover original
+    #    offsets after matching in normalised space.
+    norm_block = unicodedata.normalize("NFKC", block_text)
+    norm_hay_region, hay_map = _nfkc_map(haystack[search_from:])
+    npos = norm_hay_region.find(norm_block)
+    if npos >= 0:
+        orig_start = search_from + hay_map[npos]
+        orig_end = search_from + hay_map[npos + len(norm_block) - 1] + 1
+        return orig_start, orig_end, haystack[orig_start:orig_end]
+
+    # 5. difflib fuzzy match.
+    #    Try anchors at three positions (start, ⅓, ⅔) within the NFKC-
+    #    normalised block to locate a candidate region even when the OCR error
+    #    falls in the first part of the block.  Once a candidate region is
+    #    found, score SequenceMatcher against the *original* haystack so
+    #    returned offsets need no remapping.
+    anchor_len = max(10, min(30, len(norm_block) // 3))
+    anchor_offsets = [0]
+    if len(norm_block) > anchor_len * 2:
+        anchor_offsets += [len(norm_block) // 3, 2 * len(norm_block) // 3]
+
+    orig_approx: Optional[int] = None
+    for aoff in anchor_offsets:
+        anchor = norm_block[aoff: aoff + anchor_len]
+        npos_approx = norm_hay_region.find(anchor)
+        if npos_approx >= 0:
+            # Estimate where the start of the block falls in the original.
+            norm_block_start = max(0, npos_approx - aoff)
+            orig_approx = search_from + hay_map[norm_block_start]
+            break
+
+    if orig_approx is None:
+        return -1, -1, ""
+
+    # Slide a same-length window ± SLOP around the estimated position.
+    # Comparing equal-length strings keeps SequenceMatcher.ratio() meaningful;
+    # a wider window would dilute the score even with one-char differences.
+    blen = len(block_text)
+    best_ratio = 0.0
+    best_start = -1
+    for offset in range(-_FUZZY_SLOP, _FUZZY_SLOP + 1):
+        cand_start = orig_approx + offset
+        cand_end = cand_start + blen
+        if cand_start < search_from or cand_end > len(haystack):
+            continue
+        cand = haystack[cand_start:cand_end]
+        ratio = difflib.SequenceMatcher(
+            None, block_text, cand, autojunk=False
+        ).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_start = cand_start
+
+    if best_ratio < _FUZZY_THRESHOLD or best_start < 0:
+        return -1, -1, ""
+    best_end = best_start + blen
+    return best_start, best_end, haystack[best_start:best_end]
 
 
 def split_gap(gap_text: str) -> List[Block]:
@@ -324,7 +409,9 @@ def main() -> int:
         "--output-db",
         required=True,
         metavar="DB",
-        help="CouchDB database to receive rebuilt article.txt.ann attachments.",
+        help=(
+            "CouchDB database to receive rebuilt article.txt.ann attachments."
+        ),
     )
     parser.add_argument(
         "--doc-id",
