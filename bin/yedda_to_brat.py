@@ -110,7 +110,12 @@ def yedda_to_brat(
     """
     blocks: List[Tuple[str, str]] = []
     for match in _YEDDA_BLOCK_RE.finditer(yedda_text):
-        text = _strip_line_leading_ws(match.group(1))
+        # Normalise OCR artefact: literal \n (0x5C 0x6E, backslash + n) → actual
+        # newline.  Without this, brat's single-pass unescape converts the \n in
+        # the .ann text field to a newline while the .txt file retains the two-byte
+        # sequence, causing a text-mismatch parse error in brat.
+        raw = match.group(1).replace("\\n", "\n")
+        text = _strip_line_leading_ws(raw)
         tag = match.group(2).strip()
         if not text:  # skip empty blocks — they produce zero-length brat spans
             continue
