@@ -355,7 +355,7 @@ def three_way_merge_yedda(
             output_items.append(
                 format_conflict(orig_block_text, label, new_context)
             )
-            prev_end = max(prev_end, new_end)
+            prev_end = max(prev_end, new_start + len(new_context))
 
     # Trailing gap.
     if prev_end < len(new_text):

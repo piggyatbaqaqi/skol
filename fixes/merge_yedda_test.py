@@ -321,6 +321,32 @@ class TestThreeWayMergeYedda:
         assert "<<<<<<< annotation" in result
         assert "[@orphan block text#Nomenclature*]" in result
 
+    def test_uncertain_block_new_context_not_duplicated_in_gap(self) -> None:
+        """new_ocr conflict context must not reappear in the To-review gap.
+
+        When an uncertain block's new_context is taken from new_text[est:est+n],
+        prev_end must advance past est+n so the gap fill for the next block
+        does not re-include that same slice.
+        """
+        # orig: small "aaa" block, then 8-char "gone_xyz", then "bbb".
+        # new_text replaces "gone_xyz" region with "gap_content" (11 chars)
+        # and keeps "aaa" and "bbb".  Because est > prev_end after placing
+        # "aaa", new_context covers "gap_cont" (first 8 chars of "gap_content").
+        # Without the fix, "gap_cont" also appears in the To-review gap; with
+        # the fix, prev_end advances past new_context and only "ent" remains.
+        orig_ann = (
+            "[@aaa#Nomenclature*]\n\n"
+            "[@gone_xyz#Description*]\n\n"
+            "[@bbb#Nomenclature*]"
+        )
+        reviewed_ann = orig_ann
+        new_text = "aaa\n\ngap_content\n\nbbb"
+        result = three_way_merge_yedda(orig_ann, reviewed_ann, new_text)
+        assert "<<<<<<< annotation" in result
+        # "gap_cont" (prefix of gap_content, same as new_context) should appear
+        # exactly once — inside the conflict marker — not again as To-review.
+        assert result.count("gap_cont") == 1
+
     def test_output_is_valid_where_uncontested(self) -> None:
         """Clean blocks parse as valid YEDDA; conflict markers are outside blocks."""
         import re
