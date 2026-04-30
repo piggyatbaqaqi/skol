@@ -19,9 +19,10 @@ from merge_yedda import (  # type: ignore[import]
 # find_in_text — page-marker stripping (strategy 2)
 # ---------------------------------------------------------------------------
 
+
 class TestFindInTextPageMarker:
     def test_page_marker_prefix_stripped_exact(self) -> None:
-        """Block with synthetic --- PDF Page N --- prefix finds remainder exactly."""
+        """Synthetic PDF-Page prefix is stripped; remainder found."""
         block = "--- PDF Page 2 Label 2 ---\n110 Vitoria & al."
         hay = "110 Vitoria & al."
         start, end = find_in_text(block, hay)
@@ -29,7 +30,7 @@ class TestFindInTextPageMarker:
         assert end == len(hay)
 
     def test_page_marker_prefix_stripped_within_haystack(self) -> None:
-        """Remainder found in a larger haystack at the correct offset."""
+        """Remainder found at correct offset inside larger haystack."""
         block = "--- PDF Page 3 Label 3 ---\nRunning Header Text"
         hay = "some preamble\n\nRunning Header Text\n\nmore text"
         start, end = find_in_text(block, hay)
@@ -37,7 +38,7 @@ class TestFindInTextPageMarker:
         assert hay[start:end] == "Running Header Text"
 
     def test_page_marker_prefix_no_remainder_returns_minus_one(self) -> None:
-        """Block is only the page marker line (no text after it) → not found."""
+        """Block has no text after marker line → not found."""
         block = "--- PDF Page 1 Label 1 ---"
         hay = "some text here"
         start, end = find_in_text(block, hay)
@@ -45,7 +46,7 @@ class TestFindInTextPageMarker:
         assert end == -1
 
     def test_page_marker_prefix_remainder_not_in_haystack(self) -> None:
-        """Remainder is present as prefix but not in haystack → -1."""
+        """Remainder not in haystack → -1."""
         block = "--- PDF Page 4 Label 4 ---\nMissing Header"
         hay = "completely different content"
         start, end = find_in_text(block, hay)
@@ -53,7 +54,7 @@ class TestFindInTextPageMarker:
         assert end == -1
 
     def test_non_marker_block_unaffected(self) -> None:
-        """Block without a page-marker prefix still works normally."""
+        """Block without page-marker prefix still works normally."""
         block = "plain text block"
         hay = "before plain text block after"
         start, end = find_in_text(block, hay)
@@ -62,12 +63,50 @@ class TestFindInTextPageMarker:
 
 
 # ---------------------------------------------------------------------------
+# find_in_text — search_from parameter
+# ---------------------------------------------------------------------------
+
+
+class TestFindInTextSearchFrom:
+    def test_search_from_zero_finds_first(self) -> None:
+        hay = "abc abc"
+        start, end = find_in_text("abc", hay, search_from=0)
+        assert start == 0
+
+    def test_search_from_past_first_finds_second(self) -> None:
+        hay = "abc abc"
+        start, end = find_in_text("abc", hay, search_from=1)
+        assert start == 4
+
+    def test_search_from_past_all_returns_minus_one(self) -> None:
+        hay = "abc"
+        start, end = find_in_text("abc", hay, search_from=1)
+        assert start == -1
+
+    def test_search_from_default_is_zero(self) -> None:
+        hay = "hello world"
+        s1, _ = find_in_text("hello", hay)
+        s2, _ = find_in_text("hello", hay, search_from=0)
+        assert s1 == s2 == 0
+
+    def test_search_from_with_page_marker_strip(self) -> None:
+        """search_from is respected when page-marker stripping fires."""
+        hay = "Header\n\nHeader"
+        block = "--- PDF Page 1 Label 1 ---\nHeader"
+        s1, e1 = find_in_text(block, hay, search_from=0)
+        assert s1 == 0
+        s2, e2 = find_in_text(block, hay, search_from=1)
+        assert s2 == 8
+
+
+# ---------------------------------------------------------------------------
 # three_way_merge_yedda — page-header integration
 # ---------------------------------------------------------------------------
 
+
 class TestThreeWayMergePageHeader:
     def test_synthetic_page_header_placed_not_orphaned(self) -> None:
-        """Page-header block with synthetic --- PDF Page --- prefix is placed."""
+        """Page-header with synthetic PDF-Page prefix is placed inline."""
         orig_ann = (
             "[@first block#Nomenclature*]\n\n"
             "[@110 Running Header#Page-header*]\n\n"
@@ -76,14 +115,14 @@ class TestThreeWayMergePageHeader:
         # reviewed_ann has a synthetic prefix on the Page-header block
         reviewed_ann = (
             "[@first block#Nomenclature*]\n\n"
-            "[@--- PDF Page 2 Label 2 ---\n110 Running Header#Page-header*]\n\n"
+            "[@--- PDF Page 2 Label 2 ---\n"
+            "110 Running Header#Page-header*]\n\n"
             "[@second block#Description*]"
         )
         new_text = "first block\n\n110 Running Header\n\nsecond block"
         result = three_way_merge_yedda(orig_ann, reviewed_ann, new_text)
-        # Page-header should be placed inline, not as a conflict marker at end
+        # Page-header should be placed inline, not as a conflict marker
         assert "Page-header" in result
-        # Should not be orphaned as a conflict
         assert "<<<<<<< annotation" not in result
 
 

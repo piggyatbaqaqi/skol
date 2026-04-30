@@ -173,8 +173,9 @@ def format_conflict(
 def find_in_text(
     block_text: str,
     haystack: str,
+    search_from: int = 0,
 ) -> Tuple[int, int]:
-    """Locate block_text anywhere in haystack.
+    """Locate block_text in haystack at or after search_from.
 
     Returns (start, end) or (-1, -1).
     Tries: exact, page-marker strip, NFKC-normalised, difflib fuzzy
@@ -182,10 +183,13 @@ def find_in_text(
     """
     import unicodedata
 
+    region = haystack[search_from:]
+
     # 1. Exact.
-    pos = haystack.find(block_text)
+    pos = region.find(block_text)
     if pos >= 0:
-        return pos, pos + len(block_text)
+        abs_pos = search_from + pos
+        return abs_pos, abs_pos + len(block_text)
 
     # 2. Strip synthetic --- PDF Page N Label N --- prefix and retry.
     first_nl = block_text.find("\n")
@@ -193,9 +197,10 @@ def find_in_text(
         first_line = block_text[:first_nl].strip()
         remainder = block_text[first_nl + 1:].strip()
         if _PAGE_MARKER_RE.match(first_line) and remainder:
-            pos = haystack.find(remainder)
+            pos = region.find(remainder)
             if pos >= 0:
-                return pos, pos + len(remainder)
+                abs_pos = search_from + pos
+                return abs_pos, abs_pos + len(remainder)
 
     # 3. NFKC.
     def _nfkc_map(text: str) -> Tuple[str, List[int]]:
@@ -208,11 +213,11 @@ def find_in_text(
         return "".join(parts), orig
 
     norm_block = unicodedata.normalize("NFKC", block_text)
-    norm_hay, hay_map = _nfkc_map(haystack)
-    npos = norm_hay.find(norm_block)
+    norm_region, region_map = _nfkc_map(region)
+    npos = norm_region.find(norm_block)
     if npos >= 0:
-        orig_start = hay_map[npos]
-        orig_end = hay_map[npos + len(norm_block) - 1] + 1
+        orig_start = search_from + region_map[npos]
+        orig_end = search_from + region_map[npos + len(norm_block) - 1] + 1
         return orig_start, orig_end
 
     # 4. Difflib fuzzy — try anchors at start, ⅓, ⅔ of block.
@@ -224,18 +229,18 @@ def find_in_text(
 
     for aoff in anchor_offsets:
         anchor = norm_block[aoff: aoff + anchor_len]
-        npos_approx = norm_hay.find(anchor)
+        npos_approx = norm_region.find(anchor)
         if npos_approx < 0:
             continue
         norm_block_start = max(0, npos_approx - aoff)
-        orig_approx = hay_map[norm_block_start]
+        orig_approx = search_from + region_map[norm_block_start]
         blen = len(block_text)
         best_ratio = 0.0
         best_start = -1
         for offset in range(-slop, slop + 1):
             cs = orig_approx + offset
             ce = cs + blen
-            if cs < 0 or ce > len(haystack):
+            if cs < search_from or ce > len(haystack):
                 continue
             ratio = difflib.SequenceMatcher(
                 None, block_text, haystack[cs:ce], autojunk=False
@@ -299,30 +304,27 @@ def three_way_merge_yedda(
 
     placed_in_orig.sort(key=lambda t: t[0])
 
-    # --- Step 2: build orig → new position map ---
-    matcher = difflib.SequenceMatcher(
-        None, orig_text, new_text, autojunk=False
-    )
-    pos_map = build_pos_map(matcher.get_matching_blocks())
-
-    # --- Step 3: map each block's position to new_text ---
-    #   Collect as (new_start, new_end, label, block_text, certain)
+    # --- Step 2: find each block directly in new_text, preserving order ---
+    # Searching forward (search_from advances past each placed block) avoids
+    # O(N²) SequenceMatcher on the full document and handles large docs.
     Placed = Tuple[int, int, str, str, bool]
     mapped: List[Placed] = []
+    search_from = 0
 
-    for orig_start, orig_end, label, block_text in placed_in_orig:
-        new_start, start_certain = pos_map(orig_start)
-        # Map the last *inclusive* character of the block, then add 1 to get
-        # the exclusive end.  Mapping orig_end (exclusive) directly fails when
-        # orig_end falls exactly at the boundary of a matching run (it lies
-        # outside the run and is reported as uncertain).
-        if orig_end > orig_start:
-            new_end_char, end_certain = pos_map(orig_end - 1)
-            new_end = (new_end_char + 1) if end_certain else new_end_char
+    for _orig_start, _orig_end, label, block_text in placed_in_orig:
+        new_start, new_end = find_in_text(
+            block_text, new_text, search_from=search_from
+        )
+        if new_start >= 0:
+            mapped.append((new_start, new_end, label, block_text, True))
+            search_from = new_end
         else:
-            new_end, end_certain = new_start, start_certain
-        certain = start_certain and end_certain and new_start < new_end
-        mapped.append((new_start, new_end, label, block_text, certain))
+            # Not found in new_text — use estimated fractional position.
+            frac = (
+                _orig_start / len(orig_text) if orig_text else 0.0
+            )
+            est = int(frac * len(new_text))
+            mapped.append((est, est, label, block_text, False))
 
     mapped.sort(key=lambda t: t[0])
 
