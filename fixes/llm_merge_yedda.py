@@ -31,6 +31,7 @@ Environment variables (or ~/.skol_env):
 
 import argparse
 import logging
+import os
 import re
 import sys
 import time
@@ -519,7 +520,15 @@ def main() -> None:
     training_db = server[args.training_db]
 
     import anthropic  # type: ignore[import]
-    api_key = config.get("ANTHROPIC_API_KEY", "")
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or config.get(
+        "ANTHROPIC_API_KEY", ""
+    )
+    if not api_key:
+        print(
+            "Error: ANTHROPIC_API_KEY not set in environment or ~/.skol_env",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     client = anthropic.Anthropic(api_key=api_key)
 
     counts = process_documents(

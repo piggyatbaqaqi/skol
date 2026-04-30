@@ -37,9 +37,18 @@ def _load_skol_env() -> Dict[str, str]:
         return _skol_env_cache
 
     _skol_env_cache = {}
-    skol_env_path = Path('/home/skol/.skol_env')
-
-    if skol_env_path.exists():
+    # Check both the production path and the current user's home directory.
+    # Later paths override earlier ones so ~/.skol_env takes precedence over
+    # the shared /home/skol/.skol_env on dev machines.
+    candidate_paths = [
+        Path('/home/skol/.skol_env'),
+        Path.home() / '.skol_env',
+    ]
+    seen: Set[Path] = set()
+    for skol_env_path in candidate_paths:
+        if skol_env_path in seen or not skol_env_path.exists():
+            continue
+        seen.add(skol_env_path)
         try:
             with open(skol_env_path) as f:
                 for line in f:
