@@ -454,11 +454,15 @@ def process_document(
     if dry_run:
         print(
             f"  {doc_id}: conflicts={conflicts} "
-            f"output={len(merged)}B  (dry run)"
+            f"output={len(merged)}B  (dry run)",
+            flush=True,
         )
     else:
         _put_attachment(output_db, doc_id, _ANN_ATTACHMENT, merged)
-        print(f"  {doc_id}: conflicts={conflicts} → {_ANN_ATTACHMENT} written")
+        print(
+            f"  {doc_id}: conflicts={conflicts} → {_ANN_ATTACHMENT} written",
+            flush=True,
+        )
 
     return True
 
@@ -564,7 +568,8 @@ def main() -> int:
         f"output-db    : {args.output_db}\n"
         f"data-root    : {data_root}\n"
         f"documents    : {len(doc_ids)}\n"
-        f"mode         : {'dry run' if args.dry_run else 'apply'}\n"
+        f"mode         : {'dry run' if args.dry_run else 'apply'}\n",
+        flush=True,
     )
 
     success = errors = 0
