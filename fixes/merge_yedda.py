@@ -170,14 +170,15 @@ def format_conflict(
 # Block location helpers
 # ---------------------------------------------------------------------------
 
-def _find_in_text(
+def find_in_text(
     block_text: str,
     haystack: str,
 ) -> Tuple[int, int]:
     """Locate block_text anywhere in haystack.
 
     Returns (start, end) or (-1, -1).
-    Tries: exact, NFKC-normalised, difflib fuzzy (ratio ≥ _FUZZY_THRESHOLD).
+    Tries: exact, page-marker strip, NFKC-normalised, difflib fuzzy
+    (ratio ≥ _FUZZY_THRESHOLD).
     """
     import unicodedata
 
@@ -186,7 +187,17 @@ def _find_in_text(
     if pos >= 0:
         return pos, pos + len(block_text)
 
-    # 2. NFKC.
+    # 2. Strip synthetic --- PDF Page N Label N --- prefix and retry.
+    first_nl = block_text.find("\n")
+    if first_nl > 0:
+        first_line = block_text[:first_nl].strip()
+        remainder = block_text[first_nl + 1:].strip()
+        if _PAGE_MARKER_RE.match(first_line) and remainder:
+            pos = haystack.find(remainder)
+            if pos >= 0:
+                return pos, pos + len(remainder)
+
+    # 3. NFKC.
     def _nfkc_map(text: str) -> Tuple[str, List[int]]:
         parts: List[str] = []
         orig: List[int] = []
@@ -204,7 +215,7 @@ def _find_in_text(
         orig_end = hay_map[npos + len(norm_block) - 1] + 1
         return orig_start, orig_end
 
-    # 3. Difflib fuzzy — try anchors at start, ⅓, ⅔ of block.
+    # 4. Difflib fuzzy — try anchors at start, ⅓, ⅔ of block.
     slop = 20
     anchor_len = max(10, min(30, len(norm_block) // 3))
     anchor_offsets = [0]
@@ -270,7 +281,7 @@ def three_way_merge_yedda(
     orphans: List[Block] = []
 
     for block_text, label in reviewed_blocks:
-        start, end = _find_in_text(block_text, orig_text)
+        start, end = find_in_text(block_text, orig_text)
         if start >= 0:
             placed_in_orig.append((start, end, label, block_text))
             if verbose:
