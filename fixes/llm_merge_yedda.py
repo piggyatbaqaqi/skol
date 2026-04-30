@@ -37,15 +37,14 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
+_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(_ROOT / "bin"))
 
-from env_config import get_env_config  # type: ignore[import]
-from ingestors.yedda_tags import Tag
+from env_config import get_env_config  # type: ignore[import]  # noqa: E402
 
 # Re-use shared helpers from llm_relabel rather than duplicating them.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
-from llm_relabel import (  # type: ignore[import]
+from llm_relabel import (  # type: ignore[import]  # noqa: E402
     _BACKOFF_BASE,
     _MAX_RETRIES,
     _PRICING,
@@ -120,7 +119,8 @@ def build_merge_prompt(reviewed_ann: str, new_text: str) -> str:
         "Your task: produce a YEDDA-annotated version of the NEW OCR TEXT "
         "that uses the same labels as the REVIEWED ANNOTATION.  Match blocks "
         "by semantic content — a block in the reviewed annotation corresponds "
-        "to the closest semantically equivalent passage in the new OCR text.\n\n"
+        "to the closest semantically equivalent passage in the new OCR"
+        " text.\n\n"
         "TAG DEFINITIONS:\n"
         f"{tag_lines}\n\n"
         "RULES:\n"
@@ -342,7 +342,8 @@ def process_documents(
             if not row.id.startswith("_design/")
         ]
 
-    hard_docs: List[Tuple[str, str, str, str]] = []  # (id, merged, reviewed, new_text)
+    # (doc_id, merged_ann, reviewed_ann, new_text)
+    hard_docs: List[Tuple[str, str, str, str]] = []
 
     for doc_id in ids:
         merged_ann = _fetch_attachment(merged_db, doc_id, _ANN_ATTACHMENT)
@@ -351,13 +352,18 @@ def process_documents(
         n = count_conflicts(merged_ann)
         if n < conflict_threshold:
             if verbosity >= 2:
-                print(f"  skip {doc_id}: {n} conflict(s) < threshold {conflict_threshold}")
+                print(
+                    f"  skip {doc_id}: {n} conflict(s)"
+                    f" < threshold {conflict_threshold}"
+                )
             continue
 
         reviewed_ann = _fetch_attachment(reviewed_db, doc_id, _ANN_ATTACHMENT)
         new_text = _fetch_attachment(training_db, doc_id, _TXT_ATTACHMENT)
         if reviewed_ann is None or new_text is None:
-            logging.warning("%s: missing reviewed_ann or new_text — skipped", doc_id)
+            logging.warning(
+                "%s: missing reviewed_ann or new_text — skipped", doc_id
+            )
             continue
 
         hard_docs.append((doc_id, merged_ann, reviewed_ann, new_text))
@@ -436,26 +442,32 @@ def main() -> None:
         "--merged-db",
         default="skol_ann_merged",
         metavar="DB",
-        help="CouchDB database with deterministic merge output (default: skol_ann_merged).",
+        help="CouchDB database with deterministic merge output "
+             "(default: skol_ann_merged).",
     )
     parser.add_argument(
         "--reviewed-db",
         default="skol_ann_reviewed",
         metavar="DB",
-        help="CouchDB database with human-reviewed annotations (default: skol_ann_reviewed).",
+        help="CouchDB database with human-reviewed annotations "
+             "(default: skol_ann_reviewed).",
     )
     parser.add_argument(
         "--training-db",
         default="skol_training",
         metavar="DB",
-        help="CouchDB database with new OCR plaintext (default: skol_training).",
+        help="CouchDB database with new OCR plaintext "
+             "(default: skol_training).",
     )
     parser.add_argument(
         "--threshold",
         type=int,
         default=_DEFAULT_CONFLICT_THRESHOLD,
         metavar="N",
-        help=f"Minimum conflicts to trigger LLM merge (default: {_DEFAULT_CONFLICT_THRESHOLD}).",
+        help=(
+            "Minimum conflicts to trigger LLM merge "
+            f"(default: {_DEFAULT_CONFLICT_THRESHOLD})."
+        ),
     )
     parser.add_argument(
         "--model",
@@ -494,14 +506,13 @@ def main() -> None:
     )
 
     config = get_env_config()
-    couchdb_url = config.get("COUCHDB_URL", "http://localhost:5984")
-    couchdb_user = config.get("COUCHDB_USER", "")
-    couchdb_password = config.get("COUCHDB_PASSWORD", "")
 
     import couchdb  # type: ignore[import]
-    server = couchdb.Server(couchdb_url)
-    if couchdb_user:
-        server.resource.credentials = (couchdb_user, couchdb_password)
+    server = couchdb.Server(config["couchdb_url"])
+    server.resource.credentials = (
+        config["couchdb_username"],
+        config["couchdb_password"],
+    )
 
     merged_db = server[args.merged_db]
     reviewed_db = server[args.reviewed_db]
