@@ -191,7 +191,7 @@ def find_in_text(
         abs_pos = search_from + pos
         return abs_pos, abs_pos + len(block_text)
 
-    # 2. Strip synthetic --- PDF Page N Label N --- prefix and retry.
+    # 2. Strip synthetic --- PDF Page N Label L --- prefix and retry.
     first_nl = block_text.find("\n")
     if first_nl > 0:
         first_line = block_text[:first_nl].strip()
@@ -363,7 +363,13 @@ def three_way_merge_yedda(
             output_items.append(f"[@{gap_text}#{gap_label}*]")
 
     # Orphan blocks at end as conflict markers (no new_context known).
+    # Bare page-marker blocks (--- PDF Page N Label L --- with no body text) are
+    # handled by _split_gap when encountered in new_text gap regions;
+    # emitting a conflict for them would duplicate the Page-header block
+    # already placed by the gap fill.
     for block_text, label in orphans:
+        if label == "Page-header" and _PAGE_MARKER_RE.match(block_text.strip()):
+            continue
         output_items.append(format_conflict(block_text, label, ""))
 
     return "\n\n".join(output_items) + "\n"

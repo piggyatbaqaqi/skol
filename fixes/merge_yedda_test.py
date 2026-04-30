@@ -105,6 +105,47 @@ class TestFindInTextSearchFrom:
 
 
 class TestThreeWayMergePageHeader:
+    def test_bare_page_marker_orphan_not_emitted_as_conflict(self) -> None:
+        """Bare '--- PDF Page N ---' orphan suppressed; gap fill places it."""
+        # orig_ann has no page-marker blocks (source file predates them).
+        # reviewed_ann has a bare page-marker inserted by fix_missing_yedda.
+        # new_text contains the marker at its natural position.
+        orig_ann = (
+            "[@first block#Nomenclature*]\n\n"
+            "[@second block#Description*]"
+        )
+        reviewed_ann = (
+            "[@first block#Nomenclature*]\n\n"
+            "[@--- PDF Page 2 Label 2 ---#Page-header*]\n\n"
+            "[@second block#Description*]"
+        )
+        new_text = (
+            "first block\n\n"
+            "--- PDF Page 2 Label 2 ---\n"
+            "second block"
+        )
+        result = three_way_merge_yedda(orig_ann, reviewed_ann, new_text)
+        # The page marker should appear as a Page-header block in the output.
+        assert "[@--- PDF Page 2 Label 2 ---#Page-header*]" in result
+        # It must NOT also be an orphan conflict at the end.
+        assert "<<<<<<< annotation" not in result
+
+    def test_bare_page_marker_in_gap_labeled_page_header(self) -> None:
+        """Bare page marker in gap text gets Page-header label."""
+        orig_ann = (
+            "[@first block#Nomenclature*]\n\n"
+            "[@second block#Description*]"
+        )
+        reviewed_ann = orig_ann
+        new_text = (
+            "first block\n\n"
+            "--- PDF Page 3 Label 3 ---\n"
+            "second block"
+        )
+        result = three_way_merge_yedda(orig_ann, reviewed_ann, new_text)
+        assert "[@--- PDF Page 3 Label 3 ---#Page-header*]" in result
+        assert "<<<<<<< annotation" not in result
+
     def test_synthetic_page_header_placed_not_orphaned(self) -> None:
         """Page-header with synthetic PDF-Page prefix is placed inline."""
         orig_ann = (
