@@ -65,6 +65,7 @@ _ANN_ATTACHMENT = "article.txt.ann"
 _TXT_ATTACHMENT = "article.txt"
 _DEFAULT_CONFLICT_THRESHOLD = 5
 _DEFAULT_MAX_DROP_FRACTION = 0.25
+_DEFAULT_CHUNK_SIZE = 80
 
 _SYSTEM_PROMPT = (
     "You are a precise taxonomic text annotator. "
@@ -412,6 +413,7 @@ def process_documents(
     estimate: bool,
     verbosity: int,
     doc_ids: Optional[List[str]] = None,
+    chunk_size: int = _DEFAULT_CHUNK_SIZE,
 ) -> Dict[str, int]:
     """Find hard documents and run LLM merge for each.
 
@@ -426,6 +428,7 @@ def process_documents(
         estimate: If True, only count tokens and exit.
         verbosity: Logging verbosity.
         doc_ids: If given, process only these document IDs.
+        chunk_size: Maximum reviewed_ann blocks per API call.
 
     Returns:
         Summary count dict.
@@ -503,7 +506,8 @@ def process_documents(
         processed += 1
         try:
             result = merge_via_llm_chunked(
-                client, reviewed_ann, new_text, doc_id=doc_id, model=model
+                client, reviewed_ann, new_text, doc_id=doc_id,
+                model=model, chunk_size=chunk_size,
             )
             if verbosity >= 1:
                 n_before = count_conflicts(merged_ann)
@@ -573,6 +577,16 @@ def main() -> None:
         help=f"Claude model ID (default: {_DEFAULT_MODEL}).",
     )
     parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=_DEFAULT_CHUNK_SIZE,
+        metavar="N",
+        help=(
+            "Maximum reviewed_ann blocks per API call; larger documents "
+            f"are split into chunks (default: {_DEFAULT_CHUNK_SIZE})."
+        ),
+    )
+    parser.add_argument(
         "--doc-id",
         action="append",
         dest="doc_ids",
@@ -639,6 +653,7 @@ def main() -> None:
         estimate=args.estimate,
         verbosity=args.verbosity,
         doc_ids=args.doc_ids,
+        chunk_size=args.chunk_size,
     )
 
     if not args.estimate:
