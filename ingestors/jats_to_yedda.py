@@ -160,7 +160,7 @@ def sec_type_to_tag(sec_type: str) -> Tag:
         return Tag.PHYLOGENY
 
     if st in ("new-combinations"):
-        retur Tag.NEW_COMBINATIONS
+        return Tag.NEW_COMBINATIONS
 
     if st in ("figure-citations", "figure_citations", "figures cited",
               "figure citation", "plates", "plate"):
