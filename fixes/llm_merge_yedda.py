@@ -53,6 +53,7 @@ from llm_relabel import (  # type: ignore[import]  # noqa: E402
     _YEDDA_BLOCK_RE,
     _lcs_align_blocks,
     _reconstruct_ann,
+    chunk_ann,
 )
 
 # ---------------------------------------------------------------------------
@@ -280,6 +281,102 @@ def merge_via_llm(
 
 
 # ---------------------------------------------------------------------------
+# Chunked merge for large documents
+# ---------------------------------------------------------------------------
+
+
+def _split_new_text(new_text: str, n_chunks: int) -> List[str]:
+    """Split new_text into n_chunks parts on paragraph boundaries.
+
+    Each part contains roughly the same number of paragraphs.  No paragraph
+    is ever split in half.  If there are fewer paragraphs than n_chunks, the
+    number of parts equals the number of paragraphs.
+
+    Args:
+        new_text: Plaintext to split.
+        n_chunks: Desired number of parts.
+
+    Returns:
+        List of text strings, each ending with a trailing newline.
+    """
+    paragraphs = [p for p in new_text.split("\n\n") if p.strip()]
+    if not paragraphs:
+        return [new_text]
+    actual_chunks = min(n_chunks, len(paragraphs))
+    chunk_size = max(1, len(paragraphs) // actual_chunks)
+    parts: List[str] = []
+    for i in range(0, len(paragraphs), chunk_size):
+        batch = paragraphs[i:i + chunk_size]
+        if not batch:
+            continue
+        # Merge the last batch into the previous one if we already have
+        # enough chunks (avoids a tiny trailing chunk).
+        if len(parts) >= actual_chunks - 1 and i + chunk_size < len(paragraphs):
+            batch = paragraphs[i:]
+            parts.append("\n\n".join(batch) + "\n")
+            break
+        parts.append("\n\n".join(batch) + "\n")
+    return parts
+
+
+def merge_via_llm_chunked(
+    client: Any,
+    reviewed_ann: str,
+    new_text: str,
+    doc_id: str,
+    model: str = _DEFAULT_MODEL,
+    chunk_size: int = 80,
+    max_drop_fraction: float = _DEFAULT_MAX_DROP_FRACTION,
+) -> str:
+    """Merge reviewed_ann onto new_text, splitting large documents into chunks.
+
+    When reviewed_ann contains more than chunk_size blocks the document is
+    split: reviewed_ann is divided into block-boundary chunks and new_text
+    is divided proportionally by paragraph count.  Each chunk pair is sent
+    as a separate API call and the results are concatenated.
+
+    Args:
+        client: anthropic.Anthropic client.
+        reviewed_ann: Human-reviewed YEDDA annotation (label authority).
+        new_text: New OCR plaintext to be annotated.
+        doc_id: Document ID (used in error messages).
+        model: Claude model ID.
+        chunk_size: Maximum reviewed_ann blocks per API call.
+        max_drop_fraction: Passed through to merge_via_llm.
+
+    Returns:
+        YEDDA-annotated string covering new_text.
+    """
+    reviewed_chunks = chunk_ann(reviewed_ann, chunk_size)
+    if len(reviewed_chunks) == 1:
+        return merge_via_llm(
+            client, reviewed_ann, new_text, doc_id,
+            model=model, max_drop_fraction=max_drop_fraction,
+        )
+
+    n = len(reviewed_chunks)
+    new_text_chunks = _split_new_text(new_text, n)
+    # Pad or trim to match reviewed chunk count.
+    while len(new_text_chunks) < n:
+        new_text_chunks.append("")
+    new_text_chunks = new_text_chunks[:n]
+
+    result_parts: List[str] = []
+    for idx, (rev_chunk, new_chunk) in enumerate(
+        zip(reviewed_chunks, new_text_chunks)
+    ):
+        chunk_id = f"{doc_id} [chunk {idx + 1}/{n}]"
+        logging.info("Processing %s", chunk_id)
+        part = merge_via_llm(
+            client, rev_chunk, new_chunk, doc_id=chunk_id,
+            model=model, max_drop_fraction=max_drop_fraction,
+        )
+        result_parts.append(part.rstrip("\n"))
+
+    return "\n\n".join(result_parts) + "\n"
+
+
+# ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
 
@@ -405,7 +502,7 @@ def process_documents(
     for doc_id, merged_ann, reviewed_ann, new_text in hard_docs:
         processed += 1
         try:
-            result = merge_via_llm(
+            result = merge_via_llm_chunked(
                 client, reviewed_ann, new_text, doc_id=doc_id, model=model
             )
             if verbosity >= 1:

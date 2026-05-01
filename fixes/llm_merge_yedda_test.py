@@ -232,3 +232,94 @@ class TestMergeViaLlm:
             client, reviewed, new_text, doc_id="page_doc"
         )
         assert "[@--- PDF Page 2 Label 2 ---#Page-header*]" in result
+
+
+# ---------------------------------------------------------------------------
+# _split_new_text and merge_via_llm_chunked
+# ---------------------------------------------------------------------------
+
+
+class TestSplitNewText:
+    def test_single_chunk_returned_unchanged(self) -> None:
+        from llm_merge_yedda import _split_new_text  # type: ignore[import]
+        text = "para one\n\npara two\n\npara three\n"
+        parts = _split_new_text(text, 1)
+        assert len(parts) == 1
+        assert parts[0].strip() == text.strip()
+
+    def test_two_chunks_cover_all_text(self) -> None:
+        from llm_merge_yedda import _split_new_text  # type: ignore[import]
+        text = "aaa\n\nbbb\n\nccc\n\nddd\n"
+        parts = _split_new_text(text, 2)
+        assert len(parts) == 2
+        combined = "\n\n".join(p.strip() for p in parts if p.strip())
+        # All paragraphs must appear in the combined output.
+        for para in ["aaa", "bbb", "ccc", "ddd"]:
+            assert para in combined
+
+    def test_no_paragraph_lost(self) -> None:
+        from llm_merge_yedda import _split_new_text  # type: ignore[import]
+        paras = [f"paragraph {i}" for i in range(20)]
+        text = "\n\n".join(paras) + "\n"
+        parts = _split_new_text(text, 4)
+        combined = " ".join(parts)
+        for para in paras:
+            assert para in combined
+
+    def test_more_chunks_than_paragraphs(self) -> None:
+        """Asking for more chunks than paragraphs gives at most one per para."""
+        from llm_merge_yedda import _split_new_text  # type: ignore[import]
+        text = "only\n\ntwo\n"
+        parts = _split_new_text(text, 10)
+        assert all(p.strip() for p in parts)
+        combined = " ".join(parts)
+        assert "only" in combined and "two" in combined
+
+
+class TestMergeViaLlmChunked:
+    def test_single_chunk_delegates_to_merge_via_llm(self) -> None:
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        reviewed = "[@aaa#Nomenclature*]\n\n[@bbb#Description*]\n"
+        new_text = "aaa\n\nbbb\n"
+        expected = "[@aaa#Nomenclature*]\n\n[@bbb#Description*]\n"
+        client = _make_client_stub(expected)
+        result = merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="small_doc",
+            chunk_size=100,
+        )
+        assert "[@aaa#Nomenclature*]" in result
+        assert "[@bbb#Description*]" in result
+
+    def test_multi_chunk_concatenates_results(self) -> None:
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        # 6 blocks, chunk_size=2 → 3 chunks
+        blocks = [f"[@block{i}#Description*]" for i in range(6)]
+        reviewed = "\n\n".join(blocks) + "\n"
+        new_text = "\n\n".join(f"block{i}" for i in range(6)) + "\n"
+
+        # Stub returns corresponding 2-block chunk each call.
+        call_count = 0
+        responses = [
+            "[@block0#Description*]\n\n[@block1#Description*]\n",
+            "[@block2#Description*]\n\n[@block3#Description*]\n",
+            "[@block4#Description*]\n\n[@block5#Description*]\n",
+        ]
+
+        content_mocks = []
+        for r in responses:
+            cm = MagicMock()
+            cm.text = r
+            msg = MagicMock()
+            msg.content = [cm]
+            content_mocks.append(msg)
+
+        client = MagicMock()
+        client.messages.create.side_effect = content_mocks
+
+        result = merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="large_doc",
+            chunk_size=2,
+        )
+        for i in range(6):
+            assert f"block{i}" in result
+        assert client.messages.create.call_count == 3
