@@ -323,3 +323,160 @@ class TestMergeViaLlmChunked:
         for i in range(6):
             assert f"block{i}" in result
         assert client.messages.create.call_count == 3
+
+
+# ---------------------------------------------------------------------------
+# Chunk-level filesystem cache
+# ---------------------------------------------------------------------------
+
+
+def _make_cached_client(responses: list) -> MagicMock:
+    """Build a client whose .messages.create returns the given responses."""
+    msgs = []
+    for r in responses:
+        cm = MagicMock()
+        cm.text = r
+        msg = MagicMock()
+        msg.content = [cm]
+        msgs.append(msg)
+    client = MagicMock()
+    client.messages.create.side_effect = msgs
+    return client
+
+
+class TestChunkCache:
+    def _two_chunk_inputs(self):
+        blocks = [f"[@block{i}#Description*]" for i in range(4)]
+        reviewed = "\n\n".join(blocks) + "\n"
+        new_text = "\n\n".join(f"block{i}" for i in range(4)) + "\n"
+        return reviewed, new_text
+
+    def test_cache_miss_writes_chunk_files(self, tmp_path: Path) -> None:
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        reviewed, new_text = self._two_chunk_inputs()
+        responses = [
+            "[@block0#Description*]\n\n[@block1#Description*]\n",
+            "[@block2#Description*]\n\n[@block3#Description*]\n",
+        ]
+        client = _make_cached_client(responses)
+        merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docA",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+        doc_cache = tmp_path / "docA"
+        assert (doc_cache / "chunk_000.ann").exists()
+        assert (doc_cache / "chunk_001.ann").exists()
+        assert (doc_cache / "manifest.json").exists()
+
+    def test_cache_hit_skips_api_call(self, tmp_path: Path) -> None:
+        from llm_merge_yedda import (  # type: ignore[import]
+            _input_signature,
+            merge_via_llm_chunked,
+        )
+        reviewed, new_text = self._two_chunk_inputs()
+
+        # Pre-populate cache with manifest matching the inputs.
+        doc_cache = tmp_path / "docB"
+        doc_cache.mkdir(parents=True)
+        sig = _input_signature(reviewed, new_text, chunk_size=2)
+        (doc_cache / "manifest.json").write_text(
+            f'{{"signature": "{sig}", "n_chunks": 2}}\n'
+        )
+        (doc_cache / "chunk_000.ann").write_text(
+            "[@block0#Description*]\n\n[@block1#Description*]\n"
+        )
+        (doc_cache / "chunk_001.ann").write_text(
+            "[@block2#Description*]\n\n[@block3#Description*]\n"
+        )
+
+        client = MagicMock()
+        result = merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docB",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+        # Every chunk satisfied from cache → no API calls.
+        client.messages.create.assert_not_called()
+        for i in range(4):
+            assert f"block{i}" in result
+
+    def test_partial_cache_resumes(self, tmp_path: Path) -> None:
+        """One chunk cached, one missing → only one API call made."""
+        from llm_merge_yedda import (  # type: ignore[import]
+            _input_signature,
+            merge_via_llm_chunked,
+        )
+        reviewed, new_text = self._two_chunk_inputs()
+
+        doc_cache = tmp_path / "docC"
+        doc_cache.mkdir(parents=True)
+        sig = _input_signature(reviewed, new_text, chunk_size=2)
+        (doc_cache / "manifest.json").write_text(
+            f'{{"signature": "{sig}", "n_chunks": 2}}\n'
+        )
+        # Only chunk 0 cached.
+        (doc_cache / "chunk_000.ann").write_text(
+            "[@block0#Description*]\n\n[@block1#Description*]\n"
+        )
+
+        client = _make_cached_client([
+            "[@block2#Description*]\n\n[@block3#Description*]\n",
+        ])
+        merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docC",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+        assert client.messages.create.call_count == 1
+        assert (doc_cache / "chunk_001.ann").exists()
+
+    def test_signature_mismatch_wipes_cache(self, tmp_path: Path) -> None:
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        reviewed, new_text = self._two_chunk_inputs()
+
+        doc_cache = tmp_path / "docD"
+        doc_cache.mkdir(parents=True)
+        # Manifest signature won't match current inputs.
+        (doc_cache / "manifest.json").write_text(
+            '{"signature": "stale-sig", "n_chunks": 2}\n'
+        )
+        (doc_cache / "chunk_000.ann").write_text("STALE CONTENT\n")
+
+        responses = [
+            "[@block0#Description*]\n\n[@block1#Description*]\n",
+            "[@block2#Description*]\n\n[@block3#Description*]\n",
+        ]
+        client = _make_cached_client(responses)
+        result = merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docD",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+        # Stale content must not appear in output.
+        assert "STALE CONTENT" not in result
+        # Both chunks were re-fetched.
+        assert client.messages.create.call_count == 2
+
+    def test_clear_chunk_cache_removes_doc_dir(self, tmp_path: Path) -> None:
+        from llm_merge_yedda import _clear_chunk_cache  # type: ignore[import]
+        doc_cache = tmp_path / "docE"
+        doc_cache.mkdir(parents=True)
+        (doc_cache / "chunk_000.ann").write_text("x")
+        (doc_cache / "manifest.json").write_text("{}")
+        _clear_chunk_cache(tmp_path, "docE")
+        assert not doc_cache.exists()
+
+    def test_clear_chunk_cache_no_dir_is_noop(self, tmp_path: Path) -> None:
+        """Clearing a non-existent doc cache must not raise."""
+        from llm_merge_yedda import _clear_chunk_cache  # type: ignore[import]
+        _clear_chunk_cache(tmp_path, "doc-that-never-existed")
+
+    def test_single_chunk_path_does_not_use_cache(self, tmp_path: Path) -> None:
+        """A single-chunk doc bypasses cache entirely (nothing to checkpoint)."""
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        reviewed = "[@aaa#Nomenclature*]\n"
+        new_text = "aaa\n"
+        client = _make_cached_client(["[@aaa#Nomenclature*]\n"])
+        merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docF",
+            chunk_size=100, cache_dir=tmp_path,
+        )
+        # No cache directory created for single-chunk.
+        assert not (tmp_path / "docF").exists()

@@ -30,9 +30,12 @@ Environment variables (or ~/.skol_env):
 """
 
 import argparse
+import hashlib
+import json
 import logging
 import os
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -66,6 +69,7 @@ _TXT_ATTACHMENT = "article.txt"
 _DEFAULT_CONFLICT_THRESHOLD = 5
 _DEFAULT_MAX_DROP_FRACTION = 0.25
 _DEFAULT_CHUNK_SIZE = 80
+_DEFAULT_CACHE_DIR = Path.home() / ".cache" / "skol" / "llm_merge"
 
 _SYSTEM_PROMPT = (
     "You are a precise taxonomic text annotator. "
@@ -320,14 +324,59 @@ def _split_new_text(new_text: str, n_chunks: int) -> List[str]:
     return parts
 
 
+def _input_signature(
+    reviewed_ann: str, new_text: str, chunk_size: int,
+) -> str:
+    """Hash the inputs so a cache miss is detected when any of them change."""
+    h = hashlib.blake2b(digest_size=16)
+    h.update(reviewed_ann.encode("utf-8"))
+    h.update(b"\x00")
+    h.update(new_text.encode("utf-8"))
+    h.update(b"\x00")
+    h.update(str(chunk_size).encode("utf-8"))
+    return h.hexdigest()
+
+
+def _clear_chunk_cache(cache_dir: Path, doc_id: str) -> None:
+    """Remove the per-document chunk cache directory if it exists."""
+    doc_dir = cache_dir / doc_id
+    if doc_dir.exists():
+        shutil.rmtree(doc_dir)
+
+
+def _validate_or_init_cache(
+    doc_dir: Path, signature: str, n_chunks: int,
+) -> None:
+    """Wipe the cache directory if its manifest signature does not match.
+
+    A mismatch means the inputs (reviewed_ann, new_text, or chunk_size)
+    changed since the last run, so any cached chunks are stale.
+    """
+    manifest_path = doc_dir / "manifest.json"
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text())
+        except (json.JSONDecodeError, OSError):
+            manifest = {}
+        if manifest.get("signature") == signature:
+            return  # Cache is valid.
+        # Signature mismatch — wipe and start fresh.
+        shutil.rmtree(doc_dir)
+    doc_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps({"signature": signature, "n_chunks": n_chunks}) + "\n"
+    )
+
+
 def merge_via_llm_chunked(
     client: Any,
     reviewed_ann: str,
     new_text: str,
     doc_id: str,
     model: str = _DEFAULT_MODEL,
-    chunk_size: int = 80,
+    chunk_size: int = _DEFAULT_CHUNK_SIZE,
     max_drop_fraction: float = _DEFAULT_MAX_DROP_FRACTION,
+    cache_dir: Optional[Path] = None,
 ) -> str:
     """Merge reviewed_ann onto new_text, splitting large documents into chunks.
 
@@ -336,20 +385,29 @@ def merge_via_llm_chunked(
     is divided proportionally by paragraph count.  Each chunk pair is sent
     as a separate API call and the results are concatenated.
 
+    Successful chunk results are written to ``cache_dir/{doc_id}/chunk_NNN.ann``
+    so that a crash mid-document leaves completed chunks on disk; a re-run
+    skips cached chunks and only retries the missing ones.  When inputs change
+    (different reviewed_ann, new_text, or chunk_size) the manifest signature
+    no longer matches and the cache is wiped automatically.
+
     Args:
         client: anthropic.Anthropic client.
         reviewed_ann: Human-reviewed YEDDA annotation (label authority).
         new_text: New OCR plaintext to be annotated.
-        doc_id: Document ID (used in error messages).
+        doc_id: Document ID (used in error messages and as cache key).
         model: Claude model ID.
         chunk_size: Maximum reviewed_ann blocks per API call.
         max_drop_fraction: Passed through to merge_via_llm.
+        cache_dir: Root cache directory; defaults to _DEFAULT_CACHE_DIR.
+            Pass None to use the default; pass a path for tests.
 
     Returns:
         YEDDA-annotated string covering new_text.
     """
     reviewed_chunks = chunk_ann(reviewed_ann, chunk_size)
     if len(reviewed_chunks) == 1:
+        # No chunk-level checkpoint useful for a single chunk.
         return merge_via_llm(
             client, reviewed_ann, new_text, doc_id,
             model=model, max_drop_fraction=max_drop_fraction,
@@ -357,21 +415,35 @@ def merge_via_llm_chunked(
 
     n = len(reviewed_chunks)
     new_text_chunks = _split_new_text(new_text, n)
-    # Pad or trim to match reviewed chunk count.
     while len(new_text_chunks) < n:
         new_text_chunks.append("")
     new_text_chunks = new_text_chunks[:n]
+
+    if cache_dir is None:
+        cache_dir = _DEFAULT_CACHE_DIR
+    doc_dir = cache_dir / doc_id
+    signature = _input_signature(reviewed_ann, new_text, chunk_size)
+    _validate_or_init_cache(doc_dir, signature, n)
 
     result_parts: List[str] = []
     for idx, (rev_chunk, new_chunk) in enumerate(
         zip(reviewed_chunks, new_text_chunks)
     ):
+        chunk_path = doc_dir / f"chunk_{idx:03d}.ann"
+        if chunk_path.exists():
+            logging.info(
+                "%s [chunk %d/%d]: cache hit", doc_id, idx + 1, n
+            )
+            result_parts.append(chunk_path.read_text().rstrip("\n"))
+            continue
+
         chunk_id = f"{doc_id} [chunk {idx + 1}/{n}]"
         logging.info("Processing %s", chunk_id)
         part = merge_via_llm(
             client, rev_chunk, new_chunk, doc_id=chunk_id,
             model=model, max_drop_fraction=max_drop_fraction,
         )
+        chunk_path.write_text(part)
         result_parts.append(part.rstrip("\n"))
 
     return "\n\n".join(result_parts) + "\n"
@@ -414,6 +486,7 @@ def process_documents(
     verbosity: int,
     doc_ids: Optional[List[str]] = None,
     chunk_size: int = _DEFAULT_CHUNK_SIZE,
+    cache_dir: Optional[Path] = None,
 ) -> Dict[str, int]:
     """Find hard documents and run LLM merge for each.
 
@@ -429,6 +502,9 @@ def process_documents(
         verbosity: Logging verbosity.
         doc_ids: If given, process only these document IDs.
         chunk_size: Maximum reviewed_ann blocks per API call.
+        cache_dir: Per-document chunk cache directory; None disables caching
+            cleanup (the per-doc cache is always written by
+            merge_via_llm_chunked, but only cleared on success when this is set).
 
     Returns:
         Summary count dict.
@@ -508,6 +584,7 @@ def process_documents(
             result = merge_via_llm_chunked(
                 client, reviewed_ann, new_text, doc_id=doc_id,
                 model=model, chunk_size=chunk_size,
+                cache_dir=cache_dir,
             )
             if verbosity >= 1:
                 n_before = count_conflicts(merged_ann)
@@ -519,6 +596,8 @@ def process_documents(
             if not dry_run:
                 _write_ann(merged_db, doc_id, result)
                 written += 1
+                if cache_dir is not None:
+                    _clear_chunk_cache(cache_dir, doc_id)
         except Exception as exc:  # noqa: BLE001
             failed += 1
             logging.error("%s: LLM merge failed: %s", doc_id, exc)
@@ -585,6 +664,24 @@ def main() -> None:
             "Maximum reviewed_ann blocks per API call; larger documents "
             f"are split into chunks (default: {_DEFAULT_CHUNK_SIZE})."
         ),
+    )
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=_DEFAULT_CACHE_DIR,
+        metavar="DIR",
+        help=(
+            "Directory for per-document chunk-level checkpoint cache "
+            f"(default: {_DEFAULT_CACHE_DIR}). Successful chunks are written "
+            "here so a crashed run resumes mid-document on rerun. The "
+            "per-document cache is removed after a successful write to "
+            "CouchDB."
+        ),
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable chunk-level checkpoint cache (every chunk re-fetched).",
     )
     parser.add_argument(
         "--doc-id",
@@ -654,6 +751,7 @@ def main() -> None:
         verbosity=args.verbosity,
         doc_ids=args.doc_ids,
         chunk_size=args.chunk_size,
+        cache_dir=None if args.no_cache else args.cache_dir,
     )
 
     if not args.estimate:
