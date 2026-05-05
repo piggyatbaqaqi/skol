@@ -14,7 +14,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from llm_merge_yedda import (  # type: ignore[import]
+from llm_merge_yedda import (  # type: ignore[import]  # noqa: E402
     build_merge_prompt,
     count_conflicts,
     merge_via_llm,
@@ -290,15 +290,13 @@ class TestMergeViaLlmChunked:
         assert "[@aaa#Nomenclature*]" in result
         assert "[@bbb#Description*]" in result
 
-    def test_multi_chunk_concatenates_results(self) -> None:
+    def test_multi_chunk_concatenates_results(self, tmp_path: Path) -> None:
         from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
         # 6 blocks, chunk_size=2 → 3 chunks
         blocks = [f"[@block{i}#Description*]" for i in range(6)]
         reviewed = "\n\n".join(blocks) + "\n"
         new_text = "\n\n".join(f"block{i}" for i in range(6)) + "\n"
 
-        # Stub returns corresponding 2-block chunk each call.
-        call_count = 0
         responses = [
             "[@block0#Description*]\n\n[@block1#Description*]\n",
             "[@block2#Description*]\n\n[@block3#Description*]\n",
@@ -318,7 +316,7 @@ class TestMergeViaLlmChunked:
 
         result = merge_via_llm_chunked(
             client, reviewed, new_text, doc_id="large_doc",
-            chunk_size=2,
+            chunk_size=2, cache_dir=tmp_path,
         )
         for i in range(6):
             assert f"block{i}" in result
@@ -480,3 +478,119 @@ class TestChunkCache:
         )
         # No cache directory created for single-chunk.
         assert not (tmp_path / "docF").exists()
+
+
+# ---------------------------------------------------------------------------
+# Content-filter rejection fallback
+# ---------------------------------------------------------------------------
+
+
+class TestContentFilterFallback:
+    _FILTER_MSG = (
+        "Error code: 400 - {'type': 'error', 'error': "
+        "{'type': 'invalid_request_error', 'message': "
+        "'Output blocked by content filtering policy'}}"
+    )
+
+    def test_is_content_filter_error_detects_message(self) -> None:
+        from llm_merge_yedda import _is_content_filter_error  # type: ignore[import]
+        assert _is_content_filter_error(Exception(self._FILTER_MSG))
+        assert not _is_content_filter_error(Exception("rate limited"))
+        assert not _is_content_filter_error(Exception("connection reset"))
+
+    def test_format_chunk_conflict_has_diff_markers(self) -> None:
+        from llm_merge_yedda import _format_chunk_conflict  # type: ignore[import]
+        rev = "[@aaa#Description*]\n\n[@bbb#Notes*]\n"
+        new = "aaa text\n\nbbb text\n"
+        out = _format_chunk_conflict(rev, new)
+        assert out.startswith("<<<<<<< annotation")
+        assert "llm content filter rejected" in out
+        assert "=======\n" in out
+        assert out.rstrip("\n").endswith(">>>>>>> new_ocr")
+        assert "[@aaa#Description*]" in out
+        assert "aaa text" in out
+
+    def test_merge_via_llm_no_retry_on_content_filter(self) -> None:
+        from llm_merge_yedda import (  # type: ignore[import]
+            ContentFilterRejection,
+            merge_via_llm,
+        )
+        client = MagicMock()
+        client.messages.create.side_effect = Exception(self._FILTER_MSG)
+        with pytest.raises(ContentFilterRejection):
+            merge_via_llm(
+                client,
+                reviewed_ann="[@x#Notes*]\n",
+                new_text="x\n",
+                doc_id="d1",
+            )
+        # Single attempt only — no retry on content-filter rejection.
+        assert client.messages.create.call_count == 1
+
+    def test_chunked_substitutes_conflict_block(
+        self, tmp_path: Path
+    ) -> None:
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        # 4 blocks → 2 chunks of size 2; chunk 2 will be filter-rejected.
+        blocks = [f"[@block{i}#Description*]" for i in range(4)]
+        reviewed = "\n\n".join(blocks) + "\n"
+        new_text = "\n\n".join(f"block{i}" for i in range(4)) + "\n"
+
+        # Chunk 1 succeeds, chunk 2 raises content-filter error.
+        good_msg = MagicMock()
+        good_msg.content = [MagicMock(text=(
+            "[@block0#Description*]\n\n[@block1#Description*]\n"
+        ))]
+        client = MagicMock()
+        client.messages.create.side_effect = [
+            good_msg,
+            Exception(self._FILTER_MSG),
+        ]
+
+        result = merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docX",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+        # Chunk 1 placed normally.
+        assert "[@block0#Description*]" in result
+        # Chunk 2 became a conflict block — both reviewed and new text present.
+        assert "<<<<<<< annotation" in result
+        assert "llm content filter rejected" in result
+        assert "[@block2#Description*]" in result
+        assert "block2" in result and "block3" in result
+        # No retry → exactly two API calls (one per chunk).
+        assert client.messages.create.call_count == 2
+
+    def test_chunked_caches_conflict_block(self, tmp_path: Path) -> None:
+        """The fallback conflict block is cached so a rerun won't re-call."""
+        from llm_merge_yedda import merge_via_llm_chunked  # type: ignore[import]
+        blocks = [f"[@block{i}#Description*]" for i in range(4)]
+        reviewed = "\n\n".join(blocks) + "\n"
+        new_text = "\n\n".join(f"block{i}" for i in range(4)) + "\n"
+
+        good_msg = MagicMock()
+        good_msg.content = [MagicMock(text=(
+            "[@block0#Description*]\n\n[@block1#Description*]\n"
+        ))]
+        client = MagicMock()
+        client.messages.create.side_effect = [
+            good_msg,
+            Exception(self._FILTER_MSG),
+        ]
+        merge_via_llm_chunked(
+            client, reviewed, new_text, doc_id="docY",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+
+        # Both chunk files exist (incl. the filter-rejected one).
+        assert (tmp_path / "docY" / "chunk_000.ann").exists()
+        cached = (tmp_path / "docY" / "chunk_001.ann").read_text()
+        assert "<<<<<<< annotation" in cached
+
+        # Rerun with a fresh client — cache hit on both, zero API calls.
+        client2 = MagicMock()
+        merge_via_llm_chunked(
+            client2, reviewed, new_text, doc_id="docY",
+            chunk_size=2, cache_dir=tmp_path,
+        )
+        client2.messages.create.assert_not_called()

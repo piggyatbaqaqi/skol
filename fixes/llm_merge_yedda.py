@@ -210,6 +210,40 @@ def parse_llm_response(response: str, reviewed_ann: str) -> str:
 # merge_via_llm
 # ---------------------------------------------------------------------------
 
+class ContentFilterRejection(Exception):
+    """Raised when the API output is blocked by the content filter.
+
+    Distinct from generic API errors so callers can avoid retrying (the
+    Anthropic API marks these responses ``x-should-retry: false`` — the
+    same input will reproduce the same blocked output).
+    """
+
+
+_CONTENT_FILTER_SIGNATURE = "Output blocked by content filtering policy"
+
+
+def _is_content_filter_error(exc: BaseException) -> bool:
+    """True if exc looks like an Anthropic content-filter rejection."""
+    return _CONTENT_FILTER_SIGNATURE in str(exc)
+
+
+def _format_chunk_conflict(reviewed_chunk: str, new_chunk: str) -> str:
+    """Build a unified-diff-style conflict block for an LLM-rejected chunk.
+
+    The reviewed YEDDA blocks are placed on the ``annotation`` side and the
+    raw new OCR text on the ``new_ocr`` side, mirroring the conflict-marker
+    format used by ``merge_yedda.py`` so downstream review tooling can
+    handle both kinds of conflict uniformly.
+    """
+    return (
+        "<<<<<<< annotation [llm content filter rejected]\n"
+        + reviewed_chunk.rstrip("\n") + "\n"
+        "=======\n"
+        + new_chunk.rstrip("\n") + "\n"
+        ">>>>>>> new_ocr"
+    )
+
+
 def merge_via_llm(
     client: Any,
     reviewed_ann: str,
@@ -271,6 +305,11 @@ def merge_via_llm(
             return result
 
         except Exception as exc:  # noqa: BLE001
+            if _is_content_filter_error(exc):
+                logging.warning(
+                    "%s: content filter rejected output; not retrying", doc_id
+                )
+                raise ContentFilterRejection(str(exc)) from exc
             last_exc = exc
             if attempt < _MAX_RETRIES:
                 wait = _BACKOFF_BASE * (2 ** (attempt - 1))
@@ -439,10 +478,17 @@ def merge_via_llm_chunked(
 
         chunk_id = f"{doc_id} [chunk {idx + 1}/{n}]"
         logging.info("Processing %s", chunk_id)
-        part = merge_via_llm(
-            client, rev_chunk, new_chunk, doc_id=chunk_id,
-            model=model, max_drop_fraction=max_drop_fraction,
-        )
+        try:
+            part = merge_via_llm(
+                client, rev_chunk, new_chunk, doc_id=chunk_id,
+                model=model, max_drop_fraction=max_drop_fraction,
+            )
+        except ContentFilterRejection:
+            logging.warning(
+                "%s: substituting unified-diff conflict block "
+                "for content-filter-rejected chunk", chunk_id,
+            )
+            part = _format_chunk_conflict(rev_chunk, new_chunk) + "\n"
         chunk_path.write_text(part)
         result_parts.append(part.rstrip("\n"))
 
