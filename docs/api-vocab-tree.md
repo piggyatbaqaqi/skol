@@ -192,6 +192,18 @@ Vocabulary trees are built using the `build_vocab_tree` command:
 
 See `build_vocab_tree --help` for all options.
 
+### Singleton pruning
+
+Top-level menu items that occurred in only a single input JSON description
+are dropped from the tree before it is saved to Redis. These one-off terms
+(typically OCR noise or per-document idiosyncrasies) cluttered the cascading
+dropdowns without aiding navigation. The pruning runs automatically as part
+of `build_vocab_tree`; `--verbosity 2` lists the dropped terms.
+
+Singleton pruning only applies at the top level. Sub-level keys are still
+retained even when they appear only once, because the cascading menu
+already constrains the context in which they appear.
+
 ---
 
 ## Redis Storage

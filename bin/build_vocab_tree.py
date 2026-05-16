@@ -77,6 +77,10 @@ class VocabularyTree:
             "level_counts": defaultdict(int),
             "leaf_count": 0,
         }
+        # How many input documents each top-level key appeared in.  Used by
+        # prune_top_level_singletons() to drop menu items that show up in
+        # exactly one JSON description.
+        self.top_level_doc_counts: Dict[str, int] = defaultdict(int)
 
     def _is_valid_term(self, term: str) -> bool:
         """
@@ -195,6 +199,80 @@ class VocabularyTree:
             # Track max depth
             if depth + 1 > self.stats["max_depth"]:
                 self.stats["max_depth"] = depth + 1
+
+    def add_document_json(self, data: Any) -> None:
+        """Add one document's JSON to the tree.
+
+        Identical to ``add_json`` for tree-building purposes, but also
+        increments ``top_level_doc_counts`` for each valid top-level key
+        in the document so that ``prune_top_level_singletons`` can later
+        drop menu entries that appear in only one JSON description.
+
+        For a top-level ``list``, each item that is itself a dict
+        contributes its keys to the per-document counter — matching how
+        ``add_json`` recurses into a top-level list.
+        """
+        for top_level_key in self._iter_top_level_keys(data):
+            normalized = (
+                top_level_key.lower().strip()
+                if isinstance(top_level_key, str)
+                else str(top_level_key)
+            )
+            if self._is_valid_term(normalized):
+                self.top_level_doc_counts[normalized] += 1
+        self.add_json(data)
+
+    @staticmethod
+    def _iter_top_level_keys(data: Any) -> Any:
+        """Yield each top-level key contributed by one document."""
+        if isinstance(data, dict):
+            yield from data.keys()
+            return
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    yield from item.keys()
+
+    def prune_top_level_singletons(self) -> List[str]:
+        """Drop top-level keys that occurred in only one input document.
+
+        Returns the sorted list of pruned key names so the caller can log
+        what was removed.  Stats (total_nodes, max_depth, level_counts,
+        leaf_count) are recomputed from the remaining tree.
+        """
+        pruned = sorted(
+            key for key, count in self.top_level_doc_counts.items()
+            if count <= 1 and key in self.tree
+        )
+        for key in pruned:
+            del self.tree[key]
+            # Drop the counter entry too so a second call is a no-op.
+            self.top_level_doc_counts.pop(key, None)
+        if pruned:
+            self._recompute_stats()
+        return pruned
+
+    def _recompute_stats(self) -> None:
+        """Walk the tree from scratch to recompute the stats dictionary."""
+        self.stats = {
+            "total_nodes": 0,
+            "max_depth": 0,
+            "level_counts": defaultdict(int),
+            "leaf_count": 0,
+        }
+
+        def _walk(subtree: Dict[str, Any], depth: int) -> None:
+            for _key, children in subtree.items():
+                self.stats["total_nodes"] += 1
+                self.stats["level_counts"][depth] += 1
+                if depth > self.stats["max_depth"]:
+                    self.stats["max_depth"] = depth
+                if isinstance(children, dict) and children:
+                    _walk(children, depth + 1)
+                else:
+                    self.stats["leaf_count"] += 1
+
+        _walk(self.tree, 1)
 
     def get_children(self, path: List[str]) -> List[str]:
         """
@@ -331,7 +409,7 @@ def build_vocabulary_tree(
                 continue
 
             # Add this document's JSON to the tree
-            tree.add_json(json_annotated)
+            tree.add_document_json(json_annotated)
             processed += 1
 
             if verbosity >= 2 and processed % 100 == 0:
@@ -343,6 +421,19 @@ def build_vocabulary_tree(
             if verbosity >= 2:
                 print(f"  Warning: Error processing {doc_id}: {e}")
             skipped += 1
+
+    # Drop top-level menu items that occurred in only a single JSON
+    # description.  These are typically OCR noise or one-off labels and
+    # clutter the cascading dropdowns without aiding navigation.
+    pruned = tree.prune_top_level_singletons()
+    if verbosity >= 1 and pruned:
+        print(
+            f"\nPruned {len(pruned)} top-level singleton "
+            f"term(s) from the menu tree."
+        )
+        if verbosity >= 2:
+            for term in pruned:
+                print(f"  - {term}")
 
     if verbosity >= 1:
         print(f"\nProcessed {processed} documents, skipped {skipped}")
