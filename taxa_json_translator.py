@@ -1796,7 +1796,7 @@ def example_usage():
     4. Validate and save results
     """
     from pyspark.sql import SparkSession
-    from extract_taxa_to_couchdb import TreatmentExtractor
+    from extract_treatments_to_couchdb import TreatmentExtractor
 
     # Initialize Spark
     spark = SparkSession.builder \

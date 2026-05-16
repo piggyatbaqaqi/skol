@@ -34,7 +34,7 @@ enriched_df = taxa_df.join(results_df, on="_id", how="left")
 
 ### 1. Updated Schema in TreatmentExtractor
 
-**File**: [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+**File**: [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
 **Change**: Added `_id` field to schema
 
@@ -53,7 +53,7 @@ self._extract_schema = StructType([
 
 ### 2. Updated convert_taxa_to_rows()
 
-**File**: [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+**File**: [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
 **Change**: Set `_id` to `None` for newly extracted taxa
 
@@ -67,7 +67,7 @@ for taxon in partition:
 
 ### 3. Updated load_taxa()
 
-**File**: [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+**File**: [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
 **Change**: Include `_id` when loading from CouchDB
 

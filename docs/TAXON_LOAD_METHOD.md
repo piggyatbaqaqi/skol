@@ -107,7 +107,7 @@ This ensures loaded taxa can be:
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 
 spark = SparkSession.builder.appName("LoadTaxa").getOrCreate()
 

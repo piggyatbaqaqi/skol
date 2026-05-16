@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 

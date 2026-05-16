@@ -246,14 +246,14 @@ def get_env_config() -> Dict[str, Any]:
         'couchdb_password': _get_env('COUCHDB_PASSWORD', 'SU2orange!'),
         'couchdb_database': _get_env('COUCHDB_DATABASE', 'skol_dev'),
 
-        # Ingest database settings (for extract_taxa_to_couchdb.py)
+        # Ingest database settings (for extract_treatments_to_couchdb.py)
         'ingest_url': _get_env('INGEST_URL', _get_env('COUCHDB_URL', 'http://localhost:5984')),
         'ingest_database': _get_env('INGEST_DATABASE', ''),
         'ingest_username': _get_env('INGEST_USERNAME', _get_env('COUCHDB_USER', '')),
         'ingest_password': _get_env('INGEST_PASSWORD', _get_env('COUCHDB_PASSWORD', '')),
         'ingest_db_name': _get_env('INGEST_DB_NAME', 'skol_dev'),
 
-        # Taxon database settings (for extract_taxa_to_couchdb.py)
+        # Taxon database settings (for extract_treatments_to_couchdb.py)
         'taxon_url': _get_env('TAXON_URL', ''),
         'taxon_database': _get_env('TAXON_DATABASE', ''),
         'taxon_username': _get_env('TAXON_USERNAME', ''),

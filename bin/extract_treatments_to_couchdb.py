@@ -1067,7 +1067,7 @@ Environment Variables:
   SKIP_EXISTING=1         Same as --skip-existing
 
 Note: All database configuration can be set via command-line arguments to env_config.
-      Example: python extract_taxa_to_couchdb.py --ingest-database mydb --taxon-database mytaxa
+      Example: python extract_treatments_to_couchdb.py --ingest-database mydb --taxon-database mytaxa
 
 Script-specific Options:
 """

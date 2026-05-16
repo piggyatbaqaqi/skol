@@ -444,7 +444,7 @@ Nomenclature blocks stored separately as before (they identify the treatment).
 }
 ```
 
-### Document ID hash update (`extract_taxa_to_couchdb.py`)
+### Document ID hash update (`extract_treatments_to_couchdb.py`)
 
 Current: `sha256(taxon + ":" + description)`
 
@@ -494,7 +494,7 @@ is visually distinguishable in the context viewer.
 |---|---|
 | `taxon.py` | Redesign `group_paragraphs()` state machine; extend `Taxon` class |
 | `taxon_test.py` | Add test cases: multi-section treatment, gap behavior, new labels |
-| `bin/extract_taxa_to_couchdb.py` | Updated output schema; new hash function |
+| `bin/extract_treatments_to_couchdb.py` | Updated output schema; new hash function |
 | `bin/embed_taxa.py` | Embed description + diagnosis |
 | `django/search/views.py` | Render all section spans in context viewer |
 
@@ -565,7 +565,7 @@ character ranges as YEDDA inline delimiters).
    same attachment.
 
 2. **The entire pipeline speaks YEDDA.** `jats_to_yedda.py`, `predict_classifier.py`,
-   `extract_taxa_to_couchdb.py`, `taxon.py`, `evaluate_golden.py`, and the Django viewer
+   `extract_treatments_to_couchdb.py`, `taxon.py`, `evaluate_golden.py`, and the Django viewer
    all read/write `[@...#Tag*]`. Migrating storage would be a multi-month flag day with
    no new capability.
 
@@ -642,8 +642,8 @@ python manage.py runserver  # (from django/)
 ```bash
 python -m pytest taxon_test.py -v
 # Spot-check: find a JATS doc with Etymology + Distribution sections in skol_dev
-# Run extract_taxa_to_couchdb for that doc; confirm etymology/distribution fields populated
-python bin/extract_taxa_to_couchdb.py --experiment taxpub_v1_onnx_int8 \
+# Run extract_treatments_to_couchdb for that doc; confirm etymology/distribution fields populated
+python bin/extract_treatments_to_couchdb.py --experiment taxpub_v1_onnx_int8 \
     --doc-id <id_with_multi_section_treatment> --verbosity 2
 # Check CouchDB record has flat section fields and all *_spans populated
 ```
@@ -749,7 +749,7 @@ PROD
 
 #### Phase 5 (treatment assembly — new taxon records)
 
-`extract_taxa_to_couchdb.py` is a re-runnable pipeline step; it generates new
+`extract_treatments_to_couchdb.py` is a re-runnable pipeline step; it generates new
 CouchDB taxon records with updated `_id` hashes (breaking change — see Phase 5
 document ID hash update). On production:
 
@@ -760,7 +760,7 @@ DEV
   [SIGN-OFF REQUIRED]
 
 PROD
-  3. Run extract_taxa_to_couchdb.py --experiment <name> on prod.
+  3. Run extract_treatments_to_couchdb.py --experiment <name> on prod.
      Old taxon records with the 8-tag hash remain in the DB until manually
      purged — they will not appear in search results because the classifier
      will not emit old tag sequences.

@@ -234,7 +234,7 @@ All commands are available in `/opt/skol/bin/`:
 | `ingest` | Ingest documents into CouchDB |
 | `train_classifier` | Train the text classifier model |
 | `predict_classifier` | Run predictions with trained model |
-| `extract_taxa_to_couchdb` | Extract taxonomic data to CouchDB |
+| `extract_treatments_to_couchdb` | Extract taxonomic data to CouchDB |
 | `embed_taxa` | Generate embeddings for taxa |
 | `taxa_to_json` | Export taxa to JSON format |
 | `build_vocab_tree` | Build vocabulary tree for UI menus |

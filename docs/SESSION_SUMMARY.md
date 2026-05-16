@@ -154,7 +154,7 @@ This session continued work on the SKOL (Synoptic Key of Life) classifier projec
 4. Handles missing documents and connection errors gracefully
 
 **Files Modified**:
-- [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+- [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
 **Documentation**:
 - [TAXON_LOAD_METHOD.md](TAXON_LOAD_METHOD.md) - Implementation details
@@ -288,7 +288,7 @@ loaded_df.groupBy("source.db_name").count().show()
 - [skol_classifier/example_line_classification.py](skol_classifier/example_line_classification.py)
 - [skol_classifier/test_line_classifier.py](skol_classifier/test_line_classifier.py)
 - [skol_classifier/test_line_level_loading.py](skol_classifier/test_line_level_loading.py)
-- [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+- [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 - [jupyter/ist769_skol.ipynb](jupyter/ist769_skol.ipynb)
 
 ### Documentation Files

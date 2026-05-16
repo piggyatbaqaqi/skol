@@ -44,7 +44,7 @@ def generate_taxon_doc_id(taxon_text: str, description_text: str) -> str:
     """
     Generate a content-based, deterministic document ID for a taxon.
 
-    This must match the implementation in extract_taxa_to_couchdb.py.
+    This must match the implementation in extract_treatments_to_couchdb.py.
 
     Args:
         taxon_text: The nomenclature/taxon text

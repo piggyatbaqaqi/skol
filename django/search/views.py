@@ -2572,7 +2572,7 @@ class SourceContextView(APIView):
                 )
 
             # .ann files are stored in annotations_db (set at extraction time by
-            # extract_taxa_to_couchdb.py).  Fall back to ingest_db for older taxa
+            # extract_treatments_to_couchdb.py).  Fall back to ingest_db for older taxa
             # records that pre-date the separate annotations database.
             ann_db = taxa_doc.get('annotations_db') or ingest_db
 

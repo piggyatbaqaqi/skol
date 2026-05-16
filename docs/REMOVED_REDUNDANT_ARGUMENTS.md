@@ -30,7 +30,7 @@ After:
     --prediction-batch-size 96
 ```
 
-### 2. bin/extract_taxa_to_couchdb.py
+### 2. bin/extract_treatments_to_couchdb.py
 
 **Removed Arguments:**
 - `--ingest-url` (use `--ingest-url` via env_config)
@@ -51,7 +51,7 @@ After:
 
 Before:
 ```bash
-python3 bin/extract_taxa_to_couchdb.py \
+python3 bin/extract_treatments_to_couchdb.py \
     --ingest-database mycobank_annotations \
     --taxon-database mycobank_taxa \
     --ingest-url http://localhost:5984 \
@@ -60,7 +60,7 @@ python3 bin/extract_taxa_to_couchdb.py \
 
 After:
 ```bash
-python3 bin/extract_taxa_to_couchdb.py \
+python3 bin/extract_treatments_to_couchdb.py \
     --ingest-database mycobank_annotations \
     --taxon-database mycobank_taxa \
     --ingest-url http://localhost:5984 \
@@ -155,7 +155,7 @@ python3 tests/test_page_marker_preservation.py \
 Most scripts maintain backward compatibility:
 
 - **predict_classifier.py**: Use `--couchdb-pattern` instead of `--pattern`, `--prediction-batch-size` instead of `--batch-size`
-- **extract_taxa_to_couchdb.py**: Fully compatible (arguments handled by env_config)
+- **extract_treatments_to_couchdb.py**: Fully compatible (arguments handled by env_config)
 - **regenerate_txt_with_pages.py**: Mostly compatible (`--database` still works)
 - **test_page_marker_preservation.py**: Fully compatible
 

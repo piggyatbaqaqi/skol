@@ -6,11 +6,11 @@
 
 ## Issues Found and Fixed
 
-### Issue 1: Self-Import in extract_taxa_to_couchdb.py
+### Issue 1: Self-Import in extract_treatments_to_couchdb.py
 
 **Problem**: Line 21 had a self-import:
 ```python
-from extract_taxa_to_couchdb import generate_taxon_doc_id
+from extract_treatments_to_couchdb import generate_taxon_doc_id
 ```
 
 This created a circular import because:
@@ -20,14 +20,14 @@ This created a circular import because:
 
 **Fix**: Removed the self-import line
 
-**File**: [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+**File**: [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
 **Before**:
 ```python
 from skol_classifier.couchdb_io import CouchDBConnection
 
 from couchdb_file import read_couchdb_partition
-from extract_taxa_to_couchdb import generate_taxon_doc_id  # ← CIRCULAR!
+from extract_treatments_to_couchdb import generate_taxon_doc_id  # ← CIRCULAR!
 from finder import parse_annotated, remove_interstitials
 from taxon import group_paragraphs, Taxon
 
@@ -57,7 +57,7 @@ taxon_dict['line_number'] if taxon_dict['line_number'] is not None
 
 **Fix**: Simplified to just set `_id = None` for extracted taxa
 
-**File**: [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
+**File**: [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
 ## Import Graph Analysis
 
@@ -65,11 +65,11 @@ taxon_dict['line_number'] if taxon_dict['line_number'] is not None
 
 **Dependency Graph**:
 ```
-extract_taxa_to_couchdb (standalone, no project deps)
+extract_treatments_to_couchdb (standalone, no project deps)
 ├── Uses: couchdb_file, finder, taxon, skol_classifier.couchdb_io
 
 taxa_json_translator
-├── Depends on: extract_taxa_to_couchdb
+├── Depends on: extract_treatments_to_couchdb
 
 mistral_transfer_learning (standalone ML utilities)
 
@@ -116,7 +116,7 @@ src.data (standalone)
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| `extract_taxa_to_couchdb` | ✅ | Imports successfully |
+| `extract_treatments_to_couchdb` | ✅ | Imports successfully |
 | `skol_classifier.classifier_v2` | ✅ | Imports successfully |
 | `skol_classifier.data_loaders` | ✅ | Imports successfully |
 | `skol_classifier.output_formatters` | ✅ | Imports successfully |
@@ -167,7 +167,7 @@ Attempted to actually import each module:
 
 ```python
 try:
-    import extract_taxa_to_couchdb
+    import extract_treatments_to_couchdb
     print('✓ Success')
 except ImportError as e:
     print(f'✗ Circular import or missing dep: {e}')
@@ -223,15 +223,15 @@ Add to CI/CD:
 
 ```bash
 # Test imports
-python -c "import extract_taxa_to_couchdb"
+python -c "import extract_treatments_to_couchdb"
 python -c "import skol_classifier.classifier_v2"
 # etc.
 ```
 
 ## Related Files
 
-- [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py) - Fixed self-import
-- [taxa_json_translator.py](taxa_json_translator.py) - Depends on extract_taxa_to_couchdb
+- [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py) - Fixed self-import
+- [taxa_json_translator.py](taxa_json_translator.py) - Depends on extract_treatments_to_couchdb
 - [TAXA_ID_JOIN_FIX.md](TAXA_ID_JOIN_FIX.md) - Recent refactoring that maintained clean imports
 
 ## Conclusion
@@ -239,7 +239,7 @@ python -c "import skol_classifier.classifier_v2"
 ✅ **Both projects are free of circular imports**
 
 The only import issues are:
-1. ✅ **Fixed**: Self-import in `extract_taxa_to_couchdb.py`
+1. ✅ **Fixed**: Self-import in `extract_treatments_to_couchdb.py`
 2. ⚠️ **Expected**: Missing ML dependencies (optional)
 
 No action needed beyond ensuring ML dependencies are installed when using those features.

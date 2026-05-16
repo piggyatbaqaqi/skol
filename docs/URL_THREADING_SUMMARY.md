@@ -188,7 +188,7 @@ Each paragraph dictionary includes the `url` field from `pp.as_dict()`.
 
 ### 7. JSON Export
 
-**Location:** [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py:83-97)
+**Location:** [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py:83-97)
 
 ```python
 # Extract metadata from first nomenclature paragraph's first line
@@ -218,7 +218,7 @@ doc = {
 
 ### 8. Idempotent Document ID
 
-**Location:** [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py:33-50)
+**Location:** [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py:33-50)
 
 ```python
 def generate_taxon_doc_id(doc_id: str, url: Optional[str], line_number: int) -> str:

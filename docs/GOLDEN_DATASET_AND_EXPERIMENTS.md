@@ -213,7 +213,7 @@ The `run` subcommand assembles pipeline components:
 |---|---|---|---|
 | `train` | `train_classifier.py` | `databases.training` | `redis_keys.classifier_model` |
 | `predict` | `predict_classifier.py` | `databases.ingest` + classifier model | `.ann` attachments |
-| `extract-taxa` | `extract_taxa_to_couchdb.py` | `databases.ingest` | `databases.taxa` |
+| `extract-taxa` | `extract_treatments_to_couchdb.py` | `databases.ingest` | `databases.taxa` |
 | `embed` | `embed_taxa.py` | `databases.taxa` | `redis_keys.embedding` |
 | `build-menus` | `build_vocab_tree.py` | `databases.taxa_full` | `redis_keys.menus` |
 | `evaluate` | `evaluate_golden.py` | predictions + golden | `evaluation` field |

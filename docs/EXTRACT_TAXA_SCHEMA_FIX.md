@@ -45,7 +45,7 @@ The method returns:
 
 ### What the Schema Declared
 
-From [extract_taxa_to_couchdb.py:290-298](extract_taxa_to_couchdb.py#L290-L298) (before fix):
+From [extract_treatments_to_couchdb.py:290-298](extract_treatments_to_couchdb.py#L290-L298) (before fix):
 
 ```python
 extract_schema = StructType([
@@ -137,7 +137,7 @@ if failed > 0:
 
 ## Related Issue
 
-This same file also needs to be added to `spark.submit.pyFiles` in the notebook to avoid the `ModuleNotFoundError: No module named 'extract_taxa_to_couchdb'` error when Spark workers try to deserialize UDFs.
+This same file also needs to be added to `spark.submit.pyFiles` in the notebook to avoid the `ModuleNotFoundError: No module named 'extract_treatments_to_couchdb'` error when Spark workers try to deserialize UDFs.
 
 Add this line to the Spark configuration in the notebook:
 
@@ -147,13 +147,13 @@ Add this line to the Spark configuration in the notebook:
         f'{parent_path / "couchdb_file.py"},{parent_path / "finder.py"},'
         f'{parent_path / "taxon.py"},{parent_path / "paragraph.py"},'
         f'{parent_path / "label.py"},{parent_path / "file.py"},'
-        f'{parent_path / "extract_taxa_to_couchdb.py"}'  # ADD THIS LINE
+        f'{parent_path / "extract_treatments_to_couchdb.py"}'  # ADD THIS LINE
        )
 ```
 
 ## Files Modified
 
-- [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py#L288-L298): Fixed schema definition
+- [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py#L288-L298): Fixed schema definition
 
 ## Additional Notes
 

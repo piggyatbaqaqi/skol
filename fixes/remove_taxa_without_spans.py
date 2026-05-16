@@ -4,7 +4,7 @@ Remove Taxa Documents Without Spans
 
 This script removes taxa documents from skol_taxa_dev that don't have
 nomenclature_spans or description_spans fields. After removal, you can
-use `bin/extract_taxa_to_couchdb --skip-existing` to regenerate them
+use `bin/extract_treatments_to_couchdb --skip-existing` to regenerate them
 with span data.
 
 Usage:
@@ -188,7 +188,7 @@ def remove_taxa_without_spans(
     if dry_run:
         print(f"\nDRY RUN - no changes were made")
     else:
-        print(f"\nDocuments removed. Run extract_taxa_to_couchdb --skip-existing to regenerate.")
+        print(f"\nDocuments removed. Run extract_treatments_to_couchdb --skip-existing to regenerate.")
 
     return results
 

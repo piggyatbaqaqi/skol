@@ -110,7 +110,7 @@ Since all CouchDB documents have clean source fields, the error `MapType(StringT
 
 ### If Error Persists in Notebook
 
-Add debug validation to [extract_taxa_to_couchdb.py:97-125](extract_taxa_to_couchdb.py#L97-L125):
+Add debug validation to [extract_treatments_to_couchdb.py:97-125](extract_treatments_to_couchdb.py#L97-L125):
 
 ```python
 def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
@@ -160,7 +160,7 @@ Different versions may have different schema validation strictness.
 
 ## Files Involved
 
-- [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py) - Schema and extraction logic
+- [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py) - Schema and extraction logic
 - [taxon.py](taxon.py) - Taxon.as_row() method
 - [jupyter/ist769_skol.ipynb](jupyter/ist769_skol.ipynb) - Where error occurs
 

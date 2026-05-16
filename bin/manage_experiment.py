@@ -460,7 +460,7 @@ def _build_step_commands(
             "--skip-existing",
         ],
         "extract_taxa": [
-            sys.executable, str(_BIN_DIR / "extract_taxa_to_couchdb.py"),
+            sys.executable, str(_BIN_DIR / "extract_treatments_to_couchdb.py"),
             "--experiment", "{name}",
             "--skip-existing",
         ],

@@ -103,7 +103,7 @@ section-specific span tracking.  The CouchDB taxa records need to be
 re-extracted to pick up these fields.
 
 ```bash
-python bin/extract_taxa_to_couchdb.py \
+python bin/extract_treatments_to_couchdb.py \
     --experiment taxpub_v1_onnx_int8 --force
 ```
 

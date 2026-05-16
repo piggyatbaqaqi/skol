@@ -55,7 +55,7 @@ This document summarizes the current state of work-skipping options across SKOL 
 
 ---
 
-### 4. extract_taxa_to_couchdb.py - Taxon Extraction
+### 4. extract_treatments_to_couchdb.py - Taxon Extraction
 
 **Purpose:** Extract Taxon objects from annotated documents
 
@@ -151,7 +151,7 @@ All programs now support standard options via `env_config.py`:
 | ingest.py | YES | YES | - | YES | - | - |
 | train_classifier.py | YES | YES | YES | - | - | - |
 | predict_classifier.py | YES | YES | YES | YES | YES | - |
-| extract_taxa_to_couchdb.py | YES | (idempotent) | - | YES | YES | - |
+| extract_treatments_to_couchdb.py | YES | (idempotent) | - | YES | YES | - |
 | embed_taxa.py | YES | YES (default) | YES | - | - | - |
 | taxa_to_json.py | YES | YES | YES | YES | YES | YES |
 | regenerate_from_pdf.py | YES | - | - | - | YES | - |
@@ -196,7 +196,7 @@ All programs automatically support these via `env_config.py`:
 ## Identified Patterns
 
 ### Pattern 1: Idempotent Processing
-Used by `extract_taxa_to_couchdb.py`:
+Used by `extract_treatments_to_couchdb.py`:
 - Deterministic output IDs based on input hash
 - Safe to re-run; duplicates impossible
 - Update-or-insert logic
@@ -288,7 +288,7 @@ Text Handling (for PDF-based pipelines):
 
 **Current inconsistency:**
 - `embed_taxa.py`: Implicit skip (auto-checks Redis)
-- `extract_taxa_to_couchdb.py`: Idempotent (safe to rerun)
+- `extract_treatments_to_couchdb.py`: Idempotent (safe to rerun)
 - `predict_classifier.py`: No skip (always processes all)
 
 **Recommendation:**
@@ -297,7 +297,7 @@ Programs should be **explicit** about their skip behavior:
 2. `--skip-existing`: Enable skip behavior
 3. `--force`: Override skip, force reprocessing
 
-Exception: Idempotent programs (like `extract_taxa_to_couchdb.py`) don't need skip options since re-running is safe and produces the same output.
+Exception: Idempotent programs (like `extract_treatments_to_couchdb.py`) don't need skip options since re-running is safe and produces the same output.
 
 ### Implementation Status
 
@@ -309,7 +309,7 @@ Exception: Idempotent programs (like `extract_taxa_to_couchdb.py`) don't need sk
 
 2. **Medium Priority** (occasionally re-run):
    - ✅ `ingest.py`: Added `--dry-run`, `--skip-existing`, `--limit`
-   - ✅ `extract_taxa_to_couchdb.py`: Added `--dry-run`, `--doc-ids`, `--limit`
+   - ✅ `extract_treatments_to_couchdb.py`: Added `--dry-run`, `--doc-ids`, `--limit`
    - ✅ `embed_taxa.py`: Added `--dry-run`, `--skip-existing` (was default), `--force`
    - ✅ `taxa_to_json.py`: Added `--doc-ids`, `--force` (already had other options)
 
@@ -326,7 +326,7 @@ Each program needs to define what "existing output" means:
 | ingest.py | CouchDB document | `doc_id in db` |
 | train_classifier.py | Redis model | `redis.exists(key)` |
 | predict_classifier.py | .ann attachment | `'.ann' in doc['_attachments']` |
-| extract_taxa_to_couchdb.py | CouchDB taxon doc | `taxon_id in db` (already idempotent) |
+| extract_treatments_to_couchdb.py | CouchDB taxon doc | `taxon_id in db` (already idempotent) |
 | embed_taxa.py | Redis embedding | `redis.exists(key)` (already implemented) |
 | taxa_to_json.py | CouchDB taxa_full doc | `doc_id in dest_db` (already implemented) |
 | regenerate_*.py | .txt attachment | `'.txt' in doc['_attachments']` |
@@ -349,7 +349,7 @@ Each program needs to define what "existing output" means:
 - Add dry-run mode in ingestion loop
 - Show what would be ingested without calling `db.save()`
 
-### extract_taxa_to_couchdb.py
+### extract_treatments_to_couchdb.py
 - Add dry-run mode in `process_document()`
 - Show extracted taxa without saving to database
 
@@ -359,7 +359,7 @@ Each program needs to define what "existing output" means:
 
 Programs that are already idempotent may not need `--skip-existing`:
 
-1. **extract_taxa_to_couchdb.py**: Uses deterministic hash-based IDs
+1. **extract_treatments_to_couchdb.py**: Uses deterministic hash-based IDs
    - Re-running produces same taxa with same IDs
    - Existing documents updated (not duplicated)
    - `--skip-existing` would only save time, not correctness

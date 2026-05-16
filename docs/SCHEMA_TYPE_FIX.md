@@ -201,7 +201,7 @@ In `taxon.as_row()`, explicitly convert all source values:
 
 - [taxon.py](taxon.py) - Fixed empirical_page_number conversion
 - [paragraph.py](paragraph.py) - Has incorrect type hint in as_dict()
-- [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py) - Schema definition
+- [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py) - Schema definition
 - [jupyter/ist769_skol.ipynb](jupyter/ist769_skol.ipynb) - Where error occurred
 
 ## Testing
@@ -220,7 +220,7 @@ taxa_df.show(10)
 If error persists, use this debug code to capture the exact row causing the issue:
 
 ```python
-# Add to convert_taxa_to_rows() in extract_taxa_to_couchdb.py
+# Add to convert_taxa_to_rows() in extract_treatments_to_couchdb.py
 for taxon in partition:
     taxon_dict = taxon.as_row()
 

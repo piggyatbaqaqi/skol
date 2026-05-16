@@ -92,7 +92,7 @@ Each taxon document in the taxon database contains:
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import extract_and_save_taxa_pipeline
+from extract_treatments_to_couchdb import extract_and_save_taxa_pipeline
 
 # Create Spark session
 spark = SparkSession.builder \
@@ -127,7 +127,7 @@ results.filter("success = false").show(truncate=False)
 ### Command-Line Usage
 
 ```bash
-python extract_taxa_to_couchdb.py \
+python extract_treatments_to_couchdb.py \
     --ingest-database mycobank_annotations \
     --taxon-database mycobank_taxa \
     --ingest-username admin \
@@ -151,7 +151,7 @@ python extract_taxa_to_couchdb.py \
 #### Extract Taxa from Partition
 
 ```python
-from extract_taxa_to_couchdb import extract_taxa_from_partition, convert_taxa_to_rows
+from extract_treatments_to_couchdb import extract_taxa_from_partition, convert_taxa_to_rows
 
 def process_partition(partition):
     """Custom partition processing - returns Treatment objects."""
@@ -172,7 +172,7 @@ taxa_objects_rdd = df.rdd.mapPartitions(process_taxa)
 #### Save Taxa to CouchDB
 
 ```python
-from extract_taxa_to_couchdb import save_taxa_to_couchdb_partition
+from extract_treatments_to_couchdb import save_taxa_to_couchdb_partition
 
 def save_partition(partition):
     """Save taxa with custom settings."""
@@ -190,7 +190,7 @@ results_rdd = taxa_df.rdd.mapPartitions(save_partition)
 #### Custom Document ID Generation
 
 ```python
-from extract_taxa_to_couchdb import generate_taxon_doc_id
+from extract_treatments_to_couchdb import generate_taxon_doc_id
 
 # Generate deterministic ID
 doc_id = generate_taxon_doc_id(
@@ -451,7 +451,7 @@ for doc_id in db:
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import extract_and_save_taxa_pipeline
+from extract_treatments_to_couchdb import extract_and_save_taxa_pipeline
 
 # 1. Setup
 spark = SparkSession.builder \

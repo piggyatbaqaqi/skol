@@ -369,7 +369,7 @@ curl -X PUT http://admin:password@localhost:5984/mycobank_taxa
 **This is expected** if you haven't run the pipeline yet. To populate:
 
 ```python
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 
 extractor = TreatmentExtractor(...)
 annotated_df = extractor.load_annotated_documents()

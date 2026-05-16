@@ -195,7 +195,7 @@ if "line_number" in predictions.columns:
 
 #### 3.3 Taxa Extraction from CouchDB
 
-**File**: `extract_taxa_to_couchdb.py` lines 236-278
+**File**: `extract_treatments_to_couchdb.py` lines 236-278
 
 ```python
 def extract_taxa(self, annotated_df: DataFrame) -> DataFrame:
@@ -213,7 +213,7 @@ def extract_taxa(self, annotated_df: DataFrame) -> DataFrame:
     return taxa_df
 ```
 
-**File**: `extract_taxa_to_couchdb.py` lines 54-94
+**File**: `extract_treatments_to_couchdb.py` lines 54-94
 
 ```python
 def extract_taxa_from_partition(partition: Iterator[Row], ingest_db_name: str):
@@ -264,7 +264,7 @@ def read_couchdb_partition(partition: Iterator[Row], db_name: str):
 
 **Current Code Analysis**:
 ```python
-# In extract_taxa_to_couchdb.py
+# In extract_treatments_to_couchdb.py
 annotated_df_filtered = annotated_df.select(*required_cols)  # Selects: doc_id, value, attachment_name
 taxa_rdd = annotated_df_filtered.rdd.mapPartitions(extract_partition)
 ```
@@ -363,7 +363,7 @@ Line 7: Description
 
 ### Test 5: Taxa Extraction Ordering ✅
 
-**Location**: `extract_taxa_to_couchdb.py:54-94`, `couchdb_file.py:123-137`
+**Location**: `extract_treatments_to_couchdb.py:54-94`, `couchdb_file.py:123-137`
 
 **Verification**:
 - Reviewed code: Processes complete documents sequentially
@@ -428,7 +428,7 @@ if "line_number" in featured_df.columns:
 **Priority**: Medium
 **Reason**: Prevent potential issues if API is misused
 
-**Proposed Change** (`extract_taxa_to_couchdb.py`):
+**Proposed Change** (`extract_treatments_to_couchdb.py`):
 
 ```python
 def extract_taxa(self, annotated_df: DataFrame) -> DataFrame:
@@ -456,7 +456,7 @@ def extract_taxa(self, annotated_df: DataFrame) -> DataFrame:
 **Priority**: Low (defensive programming)
 **Reason**: Extra safety against Spark partition reordering
 
-**Proposed Change** (`extract_taxa_to_couchdb.py`):
+**Proposed Change** (`extract_treatments_to_couchdb.py`):
 
 ```python
 def extract_taxa_from_partition(partition: Iterator[Row], ingest_db_name: str):

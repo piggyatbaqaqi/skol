@@ -15,7 +15,7 @@ Complete example showing the full taxa extraction workflow:
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 
 # Create Spark session
 spark = SparkSession.builder \
@@ -432,7 +432,7 @@ print(f"Extracted {taxa_df.count()} taxa from classified documents")
 """Complete taxa extraction round-trip example."""
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 
 def main():
     # Initialize Spark

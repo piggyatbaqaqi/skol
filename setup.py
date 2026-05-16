@@ -70,7 +70,7 @@ setup(
             "skol-ingest=bin.ingest:main",
             "skol-train=bin.train_classifier:main",
             "skol-predict=bin.predict_classifier:main",
-            "skol-extract-taxa=bin.extract_taxa_to_couchdb:main",
+            "skol-extract-taxa=bin.extract_treatments_to_couchdb:main",
             "skol-embed-taxa=bin.embed_taxa:main",
         ],
     },

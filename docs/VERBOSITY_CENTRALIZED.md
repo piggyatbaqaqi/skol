@@ -103,17 +103,17 @@ python3 fixes/regenerate_txt_with_pages.py --database skol_dev --verbosity 2
 - Removed `--verbosity` argument from script-specific parser
 - Now uses `config['verbosity']` directly
 
-### 5. bin/extract_taxa_to_couchdb.py
+### 5. bin/extract_treatments_to_couchdb.py
 
 **Before:**
 ```bash
-python3 bin/extract_taxa_to_couchdb.py --ingest-database mycobank_annotations --taxon-database mycobank_taxa
+python3 bin/extract_treatments_to_couchdb.py --ingest-database mycobank_annotations --taxon-database mycobank_taxa
 ```
 
 **After:**
 ```bash
 # Use env_config verbosity
-python3 bin/extract_taxa_to_couchdb.py --ingest-database mycobank_annotations --taxon-database mycobank_taxa --verbosity 2
+python3 bin/extract_treatments_to_couchdb.py --ingest-database mycobank_annotations --taxon-database mycobank_taxa --verbosity 2
 ```
 
 **Changes:**

@@ -1,10 +1,10 @@
-"""Tests for extract_taxa_to_couchdb helper functions.
+"""Tests for extract_treatments_to_couchdb helper functions.
 
 Covers generate_taxon_doc_id: hash stability, section sensitivity,
 and None/empty equivalence.  The Spark-dependent pipeline code is
 not tested here (integration tests live in tests/).
 
-Run with: python -m pytest bin/extract_taxa_to_couchdb_test.py -v
+Run with: python -m pytest bin/extract_treatments_to_couchdb_test.py -v
 """
 
 import hashlib
@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from extract_taxa_to_couchdb import generate_taxon_doc_id
+from extract_treatments_to_couchdb import generate_taxon_doc_id
 
 
 # ---------------------------------------------------------------------------

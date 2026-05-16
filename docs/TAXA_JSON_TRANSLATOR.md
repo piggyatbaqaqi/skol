@@ -170,7 +170,7 @@ translator.save_translations(
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 # Initialize Spark
@@ -338,7 +338,7 @@ enriched_df = translator.translate_descriptions(taxa_df)
 ```python
 from pyspark.sql import SparkSession
 from skol_classifier.classifier_v2 import SkolClassifierV2
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 spark = SparkSession.builder \

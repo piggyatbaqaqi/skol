@@ -16,7 +16,7 @@ pip install transformers peft accelerate bitsandbytes torch
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 # Initialize
@@ -307,7 +307,7 @@ enriched_df = translator.translate_descriptions_batch(
 """Complete taxa translation example."""
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TreatmentExtractor
+from extract_treatments_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 # Initialize

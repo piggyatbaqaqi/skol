@@ -52,7 +52,7 @@ class CouchDBConnection:
             password: Optional password for authentication
             output_database: If set, save annotations here instead of the source DB.
                 Metadata is copied from the source document so that downstream
-                consumers (e.g. extract_taxa_to_couchdb) have full provenance.
+                consumers (e.g. extract_treatments_to_couchdb) have full provenance.
             output_couchdb_url: CouchDB URL for the output database (defaults to
                 couchdb_url when not specified).
         """
