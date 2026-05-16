@@ -72,14 +72,42 @@ database names until the data migration is scheduled.
 
 ### Step 3 — Migrate CouchDB DB names (schedule separately)
 
-When the next full `extract_treatments` pipeline pass runs:
+Run this **twice**: first against the dev environment (local CouchDB), then
+against prod via SSH to `synoptickeyof.life`.  Validate end-to-end on dev
+before scheduling prod — the prod pass is the irreversible one.
 
-1. Create new-named databases (`skol_treatments_dev`, etc.).
-2. Re-extract into the new databases.
-3. Flip config to point at new names.
-4. Write a migration script to update `databases.taxa` → `databases.treatments`
-   in all live experiment documents.
-5. Deprecate and eventually delete the old `*_taxa` databases.
+The per-environment checklist:
+
+1. Create new-named databases (`skol_treatments_dev` for dev,
+   `skol_treatments` and `skol_exp_NAME_treatments` for prod).
+2. Re-extract into the new databases via a full `extract_treatments`
+   pipeline pass.
+3. Flip config to point at new names: change the default in
+   `bin/env_config.py` and `django/skolweb/settings.py` from
+   `'skol_taxa_dev'` → `'skol_treatments_dev'` (and the prod equivalent);
+   remove the `TAXON_DB_NAME` env-var fallback and the
+   `TAXON_DB_NAME = TREATMENTS_DB_NAME` Django alias once Step 2 compat
+   is no longer needed.
+4. Write a migration script to update `databases.taxa` →
+   `databases.treatments` in all live experiment documents (shared
+   between dev and prod runs).
+5. Migrate the persisted strings listed in "Deferred — persisted data"
+   below: the `"taxon"` field returned by `Treatment.as_row()`, the
+   Spark `StructField("taxon", ...)` schemas, the Redis-stats dict key
+   `'taxa_db_name'`.
+6. Deprecate and eventually delete the old `*_taxa` databases on each
+   server (after a holding period to allow rollback).
+
+Run mechanics:
+
+- **Dev pass**: run locally against `http://localhost:5984` first.  Use
+  this pass to verify the migration script, validate the re-extracted
+  data against `skol_taxa_dev` (sample compares), and shake out any
+  remaining missed references.
+- **Prod pass**: once dev is signed off, run via SSH to
+  `synoptickeyof.life`.  Use the same migration script and config
+  changes; the env-var/Django alias removals from step (3) should land
+  in the code only after **both** environments have been migrated.
 
 ## Progress
 
@@ -144,12 +172,26 @@ unchanged.
 
 ### Step 3 — Pending operational scheduling
 
-Status: **⬜ Not started.**  Per the plan, "schedule separately" — do this
-when the next full `extract_treatments` pipeline pass is going to run on
-production data anyway.  See the original Step 3 checklist above plus the
-"Deferred — persisted data" list for the full set of dict keys, Spark
-schemas, query params, and stored experiment-doc fields that move atomically
-with the database rename.  A migration script for live experiment documents
-(`databases.taxa` → `databases.treatments`) is one of the deliverables; the
-Step 2 deprecated env-var/alias fallbacks can be removed once Step 3 has
-been deployed everywhere.
+Two passes — dev first, then prod.  See the Step 3 section above for the
+full per-pass checklist.
+
+| Pass | Target | Mechanism | Status |
+|---|---|---|---|
+| 3-dev | Local CouchDB at `http://localhost:5984` | Local commands | ⬜ Not started |
+| 3-prod | `https://synoptickeyof.life:5984` | SSH to skol@synoptickeyof.life | ⬜ Not started |
+
+Sequencing notes:
+
+- Run **3-dev first** so the migration script and re-extracted data can
+  be validated against the existing `skol_taxa_dev` (sample compares,
+  spot checks).  Treat dev as the rehearsal — prod is irreversible.
+- The config-default flip (`'skol_taxa_dev'` → `'skol_treatments_dev'`)
+  and the removal of the `TAXON_DB_NAME` env fallback / Django alias
+  should land in the code only after **both** environments have been
+  migrated, so neither is mid-flight when a code deploy goes out.
+- A migration script for live experiment documents (`databases.taxa` →
+  `databases.treatments`) is shared between the two passes; write it
+  once during 3-dev, re-run it during 3-prod.
+- The "Deferred — persisted data" list above is the full set of
+  strings, dict keys, Spark schemas, and stored experiment-doc fields
+  that move atomically with this rename.
