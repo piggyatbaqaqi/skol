@@ -78,7 +78,7 @@ the experiment document and overrides the following config keys:
 | `databases.ingest` | `ingest_db_name` | `skol_dev` |
 | `databases.training` | `training_database` | `skol_training` |
 | `databases.annotations` | `annotations_db_name` | `skol_training` |
-| `databases.taxa` | `taxon_db_name`, `source_db` | `skol_taxa_dev` |
+| `databases.taxa` | `treatments_db_name`, `source_db` | `skol_taxa_dev` |
 | `databases.taxa_full` | `dest_db` | `skol_taxa_full_dev` |
 | `redis_keys.classifier_model` | `classifier_model_key` | _(built from model_version)_ |
 | `redis_keys.embedding` | `embedding_name` | `skol:embedding:v1.1` |

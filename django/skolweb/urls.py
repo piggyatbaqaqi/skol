@@ -189,9 +189,9 @@ def sources_view(request):
             except Exception:
                 continue
 
-        taxa_db_name = getattr(settings, 'TAXA_DB_NAME', 'skol_taxa_dev')
-        if taxa_db_name in server:
-            taxa_db = server[taxa_db_name]
+        treatments_db_name = getattr(settings, 'TREATMENTS_DB_NAME', 'skol_taxa_dev')
+        if treatments_db_name in server:
+            taxa_db = server[treatments_db_name]
             for taxa_doc_id in taxa_db:
                 if taxa_doc_id.startswith('_design/'):
                     continue

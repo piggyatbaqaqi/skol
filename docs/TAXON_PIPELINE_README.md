@@ -105,7 +105,7 @@ results = extract_and_save_taxa_pipeline(
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
     taxon_couchdb_url="http://localhost:5984",
-    taxon_db_name="mycobank_taxa",
+    treatments_db_name="mycobank_taxa",
     ingest_username="admin",
     ingest_password="secret",
     taxon_username="admin",
@@ -212,7 +212,7 @@ Main pipeline function that orchestrates the entire extraction and saving proces
 - `ingest_couchdb_url` (str): URL of ingest CouchDB server
 - `ingest_db_name` (str): Name of ingest database
 - `taxon_couchdb_url` (str): URL of taxon CouchDB server
-- `taxon_db_name` (str): Name of taxon database
+- `treatments_db_name` (str): Name of taxon database
 - `ingest_username` (Optional[str]): Username for ingest database
 - `ingest_password` (Optional[str]): Password for ingest database
 - `taxon_username` (Optional[str]): Username for taxon database
@@ -250,7 +250,7 @@ UDF for saving taxa to CouchDB (idempotent).
 **Parameters:**
 - `partition` (Iterator[Row]): Iterator of Rows with taxon data
 - `couchdb_url` (str): CouchDB server URL
-- `taxon_db_name` (str): Target database name
+- `treatments_db_name` (str): Target database name
 - `username` (Optional[str]): Optional username
 - `password` (Optional[str]): Optional password
 
@@ -467,7 +467,7 @@ results = extract_and_save_taxa_pipeline(
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
     taxon_couchdb_url="http://localhost:5984",
-    taxon_db_name="mycobank_taxa",
+    treatments_db_name="mycobank_taxa",
     ingest_username="admin",
     ingest_password="secret",
     taxon_username="admin",

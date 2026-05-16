@@ -334,8 +334,8 @@ class BuildEmbeddingView(APIView):
                 env['REDIS_HOST'] = settings.REDIS_HOST
                 env['REDIS_PORT'] = str(settings.REDIS_PORT)
                 env['EMBEDDING_NAME'] = embedding_name
-                env['TAXON_DB_NAME'] = getattr(
-                    settings, 'TAXON_DB_NAME', 'skol_taxa_dev'
+                env['TREATMENTS_DB_NAME'] = getattr(
+                    settings, 'TREATMENTS_DB_NAME', 'skol_taxa_dev'
                 )
 
                 # Log file for output

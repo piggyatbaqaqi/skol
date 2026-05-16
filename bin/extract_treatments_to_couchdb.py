@@ -296,7 +296,7 @@ class TreatmentExtractor:
         ingest_db_name: Name of ingest database (where PDFs live, e.g. skol_dev).
             Stored in each taxa record as ``ingest.db_name`` so that views can
             retrieve the PDF directly without guessing.
-        taxon_db_name: Name of taxon database
+        treatments_db_name: Name of taxon database
         annotations_db_name: Name of annotations database (where .ann files live,
             e.g. skol_exp_NAME_ann).  Defaults to ``ingest_db_name`` for
             backward-compatibility with setups where annotations live in the
@@ -315,7 +315,7 @@ class TreatmentExtractor:
         ...     ingest_couchdb_url="http://localhost:5984",
         ...     ingest_db_name="skol_dev",
         ...     annotations_db_name="skol_exp_myexp_ann",
-        ...     taxon_db_name="skol_exp_myexp_taxa",
+        ...     treatments_db_name="skol_exp_myexp_taxa",
         ...     ingest_username="admin",
         ...     ingest_password="secret"
         ... )
@@ -341,7 +341,7 @@ class TreatmentExtractor:
         spark: SparkSession,
         ingest_couchdb_url: str,
         ingest_db_name: str,
-        taxon_db_name: str,
+        treatments_db_name: str,
         annotations_db_name: Optional[str] = None,
         taxon_couchdb_url: Optional[str] = None,
         ingest_username: Optional[str] = None,
@@ -360,7 +360,7 @@ class TreatmentExtractor:
         self.ingest_password = ingest_password
 
         self.taxon_couchdb_url = taxon_couchdb_url or ingest_couchdb_url
-        self.taxon_db_name = taxon_db_name
+        self.treatments_db_name = treatments_db_name
         self.taxon_username = taxon_username or ingest_username
         self.taxon_password = taxon_password or ingest_password
         self.verbosity = verbosity
@@ -509,7 +509,7 @@ class TreatmentExtractor:
         """
         # Extract to local variables to avoid serializing self
         couchdb_url = self.taxon_couchdb_url
-        db_name = self.taxon_db_name
+        db_name = self.treatments_db_name
         username = self.taxon_username
         password = self.taxon_password
         extract_schema = self._extract_schema
@@ -605,12 +605,12 @@ class TreatmentExtractor:
                 server.resource.credentials = (self.taxon_username, self.taxon_password)
 
             # Check if database exists
-            if self.taxon_db_name not in server:
+            if self.treatments_db_name not in server:
                 if self.verbosity >= 1:
-                    print(f"Taxon database {self.taxon_db_name} does not exist yet")
+                    print(f"Taxon database {self.treatments_db_name} does not exist yet")
                 return set()
 
-            db = server[self.taxon_db_name]
+            db = server[self.treatments_db_name]
 
             # Collect unique ingest._id values from all taxa documents
             existing_ids: set = set()
@@ -653,12 +653,12 @@ class TreatmentExtractor:
                 server.resource.credentials = (self.taxon_username, self.taxon_password)
 
             # Check if database exists
-            if self.taxon_db_name not in server:
+            if self.treatments_db_name not in server:
                 if self.verbosity >= 1:
-                    print(f"Database {self.taxon_db_name} does not exist")
+                    print(f"Database {self.treatments_db_name} does not exist")
                 return []
 
-            db = server[self.taxon_db_name]
+            db = server[self.treatments_db_name]
 
             # Get all document IDs
             all_doc_ids = [doc_id for doc_id in db if not doc_id.startswith('_design/')]
@@ -710,7 +710,7 @@ class TreatmentExtractor:
 
         # Extract to local variables to avoid serializing self
         couchdb_url = self.taxon_couchdb_url
-        db_name = self.taxon_db_name
+        db_name = self.treatments_db_name
         username = self.taxon_username
         password = self.taxon_password
         verbosity = self.verbosity
@@ -1015,7 +1015,7 @@ class TreatmentExtractor:
             # Dry run - just show what would be saved
             if self.verbosity >= 1:
                 taxa_count = taxa_df.count()
-                print(f"\n[DRY RUN] Would save {taxa_count} taxa to {self.taxon_db_name}")
+                print(f"\n[DRY RUN] Would save {taxa_count} taxa to {self.treatments_db_name}")
                 if self.verbosity >= 2:
                     print("\n[DRY RUN] Sample taxa:")
                     taxa_df.select("_id", "taxon", "ingest").show(5, truncate=50)
@@ -1111,8 +1111,8 @@ Script-specific Options:
     # Validate required arguments
     if not config['ingest_db_name']:
         parser.error("--ingest-db-name is required (or set $INGEST_DB_NAME)")
-    if not config['taxon_db_name']:
-        parser.error("--taxon-db-name is required (or set $TAXON_DB_NAME)")
+    if not config['treatments_db_name']:
+        parser.error("--treatments-db-name is required (or set $TREATMENTS_DB_NAME)")
 
     # Default taxon credentials to ingest credentials
     taxon_url = config['taxon_url'] or config['ingest_url']
@@ -1125,7 +1125,7 @@ Script-specific Options:
         .getOrCreate()
 
     if config['verbosity'] >= 1:
-        print(f"Extracting taxa from {config['ingest_db_name']} to {config['taxon_db_name']}...")
+        print(f"Extracting taxa from {config['ingest_db_name']} to {config['treatments_db_name']}...")
 
     # Create extractor instance
     # annotations_db_name is where .ann files live; falls back to ingest_db_name
@@ -1135,7 +1135,7 @@ Script-specific Options:
         ingest_couchdb_url=config['ingest_url'],
         ingest_db_name=config['ingest_db_name'],
         annotations_db_name=config.get('annotations_db_name') or config['ingest_db_name'],
-        taxon_db_name=config['taxon_db_name'],
+        treatments_db_name=config['treatments_db_name'],
         taxon_couchdb_url=taxon_url,
         ingest_username=config['ingest_username'],
         ingest_password=config['ingest_password'],

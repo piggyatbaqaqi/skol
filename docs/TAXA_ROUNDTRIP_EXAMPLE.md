@@ -29,7 +29,7 @@ extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
-    taxon_db_name="mycobank_taxa",
+    treatments_db_name="mycobank_taxa",
     ingest_username="admin",
     ingest_password="password"
 )
@@ -411,7 +411,7 @@ extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_raw",  # Same as classifier output
-    taxon_db_name="mycobank_taxa",
+    treatments_db_name="mycobank_taxa",
     ingest_username="admin",
     ingest_password="password"
 )
@@ -447,7 +447,7 @@ def main():
             spark=spark,
             ingest_couchdb_url="http://localhost:5984",
             ingest_db_name="mycobank_annotations",
-            taxon_db_name="mycobank_taxa",
+            treatments_db_name="mycobank_taxa",
             ingest_username="admin",
             ingest_password="password"
         )

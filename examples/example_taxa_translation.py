@@ -58,7 +58,7 @@ def main():
             spark=spark,
             ingest_couchdb_url=couchdb_url,
             ingest_db_name=ingest_db,
-            taxon_db_name=taxon_db,
+            treatments_db_name=taxon_db,
             ingest_username=username,
             ingest_password=password
         )

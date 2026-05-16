@@ -51,7 +51,7 @@ def get_publication_registry():
 def build_sources_stats(
     couchdb_url: str,
     ingest_db_name: str,
-    taxa_db_name: str,
+    treatments_db_name: str,
     username: Optional[str] = None,
     password: Optional[str] = None,
     verbosity: int = 1,
@@ -62,7 +62,7 @@ def build_sources_stats(
     Args:
         couchdb_url: CouchDB server URL
         ingest_db_name: Name of the ingest database
-        taxa_db_name: Name of the taxa database
+        treatments_db_name: Name of the taxa database
         username: CouchDB username
         password: CouchDB password
         verbosity: Output verbosity level
@@ -142,12 +142,12 @@ def build_sources_stats(
         print(f"  Found {doc_count} ingest documents across {len(source_stats)} journals")
 
     # Count taxa records
-    if taxa_db_name in server:
-        taxa_db = server[taxa_db_name]
+    if treatments_db_name in server:
+        taxa_db = server[treatments_db_name]
         taxa_count = 0
 
         if verbosity >= 1:
-            print(f"Scanning taxa database: {taxa_db_name}")
+            print(f"Scanning taxa database: {treatments_db_name}")
 
         for taxa_doc_id in taxa_db:
             if taxa_doc_id.startswith('_design/'):
@@ -174,7 +174,7 @@ def build_sources_stats(
             print(f"  Found {taxa_count} taxa documents")
     else:
         if verbosity >= 1:
-            print(f"Taxa database '{taxa_db_name}' not found, skipping taxa counts")
+            print(f"Taxa database '{treatments_db_name}' not found, skipping taxa counts")
 
     # Build display list with publication details
     sources = []
@@ -230,7 +230,7 @@ def build_sources_stats(
         'total_taxonomy_documents': total_taxonomy_documents,
         'total_taxa_records': total_taxa_records,
         'ingest_db_name': ingest_db_name,
-        'taxa_db_name': taxa_db_name,
+        'taxa_db_name': treatments_db_name,
         'created_at': datetime.now().isoformat(),
         'version': '1.0',
     }
@@ -289,7 +289,8 @@ Environment Variables:
     COUCHDB_USER        CouchDB username
     COUCHDB_PASSWORD    CouchDB password
     INGEST_DB_NAME      Ingest database name (default: skol_dev)
-    TAXON_DB_NAME       Taxa database name (default: skol_taxa_dev)
+    TREATMENTS_DB_NAME  Taxa database name (default: skol_taxa_dev)
+                        TAXON_DB_NAME accepted as deprecated fallback
     REDIS_HOST          Redis host
     REDIS_PORT          Redis port
     REDIS_PASSWORD      Redis password
@@ -301,7 +302,7 @@ Environment Variables:
     # Get configuration
     couchdb_url = config['couchdb_url']
     ingest_db_name = config.get('ingest_db_name', 'skol_dev')
-    taxa_db_name = config.get('taxon_db_name', 'skol_taxa_dev')
+    treatments_db_name = config.get('treatments_db_name', 'skol_taxa_dev')
     username = config['couchdb_username']
     password = config['couchdb_password']
     verbosity = config['verbosity']
@@ -310,7 +311,7 @@ Environment Variables:
         print("Building ingestion sources statistics...")
         print(f"  CouchDB URL: {couchdb_url}")
         print(f"  Ingest DB: {ingest_db_name}")
-        print(f"  Taxa DB: {taxa_db_name}")
+        print(f"  Taxa DB: {treatments_db_name}")
         print()
 
     try:
@@ -318,7 +319,7 @@ Environment Variables:
         stats = build_sources_stats(
             couchdb_url=couchdb_url,
             ingest_db_name=ingest_db_name,
-            taxa_db_name=taxa_db_name,
+            treatments_db_name=treatments_db_name,
             username=username,
             password=password,
             verbosity=verbosity,

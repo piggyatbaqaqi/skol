@@ -181,7 +181,7 @@ def _apply_experiment(
     Mapping from experiment document fields to config keys:
         experiment.databases.ingest    -> ingest_db_name
         experiment.databases.training  -> training_database
-        experiment.databases.taxa      -> taxon_db_name, source_db
+        experiment.databases.taxa      -> treatments_db_name, source_db
         experiment.databases.taxa_full -> dest_db
         experiment.redis_keys.classifier_model -> classifier_model_key
         experiment.redis_keys.embedding        -> embedding_name
@@ -200,7 +200,7 @@ def _apply_experiment(
         ('ingest', ['ingest_db_name']),
         ('training', ['training_database']),
         ('annotations', ['annotations_db_name']),
-        ('taxa', ['taxon_db_name', 'source_db']),
+        ('taxa', ['treatments_db_name', 'source_db']),
         ('taxa_full', ['dest_db']),
     ]
     for exp_field, config_keys in db_mapping:
@@ -258,7 +258,14 @@ def get_env_config() -> Dict[str, Any]:
         'taxon_database': _get_env('TAXON_DATABASE', ''),
         'taxon_username': _get_env('TAXON_USERNAME', ''),
         'taxon_password': _get_env('TAXON_PASSWORD', ''),
-        'taxon_db_name': _get_env('TAXON_DB_NAME', 'skol_taxa_dev'),
+        # treatments_db_name: TREATMENTS_DB_NAME, with TAXON_DB_NAME
+        # accepted as a deprecated fallback so existing .skol_env files
+        # keep working until Step 2 lapses.  The default value stays as
+        # 'skol_taxa_dev' until the data migration in Step 3.
+        'treatments_db_name': _get_env(
+            'TREATMENTS_DB_NAME',
+            _get_env('TAXON_DB_NAME', 'skol_taxa_dev'),
+        ),
 
         # JSON translation settings (for treatments_to_json.py)
         'source_db': _get_env('SOURCE_DB', 'skol_taxa_dev'),
@@ -342,7 +349,7 @@ def get_env_config() -> Dict[str, Any]:
     for key in [
         'couchdb_url', 'couchdb_host', 'couchdb_username', 'couchdb_password', 'couchdb_database',
         'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
-        'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'taxon_db_name',
+        'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'treatments_db_name',
         'training_database', 'annotations_db_name',
         'redis_host', 'redis_url', 'redis_username', 'redis_password',
         'model_version', 'classifier_model_expire',

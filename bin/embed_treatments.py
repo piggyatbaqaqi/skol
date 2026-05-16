@@ -195,7 +195,7 @@ def compute_and_save_embeddings(
         print(f"Computing Taxa Embeddings")
         print(f"{'='*70}")
         print(f"CouchDB: {couchdb_url}")
-        print(f"Database: {config['taxon_db_name']}")
+        print(f"Database: {config['treatments_db_name']}")
         print(f"Redis: {redis_url}")
         print(f"Embedding key: {config['embedding_name']}")
         if embedding_expire:
@@ -257,7 +257,7 @@ def compute_and_save_embeddings(
             couchdb_url=couchdb_url,
             username=config['couchdb_username'],
             password=config['couchdb_password'],
-            db_name=config['taxon_db_name'],
+            db_name=config['treatments_db_name'],
             verbosity=verbosity
         )
         # Primary: description + diagnosis (combined where diagnosis present).
@@ -513,7 +513,8 @@ Environment Variables:
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
   COUCHDB_PASSWORD      CouchDB password (default: SU2orange!)
-  TAXON_DB_NAME         Taxa database name (default: skol_taxa_dev)
+  TREATMENTS_DB_NAME    Taxa database name (default: skol_taxa_dev)
+                        TAXON_DB_NAME accepted as deprecated fallback
   REDIS_HOST            Redis host (default: localhost)
   REDIS_PORT            Redis port (default: 6379)
   EMBEDDING_NAME        Redis key for embeddings (default: skol:embedding:v1.1)

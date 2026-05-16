@@ -623,7 +623,7 @@ Examples:
     parser.add_argument(
         '--db', '--database',
         default=None,
-        help='CouchDB database name (default: from experiment taxon_db_name or skol_taxa_full_dev)'
+        help='CouchDB database name (default: from experiment treatments_db_name or skol_taxa_full_dev)'
     )
     parser.add_argument(
         '--couchdb-url',
@@ -726,7 +726,7 @@ Examples:
     config = get_env_config()
 
     # Resolve connection args: CLI arg > env_config > hardcoded default.
-    db = args.db or config.get('taxon_db_name') or 'skol_taxa_full_dev'
+    db = args.db or config.get('treatments_db_name') or 'skol_taxa_full_dev'
     couchdb_url = args.couchdb_url or config.get('couchdb_url') or 'http://localhost:5984'
     couchdb_user = args.couchdb_user or config.get('couchdb_username') or 'admin'
     couchdb_password = (
