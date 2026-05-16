@@ -1,19 +1,19 @@
 # Extracting Taxon Objects from *.txt.ann Files
 
-This document explains how to use the `taxon.py`, `finder.py`, `paragraph.py`, and `file.py` modules to extract `Taxon` objects from annotated text files (*.txt.ann).
+This document explains how to use the `treatment.py`, `finder.py`, `paragraph.py`, and `file.py` modules to extract `Treatment` objects from annotated text files (*.txt.ann).
 
 ## Overview
 
 The extraction process follows a pipeline architecture:
 
 ```
-*.txt.ann files → Lines → Paragraphs → Taxon objects
+*.txt.ann files → Lines → Paragraphs → Treatment objects
 ```
 
 For CouchDB-backed data:
 
 ```
-CouchDB attachments → Line objects (with metadata) → Paragraphs → Taxon objects
+CouchDB attachments → Line objects (with metadata) → Paragraphs → Treatment objects
 ```
 
 The modules work together as follows:
@@ -22,7 +22,7 @@ The modules work together as follows:
 2. **couchdb_file.py**: Reads CouchDB attachments and produces `Line` objects with populated CouchDB metadata fields (doc_id, attachment_name, db_name)
 3. **paragraph.py**: Groups `Line` objects into `Paragraph` objects
 4. **finder.py**: Orchestrates the pipeline and provides parsing functions
-5. **taxon.py**: Groups `Paragraph` objects into `Taxon` objects (Nomenclature + Description)
+5. **treatment.py**: Groups `Paragraph` objects into `Treatment` objects (Nomenclature + Description)
 
 ## Annotated File Format
 
@@ -142,7 +142,7 @@ for pp in paragraphs:
 
 **When to use:** For raw *.txt files without annotation markup.
 
-### 4. taxon.py - Taxon Grouping
+### 4. treatment.py - Treatment Grouping
 
 The `Taxon` class represents a taxonomic entity with its nomenclature and description paragraphs.
 
@@ -157,19 +157,19 @@ The `Taxon` class represents a taxonomic entity with its nomenclature and descri
 
 **group_paragraphs() Function:**
 
-The main function for extracting `Taxon` objects:
+The main function for extracting `Treatment` objects:
 
 ```python
 from file import read_files
 from finder import parse_annotated
-from taxon import group_paragraphs
+from treatment import group_paragraphs
 
 # Read and parse files
 files = ['path/to/file.txt.ann']
 lines = read_files(files)
 paragraphs = parse_annotated(lines)
 
-# Group into Taxon objects
+# Group into Treatment objects
 for taxon in group_paragraphs(paragraphs):
     print(f"Taxon {taxon._serial}:")
     for paragraph_dict in taxon.dictionaries():
@@ -199,17 +199,17 @@ import csv
 import sys
 from file import read_files
 from finder import parse_annotated
-from taxon import Taxon, group_paragraphs
+from treatment import Treatment, group_paragraphs
 
 def extract_taxa_from_files(file_paths):
     """
-    Extract Taxon objects from annotated files.
+    Extract Treatment objects from annotated files.
 
     Args:
         file_paths: List of paths to *.txt.ann files
 
     Returns:
-        Iterator of Taxon objects
+        Iterator of Treatment objects
     """
     # Step 1: Read files into Line objects
     lines = read_files(file_paths)
@@ -217,7 +217,7 @@ def extract_taxa_from_files(file_paths):
     # Step 2: Parse Lines into Paragraph objects using annotations
     paragraphs = parse_annotated(lines)
 
-    # Step 3: Group Paragraphs into Taxon objects
+    # Step 3: Group Paragraphs into Treatment objects
     taxa = group_paragraphs(paragraphs)
 
     return taxa
@@ -281,7 +281,7 @@ python finder.py --group_paragraphs --annotated_paragraphs \
 **Useful flags:**
 
 - `--annotated_paragraphs`: Use annotated boundaries (for *.txt.ann files)
-- `--group_paragraphs`: Group paragraphs into Taxon objects
+- `--group_paragraphs`: Group paragraphs into Treatment objects
 - `--output_label Nomenclature Description`: Filter output by label
 - `--dump_input`: Show the parsed paragraphs before grouping
 
@@ -345,7 +345,7 @@ Paragraph
 import glob
 from file import read_files
 from finder import parse_annotated
-from taxon import group_paragraphs
+from treatment import group_paragraphs
 
 # Find all annotated files
 files = glob.glob('data/annotated/**/*.txt.ann', recursive=True)
@@ -425,7 +425,7 @@ from pyspark.sql import SparkSession
 from skol_classifier.couchdb_io import CouchDBConnection
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
-from taxon import group_paragraphs
+from treatment import group_paragraphs
 
 def process_partition_to_taxa(partition, db_name):
     """Process partition of CouchDB rows into taxa."""
@@ -554,14 +554,14 @@ Benefits of the CouchDB-aware approach:
 
 ## Summary
 
-To extract `Taxon` objects from *.txt.ann files:
+To extract `Treatment` objects from *.txt.ann files:
 
 ### From Local Files:
 
 1. Import the necessary modules
 2. Use `read_files()` to load the files into `Line` objects
 3. Use `parse_annotated()` to group lines into `Paragraph` objects
-4. Use `group_paragraphs()` to group paragraphs into `Taxon` objects
+4. Use `group_paragraphs()` to group paragraphs into `Treatment` objects
 5. Process each `Taxon` using its methods:
    - `dictionaries()` for row-per-paragraph output
    - `as_row()` for single-row output with combined text
@@ -572,7 +572,7 @@ To extract `Taxon` objects from *.txt.ann files:
 2. Use `conn.load_distributed()` to load attachments into DataFrame
 3. Use `read_couchdb_partition()` in `mapPartitions()` to create `Line` objects with CouchDB metadata
 4. Use `parse_annotated()` to group lines into `Paragraph` objects
-5. Use `group_paragraphs()` to group paragraphs into `Taxon` objects
+5. Use `group_paragraphs()` to group paragraphs into `Treatment` objects
 6. Extract CouchDB metadata from composite filenames in output
 
 The pipeline is designed to be flexible and composable, allowing you to insert filtering or transformation steps at any stage.

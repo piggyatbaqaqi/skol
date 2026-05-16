@@ -37,7 +37,7 @@ setup(
         "skol_compat",
         "span",
         "taxa_json_translator",
-        "taxon",
+        "treatment",
         "tokenizer",
     ],
     include_package_data=True,

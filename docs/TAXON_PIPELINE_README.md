@@ -2,7 +2,7 @@
 
 ## Overview
 
-This module provides a complete UDF-based PySpark pipeline for extracting `Taxon` objects from annotated files stored in CouchDB and saving them back to CouchDB as structured JSON documents.
+This module provides a complete UDF-based PySpark pipeline for extracting `Treatment` objects from annotated files stored in CouchDB and saving them back to CouchDB as structured JSON documents.
 
 **Key Features:**
 - **Idempotent operations**: Uses composite keys `(doc_id, url, line_number)` to prevent duplicates
@@ -21,7 +21,7 @@ CouchDBConnection.load_distributed() → DataFrame[doc_id, attachment_name, valu
   ↓
 mapPartitions(extract_taxa_from_partition) → Parse & Extract Taxa → RDD[Taxon]
   ↓
-mapPartitions(convert_taxa_to_rows) → Convert Taxon objects to Rows
+mapPartitions(convert_taxa_to_rows) → Convert Treatment objects to Rows
   ↓
 DataFrame[taxon, description, source, line_number, ...]
   ↓
@@ -154,19 +154,19 @@ python extract_taxa_to_couchdb.py \
 from extract_taxa_to_couchdb import extract_taxa_from_partition, convert_taxa_to_rows
 
 def process_partition(partition):
-    """Custom partition processing - returns Taxon objects."""
+    """Custom partition processing - returns Treatment objects."""
     taxa = extract_taxa_from_partition(partition, "mycobank")
     # Convert to Rows for DataFrame
     return convert_taxa_to_rows(taxa)
 
 # Use with mapPartitions
 taxa_rdd = df.rdd.mapPartitions(process_partition)
-# Or to work directly with Taxon objects:
+# Or to work directly with Treatment objects:
 def process_taxa(partition):
     return extract_taxa_from_partition(partition, "mycobank")
 
 taxa_objects_rdd = df.rdd.mapPartitions(process_taxa)
-# Do something with Taxon objects...
+# Do something with Treatment objects...
 ```
 
 #### Save Taxa to CouchDB
@@ -231,14 +231,14 @@ UDF for extracting taxa from a partition of CouchDB rows.
 - `ingest_db_name` (str): Database name for metadata tracking
 
 **Yields:**
-- Taxon objects with nomenclature and description paragraphs
+- Treatment objects with nomenclature and description paragraphs
 
 ### `convert_taxa_to_rows()`
 
-Convert Taxon objects to PySpark Rows for DataFrame creation.
+Convert Treatment objects to PySpark Rows for DataFrame creation.
 
 **Parameters:**
-- `partition` (Iterator[Taxon]): Iterator of Taxon objects
+- `partition` (Iterator[Treatment]): Iterator of Treatment objects
 
 **Yields:**
 - PySpark Row objects with fields: taxon, description, source, line_number, paragraph_number, page_number, empirical_page_number

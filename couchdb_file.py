@@ -230,7 +230,7 @@ def read_couchdb_files_from_connection(
         >>> from skol_classifier.couchdb_io import CouchDBConnection
         >>> from couchdb_file import read_couchdb_files_from_connection
         >>> from finder import parse_annotated
-        >>> from taxon import group_paragraphs
+        >>> from treatment import group_paragraphs
         >>>
         >>> # Connect to CouchDB
         >>> conn = CouchDBConnection(

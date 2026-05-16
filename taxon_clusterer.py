@@ -20,7 +20,7 @@ from scipy.spatial.distance import cosine
 from neo4j import GraphDatabase
 from dataclasses import dataclass
 
-from taxon import get_ingest_field
+from treatment import get_ingest_field
 
 
 

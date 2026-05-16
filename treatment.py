@@ -80,7 +80,7 @@ _LABEL_TO_SPANS_FIELD: Dict[str, str] = {
 }
 
 
-class Taxon(object):
+class Treatment(object):
     FIELDNAMES = [
         "serial_number",
         "filename",
@@ -159,7 +159,7 @@ class Taxon(object):
         return None
 
     def as_row(self) -> Dict[str, Any]:
-        """Convert this Taxon to a dictionary suitable for output.
+        """Convert this Treatment to a dictionary suitable for output.
 
         Flat section fields (None when absent):
           description, diagnosis, etymology, distribution,
@@ -254,8 +254,8 @@ _TREATMENT_SECTION_LABELS: frozenset = frozenset(
 )
 
 
-def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
-    """Group annotated paragraphs into Taxon objects.
+def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Treatment]:
+    """Group annotated paragraphs into Treatment objects.
 
     State machine with two states:
 
@@ -264,7 +264,7 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
       treatment-section label → if no Nomenclature yet, create stub;
                                 transition to Look for Descriptions
       Misc-exposition → increment misc_gap; if > MISC_GAP_LIMIT and
-                        has a Nomenclature, reset the current taxon
+                        has a Nomenclature, reset the current treatment
       other → skip
 
     Look for Descriptions
@@ -274,13 +274,13 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
                         (if complete) and reset
       document boundary → yield (if complete) and reset
 
-    Yields complete Taxon objects (has_nomenclature() and has_section()).
+    Yields complete Treatment objects (has_nomenclature() and has_section()).
     """
     nomenclature = Label("Nomenclature")
     misc_exposition = Label("Misc-exposition")
 
     state = "Look for Nomenclatures"
-    taxon = Taxon()
+    treatment = Treatment()
     misc_gap = 0
 
     for pp in paragraphs:
@@ -289,29 +289,29 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
 
         if state == "Look for Nomenclatures":
             if label == nomenclature:
-                taxon.add_nomenclature(pp)
+                treatment.add_nomenclature(pp)
                 misc_gap = 0
                 continue
 
             if label_str in _TREATMENT_SECTION_LABELS:
-                if not taxon.has_nomenclature():
+                if not treatment.has_nomenclature():
                     stub_line = Line("Nomen undetected")
                     stub_paragraph = Paragraph(
                         labels=[nomenclature],
                         lines=[stub_line],
                         paragraph_number=pp.paragraph_number,
                     )
-                    taxon.add_nomenclature(stub_paragraph)
+                    treatment.add_nomenclature(stub_paragraph)
                 state = "Look for Descriptions"
                 # Fall through to Look for Descriptions handling below.
 
             elif label == misc_exposition:
                 misc_gap += 1
                 if (
-                    misc_gap > Taxon.MISC_GAP_LIMIT
-                    and taxon.has_nomenclature()
+                    misc_gap > Treatment.MISC_GAP_LIMIT
+                    and treatment.has_nomenclature()
                 ):
-                    taxon.reset()
+                    treatment.reset()
                     misc_gap = 0
                 continue
 
@@ -321,40 +321,40 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Taxon]:
         if state == "Look for Descriptions":
             # Document boundary check.
             pp_doc_id = pp.first_line.doc_id if pp.first_line else None
-            taxon_doc_id = taxon.doc_id()
-            if pp_doc_id and taxon_doc_id and pp_doc_id != taxon_doc_id:
-                if taxon.has_nomenclature() and taxon.has_section():
-                    yield taxon
-                taxon = Taxon()
+            treatment_doc_id = treatment.doc_id()
+            if pp_doc_id and treatment_doc_id and pp_doc_id != treatment_doc_id:
+                if treatment.has_nomenclature() and treatment.has_section():
+                    yield treatment
+                treatment = Treatment()
                 misc_gap = 0
                 state = "Look for Nomenclatures"
                 if label == nomenclature:
-                    taxon.add_nomenclature(pp)
+                    treatment.add_nomenclature(pp)
                 continue
 
             if label_str in _TREATMENT_SECTION_LABELS:
-                taxon.add_section(label_str, pp)
+                treatment.add_section(label_str, pp)
                 misc_gap = 0
                 continue
 
             if label == nomenclature:
-                if taxon.has_section():
-                    yield taxon
-                taxon = Taxon()
-                taxon.add_nomenclature(pp)
+                if treatment.has_section():
+                    yield treatment
+                treatment = Treatment()
+                treatment.add_nomenclature(pp)
                 misc_gap = 0
                 state = "Look for Nomenclatures"
                 continue
 
             if label == misc_exposition:
                 misc_gap += 1
-                if misc_gap > Taxon.MISC_GAP_LIMIT:
-                    if taxon.has_nomenclature() and taxon.has_section():
-                        yield taxon
-                    taxon = Taxon()
+                if misc_gap > Treatment.MISC_GAP_LIMIT:
+                    if treatment.has_nomenclature() and treatment.has_section():
+                        yield treatment
+                    treatment = Treatment()
                     misc_gap = 0
                     state = "Look for Nomenclatures"
                 continue
 
-    if taxon.has_nomenclature() and taxon.has_section():
-        yield taxon
+    if treatment.has_nomenclature() and treatment.has_section():
+        yield treatment

@@ -30,7 +30,7 @@ from paragraph import Paragraph
 from line import Line
 from file import read_files
 from label import Label
-from taxon import Taxon, group_paragraphs
+from treatment import Treatment, group_paragraphs
 
 SEED=12345
 
@@ -623,7 +623,7 @@ def main():
         sample_size = len(phase3)
 
         if args.group_paragraphs:
-            writer = csv.DictWriter(sys.stdout, fieldnames=Taxon.FIELDNAMES)
+            writer = csv.DictWriter(sys.stdout, fieldnames=Treatment.FIELDNAMES)
             writer.writeheader()
             for taxon in group_paragraphs(phase3):
                 for d in taxon.dictionaries():

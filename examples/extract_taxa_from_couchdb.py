@@ -1,5 +1,5 @@
 """
-Example: Extract Taxon objects from CouchDB attachments in PySpark.
+Example: Extract Treatment objects from CouchDB attachments in PySpark.
 
 This example demonstrates how to use the CouchDB-aware file reading functions
 to extract taxa from annotated files stored in CouchDB.
@@ -15,7 +15,7 @@ from typing import Iterator, List, Dict, Any
 from skol_classifier.couchdb_io import CouchDBConnection
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
-from taxon import group_paragraphs, Taxon
+from treatment import group_paragraphs, Treatment
 from paragraph import Paragraph
 
 
@@ -24,10 +24,10 @@ def process_partition_to_taxa(
     db_name: str
 ) -> Iterator[Dict[str, Any]]:
     """
-    Process a partition of CouchDB rows and extract Taxon objects.
+    Process a partition of CouchDB rows and extract Treatment objects.
 
     This function is designed to be used with mapPartitions in PySpark.
-    It converts CouchDB attachment content into structured Taxon data.
+    It converts CouchDB attachment content into structured Treatment data.
 
     Args:
         partition: Iterator of Rows with doc_id, attachment_name, value
@@ -50,14 +50,14 @@ def process_partition_to_taxa(
     # Step 3: Remove interstitial paragraphs (optional)
     filtered = remove_interstitials(paragraphs)
 
-    # Step 4: Group paragraphs into Taxon objects
+    # Step 4: Group paragraphs into Treatment objects
     taxa = group_paragraphs(filtered)
 
     # Step 5: Convert taxa to dictionaries and yield
     for taxon in taxa:
         for para_dict in taxon.dictionaries():
             # The para_dict contains:
-            # - serial_number: Taxon ID
+            # - serial_number: Treatment ID
             # - filename: In format "db_name/doc_id/attachment_name"
             # - label: "Nomenclature" or "Description"
             # - paragraph_number: Sequential number
@@ -161,7 +161,7 @@ def extract_taxa_local(
     username: str = None,
     password: str = None,
     pattern: str = "*.txt.ann"
-) -> List[Taxon]:
+) -> List[Treatment]:
     """
     Extract taxa from CouchDB using local (non-distributed) processing.
 
@@ -177,7 +177,7 @@ def extract_taxa_local(
         pattern: Attachment pattern
 
     Returns:
-        List of Taxon objects
+        List of Treatment objects
 
     Example:
         >>> taxa = extract_taxa_local(
@@ -286,7 +286,7 @@ def example_local():
 
     # Write to CSV
     with open("output/taxa_local.csv", "w", newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=Taxon.FIELDNAMES)
+        writer = csv.DictWriter(f, fieldnames=Treatment.FIELDNAMES)
         writer.writeheader()
 
         for taxon in taxa:
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Extract Taxon objects from CouchDB annotations"
+        description="Extract Treatment objects from CouchDB annotations"
     )
     parser.add_argument(
         "--mode",

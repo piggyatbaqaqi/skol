@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Pipeline to extract Taxon objects from CouchDB annotated files and save back to CouchDB.
+Pipeline to extract Treatment objects from CouchDB annotated files and save back to CouchDB.
 
 This module provides a UDF-based PySpark pipeline that:
 1. Reads annotated files from an ingest CouchDB database
-2. Extracts Taxon objects using the SKOL pipeline
+2. Extracts Treatment objects using the SKOL pipeline
 3. Saves Taxa as JSON documents to a taxon CouchDB database
 4. Ensures idempotent operations using composite keys: (doc_id, url, line_number)
 """
@@ -31,7 +31,7 @@ from ingestors.timestamps import set_timestamps
 
 from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
-from taxon import group_paragraphs, Taxon, get_ingest_field
+from treatment import group_paragraphs, Treatment, get_ingest_field
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ def generate_taxon_doc_id(taxon_dict: Dict[str, Any]) -> str:
     None and empty string are treated identically; whitespace is stripped.
 
     Args:
-        taxon_dict: Dict as returned by ``Taxon.as_row()``.
+        taxon_dict: Dict as returned by ``Treatment.as_row()``.
 
     Returns:
         Deterministic document ID as 'taxon_<sha256_hex>'
@@ -141,12 +141,12 @@ def generate_taxon_doc_id(taxon_dict: Dict[str, Any]) -> str:
 def extract_taxa_from_partition(
     partition: Iterator[Row],
     ingest_db_name: str
-) -> Iterator[Taxon]:
+) -> Iterator[Treatment]:
     """
     Extract Taxa from a partition of CouchDB rows.
 
     This function processes annotated files from CouchDB and yields
-    Taxon objects for further processing.
+    Treatment objects for further processing.
 
     Args:
         partition: Iterator of Rows with columns:
@@ -157,7 +157,7 @@ def extract_taxa_from_partition(
         ingest_db_name: Database name for metadata tracking
 
     Yields:
-        Taxon objects with nomenclature and description paragraphs
+        Treatment objects with nomenclature and description paragraphs
     """
     # Convert to list to enable tracing
     partition_list = list(partition)
@@ -198,10 +198,10 @@ def extract_taxa_from_partition(
                        f"human_url={getattr(first_para, 'human_url', 'N/A')}, "
                        f"pdf_url={getattr(first_para, 'pdf_url', 'N/A')}")
 
-    # Group into taxa (returns Taxon objects with references to paragraphs)
+    # Group into treatments (returns Treatment objects with references to paragraphs)
     taxa = group_paragraphs(iter(filtered_list))
 
-    # Yield Taxon objects directly
+    # Yield Treatment objects directly
     for taxon in taxa:
         # Only yield taxa that have nomenclature
         if taxon.has_nomenclature():
@@ -210,18 +210,18 @@ def extract_taxa_from_partition(
                 ingest = taxon_row.get('ingest') or {}
                 doc_id = ingest.get('_id')
                 if DEBUG_DOC_ID is None or doc_id == DEBUG_DOC_ID:
-                    logger.info(f"[TRACE] Taxon extracted: doc_id={doc_id}, "
+                    logger.info(f"[TRACE] Treatment extracted: doc_id={doc_id}, "
                                f"human_url={ingest.get('url')}, "
                                f"pdf_url={ingest.get('pdf_url')}")
             yield taxon
 
 
-def convert_taxa_to_rows(partition: Iterator[Taxon]) -> Iterator[Row]:
+def convert_taxa_to_rows(partition: Iterator[Treatment]) -> Iterator[Row]:
     """
-    Convert Taxon objects to PySpark Rows suitable for DataFrame creation.
+    Convert Treatment objects to PySpark Rows suitable for DataFrame creation.
 
     Args:
-        partition: Iterator of Taxon objects
+        partition: Iterator of Treatment objects
 
     Yields:
         PySpark Row objects with fields:
@@ -287,7 +287,7 @@ class TaxonExtractor:
 
     This class encapsulates the complete pipeline for:
     1. Loading annotated documents from a CouchDB annotations database
-    2. Extracting Taxon objects using the SKOL pipeline
+    2. Extracting Treatment objects using the SKOL pipeline
     3. Saving Taxa to a CouchDB taxon database with idempotent keys
 
     Args:
@@ -466,7 +466,7 @@ class TaxonExtractor:
         annotations_db_name = self.annotations_db_name
 
         def extract_partition(partition):  # type: ignore[reportUnknownParameterType]
-            # Extract Taxon objects
+            # Extract Treatment objects
             taxa = extract_taxa_from_partition(iter(partition), db_name)  # type: ignore[reportUnknownArgumentType]
             # Convert to Rows for DataFrame
             return convert_taxa_to_rows(taxa)
@@ -853,7 +853,7 @@ class TaxonExtractor:
 
         This method:
         1. Loads annotated files from ingest CouchDB database
-        2. Extracts Taxon objects in parallel using mapPartitions
+        2. Extracts Treatment objects in parallel using mapPartitions
         3. Saves Taxa to taxon CouchDB database with idempotent keys
         4. Returns a DataFrame with success/failure results
 

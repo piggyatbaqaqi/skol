@@ -216,7 +216,7 @@ class TestIntegrationWithParsers(unittest.TestCase):
     def test_with_group_paragraphs(self):
         """Test full pipeline: CouchDB → Lines → Paragraphs → Taxa."""
         from finder import parse_annotated
-        from taxon import group_paragraphs
+        from treatment import group_paragraphs
 
         # Simulate a complete taxon with nomenclature and description
         content = (

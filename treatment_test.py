@@ -1,4 +1,4 @@
-"""Tests for taxon.py."""
+"""Tests for treatment.py."""
 
 import textwrap
 from typing import List
@@ -7,7 +7,7 @@ import unittest
 from label import Label
 from line import Line
 from paragraph import Paragraph
-from taxon import Taxon, group_paragraphs
+from treatment import Treatment, group_paragraphs
 from finder import parse_annotated
 
 
@@ -67,10 +67,10 @@ def lineify_with_doc_id(lines: List[tuple]) -> List[Line]:
     return result
 
 
-class TestTaxon(unittest.TestCase):
+class TestTreatment(unittest.TestCase):
 
     def setUp(self):
-        Taxon.MISC_GAP_LIMIT = 3  # Give up faster than in real conditions.
+        Treatment.MISC_GAP_LIMIT = 3  # Give up faster than in real conditions.
 
     def test_sunny(self):
         test_data = lineify(
@@ -164,9 +164,9 @@ class TestTaxon(unittest.TestCase):
 
         taxa = list(group_paragraphs(parse_annotated(test_data)))
         # Now expecting 3 taxa due to stub nomenclature creation for bare Description
-        # Taxon 1: paragraph1+3 (nomenclatures) + paragraph4+6 (descriptions)
-        # Taxon 2: stub + ignored2 (description that was too far from nomenclature)
-        # Taxon 3: paragraph9 (nomenclature) + paragraph12+14+15 (descriptions)
+        # Treatment 1: paragraph1+3 (nomenclatures) + paragraph4+6 (descriptions)
+        # Treatment 2: stub + ignored2 (description that was too far from nomenclature)
+        # Treatment 3: paragraph9 (nomenclature) + paragraph12+14+15 (descriptions)
         self.assertEqual(len(taxa), 3)
 
         dictionaries1 = list(taxa[0].dictionaries())
@@ -479,11 +479,11 @@ class TestTaxon(unittest.TestCase):
             paragraph_number=1,
         )
 
-        taxon = Taxon()
-        taxon.add_nomenclature(nom_para)
-        taxon.add_section("Description", desc_para)
+        treatment = Treatment()
+        treatment.add_nomenclature(nom_para)
+        treatment.add_section("Description", desc_para)
 
-        row = taxon.as_row()
+        row = treatment.as_row()
         self.assertIsNotNone(
             row["ingest"],
             "as_row() should fall back to description ingest for stub",
@@ -495,7 +495,7 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
     """group_paragraphs() handles the full 12-tag label set."""
 
     def setUp(self):
-        Taxon.MISC_GAP_LIMIT = 3
+        Treatment.MISC_GAP_LIMIT = 3
 
     def test_treatment_section_labels_keep_treatment_open(self):
         """Diagnosis/Distribution/Biology do not increment the gap counter."""
@@ -603,8 +603,8 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
         self.assertIsNotNone(row["figure_captions"])
 
 
-class TestTaxonNewFields(unittest.TestCase):
-    """Taxon.as_row() exposes flat fields for all 12-tag section types."""
+class TestTreatmentNewFields(unittest.TestCase):
+    """Treatment.as_row() exposes flat fields for all 12-tag section types."""
 
     def _make_para(
         self, text: str, label_str: str, para_num: int = 1
@@ -614,9 +614,9 @@ class TestTaxonNewFields(unittest.TestCase):
             labels=[Label(label_str)], lines=[line], paragraph_number=para_num
         )
 
-    def _taxon_with(self, sections: list) -> Taxon:
+    def _treatment_with(self, sections: list) -> Treatment:
         nom = self._make_para("Amanita muscaria", "Nomenclature", para_num=1)
-        t = Taxon()
+        t = Treatment()
         t.add_nomenclature(nom)
         for i, (text, label_str) in enumerate(sections, start=2):
             t.add_section(
@@ -625,7 +625,7 @@ class TestTaxonNewFields(unittest.TestCase):
         return t
 
     def test_new_section_fields_populated(self):
-        t = self._taxon_with(
+        t = self._treatment_with(
             [
                 ("Differs from X.", "Diagnosis"),
                 ("Found in Europe.", "Distribution"),
@@ -638,7 +638,7 @@ class TestTaxonNewFields(unittest.TestCase):
         self.assertIn("Saprotrophic", row["biology"])
 
     def test_absent_sections_are_none(self):
-        t = self._taxon_with([("Pileus convex.", "Description")])
+        t = self._treatment_with([("Pileus convex.", "Description")])
         row = t.as_row()
         for field in (
             "diagnosis",
@@ -654,7 +654,7 @@ class TestTaxonNewFields(unittest.TestCase):
             self.assertIsNone(row[field], msg=f"{field} should be None")
 
     def test_multiple_blocks_same_section_concatenated(self):
-        t = self._taxon_with(
+        t = self._treatment_with(
             [
                 ("First diagnosis.", "Diagnosis"),
                 ("Second diagnosis.", "Diagnosis"),
@@ -665,7 +665,7 @@ class TestTaxonNewFields(unittest.TestCase):
         self.assertIn("Second diagnosis", row["diagnosis"])
 
     def test_span_fields_present_for_all_sections(self):
-        t = self._taxon_with([("Differs from X.", "Diagnosis")])
+        t = self._treatment_with([("Differs from X.", "Diagnosis")])
         row = t.as_row()
         for field in (
             "diagnosis_spans",
@@ -680,7 +680,7 @@ class TestTaxonNewFields(unittest.TestCase):
 
     def test_description_field_still_works(self):
         """Existing 'description' field and 'description_spans' still present."""
-        t = self._taxon_with([("Pileus convex.", "Description")])
+        t = self._treatment_with([("Pileus convex.", "Description")])
         row = t.as_row()
         self.assertIn("Pileus convex", row["description"])
         self.assertIn("description_spans", row)

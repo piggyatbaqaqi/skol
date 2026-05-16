@@ -2,7 +2,7 @@
 Unit tests for ingest field propagation and dual-format reading.
 
 Tests the get_ingest_field() helper function and ingest propagation
-through the data pipeline (CouchDBFile -> Line -> Taxon).
+through the data pipeline (CouchDBFile -> Line -> Treatment).
 """
 
 import unittest
@@ -12,7 +12,7 @@ from pyspark.sql import Row
 import sys
 sys.path.insert(0, '..')
 
-from taxon import get_ingest_field
+from treatment import get_ingest_field
 from couchdb_file import CouchDBFile, read_couchdb_partition
 from line import Line
 
@@ -221,12 +221,12 @@ class TestReadCouchDBPartitionIngest(unittest.TestCase):
 
 
 class TestTaxonIngestOutput(unittest.TestCase):
-    """Test ingest field in Taxon.as_row() output."""
+    """Test ingest field in Treatment.as_row() output."""
 
     def test_as_row_includes_ingest(self):
-        """Test that Taxon.as_row() includes ingest field."""
+        """Test that Treatment.as_row() includes ingest field."""
         from finder import parse_annotated
-        from taxon import group_paragraphs
+        from treatment import group_paragraphs
 
         ingest = {
             '_id': 'doc123',
@@ -267,7 +267,7 @@ class TestTaxonIngestOutput(unittest.TestCase):
     def test_as_row_ingest_none_when_not_provided(self):
         """Test that as_row() has None ingest when not provided."""
         from finder import parse_annotated
-        from taxon import group_paragraphs
+        from treatment import group_paragraphs
 
         content = (
             "[@Fungus novus Author 1999#Nomenclature*]\n"

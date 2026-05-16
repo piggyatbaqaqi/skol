@@ -36,7 +36,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
-from taxon import get_ingest_field
+from treatment import get_ingest_field
 
 
 def _inference_worker(descriptions, model_config, batch_size, result_queue, streaming=False):

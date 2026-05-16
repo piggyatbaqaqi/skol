@@ -80,3 +80,37 @@ When the next full `extract_treatments` pipeline pass runs:
 4. Write a migration script to update `databases.taxa` → `databases.treatments`
    in all live experiment documents.
 5. Deprecate and eventually delete the old `*_taxa` databases.
+
+## Progress
+
+Sub-steps are landed one at a time so the test suite stays green between
+commits.
+
+### Step 1 — Python symbol rename
+
+| Sub-step | Description | Status |
+|---|---|---|
+| 1.A | `taxon.py` → `treatment.py`; `class Taxon` → `Treatment`; update all importers (`finder.py`, `taxon_clusterer.py`, `taxa_json_translator.py`, `tests/test_ingest_field.py`, `tests/test_couchdb_file.py`, `couchdb_file.py`, `examples/extract_taxa_from_couchdb.py`, `bin/extract_taxa_to_couchdb.py`, `setup.py`). Docs: `docs/TAXON_PIPELINE_README.md`, `docs/EXTRACTING_TAXON_OBJECTS.md`. | ✅ Done |
+| 1.B | `TaxonExtractor` → `TreatmentExtractor` (file `bin/extract_taxa_to_couchdb.py` kept; symbol only). Includes the Spark `appName("SKOL Taxon Extractor")`. | ⬜ Pending |
+| 1.C | Rename `bin/extract_taxa_to_couchdb.py` → `bin/extract_treatments_to_couchdb.py` (+ `_test.py` + shell wrapper). Update Makefile/docs callers. | ⬜ Pending |
+| 1.D | Rename `bin/embed_taxa.py` → `bin/embed_treatments.py` (+ `_test.py` + shell wrapper). Update `bin/rebuild_redis` (CLAUDE.md rule) and any Redis key prefix references. | ⬜ Pending |
+| 1.E | Rename `bin/taxa_to_json.py` → `bin/treatments_to_json.py` (+ shell wrapper). Not in original plan; included with the rest of the vocabulary cleanup. | ⬜ Pending |
+| 1.F | Django views: `TaxaInfoView` → `TreatmentsInfoView`, `PDFFromTaxaView` → `PDFFromTreatmentsView`. URL routes + React API callers + `docs/api-reference.md`. | ⬜ Pending |
+| 1.G | Config keys: `taxon_db_name` → `treatments_db_name`; env `TAXON_DB_NAME` → `TREATMENTS_DB_NAME`. The new key still maps to the existing `skol_taxa_dev` DB name (Step 2 compat). | ⬜ Pending |
+
+### Deferred — persisted data (Step 3 territory)
+
+These appear in Python code but encode CouchDB / Spark field names that
+downstream consumers read.  They are intentionally **not** renamed in Step 1:
+
+- The dict key `"taxon"` returned by `Treatment.as_row()` (the concatenated
+  Nomenclature text) — still emitted to CouchDB / Spark schemas under that
+  name.
+- Spark `StructField("taxon", StringType(), False)` in
+  `bin/extract_taxa_to_couchdb.py`, `taxa_json_translator.py`,
+  `bin/taxa_to_json.py`.
+- DataFrame `.select("taxon", ...)` references in `taxa_json_translator.py`,
+  `bin/taxa_to_json.py`, `examples/example_taxa_translation.py`,
+  `tests/test_load_taxa.py`.
+
+These migrate together with the CouchDB DB rename in Step 3.
