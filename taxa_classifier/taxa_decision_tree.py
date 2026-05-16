@@ -167,7 +167,7 @@ class TaxaDecisionTreeClassifier:
                     doc = db[doc_id]
                     documents.append({
                         '_id': doc['_id'],
-                        'taxon': doc.get('taxon', ''),
+                        'treatment': doc.get('treatment', ''),
                         'description': doc.get('description', '')
                     })
                     if self.verbosity >= 2 and (i + 1) % 100 == 0:
@@ -191,7 +191,7 @@ class TaxaDecisionTreeClassifier:
                     if 'description' in doc and doc.get('description'):
                         documents.append({
                             '_id': doc['_id'],
-                            'taxon': doc.get('taxon', ''),
+                            'treatment': doc.get('treatment', ''),
                             'description': doc.get('description', '')
                         })
                         count += 1
@@ -227,7 +227,7 @@ class TaxaDecisionTreeClassifier:
 
         for doc in documents:
             desc = doc.get('description', '')
-            taxon = doc.get('taxon', '')
+            treatment = doc.get('treatment', '')
 
             # Combine taxon name and description for richer features
             text = f"{taxon} {desc}".strip()

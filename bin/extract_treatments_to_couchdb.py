@@ -125,7 +125,7 @@ def generate_taxon_doc_id(taxon_dict: Dict[str, Any]) -> str:
         Deterministic document ID as 'taxon_<sha256_hex>'
     """
     _CANONICAL_FIELDS = (
-        'taxon', 'description', 'diagnosis', 'etymology', 'distribution',
+        'treatment', 'description', 'diagnosis', 'etymology', 'distribution',
         'materials_examined', 'type_designation', 'biology', 'notes',
         'key', 'figure_captions',
     )
@@ -372,7 +372,7 @@ class TreatmentExtractor:
         span_map_schema = MapType(StringType(), StringType(), valueContainsNull=True)
 
         self._extract_schema = StructType([
-            StructField("taxon", StringType(), False),
+            StructField("treatment", StringType(), False),
             # Flat section text fields (None when that section is absent).
             StructField("description", StringType(), True),
             StructField("diagnosis", StringType(), True),
@@ -543,7 +543,7 @@ class TreatmentExtractor:
 
                             # Convert CouchDB document to Row
                             taxon_data = {
-                                'taxon': doc.get('taxon', ''),
+                                'treatment': doc.get('treatment', ''),
                                 'description': doc.get('description', ''),
                                 'ingest': doc.get('ingest'),
                                 'line_number': doc.get('line_number'),
@@ -1018,7 +1018,7 @@ class TreatmentExtractor:
                 print(f"\n[DRY RUN] Would save {taxa_count} taxa to {self.treatments_db_name}")
                 if self.verbosity >= 2:
                     print("\n[DRY RUN] Sample taxa:")
-                    taxa_df.select("_id", "taxon", "ingest").show(5, truncate=50)
+                    taxa_df.select("_id", "treatment", "ingest").show(5, truncate=50)
             # Return empty results DataFrame for dry run
             return self.spark.createDataFrame([], self._save_schema)
 

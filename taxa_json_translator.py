@@ -46,7 +46,7 @@ def _inference_worker(descriptions, model_config, batch_size, result_queue, stre
     Must be defined at module level for pickling with 'spawn' context.
 
     Args:
-        descriptions: List of dicts with '_id', 'taxon', 'description' keys
+        descriptions: List of dicts with '_id', 'treatment', 'description' keys
         model_config: Dict with model configuration
         batch_size: Number of descriptions per batch (for progress reporting)
         result_queue: Queue to send results back
@@ -179,7 +179,7 @@ Result:
                     # Send result immediately with full item data for saving
                     result_queue.put(('result', {
                         '_id': doc_id,
-                        'taxon': item.get('taxon', ''),
+                        'treatment': item.get('treatment', ''),
                         'description': description,
                         'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
@@ -198,7 +198,7 @@ Result:
                 if streaming:
                     result_queue.put(('result', {
                         '_id': doc_id,
-                        'taxon': item.get('taxon', ''),
+                        'treatment': item.get('treatment', ''),
                         'description': description,
                         'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
@@ -233,7 +233,7 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
     Must be defined at module level for pickling with 'spawn' context.
 
     Args:
-        descriptions: List of dicts with '_id', 'taxon', 'description' keys
+        descriptions: List of dicts with '_id', 'treatment', 'description' keys
         model_config: Dict with model configuration
         batch_size: Number of descriptions per batch (for progress reporting)
         result_queue: Queue to send results back
@@ -306,7 +306,7 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
                     # Send result immediately with full item data for saving
                     result_queue.put(('result', {
                         '_id': doc_id,
-                        'taxon': item.get('taxon', ''),
+                        'treatment': item.get('treatment', ''),
                         'description': description,
                         'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
@@ -325,7 +325,7 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
                 if streaming:
                     result_queue.put(('result', {
                         '_id': doc_id,
-                        'taxon': item.get('taxon', ''),
+                        'treatment': item.get('treatment', ''),
                         'description': description,
                         'ingest': item.get('ingest', {}),
                         'line_number': item.get('line_number'),
@@ -370,7 +370,7 @@ class TaxaJSONTranslator:
         >>> enriched_df = translator.translate_descriptions(taxa_df)
         >>>
         >>> # Show results
-        >>> enriched_df.select("taxon", "description", "features_json").show()
+        >>> enriched_df.select("treatment", "description", "features_json").show()
     """
 
     # Default configuration
@@ -651,7 +651,7 @@ and their values from the provided species description and format them as struct
         # Define schema with _id for joining results
         schema = StructType([
             StructField("_id", StringType(), False),
-            StructField("taxon", StringType(), False),
+            StructField("treatment", StringType(), False),
             StructField("description", StringType(), False),
             StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), True),
             StructField("line_number", IntegerType(), True),
@@ -705,7 +705,7 @@ and their values from the provided species description and format them as struct
                             # Convert CouchDB document to Row (include _id for joining)
                             taxon_data = {
                                 '_id': doc.get('_id', doc_id),
-                                'taxon': doc.get('taxon', ''),
+                                'treatment': doc.get('treatment', ''),
                                 'description': doc.get('description', ''),
                                 'ingest': doc.get('ingest', {}),
                                 'line_number': doc.get('line_number'),
@@ -933,7 +933,7 @@ Result:
         Example:
             >>> taxa_df = extractor.load_taxa()
             >>> enriched_df = translator.translate_descriptions(taxa_df)
-            >>> enriched_df.select("taxon", "features_json").show(truncate=50)
+            >>> enriched_df.select("treatment", "features_json").show(truncate=50)
         """
         print(f"Translating descriptions to JSON...")
         print(f"  Input column: {description_col}")
@@ -991,11 +991,11 @@ Result:
 
         # Step 1: Collect all data from Spark to pure Python
         print("  Collecting data from Spark...")
-        rows = taxa_df.select("_id", "taxon", description_col).collect()
+        rows = taxa_df.select("_id", "treatment", description_col).collect()
 
         # Convert to pure Python list of dicts (no Spark Row objects)
         descriptions = [
-            {'_id': row['_id'], 'taxon': row['taxon'], 'description': row[description_col]}
+            {'_id': row['_id'], 'treatment': row['treatment'], 'description': row[description_col]}
             for row in rows
         ]
         total = len(descriptions)
@@ -1162,7 +1162,7 @@ Result:
         if verbosity >= 1:
             print("  Collecting data from Spark...")
         rows = taxa_df.select(
-            "_id", "taxon", description_col, "ingest",
+            "_id", "treatment", description_col, "ingest",
             "line_number", "paragraph_number", "page_number", "empirical_page_number"
         ).collect()
 
@@ -1173,7 +1173,7 @@ Result:
             ingest_val = getattr(row, 'ingest', None)
             item = {
                 '_id': row['_id'],
-                'taxon': row['taxon'],
+                'treatment': row['treatment'],
                 'description': row[description_col],
                 'ingest': dict(ingest_val) if ingest_val else {},
                 'line_number': row['line_number'],
@@ -1280,7 +1280,7 @@ Result:
             # Drop the first description — it's the one
             # the subprocess was stuck on
             skipped = remaining[0]
-            taxon = skipped.get('taxon', 'unknown')
+            treatment = skipped.get('treatment', 'unknown')
             doc_id = skipped.get('_id', 'unknown')
             print(
                 f"  ✗ Skipping stuck description:"
@@ -1384,7 +1384,7 @@ Result:
                         line_number = data.get('line_number')
 
                         doc_id = generate_taxon_doc_id(
-                            data.get('taxon', ''),
+                            data.get('treatment', ''),
                             data.get('description', '')
                         )
 
@@ -1407,7 +1407,7 @@ Result:
 
                         taxon_doc = {
                             '_id': doc_id,
-                            'taxon': data.get('taxon', ''),
+                            'treatment': data.get('treatment', ''),
                             'description': data.get(
                                 'description', ''
                             ),
@@ -1443,7 +1443,7 @@ Result:
                             )
                         if not json_valid:
                             taxon_preview = (
-                                data.get('taxon', '')[:60]
+                                data.get('treatment', '')[:60]
                             )
                             desc_text = data.get(
                                 'description', ''
@@ -1634,7 +1634,7 @@ Result:
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
-                            row_dict.get('taxon', ''),
+                            row_dict.get('treatment', ''),
                             row_dict.get('description', '')
                         )
 
@@ -1835,7 +1835,7 @@ def example_usage():
 
         # Show sample results
         print("\nSample results:")
-        enriched_df.select("taxon", "features_json").show(5, truncate=50)
+        enriched_df.select("treatment", "features_json").show(5, truncate=50)
 
         # Validate JSON
         validated_df = translator.validate_json(enriched_df)

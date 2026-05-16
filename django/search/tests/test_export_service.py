@@ -157,7 +157,7 @@ class TestExportUserData(TestCase):
             '_id': doc_id,
             '_rev': '1-abc',
             'type': 'collection',
-            'taxon': 'Fungi',
+            'treatment': 'Fungi',
         }
 
         # Mock CouchDB server and database
@@ -177,7 +177,7 @@ class TestExportUserData(TestCase):
         expected = f'couchdb_collections/{doc_id}.json'
         assert expected in zf.namelist()
         data = json.loads(zf.read(expected))
-        assert data['taxon'] == 'Fungi'
+        assert data['treatment'] == 'Fungi'
         assert '_rev' not in data
 
     @patch(f'{EXPORT_SERVICE}.get_comments_for_collection')

@@ -215,7 +215,7 @@ class Treatment(object):
             ]
 
         retval: Dict[str, Any] = {
-            "taxon": "\n".join(str(p) for p in self._nomenclatures),
+            "treatment": "\n".join(str(p) for p in self._nomenclatures),
             "ingest": ingest,
             "line_number": first_line.line_number,
             "paragraph_number": pp.paragraph_number,

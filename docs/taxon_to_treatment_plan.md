@@ -177,7 +177,7 @@ full per-pass checklist.
 
 | Pass | Target | Mechanism | Status |
 |---|---|---|---|
-| 3-dev | Local CouchDB at `http://localhost:5984` | `bin/migrate_taxa_to_treatments.py --execute` | ✅ Data migrated (DB + doc + experiment-doc rewrites). Code-side cutover still pending — see below. |
+| 3-dev | Local CouchDB at `http://localhost:5984` | `bin/migrate_taxa_to_treatments.py --execute` + code-side cutover commit | ✅ Complete |
 | 3-prod | `https://synoptickeyof.life:5984` | SSH to skol@synoptickeyof.life | ⬜ Not started |
 
 3-dev outcome (run 2026-05-16):
@@ -194,20 +194,45 @@ full per-pass checklist.
   prod-replication-ready.
 - Originals untouched; rollback = `curl -X DELETE` each new DB.
 
-3-dev code-side cutover (next):
+3-dev code-side cutover (done):
 
-- Flip default in `bin/env_config.py` (`treatments_db_name` default
-  `'skol_taxa_dev'` → `'skol_treatments_dev'`) and the matching
-  Django setting.
-- Change Spark consumers (`taxa_json_translator.py`,
-  `bin/extract_treatments_to_couchdb.py`, `bin/treatments_to_json.py`)
-  to read the `treatment` field from documents instead of `taxon`,
-  and to write `treatment` in their output schemas.
-- Re-point any Django views / pipelines at the new DB defaults via
-  experiment docs (already done — experiment docs now refer to
-  `databases.treatments`).
-- Validate via spot-check + a re-run of the relevant pipelines
-  against the new DBs.
+- Flipped defaults in `bin/env_config.py` (`treatments_db_name`,
+  `source_db`, `dest_db`) and `django/skolweb/settings.py`
+  (`TREATMENTS_DB_NAME`, `VOCAB_TREE_DB`) from the `*_taxa_dev`
+  names to the new `*_treatments_dev` names.  The `TAXON_DB_NAME`
+  env-var fallback is preserved (rollback = set
+  `TREATMENTS_DB_NAME=skol_taxa_dev`).
+- `Treatment.as_row()` (`treatment.py`) now emits `"treatment"` as the
+  dict-key field name instead of `"taxon"`.
+- Spark consumers updated to read/write `treatment`:
+  `bin/extract_treatments_to_couchdb.py` (StructField + canonical
+  fields list + doc-to-row converter), `taxa_json_translator.py`
+  (StructField + every `.select("taxon", ...)` and dict access),
+  `bin/treatments_to_json.py` (preview/diagnostic selects).
+- Django consumers updated to read `treatment` from CouchDB docs:
+  `django/search/views.py` (Title fields, `df['taxon']` mask filters,
+  `embeddings['taxon']` lookups), `django/search/couchdb_sync.py`
+  (Collection nomenclature sync to the unified-search docs).
+- `taxon_clusterer.py` now reads `treatment` first with a `taxon`
+  fallback for pre-migration CSV exports.
+- Test fixtures updated where they built rows with the old shape:
+  `tests/test_load_taxa.py`, `examples/example_taxa_translation.py`,
+  `django/search/tests/test_export_service.py`,
+  `django/search/tests/test_search_views.py`,
+  `bin/extract_treatments_to_couchdb_test.py`.
+- Validation: full test sweep (114 pass, 0 fail). Producer +
+  persisted data + consumers all agree on `treatment` per
+  end-to-end spot-check against the migrated `skol_treatments_dev`.
+
+Kept as `taxon` (not renamed):
+
+- `'ResultType': 'taxon'` in `django/search/views.py` (user-facing
+  result-categorization label in API responses; renaming would break
+  frontend / external API clients).
+- `fixes/*.py` historical one-off scripts that ran against pre-migration
+  DBs — leave them accurate to that state.
+- `taxon_clusterer.py`'s Neo4j node label `:Taxon` (biological-taxon
+  concept, distinct from the Python class).
 
 Mid-run fix that landed during 3-dev: couchdb-python's
 `server.replicate()` helper builds short-form URLs with a `http://any`

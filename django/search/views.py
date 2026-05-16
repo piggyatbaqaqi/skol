@@ -688,7 +688,7 @@ def build_result_dict(row, similarity=None):
     """
     result_dict = {
         'Similarity': clean_value(similarity),
-        'Title': clean_value(row.get('taxon', '')),
+        'Title': clean_value(row.get('treatment', '')),
         'Description': clean_value(row.get('description', '')),
         'Feed': clean_value(row.get('source', '')),
         'URL': clean_value(row.get('filename', '')),
@@ -850,7 +850,7 @@ class SearchView(APIView):
                 embeddings = read_narrative_embeddings_from_redis(
                     settings.REDIS_URL, embedding_name,
                 )
-                mask = embeddings['taxon'].astype(str).str.contains(
+                mask = embeddings['treatment'].astype(str).str.contains(
                     nomenclature_pattern, regex=True, case=False, na=False,
                 )
                 embeddings = embeddings[mask]
@@ -980,7 +980,7 @@ class NomenclatureSearchView(APIView):
                 settings.REDIS_URL, embedding_name,
             )
 
-            mask = df['taxon'].astype(str).str.contains(
+            mask = df['treatment'].astype(str).str.contains(
                 pattern, regex=True, case=False, na=False,
             )
             matches = df[mask].head(limit)
@@ -1127,7 +1127,7 @@ class TreatmentsInfoView(APIView):
                     'taxa_db': taxa_db,
                     'ResultType': 'collection',
                     # Search result compatible fields
-                    'Title': taxa_doc.get('taxon', ''),  # nomenclature
+                    'Title': taxa_doc.get('treatment', ''),  # nomenclature
                     'Description': taxa_doc.get('description', ''),
                     'Feed': 'User Collection',
                     # Collection-specific fields
@@ -1145,7 +1145,7 @@ class TreatmentsInfoView(APIView):
                     'taxa_db': taxa_db,
                     'ResultType': 'taxon',
                     # Search result compatible fields
-                    'Title': taxa_doc.get('taxon', ''),
+                    'Title': taxa_doc.get('treatment', ''),
                     'Description': taxa_doc.get('description', ''),
                     'Feed': 'CouchDB Taxa',
                     'URL': url,

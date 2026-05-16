@@ -370,9 +370,9 @@ def translate_treatments_to_json(
         # Show sample if verbose
         if verbosity >= 2:
             print("\nSample taxa:")
-            sample_rows = taxa_df.select("_id", "taxon").limit(3).collect()
+            sample_rows = taxa_df.select("_id", "treatment").limit(3).collect()
             for row in sample_rows:
-                taxon_preview = row['taxon'][:80] + '...' if len(row['taxon']) > 80 else row['taxon']
+                treatment_preview = row['treatment'][:80] + '...' if len(row['treatment']) > 80 else row['treatment']
                 print(f"  {row['_id']}: {taxon_preview}")
 
         # Handle dry run
@@ -427,7 +427,7 @@ def translate_treatments_to_json(
                     print(f"⚠ {invalid_count} descriptions produced invalid JSON")
                     if verbosity >= 2:
                         print("\nInvalid entries:")
-                        invalid_rows = validated_df.filter("json_valid = 'false'").select("_id", "taxon").limit(5).collect()
+                        invalid_rows = validated_df.filter("json_valid = 'false'").select("_id", "treatment").limit(5).collect()
                         for row in invalid_rows:
                             print(f"  - {row['_id']}")
             else:

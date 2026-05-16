@@ -254,16 +254,17 @@ EMBEDDING_NAME = os.environ.get('EMBEDDING_NAME', 'skol:embedding:v1.1')
 # Taxa database for embeddings
 # treatments_db_name: TREATMENTS_DB_NAME, with TAXON_DB_NAME accepted as
 # a deprecated fallback so unmigrated .env files keep working until Step 2
-# lapses.  Default value stays as 'skol_taxa_dev' until Step 3 migration.
+# lapses.  Default flipped to the post-Step-3 DB name; rollback =
+# set TREATMENTS_DB_NAME=skol_taxa_dev in the Django process environment.
 TREATMENTS_DB_NAME = os.environ.get(
     'TREATMENTS_DB_NAME',
-    os.environ.get('TAXON_DB_NAME', 'skol_taxa_dev'),
+    os.environ.get('TAXON_DB_NAME', 'skol_treatments_dev'),
 )
 # Deprecated alias — read by legacy code paths.
 TAXON_DB_NAME = TREATMENTS_DB_NAME
 
 # Vocabulary tree configuration
-VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_taxa_full_dev')
+VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_treatments_full_dev')
 
 # Path to SKOL bin scripts (embed_treatments.py, build_vocab_tree.py, etc.)
 SKOL_BIN_PATH = os.environ.get('SKOL_BIN_PATH', '/opt/skol/bin')

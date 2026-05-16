@@ -75,7 +75,7 @@ def main():
 
         # Show sample taxa
         print("\nSample taxa:")
-        taxa_df.select("taxon", "description").show(3, truncate=50)
+        taxa_df.select("treatment", "description").show(3, truncate=50)
 
         # Step 2: Initialize translator
         print("\n" + "=" * 70)
@@ -118,7 +118,7 @@ def main():
         # Show sample results
         print("\nSample translations:")
         enriched_df.select(
-            "taxon",
+            "treatment",
             "features_json"
         ).show(3, truncate=100)
 
@@ -135,7 +135,7 @@ def main():
 
         if invalid_count > 0:
             print(f"\n⚠ Found {invalid_count} invalid JSON entries:")
-            invalid_df.select("taxon", "features_json").show(5, truncate=100)
+            invalid_df.select("treatment", "features_json").show(5, truncate=100)
         else:
             print("\n✓ All JSON entries are valid")
 
@@ -178,7 +178,7 @@ def main():
             print("\nComplete example (first valid entry):")
             sample = valid_df.first()
 
-            print(f"\nTaxon: {sample['taxon']}")
+            print(f"\nTreatment: {sample['treatment']}")
             print(f"\nDescription:")
             print(f"  {sample['description'][:200]}...")
             print(f"\nExtracted Features (JSON):")

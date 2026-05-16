@@ -87,7 +87,7 @@ def sync_collection_to_couchdb(collection_id: int) -> bool:
             'type': 'collection',
 
             # Taxa-compatible fields for unified search
-            'taxon': collection.nomenclature or '',
+            'treatment': collection.nomenclature or '',
             'description': collection.description or '',
 
             # Collection metadata
@@ -131,10 +131,10 @@ def sync_collection_to_couchdb(collection_id: int) -> bool:
 
             # Check for changes that should trigger history
             old_description = old_doc.get('description', '')
-            old_nomenclature = old_doc.get('taxon', '')
+            old_nomenclature = old_doc.get('treatment', '')
 
             description_changed = old_description != doc['description']
-            nomenclature_changed = old_nomenclature != doc['taxon']
+            nomenclature_changed = old_nomenclature != doc['treatment']
 
         # Save the document
         db.save(doc)

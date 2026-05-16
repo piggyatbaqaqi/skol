@@ -25,7 +25,7 @@ from extract_treatments_to_couchdb import generate_taxon_doc_id
 def _base_dict(**overrides):
     """Minimal taxon dict with all section fields absent (None)."""
     d = {
-        'taxon': 'Amanita muscaria (L.) Lam.',
+        'treatment': 'Amanita muscaria (L.) Lam.',
         'description': 'Cap convex, red with white warts.',
         'diagnosis': None,
         'etymology': None,
@@ -79,8 +79,8 @@ class TestGenerateTaxonDocIdSensitivity(unittest.TestCase):
     """Different content → different ID."""
 
     def test_different_taxon_text(self):
-        a = generate_taxon_doc_id(_base_dict(taxon='Amanita muscaria'))
-        b = generate_taxon_doc_id(_base_dict(taxon='Amanita phalloides'))
+        a = generate_taxon_doc_id(_base_dict(treatment='Amanita muscaria'))
+        b = generate_taxon_doc_id(_base_dict(treatment='Amanita phalloides'))
         self.assertNotEqual(a, b)
 
     def test_different_description(self):

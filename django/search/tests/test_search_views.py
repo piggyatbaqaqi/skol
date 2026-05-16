@@ -18,7 +18,7 @@ from search.models import Collection, CollectionProject, Project
 def _make_mock_embeddings():
     """Build a small mock embeddings DataFrame with 3 taxa."""
     data = {
-        'taxon': [
+        'treatment': [
             'Agaricus bisporus',
             'Agaricus campestris',
             'Boletus edulis',
@@ -41,7 +41,7 @@ def _make_collection_embeddings(collection_ids):
     """Build mock embeddings with collection-type taxon_ids."""
     n = len(collection_ids)
     data = {
-        'taxon': [f'Collection taxon {cid}' for cid in collection_ids],
+        'treatment': [f'Collection taxon {cid}' for cid in collection_ids],
         'description': [f'Description for {cid}' for cid in collection_ids],
         'source': ['SKOL_COLLECTIONS'] * n,
         'filename': [f'f{cid}' for cid in collection_ids],

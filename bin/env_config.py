@@ -260,16 +260,16 @@ def get_env_config() -> Dict[str, Any]:
         'taxon_password': _get_env('TAXON_PASSWORD', ''),
         # treatments_db_name: TREATMENTS_DB_NAME, with TAXON_DB_NAME
         # accepted as a deprecated fallback so existing .skol_env files
-        # keep working until Step 2 lapses.  The default value stays as
-        # 'skol_taxa_dev' until the data migration in Step 3.
+        # keep working until Step 2 lapses.  Default flipped to the
+        # post-Step-3 DB name; rollback = set TREATMENTS_DB_NAME=skol_taxa_dev.
         'treatments_db_name': _get_env(
             'TREATMENTS_DB_NAME',
-            _get_env('TAXON_DB_NAME', 'skol_taxa_dev'),
+            _get_env('TAXON_DB_NAME', 'skol_treatments_dev'),
         ),
 
         # JSON translation settings (for treatments_to_json.py)
-        'source_db': _get_env('SOURCE_DB', 'skol_taxa_dev'),
-        'dest_db': _get_env('DEST_DB', 'skol_taxa_full_dev'),
+        'source_db': _get_env('SOURCE_DB', 'skol_treatments_dev'),
+        'dest_db': _get_env('DEST_DB', 'skol_treatments_full_dev'),
         'checkpoint_path': _get_env('CHECKPOINT_PATH', ''),
 
         # Training database settings

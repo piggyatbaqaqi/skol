@@ -135,9 +135,13 @@ class TaxonClusterer:
             embedding_cols = [col for col in data.columns if col.startswith('F')]
             self.embeddings = data[embedding_cols].values
 
-            # Extract taxon names from 'taxon' field (nomenclature)
-            # If 'taxon' column doesn't exist, fall back to 'description'
-            if 'taxon' in data.columns:
+            # Extract taxon names from the nomenclature field.
+            # 'treatment' is the canonical column post-migration; 'taxon'
+            # is accepted as a deprecated fallback for pre-migration CSVs.
+            # If neither column exists, fall back to 'description'.
+            if 'treatment' in data.columns:
+                self.taxon_names = data['treatment'].tolist()
+            elif 'taxon' in data.columns:
                 self.taxon_names = data['taxon'].tolist()
             else:
                 self.taxon_names = data['description'].tolist()
