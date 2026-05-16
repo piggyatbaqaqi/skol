@@ -284,7 +284,7 @@ Add `default_experiment` to `UserSettingsSerializer`.
 
 Key views that need experiment awareness:
 - `SearchView` — use experiment's embedding key
-- `TaxaInfoView` — use experiment's taxa DB
+- `TreatmentsInfoView` — use experiment's taxa DB
 - `EmbeddingListView` — filter to experiment's embedding
 - `BuildVocabTreeView` — use experiment's taxa_full DB and menus key
 - `sources_view()` in `skolweb/urls.py` — use experiment's ingest DB

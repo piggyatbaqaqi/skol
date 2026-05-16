@@ -9,9 +9,9 @@ from .views import (
     ExperimentListView,
     EmbeddingListView,
     BuildEmbeddingView,
-    TaxaInfoView,
+    TreatmentsInfoView,
     PDFAttachmentView,
-    PDFFromTaxaView,
+    PDFFromTreatmentsView,
     # Collection views
     IdentifierTypeListView,
     FungariaListView,
@@ -74,14 +74,14 @@ urlpatterns = [
     path('search/nomenclature/', NomenclatureSearchView.as_view(), name='nomenclature-search'),
     path('search/', SearchView.as_view(), name='search'),
     # Taxa document info
-    path('taxa/<str:taxa_id>/', TaxaInfoView.as_view(), name='taxa-info'),
+    path('taxa/<str:taxa_id>/', TreatmentsInfoView.as_view(), name='taxa-info'),
     # PDF endpoints
     path('pdf/<str:db_name>/<str:doc_id>/',
          PDFAttachmentView.as_view(), name='pdf-attachment'),
     path('pdf/<str:db_name>/<str:doc_id>/<str:attachment_name>/',
          PDFAttachmentView.as_view(), name='pdf-attachment-named'),
     path('taxa/<str:taxa_id>/pdf/',
-         PDFFromTaxaView.as_view(), name='taxa-pdf'),
+         PDFFromTreatmentsView.as_view(), name='taxa-pdf'),
 
     # Identifier types (reference data)
     path('identifier-types/', IdentifierTypeListView.as_view(), name='identifier-types'),

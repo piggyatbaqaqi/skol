@@ -1029,7 +1029,7 @@ def _resolve_migrated_taxa_id(taxa_id, auth):
     return None
 
 
-class TaxaInfoView(APIView):
+class TreatmentsInfoView(APIView):
     """
     API endpoint to get taxa document information including source PDF details.
 
@@ -1231,7 +1231,7 @@ class PDFAttachmentView(APIView):
             )
 
 
-class PDFFromTaxaView(APIView):
+class PDFFromTreatmentsView(APIView):
     """
     API endpoint to retrieve PDF from a taxa document's source reference.
 
