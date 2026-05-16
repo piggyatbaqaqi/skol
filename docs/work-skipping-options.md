@@ -88,7 +88,7 @@ This document summarizes the current state of work-skipping options across SKOL 
 
 ---
 
-### 6. taxa_to_json.py - Taxa Translation
+### 6. treatments_to_json.py - Taxa Translation
 
 **Purpose:** Translate taxa descriptions to structured JSON using Mistral
 
@@ -153,7 +153,7 @@ All programs now support standard options via `env_config.py`:
 | predict_classifier.py | YES | YES | YES | YES | YES | - |
 | extract_treatments_to_couchdb.py | YES | (idempotent) | - | YES | YES | - |
 | embed_treatments.py | YES | YES (default) | YES | - | - | - |
-| taxa_to_json.py | YES | YES | YES | YES | YES | YES |
+| treatments_to_json.py | YES | YES | YES | YES | YES | YES |
 | regenerate_from_pdf.py | YES | - | - | - | YES | - |
 | regenerate_txt_with_pages.py | YES | - | - | - | YES | - |
 
@@ -207,7 +207,7 @@ Used by `embed_treatments.py`:
 - Skip by default, recompute with `--force`
 
 ### Pattern 3: Explicit Skip-Existing
-Used by `taxa_to_json.py`:
+Used by `treatments_to_json.py`:
 - Query destination for existing record IDs
 - Filter source records before processing
 - Useful for crash recovery
@@ -219,7 +219,7 @@ Used by `train_classifier.py`, `predict_classifier.py`:
 - `--save-text lazy`: Save only if missing
 
 ### Pattern 5: Incremental Processing
-Used by `taxa_to_json.py`:
+Used by `treatments_to_json.py`:
 - Save each record immediately
 - Crash-resistant; progress preserved
 
@@ -311,7 +311,7 @@ Exception: Idempotent programs (like `extract_treatments_to_couchdb.py`) don't n
    - ✅ `ingest.py`: Added `--dry-run`, `--skip-existing`, `--limit`
    - ✅ `extract_treatments_to_couchdb.py`: Added `--dry-run`, `--doc-ids`, `--limit`
    - ✅ `embed_treatments.py`: Added `--dry-run`, `--skip-existing` (was default), `--force`
-   - ✅ `taxa_to_json.py`: Added `--doc-ids`, `--force` (already had other options)
+   - ✅ `treatments_to_json.py`: Added `--doc-ids`, `--force` (already had other options)
 
 3. **Low Priority** (fixes/, already have good options):
    - `regenerate_from_pdf.py`: Has `--dry-run`, `--doc-id`
@@ -328,7 +328,7 @@ Each program needs to define what "existing output" means:
 | predict_classifier.py | .ann attachment | `'.ann' in doc['_attachments']` |
 | extract_treatments_to_couchdb.py | CouchDB taxon doc | `taxon_id in db` (already idempotent) |
 | embed_treatments.py | Redis embedding | `redis.exists(key)` (already implemented) |
-| taxa_to_json.py | CouchDB taxa_full doc | `doc_id in dest_db` (already implemented) |
+| treatments_to_json.py | CouchDB taxa_full doc | `doc_id in dest_db` (already implemented) |
 | regenerate_*.py | .txt attachment | `'.txt' in doc['_attachments']` |
 
 ---

@@ -236,7 +236,7 @@ All commands are available in `/opt/skol/bin/`:
 | `predict_classifier` | Run predictions with trained model |
 | `extract_treatments_to_couchdb` | Extract taxonomic data to CouchDB |
 | `embed_treatments` | Generate embeddings for taxa |
-| `taxa_to_json` | Export taxa to JSON format |
+| `treatments_to_json` | Export taxa to JSON format |
 | `build_vocab_tree` | Build vocabulary tree for UI menus |
 | `manage_fungaria` | Manage Index Herbariorum data |
 | `watch_install` | Watch specific deb files and install on change |

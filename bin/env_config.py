@@ -260,7 +260,7 @@ def get_env_config() -> Dict[str, Any]:
         'taxon_password': _get_env('TAXON_PASSWORD', ''),
         'taxon_db_name': _get_env('TAXON_DB_NAME', 'skol_taxa_dev'),
 
-        # JSON translation settings (for taxa_to_json.py)
+        # JSON translation settings (for treatments_to_json.py)
         'source_db': _get_env('SOURCE_DB', 'skol_taxa_dev'),
         'dest_db': _get_env('DEST_DB', 'skol_taxa_full_dev'),
         'checkpoint_path': _get_env('CHECKPOINT_PATH', ''),

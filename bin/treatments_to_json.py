@@ -7,34 +7,34 @@ translates them to structured JSON using a fine-tuned Mistral model, and
 saves the enriched records to another CouchDB database.
 
 Usage:
-    python taxa_to_json.py [--source-db NAME] [--dest-db NAME] [--checkpoint PATH]
+    python treatments_to_json.py [--source-db NAME] [--dest-db NAME] [--checkpoint PATH]
                            [--batch-size N] [--pattern PATTERN] [--limit N]
                            [--verbosity LEVEL] [--incremental]
 
 Example:
     # Default: load from skol_taxa_dev, save to skol_taxa_full
-    python taxa_to_json.py
+    python treatments_to_json.py
 
     # Specify databases
-    python taxa_to_json.py --source-db mycobank_taxa --dest-db mycobank_taxa_full
+    python treatments_to_json.py --source-db mycobank_taxa --dest-db mycobank_taxa_full
 
     # Process only specific taxa
-    python taxa_to_json.py --pattern "taxon_abc*"
+    python treatments_to_json.py --pattern "taxon_abc*"
 
     # Process only first 5 records (useful for debugging)
-    python taxa_to_json.py --limit 5
+    python treatments_to_json.py --limit 5
 
     # Use a specific model checkpoint
-    python taxa_to_json.py --checkpoint ./mistral_checkpoints/checkpoint-100
+    python treatments_to_json.py --checkpoint ./mistral_checkpoints/checkpoint-100
 
     # Save each record as soon as it's translated (recommended for long jobs)
-    python taxa_to_json.py --incremental
+    python treatments_to_json.py --incremental
 
     # Skip records that already exist in destination (for cheap restarts)
-    python taxa_to_json.py --skip-existing --incremental
+    python treatments_to_json.py --skip-existing --incremental
 
     # Recompute only records with invalid/missing JSON (after model update)
-    python taxa_to_json.py --recompute-invalid --incremental
+    python treatments_to_json.py --recompute-invalid --incremental
 """
 
 import argparse
@@ -68,7 +68,7 @@ DEFAULT_PATTERN = '*'
 # JSON Translation Functions
 # ============================================================================
 
-def translate_taxa_to_json(
+def translate_treatments_to_json(
     config: Dict[str, Any],
     source_db: str,
     dest_db: str,
@@ -834,34 +834,34 @@ Environment Variables:
 
 Examples:
   # Process all taxa with default settings
-  python taxa_to_json.py
+  python treatments_to_json.py
 
   # Process specific taxa pattern
-  python taxa_to_json.py --pattern "taxon_abc*"
+  python treatments_to_json.py --pattern "taxon_abc*"
 
   # Use custom databases
-  python taxa_to_json.py --source-db mycobank_taxa --dest-db mycobank_taxa_full
+  python treatments_to_json.py --source-db mycobank_taxa --dest-db mycobank_taxa_full
 
   # Dry run to see what would be processed
-  python taxa_to_json.py --dry-run
+  python treatments_to_json.py --dry-run
 
   # Process only first 5 records for debugging
-  python taxa_to_json.py --limit 5
+  python treatments_to_json.py --limit 5
 
   # Skip JSON validation
-  python taxa_to_json.py --no-validate
+  python treatments_to_json.py --no-validate
 
   # Incremental mode: save each record immediately (recommended for long jobs)
-  python taxa_to_json.py --incremental
+  python treatments_to_json.py --incremental
 
   # Skip records already in destination (for cheap restarts)
-  python taxa_to_json.py --skip-existing --incremental
+  python treatments_to_json.py --skip-existing --incremental
 
   # Combination: debug with limit and incremental saving
-  python taxa_to_json.py --limit 10 --incremental --verbosity 2
+  python treatments_to_json.py --limit 10 --incremental --verbosity 2
 
   # Recompute only records with invalid/missing JSON (after model update)
-  python taxa_to_json.py --recompute-invalid --incremental
+  python treatments_to_json.py --recompute-invalid --incremental
 """
     )
 
@@ -1097,7 +1097,7 @@ Examples:
 
     # Run translation
     try:
-        translate_taxa_to_json(
+        translate_treatments_to_json(
             config=config,
             source_db=source_db,
             dest_db=dest_db,
