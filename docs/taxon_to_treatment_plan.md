@@ -86,7 +86,12 @@ When the next full `extract_treatments` pipeline pass runs:
 Sub-steps are landed one at a time so the test suite stays green between
 commits.
 
-### Step 1 — Python symbol rename
+### Step 1 — Python symbol rename — ✅ Complete
+
+All seven sub-steps below landed across 8 commits in `skol` plus 1 cross-repo
+fix in `dr-drafts-mycosearch`.  Test suite went from 60/6 baseline (before
+rename) to 75/6 after 1.D made `bin/embed_treatments_test.py` collectable;
+no rename introduced a new failure.
 
 | Sub-step | Description | Status |
 |---|---|---|
@@ -107,10 +112,44 @@ downstream consumers read.  They are intentionally **not** renamed in Step 1:
   Nomenclature text) — still emitted to CouchDB / Spark schemas under that
   name.
 - Spark `StructField("taxon", StringType(), False)` in
-  `bin/extract_taxa_to_couchdb.py`, `taxa_json_translator.py`,
-  `bin/taxa_to_json.py`.
+  `bin/extract_treatments_to_couchdb.py`, `taxa_json_translator.py`,
+  `bin/treatments_to_json.py`.
 - DataFrame `.select("taxon", ...)` references in `taxa_json_translator.py`,
-  `bin/taxa_to_json.py`, `examples/example_taxa_translation.py`,
+  `bin/treatments_to_json.py`, `examples/example_taxa_translation.py`,
   `tests/test_load_taxa.py`.
+- Redis-stats dict key `'taxa_db_name'` written by `bin/build_sources_stats.py`.
+- URL query param `?taxa_db=<id>` and JSON response key `'taxa_db'` in
+  `django/search/views.py`.
+- URL path `/api/taxa/{id}/` and Django route names `'taxa-info'` /
+  `'taxa-pdf'`.
+- `experiment.databases.taxa` field in stored experiment documents (the
+  `databases.taxa` → `treatments_db_name` mapping in `bin/env_config.py`
+  reads from this stored field).
+- Env-var deprecation fallback `TAXON_DB_NAME` and Django setting alias
+  `TAXON_DB_NAME = TREATMENTS_DB_NAME`.
+- The default DB name `'skol_taxa_dev'` in `bin/env_config.py` and
+  `django/skolweb/settings.py`.
 
 These migrate together with the CouchDB DB rename in Step 3.
+
+### Step 2 — Code/data decoupling — ✅ Complete
+
+Absorbed into 1.G's design.  No separate work was needed: the new
+`treatments_db_name` config key defaults to `'skol_taxa_dev'`, the env-var
+lookup chain accepts `TAXON_DB_NAME` as a deprecated fallback, and
+`django/skolweb/settings.py` keeps `TAXON_DB_NAME = TREATMENTS_DB_NAME` as
+an alias.  Existing CouchDB databases (`skol_taxa_dev`,
+`skol_exp_NAME_taxa`) and unmigrated `.skol_env` files continue working
+unchanged.
+
+### Step 3 — Pending operational scheduling
+
+Status: **⬜ Not started.**  Per the plan, "schedule separately" — do this
+when the next full `extract_treatments` pipeline pass is going to run on
+production data anyway.  See the original Step 3 checklist above plus the
+"Deferred — persisted data" list for the full set of dict keys, Spark
+schemas, query params, and stored experiment-doc fields that move atomically
+with the database rename.  A migration script for live experiment documents
+(`databases.taxa` → `databases.treatments`) is one of the deliverables; the
+Step 2 deprecated env-var/alias fallbacks can be removed once Step 3 has
+been deployed everywhere.
