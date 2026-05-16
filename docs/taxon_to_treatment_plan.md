@@ -177,8 +177,44 @@ full per-pass checklist.
 
 | Pass | Target | Mechanism | Status |
 |---|---|---|---|
-| 3-dev | Local CouchDB at `http://localhost:5984` | Local commands | ⬜ Not started |
+| 3-dev | Local CouchDB at `http://localhost:5984` | `bin/migrate_taxa_to_treatments.py --execute` | ✅ Data migrated (DB + doc + experiment-doc rewrites). Code-side cutover still pending — see below. |
 | 3-prod | `https://synoptickeyof.life:5984` | SSH to skol@synoptickeyof.life | ⬜ Not started |
+
+3-dev outcome (run 2026-05-16):
+
+- `skol_taxa_dev` (25,420 docs), `skol_taxa_full_dev` (12,302),
+  `skol_taxa_taxpub_v1_dev` (43,046) replicated to their `*_treatments_*`
+  counterparts in ~35s total via `_replicate`.
+- All 80,768 docs in the new DBs had their persisted `taxon` field
+  renamed to `treatment` via bulk-doc updates.
+- All 6 docs in `skol_experiments` had `databases.taxa` →
+  `databases.treatments` (and `taxa_full` → `treatments_full`) with
+  their values rewritten via the same underscore-component rule —
+  including non-local prod-only references, so the docs are
+  prod-replication-ready.
+- Originals untouched; rollback = `curl -X DELETE` each new DB.
+
+3-dev code-side cutover (next):
+
+- Flip default in `bin/env_config.py` (`treatments_db_name` default
+  `'skol_taxa_dev'` → `'skol_treatments_dev'`) and the matching
+  Django setting.
+- Change Spark consumers (`taxa_json_translator.py`,
+  `bin/extract_treatments_to_couchdb.py`, `bin/treatments_to_json.py`)
+  to read the `treatment` field from documents instead of `taxon`,
+  and to write `treatment` in their output schemas.
+- Re-point any Django views / pipelines at the new DB defaults via
+  experiment docs (already done — experiment docs now refer to
+  `databases.treatments`).
+- Validate via spot-check + a re-run of the relevant pipelines
+  against the new DBs.
+
+Mid-run fix that landed during 3-dev: couchdb-python's
+`server.replicate()` helper builds short-form URLs with a `http://any`
+placeholder hostname that fails Erlang DNS resolution.  The migration
+script was updated to POST directly to `_replicate` with full source
+and target URLs plus explicit `auth.basic` blocks for each side.  The
+same fix will apply to 3-prod.
 
 Sequencing notes:
 

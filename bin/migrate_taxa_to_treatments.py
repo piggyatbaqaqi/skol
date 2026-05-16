@@ -182,9 +182,14 @@ def replicate(
 ) -> None:
     """Run a one-shot CouchDB replication source → target.
 
-    Uses ``_replicate`` with ``create_target=true`` so the new DB is
-    created if needed.  Skipped when ``target`` already exists with a
-    matching ``doc_count`` (a previous run completed).
+    POSTs to ``/_replicate`` with full URL endpoints and explicit basic
+    auth for both source and target.  We avoid the ``server.replicate()``
+    helper because couchdb-python builds short-form replication URLs
+    against a placeholder hostname (``http://any:5984``) which Erlang's
+    HTTP client can't resolve in newer CouchDB releases.
+
+    Skipped when ``target`` already exists with a matching ``doc_count``
+    (a previous run completed).
     """
     if target in server:
         target_db = server[target]
@@ -207,8 +212,22 @@ def replicate(
         logging.info("  [DRY-RUN] would replicate %s → %s", source, target)
         return
 
+    config = get_env_config()
+    base_url = config["couchdb_url"].rstrip("/")
+    auth = {
+        "basic": {
+            "username": config["couchdb_username"],
+            "password": config["couchdb_password"],
+        }
+    }
+    body = {
+        "source": {"url": f"{base_url}/{source}", "auth": auth},
+        "target": {"url": f"{base_url}/{target}", "auth": auth},
+        "create_target": True,
+    }
+
     started = time.time()
-    server.replicate(source, target, create_target=True)
+    server.resource.post_json("_replicate", body)
     elapsed = time.time() - started
     logging.info("  %s → %s: replicated in %.1fs", source, target, elapsed)
 
