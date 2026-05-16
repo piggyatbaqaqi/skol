@@ -147,13 +147,17 @@ def read_couchdb_partition(
         >>> result = df.rdd.mapPartitions(process_partition)
     """
     for row in partition:
-        # Extract ingest dict - all metadata comes from here
-        ingest = getattr(row, 'ingest', None) or {}
+        # Extract ingest dict - all metadata comes from here.  Keep it as
+        # None when the row carries no ingest field so downstream Line
+        # objects can faithfully report "no ingest data" rather than
+        # "ingest is an empty dict".
+        ingest = getattr(row, 'ingest', None)
 
-        # Extract metadata from ingest using canonical field names
-        doc_id = ingest.get('_id', 'unknown')
-        human_url = ingest.get('url')
-        pdf_url = ingest.get('pdf_url')
+        # Extract metadata from ingest using canonical field names.
+        lookup = ingest or {}
+        doc_id = lookup.get('_id', 'unknown')
+        human_url = lookup.get('url')
+        pdf_url = lookup.get('pdf_url')
 
         # Create CouchDBFile object from row data
         file_obj = CouchDBFile(

@@ -95,9 +95,9 @@ class TestReadCouchDBPartition(unittest.TestCase):
         """Test reading a single row."""
         rows = [
             Row(
-                doc_id="doc1",
+                ingest={"_id": "doc1"},
                 attachment_name="file1.txt.ann",
-                value="Line 1\nLine 2"
+                value="Line 1\nLine 2",
             )
         ]
 
@@ -111,8 +111,16 @@ class TestReadCouchDBPartition(unittest.TestCase):
     def test_read_partition_multiple_rows(self):
         """Test reading multiple rows (multiple files)."""
         rows = [
-            Row(doc_id="doc1", attachment_name="file1.txt", value="File 1 Line 1"),
-            Row(doc_id="doc2", attachment_name="file2.txt", value="File 2 Line 1\nFile 2 Line 2")
+            Row(
+                ingest={"_id": "doc1"},
+                attachment_name="file1.txt",
+                value="File 1 Line 1",
+            ),
+            Row(
+                ingest={"_id": "doc2"},
+                attachment_name="file2.txt",
+                value="File 2 Line 1\nFile 2 Line 2",
+            ),
         ]
 
         lines = list(read_couchdb_partition(iter(rows), "db1"))
@@ -132,9 +140,9 @@ class TestReadCouchDBPartition(unittest.TestCase):
         """Test reading annotated content from partition."""
         rows = [
             Row(
-                doc_id="annotated_doc",
+                ingest={"_id": "annotated_doc"},
                 attachment_name="taxa.txt.ann",
-                value="[@Nomenclature paragraph#Nomenclature*]\n[@Description paragraph#Description*]"
+                value="[@Nomenclature paragraph#Nomenclature*]\n[@Description paragraph#Description*]",
             )
         ]
 
@@ -195,14 +203,20 @@ class TestIntegrationWithParsers(unittest.TestCase):
 
         rows = [
             Row(
-                doc_id="test_doc",
+                ingest={"_id": "test_doc"},
                 attachment_name="test.txt.ann",
-                value="[@First paragraph#Nomenclature*]\n[@Second paragraph#Description*]"
+                value="[@First paragraph#Nomenclature*]\n[@Second paragraph#Description*]",
             )
         ]
 
         lines = read_couchdb_partition(iter(rows), "test_db")
-        paragraphs = list(parse_annotated(lines))
+        # parse_annotated() emits a leading unlabeled paragraph that
+        # downstream consumers (group_paragraphs) filter out via the
+        # top_label() is None check.  Mirror that here so the test
+        # exercises the same effective shape as production.
+        paragraphs = [
+            p for p in parse_annotated(lines) if p.top_label() is not None
+        ]
 
         self.assertEqual(len(paragraphs), 2)
 
@@ -225,7 +239,11 @@ class TestIntegrationWithParsers(unittest.TestCase):
         )
 
         rows = [
-            Row(doc_id="paper_2023", attachment_name="article.txt.ann", value=content)
+            Row(
+                ingest={"_id": "paper_2023"},
+                attachment_name="article.txt.ann",
+                value=content,
+            )
         ]
 
         # Full pipeline
