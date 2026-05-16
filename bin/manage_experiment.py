@@ -465,7 +465,7 @@ def _build_step_commands(
             "--skip-existing",
         ],
         "embed": [
-            sys.executable, str(_BIN_DIR / "embed_taxa.py"),
+            sys.executable, str(_BIN_DIR / "embed_treatments.py"),
             "--experiment", "{name}",
             "--force",
         ],

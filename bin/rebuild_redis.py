@@ -8,7 +8,7 @@ up a new environment.
 
 Keys rebuilt:
   - skol:classifier:model:*    (from train_classifier.py)
-  - skol:embedding:*           (from embed_taxa.py)
+  - skol:embedding:*           (from embed_treatments.py)
   - skol:ui:menus_*            (from build_vocab_tree.py)
   - skol:fungaria              (from manage_fungaria.py)
 
@@ -56,7 +56,7 @@ COMPONENTS = {
     'embeddings': {
         'name': 'Taxa Embeddings',
         'keys': ['skol:embedding:*'],
-        'script': 'embed_taxa',
+        'script': 'embed_treatments',
         'args': ['--force'],  # Force rebuild even if exists
         'verbosity_style': 'flag',  # --verbosity N
         'description': 'Compute embeddings for taxa descriptions',

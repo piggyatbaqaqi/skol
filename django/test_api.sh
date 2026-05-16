@@ -19,7 +19,7 @@ echo "========================================"
 EMBEDDING=$(curl -s "$BASE_URL/api/embeddings/" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['embeddings'][0] if data['embeddings'] else '')")
 
 if [ -z "$EMBEDDING" ]; then
-    echo "No embeddings found in Redis. Please run bin/embed_taxa.py first."
+    echo "No embeddings found in Redis. Please run bin/embed_treatments.py first."
 else
     echo "Using embedding: $EMBEDDING"
     echo ""

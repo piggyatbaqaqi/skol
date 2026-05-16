@@ -15,7 +15,7 @@ echo ""
 echo "2. Creating new embeddings with correct structure..."
 echo "   This may take a few minutes..."
 cd ../bin || exit 1
-python3 embed_taxa.py --force --verbosity 2
+python3 embed_treatments.py --force --verbosity 2
 
 echo ""
 echo "================================================="

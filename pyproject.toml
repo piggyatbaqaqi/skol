@@ -114,7 +114,7 @@ skol-ingest = "bin.ingest:main"
 skol-train = "bin.train_classifier:main"
 skol-predict = "bin.predict_classifier:main"
 skol-extract-taxa = "bin.extract_treatments_to_couchdb:main"
-skol-embed-taxa = "bin.embed_taxa:main"
+skol-embed-taxa = "bin.embed_treatments:main"
 
 [tool.setuptools.packages.find]
 include = [
@@ -163,7 +163,7 @@ py-modules = [
     "skol_compat",
     "span",
     "taxa_json_translator",
-    "taxon",
+    "treatment",
     "taxon_clusterer",
     "tokenizer",
 ]

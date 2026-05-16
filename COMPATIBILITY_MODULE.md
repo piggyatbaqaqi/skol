@@ -72,7 +72,7 @@ def post(self, request):
 
 The module is currently used by:
 
-1. **bin/embed_taxa.py** - Embedding computation script
+1. **bin/embed_treatments.py** - Embedding computation script
 2. **django/search/views.py** - Django REST API search endpoint
 
 ## Implementation Details
@@ -191,7 +191,7 @@ This module should be reviewed when:
 python3.13 -m pytest tests/
 
 # Test embedding script
-python3.13 bin/embed_taxa.py --help
+python3.13 bin/embed_treatments.py --help
 
 # Test Django
 cd django

@@ -1,10 +1,10 @@
 """
-Tests for embed_taxa helper functions.
+Tests for embed_treatments helper functions.
 
 These tests cover the pure DataFrame-manipulation logic that builds
 per-section embedding inputs, without requiring CouchDB or Redis.
 
-Run with: python -m pytest bin/embed_taxa_test.py -v
+Run with: python -m pytest bin/embed_treatments_test.py -v
 """
 
 import sys
@@ -17,7 +17,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from embed_taxa import build_primary_descriptions, build_section_descriptions
+from embed_treatments import build_primary_descriptions, build_section_descriptions
 
 
 # ---------------------------------------------------------------------------

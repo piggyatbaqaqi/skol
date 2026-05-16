@@ -403,7 +403,7 @@ The application uses **two strategies** to support both older and newer Python v
 ### No embeddings found
 - Ensure Redis is running
 - Check that embeddings exist in Redis: `redis-cli KEYS "skol:embedding:*"`
-- Run `bin/embed_taxa.py` to create embeddings
+- Run `bin/embed_treatments.py` to create embeddings
 
 ### Module not found errors
 - Ensure `dr-drafts-mycosearch` is in the correct location (parallel to `skol/` directory)
@@ -423,7 +423,7 @@ Or manually:
 ```bash
 redis-cli DEL "skol:embedding:v1.1"
 cd ../bin
-python3 embed_taxa.py --force --verbosity 2
+python3 embed_treatments.py --force --verbosity 2
 ```
 
 ### Other search failures

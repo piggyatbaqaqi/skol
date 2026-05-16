@@ -237,7 +237,7 @@ python bin/manage_experiment.py skipstep my_exp build_vocab
 | `predict` | `predict_classifier.py` | `--experiment NAME --incremental --skip-existing` |
 | `annotate_jats` | `jats_to_yedda.py` | `--experiment NAME --all --taxpub-only --output-to couchdb --skip-existing` |
 | `extract_taxa` | `extract_treatments_to_couchdb.py` | `--experiment NAME --skip-existing` |
-| `embed` | `embed_taxa.py` | `--experiment NAME --force` |
+| `embed` | `embed_treatments.py` | `--experiment NAME --force` |
 | `evaluate` | `predict_classifier.py` then `evaluate_golden.py` | predict: `--golden-db skol_golden --skip-existing`; evaluate: `--golden-db skol_golden_ann_hand --plaintext-db skol_golden --save-to-experiment` |
 | `build_vocab` | `build_vocab_tree.py` | `--experiment NAME` |
 

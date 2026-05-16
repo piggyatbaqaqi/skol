@@ -288,7 +288,7 @@ class BuildEmbeddingView(APIView):
 
             # Atomically acquire the build lock (SETNX) to prevent races
             lock_key = 'skol:build:embedding:lock'
-            lock_ttl = 7260  # 121 minutes, matches embed_taxa.py LOCK_TTL
+            lock_ttl = 7260  # 121 minutes, matches embed_treatments.py LOCK_TTL
 
             lock_acquired = r.set(
                 lock_key, 'building', nx=True, ex=lock_ttl
@@ -309,16 +309,16 @@ class BuildEmbeddingView(APIView):
 
                 bin_path = Path(settings.SKOL_BIN_PATH)
                 # Use the with_skol symlink which activates conda environment
-                embed_script = bin_path / 'embed_taxa'
+                embed_script = bin_path / 'embed_treatments'
 
                 if not embed_script.exists():
                     # Fall back to .py if symlink doesn't exist
-                    embed_script = bin_path / 'embed_taxa.py'
+                    embed_script = bin_path / 'embed_treatments.py'
                     if not embed_script.exists():
                         return Response({
                             'status': 'error',
                             'embedding_name': embedding_name,
-                            'message': f'embed_taxa not found at {bin_path}'
+                            'message': f'embed_treatments not found at {bin_path}'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Build command — skip-lock because we already hold it
@@ -362,7 +362,7 @@ class BuildEmbeddingView(APIView):
                         start_new_session=True,  # Detach from parent
                     )
 
-                logger.info(f"Started embed_taxa process with PID {process.pid}")
+                logger.info(f"Started embed_treatments process with PID {process.pid}")
 
                 # Return immediately - don't wait for completion
                 # Lock will auto-expire via TTL when build finishes or times out
@@ -374,11 +374,11 @@ class BuildEmbeddingView(APIView):
                 }, status=status.HTTP_202_ACCEPTED)
 
             except Exception as e:
-                logger.error(f"Failed to start embed_taxa: {e}")
+                logger.error(f"Failed to start embed_treatments: {e}")
                 return Response({
                     'status': 'error',
                     'embedding_name': embedding_name,
-                    'message': f'Failed to start embed_taxa: {str(e)}'
+                    'message': f'Failed to start embed_treatments: {str(e)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:

@@ -82,7 +82,7 @@ Response:
 Run the embedding tool to create embeddings:
 ```bash
 cd ../bin
-./embed_taxa.py
+./embed_treatments.py
 ```
 
 ### Connection refused

@@ -71,7 +71,7 @@ setup(
             "skol-train=bin.train_classifier:main",
             "skol-predict=bin.predict_classifier:main",
             "skol-extract-taxa=bin.extract_treatments_to_couchdb:main",
-            "skol-embed-taxa=bin.embed_taxa:main",
+            "skol-embed-taxa=bin.embed_treatments:main",
         ],
     },
     data_files=[

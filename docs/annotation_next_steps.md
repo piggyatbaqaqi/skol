@@ -37,7 +37,7 @@ and lists the remaining work in priority order.
 | Span utilities | `ingestors/gnfinder_client.py`, `ingestors/gnparser_client.py`, `ingestors/particle_detector.py`, `ingestors/spans.py` |
 | Span annotation script | `bin/annotate_spans.py` (pipeline step `annotate_spans`) |
 | Treatment assembly (12-tag) | `taxon.py` — `group_paragraphs()` redesign, flat section fields |
-| Multi-section embeddings | `bin/embed_taxa.py` — primary, distribution, biology embeddings |
+| Multi-section embeddings | `bin/embed_treatments.py` — primary, distribution, biology embeddings |
 | Experiment pipeline | `bin/manage_experiment.py` — `runnext`, `runstep`, `resetstep`, `skipstep` |
 | Evaluation (12-tag aware) | `bin/evaluate_golden.py` — `--collapse-tags` flag |
 

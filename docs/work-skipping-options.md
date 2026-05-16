@@ -72,7 +72,7 @@ This document summarizes the current state of work-skipping options across SKOL 
 
 ---
 
-### 5. embed_taxa.py - Compute Embeddings
+### 5. embed_treatments.py - Compute Embeddings
 
 **Purpose:** Compute sBERT embeddings and save to Redis
 
@@ -152,7 +152,7 @@ All programs now support standard options via `env_config.py`:
 | train_classifier.py | YES | YES | YES | - | - | - |
 | predict_classifier.py | YES | YES | YES | YES | YES | - |
 | extract_treatments_to_couchdb.py | YES | (idempotent) | - | YES | YES | - |
-| embed_taxa.py | YES | YES (default) | YES | - | - | - |
+| embed_treatments.py | YES | YES (default) | YES | - | - | - |
 | taxa_to_json.py | YES | YES | YES | YES | YES | YES |
 | regenerate_from_pdf.py | YES | - | - | - | YES | - |
 | regenerate_txt_with_pages.py | YES | - | - | - | YES | - |
@@ -202,7 +202,7 @@ Used by `extract_treatments_to_couchdb.py`:
 - Update-or-insert logic
 
 ### Pattern 2: Conditional Skip on Output Existence
-Used by `embed_taxa.py`:
+Used by `embed_treatments.py`:
 - Check if output exists before computing
 - Skip by default, recompute with `--force`
 
@@ -287,7 +287,7 @@ Text Handling (for PDF-based pipelines):
 ### Implicit vs Explicit Behavior
 
 **Current inconsistency:**
-- `embed_taxa.py`: Implicit skip (auto-checks Redis)
+- `embed_treatments.py`: Implicit skip (auto-checks Redis)
 - `extract_treatments_to_couchdb.py`: Idempotent (safe to rerun)
 - `predict_classifier.py`: No skip (always processes all)
 
@@ -310,7 +310,7 @@ Exception: Idempotent programs (like `extract_treatments_to_couchdb.py`) don't n
 2. **Medium Priority** (occasionally re-run):
    - ✅ `ingest.py`: Added `--dry-run`, `--skip-existing`, `--limit`
    - ✅ `extract_treatments_to_couchdb.py`: Added `--dry-run`, `--doc-ids`, `--limit`
-   - ✅ `embed_taxa.py`: Added `--dry-run`, `--skip-existing` (was default), `--force`
+   - ✅ `embed_treatments.py`: Added `--dry-run`, `--skip-existing` (was default), `--force`
    - ✅ `taxa_to_json.py`: Added `--doc-ids`, `--force` (already had other options)
 
 3. **Low Priority** (fixes/, already have good options):
@@ -327,7 +327,7 @@ Each program needs to define what "existing output" means:
 | train_classifier.py | Redis model | `redis.exists(key)` |
 | predict_classifier.py | .ann attachment | `'.ann' in doc['_attachments']` |
 | extract_treatments_to_couchdb.py | CouchDB taxon doc | `taxon_id in db` (already idempotent) |
-| embed_taxa.py | Redis embedding | `redis.exists(key)` (already implemented) |
+| embed_treatments.py | Redis embedding | `redis.exists(key)` (already implemented) |
 | taxa_to_json.py | CouchDB taxa_full doc | `doc_id in dest_db` (already implemented) |
 | regenerate_*.py | .txt attachment | `'.txt' in doc['_attachments']` |
 

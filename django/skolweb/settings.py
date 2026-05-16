@@ -257,7 +257,7 @@ TAXON_DB_NAME = os.environ.get('TAXON_DB_NAME', 'skol_taxa_dev')
 # Vocabulary tree configuration
 VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_taxa_full_dev')
 
-# Path to SKOL bin scripts (embed_taxa.py, build_vocab_tree.py, etc.)
+# Path to SKOL bin scripts (embed_treatments.py, build_vocab_tree.py, etc.)
 SKOL_BIN_PATH = os.environ.get('SKOL_BIN_PATH', '/opt/skol/bin')
 
 # Path to the skol source root (parent of django/ directory)

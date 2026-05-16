@@ -69,17 +69,17 @@ python3 bin/predict_classifier.py --model logistic_sections --verbosity 1
 - Removed `verbosity_override` parameter from `predict_and_save()` function
 - Now uses `config['verbosity']` directly
 
-### 3. bin/embed_taxa.py
+### 3. bin/embed_treatments.py
 
 **Before:**
 ```bash
-python3 bin/embed_taxa.py --force --verbosity 2
+python3 bin/embed_treatments.py --force --verbosity 2
 ```
 
 **After:**
 ```bash
 # Use env_config verbosity
-python3 bin/embed_taxa.py --force --verbosity 2
+python3 bin/embed_treatments.py --force --verbosity 2
 ```
 
 **Changes:**
@@ -141,7 +141,7 @@ export VERBOSITY=2
 # All scripts will use debug verbosity
 ./bin/with_skol bin/train_classifier.py --model logistic_sections
 ./bin/with_skol bin/predict_classifier.py --model logistic_sections
-python3 bin/embed_taxa.py --force
+python3 bin/embed_treatments.py --force
 ```
 
 ### Override Per Script

@@ -6,11 +6,11 @@ This standalone program loads taxa descriptions from CouchDB, computes sBERT
 embeddings using the EmbeddingsComputer, and saves them to Redis.
 
 Usage:
-    python embed_taxa.py [--force] [--verbosity LEVEL] [--expire SECONDS]
+    python embed_treatments.py [--force] [--verbosity LEVEL] [--expire SECONDS]
 
 Example:
-    python embed_taxa.py --force --verbosity 2
-    python embed_taxa.py --expire 604800  # 7 days
+    python embed_treatments.py --force --verbosity 2
+    python embed_treatments.py --expire 604800  # 7 days
 """
 
 import argparse
@@ -520,11 +520,11 @@ Environment Variables:
   EMBEDDING_EXPIRE      Expiration time in seconds (default: 172800 = 2 days)
 
 Examples:
-  python embed_taxa.py --force                  # Recompute with default expiration
-  python embed_taxa.py --dry-run                # Preview without saving
-  python embed_taxa.py --expire 604800          # Expire after 7 days
-  python embed_taxa.py --expire None            # Never expire
-  python embed_taxa.py --expire 0               # Never expire (same as None)
+  python embed_treatments.py --force                  # Recompute with default expiration
+  python embed_treatments.py --dry-run                # Preview without saving
+  python embed_treatments.py --expire 604800          # Expire after 7 days
+  python embed_treatments.py --expire None            # Never expire
+  python embed_treatments.py --expire 0               # Never expire (same as None)
 """
     )
 

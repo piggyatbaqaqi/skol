@@ -453,7 +453,7 @@ using all section texts in a fixed canonical order (empty string for absent sect
 This is a breaking change — all existing taxon records get new IDs on regeneration.
 Acceptable since `extract_taxa` is a re-runnable pipeline step.
 
-### `embed_taxa.py` — embedding strategy
+### `embed_treatments.py` — embedding strategy
 
 **Targeted hybrid**: embed only the sections that are semantically coherent and
 useful for similarity search. Not all sections warrant a vector.
@@ -471,7 +471,7 @@ useful for similarity search. Not all sections warrant a vector.
 - Distribution: `skol:taxa:embedding:{doc_id}:distribution`
 - Biology: `skol:taxa:embedding:{doc_id}:biology`
 
-**embed_taxa.py changes**:
+**embed_treatments.py changes**:
 - Compute primary embedding from `description + "\n\n" + diagnosis` (fall back to
   `description` alone if `diagnosis` absent)
 - If `distribution` field non-empty, compute and store distribution embedding
@@ -495,7 +495,7 @@ is visually distinguishable in the context viewer.
 | `taxon.py` | Redesign `group_paragraphs()` state machine; extend `Taxon` class |
 | `taxon_test.py` | Add test cases: multi-section treatment, gap behavior, new labels |
 | `bin/extract_treatments_to_couchdb.py` | Updated output schema; new hash function |
-| `bin/embed_taxa.py` | Embed description + diagnosis |
+| `bin/embed_treatments.py` | Embed description + diagnosis |
 | `django/search/views.py` | Render all section spans in context viewer |
 
 ---
@@ -660,7 +660,7 @@ Unit: 1 point = "Use Claude Code to write an ingestor for a new website"
 | **Phase 1** — Expanded label set | **1** | Localized changes: enum additions, dict updates, one new CLI flag, backward-compat deprecation alias. Well-specified, low integration risk. |
 | **Phase 2** — Span layer | **5** | Five new modules (gnfinder client, gnparser client, particle detector, spans, annotate_spans), two external REST APIs with retry logic, Redis-backed fungarium pattern builder, section-context-aware orchestration, pipeline integration. Highest new-code surface area. |
 | **Phase 3** — Django / search | **3** | Two subsystems: Django query routing + entity highlight overlay (backend) and react-select treatment section pulldown (frontend). Patterns are familiar but frontend/backend must stay in sync. |
-| **Phase 5** — Treatment assembly | **3** | State machine redesign is the hard part — subtle correctness requirements. Taxon class extension is mechanical but large. embed_taxa multi-key strategy adds Redis complexity. Three separate downstream files. |
+| **Phase 5** — Treatment assembly | **3** | State machine redesign is the hard part — subtle correctness requirements. Taxon class extension is mechanical but large. embed_treatments multi-key strategy adds Redis complexity. Three separate downstream files. |
 | **Phase 6** — Relabeling | **2** | Four scripts with clear specs: Tier 1 migration (regex+rules), two lossless format converters, one LLM client. Lower integration risk than Phase 2 but more than Phase 1. |
 | **Phase 4** — Span-enhanced classifier | *deferred* | No estimate until Phase 2 corpus coverage is measurable. |
 | **Total** | **14** | |
@@ -755,7 +755,7 @@ document ID hash update). On production:
 
 ```
 DEV
-  1. Run extract_taxa and embed_taxa against dev; verify taxon record schema.
+  1. Run extract_taxa and embed_treatments against dev; verify taxon record schema.
   2. Run evaluate_golden; confirm Macro F1 acceptable.
   [SIGN-OFF REQUIRED]
 
@@ -764,7 +764,7 @@ PROD
      Old taxon records with the 8-tag hash remain in the DB until manually
      purged — they will not appear in search results because the classifier
      will not emit old tag sequences.
-  4. Run embed_taxa.py --experiment <name> on prod.
+  4. Run embed_treatments.py --experiment <name> on prod.
   5. Optional: purge stale taxon records via a CouchDB view query on old _id
      prefixes after confirming new records are present.
 ```
