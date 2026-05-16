@@ -281,7 +281,7 @@ def convert_taxa_to_rows(partition: Iterator[Treatment]) -> Iterator[Row]:
         yield row
 
 
-class TaxonExtractor:
+class TreatmentExtractor:
     """
     Extract and save Taxa from CouchDB annotated files.
 
@@ -308,9 +308,9 @@ class TaxonExtractor:
         taxon_password: Optional password for taxon database (defaults to ingest_password)
 
     Example:
-        >>> spark = SparkSession.builder.appName("TaxonExtractor").getOrCreate()
+        >>> spark = SparkSession.builder.appName("TreatmentExtractor").getOrCreate()
         >>>
-        >>> extractor = TaxonExtractor(
+        >>> extractor = TreatmentExtractor(
         ...     spark=spark,
         ...     ingest_couchdb_url="http://localhost:5984",
         ...     ingest_db_name="skol_dev",
@@ -456,9 +456,9 @@ class TaxonExtractor:
 
         # Debug: Print schema to verify
         if self.verbosity >= 2:
-            print(f"[TaxonExtractor] Input DataFrame columns: {annotated_df.columns}")
-            print(f"[TaxonExtractor] Filtered DataFrame columns: {annotated_df_filtered.columns}")
-            print(f"[TaxonExtractor] Filtered DataFrame schema:")
+            print(f"[TreatmentExtractor] Input DataFrame columns: {annotated_df.columns}")
+            print(f"[TreatmentExtractor] Filtered DataFrame columns: {annotated_df_filtered.columns}")
+            print(f"[TreatmentExtractor] Filtered DataFrame schema:")
             annotated_df_filtered.printSchema()
 
         # Extract to local variables to avoid serializing self in the closure
@@ -1121,7 +1121,7 @@ Script-specific Options:
 
     # Create Spark session
     spark = SparkSession.builder \
-        .appName("SKOL Taxon Extractor") \
+        .appName("SKOL Treatment Extractor") \
         .getOrCreate()
 
     if config['verbosity'] >= 1:
@@ -1130,7 +1130,7 @@ Script-specific Options:
     # Create extractor instance
     # annotations_db_name is where .ann files live; falls back to ingest_db_name
     # when annotations have not been separated into their own database.
-    extractor = TaxonExtractor(
+    extractor = TreatmentExtractor(
         spark=spark,
         ingest_couchdb_url=config['ingest_url'],
         ingest_db_name=config['ingest_db_name'],

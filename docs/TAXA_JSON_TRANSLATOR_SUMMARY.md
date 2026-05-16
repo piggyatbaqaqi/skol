@@ -260,7 +260,7 @@ for i in range(0, total, batch_size):
 
 ## Integration Points
 
-### With TaxonExtractor
+### With TreatmentExtractor
 
 ```python
 # Load taxa

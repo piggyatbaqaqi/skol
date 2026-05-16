@@ -32,7 +32,7 @@ enriched_df = taxa_df.join(results_df, on="_id", how="left")
 
 ## Changes Made
 
-### 1. Updated Schema in TaxonExtractor
+### 1. Updated Schema in TreatmentExtractor
 
 **File**: [extract_taxa_to_couchdb.py](extract_taxa_to_couchdb.py)
 

@@ -1,8 +1,8 @@
-# TaxonExtractor.load_taxa() Method
+# TreatmentExtractor.load_taxa() Method
 
 ## Overview
 
-Added `load_taxa()` method to `TaxonExtractor` class that performs the inverse operation of `save_taxa()`, loading taxa from CouchDB and converting them back to a PySpark DataFrame.
+Added `load_taxa()` method to `TreatmentExtractor` class that performs the inverse operation of `save_taxa()`, loading taxa from CouchDB and converting them back to a PySpark DataFrame.
 
 ## Implementation
 
@@ -107,11 +107,11 @@ This ensures loaded taxa can be:
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 
 spark = SparkSession.builder.appName("LoadTaxa").getOrCreate()
 
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
@@ -317,7 +317,7 @@ def test_load_taxa():
     """Test load_taxa() functionality."""
     spark = SparkSession.builder.getOrCreate()
 
-    extractor = TaxonExtractor(
+    extractor = TreatmentExtractor(
         spark=spark,
         ingest_couchdb_url="http://localhost:5984",
         ingest_db_name="test_ingest",
@@ -376,6 +376,6 @@ The `load_taxa()` method provides:
 - ✅ Schema consistency
 - ✅ Error handling
 - ✅ Efficient batch loading
-- ✅ Integration with existing TaxonExtractor workflow
+- ✅ Integration with existing TreatmentExtractor workflow
 
 This enables full round-trip capability: annotated documents → taxa extraction → CouchDB storage → DataFrame loading → further processing.

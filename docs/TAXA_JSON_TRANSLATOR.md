@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `TaxaJSONTranslator` class provides an optimized interface for translating taxa descriptions into structured JSON using a fine-tuned Mistral model. It's designed specifically to work with PySpark DataFrames created by `TaxonExtractor.load_taxa()`.
+The `TaxaJSONTranslator` class provides an optimized interface for translating taxa descriptions into structured JSON using a fine-tuned Mistral model. It's designed specifically to work with PySpark DataFrames created by `TreatmentExtractor.load_taxa()`.
 
 ## Key Features
 
@@ -170,7 +170,7 @@ translator.save_translations(
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 # Initialize Spark
@@ -180,7 +180,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Load taxa
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
@@ -338,7 +338,7 @@ enriched_df = translator.translate_descriptions(taxa_df)
 ```python
 from pyspark.sql import SparkSession
 from skol_classifier.classifier_v2 import SkolClassifierV2
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 spark = SparkSession.builder \
@@ -365,7 +365,7 @@ classifier.save_annotated(predictions)
 
 # Step 2: Extract taxa
 print("\nStep 2: Extracting taxa...")
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_raw",

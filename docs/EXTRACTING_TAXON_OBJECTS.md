@@ -451,7 +451,7 @@ def process_partition_to_taxa(partition, db_name):
             yield para_dict
 
 # Create Spark session
-spark = SparkSession.builder.appName("TaxonExtractor").getOrCreate()
+spark = SparkSession.builder.appName("TreatmentExtractor").getOrCreate()
 
 # Load from CouchDB
 conn = CouchDBConnection("http://localhost:5984", "mycobank", "user", "pass")

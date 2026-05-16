@@ -117,7 +117,7 @@ python3 bin/extract_taxa_to_couchdb.py --ingest-database mycobank_annotations --
 ```
 
 **Changes:**
-- Added `verbosity` parameter to `TaxonExtractor.__init__()`
+- Added `verbosity` parameter to `TreatmentExtractor.__init__()`
 - Updated error messages and print statements to respect verbosity levels:
   - `verbosity >= 1`: Standard error messages
   - `verbosity >= 2`: Debug schema information and failed document details

@@ -3,7 +3,7 @@ Taxa JSON Translator
 
 This module provides a class for translating taxa descriptions into structured JSON
 using a fine-tuned Mistral model. Designed to work with PySpark DataFrames from
-TaxonExtractor.load_taxa().
+TreatmentExtractor.load_taxa().
 
 The TaxaJSONTranslator class encapsulates model loading, inference, and DataFrame
 processing, optimized for batch processing of taxa descriptions.
@@ -355,7 +355,7 @@ class TaxaJSONTranslator:
     Translates taxa descriptions to structured JSON using a fine-tuned Mistral model.
 
     This class is optimized for processing PySpark DataFrames created by
-    TaxonExtractor.load_taxa(), adding a new column with JSON-formatted features.
+    TreatmentExtractor.load_taxa(), adding a new column with JSON-formatted features.
 
     Example:
         >>> translator = TaxaJSONTranslator(
@@ -614,7 +614,7 @@ and their values from the provided species description and format them as struct
         """
         Load taxa from CouchDB taxon database.
 
-        This method loads taxa documents saved by TaxonExtractor.save_taxa()
+        This method loads taxa documents saved by TreatmentExtractor.save_taxa()
         and returns them as a DataFrame compatible with translate_descriptions().
 
         Args:
@@ -923,7 +923,7 @@ Result:
         using translate_descriptions_batch() instead.
 
         Args:
-            taxa_df: Input DataFrame from TaxonExtractor.load_taxa()
+            taxa_df: Input DataFrame from TreatmentExtractor.load_taxa()
             description_col: Name of column containing descriptions
             output_col: Name of output column for JSON
 
@@ -970,7 +970,7 @@ Result:
         and joins the results back. More efficient for moderate-sized datasets.
 
         Args:
-            taxa_df: Input DataFrame from TaxonExtractor.load_taxa()
+            taxa_df: Input DataFrame from TreatmentExtractor.load_taxa()
             description_col: Name of column containing descriptions
             output_col: Name of output column for JSON
             batch_size: Number of descriptions to process at once
@@ -1796,7 +1796,7 @@ def example_usage():
     4. Validate and save results
     """
     from pyspark.sql import SparkSession
-    from extract_taxa_to_couchdb import TaxonExtractor
+    from extract_taxa_to_couchdb import TreatmentExtractor
 
     # Initialize Spark
     spark = SparkSession.builder \
@@ -1807,7 +1807,7 @@ def example_usage():
 
     try:
         # Initialize extractor
-        extractor = TaxonExtractor(
+        extractor = TreatmentExtractor(
             spark=spark,
             ingest_couchdb_url="http://localhost:5984",
             ingest_db_name="mycobank_annotations",

@@ -141,7 +141,7 @@ This session continued work on the SKOL (Synoptic Key of Life) classifier projec
 **Issue**: No way to load taxa back from CouchDB after saving
 
 **Solution**:
-- Added `load_taxa()` method to `TaxonExtractor` class
+- Added `load_taxa()` method to `TreatmentExtractor` class
 - Performs inverse operation of `save_taxa()`
 - Uses `mapPartitions` for efficient distributed loading
 - Supports pattern-based filtering (`"*"`, `"taxon_*"`, `"taxon_abc*"`, exact match)

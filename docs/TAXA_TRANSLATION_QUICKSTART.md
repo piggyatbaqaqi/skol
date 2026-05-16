@@ -16,13 +16,13 @@ pip install transformers peft accelerate bitsandbytes torch
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 # Initialize
 spark = SparkSession.builder.master("local[*]").getOrCreate()
 
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
@@ -307,7 +307,7 @@ enriched_df = translator.translate_descriptions_batch(
 """Complete taxa translation example."""
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 # Initialize
@@ -317,7 +317,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Load taxa
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",

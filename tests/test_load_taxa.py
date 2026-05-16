@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for TaxonExtractor.load_taxa() method.
+"""Test script for TreatmentExtractor.load_taxa() method.
 
 Tests:
 1. Basic loading with default pattern
@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 import os
 
 
@@ -24,7 +24,7 @@ def test_load_taxa():
     """Test the load_taxa() method."""
 
     print("=" * 70)
-    print("Testing TaxonExtractor.load_taxa()")
+    print("Testing TreatmentExtractor.load_taxa()")
     print("=" * 70)
 
     # Create Spark session
@@ -49,8 +49,8 @@ def test_load_taxa():
         print(f"  Taxon DB: {taxon_db}")
 
         # Initialize extractor
-        print("\nInitializing TaxonExtractor...")
-        extractor = TaxonExtractor(
+        print("\nInitializing TreatmentExtractor...")
+        extractor = TreatmentExtractor(
             spark=spark,
             ingest_couchdb_url=couchdb_url,
             ingest_db_name=ingest_db,

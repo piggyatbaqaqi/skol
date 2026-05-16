@@ -101,7 +101,7 @@ def extract_taxa_spark(
 
     Example:
         >>> from pyspark.sql import SparkSession
-        >>> spark = SparkSession.builder.appName("TaxonExtractor").getOrCreate()
+        >>> spark = SparkSession.builder.appName("TreatmentExtractor").getOrCreate()
         >>>
         >>> taxa_df = extract_taxa_spark(
         ...     spark=spark,
@@ -231,7 +231,7 @@ def example_distributed():
 
     # Create Spark session
     spark = SparkSession.builder \
-        .appName("DistributedTaxonExtractor") \
+        .appName("DistributedTreatmentExtractor") \
         .config("spark.executor.memory", "4g") \
         .config("spark.driver.memory", "2g") \
         .getOrCreate()
@@ -302,7 +302,7 @@ def example_with_filtering():
     from pyspark.sql.functions import col
 
     spark = SparkSession.builder \
-        .appName("FilteredTaxonExtractor") \
+        .appName("FilteredTreatmentExtractor") \
         .master("local[*]") \
         .getOrCreate()
 

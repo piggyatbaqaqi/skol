@@ -6,7 +6,7 @@ This script demonstrates how to use TaxaJSONTranslator to enrich taxa
 descriptions with structured JSON features using a fine-tuned Mistral model.
 
 Workflow:
-1. Load taxa from CouchDB using TaxonExtractor
+1. Load taxa from CouchDB using TreatmentExtractor
 2. Initialize TaxaJSONTranslator with checkpoint
 3. Translate descriptions to JSON
 4. Validate and save results
@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 from taxa_json_translator import TaxaJSONTranslator
 
 
@@ -54,7 +54,7 @@ def main():
         print("STEP 1: Loading Taxa from CouchDB")
         print("=" * 70)
 
-        extractor = TaxonExtractor(
+        extractor = TreatmentExtractor(
             spark=spark,
             ingest_couchdb_url=couchdb_url,
             ingest_db_name=ingest_db,

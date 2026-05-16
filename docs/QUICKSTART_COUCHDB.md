@@ -52,7 +52,7 @@ def process_partition_to_taxa(partition, db_name):
 ```python
 # Create Spark session
 spark = SparkSession.builder \
-    .appName("TaxonExtractor") \
+    .appName("TreatmentExtractor") \
     .config("spark.executor.memory", "4g") \
     .getOrCreate()
 
@@ -145,7 +145,7 @@ def process_partition_to_taxa(partition, db_name):
 def main():
     # Setup
     spark = SparkSession.builder \
-        .appName("TaxonExtractor") \
+        .appName("TreatmentExtractor") \
         .config("spark.executor.memory", "4g") \
         .getOrCreate()
 

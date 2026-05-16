@@ -11,11 +11,11 @@ Complete example showing the full taxa extraction workflow:
 
 ## Complete Workflow
 
-### Step 1: Initialize TaxonExtractor
+### Step 1: Initialize TreatmentExtractor
 
 ```python
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 
 # Create Spark session
 spark = SparkSession.builder \
@@ -25,7 +25,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Initialize extractor
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_annotations",
@@ -407,7 +407,7 @@ predictions = classifier.predict()
 classifier.save_annotated(predictions)
 
 # 3. Extract taxa from annotated documents
-extractor = TaxonExtractor(
+extractor = TreatmentExtractor(
     spark=spark,
     ingest_couchdb_url="http://localhost:5984",
     ingest_db_name="mycobank_raw",  # Same as classifier output
@@ -432,7 +432,7 @@ print(f"Extracted {taxa_df.count()} taxa from classified documents")
 """Complete taxa extraction round-trip example."""
 
 from pyspark.sql import SparkSession
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 
 def main():
     # Initialize Spark
@@ -443,7 +443,7 @@ def main():
 
     try:
         # Initialize extractor
-        extractor = TaxonExtractor(
+        extractor = TreatmentExtractor(
             spark=spark,
             ingest_couchdb_url="http://localhost:5984",
             ingest_db_name="mycobank_annotations",

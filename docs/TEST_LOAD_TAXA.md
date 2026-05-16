@@ -2,7 +2,7 @@
 
 ## Overview
 
-Created comprehensive test suite for `TaxonExtractor.load_taxa()` method to verify:
+Created comprehensive test suite for `TreatmentExtractor.load_taxa()` method to verify:
 - Basic loading functionality
 - Pattern-based filtering
 - Round-trip consistency
@@ -163,7 +163,7 @@ python test_load_taxa.py
 
 ```
 ======================================================================
-Testing TaxonExtractor.load_taxa()
+Testing TreatmentExtractor.load_taxa()
 ======================================================================
 
 Initializing Spark session...
@@ -173,7 +173,7 @@ CouchDB Configuration:
   Ingest DB: mycobank_annotations
   Taxon DB: mycobank_taxa
 
-Initializing TaxonExtractor...
+Initializing TreatmentExtractor...
 
 ----------------------------------------------------------------------
 Test 1: Load all taxa (pattern='taxon_*')
@@ -263,7 +263,7 @@ Empty results work: ✓
 
 ```
 ======================================================================
-Testing TaxonExtractor.load_taxa()
+Testing TreatmentExtractor.load_taxa()
 ======================================================================
 
 ----------------------------------------------------------------------
@@ -369,9 +369,9 @@ curl -X PUT http://admin:password@localhost:5984/mycobank_taxa
 **This is expected** if you haven't run the pipeline yet. To populate:
 
 ```python
-from extract_taxa_to_couchdb import TaxonExtractor
+from extract_taxa_to_couchdb import TreatmentExtractor
 
-extractor = TaxonExtractor(...)
+extractor = TreatmentExtractor(...)
 annotated_df = extractor.load_annotated_documents()
 extracted_df = extractor.extract_taxa(annotated_df)
 extractor.save_taxa(extracted_df)
@@ -419,4 +419,4 @@ This test suite verifies that `load_taxa()`:
 - ✅ Handles empty results gracefully
 - ✅ Preserves data integrity in round-trip
 - ✅ Works with distributed processing via mapPartitions
-- ✅ Integrates with existing TaxonExtractor workflow
+- ✅ Integrates with existing TreatmentExtractor workflow
