@@ -5,7 +5,8 @@
 The current classifier uses a simplified 8-tag label set that collapses the full taxonomic
 treatment structure. Evaluation uses an even coarser 3-class scheme (Nomenclature /
 Description / Misc-exposition). This under-represents the standardized sections of a
-taxonomic treatment (Diagnosis, Distribution, Materials-examined, Type-designation, Biology)
+taxonomic treatment (Diagnosis, Materials-examined, Type-designation, Biology,
+Phylogeny, New-combinations, …)
 and provides no mechanism for marking sub-section entities like taxon names, authorship
 strings, DOIs, or MycoBank numbers.
 
@@ -69,30 +70,62 @@ Span record schema:
 
 ## Phase 1 — Expanded Label Set
 
-**Goal**: Add 4 new section-level tags, split Holotype into two more precise tags,
+**Goal**: Add new section-level tags, split Holotype into two more precise tags,
 and update all downstream code that uses the tag enum.
 
 ### 1a. `ingestors/yedda_tags.py`
 
-Replace 8-tag enum with 12 tags:
+The enum has grown beyond the original 12-tag plan as new section types were
+encountered.  Current canonical members (see source for the authoritative list):
 
 ```python
 class Tag(str, Enum):
-    NOMENCLATURE       = "Nomenclature"
-    DESCRIPTION        = "Description"
-    DIAGNOSIS          = "Diagnosis"           # NEW: differential diagnosis
-    ETYMOLOGY          = "Etymology"
-    DISTRIBUTION       = "Distribution"        # NEW: geographic range
-    MATERIALS_EXAMINED = "Materials-examined"  # replaces Holotype (multiple specimens)
-    TYPE_DESIGNATION   = "Type-designation"    # NEW: holotype/lectotype line (split from Holotype)
-    BIOLOGY            = "Biology"             # NEW: ecology / host / habitat
-    NOTES              = "Notes"
-    KEY                = "Key"
-    FIGURE_CAPTION     = "Figure-caption"
-    MISC_EXPOSITION    = "Misc-exposition"
+    # Core taxonomic sections.
+    NOMENCLATURE           = "Nomenclature"
+    DESCRIPTION            = "Description"
+    DIAGNOSIS              = "Diagnosis"            # differential diagnosis
+    ETYMOLOGY              = "Etymology"
+    MATERIALS_EXAMINED     = "Materials-examined"   # specimen lists; replaces multi-line Holotype
+    MATERIALS_AND_METHODS  = "Materials-and-methods"
+    TYPE_DESIGNATION       = "Type-designation"     # holotype/lectotype line (split from Holotype)
+    BIOLOGY                = "Biology"              # ecology, host, habitat, distribution
+    PHYLOGENY              = "Phylogeny"
+    NEW_COMBINATIONS       = "New-combinations"
+    NOTES                  = "Notes"
+    KEY                    = "Key"
+    FIGURE_CAPTION         = "Figure-caption"
+
+    # Bibliographic / reference apparatus.
+    BIBLIOGRAPHY           = "Bibliography"
+    TABLE                  = "Table"
+    INDEX                  = "Index"
+    TOC                    = "ToC-entry"
+
+    # Catch-all and review.
+    MISC_EXPOSITION        = "Misc-exposition"
+    FIX                    = "FIX"                  # human-review required
+
+    # Structural / pagination — not taxonomic content.
+    PAGE_HEADER            = "Page-header"          # running heads, section dividers
+
+    # Deprecated (kept so existing .ann files remain parseable).
+    HOLOTYPE               = "Holotype"             # → split: Type-designation / Materials-examined
+    DISTRIBUTION           = "Distribution"         # → folded into Biology
 ```
 
-Keep `Holotype = "Holotype"` as a deprecated alias so existing .ann files remain readable.
+Notes:
+
+- `MATERIALS_AND_METHODS` is distinct from `MATERIALS_EXAMINED`: the former
+  describes techniques/protocols, the latter lists specific specimens.
+- `PHYLOGENY`, `NEW_COMBINATIONS`, `BIBLIOGRAPHY`, `TABLE`, `INDEX`, `TOC`,
+  `FIX`, and `PAGE_HEADER` were added incrementally as new document types
+  (Persoonia, Mycotaxon, JATS-XML treatments, etc.) surfaced sections the
+  original 12-tag plan didn't anticipate.
+- `DISTRIBUTION` is now deprecated — geographic and locality data is tagged
+  `BIOLOGY` going forward.  The enum member is retained only so existing
+  annotations remain readable.
+- `FIX` is reserved for human attention; the LLM relabeller will not assign
+  it.
 
 ### 1b. `ingestors/jats_to_yedda.py` — `sec_type_to_tag()`
 
@@ -135,7 +168,7 @@ python bin/manage_experiment.py runstep taxpub_v1_onnx_int8 evaluate --force
 
 | File | Change |
 |---|---|
-| `ingestors/yedda_tags.py` | Add 4 new tags; deprecate Holotype |
+| `ingestors/yedda_tags.py` | Expanded enum (see §1a above); deprecated Holotype and Distribution |
 | `ingestors/jats_to_yedda.py` | Update `sec_type_to_tag()` |
 | `bin/evaluate_golden.py` | Remove hardcoded collapse; add `--collapse-tags` |
 | `bin/train_classifier.py` | Add 12-class model config |
