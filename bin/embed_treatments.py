@@ -15,7 +15,7 @@ Example:
 
 import argparse
 import sys
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 from pathlib import Path
 
 import redis
@@ -156,6 +156,7 @@ def compute_and_save_embeddings(
     precision: str = "float32",
     backend: str = "torch",
     section: str = "all",
+    batch_size: Optional[int] = None,
 ) -> None:
     """
     Load taxa descriptions from CouchDB, compute embeddings, and save to Redis.
@@ -351,6 +352,7 @@ def compute_and_save_embeddings(
             embedding_name=config['embedding_name'],
             precision=precision,
             backend=backend,
+            batch_size=batch_size,
         )
 
         try:
@@ -415,6 +417,7 @@ def compute_and_save_embeddings(
                 embedding_name=sec_key,
                 precision=precision,
                 backend=backend,
+                batch_size=batch_size,
             )
             try:
                 sec_embedder.run(sec_descriptions)
@@ -603,6 +606,20 @@ Examples:
     )
 
     parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=None,
+        metavar='N',
+        help=(
+            'Batch size for SentenceTransformer.encode(). When omitted, '
+            'a tiered default is chosen from the GPU\'s total memory '
+            '(e.g. 24 GB → 512, 40 GB → 1024). Override if you need to '
+            'leave headroom for other CUDA workloads or are using a '
+            'larger-than-MiniLM model.'
+        ),
+    )
+
+    parser.add_argument(
         '--section',
         type=str,
         default='all',
@@ -662,6 +679,7 @@ Examples:
             precision=args.precision,
             backend=args.backend,
             section=args.section,
+            batch_size=args.batch_size,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Embedding computation interrupted by user")
