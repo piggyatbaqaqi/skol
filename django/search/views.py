@@ -2452,6 +2452,56 @@ def parse_span(span):
         return {}
 
 
+def _collect_ann_db_candidates(
+    taxa_doc, ingest_db, taxa_db, auth, couchdb_url,
+):
+    """Build the priority-ordered list of databases to probe for the .ann
+    attachment that underlies a taxa document's spans.
+
+    Order:
+      1. ``taxa_doc['annotations_db']`` if the extractor recorded it.
+      2. ``ingest_db`` — legacy behaviour from the pre-experiment era when
+         .ann attachments lived next to the source text.
+      3. ``databases.annotations`` on the skol_experiments document whose
+         ``databases.treatments`` equals ``taxa_db``.  This is how the
+         taxpub_v1 family of experiments stores .ann files in a separate
+         ``skol_exp_*_ann`` database, while the treatments DB only holds
+         the structured per-treatment records.
+
+    Duplicates are removed while preserving first-seen order.  A failed
+    experiment lookup is swallowed and we fall back to the legacy
+    candidates — the caller will report a clear "not found" error if all
+    probes 404.
+    """
+    candidates = []
+
+    def _add(name):
+        if name and name not in candidates:
+            candidates.append(name)
+
+    _add(taxa_doc.get('annotations_db'))
+    _add(ingest_db)
+
+    try:
+        find_url = f"{couchdb_url}/skol_experiments/_find"
+        resp = requests.post(
+            find_url,
+            json={
+                'selector': {'databases.treatments': taxa_db},
+                'limit': 1,
+            },
+            auth=auth,
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            for doc in resp.json().get('docs') or []:
+                _add((doc.get('databases') or {}).get('annotations'))
+    except requests.exceptions.RequestException:
+        pass
+
+    return candidates
+
+
 class SourceContextView(APIView):
     """
     Retrieve windowed source text with highlight markers for the Source Context Viewer.
@@ -2496,16 +2546,19 @@ class SourceContextView(APIView):
             field = request.GET.get('field', 'description')
             context_chars = int(request.GET.get('context_chars', 500))
 
-            # Resolve taxa DB from user's experiment
+            # Resolve taxa DB from user's experiment.  The experiment-doc
+            # field name moved from 'taxa' → 'treatments' in Step 3-dev
+            # (docs/taxon_to_treatment_plan.md); the default value also
+            # flipped to skol_treatments_dev.
             taxa_db = request.GET.get('taxa_db')
             if not taxa_db:
                 _, exp = get_user_experiment(request)
                 if exp:
                     taxa_db = exp.get(
                         'databases', {}
-                    ).get('taxa', 'skol_taxa_dev')
+                    ).get('treatments', 'skol_treatments_dev')
                 else:
-                    taxa_db = 'skol_taxa_dev'
+                    taxa_db = 'skol_treatments_dev'
 
             _VALID_FIELDS = frozenset({
                 'nomenclature', 'description', 'diagnosis', 'etymology',
@@ -2571,34 +2624,32 @@ class SourceContextView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # .ann files are stored in annotations_db (set at extraction time by
-            # extract_treatments_to_couchdb.py).  Fall back to ingest_db for older taxa
-            # records that pre-date the separate annotations database.
-            ann_db = taxa_doc.get('annotations_db') or ingest_db
+            # .ann files may live in several databases depending on when
+            # the taxa doc was extracted and which experiment owns it.
+            # _collect_ann_db_candidates() returns the probe order:
+            # explicit annotations_db on the doc → ingest_db (legacy) →
+            # the experiment's databases.annotations.
+            ann_db_candidates = _collect_ann_db_candidates(
+                taxa_doc=taxa_doc,
+                ingest_db=ingest_db,
+                taxa_db=taxa_db,
+                auth=auth,
+                couchdb_url=couchdb_url,
+            )
 
-            # Fetch annotated file from ann_db.
-            # Spans are computed from .ann offsets, so we must use the same text.
-            # Use stored attachment_name if available, otherwise guess.
             stored_attachment = taxa_doc.get('attachment_name')
+            attachment_names = [stored_attachment] if stored_attachment else []
+            for fallback in ('article.pdf.ann', 'article.txt.ann'):
+                if fallback not in attachment_names:
+                    attachment_names.append(fallback)
+
             text_response = None
             attachment_name = None
-
-            if stored_attachment:
-                attachment_url = (
-                    f"{couchdb_url}/{ann_db}"
-                    f"/{ingest_doc_id}/{stored_attachment}"
-                )
-                text_response = requests.get(
-                    attachment_url, auth=auth, timeout=60
-                )
-                if text_response.status_code == 200:
-                    attachment_name = stored_attachment
-
-            if attachment_name is None:
-                # Fall back: try article.pdf.ann first, then article.txt.ann
-                for ann_name in ['article.pdf.ann', 'article.txt.ann']:
+            ann_db = None
+            for candidate_db in ann_db_candidates:
+                for ann_name in attachment_names:
                     attachment_url = (
-                        f"{couchdb_url}/{ann_db}"
+                        f"{couchdb_url}/{candidate_db}"
                         f"/{ingest_doc_id}/{ann_name}"
                     )
                     text_response = requests.get(
@@ -2606,14 +2657,18 @@ class SourceContextView(APIView):
                     )
                     if text_response.status_code == 200:
                         attachment_name = ann_name
+                        ann_db = candidate_db
                         break
+                if attachment_name is not None:
+                    break
 
-            if text_response is None or text_response.status_code == 404:
+            if attachment_name is None:
+                probed = ', '.join(ann_db_candidates) or '<none>'
                 return Response(
                     {
                         'error': (
                             f'No .ann file found for document'
-                            f' {ingest_doc_id} in {ann_db}'
+                            f' {ingest_doc_id} in any of: {probed}'
                         )
                     },
                     status=status.HTTP_404_NOT_FOUND

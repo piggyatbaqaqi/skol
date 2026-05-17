@@ -238,3 +238,189 @@ class TestSourceContextViewEdgeCases(TestCase):
             response = self.client.get(f'{url}?field=description&taxa_db=skol_dev')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+# ---------------------------------------------------------------------------
+# _collect_ann_db_candidates: priority-ordered list of DBs to probe for .ann
+# ---------------------------------------------------------------------------
+
+
+from search.views import _collect_ann_db_candidates  # noqa: E402
+
+
+class TestCollectAnnDbCandidates(TestCase):
+    """Priority order: explicit doc.annotations_db → ingest_db → experiment's
+    databases.annotations.  Duplicates removed while preserving first-seen
+    order."""
+
+    def _mock_experiment_lookup(self, annotations_db=None):
+        """Return a requests.post mock that fakes skol_experiments/_find."""
+        body = {'docs': []}
+        if annotations_db:
+            body = {'docs': [{'databases': {'annotations': annotations_db}}]}
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = body
+        return MagicMock(return_value=resp)
+
+    def test_explicit_annotations_db_on_doc_comes_first(self):
+        taxa_doc = {'annotations_db': 'doc_ann_db'}
+        with patch('search.views.requests.post',
+                   self._mock_experiment_lookup('exp_ann_db')):
+            result = _collect_ann_db_candidates(
+                taxa_doc=taxa_doc,
+                ingest_db='skol_dev',
+                taxa_db='skol_treatments_dev',
+                auth=None,
+                couchdb_url='http://x',
+            )
+        self.assertEqual(result, ['doc_ann_db', 'skol_dev', 'exp_ann_db'])
+
+    def test_no_explicit_then_ingest_db_first(self):
+        with patch('search.views.requests.post',
+                   self._mock_experiment_lookup('exp_ann_db')):
+            result = _collect_ann_db_candidates(
+                taxa_doc={},
+                ingest_db='skol_dev',
+                taxa_db='skol_treatments_dev',
+                auth=None,
+                couchdb_url='http://x',
+            )
+        self.assertEqual(result, ['skol_dev', 'exp_ann_db'])
+
+    def test_no_experiment_match_returns_only_ingest(self):
+        """When skol_experiments has no matching doc, candidate list is
+        just the ingest DB."""
+        with patch('search.views.requests.post',
+                   self._mock_experiment_lookup(None)):
+            result = _collect_ann_db_candidates(
+                taxa_doc={},
+                ingest_db='skol_dev',
+                taxa_db='skol_treatments_dev',
+                auth=None,
+                couchdb_url='http://x',
+            )
+        self.assertEqual(result, ['skol_dev'])
+
+    def test_duplicates_collapsed_preserving_order(self):
+        """If experiment.databases.annotations happens to be the same DB as
+        ingest_db (legacy single-DB setups), we don't probe it twice."""
+        with patch('search.views.requests.post',
+                   self._mock_experiment_lookup('skol_dev')):
+            result = _collect_ann_db_candidates(
+                taxa_doc={'annotations_db': 'skol_dev'},
+                ingest_db='skol_dev',
+                taxa_db='skol_treatments_dev',
+                auth=None,
+                couchdb_url='http://x',
+            )
+        self.assertEqual(result, ['skol_dev'])
+
+    def test_experiment_lookup_failure_is_silent(self):
+        """A transient CouchDB error during the experiment lookup must
+        not break the .ann lookup — we just fall back to the legacy
+        candidate list."""
+        def boom(*a, **kw):
+            raise req.ConnectionError('couchdb down')
+        with patch('search.views.requests.post', side_effect=boom):
+            result = _collect_ann_db_candidates(
+                taxa_doc={},
+                ingest_db='skol_dev',
+                taxa_db='skol_treatments_dev',
+                auth=None,
+                couchdb_url='http://x',
+            )
+        self.assertEqual(result, ['skol_dev'])
+
+
+# ---------------------------------------------------------------------------
+# Integration: SourceContextView falls back to experiment's annotations DB
+# ---------------------------------------------------------------------------
+
+
+class TestSourceContextViewAnnDbFallback(TestCase):
+    """When the .ann attachment isn't in the ingest DB, the view must
+    consult the experiment's databases.annotations and try there."""
+
+    def test_falls_back_to_experiment_annotations_db(self):
+        url = reverse('search:taxa-context',
+                      kwargs={'taxa_id': 'taxon_abc123'})
+        taxa_doc = _make_taxa_doc('description')
+        # No annotations_db field on the doc — must come from the experiment.
+
+        # The taxa doc fetch succeeds; the first ann fetch (against
+        # ingest_db=skol_dev) 404s; the second (against exp_ann_db) 200s.
+        taxa_resp = MagicMock(status_code=200,
+                              json=MagicMock(return_value=taxa_doc),
+                              raise_for_status=MagicMock())
+        ann_404 = MagicMock(status_code=404,
+                            raise_for_status=MagicMock())
+        ann_ok = MagicMock(status_code=200, text=_ARTICLE_TEXT,
+                           raise_for_status=MagicMock())
+
+        # GET calls in order: taxa doc, ann from skol_dev (404),
+        # ann from exp_ann_db (200).  Use a URL-aware dispatcher.
+        def _mock_get(url_arg, **kwargs):
+            if '/skol_dev/' in url_arg and ('.ann' in url_arg):
+                return ann_404
+            if '/exp_ann_db/' in url_arg and ('.ann' in url_arg):
+                return ann_ok
+            return taxa_resp
+
+        # POST to skol_experiments/_find returns the experiment with
+        # databases.annotations = exp_ann_db.
+        find_resp = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                'docs': [{'databases': {'annotations': 'exp_ann_db'}}],
+            }),
+        )
+
+        with patch('search.views.settings', _make_mock_settings()), \
+                patch('search.views.requests.get', side_effect=_mock_get), \
+                patch('search.views.requests.post', return_value=find_resp), \
+                patch('search.views.get_user_experiment',
+                      return_value=(None, None)):
+            response = self.client.get(
+                f'{url}?field=description&taxa_db=skol_treatments_dev'
+            )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_error_message_lists_all_probed_dbs(self):
+        """When every candidate DB 404s, the error names them all so
+        the operator can see exactly where we looked."""
+        url = reverse('search:taxa-context',
+                      kwargs={'taxa_id': 'taxon_abc123'})
+        taxa_doc = _make_taxa_doc('description')
+
+        taxa_resp = MagicMock(status_code=200,
+                              json=MagicMock(return_value=taxa_doc),
+                              raise_for_status=MagicMock())
+        ann_404 = MagicMock(status_code=404,
+                            raise_for_status=MagicMock())
+
+        def _mock_get(url_arg, **kwargs):
+            if '.ann' in url_arg:
+                return ann_404
+            return taxa_resp
+
+        find_resp = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                'docs': [{'databases': {'annotations': 'exp_ann_db'}}],
+            }),
+        )
+
+        with patch('search.views.settings', _make_mock_settings()), \
+                patch('search.views.requests.get', side_effect=_mock_get), \
+                patch('search.views.requests.post', return_value=find_resp), \
+                patch('search.views.get_user_experiment',
+                      return_value=(None, None)):
+            response = self.client.get(
+                f'{url}?field=description&taxa_db=skol_treatments_dev'
+            )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        err = response.json()['error']
+        # Both ingest_db and exp_ann_db must be mentioned in the error.
+        self.assertIn('skol_dev', err)
+        self.assertIn('exp_ann_db', err)
