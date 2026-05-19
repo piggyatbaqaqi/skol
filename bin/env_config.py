@@ -179,12 +179,15 @@ def _apply_experiment(
     """Apply experiment values to config, skipping CLI-explicit keys.
 
     Mapping from experiment document fields to config keys:
-        experiment.databases.ingest    -> ingest_db_name
-        experiment.databases.training  -> training_database
-        experiment.databases.taxa      -> treatments_db_name, source_db
-        experiment.databases.taxa_full -> dest_db
-        experiment.databases.golden    -> golden_db_name
-        experiment.databases.golden_ann -> golden_ann_db_name
+        experiment.databases.ingest          -> ingest_db_name
+        experiment.databases.training        -> training_database
+        experiment.databases.annotations     -> annotations_db_name
+        experiment.databases.treatments      -> treatments_db_name, source_db
+        experiment.databases.treatments_full -> dest_db
+        experiment.databases.taxa            -> treatments_db_name, source_db (deprecated alias)
+        experiment.databases.taxa_full       -> dest_db                       (deprecated alias)
+        experiment.databases.golden          -> golden_db_name
+        experiment.databases.golden_ann      -> golden_ann_db_name
         experiment.redis_keys.classifier_model -> classifier_model_key
         experiment.redis_keys.embedding        -> embedding_name
         experiment.redis_keys.menus            -> menus_key
@@ -202,8 +205,15 @@ def _apply_experiment(
         ('ingest', ['ingest_db_name']),
         ('training', ['training_database']),
         ('annotations', ['annotations_db_name']),
+        # Backward-compat: legacy doc-field names from before the
+        # Step-3 migration.  Listed FIRST so a later assignment of the
+        # canonical 'treatments' / 'treatments_full' field can overwrite
+        # them when both are present.
         ('taxa', ['treatments_db_name', 'source_db']),
         ('taxa_full', ['dest_db']),
+        # Post-Step-3 canonical doc-field names.
+        ('treatments', ['treatments_db_name', 'source_db']),
+        ('treatments_full', ['dest_db']),
         # Golden-set wiring (Step 1.B of docs/golden_v2_plan.md).
         # An experiment doc that omits these keys keeps the v1 default
         # values set in get_env_config(); v1 experiments stay correct.

@@ -63,6 +63,28 @@ points at the databases and Redis keys that step scripts (under
 | `jats_v1` | `skol_dev` | `skol_golden_ann_jats` | `skol_exp_jats_v1_treatments` ⚠ | `skol_exp_jats_v1_treatments_full` ⚠ | _(not set)_ | `skol:embedding:jats_v1` |
 | `hand_annotated` | `skol_golden` | `skol_training` | `skol_exp_hand_annotated_treatments` ⚠ | `skol_exp_hand_annotated_treatments_full` ⚠ | _(not set)_ | `skol:embedding:hand_annotated` |
 
+### Golden-set wiring (`databases.golden` / `databases.golden_ann`)
+
+Added by `bin/backfill_experiment_golden_fields.py` (Step 1.A of
+`docs/golden_v2_plan.md`). `golden` is the plaintext DB used by
+`predict_classifier.py` on the golden set; `golden_ann` is the
+answer-key `.ann` DB `evaluate_golden.py` scores against.
+
+| Experiment | golden | golden_ann |
+|---|---|---|
+| `production` | `skol_golden` | `skol_golden_ann_hand` |
+| `hand_annotated` | `skol_golden` | `skol_golden_ann_hand` |
+| `jats_v1` | `skol_golden` | `skol_golden_ann_jats` |
+| `taxpub_v1` | `skol_golden` | `skol_golden_ann_jats` |
+| `taxpub_v1_int8` | `skol_golden` | `skol_golden_ann_jats` |
+| `taxpub_v1_onnx_int8` | `skol_golden` | `skol_golden_ann_jats` |
+
+The JATS-trained experiments score against the JATS silver standard
+(`skol_golden_ann_jats`), matching their training distribution. The
+prior hardcoded literal in `bin/manage_experiment.py` evaluated every
+experiment against `skol_golden_ann_hand` — that latent mis-pairing
+is fixed by reading per-experiment values from the doc.
+
 ⚠ — Names ending in `_treatments` / `_treatments_full` are post-rename
 values that the Step-3 migration script wrote into `skol_experiments`.
 **INVESTIGATE**: the local CouchDB does **not** yet hold matching databases

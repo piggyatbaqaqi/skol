@@ -99,3 +99,62 @@ class TestApplyExperimentGoldenMapping:
         assert config['ingest_db_name'] == 'skol_dev'
         assert config['training_database'] == 'skol_training_v2'
         assert config['golden_db_name'] == 'skol_golden_v2'
+
+
+# ---------------------------------------------------------------------------
+# Post-Step-3 doc-field-name mapping (treatments / treatments_full)
+# ---------------------------------------------------------------------------
+
+
+class TestApplyExperimentTreatmentsMapping:
+    """The Step-3 data migration renamed databases.taxa → databases.treatments
+    in every experiment doc, but env_config kept looking for the old field
+    name.  These tests pin the post-migration mapping rows in place."""
+
+    def test_treatments_field_propagates(self) -> None:
+        config = {'treatments_db_name': 'skol_treatments_dev'}
+        exp = {'databases': {
+            'treatments': 'skol_treatments_taxpub_v1_dev',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['treatments_db_name'] == 'skol_treatments_taxpub_v1_dev'
+
+    def test_treatments_full_field_propagates(self) -> None:
+        config = {'dest_db': 'skol_treatments_full_dev'}
+        exp = {'databases': {
+            'treatments_full': 'skol_exp_x_treatments_full',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['dest_db'] == 'skol_exp_x_treatments_full'
+
+    def test_treatments_also_sets_source_db(self) -> None:
+        """databases.treatments writes to BOTH treatments_db_name and
+        source_db — same shape as the pre-rename ('taxa', [...]) row."""
+        config = {
+            'treatments_db_name': 'skol_treatments_dev',
+            'source_db':          'skol_treatments_dev',
+        }
+        exp = {'databases': {'treatments': 'skol_treatments_my_exp'}}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['treatments_db_name'] == 'skol_treatments_my_exp'
+        assert config['source_db'] == 'skol_treatments_my_exp'
+
+    def test_legacy_taxa_field_still_accepted(self) -> None:
+        """An unmigrated doc with the legacy databases.taxa field still
+        works (backward-compat fallback)."""
+        config = {'treatments_db_name': 'skol_treatments_dev'}
+        exp = {'databases': {'taxa': 'skol_taxa_legacy_exp'}}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['treatments_db_name'] == 'skol_taxa_legacy_exp'
+
+    def test_canonical_wins_when_both_present(self) -> None:
+        """A doc carrying both new and old field names (mid-migration) lets
+        the canonical 'treatments' value win — the mapping list orders
+        canonical before fallback."""
+        config = {'treatments_db_name': 'skol_treatments_dev'}
+        exp = {'databases': {
+            'treatments': 'new_value',
+            'taxa':       'old_value',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['treatments_db_name'] == 'new_value'

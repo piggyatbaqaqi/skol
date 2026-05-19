@@ -85,11 +85,11 @@ predictions. Together they define the experiment's evaluation universe.
 
 | # | Description | Status |
 |---|---|---|
-| 1.A | Backfill `databases.golden` + `databases.golden_ann` on every existing experiment doc (`production`, `hand_annotated`, `jats_v1`, `taxpub_v1`, `taxpub_v1_int8`, `taxpub_v1_onnx_int8`). Values per the table below. Script: `bin/backfill_experiment_golden_fields.py` (one-off, idempotent). | ⬜ Pending |
-| 1.B | Extend `bin/env_config.py`: add the experiment-doc mapping rows `('golden', ['golden_db_name'])` and `('golden_ann', ['golden_ann_db_name'])`. Default values: `'skol_golden'` and `'skol_golden_ann_hand'` (the v1 names). Add both keys to the CLI args allowlist. | ⬜ Pending |
-| 1.C | Rewire `bin/manage_experiment.py` evaluate step. Drop the hardcoded `"skol_golden"` and `"skol_golden_ann_hand"` literals at lines 493–505. Use `{golden_db_name}` and `{golden_ann_db_name}` placeholders (the existing `_apply()` substitution mechanism) so values flow from the resolved experiment config. | ⬜ Pending |
-| 1.D | Tests: `bin/manage_experiment_test.py` (or extension thereof) covering (a) the resolved command includes the experiment's golden values, (b) an experiment lacking the new fields falls back to v1 defaults, (c) per-experiment override works. | ⬜ Pending |
-| 1.E | Update `docs/experiments.md` and `docs/couchdbs.md` to document the new fields and per-experiment values. | ⬜ Pending |
+| 1.A | Backfill `databases.golden` + `databases.golden_ann` on every existing experiment doc (`production`, `hand_annotated`, `jats_v1`, `taxpub_v1`, `taxpub_v1_int8`, `taxpub_v1_onnx_int8`). Values per the table below. Script: `bin/backfill_experiment_golden_fields.py` (one-off, idempotent). | ✅ Done |
+| 1.B | Extend `bin/env_config.py`: add the experiment-doc mapping rows `('golden', ['golden_db_name'])` and `('golden_ann', ['golden_ann_db_name'])`. Default values: `'skol_golden'` and `'skol_golden_ann_hand'` (the v1 names). Add both keys to the CLI args allowlist. | ✅ Done |
+| 1.C | Rewire `bin/manage_experiment.py` evaluate step. Drop the hardcoded `"skol_golden"` and `"skol_golden_ann_hand"` literals at lines 493–505. Use `{golden_db_name}` and `{golden_ann_db_name}` placeholders (the existing `_apply()` substitution mechanism) so values flow from the resolved experiment config. | ✅ Done |
+| 1.D | Tests: `bin/manage_experiment_test.py` (or extension thereof) covering (a) the resolved command includes the experiment's golden values, (b) an experiment lacking the new fields falls back to v1 defaults, (c) per-experiment override works. | ✅ Done |
+| 1.E | Update `docs/experiments.md` and `docs/couchdbs.md` to document the new fields and per-experiment values. | ✅ Done |
 
 ### Per-experiment values for the backfill
 
@@ -249,4 +249,35 @@ None at time of writing — all decisions captured under "Goals" and
 Sub-steps land one at a time, each leaving the test suite green and
 v1 experiments fully reproducible.
 
-(Empty for now — first commit will check off 1.A.)
+### Step 1 — Experiment-schema extension — ✅ Complete (2026-05-19)
+
+All five sub-steps (1.A–1.E) landed across three skol commits.
+
+- 1.A: `bin/backfill_experiment_golden_fields.py` — 6 experiment docs
+  updated; idempotent on re-runs.
+- 1.B: `bin/env_config.py` — added `('golden', …)` /
+  `('golden_ann', …)` mapping rows, v1 defaults, CLI args allowlist.
+- 1.C: `bin/manage_experiment.py` — `_build_step_commands()` accepts
+  `config=` and reads `golden_db_name` / `golden_ann_db_name`;
+  `_run_step()` auto-resolves config from the experiment doc when not
+  passed explicitly.
+- 1.D: 30 unit tests across three new test files (15 backfill, 7 +
+  5 env_config, 8 manage_experiment); all pass; project sweep
+  443/443.
+- 1.E: `docs/experiments.md`, `docs/couchdbs.md`, and this plan doc
+  updated with the new fields and per-experiment values; backfill
+  applied to local CouchDB.
+
+**Drive-by fix folded into Step 1.E**: `bin/env_config.py` was still
+looking up `databases.taxa` / `databases.taxa_full` in experiment
+docs, even though the Step-3 migration renamed those fields to
+`databases.treatments` / `databases.treatments_full`. This meant
+every `--experiment` invocation since Step 3-dev silently used the
+default DB instead of the experiment-specific value (verified the
+bug on `taxpub_v1`: `databases.treatments =
+skol_treatments_taxpub_v1_dev` resolved to `skol_treatments_dev`
+before the fix). Added canonical `('treatments', …)` /
+`('treatments_full', …)` mapping rows with the old `('taxa', …)` /
+`('taxa_full', …)` rows kept as backward-compat fallbacks; 5
+additional tests pin the post-migration behaviour and the
+canonical-wins-over-fallback ordering.

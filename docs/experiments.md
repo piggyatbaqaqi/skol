@@ -32,11 +32,13 @@ Each experiment is a CouchDB document in `skol_experiments`:
   "notes": "Description of the experiment",
   "status": "draft",
   "databases": {
-    "ingest":       "skol_dev",
-    "training":     "skol_training",
-    "annotations":  "skol_exp_my_exp_ann",
-    "taxa":         "skol_exp_my_exp_taxa",
-    "taxa_full":    "skol_exp_my_exp_taxa_full"
+    "ingest":           "skol_dev",
+    "training":         "skol_training",
+    "annotations":      "skol_exp_my_exp_ann",
+    "treatments":       "skol_exp_my_exp_treatments",
+    "treatments_full":  "skol_exp_my_exp_treatments_full",
+    "golden":           "skol_golden",
+    "golden_ann":       "skol_golden_ann_hand"
   },
   "redis_keys": {
     "classifier_model": "skol:classifier:model:my_exp",
@@ -77,13 +79,29 @@ the experiment document and overrides the following config keys:
 |---|---|---|
 | `databases.ingest` | `ingest_db_name` | `skol_dev` |
 | `databases.training` | `training_database` | `skol_training` |
-| `databases.annotations` | `annotations_db_name` | `skol_training` |
-| `databases.taxa` | `treatments_db_name`, `source_db` | `skol_taxa_dev` |
-| `databases.taxa_full` | `dest_db` | `skol_taxa_full_dev` |
+| `databases.annotations` | `annotations_db_name` | `""` (falls back to ingest) |
+| `databases.treatments` | `treatments_db_name`, `source_db` | `skol_treatments_dev` |
+| `databases.treatments_full` | `dest_db` | `skol_treatments_full_dev` |
+| `databases.taxa` _(deprecated alias)_ | `treatments_db_name`, `source_db` | _(same as `treatments`)_ |
+| `databases.taxa_full` _(deprecated alias)_ | `dest_db` | _(same as `treatments_full`)_ |
+| `databases.golden` | `golden_db_name` | `skol_golden` |
+| `databases.golden_ann` | `golden_ann_db_name` | `skol_golden_ann_hand` |
 | `redis_keys.classifier_model` | `classifier_model_key` | _(built from model_version)_ |
 | `redis_keys.embedding` | `embedding_name` | `skol:embedding:v1.1` |
 | `redis_keys.menus` | `menus_key` | _(none)_ |
 | `model_name` | `model_name` | _(none — must pass `--model` explicitly)_ |
+
+The two `taxa*` rows are post-Step-3 deprecated aliases — they remain
+supported so pre-migration docs still resolve correctly. The canonical
+`treatments` / `treatments_full` fields, when present alongside the
+legacy aliases, override them.
+
+The golden fields (`golden` / `golden_ann`) are the answer-key wiring:
+`databases.golden` is the plaintext DB used by `predict_classifier.py`
+on the golden set; `databases.golden_ann` is the `.ann` DB
+`evaluate_golden.py` scores against. Per-experiment values are
+documented in `docs/couchdbs.md` (Experiments table) and the
+backfill is performed by `bin/backfill_experiment_golden_fields.py`.
 
 **Priority** (highest to lowest):
 
