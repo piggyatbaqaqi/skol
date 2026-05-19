@@ -21,7 +21,6 @@ docs/couchdbs.md`.)
 | `skol_training_llm_stage` | 180 | 5.3 MB | Staging area for `bin/llm_relabel.py`. Source DB recorded in `source_db`, change list in `changes.json` alongside the relabelled `article.txt.ann`. |
 | **Annotation review pipeline** (training-doc lineage) | | | |
 | `skol_ann_reviewed` | 190 | 13.5 MB | Human-reviewed YEDDA annotations. Output of the brat round-trip on `skol_training`. |
-| `skol_ann_reviewed_2` | 188 | 37.0 MB | _Likely a parallel review pass — each doc keeps both `article.txt.ann` and `article.txt.ann~` (the backup). **INVESTIGATE**: confirm purpose and how it differs from `skol_ann_reviewed`._ |
 | `skol_ann_fixed` | 190 | 22.4 MB | Output of `fixes/fix_missing_yedda.py` — gap-filling and page-marker recovery on the `_reviewed` `.ann`s. |
 | `skol_ann_merged` | 190 | 980.5 MB | Output of `fixes/merge_yedda.py` followed by `bin/enrich_ann_merged.py`. Merges human-reviewed labels onto the new OCR text from `skol_training`, then enriches with Crossref publication metadata + `is_golden` flag + copied `article.txt`/`article.pdf` attachments. |
 | `skol_staging` | 190 | 23.3 MB | Output of `bin/llm_relabel.py` running against `skol_training`. Same shape as `skol_training_llm_stage`. |
@@ -92,7 +91,6 @@ on paper but cannot be executed end-to-end.
                                   │ review (brat round-trip)
                                   ▼
                           skol_ann_reviewed
-                          skol_ann_reviewed_2 (INVESTIGATE)
                                   │
                                   │ fix_missing_yedda
                                   ▼
@@ -116,26 +114,20 @@ on paper but cannot be executed end-to-end.
 These are databases or experiment slots where I could not determine the
 intent from code, docs, or doc shape alone:
 
-1. **`skol_ann_reviewed` vs `skol_ann_reviewed_2`** — Both hold 188-190 docs
-   with `article.txt.ann` attachments and no other fields. `_reviewed_2`
-   also keeps `article.txt.ann~` backups. Is `_2` a second review pass, a
-   pre-fix snapshot, or a working copy from a different reviewer? **TODO:
-   document or delete the unused one.**
-
-2. **`skol_exp_hand_ann`** — 105 docs, one `article.txt.ann` each. The
+1. **`skol_exp_hand_ann`** — 105 docs, one `article.txt.ann` each. The
    `hand_annotated` experiment in `skol_experiments` has no
    `databases.annotations` field, so the link is inferred by name + size
    match with `skol_golden` (also 105). **TODO: confirm the linkage and
    add `databases.annotations: skol_exp_hand_ann` to the experiment doc.**
 
-3. **`jats_v1` and `hand_annotated` experiment treatments DBs** — The
+2. **`jats_v1` and `hand_annotated` experiment treatments DBs** — The
    experiment docs reference `skol_exp_jats_v1_treatments`,
    `skol_exp_jats_v1_treatments_full`, `skol_exp_hand_annotated_treatments`,
    `skol_exp_hand_annotated_treatments_full` but those databases don't
    exist locally. Are those experiments archived, or pending an
    `extract_treatments_to_couchdb` run that hasn't happened yet?
 
-4. **Production-experiment annotations** — _Resolved 2026-05-19_:
+3. **Production-experiment annotations** — _Resolved 2026-05-19_:
    `production` now carries `databases.annotations: ""` (explicit empty,
    matching the `ANNOTATIONS_DB_NAME` default in `bin/env_config.py`),
    with a `notes` field marking it as a placeholder until a 'best'
