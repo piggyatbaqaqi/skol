@@ -273,13 +273,16 @@ class TestSecTypeToTag(unittest.TestCase):
         )
 
     def test_distribution(self):
-        self.assertEqual(sec_type_to_tag("distribution"), Tag.DISTRIBUTION)
+        # Tag.DISTRIBUTION was deprecated and folded into Tag.BIOLOGY (see
+        # yedda_tags.py); the converter now maps all locality-style
+        # sec-types to BIOLOGY.
+        self.assertEqual(sec_type_to_tag("distribution"), Tag.BIOLOGY)
 
     def test_habitat(self):
-        self.assertEqual(sec_type_to_tag("habitat"), Tag.DISTRIBUTION)
+        self.assertEqual(sec_type_to_tag("habitat"), Tag.BIOLOGY)
 
     def test_habitat_distribution(self):
-        self.assertEqual(sec_type_to_tag("habitat-distribution"), Tag.DISTRIBUTION)
+        self.assertEqual(sec_type_to_tag("habitat-distribution"), Tag.BIOLOGY)
 
     def test_materials_examined(self):
         self.assertEqual(sec_type_to_tag("materials examined"), Tag.MATERIALS_EXAMINED)
@@ -1085,3 +1088,212 @@ class TestSecTypeToTagFigureCitations(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ============================================================================
+# Step 2 — JATS converter extensions (docs/golden_v2_plan.md)
+# ============================================================================
+
+
+class TestSecTypeToTagMaterialsAndMethods(unittest.TestCase):
+    """Step 2.A — sec_type_to_tag() must recognise the article-level
+    Materials-and-Methods family as Tag.MATERIALS_AND_METHODS, not as the
+    MISC_EXPOSITION catch-all."""
+
+    def test_materials_and_methods_hyphenated(self):
+        self.assertEqual(
+            sec_type_to_tag("materials-and-methods"), Tag.MATERIALS_AND_METHODS
+        )
+
+    def test_methods_and_materials_reversed_order(self):
+        self.assertEqual(
+            sec_type_to_tag("methods-and-materials"), Tag.MATERIALS_AND_METHODS
+        )
+
+    def test_methods_alone(self):
+        self.assertEqual(sec_type_to_tag("methods"), Tag.MATERIALS_AND_METHODS)
+
+    def test_methodology(self):
+        self.assertEqual(
+            sec_type_to_tag("methodology"), Tag.MATERIALS_AND_METHODS
+        )
+
+    def test_case_insensitive(self):
+        self.assertEqual(
+            sec_type_to_tag("Materials and Methods"),
+            Tag.MATERIALS_AND_METHODS,
+        )
+
+    def test_with_underscore_variant(self):
+        """Some publishers normalise hyphens to underscores."""
+        self.assertEqual(
+            sec_type_to_tag("materials_and_methods"),
+            Tag.MATERIALS_AND_METHODS,
+        )
+
+    def test_not_confused_with_materials_examined(self):
+        """The existing 'material' / 'materials examined' mappings must
+        still resolve to MATERIALS_EXAMINED (specimen lists), not the
+        new MATERIALS_AND_METHODS (technique narrative)."""
+        self.assertEqual(
+            sec_type_to_tag("materials examined"), Tag.MATERIALS_EXAMINED
+        )
+        self.assertEqual(sec_type_to_tag("material"), Tag.MATERIALS_EXAMINED)
+
+
+class TestArticleLevelMaterialsAndMethods(unittest.TestCase):
+    """Step 2.B — article-level <sec sec-type="materials-and-methods">
+    must emit a MATERIALS_AND_METHODS block rather than falling through
+    to MISC_EXPOSITION (as every non-treatment article-level section did
+    pre-Step-2)."""
+
+    def test_article_level_materials_and_methods_block(self):
+        body_xml = """
+        <sec sec-type="materials-and-methods">
+          <title>Materials and methods</title>
+          <p>We collected specimens at Site A using protocol B.</p>
+        </sec>
+        """
+        xml = _wrap_article(body_xml)
+        blocks = jats_xml_to_tagged_blocks(xml)
+        mm_blocks = [b for b in blocks if b.tag == Tag.MATERIALS_AND_METHODS]
+        self.assertEqual(
+            len(mm_blocks), 1,
+            f"expected one MATERIALS_AND_METHODS block; got {blocks}",
+        )
+        self.assertIn("specimens", mm_blocks[0].text)
+
+    def test_article_level_methods_short_sec_type(self):
+        body_xml = """
+        <sec sec-type="methods">
+          <title>Methods</title>
+          <p>DNA was extracted via the CTAB method.</p>
+        </sec>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(body_xml))
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.MATERIALS_AND_METHODS, tags)
+        self.assertNotIn(Tag.MISC_EXPOSITION, tags)
+
+    def test_unrelated_article_section_stays_misc(self):
+        """A non-treatment, non-methods section (e.g. introduction) still
+        falls to MISC_EXPOSITION — the new behaviour only kicks in for the
+        materials-and-methods family."""
+        body_xml = """
+        <sec sec-type="introduction">
+          <title>Introduction</title>
+          <p>Background on the genus.</p>
+        </sec>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(body_xml))
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.MISC_EXPOSITION, tags)
+        self.assertNotIn(Tag.MATERIALS_AND_METHODS, tags)
+
+    def test_article_level_section_without_sec_type_stays_misc(self):
+        """A <sec> without any sec-type attribute (common for plain
+        narrative passages) keeps falling to MISC_EXPOSITION."""
+        body_xml = """
+        <sec>
+          <title>Discussion</title>
+          <p>We discuss the implications.</p>
+        </sec>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(body_xml))
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.MISC_EXPOSITION, tags)
+
+
+class TestNotesAsTreatmentCatchAll(unittest.TestCase):
+    """Step 2.C — inside <tp:taxon-treatment>, any treatment-sec whose
+    sec-type isn't recognised should produce a NOTES block (not a
+    MISC_EXPOSITION one).  The semantic: prose inside a treatment that
+    isn't otherwise tagged is part of the treatment's Notes."""
+
+    def test_unknown_sec_type_inside_treatment_is_notes(self):
+        # The 'remarks' sec-type is not in sec_type_to_tag() — used to
+        # fall through to MISC_EXPOSITION.  Now should become NOTES.
+        treatment_xml = """
+        <taxon-treatment>
+          <nomenclature>
+            <taxon-name>Fungus novus</taxon-name>
+          </nomenclature>
+          <treatment-sec sec-type="remarks">
+            <p>This species was first noted in 2019.</p>
+          </treatment-sec>
+        </taxon-treatment>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(treatment_xml))
+        # NOMENCLATURE for the taxon-name + NOTES for the remarks.
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.NOTES, tags)
+        # No MISC_EXPOSITION inside a treatment.
+        self.assertNotIn(Tag.MISC_EXPOSITION, tags)
+
+    def test_empty_sec_type_inside_treatment_is_notes(self):
+        """A treatment-sec with no sec-type attribute (rare but legal)
+        also becomes NOTES."""
+        treatment_xml = """
+        <taxon-treatment>
+          <nomenclature>
+            <taxon-name>Fungus novus</taxon-name>
+          </nomenclature>
+          <treatment-sec>
+            <p>Untagged commentary.</p>
+          </treatment-sec>
+        </taxon-treatment>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(treatment_xml))
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.NOTES, tags)
+        self.assertNotIn(Tag.MISC_EXPOSITION, tags)
+
+    def test_explicit_notes_sec_type_still_notes(self):
+        """The pre-existing 'notes' sec-type mapping is untouched."""
+        treatment_xml = """
+        <taxon-treatment>
+          <nomenclature>
+            <taxon-name>Fungus novus</taxon-name>
+          </nomenclature>
+          <treatment-sec sec-type="notes">
+            <p>Explicitly tagged notes.</p>
+          </treatment-sec>
+        </taxon-treatment>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(treatment_xml))
+        notes = [b for b in blocks if b.tag == Tag.NOTES]
+        self.assertEqual(len(notes), 1)
+
+    def test_unknown_article_level_sec_still_misc(self):
+        """OUTSIDE a treatment, an unrecognised sec-type still falls to
+        MISC_EXPOSITION — the NOTES default applies only inside treatments."""
+        body_xml = """
+        <sec sec-type="acknowledgements">
+          <p>We thank our colleagues.</p>
+        </sec>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(body_xml))
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.MISC_EXPOSITION, tags)
+        self.assertNotIn(Tag.NOTES, tags)
+
+    def test_known_sec_type_inside_treatment_unaffected(self):
+        """A recognised treatment-sec sec-type still maps via the existing
+        table — Step 2.C only changes the fallback."""
+        treatment_xml = """
+        <taxon-treatment>
+          <nomenclature>
+            <taxon-name>Fungus novus</taxon-name>
+          </nomenclature>
+          <treatment-sec sec-type="description">
+            <p>Cap red, stipe white.</p>
+          </treatment-sec>
+          <treatment-sec sec-type="etymology">
+            <p>From the Latin novus.</p>
+          </treatment-sec>
+        </taxon-treatment>
+        """
+        blocks = jats_xml_to_tagged_blocks(_wrap_article(treatment_xml))
+        tags = [b.tag for b in blocks]
+        self.assertIn(Tag.DESCRIPTION, tags)
+        self.assertIn(Tag.ETYMOLOGY, tags)

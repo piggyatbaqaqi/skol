@@ -129,11 +129,11 @@ attributable.
 
 | # | Description | Status |
 |---|---|---|
-| 2.A | Extend `sec_type_to_tag()` with the `materials-and-methods` family (case-insensitive, hyphen/underscore tolerant). | ⬜ Pending |
-| 2.B | Add article-level processing in `bin/jats_to_yedda.py` so non-treatment `<sec>` elements get their own `sec_type_to_tag()` pass instead of all collapsing to `MISC_EXPOSITION`. Treatment-level processing unchanged. | ⬜ Pending |
-| 2.C | Change the intra-treatment fallback from `MISC_EXPOSITION` to `NOTES` in `process_treatment()` and `process_plain_jats_treatment()`. | ⬜ Pending |
-| 2.D | Unit tests in `ingestors/jats_to_yedda_test.py` for each new case: explicit `materials-and-methods` sec-type, article-level vs intra-treatment scope, intra-treatment catch-all becomes Notes, no-regression on the existing 13 mappings. | ⬜ Pending |
-| 2.E | Spot-check on 3 sample JATS files from `skol_dev` — count tag distributions before and after the change so we can characterise the impact size for the eventual v2 metrics shift. | ⬜ Pending |
+| 2.A | Extend `sec_type_to_tag()` with the `materials-and-methods` family (case-insensitive, hyphen/underscore tolerant). | ✅ Done |
+| 2.B | Add article-level processing in `bin/jats_to_yedda.py` so non-treatment `<sec>` elements get their own `sec_type_to_tag()` pass instead of all collapsing to `MISC_EXPOSITION`. Treatment-level processing unchanged. | ✅ Done |
+| 2.C | Change the intra-treatment fallback from `MISC_EXPOSITION` to `NOTES` in `process_treatment()` and `process_plain_jats_treatment()`. | ✅ Done |
+| 2.D | Unit tests in `ingestors/jats_to_yedda_test.py` for each new case: explicit `materials-and-methods` sec-type, article-level vs intra-treatment scope, intra-treatment catch-all becomes Notes, no-regression on the existing 13 mappings. | ✅ Done |
+| 2.E | Spot-check on 3 sample JATS files from `skol_dev` — count tag distributions before and after the change so we can characterise the impact size for the eventual v2 metrics shift. | ✅ Done |
 
 ## Step 3 — Curator v2 mode
 
@@ -281,3 +281,39 @@ before the fix). Added canonical `('treatments', …)` /
 `('taxa_full', …)` rows kept as backward-compat fallbacks; 5
 additional tests pin the post-migration behaviour and the
 canonical-wins-over-fallback ordering.
+
+### Step 2 — JATS converter extensions — ✅ Complete (2026-05-19)
+
+All five sub-steps (2.A–2.E) landed in one commit.
+
+- 2.A: `sec_type_to_tag()` recognises the materials-and-methods family
+  (`materials-and-methods` / `methods-and-materials` /
+  `methods` / `methodology` / case-and-underscore-tolerant variants).
+- 2.B: `_process_body_section()` now promotes the materials-and-methods
+  family to `Tag.MATERIALS_AND_METHODS` instead of dropping it into
+  the article-level MISC_EXPOSITION catch-all.
+- 2.C: `process_treatment()` and `process_jats_treatment()`
+  intra-treatment fallback is now `Tag.NOTES` (was `MISC_EXPOSITION`).
+- 2.D: 16 new unit tests across three test classes
+  (`TestSecTypeToTagMaterialsAndMethods`,
+  `TestArticleLevelMaterialsAndMethods`,
+  `TestNotesAsTreatmentCatchAll`); 106/106 in
+  `ingestors/jats_to_yedda_test.py`.
+- 2.E: spot-checked 3 JATS articles in `skol_dev`.  Sample doc
+  `01003acad16b577594ba97aaede2e3fb` produces 11 `Notes` blocks —
+  formerly `MISC_EXPOSITION` blocks now correctly tagged as
+  treatment notes.
+
+**Drive-by fixes folded into Step 2**:
+
+1. Three pre-existing tests in `TestSecTypeToTag` expected
+   `Tag.DISTRIBUTION` for `distribution` / `habitat` /
+   `habitat-distribution`.  `Tag.DISTRIBUTION` was deprecated and folded
+   into `Tag.BIOLOGY` (see `ingestors/yedda_tags.py`); the tests were
+   left over from before the deprecation.  Updated to expect
+   `Tag.BIOLOGY`.
+2. **Pre-existing string-vs-tuple bug**: `if st in ("new-combinations"):`
+   in `sec_type_to_tag()` was a substring check (missing trailing
+   comma) — any `st` that is a substring of `"new-combinations"`
+   (including `""` and `"new"`) returned `Tag.NEW_COMBINATIONS`.
+   Replaced with `if st == "new-combinations":`.

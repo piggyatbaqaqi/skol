@@ -159,7 +159,7 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st in ("phylogeny", "phylogenetic analysis", "molecular phylogeny"):
         return Tag.PHYLOGENY
 
-    if st in ("new-combinations"):
+    if st == "new-combinations":
         return Tag.NEW_COMBINATIONS
 
     if st in ("figure-citations", "figure_citations", "figures cited",
@@ -207,6 +207,21 @@ def sec_type_to_tag(sec_type: str) -> Tag:
     if st == "table" or st.startswith("table "):
         return Tag.TABLE
 
+    # Article-level Materials-and-Methods family.  Distinct from
+    # "materials examined" / "material" (above) — those are specimen
+    # lists inside a treatment.  Normalise underscores to hyphens so
+    # variants like "materials_and_methods" also resolve.
+    mm = st.replace("_", "-").replace("  ", " ")
+    if mm in {
+        "materials-and-methods",
+        "materials and methods",
+        "methods-and-materials",
+        "methods and materials",
+        "methods",
+        "methodology",
+    }:
+        return Tag.MATERIALS_AND_METHODS
+
     return Tag.MISC_EXPOSITION
 
 
@@ -240,6 +255,11 @@ def process_treatment(treatment_elem: ET.Element) -> List[TaggedBlock]:
         if local == "treatment-sec":
             sec_type = child.get("sec-type", "")
             tag = sec_type_to_tag(sec_type)
+            # Inside a treatment, an unrecognised sec-type is part of the
+            # treatment's Notes — promote the MISC_EXPOSITION fallback
+            # accordingly.  Step 2.C of docs/golden_v2_plan.md.
+            if tag == Tag.MISC_EXPOSITION:
+                tag = Tag.NOTES
 
             # Extract section text without fig content
             text = clean_passage_text(
@@ -357,6 +377,10 @@ def process_jats_treatment(treatment_sec: ET.Element) -> List[TaggedBlock]:
         if mapped.lower().startswith("treatment-"):
             mapped = mapped[len("treatment-"):]
         tag = sec_type_to_tag(mapped)
+        # Inside a treatment, an unrecognised sec-type is Notes (not
+        # the article-level MISC_EXPOSITION catch-all).  Step 2.C.
+        if tag == Tag.MISC_EXPOSITION:
+            tag = Tag.NOTES
 
         text = clean_passage_text(
             re.sub(r"\s+", " ", extract_text(child, _SKIP_TAGS_WITH_FIG))
@@ -417,13 +441,21 @@ def _process_body_section(sec_elem: ET.Element) -> List[TaggedBlock]:
             # (e.g., section title/intro paragraphs)
             return blocks
 
-    # Plain section (intro, methods, discussion, etc.) → Misc-exposition
+    # Plain article-level section.  Default to MISC_EXPOSITION, but
+    # promote the Materials-and-methods family to MATERIALS_AND_METHODS
+    # so the v2 corpus carries that distinction.  Step 2.B of
+    # docs/golden_v2_plan.md.
     text = clean_passage_text(
         re.sub(r"\s+", " ", extract_text(sec_elem, _SKIP_TAGS_WITH_FIG))
     )
+    sec_type = sec_elem.get("sec-type", "")
+    if sec_type and sec_type_to_tag(sec_type) == Tag.MATERIALS_AND_METHODS:
+        tag = Tag.MATERIALS_AND_METHODS
+    else:
+        tag = Tag.MISC_EXPOSITION
     blocks = []
     if text:
-        blocks.append(TaggedBlock(text=text, tag=Tag.MISC_EXPOSITION))
+        blocks.append(TaggedBlock(text=text, tag=tag))
     blocks.extend(extract_fig_blocks(sec_elem))
     return blocks
 
