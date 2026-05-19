@@ -17,12 +17,13 @@ docs/couchdbs.md`.)
 | `skol_dev` | 30,967 | 79.7 GB | Primary ingest database. Article metadata plus `article.txt` and `article.pdf` attachments. `article.txt` files are extracted from `article.pdf` either directly or via OCR. Some articles have only `article.xml` which are JATS XML TaxPub.|
 | **Training corpora** | | | |
 | `skol_training` | 190 | 6.8 GB | Hand-curated training set. Each doc carries `article.txt`, `article.pdf`, and a hand-edited `article.txt.ann`. `skol_dev_id` cross-links to the matching ingest doc. |
+| `skol_training_v2` | 190 | 0.2 MB | New hand-labelled training dataset. CouchDB-replicated from `skol_ann_merged` on 2026-05-19 to serve as the v2 training source. Each doc carries `is_golden`, `publication_metadata`, and (by design) only `*.ann` attachments — `article.txt` and `article.pdf` live in `skol_dev`. |
 | `skol_training_taxpub_v1` | 1,743 | 156.6 MB | JATS/TaxPub-derived training corpus for the `taxpub_v1*` family of experiments. One `article.txt.ann` per doc, plus bibliographic metadata (`doi`, `title`, `authors`). |
 | `skol_training_llm_stage` | 180 | 5.3 MB | Staging area for `bin/llm_relabel.py`. Source DB recorded in `source_db`, change list in `changes.json` alongside the relabelled `article.txt.ann`. |
 | **Annotation review pipeline** (training-doc lineage) | | | |
 | `skol_ann_reviewed` | 190 | 13.5 MB | Human-reviewed YEDDA annotations. Output of the brat round-trip on `skol_training`. |
 | `skol_ann_fixed` | 190 | 22.4 MB | Output of `fixes/fix_missing_yedda.py` — gap-filling and page-marker recovery on the `_reviewed` `.ann`s. |
-| `skol_ann_merged` | 190 | 980.5 MB | Output of `fixes/merge_yedda.py` followed by `bin/enrich_ann_merged.py`. Merges human-reviewed labels onto the new OCR text from `skol_training`, then enriches with Crossref publication metadata + `is_golden` flag + copied `article.txt`/`article.pdf` attachments. |
+| `skol_ann_merged` | 190 | 980.5 MB | Output of `fixes/merge_yedda.py` followed by `bin/enrich_ann_merged.py`. Merges human-reviewed labels onto the new OCR text from `skol_training`, then enriches with Crossref publication metadata + `is_golden` flag + copied `article.txt`/`article.pdf` attachments. I then ran a hand-annotation process and overwrote `skol_ann_merged` with the full annotated records. |
 | `skol_staging` | 190 | 23.3 MB | Output of `bin/llm_relabel.py` running against `skol_training`. Same shape as `skol_training_llm_stage`. |
 | **Golden / evaluation** | | | |
 | `skol_golden` | 105 | 1.0 GB | 105 curated articles + `article.txt`/`article.pdf` (and `article.xml` where JATS exists). The union of all golden sources. Built by `bin/curate_golden_dataset.py`. |
@@ -99,6 +100,9 @@ on paper but cannot be executed end-to-end.
                                   │ merge_yedda + enrich_ann_merged
                                   ▼
                           skol_ann_merged
+                                  │
+                                  ├─ hand-annotation pass overwrites
+                                  │  ───────────────────────────────►  skol_training_v2  (v2 training set, .ann-only)
                                   │
                                   │ llm_relabel
                                   ▼
