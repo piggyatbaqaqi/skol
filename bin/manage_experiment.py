@@ -433,13 +433,24 @@ def _build_step_commands(
     step_name: str,
     experiment_name: str,
     force: bool = False,
+    config: Optional[Dict[str, Any]] = None,
 ) -> List[List[str]]:
     """Build the subprocess command list(s) for a pipeline step.
 
     Returns a list of commands to run in sequence.  Most steps have one
     command; ``evaluate`` has two: predict on the golden set first, then
     run the evaluation comparison.
+
+    ``config`` is the resolved env_config + experiment-doc dict.  For
+    the ``evaluate`` step we read ``golden_db_name`` (plaintext source)
+    and ``golden_ann_db_name`` (answer key) so the evaluation runs
+    against the per-experiment golden DBs recorded on the experiment
+    doc, rather than the previously-hardcoded ``skol_golden`` /
+    ``skol_golden_ann_hand`` literals.  When ``config`` is omitted, v1
+    defaults apply (Step 1.C of docs/golden_v2_plan.md).
     """
+    if config is None:
+        config = {}
     # Steps with a single command template.
     single: Dict[str, List[str]] = {
         "train": [
@@ -490,17 +501,23 @@ def _build_step_commands(
         return cmd
 
     if step_name == "evaluate":
+        # The plaintext source for predict + evaluate.
+        golden_db = config.get("golden_db_name", "skol_golden")
+        # The answer-key .ann database scored against.
+        golden_ann_db = config.get(
+            "golden_ann_db_name", "skol_golden_ann_hand"
+        )
         predict_golden: List[str] = _apply([
             sys.executable, str(_BIN_DIR / "predict_classifier.py"),
             "--experiment", "{name}",
-            "--golden-db", "skol_golden",
+            "--golden-db", golden_db,
             "--skip-existing",
         ])
         evaluate_cmd: List[str] = _apply([
             sys.executable, str(_BIN_DIR / "evaluate_golden.py"),
             "--experiment", "{name}",
-            "--golden-db", "skol_golden_ann_hand",
-            "--plaintext-db", "skol_golden",
+            "--golden-db", golden_ann_db,
+            "--plaintext-db", golden_db,
             "--save-to-experiment",
         ])
         return [predict_golden, evaluate_cmd]
@@ -515,14 +532,26 @@ def _run_step(
     experiment_name: str,
     verbosity: int = 1,
     force: bool = False,
+    config: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Run a pipeline step, updating CouchDB status before and after.
 
     Returns True on success, False on failure.
+
+    ``config`` is the resolved env_config + experiment-doc dict used by
+    the evaluate-step builder to look up the per-experiment golden DBs.
     """
     step = doc["pipeline"]["steps"][step_idx]
     step_name = step["name"]
-    cmds = _build_step_commands(step_name, experiment_name, force=force)
+    if config is None:
+        # Resolve the experiment-aware config so the evaluate-step builder
+        # sees the per-experiment golden DBs from the doc.
+        from env_config import _apply_experiment
+        config = get_env_config()
+        _apply_experiment(config, doc, cli_explicit_keys=set())
+    cmds = _build_step_commands(
+        step_name, experiment_name, force=force, config=config,
+    )
 
     if verbosity >= 1:
         print(

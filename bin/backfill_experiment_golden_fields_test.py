@@ -10,8 +10,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from backfill_experiment_golden_fields import (  # type: ignore[import]  # noqa: E402
@@ -135,9 +133,13 @@ class TestBackfillOneDoc:
 
 def _make_db_stub(docs: Dict[str, Dict[str, Any]]) -> MagicMock:
     """Return a MagicMock that mimics the CouchDB-python API surface used
-    by the backfill script: iteration, __getitem__, save()."""
+    by the backfill script: iteration, __getitem__, save().
+
+    __iter__ uses side_effect (not return_value) so each call to
+    ``for _ in db`` gets a fresh iterator — needed for the
+    second-pass-is-no-op idempotency test."""
     db = MagicMock()
-    db.__iter__ = MagicMock(return_value=iter(list(docs)))
+    db.__iter__ = MagicMock(side_effect=lambda: iter(list(docs)))
     db.__getitem__.side_effect = lambda doc_id: dict(docs[doc_id])
 
     saved: List[Dict[str, Any]] = []

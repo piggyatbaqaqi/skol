@@ -183,6 +183,8 @@ def _apply_experiment(
         experiment.databases.training  -> training_database
         experiment.databases.taxa      -> treatments_db_name, source_db
         experiment.databases.taxa_full -> dest_db
+        experiment.databases.golden    -> golden_db_name
+        experiment.databases.golden_ann -> golden_ann_db_name
         experiment.redis_keys.classifier_model -> classifier_model_key
         experiment.redis_keys.embedding        -> embedding_name
         experiment.redis_keys.menus            -> menus_key
@@ -202,6 +204,11 @@ def _apply_experiment(
         ('annotations', ['annotations_db_name']),
         ('taxa', ['treatments_db_name', 'source_db']),
         ('taxa_full', ['dest_db']),
+        # Golden-set wiring (Step 1.B of docs/golden_v2_plan.md).
+        # An experiment doc that omits these keys keeps the v1 default
+        # values set in get_env_config(); v1 experiments stay correct.
+        ('golden', ['golden_db_name']),
+        ('golden_ann', ['golden_ann_db_name']),
     ]
     for exp_field, config_keys in db_mapping:
         value = databases.get(exp_field)
@@ -278,6 +285,14 @@ def get_env_config() -> Dict[str, Any]:
         # Annotations output database (empty = write to ingest DB)
         'annotations_db_name': _get_env('ANNOTATIONS_DB_NAME', ''),
 
+        # Golden evaluation set wiring.  Defaults are v1 names so any
+        # script run without an --experiment / experiment-doc context
+        # keeps evaluating against the v1 hand standard.
+        'golden_db_name': _get_env('GOLDEN_DB_NAME', 'skol_golden'),
+        'golden_ann_db_name': _get_env(
+            'GOLDEN_ANN_DB_NAME', 'skol_golden_ann_hand'
+        ),
+
         # Redis settings
         'redis_host': _get_env('REDIS_HOST', 'localhost'),
         'redis_port': int(_get_env('REDIS_PORT', '6380')),
@@ -350,6 +365,7 @@ def get_env_config() -> Dict[str, Any]:
         'couchdb_url', 'couchdb_host', 'couchdb_username', 'couchdb_password', 'couchdb_database',
         'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
         'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'treatments_db_name',
+        'golden_db_name', 'golden_ann_db_name',
         'training_database', 'annotations_db_name',
         'redis_host', 'redis_url', 'redis_username', 'redis_password',
         'model_version', 'classifier_model_expire',
