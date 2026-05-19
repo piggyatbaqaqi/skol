@@ -7,15 +7,14 @@ counts and sizes shift over time but the role of each DB is durable.
 
 Whenever a new database is added, update the relevant section below.  (See
 `CLAUDE.md` — `Whenever we create a new CouchDB database, please update
-docs/clouddbs.md`. The filename in the rule has a typo; the canonical doc
-is **this file**, `docs/couchdbs.md`.)
+docs/couchdbs.md`.)
 
 ## At a glance
 
 | DB | Docs | Size | Role |
 |---|---:|---:|---|
 | **Source / ingest** | | | |
-| `skol_dev` | 30,967 | 79.7 GB | Primary ingest database. Article metadata plus `article.txt` and `article.pdf` attachments. |
+| `skol_dev` | 30,967 | 79.7 GB | Primary ingest database. Article metadata plus `article.txt` and `article.pdf` attachments. `article.txt` files are extracted from `article.pdf` either directly or via OCR. Some articles have only `article.xml` which are JATS XML TaxPub.|
 | **Training corpora** | | | |
 | `skol_training` | 190 | 6.8 GB | Hand-curated training set. Each doc carries `article.txt`, `article.pdf`, and a hand-edited `article.txt.ann`. `skol_dev_id` cross-links to the matching ingest doc. |
 | `skol_training_taxpub_v1` | 1,743 | 156.6 MB | JATS/TaxPub-derived training corpus for the `taxpub_v1*` family of experiments. One `article.txt.ann` per doc, plus bibliographic metadata (`doi`, `title`, `authors`). |
@@ -57,7 +56,7 @@ points at the databases and Redis keys that step scripts (under
 
 | Experiment | ingest | training | treatments | treatments_full | annotations | embedding key |
 |---|---|---|---|---|---|---|
-| `production` | `skol_dev` | `skol_training` | `skol_treatments_dev` | `skol_treatments_full_dev` | _(not set — falls back to ingest)_ | `skol:embedding:v1.1` |
+| `production` | `skol_dev` | `skol_training` | `skol_treatments_dev` | `skol_treatments_full_dev` | `""` _(explicit empty — falls back to ingest)_ | `skol:embedding:v1.1` |
 | `taxpub_v1` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:taxpub_v1` |
 | `taxpub_v1_int8` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_int8_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:taxpub_v1_int8` |
 | `taxpub_v1_onnx_int8` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_onnx_int8_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:taxpub_v1_onnx` |
@@ -136,9 +135,10 @@ intent from code, docs, or doc shape alone:
    exist locally. Are those experiments archived, or pending an
    `extract_treatments_to_couchdb` run that hasn't happened yet?
 
-4. **Production-experiment annotations** — `production` has no
-   `databases.annotations` set. Today the context viewer falls back to the
-   ingest DB (`skol_dev`), which has `article.txt` / `article.pdf` but no
-   `.ann`. Should `production` point at a specific annotations DB, or is
-   that genuinely a setup where `.ann` files live in `skol_dev` itself for
-   older docs?
+4. **Production-experiment annotations** — _Resolved 2026-05-19_:
+   `production` now carries `databases.annotations: ""` (explicit empty,
+   matching the `ANNOTATIONS_DB_NAME` default in `bin/env_config.py`),
+   with a `notes` field marking it as a placeholder until a 'best'
+   experiment's databases are promoted into the slot. The context viewer's
+   fallback to `ingest_db` (`skol_dev`) is the intentional behaviour while
+   no specific annotations DB is chosen.
