@@ -339,6 +339,12 @@ MODEL_CONFIGS = {
         "coalesce_labels": True,
         "output_format": "annotated",
     },
+    "logistic_sections_v3": {
+        "name": "Logistic Regression (12-class, all sources)",
+        "extraction_mode": "section",
+        "coalesce_labels": True,
+        "output_format": "annotated",
+    },
 }
 
 

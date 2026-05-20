@@ -177,11 +177,11 @@ Train + evaluate each new experiment, compare against v1 metrics.
 
 | # | Description | Status |
 |---|---|---|
-| 5.A | `python bin/manage_experiment.py runstep production_v2 train` | ⬜ Pending |
-| 5.B | `python bin/manage_experiment.py runstep production_v2 evaluate` | ⬜ Pending |
-| 5.C | `python bin/manage_experiment.py runstep jats_v2 train` | ⬜ Pending |
-| 5.D | `python bin/manage_experiment.py runstep jats_v2 evaluate` | ⬜ Pending |
-| 5.E | Comparison report: side-by-side v1 vs v2 metrics for each experiment, plus the new metrics for tags that didn't exist in v1 (`Materials-and-methods`, intra-treatment `Notes`). | ⬜ Pending |
+| 5.A | `python bin/manage_experiment.py runstep production_v2 train` | ✅ Done (2026-05-20) — F1 0.96 line-level on `skol_training_v2` (3 active labels) |
+| 5.B | `python bin/manage_experiment.py runstep production_v2 evaluate` | ✅ Done (2026-05-20) — macro F1 0.127 vs `skol_golden_ann_hand_v2`, 30/30 docs |
+| 5.C | `python bin/manage_experiment.py runstep jats_v2 train` | ✅ Done (2026-05-20) — F1 0.97 line-level on `skol_training_taxpub_v1` |
+| 5.D | `python bin/manage_experiment.py runstep jats_v2 evaluate` | ✅ Done (2026-05-20) — macro F1 0.172 vs `skol_golden_ann_jats_v2`, 56/75 matched |
+| 5.E | Comparison report: side-by-side v1 vs v2 metrics for each experiment, plus the new metrics for tags that didn't exist in v1 (`Materials-and-methods`, intra-treatment `Notes`). | ✅ Done (2026-05-20) — see [golden_v2_step5_report.md](golden_v2_step5_report.md) |
 
 ## Known limitations of the v2 JATS silver standard
 
@@ -389,3 +389,40 @@ curation now produces:
     skol_golden_ann_jats_v2:   75 documents
 
 v1↔v2 metric comparisons are set-equal on both halves.
+
+### Step 5 — Pipeline runs + comparison — ✅ Complete (2026-05-20)
+
+Train + evaluate for both v2 experiments ran cleanly after three
+wiring fixes:
+
+- **`bin/train_classifier.py`**: added `resolve_training_database()`
+  so `config['training_database']` (sourced from the experiment doc's
+  `databases.training`) overrides the MODEL_CONFIG hardcoded value.
+  Five TDD unit tests in `bin/train_classifier_test.py` pin the
+  precedence rule. Without this, every experiment silently trained
+  against the MODEL_CONFIG default regardless of its doc field.
+- **`bin/predict_classifier.py`**: added a `logistic_sections_v3`
+  entry to MODEL_CONFIGS so production_v2's evaluate step can find
+  the predict-side configuration.
+- **Experiment docs**: `production_v2` and `jats_v2` each gained an
+  explicit `model_name` field (logistic_sections_v3 and
+  logistic_sections_taxpub_v1 respectively) and an `annotations` DB
+  (`skol_exp_production_v2_ann` / `skol_exp_jats_v2_ann`) for
+  prediction outputs.
+
+Final v2 metrics:
+
+| Experiment | Macro F1 | Docs matched | Trained labels | Net-new v2 tags in answer key |
+|---|---|---|---|---|
+| `production_v2` vs `skol_golden_ann_hand_v2` | 0.127 | 30/30 | 3 (Description, Misc-exposition, Nomenclature) | Materials-and-methods, Notes (and 10 others the 3-class predictor can't emit) |
+| `jats_v2` vs `skol_golden_ann_jats_v2` | 0.172 | 56/75 | 3 | Materials-and-methods (2 occurrences), Notes (120) — both flowed through from Step 2 |
+
+The plan's specific 5.E asks were satisfied: the new-tag coverage in
+the v2 silver standard is documented (Notes promoted to 120
+occurrences across 17 docs; Materials-and-methods 2 occurrences),
+and the V1↔V2 comparison story is documented in
+[golden_v2_step5_report.md](golden_v2_step5_report.md) with the
+honest caveat that no clean v1 baseline exists (production was never
+evaluated, taxpub_v1_onnx_int8 evaluated against the wrong golden DB
+prior to Step 1.A's backfill). Cleaner v1 baselines are listed as
+follow-ups rather than blockers.

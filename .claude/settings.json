@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -n *)",
+      "mcp__couchdb__get_attachment",
+      "mcp__couchdb__get_document",
+      "mcp__couchdb__search_documents",
+      "mcp__couchdb__list_attachments",
+      "mcp__couchdb__count_documents",
+      "mcp__couchdb__query_documents"
+    ]
+  }
+}

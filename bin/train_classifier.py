@@ -123,6 +123,35 @@ MODEL_CONFIGS = {
 }
 
 
+def resolve_training_database(
+    model_config: Dict[str, Any],
+    config: Dict[str, Any],
+) -> str:
+    """Return the CouchDB training database to use for this run.
+
+    Precedence (CLAUDE.md priority chain):
+      1. ``config['training_database']`` — sourced from CLI > env >
+         experiment-doc ``databases.training`` > env_config default.
+      2. ``model_config['couchdb_training_database']`` — value baked
+         into MODEL_CONFIGS, used only when (1) is absent or empty.
+
+    Per precedence option (b) of golden_v2_plan Step 5: v1 experiment
+    docs must carry ``databases.training`` explicitly so config always
+    wins without surprising the v1-only ``logistic_sections_taxpub_v1``
+    flow.
+    """
+    cfg_value = config.get('training_database')
+    if cfg_value:
+        return cfg_value
+    model_value = model_config.get('couchdb_training_database')
+    if model_value:
+        return model_value
+    raise ValueError(
+        "No training database configured: neither config['training_database']"
+        " nor model_config['couchdb_training_database'] is set."
+    )
+
+
 def make_spark_session(config: Dict[str, Any]) -> SparkSession:
     """
     Create and configure a Spark session.
@@ -193,6 +222,10 @@ def train_classifier(
         model_config['save_text'] = save_text_override
     if use_line_lengths_override is not None:
         model_config['use_line_lengths'] = use_line_lengths_override
+
+    model_config['couchdb_training_database'] = resolve_training_database(
+        model_config, config
+    )
 
     # Determine Redis expiration time
     expire_time = config.get('classifier_model_expire')
