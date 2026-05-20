@@ -166,10 +166,10 @@ attributable.
 
 | # | Description | Status |
 |---|---|---|
-| 4.A | Create `production_v2` experiment doc. Inherits production's databases, points `training` at `skol_training_v2`, points `golden` / `golden_ann` at `skol_golden_v2` / `skol_golden_ann_hand_v2`. | ⬜ Pending |
-| 4.B | Create `jats_v2` experiment doc. `training: skol_training_taxpub_v1` (unchanged unless we plan a v2 of that too), `golden_ann: skol_golden_ann_jats_v2`. | ⬜ Pending |
-| 4.C | Optionally `jats_v2_int8` / `jats_v2_onnx_int8` to mirror the `taxpub_v1` family — only if you want quantised variants in the v2 comparison. | ⬜ Optional |
-| 4.D | Update `docs/couchdbs.md` experiments table with the new rows. | ⬜ Pending |
+| 4.A | Create `production_v2` experiment doc. Inherits production's databases, points `training` at `skol_training_v2`, points `golden` / `golden_ann` at `skol_golden_v2` / `skol_golden_ann_hand_v2`. | ✅ Done |
+| 4.B | Create `jats_v2` experiment doc. `training: skol_training_taxpub_v1` (unchanged unless we plan a v2 of that too), `golden_ann: skol_golden_ann_jats_v2`. | ✅ Done |
+| 4.C | Optionally `jats_v2_int8` / `jats_v2_onnx_int8` to mirror the `taxpub_v1` family — only if you want quantised variants in the v2 comparison. | ⬜ Deferred (not pursued for v2; can be added later if comparison shows a winner) |
+| 4.D | Update `docs/couchdbs.md` experiments table with the new rows. | ✅ Done |
 
 ## Step 5 — Pipeline runs
 
@@ -317,6 +317,28 @@ All five sub-steps (2.A–2.E) landed in one commit.
    comma) — any `st` that is a substring of `"new-combinations"`
    (including `""` and `"new"`) returned `Tag.NEW_COMBINATIONS`.
    Replaced with `if st == "new-combinations":`.
+
+### Step 4 — New experiment definitions — ✅ Complete (2026-05-20)
+
+Created two new docs in `skol_experiments`:
+
+- **`production_v2`** — same `skol_dev` ingest as `production`; training
+  switched to `skol_training_v2` (post-hand-annotation); golden /
+  golden_ann point at `skol_golden_v2` / `skol_golden_ann_hand_v2`.
+  Redis namespace is `:v2` (classifier_model, embedding, menus) so
+  v1 production's keys stay intact for direct comparison.
+- **`jats_v2`** — same `skol_training_taxpub_v1` training as the
+  `taxpub_v1` family (the source corpus is unchanged); golden_ann
+  points at the regenerated `skol_golden_ann_jats_v2` (post-Step-2
+  JATS converter).  Redis keys carry a `jats_v2` namespace.
+
+Sub-step 4.C (quantised `jats_v2_int8` / `jats_v2_onnx_int8` variants
+mirroring the `taxpub_v1` family) is deferred — the Step-5 comparison
+report will tell us whether the v2 line is worth the extra
+quantisation variants.
+
+`docs/couchdbs.md` updated: experiments table has new rows for
+`production_v2` and `jats_v2`; golden-set-wiring sub-table likewise.
 
 ### Step 3 — Curator v2 mode — partial (2026-05-20)
 

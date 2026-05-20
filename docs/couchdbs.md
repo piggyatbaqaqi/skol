@@ -65,6 +65,8 @@ points at the databases and Redis keys that step scripts (under
 | `taxpub_v1_onnx_int8` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_onnx_int8_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:taxpub_v1_onnx` |
 | `jats_v1` | `skol_dev` | `skol_golden_ann_jats` | `skol_exp_jats_v1_treatments` ⚠ | `skol_exp_jats_v1_treatments_full` ⚠ | _(not set)_ | `skol:embedding:jats_v1` |
 | `hand_annotated` | `skol_golden` | `skol_training` | `skol_exp_hand_annotated_treatments` ⚠ | `skol_exp_hand_annotated_treatments_full` ⚠ | _(not set)_ | `skol:embedding:hand_annotated` |
+| `production_v2` | `skol_dev` | `skol_training_v2` | `skol_treatments_dev` | `skol_treatments_full_dev` | `""` _(explicit empty — falls back to ingest)_ | `skol:embedding:v2` |
+| `jats_v2` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:jats_v2` |
 
 ### Golden-set wiring (`databases.golden` / `databases.golden_ann`)
 
@@ -81,6 +83,8 @@ answer-key `.ann` DB `evaluate_golden.py` scores against.
 | `taxpub_v1` | `skol_golden` | `skol_golden_ann_jats` |
 | `taxpub_v1_int8` | `skol_golden` | `skol_golden_ann_jats` |
 | `taxpub_v1_onnx_int8` | `skol_golden` | `skol_golden_ann_jats` |
+| `production_v2` | `skol_golden_v2` | `skol_golden_ann_hand_v2` |
+| `jats_v2` | `skol_golden_v2` | `skol_golden_ann_jats_v2` |
 
 The JATS-trained experiments score against the JATS silver standard
 (`skol_golden_ann_jats`), matching their training distribution. The
