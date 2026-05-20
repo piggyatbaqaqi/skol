@@ -127,19 +127,25 @@ refinement.
 | 3.B | Pre-compute inverse-frequency class weights from `skol_training_v3_combined_no_golden`'s tag distribution; replace the placeholder 1.0s in `logistic_sections_v3` with the computed values. | ✅ Done (2026-05-20) — formula: `weight = min(max_count / count, 10.0)` over per-tag annotation-block counts (131 543 total blocks across 1 884 docs). Misc-exposition gets 1.0 (most common); Diagnosis/Type-designation/Biology/Etymology get 4-7×; Phylogeny/Key/Materials-and-methods/ToC-entry capped at 10×. New-combinations has zero blocks in the corpus → 1.0 placeholder. Two new sanity tests in `bin/train_classifier_test.py` pin the ordering (misc ≤ everything; rare > common). |
 | 3.C | TDD: pin the 19 class_weight keys against `ACTIVE_TAGS_19`. | ✅ Done in Step 1.C — `TestLogisticSectionsV3ClassWeightsCoverActive19` in `bin/train_classifier_test.py`. |
 
-### Step 4 — Experiment docs
+### Step 4 — Experiment docs ✅ Done (2026-05-20)
 
-Three new docs in `skol_experiments` via `bin/manage_experiment.py create`:
+Three new docs in `skol_experiments`. `manage_experiment.py create`
+doesn't expose `golden` / `golden_ann` / `redis_keys` — created
+directly via a Python `couchdb` write, same pattern as Step 4 of
+[golden_v2_plan.md](golden_v2_plan.md).
 
 | Name | training | golden | golden_ann (primary) | annotations | model_name |
 |---|---|---|---|---|---|
-| `production_v3_hand`  | `skol_training_v2_no_golden`              | `skol_golden_v2` | `skol_golden_ann_hand_v2` | `skol_exp_production_v3_hand_ann` | `logistic_sections_v3_19class` |
-| `production_v3_jats`  | `skol_training_taxpub_v2_no_golden`       | `skol_golden_v2` | `skol_golden_ann_hand_v2` | `skol_exp_production_v3_jats_ann` | `logistic_sections_v3_19class` |
-| `production_v3_full`  | `skol_training_v3_combined_no_golden`     | `skol_golden_v2` | `skol_golden_ann_hand_v2` | `skol_exp_production_v3_full_ann` | `logistic_sections_v3_19class` |
+| `production_v3_hand`  | `skol_training_v2_no_golden`              | `skol_golden_v2` | `skol_golden_ann_hand_v2` | `skol_exp_production_v3_hand_ann` | `logistic_sections_v3` |
+| `production_v3_jats`  | `skol_training_taxpub_v2_no_golden`       | `skol_golden_v2` | `skol_golden_ann_hand_v2` | `skol_exp_production_v3_jats_ann` | `logistic_sections_v3` |
+| `production_v3_full`  | `skol_training_v3_combined_no_golden`     | `skol_golden_v2` | `skol_golden_ann_hand_v2` | `skol_exp_production_v3_full_ann` | `logistic_sections_v3` |
 
-Redis keys carry a `:v3_{hand,jats,full}` namespace so each model is
-independently addressable. `golden_ann` set to the hand gold (richer
-answer key); the silver JATS eval is a one-off Step-6 invocation.
+All three reference the same `logistic_sections_v3` MODEL_CONFIG
+(architecture + 19-key class_weights from Step 3.B). They differ only
+in training corpus. Redis keys carry a `:v3_{hand,jats,full}`
+namespace so each model is independently addressable. `golden_ann`
+set to the hand gold (richer answer key); the silver JATS eval is a
+one-off Step-5.G invocation.
 
 ### Step 5 — Pipeline runs
 

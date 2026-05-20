@@ -53,7 +53,7 @@ docs/couchdbs.md`.)
 | `skol_collections_history_dev` | 4,153 | 3.2 MB | Append-only change history for collections (`change_type`, `changed_at`, prior `name`/`nomenclature`/`description`/`owner`). |
 | `skol_comments_dev` | 6 | 0.1 MB | Threaded comments on collections (`body`, `author`, `path`, `parent_path`, `edit_history`, soft-delete + hidden flags). |
 | **Configuration** | | | |
-| `skol_experiments` | 6 | 0.4 MB | Experiment configuration documents — wires together ingest/training/treatments/annotations DBs and Redis keys per experiment. See "Experiments" below. |
+| `skol_experiments` | 11 | 0.4 MB | Experiment configuration documents — wires together ingest/training/treatments/annotations DBs and Redis keys per experiment. See "Experiments" below. |
 
 ## Experiments
 
@@ -71,6 +71,9 @@ points at the databases and Redis keys that step scripts (under
 | `hand_annotated` | `skol_golden` | `skol_training` | `skol_exp_hand_annotated_treatments` ⚠ | `skol_exp_hand_annotated_treatments_full` ⚠ | _(not set)_ | `skol:embedding:hand_annotated` |
 | `production_v2` | `skol_dev` | `skol_training_v2` | `skol_treatments_dev` | `skol_treatments_full_dev` | `""` _(explicit empty — falls back to ingest)_ | `skol:embedding:v2` |
 | `jats_v2` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:jats_v2` |
+| `production_v3_hand` | `skol_dev` | `skol_training_v2_no_golden` | `skol_treatments_dev` | `skol_treatments_full_dev` | `skol_exp_production_v3_hand_ann` | `skol:embedding:v3_hand` |
+| `production_v3_jats` | `skol_dev` | `skol_training_taxpub_v2_no_golden` | `skol_treatments_dev` | `skol_treatments_full_dev` | `skol_exp_production_v3_jats_ann` | `skol:embedding:v3_jats` |
+| `production_v3_full` | `skol_dev` | `skol_training_v3_combined_no_golden` | `skol_treatments_dev` | `skol_treatments_full_dev` | `skol_exp_production_v3_full_ann` | `skol:embedding:v3_full` |
 
 ### Golden-set wiring (`databases.golden` / `databases.golden_ann`)
 
@@ -89,6 +92,9 @@ answer-key `.ann` DB `evaluate_golden.py` scores against.
 | `taxpub_v1_onnx_int8` | `skol_golden` | `skol_golden_ann_jats` |
 | `production_v2` | `skol_golden_v2` | `skol_golden_ann_hand_v2` |
 | `jats_v2` | `skol_golden_v2` | `skol_golden_ann_jats_v2` |
+| `production_v3_hand` | `skol_golden_v2` | `skol_golden_ann_hand_v2` |
+| `production_v3_jats` | `skol_golden_v2` | `skol_golden_ann_hand_v2` |
+| `production_v3_full` | `skol_golden_v2` | `skol_golden_ann_hand_v2` |
 
 The JATS-trained experiments score against the JATS silver standard
 (`skol_golden_ann_jats`), matching their training distribution. The
