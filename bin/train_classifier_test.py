@@ -127,3 +127,25 @@ class TestLogisticSectionsV3ClassWeightsCoverActive19:
                 f"{name} must stay 3-class (v1 baseline); "
                 f"got {len(cfg['class_weights'])} keys"
             )
+
+    def test_misc_exposition_has_lowest_weight(self) -> None:
+        """Inverse-frequency property (Step 3.B): the most-common tag
+        ``Misc-exposition`` is the reference point — every other tag
+        weight is ≥ its weight. Catches a future weight refresh that
+        accidentally inverts the relationship."""
+        weights = MODEL_CONFIGS["logistic_sections_v3"]["class_weights"]
+        misc = weights["Misc-exposition"]
+        for tag, w in weights.items():
+            assert w >= misc, (
+                f"{tag!r} weight {w} is below Misc-exposition {misc}"
+            )
+
+    def test_rare_tags_outweigh_common_tags(self) -> None:
+        """Spot check: Phylogeny (188 blocks in the combined corpus)
+        and Materials-and-methods (1 001 blocks) must outweigh
+        Nomenclature (14 074 blocks) and Description (12 865) —
+        otherwise the inverse-frequency calc is broken."""
+        weights = MODEL_CONFIGS["logistic_sections_v3"]["class_weights"]
+        assert weights["Phylogeny"] > weights["Nomenclature"]
+        assert weights["Materials-and-methods"] > weights["Description"]
+        assert weights["Diagnosis"] > weights["Notes"]

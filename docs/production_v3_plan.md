@@ -124,7 +124,7 @@ refinement.
 | # | Description | Status |
 |---|---|---|
 | 3.A | ~~Add `logistic_sections_v3_19class` to MODEL_CONFIGS~~ | ✅ Folded into Step 1.C — `logistic_sections_v3` is now the 19-class baseline directly. |
-| 3.B | Pre-compute inverse-frequency class weights from `skol_training_v3_combined_no_golden`'s tag distribution; replace the placeholder 1.0s in `logistic_sections_v3` with the computed values. | ⬜ |
+| 3.B | Pre-compute inverse-frequency class weights from `skol_training_v3_combined_no_golden`'s tag distribution; replace the placeholder 1.0s in `logistic_sections_v3` with the computed values. | ✅ Done (2026-05-20) — formula: `weight = min(max_count / count, 10.0)` over per-tag annotation-block counts (131 543 total blocks across 1 884 docs). Misc-exposition gets 1.0 (most common); Diagnosis/Type-designation/Biology/Etymology get 4-7×; Phylogeny/Key/Materials-and-methods/ToC-entry capped at 10×. New-combinations has zero blocks in the corpus → 1.0 placeholder. Two new sanity tests in `bin/train_classifier_test.py` pin the ordering (misc ≤ everything; rare > common). |
 | 3.C | TDD: pin the 19 class_weight keys against `ACTIVE_TAGS_19`. | ✅ Done in Step 1.C — `TestLogisticSectionsV3ClassWeightsCoverActive19` in `bin/train_classifier_test.py`. |
 
 ### Step 4 — Experiment docs

@@ -99,30 +99,35 @@ MODEL_CONFIGS = {
         "regParam": 0.01,
         "extraction_mode": "section",
         # Class-weight keyspace is ACTIVE_TAGS_19 (see
-        # ingestors/yedda_tags.py).  Values are placeholder 1.0;
-        # Step 3.B of docs/production_v3_plan.md replaces them with
-        # inverse-frequency weights computed from
-        # skol_training_v3_combined_no_golden.
+        # ingestors/yedda_tags.py).  Values are inverse-frequency
+        # weights from skol_training_v3_combined_no_golden's per-tag
+        # annotation-block count: weight = min(max_count / count, 10.0).
+        # Most-common class (Misc-exposition, 21 465 blocks) gets 1.0;
+        # rare classes are capped at 10x so they don't dominate the
+        # loss.  New-combinations has zero blocks in the corpus —
+        # weight=1.0 keeps it as a placeholder; the model will learn a
+        # zero-prior weight from data.  Recomputed by Step 3.B of
+        # docs/production_v3_plan.md.
         "class_weights": {
-            "Nomenclature": 1.0,
-            "Description": 1.0,
-            "Diagnosis": 1.0,
-            "Etymology": 1.0,
-            "Materials-examined": 1.0,
-            "Materials-and-methods": 1.0,
-            "Type-designation": 1.0,
-            "Biology": 1.0,
-            "Phylogeny": 1.0,
-            "New-combinations": 1.0,
-            "Notes": 1.0,
-            "Key": 1.0,
-            "Figure-caption": 1.0,
-            "Bibliography": 1.0,
-            "Table": 1.0,
-            "Index": 1.0,
-            "ToC-entry": 1.0,
-            "Misc-exposition": 1.0,
-            "Page-header": 1.0,
+            "Nomenclature": 1.53,
+            "Description": 1.67,
+            "Diagnosis": 7.10,
+            "Etymology": 4.87,
+            "Materials-examined": 2.68,
+            "Materials-and-methods": 10.00,
+            "Type-designation": 6.22,
+            "Biology": 4.52,
+            "Phylogeny": 10.00,
+            "New-combinations": 1.00,
+            "Notes": 1.68,
+            "Key": 10.00,
+            "Figure-caption": 1.67,
+            "Bibliography": 2.14,
+            "Table": 3.86,
+            "Index": 2.41,
+            "ToC-entry": 10.00,
+            "Misc-exposition": 1.00,
+            "Page-header": 3.00,
         },
         "word_vocab_size": 3600,
         "suffix_vocab_size": 400,
