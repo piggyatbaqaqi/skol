@@ -158,7 +158,7 @@ attributable.
 | 3.A | Add `--version` and `--reuse-ids-from` flags to `bin/curate_golden_dataset.py`. Default `--version v1` so calling without flags is unchanged. | ✅ Done |
 | 3.B | When `--version v2`, source hand `.ann` from `skol_training_v2` (override via `--hand-source-db`). | ✅ Done |
 | 3.C | Tests for ID-inheritance: given a v1 `skol_golden`, `--reuse-ids-from skol_golden` produces exactly the same doc IDs in the v2 output (set equality). | ✅ Done |
-| 3.D | Run the v2 curation against local dev CouchDB. Verify `skol_golden_v2` ⊆ same 105 article IDs as `skol_golden`. | ✅ Done (28 hand + 75 JATS = 103 docs; 2 v1 hand IDs missing from disk — see Progress) |
+| 3.D | Run the v2 curation against local dev CouchDB. Verify `skol_golden_v2` ⊆ same 105 article IDs as `skol_golden`. | ✅ Done (105 docs: 30 hand + 75 JATS; v1↔v2 hand-set ID parity confirmed). |
 
 ## Step 4 — New experiment definitions
 
@@ -353,14 +353,17 @@ flowed through end-to-end — across all 75 v2 JATS docs:
     Diagnosis         15     Materials-and-methods   5 ← new
     Key                2
 
-**Gap note** — two v1 hand-set IDs are not in the filesystem
-directory:
+**Gap closed (2026-05-20)** — the 11 training-doc IDs originally
+missing from `~/lab/skol/skol_ann_merged_processed/` (including the
+two v1 hand-set IDs `fa853806972b53448409f2a75b9b3719` and
+`ff9708cd795925e0e7970b86f1e44259`) were extracted from
+`skol_ann_reviewed`, hand-checked by the operator, moved into
+`~/lab/skol/skol_ann_merged_processed/`, and uploaded as
+`article.txt.ann` attachments on `skol_training_v2`.  Re-running the
+curation now produces:
 
-    fa853806972b53448409f2a75b9b3719
-    ff9708cd795925e0e7970b86f1e44259
+    skol_golden_v2:           105 documents
+    skol_golden_ann_hand_v2:   30 documents (set-equal to v1)
+    skol_golden_ann_jats_v2:   75 documents
 
-The v2 hand set is therefore 28 docs, not 30 — so the v1↔v2 metric
-comparison is set-inequal on the hand side.  Operator may choose
-later to (i) annotate those two and re-run curation, (ii) drop them
-from `skol_golden_ann_hand` for parity, or (iii) accept the 28-doc
-v2 hand set as-is.
+v1↔v2 metric comparisons are set-equal on both halves.
