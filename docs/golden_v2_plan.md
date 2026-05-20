@@ -158,7 +158,7 @@ attributable.
 | 3.A | Add `--version` and `--reuse-ids-from` flags to `bin/curate_golden_dataset.py`. Default `--version v1` so calling without flags is unchanged. | ✅ Done |
 | 3.B | When `--version v2`, source hand `.ann` from `skol_training_v2` (override via `--hand-source-db`). | ✅ Done |
 | 3.C | Tests for ID-inheritance: given a v1 `skol_golden`, `--reuse-ids-from skol_golden` produces exactly the same doc IDs in the v2 output (set equality). | ✅ Done |
-| 3.D | Run the v2 curation against local dev CouchDB. Verify `skol_golden_v2` ⊆ same 105 article IDs as `skol_golden`. | 🚫 Blocked — `skol_training_v2` is empty of `.ann` attachments (see Progress note). |
+| 3.D | Run the v2 curation against local dev CouchDB. Verify `skol_golden_v2` ⊆ same 105 article IDs as `skol_golden`. | ✅ Done (28 hand + 75 JATS = 103 docs; 2 v1 hand IDs missing from disk — see Progress) |
 
 ## Step 4 — New experiment definitions
 
@@ -333,32 +333,34 @@ Sub-steps 3.A / 3.B / 3.C landed in one commit:
   v1 union).  `populate_golden_databases()` now accepts the three
   output DB names as parameters rather than hard-coding them.
 
-**3.D BLOCKED** — when the dry-run was attempted against local
-CouchDB, `skol_training_v2` turned out to have **zero `article.txt.ann`
-attachments**.  Tracing back: it was replicated from `skol_ann_merged`,
-which itself carries only `is_golden` and `publication_metadata`
-fields — no annotation attachments.  The user's earlier note about
-"ran a hand-annotation process and overwrote `skol_ann_merged` with
-the full annotated records" must have written metadata only on this
-machine, or the actual annotation work happened on a different
-system.  Hand `.ann` files for the 30 hand-set docs are present in:
+**3.D resolved (2026-05-20)** — the hand-annotated `.ann` files were
+not in `skol_ann_merged` or `skol_training_v2` but on the filesystem
+at `/home/piggy/lab/skol/skol_ann_merged_processed/<doc_id>/article.txt.ann`
+(179 of 190 training docs annotated).  Uploaded all 179 as
+`article.txt.ann` attachments on the matching docs in
+`skol_training_v2`, then re-ran the v2 curation:
 
-- `skol_ann_reviewed` — human-reviewed YEDDA (10,418 B for sample)
-- `skol_ann_fixed`    — post `fix_missing_yedda` (10,562 B)
-- `skol_training`     — original v1 source (10,171 B; identical to
-  the v1 golden's content)
+    skol_golden_v2:            103 documents
+    skol_golden_ann_hand_v2:    28 documents
+    skol_golden_ann_jats_v2:    75 documents
 
-Next actions (operator decision):
+Tag distribution on the JATS-derived `.ann` confirms the Step-2 changes
+flowed through end-to-end — across all 75 v2 JATS docs:
 
-- (a) Treat the v2 hand standard as identical to v1 for the moment
-  (`--hand-source-db skol_ann_fixed` or `skol_ann_reviewed`), then
-  do hand re-annotation as a separate effort and re-curate later.
-- (b) Run the planned hand re-annotation, populate
-  `skol_training_v2` (or another DB) with the new `.ann` files,
-  then run 3.D with the default `--hand-source-db skol_training_v2`.
-- (c) Run 3.D for the JATS half only (regenerating `skol_golden_ann_jats_v2`
-  with the post-Step-2 converter), leaving `skol_golden_ann_hand_v2`
-  empty until the hand effort completes.
+    Misc-exposition  519     Description     120     Materials-examined 56
+    Figure-caption   284     Nomenclature     96     Type-designation   43
+    Notes            126 ← new Etymology     62     Biology            41
+    Diagnosis         15     Materials-and-methods   5 ← new
+    Key                2
 
-(c) is the smallest unblock for a v2 evaluation pipeline run — the
-JATS silver alone is enough to compare `taxpub_v1` against `jats_v2`.
+**Gap note** — two v1 hand-set IDs are not in the filesystem
+directory:
+
+    fa853806972b53448409f2a75b9b3719
+    ff9708cd795925e0e7970b86f1e44259
+
+The v2 hand set is therefore 28 docs, not 30 — so the v1↔v2 metric
+comparison is set-inequal on the hand side.  Operator may choose
+later to (i) annotate those two and re-run curation, (ii) drop them
+from `skol_golden_ann_hand` for parity, or (iii) accept the 28-doc
+v2 hand set as-is.

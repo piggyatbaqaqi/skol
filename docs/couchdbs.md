@@ -29,6 +29,9 @@ docs/couchdbs.md`.)
 | `skol_golden` | 105 | 1.0 GB | 105 curated articles + `article.txt`/`article.pdf` (and `article.xml` where JATS exists). The union of all golden sources. Built by `bin/curate_golden_dataset.py`. |
 | `skol_golden_ann_hand` | 30 | 4.6 MB | 30 hand-annotated `.txt.ann` (gold standard). Sourced from `skol_training`. |
 | `skol_golden_ann_jats` | 75 | 6.7 MB | 75 JATS-derived `.txt.ann` (silver standard). Sourced from articles with TaxPub markup. |
+| `skol_golden_v2` | 103 | _(varies)_ | v2 union database — same article IDs as `skol_golden` minus 2 hand IDs without on-disk annotations. Built 2026-05-20 by `bin/curate_golden_dataset.py --version v2 --reuse-ids-from skol_golden`. |
+| `skol_golden_ann_hand_v2` | 28 | _(varies)_ | v2 hand-annotated `.ann`. Sourced from `skol_training_v2` after uploading the 179 hand-annotated `.ann` files from `~/lab/skol/skol_ann_merged_processed/`. 2 of v1's 30 hand IDs not yet annotated on disk. |
+| `skol_golden_ann_jats_v2` | 75 | _(varies)_ | v2 JATS-derived `.ann`. Regenerated 2026-05-20 with the post-Step-2 `bin/jats_to_yedda.py` (now emits `Materials-and-methods` + intra-treatment `Notes`). |
 | **Treatments (post-Step-3 rename)** | | | |
 | `skol_treatments_dev` | 25,420 | 190.5 MB | Primary treatments database. Output of `bin/extract_treatments_to_couchdb.py` against `skol_dev`. Step-3-dev rename of `skol_taxa_dev`; each document's nomenclature field renamed `taxon` → `treatment`. |
 | `skol_treatments_full_dev` | 12,302 | 51.9 MB | Treatments enriched with `json_annotated` (structured JSON via `bin/treatments_to_json.py`). Step-3-dev rename of `skol_taxa_full_dev`. |
