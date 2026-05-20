@@ -67,6 +67,119 @@ def _get_or_create_db(server, name: str):
 
 
 # ---------------------------------------------------------------------------
+# v2-mode helpers (Step 3 of docs/golden_v2_plan.md)
+# ---------------------------------------------------------------------------
+
+_VERSION_SUFFIX = {
+    "v1": "",
+    "v2": "_v2",
+}
+
+_HAND_SOURCE_DEFAULTS = {
+    "v1": "skol_training",
+    "v2": "skol_training_v2",
+}
+
+
+def compute_output_db_names(version: str) -> Tuple[str, str, str]:
+    """Return the (golden, golden_ann_hand, golden_ann_jats) DB names
+    for the given version.
+
+    Raises ``ValueError`` for unknown versions so a CLI typo fails fast
+    rather than silently writing to the wrong databases.
+    """
+    if version not in _VERSION_SUFFIX:
+        raise ValueError(
+            f"unknown version {version!r} — expected one of: "
+            + ", ".join(sorted(_VERSION_SUFFIX))
+        )
+    suffix = _VERSION_SUFFIX[version]
+    return (
+        f"skol_golden{suffix}",
+        f"skol_golden_ann_hand{suffix}",
+        f"skol_golden_ann_jats{suffix}",
+    )
+
+
+def resolve_hand_source_db(
+    version: str, override: Optional[str],
+) -> str:
+    """Choose the database that holds hand-annotated ``article.txt.ann``
+    attachments for this curation run.
+
+    An explicit ``--hand-source-db`` always wins.  Otherwise we pick
+    ``skol_training`` for v1 (original behaviour) and
+    ``skol_training_v2`` for v2 (the post-hand-annotation overwrite of
+    ``skol_ann_merged``).
+    """
+    if override:
+        return override
+    return _HAND_SOURCE_DEFAULTS.get(version, "skol_training")
+
+
+def select_via_reuse_ids(
+    server,
+    v1_golden_db_name: str,
+    v1_ann_hand_db_name: str,
+    v1_ann_jats_db_name: str,
+    hand_source_db_name: str,
+    dev_db_name: str,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Inherit a v1 golden set's exact doc-ID partition into v2.
+
+    Reads the doc-IDs that already exist in the v1 hand and JATS
+    annotation databases, and rebuilds the corresponding selection
+    structures from the v2 source databases:
+
+      - hand selections: for each id in ``v1_ann_hand_db_name``, read
+        ``article.txt.ann`` from ``hand_source_db_name`` (e.g.
+        ``skol_training_v2``) and look up the metadata doc there.
+      - jats selections: for each id in ``v1_ann_jats_db_name``, look
+        up the corresponding ``skol_dev`` doc — JATS-derived ``.ann``
+        is regenerated downstream from that doc's ``article.xml``.
+
+    A hand-set entry with no resolvable source doc/attachment in
+    ``hand_source_db_name`` is silently dropped (caller may warn).
+    The point of v2 is to mirror v1's partition — anything we genuinely
+    can't reconstruct is a data-quality issue the caller should
+    surface separately.
+    """
+    hand_source = server[hand_source_db_name]
+    dev = server[dev_db_name]
+    v1_hand_ann = server[v1_ann_hand_db_name]
+    v1_jats_ann = server[v1_ann_jats_db_name]
+
+    hand_selections: List[Dict[str, Any]] = []
+    for doc_id in v1_hand_ann:
+        if doc_id.startswith("_design/"):
+            continue
+        if doc_id not in hand_source:
+            continue
+        att = hand_source.get_attachment(doc_id, "article.txt.ann")
+        if att is None:
+            continue
+        yedda_text = att.read().decode("utf-8")
+        hand_selections.append({
+            "doc_id": doc_id,
+            "doc": hand_source[doc_id],
+            "yedda_text": yedda_text,
+        })
+
+    jats_selections: List[Dict[str, Any]] = []
+    for doc_id in v1_jats_ann:
+        if doc_id.startswith("_design/"):
+            continue
+        if doc_id not in dev:
+            continue
+        jats_selections.append({
+            "doc_id": doc_id,
+            "doc": dev[doc_id],
+        })
+
+    return hand_selections, jats_selections
+
+
+# ---------------------------------------------------------------------------
 # Step 1: Select hand-annotated documents from skol_training
 # ---------------------------------------------------------------------------
 
@@ -541,6 +654,9 @@ def populate_golden_databases(
     dry_run: bool,
     mark_dev: bool,
     verbosity: int,
+    golden_db_name: str = "skol_golden",
+    ann_hand_db_name: str = "skol_golden_ann_hand",
+    ann_jats_db_name: str = "skol_golden_ann_jats",
 ) -> Dict[str, int]:
     """Populate all golden databases.
 
@@ -561,8 +677,8 @@ def populate_golden_databases(
     """
     if dry_run:
         counts = {
-            "skol_golden": len(training_selections) + len(jats_selections),
-            "skol_golden_ann_hand": len(training_selections),
+            golden_db_name: len(training_selections) + len(jats_selections),
+            ann_hand_db_name: len(training_selections),
         }
         # Count JATS annotation candidates
         jats_ann = 0
@@ -572,21 +688,21 @@ def populate_golden_databases(
                 jats_ann += 1
         for sel in jats_selections:
             jats_ann += 1  # All JATS selections have JATS XML
-        counts["skol_golden_ann_jats"] = jats_ann
+        counts[ann_jats_db_name] = jats_ann
         return counts
 
     # Create/open golden databases
-    golden_db = _get_or_create_db(server, "skol_golden")
-    ann_hand_db = _get_or_create_db(server, "skol_golden_ann_hand")
-    ann_jats_db = _get_or_create_db(server, "skol_golden_ann_jats")
+    golden_db = _get_or_create_db(server, golden_db_name)
+    ann_hand_db = _get_or_create_db(server, ann_hand_db_name)
+    ann_jats_db = _get_or_create_db(server, ann_jats_db_name)
 
     training_db = server[training_db_name]
     dev_db = server[dev_db_name]
 
     counts = {
-        "skol_golden": 0,
-        "skol_golden_ann_hand": 0,
-        "skol_golden_ann_jats": 0,
+        golden_db_name: 0,
+        ann_hand_db_name: 0,
+        ann_jats_db_name: 0,
     }
 
     # Process training documents
@@ -617,14 +733,14 @@ def populate_golden_databases(
             training_db, golden_db, doc_id, doc,
             golden_sources, plaintext, copy_atts, verbosity,
         )
-        counts["skol_golden"] += 1
+        counts[golden_db_name] += 1
 
         # Save hand annotation
         _save_annotation(
             ann_hand_db, doc_id, sel["yedda_text"],
             "hand", training_db_name, verbosity,
         )
-        counts["skol_golden_ann_hand"] += 1
+        counts[ann_hand_db_name] += 1
 
         # Generate JATS annotation if JATS XML available
         if golden_sources["jats_available"]:
@@ -637,7 +753,7 @@ def populate_golden_databases(
                         ann_jats_db, doc_id, jats_yedda,
                         "jats", training_db_name, verbosity,
                     )
-                    counts["skol_golden_ann_jats"] += 1
+                    counts[ann_jats_db_name] += 1
                 except Exception as exc:
                     if verbosity >= 1:
                         print(
@@ -652,7 +768,7 @@ def populate_golden_databases(
             dev_id = sel["doc"].get("skol_dev_id")
             if dev_id:
                 if _mark_golden_in_dev(
-                    dev_db, dev_id, "skol_golden", verbosity,
+                    dev_db, dev_id, golden_db_name, verbosity,
                 ):
                     marked += 1
         if verbosity >= 1:
@@ -714,7 +830,7 @@ def populate_golden_databases(
             dev_db, golden_db, doc_id, doc,
             golden_sources, plaintext, copy_atts, verbosity,
         )
-        counts["skol_golden"] += 1
+        counts[golden_db_name] += 1
 
         # Generate JATS annotation
         try:
@@ -723,7 +839,7 @@ def populate_golden_databases(
                 ann_jats_db, doc_id, jats_yedda,
                 "jats", dev_db_name, verbosity,
             )
-            counts["skol_golden_ann_jats"] += 1
+            counts[ann_jats_db_name] += 1
         except Exception as exc:
             if verbosity >= 1:
                 print(
@@ -736,7 +852,7 @@ def populate_golden_databases(
         marked = 0
         for sel in jats_selections:
             if _mark_golden_in_dev(
-                dev_db, sel["doc_id"], "skol_golden", verbosity,
+                dev_db, sel["doc_id"], golden_db_name, verbosity,
             ):
                 marked += 1
         if verbosity >= 1:
@@ -803,6 +919,41 @@ def main() -> None:
         action="store_true",
         help="Skip marking skol_dev docs with golden_dataset field.",
     )
+    # ---- v2-mode flags (Step 3 of docs/golden_v2_plan.md) ----
+    parser.add_argument(
+        "--version",
+        choices=("v1", "v2"),
+        default="v1",
+        help=(
+            "Curate the v1 or v2 golden set. v2 writes to "
+            "skol_golden_v2 / skol_golden_ann_hand_v2 / "
+            "skol_golden_ann_jats_v2 and sources hand annotations "
+            "from skol_training_v2 by default (default: v1)."
+        ),
+    )
+    parser.add_argument(
+        "--reuse-ids-from",
+        type=str,
+        metavar="V1_GOLDEN_DB",
+        default=None,
+        help=(
+            "Inherit the exact doc IDs from a v1 golden DB instead of "
+            "running the stratified selection. The corresponding v1 "
+            "_ann_hand / _ann_jats databases are read to recover the "
+            "hand vs JATS partition. Typically: "
+            "--reuse-ids-from skol_golden."
+        ),
+    )
+    parser.add_argument(
+        "--hand-source-db",
+        type=str,
+        default=None,
+        help=(
+            "Database to source hand-annotated .ann attachments from. "
+            "Defaults to skol_training for --version v1 and "
+            "skol_training_v2 for --version v2."
+        ),
+    )
     parser.add_argument(
         "-v", "--verbose",
         action="count",
@@ -829,22 +980,61 @@ def main() -> None:
 
     server = _connect_server(config)
 
+    # Resolve v1/v2 output DB names and the hand-annotation source DB.
+    golden_db_name, ann_hand_db_name, ann_jats_db_name = (
+        compute_output_db_names(args.version)
+    )
+    hand_source_db_name = resolve_hand_source_db(
+        args.version, args.hand_source_db,
+    )
+    if hand_source_db_name != training_db_name:
+        training_db_name = hand_source_db_name
+
     if verbosity >= 1:
         print(
-            f"Curating golden dataset from {training_db_name} "
-            f"and {dev_db_name}",
+            f"Curating golden dataset (version={args.version}) "
+            f"from {training_db_name} and {dev_db_name} "
+            f"→ {golden_db_name} / {ann_hand_db_name} / {ann_jats_db_name}",
             file=sys.stderr,
         )
 
-    # Step 1: Select training documents (all qualifying)
-    all_training = select_training_docs(
-        server, training_db_name, args.min_tags, verbosity,
-    )
-
-    # Step 1b: Subsample to holdout size
-    training_selections = subsample_training_docs(
-        all_training, args.hand_limit, verbosity,
-    )
+    if args.reuse_ids_from:
+        # v2 mode: inherit v1's exact 30+75 doc IDs.  Skip the
+        # stratified selection — we want set equality with v1.
+        if verbosity >= 1:
+            print(
+                f"\nInheriting doc IDs from v1 golden set "
+                f"'{args.reuse_ids_from}' "
+                f"(hand source: {hand_source_db_name})",
+                file=sys.stderr,
+            )
+        # Derive the corresponding v1 ann databases.
+        v1_ann_hand = args.reuse_ids_from.replace(
+            "skol_golden", "skol_golden_ann_hand"
+        ) if args.reuse_ids_from == "skol_golden" else (
+            f"{args.reuse_ids_from}_ann_hand"
+        )
+        v1_ann_jats = args.reuse_ids_from.replace(
+            "skol_golden", "skol_golden_ann_jats"
+        ) if args.reuse_ids_from == "skol_golden" else (
+            f"{args.reuse_ids_from}_ann_jats"
+        )
+        training_selections, jats_selections = select_via_reuse_ids(
+            server,
+            v1_golden_db_name=args.reuse_ids_from,
+            v1_ann_hand_db_name=v1_ann_hand,
+            v1_ann_jats_db_name=v1_ann_jats,
+            hand_source_db_name=hand_source_db_name,
+            dev_db_name=dev_db_name,
+        )
+    else:
+        # Original v1 path: stratified selection.
+        all_training = select_training_docs(
+            server, training_db_name, args.min_tags, verbosity,
+        )
+        training_selections = subsample_training_docs(
+            all_training, args.hand_limit, verbosity,
+        )
 
     # Step 2: Obtain plaintext for training documents
     training_plaintexts: Dict[str, Tuple[str, str]] = {}
@@ -866,11 +1056,14 @@ def main() -> None:
         for src, n in sorted(pt_source_counts.items(), key=lambda x: -x[1]):
             print(f"  {src}: {n}", file=sys.stderr)
 
-    # Step 3: Select JATS articles from dev
-    exclude_ids = {sel["doc_id"] for sel in training_selections}
-    jats_selections = select_jats_docs(
-        server, dev_db_name, exclude_ids, args.jats_limit, verbosity,
-    )
+    # Step 3: Select JATS articles from dev (skipped in --reuse-ids-from
+    # mode — jats_selections was already populated by
+    # select_via_reuse_ids above).
+    if not args.reuse_ids_from:
+        exclude_ids = {sel["doc_id"] for sel in training_selections}
+        jats_selections = select_jats_docs(
+            server, dev_db_name, exclude_ids, args.jats_limit, verbosity,
+        )
 
     # Step 4: Populate golden databases
     if verbosity >= 1:
@@ -890,6 +1083,9 @@ def main() -> None:
             training_selections, jats_selections,
             training_plaintexts, config, dry_run=True,
             mark_dev=False, verbosity=verbosity,
+            golden_db_name=golden_db_name,
+            ann_hand_db_name=ann_hand_db_name,
+            ann_jats_db_name=ann_jats_db_name,
         )
         print("\n=== DRY RUN ===")
         print("Would create/update:")
@@ -902,6 +1098,9 @@ def main() -> None:
         training_selections, jats_selections,
         training_plaintexts, config, dry_run=False,
         mark_dev=mark_dev, verbosity=verbosity,
+        golden_db_name=golden_db_name,
+        ann_hand_db_name=ann_hand_db_name,
+        ann_jats_db_name=ann_jats_db_name,
     )
 
     if verbosity >= 1:
