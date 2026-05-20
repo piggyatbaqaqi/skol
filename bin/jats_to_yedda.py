@@ -24,7 +24,7 @@ Examples:
 import argparse
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 # Allow running as a script or as a module.
 if __name__ == "__main__" and __package__ is None:
@@ -137,6 +137,41 @@ def _get_xml_attachment(
 
 
 _TAXPUB_NS = "http://www.plazi.org/taxpub"
+
+
+def select_doc_ids(
+    source_db: Any,
+    exclude_ids: Set[str],
+    include_ids: Optional[Set[str]] = None,
+) -> List[str]:
+    """Return doc IDs from ``source_db`` that pass the JATS/TaxPub
+    filters, are not in ``exclude_ids``, and (if ``include_ids`` is
+    given) are in it.
+
+    Filters applied:
+      * ``xml_available`` is truthy
+      * ``xml_format`` ∈ {"jats", "taxpub"}
+      * ``is_taxpub`` is not explicitly False (None is allowed)
+
+    Precedence: ``exclude_ids`` always wins over ``include_ids``.
+    ``include_ids=None`` means "no restriction"; an empty set means
+    "process zero docs."
+    """
+    doc_ids: List[str] = []
+    for row in source_db.view("_all_docs", include_docs=True):
+        doc = row.doc
+        if not doc or not doc.get("xml_available", False):
+            continue
+        if doc.get("xml_format") not in ("jats", "taxpub"):
+            continue
+        if doc.get("is_taxpub") is False:
+            continue
+        if row.id in exclude_ids:
+            continue
+        if include_ids is not None and row.id not in include_ids:
+            continue
+        doc_ids.append(row.id)
+    return doc_ids
 
 
 def _has_taxpub(xml_string: str) -> bool:
@@ -255,6 +290,16 @@ def main() -> None:
         metavar="FILE",
         help="File of doc IDs (one per line) to exclude.",
     )
+    parser.add_argument(
+        "--include-ids",
+        type=str,
+        default=None,
+        metavar="FILE",
+        help=(
+            "File of doc IDs (one per line) to restrict --all to. "
+            "Filters still apply; exclude_ids wins on overlap."
+        ),
+    )
 
     # Work-skipping and partial computation options.
     parser.add_argument(
@@ -318,13 +363,26 @@ def main() -> None:
     # Load exclusion set if provided.
     exclude_ids: Set[str] = set()
     if args.exclude_ids:
-        with open(args.exclude_ids) as f:
+        with open(args.exclude_ids, encoding="utf-8") as f:
             exclude_ids = {
                 line.strip() for line in f if line.strip()
             }
         if verbosity >= 1:
             print(
                 f"Loaded {len(exclude_ids)} IDs to exclude",
+                file=sys.stderr,
+            )
+
+    # Load inclusion set if provided.  None means "no restriction".
+    include_ids: Optional[Set[str]] = None
+    if args.include_ids:
+        with open(args.include_ids, encoding="utf-8") as f:
+            include_ids = {
+                line.strip() for line in f if line.strip()
+            }
+        if verbosity >= 1:
+            print(
+                f"Loaded {len(include_ids)} IDs to include",
                 file=sys.stderr,
             )
 
@@ -351,30 +409,20 @@ def main() -> None:
     if args.doc_id:
         doc_ids = [args.doc_id]
     elif args.all:
-        # Collect documents with JATS XML available.
-        # When is_taxpub is set on a doc (post-backfill), use it to pre-filter
-        # instead of reading every XML attachment later.  Documents without the
-        # flag still pass through; taxpub_only will check the XML content.
-        for row in source_db.view(
-            "_all_docs", include_docs=True,
-        ):
-            doc = row.doc
-            if not doc or not doc.get("xml_available", False):
-                continue
-            xml_fmt = doc.get("xml_format")
-            if xml_fmt not in ("jats", "taxpub"):
-                continue
-            # Skip documents known to lack TaxPub markup.
-            if doc.get("is_taxpub") is False:
-                continue
-            if row.id in exclude_ids:
-                excluded_count += 1
-                continue
-            doc_ids.append(row.id)
+        doc_ids = select_doc_ids(
+            source_db, exclude_ids=exclude_ids, include_ids=include_ids,
+        )
         if verbosity >= 1:
-            msg = f"Found {len(doc_ids)} JATS XML documents in {database}"
-            if excluded_count:
-                msg += f" ({excluded_count} excluded)"
+            msg = (
+                f"Found {len(doc_ids)} JATS XML documents in "
+                f"{database}"
+            )
+            if exclude_ids:
+                msg += f" ({len(exclude_ids)} ID(s) excluded)"
+            if include_ids is not None:
+                msg += (
+                    f" (restricted to {len(include_ids)} include-ID(s))"
+                )
             print(msg, file=sys.stderr)
 
     if limit is not None:
