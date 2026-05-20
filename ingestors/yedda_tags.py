@@ -6,7 +6,7 @@ functions used by JATS annotation converters.
 
 import dataclasses
 from enum import Enum
-from typing import List
+from typing import FrozenSet, List, Tuple
 
 
 class Tag(str, Enum):
@@ -38,6 +38,25 @@ class Tag(str, Enum):
     HOLOTYPE = "Holotype"
     # Deprecated: Replace with BIOLOGY.
     DISTRIBUTION = "Distribution"
+
+
+DEPRECATED_TAGS: FrozenSet[Tag] = frozenset({
+    Tag.HOLOTYPE,      # folded into TYPE_DESIGNATION
+    Tag.DISTRIBUTION,  # folded into BIOLOGY
+    Tag.FIX,           # workflow marker, not a semantic class
+})
+"""Tags excluded from ACTIVE_TAGS_19. HOLOTYPE / DISTRIBUTION are
+semantically deprecated (their content folds into the listed
+replacements); FIX is a workflow marker, not a label."""
+
+
+ACTIVE_TAGS_19: Tuple[Tag, ...] = tuple(
+    t for t in Tag if t not in DEPRECATED_TAGS
+)
+"""The 19 canonical active tags. Source of truth for any consumer
+that needs to enumerate the label space — classifier MODEL_CONFIG
+class_weights, schema validation, the JATS converter's emit set.
+Order is the Tag enum declaration order (stable for serialisation)."""
 
 
 @dataclasses.dataclass

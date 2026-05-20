@@ -7,6 +7,11 @@ default) must win over the value baked into MODEL_CONFIGS. This matches
 the CLI-parameter priority chain documented in CLAUDE.md and parallels
 the doc-field plumbing fixed for ``databases.treatments`` in Step 1.E
 of docs/golden_v2_plan.md.
+
+Also pins the v3 schema alignment for ``logistic_sections_v3``: the
+class_weights dict must enumerate the full ``ACTIVE_TAGS_19`` label
+space so the v3 baseline trains every active class (Step 1.C of
+docs/production_v3_plan.md).
 """
 
 import sys
@@ -15,9 +20,18 @@ from typing import Any, Dict
 
 import pytest
 
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent.parent),
+)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from train_classifier import resolve_training_database  # type: ignore[import]  # noqa: E402
+from ingestors.yedda_tags import (  # type: ignore[import]  # noqa: E402
+    ACTIVE_TAGS_19,
+)
+from train_classifier import (  # type: ignore[import]  # noqa: E402
+    MODEL_CONFIGS,
+    resolve_training_database,
+)
 
 
 class TestResolveTrainingDatabase:
@@ -75,3 +89,41 @@ class TestResolveTrainingDatabase:
         than silently training against an undefined database."""
         with pytest.raises((KeyError, ValueError)):
             resolve_training_database({}, {})
+
+
+class TestLogisticSectionsV3ClassWeightsCoverActive19:
+    """Step 1.C of docs/production_v3_plan.md — ``logistic_sections_v3``
+    is the v3 baseline. Its class_weights dict must enumerate every
+    tag in ACTIVE_TAGS_19 so the trained classifier has a weight for
+    each active label.
+
+    Older 3-class MODEL_CONFIGs (``logistic_sections``,
+    ``logistic_sections_taxpub_v1``) are intentionally NOT expanded —
+    they exist as v1/v1-jats baselines for comparison."""
+
+    def test_logistic_sections_v3_keys_match_active_19(self) -> None:
+        """class_weights keys are exactly the 19 ACTIVE_TAGS_19
+        string values — no missing tag, no extra tag."""
+        cfg = MODEL_CONFIGS["logistic_sections_v3"]
+        active_values = {t.value for t in ACTIVE_TAGS_19}
+        assert set(cfg["class_weights"].keys()) == active_values
+
+    def test_logistic_sections_v3_weights_are_positive(self) -> None:
+        """Every class weight is a positive float. Zero would zero
+        out that class's contribution; negative is nonsense."""
+        cfg = MODEL_CONFIGS["logistic_sections_v3"]
+        for tag, weight in cfg["class_weights"].items():
+            assert weight > 0, (
+                f"class_weights[{tag!r}] = {weight!r} must be > 0"
+            )
+
+    def test_v1_baselines_remain_3class(self) -> None:
+        """``logistic_sections`` and ``logistic_sections_taxpub_v1``
+        keep their 3-key class_weights — they are v1 baselines for
+        the v3 comparison report and must not be silently expanded."""
+        for name in ("logistic_sections", "logistic_sections_taxpub_v1"):
+            cfg = MODEL_CONFIGS[name]
+            assert len(cfg["class_weights"]) == 3, (
+                f"{name} must stay 3-class (v1 baseline); "
+                f"got {len(cfg['class_weights'])} keys"
+            )

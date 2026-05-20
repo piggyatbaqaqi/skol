@@ -95,9 +95,9 @@ Notes).
 
 | # | Description | Status |
 |---|---|---|
-| 1.A | Add `Tag.active_19()` classmethod (or module-level `ACTIVE_TAGS_19` tuple) in `ingestors/yedda_tags.py` returning the 19-tag set with deprecation reasons documented. | ⬜ |
-| 1.B | TDD: tests pin the exact set; pin that `HOLOTYPE` / `DISTRIBUTION` / `FIX` are excluded; pin the count. | ⬜ |
-| 1.C | Update `ingestors/jats_to_yedda.py` and `bin/train_classifier.py` MODEL_CONFIGS class_weights to source from `ACTIVE_TAGS_19` rather than hardcoded subsets. | ⬜ |
+| 1.A | Add `Tag.active_19()` classmethod (or module-level `ACTIVE_TAGS_19` tuple) in `ingestors/yedda_tags.py` returning the 19-tag set with deprecation reasons documented. | ✅ Done (2026-05-20) — module-level `ACTIVE_TAGS_19: Tuple[Tag, ...]` and `DEPRECATED_TAGS: FrozenSet[Tag]` constants in [ingestors/yedda_tags.py](../ingestors/yedda_tags.py). |
+| 1.B | TDD: tests pin the exact set; pin that `HOLOTYPE` / `DISTRIBUTION` / `FIX` are excluded; pin the count. | ✅ Done (2026-05-20) — `TestActiveTags19` (8 tests) in [ingestors/yedda_tags_test.py](../ingestors/yedda_tags_test.py): count anchor, exclusion of each deprecated tag, partition coverage, disjoint check, exact string anchor, ordered-tuple contract. |
+| 1.C | Update `ingestors/jats_to_yedda.py` and `bin/train_classifier.py` MODEL_CONFIGS class_weights to source from `ACTIVE_TAGS_19` rather than hardcoded subsets. | ✅ Done (2026-05-20) — `JATS_EMIT_TAGS: FrozenSet[Tag]` constant added to `ingestors/jats_to_yedda.py` (4 tests in `TestJatsEmitTags`); `logistic_sections_v3` MODEL_CONFIG class_weights expanded from 13 → 19 keys matching `ACTIVE_TAGS_19` (placeholder weights 1.0; Step 3.B refines). v1 baselines `logistic_sections` and `logistic_sections_taxpub_v1` intentionally left at 3 classes for v1 comparison. Deprecated `Distribution` removed. |
 
 ### Step 2 — No-golden training DBs
 
@@ -113,13 +113,19 @@ the "exclude golden" decision is auditable and stable across runs.
 | 2.E | Combined: new helper `bin/build_combined_training_db.py` that unions `skol_training_v2_no_golden` + `skol_training_taxpub_v2_no_golden` into `skol_training_v3_combined_no_golden` (1 884 docs; safe because hand ∩ JATS = 0). | ⬜ |
 | 2.F | Update `docs/couchdbs.md` with the three new DBs. | ⬜ |
 
-### Step 3 — 19-class MODEL_CONFIG
+### Step 3 — 19-class MODEL_CONFIG class weights
+
+Folded into Step 1.C: `logistic_sections_v3` was rewired to use the
+full 19-key class_weights dict aligned with `ACTIVE_TAGS_19` (no new
+MODEL_CONFIG entry needed — the existing `logistic_sections_v3` *is*
+the 19-class baseline now). Remaining work is the weight-value
+refinement.
 
 | # | Description | Status |
 |---|---|---|
-| 3.A | Add `logistic_sections_v3_19class` to MODEL_CONFIGS in `bin/train_classifier.py` and `bin/predict_classifier.py`. Same architecture as `logistic_sections_v3` but with the full 19-tag class_weights dict (inverse-frequency from the combined corpus). | ⬜ |
-| 3.B | Pre-compute class weights from `skol_training_v3_combined_no_golden`'s tag frequencies and inline them in the MODEL_CONFIG. | ⬜ |
-| 3.C | TDD: pin the 19 class_weight keys against `ACTIVE_TAGS_19`. | ⬜ |
+| 3.A | ~~Add `logistic_sections_v3_19class` to MODEL_CONFIGS~~ | ✅ Folded into Step 1.C — `logistic_sections_v3` is now the 19-class baseline directly. |
+| 3.B | Pre-compute inverse-frequency class weights from `skol_training_v3_combined_no_golden`'s tag distribution; replace the placeholder 1.0s in `logistic_sections_v3` with the computed values. | ⬜ |
+| 3.C | TDD: pin the 19 class_weight keys against `ACTIVE_TAGS_19`. | ✅ Done in Step 1.C — `TestLogisticSectionsV3ClassWeightsCoverActive19` in `bin/train_classifier_test.py`. |
 
 ### Step 4 — Experiment docs
 

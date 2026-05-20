@@ -33,6 +33,31 @@ TP_PREFIX = f"{{{TP_NS}}}"
 _DEFAULT_SKIP_TAGS = frozenset({"object-id"})
 
 
+# The exact set of Tag values this converter can return from
+# ``sec_type_to_tag()`` and the article-level / treatment processors.
+# Must stay a subset of ``ACTIVE_TAGS_19`` and disjoint from
+# ``DEPRECATED_TAGS``. Pinned by ``TestJatsEmitTags`` so a future
+# ``return Tag.HOLOTYPE`` slip is caught by the test suite.
+JATS_EMIT_TAGS: FrozenSet[Tag] = frozenset({
+    Tag.NOMENCLATURE,
+    Tag.DESCRIPTION,
+    Tag.DIAGNOSIS,
+    Tag.ETYMOLOGY,
+    Tag.MATERIALS_EXAMINED,
+    Tag.MATERIALS_AND_METHODS,
+    Tag.TYPE_DESIGNATION,
+    Tag.BIOLOGY,
+    Tag.PHYLOGENY,
+    Tag.NEW_COMBINATIONS,
+    Tag.NOTES,
+    Tag.KEY,
+    Tag.FIGURE_CAPTION,
+    Tag.BIBLIOGRAPHY,
+    Tag.TABLE,
+    Tag.MISC_EXPOSITION,
+})
+
+
 def strip_ns(root: ET.Element) -> ET.Element:
     """Strip all namespace prefixes from element tags in an ElementTree.
 

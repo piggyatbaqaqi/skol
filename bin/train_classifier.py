@@ -88,7 +88,7 @@ MODEL_CONFIGS = {
         "section_name_vocab_size": 50,
     },
     "logistic_sections_v3": {
-        "name": "Logistic Regression (12-class, all sources)",
+        "name": "Logistic Regression (19-class, all sources)",
         "model_type": "logistic",
         "verbosity": 2,
         "input_source": "couchdb",
@@ -98,23 +98,31 @@ MODEL_CONFIGS = {
         "maxIter": 100,
         "regParam": 0.01,
         "extraction_mode": "section",
-        # Class weights to be recalculated from inverse label frequency
-        # after the 12-tag training corpus is generated (Phase 6).
-        # Placeholder weights mirror the 3-class inverse-frequency ratios.
+        # Class-weight keyspace is ACTIVE_TAGS_19 (see
+        # ingestors/yedda_tags.py).  Values are placeholder 1.0;
+        # Step 3.B of docs/production_v3_plan.md replaces them with
+        # inverse-frequency weights computed from
+        # skol_training_v3_combined_no_golden.
         "class_weights": {
-            "Nomenclature": 3.0,
-            "Description": 2.0,
-            "Diagnosis": 2.0,
-            "Etymology": 2.0,
-            "Distribution": 2.0,
-            "Materials-examined": 2.0,
-            "Type-designation": 2.0,
-            "Biology": 2.0,
-            "Phylogeny": 2.0,
-            "Notes": 1.5,
-            "Key": 1.5,
-            "Figure-caption": 1.5,
+            "Nomenclature": 1.0,
+            "Description": 1.0,
+            "Diagnosis": 1.0,
+            "Etymology": 1.0,
+            "Materials-examined": 1.0,
+            "Materials-and-methods": 1.0,
+            "Type-designation": 1.0,
+            "Biology": 1.0,
+            "Phylogeny": 1.0,
+            "New-combinations": 1.0,
+            "Notes": 1.0,
+            "Key": 1.0,
+            "Figure-caption": 1.0,
+            "Bibliography": 1.0,
+            "Table": 1.0,
+            "Index": 1.0,
+            "ToC-entry": 1.0,
             "Misc-exposition": 1.0,
+            "Page-header": 1.0,
         },
         "word_vocab_size": 3600,
         "suffix_vocab_size": 400,

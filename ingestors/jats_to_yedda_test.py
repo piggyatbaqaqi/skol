@@ -3,8 +3,9 @@
 import unittest
 import xml.etree.ElementTree as ET
 
-from .yedda_tags import Tag
+from .yedda_tags import ACTIVE_TAGS_19, DEPRECATED_TAGS, Tag
 from .jats_to_yedda import (
+    JATS_EMIT_TAGS,
     _has_treatments,
     extract_fig_blocks,
     extract_text,
@@ -1297,3 +1298,61 @@ class TestNotesAsTreatmentCatchAll(unittest.TestCase):
         tags = [b.tag for b in blocks]
         self.assertIn(Tag.DESCRIPTION, tags)
         self.assertIn(Tag.ETYMOLOGY, tags)
+
+
+class TestJatsEmitTags(unittest.TestCase):
+    """``JATS_EMIT_TAGS`` documents and pins the exact set of Tag values
+    that ``sec_type_to_tag()`` and the rest of the converter can return.
+    Step 1.C of docs/production_v3_plan.md: the converter's emit set
+    must stay a subset of ``ACTIVE_TAGS_19``, never overlap
+    ``DEPRECATED_TAGS``. These tests catch a future ``return
+    Tag.HOLOTYPE`` slipping in by accident."""
+
+    def test_emit_set_subset_of_active_19(self) -> None:
+        """Every Tag the JATS converter can emit is in the 19-tag
+        active label set. If you add a new ``return Tag.X`` branch in
+        jats_to_yedda, add it to JATS_EMIT_TAGS too; this test will
+        fail until you do."""
+        self.assertTrue(
+            JATS_EMIT_TAGS.issubset(set(ACTIVE_TAGS_19)),
+            f"JATS_EMIT_TAGS includes non-active tags: "
+            f"{JATS_EMIT_TAGS - set(ACTIVE_TAGS_19)}",
+        )
+
+    def test_emit_set_disjoint_from_deprecated(self) -> None:
+        """The converter must never emit a deprecated tag. Catches
+        accidental regressions to ``return Tag.HOLOTYPE`` /
+        ``Tag.DISTRIBUTION`` / ``Tag.FIX``."""
+        self.assertTrue(
+            JATS_EMIT_TAGS.isdisjoint(DEPRECATED_TAGS),
+            f"JATS_EMIT_TAGS overlaps deprecated tags: "
+            f"{JATS_EMIT_TAGS & DEPRECATED_TAGS}",
+        )
+
+    def test_misc_exposition_in_emit_set(self) -> None:
+        """``MISC_EXPOSITION`` is the catch-all default for any
+        unmatched sec-type — it must be in the emit set."""
+        self.assertIn(Tag.MISC_EXPOSITION, JATS_EMIT_TAGS)
+
+    def test_known_sec_types_emit_documented_tags(self) -> None:
+        """A representative spot-check that every sec_type_to_tag
+        return path produces a tag that's in JATS_EMIT_TAGS. If a new
+        return-path is added without updating JATS_EMIT_TAGS, this
+        test fails."""
+        observed: set = set()
+        for sec_type in (
+            "description", "etymology", "diagnosis",
+            "type-designation", "materials-examined", "biology",
+            "phylogeny", "new-combinations", "nomenclature",
+            "notes", "key", "bibliography", "table",
+            "materials-and-methods",
+        ):
+            tag = sec_type_to_tag(sec_type)
+            observed.add(tag)
+        # Plus the catch-all path for an unrecognised sec-type.
+        observed.add(sec_type_to_tag("entirely-unrecognised-foo"))
+        self.assertTrue(
+            observed.issubset(JATS_EMIT_TAGS),
+            f"sec_type_to_tag returned tags not in JATS_EMIT_TAGS: "
+            f"{observed - JATS_EMIT_TAGS}",
+        )

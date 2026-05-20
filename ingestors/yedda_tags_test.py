@@ -4,7 +4,13 @@ from typing import List
 
 import pytest
 
-from ingestors.yedda_tags import Tag, TaggedBlock, tagged_blocks_to_yedda
+from ingestors.yedda_tags import (
+    ACTIVE_TAGS_19,
+    DEPRECATED_TAGS,
+    Tag,
+    TaggedBlock,
+    tagged_blocks_to_yedda,
+)
 
 
 class TestTagEnum:
@@ -107,3 +113,62 @@ class TestTaggedBlocksToYedda:
         ]
         result = tagged_blocks_to_yedda(blocks)
         assert "[@Table 1. Conidia dimensions.#Table*]" in result
+
+
+class TestActiveTags19:
+    """``ACTIVE_TAGS_19`` is the canonical 19-tag label set used by all
+    v3 consumers (classifier MODEL_CONFIGs, schema validation, the
+    JATS converter's emit set). Per Step 1 of
+    docs/production_v3_plan.md: 22 declared tags minus 2 deprecated
+    (``HOLOTYPE``, ``DISTRIBUTION``) minus 1 workflow marker (``FIX``)
+    = 19 active. These tests pin that partition so a future enum
+    addition can't slip past unclassified."""
+
+    def test_count_is_19(self) -> None:
+        """Anchor count: any tag added to the enum must be explicitly
+        categorised into ACTIVE_TAGS_19 or DEPRECATED_TAGS, never
+        forgotten."""
+        assert len(ACTIVE_TAGS_19) == 19
+
+    def test_holotype_excluded(self) -> None:
+        """Deprecated — folds into TYPE_DESIGNATION."""
+        assert Tag.HOLOTYPE not in ACTIVE_TAGS_19
+
+    def test_distribution_excluded(self) -> None:
+        """Deprecated — folds into BIOLOGY."""
+        assert Tag.DISTRIBUTION not in ACTIVE_TAGS_19
+
+    def test_fix_excluded(self) -> None:
+        """Workflow marker, not a semantic class."""
+        assert Tag.FIX not in ACTIVE_TAGS_19
+
+    def test_partition_covers_enum(self) -> None:
+        """ACTIVE_TAGS_19 ∪ DEPRECATED_TAGS = every Tag — catches a
+        future tag added but never categorised."""
+        assert set(ACTIVE_TAGS_19) | set(DEPRECATED_TAGS) == set(Tag)
+
+    def test_active_disjoint_from_deprecated(self) -> None:
+        """No tag is both active and deprecated — guards against the
+        natural copy-paste mistake."""
+        assert set(ACTIVE_TAGS_19).isdisjoint(set(DEPRECATED_TAGS))
+
+    def test_exact_string_anchor(self) -> None:
+        """Pin the literal 19 tag values. Renames force a deliberate
+        test update so a typo'd value can't slip through. Order
+        independence: compare as sets."""
+        expected = {
+            "Nomenclature", "Description", "Diagnosis", "Etymology",
+            "Materials-examined", "Materials-and-methods",
+            "Type-designation", "Biology", "Phylogeny",
+            "New-combinations", "Notes", "Key", "Figure-caption",
+            "Bibliography", "Table", "Index", "ToC-entry",
+            "Misc-exposition", "Page-header",
+        }
+        assert {t.value for t in ACTIVE_TAGS_19} == expected
+
+    def test_is_ordered_tuple(self) -> None:
+        """ACTIVE_TAGS_19 is a tuple, not a set — order is the Tag
+        enum declaration order. Documents the contract for any
+        consumer that needs a stable iteration order (ordered
+        class_weight dicts, serialised feature columns)."""
+        assert isinstance(ACTIVE_TAGS_19, tuple)
