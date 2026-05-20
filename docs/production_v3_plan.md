@@ -106,12 +106,12 @@ the "exclude golden" decision is auditable and stable across runs.
 
 | # | Description | Status |
 |---|---|---|
-| 2.A | New helper `bin/build_no_golden_training_db.py` with CLI: `--source DB --golden-ann DB --output DB`. Iterates source, skips any doc_id present in `--golden-ann`, copies the rest (doc + attachments) to `--output`. Idempotent (skip if output exists with matching doc count). | ⬜ |
-| 2.B | TDD: tests against in-memory fake DBs covering (a) basic filtering, (b) doc count equals source - golden, (c) attachments preserved, (d) idempotent on re-run. | ⬜ |
-| 2.C | Run for hand: `--source skol_training_v2 --golden-ann skol_golden_ann_hand_v2 --output skol_training_v2_no_golden` → 160 docs. | ⬜ |
-| 2.D | Run for JATS: `--source skol_training_taxpub_v2 --golden-ann skol_golden_ann_jats_v2 --output skol_training_taxpub_v2_no_golden` → 1 724 docs. | ⬜ |
-| 2.E | Combined: new helper `bin/build_combined_training_db.py` that unions `skol_training_v2_no_golden` + `skol_training_taxpub_v2_no_golden` into `skol_training_v3_combined_no_golden` (1 884 docs; safe because hand ∩ JATS = 0). | ⬜ |
-| 2.F | Update `docs/couchdbs.md` with the three new DBs. | ⬜ |
+| 2.A | New helper `bin/build_no_golden_training_db.py` with CLI: `--source DB --golden-ann DB --output DB`. Iterates source, skips any doc_id present in `--golden-ann`, copies the rest (doc + attachments) to `--output`. Idempotent (skip if output exists with matching doc count). | ✅ Done (2026-05-20) |
+| 2.B | TDD: tests against in-memory fake DBs covering (a) basic filtering, (b) doc count equals source - golden, (c) attachments preserved, (d) idempotent on re-run. | ✅ Done (2026-05-20) — 7 tests in `bin/build_no_golden_training_db_test.py` + 5 tests in `bin/build_combined_training_db_test.py`, all green. |
+| 2.C | Run for hand: `--source skol_training_v2 --golden-ann skol_golden_ann_hand_v2 --output skol_training_v2_no_golden` → 160 docs. | ✅ Done (2026-05-20) — `copied=160 skipped_golden=30 skipped_exists=0`. |
+| 2.D | Run for JATS: `--source skol_training_taxpub_v2 --golden-ann skol_golden_ann_jats_v2 --output skol_training_taxpub_v2_no_golden` → 1 724 docs. | ✅ Done (2026-05-20) — `copied=1724 skipped_golden=19 skipped_exists=0`. |
+| 2.E | Combined: new helper `bin/build_combined_training_db.py` that unions `skol_training_v2_no_golden` + `skol_training_taxpub_v2_no_golden` into `skol_training_v3_combined_no_golden` (1 884 docs; safe because hand ∩ JATS = 0). | ✅ Done (2026-05-20) — `copied=1884 skipped_exists=0`, zero ID collisions. |
+| 2.F | Update `docs/couchdbs.md` with the three new DBs. | ✅ Done (2026-05-20). |
 
 ### Step 3 — 19-class MODEL_CONFIG class weights
 
