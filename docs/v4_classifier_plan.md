@@ -167,7 +167,29 @@ over the trained CRFs' inputs — it does not change the SBERT cache.
 | Pass | Training corpus | Doc count | Why |
 |---|---|---|---|
 | Pass 1 (layout) | `skol_training_v2_no_golden` | 160 | Hand-annotated PDF-derived docs are the *only* source of true positives for Page-header / Index / Page-header / Table / etc. — JATS-derived docs (XML source) have zero of these by construction. Training Pass 1 on the combined corpus would dilute the signal with 1 724 docs of all-Other lines. |
-| Pass 2 (treatment) | `skol_training_v3_combined_no_golden` | 1 884 | Combined corpus gives the broadest coverage of treatment-section labels. Pre-filter: drop any line whose ground-truth label is one of the 7 Pass-1 layout categories (JATS docs have none; hand docs lose those rows). |
+| Pass 2 (treatment) | **OPEN** — see ablation note below | 160 or 1 884 | The v3 negative result ([extraction_pipeline.md](extraction_pipeline.md) §Background) showed cross-distribution training data does *not* help under bag-of-words representations. Whether SBERT's semantic embeddings make the transfer work is the open empirical question. Step 6 schedules an explicit ablation. |
+
+**Pass-2 training-corpus ablation.** The combined corpus is 9:1 JATS-
+dominated, and the v3 experiments showed JATS-derived labels at best
+fail to help and at worst degrade PDF-classification metrics
+(`v3_jats` macro F1 0.132 vs `v3_hand` 0.459 on the same hand gold).
+That negative was at the level of tf-idf features; SBERT may or may
+not erase the gap by abstracting surface form away.
+
+Train two Pass-2 variants in Step 6 and compare:
+
+- `v4_pass2_hand` — Pass 2 trained on `skol_training_v2_no_golden`
+  alone, mirroring Pass 1's training scope.
+- `v4_pass2_combined` — Pass 2 trained on
+  `skol_training_v3_combined_no_golden` (after dropping
+  layout-labelled lines).
+
+Both share the same SBERT cache and the same Pass 1 model. If
+`hand` ≥ `combined` on hand gold, the v3 negative generalises and we
+drop the combined option (Pass 2 trains on hand-only). If
+`combined` > `hand`, SBERT is doing what we hoped and JATS data is a
+useful augmentation despite the surface-form gap. The cost is roughly
+2× training time; cheap relative to the certainty it buys.
 
 ### Train/eval/dev split
 
@@ -257,11 +279,11 @@ follow-on:
 | # | Description | Status |
 |---|---|---|
 | 6.A | New experiment doc `production_v4` in `skol_experiments`. Fields per the v3 pattern; `model_name: "v4_crf"`. Three training-database variants are not needed — v4 uses the combined corpus only (Pass 1 internally restricts to hand). | ⬜ |
-| 6.B | Run `train_crf_layout` then `train_crf_treatment`. | ⬜ |
-| 6.C | Run `predict_v4` over `skol_golden_v2`. | ⬜ |
-| 6.D | Run `evaluate_golden.py --experiment production_v4` against `skol_golden_ann_hand_v2`. | ⬜ |
-| 6.E | One-off eval against `skol_golden_ann_jats_v2`. | ⬜ |
-| 6.F | Ablation: train a *single-CRF* baseline (no Pass 1 / Pass 2 split, full 19-label space) and compare. If the two-pass design doesn't beat the single-CRF baseline, that's a Step 7 decision to abandon the two-pass complexity. | ⬜ |
+| 6.B | Run `train_crf_layout` (Pass 1). | ⬜ |
+| 6.C | Train **two** Pass-2 variants: `v4_pass2_hand` (hand-only) and `v4_pass2_combined` (full combined corpus). See "Training data scope" above. | ⬜ |
+| 6.D | Run `predict_v4` twice over `skol_golden_v2` — once with each Pass 2 variant. | ⬜ |
+| 6.E | Run `evaluate_golden.py` for each Pass 2 variant against `skol_golden_ann_hand_v2`. The variant with the higher macro F1 becomes `production_v4`'s real Pass 2. | ⬜ |
+| 6.F | Ablation: train a *single-CRF* baseline (no Pass 1 / Pass 2 split, full 19-label space, hand-only training) and compare. If the two-pass design doesn't beat the single-CRF baseline, that's a Step 7 decision to abandon the two-pass complexity. | ⬜ |
 
 ### Step 7 — Comparison report
 
