@@ -324,7 +324,7 @@ def get_env_config() -> Dict[str, Any]:
         'couchdb_pattern': _get_env('COUCHDB_PATTERN', '*.txt'),
         'pattern': _get_env('PATTERN', '*.ann'),  # Matches both .txt.ann and .pdf.ann
         'prediction_batch_size': int(_get_env('PREDICTION_BATCH_SIZE', '24')),
-        'num_workers': int(_get_env('NUM_WORKERS', '4')),
+        'num_workers': int(_get_env('NUM_WORKERS', '8')),
         'union_batch_size': int(_get_env('UNION_BATCH_SIZE', '1000')),
         'incremental_batch_size': int(_get_env('INCREMENTAL_BATCH_SIZE', '50')),
 
@@ -339,11 +339,16 @@ def get_env_config() -> Dict[str, Any]:
         'annotated_path': Path(_get_env('ANNOTATED_PATH', str(Path.cwd().parent / "data" / "annotated"))),
         'brat_data_dir': Path(_get_env('BRAT_DATA_DIR', '/data/piggy/src/github.com/piggyatbaqaqi/brat/data/skol')),
 
-        # Spark settings
-        'cores': int(_get_env('SPARK_CORES', '4')),
+        # Spark settings.  Defaults sized for a 24-core / 96 GB-RAM box
+        # — the local-mode JVM saturates ~16 cores before shuffle
+        # overhead dominates, and driver/executor memory share the
+        # heap in local mode.  Override per-host with SPARK_CORES /
+        # SPARK_DRIVER_MEMORY / SPARK_EXECUTOR_MEMORY env vars on
+        # smaller machines.
+        'cores': int(_get_env('SPARK_CORES', '16')),
         'bahir_package': _get_env('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
-        'spark_driver_memory': _get_env('SPARK_DRIVER_MEMORY', '4g'),
-        'spark_executor_memory': _get_env('SPARK_EXECUTOR_MEMORY', '4g'),
+        'spark_driver_memory': _get_env('SPARK_DRIVER_MEMORY', '32g'),
+        'spark_executor_memory': _get_env('SPARK_EXECUTOR_MEMORY', '16g'),
 
         # NCBI E-utilities API key (optional, increases rate limit from 3 to 10 rps)
         'ncbi_api_key': _get_env('NCBI_API_KEY', '') or None,
