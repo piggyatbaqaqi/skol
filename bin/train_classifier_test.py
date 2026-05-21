@@ -149,3 +149,26 @@ class TestLogisticSectionsV3ClassWeightsCoverActive19:
         assert weights["Phylogeny"] > weights["Nomenclature"]
         assert weights["Materials-and-methods"] > weights["Description"]
         assert weights["Diagnosis"] > weights["Notes"]
+
+    def test_v3_disables_label_collapse(self) -> None:
+        """logistic_sections_v3 must set collapse_labels=False so the
+        19-tag class_weights dict is actually trained. The classifier
+        default is True, which silently folds every label except
+        Nomenclature / Description into Misc-exposition (see
+        ParagraphExtractor.collapse_labels in
+        skol_classifier/preprocessing.py). Without this override the
+        v3 baseline trains as 3-class and the 19 class_weights are
+        dead weight."""
+        cfg = MODEL_CONFIGS["logistic_sections_v3"]
+        assert cfg.get("collapse_labels") is False
+
+    def test_v1_baselines_keep_label_collapse_default(self) -> None:
+        """The two v1 baselines do not override collapse_labels —
+        they inherit the True default so they remain 3-class for the
+        v3 vs v1 comparison report."""
+        for name in ("logistic_sections", "logistic_sections_taxpub_v1"):
+            cfg = MODEL_CONFIGS[name]
+            assert "collapse_labels" not in cfg, (
+                f"{name} must not override collapse_labels "
+                f"(inherits True default for the 3-class baseline)"
+            )

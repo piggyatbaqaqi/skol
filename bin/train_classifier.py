@@ -98,6 +98,16 @@ MODEL_CONFIGS = {
         "maxIter": 100,
         "regParam": 0.01,
         "extraction_mode": "section",
+        # IMPORTANT: collapse_labels=False so the 19-tag schema in
+        # class_weights below is actually trained.  The classifier
+        # default is True, which silently folds every label except
+        # Nomenclature / Description into Misc-exposition (see
+        # ParagraphExtractor.collapse_labels in
+        # skol_classifier/preprocessing.py).  The two v1 baselines
+        # (logistic_sections, logistic_sections_taxpub_v1) keep the
+        # default True for the 3-class story; this v3 config is the
+        # actual 19-class one.
+        "collapse_labels": False,
         # Class-weight keyspace is ACTIVE_TAGS_19 (see
         # ingestors/yedda_tags.py).  Values are inverse-frequency
         # weights from skol_training_v3_combined_no_golden's per-tag
