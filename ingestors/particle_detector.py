@@ -39,6 +39,19 @@ _PATTERNS: Dict[str, re.Pattern] = {  # type: ignore[type-arg]
     "Page-ref": re.compile(r'\b(?:p\.|pp\.)\s*(\d+(?:[-\u2013]\d+)?)'),
     "GBIF-ID": re.compile(r'\bGBIF[:\s]+(\d{7,})\b', re.IGNORECASE),
     "ISSN": re.compile(r'\bISSN\s*:?\s*(\d{4}-\d{3}[\dX])\b', re.IGNORECASE),
+    # CBS culture-collection accession numbers (Westerdijk Institute).
+    # Two formats observed in our corpus (24 681 hits across 1 044
+    # docs): old dotted ``CBS 513.77`` (3 digits + period + 2-4 digits)
+    # and modern ``CBS 136259`` (5-7 contiguous digits).  Either may
+    # carry a trailing ``T`` / ``t`` for the type strain.  Composite
+    # citations like ``CBS 144700/AP 6516 T`` match the CBS portion
+    # only; the AP code is left for FungariumDetector if registered.
+    # Lookup URL: https://wi.knaw.nl/fungal_table  (SPA \u2014 paste the
+    # accession into the on-site search form).
+    "CBS-number": re.compile(
+        r'\bCBS\s+(\d{3}\.\d{2,4}|\d{5,7})(?:\s*[Tt])?\b',
+        re.IGNORECASE,
+    ),
     # Author affiliation / contact footnotes at the bottom of the first page
     # of a journal article.  The OCR'd text typically looks like:
     #   "1) Department of Botany, University of ..."
@@ -222,6 +235,13 @@ def detect_particles(
 
     for label, pattern in _PATTERNS.items():
         for m in pattern.finditer(text):
+            metadata: Dict[str, Any] = {}
+            # CBS spans carry the accession in metadata for downstream
+            # consumers (e.g. linking to wi.knaw.nl/fungal_table).  If
+            # a second pattern grows the same need, factor this into a
+            # per-pattern hook map.
+            if label == "CBS-number" and m.lastindex:
+                metadata["accession"] = m.group(1)
             spans.append(
                 Span(
                     start=m.start(),
@@ -229,6 +249,7 @@ def detect_particles(
                     label=label,
                     text=m.group(0),
                     source="regex",
+                    metadata=metadata,
                 )
             )
 

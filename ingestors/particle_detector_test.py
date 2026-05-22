@@ -312,5 +312,93 @@ class TestAuthorFootnote(unittest.TestCase):
         self.assertIn("Author-footnote", self._labels(text))
 
 
+# ---------------------------------------------------------------------------
+# CBS culture-collection numbers (Westerdijk Institute)
+# ---------------------------------------------------------------------------
+
+
+class TestCbsNumberDetection(unittest.TestCase):
+    """CBS culture numbers — Westerdijk Fungal Biodiversity Institute
+    (https://wi.knaw.nl/fungal_table).  External strain identifiers,
+    same shape of label as DOI / MB-number / GBIF-ID.
+
+    Two formats appear in our 24 681-hit corpus survey:
+      - Old dotted: ``CBS 513.77``  (3 digits + period + 2-4 digits)
+      - Modern:     ``CBS 136259``  (5-7 contiguous digits)
+    Both may carry a trailing ``T`` / ``t`` marking the type strain.
+    """
+
+    def _detect(self, text: str):
+        with patch("ingestors.particle_detector.FungariumDetector"):
+            return detect_particles(text, redis_client=None)
+
+    def _cbs(self, text: str):
+        return [s for s in self._detect(text) if s.label == "CBS-number"]
+
+    def test_dotted_format(self) -> None:
+        """Older format: 3 digits + period + 2-4 digits."""
+        cbs = self._cbs("Type culture CBS 513.77 was deposited.")
+        self.assertEqual(len(cbs), 1)
+        self.assertEqual(cbs[0].text, "CBS 513.77")
+
+    def test_modern_numeric(self) -> None:
+        """Modern format: 5-7 contiguous digits, no period."""
+        cbs = self._cbs("Strain CBS 136259 was sequenced.")
+        self.assertEqual(len(cbs), 1)
+        self.assertEqual(cbs[0].text, "CBS 136259")
+
+    def test_type_strain_suffix_no_space(self) -> None:
+        """Type-strain marker 'T' immediately after the digits."""
+        cbs = self._cbs("Holotype CBS 128831T described herein.")
+        self.assertEqual(len(cbs), 1)
+        self.assertIn("128831", cbs[0].text)
+
+    def test_type_strain_suffix_with_space(self) -> None:
+        """Type-strain marker 'T' with a space before it."""
+        cbs = self._cbs("Holotype CBS 132036 T (ex-type).")
+        self.assertEqual(len(cbs), 1)
+        self.assertIn("132036", cbs[0].text)
+
+    def test_case_insensitive(self) -> None:
+        """``cbs`` lowercase still matches."""
+        cbs = self._cbs("Listed as cbs 115.96 in catalog.")
+        self.assertEqual(len(cbs), 1)
+
+    def test_composite_with_slash_matches_cbs_only(self) -> None:
+        """``CBS 144700/AP 6516`` — match the CBS portion only, leave
+        AP 6516 alone (a different collection's range, picked up by
+        FungariumDetector if registered)."""
+        cbs = self._cbs("Strain CBS 144700/AP 6516 T ex-type.")
+        self.assertEqual(len(cbs), 1)
+        self.assertTrue(cbs[0].text.startswith("CBS"))
+        self.assertIn("144700", cbs[0].text)
+        self.assertNotIn("AP", cbs[0].text)
+
+    def test_no_false_match_on_bare_acronym(self) -> None:
+        """The string 'CBS' alone without a number is not a match."""
+        cbs = self._cbs("The CBS Broadcasting Company logo.")
+        self.assertEqual(cbs, [])
+
+    def test_no_false_match_on_substring(self) -> None:
+        """Word boundary: ``TCBS 12`` (a different acronym) doesn't
+        match.  The 5-7-digit length requirement also rules out the
+        2-digit '12'; this test keeps the boundary check honest."""
+        cbs = self._cbs("Unrelated code TCBS 12 in dataset.")
+        self.assertEqual(cbs, [])
+
+    def test_metadata_carries_accession_modern(self) -> None:
+        """Span metadata exposes the accession string for downstream
+        linking to wi.knaw.nl/fungal_table."""
+        cbs = self._cbs("Sample CBS 136259 type strain.")
+        self.assertEqual(len(cbs), 1)
+        self.assertEqual(cbs[0].metadata.get("accession"), "136259")
+
+    def test_metadata_carries_accession_dotted(self) -> None:
+        """Dotted format's accession captured verbatim as '513.77'."""
+        cbs = self._cbs("Sample CBS 513.77 described.")
+        self.assertEqual(len(cbs), 1)
+        self.assertEqual(cbs[0].metadata.get("accession"), "513.77")
+
+
 if __name__ == "__main__":
     unittest.main()
