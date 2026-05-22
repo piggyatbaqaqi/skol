@@ -166,6 +166,55 @@ sweep) becomes sustainable.  Without E the buildout decays — new
 docs ingest into `skol_dev` but no Treatments / embeddings get
 produced.
 
+## Phase F — `skol-gnservices` Debian package
+
+Ships gnfinder + gnparser as a sibling Debian package built from the
+same repo as `skol.deb`.  Required for an automated v3_hand (and
+eventual v4) production install — currently the binaries live in
+`~/bin/` on dev and would have to be installed by hand on prod.
+Closes that gap before any production rollout.
+
+Same-repo, separate-packaging-dir layout:
+
+```
+skol/
+  packaging/skol-gnservices/
+    debian/
+      control                       ← hand-written, not stdeb-generated
+      rules
+      copyright
+      skol-gnservices.install
+      gnfinder.service              ← systemd unit for gnfinder -p 9080
+      gnparser.service              ← systemd unit for gnparser -p 9081
+      postinst                      ← create skol-gn user, enable units
+      prerm
+    VERSION                          ← tracks upstream gnfinder/gnparser tags
+    fetch_binaries.sh                ← curls release tarballs from
+                                       github.com/gnames during build
+  Makefile                           ← gains `make deb-gnservices` target
+```
+
+Two binary packages from one source repo because the gnservices
+release cadence (follows upstream gnfinder/gnparser) is independent
+from skol's release cadence — different changelogs + different
+versions, but one place to PR cross-cutting config changes (e.g.
+shifting ports between env_config and the systemd unit at once).
+
+| # | Description | Status |
+|---|---|---|
+| F.1 | Create `packaging/skol-gnservices/` skeleton: `debian/control` declaring `Package: skol-gnservices`, `Architecture: amd64`, `Depends: adduser, systemd`; `debian/rules` using `dh $@`; `debian/copyright` listing Apache-2.0 for both upstream binaries; a `VERSION` file pinning the upstream tags. | ⬜ |
+| F.2 | Write `fetch_binaries.sh` that pulls the gnfinder + gnparser release tarballs from github.com/gnames during the package build and unpacks the binaries to a staging area `debian/skol-gnservices/opt/skol-gnservices/bin/`. | ⬜ |
+| F.3 | Add `gnfinder.service` and `gnparser.service` systemd units (each starting the binary with the agreed-upon ports + run-as user).  Place them in `debian/skol-gnservices/lib/systemd/system/`. | ⬜ |
+| F.4 | Add `debian/postinst` to create a system user `skol-gn`, enable both units, start them.  Mirror existing skol postinst patterns. | ⬜ |
+| F.5 | Add `Makefile` target `deb-gnservices` that invokes `dpkg-buildpackage -us -uc -b` from `packaging/skol-gnservices/`. | ⬜ |
+| F.6 | Update `stdeb.cfg`'s `Depends:` (or `Recommends:`) line on the main `skol` package to include `skol-gnservices`. | ⬜ |
+| F.7 | Build both `.deb`s locally on dev; install via `dpkg -i`; verify `gnfinder` and `gnparser` services come up on the expected ports and that the existing `ingestors/gnfinder_client.py` + `gnparser_client.py` clients can talk to them. | ⬜ |
+| F.8 | Update `docs/experiments.md` and `docs/v4_classifier_plan.md` to document the install + the deb layout. | ⬜ |
+
+Phases E and F together gate Phase D (production deployment) —
+without them, prod gets neither scheduled extraction jobs nor the
+gn-services the future v4 pipeline depends on.
+
 ## Phase D — Production deployment (separately scheduled)
 
 Out of scope for this buildout; treated as a follow-up that
