@@ -26,6 +26,7 @@ class AttachmentsInspector(CatalogElementMixin, Inspector):
         "cost": "low",
         "produces": [
             "has_xml", "has_pdf", "has_plaintext", "has_markdown",
+            "has_yedda_ann",
         ],
     }
 
@@ -36,6 +37,15 @@ class AttachmentsInspector(CatalogElementMixin, Inspector):
             "has_pdf": "article.pdf" in atts,
             "has_plaintext": "article.txt" in atts,
             "has_markdown": "article.md" in atts,
+            # True if any pre-existing YEDDA ``.ann`` attachment is
+            # present — these are the outputs of an upstream
+            # predict_classifier or jats_to_yedda run.  Used by the
+            # ``classifier_logistic_v3`` component which reads that
+            # attachment verbatim.
+            "has_yedda_ann": any(
+                k.endswith(".txt.ann") or k.endswith(".pdf.ann")
+                for k in atts
+            ),
         }
 
 

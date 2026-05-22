@@ -100,11 +100,14 @@ class TestClassifierLogisticV3(TestCase):
     """Reads article.txt.ann attachment; emits YEDDA-text contribution
     at priority 4 — lossless passthrough, no TaggedBlock round-trip."""
 
-    def test_preconditions_gates_on_has_plaintext(self) -> None:
+    def test_preconditions_gates_on_has_yedda_ann(self) -> None:
         descriptor = ClassifierLogisticV3()
         self.assertFalse(descriptor.preconditions({}))
-        self.assertTrue(
+        self.assertFalse(
             descriptor.preconditions({"has_plaintext": True}),
+        )
+        self.assertTrue(
+            descriptor.preconditions({"has_yedda_ann": True}),
         )
 
     def test_run_passes_ann_text_verbatim(self) -> None:

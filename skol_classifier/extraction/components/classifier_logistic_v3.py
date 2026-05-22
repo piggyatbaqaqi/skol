@@ -52,11 +52,15 @@ class ClassifierLogisticV3Instance(ComponentInstance):
 class ClassifierLogisticV3(CatalogElementMixin, SectionLabeler):
     """Catalog descriptor for the classifier-output labeler.
 
-    Preconditions: ``has_plaintext`` (the .ann attachment lives
-    alongside the .txt the classifier read).  We additionally
-    require ``not has_taxpub_markup`` to be implicit at dispatch
-    time — when both gates hold we let the dispatcher run both
-    components and the priority-10 taxpub extractor wins on merge.
+    Preconditions: ``has_yedda_ann`` — the .ann attachment must
+    exist on the doc (an upstream ``predict_classifier`` run wrote
+    it).  We deliberately gate on the .ann file rather than on
+    ``has_plaintext`` because Spark partitions feed the dispatcher
+    just the .ann content, not the underlying .txt.
+
+    When both this component and ``taxpub_treatment_extractor``
+    qualify, the priority-10 taxpub extractor wins on merge at the
+    PipelineState level.
     """
 
     _name = _SOURCE
@@ -65,9 +69,9 @@ class ClassifierLogisticV3(CatalogElementMixin, SectionLabeler):
         "cost": "low",
         "source": "model",
         "produces": ["treatment_labels"],
-        "requires_props": ["has_plaintext"],
+        "requires_props": ["has_yedda_ann"],
     }
-    requires_props: FrozenSet[str] = frozenset({"has_plaintext"})
+    requires_props: FrozenSet[str] = frozenset({"has_yedda_ann"})
     requires_outputs: FrozenSet[str] = frozenset()
     produces_outputs: FrozenSet[str] = frozenset({"treatment_labels"})
     instance_constructor: Type[ComponentInstance] = (
@@ -75,7 +79,7 @@ class ClassifierLogisticV3(CatalogElementMixin, SectionLabeler):
     )
 
     def preconditions(self, props: Dict[str, Any]) -> bool:
-        return bool(props.get("has_plaintext"))
+        return bool(props.get("has_yedda_ann"))
 
 
 def register(catalog: MemoryCatalog[Component], **kwargs: Any) -> None:

@@ -31,6 +31,7 @@ class TestAttachmentsInspector(TestCase):
             "article.pdf": {},
             "article.txt": {},
             "article.md": {},
+            "article.txt.ann": {},
         }}
         self.assertEqual(
             ins.inspect(doc, {}),
@@ -39,6 +40,7 @@ class TestAttachmentsInspector(TestCase):
                 "has_pdf": True,
                 "has_plaintext": True,
                 "has_markdown": True,
+                "has_yedda_ann": True,
             },
         )
 
@@ -51,8 +53,19 @@ class TestAttachmentsInspector(TestCase):
                 "has_pdf": False,
                 "has_plaintext": False,
                 "has_markdown": False,
+                "has_yedda_ann": False,
             },
         )
+
+    def test_pdf_ann_also_sets_has_yedda_ann(self) -> None:
+        """``article.pdf.ann`` is also a YEDDA-format attachment;
+        ``has_yedda_ann`` is True for either ``.txt.ann`` or
+        ``.pdf.ann``."""
+        ins = AttachmentsInspector()
+        doc = {"_attachments": {"article.pdf.ann": {}}}
+        out = ins.inspect(doc, {})
+        self.assertTrue(out["has_yedda_ann"])
+        self.assertFalse(out["has_plaintext"])
 
 
 class TestXmlRootInspector(TestCase):

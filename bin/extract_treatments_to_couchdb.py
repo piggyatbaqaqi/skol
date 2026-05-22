@@ -33,6 +33,12 @@ from couchdb_file import read_couchdb_partition
 from finder import parse_annotated, remove_interstitials
 from treatment import group_paragraphs, Treatment, get_ingest_field
 
+# Extraction-pipeline dispatcher (extraction_pipeline.md Commit 1 /
+# docs/v3_buildout.md Phase A).  The per-partition function below
+# now wraps the dispatcher rather than hand-rolling the parse +
+# group flow.
+from skol_classifier.extraction.dispatcher import Dispatcher
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -138,81 +144,93 @@ def generate_taxon_doc_id(taxon_dict: Dict[str, Any]) -> str:
     return f"taxon_{hash_obj.hexdigest()}"
 
 
+def _row_to_dispatcher_doc(row: Row) -> Dict[str, Any]:
+    """Build the per-doc dict the dispatcher consumes from a Spark row.
+
+    Rows carry the .ann attachment content in ``row.value`` plus the
+    full ingest doc in ``row.ingest``.  The dispatcher's inspectors
+    + components read attachments via ``state.get_attachment(name)``,
+    so we pre-seed ``_attachments`` with the .ann bytes (the only
+    attachment available in a partition row).
+
+    Other CouchDB-resident attachments — ``article.xml``,
+    ``article.txt`` — are *not* available in the partition; if they
+    were the dispatcher would route through ``taxpub_treatment_extractor``
+    instead.  That's a future commit (per docs/extraction_pipeline.md
+    migration sequence); today's flow stays on the
+    ``classifier_logistic_v3`` path.
+    """
+    ingest = getattr(row, "ingest", None) or {}
+    # Merge ingest fields into the synthetic doc so inspectors see
+    # things like xml_format / is_taxpub / url / pdf_url naturally.
+    doc: Dict[str, Any] = dict(ingest)
+    # Always overwrite _attachments with what's actually in-hand.
+    doc["_attachments"] = {row.attachment_name: row.value}
+    if "_id" not in doc:
+        doc["_id"] = ingest.get("_id", "unknown")
+    return doc
+
+
 def extract_taxa_from_partition(
     partition: Iterator[Row],
     ingest_db_name: str
 ) -> Iterator[Treatment]:
     """
-    Extract Taxa from a partition of CouchDB rows.
+    Extract Taxa from a partition of CouchDB rows via the dispatcher.
 
-    This function processes annotated files from CouchDB and yields
-    Treatment objects for further processing.
+    Each row is wrapped in a per-doc dict and run through
+    :class:`Dispatcher` (see ``skol_classifier/extraction/``).  The
+    dispatcher routes to ``classifier_logistic_v3`` (today's only
+    selectable labeler given the .ann-only attachment seed), which
+    in turn feeds the ``treatment_assembler`` — preserving
+    field-equality with the pre-dispatcher pipeline.
+
+    The dispatcher itself is constructed once per partition (per the
+    Spark worker model); the catalogs are loaded once and reused
+    across rows.
 
     Args:
         partition: Iterator of Rows with columns:
             - doc_id: CouchDB document ID
-            - attachment_name: Attachment filename
-            - value: Text content
-            - human_url: Optional URL
-        ingest_db_name: Database name for metadata tracking
+            - attachment_name: Attachment filename (e.g. article.txt.ann)
+            - value: Text content (the .ann YEDDA string)
+            - ingest: Full ingest doc dict with metadata
+        ingest_db_name: Database name for metadata tracking.
 
     Yields:
-        Treatment objects with nomenclature and description paragraphs
+        Treatment objects with nomenclature and section paragraphs.
     """
-    # Convert to list to enable tracing
     partition_list = list(partition)
 
     if DEBUG_TRACE:
         for row in partition_list:
             if DEBUG_DOC_ID is None or row.doc_id == DEBUG_DOC_ID:
-                logger.info(f"[TRACE] Row from CouchDB: doc_id={row.doc_id}, "
-                           f"human_url={getattr(row, 'human_url', 'NOT_PRESENT')}, "
-                           f"pdf_url={getattr(row, 'pdf_url', 'NOT_PRESENT')}")
+                logger.info(
+                    f"[TRACE] Row from CouchDB: doc_id={row.doc_id}, "
+                    f"human_url={getattr(row, 'human_url', 'NOT_PRESENT')}, "
+                    f"pdf_url={getattr(row, 'pdf_url', 'NOT_PRESENT')}"
+                )
 
-    # Read lines from partition
-    lines = read_couchdb_partition(iter(partition_list), ingest_db_name)
+    dispatcher = Dispatcher.from_default_catalogs(
+        config={"ingest_db_name": ingest_db_name},
+    )
 
-    # Trace first few lines
-    lines_list = []
-    for i, line in enumerate(lines):
-        lines_list.append(line)
-        if DEBUG_TRACE and i < 3:
-            if DEBUG_DOC_ID is None or (hasattr(line, 'doc_id') and line.doc_id == DEBUG_DOC_ID):
-                logger.info(f"[TRACE] Line {i}: doc_id={getattr(line, 'doc_id', 'N/A')}, "
-                           f"human_url={getattr(line, 'human_url', 'N/A')}, "
-                           f"pdf_url={getattr(line, 'pdf_url', 'N/A')}")
-
-    # Parse annotated content
-    paragraphs = parse_annotated(iter(lines_list))
-
-    # Remove interstitial paragraphs
-    filtered = remove_interstitials(paragraphs)
-
-    # Convert to list to preserve paragraph objects for metadata extraction
-    filtered_list = list(filtered)
-
-    if DEBUG_TRACE and filtered_list:
-        first_para = filtered_list[0]
-        if DEBUG_DOC_ID is None or (hasattr(first_para.first_line, 'doc_id') and first_para.first_line.doc_id == DEBUG_DOC_ID):
-            logger.info(f"[TRACE] First paragraph: "
-                       f"human_url={getattr(first_para, 'human_url', 'N/A')}, "
-                       f"pdf_url={getattr(first_para, 'pdf_url', 'N/A')}")
-
-    # Group into treatments (returns Treatment objects with references to paragraphs)
-    taxa = group_paragraphs(iter(filtered_list))
-
-    # Yield Treatment objects directly
-    for taxon in taxa:
-        # Only yield taxa that have nomenclature
-        if taxon.has_nomenclature():
+    for row in partition_list:
+        doc = _row_to_dispatcher_doc(row)
+        for taxon in dispatcher.extract(doc):
+            if not taxon.has_nomenclature():
+                continue
             if DEBUG_TRACE:
                 taxon_row = taxon.as_row()
-                ingest = taxon_row.get('ingest') or {}
-                doc_id = ingest.get('_id')
-                if DEBUG_DOC_ID is None or doc_id == DEBUG_DOC_ID:
-                    logger.info(f"[TRACE] Treatment extracted: doc_id={doc_id}, "
-                               f"human_url={ingest.get('url')}, "
-                               f"pdf_url={ingest.get('pdf_url')}")
+                ingest = taxon_row.get("ingest") or {}
+                taxon_doc_id = ingest.get("_id")
+                if DEBUG_DOC_ID is None or taxon_doc_id == DEBUG_DOC_ID:
+                    logger.info(
+                        f"[TRACE] Treatment extracted: "
+                        f"doc_id={taxon_doc_id}, "
+                        f"human_url={ingest.get('url')}, "
+                        f"pdf_url={ingest.get('pdf_url')}"
+                    )
             yield taxon
 
 
