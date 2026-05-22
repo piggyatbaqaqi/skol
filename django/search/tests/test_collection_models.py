@@ -311,3 +311,73 @@ class TestSeededIdentifierTypes(TestCase):
         codes = ['inat', 'mo', 'genbank', 'mycobank', 'indexfungorum']
         for code in codes:
             assert IdentifierType.objects.filter(code=code).exists(), f"Missing: {code}"
+
+
+class TestIdentifierTypeActions(TestCase):
+    """Per-type action lists are stored on IdentifierType.actions.
+
+    Replaces the previous hardcoded ``identifier_type_code === 'inat'``
+    branch in collection_detail.html with a data-driven dispatch. Two
+    action kinds today:
+      - clipboard_on_link_click: link click copies + opens
+      - external_post_button:    server-side action button (iNat)
+
+    Migration 0023 backfills both records.
+    """
+
+    def test_inat_actions_backfilled(self) -> None:
+        """iNat IdentifierType has exactly one external_post_button
+        action with the canonical endpoint + label + owner/description
+        gates."""
+        it = IdentifierType.objects.get(code='inat')
+        assert it.actions == [{
+            "kind": "external_post_button",
+            "endpoint": "post_inat_comment",
+            "label": "Post to iNat",
+            "requires_owner": True,
+            "requires_description": True,
+        }]
+
+    def test_cbs_actions_backfilled(self) -> None:
+        """CBS IdentifierType has exactly one clipboard_on_link_click
+        action with the canonical {name} {value} format."""
+        it = IdentifierType.objects.get(code='cbs')
+        assert it.actions == [{
+            "kind": "clipboard_on_link_click",
+            "format": "{name} {value}",
+        }]
+
+    def test_other_types_default_empty(self) -> None:
+        """Identifier types not explicitly backfilled (e.g. GenBank, MO,
+        MycoBank, IndexFungorum) get the empty default."""
+        for code in ('mo', 'genbank', 'mycobank', 'indexfungorum'):
+            it = IdentifierType.objects.get(code=code)
+            assert it.actions == [], (
+                f"{code}: expected empty actions, got {it.actions!r}"
+            )
+
+    def test_actions_blank_allowed_on_create(self) -> None:
+        """Creating a new IdentifierType without actions kwarg defaults
+        to an empty list — no validation error."""
+        it = IdentifierType.objects.create(
+            code='actiontest',
+            name='Action Test',
+            url_pattern='https://example.test/{id}',
+        )
+        assert it.actions == []
+
+    def test_actions_round_trip_arbitrary_payload(self) -> None:
+        """The JSONField stores arbitrary dict structures (forward-compat
+        for future action kinds)."""
+        it = IdentifierType.objects.create(
+            code='actiontest2',
+            name='Action Test 2',
+            url_pattern='https://example.test/{id}',
+            actions=[
+                {"kind": "future_kind", "arbitrary": {"nested": [1, 2, 3]}},
+            ],
+        )
+        it.refresh_from_db()
+        assert it.actions == [
+            {"kind": "future_kind", "arbitrary": {"nested": [1, 2, 3]}},
+        ]

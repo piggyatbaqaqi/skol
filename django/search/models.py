@@ -28,6 +28,17 @@ class IdentifierType(models.Model):
         help_text="URL pattern with {id} placeholder, e.g., https://www.inaturalist.org/observations/{id}"
     )
     description = models.TextField(blank=True, default="")
+    # Per-type UI action list — replaces the previous hardcoded
+    # ``identifier_type_code === 'inat'`` branch in collection_detail.html.
+    # Each entry is a dict with a ``kind`` and kind-specific keys.  Known
+    # kinds:
+    #   - ``clipboard_on_link_click``: clicking the URL copies a formatted
+    #     payload to the clipboard and opens the link.  Fields: ``format``
+    #     (str with ``{name}`` and ``{value}`` placeholders).
+    #   - ``external_post_button``: render a button that POSTs to a
+    #     server endpoint.  Fields: ``endpoint`` (str), ``label`` (str),
+    #     ``requires_owner`` (bool), ``requires_description`` (bool).
+    actions = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

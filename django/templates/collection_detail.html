@@ -456,6 +456,25 @@
             padding: 6px 16px;
             font-size: 0.85em;
         }
+
+        /* Toast shown briefly after copy-to-clipboard actions. */
+        .copy-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #333;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            font-size: 0.9em;
+            opacity: 1;
+            transition: opacity 0.4s ease-out;
+        }
+        .copy-toast.copy-toast-fade {
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -814,6 +833,91 @@
             }
         }
 
+        // -------------------------------------------------------------
+        // Per-IdentifierType action dispatch
+        //
+        // Each ExternalIdentifier carries `identifier_type_actions` —
+        // a list of {kind, ...} dicts populated by the migration
+        // backfill in 0023_backfill_inat_cbs_actions.py.  We dispatch
+        // on `kind` to render either a click-to-copy attribute on the
+        // URL link or an extra action button next to it.
+        // -------------------------------------------------------------
+
+        // Map an action's `endpoint` string to the JS handler name.
+        // New external_post_button endpoints must be added here.
+        const ACTION_HANDLERS = {
+            post_inat_comment: 'postInatComment',
+        };
+
+        function escapeJsString(s) {
+            return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        function formatActionPayload(format, name, value) {
+            return String(format)
+                .replace('{name}', name)
+                .replace('{value}', value);
+        }
+
+        function showCopyToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            // Fade after 700ms, remove after 1300ms total.
+            setTimeout(() => toast.classList.add('copy-toast-fade'), 700);
+            setTimeout(() => toast.remove(), 1300);
+        }
+
+        function copyToClipboardWithToast(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(
+                    () => showCopyToast(`Copied '${text}'`),
+                    () => showCopyToast('Copy failed — select and Ctrl+C instead'),
+                );
+            } else {
+                showCopyToast('Copy unavailable in this browser');
+            }
+        }
+
+        // Build the inner HTML for an external identifier's clickable
+        // value, including any clipboard_on_link_click behavior.
+        function renderIdentifierLink(i, displayValue) {
+            if (!i.url) {
+                return escapeHtml(displayValue);
+            }
+            const actions = i.identifier_type_actions || [];
+            const clip = actions.find(a => a.kind === 'clipboard_on_link_click');
+            let attrs = `href="${escapeHtml(i.url)}" target="_blank"`;
+            if (clip) {
+                const payload = formatActionPayload(
+                    clip.format, i.identifier_type_name, i.value);
+                attrs += ` title="Click to copy &#39;${escapeHtml(payload)}&#39; and open the lookup page"`;
+                attrs += ` onclick="copyToClipboardWithToast('${escapeJsString(payload)}')"`;
+            }
+            return `<a ${attrs}>${escapeHtml(displayValue)}</a>`;
+        }
+
+        // Render any action buttons that belong in .identifier-actions.
+        // Today only external_post_button — kind: external_post_button,
+        // endpoint, label, requires_owner, requires_description.
+        function renderIdentifierActionButtons(i, collection, isOwner) {
+            const actions = i.identifier_type_actions || [];
+            return actions.map(a => {
+                if (a.kind !== 'external_post_button') return '';
+                const handler = ACTION_HANDLERS[a.endpoint];
+                if (!handler) return '';
+                if (a.requires_owner && !isOwner) return '';
+                if (a.requires_description && !collection.description) return '';
+                if (collection.hidden) return '';
+                const label = a.label || 'Action';
+                return `<button class="btn-small" `
+                     + `onclick="${handler}(${i.id})" `
+                     + `title="${escapeHtml(label)}">`
+                     + `${escapeHtml(label)}</button>`;
+            }).join('');
+        }
+
         // Display identifiers
         function displayIdentifiers() {
             if (!collection.external_identifiers || collection.external_identifiers.length === 0) {
@@ -837,12 +941,12 @@
                         <div class="identifier-info">
                             <span class="identifier-type">${escapeHtml(displayType)}</span>
                             <span class="identifier-value">
-                                ${i.url ? `<a href="${escapeHtml(i.url)}" target="_blank">${escapeHtml(displayValue)}</a>` : escapeHtml(displayValue)}
+                                ${renderIdentifierLink(i, displayValue)}
                             </span>
                             ${i.notes ? `<span class="identifier-notes">${escapeHtml(i.notes)}</span>` : ''}
                         </div>
                         <div class="identifier-actions">
-                            ${isOwner && !collection.hidden && i.identifier_type_code === 'inat' && collection.description ? `<button class="btn-small" onclick="postInatComment(${i.id})" title="Post description as iNaturalist comment">Post to iNat</button>` : ''}
+                            ${renderIdentifierActionButtons(i, collection, isOwner)}
                             ${isOwner && !collection.hidden ? `<button class="btn-danger btn-small" onclick="deleteIdentifier(${i.id})">Delete</button>` : ''}
                         </div>
                     </div>

@@ -51,6 +51,83 @@ class TestIdentifierTypeListView(TestCase):
             assert 'name' in it
             assert 'url_pattern' in it
 
+    def test_response_includes_actions_field(self) -> None:
+        """The serializer exposes the new `actions` JSONField so the
+        frontend can dispatch per-type click behavior + buttons."""
+        self.client.login(username='testuser', password='password')
+        response = self.client.get(self.url)
+        data = response.json()
+        for it in data['identifier_types']:
+            assert 'actions' in it, (
+                f"missing `actions` on {it.get('code')!r}: {it.keys()}"
+            )
+            assert isinstance(it['actions'], list)
+
+    def test_inat_actions_in_response(self) -> None:
+        """The iNat type carries its external_post_button action in the
+        list response (so the frontend can render "Post to iNat")."""
+        self.client.login(username='testuser', password='password')
+        response = self.client.get(self.url)
+        data = response.json()
+        inat = next(it for it in data['identifier_types'] if it['code'] == 'inat')
+        assert inat['actions'] == [{
+            "kind": "external_post_button",
+            "endpoint": "post_inat_comment",
+            "label": "Post to iNat",
+            "requires_owner": True,
+            "requires_description": True,
+        }]
+
+    def test_cbs_actions_in_response(self) -> None:
+        """The CBS type carries its clipboard_on_link_click action."""
+        self.client.login(username='testuser', password='password')
+        response = self.client.get(self.url)
+        data = response.json()
+        cbs = next(it for it in data['identifier_types'] if it['code'] == 'cbs')
+        assert cbs['actions'] == [{
+            "kind": "clipboard_on_link_click",
+            "format": "{name} {value}",
+        }]
+
+
+class TestExternalIdentifierSerializerActions(TestCase):
+    """ExternalIdentifier serializer also exposes its type's actions
+    inline as `identifier_type_actions`, so the frontend doesn't have
+    to do a separate IdentifierType lookup to render an identifier
+    list."""
+
+    def setUp(self) -> None:
+        self.client = Client()
+        self.user = User.objects.create_user(
+            'testuser', 'test@example.com', 'password',
+        )
+        self.collection = Collection.objects.create(
+            owner=self.user, name='Test Collection',
+        )
+
+    def test_external_identifier_carries_type_actions(self) -> None:
+        """Reading a collection via the API returns each external
+        identifier with its parent type's actions inlined."""
+        cbs_type = IdentifierType.objects.get(code='cbs')
+        ExternalIdentifier.objects.create(
+            collection=self.collection,
+            identifier_type=cbs_type,
+            value='513.77',
+        )
+        self.client.login(username='testuser', password='password')
+        url = reverse(
+            'search:collection-detail',
+            kwargs={'collection_id': self.collection.collection_id},
+        )
+        response = self.client.get(url)
+        assert response.status_code == 200, response.content
+        identifiers = response.json()['external_identifiers']
+        assert len(identifiers) == 1
+        assert identifiers[0]['identifier_type_actions'] == [{
+            "kind": "clipboard_on_link_click",
+            "format": "{name} {value}",
+        }]
+
 
 class TestCollectionListCreateView(TestCase):
     """Tests for GET/POST /api/collections/."""

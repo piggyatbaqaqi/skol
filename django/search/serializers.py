@@ -23,7 +23,7 @@ class IdentifierTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IdentifierType
-        fields = ['id', 'code', 'name', 'url_pattern', 'description']
+        fields = ['id', 'code', 'name', 'url_pattern', 'description', 'actions']
         read_only_fields = ['id']
 
 
@@ -38,6 +38,13 @@ class ExternalIdentifierSerializer(serializers.ModelSerializer):
         source='identifier_type.name',
         read_only=True
     )
+    # Inline the parent type's actions so the frontend can dispatch
+    # per-type click behavior + buttons without a separate IdentifierType
+    # fetch.
+    identifier_type_actions = serializers.JSONField(
+        source='identifier_type.actions',
+        read_only=True,
+    )
     url = serializers.CharField(read_only=True)
     # For fungarium identifiers, include the fungarium organization name
     fungarium_name = serializers.SerializerMethodField()
@@ -46,10 +53,14 @@ class ExternalIdentifierSerializer(serializers.ModelSerializer):
         model = ExternalIdentifier
         fields = [
             'id', 'identifier_type', 'identifier_type_code',
-            'identifier_type_name', 'value', 'fungarium_code',
+            'identifier_type_name', 'identifier_type_actions',
+            'value', 'fungarium_code',
             'fungarium_name', 'notes', 'url', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at', 'url', 'fungarium_name']
+        read_only_fields = [
+            'id', 'created_at', 'url', 'fungarium_name',
+            'identifier_type_actions',
+        ]
 
     def get_fungarium_name(self, obj) -> str:
         """Get the fungarium organization name from Redis."""
