@@ -151,35 +151,26 @@ one-off Step-5.G invocation.
 
 | # | Description | Status |
 |---|---|---|
-| 5.A | `runstep production_v3_hand train` | ⬜ |
-| 5.B | `runstep production_v3_hand evaluate` (against `skol_golden_ann_hand_v2`) | ⬜ |
-| 5.C | `runstep production_v3_jats train` | ⬜ |
-| 5.D | `runstep production_v3_jats evaluate` | ⬜ |
-| 5.E | `runstep production_v3_full train` | ⬜ |
-| 5.F | `runstep production_v3_full evaluate` | ⬜ |
-| 5.G | One-off `evaluate_golden.py` runs against `skol_golden_ann_jats_v2` for each of the three models. | ⬜ |
-| 5.H | Re-evaluate `jats_v2` after pointing its `training` field at `skol_training_taxpub_v2_no_golden`. Produces a contamination-free v2 baseline so v3↔v2 deltas in Step 6 are clean. | ⬜ |
+| 5.A | `runstep production_v3_hand train` | ✅ Done (2026-05-20) — line F1 0.79 on 19-class test split (`collapse_labels=False` after [`f417c11`](../bin/train_classifier.py) fix). |
+| 5.B | `runstep production_v3_hand evaluate` (against `skol_golden_ann_hand_v2`) | ✅ Done (2026-05-20) — character-level macro F1 **0.459** on hand gold. |
+| 5.C | `runstep production_v3_jats train` | ✅ Done (2026-05-21) — line F1 0.95 on test split. |
+| 5.D | `runstep production_v3_jats evaluate` | ✅ Done (2026-05-21) — character-level macro F1 **0.132** on hand gold. |
+| 5.E | `runstep production_v3_full train` | ✅ Done (2026-05-22) — line F1 0.87; finished in ~30 min on 16-core Spark after `74ce0ab` defaults bump. |
+| 5.F | `runstep production_v3_full evaluate` | ✅ Done (2026-05-22) — character-level macro F1 **0.326** on hand gold; lies between v3_hand and v3_jats, confirming the 9:1 JATS-dominated combined corpus drags performance below hand-only. |
+| 5.G | ~~One-off `evaluate_golden.py` runs against `skol_golden_ann_jats_v2` for each of the three models.~~ | ❌ **Moot** — under the post-Step-7 architecture ([extraction_pipeline.md](extraction_pipeline.md)) JATS docs go through deterministic XML extraction, not the classifier. There's no production model path for the JATS silver gold to score; it becomes a converter QA artifact instead. |
+| 5.H | ~~Re-evaluate `jats_v2` after pointing its `training` field at `skol_training_taxpub_v2_no_golden`.~~ | ❌ **Moot** — same reason; `jats_v2` and all v3 JATS-evaluation experiments are archived. |
 
-### Step 6 — Comparison report
+### Step 6 — Comparison report — ✅ Done (2026-05-22)
 
-`docs/production_v3_report.md` covering:
+Written at [docs/production_v3_report.md](production_v3_report.md).
 
-- **3×2 metric grid**: macro F1 + per-tag F1 for each model × each
-  golden DB.
-- **Direct comparison with Step-5 v2 numbers** — does any v3 model
-  beat `production_v2` (0.127) or `jats_v2` (0.172)?
-- **Per-tag coverage analysis** — which of the 19 tags does each
-  baseline learn meaningfully (F1 > 0.1)? Where are the dead zones?
-- **Hand-vs-JATS bias** — `production_v3_hand` should win on the hand
-  gold; `production_v3_jats` should win on the JATS silver;
-  `production_v3_full` should be the safest bet for either.
-- **Contamination-corrected v2 comparison** — `jats_v2`'s Step-5 F1
-  of 0.172 was inflated by ~1/3 of its matched eval docs (19 of 56)
-  being present in `skol_training_taxpub_v1`. The v3 baselines have
-  zero overlap with golden, so v3-vs-v2 deltas need to be read with
-  that in mind. Optionally re-run `jats_v2` evaluate after Step 2
-  using `skol_training_taxpub_v2_no_golden` to get a clean v2
-  baseline.
+Headline finding: **the cross-distribution-training hypothesis is
+falsified.** v3_hand (160 hand docs) macro F1 **0.459**; v3_full
+(1 884 combined docs) macro F1 **0.326**; v3_jats (1 724 JATS docs)
+macro F1 **0.132**. Adding JATS data hurts PDF classification
+monotonically. The 1×3 grid (one gold, three models) collapsed the
+originally-planned 3×2 grid because Step 5.G/5.H became moot under
+the new extraction architecture ([extraction_pipeline.md](extraction_pipeline.md)).
 
 ## Open questions
 
@@ -188,7 +179,9 @@ one-off Step-5.G invocation.
   third-largest in hand (3 726 chars). Default inverse-frequency
   would give it a moderate weight; we may want to bias higher
   since it's a target for future Phase-2 diagnosis-extraction work.
-  Decide after Step 5.G — if Notes F1 is already strong, no bump.
+  **Resolved (2026-05-22):** v3_hand's Notes character-level F1 is
+  0.518 (mid-range — sixth of 18 tags). No bump warranted at the
+  v3 weighting; revisit when v4 metrics land.
 
 ## Workflow / sequencing
 
