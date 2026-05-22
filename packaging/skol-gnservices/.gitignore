@@ -1,0 +1,8 @@
+# debhelper / dpkg-buildpackage artefacts.
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/skol-gnservices/
+debian/skol-gnservices.debhelper.log
+debian/skol-gnservices.postrm.debhelper
+debian/skol-gnservices.substvars

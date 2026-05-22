@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+# Fetch the upstream release tarballs and stage the binaries in
+# build/.  Idempotent — fetch_binaries.sh re-uses an existing build/
+# directory on subsequent runs.
+override_dh_auto_build:
+	./fetch_binaries.sh
+
+# Place artefacts into the staging tree that dh_builddeb will pack.
+override_dh_auto_install:
+	# Binaries.
+	install -d debian/skol-gnservices/opt/skol-gnservices/bin
+	install -m 0755 build/gnfinder \
+		debian/skol-gnservices/opt/skol-gnservices/bin/gnfinder
+	install -m 0755 build/gnparser \
+		debian/skol-gnservices/opt/skol-gnservices/bin/gnparser
+	# Default port config (overridable post-install).
+	install -d debian/skol-gnservices/etc/skol-gnservices
+	install -m 0644 debian/ports.conf \
+		debian/skol-gnservices/etc/skol-gnservices/ports.conf
+
+override_dh_auto_clean:
+	rm -rf build/
+	dh_auto_clean
+
+# We ship two systemd units (gnfinder.service + gnparser.service) in
+# one package; dh_installsystemd by default only auto-detects
+# debian/<package>.service.  Invoke it once per --name=<unit> so it
+# picks up debian/skol-gnservices.gnfinder.service and
+# debian/skol-gnservices.gnparser.service.
+override_dh_installsystemd:
+	dh_installsystemd --name=gnfinder
+	dh_installsystemd --name=gnparser

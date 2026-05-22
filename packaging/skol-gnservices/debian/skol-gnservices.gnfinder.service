@@ -1,0 +1,22 @@
+[Unit]
+Description=GNFinder name-detection HTTP service (skol-gnservices)
+Documentation=https://github.com/gnames/gnfinder
+After=network.target
+
+[Service]
+Type=simple
+User=skol-gn
+Group=skol-gn
+EnvironmentFile=/etc/skol-gnservices/ports.conf
+ExecStart=/opt/skol-gnservices/bin/gnfinder -p ${GNFINDER_PORT}
+Restart=on-failure
+RestartSec=5
+# Hardening — these binaries don't need to write outside their own
+# working area or read from the user's home.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,33 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: skol-gnservices
+Source: https://github.com/piggyatbaqaqi/skol
+
+Files: *
+Copyright: 2026 La Monte Henry Piggy Yarroll
+License: Apache-2.0
+
+Files: opt/skol-gnservices/bin/gnfinder
+Copyright: 2018-present, Dmitry Mozzherin
+Source: https://github.com/gnames/gnfinder
+License: Apache-2.0
+Comment:
+ Statically-linked Go binary fetched at build time from
+ github.com/gnames/gnfinder release v1.1.6.
+
+Files: opt/skol-gnservices/bin/gnparser
+Copyright: 2018-present, Dmitry Mozzherin
+Source: https://github.com/gnames/gnparser
+License: Apache-2.0
+Comment:
+ Statically-linked Go binary fetched at build time from
+ github.com/gnames/gnparser release v1.15.0.
+
+License: Apache-2.0
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ .
+   http://www.apache.org/licenses/LICENSE-2.0
+ .
+ On Debian systems, the complete text of the Apache version 2.0
+ license can be found in `/usr/share/common-licenses/Apache-2.0'.

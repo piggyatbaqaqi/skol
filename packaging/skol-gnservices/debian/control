@@ -1,0 +1,25 @@
+Source: skol-gnservices
+Section: misc
+Priority: optional
+Maintainer: La Monte Henry Piggy Yarroll <piggy.yarroll+skol@gmail.com>
+Build-Depends: debhelper-compat (= 13), curl, ca-certificates
+Standards-Version: 4.6.0
+Homepage: https://github.com/piggyatbaqaqi/skol
+
+Package: skol-gnservices
+Architecture: amd64
+Depends: ${misc:Depends}, adduser
+Description: gnfinder + gnparser as local HTTP services for skol
+ Bundles the gnfinder and gnparser binaries from the gnames project
+ as systemd-managed HTTP services on localhost:9080 and localhost:9081
+ respectively.  Skol's v4 span layer (taxon-name detection and
+ authorship parsing) connects to these services per-line; running
+ them locally avoids round-trip latency and rate-limiting from the
+ public globalnames.org API.
+ .
+ The bundled binaries are statically-linked Go executables released
+ by the gnames project under Apache-2.0.  This package fetches the
+ release tarballs from github.com/gnames at build time; the
+ installed .deb is self-contained.
+ .
+ Ports + concurrency are tunable via /etc/skol-gnservices/ports.conf.

@@ -1,0 +1,8 @@
+#!/bin/sh
+# prerm — runs before files are removed.  dh_installsystemd's
+# inserted fragment stops and disables the units.
+set -e
+
+#DEBHELPER#
+
+exit 0

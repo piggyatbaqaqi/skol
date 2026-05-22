@@ -1,0 +1,8 @@
+skol-gnservices (1.1.6+1.15.0-1) unstable; urgency=medium
+
+  * Initial packaging.  Bundles gnfinder v1.1.6 and gnparser v1.15.0
+    as systemd services on localhost:9080 (gnfinder) and localhost:9081
+    (gnparser).  Closes the manual-install gap blocking automated
+    v3_hand + v4 production deployment.
+
+ -- La Monte Henry Piggy Yarroll <piggy.yarroll+skol@gmail.com>  Fri, 22 May 2026 17:00:00 +0000

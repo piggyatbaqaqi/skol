@@ -1,0 +1,20 @@
+[Unit]
+Description=GNParser scientific-name parsing HTTP service (skol-gnservices)
+Documentation=https://github.com/gnames/gnparser
+After=network.target
+
+[Service]
+Type=simple
+User=skol-gn
+Group=skol-gn
+EnvironmentFile=/etc/skol-gnservices/ports.conf
+ExecStart=/opt/skol-gnservices/bin/gnparser -j ${GNPARSER_JOBS} -p ${GNPARSER_PORT}
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target
