@@ -220,8 +220,11 @@ EOF
 chmod 755 ${INSTALL_DIR}/bin/with_skol
 chown skol:skol ${INSTALL_DIR}/bin/with_skol
 
-# Create symlinks for each command in the version-specific bin directory
-for cmd in jats_to_yedda ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis; do
+# Create symlinks for each command in the version-specific bin directory.
+# manage_experiment + extract_treatments_to_couchdb + embed_treatments are
+# needed by the v3_hand experiment cron jobs (see debian/skol.cron and
+# docs/v3_buildout.md §Phase E).
+for cmd in jats_to_yedda ingest train_classifier predict_classifier extract_taxa_to_couchdb embed_taxa taxa_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis manage_experiment extract_treatments_to_couchdb embed_treatments; do
     ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}
 done
 
@@ -266,7 +269,8 @@ echo "SKOL ${VERSION} installation complete."
 echo "Commands available via ${BIN_SYMLINK}/:"
 echo "  jats_to_yedda, ingest, train_classifier, predict_classifier,"
 echo "  extract_taxa_to_couchdb, embed_taxa, taxa_to_json, build_vocab_tree,"
-echo "  manage_fungaria, watch_install, watch_incremental, rebuild_redis"
+echo "  manage_fungaria, watch_install, watch_incremental, rebuild_redis,"
+echo "  manage_experiment, extract_treatments_to_couchdb, embed_treatments"
 echo "Or use: ${BIN_SYMLINK}/with_skol <command>"
 echo ""
 echo "Database services:"

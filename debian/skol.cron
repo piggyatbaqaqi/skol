@@ -70,6 +70,15 @@ SKIP_EXISTING=1
 0 6 * * * skol time /opt/skol/bin/embed_taxa --verbosity=2 --expire None --force > ${LOGDIR}/embed-taxa.log 2>&1
 0 22 * * * skol time /opt/skol/bin/taxa_to_json --verbosity=2 --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200 > ${LOGDIR}/taxa-to-json.log 2>&1
 0 22 * * 0,2,4,6 skol time /opt/skol/bin/build_vocab_tree --verbosity=2 --db=skol_taxa_full_dev > ${LOGDIR}/build-vocab-tree.log 2>&1
+# v3_hand experiment — keeps the v3 hand-only baseline up to date so the
+# v3_hand Treatments + embeddings track new docs ingested into skol_dev.
+# Slots are offset from the v1 jobs (predict 00:00, extract 04:00, embed
+# 06:00) to avoid Spark / GPU contention.  Training is weekly because the
+# v3_hand training corpus is fixed.  See docs/v3_buildout.md §Phase E.
+30 3 * * 0 skol time /opt/skol/bin/manage_experiment runstep production_v3_hand train > ${LOGDIR}/v3_hand-train.log 2>&1
+0 12 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand predict > ${LOGDIR}/v3_hand-predict.log 2>&1
+0 14 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand extract_taxa > ${LOGDIR}/v3_hand-extract.log 2>&1
+0 16 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand embed > ${LOGDIR}/v3_hand-embed.log 2>&1
 # Update sources statistics for the ingestion sources page daily at 7am
 0 7 * * * skol time /opt/skol/bin/build_sources_stats --verbosity=2 > ${LOGDIR}/build-sources-stats.log 2>&1
 */5 * * * * skol /usr/bin/redis-cli -p ${REDIS_PORT} save

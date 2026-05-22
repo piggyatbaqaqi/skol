@@ -266,6 +266,31 @@ the 30 hand-annotated gold standards (`skol_golden_ann_hand`).
 `--force` on `runnext`/`runstep` replaces `--skip-existing` with `--force` in
 every command of the step.
 
+### Scheduled (cron) execution
+
+Production experiments are kept current by scheduled `runstep` invocations in
+[`debian/skol.cron`](../debian/skol.cron). The cron lines call the wrapper
+symlinks created by `debian/postinst.template` (which symlinks
+`manage_experiment`, `extract_treatments_to_couchdb`, and `embed_treatments`
+to `with_skol` so they pick up the venv + skol env).
+
+`production_v3_hand` schedule (offset from v1 to avoid Spark / GPU contention
+with the v1 `train_classifier`/`predict_classifier`/`extract_taxa_to_couchdb`/
+`embed_taxa` jobs that run at 00:30/00:00/04:00/06:00):
+
+| Step | Cadence | Slot | Notes |
+|---|---|---|---|
+| `train` | Weekly, Sun | 03:30 | Training corpus is fixed; weekly retrain is precautionary |
+| `predict` | Daily | 12:00 | Tracks new docs in `skol_dev` |
+| `extract_taxa` | Daily | 14:00 | Runs after predict; uses Treatment-extraction pipeline (`bin/extract_treatments_to_couchdb.py`) |
+| `embed` | Daily | 16:00 | Runs after extract_taxa; embeds Treatments via SBERT |
+
+To add a new production experiment to cron: add four lines to
+`debian/skol.cron` following the `production_v3_hand` pattern, picking slots
+that don't collide with the v1 or any other v3 jobs. Each line uses the
+canonical `manage_experiment runstep <exp_name> <step>` shape so the
+experiment doc's databases / Redis keys / model name flow through.
+
 ## Training a classifier
 
 ```bash
