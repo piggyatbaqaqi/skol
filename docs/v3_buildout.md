@@ -146,6 +146,26 @@ Embed Treatments and write to Redis so the Django search reads them.
 | C.3 | Run `bin/embed_treatments.py --experiment production_v3_hand` (existing script). It already iterates the target DB, computes SBERT embeddings, writes to Redis. Should pick up the new `skol_treatments_v3_dev` automatically once B.1's choice is wired into the experiment doc. | ⬜ |
 | C.4 | Smoke-test the Django search UI: query a known taxonomic phrase (e.g. "Pardosa moesta sp. nov."), confirm reasonable matches surface. | ⬜ |
 
+## Phase E — Scheduled cron jobs for ongoing operation
+
+`debian/skol.cron` already schedules the v1 production pipeline
+(train_classifier, predict_classifier, extract_taxa_to_couchdb,
+embed_taxa).  Add parallel v3_hand-experiment jobs so the pipeline
+keeps producing fresh treatments + embeddings as new docs land in
+`skol_dev` via the daily ingestion jobs.
+
+| # | Description | Status |
+|---|---|---|
+| E.1 | Pick cadence + clock slots that don't collide with the v1 jobs.  v1 train at 00:30, predict at 00:00, extract at 04:00, embed at 06:00 — schedule v3_hand later in the day, e.g. predict 12:00, extract 14:00, embed 16:00, train weekly Sunday 03:30.  Training stays infrequent because the v3_hand training corpus is fixed; predict/extract/embed are daily to track new ingest. | ⬜ |
+| E.2 | Add jobs to `debian/skol.cron`: `manage_experiment.py runstep production_v3_hand train` (weekly), `predict` (daily), `extract_taxa` (daily, after predict), `embed` (daily, after extract).  Each line uses the canonical `runstep` invocation so the experiment doc's databases / Redis keys / model name flow through. | ⬜ |
+| E.3 | Verify on dev: bump the dev cron entries (or run the commands by hand at the scheduled times) and confirm new treatments + embeddings appear in `skol_treatments_v3_dev` and the production_v3_hand Redis namespace within a few hours. | ⬜ |
+| E.4 | Document the new cron entries in `docs/experiments.md` so future operators know which jobs maintain each experiment. | ⬜ |
+
+Lives in v3_buildout because it's how the work in Phase B (one-time
+sweep) becomes sustainable.  Without E the buildout decays — new
+docs ingest into `skol_dev` but no Treatments / embeddings get
+produced.
+
 ## Phase D — Production deployment (separately scheduled)
 
 Out of scope for this buildout; treated as a follow-up that
