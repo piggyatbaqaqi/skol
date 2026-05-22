@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from ingestors.spans import Span
-from ingestors.yedda_tags import TaggedBlock
+from ingestors.yedda_tags import TaggedBlock, tagged_blocks_to_yedda
 
 
 # ---------------------------------------------------------------------------
@@ -40,17 +40,51 @@ from ingestors.yedda_tags import TaggedBlock
 class LabelContribution:
     """A labeler's offer of per-passage tag labels for a doc.
 
+    A contribution carries *either* a structured ``blocks`` list
+    (the canonical TaggedBlock representation, used by components
+    like the taxpub extractor that produce labels directly) *or*
+    a raw ``ann_text`` YEDDA string (used by components like the
+    ``v3_hand`` classifier wrapper that already have YEDDA on
+    disk and would lose interstitial text on a round-trip through
+    ``parse_yedda_to_tagged_blocks``).
+
+    Exactly one of the two must be set; the other stays ``None``.
+    Use :meth:`PipelineState.add_section_labels` for the blocks
+    path and :meth:`PipelineState.add_ann_text` for the text path.
+
     Attributes:
-        source: Component name that produced these labels.
-        blocks: TaggedBlock list, in document order.
+        source: Component name that produced this contribution.
+        blocks: TaggedBlock list, in document order — or ``None``
+            if this contribution came in as YEDDA text.
+        ann_text: YEDDA-formatted string — or ``None`` if this
+            contribution came in as TaggedBlock.
         priority: Higher wins on merge.  Convention: ``10`` for
             deterministic XML extractors, ``4`` for model-based
             labelers.
     """
 
     source: str
-    blocks: List[TaggedBlock]
+    blocks: Optional[List[TaggedBlock]] = None
+    ann_text: Optional[str] = None
     priority: int = 0
+
+    def __post_init__(self) -> None:
+        if (self.blocks is None) == (self.ann_text is None):
+            raise ValueError(
+                "LabelContribution requires exactly one of "
+                "blocks / ann_text to be set"
+            )
+
+    def to_yedda_text(self) -> str:
+        """Return this contribution as a YEDDA-formatted string.
+
+        For ``ann_text`` contributions this is the identity; for
+        ``blocks`` contributions it serialises via
+        ``tagged_blocks_to_yedda``.
+        """
+        if self.ann_text is not None:
+            return self.ann_text
+        return tagged_blocks_to_yedda(self.blocks or [])
 
 
 @dataclass
@@ -95,6 +129,10 @@ class PipelineState:
     _label_contributions: List[LabelContribution] = field(default_factory=list)
     _span_contributions: List[SpanContribution] = field(default_factory=list)
     _attachment_cache: Dict[str, bytes] = field(default_factory=dict)
+
+    # Filled by the treatment_assembler component as the final step
+    # of the dispatcher's run.  Empty until the assembler executes.
+    treatments: List[Any] = field(default_factory=list)
 
     # ---- Attachments --------------------------------------------------------
 
@@ -144,7 +182,10 @@ class PipelineState:
         blocks: List[TaggedBlock],
         priority: int = 0,
     ) -> None:
-        """Record a labeler's contribution.
+        """Record a structured (TaggedBlock-list) labeler contribution.
+
+        Used by components that produce labels in TaggedBlock form
+        natively — taxpub_treatment_extractor today, future v4 CRFs.
 
         Args:
             source: Component name (for traceability + merge ordering).
@@ -152,7 +193,34 @@ class PipelineState:
             priority: Higher wins on merge.
         """
         self._label_contributions.append(
-            LabelContribution(source=source, blocks=blocks, priority=priority)
+            LabelContribution(
+                source=source, blocks=blocks, priority=priority,
+            )
+        )
+
+    def add_ann_text(
+        self,
+        source: str,
+        text: str,
+        priority: int = 0,
+    ) -> None:
+        """Record a YEDDA-text labeler contribution.
+
+        Used by components that already have YEDDA text on hand and
+        would lose information (interstitials, line breaks within
+        blocks, blank-line separators) on a round-trip through
+        TaggedBlock parsing — the v3_hand classifier wrapper reading
+        ``article.txt.ann`` is the canonical example.
+
+        Args:
+            source: Component name.
+            text: YEDDA-formatted string covering the doc.
+            priority: Higher wins on merge.
+        """
+        self._label_contributions.append(
+            LabelContribution(
+                source=source, ann_text=text, priority=priority,
+            )
         )
 
     def add_spans(
@@ -175,11 +243,32 @@ class PipelineState:
         per doc (taxpub vs classifier), so the highest-priority
         contribution wins entirely.  Future commits will introduce
         range-aware merging.
+
+        If the winning contribution came in as ``ann_text`` (no
+        structured blocks), this returns an empty list — callers
+        that need a structured representation of a text-only
+        contribution should parse with a YEDDA reader.  The
+        :meth:`merged_ann_text` accessor below is the lossless
+        alternative for the assembler.
         """
         if not self._label_contributions:
             return []
         winner = max(self._label_contributions, key=lambda c: c.priority)
-        return list(winner.blocks)
+        return list(winner.blocks) if winner.blocks is not None else []
+
+    def merged_ann_text(self) -> str:
+        """Return the merged labels as a YEDDA-formatted string.
+
+        Lossless for both contribution shapes: blocks-based wins are
+        serialised via ``tagged_blocks_to_yedda``; text-based wins
+        are returned verbatim.  Used by the treatment assembler so
+        downstream parsing matches what the existing pipeline
+        consumed before the dispatcher refactor.
+        """
+        if not self._label_contributions:
+            return ""
+        winner = max(self._label_contributions, key=lambda c: c.priority)
+        return winner.to_yedda_text()
 
     def merged_spans(self) -> List[Span]:
         """Return all span contributions concatenated.

@@ -140,13 +140,100 @@ class TestSpanContributions(TestCase):
 class TestContributionDataclasses(TestCase):
     """LabelContribution / SpanContribution carry their fields."""
 
-    def test_label_contribution_fields(self) -> None:
+    def test_label_contribution_blocks_fields(self) -> None:
         lc = LabelContribution(source="x", blocks=[], priority=7)
         self.assertEqual(lc.source, "x")
         self.assertEqual(lc.blocks, [])
+        self.assertIsNone(lc.ann_text)
         self.assertEqual(lc.priority, 7)
+
+    def test_label_contribution_ann_text_fields(self) -> None:
+        lc = LabelContribution(source="x", ann_text="[@foo#X*]", priority=4)
+        self.assertEqual(lc.source, "x")
+        self.assertIsNone(lc.blocks)
+        self.assertEqual(lc.ann_text, "[@foo#X*]")
+
+    def test_label_contribution_requires_exactly_one_shape(self) -> None:
+        """Passing both ``blocks`` and ``ann_text`` is a programmer
+        error — the contribution is ambiguous."""
+        with self.assertRaises(ValueError):
+            LabelContribution(
+                source="x", blocks=[_block("y")], ann_text="z",
+            )
+        # Neither is also invalid.
+        with self.assertRaises(ValueError):
+            LabelContribution(source="x")
+
+    def test_label_contribution_to_yedda_text_passthrough(self) -> None:
+        lc = LabelContribution(source="x", ann_text="raw yedda")
+        self.assertEqual(lc.to_yedda_text(), "raw yedda")
+
+    def test_label_contribution_to_yedda_text_serialises_blocks(self) -> None:
+        block = _block("hello", Tag.DESCRIPTION)
+        lc = LabelContribution(source="x", blocks=[block])
+        # Should match tagged_blocks_to_yedda's output exactly.
+        from ingestors.yedda_tags import tagged_blocks_to_yedda
+        self.assertEqual(lc.to_yedda_text(), tagged_blocks_to_yedda([block]))
 
     def test_span_contribution_fields(self) -> None:
         sc = SpanContribution(source="y", spans=[])
         self.assertEqual(sc.source, "y")
         self.assertEqual(sc.spans, [])
+
+
+class TestAnnTextContributions(TestCase):
+    """``add_ann_text`` carries YEDDA text contributions lossless
+    through the merge."""
+
+    def test_no_labelers_returns_empty_string(self) -> None:
+        self.assertEqual(PipelineState().merged_ann_text(), "")
+
+    def test_single_ann_text_returns_verbatim(self) -> None:
+        state = PipelineState()
+        state.add_ann_text("classifier", "[@some#Nomenclature*]", priority=4)
+        self.assertEqual(
+            state.merged_ann_text(), "[@some#Nomenclature*]",
+        )
+
+    def test_blocks_contribution_serialises_to_yedda(self) -> None:
+        state = PipelineState()
+        blocks = [_block("foo", Tag.DESCRIPTION)]
+        state.add_section_labels("x", blocks, priority=10)
+        from ingestors.yedda_tags import tagged_blocks_to_yedda
+        self.assertEqual(
+            state.merged_ann_text(), tagged_blocks_to_yedda(blocks),
+        )
+
+    def test_blocks_higher_priority_beats_text(self) -> None:
+        """A taxpub-style blocks contribution at priority 10 wins over
+        a classifier-style text contribution at priority 4."""
+        state = PipelineState()
+        blocks = [_block("from-blocks", Tag.NOMENCLATURE)]
+        state.add_section_labels("taxpub", blocks, priority=10)
+        state.add_ann_text("classifier", "[@from-text#FIX*]", priority=4)
+        from ingestors.yedda_tags import tagged_blocks_to_yedda
+        self.assertEqual(
+            state.merged_ann_text(), tagged_blocks_to_yedda(blocks),
+        )
+
+    def test_text_higher_priority_beats_blocks(self) -> None:
+        """Symmetric: a higher-priority text contribution wins over
+        lower-priority blocks (exercises both directions of the
+        polymorphic merge)."""
+        state = PipelineState()
+        state.add_section_labels(
+            "low_blocks", [_block("z")], priority=2,
+        )
+        state.add_ann_text("hi_text", "[@won#Description*]", priority=10)
+        self.assertEqual(
+            state.merged_ann_text(), "[@won#Description*]",
+        )
+
+    def test_merged_section_labels_empty_when_winner_is_text(self) -> None:
+        """``merged_section_labels`` can't structure-parse YEDDA text
+        (yet); when the winning contribution is text-only it
+        gracefully returns ``[]``.  The lossless path is
+        ``merged_ann_text``."""
+        state = PipelineState()
+        state.add_ann_text("classifier", "[@x#Y*]", priority=4)
+        self.assertEqual(state.merged_section_labels(), [])
