@@ -329,7 +329,35 @@ follow-on:
 
 So a future re-eval against today's numbers matches exactly.
 
-## Open questions
+## Span-layer cost (measured 2026-05-22)
+
+A 15-doc sample (5k-220k chars each, 676 k total chars, 1 299
+TaxonNames detected) was timed against:
+
+| Service | Per-doc avg | 30 k-doc projection (sequential) | 30 k-doc projection (16-parallel) |
+|---|---:|---:|---:|
+| gnfinder local (`-p 9080`)  | 0.027 s | 14 min  | 1 min  |
+| gnparser local (`-p 9081`)  | 0.17 s  | 84 min  | 5 min  |
+| **Combined**                | **0.20 s** | **98 min** | **6 min** |
+
+Public-API equivalents were ~10× slower and gnparser was outright
+unreachable due to a stale endpoint convention in the client (GET vs
+POST mismatch; fixed in `gnparser_client.py`).  Local services
+remove the network bottleneck and make the span layer essentially
+free at corpus scale.
+
+**Operational work items unblocked by this finding:**
+
+- ⬜ **gnservices packaging.**  Decide between bundling the two
+  binaries in the main `skol.deb` (Option C — fastest) and shipping
+  a separate `skol-gnservices.deb` (Option B — the right
+  long-term answer; independent release cadence).  Either way, add
+  systemd units to start `gnfinder -p 9080` and `gnparser -j 8 -p 9081`
+  on boot.  Track as a Phase-D-blocker — needs to land before
+  v4 prod deployment.
+- ⬜ **Span cache.**  ``sha256(text) → spans`` Redis keyed by line
+  content.  Cuts incremental-sweep runtime once we re-process the
+  corpus on a future ingest cycle.  Defer to after first run.
 
 - **Linear-chain vs BiLSTM-CRF?** Lean: start linear-chain over SBERT
   vectors. SBERT already encodes per-line semantics; the CRF only

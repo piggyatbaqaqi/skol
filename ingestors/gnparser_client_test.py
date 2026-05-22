@@ -113,7 +113,7 @@ class TestParseAuthorshipAfterName(unittest.TestCase):
     def _call(self, window: str, parsed_body) -> object:
         resp = _mock_response(parsed_body)
         with patch("ingestors.gnparser_client.requests") as mock_req:
-            mock_req.post.return_value = resp
+            mock_req.get.return_value = resp
             mock_req.HTTPError = Exception
             mock_req.Timeout = TimeoutError
             mock_req.ConnectionError = ConnectionError
@@ -143,24 +143,27 @@ class TestParseAuthorshipAfterName(unittest.TestCase):
     def test_empty_window_returns_none(self) -> None:
         # Should not call the API at all
         with patch("ingestors.gnparser_client.requests") as mock_req:
-            mock_req.post.return_value = _mock_response([])
+            mock_req.get.return_value = _mock_response([])
             mock_req.HTTPError = Exception
             mock_req.Timeout = TimeoutError
             mock_req.ConnectionError = ConnectionError
             result = parse_authorship_after_name("   ", retries=0)
         self.assertIsNone(result)
-        mock_req.post.assert_not_called()
+        mock_req.get.assert_not_called()
 
     def test_sends_synthetic_name_with_dummy_prefix(self) -> None:
+        """The URL path carries the name with the ``Xus `` prefix
+        url-encoded (the GET API uses the path segment as input)."""
         resp = _mock_response(_PARSED_WITH_AUTHORSHIP)
         with patch("ingestors.gnparser_client.requests") as mock_req:
-            mock_req.post.return_value = resp
+            mock_req.get.return_value = resp
             mock_req.HTTPError = Exception
             mock_req.Timeout = TimeoutError
             mock_req.ConnectionError = ConnectionError
             parse_authorship_after_name("(L.) Lam.", retries=0)
-            payload = mock_req.post.call_args[1]["json"]
-        self.assertTrue(payload[0].startswith("Xus "))
+            called_url = mock_req.get.call_args[0][0]
+        # %20 is the URL-encoded space after the "Xus " prefix.
+        self.assertIn("Xus%20", called_url)
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +178,7 @@ class TestBatchParseRetry(unittest.TestCase):
         ok_resp = _mock_response(_PARSED_WITH_AUTHORSHIP)
         with patch("ingestors.gnparser_client.requests") as mock_req:
             with patch("ingestors.gnparser_client.time.sleep"):
-                mock_req.post.side_effect = [fail_resp, ok_resp]
+                mock_req.get.side_effect = [fail_resp, ok_resp]
                 mock_req.HTTPError = Exception
                 mock_req.Timeout = TimeoutError
                 mock_req.ConnectionError = ConnectionError
@@ -186,7 +189,7 @@ class TestBatchParseRetry(unittest.TestCase):
         fail_resp = _mock_response({}, 500)
         with patch("ingestors.gnparser_client.requests") as mock_req:
             with patch("ingestors.gnparser_client.time.sleep"):
-                mock_req.post.return_value = fail_resp
+                mock_req.get.return_value = fail_resp
                 mock_req.HTTPError = Exception
                 mock_req.Timeout = TimeoutError
                 mock_req.ConnectionError = ConnectionError

@@ -13,6 +13,7 @@ Default endpoint: ``https://parser.globalnames.org/api/v1``
 """
 
 import time
+import urllib.parse
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -118,7 +119,13 @@ def _batch_parse(
     timeout: int = _DEFAULT_TIMEOUT,
     retries: int = _DEFAULT_RETRIES,
 ) -> List[Dict[str, Any]]:
-    """POST a list of name strings to gnparser and return parsed dicts.
+    """Submit a list of name strings to gnparser and return parsed dicts.
+
+    Uses the gnparser HTTP API's ``GET /api/v1/<names>`` form with
+    ``|`` as the multi-name separator (per the documented API at
+    ``/doc/api`` on the running service).  An earlier version of this
+    client used ``POST /api/v1/parse``; that path responds with
+    405 Method Not Allowed on the current gnparser builds (≥ v1.15).
 
     Args:
         names: List of scientific name strings.
@@ -129,14 +136,18 @@ def _batch_parse(
     Returns:
         List of parsed result dicts (one per name).
     """
-    url = gnparser_url.rstrip("/") + "/parse"
+    base = gnparser_url.rstrip("/")
+    # gnparser splits on a literal ``|`` between names; everything
+    # else needs URL-encoding (spaces, punctuation, unicode).
+    encoded_names = [urllib.parse.quote(n, safe="") for n in names]
+    url = base + "/" + "|".join(encoded_names)
     last_exc: Optional[Exception] = None
 
     for attempt in range(retries + 1):
         if attempt > 0:
             time.sleep(_BACKOFF_BASE * (2 ** (attempt - 1)))
         try:
-            resp = requests.post(url, json=names, timeout=timeout)
+            resp = requests.get(url, timeout=timeout)
             resp.raise_for_status()
             return resp.json()  # type: ignore[no-any-return]
         except (requests.HTTPError, requests.Timeout, requests.ConnectionError) as exc:
