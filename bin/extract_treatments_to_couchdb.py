@@ -751,6 +751,13 @@ class TreatmentExtractor:
         username = self.taxon_username
         password = self.taxon_password
         verbosity = self.verbosity
+        # Stamped into each saved taxon doc so views can locate the
+        # source .ann attachment without guessing which database holds
+        # it.  ``save_partition`` is a closure executed on Spark workers
+        # without ``self`` in scope; without this local extract every
+        # save raises ``NameError: name 'annotations_db_name' is not
+        # defined`` and the whole partition's writes silently fail.
+        annotations_db_name = self.annotations_db_name
 
         def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
             """Save taxa to CouchDB for an entire partition (idempotent)."""
@@ -1223,11 +1230,11 @@ Script-specific Options:
     )
 
     # Show results
-    if config['verbosity'] >= 1:
-        total = results.count()
-        successes = results.filter("success = true").count()
-        failures = results.filter("success = false").count()
+    total = results.count()
+    successes = results.filter("success = true").count()
+    failures = results.filter("success = false").count()
 
+    if config['verbosity'] >= 1:
         print(f"\nResults:")
         print(f"  Total taxa: {total}")
         print(f"  Successful saves: {successes}")
@@ -1238,3 +1245,16 @@ Script-specific Options:
             results.filter("success = false").show(truncate=False)
 
     spark.stop()
+
+    # Exit non-zero on total save failure so manage_experiment's
+    # runstep treats this as a real failure rather than marking the
+    # pipeline step "completed".  We only hard-fail when *every* save
+    # failed (e.g. the NameError-in-closure regression that masked
+    # itself as exit-0) — partial transient failures stay non-fatal so
+    # the daily cron doesn't alarm on a few CouchDB write conflicts.
+    if total > 0 and successes == 0:
+        print(
+            f"\nERROR: 0/{total} saves succeeded — exiting with error.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
