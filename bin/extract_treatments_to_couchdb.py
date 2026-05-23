@@ -1156,10 +1156,23 @@ Script-specific Options:
     taxon_username = config['taxon_username'] or config['ingest_username']
     taxon_password = config['taxon_password'] or config['ingest_password']
 
-    # Create Spark session
-    spark = SparkSession.builder \
-        .appName("SKOL Treatment Extractor") \
+    # Create Spark session sized from env_config (dev defaults are
+    # 24-core-box-sized; prod overrides via SPARK_CORES /
+    # SPARK_DRIVER_MEMORY / SPARK_EXECUTOR_MEMORY in /home/skol/.skol_env).
+    # Without these overrides the JVM heap defaults to ~1 GiB and a
+    # full-skol_dev extract OOMs at the dedup window-function shuffle.
+    cores = config.get('cores', 16)
+    driver_memory = config.get('spark_driver_memory', '32g')
+    executor_memory = config.get('spark_executor_memory', '16g')
+    spark = (
+        SparkSession.builder
+        .appName("SKOL Treatment Extractor")
+        .master(f"local[{cores}]")
+        .config("spark.driver.memory", driver_memory)
+        .config("spark.executor.memory", executor_memory)
+        .config("spark.driver.maxResultSize", "0")
         .getOrCreate()
+    )
 
     if config['verbosity'] >= 1:
         print(f"Extracting taxa from {config['ingest_db_name']} to {config['treatments_db_name']}...")
