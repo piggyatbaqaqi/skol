@@ -15,7 +15,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from extract_treatments_to_couchdb import generate_taxon_doc_id
+from extract_treatments_to_couchdb import EXTRACT_SCHEMA, generate_taxon_doc_id
+from label import Label
+from line import Line
+from paragraph import Paragraph
+from treatment import Treatment
 
 
 # ---------------------------------------------------------------------------
@@ -190,6 +194,71 @@ class TestGenerateTaxonDocIdCanonicalOrder(unittest.TestCase):
             taxon='BBB', description='AAA',
         ))
         self.assertNotEqual(a, b)
+
+
+# ---------------------------------------------------------------------------
+# Schema ↔ as_row() field-set contract
+# ---------------------------------------------------------------------------
+
+class TestExtractSchemaMatchesAsRow(unittest.TestCase):
+    """EXTRACT_SCHEMA's field set must exactly match what gets fed into
+    ``createDataFrame``: ``Treatment.as_row()`` keys plus the two keys
+    added by ``convert_taxa_to_rows`` (``_id``, ``json_annotated``).
+
+    Drift between the two sides triggers a Spark
+    ``FIELD_STRUCT_LENGTH_MISMATCH`` at runtime — which the
+    skol_golden_v2 verification path didn't catch because it compared
+    as_row() dicts to each other, not against the Spark schema.
+    """
+
+    @staticmethod
+    def _make_para(text: str, label_str: str, para_num: int = 1) -> Paragraph:
+        line = Line(f"[@{text}#{label_str}*]")
+        return Paragraph(
+            labels=[Label(label_str)], lines=[line], paragraph_number=para_num,
+        )
+
+    def _minimal_treatment(self) -> Treatment:
+        """A Treatment with one nomenclature and every section label,
+        so as_row() exercises every section / span field."""
+        t = Treatment()
+        t.add_nomenclature(
+            self._make_para("Amanita muscaria", "Nomenclature", para_num=1)
+        )
+        section_labels = [
+            "Description", "Diagnosis", "Etymology", "Distribution",
+            "Materials-examined", "Type-designation", "Biology", "Notes",
+            "Key", "Figure-caption",
+        ]
+        for i, label_str in enumerate(section_labels, start=2):
+            t.add_section(
+                label_str, self._make_para(f"text-{label_str}", label_str, para_num=i)
+            )
+        return t
+
+    def test_schema_field_set_matches_as_row_plus_caller_added(self):
+        row = self._minimal_treatment().as_row()
+        # convert_taxa_to_rows() adds these before createDataFrame:
+        produced_keys = set(row.keys()) | {"_id", "json_annotated"}
+        schema_keys = set(EXTRACT_SCHEMA.fieldNames())
+        missing_in_schema = produced_keys - schema_keys
+        missing_in_row = schema_keys - produced_keys
+        self.assertEqual(
+            missing_in_schema, set(),
+            msg=(
+                "Treatment.as_row() (+ caller-added keys) produces fields "
+                f"that EXTRACT_SCHEMA does not declare: {missing_in_schema}. "
+                "Add matching StructFields to EXTRACT_SCHEMA."
+            ),
+        )
+        self.assertEqual(
+            missing_in_row, set(),
+            msg=(
+                "EXTRACT_SCHEMA declares fields that Treatment.as_row() "
+                f"(+ caller-added keys) never produces: {missing_in_row}. "
+                "Either drop the StructFields or update as_row()."
+            ),
+        )
 
 
 if __name__ == '__main__':

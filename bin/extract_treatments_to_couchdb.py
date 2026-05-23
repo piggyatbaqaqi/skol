@@ -47,6 +47,54 @@ DEBUG_TRACE = False
 DEBUG_DOC_ID = None
 
 
+# Schema for extracted treatments.  Hoisted to module level so the
+# extract_treatments_to_couchdb_test.py regression test can import it
+# without booting a SparkSession.  The field set must match exactly
+# what ``Treatment.as_row()`` produces plus ``_id`` and
+# ``json_annotated`` (added by ``convert_taxa_to_rows`` below).
+#
+# Span schema uses MapType (not StructType) to preserve dict structure
+# in CouchDB — StructType converts dicts to Row objects which then
+# serialize as arrays.
+_SPAN_MAP_SCHEMA = MapType(StringType(), StringType(), valueContainsNull=True)
+
+EXTRACT_SCHEMA = StructType([
+    StructField("treatment", StringType(), False),
+    # Flat section text fields (None when that section is absent).
+    StructField("description", StringType(), True),
+    StructField("diagnosis", StringType(), True),
+    StructField("etymology", StringType(), True),
+    StructField("distribution", StringType(), True),
+    StructField("materials_examined", StringType(), True),
+    StructField("type_designation", StringType(), True),
+    StructField("biology", StringType(), True),
+    StructField("notes", StringType(), True),
+    StructField("key", StringType(), True),
+    StructField("figure_captions", StringType(), True),
+    StructField("ingest", MapType(StringType(), StringType(),
+                                  valueContainsNull=True), True),
+    StructField("line_number", IntegerType(), True),
+    StructField("paragraph_number", IntegerType(), True),
+    StructField("pdf_page", IntegerType(), True),
+    StructField("pdf_label", StringType(), True),
+    StructField("empirical_page_number", StringType(), True),
+    # Span fields (empty list when that section is absent).
+    StructField("nomenclature_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("description_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("diagnosis_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("etymology_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("distribution_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("materials_examined_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("type_designation_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("biology_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("notes_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("figure_caption_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("attachment_name", StringType(), True),
+    StructField("_id", StringType(), True),
+    StructField("json_annotated", StringType(), True)
+])
+
+
 def row_to_dict_recursive(obj: Any) -> Any:
     """
     Recursively convert PySpark Row objects to dictionaries.
@@ -383,46 +431,10 @@ class TreatmentExtractor:
         self.taxon_password = taxon_password or ingest_password
         self.verbosity = verbosity
 
-        # Schema for extracted taxa
-        # All metadata is in the ingest field
-        # Span schema uses MapType to preserve dictionary structure in CouchDB
-        # (StructType converts dicts to Row objects which serialize as arrays)
-        span_map_schema = MapType(StringType(), StringType(), valueContainsNull=True)
-
-        self._extract_schema = StructType([
-            StructField("treatment", StringType(), False),
-            # Flat section text fields (None when that section is absent).
-            StructField("description", StringType(), True),
-            StructField("diagnosis", StringType(), True),
-            StructField("etymology", StringType(), True),
-            StructField("distribution", StringType(), True),
-            StructField("materials_examined", StringType(), True),
-            StructField("type_designation", StringType(), True),
-            StructField("biology", StringType(), True),
-            StructField("notes", StringType(), True),
-            StructField("key", StringType(), True),
-            StructField("figure_captions", StringType(), True),
-            StructField("ingest", MapType(StringType(), StringType(),
-                                          valueContainsNull=True), True),
-            StructField("line_number", IntegerType(), True),
-            StructField("paragraph_number", IntegerType(), True),
-            StructField("pdf_page", IntegerType(), True),
-            StructField("pdf_label", StringType(), True),
-            StructField("empirical_page_number", StringType(), True),
-            # Span fields (empty list when that section is absent).
-            StructField("nomenclature_spans", ArrayType(span_map_schema), True),
-            StructField("description_spans", ArrayType(span_map_schema), True),
-            StructField("diagnosis_spans", ArrayType(span_map_schema), True),
-            StructField("etymology_spans", ArrayType(span_map_schema), True),
-            StructField("distribution_spans", ArrayType(span_map_schema), True),
-            StructField("materials_examined_spans", ArrayType(span_map_schema), True),
-            StructField("type_designation_spans", ArrayType(span_map_schema), True),
-            StructField("biology_spans", ArrayType(span_map_schema), True),
-            StructField("notes_spans", ArrayType(span_map_schema), True),
-            StructField("attachment_name", StringType(), True),
-            StructField("_id", StringType(), True),
-            StructField("json_annotated", StringType(), True)
-        ])
+        # Schema for extracted treatments (defined at module level so
+        # the bin/extract_treatments_to_couchdb_test.py field-set
+        # regression test can import it without booting Spark).
+        self._extract_schema = EXTRACT_SCHEMA
 
         # Schema for save results
         self._save_schema = StructType([
