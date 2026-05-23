@@ -63,6 +63,12 @@ SKIP_EXISTING=1
 40 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication mycobiology-pmc > ${LOGDIR}/ingest-mycobiology-pmc.log 2>&1
 50 22 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication curr-med-mycol-pmc > ${LOGDIR}/ingest-curr-med-mycol-pmc.log 2>&1
 0 23 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/ingest --publication med-mycol-case-rep-pmc > ${LOGDIR}/ingest-med-mycol-case-rep-pmc.log 2>&1
+# Extract plaintext (article.txt) from newly-ingested PDFs / JATS / efetch.
+# Runs after the PMC ingesters and before predict_classifier (00:00) so the
+# classifier always sees fresh article.txt attachments.  Shares the PMC flock
+# because --source auto tries efetch first, which is an NCBI eutils call —
+# subject to the same off-peak / serialization policy as the PMC ingesters.
+30 23 * * * skol flock /var/lock/skol-pmc.lock time /opt/skol/bin/extract_plaintext --all --skip-existing -v > ${LOGDIR}/extract-plaintext.log 2>&1
 # Generate YEDDA training data from newly ingested articles (after PMC/Pensoft ingesters)
 30 17 * * * skol time /opt/skol/bin/jats_to_yedda --all --output-to couchdb --skip-existing > ${LOGDIR}/jats-to-yedda.log 2>&1
 0 0 * * * skol time /opt/skol/bin/predict_classifier --cores=2 --batch-size=24 --spark-driver-memory=8g --spark-executor-memory=8g --union-batch-size=1000 --verbosity=2 --save-text=lazy --incremental --incremental-batch-size=50 --retry-failed-extraction > ${LOGDIR}/predict-classifier.log 2>&1
