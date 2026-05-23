@@ -336,8 +336,15 @@ def convert_taxa_to_rows(partition: Iterator[Treatment]) -> Iterator[Row]:
             taxon_dict['_id'] = generate_taxon_doc_id(taxon_dict)
         if 'json_annotated' not in taxon_dict:
             taxon_dict['json_annotated'] = None
-        # Convert dict to Row
-        row = Row(**taxon_dict)
+        # Convert dict to Row.  Reorder keys to match EXTRACT_SCHEMA
+        # because ``createDataFrame`` matches Row fields positionally,
+        # not by name — and ``Treatment.as_row()``'s insertion order
+        # does not match the schema's field order.  Without this
+        # reordering, e.g. the 15th field of the Row (``biology`` in
+        # as_row order) would land in the schema's 15th slot
+        # (``pdf_page``), failing type validation downstream.
+        row = Row(**{name: taxon_dict[name]
+                     for name in EXTRACT_SCHEMA.fieldNames()})
 
         if DEBUG_TRACE:
             doc_id = get_ingest_field(taxon_dict, '_id')

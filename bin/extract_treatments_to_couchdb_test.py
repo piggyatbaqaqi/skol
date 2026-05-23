@@ -15,7 +15,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from extract_treatments_to_couchdb import EXTRACT_SCHEMA, generate_taxon_doc_id
+from extract_treatments_to_couchdb import (
+    EXTRACT_SCHEMA, convert_taxa_to_rows, generate_taxon_doc_id,
+)
 from label import Label
 from line import Line
 from paragraph import Paragraph
@@ -259,6 +261,40 @@ class TestExtractSchemaMatchesAsRow(unittest.TestCase):
                 "Either drop the StructFields or update as_row()."
             ),
         )
+
+    def test_convert_taxa_to_rows_aligns_with_schema_positionally(self):
+        """``createDataFrame(rdd, schema)`` matches Row fields by position,
+        not by name.  ``Treatment.as_row()``'s dict insertion order does
+        NOT match ``EXTRACT_SCHEMA.fieldNames()`` — without explicit
+        reordering, the 15th value of the Row (``biology`` text in
+        as_row order) would land in the schema's 15th slot (``pdf_page``,
+        IntegerType), failing type validation on any non-empty Biology
+        section.  This test locks the alignment by name and (because
+        ``Row(**ordered_dict)`` preserves dict order) by position.
+        """
+        t = self._minimal_treatment()
+        rows = list(convert_taxa_to_rows(iter([t])))
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        schema_field_names = EXTRACT_SCHEMA.fieldNames()
+        # Row.__fields__ is the kwarg order from Row(**dict).
+        self.assertEqual(
+            list(row.__fields__), schema_field_names,
+            msg=(
+                "Row field order must match EXTRACT_SCHEMA.fieldNames() "
+                "exactly so positional matching in createDataFrame "
+                "lands every value in the right column."
+            ),
+        )
+        # Spot-check that values land in the right schema slots — not
+        # shifted by the as_row()/schema ordering mismatch.
+        row_dict = row.asDict()
+        self.assertEqual(row_dict["pdf_page"], 0)  # int from Line default
+        self.assertIsInstance(
+            row_dict["biology"], str,
+            msg="biology text must land in the biology field, not pdf_page",
+        )
+        self.assertIn("text-Biology", row_dict["biology"])
 
 
 if __name__ == '__main__':
