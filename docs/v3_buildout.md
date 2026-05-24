@@ -130,7 +130,7 @@ Treatments for every taxonomically-relevant doc.
 | B.1 | Create the **v3_hand-specific output DBs** so every pipeline step writes to its own namespace (none share with the unrelated dev defaults): `skol_treatments_v3_dev` (treatments — replaces today's `skol_treatments_dev` in the experiment doc), `skol_treatments_full_v3_dev` (full-context treatments — replaces today's `skol_treatments_full_dev`). The `databases.annotations` field on `production_v3_hand` is already v3-specific (`skol_exp_production_v3_hand_ann`); no change there. Update the `production_v3_hand` experiment doc with the new `treatments` + `treatments_full` values **before** running B.3, since `extract_treatments_to_couchdb.py` reads them from there. Both DBs are created lazily by CouchDB on first write; nothing to pre-allocate. | ⬜ |
 | B.2 | Predict YEDDA for all skol_dev docs lacking `.ann`. The dispatcher decides per-doc whether predict_classifier runs (PDF/plaintext) or whether the XML reader runs (taxpub). For docs that already have `article.txt.ann` from earlier experiment runs, skip via `--skip-existing` (existing flag). | ⬜ |
 | B.3 | Run `bin/extract_treatments_to_couchdb.py --database skol_dev --output-database skol_treatments_v3_dev` to extract Treatments through the dispatcher. Expected ~10-50 k Treatments depending on how many of the ~28 k PDF docs and ~2 500 taxpub docs are taxonomic. | ⬜ |
-| B.4 | Spot-check: for 10 random Treatments, inspect that all flat section fields populated correctly. For 5 JATS-source Treatments, verify the XML-reader path produced the same section text as the previous `jats_to_yedda` output. | ⬜ |
+| B.4 | Spot-check: for 10 random Treatments, inspect that all flat section fields populated correctly. For 5 JATS-source Treatments, verify the XML-reader path produced the same section text as the previous `jats_to_yedda` output. | ✅ Audit done (1,000-treatment sample). Findings: (i) classifier path produces well-formed treatments with expected section coverage (Description 29%, Biology 17%, Diagnosis 12%); (ii) **0 treatments from is_taxpub docs — taxpub dispatcher fork never fires in Spark partition path**; (iii) **12,349 / 17,317 plain docs (71%) yield 0 treatments** because no Nomenclature is predicted; (iv) Distribution field never populated — v3_hand model omits the label. Both structural gaps deferred to new Phase G. |
 | B.5 | Update `docs/couchdbs.md` with the new `skol_treatments_v3_dev` + `skol_treatments_full_v3_dev` rows, and update the experiments table to reflect `production_v3_hand`'s new `treatments` / `treatments_full` pointers. | ⬜ |
 
 ## Phase C — SBERT embedding
@@ -214,6 +214,37 @@ shifting ports between env_config and the systemd unit at once).
 Phases E and F together gate Phase D (production deployment) —
 without them, prod gets neither scheduled extraction jobs nor the
 gn-services the future v4 pipeline depends on.
+
+## Phase G — Coverage gaps identified by Phase B.4
+
+B.4's spot-check found two structural gaps that suppress Treatment
+yield well below v1's 25,420 (vs the v3-current 6,963 on a *larger*
+doc population).  Each is a coding work item, not a tuning knob.
+
+Empirical baseline (B.4 audit against `skol_treatments_v3_dev`,
+6,963 treatments from 4,968 unique source docs):
+
+| Gap | Evidence | Estimated lift |
+|---|---|---|
+| TaxPub dispatcher fork not firing | 0 / 1000 sampled treatments came from `is_taxpub=True` docs; 1,784 docs entirely dark | High — TaxPub docs are typically dense taxonomic monographs with many treatments per doc |
+| Orphan section blocks dropped | 12,349 / 17,317 plain docs (71%) yield 0 treatments because the classifier finds no Nomenclature paragraph | High — recovers treatment content for any doc that has Description/Diagnosis but no clean species heading |
+
+A separate non-blocking observation from the same audit: the v3_hand
+model's output vocabulary never emits `Distribution` (0 / 500 sampled
+treatments populated the field).  Treated as a model-side concern, not
+a pipeline gap — track separately with the next retraining cycle.
+
+### Sub-steps
+
+| # | Description | Status |
+|---|---|---|
+| G.1 | **Wire the `taxpub_treatment_extractor` fork in the Spark partition path.** Today `_row_to_dispatcher_doc` ([bin/extract_treatments_to_couchdb.py:195](../bin/extract_treatments_to_couchdb.py#L195)) builds the per-doc dict from a Spark row that carries only the `.ann` attachment bytes — `article.xml` is absent, so `has_taxpub_markup` is permanently false and `taxpub_treatment_extractor` (which the dispatcher would otherwise prefer at priority 10) never fires.  The docstring acknowledges the gap and calls it "a future commit"; this is that commit.  Options: (a) fatten the Spark row to include `article.xml` bytes when present; (b) have the `TaxpubMarkupInspector` lazy-fetch via CouchDB inside the partition; (c) run TaxPub docs through a separate non-Spark sweep that iterates `skol_dev` for `is_taxpub=True` and calls `dispatcher.extract()` directly.  Prefer (c) — keeps Spark for the heavy classifier path, is one round-trip per TaxPub doc (~1,784 docs total), and isolates the deterministic extractor's failure modes from the Spark job's.  Acceptance: post-run, `skol_treatments_v3_dev` contains a non-zero count of treatments whose `ingest._id` resolves to an `is_taxpub=True` doc in `skol_dev`. | ⬜ |
+| G.2 | **"Nomen unknown" synthesis for orphan Description / Diagnosis blocks.** `group_paragraphs` in `treatment.py` currently requires a Nomenclature paragraph to open a Treatment; orphan Description / Diagnosis paragraphs (those with no preceding Nomenclature in the same section) are silently dropped.  This was the dominant Phase B.4 finding: 71% of plain docs yielded 0 treatments.  Re-introduce the v2-era heuristic: when `group_paragraphs` encounters a Description **or** Diagnosis paragraph and no Treatment is currently open, synthesize a stub Nomenclature with the literal text "Nomen unknown" and open a Treatment around it.  The stub should carry the orphan paragraph's `pdf_page` / `line_number` / `ingest` so downstream consumers can still trace provenance.  Treatments built this way are flagged (e.g. `synthetic_nomenclature: true` field) so the Django UI can render them distinctly.  Acceptance: (i) unit test that a YEDDA stream with a bare Description paragraph produces one Treatment with `treatment == "Nomen unknown"` and the Description text populated; (ii) re-run of B.3 against skol_dev produces materially more than 6,963 treatments, with the delta attributable to docs that previously yielded 0. | ⬜ |
+
+G.1 and G.2 are independent — implement and ship in either order.
+Both should land before Phase C (SBERT embedding) sees the v3_hand
+data as "complete," since both materially change the Treatment count
+that embeddings flow from.
 
 ## Phase D — Production deployment (separately scheduled)
 
