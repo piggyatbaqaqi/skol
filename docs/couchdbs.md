@@ -40,6 +40,8 @@ docs/couchdbs.md`.)
 | `skol_treatments_dev` | 25,420 | 190.5 MB | Primary treatments database. Output of `bin/extract_treatments_to_couchdb.py` against `skol_dev`. Step-3-dev rename of `skol_taxa_dev`; each document's nomenclature field renamed `taxon` → `treatment`. |
 | `skol_treatments_full_dev` | 12,302 | 51.9 MB | Treatments enriched with `json_annotated` (structured JSON via `bin/treatments_to_json.py`). Step-3-dev rename of `skol_taxa_full_dev`. |
 | `skol_treatments_taxpub_v1_dev` | 43,046 | 261.9 MB | Treatments for the `taxpub_v1*` experiments. Step-3-dev rename of `skol_taxa_taxpub_v1_dev`. |
+| `skol_treatments_v3_dev` | 6,963 | 1.5 GB | Treatments database for `production_v3_hand`. Output of `bin/extract_treatments_to_couchdb.py --experiment production_v3_hand` against `skol_dev`, run through the new dispatcher (`skol_classifier/extraction/`). Only the `classifier_logistic_v3` component fires today — the `taxpub_treatment_extractor` fork is wired in code but never runs in the Spark partition path because `article.xml` is not loaded into the partition row (see [v3_buildout.md §Phase G.1](v3_buildout.md)). Lift expected once G.1 lands. |
+| `skol_treatments_full_v3_dev` | 0 | _(empty)_ | Per-experiment `full` (json_annotated) database for `production_v3_hand`. Created lazily but empty until `bin/treatments_to_json.py` runs against `skol_treatments_v3_dev`. |
 | **Legacy taxa (pre-rename; retained for rollback)** | | | |
 | `skol_taxa_dev` | 25,420 | 160.1 MB | Pre-rename original of `skol_treatments_dev`. Kept until Step 3-prod completes (per `docs/taxon_to_treatment_plan.md`). |
 | `skol_taxa_full_dev` | 12,302 | 55.0 MB | Pre-rename original of `skol_treatments_full_dev`. |
@@ -48,6 +50,9 @@ docs/couchdbs.md`.)
 | **Experiment-specific annotations** | | | |
 | `skol_exp_taxpub_v1_ann` | 18,794 | 1.3 GB | `.ann` (`article.pdf.ann`) plus ingest metadata for the `taxpub_v1*` experiment family. Referenced from `skol_experiments` as `databases.annotations`. |
 | `skol_exp_hand_ann` | 105 | 2.8 MB | _One `article.txt.ann` per doc; 105 entries matches `skol_golden`'s size. **INVESTIGATE**: confirm this is the hand-annotated annotations DB for the `hand_annotated` experiment (the experiment's `databases.annotations` field is missing, so this guess can't be confirmed automatically)._ |
+| `skol_exp_production_v3_hand_ann` | 17,297 | 651 MB | `article.txt.ann` for the `production_v3_hand` predict step. Sourced from `skol_dev` (plain docs only — `is_taxpub=True` docs are skipped by `predict_classifier.py` and routed through the future taxpub fork instead). Each doc carries the YEDDA-tagged prediction plus the ingest metadata needed to extract Treatments. |
+| `skol_exp_production_v3_jats_ann` | 86 | _(small)_ | `article.txt.ann` for the `production_v3_jats` predict runs (currently sparse — full v3_jats sweep has not yet run). |
+| `skol_exp_production_v3_full_ann` | 86 | _(small)_ | `article.txt.ann` for the `production_v3_full` predict runs (currently sparse — full v3_full sweep has not yet run). |
 | **Django app data** | | | |
 | `skol_collections_dev` | 3,979 | 2.8 MB | User-created collections (specimens/observations) synced from the Django app. Each doc has `type: collection` plus the same `treatment`/`description`/`ingest` shape as taxa so unified search works. Written by `django/search/couchdb_sync.py`. |
 | `skol_collections_history_dev` | 4,153 | 3.2 MB | Append-only change history for collections (`change_type`, `changed_at`, prior `name`/`nomenclature`/`description`/`owner`). |
@@ -71,7 +76,7 @@ points at the databases and Redis keys that step scripts (under
 | `hand_annotated` | `skol_golden` | `skol_training` | `skol_exp_hand_annotated_treatments` ⚠ | `skol_exp_hand_annotated_treatments_full` ⚠ | _(not set)_ | `skol:embedding:hand_annotated` |
 | `production_v2` | `skol_dev` | `skol_training_v2` | `skol_treatments_dev` | `skol_treatments_full_dev` | `""` _(explicit empty — falls back to ingest)_ | `skol:embedding:v2` |
 | `jats_v2` | `skol_dev` | `skol_training_taxpub_v1` | `skol_treatments_taxpub_v1_dev` | `skol_exp_taxpub_v1_treatments_full` | `skol_exp_taxpub_v1_ann` | `skol:embedding:jats_v2` |
-| `production_v3_hand` | `skol_dev` | `skol_training_v2_no_golden` | `skol_treatments_dev` | `skol_treatments_full_dev` | `skol_exp_production_v3_hand_ann` | `skol:embedding:v3_hand` |
+| `production_v3_hand` | `skol_dev` | `skol_training_v2_no_golden` | `skol_treatments_v3_dev` | `skol_treatments_full_v3_dev` | `skol_exp_production_v3_hand_ann` | `skol:embedding:v3_hand` |
 | `production_v3_jats` | `skol_dev` | `skol_training_taxpub_v2_no_golden` | `skol_treatments_dev` | `skol_treatments_full_dev` | `skol_exp_production_v3_jats_ann` | `skol:embedding:v3_jats` |
 | `production_v3_full` | `skol_dev` | `skol_training_v3_combined_no_golden` | `skol_treatments_dev` | `skol_treatments_full_dev` | `skol_exp_production_v3_full_ann` | `skol:embedding:v3_full` |
 
