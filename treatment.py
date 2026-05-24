@@ -80,6 +80,17 @@ _LABEL_TO_SPANS_FIELD: Dict[str, str] = {
 }
 
 
+# Text marker for synthetic ("orphan section") Nomenclature stubs
+# synthesised by ``group_paragraphs`` below when it encounters a
+# treatment-section paragraph (Description, Diagnosis, etc.) without
+# a preceding real Nomenclature.  Recognised by ``Treatment.is_synthetic_nomenclature``
+# and exposed via the ``synthetic_nomenclature`` field on
+# ``as_row()`` so the Django UI can render these treatments
+# distinctly from those with a real species-name heading.  Phase G.2 of
+# v3_buildout.md.
+SYNTHETIC_NOMENCLATURE_TEXT = "Nomen ignotum"
+
+
 class Treatment(object):
     FIELDNAMES = [
         "serial_number",
@@ -134,6 +145,25 @@ class Treatment(object):
 
     def has_description(self) -> bool:
         return bool(self._sections.get("Description"))
+
+    def is_synthetic_nomenclature(self) -> bool:
+        """True if this Treatment's Nomenclature is a synthesised stub
+        (a placeholder created by ``group_paragraphs`` for an orphan
+        section paragraph with no real Nomenclature heading).
+
+        Detected by matching the canonical ``SYNTHETIC_NOMENCLATURE_TEXT``
+        marker in the first Nomenclature paragraph's first line.
+        Downstream consumers (Django UI, embedding pipeline) read the
+        ``synthetic_nomenclature`` field on ``as_row()`` to render
+        these distinctly from name-headed treatments.  Phase G.2 of
+        v3_buildout.md.
+        """
+        if not self._nomenclatures:
+            return False
+        first_line = self._nomenclatures[0].first_line
+        if first_line is None:
+            return False
+        return first_line.line.strip() == SYNTHETIC_NOMENCLATURE_TEXT
 
     def doc_id(self) -> Optional[str]:
         """Return doc_id from the first nomenclature paragraph, if any."""
@@ -227,6 +257,7 @@ class Treatment(object):
                 else None
             ),
             "attachment_name": attachment_name,
+            "synthetic_nomenclature": self.is_synthetic_nomenclature(),
         }
         retval.update(section_fields)
         retval.update(span_fields)
@@ -295,7 +326,7 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Treatment]:
 
             if label_str in _TREATMENT_SECTION_LABELS:
                 if not treatment.has_nomenclature():
-                    stub_line = Line("Nomen undetected")
+                    stub_line = Line(SYNTHETIC_NOMENCLATURE_TEXT)
                     stub_paragraph = Paragraph(
                         labels=[nomenclature],
                         lines=[stub_line],

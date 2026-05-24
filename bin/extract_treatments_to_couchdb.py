@@ -90,6 +90,10 @@ EXTRACT_SCHEMA = StructType([
     StructField("notes_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("figure_caption_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("attachment_name", StringType(), True),
+    # Phase G.2: True for stub-Nomenclature treatments (orphan
+    # Description/Diagnosis blocks).  Recognised by the Django UI to
+    # render distinctly from name-headed treatments.
+    StructField("synthetic_nomenclature", BooleanType(), False),
     StructField("_id", StringType(), True),
     StructField("json_annotated", StringType(), True)
 ])

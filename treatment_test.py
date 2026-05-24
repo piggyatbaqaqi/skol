@@ -202,7 +202,7 @@ class TestTreatment(unittest.TestCase):
         self.assertTrue(
             all([d["serial_number"] == sn2 for d in dictionaries2])
         )
-        self.assertEqual(dictionaries2[0]["body"], "Nomen undetected\n")
+        self.assertEqual(dictionaries2[0]["body"], "Nomen ignotum\n")
         self.assertEqual(dictionaries2[0]["label"], "Nomenclature")
         self.assertEqual(dictionaries2[1]["body"], "ignored2\n")
         self.assertEqual(dictionaries2[1]["label"], "Description")
@@ -388,7 +388,7 @@ class TestTreatment(unittest.TestCase):
         """Test that a Description without preceding Nomenclature creates a stub.
 
         When we encounter a Description paragraph without any preceding Nomenclature,
-        a stub Nomenclature paragraph with 'Nomen undetected' should be automatically
+        a stub Nomenclature paragraph with 'Nomen ignotum' should be automatically
         created since Descriptions are more reliably detected than Nomenclatures.
         """
         test_data = lineify(
@@ -411,7 +411,7 @@ class TestTreatment(unittest.TestCase):
         )
 
         self.assertEqual(dictionaries[0]["label"], "Nomenclature")
-        self.assertEqual(dictionaries[0]["body"], "Nomen undetected\n")
+        self.assertEqual(dictionaries[0]["body"], "Nomen ignotum\n")
         self.assertEqual(dictionaries[1]["label"], "Description")
         self.assertEqual(dictionaries[1]["body"], "desc1\n")
         self.assertEqual(dictionaries[2]["label"], "Description")
@@ -439,7 +439,7 @@ class TestTreatment(unittest.TestCase):
 
         dictionaries1 = list(taxa[0].dictionaries())
         self.assertEqual(len(dictionaries1), 3)
-        self.assertEqual(dictionaries1[0]["body"], "Nomen undetected\n")
+        self.assertEqual(dictionaries1[0]["body"], "Nomen ignotum\n")
         self.assertEqual(dictionaries1[0]["label"], "Nomenclature")
         self.assertEqual(dictionaries1[1]["body"], "desc1\n")
         self.assertEqual(dictionaries1[2]["body"], "desc2\n")
@@ -453,7 +453,7 @@ class TestTreatment(unittest.TestCase):
     def test_as_row_stub_ingest_fallback(self):
         """as_row() uses description ingest when nomenclature stub has none.
 
-        'Nomen undetected' stubs are synthetic Lines with no fileobj, so
+        'Nomen ignotum' stubs are synthetic Lines with no fileobj, so
         first_line.ingest is None.  as_row() must fall back to the first
         description paragraph's ingest so the Source Context Viewer can
         locate the document.
@@ -472,7 +472,7 @@ class TestTreatment(unittest.TestCase):
             paragraph_number=1,
         )
 
-        nom_stub = Line("Nomen undetected")  # no fileobj — ingest is None
+        nom_stub = Line("Nomen ignotum")  # no fileobj — ingest is None
         nom_para = Paragraph(
             labels=[Label("Nomenclature")],
             lines=[nom_stub],
@@ -684,6 +684,67 @@ class TestTreatmentNewFields(unittest.TestCase):
         row = t.as_row()
         self.assertIn("Pileus convex", row["description"])
         self.assertIn("description_spans", row)
+
+
+class TestSyntheticNomenclatureFlag(unittest.TestCase):
+    """Phase G.2: ``synthetic_nomenclature`` field distinguishes stub
+    Nomenclatures (synthesised by ``group_paragraphs`` for orphan
+    Description / Diagnosis blocks) from real species-name headings.
+    """
+
+    def _make_para(
+        self, text: str, label_str: str, para_num: int = 1
+    ) -> Paragraph:
+        line = Line(f"[@{text}#{label_str}*]")
+        return Paragraph(
+            labels=[Label(label_str)],
+            lines=[line],
+            paragraph_number=para_num,
+        )
+
+    def test_real_nomenclature_not_synthetic(self):
+        from treatment import Treatment
+        t = Treatment()
+        t.add_nomenclature(
+            self._make_para("Amanita muscaria", "Nomenclature", 1)
+        )
+        self.assertFalse(t.is_synthetic_nomenclature())
+        self.assertFalse(t.as_row()["synthetic_nomenclature"])
+
+    def test_stub_nomenclature_is_synthetic(self):
+        from treatment import Treatment, SYNTHETIC_NOMENCLATURE_TEXT
+        # Mimic what group_paragraphs does when it sees an orphan
+        # section: synthesise a stub Nomenclature with the canonical
+        # marker string.
+        stub_line = Line(SYNTHETIC_NOMENCLATURE_TEXT)
+        stub_para = Paragraph(
+            labels=[Label("Nomenclature")],
+            lines=[stub_line],
+            paragraph_number=1,
+        )
+        t = Treatment()
+        t.add_nomenclature(stub_para)
+        self.assertTrue(t.is_synthetic_nomenclature())
+        self.assertTrue(t.as_row()["synthetic_nomenclature"])
+
+    def test_orphan_description_via_group_paragraphs_is_synthetic(self):
+        """End-to-end: a YEDDA stream with a bare Description paragraph
+        produces a Treatment that ``is_synthetic_nomenclature`` flags."""
+        import textwrap
+        from finder import parse_annotated
+        from treatment import group_paragraphs
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+            [@cap red#Description*]
+            [@from latin#Etymology*]
+            """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1)
+        self.assertTrue(taxa[0].is_synthetic_nomenclature())
+        self.assertTrue(taxa[0].as_row()["synthetic_nomenclature"])
 
 
 if __name__ == "__main__":
