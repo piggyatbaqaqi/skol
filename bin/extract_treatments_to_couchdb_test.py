@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from extract_treatments_to_couchdb import (
     EXTRACT_SCHEMA, convert_taxa_to_rows, generate_taxon_doc_id,
+    iter_taxpub_treatments,
 )
 from label import Label
 from line import Line
@@ -295,6 +296,62 @@ class TestExtractSchemaMatchesAsRow(unittest.TestCase):
             msg="biology text must land in the biology field, not pdf_page",
         )
         self.assertIn("text-Biology", row_dict["biology"])
+
+
+# ---------------------------------------------------------------------------
+# Phase G.1: taxpub_treatment_extractor fork wiring
+# ---------------------------------------------------------------------------
+
+class TestIterTaxpubTreatments(unittest.TestCase):
+    """``iter_taxpub_treatments`` is the non-Spark sweep that feeds
+    ``is_taxpub=True`` docs through the dispatcher so the
+    ``taxpub_treatment_extractor`` component actually fires — the gap
+    documented in [v3_buildout.md §Phase G.1] where the Spark partition
+    flow can't see ``article.xml`` bytes.
+    """
+
+    _TAXPUB_XML = b"""<?xml version="1.0"?>
+<article xmlns:tp="http://www.plazi.org/taxpub">
+  <body>
+    <tp:taxon-treatment>
+      <tp:nomenclature>
+        <tp:taxon-name><tp:taxon-name-part>Foo bar</tp:taxon-name-part></tp:taxon-name>
+      </tp:nomenclature>
+      <tp:treatment-sec sec-type="description">
+        <p>Cap red.</p>
+      </tp:treatment-sec>
+    </tp:taxon-treatment>
+  </body>
+</article>
+"""
+
+    def test_yields_treatment_for_taxpub_doc(self):
+        doc = {"_id": "doc1", "is_taxpub": True, "xml_format": "jats"}
+        treatments = list(iter_taxpub_treatments([(doc, self._TAXPUB_XML)]))
+        self.assertEqual(len(treatments), 1)
+        t = treatments[0]
+        self.assertTrue(t.has_nomenclature())
+        row = t.as_row()
+        self.assertIn("Foo bar", row["treatment"])
+        self.assertIn("Cap red", row["description"] or "")
+
+    def test_pre_seeded_attachments_are_not_overwritten(self):
+        """A doc that already has _attachments (e.g. CouchDB metadata
+        stubs) must keep its other entries; only ``article.xml`` is
+        injected by this helper."""
+        doc = {
+            "_id": "doc1",
+            "is_taxpub": True,
+            "xml_format": "jats",
+            "_attachments": {"article.pdf": {"content_type": "application/pdf"}},
+        }
+        treatments = list(iter_taxpub_treatments([(doc, self._TAXPUB_XML)]))
+        self.assertEqual(len(treatments), 1)
+        # The input doc must not be mutated — taxpub iterator runs on a copy.
+        self.assertNotIn("article.xml", doc["_attachments"])
+
+    def test_empty_input_yields_nothing(self):
+        self.assertEqual(list(iter_taxpub_treatments([])), [])
 
 
 if __name__ == '__main__':

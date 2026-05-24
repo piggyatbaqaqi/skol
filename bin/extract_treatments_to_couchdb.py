@@ -14,7 +14,7 @@ import os
 import sys
 import logging
 from pathlib import Path
-from typing import Iterator, Optional, Dict, Any
+from typing import Iterable, Iterator, Optional, Dict, Any, Set, Tuple
 
 import couchdb
 from pyspark.sql import SparkSession, DataFrame, Row
@@ -217,6 +217,39 @@ def _row_to_dispatcher_doc(row: Row) -> Dict[str, Any]:
     if "_id" not in doc:
         doc["_id"] = ingest.get("_id", "unknown")
     return doc
+
+
+def iter_taxpub_treatments(
+    docs: Iterable[Tuple[Dict[str, Any], bytes]],
+    ingest_db_name: str = "",
+) -> Iterator[Treatment]:
+    """Yield Treatment objects from is_taxpub docs via the dispatcher's
+    ``taxpub_treatment_extractor`` fork — the non-Spark sweep that
+    Phase G.1 of v3_buildout adds to close the taxpub coverage gap.
+
+    Each input pair is ``(doc, xml_bytes)``.  ``doc`` is the ingest
+    doc dict (read-only — caller's dict is not mutated); ``xml_bytes``
+    is the raw ``article.xml`` attachment content.  The bytes are
+    injected into ``_attachments['article.xml']`` on a copy of the
+    doc so the dispatcher's ``TaxpubMarkupInspector`` sees them; the
+    ``TaxpubTreatmentExtractor`` component then fires at priority 10
+    and contributes TaggedBlocks that the treatment_assembler turns
+    into Treatments.
+
+    Only Treatments with a Nomenclature are yielded — same filter
+    the Spark-partition classifier path applies.
+    """
+    dispatcher = Dispatcher.from_default_catalogs(
+        config={"ingest_db_name": ingest_db_name},
+    )
+    for doc, xml_bytes in docs:
+        atts = dict(doc.get("_attachments") or {})
+        atts["article.xml"] = xml_bytes
+        doc_with_xml = dict(doc)
+        doc_with_xml["_attachments"] = atts
+        for treatment in dispatcher.extract(doc_with_xml):
+            if treatment.has_nomenclature():
+                yield treatment
 
 
 def extract_taxa_from_partition(
@@ -625,6 +658,61 @@ class TreatmentExtractor:
         taxa_df = self.spark.createDataFrame(taxa_rdd, extract_schema)
 
         return taxa_df
+
+    def _extract_taxpub_treatments(
+        self,
+        skip_doc_ids: Optional[Set[str]] = None,
+    ) -> Iterator[Treatment]:
+        """Iterate ``is_taxpub=True`` docs in the ingest DB and yield
+        Treatment objects via the dispatcher's ``taxpub_treatment_extractor``
+        fork.
+
+        Phase G.1 of v3_buildout: closes the coverage gap where the
+        Spark partition flow never sees ``article.xml`` bytes, so
+        the taxpub fork never fires.  Runs as a non-Spark sweep
+        (~1,784 docs on dev) — one CouchDB round-trip per doc, both
+        for the doc dict and the article.xml attachment.
+
+        ``skip_doc_ids`` filters out ingest doc IDs that already
+        produced Treatments (passed through from ``run_pipeline``'s
+        ``--skip-existing`` flow).
+        """
+        server = couchdb.Server(self.ingest_couchdb_url)
+        if self.ingest_username and self.ingest_password:
+            server.resource.credentials = (
+                self.ingest_username, self.ingest_password,
+            )
+        db = server[self.ingest_db_name]
+
+        def _yield_docs() -> Iterator[Tuple[Dict[str, Any], bytes]]:
+            count = 0
+            for doc_id in db:
+                if skip_doc_ids is not None and doc_id in skip_doc_ids:
+                    continue
+                try:
+                    doc = db[doc_id]
+                except Exception:
+                    continue
+                if not doc.get("is_taxpub"):
+                    continue
+                atts = doc.get("_attachments") or {}
+                if "article.xml" not in atts:
+                    continue
+                try:
+                    xml_bytes = db.get_attachment(doc_id, "article.xml").read()
+                except Exception:
+                    continue
+                count += 1
+                yield (dict(doc), xml_bytes)
+            if self.verbosity >= 1:
+                print(
+                    f"[G.1] Scanned {self.ingest_db_name}: "
+                    f"{count} is_taxpub docs with article.xml"
+                )
+
+        yield from iter_taxpub_treatments(
+            _yield_docs(), ingest_db_name=self.ingest_db_name,
+        )
 
     def get_existing_ingest_doc_ids(self) -> set:
         """
@@ -1051,8 +1139,38 @@ class TreatmentExtractor:
             print(f"\nProcessing {total_docs} documents (non-incremental mode)")
             print("  TIP: Use --incremental for crash-resistant batch processing")
 
-        # Step 2: Extract taxa from annotated documents
+        # Step 2: Extract taxa from annotated documents (classifier path)
         taxa_df = self.extract_taxa(annotated_df)
+
+        # Step 2b — Phase G.1: also extract Treatments from is_taxpub
+        # docs in the ingest DB.  predict_classifier skips is_taxpub
+        # docs by design, so they never reach the annotations DB and
+        # the Spark partition flow above never sees them — they
+        # require the dispatcher's taxpub_treatment_extractor fork
+        # which reads article.xml directly.  See v3_buildout.md §G.1.
+        skip_ids = (
+            self.get_existing_ingest_doc_ids() if skip_existing else None
+        )
+        taxpub_treatments = list(
+            self._extract_taxpub_treatments(skip_doc_ids=skip_ids)
+        )
+        if taxpub_treatments:
+            taxpub_rows = list(convert_taxa_to_rows(iter(taxpub_treatments)))
+            if taxpub_rows:
+                taxpub_df = self.spark.createDataFrame(
+                    taxpub_rows, self._extract_schema,
+                )
+                taxa_df = taxa_df.unionByName(taxpub_df)
+                if self.verbosity >= 1:
+                    print(
+                        f"[G.1] Added {len(taxpub_rows)} taxpub treatments "
+                        f"from {self.ingest_db_name}"
+                    )
+        elif self.verbosity >= 1:
+            print(
+                f"[G.1] No taxpub treatments to add from "
+                f"{self.ingest_db_name}"
+            )
 
         # Step 3: Handle dry run or save taxa to CouchDB
         if dry_run:
