@@ -153,19 +153,21 @@ Use these subcommands instead of invoking the individual scripts directly.
 ### Step order and dependencies
 
 ```
-1. train            ─┐
-2. predict           │  sequential: each requires the previous to be
-3. annotate_jats     │  completed or skipped before it can run
-4. extract_taxa      │
-5. embed             │
-6. annotate_spans   ─┘
-7. evaluate    ─┐  independent: both require steps 1-6 done,
-8. build_vocab ─┘  but can run in either order
+1. train               ─┐
+2. predict              │  sequential: each requires the previous to be
+3. annotate_jats        │  completed or skipped before it can run
+4. extract_taxa         │
+5. embed                │
+6. treatments_to_json   │
+7. annotate_spans      ─┘
+8. evaluate    ─┐  independent: both require steps 1-7 done,
+9. build_vocab ─┘  but can run in either order
 ```
 
 - `predict` runs the ML classifier on non-TaxPub documents (`is_taxpub=False`)
 - `annotate_jats` runs `jats_to_yedda` on TaxPub documents (`is_taxpub=True`)
 - Both write to `databases.annotations`; both must complete before `extract_taxa`
+- `treatments_to_json` runs the LLM annotator over `databases.treatments` and writes JSON-annotated docs to `databases.treatments_full` — consumed by the Django JSON Features endpoint
 
 ### `pipeline` — show status
 
@@ -256,6 +258,7 @@ python bin/manage_experiment.py skipstep my_exp build_vocab
 | `annotate_jats` | `jats_to_yedda.py` | `--experiment NAME --all --taxpub-only --output-to couchdb --skip-existing` |
 | `extract_taxa` | `extract_treatments_to_couchdb.py` | `--experiment NAME --skip-existing` |
 | `embed` | `embed_treatments.py` | `--experiment NAME --force` |
+| `treatments_to_json` | `treatments_to_json.py` | `--experiment NAME --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200` |
 | `evaluate` | `predict_classifier.py` then `evaluate_golden.py` | predict: `--golden-db skol_golden --skip-existing`; evaluate: `--golden-db skol_golden_ann_hand --plaintext-db skol_golden --save-to-experiment` |
 | `build_vocab` | `build_vocab_tree.py` | `--experiment NAME` |
 
@@ -284,6 +287,7 @@ with the v1 `train_classifier`/`predict_classifier`/`extract_taxa_to_couchdb`/
 | `predict` | Daily | 12:00 | Tracks new docs in `skol_dev` |
 | `extract_taxa` | Daily | 14:00 | Runs after predict; uses Treatment-extraction pipeline (`bin/extract_treatments_to_couchdb.py`) |
 | `embed` | Daily | 16:00 | Runs after extract_taxa; embeds Treatments via SBERT |
+| `treatments_to_json` | Daily | 18:00 | Runs after embed; LLM-annotates Treatments into JSON for the Django JSON Features endpoint |
 
 To add a new production experiment to cron: add four lines to
 `debian/skol.cron` following the `production_v3_hand` pattern, picking slots

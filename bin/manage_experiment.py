@@ -96,6 +96,7 @@ _PIPELINE_STEPS = [
     "annotate_jats",
     "extract_taxa",
     "embed",
+    "treatments_to_json",
     "annotate_spans",
     "evaluate",
     "build_vocab",
@@ -104,9 +105,11 @@ _PIPELINE_STEPS = [
 # Statuses that count as "done" for dependency purposes.
 _DONE_STATUSES = ("completed", "skipped")
 
-# Steps that must all be done before steps 6+ (evaluate, build_vocab) can run.
-# Steps 0-5 are sequential among themselves (each requires the prior one done).
-_SEQUENTIAL_COUNT = 6  # train, predict, annotate_jats, extract_taxa, embed, annotate_spans
+# Steps that must all be done before the trailing evaluate / build_vocab steps
+# can run.  The leading steps (train ... annotate_spans) are sequential among
+# themselves (each requires the prior one done).
+_SEQUENTIAL_COUNT = 7  # train, predict, annotate_jats, extract_taxa, embed,
+                       # treatments_to_json, annotate_spans
 
 
 def _default_pipeline() -> Dict[str, Any]:
@@ -479,6 +482,15 @@ def _build_step_commands(
             sys.executable, str(_BIN_DIR / "embed_treatments.py"),
             "--experiment", "{name}",
             "--force",
+        ],
+        "treatments_to_json": [
+            sys.executable, str(_BIN_DIR / "treatments_to_json.py"),
+            "--experiment", "{name}",
+            "--incremental",
+            "--skip-existing",
+            "--use-constrained-decoding",
+            "--graceful-degradation",
+            "--timeout", "1200",
         ],
         "annotate_spans": [
             sys.executable, str(_BIN_DIR / "annotate_spans.py"),
