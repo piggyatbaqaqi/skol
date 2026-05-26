@@ -141,10 +141,10 @@ Embed Treatments and write to Redis so the Django search reads them.
 
 | # | Description | Status |
 |---|---|---|
-| C.1 | Pick the embedding text. Per [treatment_architecture.md §Phase 5](treatment_architecture.md): `description + "\n\n" + diagnosis` (with diagnosis falling back to empty if absent). | ⬜ |
-| C.2 | Choose the Redis key namespace. The `production_v3_hand` experiment doc declares `redis_keys.embedding`; whatever it says becomes the prefix. Inspect + confirm before running. | ⬜ |
-| C.3 | Run `bin/embed_treatments.py --experiment production_v3_hand` (existing script). It already iterates the target DB, computes SBERT embeddings, writes to Redis. Should pick up the new `skol_treatments_v3_dev` automatically once B.1's choice is wired into the experiment doc. | ⬜ |
-| C.4 | Smoke-test the Django search UI: query a known taxonomic phrase (e.g. "Pardosa moesta sp. nov."), confirm reasonable matches surface. | ⬜ |
+| C.1 | Pick the embedding text. Per [treatment_architecture.md §Phase 5](treatment_architecture.md): `description + "\n\n" + diagnosis` (with diagnosis falling back to empty if absent). | ✅ Confirmed in `build_primary_descriptions` ([bin/embed_treatments.py:86](../bin/embed_treatments.py#L86)). |
+| C.2 | Choose the Redis key namespace. The `production_v3_hand` experiment doc declares `redis_keys.embedding`; whatever it says becomes the prefix. Inspect + confirm before running. | ✅ `skol:embedding:v3_hand` per the experiment doc. |
+| C.3 | Run `bin/embed_treatments.py --experiment production_v3_hand` (existing script). It already iterates the target DB, computes SBERT embeddings, writes to Redis. Should pick up the new `skol_treatments_v3_dev` automatically once B.1's choice is wired into the experiment doc. | ✅ 14,748 records (14,625 treatments + 123 collections) embedded at 768-dim; Redis key is **99.3 MB**. Required a separate fix to land: pre-slimming, the pickled DataFrame exceeded Redis's 4 GB `proto-max-bulk-len` cap because each Treatment carried the full ingest doc (~260 KB each); slimming the per-treatment ingest to 4 essential keys (`_id`, `url`, `pdf_url`, `db_name`) dropped median treatment size 210 KB → 5.7 KB (37×) and embedding pickle 4 GB → 99 MB (40×). |
+| C.4 | Smoke-test the Django search UI: query a known taxonomic phrase (e.g. "Pardosa moesta sp. nov."), confirm reasonable matches surface. | ✅ Smoke-tested via direct cosine-sim against the loaded embedding matrix: `"Amanita muscaria red cap white warts"` → top hits in *Amanita* section Vaginatae (sim 0.71), `"mycelium hyphae septate"` → top 3 *Penicillium* species matching the exact phrase (sim 0.74), `"saprobic on dead wood"` → matching descriptions (sim 0.65). Out-of-domain queries score low as expected. |
 
 ## Phase E — Scheduled cron jobs for ongoing operation
 
