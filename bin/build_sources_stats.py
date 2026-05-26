@@ -29,6 +29,8 @@ from typing import Dict, Any, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import re
+
 import couchdb
 from env_config import get_env_config, create_redis_client
 
@@ -36,6 +38,49 @@ from env_config import get_env_config, create_redis_client
 # fallback).  Experiment-scoped runs append ``:{experiment_name}``
 # via :func:`redis_key_for_experiment`.
 _DEFAULT_REDIS_KEY = 'skol:sources:stats'
+
+
+# Regex tags applied to each Treatment's ``treatment`` text (the
+# Nomenclature paragraph) to count newly described or sanctioned
+# names per journal.  Surface on the Ingestion Sources page as
+# additional badges next to the total Treatments count.
+#
+# ``sp. nov.`` / ``gen. nov.`` / ``comb. nov.`` are nomenclatural-act
+# markers — papers establishing a new species, genus, or combination.
+# Case-insensitive; tolerates optional trailing-period and the space
+# between the abbreviation and ``nov.``.
+_NEW_TAXON_RE = re.compile(
+    r"\b(?:sp|gen|comb|nom)\.?\s+nov\.?\b",
+    re.IGNORECASE,
+)
+
+# Sanctioning-author tags.  Fries' Systema Mycologicum (1821) and
+# Persoon's Synopsis Methodica Fungorum (1801) are the two
+# nomenclatural-priority anchors in mycology — names with these
+# attributions get special legal status.  Common citation forms:
+#   ``Name : Fr.`` (sanctioned by Fries)
+#   ``Name (Fr.) NewAuthor`` (combination based on a Fries name)
+#   ``Name ex Fries`` (validly published by Fries even if originally proposed by another)
+#   ``Name : Pers.`` / ``(Pers.)`` / ``ex Persoon``
+_SANCTIONED_RE = re.compile(
+    r":\s*Fr\.|:\s*Pers\.|\(Fr\.\)|\(Pers\.\)|\bex\s+Fries\b|\bex\s+Persoon\b",
+)
+
+
+def count_new_taxon_acts(text):
+    """Count nomenclatural-act markers (``sp. nov.``, ``gen. nov.``,
+    ``comb. nov.``, ``nom. nov.``) in a Treatment's text."""
+    if not text:
+        return 0
+    return len(_NEW_TAXON_RE.findall(text))
+
+
+def count_sanctioned_markers(text):
+    """Count Fries / Persoon sanctioning-author citations in a
+    Treatment's text."""
+    if not text:
+        return 0
+    return len(_SANCTIONED_RE.findall(text))
 
 
 def redis_key_for_experiment(experiment_name):
@@ -141,12 +186,18 @@ def build_sources_stats(
             # Map doc_id to journal for taxa lookup
             doc_to_journal[doc_id] = journal_name
 
-            # Initialize stats for this journal if not seen before
+            # Initialize stats for this journal if not seen before.
+            # ``new_taxa_acts`` counts ``sp. nov.`` / ``gen. nov.`` /
+            # ``comb. nov.`` / ``nom. nov.`` markers across all
+            # Treatments from this journal; ``sanctioned_markers``
+            # counts Fries / Persoon sanction citations.
             if journal_name not in source_stats:
                 source_stats[journal_name] = {
                     'total': 0,
                     'taxonomy': 0,
                     'treatments': 0,
+                    'new_taxa_acts': 0,
+                    'sanctioned_markers': 0,
                 }
 
             # Increment total count
@@ -187,6 +238,15 @@ def build_sources_stats(
                 if ingest_doc_id and ingest_doc_id in doc_to_journal:
                     journal_name = doc_to_journal[ingest_doc_id]
                     source_stats[journal_name]['treatments'] += 1
+                    # Mycologist-facing counts derived from the
+                    # Nomenclature text on each Treatment.
+                    treatment_text = taxa_doc.get('treatment') or ''
+                    source_stats[journal_name]['new_taxa_acts'] += (
+                        count_new_taxon_acts(treatment_text)
+                    )
+                    source_stats[journal_name]['sanctioned_markers'] += (
+                        count_sanctioned_markers(treatment_text)
+                    )
 
             except Exception:
                 continue
@@ -202,6 +262,8 @@ def build_sources_stats(
     total_records = 0
     total_taxonomy_documents = 0
     total_treatments_records = 0
+    total_new_taxa_acts = 0
+    total_sanctioned_markers = 0
 
     for journal_name, stats in source_stats.items():
         source_info = {
@@ -216,6 +278,8 @@ def build_sources_stats(
                 1
             ),
             'treatments_records': stats['treatments'],
+            'new_taxa_acts': stats.get('new_taxa_acts', 0),
+            'sanctioned_markers': stats.get('sanctioned_markers', 0),
         }
 
         # Try to get additional information from PublicationRegistry
@@ -241,6 +305,8 @@ def build_sources_stats(
         total_records += stats['total']
         total_taxonomy_documents += stats['taxonomy']
         total_treatments_records += stats['treatments']
+        total_new_taxa_acts += stats.get('new_taxa_acts', 0)
+        total_sanctioned_markers += stats.get('sanctioned_markers', 0)
 
     # Sort sources by name
     sources.sort(key=lambda x: x['name'].lower())
@@ -250,6 +316,8 @@ def build_sources_stats(
         'total_records': total_records,
         'total_taxonomy_documents': total_taxonomy_documents,
         'total_treatments_records': total_treatments_records,
+        'total_new_taxa_acts': total_new_taxa_acts,
+        'total_sanctioned_markers': total_sanctioned_markers,
         'ingest_db_name': ingest_db_name,
         'treatments_db_name': treatments_db_name,
         'created_at': datetime.now().isoformat(),
@@ -262,6 +330,8 @@ def build_sources_stats(
         print(f"  Total records: {total_records}")
         print(f"  Taxonomy documents: {total_taxonomy_documents}")
         print(f"  Treatments records: {total_treatments_records}")
+        print(f"  New-taxon acts (sp/gen/comb/nom nov.): {total_new_taxa_acts}")
+        print(f"  Sanctioned (Fries/Persoon) markers:    {total_sanctioned_markers}")
 
     return result
 

@@ -150,6 +150,8 @@ def sources_view(request):
         'total_records': 0,
         'total_taxonomy_documents': 0,
         'total_treatments_records': 0,
+        'total_new_taxa_acts': 0,
+        'total_sanctioned_markers': 0,
         'cached': False,
         'cached_at': None,
         'experiment_name': experiment_name,
@@ -173,6 +175,8 @@ def sources_view(request):
             context['total_records'] = data.get('total_records', 0)
             context['total_taxonomy_documents'] = data.get('total_taxonomy_documents', 0)
             context['total_treatments_records'] = data.get('total_treatments_records', 0)
+            context['total_new_taxa_acts'] = data.get('total_new_taxa_acts', 0)
+            context['total_sanctioned_markers'] = data.get('total_sanctioned_markers', 0)
             context['cached'] = True
             context['cached_at'] = data.get('created_at')
             return render(request, 'sources.html', context)
@@ -247,7 +251,10 @@ def sources_view(request):
                 doc_to_journal[doc_id] = journal_name
 
                 if journal_name not in source_stats:
-                    source_stats[journal_name] = {'total': 0, 'taxonomy': 0, 'treatments': 0}
+                    source_stats[journal_name] = {
+                        'total': 0, 'taxonomy': 0, 'treatments': 0,
+                        'new_taxa_acts': 0, 'sanctioned_markers': 0,
+                    }
 
                 source_stats[journal_name]['total'] += 1
                 if doc.get('taxonomy') is True:
@@ -260,7 +267,15 @@ def sources_view(request):
         # re-read settings here.  The stats dict uses the canonical
         # ``treatments`` key (matches bin/build_sources_stats.py and the
         # source_stats initialiser a few lines up at line 213).
+        # Match build_sources_stats's per-journal aggregation: count
+        # treatments + nomenclatural-act / sanctioning-author markers
+        # in the Treatment text.  Import lazily so the fast Redis path
+        # doesn't pay for the regex compile on every page render.
         if treatments_db_name in server:
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / 'bin'))
+            from build_sources_stats import (
+                count_new_taxon_acts, count_sanctioned_markers,
+            )
             treatments_db = server[treatments_db_name]
             for treatment_doc_id in treatments_db:
                 if treatment_doc_id.startswith('_design/'):
@@ -272,6 +287,13 @@ def sources_view(request):
                     if ingest_doc_id and ingest_doc_id in doc_to_journal:
                         journal_name = doc_to_journal[ingest_doc_id]
                         source_stats[journal_name]['treatments'] += 1
+                        treatment_text = treatment_doc.get('treatment') or ''
+                        source_stats[journal_name]['new_taxa_acts'] += (
+                            count_new_taxon_acts(treatment_text)
+                        )
+                        source_stats[journal_name]['sanctioned_markers'] += (
+                            count_sanctioned_markers(treatment_text)
+                        )
                 except Exception:
                     continue
 
@@ -287,6 +309,8 @@ def sources_view(request):
                     (stats['taxonomy'] / stats['total'] * 100) if stats['total'] > 0 else 0, 1
                 ),
                 'treatments_records': stats['treatments'],
+                'new_taxa_acts': stats.get('new_taxa_acts', 0),
+                'sanctioned_markers': stats.get('sanctioned_markers', 0),
             }
 
             if PublicationRegistry:
@@ -309,6 +333,8 @@ def sources_view(request):
             context['total_records'] += stats['total']
             context['total_taxonomy_documents'] += stats['taxonomy']
             context['total_treatments_records'] += stats['treatments']
+            context['total_new_taxa_acts'] += stats.get('new_taxa_acts', 0)
+            context['total_sanctioned_markers'] += stats.get('sanctioned_markers', 0)
 
         context['sources'].sort(key=lambda x: x['name'].lower())
 

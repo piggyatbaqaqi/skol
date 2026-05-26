@@ -116,32 +116,31 @@
             border-bottom: 1px solid #e0e0e0;
         }
 
-        /* Column widths */
+        /* Column widths — Publication doubles as the website link
+         * (the explicit Website column was retired in favour of
+         * making the journal name clickable; gave back ~22% of
+         * horizontal real estate for the new count columns). */
         .sources-table th:nth-child(1),
-        .sources-table td:nth-child(1) { width: 18%; }  /* Publication */
+        .sources-table td:nth-child(1) { width: 28%; }  /* Publication (link) */
         .sources-table th:nth-child(2),
-        .sources-table td:nth-child(2) { width: 15%; }  /* Publisher */
+        .sources-table td:nth-child(2) { width: 14%; }  /* Publisher */
         .sources-table th:nth-child(3),
-        .sources-table td:nth-child(3) { width: 22%; }  /* Website */
+        .sources-table td:nth-child(3) { width: 12%; }  /* Total */
         .sources-table th:nth-child(4),
-        .sources-table td:nth-child(4) { width: 15%; }  /* Total */
+        .sources-table td:nth-child(4) { width: 14%; }  /* Taxonomy */
         .sources-table th:nth-child(5),
-        .sources-table td:nth-child(5) { width: 15%; }  /* Taxonomy */
+        .sources-table td:nth-child(5) { width: 12%; }  /* Treatments */
         .sources-table th:nth-child(6),
-        .sources-table td:nth-child(6) { width: 15%; }  /* Taxa */
+        .sources-table td:nth-child(6) { width: 10%; }  /* New taxa */
+        .sources-table th:nth-child(7),
+        .sources-table td:nth-child(7) { width: 10%; }  /* Sanctioned */
 
-        .website-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .website-cell a {
-            display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        /* Narrow-viewport safety net: keep the table on its own
+         * horizontal-scroll axis instead of compressing columns into
+         * unreadable widths. */
+        .sources-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .sources-table th {
@@ -291,34 +290,41 @@
                 <div class="stat-label">Treatments</div>
                 <div class="stat-value">{{ total_treatments_records|default:"0" }}</div>
             </div>
+            <div class="stat-box">
+                <div class="stat-label" title="Treatments containing ``sp. nov.``, ``gen. nov.``, ``comb. nov.``, or ``nom. nov.``">New taxa</div>
+                <div class="stat-value">{{ total_new_taxa_acts|default:"0" }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label" title="Treatments citing Fries (1821) or Persoon (1801) as the sanctioning authority">Sanctioned</div>
+                <div class="stat-value">{{ total_sanctioned_markers|default:"0" }}</div>
+            </div>
         </div>
 
         {% if sources %}
+        <div class="sources-table-wrapper">
         <table class="sources-table">
             <thead>
                 <tr>
                     <th>Publication</th>
                     <th>Publisher/Source</th>
-                    <th>Website</th>
                     <th style="text-align: right;">Total Documents</th>
                     <th style="text-align: right;">Taxonomy Documents</th>
                     <th style="text-align: right;">Treatments</th>
+                    <th style="text-align: right;" title="Treatments containing ``sp. nov.``, ``gen. nov.``, ``comb. nov.``, or ``nom. nov.``">New taxa</th>
+                    <th style="text-align: right;" title="Treatments citing Fries (1821) or Persoon (1801) as the sanctioning authority">Sanctioned</th>
                 </tr>
             </thead>
             <tbody>
                 {% for source in sources %}
                 <tr>
-                    <td class="source-name">{{ source.name }}</td>
-                    <td>{{ source.publisher }}</td>
-                    <td class="website-cell" title="{{ source.website }}">
+                    <td class="source-name">
                         {% if source.website %}
-                        <a href="{{ source.website }}" target="_blank" class="source-link">
-                            {{ source.website }}
-                        </a>
+                        <a href="{{ source.website }}" target="_blank" class="source-link" title="{{ source.website }}">{{ source.name }}</a>
                         {% else %}
-                        <span style="color: #999;">—</span>
+                        {{ source.name }}
                         {% endif %}
                     </td>
+                    <td>{{ source.publisher }}</td>
                     <td style="text-align: right;">
                         <span class="stat-badge">{{ source.total_records }}</span>
                     </td>
@@ -329,10 +335,17 @@
                     <td style="text-align: right;">
                         <span class="stat-badge">{{ source.treatments_records }}</span>
                     </td>
+                    <td style="text-align: right;">
+                        <span class="stat-badge">{{ source.new_taxa_acts|default:"0" }}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <span class="stat-badge">{{ source.sanctioned_markers|default:"0" }}</span>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="no-sources">
             <p>No sources found in the database.</p>
