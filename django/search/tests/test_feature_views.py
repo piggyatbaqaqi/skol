@@ -379,7 +379,7 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_settings.COUCHDB_PASSWORD = 'password'
 
         mock_classifier = MagicMock()
-        mock_classifier.fit.side_effect = ValueError("Need at least 2 taxa documents")
+        mock_classifier.fit.side_effect = ValueError("Need at least 2 treatment documents")
 
         with patch.dict('sys.modules', {
             'taxa_classifier': MagicMock(),

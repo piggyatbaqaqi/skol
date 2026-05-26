@@ -108,11 +108,11 @@ def flatten_to_tokens(json_data: Any) -> str:
 
 
 class TaxaJsonClassifier:
-    """Classifier for taxa identification using TF-IDF on flattened JSON.
+    """Classifier for treatment identification using TF-IDF on flattened JSON.
 
     This classifier takes structured JSON annotations, flattens them to
     key=value tokens, applies TF-IDF encoding, and uses a Decision Tree
-    to classify taxa.
+    to classify treatments.
 
     Attributes:
         vectorizer: TfidfVectorizer for converting tokens to feature vectors
@@ -210,21 +210,21 @@ class TaxaJsonClassifier:
         taxa_ids: Optional[List[str]] = None,
         limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        """Fetch taxa documents from CouchDB.
+        """Fetch treatment documents from CouchDB.
 
         Args:
-            taxa_ids: List of specific taxon IDs to fetch. If None, fetches all.
+            taxa_ids: List of specific treatment IDs to fetch. If None, fetches all.
             limit: Maximum number of documents to fetch
 
         Returns:
-            List of taxa documents with _id and json_annotated fields
+            List of treatment documents with _id and json_annotated fields
         """
         db = self._connect_db()
         documents = []
 
         if taxa_ids:
             if self.verbosity >= 1:
-                print(f"Fetching {len(taxa_ids)} taxa documents...")
+                print(f"Fetching {len(taxa_ids)} treatment documents...")
 
             for i, doc_id in enumerate(taxa_ids):
                 try:
@@ -242,7 +242,7 @@ class TaxaJsonClassifier:
                         print(f"  Warning: Could not fetch {doc_id}: {e}")
         else:
             if self.verbosity >= 1:
-                print(f"Fetching taxa documents from {self.database}...")
+                print(f"Fetching treatment documents from {self.database}...")
 
             count = 0
             for doc_id in db:
@@ -318,10 +318,10 @@ class TaxaJsonClassifier:
         test_size: float = 0.2,
         limit: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Train the classifier on taxa JSON annotations.
+        """Train the classifier on treatment JSON annotations.
 
         Args:
-            taxa_ids: List of specific taxon IDs to train on
+            taxa_ids: List of specific treatment IDs to train on
             documents: Pre-fetched documents (alternative to taxa_ids)
             test_size: Fraction of data for testing (0.0-1.0)
             limit: Maximum number of documents
@@ -352,7 +352,7 @@ class TaxaJsonClassifier:
 
         if self.verbosity >= 1:
             print(f"Training on {len(token_strings)} samples, "
-                  f"{len(unique_ids)} unique taxa")
+                  f"{len(unique_ids)} unique treatments")
 
         # Create and fit TF-IDF vectorizer
         if self.verbosity >= 1:
@@ -441,7 +441,7 @@ class TaxaJsonClassifier:
         self,
         json_data: Union[Dict[str, Any], List[Dict[str, Any]]]
     ) -> List[Dict[str, Any]]:
-        """Predict taxa IDs for given JSON data.
+        """Predict treatment IDs for given JSON data.
 
         Args:
             json_data: Single JSON dict or list of JSON dicts

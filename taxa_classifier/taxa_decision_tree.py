@@ -44,9 +44,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 
 class TaxaDecisionTreeClassifier:
-    """Classifier for taxa identification using TF-IDF + Decision Tree.
+    """Classifier for treatment identification using TF-IDF + Decision Tree.
 
-    This classifier takes taxa descriptions and learns to identify which
+    This classifier takes treatment descriptions and learns to identify which
     taxon a description belongs to based on its text content.
 
     Attributes:
@@ -145,14 +145,14 @@ class TaxaDecisionTreeClassifier:
         taxa_ids: Optional[List[str]] = None,
         limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        """Fetch taxa documents from CouchDB.
+        """Fetch treatment documents from CouchDB.
 
         Args:
-            taxa_ids: List of specific taxon IDs to fetch. If None, fetches all.
+            taxa_ids: List of specific treatment IDs to fetch. If None, fetches all.
             limit: Maximum number of documents to fetch (applies when taxa_ids is None)
 
         Returns:
-            List of taxa documents with _id, taxon, and description fields
+            List of treatment documents with _id, treatment, and description fields
         """
         db = self._connect_db()
         documents = []
@@ -160,7 +160,7 @@ class TaxaDecisionTreeClassifier:
         if taxa_ids:
             # Fetch specific documents
             if self.verbosity >= 1:
-                print(f"Fetching {len(taxa_ids)} taxa documents...")
+                print(f"Fetching {len(taxa_ids)} treatment documents...")
 
             for i, doc_id in enumerate(taxa_ids):
                 try:
@@ -178,7 +178,7 @@ class TaxaDecisionTreeClassifier:
         else:
             # Fetch all documents
             if self.verbosity >= 1:
-                print(f"Fetching all taxa documents from {self.database}...")
+                print(f"Fetching all treatment documents from {self.database}...")
 
             count = 0
             for doc_id in db:
@@ -206,7 +206,7 @@ class TaxaDecisionTreeClassifier:
                         print(f"  Warning: Could not fetch {doc_id}: {e}")
 
         if self.verbosity >= 1:
-            print(f"Fetched {len(documents)} taxa documents")
+            print(f"Fetched {len(documents)} treatment documents")
 
         return documents
 
@@ -245,7 +245,7 @@ class TaxaDecisionTreeClassifier:
         test_size: float = 0.2,
         limit: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Train the classifier on taxa descriptions.
+        """Train the classifier on treatment descriptions.
 
         Args:
             taxa_ids: List of specific taxon IDs to train on. If None, uses all.
@@ -261,7 +261,7 @@ class TaxaDecisionTreeClassifier:
             documents = self.fetch_taxa(taxa_ids, limit=limit)
 
         if len(documents) < 2:
-            raise ValueError(f"Need at least 2 taxa documents for training, got {len(documents)}")
+            raise ValueError(f"Need at least 2 treatment documents for training, got {len(documents)}")
 
         # Prepare data
         if self.verbosity >= 1:
@@ -281,7 +281,7 @@ class TaxaDecisionTreeClassifier:
         y = np.array([self.reverse_mapping[taxa_id] for taxa_id in ids])
 
         if self.verbosity >= 1:
-            print(f"Training on {len(descriptions)} descriptions from {len(unique_ids)} unique taxa")
+            print(f"Training on {len(descriptions)} descriptions from {len(unique_ids)} unique treatments")
 
         # Create and fit TF-IDF vectorizer
         if self.verbosity >= 1:
@@ -374,7 +374,7 @@ class TaxaDecisionTreeClassifier:
         self,
         descriptions: Union[str, List[str]]
     ) -> List[Dict[str, Any]]:
-        """Predict taxa IDs for given descriptions.
+        """Predict treatment IDs for given descriptions.
 
         Args:
             descriptions: Single description or list of descriptions
@@ -422,7 +422,7 @@ class TaxaDecisionTreeClassifier:
         self,
         description: str
     ) -> str:
-        """Predict a single taxa ID for a description.
+        """Predict a single treatment ID for a description.
 
         Args:
             description: Description text
@@ -769,7 +769,7 @@ class TaxaDecisionTreeClassifier:
 
 
 def main():
-    """Command-line interface for the taxa classifier."""
+    """Command-line interface for the treatment classifier."""
     import argparse
 
     parser = argparse.ArgumentParser(
