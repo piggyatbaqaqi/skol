@@ -2305,9 +2305,25 @@ class TextClassifierView(APIView):
                 sys.path.insert(0, skol_root)
             from taxa_classifier.taxa_decision_tree import TaxaDecisionTreeClassifier
 
+            # Resolve treatments DB from the active experiment (post-Step-3
+            # rename uses ``databases.treatments``, not ``databases.taxa``).
+            # Falls back to settings.TREATMENTS_DB_NAME so the endpoint
+            # still works without an experiment selected.  Hardcoding
+            # ``skol_taxa_dev`` here used to silently 404 every taxa_id
+            # against the old v1 DB → "Need at least 2 taxa documents,
+            # got 0".  See django/search/views.py:1062 for the matching
+            # search-side fix.
+            _, exp = get_user_experiment(request)
+            default_treatments_db = getattr(
+                settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
+            )
+            classifier_db = (
+                exp.get('databases', {}).get('treatments', default_treatments_db)
+                if exp else default_treatments_db
+            )
             classifier = TaxaDecisionTreeClassifier(
                 couchdb_url=settings.COUCHDB_URL,
-                database='skol_taxa_dev',
+                database=classifier_db,
                 username=settings.COUCHDB_USERNAME,
                 password=settings.COUCHDB_PASSWORD,
                 max_depth=max_depth,
@@ -2387,9 +2403,24 @@ class JsonClassifierView(APIView):
                 sys.path.insert(0, skol_root)
             from taxa_classifier.taxa_json_classifier import TaxaJsonClassifier
 
+            # Resolve the per-experiment ``treatments_full`` DB (the
+            # one bin/treatments_to_json.py writes JSON-annotated docs
+            # into).  Fallback chain: experiment.databases.treatments_full
+            # → settings.VOCAB_TREE_DB → "skol_treatments_full_dev".
+            # Same migration-gap fix as the text classifier above.
+            _, exp = get_user_experiment(request)
+            default_full_db = getattr(
+                settings, 'VOCAB_TREE_DB', 'skol_treatments_full_dev',
+            )
+            classifier_db = (
+                exp.get('databases', {}).get(
+                    'treatments_full', default_full_db,
+                )
+                if exp else default_full_db
+            )
             classifier = TaxaJsonClassifier(
                 couchdb_url=settings.COUCHDB_URL,
-                database='skol_taxa_full_dev',
+                database=classifier_db,
                 username=settings.COUCHDB_USERNAME,
                 password=settings.COUCHDB_PASSWORD,
                 max_depth=max_depth,
