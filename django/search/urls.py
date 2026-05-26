@@ -74,13 +74,13 @@ urlpatterns = [
     path('search/nomenclature/', NomenclatureSearchView.as_view(), name='nomenclature-search'),
     path('search/', SearchView.as_view(), name='search'),
     # Taxa document info
-    path('taxa/<str:taxa_id>/', TreatmentsInfoView.as_view(), name='taxa-info'),
+    path('taxa/<str:treatment_id>/', TreatmentsInfoView.as_view(), name='treatments-info'),
     # PDF endpoints
     path('pdf/<str:db_name>/<str:doc_id>/',
          PDFAttachmentView.as_view(), name='pdf-attachment'),
     path('pdf/<str:db_name>/<str:doc_id>/<str:attachment_name>/',
          PDFAttachmentView.as_view(), name='pdf-attachment-named'),
-    path('taxa/<str:taxa_id>/pdf/',
+    path('taxa/<str:treatment_id>/pdf/',
          PDFFromTreatmentsView.as_view(), name='taxa-pdf'),
 
     # Identifier types (reference data)
@@ -148,7 +148,7 @@ urlpatterns = [
     path('classifier/json/', JsonClassifierView.as_view(), name='classifier-json'),
 
     # Source context viewer endpoint
-    path('taxa/<str:taxa_id>/context/', SourceContextView.as_view(), name='taxa-context'),
+    path('taxa/<str:treatment_id>/context/', SourceContextView.as_view(), name='treatments-context'),
 
     # User settings
     path('user-settings/', UserSettingsView.as_view(), name='user-settings'),

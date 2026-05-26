@@ -264,7 +264,7 @@
             </div>
             <div class="stat-box">
                 <div class="stat-label">Taxa Records</div>
-                <div class="stat-value">{{ total_taxa_records|default:"0" }}</div>
+                <div class="stat-value">{{ total_treatments_records|default:"0" }}</div>
             </div>
         </div>
 
@@ -302,7 +302,7 @@
                         <span class="percentage">({{ source.taxonomy_percentage }}%)</span>
                     </td>
                     <td style="text-align: right;">
-                        <span class="stat-badge">{{ source.taxa_records }}</span>
+                        <span class="stat-badge">{{ source.treatments_records }}</span>
                     </td>
                 </tr>
                 {% endfor %}

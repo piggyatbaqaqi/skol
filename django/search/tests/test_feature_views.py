@@ -79,7 +79,7 @@ class TestTextClassifierViewValidation(TestCase):
         """PUT requests should return 405 Method Not Allowed."""
         response = self.client.put(
             self.url,
-            data=json.dumps({'taxa_ids': ['id1']}),
+            data=json.dumps({'treatment_ids': ['id1']}),
             content_type='application/json',
         )
         assert response.status_code == 405
@@ -99,40 +99,40 @@ class TestTextClassifierViewValidation(TestCase):
         assert response.status_code == 400
         data = response.json()
         assert 'error' in data
-        assert 'taxa_ids' in data['error']
+        assert 'treatment_ids' in data['error']
 
     def test_empty_taxa_ids_returns_400(self) -> None:
-        """Empty taxa_ids list should return 400."""
+        """Empty treatment_ids list should return 400."""
         response = self.client.post(
             self.url,
-            data=json.dumps({'taxa_ids': []}),
+            data=json.dumps({'treatment_ids': []}),
             content_type='application/json',
         )
         assert response.status_code == 400
 
     def test_taxa_ids_not_list_returns_400(self) -> None:
-        """taxa_ids as a string should return 400."""
+        """treatment_ids as a string should return 400."""
         response = self.client.post(
             self.url,
-            data=json.dumps({'taxa_ids': 'not-a-list'}),
+            data=json.dumps({'treatment_ids': 'not-a-list'}),
             content_type='application/json',
         )
         assert response.status_code == 400
 
     def test_taxa_ids_null_returns_400(self) -> None:
-        """taxa_ids: null should return 400."""
+        """treatment_ids: null should return 400."""
         response = self.client.post(
             self.url,
-            data=json.dumps({'taxa_ids': None}),
+            data=json.dumps({'treatment_ids': None}),
             content_type='application/json',
         )
         assert response.status_code == 400
 
     def test_taxa_ids_integer_returns_400(self) -> None:
-        """taxa_ids as an integer should return 400."""
+        """treatment_ids as an integer should return 400."""
         response = self.client.post(
             self.url,
-            data=json.dumps({'taxa_ids': 42}),
+            data=json.dumps({'treatment_ids': 42}),
             content_type='application/json',
         )
         assert response.status_code == 400
@@ -165,7 +165,7 @@ class TestTextClassifierViewFunctional(TestCase):
             response = self.client.post(
                 self.url,
                 data=json.dumps({
-                    'taxa_ids': ['id1', 'id2', 'id3'],
+                    'treatment_ids': ['id1', 'id2', 'id3'],
                     'top_n': 10,
                     'max_depth': 5,
                 }),
@@ -186,9 +186,9 @@ class TestTextClassifierViewFunctional(TestCase):
 
         # Metadata structure
         meta = data['metadata']
-        assert set(meta.keys()) == {'n_classes', 'n_features', 'tree_depth', 'taxa_count'}
+        assert set(meta.keys()) == {'n_classes', 'n_features', 'tree_depth', 'treatments_count'}
         assert meta['n_classes'] == 5
-        assert meta['taxa_count'] == 3
+        assert meta['treatments_count'] == 3
 
         # Tree JSON passed through
         assert data['tree_json'] == MOCK_TREE_JSON
@@ -211,7 +211,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -239,7 +239,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -273,7 +273,7 @@ class TestTextClassifierViewFunctional(TestCase):
             response = self.client.post(
                 self.url,
                 data=json.dumps({
-                    'taxa_ids': ['id1', 'id2'],
+                    'treatment_ids': ['id1', 'id2'],
                     'top_n': 15,
                     'max_depth': 7,
                     'min_df': 2,
@@ -309,7 +309,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -320,11 +320,16 @@ class TestTextClassifierViewFunctional(TestCase):
 
     @patch('search.views.settings')
     def test_classifier_uses_correct_database(self, mock_settings) -> None:
-        """Text classifier should use 'skol_taxa_dev' database."""
+        """Text classifier reads the treatments DB from
+        settings.TREATMENTS_DB_NAME when no experiment is set on the
+        request — the same fallback the search view uses.  Pre-rename
+        this asserted the hardcoded ``skol_taxa_dev``; now it asserts
+        the settings value flows through unmodified."""
         mock_settings.SKOL_ROOT_PATH = '/fake/path'
         mock_settings.COUCHDB_URL = 'http://localhost:5984'
         mock_settings.COUCHDB_USERNAME = 'admin'
         mock_settings.COUCHDB_PASSWORD = 'password'
+        mock_settings.TREATMENTS_DB_NAME = 'skol_treatments_dev'
 
         mock_classifier = _mock_text_classifier()
         mock_cls = MagicMock(return_value=mock_classifier)
@@ -337,12 +342,12 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
         ctor_kwargs = mock_cls.call_args[1]
-        assert ctor_kwargs['database'] == 'skol_taxa_dev'
+        assert ctor_kwargs['database'] == 'skol_treatments_dev'
 
     @patch('search.views.settings')
     def test_classifier_trains_with_test_size_zero(self, mock_settings) -> None:
@@ -362,12 +367,12 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
         mock_classifier.fit.assert_called_once_with(
-            taxa_ids=['id1', 'id2'], test_size=0.0
+            treatment_ids=['id1', 'id2'], test_size=0.0
         )
 
     @patch('search.views.settings')
@@ -389,7 +394,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1']}),
+                data=json.dumps({'treatment_ids': ['id1']}),
                 content_type='application/json',
             )
 
@@ -415,7 +420,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -440,7 +445,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -467,7 +472,7 @@ class TestTextClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -498,7 +503,7 @@ class TestJsonClassifierViewValidation(TestCase):
     def test_empty_taxa_ids_returns_400(self) -> None:
         response = self.client.post(
             self.url,
-            data=json.dumps({'taxa_ids': []}),
+            data=json.dumps({'treatment_ids': []}),
             content_type='application/json',
         )
         assert response.status_code == 400
@@ -506,7 +511,7 @@ class TestJsonClassifierViewValidation(TestCase):
     def test_taxa_ids_not_list_returns_400(self) -> None:
         response = self.client.post(
             self.url,
-            data=json.dumps({'taxa_ids': {'key': 'value'}}),
+            data=json.dumps({'treatment_ids': {'key': 'value'}}),
             content_type='application/json',
         )
         assert response.status_code == 400
@@ -543,7 +548,7 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -558,11 +563,15 @@ class TestJsonClassifierViewFunctional(TestCase):
 
     @patch('search.views.settings')
     def test_classifier_uses_correct_database(self, mock_settings) -> None:
-        """JSON classifier should use 'skol_taxa_full_dev' database."""
+        """JSON classifier reads the treatments_full DB from
+        settings.VOCAB_TREE_DB when no experiment is set on the
+        request — pre-rename this asserted the hardcoded
+        ``skol_taxa_full_dev`` literal."""
         mock_settings.SKOL_ROOT_PATH = '/fake/path'
         mock_settings.COUCHDB_URL = 'http://localhost:5984'
         mock_settings.COUCHDB_USERNAME = 'admin'
         mock_settings.COUCHDB_PASSWORD = 'password'
+        mock_settings.VOCAB_TREE_DB = 'skol_treatments_full_dev'
 
         mock_classifier = _mock_json_classifier()
         mock_cls = MagicMock(return_value=mock_classifier)
@@ -575,12 +584,12 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
         ctor_kwargs = mock_cls.call_args[1]
-        assert ctor_kwargs['database'] == 'skol_taxa_full_dev'
+        assert ctor_kwargs['database'] == 'skol_treatments_full_dev'
 
     @patch('search.views.settings')
     def test_classifier_trains_with_test_size_zero(self, mock_settings) -> None:
@@ -600,12 +609,12 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2', 'id3']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2', 'id3']}),
                 content_type='application/json',
             )
 
         mock_classifier.fit.assert_called_once_with(
-            taxa_ids=['id1', 'id2', 'id3'], test_size=0.0
+            treatment_ids=['id1', 'id2', 'id3'], test_size=0.0
         )
 
     @patch('search.views.settings')
@@ -627,7 +636,7 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1']}),
+                data=json.dumps({'treatment_ids': ['id1']}),
                 content_type='application/json',
             )
 
@@ -653,7 +662,7 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -679,7 +688,7 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 
@@ -710,7 +719,7 @@ class TestJsonClassifierViewFunctional(TestCase):
         }):
             response = self.client.post(
                 self.url,
-                data=json.dumps({'taxa_ids': ['id1', 'id2']}),
+                data=json.dumps({'treatment_ids': ['id1', 'id2']}),
                 content_type='application/json',
             )
 

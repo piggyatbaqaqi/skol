@@ -117,9 +117,9 @@ class ExperimentListView(APIView):
                     'embedding': doc.get(
                         'redis_keys', {}
                     ).get('embedding', ''),
-                    'taxa_db': doc.get(
+                    'treatments_db': doc.get(
                         'databases', {}
-                    ).get('taxa', ''),
+                    ).get('treatments', ''),
                 })
 
             return Response({
@@ -1012,7 +1012,7 @@ class NomenclatureSearchView(APIView):
             )
 
 
-def _resolve_migrated_taxa_id(taxa_id, auth):
+def _resolve_migrated_taxa_id(treatment_id, auth):
     """Look up a taxon ID in the migration database to find its new content-based ID.
 
     Returns the new ID if found, or None if no mapping exists.
@@ -1020,7 +1020,7 @@ def _resolve_migrated_taxa_id(taxa_id, auth):
     migration_db = os.environ.get('TAXA_MIGRATION_DB', 'skol_taxa_migration_dev')
     couchdb_url = settings.COUCHDB_URL
     try:
-        migration_url = f"{couchdb_url}/{migration_db}/{taxa_id}"
+        migration_url = f"{couchdb_url}/{migration_db}/{treatment_id}"
         resp = requests.get(migration_url, auth=auth, timeout=10)
         if resp.status_code == 200:
             return resp.json().get('new_id')
@@ -1033,7 +1033,7 @@ class TreatmentsInfoView(APIView):
     """
     API endpoint to get taxa document information including source PDF details.
 
-    GET /api/taxa/<taxa_id>/
+    GET /api/treatments/<treatment_id>/
     Returns: Taxa document with source information for PDF retrieval
 
     Response format matches search result format for use with TaxonResultWidget:
@@ -1049,7 +1049,7 @@ class TreatmentsInfoView(APIView):
     }
     """
 
-    def get(self, request, taxa_id, taxa_db=None):
+    def get(self, request, treatment_id, treatments_db=None):
         try:
             # Build CouchDB URL for the taxa document
             couchdb_url = settings.COUCHDB_URL
@@ -1066,44 +1066,44 @@ class TreatmentsInfoView(APIView):
             default_treatments_db = getattr(
                 settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
             )
-            if taxa_db is None:
+            if treatments_db is None:
                 _, exp = get_user_experiment(request)
                 if exp:
-                    taxa_db = exp.get('databases', {}).get(
+                    treatments_db = exp.get('databases', {}).get(
                         'treatments', default_treatments_db,
                     )
                 else:
-                    taxa_db = default_treatments_db
+                    treatments_db = default_treatments_db
 
             # Determine the correct database based on document ID prefix
-            if taxa_id.startswith('collection_'):
-                taxa_db = os.environ.get('COLLECTIONS_DB_NAME', 'skol_collections_dev')
+            if treatment_id.startswith('collection_'):
+                treatments_db = os.environ.get('COLLECTIONS_DB_NAME', 'skol_collections_dev')
 
             # Fetch the taxa document
-            taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
+            taxa_url = f"{couchdb_url}/{treatments_db}/{treatment_id}"
             response = requests.get(taxa_url, auth=auth, timeout=30)
 
-            # If not found and taxa_id doesn't have prefix, try with taxon_ prefix
+            # If not found and treatment_id doesn't have prefix, try with taxon_ prefix
             # This handles legacy embeddings that don't include the prefix
-            if response.status_code == 404 and not taxa_id.startswith('taxon_') and not taxa_id.startswith('collection_'):
-                taxa_url_with_prefix = f"{couchdb_url}/{taxa_db}/taxon_{taxa_id}"
+            if response.status_code == 404 and not treatment_id.startswith('taxon_') and not treatment_id.startswith('collection_'):
+                taxa_url_with_prefix = f"{couchdb_url}/{treatments_db}/taxon_{treatment_id}"
                 response = requests.get(taxa_url_with_prefix, auth=auth, timeout=30)
                 if response.status_code == 200:
-                    # Update taxa_id to include the prefix for consistency
-                    taxa_id = f"taxon_{taxa_id}"
+                    # Update treatment_id to include the prefix for consistency
+                    treatment_id = f"taxon_{treatment_id}"
 
             # If still not found, check migration mapping for old->new ID
             if response.status_code == 404:
-                new_id = _resolve_migrated_taxa_id(taxa_id, auth)
+                new_id = _resolve_migrated_taxa_id(treatment_id, auth)
                 if new_id:
-                    taxa_url = f"{couchdb_url}/{taxa_db}/{new_id}"
+                    taxa_url = f"{couchdb_url}/{treatments_db}/{new_id}"
                     response = requests.get(taxa_url, auth=auth, timeout=30)
                     if response.status_code == 200:
-                        taxa_id = new_id
+                        treatment_id = new_id
 
             if response.status_code == 404:
                 return Response(
-                    {'error': f'Taxa document not found: {taxa_id}'},
+                    {'error': f'Taxa document not found: {treatment_id}'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
@@ -1111,7 +1111,7 @@ class TreatmentsInfoView(APIView):
             taxa_doc = response.json()
 
             # Check if this is a collection document
-            is_collection = taxa_id.startswith('collection_')
+            is_collection = treatment_id.startswith('collection_')
 
             # Extract ingest metadata for PDF linking
             ingest = taxa_doc.get('ingest', {})
@@ -1133,8 +1133,8 @@ class TreatmentsInfoView(APIView):
                 collection_meta = taxa_doc.get('collection', {})
                 owner = taxa_doc.get('owner', {})
                 result = {
-                    'taxon_id': taxa_id,
-                    'taxa_db': taxa_db,
+                    'taxon_id': treatment_id,
+                    'treatments_db': treatments_db,
                     'ResultType': 'collection',
                     # Search result compatible fields
                     'Title': taxa_doc.get('treatment', ''),  # nomenclature
@@ -1151,8 +1151,8 @@ class TreatmentsInfoView(APIView):
             else:
                 # Return taxa info in search result format for widget compatibility
                 result = {
-                    'taxon_id': taxa_id,
-                    'taxa_db': taxa_db,
+                    'taxon_id': treatment_id,
+                    'treatments_db': treatments_db,
                     'ResultType': 'taxon',
                     # Search result compatible fields
                     'Title': taxa_doc.get('treatment', ''),
@@ -1175,7 +1175,7 @@ class TreatmentsInfoView(APIView):
             return Response(result)
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"CouchDB request failed for taxa {taxa_id}: {e}")
+            logger.error(f"CouchDB request failed for taxa {treatment_id}: {e}")
             return Response(
                 {'error': f'Failed to fetch taxa document: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1243,10 +1243,10 @@ class PDFAttachmentView(APIView):
 
 class PDFFromTreatmentsView(APIView):
     """
-    API endpoint to retrieve PDF from a taxa document's source reference.
+    API endpoint to retrieve PDF from a treatment document's source reference.
 
-    GET /api/taxa/<taxa_id>/pdf/
-    GET /api/taxa/<taxa_id>/pdf/?taxa_db=<taxa_db_name>
+    GET /api/treatments/<treatment_id>/pdf/
+    GET /api/treatments/<treatment_id>/pdf/?treatments_db=<treatments_db_name>
 
     This is a convenience endpoint that:
     1. Looks up the taxa document
@@ -1254,10 +1254,10 @@ class PDFFromTreatmentsView(APIView):
     3. Returns the PDF attachment from the source document
     """
 
-    def get(self, request, taxa_id):
+    def get(self, request, treatment_id):
         try:
-            taxa_db = request.GET.get(
-                'taxa_db',
+            treatments_db = request.GET.get(
+                'treatments_db',
                 getattr(settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev'),
             )
 
@@ -1266,21 +1266,21 @@ class PDFFromTreatmentsView(APIView):
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
 
             # Fetch the taxa document to get source info
-            taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
+            taxa_url = f"{couchdb_url}/{treatments_db}/{treatment_id}"
             taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
 
             # Check migration mapping for old->new ID
             if taxa_response.status_code == 404:
-                new_id = _resolve_migrated_taxa_id(taxa_id, auth)
+                new_id = _resolve_migrated_taxa_id(treatment_id, auth)
                 if new_id:
-                    taxa_url = f"{couchdb_url}/{taxa_db}/{new_id}"
+                    taxa_url = f"{couchdb_url}/{treatments_db}/{new_id}"
                     taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
                     if taxa_response.status_code == 200:
-                        taxa_id = new_id
+                        treatment_id = new_id
 
             if taxa_response.status_code == 404:
                 return Response(
-                    {'error': f'Taxa document not found: {taxa_id}'},
+                    {'error': f'Taxa document not found: {treatment_id}'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
@@ -1320,9 +1320,9 @@ class PDFFromTreatmentsView(APIView):
             # Include page number in filename if available
             pdf_page = taxa_doc.get('pdf_page')
             if pdf_page:
-                filename = f"{taxa_id}_page{pdf_page}.pdf"
+                filename = f"{treatment_id}_page{pdf_page}.pdf"
             else:
-                filename = f"{taxa_id}.pdf"
+                filename = f"{treatment_id}.pdf"
 
             disposition = request.GET.get('download', 'inline')
             if disposition == 'true':
@@ -1337,7 +1337,7 @@ class PDFFromTreatmentsView(APIView):
             return http_response
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"CouchDB request failed for taxa {taxa_id}: {e}")
+            logger.error(f"CouchDB request failed for taxa {treatment_id}: {e}")
             return Response(
                 {'error': f'Failed to fetch PDF: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -2276,24 +2276,24 @@ class TextClassifierView(APIView):
     """REST interface for TreatmentsDecisionTreeClassifier (description text features).
 
     POST /api/classifier/text/
-    Body: { taxa_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
+    Body: { treatment_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
     Response: {
         features: [{name, importance, display_text}, ...],
-        metadata: {n_classes, n_features, tree_depth, taxa_count},
+        metadata: {n_classes, n_features, tree_depth, treatments_count},
         tree_json: {...}
     }
     """
 
     def post(self, request):
-        taxa_ids = request.data.get('taxa_ids', [])
+        treatment_ids = request.data.get('treatment_ids', [])
         top_n = request.data.get('top_n', 30)
         max_depth = request.data.get('max_depth', 10)
         min_df = request.data.get('min_df', 1)
         max_df = request.data.get('max_df', 1.0)
 
-        if not taxa_ids or not isinstance(taxa_ids, list):
+        if not treatment_ids or not isinstance(treatment_ids, list):
             return Response(
-                {'error': 'taxa_ids must be a non-empty list'},
+                {'error': 'treatment_ids must be a non-empty list'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -2309,7 +2309,7 @@ class TextClassifierView(APIView):
             # rename uses ``databases.treatments``, not ``databases.taxa``).
             # Falls back to settings.TREATMENTS_DB_NAME so the endpoint
             # still works without an experiment selected.  Hardcoding
-            # ``skol_taxa_dev`` here used to silently 404 every taxa_id
+            # ``skol_taxa_dev`` here used to silently 404 every treatment_id
             # against the old v1 DB → "Need at least 2 taxa documents,
             # got 0".  See django/search/views.py:1062 for the matching
             # search-side fix.
@@ -2332,7 +2332,7 @@ class TextClassifierView(APIView):
                 verbosity=0,
             )
 
-            stats = classifier.fit(taxa_ids=taxa_ids, test_size=0.0)
+            stats = classifier.fit(treatment_ids=treatment_ids, test_size=0.0)
             importances = classifier.get_feature_importances(top_n=top_n)
             tree_json = classifier.tree_to_json(max_depth=max_depth)
 
@@ -2351,7 +2351,7 @@ class TextClassifierView(APIView):
                     'n_classes': stats['n_classes'],
                     'n_features': stats['n_features'],
                     'tree_depth': stats['tree_depth'],
-                    'taxa_count': len(taxa_ids),
+                    'treatments_count': len(treatment_ids),
                 },
                 'tree_json': tree_json,
             })
@@ -2374,24 +2374,24 @@ class JsonClassifierView(APIView):
     """REST interface for TreatmentsJSONClassifier (structured JSON annotation features).
 
     POST /api/classifier/json/
-    Body: { taxa_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
+    Body: { treatment_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
     Response: {
         features: [{name, importance, display_text}, ...],
-        metadata: {n_classes, n_features, tree_depth, taxa_count},
+        metadata: {n_classes, n_features, tree_depth, treatments_count},
         tree_json: {...}
     }
     """
 
     def post(self, request):
-        taxa_ids = request.data.get('taxa_ids', [])
+        treatment_ids = request.data.get('treatment_ids', [])
         top_n = request.data.get('top_n', 30)
         max_depth = request.data.get('max_depth', 10)
         min_df = request.data.get('min_df', 1)
         max_df = request.data.get('max_df', 1.0)
 
-        if not taxa_ids or not isinstance(taxa_ids, list):
+        if not treatment_ids or not isinstance(treatment_ids, list):
             return Response(
-                {'error': 'taxa_ids must be a non-empty list'},
+                {'error': 'treatment_ids must be a non-empty list'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -2429,7 +2429,7 @@ class JsonClassifierView(APIView):
                 verbosity=0,
             )
 
-            stats = classifier.fit(taxa_ids=taxa_ids, test_size=0.0)
+            stats = classifier.fit(treatment_ids=treatment_ids, test_size=0.0)
             importances = classifier.get_feature_importances(top_n=top_n)
             tree_json = classifier.tree_to_json(max_depth=max_depth)
 
@@ -2449,7 +2449,7 @@ class JsonClassifierView(APIView):
                     'n_classes': stats['n_classes'],
                     'n_features': stats['n_features'],
                     'tree_depth': stats['tree_depth'],
-                    'taxa_count': len(taxa_ids),
+                    'treatments_count': len(treatment_ids),
                 },
                 'tree_json': tree_json,
             })
@@ -2497,7 +2497,7 @@ def parse_span(span):
 
 
 def _collect_ann_db_candidates(
-    taxa_doc, ingest_db, taxa_db, auth, couchdb_url,
+    taxa_doc, ingest_db, treatments_db, auth, couchdb_url,
 ):
     """Build the priority-ordered list of databases to probe for the .ann
     attachment that underlies a taxa document's spans.
@@ -2507,7 +2507,7 @@ def _collect_ann_db_candidates(
       2. ``ingest_db`` — legacy behaviour from the pre-experiment era when
          .ann attachments lived next to the source text.
       3. ``databases.annotations`` on the skol_experiments document whose
-         ``databases.treatments`` equals ``taxa_db``.  This is how the
+         ``databases.treatments`` equals ``treatments_db``.  This is how the
          taxpub_v1 family of experiments stores .ann files in a separate
          ``skol_exp_*_ann`` database, while the treatments DB only holds
          the structured per-treatment records.
@@ -2531,7 +2531,7 @@ def _collect_ann_db_candidates(
         resp = requests.post(
             find_url,
             json={
-                'selector': {'databases.treatments': taxa_db},
+                'selector': {'databases.treatments': treatments_db},
                 'limit': 1,
             },
             auth=auth,
@@ -2553,13 +2553,13 @@ class SourceContextView(APIView):
     Shows all spans for a field in a single window, from the start of the first span
     to the end of the last span, with all spans highlighted.
 
-    GET /api/taxa/<taxa_id>/context/
+    GET /api/treatments/<treatment_id>/context/
     Query params:
       - field: section name — one of: nomenclature, description, diagnosis,
                etymology, distribution, materials_examined, type_designation,
                biology, notes, figure_caption  (default: 'description')
       - context_chars: characters of context before/after span range (default: 500)
-      - taxa_db: database name (default: 'skol_taxa_dev')
+      - treatments_db: database name (default: 'skol_taxa_dev')
 
     Response:
       {
@@ -2571,7 +2571,7 @@ class SourceContextView(APIView):
       }
     """
 
-    def get(self, request, taxa_id):
+    def get(self, request, treatment_id):
         collection_id = request.GET.get('collection_id')
         collection = None
         if collection_id:
@@ -2583,7 +2583,7 @@ class SourceContextView(APIView):
             user=request.user if request.user.is_authenticated else None,
             collection=collection,
             event_type='source_context_viewed',
-            payload={'taxa_id': taxa_id},
+            payload={'treatment_id': treatment_id},
         )
         try:
             # Parse query parameters
@@ -2594,15 +2594,15 @@ class SourceContextView(APIView):
             # field name moved from 'taxa' → 'treatments' in Step 3-dev
             # (docs/taxon_to_treatment_plan.md); the default value also
             # flipped to skol_treatments_dev.
-            taxa_db = request.GET.get('taxa_db')
-            if not taxa_db:
+            treatments_db = request.GET.get('treatments_db')
+            if not treatments_db:
                 _, exp = get_user_experiment(request)
                 if exp:
-                    taxa_db = exp.get(
+                    treatments_db = exp.get(
                         'databases', {}
                     ).get('treatments', 'skol_treatments_dev')
                 else:
-                    taxa_db = 'skol_treatments_dev'
+                    treatments_db = 'skol_treatments_dev'
 
             _VALID_FIELDS = frozenset({
                 'nomenclature', 'description', 'diagnosis', 'etymology',
@@ -2623,21 +2623,21 @@ class SourceContextView(APIView):
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
 
             # Fetch the taxa document
-            taxa_url = f"{couchdb_url}/{taxa_db}/{taxa_id}"
+            taxa_url = f"{couchdb_url}/{treatments_db}/{treatment_id}"
             taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
 
             # Check migration mapping for old->new ID
             if taxa_response.status_code == 404:
-                new_id = _resolve_migrated_taxa_id(taxa_id, auth)
+                new_id = _resolve_migrated_taxa_id(treatment_id, auth)
                 if new_id:
-                    taxa_url = f"{couchdb_url}/{taxa_db}/{new_id}"
+                    taxa_url = f"{couchdb_url}/{treatments_db}/{new_id}"
                     taxa_response = requests.get(taxa_url, auth=auth, timeout=30)
                     if taxa_response.status_code == 200:
-                        taxa_id = new_id
+                        treatment_id = new_id
 
             if taxa_response.status_code == 404:
                 return Response(
-                    {'error': f'Taxa document not found: {taxa_id}'},
+                    {'error': f'Taxa document not found: {treatment_id}'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
@@ -2676,7 +2676,7 @@ class SourceContextView(APIView):
             ann_db_candidates = _collect_ann_db_candidates(
                 taxa_doc=taxa_doc,
                 ingest_db=ingest_db,
-                taxa_db=taxa_db,
+                treatments_db=treatments_db,
                 auth=auth,
                 couchdb_url=couchdb_url,
             )
@@ -2781,7 +2781,7 @@ class SourceContextView(APIView):
             })
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"CouchDB request failed for taxa {taxa_id} context: {e}")
+            logger.error(f"CouchDB request failed for taxa {treatment_id} context: {e}")
             return Response(
                 {'error': f'Failed to fetch context: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

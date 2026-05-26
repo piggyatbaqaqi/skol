@@ -125,7 +125,7 @@ def build_sources_stats(
                 source_stats[journal_name] = {
                     'total': 0,
                     'taxonomy': 0,
-                    'taxa': 0,
+                    'treatments': 0,
                 }
 
             # Increment total count
@@ -147,7 +147,7 @@ def build_sources_stats(
         taxa_count = 0
 
         if verbosity >= 1:
-            print(f"Scanning taxa database: {treatments_db_name}")
+            print(f"Scanning treatments database: {treatments_db_name}")
 
         for taxa_doc_id in taxa_db:
             if taxa_doc_id.startswith('_design/'):
@@ -158,20 +158,20 @@ def build_sources_stats(
                 taxa_count += 1
 
                 if verbosity >= 2 and taxa_count % 1000 == 0:
-                    print(f"  Processed {taxa_count} taxa documents...")
+                    print(f"  Processed {taxa_count} treatment documents...")
 
                 # Get the ingest doc_id from the taxa document
                 ingest = taxa_doc.get('ingest', {})
                 ingest_doc_id = ingest.get('_id')
                 if ingest_doc_id and ingest_doc_id in doc_to_journal:
                     journal_name = doc_to_journal[ingest_doc_id]
-                    source_stats[journal_name]['taxa'] += 1
+                    source_stats[journal_name]['treatments'] += 1
 
             except Exception:
                 continue
 
         if verbosity >= 1:
-            print(f"  Found {taxa_count} taxa documents")
+            print(f"  Found {taxa_count} treatment documents")
     else:
         if verbosity >= 1:
             print(f"Taxa database '{treatments_db_name}' not found, skipping taxa counts")
@@ -180,7 +180,7 @@ def build_sources_stats(
     sources = []
     total_records = 0
     total_taxonomy_documents = 0
-    total_taxa_records = 0
+    total_treatments_records = 0
 
     for journal_name, stats in source_stats.items():
         source_info = {
@@ -194,7 +194,7 @@ def build_sources_stats(
                 (stats['taxonomy'] / stats['total'] * 100) if stats['total'] > 0 else 0,
                 1
             ),
-            'taxa_records': stats['taxa'],
+            'treatments_records': stats['treatments'],
         }
 
         # Try to get additional information from PublicationRegistry
@@ -219,7 +219,7 @@ def build_sources_stats(
         sources.append(source_info)
         total_records += stats['total']
         total_taxonomy_documents += stats['taxonomy']
-        total_taxa_records += stats['taxa']
+        total_treatments_records += stats['treatments']
 
     # Sort sources by name
     sources.sort(key=lambda x: x['name'].lower())
@@ -228,9 +228,9 @@ def build_sources_stats(
         'sources': sources,
         'total_records': total_records,
         'total_taxonomy_documents': total_taxonomy_documents,
-        'total_taxa_records': total_taxa_records,
+        'total_treatments_records': total_treatments_records,
         'ingest_db_name': ingest_db_name,
-        'taxa_db_name': treatments_db_name,
+        'treatments_db_name': treatments_db_name,
         'created_at': datetime.now().isoformat(),
         'version': '1.0',
     }
@@ -240,7 +240,7 @@ def build_sources_stats(
         print(f"  Sources: {len(sources)}")
         print(f"  Total records: {total_records}")
         print(f"  Taxonomy documents: {total_taxonomy_documents}")
-        print(f"  Taxa records: {total_taxa_records}")
+        print(f"  Treatments records: {total_treatments_records}")
 
     return result
 

@@ -54,7 +54,7 @@ const SourceContextViewer = ({
         context_chars: contextChars.toString(),
       });
       if (taxaDb) {
-        params.set('taxa_db', taxaDb);
+        params.set('treatments_db', taxaDb);
       }
 
       const response = await fetch(

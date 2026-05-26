@@ -29,7 +29,7 @@ function getCSRFToken() {
  *
  * @param {Object} props
  * @param {Array} props.features - [{name, importance, display_text}, ...]
- * @param {Object} props.metadata - {n_classes, n_features, tree_depth, taxa_count}
+ * @param {Object} props.metadata - {n_classes, n_features, tree_depth, treatments_count}
  * @param {boolean} props.loading
  * @param {string|null} props.error
  * @param {Set} props.selectedFeatures - set of selected feature names
@@ -110,7 +110,7 @@ const FeatureBrowserPanel = ({
     >
       {metadata && (
         <div className="feature-metadata">
-          {metadata.taxa_count} taxa, {metadata.n_features} features, depth {metadata.tree_depth}
+          {metadata.treatments_count} taxa, {metadata.n_features} features, depth {metadata.tree_depth}
         </div>
       )}
 
@@ -235,7 +235,7 @@ const FeatureSelectionWidget = ({
    */
   useEffect(() => {
     const handleSearchResults = (event) => {
-      const ids = event.detail?.taxa_ids;
+      const ids = event.detail?.treatment_ids;
       if (ids && ids.length > 0) {
         setTaxaIds(ids);
         // Reset fetched tracking so tabs re-fetch
@@ -282,7 +282,7 @@ const FeatureSelectionWidget = ({
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          taxa_ids: ids,
+          treatment_ids: ids,
           top_n: settings.top_n,
           max_depth: settings.max_depth,
           min_df: settings.min_df,

@@ -2785,7 +2785,7 @@
                     if (taxaIds.length > 0) {
                         document.dispatchEvent(
                             new CustomEvent('search-results-ready', {
-                                detail: { taxa_ids: taxaIds }
+                                detail: { treatment_ids: taxaIds }
                             })
                         );
                     }
@@ -3001,14 +3001,14 @@
                             const hasNomen = !syntheticNomen.includes((result.Title || '').trim());
                             const nomenclatureViewer = hasNomen ? `
                             <div data-source-context-viewer
-                                 data-taxa-id="${escapeHtml(result.taxon_id)}"
+                                 data-treatment-id="${escapeHtml(result.taxon_id)}"
                                  data-field="nomenclature"
                                  data-api-base-url="${API_BASE}">
                             </div>` : '';
                             return `
                         <div class="source-context-viewers" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">${nomenclatureViewer}
                             <div data-source-context-viewer
-                                 data-taxa-id="${escapeHtml(result.taxon_id)}"
+                                 data-treatment-id="${escapeHtml(result.taxon_id)}"
                                  data-field="description"
                                  data-api-base-url="${API_BASE}">
                             </div>

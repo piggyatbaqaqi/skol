@@ -590,7 +590,7 @@ class TreatmentExtractor:
         verbosity = self.verbosity
 
         def load_partition(partition: Iterator[Row]) -> Iterator[Row]:
-            """Load taxa from CouchDB for an entire partition."""
+            """Load treatments from CouchDB for an entire partition."""
             # Connect to CouchDB once per partition
             try:
                 server = couchdb.Server(couchdb_url)
@@ -757,13 +757,13 @@ class TreatmentExtractor:
                     pass  # Skip documents we can't read
 
             if self.verbosity >= 1:
-                print(f"Found {len(existing_ids)} ingest documents with existing taxa")
+                print(f"Found {len(existing_ids)} ingest documents with existing treatments")
 
             return existing_ids
 
         except Exception as e:
             if self.verbosity >= 1:
-                print(f"Error querying existing taxa: {e}")
+                print(f"Error querying existing treatments: {e}")
             return set()
 
     def _get_matching_doc_ids(self, pattern: str) -> list:
@@ -835,7 +835,7 @@ class TreatmentExtractor:
                             .drop("_row_num")
             deduped_count = taxa_df.count()
             if self.verbosity >= 1 and original_count != deduped_count:
-                print(f"  Deduplicated: {original_count} -> {deduped_count} taxa ({original_count - deduped_count} duplicates removed)")
+                print(f"  Deduplicated: {original_count} -> {deduped_count} treatments ({original_count - deduped_count} duplicates removed)")
 
         # Extract to local variables to avoid serializing self
         couchdb_url = self.taxon_couchdb_url
@@ -859,7 +859,7 @@ class TreatmentExtractor:
         ingest_db_name = self.ingest_db_name
 
         def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
-            """Save taxa to CouchDB for an entire partition (idempotent)."""
+            """Save treatments to CouchDB for an entire partition (idempotent)."""
             MAX_RETRIES = 3
 
             # Connect to CouchDB once per partition
@@ -1051,7 +1051,7 @@ class TreatmentExtractor:
                 after_count = annotated_df.select("doc_id").distinct().count()
                 skipped = before_count - after_count
                 if self.verbosity >= 1:
-                    print(f"Skipped {skipped} documents with existing taxa ({after_count} remaining)")
+                    print(f"Skipped {skipped} documents with existing treatments ({after_count} remaining)")
 
         # Apply limit if specified
         if limit is not None:
@@ -1099,11 +1099,11 @@ class TreatmentExtractor:
                     total_taxa += batch_taxa_count
 
                     if self.verbosity >= 1:
-                        print(f"  Extracted {batch_taxa_count} taxa")
+                        print(f"  Extracted {batch_taxa_count} treatments")
 
                     if dry_run:
                         if self.verbosity >= 1:
-                            print(f"  [DRY RUN] Would save {batch_taxa_count} taxa")
+                            print(f"  [DRY RUN] Would save {batch_taxa_count} treatments")
                     else:
                         # Save this batch
                         batch_results = self.save_taxa(taxa_df)
@@ -1134,7 +1134,7 @@ class TreatmentExtractor:
                 print(f"{'='*70}")
                 print(f"  Total batches: {batch_num}")
                 print(f"  Documents processed: {total_docs}")
-                print(f"  Taxa extracted: {total_taxa}")
+                print(f"  Treatments extracted: {total_taxa}")
                 if not dry_run:
                     print(f"  Taxa saved: {total_saved}")
                     print(f"  Errors: {total_errors}")
@@ -1188,9 +1188,9 @@ class TreatmentExtractor:
             # Dry run - just show what would be saved
             if self.verbosity >= 1:
                 taxa_count = taxa_df.count()
-                print(f"\n[DRY RUN] Would save {taxa_count} taxa to {self.treatments_db_name}")
+                print(f"\n[DRY RUN] Would save {taxa_count} treatments to {self.treatments_db_name}")
                 if self.verbosity >= 2:
-                    print("\n[DRY RUN] Sample taxa:")
+                    print("\n[DRY RUN] Sample treatments:")
                     taxa_df.select("_id", "treatment", "ingest").show(5, truncate=50)
             # Return empty results DataFrame for dry run
             return self.spark.createDataFrame([], self._save_schema)
@@ -1229,7 +1229,7 @@ Work Control Options (from env_config):
                           Documents per batch when --incremental is set (default: 50)
   --limit N               Process at most N documents
   --doc-id ID1,ID2,...    Process only specific document IDs (comma-separated)
-  --skip-existing         Skip ingest documents that already have taxa extracted
+  --skip-existing         Skip ingest documents that already have treatments extracted
 
 Environment Variables:
   DRY_RUN=1               Same as --dry-run
@@ -1260,7 +1260,7 @@ Script-specific Options:
         "--skip-existing",
         action="store_true",
         default=None,
-        help="Skip ingest documents that already have taxa extracted"
+        help="Skip ingest documents that already have treatments extracted"
     )
 
     args, _ = parser.parse_known_args()
@@ -1311,7 +1311,7 @@ Script-specific Options:
     )
 
     if config['verbosity'] >= 1:
-        print(f"Extracting taxa from {config['ingest_db_name']} to {config['treatments_db_name']}...")
+        print(f"Extracting treatments from {config['ingest_db_name']} to {config['treatments_db_name']}...")
 
     # Create extractor instance
     # annotations_db_name is where .ann files live; falls back to ingest_db_name
@@ -1342,7 +1342,7 @@ Script-specific Options:
         if config.get('incremental'):
             print(f"[INCREMENTAL MODE] Batch size: {config.get('incremental_batch_size', 50)}")
         if skip_existing:
-            print("[SKIP EXISTING] Skipping documents with existing taxa")
+            print("[SKIP EXISTING] Skipping documents with existing treatments")
         if config.get('doc_ids'):
             print(f"Processing specific doc_ids: {config['doc_ids']}")
         if config.get('limit'):
@@ -1365,7 +1365,7 @@ Script-specific Options:
 
     if config['verbosity'] >= 1:
         print(f"\nResults:")
-        print(f"  Total taxa: {total}")
+        print(f"  Total treatments: {total}")
         print(f"  Successful saves: {successes}")
         print(f"  Failed saves: {failures}")
 

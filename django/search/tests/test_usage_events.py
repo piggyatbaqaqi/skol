@@ -53,7 +53,7 @@ class TestUsageEventModel(TestCase):
         """Anonymous events are allowed (user=None)."""
         evt = UsageEvent.objects.create(
             event_type='pdf_viewed',
-            payload={'taxa_id': 'abc123'},
+            payload={'treatment_id': 'abc123'},
         )
         assert evt.user is None
 

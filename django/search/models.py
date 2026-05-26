@@ -192,7 +192,7 @@ class SearchHistory(models.Model):
     embedding_name = models.CharField(max_length=255, blank=True, default='')
     k = models.PositiveIntegerField(default=3)
     # Store result references as JSON (not full results, to save space)
-    # Format: [{"similarity": 0.95, "taxa_id": "...", "title": "..."}, ...]
+    # Format: [{"similarity": 0.95, "treatment_id": "...", "title": "..."}, ...]
     result_references = models.JSONField(default=list)
     result_count = models.PositiveIntegerField(default=0)
     # Nomenclature change field

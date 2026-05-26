@@ -10,23 +10,23 @@ import sys
 from pathlib import Path
 
 
-def pdf_viewer(request, taxa_id=None):
+def pdf_viewer(request, treatment_id=None):
     """
     Render the PDF viewer page.
 
     Query params:
         - db: Database name (default: skol_dev)
-        - doc_id: Document ID (if not using taxa_id)
+        - doc_id: Document ID (if not using treatment_id)
         - page: Initial page number
-        - taxa_db: Taxa database (default: skol_taxa_dev)
+        - treatments_db: Taxa database (default: skol_taxa_dev)
     """
     context = {}
 
-    if taxa_id:
+    if treatment_id:
         # Use the taxa endpoint to get the PDF
-        taxa_db = request.GET.get('taxa_db', 'skol_taxa_dev')
-        context['pdf_url'] = f"{settings.FORCE_SCRIPT_NAME or ''}/api/taxa/{taxa_id}/pdf/?taxa_db={taxa_db}"
-        context['title'] = f"Taxa: {taxa_id}"
+        treatments_db = request.GET.get('treatments_db', 'skol_taxa_dev')
+        context['pdf_url'] = f"{settings.FORCE_SCRIPT_NAME or ''}/api/treatments/{treatment_id}/pdf/?treatments_db={treatments_db}"
+        context['title'] = f"Taxa: {treatment_id}"
         context['initial_page'] = request.GET.get('page', 1)
     else:
         # Direct database/document access
@@ -102,7 +102,7 @@ def sources_view(request):
         'error': None,
         'total_records': 0,
         'total_taxonomy_documents': 0,
-        'total_taxa_records': 0,
+        'total_treatments_records': 0,
         'cached': False,
         'cached_at': None,
     }
@@ -118,7 +118,7 @@ def sources_view(request):
             context['sources'] = data.get('sources', [])
             context['total_records'] = data.get('total_records', 0)
             context['total_taxonomy_documents'] = data.get('total_taxonomy_documents', 0)
-            context['total_taxa_records'] = data.get('total_taxa_records', 0)
+            context['total_treatments_records'] = data.get('total_treatments_records', 0)
             context['cached'] = True
             context['cached_at'] = data.get('created_at')
             return render(request, 'sources.html', context)
@@ -180,7 +180,7 @@ def sources_view(request):
                 doc_to_journal[doc_id] = journal_name
 
                 if journal_name not in source_stats:
-                    source_stats[journal_name] = {'total': 0, 'taxonomy': 0, 'taxa': 0}
+                    source_stats[journal_name] = {'total': 0, 'taxonomy': 0, 'treatments': 0}
 
                 source_stats[journal_name]['total'] += 1
                 if doc.get('taxonomy') is True:
@@ -191,12 +191,12 @@ def sources_view(request):
 
         treatments_db_name = getattr(settings, 'TREATMENTS_DB_NAME', 'skol_taxa_dev')
         if treatments_db_name in server:
-            taxa_db = server[treatments_db_name]
-            for taxa_doc_id in taxa_db:
+            treatments_db = server[treatments_db_name]
+            for taxa_doc_id in treatments_db:
                 if taxa_doc_id.startswith('_design/'):
                     continue
                 try:
-                    taxa_doc = taxa_db[taxa_doc_id]
+                    taxa_doc = treatments_db[taxa_doc_id]
                     ingest = taxa_doc.get('ingest', {})
                     ingest_doc_id = ingest.get('_id')
                     if ingest_doc_id and ingest_doc_id in doc_to_journal:
@@ -216,7 +216,7 @@ def sources_view(request):
                 'taxonomy_percentage': round(
                     (stats['taxonomy'] / stats['total'] * 100) if stats['total'] > 0 else 0, 1
                 ),
-                'taxa_records': stats['taxa'],
+                'treatments_records': stats['treatments'],
             }
 
             if PublicationRegistry:
@@ -238,7 +238,7 @@ def sources_view(request):
             context['sources'].append(source_info)
             context['total_records'] += stats['total']
             context['total_taxonomy_documents'] += stats['taxonomy']
-            context['total_taxa_records'] += stats['taxa']
+            context['total_treatments_records'] += stats['treatments']
 
         context['sources'].sort(key=lambda x: x['name'].lower())
 
@@ -259,7 +259,7 @@ urlpatterns = [
     path('help/', TemplateView.as_view(template_name='help.html'), name='help'),
     path('sources/', sources_view, name='sources'),
     path('pdf/', pdf_viewer, name='pdf-viewer'),
-    path('pdf/taxa/<str:taxa_id>/', pdf_viewer, name='pdf-viewer-taxa'),
+    path('pdf/treatments/<str:treatment_id>/', pdf_viewer, name='pdf-viewer-treatments'),
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('collections/', collections_view, name='collections'),
     path('collections/<int:collection_id>/', collection_detail_view, name='collection-detail-page'),

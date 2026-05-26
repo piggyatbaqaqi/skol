@@ -6,11 +6,11 @@
  *
  * Usage in HTML:
  *   <div data-source-context-viewer
- *        data-taxa-id="taxon_xxx"
+ *        data-treatment-id="taxon_xxx"
  *        data-field="description"
  *        data-api-base-url="/skol/api"
  *        data-context-chars="500"
- *        data-taxa-db="skol_taxa_dev"
+ *        data-treatments-db="skol_taxa_dev"
  *        data-original-text="The original text to display">
  *   </div>
  *
@@ -40,7 +40,7 @@ function initSourceContextViewers() {
     const originalText = container.dataset.originalText || '';
 
     if (!taxaId) {
-      console.error('SourceContextViewer: missing data-taxa-id attribute');
+      console.error('SourceContextViewer: missing data-treatment-id attribute');
       return;
     }
 

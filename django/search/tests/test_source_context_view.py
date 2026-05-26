@@ -75,7 +75,7 @@ class TestSourceContextViewValidFields(TestCase):
     """SourceContextView accepts every treatment section field name."""
 
     def _get_context(self, field: str):
-        url = reverse('search:taxa-context', kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context', kwargs={'treatment_id': 'taxon_abc123'})
         taxa_doc = _make_taxa_doc(field)
         mock_settings = _make_mock_settings()
 
@@ -98,7 +98,7 @@ class TestSourceContextViewValidFields(TestCase):
         with patch('search.views.settings', mock_settings), \
                 patch('search.views.requests.get', side_effect=_mock_get), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
-            return self.client.get(f'{url}?field={field}&taxa_db=skol_dev')
+            return self.client.get(f'{url}?field={field}&treatments_db=skol_dev')
 
     def test_all_valid_fields_return_200(self):
         """Every section field name is accepted (not 400)."""
@@ -118,10 +118,10 @@ class TestSourceContextViewValidFields(TestCase):
 
     def test_invalid_field_returns_400(self):
         """Unrecognised field name returns 400."""
-        url = reverse('search:taxa-context', kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context', kwargs={'treatment_id': 'taxon_abc123'})
         with patch('search.views.settings', _make_mock_settings()), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
-            response = self.client.get(f'{url}?field=banana&taxa_db=skol_dev')
+            response = self.client.get(f'{url}?field=banana&treatments_db=skol_dev')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('Invalid field', response.json()['error'])
 
@@ -143,7 +143,7 @@ class TestSourceContextViewMarkCssClass(TestCase):
     """<mark> tags carry a section-specific CSS class."""
 
     def _get_highlighted(self, field: str) -> str:
-        url = reverse('search:taxa-context', kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context', kwargs={'treatment_id': 'taxon_abc123'})
         taxa_doc = _make_taxa_doc(field)
         mock_settings = _make_mock_settings()
 
@@ -165,7 +165,7 @@ class TestSourceContextViewMarkCssClass(TestCase):
         with patch('search.views.settings', mock_settings), \
                 patch('search.views.requests.get', side_effect=_mock_get), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
-            response = self.client.get(f'{url}?field={field}&taxa_db=skol_dev')
+            response = self.client.get(f'{url}?field={field}&treatments_db=skol_dev')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         return response.json()['source_text']
@@ -197,7 +197,7 @@ class TestSourceContextViewEdgeCases(TestCase):
 
     def test_missing_spans_returns_404(self):
         """Returns 404 when the taxa doc has no spans for the requested field."""
-        url = reverse('search:taxa-context', kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context', kwargs={'treatment_id': 'taxon_abc123'})
         taxa_doc = {
             '_id': 'taxon_abc123',
             'ingest': {'_id': 'ingest_doc_001', 'db_name': 'skol_dev'},
@@ -213,13 +213,13 @@ class TestSourceContextViewEdgeCases(TestCase):
         with patch('search.views.settings', mock_settings), \
                 patch('search.views.requests.get', return_value=taxa_resp), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
-            response = self.client.get(f'{url}?field=description&taxa_db=skol_dev')
+            response = self.client.get(f'{url}?field=description&treatments_db=skol_dev')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_missing_ingest_id_returns_400(self):
         """Returns 400 when taxa doc lacks ingest._id."""
-        url = reverse('search:taxa-context', kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context', kwargs={'treatment_id': 'taxon_abc123'})
         taxa_doc = {
             '_id': 'taxon_abc123',
             'ingest': {'db_name': 'skol_dev'},  # No _id
@@ -235,7 +235,7 @@ class TestSourceContextViewEdgeCases(TestCase):
         with patch('search.views.settings', mock_settings), \
                 patch('search.views.requests.get', return_value=taxa_resp), \
                 patch('search.views.get_user_experiment', return_value=(None, None)):
-            response = self.client.get(f'{url}?field=description&taxa_db=skol_dev')
+            response = self.client.get(f'{url}?field=description&treatments_db=skol_dev')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -270,7 +270,7 @@ class TestCollectAnnDbCandidates(TestCase):
             result = _collect_ann_db_candidates(
                 taxa_doc=taxa_doc,
                 ingest_db='skol_dev',
-                taxa_db='skol_treatments_dev',
+                treatments_db='skol_treatments_dev',
                 auth=None,
                 couchdb_url='http://x',
             )
@@ -282,7 +282,7 @@ class TestCollectAnnDbCandidates(TestCase):
             result = _collect_ann_db_candidates(
                 taxa_doc={},
                 ingest_db='skol_dev',
-                taxa_db='skol_treatments_dev',
+                treatments_db='skol_treatments_dev',
                 auth=None,
                 couchdb_url='http://x',
             )
@@ -296,7 +296,7 @@ class TestCollectAnnDbCandidates(TestCase):
             result = _collect_ann_db_candidates(
                 taxa_doc={},
                 ingest_db='skol_dev',
-                taxa_db='skol_treatments_dev',
+                treatments_db='skol_treatments_dev',
                 auth=None,
                 couchdb_url='http://x',
             )
@@ -310,7 +310,7 @@ class TestCollectAnnDbCandidates(TestCase):
             result = _collect_ann_db_candidates(
                 taxa_doc={'annotations_db': 'skol_dev'},
                 ingest_db='skol_dev',
-                taxa_db='skol_treatments_dev',
+                treatments_db='skol_treatments_dev',
                 auth=None,
                 couchdb_url='http://x',
             )
@@ -326,7 +326,7 @@ class TestCollectAnnDbCandidates(TestCase):
             result = _collect_ann_db_candidates(
                 taxa_doc={},
                 ingest_db='skol_dev',
-                taxa_db='skol_treatments_dev',
+                treatments_db='skol_treatments_dev',
                 auth=None,
                 couchdb_url='http://x',
             )
@@ -343,8 +343,8 @@ class TestSourceContextViewAnnDbFallback(TestCase):
     consult the experiment's databases.annotations and try there."""
 
     def test_falls_back_to_experiment_annotations_db(self):
-        url = reverse('search:taxa-context',
-                      kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context',
+                      kwargs={'treatment_id': 'taxon_abc123'})
         taxa_doc = _make_taxa_doc('description')
         # No annotations_db field on the doc — must come from the experiment.
 
@@ -382,15 +382,15 @@ class TestSourceContextViewAnnDbFallback(TestCase):
                 patch('search.views.get_user_experiment',
                       return_value=(None, None)):
             response = self.client.get(
-                f'{url}?field=description&taxa_db=skol_treatments_dev'
+                f'{url}?field=description&treatments_db=skol_treatments_dev'
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_error_message_lists_all_probed_dbs(self):
         """When every candidate DB 404s, the error names them all so
         the operator can see exactly where we looked."""
-        url = reverse('search:taxa-context',
-                      kwargs={'taxa_id': 'taxon_abc123'})
+        url = reverse('search:treatments-context',
+                      kwargs={'treatment_id': 'taxon_abc123'})
         taxa_doc = _make_taxa_doc('description')
 
         taxa_resp = MagicMock(status_code=200,
@@ -417,7 +417,7 @@ class TestSourceContextViewAnnDbFallback(TestCase):
                 patch('search.views.get_user_experiment',
                       return_value=(None, None)):
             response = self.client.get(
-                f'{url}?field=description&taxa_db=skol_treatments_dev'
+                f'{url}?field=description&treatments_db=skol_treatments_dev'
             )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         err = response.json()['error']
