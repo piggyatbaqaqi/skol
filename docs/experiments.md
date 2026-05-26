@@ -153,21 +153,23 @@ Use these subcommands instead of invoking the individual scripts directly.
 ### Step order and dependencies
 
 ```
-1. train               ─┐
-2. predict              │  sequential: each requires the previous to be
-3. annotate_jats        │  completed or skipped before it can run
-4. extract_taxa         │
-5. embed                │
-6. treatments_to_json   │
-7. annotate_spans      ─┘
-8. evaluate    ─┐  independent: both require steps 1-7 done,
-9. build_vocab ─┘  but can run in either order
+1. train                ─┐
+2. predict               │  sequential: each requires the previous to be
+3. annotate_jats         │  completed or skipped before it can run
+4. extract_taxa          │
+5. embed                 │
+6. treatments_to_json    │
+7. annotate_spans       ─┘
+8.  evaluate             ─┐  independent: each requires steps 1-7 done,
+9.  build_vocab          ─│  but they can run in any order relative to
+10. build_sources_stats  ─┘  one another
 ```
 
 - `predict` runs the ML classifier on non-TaxPub documents (`is_taxpub=False`)
 - `annotate_jats` runs `jats_to_yedda` on TaxPub documents (`is_taxpub=True`)
 - Both write to `databases.annotations`; both must complete before `extract_taxa`
 - `treatments_to_json` runs the LLM annotator over `databases.treatments` and writes JSON-annotated docs to `databases.treatments_full` — consumed by the Django JSON Features endpoint
+- `build_sources_stats` scans the experiment's `ingest` + `treatments` databases and writes the per-experiment Ingestion Sources page stats to Redis (`skol:sources:stats:<experiment>`)
 
 ### `pipeline` — show status
 
@@ -261,6 +263,7 @@ python bin/manage_experiment.py skipstep my_exp build_vocab
 | `treatments_to_json` | `treatments_to_json.py` | `--experiment NAME --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200` |
 | `evaluate` | `predict_classifier.py` then `evaluate_golden.py` | predict: `--golden-db skol_golden --skip-existing`; evaluate: `--golden-db skol_golden_ann_hand --plaintext-db skol_golden --save-to-experiment` |
 | `build_vocab` | `build_vocab_tree.py` | `--experiment NAME` |
+| `build_sources_stats` | `build_sources_stats.py` | `--experiment NAME --verbosity 2` |
 
 The `evaluate` step runs two commands in sequence: it first predicts on the
 105-document golden set (`skol_golden`), then scores those predictions against
@@ -288,6 +291,7 @@ with the v1 `train_classifier`/`predict_classifier`/`extract_treatments_to_couch
 | `extract_taxa` | Daily | 14:00 | Runs after predict; uses Treatment-extraction pipeline (`bin/extract_treatments_to_couchdb.py`) |
 | `embed` | Daily | 16:00 | Runs after extract_taxa; embeds Treatments via SBERT |
 | `treatments_to_json` | Daily | 18:00 | Runs after embed; LLM-annotates Treatments into JSON for the Django JSON Features endpoint |
+| `build_sources_stats` | Daily | 18:30 | Writes per-experiment Ingestion Sources page stats to Redis (`skol:sources:stats:<experiment>`) |
 
 To add a new production experiment to cron: add four lines to
 `debian/skol.cron` following the `production_v3_hand` pattern, picking slots

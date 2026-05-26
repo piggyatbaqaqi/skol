@@ -100,6 +100,7 @@ _PIPELINE_STEPS = [
     "annotate_spans",
     "evaluate",
     "build_vocab",
+    "build_sources_stats",
 ]
 
 # Statuses that count as "done" for dependency purposes.
@@ -500,6 +501,11 @@ def _build_step_commands(
         "build_vocab": [
             sys.executable, str(_BIN_DIR / "build_vocab_tree.py"),
             "--experiment", "{name}",
+        ],
+        "build_sources_stats": [
+            sys.executable, str(_BIN_DIR / "build_sources_stats.py"),
+            "--experiment", "{name}",
+            "--verbosity", "2",
         ],
     }
 
