@@ -648,11 +648,19 @@ and their values from the provided species description and format them as struct
         from skol_classifier.couchdb_io import CouchDBConnection
         from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType
 
-        # Define schema with _id for joining results
+        # Define schema with _id for joining results.
+        # ``description`` is nullable because:
+        #   * taxpub-source Treatments (Phase G.1 fork) sometimes carry
+        #     only Etymology / Notes / Type-designation without a
+        #     Description section;
+        #   * orphan-section ``Nomen ignotum`` stubs that group only a
+        #     Diagnosis paragraph have ``description=None``.
+        # Both are valid Treatments and pass through downstream — the
+        # LLM annotator is expected to short-circuit on empty input.
         schema = StructType([
             StructField("_id", StringType(), False),
             StructField("treatment", StringType(), False),
-            StructField("description", StringType(), False),
+            StructField("description", StringType(), True),
             StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), True),
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
