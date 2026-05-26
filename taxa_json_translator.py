@@ -39,6 +39,29 @@ from pyspark.sql.types import StringType
 from treatment import get_ingest_field
 
 
+def build_llm_input_text(doc: Dict[str, Any]) -> str:
+    """Construct the text fed to the JSON-translation LLM from a
+    Treatment CouchDB doc.
+
+    Combines the Description and Diagnosis sections.  Diagnosis often
+    carries the differentiating ``feature → subfeature → value``
+    statements ("differs from X in having Y…") that the LLM is
+    supposed to extract, so including it materially improves recall.
+    Mirrors what ``bin/embed_treatments.build_primary_descriptions``
+    does for SBERT input.
+
+    Both sections fall back to ``''`` when absent.  Separator is the
+    same ``\\n\\n`` used by the embedding pipeline.  Returns ``''``
+    when neither section is present (the LLM annotator short-circuits
+    on empty input).
+    """
+    desc = doc.get('description') or ''
+    diag = doc.get('diagnosis') or ''
+    if desc and diag:
+        return f"{desc}\n\n{diag}"
+    return desc or diag
+
+
 def _inference_worker(descriptions, model_config, batch_size, result_queue, streaming=False):
     """
     Worker function that runs model inference in an isolated subprocess.
@@ -710,11 +733,17 @@ and their values from the provided species description and format them as struct
                         if doc_id in db:
                             doc = db[doc_id]
 
-                            # Convert CouchDB document to Row (include _id for joining)
+                            # Convert CouchDB document to Row (include _id for joining).
+                            # The ``description`` column carries the combined
+                            # Description + Diagnosis text fed to the LLM —
+                            # see ``build_llm_input_text`` above for the
+                            # rationale (Diagnosis carries the differentiating
+                            # ``feature->subfeature->value`` statements the
+                            # annotator is meant to extract).
                             taxon_data = {
                                 '_id': doc.get('_id', doc_id),
                                 'treatment': doc.get('treatment', ''),
-                                'description': doc.get('description', ''),
+                                'description': build_llm_input_text(doc),
                                 'ingest': doc.get('ingest', {}),
                                 'line_number': doc.get('line_number'),
                                 'paragraph_number': doc.get('paragraph_number'),
