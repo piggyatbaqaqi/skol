@@ -80,6 +80,35 @@ _LABEL_TO_SPANS_FIELD: Dict[str, str] = {
 }
 
 
+# Essential keys preserved when slimming the per-treatment ``ingest``
+# field.  The source ingest doc on skol_dev is ~260 KB on average
+# (full publication metadata, attachment stubs, etc.); duplicating
+# that into every Treatment ballooned ``skol_treatments_v3_dev`` to
+# 1.5 GB and made the SBERT embedding pickle exceed Redis's 4 GB
+# proto-max-bulk-len cap.  An audit of downstream consumers
+# (django/search, taxa_json_translator, taxon_clusterer,
+# dr-drafts-mycosearch) shows only these four keys are actually read.
+# All other ingest fields are still available via a CouchDB lookup
+# from ``ingest._id`` if needed.
+_ESSENTIAL_INGEST_KEYS = frozenset({"_id", "url", "pdf_url", "db_name"})
+
+
+def _slim_ingest(
+    ingest: Optional[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """Project ``ingest`` down to the four keys downstream code reads.
+
+    Returns ``None`` when the source is ``None``.  When the source is a
+    dict, returns a new dict containing exactly the
+    ``_ESSENTIAL_INGEST_KEYS`` — missing keys are filled with ``None``
+    so the four-key shape is stable for callers that iterate or expect
+    specific keys.
+    """
+    if ingest is None:
+        return None
+    return {key: ingest.get(key) for key in _ESSENTIAL_INGEST_KEYS}
+
+
 # Text marker for synthetic ("orphan section") Nomenclature stubs
 # synthesised by ``group_paragraphs`` below when it encounters a
 # treatment-section paragraph (Description, Diagnosis, etc.) without
@@ -246,7 +275,7 @@ class Treatment(object):
 
         retval: Dict[str, Any] = {
             "treatment": "\n".join(str(p) for p in self._nomenclatures),
-            "ingest": ingest,
+            "ingest": _slim_ingest(ingest),
             "line_number": first_line.line_number,
             "paragraph_number": pp.paragraph_number,
             "pdf_page": pp.pdf_page,

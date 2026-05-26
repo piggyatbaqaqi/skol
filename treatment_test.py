@@ -686,6 +686,100 @@ class TestTreatmentNewFields(unittest.TestCase):
         self.assertIn("description_spans", row)
 
 
+class TestIngestSlimming(unittest.TestCase):
+    """``Treatment.as_row()`` stores only the essential ingest keys
+    (``_id``, ``url``, ``pdf_url``, ``db_name``) — not the full source
+    CouchDB doc.  Phase B of the embedding-bloat fix:
+    skol_treatments_v3_dev was 1.5 GB and embed_treatments could not
+    pickle the full DataFrame because per-treatment ingest payloads
+    averaged 261 KB (the entire ingest doc was duplicated 1-to-many).
+    """
+
+    def _treatment_with_fat_ingest(self) -> "Treatment":
+        from treatment import Treatment
+        fat_ingest = {
+            "_id": "doc1",
+            "url": "https://example.com/doc1",
+            "pdf_url": "https://example.com/doc1.pdf",
+            "db_name": "skol_dev",
+            "_attachments": {"article.pdf": {"content_type": "application/pdf"}},
+            "_rev": "1-abc",
+            "publication_metadata": {"title": "X", "authors": ["A", "B"]},
+            "ingest_timestamp": "2026-01-01",
+            "should_be_dropped_too": "x" * 1000,
+        }
+        fileobj = MockFileObject(doc_id="doc1", ingest=fat_ingest)
+        nom_line = Line("[@Foo bar#Nomenclature*]", fileobj)
+        nom_para = Paragraph(
+            labels=[Label("Nomenclature")],
+            lines=[nom_line],
+            paragraph_number=1,
+        )
+        t = Treatment()
+        t.add_nomenclature(nom_para)
+        return t
+
+    def test_only_essential_keys_kept(self):
+        t = self._treatment_with_fat_ingest()
+        row = t.as_row()
+        self.assertIsNotNone(row["ingest"])
+        self.assertEqual(
+            set(row["ingest"].keys()),
+            {"_id", "url", "pdf_url", "db_name"},
+            msg=(
+                "Treatment.as_row() must drop non-essential ingest fields. "
+                "Storing the full ingest doc inflates the Treatment by "
+                "~250 KB each and blows the Redis embed-pickle past 4 GB."
+            ),
+        )
+
+    def test_essential_values_passed_through(self):
+        t = self._treatment_with_fat_ingest()
+        ingest = t.as_row()["ingest"]
+        self.assertEqual(ingest["_id"], "doc1")
+        self.assertEqual(ingest["url"], "https://example.com/doc1")
+        self.assertEqual(ingest["pdf_url"], "https://example.com/doc1.pdf")
+        self.assertEqual(ingest["db_name"], "skol_dev")
+
+    def test_missing_essential_key_yields_none_value(self):
+        """If an essential key is absent from the source ingest, the
+        slim ingest still has that key but with None — preserves the
+        4-key shape downstream consumers expect."""
+        from treatment import Treatment
+        partial_ingest = {"_id": "doc1", "url": "http://example.com"}
+        fileobj = MockFileObject(doc_id="doc1", ingest=partial_ingest)
+        nom_line = Line("[@Foo bar#Nomenclature*]", fileobj)
+        nom_para = Paragraph(
+            labels=[Label("Nomenclature")],
+            lines=[nom_line],
+            paragraph_number=1,
+        )
+        t = Treatment()
+        t.add_nomenclature(nom_para)
+        row = t.as_row()
+        self.assertEqual(
+            set(row["ingest"].keys()),
+            {"_id", "url", "pdf_url", "db_name"},
+        )
+        self.assertIsNone(row["ingest"]["pdf_url"])
+        self.assertIsNone(row["ingest"]["db_name"])
+
+    def test_none_ingest_stays_none(self):
+        """When the nomenclature line has no fileobj (synthetic stub
+        with no description either), the ingest slot stays None."""
+        from treatment import Treatment, SYNTHETIC_NOMENCLATURE_TEXT
+        nom_stub = Line(SYNTHETIC_NOMENCLATURE_TEXT)
+        nom_para = Paragraph(
+            labels=[Label("Nomenclature")],
+            lines=[nom_stub],
+            paragraph_number=1,
+        )
+        t = Treatment()
+        t.add_nomenclature(nom_para)
+        row = t.as_row()
+        self.assertIsNone(row["ingest"])
+
+
 class TestSyntheticNomenclatureFlag(unittest.TestCase):
     """Phase G.2: ``synthetic_nomenclature`` field distinguishes stub
     Nomenclatures (synthesised by ``group_paragraphs`` for orphan
