@@ -126,6 +126,46 @@ class TestClassifierLogisticV3(TestCase):
         self.assertIsNone(contrib.blocks)
         self.assertEqual(contrib.ann_text, _YEDDA_ANN)
 
+    def test_run_falls_back_to_pdf_ann(self) -> None:
+        """PDF-derived ingest paths (Mycotaxon, Cryptogamie, Journal of
+        Fungi via the crossref ingestor, etc.) store the classifier's
+        prediction under ``article.pdf.ann`` rather than
+        ``article.txt.ann``.  The component must read whichever .ann
+        attachment is present — hardcoding ``.txt.ann`` skipped every
+        PDF-source doc and produced zero treatments from journal-
+        bearing ingest records."""
+        descriptor = ClassifierLogisticV3()
+        instance = descriptor.create_instance()
+        state = PipelineState(
+            doc={
+                "_id": "y",
+                "_attachments": {"article.pdf.ann": _YEDDA_ANN},
+            },
+        )
+        instance.run(state)
+        self.assertEqual(state.label_sources(), ["classifier_logistic_v3"])
+        contrib = state._label_contributions[0]
+        self.assertEqual(contrib.ann_text, _YEDDA_ANN)
+
+    def test_run_prefers_txt_over_pdf_when_both_present(self) -> None:
+        """When both attachments exist, prefer ``article.txt.ann`` (the
+        canonical OCR/plaintext-extracted prediction)."""
+        descriptor = ClassifierLogisticV3()
+        instance = descriptor.create_instance()
+        txt_ann = "[@A#Nomenclature*]\n"
+        pdf_ann = "[@B#Nomenclature*]\n"
+        state = PipelineState(
+            doc={
+                "_id": "z",
+                "_attachments": {
+                    "article.txt.ann": txt_ann,
+                    "article.pdf.ann": pdf_ann,
+                },
+            },
+        )
+        instance.run(state)
+        self.assertEqual(state._label_contributions[0].ann_text, txt_ann)
+
 
 class TestTreatmentAssembler(TestCase):
     """Reads merged_ann_text → CouchDBFile → parse_annotated →

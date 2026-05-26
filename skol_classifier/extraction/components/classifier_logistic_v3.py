@@ -33,14 +33,35 @@ from skol_classifier.extraction.state import PipelineState
 
 _PRIORITY = 4
 _SOURCE = "classifier_logistic_v3"
-_ANN_ATTACHMENT = "article.txt.ann"
+# Attachment names predict_classifier may have written.  Plaintext-fed
+# docs land under ``article.txt.ann``; PDF-fed docs (crossref / Ingenta /
+# direct-PDF ingestors) under ``article.pdf.ann``.  We prefer the text
+# variant when both are present (the OCR/plaintext-derived prediction
+# is typically cleaner than the raw-PDF one).
+#
+# Pre-fix: this component hardcoded ``article.txt.ann`` and raised
+# FileNotFoundError on every PDF-derived doc, producing zero treatments
+# from named-journal ingest records (Mycotaxon, Journal of Fungi via
+# crossref, Cryptogamie, etc.).  The bug only surfaced when the
+# Ingestion Sources page audit showed all 14,032 v3_hand treatments
+# bucketed into "Unknown" — see the user's report.
+_ANN_ATTACHMENTS = ("article.txt.ann", "article.pdf.ann")
 
 
 class ClassifierLogisticV3Instance(ComponentInstance):
     """Per-doc runtime: reads .ann attachment, contributes YEDDA text."""
 
     def run(self, state: PipelineState) -> None:
-        ann_bytes = state.get_attachment(_ANN_ATTACHMENT)
+        atts = state.doc.get("_attachments") or {}
+        attachment_name = next(
+            (name for name in _ANN_ATTACHMENTS if name in atts), None,
+        )
+        if attachment_name is None:
+            # Preconditions should have gated this, but be defensive:
+            # let get_attachment raise the canonical FileNotFoundError
+            # if neither variant is present.
+            attachment_name = _ANN_ATTACHMENTS[0]
+        ann_bytes = state.get_attachment(attachment_name)
         ann_text = ann_bytes.decode("utf-8")
         state.add_ann_text(
             source=_SOURCE,
