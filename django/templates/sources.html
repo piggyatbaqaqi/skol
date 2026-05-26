@@ -238,7 +238,32 @@
         </div>
 
         <h1>Ingestion Sources</h1>
-        <p class="subtitle">Publications and data sources indexed by SKOL</p>
+        <p class="subtitle">
+            Publications and data sources indexed by SKOL
+            {% if experiment_name %}— experiment <strong>{{ experiment_name }}</strong>{% endif %}
+        </p>
+
+        {% if override_active %}
+        <div style="background:#fff8e1; border-left:4px solid #f9a825; padding:12px 16px; margin-bottom:18px; border-radius:0 6px 6px 0; color:#555; font-size:0.95em;">
+            Showing <strong>{{ experiment_name }}</strong>.
+            Your active experiment is <strong>{{ active_experiment_name }}</strong> —
+            <a href="?" style="color:#667eea; font-weight:600;">switch back</a>.
+        </div>
+        {% endif %}
+
+        {% if available_experiments %}
+        <form method="get" style="margin-bottom:18px; display:flex; align-items:center; gap:10px;">
+            <label for="experiment-select" style="color:#555; font-size:0.95em;">View experiment:</label>
+            <select name="experiment" id="experiment-select" onchange="this.form.submit()" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.95em;">
+                <option value="" {% if not experiment_name %}selected{% endif %}>(default / v1)</option>
+                {% for exp in available_experiments %}
+                <option value="{{ exp }}" {% if exp == experiment_name %}selected{% endif %}>{{ exp }}{% if exp == active_experiment_name %} (active){% endif %}</option>
+                {% endfor %}
+            </select>
+            <noscript><button type="submit" style="padding:6px 12px; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer;">View</button></noscript>
+        </form>
+        {% endif %}
+
         {% if cached_at %}
         <p style="color: #999; font-size: 0.85em; margin-bottom: 20px;">Last updated: {{ cached_at }}</p>
         {% endif %}

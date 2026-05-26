@@ -97,6 +97,53 @@ def sources_view(request):
     import json
     import redis
 
+    # The user's "active" experiment — the one the search page sees —
+    # is the default for this page too.  An optional ``?experiment=NAME``
+    # query param overrides it just for this view (bookmarkable;
+    # doesn't change the global active experiment).  When the override
+    # differs from the active one, the template renders a banner
+    # telling the user they're looking at a non-default experiment
+    # and offering a one-click link back to the active one.  See
+    # docs/experiments.md for the build_sources_stats step that
+    # populates the per-experiment Redis key this view reads.
+    active_experiment_name = ''
+    if request.user.is_authenticated:
+        try:
+            from search.views import get_user_experiment
+            _, exp = get_user_experiment(request)
+            if exp:
+                active_experiment_name = exp.get('_id', '') or ''
+        except Exception:
+            pass
+    override_experiment_name = (request.GET.get('experiment') or '').strip()
+    experiment_name = override_experiment_name or active_experiment_name
+    redis_key = (
+        f'skol:sources:stats:{experiment_name}'
+        if experiment_name else 'skol:sources:stats'
+    )
+
+    # Look up the list of all experiments so the template can render
+    # the per-page experiment pulldown.  Best-effort: if CouchDB is
+    # unreachable, the pulldown is omitted (the page still works
+    # against whichever experiment the URL or session selected).
+    available_experiments = []
+    try:
+        import couchdb as _couchdb
+        couchdb_url = getattr(settings, 'COUCHDB_URL', 'http://127.0.0.1:5984')
+        _server = _couchdb.Server(couchdb_url)
+        _u = getattr(settings, 'COUCHDB_USERNAME', '')
+        _p = getattr(settings, 'COUCHDB_PASSWORD', '')
+        if _u and _p:
+            _server.resource.credentials = (_u, _p)
+        _exp_db = _server['skol_experiments']
+        for _exp_id in _exp_db:
+            if _exp_id.startswith('_'):
+                continue
+            available_experiments.append(_exp_id)
+        available_experiments.sort()
+    except Exception:
+        pass
+
     context = {
         'sources': [],
         'error': None,
@@ -105,27 +152,14 @@ def sources_view(request):
         'total_treatments_records': 0,
         'cached': False,
         'cached_at': None,
+        'experiment_name': experiment_name,
+        'active_experiment_name': active_experiment_name,
+        'override_active': bool(
+            override_experiment_name
+            and override_experiment_name != active_experiment_name
+        ),
+        'available_experiments': available_experiments,
     }
-
-    # Resolve the experiment-scoped Redis key.  Authenticated users
-    # with an active experiment read ``skol:sources:stats:<exp>``
-    # (populated by ``build_sources_stats.py --experiment <exp>``);
-    # anonymous users + the v1 cron job stay on the legacy
-    # ``skol:sources:stats`` key.  Mirrors the helper in
-    # bin/build_sources_stats.py so both sides stay in sync.
-    experiment_name = ''
-    if request.user.is_authenticated:
-        try:
-            from search.views import get_user_experiment
-            _, exp = get_user_experiment(request)
-            if exp:
-                experiment_name = exp.get('_id', '')
-        except Exception:
-            pass
-    redis_key = (
-        f'skol:sources:stats:{experiment_name}'
-        if experiment_name else 'skol:sources:stats'
-    )
 
     # Try to read from Redis first
     try:
@@ -164,22 +198,25 @@ def sources_view(request):
     db_user = getattr(settings, 'COUCHDB_USERNAME', 'admin')
     db_password = getattr(settings, 'COUCHDB_PASSWORD', '')
 
-    # Use the active experiment's ingest + treatments databases when
+    # Use the resolved experiment's ingest + treatments databases when
     # available (matches what build_sources_stats.py --experiment <X>
-    # would compute).  Falls back to the legacy settings defaults for
-    # anonymous users.  ``get_user_experiment`` was already called
-    # above to resolve the Redis key — we re-fetch the doc here so the
-    # slow-path stats also stay experiment-scoped.
+    # would compute).  ``experiment_name`` honours the ``?experiment``
+    # URL override resolved at the top of this view; we re-fetch the
+    # doc here so the slow-path stats stay scoped to whichever
+    # experiment the page is showing.  Falls back to settings defaults
+    # for anonymous users / no experiment selected.
     db_name = getattr(settings, 'INGESTION_DB_NAME', 'skol_dev')
     treatments_db_name = getattr(
         settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
     )
-    if request.user.is_authenticated:
+    if experiment_name:
         try:
-            from search.views import get_user_experiment
-            _, exp = get_user_experiment(request)
-            if exp:
-                databases = exp.get('databases', {}) or {}
+            _exp_db = couchdb.Server(couchdb_url)
+            if db_user and db_password:
+                _exp_db.resource.credentials = (db_user, db_password)
+            _doc = _exp_db['skol_experiments'].get(experiment_name)
+            if _doc:
+                databases = _doc.get('databases', {}) or {}
                 db_name = databases.get('ingest', db_name)
                 treatments_db_name = databases.get(
                     'treatments', treatments_db_name,
