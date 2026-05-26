@@ -278,8 +278,8 @@ symlinks created by `debian/postinst.template` (which symlinks
 to `with_skol` so they pick up the venv + skol env).
 
 `production_v3_hand` schedule (offset from v1 to avoid Spark / GPU contention
-with the v1 `train_classifier`/`predict_classifier`/`extract_taxa_to_couchdb`/
-`embed_taxa` jobs that run at 00:30/00:00/04:00/06:00):
+with the v1 `train_classifier`/`predict_classifier`/`extract_treatments_to_couchdb`/
+`embed_treatments` jobs that run at 00:30/00:00/04:00/06:00):
 
 | Step | Cadence | Slot | Notes |
 |---|---|---|---|

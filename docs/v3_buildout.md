@@ -149,8 +149,8 @@ Embed Treatments and write to Redis so the Django search reads them.
 ## Phase E — Scheduled cron jobs for ongoing operation
 
 `debian/skol.cron` already schedules the v1 production pipeline
-(train_classifier, predict_classifier, extract_taxa_to_couchdb,
-embed_taxa).  Add parallel v3_hand-experiment jobs so the pipeline
+(train_classifier, predict_classifier, extract_treatments_to_couchdb,
+embed_treatments).  Add parallel v3_hand-experiment jobs so the pipeline
 keeps producing fresh treatments + embeddings as new docs land in
 `skol_dev` via the daily ingestion jobs.
 

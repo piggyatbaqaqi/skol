@@ -70,8 +70,8 @@ setup(
             "skol-ingest=bin.ingest:main",
             "skol-train=bin.train_classifier:main",
             "skol-predict=bin.predict_classifier:main",
-            "skol-extract-taxa=bin.extract_treatments_to_couchdb:main",
-            "skol-embed-taxa=bin.embed_treatments:main",
+            "skol-extract-treatments=bin.extract_treatments_to_couchdb:main",
+            "skol-embed-treatments=bin.embed_treatments:main",
         ],
     },
     data_files=[
