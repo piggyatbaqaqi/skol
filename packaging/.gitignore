@@ -1,0 +1,11 @@
+# dpkg-buildpackage emits its .deb / .changes / .buildinfo / .dsc /
+# orig-tarball outputs into the parent directory of the source.  Those
+# are build artefacts, not source — keep them out of git.
+*.deb
+*.changes
+*.buildinfo
+*.dsc
+*.tar.xz
+*.tar.gz
+*.build
+*.upload
