@@ -1055,15 +1055,25 @@ class TreatmentsInfoView(APIView):
             couchdb_url = settings.COUCHDB_URL
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
 
-            # Use experiment's taxa DB if not explicitly provided
+            # Use experiment's treatments DB if not explicitly provided.
+            # NB: the experiment doc key is ``treatments`` (per the post-Step-3
+            # rename, commits 81be957 / 6150663) — NOT ``taxa``.  Reading
+            # ``taxa`` here used to silently fall through to the legacy
+            # skol_taxa_dev DB, which on v3_hand caused every lookup to 404
+            # (content-hash IDs don't match across DBs) and the search to
+            # hang on per-result migration-mapping scans.  See v3_buildout.md
+            # §Phase C.4 follow-up.
+            default_treatments_db = getattr(
+                settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
+            )
             if taxa_db is None:
                 _, exp = get_user_experiment(request)
                 if exp:
                     taxa_db = exp.get('databases', {}).get(
-                        'taxa', 'skol_taxa_dev'
+                        'treatments', default_treatments_db,
                     )
                 else:
-                    taxa_db = 'skol_taxa_dev'
+                    taxa_db = default_treatments_db
 
             # Determine the correct database based on document ID prefix
             if taxa_id.startswith('collection_'):
@@ -1246,7 +1256,10 @@ class PDFFromTreatmentsView(APIView):
 
     def get(self, request, taxa_id):
         try:
-            taxa_db = request.GET.get('taxa_db', 'skol_taxa_dev')
+            taxa_db = request.GET.get(
+                'taxa_db',
+                getattr(settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev'),
+            )
 
             # Build CouchDB URL
             couchdb_url = settings.COUCHDB_URL

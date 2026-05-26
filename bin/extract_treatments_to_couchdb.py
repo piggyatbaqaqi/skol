@@ -850,6 +850,13 @@ class TreatmentExtractor:
         # save raises ``NameError: name 'annotations_db_name' is not
         # defined`` and the whole partition's writes silently fail.
         annotations_db_name = self.annotations_db_name
+        # ``ingest.db_name`` on each saved Treatment must point at the
+        # SOURCE ingest DB (where ``article.pdf`` lives) so the Django
+        # PDF view ([django/search/views.py: ServeTaxaPdfView]) can
+        # fetch the right attachment.  Previously this was set to
+        # ``self.treatments_db_name`` (where the Treatment itself
+        # lives), which meant the PDF lookup always 404'd.
+        ingest_db_name = self.ingest_db_name
 
         def save_partition(partition: Iterator[Row]) -> Iterator[Row]:
             """Save taxa to CouchDB for an entire partition (idempotent)."""
@@ -906,7 +913,7 @@ class TreatmentExtractor:
                         # views can retrieve attachments without guessing DB names.
                         ingest_data = taxon_doc.get('ingest')
                         if isinstance(ingest_data, dict):
-                            ingest_data['db_name'] = db_name
+                            ingest_data['db_name'] = ingest_db_name
                         taxon_doc['annotations_db'] = annotations_db_name
 
                         if DEBUG_TRACE:
