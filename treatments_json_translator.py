@@ -3,15 +3,15 @@ Taxa JSON Translator
 
 This module provides a class for translating taxa descriptions into structured JSON
 using a fine-tuned Mistral model. Designed to work with PySpark DataFrames from
-TreatmentExtractor.load_taxa().
+TreatmentExtractor.load_treatments().
 
-The TaxaJSONTranslator class encapsulates model loading, inference, and DataFrame
+The TreatmentsJSONTranslator class encapsulates model loading, inference, and DataFrame
 processing, optimized for batch processing of taxa descriptions.
 
 Constrained Decoding Support:
     The translator supports constrained decoding using the Outlines library, which
     guarantees valid JSON output conforming to a schema. Enable with:
-        translator = TaxaJSONTranslator(..., use_constrained_decoding=True)
+        translator = TreatmentsJSONTranslator(..., use_constrained_decoding=True)
 
     This addresses common problems with free-form generation:
     - Low structural success rate (<50% valid JSON)
@@ -373,21 +373,21 @@ def _constrained_inference_worker(descriptions, model_config, batch_size, result
         result_queue.put(('error', str(e) + "\n" + traceback.format_exc()))
 
 
-class TaxaJSONTranslator:
+class TreatmentsJSONTranslator:
     """
     Translates taxa descriptions to structured JSON using a fine-tuned Mistral model.
 
     This class is optimized for processing PySpark DataFrames created by
-    TreatmentExtractor.load_taxa(), adding a new column with JSON-formatted features.
+    TreatmentExtractor.load_treatments(), adding a new column with JSON-formatted features.
 
     Example:
-        >>> translator = TaxaJSONTranslator(
+        >>> translator = TreatmentsJSONTranslator(
         ...     spark=spark,
         ...     checkpoint_path="./mistral_checkpoints/checkpoint-100"
         ... )
         >>>
         >>> # Load taxa from CouchDB
-        >>> taxa_df = extractor.load_taxa()
+        >>> taxa_df = extractor.load_treatments()
         >>>
         >>> # Add JSON column
         >>> enriched_df = translator.translate_descriptions(taxa_df)
@@ -461,7 +461,7 @@ and their values from the provided species description and format them as struct
         ontology_dir: Optional[str] = None
     ):
         """
-        Initialize the TaxaJSONTranslator.
+        Initialize the TreatmentsJSONTranslator.
 
         Args:
             spark: SparkSession instance
@@ -512,7 +512,7 @@ and their values from the provided species description and format them as struct
         self._ontology_registry = None
         self._ontology_context_builder = None
 
-        print(f"TaxaJSONTranslator initialized")
+        print(f"TreatmentsJSONTranslator initialized")
         print(f"  CouchDB URL: {couchdb_url}")
         print(f"  Base model: {base_model_id}")
         print(f"  Checkpoint: {checkpoint_path or 'None (using base model)'}")
@@ -629,7 +629,7 @@ and their values from the provided species description and format them as struct
         print(f"  ✓ Built ontology context for {total} descriptions")
         return descriptions
 
-    def load_taxa(
+    def load_treatments(
         self,
         db_name: str,
         pattern: str = "*"
@@ -658,14 +658,14 @@ and their values from the provided species description and format them as struct
                 - empirical_page_number: Empirical page number of first nomenclature paragraph
 
         Example:
-            >>> translator = TaxaJSONTranslator(
+            >>> translator = TreatmentsJSONTranslator(
             ...     spark=spark,
             ...     couchdb_url="http://localhost:5984",
             ...     username="admin",
             ...     password="secret",
             ...     checkpoint_path="..."
             ... )
-            >>> taxa_df = translator.load_taxa(db_name="mycobank_taxa")
+            >>> taxa_df = translator.load_treatments(db_name="mycobank_taxa")
             >>> print(f"Loaded {taxa_df.count()} taxa")
         """
         from skol_classifier.couchdb_io import CouchDBConnection
@@ -960,7 +960,7 @@ Result:
         using translate_descriptions_batch() instead.
 
         Args:
-            taxa_df: Input DataFrame from TreatmentExtractor.load_taxa()
+            taxa_df: Input DataFrame from TreatmentExtractor.load_treatments()
             description_col: Name of column containing descriptions
             output_col: Name of output column for JSON
 
@@ -968,7 +968,7 @@ Result:
             DataFrame with additional JSON column
 
         Example:
-            >>> taxa_df = extractor.load_taxa()
+            >>> taxa_df = extractor.load_treatments()
             >>> enriched_df = translator.translate_descriptions(taxa_df)
             >>> enriched_df.select("treatment", "features_json").show(truncate=50)
         """
@@ -1007,7 +1007,7 @@ Result:
         and joins the results back. More efficient for moderate-sized datasets.
 
         Args:
-            taxa_df: Input DataFrame from TreatmentExtractor.load_taxa()
+            taxa_df: Input DataFrame from TreatmentExtractor.load_treatments()
             description_col: Name of column containing descriptions
             output_col: Name of output column for JSON
             batch_size: Number of descriptions to process at once
@@ -1016,7 +1016,7 @@ Result:
             DataFrame with additional JSON column
 
         Example:
-            >>> taxa_df = extractor.load_taxa()
+            >>> taxa_df = extractor.load_treatments()
             >>> enriched_df = translator.translate_descriptions_batch(
             ...     taxa_df, batch_size=20
             ... )
@@ -1162,7 +1162,7 @@ Result:
         - Better progress monitoring
 
         Args:
-            taxa_df: Input DataFrame from load_taxa()
+            taxa_df: Input DataFrame from load_treatments()
             db_name: Destination CouchDB database name
             description_col: Name of column containing descriptions
             batch_size: Batch size for progress reporting (not for saving)
@@ -1179,7 +1179,7 @@ Result:
             Dict with 'success_count', 'failure_count', 'total' keys
 
         Example:
-            >>> taxa_df = translator.load_taxa(db_name="skol_taxa_dev")
+            >>> taxa_df = translator.load_treatments(db_name="skol_taxa_dev")
             >>> results = translator.translate_and_save_streaming(
             ...     taxa_df,
             ...     db_name="skol_taxa_full_dev",
@@ -1586,7 +1586,7 @@ Result:
         Args:
             taxa_df: DataFrame with taxa and translations (must include json_annotated_col)
             db_name: Name of taxon database. If None, uses the database from the most
-                    recent load_taxa() call. If no database was loaded and db_name is
+                    recent load_treatments() call. If no database was loaded and db_name is
                     None, raises ValueError.
             json_annotated_col: Name of column containing JSON features (default: "features_json")
 
@@ -1595,7 +1595,7 @@ Result:
 
         Example:
             >>> # Load taxa and translate
-            >>> taxa_df = translator.load_taxa(db_name="mycobank_taxa")
+            >>> taxa_df = translator.load_treatments(db_name="mycobank_taxa")
             >>> enriched_df = translator.translate_descriptions(taxa_df)
             >>>
             >>> # Save back to same database (default)
@@ -1609,10 +1609,10 @@ Result:
         if db_name is None:
             if self._last_loaded_db_name is None:
                 raise ValueError(
-                    "db_name must be specified when no database has been loaded via load_taxa()"
+                    "db_name must be specified when no database has been loaded via load_treatments()"
                 )
             db_name = self._last_loaded_db_name
-            print(f"Using database from last load_taxa(): {db_name}")
+            print(f"Using database from last load_treatments(): {db_name}")
         from pyspark.sql import Row
         from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 
@@ -1824,7 +1824,7 @@ Result:
 
 def example_usage():
     """
-    Example usage of TaxaJSONTranslator.
+    Example usage of TreatmentsJSONTranslator.
 
     This function demonstrates the complete workflow:
     1. Initialize Spark
@@ -1855,11 +1855,11 @@ def example_usage():
 
         # Load taxa
         print("Loading taxa from CouchDB...")
-        taxa_df = extractor.load_taxa()
+        taxa_df = extractor.load_treatments()
         print(f"Loaded {taxa_df.count()} taxa")
 
         # Initialize translator
-        translator = TaxaJSONTranslator(
+        translator = TreatmentsJSONTranslator(
             spark=spark,
             couchdb_url="http://localhost:5984",
             username="admin",

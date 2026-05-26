@@ -2273,7 +2273,7 @@ class VocabTreeChildrenView(APIView):
 
 
 class TextClassifierView(APIView):
-    """REST interface for TaxaDecisionTreeClassifier (description text features).
+    """REST interface for TreatmentsDecisionTreeClassifier (description text features).
 
     POST /api/classifier/text/
     Body: { taxa_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
@@ -2303,7 +2303,7 @@ class TextClassifierView(APIView):
             skol_root = settings.SKOL_ROOT_PATH
             if skol_root not in sys.path:
                 sys.path.insert(0, skol_root)
-            from taxa_classifier.taxa_decision_tree import TaxaDecisionTreeClassifier
+            from treatments_classifier.treatments_decision_tree import TreatmentsDecisionTreeClassifier
 
             # Resolve treatments DB from the active experiment (post-Step-3
             # rename uses ``databases.treatments``, not ``databases.taxa``).
@@ -2321,7 +2321,7 @@ class TextClassifierView(APIView):
                 exp.get('databases', {}).get('treatments', default_treatments_db)
                 if exp else default_treatments_db
             )
-            classifier = TaxaDecisionTreeClassifier(
+            classifier = TreatmentsDecisionTreeClassifier(
                 couchdb_url=settings.COUCHDB_URL,
                 database=classifier_db,
                 username=settings.COUCHDB_USERNAME,
@@ -2371,7 +2371,7 @@ class TextClassifierView(APIView):
 
 
 class JsonClassifierView(APIView):
-    """REST interface for TaxaJsonClassifier (structured JSON annotation features).
+    """REST interface for TreatmentsJSONClassifier (structured JSON annotation features).
 
     POST /api/classifier/json/
     Body: { taxa_ids: [...], top_n: 30, max_depth: 10, min_df: 1, max_df: 1.0 }
@@ -2401,7 +2401,7 @@ class JsonClassifierView(APIView):
             skol_root = settings.SKOL_ROOT_PATH
             if skol_root not in sys.path:
                 sys.path.insert(0, skol_root)
-            from taxa_classifier.taxa_json_classifier import TaxaJsonClassifier
+            from treatments_classifier.treatments_json_classifier import TreatmentsJSONClassifier
 
             # Resolve the per-experiment ``treatments_full`` DB (the
             # one bin/treatments_to_json.py writes JSON-annotated docs
@@ -2418,7 +2418,7 @@ class JsonClassifierView(APIView):
                 )
                 if exp else default_full_db
             )
-            classifier = TaxaJsonClassifier(
+            classifier = TreatmentsJSONClassifier(
                 couchdb_url=settings.COUCHDB_URL,
                 database=classifier_db,
                 username=settings.COUCHDB_USERNAME,

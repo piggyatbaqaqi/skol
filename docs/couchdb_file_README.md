@@ -371,7 +371,7 @@ python test_couchdb_file.py
 ## See Also
 
 - [EXTRACTING_TAXON_OBJECTS.md](EXTRACTING_TAXON_OBJECTS.md) - Full extraction guide
-- [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.py) - Complete examples
+- [examples/extract_treatments_from_couchdb.py](examples/extract_treatments_from_couchdb.py) - Complete examples
 - [skol_classifier/couchdb_io.py](skol_classifier/couchdb_io.py) - CouchDBConnection class
 - [file.py](file.py) - Original file reading module
 - [line.py](line.py) - Base Line class

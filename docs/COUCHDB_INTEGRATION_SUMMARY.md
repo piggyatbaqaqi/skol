@@ -18,7 +18,7 @@ Key components:
 
 **Purpose:** Drop-in replacement for `file.py` when working with CouchDB attachments in PySpark. Uses the unified `Line` class with optional CouchDB fields.
 
-### 2. [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.py)
+### 2. [examples/extract_treatments_from_couchdb.py](examples/extract_treatments_from_couchdb.py)
 **Complete working examples**
 
 Includes:
@@ -207,7 +207,7 @@ for taxon in taxa:
 
 ```bash
 # Distributed mode
-python examples/extract_taxa_from_couchdb.py \
+python examples/extract_treatments_from_couchdb.py \
     --mode distributed \
     --database mycobank_annotations \
     --db-name mycobank \
@@ -215,7 +215,7 @@ python examples/extract_taxa_from_couchdb.py \
     --password secret
 
 # Local mode (for testing)
-python examples/extract_taxa_from_couchdb.py \
+python examples/extract_treatments_from_couchdb.py \
     --mode local \
     --database mycobank_annotations \
     --db-name mycobank
@@ -341,7 +341,7 @@ taxa_rdd = df.rdd.mapPartitions(process_partition)
 
 - **Main Guide**: [EXTRACTING_TAXON_OBJECTS.md](EXTRACTING_TAXON_OBJECTS.md)
 - **Module Reference**: [couchdb_file_README.md](couchdb_file_README.md)
-- **Examples**: [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.py)
+- **Examples**: [examples/extract_treatments_from_couchdb.py](examples/extract_treatments_from_couchdb.py)
 - **Tests**: [tests/test_couchdb_file.py](tests/test_couchdb_file.py)
 
 ## Quick Reference

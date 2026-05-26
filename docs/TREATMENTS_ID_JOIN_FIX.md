@@ -2,7 +2,7 @@
 
 ## Overview
 
-Updated `TaxaJSONTranslator.translate_descriptions_batch()` to join results back to the original DataFrame using the `_id` field (CouchDB document ID) instead of the `taxon` field.
+Updated `TreatmentsJSONTranslator.translate_descriptions_batch()` to join results back to the original DataFrame using the `_id` field (CouchDB document ID) instead of the `taxon` field.
 
 ## Problem
 
@@ -65,7 +65,7 @@ for taxon in partition:
     yield Row(**taxon_dict)
 ```
 
-### 3. Updated load_taxa()
+### 3. Updated load_treatments()
 
 **File**: [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py)
 
@@ -82,7 +82,7 @@ taxon_data = {
 
 ### 4. Updated translate_descriptions_batch()
 
-**File**: [taxa_json_translator.py](taxa_json_translator.py)
+**File**: [treatments_json_translator.py](treatments_json_translator.py)
 
 **Change**: Collect `_id` and join on it
 
@@ -175,7 +175,7 @@ root
 
 ```python
 # Still works the same
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 enriched_df = translator.translate_descriptions_batch(taxa_df)
 ```
 
@@ -209,7 +209,7 @@ extracted_df.select("_id", "taxon").show()
 extractor.save_taxa(extracted_df)
 
 # Load back
-loaded_df = extractor.load_taxa()
+loaded_df = extractor.load_treatments()
 loaded_df.select("_id", "taxon").show()
 # +----------------+------------------+
 # |            _id|             taxon|
@@ -237,7 +237,7 @@ extracted_df = extractor.extract_taxa(annotated_df)
 extractor.save_taxa(extracted_df)
 
 # Load with _id
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 # Now translate (works because _id is populated)
 enriched_df = translator.translate_descriptions_batch(taxa_df)
@@ -283,7 +283,7 @@ extracted_df = extractor.extract_taxa(annotated_df)
 extractor.save_taxa(extracted_df)
 
 # Load with _id
-loaded_df = extractor.load_taxa()
+loaded_df = extractor.load_treatments()
 assert loaded_df.filter("_id IS NOT NULL").count() == loaded_df.count()
 
 # Translate
@@ -305,7 +305,7 @@ enriched_df = translator.translate_descriptions_batch(extracted_df)  # Now fails
 ```python
 extracted_df = extractor.extract_taxa(annotated_df)
 extractor.save_taxa(extracted_df)
-loaded_df = extractor.load_taxa()
+loaded_df = extractor.load_treatments()
 enriched_df = translator.translate_descriptions_batch(loaded_df)  # Works
 ```
 
@@ -315,13 +315,13 @@ extracted_df = extractor.extract_taxa(annotated_df)
 enriched_df = translator.translate_descriptions(extracted_df)  # Still works
 ```
 
-### If You're Using load_taxa()
+### If You're Using load_treatments()
 
 **No changes needed** - this is the recommended workflow:
 
 ```python
 # Load taxa (has _id)
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 # Translate (uses _id for join)
 enriched_df = translator.translate_descriptions_batch(taxa_df)
@@ -340,10 +340,10 @@ This fix enables future enhancements:
 ✅ **More Correct**: Joins on unique `_id` instead of potentially duplicate `taxon`
 ✅ **CouchDB Aligned**: `_id` matches CouchDB document ID
 ✅ **Future Proof**: Enables saving translations back to CouchDB
-✅ **Backward Compatible**: Existing `load_taxa() → translate()` workflow unchanged
+✅ **Backward Compatible**: Existing `load_treatments() → translate()` workflow unchanged
 
 The recommended workflow is now explicitly:
 1. Extract taxa: `extract_taxa()`
 2. Save to CouchDB: `save_taxa()`
-3. Load with IDs: `load_taxa()`
+3. Load with IDs: `load_treatments()`
 4. Translate: `translate_descriptions_batch()`

@@ -36,7 +36,7 @@ setup(
         "pdf_section_extractor",
         "skol_compat",
         "span",
-        "taxa_json_translator",
+        "treatments_json_translator",
         "treatment",
         "tokenizer",
     ],

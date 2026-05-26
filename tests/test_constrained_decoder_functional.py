@@ -5,7 +5,7 @@ Functional tests for constrained decoding integration.
 This script tests the full constrained decoding pipeline including:
 1. TaxonomySchema JSON schema generation
 2. ConstrainedDecoder with mock backend
-3. Integration with TaxaJSONTranslator (mock mode)
+3. Integration with TreatmentsJSONTranslator (mock mode)
 
 Usage:
     python tests/test_constrained_decoder_functional.py

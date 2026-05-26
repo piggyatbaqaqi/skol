@@ -132,7 +132,7 @@ def translate_treatments_to_json(
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
-    from taxa_json_translator import TaxaJSONTranslator
+    from treatments_json_translator import TreatmentsJSONTranslator
 
     # Build CouchDB URL
     couchdb_url = config['couchdb_url']
@@ -206,7 +206,7 @@ def translate_treatments_to_json(
     try:
         # Initialize translator
         if verbosity >= 1:
-            print("\nInitializing TaxaJSONTranslator...")
+            print("\nInitializing TreatmentsJSONTranslator...")
 
         # Build translator kwargs
         translator_kwargs = {
@@ -226,13 +226,13 @@ def translate_treatments_to_json(
         if base_model_id:
             translator_kwargs['base_model_id'] = base_model_id
 
-        translator = TaxaJSONTranslator(**translator_kwargs)
+        translator = TreatmentsJSONTranslator(**translator_kwargs)
 
         # Load taxa from source database
         if verbosity >= 1:
             print(f"\nLoading taxa from {source_db}...")
 
-        taxa_df = translator.load_taxa(db_name=source_db, pattern=pattern)
+        taxa_df = translator.load_treatments(db_name=source_db, pattern=pattern)
         loaded_count = taxa_df.count()
 
         if loaded_count == 0:

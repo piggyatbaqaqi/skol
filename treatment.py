@@ -86,7 +86,7 @@ _LABEL_TO_SPANS_FIELD: Dict[str, str] = {
 # that into every Treatment ballooned ``skol_treatments_v3_dev`` to
 # 1.5 GB and made the SBERT embedding pickle exceed Redis's 4 GB
 # proto-max-bulk-len cap.  An audit of downstream consumers
-# (django/search, taxa_json_translator, taxon_clusterer,
+# (django/search, treatments_json_translator, taxon_clusterer,
 # dr-drafts-mycosearch) shows only these four keys are actually read.
 # All other ingest fields are still available via a CouchDB lookup
 # from ``ingest._id`` if needed.

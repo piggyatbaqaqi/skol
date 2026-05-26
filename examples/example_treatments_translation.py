@@ -2,12 +2,12 @@
 """
 Example: Translating Taxa Descriptions to JSON
 
-This script demonstrates how to use TaxaJSONTranslator to enrich taxa
+This script demonstrates how to use TreatmentsJSONTranslator to enrich taxa
 descriptions with structured JSON features using a fine-tuned Mistral model.
 
 Workflow:
 1. Load taxa from CouchDB using TreatmentExtractor
-2. Initialize TaxaJSONTranslator with checkpoint
+2. Initialize TreatmentsJSONTranslator with checkpoint
 3. Translate descriptions to JSON
 4. Validate and save results
 """
@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pyspark.sql import SparkSession
 from extract_treatments_to_couchdb import TreatmentExtractor
-from taxa_json_translator import TaxaJSONTranslator
+from treatments_json_translator import TreatmentsJSONTranslator
 
 
 def main():
@@ -63,7 +63,7 @@ def main():
             ingest_password=password
         )
 
-        taxa_df = extractor.load_taxa()
+        taxa_df = extractor.load_treatments()
         count = taxa_df.count()
 
         print(f"\n✓ Loaded {count} taxa")
@@ -79,7 +79,7 @@ def main():
 
         # Step 2: Initialize translator
         print("\n" + "=" * 70)
-        print("STEP 2: Initializing TaxaJSONTranslator")
+        print("STEP 2: Initializing TreatmentsJSONTranslator")
         print("=" * 70)
 
         if checkpoint_path and Path(checkpoint_path).exists():
@@ -92,7 +92,7 @@ def main():
             print("\nNo checkpoint specified, using base model")
             print("  Set MISTRAL_CHECKPOINT env var to use fine-tuned model")
 
-        translator = TaxaJSONTranslator(
+        translator = TreatmentsJSONTranslator(
             spark=spark,
             checkpoint_path=checkpoint_path,
             max_new_tokens=1024

@@ -550,7 +550,7 @@ class TreatmentExtractor:
 
         return taxa_df
 
-    def load_taxa(self, pattern: str = "taxon_*") -> DataFrame:
+    def load_treatments(self, pattern: str = "taxon_*") -> DataFrame:
         """
         Load taxa from CouchDB taxon database.
 
@@ -575,11 +575,11 @@ class TreatmentExtractor:
 
         Example:
             >>> # Load all taxa
-            >>> taxa_df = extractor.load_taxa()
+            >>> taxa_df = extractor.load_treatments()
             >>> print(f"Loaded {taxa_df.count()} taxa")
             >>>
             >>> # Load specific subset
-            >>> subset_df = extractor.load_taxa(pattern="taxon_abc*")
+            >>> subset_df = extractor.load_treatments(pattern="taxon_abc*")
         """
         # Extract to local variables to avoid serializing self
         couchdb_url = self.taxon_couchdb_url

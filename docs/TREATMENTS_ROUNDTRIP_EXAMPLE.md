@@ -128,7 +128,7 @@ Save results:
 
 ```python
 # Load all taxa back from database
-loaded_df = extractor.load_taxa()
+loaded_df = extractor.load_treatments()
 
 print(f"Loaded {loaded_df.count()} taxa from CouchDB")
 
@@ -178,7 +178,7 @@ else:
 
 ```python
 # Load all taxa (default)
-all_taxa = extractor.load_taxa()
+all_taxa = extractor.load_treatments()
 print(f"All taxa: {all_taxa.count()}")
 ```
 
@@ -186,7 +186,7 @@ print(f"All taxa: {all_taxa.count()}")
 
 ```python
 # Load taxa with specific prefix
-subset = extractor.load_taxa(pattern="taxon_abc*")
+subset = extractor.load_treatments(pattern="taxon_abc*")
 print(f"Taxa with prefix 'taxon_abc': {subset.count()}")
 ```
 
@@ -200,7 +200,7 @@ import hashlib
 taxon_name = "Agaricus bisporus"
 taxon_id = "taxon_" + hashlib.md5(taxon_name.encode()).hexdigest()
 
-single_taxon = extractor.load_taxa(pattern=taxon_id)
+single_taxon = extractor.load_treatments(pattern=taxon_id)
 if single_taxon.count() > 0:
     print(f"Found taxon: {single_taxon.first()['taxon']}")
 ```
@@ -213,7 +213,7 @@ if single_taxon.count() > 0:
 from pyspark.sql.functions import col
 
 # Load all taxa
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 # Group by source document
 by_source = taxa_df.groupBy("source.doc_id", "source.attachment_name").count()
@@ -279,7 +279,7 @@ save_results = extractor.save_taxa(extracted_df)
 print(f"Saved {save_results.filter('success = true').count()} taxa")
 
 # Later: Load and analyze
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 # Add new annotated documents to CouchDB (external process)
 # ...
@@ -292,7 +292,7 @@ new_extracted_df = extractor.extract_taxa(new_annotated_df)
 new_save_results = extractor.save_taxa(new_extracted_df)
 
 # Reload to see updated data
-updated_taxa_df = extractor.load_taxa()
+updated_taxa_df = extractor.load_treatments()
 print(f"Total taxa now: {updated_taxa_df.count()}")
 ```
 
@@ -302,7 +302,7 @@ print(f"Total taxa now: {updated_taxa_df.count()}")
 
 ```python
 try:
-    taxa_df = extractor.load_taxa()
+    taxa_df = extractor.load_treatments()
     print(f"Loaded {taxa_df.count()} taxa")
 except Exception as e:
     print(f"Error loading taxa: {e}")
@@ -344,7 +344,7 @@ patterns = ["taxon_a*", "taxon_b*", "taxon_c*", "taxon_d*"]
 
 for pattern in patterns:
     print(f"\nProcessing {pattern}...")
-    taxa_batch = extractor.load_taxa(pattern=pattern)
+    taxa_batch = extractor.load_treatments(pattern=pattern)
     count = taxa_batch.count()
     print(f"  Loaded {count} taxa")
 
@@ -357,7 +357,7 @@ for pattern in patterns:
 
 ```python
 # Load once and cache
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 taxa_df.cache()
 
 # Multiple operations on cached data
@@ -373,7 +373,7 @@ taxa_df.unpersist()
 
 ```python
 # Load and repartition
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 taxa_df = taxa_df.repartition(200)  # Adjust based on cluster size
 
 # Now operations will be more parallel
@@ -421,7 +421,7 @@ extracted_df = extractor.extract_taxa(annotated_df)
 save_results = extractor.save_taxa(extracted_df)
 
 # 4. Load and analyze
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 print(f"Extracted {taxa_df.count()} taxa from classified documents")
 ```
 
@@ -474,7 +474,7 @@ def main():
 
         # Step 4: Load from CouchDB
         print("4. Loading taxa from CouchDB...")
-        loaded_df = extractor.load_taxa()
+        loaded_df = extractor.load_treatments()
         loaded_count = loaded_df.count()
         print(f"   Loaded {loaded_count} taxa\n")
 

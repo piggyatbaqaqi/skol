@@ -17,7 +17,7 @@ pip install transformers peft accelerate bitsandbytes torch
 ```python
 from pyspark.sql import SparkSession
 from extract_treatments_to_couchdb import TreatmentExtractor
-from taxa_json_translator import TaxaJSONTranslator
+from treatments_json_translator import TreatmentsJSONTranslator
 
 # Initialize
 spark = SparkSession.builder.master("local[*]").getOrCreate()
@@ -31,13 +31,13 @@ extractor = TreatmentExtractor(
     ingest_password="password"
 )
 
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./mistral_checkpoints/checkpoint-100"
 )
 
 # Load, translate, save
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 enriched_df = translator.translate_descriptions(taxa_df)
 translator.save_translations(enriched_df, "output/taxa_features.parquet")
 
@@ -88,7 +88,7 @@ export COUCHDB_PASSWORD="password"
 export MISTRAL_CHECKPOINT="./mistral_checkpoints/checkpoint-100"
 
 # Run example
-python example_taxa_translation.py
+python example_treatments_translation.py
 ```
 
 ## Common Patterns
@@ -97,7 +97,7 @@ python example_taxa_translation.py
 
 ```python
 # Load specific taxa
-taxa_df = extractor.load_taxa(pattern="taxon_abc*")
+taxa_df = extractor.load_treatments(pattern="taxon_abc*")
 
 # Translate
 enriched_df = translator.translate_descriptions(taxa_df)
@@ -121,7 +121,7 @@ translator.save_translations(enriched_df, "output/taxa.csv", format="csv")
 ```python
 custom_prompt = "Extract only morphological features as JSON."
 
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./checkpoints/checkpoint-100",
     prompt=custom_prompt
@@ -132,7 +132,7 @@ translator = TaxaJSONTranslator(
 
 ```python
 # For machines without GPU
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./checkpoints/checkpoint-100",
     device="cpu",
@@ -169,7 +169,7 @@ translator = TaxaJSONTranslator(
 
 ### DataFrame Schema
 
-**Input** (from `load_taxa()`):
+**Input** (from `load_treatments()`):
 ```
 root
  |-- taxon: string
@@ -226,7 +226,7 @@ root
 
 **Solution 1**: Enable 4-bit quantization (default)
 ```python
-translator = TaxaJSONTranslator(spark=spark, load_in_4bit=True)
+translator = TreatmentsJSONTranslator(spark=spark, load_in_4bit=True)
 ```
 
 **Solution 2**: Use smaller batches
@@ -236,7 +236,7 @@ enriched_df = translator.translate_descriptions_batch(taxa_df, batch_size=5)
 
 **Solution 3**: Use CPU
 ```python
-translator = TaxaJSONTranslator(spark=spark, device="cpu", load_in_4bit=False)
+translator = TreatmentsJSONTranslator(spark=spark, device="cpu", load_in_4bit=False)
 ```
 
 ### Error: Checkpoint not found
@@ -248,7 +248,7 @@ checkpoint = "./checkpoints/checkpoint-100"
 if not Path(checkpoint).exists():
     checkpoint = None  # Use base model
 
-translator = TaxaJSONTranslator(spark=spark, checkpoint_path=checkpoint)
+translator = TreatmentsJSONTranslator(spark=spark, checkpoint_path=checkpoint)
 ```
 
 ### Issue: Invalid JSON outputs
@@ -285,7 +285,7 @@ enriched_df = translator.translate_descriptions(taxa_df)
 ```python
 patterns = ["taxon_a*", "taxon_b*", "taxon_c*"]
 for pattern in patterns:
-    chunk = extractor.load_taxa(pattern=pattern)
+    chunk = extractor.load_treatments(pattern=pattern)
     enriched = translator.translate_descriptions(chunk)
     translator.save_translations(enriched, f"output/{pattern}.parquet")
 ```
@@ -308,7 +308,7 @@ enriched_df = translator.translate_descriptions_batch(
 
 from pyspark.sql import SparkSession
 from extract_treatments_to_couchdb import TreatmentExtractor
-from taxa_json_translator import TaxaJSONTranslator
+from treatments_json_translator import TreatmentsJSONTranslator
 
 # Initialize
 spark = SparkSession.builder \
@@ -326,11 +326,11 @@ extractor = TreatmentExtractor(
     ingest_password="password"
 )
 
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 print(f"Loaded {taxa_df.count()} taxa")
 
 # Translate
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./mistral_checkpoints/checkpoint-100"
 )
@@ -357,7 +357,7 @@ spark.stop()
 ## Next Steps
 
 - Read [TAXA_JSON_TRANSLATOR.md](TAXA_JSON_TRANSLATOR.md) for detailed documentation
-- See [example_taxa_translation.py](example_taxa_translation.py) for full example
+- See [example_treatments_translation.py](example_treatments_translation.py) for full example
 - Check [TAXA_ROUNDTRIP_EXAMPLE.md](TAXA_ROUNDTRIP_EXAMPLE.md) for pipeline integration
 
 ## Environment Variables
@@ -377,7 +377,7 @@ export HUGGING_FACE_TOKEN="your_token_here"
 
 ## API Reference
 
-### TaxaJSONTranslator
+### TreatmentsJSONTranslator
 
 **Methods**:
 - `translate_descriptions(taxa_df)` → DataFrame with JSON column

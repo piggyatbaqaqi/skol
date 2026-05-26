@@ -1,15 +1,15 @@
-# TreatmentExtractor.load_taxa() Method
+# TreatmentExtractor.load_treatments() Method
 
 ## Overview
 
-Added `load_taxa()` method to `TreatmentExtractor` class that performs the inverse operation of `save_taxa()`, loading taxa from CouchDB and converting them back to a PySpark DataFrame.
+Added `load_treatments()` method to `TreatmentExtractor` class that performs the inverse operation of `save_taxa()`, loading taxa from CouchDB and converting them back to a PySpark DataFrame.
 
 ## Implementation
 
 ### Method Signature
 
 ```python
-def load_taxa(self, pattern: str = "taxon_*") -> DataFrame:
+def load_treatments(self, pattern: str = "taxon_*") -> DataFrame:
     """
     Load taxa from CouchDB taxon database.
 
@@ -40,19 +40,19 @@ Supports flexible pattern matching for document IDs:
 
 ```python
 # Load all taxa
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 # Load all taxa (explicit)
-taxa_df = extractor.load_taxa(pattern="*")
+taxa_df = extractor.load_treatments(pattern="*")
 
 # Load specific prefix
-taxa_df = extractor.load_taxa(pattern="taxon_abc")
+taxa_df = extractor.load_treatments(pattern="taxon_abc")
 
 # Load with wildcard
-taxa_df = extractor.load_taxa(pattern="taxon_abc*")
+taxa_df = extractor.load_treatments(pattern="taxon_abc*")
 
 # Load exact document
-taxa_df = extractor.load_taxa(pattern="taxon_123abc")
+taxa_df = extractor.load_treatments(pattern="taxon_123abc")
 ```
 
 #### 2. Distributed Processing
@@ -121,7 +121,7 @@ extractor = TreatmentExtractor(
 )
 
 # Load all taxa
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 print(f"Loaded {taxa_df.count()} taxa")
 taxa_df.show(10)
@@ -134,7 +134,7 @@ taxa_df.groupBy("source.db_name").count().show()
 
 ```python
 # Load taxa with specific prefix
-subset_df = extractor.load_taxa(pattern="taxon_abc*")
+subset_df = extractor.load_treatments(pattern="taxon_abc*")
 
 print(f"Loaded {subset_df.count()} taxa with prefix 'taxon_abc'")
 
@@ -162,7 +162,7 @@ successes = save_results.filter("success = true").count()
 print(f"Saved {successes} taxa to CouchDB")
 
 # Load back from CouchDB
-loaded_df = extractor.load_taxa()
+loaded_df = extractor.load_treatments()
 
 print(f"Loaded {loaded_df.count()} taxa from CouchDB")
 
@@ -175,7 +175,7 @@ print("✓ Round-trip successful!")
 
 ```python
 # Load existing taxa
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
 # Add computed field
 from pyspark.sql.functions import length
@@ -244,7 +244,7 @@ patterns = ["taxon_a*", "taxon_b*", "taxon_c*"]
 
 all_taxa = []
 for pattern in patterns:
-    batch_df = extractor.load_taxa(pattern=pattern)
+    batch_df = extractor.load_treatments(pattern=pattern)
     all_taxa.append(batch_df)
 
 # Union all batches
@@ -257,19 +257,19 @@ complete_df = reduce(DataFrame.union, all_taxa)
 1. **Use specific patterns** when possible to reduce documents to load
 2. **Repartition** if needed for better parallelism:
    ```python
-   taxa_df = extractor.load_taxa()
+   taxa_df = extractor.load_treatments()
    taxa_df = taxa_df.repartition(200)  # Increase partitions
    ```
 3. **Cache** if reusing:
    ```python
-   taxa_df = extractor.load_taxa()
+   taxa_df = extractor.load_treatments()
    taxa_df.cache()
    # Multiple operations on taxa_df
    ```
 
-## Comparison: save_taxa() vs load_taxa()
+## Comparison: save_taxa() vs load_treatments()
 
-| Aspect | save_taxa() | load_taxa() |
+| Aspect | save_taxa() | load_treatments() |
 |--------|-------------|-------------|
 | **Direction** | DataFrame → CouchDB | CouchDB → DataFrame |
 | **Input** | DataFrame with taxa | Pattern string |
@@ -313,8 +313,8 @@ def load_partition(partition: Iterator[Row]) -> Iterator[Row]:
 ## Testing
 
 ```python
-def test_load_taxa():
-    """Test load_taxa() functionality."""
+def test_load_treatments():
+    """Test load_treatments() functionality."""
     spark = SparkSession.builder.getOrCreate()
 
     extractor = TreatmentExtractor(
@@ -327,12 +327,12 @@ def test_load_taxa():
     )
 
     # Test 1: Load all taxa
-    all_taxa = extractor.load_taxa()
+    all_taxa = extractor.load_treatments()
     assert all_taxa.count() > 0
     print("✓ Load all taxa works")
 
     # Test 2: Load with pattern
-    subset = extractor.load_taxa(pattern="taxon_test*")
+    subset = extractor.load_treatments(pattern="taxon_test*")
     assert subset.count() <= all_taxa.count()
     print("✓ Pattern matching works")
 
@@ -343,7 +343,7 @@ def test_load_taxa():
     print("✓ Schema is correct")
 
     # Test 4: Empty pattern
-    empty = extractor.load_taxa(pattern="nonexistent*")
+    empty = extractor.load_treatments(pattern="nonexistent*")
     assert empty.count() == 0
     print("✓ Empty result works")
 
@@ -369,7 +369,7 @@ Potential improvements:
 
 ## Summary
 
-The `load_taxa()` method provides:
+The `load_treatments()` method provides:
 - ✅ Inverse operation of `save_taxa()`
 - ✅ Distributed loading via mapPartitions
 - ✅ Pattern-based filtering

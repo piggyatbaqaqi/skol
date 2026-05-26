@@ -391,7 +391,7 @@ def read_couchdb_files_from_connection(
 ## Note on __init__ Methods
 
 The following classes inherit their `__init__` from their parent classes and do not need explicit definition:
-- **TaxaJSONTranslator** inherits from TJT
+- **TreatmentsJSONTranslator** inherits from TJT
 - **TaxonClusterer** inherits from TC
 - **SKOL_TAXA** inherits from STX
 - **EmbeddingsComputer** inherits from EC

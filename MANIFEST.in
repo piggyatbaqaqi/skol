@@ -23,6 +23,8 @@ include mycobank_species.py
 include nomenclature.py
 include paragraph.py
 include skol_compat.py
-include taxon.py
+include treatment.py
+include treatments_json_translator.py
+recursive-include treatments_classifier *.py
 include tokenizer.py
 recursive-include data/ontologies *.obo *.owl

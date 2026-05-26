@@ -10,7 +10,7 @@ This report documents all methods that use Redis or CouchDB across classes impor
 | `skol_classifier.output_formatters` | `CouchDBOutputWriter` | `CDBOW` | `__init__()`, `save_annotated()` |
 | `skol_classifier.classifier_v2` | `SkolClassifierV2` | `SC` | `load_raw()`, `_load_raw_from_couchdb()`, `_load_annotated_from_couchdb()`, `_save_to_couchdb()` |
 | `couchdb_file` | `CouchDBFile` | `CDBF` | `__init__()`, `filename` (property), `doc_id` (property), `attachment_name` (property), `db_name` (property), `human_url` (property), `read_couchdb_partition()` (function), `read_couchdb_rows()` (function), `read_couchdb_files_from_connection()` (function) |
-| `taxa_json_translator` | `TaxaJSONTranslator` | `TJT` | `__init__()`, `load_taxa()`, `save_taxa()` |
+| `treatments_json_translator` | `TreatmentsJSONTranslator` | `TJT` | `__init__()`, `load_treatments()`, `save_taxa()` |
 | `dr_drafts_mycosearch.data` | `SKOL_TAXA` | `STX` | `__init__()`, `load_data()` |
 
 ## Classes with Redis Methods
@@ -56,9 +56,9 @@ _save_model_to_redis, _load_model_from_redis
 __init__, filename, doc_id, attachment_name, db_name, human_url, read_couchdb_partition, read_couchdb_rows, read_couchdb_files_from_connection
 ```
 
-### TaxaJSONTranslator (TJT)
+### TreatmentsJSONTranslator (TJT)
 ```python
-__init__, load_taxa, save_taxa
+__init__, load_treatments, save_taxa
 ```
 
 ### TaxonClusterer (TC) - Redis
@@ -123,12 +123,12 @@ All methods and properties in this class relate to CouchDB:
 - `read_couchdb_rows()` - Reads annotated files from a list of CouchDB rows
 - `read_couchdb_files_from_connection()` - Loads and reads annotated files from CouchDB using CouchDBConnection
 
-### TaxaJSONTranslator (TJT)
+### TreatmentsJSONTranslator (TJT)
 
 All methods interact with CouchDB:
 
 - `__init__()` - Stores CouchDB URL and credentials
-- `load_taxa()` - Loads taxa from CouchDB using CouchDBConnection, queries documents with `conn.get_all_doc_ids()`, and uses `conn.db` to retrieve documents
+- `load_treatments()` - Loads taxa from CouchDB using CouchDBConnection, queries documents with `conn.get_all_doc_ids()`, and uses `conn.db` to retrieve documents
 - `save_taxa()` - Saves taxa DataFrame to CouchDB using `couchdb.Server()` and `db.save()` within a mapPartitions function
 
 ### TaxonClusterer (TC)

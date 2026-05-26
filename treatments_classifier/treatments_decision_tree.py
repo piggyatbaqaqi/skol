@@ -5,10 +5,10 @@ based on description text, using TF-IDF vectorization for text encoding.
 
 Example usage:
 
-    from taxa_classifier import TaxaDecisionTreeClassifier
+    from treatments_classifier import TreatmentsDecisionTreeClassifier
 
     # Initialize with CouchDB connection
-    classifier = TaxaDecisionTreeClassifier(
+    classifier = TreatmentsDecisionTreeClassifier(
         couchdb_url='http://localhost:5984',
         database='skol_taxa_dev',
         username='admin',
@@ -43,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 
-class TaxaDecisionTreeClassifier:
+class TreatmentsDecisionTreeClassifier:
     """Classifier for treatment identification using TF-IDF + Decision Tree.
 
     This classifier takes treatment descriptions and learns to identify which
@@ -75,7 +75,7 @@ class TaxaDecisionTreeClassifier:
         random_state: int = 42,
         verbosity: int = 1
     ):
-        """Initialize the TaxaDecisionTreeClassifier.
+        """Initialize the TreatmentsDecisionTreeClassifier.
 
         Args:
             couchdb_url: CouchDB server URL (default: from env_config)
@@ -841,7 +841,7 @@ def main():
     args = parser.parse_args()
 
     # Initialize classifier
-    classifier = TaxaDecisionTreeClassifier(
+    classifier = TreatmentsDecisionTreeClassifier(
         database=args.database,
         max_features=args.max_features,
         max_depth=args.max_depth,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for TreatmentExtractor.load_taxa() method.
+"""Test script for TreatmentExtractor.load_treatments() method.
 
 Tests:
 1. Basic loading with default pattern
@@ -20,11 +20,11 @@ from extract_treatments_to_couchdb import TreatmentExtractor
 import os
 
 
-def test_load_taxa():
-    """Test the load_taxa() method."""
+def test_load_treatments():
+    """Test the load_treatments() method."""
 
     print("=" * 70)
-    print("Testing TreatmentExtractor.load_taxa()")
+    print("Testing TreatmentExtractor.load_treatments()")
     print("=" * 70)
 
     # Create Spark session
@@ -64,7 +64,7 @@ def test_load_taxa():
         print("Test 1: Load all taxa (pattern='taxon_*')")
         print("-" * 70)
 
-        all_taxa = extractor.load_taxa()
+        all_taxa = extractor.load_treatments()
         count = all_taxa.count()
         print(f"✓ Loaded {count} taxa")
 
@@ -84,12 +84,12 @@ def test_load_taxa():
         print("-" * 70)
 
         # Try loading with wildcard pattern
-        wildcard_taxa = extractor.load_taxa(pattern="taxon_*")
+        wildcard_taxa = extractor.load_treatments(pattern="taxon_*")
         wildcard_count = wildcard_taxa.count()
         print(f"Pattern 'taxon_*': {wildcard_count} taxa")
 
         # Try loading all documents
-        all_docs = extractor.load_taxa(pattern="*")
+        all_docs = extractor.load_treatments(pattern="*")
         all_count = all_docs.count()
         print(f"Pattern '*': {all_count} taxa")
 
@@ -130,7 +130,7 @@ def test_load_taxa():
         print("Test 4: Empty result handling")
         print("-" * 70)
 
-        empty = extractor.load_taxa(pattern="nonexistent_pattern_12345")
+        empty = extractor.load_treatments(pattern="nonexistent_pattern_12345")
         empty_count = empty.count()
 
         if empty_count == 0:
@@ -168,7 +168,7 @@ def test_load_taxa():
 
                     # Load back
                     print("Loading taxa from CouchDB...")
-                    loaded_df = extractor.load_taxa()
+                    loaded_df = extractor.load_treatments()
                     loaded_count = loaded_df.count()
                     print(f"Loaded {loaded_count} taxa")
 
@@ -238,5 +238,5 @@ def test_load_taxa():
 
 
 if __name__ == "__main__":
-    success = test_load_taxa()
+    success = test_load_treatments()
     sys.exit(0 if success else 1)

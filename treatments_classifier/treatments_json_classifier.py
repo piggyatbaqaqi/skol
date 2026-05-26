@@ -13,9 +13,9 @@ These tokens are then processed with TF-IDF to create feature vectors.
 
 Example usage:
 
-    from taxa_classifier import TaxaJsonClassifier
+    from treatments_classifier import TreatmentsJSONClassifier
 
-    classifier = TaxaJsonClassifier(
+    classifier = TreatmentsJSONClassifier(
         couchdb_url='http://localhost:5984',
         database='skol_taxa_full_dev',
         username='admin',
@@ -107,7 +107,7 @@ def flatten_to_tokens(json_data: Any) -> str:
     return ' '.join(tokens)
 
 
-class TaxaJsonClassifier:
+class TreatmentsJSONClassifier:
     """Classifier for treatment identification using TF-IDF on flattened JSON.
 
     This classifier takes structured JSON annotations, flattens them to
@@ -140,7 +140,7 @@ class TaxaJsonClassifier:
         random_state: int = 42,
         verbosity: int = 1
     ):
-        """Initialize the TaxaJsonClassifier.
+        """Initialize the TreatmentsJSONClassifier.
 
         Args:
             couchdb_url: CouchDB server URL (default: from env_config)
@@ -747,7 +747,7 @@ def main():
 
     args = parser.parse_args()
 
-    classifier = TaxaJsonClassifier(
+    classifier = TreatmentsJSONClassifier(
         database=args.database,
         max_depth=args.max_depth,
         max_features=args.max_features,

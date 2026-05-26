@@ -1,8 +1,8 @@
-# Testing load_taxa() Method
+# Testing load_treatments() Method
 
 ## Overview
 
-Created comprehensive test suite for `TreatmentExtractor.load_taxa()` method to verify:
+Created comprehensive test suite for `TreatmentExtractor.load_treatments()` method to verify:
 - Basic loading functionality
 - Pattern-based filtering
 - Round-trip consistency
@@ -11,7 +11,7 @@ Created comprehensive test suite for `TreatmentExtractor.load_taxa()` method to 
 
 ## Test Script
 
-**File**: [test_load_taxa.py](test_load_taxa.py)
+**File**: [test_load_treatments.py](test_load_treatments.py)
 
 ## Test Cases
 
@@ -20,7 +20,7 @@ Created comprehensive test suite for `TreatmentExtractor.load_taxa()` method to 
 **Purpose**: Verify basic loading with default pattern
 
 ```python
-all_taxa = extractor.load_taxa()
+all_taxa = extractor.load_treatments()
 count = all_taxa.count()
 ```
 
@@ -37,10 +37,10 @@ count = all_taxa.count()
 
 ```python
 # Load with wildcard
-wildcard_taxa = extractor.load_taxa(pattern="taxon_*")
+wildcard_taxa = extractor.load_treatments(pattern="taxon_*")
 
 # Load all documents
-all_docs = extractor.load_taxa(pattern="*")
+all_docs = extractor.load_treatments(pattern="*")
 
 # Verify they match
 assert wildcard_count == all_count
@@ -75,7 +75,7 @@ assert expected_cols == actual_cols
 **Purpose**: Verify graceful handling of no matches
 
 ```python
-empty = extractor.load_taxa(pattern="nonexistent_pattern_12345")
+empty = extractor.load_treatments(pattern="nonexistent_pattern_12345")
 assert empty.count() == 0
 ```
 
@@ -102,7 +102,7 @@ save_results = extractor.save_taxa(extracted_df)
 successes = save_results.filter("success = true").count()
 
 # 4. Load back from CouchDB
-loaded_df = extractor.load_taxa()
+loaded_df = extractor.load_treatments()
 loaded_count = loaded_df.count()
 
 # 5. Verify
@@ -147,14 +147,14 @@ export COUCHDB_PASSWORD="password"
 export INGEST_DB="mycobank_annotations"
 export TAXON_DB="mycobank_taxa"
 
-python test_load_taxa.py
+python test_load_treatments.py
 ```
 
 ### Using Defaults
 
 ```bash
 # Uses localhost:5984 with admin/password
-python test_load_taxa.py
+python test_load_treatments.py
 ```
 
 ## Expected Output
@@ -163,7 +163,7 @@ python test_load_taxa.py
 
 ```
 ======================================================================
-Testing TreatmentExtractor.load_taxa()
+Testing TreatmentExtractor.load_treatments()
 ======================================================================
 
 Initializing Spark session...
@@ -263,7 +263,7 @@ Empty results work: ✓
 
 ```
 ======================================================================
-Testing TreatmentExtractor.load_taxa()
+Testing TreatmentExtractor.load_treatments()
 ======================================================================
 
 ----------------------------------------------------------------------
@@ -400,7 +400,7 @@ The test uses a small dataset for speed. For performance testing with large data
 # Load in batches
 patterns = ["taxon_a*", "taxon_b*", "taxon_c*"]
 for pattern in patterns:
-    taxa_df = extractor.load_taxa(pattern=pattern)
+    taxa_df = extractor.load_treatments(pattern=pattern)
     print(f"{pattern}: {taxa_df.count()} taxa")
 ```
 
@@ -412,7 +412,7 @@ for pattern in patterns:
 
 ## Summary
 
-This test suite verifies that `load_taxa()`:
+This test suite verifies that `load_treatments()`:
 - ✅ Loads taxa from CouchDB correctly
 - ✅ Supports pattern-based filtering
 - ✅ Returns correct schema

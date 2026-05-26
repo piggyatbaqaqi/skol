@@ -46,7 +46,7 @@ def _mock_settings():
 
 
 def _mock_text_classifier(stats=None, importances=None, tree_json=None):
-    """Create a mock TaxaDecisionTreeClassifier."""
+    """Create a mock TreatmentsDecisionTreeClassifier."""
     mock = MagicMock()
     mock.fit.return_value = stats or MOCK_STATS
     mock.get_feature_importances.return_value = importances or MOCK_IMPORTANCES
@@ -55,7 +55,7 @@ def _mock_text_classifier(stats=None, importances=None, tree_json=None):
 
 
 def _mock_json_classifier(stats=None, importances=None, tree_json=None):
-    """Create a mock TaxaJsonClassifier."""
+    """Create a mock TreatmentsJSONClassifier."""
     mock = MagicMock()
     mock.fit.return_value = stats or MOCK_STATS
     mock.get_feature_importances.return_value = importances or MOCK_IMPORTANCES
@@ -157,9 +157,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=mock_cls
             ),
         }):
             response = self.client.post(
@@ -204,9 +204,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_classifier = _mock_text_classifier()
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -232,9 +232,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=mock_cls
             ),
         }):
             response = self.client.post(
@@ -265,9 +265,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=mock_cls
             ),
         }):
             response = self.client.post(
@@ -302,9 +302,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=mock_cls
             ),
         }):
             response = self.client.post(
@@ -330,9 +330,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=mock_cls
             ),
         }):
             self.client.post(
@@ -355,9 +355,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_classifier = _mock_text_classifier()
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             self.client.post(
@@ -382,9 +382,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_classifier.fit.side_effect = ValueError("Need at least 2 treatment documents")
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -408,9 +408,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_classifier.fit.side_effect = ConnectionError("CouchDB unreachable")
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -433,9 +433,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_classifier = _mock_text_classifier()
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -460,9 +460,9 @@ class TestTextClassifierViewFunctional(TestCase):
         mock_classifier = _mock_text_classifier()
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_decision_tree': MagicMock(
-                TaxaDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_decision_tree': MagicMock(
+                TreatmentsDecisionTreeClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -536,9 +536,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_classifier = _mock_json_classifier(importances=json_importances)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -568,9 +568,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=mock_cls
             ),
         }):
             self.client.post(
@@ -593,9 +593,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_classifier = _mock_json_classifier()
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             self.client.post(
@@ -620,9 +620,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_classifier.fit.side_effect = ValueError("Need at least 2 documents")
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -646,9 +646,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_classifier.fit.side_effect = RuntimeError("Unexpected failure")
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(
@@ -672,9 +672,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_cls = MagicMock(return_value=mock_classifier)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=mock_cls
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=mock_cls
             ),
         }):
             self.client.post(
@@ -703,9 +703,9 @@ class TestJsonClassifierViewFunctional(TestCase):
         mock_classifier = _mock_json_classifier(importances=importances)
 
         with patch.dict('sys.modules', {
-            'taxa_classifier': MagicMock(),
-            'taxa_classifier.taxa_json_classifier': MagicMock(
-                TaxaJsonClassifier=MagicMock(return_value=mock_classifier)
+            'treatments_classifier': MagicMock(),
+            'treatments_classifier.treatments_json_classifier': MagicMock(
+                TreatmentsJSONClassifier=MagicMock(return_value=mock_classifier)
             ),
         }):
             response = self.client.post(

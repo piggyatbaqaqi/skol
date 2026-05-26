@@ -68,7 +68,7 @@ taxon_dict['line_number'] if taxon_dict['line_number'] is not None
 extract_treatments_to_couchdb (standalone, no project deps)
 ├── Uses: couchdb_file, finder, taxon, skol_classifier.couchdb_io
 
-taxa_json_translator
+treatments_json_translator
 ├── Depends on: extract_treatments_to_couchdb
 
 mistral_transfer_learning (standalone ML utilities)
@@ -123,7 +123,7 @@ src.data (standalone)
 | `skol_classifier.model` | ✅ | Imports successfully |
 | `skol_classifier.couchdb_io` | ✅ | Imports successfully |
 | `mistral_transfer_learning` | ⚠️ | Missing `peft`, `transformers` (ML deps) |
-| `taxa_json_translator` | ⚠️ | Missing `peft`, `transformers` (ML deps) |
+| `treatments_json_translator` | ⚠️ | Missing `peft`, `transformers` (ML deps) |
 
 **Note**: The ML-related modules require additional dependencies that may not be installed:
 - `peft` (Parameter-Efficient Fine-Tuning)
@@ -231,7 +231,7 @@ python -c "import skol_classifier.classifier_v2"
 ## Related Files
 
 - [extract_treatments_to_couchdb.py](extract_treatments_to_couchdb.py) - Fixed self-import
-- [taxa_json_translator.py](taxa_json_translator.py) - Depends on extract_treatments_to_couchdb
+- [treatments_json_translator.py](treatments_json_translator.py) - Depends on extract_treatments_to_couchdb
 - [TAXA_ID_JOIN_FIX.md](TAXA_ID_JOIN_FIX.md) - Recent refactoring that maintained clean imports
 
 ## Conclusion

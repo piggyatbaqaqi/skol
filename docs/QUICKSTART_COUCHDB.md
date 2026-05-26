@@ -298,7 +298,7 @@ spark = SparkSession.builder \
 
 - **Full Documentation**: [EXTRACTING_TAXON_OBJECTS.md](EXTRACTING_TAXON_OBJECTS.md)
 - **Module Reference**: [couchdb_file_README.md](couchdb_file_README.md)
-- **Complete Examples**: [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.py)
+- **Complete Examples**: [examples/extract_treatments_from_couchdb.py](examples/extract_treatments_from_couchdb.py)
 - **Integration Summary**: [COUCHDB_INTEGRATION_SUMMARY.md](COUCHDB_INTEGRATION_SUMMARY.md)
 
 ## Command-Line Alternative
@@ -306,7 +306,7 @@ spark = SparkSession.builder \
 Use the provided example script:
 
 ```bash
-python examples/extract_taxa_from_couchdb.py \
+python examples/extract_treatments_from_couchdb.py \
     --mode distributed \
     --database mycobank_annotations \
     --db-name mycobank \

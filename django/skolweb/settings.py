@@ -270,7 +270,7 @@ VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_treatments_full_dev')
 SKOL_BIN_PATH = os.environ.get('SKOL_BIN_PATH', '/opt/skol/bin')
 
 # Path to the skol source root (parent of django/ directory)
-# Used for importing taxa_classifier and other non-Django modules
+# Used for importing treatments_classifier and other non-Django modules
 SKOL_ROOT_PATH = os.environ.get('SKOL_ROOT_PATH', str(Path(BASE_DIR).parent))
 
 # CouchDB configuration

@@ -1,4 +1,4 @@
-"""Tests for taxa_json_translator helper functions.
+"""Tests for treatments_json_translator helper functions.
 
 Currently covers ``build_llm_input_text`` — the helper that builds the
 text fed to the JSON-translation LLM from a Treatment CouchDB doc.
@@ -7,12 +7,12 @@ include both Description AND Diagnosis so the annotator sees the
 ``feature->subfeature->value`` statements that Diagnosis typically
 carries.
 
-Run with: python -m pytest taxa_json_translator_test.py -v
+Run with: python -m pytest treatments_json_translator_test.py -v
 """
 
 import unittest
 
-from taxa_json_translator import build_llm_input_text
+from treatments_json_translator import build_llm_input_text
 
 
 class TestBuildLlmInputText(unittest.TestCase):

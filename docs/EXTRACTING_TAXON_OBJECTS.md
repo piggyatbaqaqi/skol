@@ -517,7 +517,7 @@ This metadata is preserved through the entire pipeline and appears in the final 
 
 ### Complete CouchDB Example
 
-See [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.py) for a complete working example with:
+See [examples/extract_treatments_from_couchdb.py](examples/extract_treatments_from_couchdb.py) for a complete working example with:
 
 - Distributed Spark processing
 - Local processing for small datasets
@@ -528,7 +528,7 @@ See [examples/extract_taxa_from_couchdb.py](examples/extract_taxa_from_couchdb.p
 
 ```bash
 # Distributed processing
-python examples/extract_taxa_from_couchdb.py \
+python examples/extract_treatments_from_couchdb.py \
     --mode distributed \
     --database mycobank_annotations \
     --db-name mycobank \
@@ -536,7 +536,7 @@ python examples/extract_taxa_from_couchdb.py \
     --password secret
 
 # Local processing (for testing)
-python examples/extract_taxa_from_couchdb.py \
+python examples/extract_treatments_from_couchdb.py \
     --mode local \
     --database mycobank_annotations \
     --db-name mycobank

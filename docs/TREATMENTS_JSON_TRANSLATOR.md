@@ -1,8 +1,8 @@
-# TaxaJSONTranslator Class
+# TreatmentsJSONTranslator Class
 
 ## Overview
 
-The `TaxaJSONTranslator` class provides an optimized interface for translating taxa descriptions into structured JSON using a fine-tuned Mistral model. It's designed specifically to work with PySpark DataFrames created by `TreatmentExtractor.load_taxa()`.
+The `TreatmentsJSONTranslator` class provides an optimized interface for translating taxa descriptions into structured JSON using a fine-tuned Mistral model. It's designed specifically to work with PySpark DataFrames created by `TreatmentExtractor.load_treatments()`.
 
 ## Key Features
 
@@ -26,7 +26,7 @@ The `TaxaJSONTranslator` class provides an optimized interface for translating t
 ### Workflow
 
 ```
-Taxa DataFrame → TaxaJSONTranslator → Enriched DataFrame
+Taxa DataFrame → TreatmentsJSONTranslator → Enriched DataFrame
                       ↓
                   Mistral Model
                       ↓
@@ -38,7 +38,7 @@ Taxa DataFrame → TaxaJSONTranslator → Enriched DataFrame
 ### Constructor
 
 ```python
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark: SparkSession,
     checkpoint_path: Optional[str] = None,
     base_model_id: str = "mistralai/Mistral-7B-Instruct-v0.3",
@@ -80,7 +80,7 @@ enriched_df = translator.translate_descriptions(
 
 **Example**:
 ```python
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 enriched_df = translator.translate_descriptions(taxa_df)
 enriched_df.select("taxon", "features_json").show()
 ```
@@ -171,7 +171,7 @@ translator.save_translations(
 ```python
 from pyspark.sql import SparkSession
 from extract_treatments_to_couchdb import TreatmentExtractor
-from taxa_json_translator import TaxaJSONTranslator
+from treatments_json_translator import TreatmentsJSONTranslator
 
 # Initialize Spark
 spark = SparkSession.builder \
@@ -189,11 +189,11 @@ extractor = TreatmentExtractor(
     ingest_password="password"
 )
 
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 print(f"Loaded {taxa_df.count()} taxa")
 
 # Initialize translator
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./mistral_checkpoints/checkpoint-100"
 )
@@ -253,7 +253,7 @@ Output JSON with these top-level keys: pileus, stipe, lamellae, spores.
 Each key should contain a dictionary of attributes and their values.
 '''
 
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./checkpoints/fungi-specific-100",
     prompt=custom_prompt
@@ -309,7 +309,7 @@ print(json.dumps(features, indent=2))
 
 ```python
 # Use base model without fine-tuning
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path=None  # No checkpoint = base model
 )
@@ -321,7 +321,7 @@ enriched_df = translator.translate_descriptions(taxa_df)
 
 ```python
 # For machines without GPU
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./checkpoints/checkpoint-100",
     device="cpu",
@@ -339,7 +339,7 @@ enriched_df = translator.translate_descriptions(taxa_df)
 from pyspark.sql import SparkSession
 from skol_classifier.classifier_v2 import SkolClassifierV2
 from extract_treatments_to_couchdb import TreatmentExtractor
-from taxa_json_translator import TaxaJSONTranslator
+from treatments_json_translator import TreatmentsJSONTranslator
 
 spark = SparkSession.builder \
     .appName("Complete Pipeline") \
@@ -382,9 +382,9 @@ print(f"Saved {save_results.filter('success = true').count()} taxa")
 
 # Step 3: Load and translate
 print("\nStep 3: Translating descriptions to JSON...")
-taxa_df = extractor.load_taxa()
+taxa_df = extractor.load_treatments()
 
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./mistral_checkpoints/checkpoint-100"
 )
@@ -451,7 +451,7 @@ enriched_df = translator.translate_descriptions_batch(
 # 4. Process in chunks for very large datasets
 pattern_prefixes = ["taxon_a*", "taxon_b*", "taxon_c*"]
 for pattern in pattern_prefixes:
-    chunk_df = extractor.load_taxa(pattern=pattern)
+    chunk_df = extractor.load_treatments(pattern=pattern)
     enriched_chunk = translator.translate_descriptions(chunk_df)
     translator.save_translations(
         enriched_chunk,
@@ -470,7 +470,7 @@ for pattern in pattern_prefixes:
 **Solutions**:
 ```python
 # Option 1: Enable 4-bit quantization
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     load_in_4bit=True
 )
@@ -482,7 +482,7 @@ enriched_df = translator.translate_descriptions_batch(
 )
 
 # Option 3: Use CPU
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     device="cpu",
     load_in_4bit=False
@@ -519,13 +519,13 @@ if not Path(checkpoint_path).exists():
     print(f"Checkpoint not found, using base model")
     checkpoint_path = None
 
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path=checkpoint_path
 )
 ```
 
-## Comparison: TaxaJSONTranslator vs Direct Usage
+## Comparison: TreatmentsJSONTranslator vs Direct Usage
 
 ### Direct Usage (from mistral_transfer_learning.py)
 
@@ -543,11 +543,11 @@ for row in descriptions:
     # ... manual DataFrame construction
 ```
 
-### Using TaxaJSONTranslator
+### Using TreatmentsJSONTranslator
 
 ```python
 # Initialize once
-translator = TaxaJSONTranslator(
+translator = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path=checkpoint_path
 )
@@ -568,7 +568,7 @@ enriched_df = translator.translate_descriptions(taxa_df)
 ### Custom JSON Extraction
 
 ```python
-class CustomTaxaTranslator(TaxaJSONTranslator):
+class CustomTaxaTranslator(TreatmentsJSONTranslator):
     def _extract_json(self, text: str) -> Dict[str, Any]:
         """Custom JSON extraction logic."""
         # Your custom parsing logic
@@ -605,12 +605,12 @@ enriched_df.write \
 
 ```python
 # Use multiple checkpoints
-translator1 = TaxaJSONTranslator(
+translator1 = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./checkpoints/checkpoint-50"
 )
 
-translator2 = TaxaJSONTranslator(
+translator2 = TreatmentsJSONTranslator(
     spark=spark,
     checkpoint_path="./checkpoints/checkpoint-100"
 )
@@ -629,7 +629,7 @@ enriched2 = translator2.translate_descriptions(taxa_df)
 
 ```python
 def test_taxa_translator():
-    """Test TaxaJSONTranslator functionality."""
+    """Test TreatmentsJSONTranslator functionality."""
     spark = SparkSession.builder.master("local[*]").getOrCreate()
 
     try:
@@ -644,7 +644,7 @@ def test_taxa_translator():
         taxa_df = spark.createDataFrame(test_data)
 
         # Initialize translator
-        translator = TaxaJSONTranslator(
+        translator = TreatmentsJSONTranslator(
             spark=spark,
             checkpoint_path=None  # Use base model for testing
         )
@@ -675,7 +675,7 @@ def test_taxa_translator():
 
 ## Summary
 
-The `TaxaJSONTranslator` class provides:
+The `TreatmentsJSONTranslator` class provides:
 
 - ✅ **Encapsulated Interface**: All Mistral functionality in one class
 - ✅ **PySpark Integration**: Native DataFrame operations
