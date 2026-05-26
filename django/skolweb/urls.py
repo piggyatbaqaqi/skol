@@ -107,12 +107,32 @@ def sources_view(request):
         'cached_at': None,
     }
 
+    # Resolve the experiment-scoped Redis key.  Authenticated users
+    # with an active experiment read ``skol:sources:stats:<exp>``
+    # (populated by ``build_sources_stats.py --experiment <exp>``);
+    # anonymous users + the v1 cron job stay on the legacy
+    # ``skol:sources:stats`` key.  Mirrors the helper in
+    # bin/build_sources_stats.py so both sides stay in sync.
+    experiment_name = ''
+    if request.user.is_authenticated:
+        try:
+            from search.views import get_user_experiment
+            _, exp = get_user_experiment(request)
+            if exp:
+                experiment_name = exp.get('_id', '')
+        except Exception:
+            pass
+    redis_key = (
+        f'skol:sources:stats:{experiment_name}'
+        if experiment_name else 'skol:sources:stats'
+    )
+
     # Try to read from Redis first
     try:
         from search.utils import get_redis_client
         r = get_redis_client(decode_responses=True)
 
-        cached_data = r.get('skol:sources:stats')
+        cached_data = r.get(redis_key)
         if cached_data:
             data = json.loads(cached_data)
             context['sources'] = data.get('sources', [])
@@ -144,16 +164,26 @@ def sources_view(request):
     db_user = getattr(settings, 'COUCHDB_USERNAME', 'admin')
     db_password = getattr(settings, 'COUCHDB_PASSWORD', '')
 
-    # Use experiment's ingest database if available
+    # Use the active experiment's ingest + treatments databases when
+    # available (matches what build_sources_stats.py --experiment <X>
+    # would compute).  Falls back to the legacy settings defaults for
+    # anonymous users.  ``get_user_experiment`` was already called
+    # above to resolve the Redis key — we re-fetch the doc here so the
+    # slow-path stats also stay experiment-scoped.
     db_name = getattr(settings, 'INGESTION_DB_NAME', 'skol_dev')
+    treatments_db_name = getattr(
+        settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
+    )
     if request.user.is_authenticated:
         try:
             from search.views import get_user_experiment
             _, exp = get_user_experiment(request)
             if exp:
-                db_name = exp.get(
-                    'databases', {}
-                ).get('ingest', db_name)
+                databases = exp.get('databases', {}) or {}
+                db_name = databases.get('ingest', db_name)
+                treatments_db_name = databases.get(
+                    'treatments', treatments_db_name,
+                )
         except Exception:
             pass
 
@@ -189,19 +219,22 @@ def sources_view(request):
             except Exception:
                 continue
 
-        treatments_db_name = getattr(settings, 'TREATMENTS_DB_NAME', 'skol_taxa_dev')
+        # Use the experiment-scoped treatments DB resolved above; do NOT
+        # re-read settings here.  The stats dict uses the canonical
+        # ``treatments`` key (matches bin/build_sources_stats.py and the
+        # source_stats initialiser a few lines up at line 213).
         if treatments_db_name in server:
             treatments_db = server[treatments_db_name]
-            for taxa_doc_id in treatments_db:
-                if taxa_doc_id.startswith('_design/'):
+            for treatment_doc_id in treatments_db:
+                if treatment_doc_id.startswith('_design/'):
                     continue
                 try:
-                    taxa_doc = treatments_db[taxa_doc_id]
-                    ingest = taxa_doc.get('ingest', {})
+                    treatment_doc = treatments_db[treatment_doc_id]
+                    ingest = treatment_doc.get('ingest', {})
                     ingest_doc_id = ingest.get('_id')
                     if ingest_doc_id and ingest_doc_id in doc_to_journal:
                         journal_name = doc_to_journal[ingest_doc_id]
-                        source_stats[journal_name]['taxa'] += 1
+                        source_stats[journal_name]['treatments'] += 1
                 except Exception:
                     continue
 

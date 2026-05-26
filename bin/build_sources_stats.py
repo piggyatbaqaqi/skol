@@ -32,8 +32,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import couchdb
 from env_config import get_env_config, create_redis_client
 
-# Redis key for sources statistics
-REDIS_KEY = 'skol:sources:stats'
+# Default Redis key for sources statistics (v1 / anonymous-user
+# fallback).  Experiment-scoped runs append ``:{experiment_name}``
+# via :func:`redis_key_for_experiment`.
+_DEFAULT_REDIS_KEY = 'skol:sources:stats'
+
+
+def redis_key_for_experiment(experiment_name):
+    """Return the Redis key used by ``build_sources_stats`` for the
+    given experiment.
+
+    When *experiment_name* is empty / None, returns the legacy
+    ``skol:sources:stats`` key — matches the v1 cron job and the
+    Django sources view's default fallback (for anonymous users or
+    users with no active experiment).
+
+    When *experiment_name* is non-empty (e.g. ``production_v3_hand``),
+    appends ``:{experiment_name}`` so each experiment's Sources page
+    reads its own stats blob.  Mirrors the experiment-doc Redis-key
+    convention used elsewhere (``skol:embedding:v3_hand`` etc.).
+    """
+    if not experiment_name:
+        return _DEFAULT_REDIS_KEY
+    return f'{_DEFAULT_REDIS_KEY}:{experiment_name}'
 
 
 def get_publication_registry():
@@ -245,22 +266,31 @@ def build_sources_stats(
     return result
 
 
-def save_to_redis(stats: Dict[str, Any], verbosity: int = 1) -> None:
+def save_to_redis(
+    stats: Dict[str, Any],
+    experiment_name: Optional[str] = None,
+    verbosity: int = 1,
+) -> None:
     """
     Save sources statistics to Redis.
 
     Args:
         stats: Statistics dictionary to save
+        experiment_name: Active experiment ID; selects an
+            experiment-scoped Redis key.  None / empty writes to the
+            default ``skol:sources:stats`` key (v1 / anonymous-user
+            fallback).
         verbosity: Output verbosity level
     """
     r = create_redis_client(decode_responses=True)
+    key = redis_key_for_experiment(experiment_name)
 
     # Save as JSON
     json_data = json.dumps(stats)
-    r.set(REDIS_KEY, json_data)
+    r.set(key, json_data)
 
     if verbosity >= 1:
-        print(f"\nSaved to Redis key: {REDIS_KEY}")
+        print(f"\nSaved to Redis key: {key}")
         print(f"  JSON size: {len(json_data)} bytes")
 
 
@@ -302,16 +332,21 @@ Environment Variables:
     # Get configuration
     couchdb_url = config['couchdb_url']
     ingest_db_name = config.get('ingest_db_name', 'skol_dev')
-    treatments_db_name = config.get('treatments_db_name', 'skol_taxa_dev')
+    treatments_db_name = config.get('treatments_db_name', 'skol_treatments_dev')
     username = config['couchdb_username']
     password = config['couchdb_password']
     verbosity = config['verbosity']
+    # ``--experiment NAME`` (env_config.py:424) populates this; an empty
+    # string means "no experiment selected" and the default Redis key
+    # gets written for the v1 sources page.
+    experiment_name = config.get('experiment_name') or None
 
     if verbosity >= 1:
         print("Building ingestion sources statistics...")
         print(f"  CouchDB URL: {couchdb_url}")
+        print(f"  Experiment: {experiment_name or '(none — default Redis key)'}")
         print(f"  Ingest DB: {ingest_db_name}")
-        print(f"  Taxa DB: {treatments_db_name}")
+        print(f"  Treatments DB: {treatments_db_name}")
         print()
 
     try:
@@ -326,7 +361,9 @@ Environment Variables:
         )
 
         # Save to Redis
-        save_to_redis(stats, verbosity=verbosity)
+        save_to_redis(
+            stats, experiment_name=experiment_name, verbosity=verbosity,
+        )
 
         if verbosity >= 1:
             print("\nDone!")

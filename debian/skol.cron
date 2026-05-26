@@ -92,6 +92,11 @@ SKIP_EXISTING=1
 0 18 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand treatments_to_json > ${LOGDIR}/v3_hand-treatments-to-json.log 2>&1
 # Update sources statistics for the ingestion sources page daily at 7am
 0 7 * * * skol time /opt/skol/bin/build_sources_stats --verbosity=2 > ${LOGDIR}/build-sources-stats.log 2>&1
+# Per-experiment Ingestion Sources stats (writes the experiment-scoped
+# Redis key ``skol:sources:stats:<experiment>``).  Slot after the v3_hand
+# treatments_to_json daily run so the treatments_full counts surface
+# alongside the treatments counts on the per-experiment Sources page.
+30 18 * * * skol time /opt/skol/bin/build_sources_stats --experiment production_v3_hand --verbosity=2 > ${LOGDIR}/build-sources-stats-v3_hand.log 2>&1
 */5 * * * * skol /usr/bin/redis-cli -p ${REDIS_PORT} save
 # Daily admin report at 6am — stdout goes to MAILTO, emails to opted-in users
 0 6 * * * skol /opt/skol/bin/daily_report --send 2>> ${LOGDIR}/daily-report.log
