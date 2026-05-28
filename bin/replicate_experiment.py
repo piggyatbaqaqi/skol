@@ -24,9 +24,7 @@ fresh CouchDB install before security is locked down.
 from __future__ import annotations
 
 import argparse
-import json
 import logging
-import os
 import sys
 import time
 import urllib.parse
@@ -110,7 +108,7 @@ def _build_replicate_body(
 
 def replicate(
     source_admin_url: str,
-    source_creds: tuple,
+    source_creds: Optional[tuple],
     source_url: str,
     target_url: str,
     db_name: str,
@@ -194,7 +192,10 @@ def main() -> int:
     parser.add_argument('--timeout', type=int, default=7200,
                         help='Per-database replicate POST timeout in '
                              'seconds (default: 7200 = 2h)')
-    args = parser.parse_args()
+    # Use parse_known_args so env_config's auto-generated flags
+    # (--couchdb-username, --couchdb-password, --couchdb-url, etc.)
+    # pass through instead of erroring out as unknown.
+    args, _unknown = parser.parse_known_args()
 
     # Lazy imports so the unit tests don't need couchdb / env_config.
     from env_config import get_env_config
@@ -266,7 +267,9 @@ def main() -> int:
         results.append(result)
         if args.verbosity >= 1:
             if result.get('ok'):
-                docs = result.get('docs_written') or result.get('history', [{}])[0].get('docs_written', '?')
+                docs = (result.get('docs_written')
+                        or result.get('history', [{}])[0].get(
+                            'docs_written', '?'))
                 print(f'  ✓ {db}: docs_written={docs}')
             else:
                 print(f'  ✗ {db}: {result.get("error")} '
