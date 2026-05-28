@@ -70,35 +70,60 @@ def databases_for_experiment(
 
 def build_couchdb_url(
     host: str,
-    user: Optional[str] = None,
-    password: Optional[str] = None,
     port: int = 5984,
     scheme: str = 'http',
 ) -> str:
-    """Build a CouchDB base URL with embedded credentials.
+    """Build a bare CouchDB base URL — no embedded credentials.
 
-    Percent-encodes the username and password so values containing
-    ``@``, ``:``, ``/``, etc. survive the URL.  Returns the bare host
-    URL (no credentials) when both ``user`` and ``password`` are
-    falsy — useful for an "admin party" target.
+    Credentials travel separately in the structured ``auth`` block of
+    the replicate body (see ``_build_replicate_body``).  CouchDB's
+    replicator does not percent-decode URL userinfo before forwarding
+    it as Basic Auth, so passwords containing ``@`` (e.g. our local
+    admin password) silently fail when embedded in the URL.
     """
-    netloc = f'{host}:{port}'
-    if user and password:
-        user_enc = urllib.parse.quote(user, safe='')
-        pass_enc = urllib.parse.quote(password, safe='')
-        netloc = f'{user_enc}:{pass_enc}@{netloc}'
-    return f'{scheme}://{netloc}'
+    return f'{scheme}://{host}:{port}'
+
+
+def _wrap_side(
+    url: str, auth: Optional[tuple],
+) -> Any:
+    """Format one side of a replicate body.
+
+    Returns the bare URL string when ``auth`` is missing or has empty
+    user/password (admin-party).  Otherwise returns the structured
+    ``{"url": ..., "auth": {"basic": {...}}}`` form CouchDB needs to
+    avoid the URL-userinfo bug.
+    """
+    if not auth:
+        return url
+    user, password = auth
+    if not (user and password):
+        return url
+    return {
+        'url': url,
+        'auth': {'basic': {'username': user, 'password': password}},
+    }
 
 
 def _build_replicate_body(
     source_url: str,
     target_url: str,
+    source_auth: Optional[tuple] = None,
+    target_auth: Optional[tuple] = None,
     continuous: bool = False,
 ) -> Dict[str, Any]:
-    """Construct the JSON body for a ``POST /_replicate`` call."""
+    """Construct the JSON body for a ``POST /_replicate`` call.
+
+    When ``source_auth`` / ``target_auth`` are supplied, the
+    corresponding side is emitted as the structured
+    ``{"url": ..., "auth": {"basic": {"username": ..., "password":
+    ...}}}`` form — avoiding the CouchDB replicator bug where
+    percent-encoded ``@`` in URL userinfo is forwarded verbatim into
+    the Basic Auth header.
+    """
     body: Dict[str, Any] = {
-        'source': source_url,
-        'target': target_url,
+        'source': _wrap_side(source_url, source_auth),
+        'target': _wrap_side(target_url, target_auth),
         'create_target': True,
     }
     if continuous:
@@ -112,12 +137,21 @@ def replicate(
     source_url: str,
     target_url: str,
     db_name: str,
+    source_auth: Optional[tuple] = None,
+    target_auth: Optional[tuple] = None,
     continuous: bool = False,
     timeout: int = 7200,
     verbosity: int = 1,
 ) -> Dict[str, Any]:
     """POST a single-database replication request to the local
     CouchDB's ``/_replicate`` endpoint.
+
+    ``source_creds`` authenticates the POST to ``/_replicate`` itself
+    (i.e. the admin call to the local CouchDB).  ``source_auth`` and
+    ``target_auth`` go inside the replicate body's structured ``auth``
+    block — they're what the replicator uses to talk to the source
+    and target databases.  Often ``source_creds == source_auth``, but
+    they're separate to allow admin-party setups on either side.
 
     Returns the parsed JSON reply on success, or a dict with
     ``ok=False`` and ``error`` on failure.
@@ -126,6 +160,8 @@ def replicate(
     body = _build_replicate_body(
         f'{source_url}/{db_name}',
         f'{target_url}/{db_name}',
+        source_auth=source_auth,
+        target_auth=target_auth,
         continuous=continuous,
     )
     url = f'{source_admin_url}/_replicate'
@@ -205,22 +241,24 @@ def main() -> int:
     src_user = config.get('couchdb_username') or ''
     src_pass = config.get('couchdb_password') or ''
     src_creds = (src_user, src_pass) if (src_user and src_pass) else None
-    # ``source`` URL gets embedded in the replicate body and must be
-    # resolvable from the local CouchDB's perspective.
+    # The source URL embedded in the replicate body must be reachable
+    # from the local CouchDB process.  ``localhost`` is the common
+    # case; the rest of the URL is reconstructed from the admin URL
+    # to honour any non-default port.
+    parsed = urllib.parse.urlparse(src_admin_url)
     src_url = build_couchdb_url(
-        # The source URL embedded in the replicate body must be
-        # reachable from the local CouchDB process.  ``localhost``
-        # is the common case; the rest of the URL is reconstructed
-        # from the admin URL to honour any non-default port.
-        host=urllib.parse.urlparse(src_admin_url).hostname or 'localhost',
-        user=src_user, password=src_pass,
-        port=urllib.parse.urlparse(src_admin_url).port or 5984,
-        scheme=urllib.parse.urlparse(src_admin_url).scheme or 'http',
+        host=parsed.hostname or 'localhost',
+        port=parsed.port or 5984,
+        scheme=parsed.scheme or 'http',
     )
     tgt_url = build_couchdb_url(
         host=args.target_host,
-        user=args.target_user, password=args.target_pass,
-        port=args.target_port, scheme=args.target_scheme,
+        port=args.target_port,
+        scheme=args.target_scheme,
+    )
+    tgt_auth = (
+        (args.target_user, args.target_pass)
+        if (args.target_user and args.target_pass) else None
     )
 
     # Resolve the experiment doc.
@@ -260,6 +298,8 @@ def main() -> int:
             source_url=src_url,
             target_url=tgt_url,
             db_name=db,
+            source_auth=src_creds,
+            target_auth=tgt_auth,
             continuous=args.continuous,
             timeout=args.timeout,
             verbosity=args.verbosity,
