@@ -20,7 +20,6 @@ Constrained Decoding Support:
 """
 
 import json
-import io
 import multiprocessing as mp
 import os
 from typing import Optional, Dict, Any, List
@@ -37,6 +36,129 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
 from treatment import get_ingest_field
+
+
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    """Extract the first balanced top-level JSON object from model output.
+
+    Handles common wrappers the base model emits:
+    - ```` ```json ... ``` ```` markdown fences
+    - a trailing "Explanation:" prose section
+    - leading "Result:" markers and whitespace
+
+    Returns the parsed dict, or None if no parseable object is found.
+    """
+    if not text:
+        return None
+
+    # Scan for the first balanced {...}, respecting strings/escapes so braces
+    # inside string values don't throw off the depth count.
+    start = text.find('{')
+    while start != -1:
+        depth = 0
+        in_str = False
+        escape = False
+        for i in range(start, len(text)):
+            ch = text[i]
+            if in_str:
+                if escape:
+                    escape = False
+                elif ch == '\\':
+                    escape = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start:i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        break  # malformed; try next '{'
+        # Either unbalanced (truncated) or malformed; advance to next '{'
+        start = text.find('{', start + 1)
+
+    return None
+
+
+def _split_description(text: str, max_chars: int = 6000) -> List[str]:
+    """Split a long description into chunks that each fit within max_chars.
+
+    Descriptive components in taxonomic treatments are largely independent, so we
+    can translate chunks separately and merge the resulting JSON. Splits prefer
+    sentence/paragraph boundaries; a single sentence longer than max_chars is
+    hard-split as a last resort.
+
+    Returns a list with at least one chunk (the original text if already short).
+    """
+    text = (text or "").strip()
+    if len(text) <= max_chars:
+        return [text] if text else []
+
+    # Candidate boundaries: paragraph breaks first, then sentence enders.
+    # Use a regex that keeps the delimiter attached to the preceding sentence.
+    import re
+    # Split into sentence-ish units; keep terminators with the sentence.
+    units = re.split(r'(?<=[.;!?])\s+|\n+', text)
+    units = [u.strip() for u in units if u and u.strip()]
+
+    chunks: List[str] = []
+    current = ""
+    for unit in units:
+        # A single unit longer than the budget: flush current, hard-split unit.
+        if len(unit) > max_chars:
+            if current:
+                chunks.append(current)
+                current = ""
+            for i in range(0, len(unit), max_chars):
+                chunks.append(unit[i:i + max_chars])
+            continue
+        if not current:
+            current = unit
+        elif len(current) + 1 + len(unit) <= max_chars:
+            current = f"{current} {unit}"
+        else:
+            chunks.append(current)
+            current = unit
+    if current:
+        chunks.append(current)
+
+    return chunks
+
+
+def _deep_merge_json(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively merge JSON dict b into a, returning a new merged dict.
+
+    - Two dicts at the same key are merged recursively.
+    - Two lists are concatenated with order-preserving dedupe.
+    - A dict and a list (or other type mismatch) keeps a's value and drops b's,
+      since mismatched shapes across chunks are rare and a-wins is predictable.
+    - Otherwise (scalars), a's value wins.
+    """
+    result = dict(a)
+    for key, b_val in b.items():
+        if key not in result:
+            result[key] = b_val
+            continue
+        a_val = result[key]
+        if isinstance(a_val, dict) and isinstance(b_val, dict):
+            result[key] = _deep_merge_json(a_val, b_val)
+        elif isinstance(a_val, list) and isinstance(b_val, list):
+            merged = list(a_val)
+            seen = {json.dumps(x, sort_keys=True) for x in a_val}
+            for item in b_val:
+                marker = json.dumps(item, sort_keys=True)
+                if marker not in seen:
+                    merged.append(item)
+                    seen.add(marker)
+            result[key] = merged
+        # else: type mismatch or scalar -> keep a's value
+    return result
 
 
 def build_llm_input_text(doc: Dict[str, Any]) -> str:
@@ -876,45 +998,42 @@ Result:
         Returns:
             Parsed JSON object (or empty dict if parsing fails)
         """
-        state = "START"
-        lines = []
-
-        try:
-            with io.StringIO(text) as f:
-                for line in f:
-                    if line.startswith('```json') or line.startswith("result:") or line.startswith("Result:"):
-                        state = "RECORDING"
-                    elif line.startswith('```'):
-                        state = "END"
-                        return json.loads("\n".join(lines))
-                    elif line.startswith("}"):
-                        lines.append(line)
-                        state = "END"
-                        return json.loads("\n".join(lines))
-                    elif state == "RECORDING":
-                        lines.append(line)
-
-            # If we didn't return yet, try parsing accumulated lines
-            if lines:
-                return json.loads("\n".join(lines))
-
-            # Last resort: try parsing entire text as JSON
-            return json.loads(text)
-
-        except json.JSONDecodeError as e:
-            print(f"Warning: Failed to parse JSON: {e}")
+        obj = _extract_json_object(text)
+        if obj is None:
+            print("Warning: Failed to parse JSON: no balanced JSON object found")
             return {}
+        return obj
 
     def generate_json(self, description: str) -> str:
-        """
-        Generate JSON from a taxon description.
+        """Generate JSON from a description, chunking long inputs and merging.
 
-        Args:
-            description: Taxon description text
-
-        Returns:
-            JSON object (or empty JSON object if generation fails)
+        Descriptive components in a treatment are largely independent, so a
+        description that would overflow the context window is split on
+        sentence/punctuation boundaries, each chunk is translated separately,
+        and the per-chunk JSON objects are deep-merged into one result.
         """
+        # Budget in chars for one chunk, leaving room for the prompt scaffold
+        # (~700 tokens) within self.max_length. ~3.5 chars/token is conservative
+        # for this corpus (unicode measurements, μm, etc.).
+        budget_chars = max(1000, int((self.max_length - 768) * 3.5))
+        chunks = _split_description(description, budget_chars)
+        if not chunks:
+            return "{}"
+        if len(chunks) == 1:
+            return self._generate_json_single(chunks[0])
+
+        merged: Dict[str, Any] = {}
+        for chunk in chunks:
+            try:
+                piece = json.loads(self._generate_json_single(chunk))
+            except json.JSONDecodeError:
+                piece = {}
+            if isinstance(piece, dict) and piece:
+                merged = _deep_merge_json(merged, piece)
+        return json.dumps(merged, ensure_ascii=False)
+
+    def _generate_json_single(self, description: str) -> str:
+        """Generate JSON from a single (already size-bounded) description."""
         try:
             # Create prompt
             prompt = self._make_prompt(description)
