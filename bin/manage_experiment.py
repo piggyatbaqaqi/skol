@@ -483,6 +483,12 @@ def _build_step_commands(
             sys.executable, str(_BIN_DIR / "embed_treatments.py"),
             "--experiment", "{name}",
             "--force",
+            # Belt-and-suspenders with the env_config default change to
+            # _parse_embedding_expire (no expiry by default): if a future
+            # operator sets EMBEDDING_EXPIRE in the cron environment, this
+            # ensures the per-experiment runstep still produces persistent
+            # embeddings — matching the v1 cron's explicit ``--expire None``.
+            "--expire", "None",
         ],
         "treatments_to_json": [
             sys.executable, str(_BIN_DIR / "treatments_to_json.py"),

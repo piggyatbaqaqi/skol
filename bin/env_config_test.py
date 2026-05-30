@@ -11,7 +11,10 @@ from typing import Any, Dict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import _apply_experiment  # type: ignore[import]  # noqa: E402
+from env_config import (  # type: ignore[import]  # noqa: E402
+    _apply_experiment,
+    _parse_embedding_expire,
+)
 
 
 def _starter_config(**overrides: Any) -> Dict[str, Any]:
@@ -158,3 +161,48 @@ class TestApplyExperimentTreatmentsMapping:
         }}
         _apply_experiment(config, exp, cli_explicit_keys=set())
         assert config['treatments_db_name'] == 'new_value'
+
+
+class TestParseEmbeddingExpire:
+    """Embedding TTLs default to *no* expiry — only set one when the
+    caller explicitly asks for a positive integer.  This is the policy
+    that fixes the v3_hand-embed silent-loss bug where the previous
+    2-day default would expire embeddings before the next successful
+    nightly refresh.
+    """
+
+    def test_unset_means_no_expiry(self) -> None:
+        assert _parse_embedding_expire('') is None
+
+    def test_whitespace_means_no_expiry(self) -> None:
+        assert _parse_embedding_expire('   ') is None
+
+    def test_literal_none_string_means_no_expiry(self) -> None:
+        assert _parse_embedding_expire('None') is None
+        assert _parse_embedding_expire('none') is None
+        assert _parse_embedding_expire('NONE') is None
+
+    def test_zero_means_no_expiry(self) -> None:
+        """The CLI already documents ``--expire 0`` as 'never expire';
+        env-var path mirrors that."""
+        assert _parse_embedding_expire('0') is None
+
+    def test_positive_integer_passes_through(self) -> None:
+        assert _parse_embedding_expire('172800') == 172800
+        assert _parse_embedding_expire('7') == 7
+
+    def test_negative_integer_means_no_expiry(self) -> None:
+        """Defensive: a negative value isn't a meaningful TTL.
+        Treat as 'no expiration' rather than crashing on it."""
+        assert _parse_embedding_expire('-1') is None
+
+    def test_garbage_means_no_expiry(self) -> None:
+        """A typo'd env var (e.g. ``2d`` instead of ``172800``) must
+        not silently become a 2-day TTL via implicit conversion —
+        better to disable expiry than to inherit a wrong value."""
+        assert _parse_embedding_expire('two days') is None
+        assert _parse_embedding_expire('2d') is None
+
+    def test_none_argument(self) -> None:
+        """Passed ``None`` directly (not the string) — defensive."""
+        assert _parse_embedding_expire(None) is None

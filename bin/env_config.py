@@ -106,6 +106,27 @@ def _parse_optional_int(value: Optional[str]) -> Optional[int]:
         return None
 
 
+def _parse_embedding_expire(value: Optional[str]) -> Optional[int]:
+    """Parse EMBEDDING_EXPIRE: only an explicit positive integer sets a TTL.
+
+    Empty, "None", "0", negative values, or garbage all map to None
+    (no expiration).  The previous behaviour — defaulting to a 2-day
+    TTL — caused v3_hand embeddings to evaporate when the nightly
+    refresh cron failed for two consecutive days; embeddings the
+    pipeline depends on must persist until explicitly invalidated.
+    """
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped or stripped.lower() == 'none':
+        return None
+    try:
+        parsed = int(stripped)
+    except ValueError:
+        return None
+    return parsed if parsed > 0 else None
+
+
 def _parse_doc_ids(value: Optional[str]) -> Optional[List[str]]:
     """Parse a comma-separated list of document IDs, returning None if empty."""
     if not value:
@@ -318,7 +339,7 @@ def get_env_config() -> Dict[str, Any]:
 
         # Embedding settings
         'embedding_name': _get_env('EMBEDDING_NAME', 'skol:embedding:v1.1'),
-        'embedding_expire': int(_get_env('EMBEDDING_EXPIRE', str(60 * 60 * 24 * 2))),  # 2 days default
+        'embedding_expire': _parse_embedding_expire(_get_env('EMBEDDING_EXPIRE', '')),  # default: no expiry
 
         # Prediction settings
         'couchdb_pattern': _get_env('COUCHDB_PATTERN', '*.txt'),
