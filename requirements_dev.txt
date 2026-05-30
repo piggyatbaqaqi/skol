@@ -1,8 +1,9 @@
-pytest-xdist
-stdeb
-debhelper
-build
-mypy
-pytest-django
-autopep8
-anthropic
+pytest==8.4.2
+pytest-xdist==3.8.0
+pytest-django==4.11.1
+mypy==1.18.2
+autopep8==2.3.2
+build==1.4.0
+stdeb==0.11.0
+debhelper==0.3.0
+anthropic==0.87.0
