@@ -373,7 +373,7 @@ def translate_treatments_to_json(
             sample_rows = taxa_df.select("_id", "treatment").limit(3).collect()
             for row in sample_rows:
                 treatment_preview = row['treatment'][:80] + '...' if len(row['treatment']) > 80 else row['treatment']
-                print(f"  {row['_id']}: {taxon_preview}")
+                print(f"  {row['_id']}: {treatment_preview}")
 
         # Handle dry run
         if dry_run:

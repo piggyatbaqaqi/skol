@@ -375,7 +375,8 @@ class SkolModel(ABC):
             # Print confusion matrix at verbosity >= 2
             if self.verbosity >= 2:
                 print(f"\nConfusion Matrix:")
-                print(f"{'True \\ Pred':<15}", end="")
+                header_label = 'True \\ Pred'
+                print(f"{header_label:<15}", end="")
                 for pred_class in range(num_classes):
                     pred_name = class_names[pred_class] if class_names else f"C{pred_class}"
                     print(f"{pred_name:<12}", end="")
