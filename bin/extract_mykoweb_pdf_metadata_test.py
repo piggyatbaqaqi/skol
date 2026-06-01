@@ -18,11 +18,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from extract_mykoweb_pdf_metadata import (  # type: ignore[import]
+    _refine_container_title,
     classify_journals_row,
     classify_keys_row,
     classify_literature_row,
     classify_misc_row,
     extract_rows_from_html,
+    merge_pdf_records,
     parse_citation_tail,
 )
 
@@ -380,3 +382,190 @@ class TestClassifyMiscRow(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# Round 2 — fixes from the live-data dry-run
+# ---------------------------------------------------------------------------
+
+
+class TestInlineTagSpacing(unittest.TestCase):
+    """``get_text(strip=True)`` joins child text nodes with NO
+    separator, so ``the <em>Ganodermataceae</em> Donk`` became
+    ``theGanodermataceaeDonk`` in the JSON.  Use the separator-arg
+    form so inline tags don't eat word boundaries."""
+
+    def test_em_inside_anchor_preserves_word_boundary(self):
+        html = (
+            '<li><a href="literature/foo.pdf">A Nomenclatural Study of the '
+            '<em>Ganodermataceae</em> Donk</a></li>'
+        )
+        rows = extract_rows_from_html(html, 'systematics/literature.html')
+        self.assertEqual(
+            rows[0]['anchor_text'],
+            'A Nomenclatural Study of the Ganodermataceae Donk',
+        )
+
+    def test_em_in_li_text_after_preserves_boundary(self):
+        """Same issue applies to the post-link tail — italics around
+        a journal name shouldn't run into surrounding words."""
+        html = (
+            '<li><a href="literature/foo.pdf">A</a> <em>Persoonia</em> 3: 1-5.'
+            '</li>'
+        )
+        rows = extract_rows_from_html(html, 'systematics/literature.html')
+        self.assertIn('Persoonia 3: 1-5', rows[0]['li_text_after'])
+
+
+class TestMergePdfRecords(unittest.TestCase):
+    """When two HTML rows resolve to the same PDF relative path
+    (e.g. the Melanogaster row has a "title" anchor and a "."
+    anchor pointing at the same file, or the same PDF is referenced
+    from both literature.html and references.html), merge into one
+    record preferring the more-specific kind and the longer / more
+    informative field values."""
+
+    def test_two_anchors_same_pdf_merge_picks_better_title(self):
+        """Melanogaster shape: one row has good title + book kind,
+        the other has '.' title + journal_article kind (it carried
+        the citation tail).  Merged: journal_article kind, the good
+        title preserved."""
+        first = {
+            'kind':            'book',
+            'title':           'Melanogaster',
+            'container_title': None,
+            'author':          'Zeller, S.M. & Dodge, C.W.',
+            'year':            1936,
+            'source_html':     'systematics/literature.html',
+        }
+        second = {
+            'kind':            'journal_article',
+            'title':           '.',
+            'container_title': 'Ann. Missouri Bot. Gard.',
+            'volume':          '23',
+            'issue':           '636',
+            'pages':           '655',
+            'author':          'Zeller, S.M. & Dodge, C.W.',
+            'year':            1936,
+            'source_html':     'systematics/literature.html',
+        }
+        merged = merge_pdf_records(first, second)
+        self.assertEqual(merged['kind'], 'journal_article')
+        self.assertEqual(merged['title'], 'Melanogaster')
+        self.assertEqual(merged['container_title'],
+                         'Ann. Missouri Bot. Gard.')
+        self.assertEqual(merged['volume'], '23')
+        self.assertEqual(merged['issue'], '636')
+        self.assertEqual(merged['pages'], '655')
+
+    def test_book_then_journal_prefers_journal_kind(self):
+        """journal_article is more specific than book — when in
+        doubt, prefer it."""
+        book = {'kind': 'book', 'title': 'X', 'source_html': 'a.html'}
+        article = {
+            'kind': 'journal_article',
+            'title': 'X', 'container_title': 'Y',
+            'volume': '1', 'pages': '1-2',
+            'source_html': 'a.html',
+        }
+        self.assertEqual(merge_pdf_records(book, article)['kind'],
+                         'journal_article')
+        # Order shouldn't matter.
+        self.assertEqual(merge_pdf_records(article, book)['kind'],
+                         'journal_article')
+
+    def test_merge_prefers_longer_title(self):
+        a = {'kind': 'book', 'title': 'A', 'source_html': 'x.html'}
+        b = {'kind': 'book', 'title': 'A Longer Title',
+             'source_html': 'x.html'}
+        merged = merge_pdf_records(a, b)
+        self.assertEqual(merged['title'], 'A Longer Title')
+
+    def test_merge_punctuation_only_title_loses(self):
+        """Title='.' or whitespace-only is worse than any real
+        anchor text — merge must drop it."""
+        a = {'kind': 'book', 'title': '.', 'source_html': 'x.html'}
+        b = {'kind': 'book', 'title': 'Real Title',
+             'source_html': 'x.html'}
+        merged = merge_pdf_records(a, b)
+        self.assertEqual(merged['title'], 'Real Title')
+
+    def test_merge_keeps_first_non_empty_for_unique_fields(self):
+        """Fields present in only one record carry through to the
+        merged result."""
+        a = {'kind': 'book', 'title': 'X', 'author': 'Doe, J.',
+             'source_html': 'x.html'}
+        b = {'kind': 'book', 'title': 'X', 'year': 2000,
+             'source_html': 'x.html'}
+        merged = merge_pdf_records(a, b)
+        self.assertEqual(merged['author'], 'Doe, J.')
+        self.assertEqual(merged['year'], 2000)
+
+    def test_merge_prefers_non_none_container_title(self):
+        """A book record carries container_title=None; a journal
+        record carries the real journal name.  Merged result must
+        keep the real one."""
+        book = {'kind': 'book', 'title': 'X', 'container_title': None,
+                'source_html': 'x.html'}
+        article = {'kind': 'journal_article', 'title': 'X',
+                   'container_title': 'Some Journal',
+                   'volume': '1', 'pages': '1-2',
+                   'source_html': 'x.html'}
+        merged = merge_pdf_records(book, article)
+        self.assertEqual(merged['container_title'], 'Some Journal')
+
+
+class TestRefineContainerTitle(unittest.TestCase):
+    """When the citation regex matches a vol:pages inside a long
+    interstitial-prose tail, the captured ``container_title`` runs
+    on too long.  ``_refine_container_title`` clips on a clean
+    sentence break (period + space + capitalised word) when the
+    container is suspiciously long."""
+
+    def test_short_container_unchanged(self):
+        """Short, normal journal names pass through unchanged."""
+        self.assertEqual(
+            _refine_container_title('Ann. Missouri Bot. Gard.'),
+            'Ann. Missouri Bot. Gard.',
+        )
+        self.assertEqual(
+            _refine_container_title('Mycologia'),
+            'Mycologia',
+        )
+
+    def test_abbreviation_periods_not_treated_as_sentence_breaks(self):
+        """``Ann. Missouri Bot. Gard.`` has periods but they're
+        abbreviation periods — the heuristic must not lop them off."""
+        self.assertEqual(
+            _refine_container_title(
+                'Bull. Torrey bot. Club'
+            ),
+            'Bull. Torrey bot. Club',
+        )
+
+    def test_long_container_with_prose_clips_to_trailing_journal(self):
+        """The Peck case: title's tail picked up interstitial prose
+        before the real journal name."""
+        result = _refine_container_title(
+            'State Botanist, with bibliographic locations cited and '
+            'some of the most obvious synonyms given. Report of the '
+            'State Botanist'
+        )
+        self.assertEqual(result, 'Report of the State Botanist')
+
+    def test_long_container_short_tail_unchanged(self):
+        """If the chunk after the last sentence break is too short
+        (e.g. 'Ann. Missouri Bot. Gard.' → tail 'Gard.' is only 5
+        chars), don't clip — it's an abbreviation, not a sentence
+        break."""
+        self.assertEqual(
+            _refine_container_title(
+                'Some Long Container Name That Goes On A Bit. Gard.'
+            ),
+            'Some Long Container Name That Goes On A Bit. Gard.',
+        )
+
+    def test_none_passthrough(self):
+        """Defensive: helper may be called with None / empty."""
+        self.assertIsNone(_refine_container_title(None))
+        self.assertEqual(_refine_container_title(''), '')

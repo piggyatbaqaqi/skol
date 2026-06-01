@@ -79,7 +79,7 @@ def _first_bold_text(li: Tag) -> str:
     bold = li.find(['strong', 'b'])
     if bold is None:
         return ''
-    return bold.get_text(strip=True)
+    return bold.get_text(' ', strip=True)
 
 
 def _find_enclosing_li(anchor: Tag) -> Optional[Tag]:
@@ -127,7 +127,7 @@ def extract_rows_from_html(
         rows.append({
             'source_html':    source_html,
             'href':           href,
-            'anchor_text':    anchor.get_text(strip=True),
+            'anchor_text':    anchor.get_text(' ', strip=True),
             'li_text_before': li_before,
             'li_text_after':  li_after,
             'strong_text':    strong_text,
@@ -146,6 +146,42 @@ _CITATION_RE = re.compile(
     r'\b(?P<vol>\d+)(?:\((?P<issue>\d+)\))?:\s*(?P<pages>\d+[\-–]\d+)'
 )
 
+# A "sentence-break" period: ``. <Capital><lowercase>+`` — typical
+# pattern at a real sentence boundary, distinct from abbreviation
+# periods like ``Ann. Missouri Bot. Gard.`` where the chunk after
+# the period is short.  Used by _refine_container_title to clip off
+# interstitial prose from a too-long captured container.
+_SENTENCE_BREAK_RE = re.compile(r'\.\s+(?=[A-Z][a-z])')
+
+_CONTAINER_LONG_THRESHOLD = 50  # chars
+_CONTAINER_MIN_TAIL = 10        # chars — refuse to clip to a stub
+
+
+def _refine_container_title(container: Optional[str]) -> Optional[str]:
+    """When the citation-regex capture runs on too long because the
+    post-link tail had interstitial prose (e.g. the Peck row's
+    ``State Botanist, with bibliographic locations cited and some of
+    the most obvious synonyms given. Report of the State Botanist``),
+    clip on the LAST sentence-style break — period followed by space
+    followed by a Capitalized + lowercase word — and keep the trailing
+    chunk if it's substantive.
+
+    Short containers (the normal case) and containers whose
+    trailing chunk after the last sentence break is too short
+    (abbreviation periods like ``Ann. Missouri Bot. Gard.``) pass
+    through unchanged.
+    """
+    if container is None or len(container) <= _CONTAINER_LONG_THRESHOLD:
+        return container
+    matches = list(_SENTENCE_BREAK_RE.finditer(container))
+    if not matches:
+        return container
+    last = matches[-1]
+    tail = container[last.end():].strip()
+    if len(tail) < _CONTAINER_MIN_TAIL:
+        return container
+    return tail
+
 
 def parse_citation_tail(text: str) -> Optional[Dict[str, Any]]:
     """Match ``CONTAINER VOL[(ISSUE)]: PAGES`` in the post-link text
@@ -160,11 +196,91 @@ def parse_citation_tail(text: str) -> Optional[Dict[str, Any]]:
     if not container:
         return None
     return {
-        'container_title': container,
+        'container_title': _refine_container_title(container),
         'volume':          m.group('vol'),
         'issue':           m.group('issue'),
         'pages':           m.group('pages'),
     }
+
+
+# ---------------------------------------------------------------------------
+# Stage 2c — merging two records that resolve to the same PDF
+# ---------------------------------------------------------------------------
+
+
+# Kind specificity: lower index = more specific.  Used to decide
+# which kind to keep when merging two records.
+_KIND_ORDER = {
+    'journal_article': 0,
+    'book':            1,
+    'journal':         2,
+    'key':             3,
+    'misc':            4,
+}
+
+
+def _is_meaningful(value: Any) -> bool:
+    """Strings of pure whitespace / punctuation are not informative
+    titles; treat them as missing when picking between two
+    candidates."""
+    if value is None:
+        return False
+    if isinstance(value, str):
+        stripped = value.strip(' .,;:\n\t-_')
+        return bool(stripped)
+    return True
+
+
+def merge_pdf_records(
+    a: Dict[str, Any],
+    b: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Combine two records that resolved to the same PDF path.
+
+    Picks the more-specific ``kind`` (journal_article > book > key /
+    misc), then for every other field prefers the value that is
+    meaningful (non-empty, not just punctuation) and — among
+    meaningful strings — the longer of the two.  Either record may
+    be missing fields; the result carries any field present in
+    either.
+    """
+    a_kind = a.get('kind')
+    b_kind = b.get('kind')
+    if a_kind == b_kind:
+        winning_kind = a_kind
+    elif a_kind is None:
+        winning_kind = b_kind
+    elif b_kind is None:
+        winning_kind = a_kind
+    else:
+        a_rank = _KIND_ORDER.get(a_kind, 99)
+        b_rank = _KIND_ORDER.get(b_kind, 99)
+        winning_kind = a_kind if a_rank <= b_rank else b_kind
+
+    merged: Dict[str, Any] = {}
+    if winning_kind is not None:
+        merged['kind'] = winning_kind
+    for key in set(a.keys()) | set(b.keys()):
+        if key == 'kind':
+            continue
+        a_val = a.get(key)
+        b_val = b.get(key)
+        a_ok = _is_meaningful(a_val)
+        b_ok = _is_meaningful(b_val)
+        if a_ok and not b_ok:
+            merged[key] = a_val
+        elif b_ok and not a_ok:
+            merged[key] = b_val
+        elif a_ok and b_ok:
+            # Both meaningful: prefer longer string, else a.
+            if isinstance(a_val, str) and isinstance(b_val, str):
+                merged[key] = a_val if len(a_val) >= len(b_val) else b_val
+            else:
+                merged[key] = a_val
+        else:
+            # Neither meaningful — preserve whatever's there.
+            merged[key] = a_val if a_val is not None else b_val
+    return merged
 
 
 # ---------------------------------------------------------------------------
@@ -310,6 +426,12 @@ def run(
         for row in rows:
             pdf_relpath = _resolve_pdf_relpath(row['href'], source_html)
             record = classifier(row)
+            if pdf_relpath in metadata:
+                # Two rows resolved to the same PDF (e.g. the
+                # Melanogaster row's split anchors, or a PDF
+                # referenced from two HTML files).  Merge instead
+                # of overwriting so the better fields survive.
+                record = merge_pdf_records(metadata[pdf_relpath], record)
             metadata[pdf_relpath] = record
             if (record.get('kind') == 'book'
                     and row.get('li_text_after', '').strip()):
