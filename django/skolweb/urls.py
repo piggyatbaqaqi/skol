@@ -241,13 +241,21 @@ def sources_view(request):
         source_stats = {}
         doc_to_journal = {}
 
+        # Lazy import — keeps the fast Redis path off this module's
+        # startup cost.  Hoisted out of the loop so we pay it once.
+        sys.path.insert(
+            0,
+            str(Path(__file__).resolve().parent.parent.parent / 'bin'),
+        )
+        from build_sources_stats import resolve_source_name
+
         for doc_id in db:
             if doc_id.startswith('_design/'):
                 continue
 
             try:
                 doc = db[doc_id]
-                journal_name = doc.get('journal') or 'Unknown'
+                journal_name = resolve_source_name(doc)
                 doc_to_journal[doc_id] = journal_name
 
                 if journal_name not in source_stats:

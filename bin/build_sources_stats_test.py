@@ -11,6 +11,7 @@ from build_sources_stats import (
     count_new_taxon_acts,
     count_sanctioned_markers,
     redis_key_for_experiment,
+    resolve_source_name,
 )
 
 
@@ -132,5 +133,94 @@ class TestRedisKeyForExperiment(unittest.TestCase):
             )
 
 
-if __name__ == '__main__':
+class TestResolveSourceName(unittest.TestCase):
+    """Group docs by ``journal`` first; if the journal field is
+    empty, fall back to identifying the source by other signals so
+    docs don't collapse into a single opaque ``Unknown`` bucket
+    when we know they came from mykoweb but lack a curated
+    container_title."""
+
+    def test_journal_wins(self):
+        """Whenever the journal field is set, return it verbatim —
+        the fallback logic only kicks in for empty journal."""
+        self.assertEqual(
+            resolve_source_name({'journal': 'Mycotaxon'}),
+            'Mycotaxon',
+        )
+
+    def test_journal_set_with_mykoweb_url_still_wins(self):
+        """A doc with both journal set AND mykoweb pdf_url stays
+        on the journal — the mykoweb fallback only applies when
+        journal is missing."""
+        self.assertEqual(
+            resolve_source_name({
+                'journal': 'Mycotaxon',
+                'pdf_url': 'https://mykoweb.com/systematics/x.pdf',
+            }),
+            'Mycotaxon',
+        )
+
+    def test_empty_journal_mykoweb_https_url_falls_back(self):
+        self.assertEqual(
+            resolve_source_name({
+                'pdf_url': 'https://mykoweb.com/CAF/PDF/foo.pdf',
+            }),
+            'mykoweb',
+        )
+
+    def test_empty_journal_mykoweb_http_url_falls_back(self):
+        """``http://`` (non-TLS) URLs are also mykoweb."""
+        self.assertEqual(
+            resolve_source_name({
+                'pdf_url': 'http://mykoweb.com/misc/foo.pdf',
+            }),
+            'mykoweb',
+        )
+
+    def test_empty_journal_meta_source_mykoweb_falls_back(self):
+        """No pdf_url, but meta.source identifies the doc as
+        mykoweb-sourced."""
+        self.assertEqual(
+            resolve_source_name({
+                'meta': {'source': 'mykoweb', 'type': 'literature'},
+            }),
+            'mykoweb',
+        )
+
+    def test_empty_journal_meta_source_mykoweb_caf_falls_back(self):
+        """meta.source is one of the per-publication mykoweb-* keys
+        (mykoweb-caf, mykoweb-crepidotus, etc.) — also mykoweb."""
+        self.assertEqual(
+            resolve_source_name({'meta': {'source': 'mykoweb-caf'}}),
+            'mykoweb',
+        )
+
+    def test_empty_journal_archive_org_stays_unknown(self):
+        """A non-mykoweb pdf_url (e.g. archive.org/Sydowia) doesn't
+        match the fallback — falls through to Unknown."""
+        self.assertEqual(
+            resolve_source_name({
+                'pdf_url': 'https://archive.org/download/sydowia_1925.pdf',
+            }),
+            'Unknown',
+        )
+
+    def test_empty_journal_no_signals_unknown(self):
+        """A doc with no journal, no pdf_url, no meta — stays
+        Unknown."""
+        self.assertEqual(resolve_source_name({}), 'Unknown')
+
+    def test_whitespace_only_journal_falls_through(self):
+        """Empty / whitespace-only journal must trigger the fallback
+        the same way a missing one does."""
+        self.assertEqual(
+            resolve_source_name({
+                'journal': '   ',
+                'pdf_url': 'https://mykoweb.com/x.pdf',
+            }),
+            'mykoweb',
+        )
+
+
+if __name__ == "__main__":
     unittest.main()

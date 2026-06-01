@@ -83,6 +83,31 @@ def count_sanctioned_markers(text):
     return len(_SANCTIONED_RE.findall(text))
 
 
+def resolve_source_name(doc):
+    """Pick the Sources-page bucket name for ``doc``.
+
+    Returns the doc's ``journal`` field when it's set.  Otherwise
+    falls back to identifying the source by other signals — at
+    present, any doc whose ``pdf_url`` lives under ``mykoweb.com``
+    or whose ``meta.source`` starts with ``mykoweb`` rolls up under
+    a single ``mykoweb`` bucket instead of disappearing into
+    ``Unknown``.  Docs with no usable signals stay ``Unknown``.
+    """
+    journal = doc.get('journal')
+    if journal and journal.strip():
+        return journal
+    pdf_url = doc.get('pdf_url') or ''
+    if (pdf_url.startswith('https://mykoweb.com/')
+            or pdf_url.startswith('http://mykoweb.com/')):
+        return 'mykoweb'
+    meta = doc.get('meta')
+    if isinstance(meta, dict):
+        source = meta.get('source') or ''
+        if source == 'mykoweb' or source.startswith('mykoweb-'):
+            return 'mykoweb'
+    return 'Unknown'
+
+
 def redis_key_for_experiment(experiment_name):
     """Return the Redis key used by ``build_sources_stats`` for the
     given experiment.
@@ -174,10 +199,11 @@ def build_sources_stats(
             if verbosity >= 2 and doc_count % 1000 == 0:
                 print(f"  Processed {doc_count} ingest documents...")
 
-            # Get the journal name from the document
-            journal_name = doc.get('journal')
-            if not journal_name:
-                journal_name = 'Unknown'
+            # Resolve the Sources-page bucket name for this doc.
+            # Falls back to 'mykoweb' for docs without a journal
+            # field that still carry mykoweb pdf_url / meta.source
+            # signals, so they don't all collapse into 'Unknown'.
+            journal_name = resolve_source_name(doc)
 
             # Normalize journal name to canonical form
             if normalize_fn:
