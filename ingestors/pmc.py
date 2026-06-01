@@ -269,6 +269,7 @@ class PmcIngestor(Ingestor):
         """
         metadata: Dict[str, Any] = {
             "title": "",
+            "journal": "",
             "doi": "",
             "pmid": "",
             "pmcid": "",
@@ -289,6 +290,22 @@ class PmcIngestor(Ingestor):
         front = root.find(f".//{ns}front")
         if front is None:
             return metadata
+
+        # Journal title — modern JATS has
+        # ``<journal-meta><journal-title-group><journal-title>...``;
+        # older variants put ``<journal-title>`` directly under
+        # ``<journal-meta>``.  Try both paths.
+        journal_meta = front.find(f"{ns}journal-meta")
+        if journal_meta is not None:
+            jtitle = journal_meta.find(
+                f"{ns}journal-title-group/{ns}journal-title",
+            )
+            if jtitle is None:
+                jtitle = journal_meta.find(f"{ns}journal-title")
+            if jtitle is not None:
+                metadata["journal"] = "".join(
+                    jtitle.itertext(),
+                ).strip()
 
         article_meta = front.find(f"{ns}article-meta")
         if article_meta is None:

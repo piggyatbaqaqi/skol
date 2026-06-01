@@ -171,6 +171,10 @@ class PublicationRegistry:
             'publisher': 'Pensoft Publishers',
             'issn':      '2210-6340',
             'eissn':     '2210-6359',
+            'aliases': [
+                # JATS variant from PMC — appends the subtitle.
+                'IMA Fungus : The Global Mycological Journal',
+            ],
         },
         'journal-of-fungi': {
             'name':      'Journal of Fungi',
@@ -263,6 +267,8 @@ class PublicationRegistry:
             'eissn':     '1878-9080',
             'aliases': [
                 'Persoonia - Molecular Phylogeny and Evolution of Fungi',
+                # JATS variant from PMC: colon-space instead of hyphen.
+                'Persoonia : Molecular Phylogeny and Evolution of Fungi',
             ],
         },
         'studies-in-mycology': {

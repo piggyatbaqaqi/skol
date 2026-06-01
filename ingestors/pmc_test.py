@@ -148,7 +148,13 @@ class TestExtractMetadataFromXml(unittest.TestCase):
 
     _JATS_ARTICLE = (
         '<article>'
-        '<front><article-meta>'
+        '<front>'
+        '<journal-meta>'
+        '<journal-title-group>'
+        '<journal-title>Persoonia - Molecular Phylogeny and Evolution of Fungi</journal-title>'
+        '</journal-title-group>'
+        '</journal-meta>'
+        '<article-meta>'
         '<article-id pub-id-type="doi">10.1234/test.2025.001</article-id>'
         '<article-id pub-id-type="pmid">12345678</article-id>'
         '<article-id pub-id-type="pmc">PMC7777777</article-id>'
@@ -169,6 +175,32 @@ class TestExtractMetadataFromXml(unittest.TestCase):
         '</permissions>'
         '</article-meta></front>'
         '<body><p>Body text.</p></body>'
+        '</article>'
+    )
+
+    # Older JATS variants put <journal-title> directly under
+    # <journal-meta> with no <journal-title-group> wrapper.  Real
+    # examples are in skol_dev's PMC attachments.
+    _JATS_ARTICLE_NO_TITLE_GROUP = (
+        '<article>'
+        '<front>'
+        '<journal-meta>'
+        '<journal-title>Sydowia</journal-title>'
+        '</journal-meta>'
+        '<article-meta>'
+        '<article-id pub-id-type="doi">10.foo/bar</article-id>'
+        '</article-meta>'
+        '</front>'
+        '</article>'
+    )
+
+    _JATS_ARTICLE_NO_JOURNAL_META = (
+        '<article>'
+        '<front>'
+        '<article-meta>'
+        '<article-id pub-id-type="doi">10.foo/bar</article-id>'
+        '</article-meta>'
+        '</front>'
         '</article>'
     )
 
@@ -202,6 +234,34 @@ class TestExtractMetadataFromXml(unittest.TestCase):
             self._JATS_ARTICLE,
         )
         self.assertEqual(metadata["pmcid"], "PMC7777777")
+
+    def test_extract_journal_from_title_group(self) -> None:
+        """Modern JATS — ``<journal-meta><journal-title-group>
+        <journal-title>...</journal-title>...``"""
+        metadata = PmcIngestor._extract_metadata_from_xml(
+            self._JATS_ARTICLE,
+        )
+        self.assertEqual(
+            metadata["journal"],
+            'Persoonia - Molecular Phylogeny and Evolution of Fungi',
+        )
+
+    def test_extract_journal_without_title_group(self) -> None:
+        """Older JATS variants put ``<journal-title>`` directly
+        under ``<journal-meta>`` (no ``<journal-title-group>``
+        wrapper).  Real examples are in skol_dev attachments."""
+        metadata = PmcIngestor._extract_metadata_from_xml(
+            self._JATS_ARTICLE_NO_TITLE_GROUP,
+        )
+        self.assertEqual(metadata["journal"], 'Sydowia')
+
+    def test_extract_journal_missing_returns_empty(self):
+        """An article with no ``<journal-meta>`` returns
+        ``journal=''`` rather than crashing."""
+        metadata = PmcIngestor._extract_metadata_from_xml(
+            self._JATS_ARTICLE_NO_JOURNAL_META,
+        )
+        self.assertEqual(metadata["journal"], '')
 
     def test_extract_license(self) -> None:
         """License URL is extracted from permissions."""
