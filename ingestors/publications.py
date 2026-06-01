@@ -117,7 +117,7 @@ class PublicationRegistry:
     JOURNALS: Dict[str, JournalEntry] = {
         'american-midland-naturalist': {
             'name':      'The American Midland Naturalist',
-            'address':   'https://www.jstor.org/journal/amermidlnatu',
+            'address':   'https://www.biodiversitylibrary.org/bibliography/42576',
             'publisher': 'University of Notre Dame',
             'issn':      '0003-0031',
             'aliases':   ['Am. Mid. Nat.'],
@@ -204,7 +204,7 @@ class PublicationRegistry:
         },
         'farlowia': {
             'name':      'Farlowia',
-            'address':   'https://www.jstor.org/journal/farlowia',
+            'address':   'https://www.biodiversitylibrary.org/bibliography/8033',
             'publisher': 'Harvard University (Farlow Reference Library and Herbarium)',
         },
         'funga-nordica': {
@@ -245,7 +245,7 @@ class PublicationRegistry:
         },
         'journal-of-mycology': {
             'name':      'The Journal of Mycology',
-            'address':   'https://www.jstor.org/journal/jmycology',
+            'address':   'https://www.biodiversitylibrary.org/bibliography/9048',
             'publisher': 'JSTOR',
             'issn':      '1052-0368',
             'aliases': [
@@ -254,13 +254,13 @@ class PublicationRegistry:
         },
         'journal-of-the-elisha-mitchell-scientific-society': {
             'name':      'Journal of the Elisha Mitchell Scientific Society',
-            'address':   'https://www.jstor.org/journal/jelishmitcscis',
+            'address':   'https://www.biodiversitylibrary.org/bibliography/7533',
             'publisher': 'Elisha Mitchell Scientific Society',
             'issn':      '0013-6220',
         },
         'lloydia': {
             'name':      'Lloydia',
-            'address':   'https://www.jstor.org/journal/lloydia',
+            'address':   'https://catalog.hathitrust.org/Record/000052921',
             'publisher': 'Lloyd Library and Museum',
             'issn':      '0024-5461',
             # Defunct; merged into Journal of Natural Products in 1979.
@@ -325,6 +325,16 @@ class PublicationRegistry:
             'eissn':        '2154-8889',
             'ingenta_path': 'mtax/mt',
         },
+        'mykoweb': {
+            # Fallback bucket for mykoweb-sourced docs that don't
+            # carry a more specific journal field.  ``resolve_source_name``
+            # synthesises the bucket label ``"mykoweb"`` for any doc
+            # with a mykoweb pdf_url or meta.source; this row gives
+            # the bucket a clickable home on the Sources page.
+            'name':      'mykoweb',
+            'address':   'https://www.mykoweb.com/',
+            'publisher': 'Michael Wood / MykoWeb',
+        },
         'new-york-state-museum': {
             'name':      'New York State Museum',
             'address':   'http://www.nysm.nysed.gov/',
@@ -373,7 +383,7 @@ class PublicationRegistry:
         },
         'papers-of-the-michigan-academy-of-science': {
             'name':      'Papers of the Michigan Academy of Science',
-            'address':   'https://lsa.umich.edu/maas',
+            'address':   'https://catalog.hathitrust.org/Record/000055197',
             'publisher': 'Michigan Academy of Science, Arts and Letters',
             'aliases':   ['Pap. Mich. Acad. Sci.'],
         },
