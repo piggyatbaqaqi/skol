@@ -1,6 +1,15 @@
 # Mykoweb PDF → journal / book metadata extraction
 
-Status: **planned**.  Implement when picking up the mykoweb ingestor.
+Status: **implemented** (commit 154a1fb) — see
+[bin/extract_mykoweb_pdf_metadata.py](../bin/extract_mykoweb_pdf_metadata.py)
+and [bin/extract_mykoweb_pdf_metadata_test.py](../bin/extract_mykoweb_pdf_metadata_test.py).
+Canonical output: `/data/skol/www/mykoweb.com/systematics_pdf_metadata.json`
+(451 rows; 23 tests pass).  93 unparsed candidates landed in
+`systematics_pdf_metadata.unparsed.json`; spot-check confirmed they
+are all legitimate books with publisher tails, not articles the
+regex missed — so the LLM fallback section below did **not** need
+to fire.  Remaining work: integration with the mykoweb ingestor
+(consume the JSON, populate `journal` on skol_dev treatments).
 
 ## Goal
 
