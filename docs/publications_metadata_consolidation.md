@@ -75,7 +75,7 @@ better.  Discard.
 
 ```python
 # JOURNALS — one row per real-world journal, keyed by stable slug.
-JOURNALS: Dict[str, Dict[str, Any]] = {
+JOURNALS: Dict[str, JournalEntry] = {
     'sydowia': {
         'name':       'Sydowia',
         'address':    'https://www.sydowia.at/',
@@ -107,7 +107,7 @@ JOURNALS: Dict[str, Dict[str, Any]] = {
 
 # SOURCES — one row per scrape mechanism; each row's `journal`
 # field is a foreign key (slug) into JOURNALS.
-SOURCES: Dict[str, Dict[str, Any]] = {
+SOURCES: Dict[str, SourceEntry] = {
     'persoonia-pmc': {
         'journal':         'persoonia',         # FK slug
         'address':         '...PMC URL...',
@@ -126,20 +126,81 @@ SOURCES: Dict[str, Dict[str, Any]] = {
 }
 ```
 
+## Static typing — TypedDict
+
+The dict literals stay (they're the readable source-of-truth
+format), but mypy gets real type narrowing at every call site
+via `TypedDict` declarations co-located with the registry:
+
+```python
+from typing import List, Optional
+# Python 3.11+: from typing import NotRequired
+# Earlier:      from typing_extensions import NotRequired
+
+class JournalEntry(TypedDict):
+    name:      str                            # required
+    aliases:   NotRequired[List[str]]
+    address:   NotRequired[str]               # journal homepage
+    issn:      NotRequired[str]
+    eissn:     NotRequired[str]
+    isbn:      NotRequired[str]               # for book-like refs
+    doi:       NotRequired[str]               # journal-DOI, not article
+    publisher: NotRequired[str]
+    abbrev:    NotRequired[str]               # ISO 4 abbreviation
+
+
+class SourceEntry(TypedDict):
+    journal:         str                       # required: FK slug → JOURNALS
+    source:          str                       # required: ingestor family
+    ingestor_class:  str                       # required
+    address:         NotRequired[str]          # scrape endpoint
+    local_path:      NotRequired[str]
+    local_path_prefix: NotRequired[str]
+    url_prefix:      NotRequired[str]
+    rate_limit_min_ms: NotRequired[int]
+    rate_limit_max_ms: NotRequired[int]
+```
+
+The benefit lands at every consumer:
+
+```python
+def render_journal_row(slug: str) -> str:
+    journal = JOURNALS[slug]                    # JournalEntry
+    return f'<a href="{journal.get("address", "#")}">{journal["name"]}</a>'
+    #             mypy knows 'name' is required (str)
+    #             and 'address' is Optional[str] via .get()
+```
+
+`name` is the only field flagged as required on `JournalEntry`
+(every journal must have a display name); everything else is
+optional because the data really is heterogeneous (some journals
+have ISSN, some have ISBN, some have neither).  `SourceEntry`
+requires `journal` (the FK), `source`, and `ingestor_class`
+because without those the row isn't actionable as an ingestion
+source.
+
+Type-checking validation (`mypy ingestors/publications.py`) catches
+typos in field names, missing required fields, and wrong types at
+edit time — replaces the "single `_validate_journal_entry` function
+called at import" idea proposed earlier.  Per CLAUDE.md the new
+code passes mypy.
+
 Helper methods on `PublicationRegistry`:
-- `get_journal(slug_or_name) -> Optional[dict]` — JOURNALS lookup
-  with alias resolution.  Accepts either the slug directly or a
-  display name (or alias) and resolves to the JOURNALS entry.
-- `find_journal_by_issn(issn) -> Optional[str]` — scans JOURNALS
-  for an entry whose `issn` or `eissn` matches; returns the slug.
-- `find_journal_by_doi(doi) -> Optional[str]` — same shape, scans
-  the journal-DOI attribute.  (Per-article DOIs are out of scope —
-  those need a Crossref lookup, not a JOURNALS scan.)
-- `find_journal_by_isbn(isbn) -> Optional[str]` — same shape for
-  book-like reference works.
-- `normalize_journal_name(name)` — consults `JOURNALS[*].aliases`
-  lists; returns the canonical display name (the `name` field) of
-  the matching journal.
+- `get_journal(slug_or_name: str) -> Optional[JournalEntry]` —
+  JOURNALS lookup with alias resolution.  Accepts either the slug
+  directly or a display name (or alias).
+- `find_journal_by_issn(issn: str) -> Optional[str]` — scans
+  JOURNALS for an entry whose `issn` or `eissn` matches; returns
+  the slug.
+- `find_journal_by_doi(doi: str) -> Optional[str]` — same shape,
+  scans the journal-DOI attribute.  (Per-article DOIs are out of
+  scope — those need a Crossref lookup, not a JOURNALS scan.)
+- `find_journal_by_isbn(isbn: str) -> Optional[str]` — same shape
+  for book-like reference works.
+- `normalize_journal_name(name: str) -> str` — consults
+  `JOURNALS[*].aliases` lists; returns the canonical display name
+  (the `name` field) of the matching journal, or the input
+  unchanged if no alias matches.
 
 ## Enrichment workflow (one-shot, no runtime Crossref dependency)
 
