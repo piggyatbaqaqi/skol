@@ -167,7 +167,7 @@ class PublicationRegistry:
         },
         'ima-fungus': {
             'name':      'IMA Fungus',
-            'address':   'https://imafungus.biomedcentral.com/',
+            'address':   'https://imafungus.pensoft.net/',
             'publisher': 'Pensoft Publishers',
             'issn':      '2210-6340',
             'eissn':     '2210-6359',
@@ -225,7 +225,7 @@ class PublicationRegistry:
         },
         'mycoscience': {
             'name':      'Mycoscience',
-            'address':   'https://www.mycology-jp.org/',
+            'address':   'https://mycoscience.org/',
             'publisher': 'The Mycological Society of Japan',
             'issn':      '1340-3540',
             'eissn':     '1618-2545',
