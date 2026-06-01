@@ -1,129 +1,215 @@
-# Consolidating publication metadata into a single registry
+# Normalizing publication metadata into JOURNALS + SOURCES
 
-Status: **phase 1 in progress**.  Tracking the migration of
-journal-level facts (display URL, ISSN, name aliases) into
-`ingestors/publications.SOURCES`.
+Status: **plan under review**.  Refactor of `ingestors/publications.py`
+to separate journal-level facts from ingestion-source mechanics.
 
-## Background
+## Goal
 
-`ingestors/publications.py` carries publication state in two places:
+Split the current single `SOURCES` table into two related tables:
 
-- **`SOURCES`** — per-publication scrape configuration: `name`,
-  `journal`, `address`, `source`, `ingestor_class`, `local_path`,
-  etc.  Each entry feeds `bin/ingest.py` and one `Ingestor`
-  subclass.
-- **`JOURNAL_NAME_ALIASES`** — flat dict mapping variant journal
-  names (`'Sydowia Beih.'`, `'Cryptogamie Mycologie'`, etc.) to
-  canonical names.  Consumed by `normalize_journal_name()` to
-  consolidate per-journal stats on the Sources page.
+- **`JOURNALS`** — keyed by canonical journal name; one row per
+  real-world journal.  Owns the facts that are properties of the
+  *journal*: official website, ISSN(s), publisher, historical-name
+  aliases.
+- **`SOURCES`** — keyed by ingestion-source name; one row per
+  *way to fetch* articles for some journal (RSS, PMC, Crossref,
+  local mirror, etc.).  Each row references its journal by
+  canonical name (foreign key into `JOURNALS`).
 
-The Ingestion Sources page also currently routes journal-less docs
-through `resolve_source_name()` (in `bin/build_sources_stats.py`),
-which falls back to a hard-coded `'mykoweb'` label.  Other "this
-doc came from journal X but we don't know how to display X yet"
-cases (Sydowia via archive.org) have no home — they end up in
-``Unknown``.
+The parallel `JOURNAL_NAME_ALIASES` dict goes away — aliases live
+on their journal record in `JOURNALS`.
 
-We need a place to record journal-level facts (display URL, ISSN,
-historical-name aliases) without inventing another top-level dict
-and without coupling that data to scraper invocation.
+## The smell we're paying off
 
-## Schema decision
+Today's `SOURCES` is denormalized: 9 of 20 journals have multiple
+entries (Persoonia has 3, Mycology has 3, Journal of Fungi has 4),
+and each entry duplicates the journal-level fields (ISSN,
+address-of-the-actual-journal, etc.).
 
-Extend `SOURCES` with a new optional field:
+To keep those duplicate entries' `journal` field unique, some
+entries embed publisher information into the journal name:
+`"Mycology (PMC)"`, `"Journal of Fungi (PMC)"`, `"Mycology: An
+International Journal on Fungal Biology (Taylor & Francis)"`.
+Those compound strings leak into the rendered Sources page where
+they shouldn't be — `"(PMC)"` is a mechanism, not the name of a
+journal.
+
+Aliases (`JOURNAL_NAME_ALIASES`) sit in their own dict — fine in
+isolation, but they ARE journal-level facts and should be co-located
+with the rest.
+
+The `role='metadata'` patch I sketched in an earlier draft of this
+doc would have added a parallel kind of SOURCES row to host
+journal-level fields.  That made the denormalization worse, not
+better.  Discard.
+
+## New shape
 
 ```python
-'role': 'ingest' | 'metadata'   # default: 'ingest'
+# JOURNALS — one row per real-world journal.
+JOURNALS: Dict[str, Dict[str, Any]] = {
+    'Sydowia': {
+        'address':   'https://www.sydowia.at/',
+        'issn':      '0082-0598',
+        'aliases':   ['Sydowia Beih.'],
+        'publisher': 'Verlag Ferdinand Berger & Söhne',
+    },
+    'Persoonia': {
+        'address':   'https://persoonia.org/',
+        'aliases':   ['Persoonia - Molecular Phylogeny and Evolution of Fungi'],
+        'publisher': 'Naturalis Biodiversity Center',
+    },
+    'Journal of Fungi': {
+        'address':   'https://www.mdpi.com/journal/jof',
+        'publisher': 'MDPI',
+    },
+    # ...
+}
+
+# SOURCES — one row per scrape mechanism; each row's `journal`
+# field is a foreign key into JOURNALS.
+SOURCES: Dict[str, Dict[str, Any]] = {
+    'persoonia-pmc': {
+        'journal':         'Persoonia',
+        'address':         '...PMC URL...',
+        'source':          'pmc',
+        'ingestor_class':  'PMCIngestor',
+    },
+    'persoonia-rss': {
+        'journal':         'Persoonia',
+        ...
+    },
+    'jof-pmc': {
+        'journal':         'Journal of Fungi',   # NOT 'Journal of Fungi (PMC)'
+        ...
+    },
+    # ...
+}
 ```
 
-- **`role='ingest'`** (default; absent field implied): the entry
-  is a scrape source as today; `bin/ingest.py` may invoke its
-  `ingestor_class`.
-- **`role='metadata'`**: the entry is a display-only record.
-  `bin/ingest.py` skips it.  Used to host the journal's official
-  website, ISSN(s), historical-name aliases, etc.
-
-Each canonical journal is allowed **at most one `role='metadata'`
-entry** — the home for `aliases` and journal-level fields.  Scraper
-entries (`role='ingest'`) stay narrowly focused on "how to scrape
-from here".
-
-Future role values (`'deprecated'`, `'preview'`, `'archived'`) can
-be added later without revisiting the schema.
+Helper methods on `PublicationRegistry`:
+- `get_journal(name) -> Optional[dict]` — JOURNALS lookup with alias
+  resolution.
+- `find_journal_by_issn(issn) -> Optional[str]` — scans JOURNALS
+  for an entry whose `issn` or `eissn` matches; returns the canonical
+  journal name.
+- `normalize_journal_name(name)` — consults `JOURNALS[*].aliases`
+  lists; returns the canonical name on the LHS of the matching
+  entry.
 
 ## Phased migration
 
-### Phase 1 (this thread)
+Five phases, sized so each one is a self-contained landing.
 
-1. Add `role` filtering to `bin/ingest.py` — skip entries where
-   `role != 'ingest'`.
-2. Add a single pilot metadata entry: `'sydowia-journal'`
-   (`role='metadata'`, owns `aliases=['Sydowia Beih.']`, carries
-   the official Sydowia website + ISSN `0082-0598`).
-3. Extend `normalize_journal_name()` to consult per-entry
-   `aliases` lists *in addition to* the legacy
-   `JOURNAL_NAME_ALIASES` dict.  Keeps the migration incremental;
-   no flag-day.
-4. Extend `resolve_source_name()` (in `bin/build_sources_stats.py`)
-   to consult metadata entries' `issn`/`eissn` fields — so a doc
-   whose ISSN matches a metadata entry's ISSN gets bucketed under
-   that entry's `journal` even when its own `journal` field is
-   empty.  This is the path that surfaces the 249 archive.org
-   Sydowia docs.
-5. Rebuild `production_v3_hand` Sources stats and verify Sydowia
-   absorbs the 249 docs.
+### Phase 1 — build `JOURNALS`; rename compound `journal` fields in `SOURCES`
 
-### Phase 2
+**Goal**: structurally split the table.  No behavior change on the
+rendered Sources page yet.
 
-Migrate the remaining nine `JOURNAL_NAME_ALIASES` entries into
-per-journal metadata entries, one at a time.  Each migration:
+1. Write a one-shot scaffolding script (in `bin/` or a throwaway)
+   that walks current `SOURCES` and emits a draft `JOURNALS`
+   dict — one entry per unique `journal` value, fields populated
+   from whichever SOURCES entry had them.
+2. Hand-edit the draft `JOURNALS`: deduplicate, normalize journal
+   names (strip publisher tags like `"(PMC)"`, `"(Taylor &
+   Francis)"`), fill in missing official-website URLs and ISSNs
+   from public sources.
+3. Update `SOURCES` entries that carried compound names to point
+   at the canonical journal: `"Journal of Fungi (PMC)"` →
+   `"Journal of Fungi"`, etc.
+4. All existing classmethods on `PublicationRegistry` keep working
+   — `get_by_journal()`, `list_publications()`, etc.  Tests pass.
 
-- Add `'<journal>-journal'` metadata entry to `SOURCES` (if a
-  metadata home doesn't already exist for that journal).
-- Move the alias from `JOURNAL_NAME_ALIASES` to the entry's
-  `aliases` list.
-- Run the registry tests; visually inspect the Sources page for
-  any consolidation regression.
+**Visible state after phase 1**: nothing changes on the Sources
+page yet — the rendered rows are driven by skol_dev's `journal`
+field, which still carries the old compound names from past
+ingestions.  That's fixed in phase 2.
 
-Aliases that don't correspond to a real journal (or that exist
-only to clean up parser garbage like
-`'and Leucophlebs in North America. Ann. Missouri Bot. Gard.'`)
-either go under the parent journal's metadata entry or are
-deleted in favour of fixing the extractor that produced them.
+### Phase 2 — rename existing skol_dev `journal` fields
 
-### Phase 3
+**Goal**: rewrite the docs in skol_dev that carry old compound
+journal names so they match the new canonical ones.
 
-Delete `JOURNAL_NAME_ALIASES` (now empty) and the back-compat
-branch in `normalize_journal_name()`.  Single source of truth:
-SOURCES alone.
+1. New `bin/rename_journals.py`: given a mapping from old → new,
+   walk skol_dev and rewrite any doc whose `journal` field matches
+   an old name.  Idempotent — re-running is a no-op once docs are
+   at the target state.  Supports `--dry-run`, `--limit`,
+   `--verbosity`.
+2. Mapping for this round comes from the compound names enumerated
+   in phase 1 (we'll enumerate them while we're in there).
+3. Apply, rebuild `production_v3_hand` Sources stats.
 
-### Phase 4 (optional, later)
+**Visible state after phase 2**: rows on the Sources page no
+longer carry `"(PMC)"` / publisher suffixes; previously-separate
+rows for the same journal-via-multiple-ingestors merge into one.
 
-Backfill `journal=<canonical>` onto skol_dev docs whose ISSN
-matches a metadata-entry ISSN — so downstream consumers don't have
+### Phase 3 — move alias handling into `JOURNALS`
+
+**Goal**: delete `JOURNAL_NAME_ALIASES`.
+
+1. Move each entry of `JOURNAL_NAME_ALIASES` into the
+   `aliases` list on its canonical `JOURNALS` entry.
+2. Update `normalize_journal_name()` to consult
+   `JOURNALS[name].aliases`.  Keep a short back-compat branch
+   that also checks the legacy dict, then delete that branch and
+   the dict.
+3. Run a one-shot pass over skol_dev to rewrite any doc whose
+   `journal` field is currently a known alias to the canonical
+   form (e.g., docs whose journal field literally says
+   `"Sydowia Beih."` get rewritten to `"Sydowia"`).  Same script
+   from phase 2 with an alias-source mapping.
+4. Rebuild Sources stats.
+
+### Phase 4 — add `find_journal_by_issn`, ISSN-fallback in resolve_source_name
+
+**Goal**: surface the 249 archive.org Sydowia docs under
+`"Sydowia"` without writing to skol_dev.
+
+1. Implement `PublicationRegistry.find_journal_by_issn(issn)`.
+2. Extend `resolve_source_name(doc)` in
+   `bin/build_sources_stats.py`: if `journal` is empty, consult
+   `find_journal_by_issn(doc.get('issn'))` (and `eissn`) before
+   falling through to the mykoweb fallback / Unknown.
+3. Rebuild Sources stats.  Sydowia bucket grows by 249.
+
+### Phase 5 (optional) — persistent ISSN-driven journal backfill
+
+**Goal**: write `journal=<canonical>` onto skol_dev docs whose
+ISSN matches a JOURNALS entry, so downstream consumers don't have
 to re-resolve.  Mirrors the existing `bin/backfill_journal.py`
-ISSN pass but driven by the in-tree registry rather than Crossref.
+ISSN pass but the source of truth is the in-tree registry rather
+than Crossref — useful exactly for cases (like Sydowia) where
+Crossref's ISSN endpoint has gaps.
 
-## Things to confirm before starting
+Decide whether to do this after phase 4 — phase 4 alone covers the
+Sources page; phase 5 only matters for other consumers of the
+`journal` field.
 
-- ✓ No automated tooling writes back to `JOURNAL_NAME_ALIASES`.
-- ✓ No external consumers import `JOURNAL_NAME_ALIASES` directly
-  (only via `normalize_journal_name()`).
-- ⚠ Two-tier resolution order during phase 1–2: per-entry
-  `aliases` are consulted first; legacy `JOURNAL_NAME_ALIASES`
-  second.  If a name is in both, the metadata entry wins — but
-  the migration removes entries from the legacy dict so this
-  conflict shouldn't occur in practice.
+## Things to confirm before phase 1
 
-## Notes / non-goals
+- No automated tooling writes back to `SOURCES` or
+  `JOURNAL_NAME_ALIASES`.  Both are hand-curated source files.
+- The compound-name renames in phase 1 (e.g.,
+  `"Journal of Fungi (PMC)"` → `"Journal of Fungi"`) will merge
+  what currently appear as separate rows on the Sources page —
+  confirmed wanted.
+- Phase 2 writes to skol_dev.  Idempotent + dry-run-able.  No
+  destructive deletes.
 
-- Out of scope for phase 1: an admin UI for editing journal
-  metadata.  All entries hand-edited in `publications.py`.
-- Out of scope for phase 1: ISSN normalization on the lookup side
-  (lookup is exact match on the stored ISSN string).  The
-  `normalize_issn` helper in `backfill_journal.py` exists for the
-  Crossref-call path; we don't need it here yet.
-- Out of scope: changing the `JOURNAL_NAME_ALIASES` value side
-  (canonical names) — the canonical name on the LHS of the
-  current dict matches the `journal` field on the existing
-  SOURCES entries.  Phase 2 just relocates the alias rows.
+## Open questions
+
+- **Where to put the scaffolding script for phase 1?** Throwaway
+  in `/tmp/`, committed `bin/scaffold_journals.py`, or just
+  inline in this doc?  Throwaway keeps `bin/` from accumulating
+  one-shot tools; committed gives a paper trail.
+- **Should `JOURNALS` track per-journal stats** (e.g., total docs,
+  first-seen date) or stay purely descriptive?  Recommend purely
+  descriptive — stats live in Redis (`skol:sources:stats:*`),
+  not in the source registry.
+- **`address` semantics**: today some `SOURCES` entries' `address`
+  is a scrape endpoint (`https://api.crossref.org/...`); on the
+  Sources-page row it's intended as the journal's homepage.  In
+  the new shape, `JOURNALS[name].address` is the journal homepage
+  (what gets displayed); `SOURCES[key].address` is the scrape
+  endpoint (only used by the ingestor).  Worth being explicit
+  about this in the schema docstrings.
