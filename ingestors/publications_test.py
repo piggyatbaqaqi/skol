@@ -452,6 +452,74 @@ class TestFindJournalByJournalDoi(unittest.TestCase):
         )
 
 
+class TestPreviouslyOrphanJournalsResolved(unittest.TestCase):
+    """Regression: each journal name found in live skol_dev data
+    that previously had no JOURNALS entry now resolves through
+    ``normalize_journal_name`` (either as a canonical ``name`` or
+    via the alias list of a related entry).
+
+    Maps the live-data string to the canonical short name we
+    expect.  When new ingest variants surface, add them here as
+    aliases on the matching JOURNALS row.
+    """
+
+    EXPECTED_RESOLUTIONS = {
+        # mykoweb collection / reference works
+        'California Fungi':                  'California Fungi',
+        'Omphalina':                         'Omphalina',
+        'Funga Nordica':                     'Funga Nordica',
+        # New York State Museum cluster — 5 publication series rolled
+        # into one row.  Different name forms used in different
+        # source documents.
+        'Ann. Rep. NY State Mus.':           'New York State Museum',
+        'N. Y. State Mus. Bull.':            'New York State Museum',
+        'Bulletin of the New York State Museum': 'New York State Museum',
+        'Memoir of the New York State Museum':   'New York State Museum',
+        'Report of the State Botanist':      'New York State Museum',
+        # NYBG cluster — Brittonia is the surviving journal; Bull. NYBG
+        # is its predecessor.
+        'Bull. N. Y. Bot. Gard.':            'Brittonia',
+        # Long-tail journals — one entry each
+        'Bull. Torrey bot. Club':            'Bulletin of the Torrey Botanical Club',
+        'Farlowia':                          'Farlowia',
+        'Beih. Nova Hedw.':                  'Nova Hedwigia',
+        'Proc. Calif. Acad. Sci., ser 3':    'Proceedings of the California Academy of Sciences',
+        'Am. Mid. Nat.':                     'The American Midland Naturalist',
+        'Pap. Mich. Acad. Sci.':             'Papers of the Michigan Academy of Science',
+        'Lloydia':                           'Lloydia',
+        'Bull. Buffalo Soc. Nat. Sci.':      'Bulletin of the Buffalo Society of Natural Sciences',
+        'Contr. Univ. Mich. Herb.':          'Contributions from the University of Michigan Herbarium',
+        'Journal of the Elisha Mitchell Scientific Society': 'Journal of the Elisha Mitchell Scientific Society',
+        'Bulletin of the Lloyd Library':     'Bulletin of the Lloyd Library',
+        'N. Amer. Fl. Ser. II':              'North American Flora',
+        'Universtiy of California Publications in Botany':  # typo in data
+            'University of California Publications in Botany',
+    }
+
+    def test_each_resolves_to_expected_canonical(self):
+        for variant, expected in self.EXPECTED_RESOLUTIONS.items():
+            with self.subTest(variant=variant):
+                self.assertEqual(
+                    PublicationRegistry.normalize_journal_name(variant),
+                    expected,
+                    f'{variant!r} should resolve to {expected!r}',
+                )
+
+    def test_each_canonical_is_in_journals(self):
+        """The right-hand sides above are all JOURNALS[*].name —
+        i.e., every expected destination has a real entry."""
+        canonical_names = {
+            entry['name']
+            for entry in PublicationRegistry.JOURNALS.values()
+        }
+        for variant, expected in self.EXPECTED_RESOLUTIONS.items():
+            with self.subTest(variant=variant):
+                self.assertIn(
+                    expected, canonical_names,
+                    f'JOURNALS has no entry whose name is {expected!r}',
+                )
+
+
 class TestEveryJournalHasAddress(unittest.TestCase):
     """Every JOURNALS entry must carry a non-empty ``address`` field
     pointing at the journal's canonical homepage.  The Sources page

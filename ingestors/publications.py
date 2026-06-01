@@ -115,6 +115,13 @@ class PublicationRegistry:
     # JOURNAL_NAME_ALIASES; ``address`` gets filled in by hand from
     # each journal's official site.
     JOURNALS: Dict[str, JournalEntry] = {
+        'american-midland-naturalist': {
+            'name':      'The American Midland Naturalist',
+            'address':   'https://www.jstor.org/journal/amermidlnatu',
+            'publisher': 'University of Notre Dame',
+            'issn':      '0003-0031',
+            'aliases':   ['Am. Mid. Nat.'],
+        },
         'annals-of-the-missouri-botanical-garden': {
             'name':      'Annals of the Missouri Botanical Garden',
             'address':   'https://annals.mobot.org/index.php/annals',
@@ -130,6 +137,47 @@ class PublicationRegistry:
                 'Gymnomyces, and Macowanites in North America. Ann. Missouri Bot. Gard.',
                 'in North America. Ann. Missouri Bot. Gard.',
             ],
+        },
+        'brittonia': {
+            'name':      'Brittonia',
+            'address':   'https://link.springer.com/journal/12228',
+            'publisher': 'Springer (for the New York Botanical Garden)',
+            'issn':      '0007-196X',
+            'eissn':     '1938-436X',
+            'aliases': [
+                # Bull. NYBG was the predecessor publication, replaced
+                # by Brittonia in 1931.
+                'Bull. N. Y. Bot. Gard.',
+            ],
+        },
+        'bulletin-of-the-buffalo-society-of-natural-sciences': {
+            'name':      'Bulletin of the Buffalo Society of Natural Sciences',
+            'address':   'https://www.sciencemuseum.org/',
+            'publisher': 'Buffalo Society of Natural Sciences',
+            'aliases':   ['Bull. Buffalo Soc. Nat. Sci.'],
+        },
+        'bulletin-of-the-lloyd-library': {
+            'name':      'Bulletin of the Lloyd Library',
+            'address':   'https://www.lloydlibrary.org/',
+            'publisher': 'Lloyd Library and Museum',
+        },
+        'bulletin-of-the-torrey-botanical-club': {
+            'name':      'Bulletin of the Torrey Botanical Club',
+            'address':   'https://www.torreybotanical.org/',
+            'publisher': 'Torrey Botanical Society',
+            'issn':      '0040-9618',
+            'aliases':   ['Bull. Torrey bot. Club'],
+        },
+        'california-fungi': {
+            'name':      'California Fungi',
+            'address':   'https://www.mykoweb.com/CAF/',
+            'publisher': 'Michael Wood / MykoWeb',
+        },
+        'contributions-from-the-university-of-michigan-herbarium': {
+            'name':      'Contributions from the University of Michigan Herbarium',
+            'address':   'https://lsa.umich.edu/herbarium',
+            'publisher': 'University of Michigan Herbarium',
+            'aliases':   ['Contr. Univ. Mich. Herb.'],
         },
         'cryptogamie-mycologie': {
             'name':      'Cryptogamie, Mycologie',  # canonical form
@@ -153,6 +201,16 @@ class PublicationRegistry:
             'address':   'https://www.frontiersin.org/journals/fungal-biology',
             'publisher': 'Frontiers Media S.A.',
             'eissn':     '2673-6128',
+        },
+        'farlowia': {
+            'name':      'Farlowia',
+            'address':   'https://www.jstor.org/journal/farlowia',
+            'publisher': 'Harvard University (Farlow Reference Library and Herbarium)',
+        },
+        'funga-nordica': {
+            'name':      'Funga Nordica',
+            'address':   'https://www.svampetryk.dk/',
+            'publisher': 'Nordsvamp (Svampetryk)',
         },
         'fungal-biology-and-biotechnology': {
             'name':      'Fungal Biology and Biotechnology',
@@ -193,6 +251,19 @@ class PublicationRegistry:
             'aliases': [
                 'Journal of Mycology',  # without leading "The"
             ],
+        },
+        'journal-of-the-elisha-mitchell-scientific-society': {
+            'name':      'Journal of the Elisha Mitchell Scientific Society',
+            'address':   'https://www.jstor.org/journal/jelishmitcscis',
+            'publisher': 'Elisha Mitchell Scientific Society',
+            'issn':      '0013-6220',
+        },
+        'lloydia': {
+            'name':      'Lloydia',
+            'address':   'https://www.jstor.org/journal/lloydia',
+            'publisher': 'Lloyd Library and Museum',
+            'issn':      '0024-5461',
+            # Defunct; merged into Journal of Natural Products in 1979.
         },
         'medical-mycology-case-reports': {
             'name':      'Medical Mycology Case Reports',
@@ -254,6 +325,42 @@ class PublicationRegistry:
             'eissn':        '2154-8889',
             'ingenta_path': 'mtax/mt',
         },
+        'new-york-state-museum': {
+            'name':      'New York State Museum',
+            'address':   'http://www.nysm.nysed.gov/',
+            'publisher': 'New York State Museum',
+            'aliases': [
+                # Five publication series from the same institution.
+                # All publish taxonomic / botanical reports historically
+                # tied to the State Botanist's office.
+                'Ann. Rep. NY State Mus.',
+                'N. Y. State Mus. Bull.',
+                'Bulletin of the New York State Museum',
+                'Memoir of the New York State Museum',
+                'Report of the State Botanist',
+            ],
+        },
+        'north-american-flora': {
+            'name':      'North American Flora',
+            'address':   'https://www.nybg.org/',
+            'publisher': 'New York Botanical Garden',
+            'aliases':   ['N. Amer. Fl. Ser. II'],
+        },
+        'nova-hedwigia': {
+            'name':      'Nova Hedwigia',
+            'address':   'https://www.schweizerbart.de/journals/nova_hedwigia',
+            'publisher': 'Schweizerbart Science Publishers',
+            'issn':      '0029-5035',
+            'aliases': [
+                # Beih. = Beihefte = supplement series.
+                'Beih. Nova Hedw.',
+            ],
+        },
+        'omphalina': {
+            'name':      'Omphalina',
+            'address':   'https://nlmushrooms.ca/',
+            'publisher': 'Foray Newfoundland & Labrador',
+        },
         'open-access-journal-of-mycology-mycological-sciences': {
             'name':      'Open Access Journal of Mycology & Mycological Sciences',
             'address':   'https://medwinpublishers.com/OAJMMS/',
@@ -263,6 +370,12 @@ class PublicationRegistry:
             'aliases': [
                 'Open Access Journal of Mycology &amp; Mycological Sciences',
             ],
+        },
+        'papers-of-the-michigan-academy-of-science': {
+            'name':      'Papers of the Michigan Academy of Science',
+            'address':   'https://lsa.umich.edu/maas',
+            'publisher': 'Michigan Academy of Science, Arts and Letters',
+            'aliases':   ['Pap. Mich. Acad. Sci.'],
         },
         'persoonia': {
             'name':         'Persoonia',  # canonical short form
@@ -276,6 +389,12 @@ class PublicationRegistry:
                 # JATS variant from PMC: colon-space instead of hyphen.
                 'Persoonia : Molecular Phylogeny and Evolution of Fungi',
             ],
+        },
+        'proceedings-of-the-california-academy-of-sciences': {
+            'name':      'Proceedings of the California Academy of Sciences',
+            'address':   'https://www.calacademy.org/scientific-publications/proceedings-of-the-california-academy-of-sciences',
+            'publisher': 'California Academy of Sciences',
+            'aliases':   ['Proc. Calif. Acad. Sci., ser 3'],
         },
         'studies-in-mycology': {
             'name':         'Studies in Mycology',
@@ -293,6 +412,16 @@ class PublicationRegistry:
             # Crossref 404s on this ISSN — fields filled in by hand.
             'aliases': [
                 'Sydowia Beih.',
+            ],
+        },
+        'university-of-california-publications-in-botany': {
+            'name':      'University of California Publications in Botany',
+            'address':   'https://escholarship.org/uc/ucpubs_bot',
+            'publisher': 'University of California Press',
+            'aliases': [
+                # Typo present in skol_dev — preserve so any straggler
+                # doc still rolls up cleanly.
+                'Universtiy of California Publications in Botany',
             ],
         },
     }
