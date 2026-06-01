@@ -281,40 +281,74 @@ page yet — the rendered rows are driven by skol_dev's `journal`
 field, which still carries the old compound names from past
 ingestions.  That's fixed in phase 2.
 
-### Phase 2 — rename existing skol_dev `journal` fields
+### Phase 2 — deliver `bin/rename_journals.py` (script only)
 
-**Goal**: rewrite the docs in skol_dev that carry old compound
-journal names so they match the new canonical ones.
+**Goal**: deliver a generic rewrite-script that walks the ingest
+database, runs a mapping function over each doc's ``journal``
+field, and writes back when the mapping changes the value.
 
-1. New `bin/rename_journals.py`: given a mapping from old → new,
-   walk skol_dev and rewrite any doc whose `journal` field matches
-   an old name.  Idempotent — re-running is a no-op once docs are
-   at the target state.  Supports `--dry-run`, `--limit`,
-   `--verbosity`.
-2. Mapping for this round comes from the compound names enumerated
-   in phase 1 (we'll enumerate them while we're in there).
-3. Apply, rebuild `production_v3_hand` Sources stats.
+1. Generic `bin/rename_journals.py` — takes a mapping function;
+   default for phase 2 is ``strip_publisher_suffix``.  Idempotent;
+   supports ``--dry-run`` / ``--limit`` / ``--verbosity``.
 
-**Visible state after phase 2**: rows on the Sources page no
-longer carry `"(PMC)"` / publisher suffixes; previously-separate
-rows for the same journal-via-multiple-ingestors merge into one.
+**Live finding (recorded for the record)**: a phase-2 dry-run
+against skol_dev returned **zero eligible docs**.  The
+``" (PMC)"`` / ``" (Taylor & Francis)"`` / ``" (Internet Archive)"``
+suffixes only ever lived on ``SOURCES[*].name`` (the ingestor's
+display label), never on the per-doc ``journal`` value.  Every
+PMC ingest already wrote the clean journal name to skol_dev.
 
-### Phase 3 — move alias handling into `JOURNALS`
+So phase 2 commits the script as an artifact but does not write
+to skol_dev.  The actual rewrite work — the legacy aliases —
+moves up into phase 3 as the script's first real use.
 
-**Goal**: delete `JOURNAL_NAME_ALIASES`.
+### Phase 3 — migrate aliases into `JOURNALS`; rewrite docs
 
-1. Move each entry of `JOURNAL_NAME_ALIASES` into the
-   `aliases` list on its canonical `JOURNALS` entry.
-2. Update `normalize_journal_name()` to consult
-   `JOURNALS[name].aliases`.  Keep a short back-compat branch
-   that also checks the legacy dict, then delete that branch and
-   the dict.
-3. Run a one-shot pass over skol_dev to rewrite any doc whose
-   `journal` field is currently a known alias to the canonical
-   form (e.g., docs whose journal field literally says
-   `"Sydowia Beih."` get rewritten to `"Sydowia"`).  Same script
-   from phase 2 with an alias-source mapping.
-4. Rebuild Sources stats.
+**Goal**: delete ``JOURNAL_NAME_ALIASES``; rewrite skol_dev docs
+whose ``journal`` field is a known alias to its canonical form.
+
+Aliases that need migrating into ``JOURNALS[slug].aliases``:
+
+| Alias | Canonical | skol_dev docs |
+|---|---|---|
+| `'Persoonia - Molecular Phylogeny and Evolution of Fungi'` | `Persoonia` | 879 |
+| `'Cryptogamie. Mycologie'` | `Cryptogamie, Mycologie` | 576 |
+| `'Cryptogamie Mycologie'` | `Cryptogamie, Mycologie` | 89 |
+| `'Open Access Journal of Mycology &amp; Mycological Sciences'` | `Open Access Journal of Mycology & Mycological Sciences` | 22 |
+| `'Sydowia Beih.'` | `Sydowia` | (a few, mostly in scrape artefacts) |
+| `'mycosphere'` (lowercase) | `Mycosphere` | 873 (NEW — not in current legacy dict) |
+
+Plus four aliases in the current legacy dict pointing at journals
+that don't have a JOURNALS entry yet (`Annals of the Missouri
+Botanical Garden`, `Ann. Missouri Bot. Gard.`, the two
+"in North America" fragments, the misdirected `Mycology:` →
+`Mycology: ... (Taylor & Francis)` row).  Sub-decisions for each
+of those are noted in the phase-3 commit when it lands.
+
+Steps:
+1. Add an ``aliases`` list to each affected ``JOURNALS`` entry
+   carrying the alias variants from the table above.
+2. Add the lowercase ``mycosphere`` alias to the JOURNALS entry
+   (one new value).
+3. Resolve the four orphan aliases — either add the missing
+   JOURNALS entries (Annals of the Missouri Botanical Garden,
+   etc.) or delete the orphan aliases.
+4. Fix the misdirected ``'Mycology: An International Journal on
+   Fungal Biology'`` → ``'Mycology: An International Journal on
+   Fungal Biology (Taylor & Francis)'`` row in the legacy dict
+   (it points the wrong way given phase-1B's canonical short form).
+5. Update ``normalize_journal_name()`` to consult
+   ``JOURNALS[*].aliases``.  Keep a short back-compat branch that
+   also checks ``JOURNAL_NAME_ALIASES``; remove it (and the dict)
+   in a follow-up once verified.
+6. Run ``bin/rename_journals.py`` with ``normalize_journal_name``
+   as the mapping function.  The dry-run should show ~2400+
+   updates from the table above.
+7. Apply; rebuild ``production_v3_hand`` Sources stats.
+
+**Visible state after phase 3**: the Sources page collapses the
+duplicate Persoonia / Cryptogamie / OAJMMS / mycosphere rows into
+one row each.
 
 ### Phase 4 — add `find_journal_by_issn`, ISSN-fallback in resolve_source_name
 
