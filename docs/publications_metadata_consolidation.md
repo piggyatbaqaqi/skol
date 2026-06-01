@@ -7,17 +7,45 @@ to separate journal-level facts from ingestion-source mechanics.
 
 Split the current single `SOURCES` table into two related tables:
 
-- **`JOURNALS`** — keyed by canonical journal name; one row per
-  real-world journal.  Owns the facts that are properties of the
-  *journal*: official website, ISSN(s), publisher, historical-name
-  aliases.
+- **`JOURNALS`** — keyed by a stable opaque slug; one row per
+  real-world journal (or journal-like reference work).  Owns the
+  facts that are properties of the *journal*: display name,
+  official website, ISSN(s), eISSN, journal-DOI, ISBN, publisher,
+  historical-name aliases.
 - **`SOURCES`** — keyed by ingestion-source name; one row per
   *way to fetch* articles for some journal (RSS, PMC, Crossref,
-  local mirror, etc.).  Each row references its journal by
-  canonical name (foreign key into `JOURNALS`).
+  local mirror, etc.).  Each row references its journal by **slug**
+  (foreign key into `JOURNALS`).
 
 The parallel `JOURNAL_NAME_ALIASES` dict goes away — aliases live
 on their journal record in `JOURNALS`.
+
+## Identity / primary key
+
+`JOURNALS` is keyed by a **stable human-readable slug**, not by
+ISSN.  Examples: `sydowia`, `persoonia`, `journal-of-fungi`,
+`california-fungi`, `funga-nordica`.
+
+ISSN-as-key was rejected because it doesn't cover what we
+actually have:
+
+- Pre-ISSN journals (pre-~1971, plus tiny journals that never
+  registered).
+- Books / reference works the literature ingestor treats as
+  journals (`funga-nordica` has an ISBN, not an ISSN;
+  `california-fungi` has neither).
+- Synthetic roll-ups (no formal identifier at all).
+
+The slug is stable across display-name renames (changing
+``'name': 'Sydowia'`` to ``'name': 'Sydowia (Austria)'`` doesn't
+break the foreign keys from `SOURCES`), works as a future URL
+component (`/sources/sydowia/`), and is greppable.
+
+`ISSN`, `eISSN`, journal-`DOI`, and `ISBN` live on the record as
+**searchable attributes** — `find_journal_by_issn(issn)` and
+similar return the slug.  None is required; the scaffolding
+script fills them in where Crossref / DOAJ / NLM have them and
+leaves them absent otherwise.
 
 ## The smell we're paying off
 
@@ -46,41 +74,52 @@ better.  Discard.
 ## New shape
 
 ```python
-# JOURNALS — one row per real-world journal.
+# JOURNALS — one row per real-world journal, keyed by stable slug.
 JOURNALS: Dict[str, Dict[str, Any]] = {
-    'Sydowia': {
-        'address':   'https://www.sydowia.at/',
-        'issn':      '0082-0598',
-        'aliases':   ['Sydowia Beih.'],
-        'publisher': 'Verlag Ferdinand Berger & Söhne',
+    'sydowia': {
+        'name':       'Sydowia',
+        'address':    'https://www.sydowia.at/',
+        'issn':       '0082-0598',
+        'aliases':    ['Sydowia Beih.'],
+        'publisher':  'Verlag Ferdinand Berger & Söhne',
     },
-    'Persoonia': {
-        'address':   'https://persoonia.org/',
-        'aliases':   ['Persoonia - Molecular Phylogeny and Evolution of Fungi'],
-        'publisher': 'Naturalis Biodiversity Center',
+    'persoonia': {
+        'name':       'Persoonia',
+        'address':    'https://persoonia.org/',
+        'aliases':    ['Persoonia - Molecular Phylogeny and Evolution of Fungi'],
+        'publisher':  'Naturalis Biodiversity Center',
     },
-    'Journal of Fungi': {
-        'address':   'https://www.mdpi.com/journal/jof',
-        'publisher': 'MDPI',
+    'journal-of-fungi': {
+        'name':       'Journal of Fungi',
+        'address':    'https://www.mdpi.com/journal/jof',
+        'publisher':  'MDPI',
+    },
+    'california-fungi': {  # no ISSN — book-like reference
+        'name':       'California Fungi',
+        'aliases':    [],
+    },
+    'funga-nordica': {     # no ISSN — book series
+        'name':       'Funga Nordica',
+        'isbn':       '978-87-983961-3-2',
     },
     # ...
 }
 
 # SOURCES — one row per scrape mechanism; each row's `journal`
-# field is a foreign key into JOURNALS.
+# field is a foreign key (slug) into JOURNALS.
 SOURCES: Dict[str, Dict[str, Any]] = {
     'persoonia-pmc': {
-        'journal':         'Persoonia',
+        'journal':         'persoonia',         # FK slug
         'address':         '...PMC URL...',
         'source':          'pmc',
         'ingestor_class':  'PMCIngestor',
     },
     'persoonia-rss': {
-        'journal':         'Persoonia',
+        'journal':         'persoonia',         # same slug, different fetch
         ...
     },
     'jof-pmc': {
-        'journal':         'Journal of Fungi',   # NOT 'Journal of Fungi (PMC)'
+        'journal':         'journal-of-fungi',  # slug, NOT 'Journal of Fungi (PMC)'
         ...
     },
     # ...
@@ -88,14 +127,70 @@ SOURCES: Dict[str, Dict[str, Any]] = {
 ```
 
 Helper methods on `PublicationRegistry`:
-- `get_journal(name) -> Optional[dict]` — JOURNALS lookup with alias
-  resolution.
+- `get_journal(slug_or_name) -> Optional[dict]` — JOURNALS lookup
+  with alias resolution.  Accepts either the slug directly or a
+  display name (or alias) and resolves to the JOURNALS entry.
 - `find_journal_by_issn(issn) -> Optional[str]` — scans JOURNALS
-  for an entry whose `issn` or `eissn` matches; returns the canonical
-  journal name.
+  for an entry whose `issn` or `eissn` matches; returns the slug.
+- `find_journal_by_doi(doi) -> Optional[str]` — same shape, scans
+  the journal-DOI attribute.  (Per-article DOIs are out of scope —
+  those need a Crossref lookup, not a JOURNALS scan.)
+- `find_journal_by_isbn(isbn) -> Optional[str]` — same shape for
+  book-like reference works.
 - `normalize_journal_name(name)` — consults `JOURNALS[*].aliases`
-  lists; returns the canonical name on the LHS of the matching
-  entry.
+  lists; returns the canonical display name (the `name` field) of
+  the matching journal.
+
+## Enrichment workflow (one-shot, no runtime Crossref dependency)
+
+`JOURNALS` is built once via a scaffolding script and committed
+to Git.  Runtime code never talks to Crossref.
+
+Rationale:
+- `JOURNALS` is itself the cache — a hand-curated, Git-tracked
+  Python literal.  No "is the cache stale?" decision; `git log`
+  tells you when the source of truth last changed.
+- Hand-edits survive.  Crossref's title for Sydowia is `"Sydowia"`
+  but we may want `"Sydowia Beih."` recorded as an alias — that's
+  a hand-edit, not a Crossref override layer.
+- No new CouchDB database to maintain.  The skol stack already
+  has ~10; adding one for ~20 hand-curated rows doesn't earn its
+  keep.
+
+Crossref doesn't cover everything we want.  It gives canonical
+title, ISSN, eissn, publisher reliably; ISO 4 abbreviations are
+sometimes in `short-container-title` but inconsistent; official
+journal websites are rarely returned.  The scaffolding script
+treats Crossref as one input among several — abbreviation and
+website fields stay hand-edited.
+
+### Scaffolding script — shape
+
+```
+bin/scaffold_journals.py
+    --crossref-mailto piggy.yarroll+skol@gmail.com   # polite pool
+    --output ingestors/JOURNALS_draft.py
+    [--journal sydowia]                              # one at a time, OR
+    [--all]                                          # bulk scaffold from SOURCES
+```
+
+Behaviour:
+1. Walk current `SOURCES` and collect unique `journal` strings
+   (deduplicating canonical-name-mixed-with-publisher-tag forms).
+2. For each, infer the slug (`'Sydowia' → 'sydowia'`,
+   `'Journal of Fungi (PMC)' → 'journal-of-fungi'`).
+3. If any current `SOURCES` row has an ISSN, look up the journal
+   on Crossref's `/journals/{issn}` endpoint (polite pool).
+4. Emit a draft `JOURNALS_draft.py` whose entries combine
+   Crossref response fields + ISSNs harvested from `SOURCES` +
+   placeholder hand-edit fields (`# TODO: website`,
+   `# TODO: aliases`).
+5. Operator hand-edits the draft, then moves entries into
+   `ingestors/publications.py` as part of the phase-1 commit.
+
+Re-runnable for a single journal when adding a new one
+(`--journal new-slug`).  The script doesn't overwrite existing
+`JOURNALS` entries — it appends a draft for inspection.
 
 ## Phased migration
 
@@ -198,10 +293,6 @@ Sources page; phase 5 only matters for other consumers of the
 
 ## Open questions
 
-- **Where to put the scaffolding script for phase 1?** Throwaway
-  in `/tmp/`, committed `bin/scaffold_journals.py`, or just
-  inline in this doc?  Throwaway keeps `bin/` from accumulating
-  one-shot tools; committed gives a paper trail.
 - **Should `JOURNALS` track per-journal stats** (e.g., total docs,
   first-seen date) or stay purely descriptive?  Recommend purely
   descriptive — stats live in Redis (`skol:sources:stats:*`),
@@ -209,7 +300,7 @@ Sources page; phase 5 only matters for other consumers of the
 - **`address` semantics**: today some `SOURCES` entries' `address`
   is a scrape endpoint (`https://api.crossref.org/...`); on the
   Sources-page row it's intended as the journal's homepage.  In
-  the new shape, `JOURNALS[name].address` is the journal homepage
+  the new shape, `JOURNALS[slug].address` is the journal homepage
   (what gets displayed); `SOURCES[key].address` is the scrape
   endpoint (only used by the ingestor).  Worth being explicit
   about this in the schema docstrings.
