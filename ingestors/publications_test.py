@@ -379,5 +379,27 @@ class TestLegacyAliasDictRemoved(unittest.TestCase):
         self.assertEqual(legacy, {})
 
 
+class TestEveryJournalHasAddress(unittest.TestCase):
+    """Every JOURNALS entry must carry a non-empty ``address`` field
+    pointing at the journal's canonical homepage.  The Sources page
+    renders this as the clickable link; an empty value silently
+    falls back to a SOURCES scrape endpoint (PMC, Crossref API),
+    which is the bug this test prevents from recurring."""
+
+    def test_every_entry_has_a_url_address(self):
+        for slug, entry in PublicationRegistry.JOURNALS.items():
+            with self.subTest(slug=slug):
+                addr = entry.get('address', '')
+                self.assertTrue(
+                    addr and addr.strip(),
+                    f'JOURNALS[{slug!r}].address is empty',
+                )
+                self.assertTrue(
+                    addr.startswith(('http://', 'https://')),
+                    f'JOURNALS[{slug!r}].address must be a URL: '
+                    f'{addr!r}',
+                )
+
+
 if __name__ == '__main__':
     unittest.main()

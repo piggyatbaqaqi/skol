@@ -339,8 +339,12 @@ def build_sources_stats(
                 if journal_entry.get('address'):
                     source_info['website'] = journal_entry['address']
             pub_config = PublicationRegistry.get_by_journal(journal_name)
-            if pub_config:
-                if pub_config.get('address') and not source_info.get('website'):
+            # Only fall back to SOURCES for the website if JOURNALS
+            # didn't provide one — and even then, treat the SOURCES
+            # address as a last resort (it's a scrape endpoint, not
+            # the journal's homepage).
+            if pub_config and not source_info.get('website'):
+                if pub_config.get('address'):
                     source_info['website'] = pub_config['address']
                 else:
                     # Fallback: try to extract website from various URL fields

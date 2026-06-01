@@ -115,6 +115,7 @@ class PublicationRegistry:
     JOURNALS: Dict[str, JournalEntry] = {
         'annals-of-the-missouri-botanical-garden': {
             'name':      'Annals of the Missouri Botanical Garden',
+            'address':   'https://annals.mobot.org/index.php/annals',
             'publisher': 'Missouri Botanical Garden Press',
             'issn':      '0026-6493',
             'aliases': [
@@ -130,6 +131,7 @@ class PublicationRegistry:
         },
         'cryptogamie-mycologie': {
             'name':      'Cryptogamie, Mycologie',  # canonical form
+            'address':   'https://sciencepress.mnhn.fr/en/periodiques/mycologie',
             'publisher': "BioOne (Museum National d'Histoire Naturelle, Paris, France)",
             'issn':      '0181-1584',
             'eissn':     '1776-100X',
@@ -140,38 +142,45 @@ class PublicationRegistry:
         },
         'current-medical-mycology': {
             'name':      'Current Medical Mycology',
+            'address':   'http://cmm.mazums.ac.ir/',
             'publisher': 'Mazandaran University of Medical Sciences',
             'eissn':     '2423-3420',
         },
         'frontiers-in-fungal-biology': {
             'name':      'Frontiers in Fungal Biology',
+            'address':   'https://www.frontiersin.org/journals/fungal-biology',
             'publisher': 'Frontiers Media S.A.',
             'eissn':     '2673-6128',
         },
         'fungal-biology-and-biotechnology': {
             'name':      'Fungal Biology and Biotechnology',
+            'address':   'https://fungalbiolbiotech.biomedcentral.com/',
             'publisher': 'BioMed Central (Springer Nature)',
             'eissn':     '2054-3085',
         },
         'fungal-systematics-and-evolution': {
             'name':      'Fungal Systematics and Evolution',
+            'address':   'https://fuse-journal.org/',
             'publisher': 'Westerdijk Fungal Biodiversity Institute',
             'issn':      '2589-3823',
             'eissn':     '2589-3831',
         },
         'ima-fungus': {
             'name':      'IMA Fungus',
+            'address':   'https://imafungus.biomedcentral.com/',
             'publisher': 'Pensoft Publishers',
             'issn':      '2210-6340',
             'eissn':     '2210-6359',
         },
         'journal-of-fungi': {
             'name':      'Journal of Fungi',
+            'address':   'https://www.mdpi.com/journal/jof',
             'publisher': 'MDPI AG',
             'eissn':     '2309-608X',
         },
         'journal-of-mycology': {
             'name':      'The Journal of Mycology',
+            'address':   'https://www.jstor.org/journal/jmycology',
             'publisher': 'JSTOR',
             'issn':      '1052-0368',
             'aliases': [
@@ -180,28 +189,33 @@ class PublicationRegistry:
         },
         'medical-mycology-case-reports': {
             'name':      'Medical Mycology Case Reports',
+            'address':   'https://www.sciencedirect.com/journal/medical-mycology-case-reports',
             'publisher': 'International Society for Human and Animal Mycology',
             'eissn':     '2211-7539',
         },
         'mycobiology': {
             'name':      'Mycobiology',
+            'address':   'https://www.tandfonline.com/journals/tmyb20',
             'publisher': 'Korean Society of Mycology',
             'eissn':     '2092-9323',
         },
         'mycokeys': {
             'name':      'MycoKeys',
+            'address':   'https://mycokeys.pensoft.net/',
             'publisher': 'Pensoft Publishers',
             'issn':      '1314-4057',
             'eissn':     '1314-4049',
         },
         'mycologia': {
             'name':      'Mycologia',
+            'address':   'https://www.tandfonline.com/journals/umyc20',
             'publisher': 'Informa UK (Taylor & Francis)',
             'issn':      '0027-5514',
             'eissn':     '1557-2536',
         },
         'mycology': {
             'name':      'Mycology: An International Journal on Fungal Biology',
+            'address':   'https://www.tandfonline.com/journals/tmyc20',
             'publisher': 'Informa UK (Taylor & Francis)',
             'issn':      '2150-1203',
             'eissn':     '2150-1211',
@@ -211,12 +225,14 @@ class PublicationRegistry:
         },
         'mycoscience': {
             'name':      'Mycoscience',
+            'address':   'https://www.mycology-jp.org/',
             'publisher': 'The Mycological Society of Japan',
             'issn':      '1340-3540',
             'eissn':     '1618-2545',
         },
         'mycosphere': {
             'name':      'Mycosphere',
+            'address':   'https://www.mycosphere.org/',
             'publisher': 'Maximum Academic Press',
             'eissn':     '2077-7000',
             'aliases': [
@@ -225,12 +241,14 @@ class PublicationRegistry:
         },
         'mycotaxon': {
             'name':      'Mycotaxon',
+            'address':   'https://www.mycotaxon.com/',
             'publisher': 'Mycotaxon, Ltd.',  # Crossref reports BHL (deposit agent); real publisher is Mycotaxon, Ltd.
             'issn':      '0093-4666',
             'eissn':     '2154-8889',
         },
         'open-access-journal-of-mycology-mycological-sciences': {
             'name':      'Open Access Journal of Mycology & Mycological Sciences',
+            'address':   'https://medwinpublishers.com/OAJMMS/',
             'publisher': 'Medwin Publishers',
             'issn':      '2689-7822',
             'aliases': [
@@ -239,6 +257,7 @@ class PublicationRegistry:
         },
         'persoonia': {
             'name':      'Persoonia',  # canonical short form
+            'address':   'https://persoonia.org/',
             'publisher': 'Westerdijk Fungal Biodiversity Institute',
             'issn':      '0031-5850',
             'eissn':     '1878-9080',
@@ -248,12 +267,14 @@ class PublicationRegistry:
         },
         'studies-in-mycology': {
             'name':      'Studies in Mycology',
+            'address':   'https://www.studiesinmycology.org/',
             'publisher': 'Westerdijk Fungal Biodiversity Institute',
             'issn':      '0166-0616',
             'eissn':     '1872-9797',
         },
         'sydowia': {
             'name':      'Sydowia',
+            'address':   'https://www.sydowia.at/',
             'publisher': 'Verlag Ferdinand Berger & Söhne',
             'issn':      '0082-0598',
             # Crossref 404s on this ISSN — fields filled in by hand.
