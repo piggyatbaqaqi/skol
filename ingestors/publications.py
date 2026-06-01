@@ -121,14 +121,17 @@ class PublicationRegistry:
         },
         'current-medical-mycology': {
             'name':      'Current Medical Mycology',
+            'publisher': 'Mazandaran University of Medical Sciences',
             'eissn':     '2423-3420',
         },
         'frontiers-in-fungal-biology': {
             'name':      'Frontiers in Fungal Biology',
+            'publisher': 'Frontiers Media S.A.',
             'eissn':     '2673-6128',
         },
         'fungal-biology-and-biotechnology': {
             'name':      'Fungal Biology and Biotechnology',
+            'publisher': 'BioMed Central (Springer Nature)',
             'eissn':     '2054-3085',
         },
         'fungal-systematics-and-evolution': {
@@ -155,10 +158,12 @@ class PublicationRegistry:
         },
         'medical-mycology-case-reports': {
             'name':      'Medical Mycology Case Reports',
+            'publisher': 'International Society for Human and Animal Mycology',
             'eissn':     '2211-7539',
         },
         'mycobiology': {
             'name':      'Mycobiology',
+            'publisher': 'Korean Society of Mycology',
             'eissn':     '2092-9323',
         },
         'mycokeys': {
@@ -187,6 +192,7 @@ class PublicationRegistry:
         },
         'mycosphere': {
             'name':      'Mycosphere',
+            'publisher': 'Maximum Academic Press',
             'eissn':     '2077-7000',
         },
         'mycotaxon': {
@@ -214,8 +220,9 @@ class PublicationRegistry:
         },
         'sydowia': {
             'name':      'Sydowia',
+            'publisher': 'Verlag Ferdinand Berger & Söhne',
             'issn':      '0082-0598',
-            # Crossref 404s on this ISSN — publisher / address hand-edit later.
+            # Crossref 404s on this ISSN — fields filled in by hand.
         },
     }
 
