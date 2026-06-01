@@ -222,5 +222,69 @@ class TestResolveSourceName(unittest.TestCase):
         )
 
 
+class TestResolveSourceNameIssnFallback(unittest.TestCase):
+    """Phase-4 ISSN fallback: when ``journal`` is empty, consult
+    ``PublicationRegistry.find_journal_by_issn`` before falling
+    through to the mykoweb / Unknown buckets.  Surfaces the 249
+    archive.org Sydowia docs under ``"Sydowia"`` instead of the
+    Unknown bucket — they all carry ``issn=0082-0598``."""
+
+    def test_empty_journal_issn_matches_known_journal(self):
+        """ISSN 0082-0598 → Sydowia (the JOURNALS row's canonical
+        ``name``)."""
+        self.assertEqual(
+            resolve_source_name({'issn': '0082-0598'}),
+            'Sydowia',
+        )
+
+    def test_empty_journal_eissn_matches_known_journal(self):
+        """eissn is consulted the same way as issn — Persoonia's
+        electronic ISSN."""
+        self.assertEqual(
+            resolve_source_name({'eissn': '1878-9080'}),
+            'Persoonia',
+        )
+
+    def test_archive_org_sydowia_doc_now_resolves(self):
+        """The exact shape of the 249 archive.org Sydowia docs:
+        no journal, pdf_url under archive.org, issn 0082-0598.
+        Previously stayed in Unknown; phase 4 surfaces them."""
+        self.assertEqual(
+            resolve_source_name({
+                'pdf_url': 'https://archive.org/download/sydowia_1925.pdf',
+                'issn':    '0082-0598',
+                'title':   'Annales Mycologici 1925: Vol 23 1-2',
+            }),
+            'Sydowia',
+        )
+
+    def test_issn_takes_priority_over_mykoweb_fallback(self):
+        """When both signals are present, the ISSN (more specific
+        — identifies a journal directly) wins over the mykoweb
+        catch-all."""
+        self.assertEqual(
+            resolve_source_name({
+                'issn':    '0082-0598',
+                'pdf_url': 'https://mykoweb.com/x.pdf',
+            }),
+            'Sydowia',
+        )
+
+    def test_unknown_issn_falls_through_to_next_fallback(self):
+        """An ISSN that isn't in JOURNALS doesn't short-circuit;
+        the mykoweb / Unknown fallbacks still get a chance."""
+        self.assertEqual(
+            resolve_source_name({
+                'issn':    '9999-9999',
+                'pdf_url': 'https://mykoweb.com/x.pdf',
+            }),
+            'mykoweb',
+        )
+        self.assertEqual(
+            resolve_source_name({'issn': '9999-9999'}),
+            'Unknown',
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

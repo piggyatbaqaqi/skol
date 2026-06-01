@@ -86,16 +86,33 @@ def count_sanctioned_markers(text):
 def resolve_source_name(doc):
     """Pick the Sources-page bucket name for ``doc``.
 
-    Returns the doc's ``journal`` field when it's set.  Otherwise
-    falls back to identifying the source by other signals — at
-    present, any doc whose ``pdf_url`` lives under ``mykoweb.com``
-    or whose ``meta.source`` starts with ``mykoweb`` rolls up under
-    a single ``mykoweb`` bucket instead of disappearing into
-    ``Unknown``.  Docs with no usable signals stay ``Unknown``.
+    Resolution order (most specific signal first):
+
+    1. ``journal`` field, if non-empty — that's the post-phase-3
+       canonical name.
+    2. ISSN-driven fallback — if ``issn`` or ``eissn`` matches a
+       JOURNALS entry, return that entry's canonical ``name``.
+       Surfaces the 249 archive.org Sydowia docs (issn 0082-0598)
+       under ``"Sydowia"`` instead of Unknown.
+    3. mykoweb catch-all — pdf_url under mykoweb.com or meta.source
+       starting with ``"mykoweb"`` rolls up under ``"mykoweb"``.
+    4. ``"Unknown"`` — no usable signals.
     """
     journal = doc.get('journal')
     if journal and journal.strip():
         return journal
+
+    # Lazy import — keeps test fast-path off PublicationRegistry's
+    # cost when nobody invokes resolve_source_name.
+    from ingestors.publications import PublicationRegistry
+    for issn_field in ('issn', 'eissn'):
+        issn = doc.get(issn_field)
+        if not issn:
+            continue
+        slug = PublicationRegistry.find_journal_by_issn(issn)
+        if slug is not None:
+            return PublicationRegistry.JOURNALS[slug]['name']
+
     pdf_url = doc.get('pdf_url') or ''
     if (pdf_url.startswith('https://mykoweb.com/')
             or pdf_url.startswith('http://mykoweb.com/')):
