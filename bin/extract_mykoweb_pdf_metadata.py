@@ -352,6 +352,233 @@ def classify_misc_row(row: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Stage 2d — disk-only PDFs (CAF, misc/Omphalina, OldBooks, etc.)
+# ---------------------------------------------------------------------------
+
+
+# Roman → Arabic for the Omphalina-newsletter volume parser.
+_ROMAN_VALUES: Dict[str, int] = {
+    'I': 1, 'V': 5, 'X': 10, 'L': 50,
+    'C': 100, 'D': 500, 'M': 1000,
+}
+
+
+def _roman_to_int(s: str) -> Optional[int]:
+    """Lenient Roman-to-Arabic conversion.  Returns None on empty
+    input or any non-Roman character (rather than raising)."""
+    if not s:
+        return None
+    s = s.upper()
+    total = 0
+    prev = 0
+    for ch in reversed(s):
+        if ch not in _ROMAN_VALUES:
+            return None
+        v = _ROMAN_VALUES[ch]
+        if v < prev:
+            total -= v
+        else:
+            total += v
+        prev = v
+    return total if total > 0 else None
+
+
+def pretty_title_from_stem(stem: str) -> str:
+    """Filename stem → human-readable title (underscores → spaces,
+    runs of whitespace collapsed, ends trimmed)."""
+    return _norm_ws(stem.replace('_', ' ')).strip()
+
+
+_OMPHALINA_RE = re.compile(r'^O-([IVXLCDM]+)-(\d+)$', re.IGNORECASE)
+
+
+def parse_omphalina_filename(stem: str) -> Optional[Dict[str, Any]]:
+    """``O-VIII-2`` → ``{volume: '8', issue: '2', title: 'Omphalina
+    Vol. 8 No. 2'}``.  Returns None when the stem doesn't match the
+    Omphalina naming convention."""
+    m = _OMPHALINA_RE.match(stem)
+    if not m:
+        return None
+    vol = _roman_to_int(m.group(1))
+    if vol is None:
+        return None
+    issue = m.group(2)
+    return {
+        'volume': str(vol),
+        'issue':  issue,
+        'title':  f'Omphalina Vol. {vol} No. {issue}',
+    }
+
+
+# Disk-extraction rules.  Order matters — the first rule whose
+# ``root`` is a prefix of the file's relpath wins, so the more
+# specific paths must come before the less specific ones (e.g.
+# ``CAF/PDF/FungaNordica`` before ``CAF/PDF``).  ``recursive=False``
+# limits a rule to files directly in that directory (used to keep
+# ``CAF/PDF`` from swallowing ``CAF/PDF/FungaNordica`` content).
+_DISK_RULES: list = [
+    {
+        'root':             'CAF/protologue',
+        'kind':             'misc',
+        'container_title':  'California Fungi',
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+    {
+        'root':             'CAF/PDF/FungaNordica',
+        'kind':             'book',
+        'container_title':  'Funga Nordica',
+        'title_from':       'after_dash',
+        'recursive':        True,
+    },
+    {
+        'root':             'CAF/PDF',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        False,  # exclude the FungaNordica subdir
+    },
+    {
+        'root':             'CAF/keys',
+        'kind':             'key',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+    {
+        'root':             'misc/Omphalina',
+        'kind':             'journal_article',  # overridden if parse fails
+        'container_title':  'Omphalina',
+        'title_from':       'omphalina',
+        'recursive':        True,
+    },
+    {
+        # Disk-only PDFs under ``systematics/literature/`` that
+        # aren't linked from literature.html.  Order matters: this
+        # rule runs *after* the HTML pass adds its records to
+        # ``metadata``, and ``run()`` only writes a disk record
+        # when the relpath isn't already present — so this rule
+        # only contributes the stragglers, never overwrites the
+        # HTML-derived records.
+        'root':             'systematics/literature',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+    {
+        # A separate top-level literature/ directory (distinct from
+        # systematics/literature/).  A couple of monograph PDFs
+        # live here.
+        'root':             'literature',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        False,
+    },
+    {
+        # Loose PDFs directly under misc/ — Omphalina has its own
+        # rule above (more specific); this picks up the strays.
+        'root':             'misc',
+        'kind':             'misc',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        False,
+    },
+    {
+        'root':             'OldBooks',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+    {
+        'root':             'Pholiota',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+    {
+        'root':             'GSMNP',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+    {
+        'root':             'Crepidotus',
+        'kind':             'book',
+        'container_title':  None,
+        'title_from':       'stem',
+        'recursive':        True,
+    },
+]
+
+
+def _title_after_dash(stem: str) -> str:
+    """Strip a ``Prefix-`` from the stem (e.g.
+    ``FungaNordica-Russula`` → ``Russula``)."""
+    _, _, tail = stem.partition('-')
+    return pretty_title_from_stem(tail or stem)
+
+
+def apply_disk_rule(
+    rule: Dict[str, Any], file_relpath: str,
+) -> Dict[str, Any]:
+    """Build one metadata record from a rule + the PDF's
+    site-relative path.  Output shape matches the HTML classifiers
+    so downstream code (merge_pdf_records, the backfill helpers)
+    needs no special-casing."""
+    stem = Path(file_relpath).stem
+    record: Dict[str, Any] = {
+        'kind':            rule['kind'],
+        'container_title': rule['container_title'],
+        'source_html':     rule['root'].rstrip('/') + '/',
+    }
+    title_from = rule['title_from']
+    if title_from == 'stem':
+        record['title'] = pretty_title_from_stem(stem)
+    elif title_from == 'after_dash':
+        record['title'] = _title_after_dash(stem)
+    elif title_from == 'omphalina':
+        parsed = parse_omphalina_filename(stem)
+        if parsed is not None:
+            record['title'] = parsed['title']
+            record['volume'] = parsed['volume']
+            record['issue'] = parsed['issue']
+        else:
+            # Fallback for malformed Omphalina names.
+            record['kind'] = 'misc'
+            record['title'] = pretty_title_from_stem(stem)
+    else:
+        record['title'] = pretty_title_from_stem(stem)
+    return record
+
+
+def extract_disk_only_records(
+    site_root: Path,
+) -> Dict[str, Dict[str, Any]]:
+    """Walk every ``_DISK_RULES`` directory under ``site_root`` and
+    emit ``{pdf_relpath: record}``.  Missing directories are skipped
+    silently (lenient per directory)."""
+    out: Dict[str, Dict[str, Any]] = {}
+    for rule in _DISK_RULES:
+        rule_root = site_root / rule['root']
+        if not rule_root.is_dir():
+            continue
+        glob_pattern = '**/*.pdf' if rule['recursive'] else '*.pdf'
+        for pdf in rule_root.glob(glob_pattern):
+            relpath = str(pdf.relative_to(site_root).as_posix())
+            if relpath in out:
+                # An earlier (more specific) rule already claimed this
+                # file — don't let a broader rule overwrite it.
+                continue
+            out[relpath] = apply_disk_rule(rule, relpath)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Stage 3 — pipeline + CLI
 # ---------------------------------------------------------------------------
 
@@ -444,6 +671,26 @@ def run(
                     'li_text_after': row['li_text_after'],
                     'source_html':   source_html,
                 })
+
+    # Second pass: walk disk-only directories (CAF, misc/Omphalina,
+    # OldBooks, etc.).  PDFs already classified from HTML win — only
+    # add records that the HTML pass didn't see.
+    disk_records = extract_disk_only_records(site_root)
+    if verbosity >= 1:
+        print(f'  disk-only directories: {len(disk_records)} PDF rows')
+    new_from_disk = 0
+    for relpath, record in disk_records.items():
+        if relpath in metadata:
+            # An HTML row already covered this PDF — prefer the
+            # HTML-derived record (it has a citation, an author,
+            # a year — strictly more information than the
+            # filename-only disk record).
+            continue
+        metadata[relpath] = record
+        new_from_disk += 1
+    if verbosity >= 1:
+        print(f'  disk-only added {new_from_disk} records '
+              f'(others already covered by HTML)')
 
     out_path.write_text(json.dumps(metadata, indent=2, sort_keys=True),
                         encoding='utf-8')

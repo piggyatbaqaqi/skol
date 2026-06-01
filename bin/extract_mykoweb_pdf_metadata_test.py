@@ -569,3 +569,300 @@ class TestRefineContainerTitle(unittest.TestCase):
         """Defensive: helper may be called with None / empty."""
         self.assertIsNone(_refine_container_title(None))
         self.assertEqual(_refine_container_title(''), '')
+
+
+# ---------------------------------------------------------------------------
+# Round 3 — disk-only PDF coverage (CAF, misc/Omphalina, OldBooks, etc.)
+# ---------------------------------------------------------------------------
+
+
+class TestRomanToInt(unittest.TestCase):
+    """Roman-to-Arabic for the Omphalina-newsletter volume parser
+    (filenames like ``O-VIII-2.pdf``).  Lenient — invalid input
+    returns None rather than crashing."""
+
+    def test_basic_numerals(self):
+        from extract_mykoweb_pdf_metadata import _roman_to_int  # type: ignore[import]
+        self.assertEqual(_roman_to_int('I'), 1)
+        self.assertEqual(_roman_to_int('V'), 5)
+        self.assertEqual(_roman_to_int('X'), 10)
+
+    def test_compound_numerals(self):
+        from extract_mykoweb_pdf_metadata import _roman_to_int
+        self.assertEqual(_roman_to_int('VIII'), 8)
+        self.assertEqual(_roman_to_int('IX'), 9)
+        self.assertEqual(_roman_to_int('XII'), 12)
+
+    def test_invalid_returns_none(self):
+        from extract_mykoweb_pdf_metadata import _roman_to_int
+        self.assertIsNone(_roman_to_int(''))
+        self.assertIsNone(_roman_to_int('foo'))
+
+
+class TestPrettyTitleFromStem(unittest.TestCase):
+    """Filename-stem → human-readable title for disk-only PDFs.
+    Replaces underscores with spaces, normalises whitespace."""
+
+    def test_underscores_become_spaces(self):
+        from extract_mykoweb_pdf_metadata import pretty_title_from_stem  # type: ignore[import]
+        self.assertEqual(
+            pretty_title_from_stem('Agaricus_albissimus'),
+            'Agaricus albissimus',
+        )
+
+    def test_no_underscores_passthrough(self):
+        from extract_mykoweb_pdf_metadata import pretty_title_from_stem
+        self.assertEqual(
+            pretty_title_from_stem(
+                'A monographic study of the genera Crinipellis',
+            ),
+            'A monographic study of the genera Crinipellis',
+        )
+
+    def test_whitespace_normalised(self):
+        from extract_mykoweb_pdf_metadata import pretty_title_from_stem
+        self.assertEqual(
+            pretty_title_from_stem('  trim_me  '),
+            'trim me',
+        )
+
+
+class TestParseOmphalinaFilename(unittest.TestCase):
+    """``misc/Omphalina/O-VIII-2.pdf`` → volume=8, issue=2."""
+
+    def test_basic_parse(self):
+        from extract_mykoweb_pdf_metadata import parse_omphalina_filename  # type: ignore[import]
+        result = parse_omphalina_filename('O-VIII-2')
+        assert result is not None
+        self.assertEqual(result['volume'], '8')
+        self.assertEqual(result['issue'], '2')
+        self.assertEqual(result['title'], 'Omphalina Vol. 8 No. 2')
+
+    def test_low_volume(self):
+        from extract_mykoweb_pdf_metadata import parse_omphalina_filename
+        result = parse_omphalina_filename('O-III-3')
+        assert result is not None
+        self.assertEqual(result['volume'], '3')
+        self.assertEqual(result['issue'], '3')
+
+    def test_non_omphalina_returns_none(self):
+        from extract_mykoweb_pdf_metadata import parse_omphalina_filename
+        self.assertIsNone(parse_omphalina_filename('something-else'))
+
+    def test_malformed_returns_none(self):
+        from extract_mykoweb_pdf_metadata import parse_omphalina_filename
+        self.assertIsNone(parse_omphalina_filename('O-VIII'))
+
+
+class TestApplyDiskRule(unittest.TestCase):
+    """``apply_disk_rule(rule, file_relpath)`` produces records in
+    the same shape as the HTML classifiers."""
+
+    def test_caf_protologue(self):
+        from extract_mykoweb_pdf_metadata import (  # type: ignore[import]
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES
+                    if r['root'] == 'CAF/protologue')
+        record = apply_disk_rule(
+            rule, 'CAF/protologue/Agaricus_albissimus.pdf',
+        )
+        self.assertEqual(record['kind'], 'misc')
+        self.assertEqual(record['container_title'], 'California Fungi')
+        self.assertEqual(record['title'], 'Agaricus albissimus')
+
+    def test_caf_funganordica_strips_prefix(self):
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES
+                    if r['root'] == 'CAF/PDF/FungaNordica')
+        record = apply_disk_rule(
+            rule, 'CAF/PDF/FungaNordica/FungaNordica-Russula.pdf',
+        )
+        self.assertEqual(record['kind'], 'book')
+        self.assertEqual(record['container_title'], 'Funga Nordica')
+        self.assertEqual(record['title'], 'Russula')
+
+    def test_caf_pdf_root_book(self):
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES if r['root'] == 'CAF/PDF')
+        record = apply_disk_rule(
+            rule,
+            'CAF/PDF/A Systematic Study of Tricholoma in CA.pdf',
+        )
+        self.assertEqual(record['kind'], 'book')
+        self.assertIsNone(record['container_title'])
+        self.assertEqual(record['title'],
+                         'A Systematic Study of Tricholoma in CA')
+
+    def test_caf_keys(self):
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES if r['root'] == 'CAF/keys')
+        record = apply_disk_rule(
+            rule, 'CAF/keys/Arcangeliella_key.pdf',
+        )
+        self.assertEqual(record['kind'], 'key')
+        self.assertEqual(record['title'], 'Arcangeliella key')
+
+    def test_omphalina_with_vol_issue(self):
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES
+                    if r['root'] == 'misc/Omphalina')
+        record = apply_disk_rule(rule, 'misc/Omphalina/O-VIII-2.pdf')
+        self.assertEqual(record['kind'], 'journal_article')
+        self.assertEqual(record['container_title'], 'Omphalina')
+        self.assertEqual(record['volume'], '8')
+        self.assertEqual(record['issue'], '2')
+
+    def test_omphalina_malformed_falls_back_to_misc(self):
+        """Filename doesn't match O-<roman>-<num> — emit a misc
+        record instead of fabricating vol/issue."""
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES
+                    if r['root'] == 'misc/Omphalina')
+        record = apply_disk_rule(rule, 'misc/Omphalina/special.pdf')
+        self.assertEqual(record['kind'], 'misc')
+        self.assertEqual(record['container_title'], 'Omphalina')
+
+    def test_generic_book_directory(self):
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES if r['root'] == 'OldBooks')
+        record = apply_disk_rule(
+            rule, 'OldBooks/OurEdibleToadstoolsMushrooms.pdf',
+        )
+        self.assertEqual(record['kind'], 'book')
+        self.assertIsNone(record['container_title'])
+        self.assertEqual(record['title'],
+                         'OurEdibleToadstoolsMushrooms')
+
+    def test_record_carries_source_html_sentinel(self):
+        """Records emitted from disk-extraction must carry a
+        ``source_html`` value so downstream consumers can tell them
+        apart from HTML-extracted ones.  Use the rule's root as the
+        sentinel."""
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES if r['root'] == 'OldBooks')
+        record = apply_disk_rule(rule, 'OldBooks/Foo.pdf')
+        self.assertEqual(record['source_html'], 'OldBooks/')
+
+
+class TestExtractDiskOnlyRecords(unittest.TestCase):
+    """``extract_disk_only_records(site_root)`` walks ``_DISK_RULES``
+    in order and emits the same ``{pdf_relpath: record}`` shape as
+    the HTML pipeline."""
+
+    def _build_fixture(self, tmp_root: Path) -> None:
+        for relpath in [
+            'CAF/protologue/Agaricus_albissimus.pdf',
+            'CAF/PDF/FungaNordica/FungaNordica-Russula.pdf',
+            'CAF/PDF/A monographic study of Tricholoma.pdf',
+            'CAF/keys/Arcangeliella_key.pdf',
+            'misc/Omphalina/O-VIII-2.pdf',
+            'OldBooks/OurEdible.pdf',
+        ]:
+            p = tmp_root / relpath
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(b'%PDF-stub')
+
+    def test_walks_every_disk_rule(self):
+        from extract_mykoweb_pdf_metadata import extract_disk_only_records  # type: ignore[import]
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._build_fixture(root)
+            records = extract_disk_only_records(root)
+        for expected in [
+            'CAF/protologue/Agaricus_albissimus.pdf',
+            'CAF/PDF/FungaNordica/FungaNordica-Russula.pdf',
+            'CAF/PDF/A monographic study of Tricholoma.pdf',
+            'CAF/keys/Arcangeliella_key.pdf',
+            'misc/Omphalina/O-VIII-2.pdf',
+            'OldBooks/OurEdible.pdf',
+        ]:
+            self.assertIn(expected, records)
+
+    def test_caf_pdf_root_excludes_funganordica_subdir(self):
+        from extract_mykoweb_pdf_metadata import extract_disk_only_records
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._build_fixture(root)
+            records = extract_disk_only_records(root)
+        rec = records[
+            'CAF/PDF/FungaNordica/FungaNordica-Russula.pdf'
+        ]
+        self.assertEqual(rec['container_title'], 'Funga Nordica')
+        loose = records[
+            'CAF/PDF/A monographic study of Tricholoma.pdf'
+        ]
+        self.assertIsNone(loose['container_title'])
+
+    def test_missing_directory_does_not_crash(self):
+        from extract_mykoweb_pdf_metadata import extract_disk_only_records
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'OldBooks').mkdir()
+            (root / 'OldBooks' / 'Foo.pdf').write_bytes(b'x')
+            records = extract_disk_only_records(root)
+        self.assertEqual(list(records.keys()), ['OldBooks/Foo.pdf'])
+
+
+class TestApplyDiskRuleResidualRules(unittest.TestCase):
+    """Round-3.1 — three additional rules covering the last 6 stragglers
+    found in the live skol_dev data: loose PDFs in ``misc/`` (not
+    ``misc/Omphalina/``), loose PDFs in a top-level ``literature/``
+    directory (separate from ``systematics/literature/``), and disk
+    PDFs in ``systematics/literature/`` not linked from
+    literature.html."""
+
+    def test_systematics_literature_disk_only(self):
+        from extract_mykoweb_pdf_metadata import (  # type: ignore[import]
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES
+                    if r['root'] == 'systematics/literature')
+        record = apply_disk_rule(
+            rule, 'systematics/literature/Polyporaceae of Wisconsin.pdf',
+        )
+        self.assertEqual(record['kind'], 'book')
+        self.assertIsNone(record['container_title'])
+        self.assertEqual(record['title'], 'Polyporaceae of Wisconsin')
+
+    def test_toplevel_literature_dir(self):
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES if r['root'] == 'literature')
+        record = apply_disk_rule(
+            rule,
+            'literature/The Agaricaceae of the Pacific Coast I.pdf',
+        )
+        self.assertEqual(record['kind'], 'book')
+        self.assertIsNone(record['container_title'])
+
+    def test_misc_loose_pdf(self):
+        """``misc/Harry_D_Thiers.pdf`` (loose, NOT under
+        misc/Omphalina/) → kind=misc, no container."""
+        from extract_mykoweb_pdf_metadata import (
+            apply_disk_rule, _DISK_RULES,
+        )
+        rule = next(r for r in _DISK_RULES
+                    if r['root'] == 'misc' and r.get('recursive') is False)
+        record = apply_disk_rule(rule, 'misc/Harry_D_Thiers.pdf')
+        self.assertEqual(record['kind'], 'misc')
+        self.assertIsNone(record['container_title'])
+        self.assertEqual(record['title'], 'Harry D Thiers')
