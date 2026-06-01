@@ -20,7 +20,6 @@ Constrained Decoding Support:
 """
 
 import json
-import io
 import multiprocessing as mp
 import os
 from typing import Optional, Dict, Any, List
@@ -37,6 +36,207 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
 from treatment import get_ingest_field
+
+
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    """Extract the first balanced top-level JSON object from model output.
+
+    Handles common wrappers the base model emits:
+    - ```` ```json ... ``` ```` markdown fences
+    - a trailing "Explanation:" prose section
+    - leading "Result:" markers and whitespace
+
+    Returns the parsed dict, or None if no parseable object is found.
+    """
+    if not text:
+        return None
+
+    # Scan for the first balanced {...}, respecting strings/escapes so braces
+    # inside string values don't throw off the depth count.
+    start = text.find('{')
+    while start != -1:
+        depth = 0
+        in_str = False
+        escape = False
+        for i in range(start, len(text)):
+            ch = text[i]
+            if in_str:
+                if escape:
+                    escape = False
+                elif ch == '\\':
+                    escape = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start:i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        break  # malformed; try next '{'
+        # Either unbalanced (truncated) or malformed; advance to next '{'
+        start = text.find('{', start + 1)
+
+    return None
+
+
+def _split_description(text: str, max_chars: int = 6000) -> List[str]:
+    """Split a long description into chunks that each fit within max_chars.
+
+    Descriptive components in taxonomic treatments are largely independent, so we
+    can translate chunks separately and merge the resulting JSON. Splits prefer
+    sentence/paragraph boundaries; a single sentence longer than max_chars is
+    hard-split as a last resort.
+
+    Returns a list with at least one chunk (the original text if already short).
+    """
+    text = (text or "").strip()
+    if len(text) <= max_chars:
+        return [text] if text else []
+
+    # Candidate boundaries: paragraph breaks first, then sentence enders.
+    # Use a regex that keeps the delimiter attached to the preceding sentence.
+    import re
+    # Split into sentence-ish units; keep terminators with the sentence.
+    units = re.split(r'(?<=[.;!?])\s+|\n+', text)
+    units = [u.strip() for u in units if u and u.strip()]
+
+    chunks: List[str] = []
+    current = ""
+    for unit in units:
+        # A single unit longer than the budget: flush current, hard-split unit.
+        if len(unit) > max_chars:
+            if current:
+                chunks.append(current)
+                current = ""
+            for i in range(0, len(unit), max_chars):
+                chunks.append(unit[i:i + max_chars])
+            continue
+        if not current:
+            current = unit
+        elif len(current) + 1 + len(unit) <= max_chars:
+            current = f"{current} {unit}"
+        else:
+            chunks.append(current)
+            current = unit
+    if current:
+        chunks.append(current)
+
+    return chunks
+
+
+def _deep_merge_json(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively merge JSON dict b into a, returning a new merged dict.
+
+    - Two dicts at the same key are merged recursively.
+    - Two lists are concatenated with order-preserving dedupe.
+    - A dict and a list (or other type mismatch) keeps a's value and drops b's,
+      since mismatched shapes across chunks are rare and a-wins is predictable.
+    - Otherwise (scalars), a's value wins.
+    """
+    result = dict(a)
+    for key, b_val in b.items():
+        if key not in result:
+            result[key] = b_val
+            continue
+        a_val = result[key]
+        if isinstance(a_val, dict) and isinstance(b_val, dict):
+            result[key] = _deep_merge_json(a_val, b_val)
+        elif isinstance(a_val, list) and isinstance(b_val, list):
+            merged = list(a_val)
+            seen = {json.dumps(x, sort_keys=True) for x in a_val}
+            for item in b_val:
+                marker = json.dumps(item, sort_keys=True)
+                if marker not in seen:
+                    merged.append(item)
+                    seen.add(marker)
+            result[key] = merged
+        # else: type mismatch or scalar -> keep a's value
+    return result
+
+
+def _build_prompt(prompt_template: str, description: str,
+                  ontology_context: Optional[str] = None) -> str:
+    """Build the model prompt for one description.
+
+    Single source of truth for the prompt format used by every inference path
+    (instance method and both subprocess workers).
+    """
+    if ontology_context:
+        return f"""<s>[INST]{prompt_template}
+
+## Ontology Vocabulary
+{ontology_context}
+
+## Species Description
+{description}[/INST]
+
+Result:
+"""
+    return f"""<s>[INST]{prompt_template}
+
+## Species Description
+{description}[/INST]
+
+Result:
+"""
+
+
+def _chunk_budget_chars(max_length: int) -> int:
+    """Char budget for one chunk, leaving ~768 tokens for the prompt scaffold.
+
+    ~3.5 chars/token is conservative for this corpus (unicode measurements, μm).
+    """
+    return max(1000, int((max_length - 768) * 3.5))
+
+
+def _raw_generate(model, tokenizer, prompt_template: str, description: str,
+                  device: str, max_new_tokens: int,
+                  ontology_context: Optional[str] = None) -> str:
+    """Run the model on one (already size-bounded) description, return decoded text."""
+    import torch
+    prompt = _build_prompt(prompt_template, description, ontology_context)
+    model_input = tokenizer(prompt, return_tensors="pt").to(device)
+    with torch.no_grad():
+        output = model.generate(
+            **model_input,
+            max_new_tokens=max_new_tokens,
+            pad_token_id=2,
+            do_sample=False,  # Deterministic output
+            temperature=None,
+            top_p=None,
+        )
+    return tokenizer.decode(output[0], skip_special_tokens=True)
+
+
+def _translate_description(description: str, translate_chunk_fn, max_length: int) -> str:
+    """Chunk a description, translate each chunk to a JSON dict, deep-merge, return a JSON string.
+
+    Descriptive components in a treatment are largely independent, so a
+    description that would overflow the context window is split on
+    sentence/punctuation boundaries, each chunk is translated separately via
+    ``translate_chunk_fn`` (which returns a dict), and the per-chunk objects are
+    deep-merged. This is the single shared pipeline behind every inference path.
+    """
+    chunks = _split_description(description, _chunk_budget_chars(max_length))
+    if not chunks:
+        return "{}"
+    merged: Dict[str, Any] = {}
+    for chunk in chunks:
+        try:
+            piece = translate_chunk_fn(chunk)
+        except Exception as e:  # one bad chunk shouldn't sink the whole record
+            print(f"Warning: chunk translation failed: {e}")
+            piece = {}
+        if isinstance(piece, dict) and piece:
+            merged = _deep_merge_json(merged, piece)
+    return json.dumps(merged, ensure_ascii=False)
 
 
 def build_llm_input_text(doc: Dict[str, Any]) -> str:
@@ -80,8 +280,6 @@ def _inference_worker(descriptions, model_config, batch_size, result_queue, stre
         import torch
         from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
         from peft import PeftModel
-        import json as json_module
-        import io
 
         # Load tokenizer
         print("    Loading tokenizer...")
@@ -120,52 +318,6 @@ def _inference_worker(descriptions, model_config, batch_size, result_queue, stre
         model.eval()
         print("    ✓ Model ready")
 
-        # Helper to make prompt
-        def make_prompt(description, ontology_context=None):
-            if ontology_context:
-                return f"""<s>[INST]{model_config['prompt']}
-
-## Ontology Vocabulary
-{ontology_context}
-
-## Species Description
-{description}[/INST]
-
-Result:
-"""
-            else:
-                return f"""<s>[INST]{model_config['prompt']}
-
-## Species Description
-{description}[/INST]
-
-Result:
-"""
-
-        # Helper to extract JSON
-        def extract_json(text):
-            state = "START"
-            lines = []
-            try:
-                with io.StringIO(text) as f:
-                    for line in f:
-                        if line.startswith('```json') or line.startswith("result:") or line.startswith("Result:"):
-                            state = "RECORDING"
-                        elif line.startswith('```'):
-                            state = "END"
-                            return json_module.loads("\n".join(lines))
-                        elif line.startswith("}"):
-                            lines.append(line)
-                            state = "END"
-                            return json_module.loads("\n".join(lines))
-                        elif state == "RECORDING":
-                            lines.append(line)
-                if lines:
-                    return json_module.loads("\n".join(lines))
-                return json_module.loads(text)
-            except json_module.JSONDecodeError:
-                return {}
-
         # Process descriptions
         results = {}
         total = len(descriptions)
@@ -181,22 +333,19 @@ Result:
                 print(f"    Batch {batch_num}/{total_batches}")
 
             try:
-                prompt = make_prompt(description, ontology_context)
-                model_input = tokenizer(prompt, return_tensors="pt").to(model_config['device'])
-
-                with torch.no_grad():
-                    output = model.generate(
-                        **model_input,
-                        max_new_tokens=model_config['max_new_tokens'],
-                        pad_token_id=2,
-                        do_sample=False,
-                        temperature=None,
-                        top_p=None
+                # Shared chunk-and-merge pipeline: split oversized descriptions,
+                # translate each chunk, deep-merge. Same routine as the instance
+                # method and the constrained worker.
+                def translate_chunk(chunk):
+                    text = _raw_generate(
+                        model, tokenizer, model_config['prompt'], chunk,
+                        model_config['device'], model_config['max_new_tokens'],
+                        ontology_context=ontology_context,
                     )
+                    return _extract_json_object(text) or {}
 
-                generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
-                json_obj = extract_json(generated_text)
-                json_str = json_module.dumps(json_obj, ensure_ascii=False)
+                json_str = _translate_description(
+                    description, translate_chunk, model_config['max_length'])
 
                 if streaming:
                     # Send result immediately with full item data for saving
@@ -858,13 +1007,7 @@ and their values from the provided species description and format them as struct
         Returns:
             Formatted prompt string
         """
-        return f"""<s>[INST]{self.prompt}
-
-## Species Description
-{description}[/INST]
-
-Result:
-"""
+        return _build_prompt(self.prompt, description)
 
     def _extract_json(self, text: str) -> Dict[str, Any]:
         """
@@ -876,75 +1019,28 @@ Result:
         Returns:
             Parsed JSON object (or empty dict if parsing fails)
         """
-        state = "START"
-        lines = []
-
-        try:
-            with io.StringIO(text) as f:
-                for line in f:
-                    if line.startswith('```json') or line.startswith("result:") or line.startswith("Result:"):
-                        state = "RECORDING"
-                    elif line.startswith('```'):
-                        state = "END"
-                        return json.loads("\n".join(lines))
-                    elif line.startswith("}"):
-                        lines.append(line)
-                        state = "END"
-                        return json.loads("\n".join(lines))
-                    elif state == "RECORDING":
-                        lines.append(line)
-
-            # If we didn't return yet, try parsing accumulated lines
-            if lines:
-                return json.loads("\n".join(lines))
-
-            # Last resort: try parsing entire text as JSON
-            return json.loads(text)
-
-        except json.JSONDecodeError as e:
-            print(f"Warning: Failed to parse JSON: {e}")
+        obj = _extract_json_object(text)
+        if obj is None:
+            print("Warning: Failed to parse JSON: no balanced JSON object found")
             return {}
+        return obj
 
     def generate_json(self, description: str) -> str:
+        """Generate JSON from a description, chunking long inputs and merging.
+
+        Descriptive components in a treatment are largely independent, so a
+        description that would overflow the context window is split on
+        sentence/punctuation boundaries, each chunk is translated separately,
+        and the per-chunk JSON objects are deep-merged into one result. The
+        chunk/merge pipeline is shared with the subprocess workers via
+        ``_translate_description``.
         """
-        Generate JSON from a taxon description.
+        def translate_chunk(chunk: str) -> Dict[str, Any]:
+            text = _raw_generate(self.model, self.tokenizer, self.prompt,
+                                 chunk, self.device, self.max_new_tokens)
+            return _extract_json_object(text) or {}
 
-        Args:
-            description: Taxon description text
-
-        Returns:
-            JSON object (or empty JSON object if generation fails)
-        """
-        try:
-            # Create prompt
-            prompt = self._make_prompt(description)
-
-            # Tokenize
-            model_input = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-
-            # Generate
-            with torch.no_grad():
-                output = self.model.generate(
-                    **model_input,
-                    max_new_tokens=self.max_new_tokens,
-                    pad_token_id=2,
-                    do_sample=False,  # Deterministic output
-                    temperature=None,
-                    top_p=None
-                )
-
-            # Decode
-            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-
-            # Extract JSON from output
-            json_obj = self._extract_json(generated_text)
-
-            # Return as JSON string
-            return json.dumps(json_obj, ensure_ascii=False)
-
-        except Exception as e:
-            print(f"Warning: Error generating JSON: {e}")
-            return "{}"
+        return _translate_description(description, translate_chunk, self.max_length)
 
     def translate_descriptions(
         self,
