@@ -56,36 +56,48 @@ def metadata_to_doc_fields(
     """Translate a metadata record into fields to merge into the
     ingestor's outgoing ``doc_dict``.
 
+    ``container_title`` propagates to ``journal`` regardless of
+    ``kind`` so collection-roll-up records (CAF protologue,
+    Funga Nordica chapters, etc.) surface on the Sources page
+    under their parent collection.  ``kind=journal`` is the
+    journals ingestor's domain — return empty so this path
+    doesn't accidentally rewrite a journal-volume doc.
+
     Empty / None values are dropped so the doc doesn't carry
-    spurious null fields.  Non-literature kinds (journal, key, misc)
-    return an empty dict — they're not this ingestor's domain.
+    spurious null fields.
     """
     kind = record.get('kind')
-    if kind not in ('journal_article', 'book'):
+    if kind == 'journal':
+        return {}
+    itemtype_for_kind = {
+        'journal_article': 'article',
+        'book':             'book',
+        'key':              'key',
+        'misc':              'misc',
+    }
+    itemtype = itemtype_for_kind.get(kind)
+    if itemtype is None:
         return {}
 
-    fields: Dict[str, Any] = {}
+    fields: Dict[str, Any] = {'itemtype': itemtype}
+
+    container = record.get('container_title')
+    if container:
+        fields['journal'] = container
+
+    # Volume / issue / pages are meaningful only for actual journal
+    # articles — a CAF book carrying ``container='California Fungi'``
+    # gets the journal field but no spurious vol/pages.
     if kind == 'journal_article':
-        fields['itemtype'] = 'article'
-        container = record.get('container_title')
-        if container:
-            fields['journal'] = container
         for k in ('volume', 'issue', 'pages'):
             value = record.get(k)
             if value:
                 fields[k] = value
-    else:  # 'book'
-        fields['itemtype'] = 'book'
 
-    # Title / author / year apply to both kinds.
-    title = record.get('title')
-    if title:
-        fields['title'] = title
-    author = record.get('author')
-    if author:
-        fields['author'] = author
-    year = record.get('year')
-    if year:
-        fields['year'] = year
+    # Title / author / year apply to every kind.
+    for k in ('title', 'author', 'year'):
+        value = record.get(k)
+        if value:
+            fields[k] = value
 
     return fields

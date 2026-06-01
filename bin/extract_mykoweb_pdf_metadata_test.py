@@ -685,6 +685,9 @@ class TestApplyDiskRule(unittest.TestCase):
         self.assertEqual(record['title'], 'Russula')
 
     def test_caf_pdf_root_book(self):
+        """A loose ``CAF/PDF/*.pdf`` (not in FungaNordica/) — kind
+        book, container 'California Fungi' so everything under
+        CAF/ rolls up to the same Sources-page bucket."""
         from extract_mykoweb_pdf_metadata import (
             apply_disk_rule, _DISK_RULES,
         )
@@ -694,11 +697,12 @@ class TestApplyDiskRule(unittest.TestCase):
             'CAF/PDF/A Systematic Study of Tricholoma in CA.pdf',
         )
         self.assertEqual(record['kind'], 'book')
-        self.assertIsNone(record['container_title'])
+        self.assertEqual(record['container_title'], 'California Fungi')
         self.assertEqual(record['title'],
                          'A Systematic Study of Tricholoma in CA')
 
     def test_caf_keys(self):
+        """CAF/keys/*.pdf — kind=key, container 'California Fungi'."""
         from extract_mykoweb_pdf_metadata import (
             apply_disk_rule, _DISK_RULES,
         )
@@ -707,6 +711,7 @@ class TestApplyDiskRule(unittest.TestCase):
             rule, 'CAF/keys/Arcangeliella_key.pdf',
         )
         self.assertEqual(record['kind'], 'key')
+        self.assertEqual(record['container_title'], 'California Fungi')
         self.assertEqual(record['title'], 'Arcangeliella key')
 
     def test_omphalina_with_vol_issue(self):
@@ -808,7 +813,7 @@ class TestExtractDiskOnlyRecords(unittest.TestCase):
         loose = records[
             'CAF/PDF/A monographic study of Tricholoma.pdf'
         ]
-        self.assertIsNone(loose['container_title'])
+        self.assertEqual(loose['container_title'], 'California Fungi')
 
     def test_missing_directory_does_not_crash(self):
         from extract_mykoweb_pdf_metadata import extract_disk_only_records

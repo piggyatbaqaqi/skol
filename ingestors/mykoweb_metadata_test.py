@@ -209,17 +209,60 @@ class TestMetadataToDocFields(unittest.TestCase):
         self.assertNotIn('author', fields)
         self.assertNotIn('year', fields)
 
-    def test_non_literature_kinds_return_empty(self):
-        """``kind=journal`` (journals.html), ``kind=key``,
-        ``kind=misc`` aren't this ingestor's domain — returning an
-        empty dict signals 'no enrichment, fall back to current
-        behaviour'."""
-        for kind in ('journal', 'key', 'misc'):
-            with self.subTest(kind=kind):
-                self.assertEqual(
-                    metadata_to_doc_fields({'kind': kind, 'title': 'X'}),
-                    {},
-                )
+    def test_journal_kind_returns_empty(self):
+        """``kind=journal`` (from journals.html) is handled by the
+        journals ingestor, not the literature ingestor — return
+        empty so this lookup path doesn't accidentally rewrite a
+        journal-volume doc."""
+        self.assertEqual(
+            metadata_to_doc_fields(
+                {'kind': 'journal', 'title': 'Mycotaxon Vol. 1'},
+            ),
+            {},
+        )
+
+    def test_misc_kind_emits_itemtype_and_journal(self):
+        """``kind=misc`` records (CAF protologue, misc/ loose PDFs)
+        used to return empty — leaving 307+ CAF/protologue docs in
+        the Unknown bucket on the Sources page.  Now they emit
+        ``itemtype=misc`` and propagate ``container_title`` →
+        ``journal`` so they roll up under their collection name."""
+        record = {
+            'kind':            'misc',
+            'title':           'Agaricus albissimus',
+            'container_title': 'California Fungi',
+        }
+        fields = metadata_to_doc_fields(record)
+        self.assertEqual(fields['itemtype'], 'misc')
+        self.assertEqual(fields['journal'], 'California Fungi')
+        self.assertEqual(fields['title'], 'Agaricus albissimus')
+
+    def test_key_kind_emits_itemtype(self):
+        """``kind=key`` (taxonomic-key PDFs) emits ``itemtype=key``
+        and a journal field when container_title is set."""
+        record = {
+            'kind':            'key',
+            'title':           'Arcangeliella key',
+            'container_title': 'California Fungi',
+        }
+        fields = metadata_to_doc_fields(record)
+        self.assertEqual(fields['itemtype'], 'key')
+        self.assertEqual(fields['journal'], 'California Fungi')
+
+    def test_book_with_container_now_emits_journal(self):
+        """A book record with a container_title (e.g. a chapter of
+        the *Funga Nordica* reference book) used to drop the
+        container — now it propagates as ``journal`` so the book
+        rolls up under its parent collection on the Sources page."""
+        record = {
+            'kind':            'book',
+            'title':           'Russula',
+            'container_title': 'Funga Nordica',
+        }
+        fields = metadata_to_doc_fields(record)
+        self.assertEqual(fields['itemtype'], 'book')
+        self.assertEqual(fields['journal'], 'Funga Nordica')
+        self.assertEqual(fields['title'], 'Russula')
 
     def test_unknown_kind_returns_empty(self):
         """Defensive: a future ``kind`` value we don't know about

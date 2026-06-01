@@ -434,14 +434,14 @@ _DISK_RULES: list = [
     {
         'root':             'CAF/PDF',
         'kind':             'book',
-        'container_title':  None,
+        'container_title':  'California Fungi',
         'title_from':       'stem',
         'recursive':        False,  # exclude the FungaNordica subdir
     },
     {
         'root':             'CAF/keys',
         'kind':             'key',
-        'container_title':  None,
+        'container_title':  'California Fungi',
         'title_from':       'stem',
         'recursive':        True,
     },

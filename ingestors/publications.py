@@ -33,6 +33,11 @@ class PublicationRegistry:
         # Long form to short form
         'Persoonia - Molecular Phylogeny and Evolution of Fungi': 'Persoonia',
         'Mycology: An International Journal on Fungal Biology': 'Mycology: An International Journal on Fungal Biology (Taylor & Francis)',
+        'and Leucophlebs in North America. Ann. Missouri Bot. Gard.': 'Annals of the Missouri Botanical Garden',
+        'Ann. Missouri Bot. Gard.': 'Annals of the Missouri Botanical Garden',
+        'Gymnomyces, and Macowanites in North America. Ann. Missouri Bot. Gard.': 'Annals of the Missouri Botanical Garden',
+        'in North America. Ann. Missouri Bot. Gard.':  'Annals of the Missouri Botanical Garden',
+        'Sydowia Beih.': 'Sydowia',
     }
 
     # Robots.txt URLs for each source
