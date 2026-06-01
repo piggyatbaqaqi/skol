@@ -31,15 +31,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
-# Publishers / source-providers that current SOURCES rows tack on
-# as ``" (Publisher)"`` parentheticals to disambiguate multi-ingestor
-# journals.  Stripping these is what causes the same journal ingested
-# via multiple sources to dedupe into one ``JOURNALS`` slug.
-_KNOWN_PUBLISHER_SUFFIXES = (
-    'PMC',
-    'Taylor & Francis',
-    'Internet Archive',
-)
+# ``strip_publisher_suffix`` lives in ingestors/publications.py
+# (one source of truth for the recognised-publisher list — used
+# by ``normalize_journal_name`` there and by this scaffolding
+# script).
+from ingestors.publications import strip_publisher_suffix  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -58,22 +54,6 @@ def slugify(name: str) -> str:
     on already-slug-shaped input.
     """
     return _SLUG_RE.sub('-', name.lower()).strip('-')
-
-
-def strip_publisher_suffix(name: str) -> str:
-    """Strip a trailing ``" (Publisher)"`` from a journal name when
-    the publisher is one of the known disambiguators
-    (``PMC``, ``Taylor & Francis``, ``Internet Archive``).
-
-    Parentheticals that aren't recognised publishers (e.g.
-    ``"Mycotaxon (n.s.)"``) pass through unchanged.  Idempotent.
-    """
-    stripped = name.strip()
-    for suffix in _KNOWN_PUBLISHER_SUFFIXES:
-        marker = f'({suffix})'
-        if stripped.endswith(marker):
-            return stripped[:-len(marker)].strip()
-    return stripped
 
 
 def infer_slug_from_journal_name(name: str) -> str:
