@@ -70,8 +70,15 @@ class PmcIngestor(Ingestor):
         recheck_xml: bool = False,
         download_text: bool = False,
         recheck_text: bool = False,
+        journal: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
+        # ``journal`` here is the FK slug into JOURNALS (e.g.
+        # ``'journal-of-fungi'``), passed in by bin/ingest.py from
+        # the publication config.  Stored as ``journal_slug`` so it
+        # doesn't shadow the doc-level ``journal`` field that
+        # downstream code reads.
+        self.journal_slug = journal
         super().__init__(**kwargs)
         self.journal_search_term = journal_search_term
         self.max_articles = max_articles
@@ -421,6 +428,12 @@ class PmcIngestor(Ingestor):
             "_id": doc_id,
             "pmcid": pmcid,
             "source": "pmc",
+            # Match the convention other ingestors follow
+            # (LocalMykowebLiteratureIngestor uses the same shape).
+            # Lets ``resolve_source_name`` and any future
+            # ``meta.source``-aware consumers route PMC docs
+            # uniformly.
+            "meta": {"source": "pmc", "type": "journal_article"},
             # Canonical URLs — pdf_url is the human article page,
             # xml_url is the OAI-PMH fetch endpoint.  Stored at doc
             # creation time so downstream consumers (Sources page,
@@ -429,6 +442,16 @@ class PmcIngestor(Ingestor):
             "pdf_url": self.pmc_article_url(pmcid),
             "xml_url": self.pmc_oai_xml_url(pmcid),
         }
+        # Placeholder journal name from the publication config's
+        # ``journal`` slug.  Prevents the orphan-PMC-doc regression:
+        # if the JATS XML fetch fails partway, this doc still has a
+        # journal field for Sources-page grouping.  Skips silently
+        # when no slug is provided or the slug isn't in JOURNALS.
+        if self.journal_slug:
+            from ingestors.publications import PublicationRegistry
+            entry = PublicationRegistry.JOURNALS.get(self.journal_slug)
+            if entry and entry.get('name'):
+                doc['journal'] = entry['name']
         set_timestamps(doc, is_new=True)
         self.db.save(doc)
 

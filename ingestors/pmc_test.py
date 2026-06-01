@@ -1031,6 +1031,64 @@ class TestEnsureDocument(unittest.TestCase):
         self.assertIn("oai:pubmedcentral.nih.gov:1234567", url)
         self.assertIn("metadataPrefix=pmc", url)
 
+    def test_new_doc_records_meta_block(self) -> None:
+        """``meta = {'source': 'pmc', 'type': 'journal_article'}``
+        matches the convention used by other ingestors
+        (LocalMykowebLiteratureIngestor stamps the same shape).
+        Lets ``resolve_source_name`` and any future ``meta.source``-
+        aware consumers route PMC docs uniformly."""
+        db = MagicMock()
+        db.save = MagicMock(return_value=("id", "rev"))
+        ing = _make_ingestor(db=db)
+
+        ing._ensure_document("1234567", "doc_id_abc", None)
+
+        saved_doc = db.save.call_args[0][0]
+        self.assertIn("meta", saved_doc)
+        self.assertEqual(saved_doc["meta"]["source"], "pmc")
+        self.assertEqual(saved_doc["meta"]["type"], "journal_article")
+
+    def test_new_doc_records_placeholder_journal_from_slug(self) -> None:
+        """When the ingestor was instantiated with a ``journal``
+        slug (passed in by bin/ingest.py from the publication config),
+        write the canonical journal name on every new doc.  Prevents
+        the orphan-PMC-doc regression: if the JATS XML fetch fails,
+        the doc still has a journal field for Sources-page grouping."""
+        db = MagicMock()
+        db.save = MagicMock(return_value=("id", "rev"))
+        ing = _make_ingestor(db=db, journal="journal-of-fungi")
+
+        ing._ensure_document("1234567", "doc_id_abc", None)
+
+        saved_doc = db.save.call_args[0][0]
+        self.assertEqual(saved_doc["journal"], "Journal of Fungi")
+
+    def test_new_doc_omits_journal_when_slug_unknown(self) -> None:
+        """Defensive: if the caller passes a slug that isn't in
+        JOURNALS, leave ``journal`` unset rather than guessing —
+        downstream backfill (Crossref via DOI, etc.) can still
+        populate it later."""
+        db = MagicMock()
+        db.save = MagicMock(return_value=("id", "rev"))
+        ing = _make_ingestor(db=db, journal="not-a-real-slug")
+
+        ing._ensure_document("1234567", "doc_id_abc", None)
+
+        saved_doc = db.save.call_args[0][0]
+        self.assertNotIn("journal", saved_doc)
+
+    def test_new_doc_omits_journal_when_no_slug(self) -> None:
+        """Bare-bones invocation (no journal kwarg) — old call
+        sites still work without writing a journal field."""
+        db = MagicMock()
+        db.save = MagicMock(return_value=("id", "rev"))
+        ing = _make_ingestor(db=db)
+
+        ing._ensure_document("1234567", "doc_id_abc", None)
+
+        saved_doc = db.save.call_args[0][0]
+        self.assertNotIn("journal", saved_doc)
+
 
 if __name__ == "__main__":
     unittest.main()
