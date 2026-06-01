@@ -379,6 +379,79 @@ class TestLegacyAliasDictRemoved(unittest.TestCase):
         self.assertEqual(legacy, {})
 
 
+class TestFindJournalByIngentaUrl(unittest.TestCase):
+    """Ingenta URLs encode the journal as
+    ``ingentaconnect.com/contentone/<publisher>/<journal>/...``.
+    Four JOURNALS entries carry an ``ingenta_path`` field
+    (``'wfbi/pimj'`` for Persoonia, etc.); this helper extracts
+    that path from a URL and returns the matching slug."""
+
+    def test_persoonia_url(self):
+        slug = PublicationRegistry.find_journal_by_ingenta_url(
+            'https://www.ingentaconnect.com/contentone/wfbi/pimj/'
+            '2007/00000019/00000002/art00008?crawler=true',
+        )
+        self.assertEqual(slug, 'persoonia')
+
+    def test_fuse_url(self):
+        slug = PublicationRegistry.find_journal_by_ingenta_url(
+            'https://www.ingentaconnect.com/contentone/wfbi/fuse/'
+            '2023/00000011/00000001/art00001',
+        )
+        self.assertEqual(slug, 'fungal-systematics-and-evolution')
+
+    def test_sim_url(self):
+        slug = PublicationRegistry.find_journal_by_ingenta_url(
+            'https://www.ingentaconnect.com/contentone/wfbi/sim/'
+            '2023/00000105/00000001/art00001',
+        )
+        self.assertEqual(slug, 'studies-in-mycology')
+
+    def test_mycotaxon_url(self):
+        slug = PublicationRegistry.find_journal_by_ingenta_url(
+            'https://www.ingentaconnect.com/contentone/mtax/mt/'
+            '2010/00000114/00000001/art00001',
+        )
+        self.assertEqual(slug, 'mycotaxon')
+
+    def test_non_ingenta_returns_none(self):
+        self.assertIsNone(
+            PublicationRegistry.find_journal_by_ingenta_url(
+                'https://example.com/x',
+            ),
+        )
+
+    def test_unknown_path_returns_none(self):
+        """Ingenta URL but unknown publisher/journal."""
+        self.assertIsNone(
+            PublicationRegistry.find_journal_by_ingenta_url(
+                'https://www.ingentaconnect.com/contentone/foo/bar/'
+                '2023/baz',
+            ),
+        )
+
+    def test_empty_or_none_returns_none(self):
+        self.assertIsNone(
+            PublicationRegistry.find_journal_by_ingenta_url(''),
+        )
+        self.assertIsNone(
+            PublicationRegistry.find_journal_by_ingenta_url(None),
+        )
+
+
+class TestFindJournalByJournalDoi(unittest.TestCase):
+    """The phase-1B ``find_journal_by_doi`` helper matches an exact
+    JOURNALS[*].doi field.  After phase-3+ we set that for OAJMMS
+    (``10.23880/oajmms``) so the 1 doi.org Unknown doc rescues
+    through it."""
+
+    def test_oajmms_journal_doi(self):
+        self.assertEqual(
+            PublicationRegistry.find_journal_by_doi('10.23880/oajmms'),
+            'open-access-journal-of-mycology-mycological-sciences',
+        )
+
+
 class TestEveryJournalHasAddress(unittest.TestCase):
     """Every JOURNALS entry must carry a non-empty ``address`` field
     pointing at the journal's canonical homepage.  The Sources page

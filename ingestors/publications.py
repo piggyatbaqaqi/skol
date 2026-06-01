@@ -31,15 +31,17 @@ class JournalEntry(TypedDict, total=False):
     have ISSN, some ISBN, some neither; eissn is electronic-
     only or absent on print-only journals).
     """
-    name:      str
-    aliases:   NotRequired[List[str]]
-    address:   NotRequired[str]   # journal homepage (NOT scrape URL)
-    issn:      NotRequired[str]
-    eissn:     NotRequired[str]
-    isbn:      NotRequired[str]   # for book-like references
-    doi:       NotRequired[str]   # journal-DOI, not article DOI
-    publisher: NotRequired[str]
-    abbrev:    NotRequired[str]   # ISO 4 abbreviation
+    name:         str
+    aliases:      NotRequired[List[str]]
+    address:      NotRequired[str]   # journal homepage (NOT scrape URL)
+    issn:         NotRequired[str]
+    eissn:        NotRequired[str]
+    isbn:         NotRequired[str]   # for book-like references
+    doi:          NotRequired[str]   # journal-DOI (not article DOI)
+    doi_prefix:   NotRequired[str]   # e.g. "10.3767" for Persoonia
+    ingenta_path: NotRequired[str]   # e.g. "wfbi/pimj" for Persoonia
+    publisher:    NotRequired[str]
+    abbrev:       NotRequired[str]   # ISO 4 abbreviation
 
 
 class SourceEntry(TypedDict, total=False):
@@ -159,11 +161,12 @@ class PublicationRegistry:
             'eissn':     '2054-3085',
         },
         'fungal-systematics-and-evolution': {
-            'name':      'Fungal Systematics and Evolution',
-            'address':   'https://fuse-journal.org/',
-            'publisher': 'Westerdijk Fungal Biodiversity Institute',
-            'issn':      '2589-3823',
-            'eissn':     '2589-3831',
+            'name':         'Fungal Systematics and Evolution',
+            'address':      'https://fuse-journal.org/',
+            'publisher':    'Westerdijk Fungal Biodiversity Institute',
+            'issn':         '2589-3823',
+            'eissn':        '2589-3831',
+            'ingenta_path': 'wfbi/fuse',
         },
         'ima-fungus': {
             'name':      'IMA Fungus',
@@ -244,27 +247,30 @@ class PublicationRegistry:
             ],
         },
         'mycotaxon': {
-            'name':      'Mycotaxon',
-            'address':   'https://www.mycotaxon.com/',
-            'publisher': 'Mycotaxon, Ltd.',  # Crossref reports BHL (deposit agent); real publisher is Mycotaxon, Ltd.
-            'issn':      '0093-4666',
-            'eissn':     '2154-8889',
+            'name':         'Mycotaxon',
+            'address':      'https://www.mycotaxon.com/',
+            'publisher':    'Mycotaxon, Ltd.',  # Crossref reports BHL (deposit agent); real publisher is Mycotaxon, Ltd.
+            'issn':         '0093-4666',
+            'eissn':        '2154-8889',
+            'ingenta_path': 'mtax/mt',
         },
         'open-access-journal-of-mycology-mycological-sciences': {
             'name':      'Open Access Journal of Mycology & Mycological Sciences',
             'address':   'https://medwinpublishers.com/OAJMMS/',
             'publisher': 'Medwin Publishers',
             'issn':      '2689-7822',
+            'doi':       '10.23880/oajmms',  # journal-level DOI; resolves to the journal homepage
             'aliases': [
                 'Open Access Journal of Mycology &amp; Mycological Sciences',
             ],
         },
         'persoonia': {
-            'name':      'Persoonia',  # canonical short form
-            'address':   'https://persoonia.org/',
-            'publisher': 'Westerdijk Fungal Biodiversity Institute',
-            'issn':      '0031-5850',
-            'eissn':     '1878-9080',
+            'name':         'Persoonia',  # canonical short form
+            'address':      'https://persoonia.org/',
+            'publisher':    'Westerdijk Fungal Biodiversity Institute',
+            'issn':         '0031-5850',
+            'eissn':        '1878-9080',
+            'ingenta_path': 'wfbi/pimj',
             'aliases': [
                 'Persoonia - Molecular Phylogeny and Evolution of Fungi',
                 # JATS variant from PMC: colon-space instead of hyphen.
@@ -272,11 +278,12 @@ class PublicationRegistry:
             ],
         },
         'studies-in-mycology': {
-            'name':      'Studies in Mycology',
-            'address':   'https://www.studiesinmycology.org/',
-            'publisher': 'Westerdijk Fungal Biodiversity Institute',
-            'issn':      '0166-0616',
-            'eissn':     '1872-9797',
+            'name':         'Studies in Mycology',
+            'address':      'https://www.studiesinmycology.org/',
+            'publisher':    'Westerdijk Fungal Biodiversity Institute',
+            'issn':         '0166-0616',
+            'eissn':        '1872-9797',
+            'ingenta_path': 'wfbi/sim',
         },
         'sydowia': {
             'name':      'Sydowia',
@@ -1013,6 +1020,35 @@ class PublicationRegistry:
             return None
         for slug, entry in cls.JOURNALS.items():
             if entry.get('isbn') == isbn:
+                return slug
+        return None
+
+    @classmethod
+    def find_journal_by_ingenta_url(
+        cls, url: Optional[str],
+    ) -> Optional[str]:
+        """Recover a JOURNALS slug from an ingentaconnect URL.
+
+        Ingenta encodes the publisher + journal in the URL path as
+        ``ingentaconnect.com/contentone/<publisher>/<journal>/...``.
+        We match against the ``ingenta_path`` field on JOURNALS
+        (e.g. ``'wfbi/pimj'`` for Persoonia).  Returns None for
+        non-Ingenta URLs or unrecognised path segments.
+        """
+        if not url:
+            return None
+        marker = 'ingentaconnect.com/contentone/'
+        idx = url.find(marker)
+        if idx == -1:
+            return None
+        tail = url[idx + len(marker):]
+        # Take the first two path segments (publisher / journal).
+        parts = tail.split('/', 2)
+        if len(parts) < 2:
+            return None
+        candidate_path = f'{parts[0]}/{parts[1]}'
+        for slug, entry in cls.JOURNALS.items():
+            if entry.get('ingenta_path') == candidate_path:
                 return slug
         return None
 
