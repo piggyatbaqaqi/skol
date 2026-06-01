@@ -992,6 +992,45 @@ class TestEnsureDocument(unittest.TestCase):
 
         db.save.assert_not_called()
 
+    def test_new_doc_records_pdf_url(self) -> None:
+        """Article-page URL goes on the doc as ``pdf_url`` (the
+        existing skol convention — primary clickable link).  Previously
+        omitted; that's what left ~hundreds of PMC docs in the
+        no-URL bucket on the Sources page."""
+        db = MagicMock()
+        db.save = MagicMock(return_value=("id", "rev"))
+        ing = _make_ingestor(db=db)
+
+        ing._ensure_document("1234567", "doc_id_abc", None)
+
+        saved_doc = db.save.call_args[0][0]
+        self.assertEqual(
+            saved_doc["pdf_url"],
+            "https://pmc.ncbi.nlm.nih.gov/articles/PMC1234567/",
+        )
+
+    def test_new_doc_records_xml_url(self) -> None:
+        """Mirrors the Pensoft pattern: store the OAI-PMH XML fetch
+        URL alongside the article page so downstream consumers can
+        re-fetch the canonical source if needed."""
+        db = MagicMock()
+        db.save = MagicMock(return_value=("id", "rev"))
+        ing = _make_ingestor(db=db)
+
+        ing._ensure_document("1234567", "doc_id_abc", None)
+
+        saved_doc = db.save.call_args[0][0]
+        self.assertIn("xml_url", saved_doc)
+        url = saved_doc["xml_url"]
+        # OAI-PMH GetRecord URL with the canonical identifier.
+        self.assertIn(
+            "https://pmc.ncbi.nlm.nih.gov/api/oai/v1/mh/",
+            url,
+        )
+        self.assertIn("verb=GetRecord", url)
+        self.assertIn("oai:pubmedcentral.nih.gov:1234567", url)
+        self.assertIn("metadataPrefix=pmc", url)
+
 
 if __name__ == "__main__":
     unittest.main()

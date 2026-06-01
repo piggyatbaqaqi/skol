@@ -37,6 +37,25 @@ class PmcIngestor(Ingestor):
     OAI_PMH_URL = "https://pmc.ncbi.nlm.nih.gov/api/oai/v1/mh/"
     PMC_ARTICLE_URL_TEMPLATE = "https://pmc.ncbi.nlm.nih.gov/articles/PMC{}/"
 
+    @classmethod
+    def pmc_article_url(cls, pmcid: str) -> str:
+        """Human-readable PMC article-page URL.  Stored as
+        ``pdf_url`` on the ingested doc (the primary clickable
+        link by skol convention)."""
+        return cls.PMC_ARTICLE_URL_TEMPLATE.format(pmcid)
+
+    @classmethod
+    def pmc_oai_xml_url(cls, pmcid: str) -> str:
+        """OAI-PMH GetRecord URL for the article's JATS XML.
+        Stored as ``xml_url`` on the doc so downstream consumers
+        can re-fetch the canonical source."""
+        return (
+            f"{cls.OAI_PMH_URL}"
+            f"?verb=GetRecord"
+            f"&identifier=oai:pubmedcentral.nih.gov:{pmcid}"
+            f"&metadataPrefix=pmc"
+        )
+
     def __init__(
         self,
         journal_search_term: str,
@@ -402,6 +421,13 @@ class PmcIngestor(Ingestor):
             "_id": doc_id,
             "pmcid": pmcid,
             "source": "pmc",
+            # Canonical URLs — pdf_url is the human article page,
+            # xml_url is the OAI-PMH fetch endpoint.  Stored at doc
+            # creation time so downstream consumers (Sources page,
+            # backfill_journal, anything reading pdf_url) don't see
+            # an empty field.
+            "pdf_url": self.pmc_article_url(pmcid),
+            "xml_url": self.pmc_oai_xml_url(pmcid),
         }
         set_timestamps(doc, is_new=True)
         self.db.save(doc)
