@@ -113,11 +113,30 @@ class PublicationRegistry:
     # JOURNAL_NAME_ALIASES; ``address`` gets filled in by hand from
     # each journal's official site.
     JOURNALS: Dict[str, JournalEntry] = {
+        'annals-of-the-missouri-botanical-garden': {
+            'name':      'Annals of the Missouri Botanical Garden',
+            'publisher': 'Missouri Botanical Garden Press',
+            'issn':      '0026-6493',
+            'aliases': [
+                'Ann. Missouri Bot. Gard.',
+                # Extraction artefacts from earlier mykoweb-citation
+                # parsing — the regex sometimes captured a citation
+                # fragment + journal name together; keep them as
+                # aliases so any straggler doc rolls up correctly.
+                'and Leucophlebs in North America. Ann. Missouri Bot. Gard.',
+                'Gymnomyces, and Macowanites in North America. Ann. Missouri Bot. Gard.',
+                'in North America. Ann. Missouri Bot. Gard.',
+            ],
+        },
         'cryptogamie-mycologie': {
             'name':      'Cryptogamie, Mycologie',  # canonical form
             'publisher': "BioOne (Museum National d'Histoire Naturelle, Paris, France)",
             'issn':      '0181-1584',
             'eissn':     '1776-100X',
+            'aliases': [
+                'Cryptogamie. Mycologie',
+                'Cryptogamie Mycologie',
+            ],
         },
         'current-medical-mycology': {
             'name':      'Current Medical Mycology',
@@ -155,6 +174,9 @@ class PublicationRegistry:
             'name':      'The Journal of Mycology',
             'publisher': 'JSTOR',
             'issn':      '1052-0368',
+            'aliases': [
+                'Journal of Mycology',  # without leading "The"
+            ],
         },
         'medical-mycology-case-reports': {
             'name':      'Medical Mycology Case Reports',
@@ -183,6 +205,9 @@ class PublicationRegistry:
             'publisher': 'Informa UK (Taylor & Francis)',
             'issn':      '2150-1203',
             'eissn':     '2150-1211',
+            'aliases': [
+                'Mycology',  # bare short form; ~872 docs in skol_dev
+            ],
         },
         'mycoscience': {
             'name':      'Mycoscience',
@@ -194,6 +219,9 @@ class PublicationRegistry:
             'name':      'Mycosphere',
             'publisher': 'Maximum Academic Press',
             'eissn':     '2077-7000',
+            'aliases': [
+                'mycosphere',  # lowercase form; ~873 docs in skol_dev
+            ],
         },
         'mycotaxon': {
             'name':      'Mycotaxon',
@@ -205,12 +233,18 @@ class PublicationRegistry:
             'name':      'Open Access Journal of Mycology & Mycological Sciences',
             'publisher': 'Medwin Publishers',
             'issn':      '2689-7822',
+            'aliases': [
+                'Open Access Journal of Mycology &amp; Mycological Sciences',
+            ],
         },
         'persoonia': {
             'name':      'Persoonia',  # canonical short form
             'publisher': 'Westerdijk Fungal Biodiversity Institute',
             'issn':      '0031-5850',
             'eissn':     '1878-9080',
+            'aliases': [
+                'Persoonia - Molecular Phylogeny and Evolution of Fungi',
+            ],
         },
         'studies-in-mycology': {
             'name':      'Studies in Mycology',
@@ -223,26 +257,17 @@ class PublicationRegistry:
             'publisher': 'Verlag Ferdinand Berger & Söhne',
             'issn':      '0082-0598',
             # Crossref 404s on this ISSN — fields filled in by hand.
+            'aliases': [
+                'Sydowia Beih.',
+            ],
         },
     }
 
-    # Journal name aliases: maps variant/misspelled names to canonical names
-    # Used by normalize_journal_name() to consolidate statistics
-    JOURNAL_NAME_ALIASES: Dict[str, str] = {
-        # Cryptogamie Mycologie variants
-        'Cryptogamie Mycologie': 'Cryptogamie, Mycologie',
-        'Cryptogamie. Mycologie': 'Cryptogamie, Mycologie',
-        # HTML entity encoding issues
-        'Open Access Journal of Mycology &amp; Mycological Sciences': 'Open Access Journal of Mycology & Mycological Sciences',
-        # Long form to short form
-        'Persoonia - Molecular Phylogeny and Evolution of Fungi': 'Persoonia',
-        'Mycology: An International Journal on Fungal Biology': 'Mycology: An International Journal on Fungal Biology (Taylor & Francis)',
-        'and Leucophlebs in North America. Ann. Missouri Bot. Gard.': 'Annals of the Missouri Botanical Garden',
-        'Ann. Missouri Bot. Gard.': 'Annals of the Missouri Botanical Garden',
-        'Gymnomyces, and Macowanites in North America. Ann. Missouri Bot. Gard.': 'Annals of the Missouri Botanical Garden',
-        'in North America. Ann. Missouri Bot. Gard.':  'Annals of the Missouri Botanical Garden',
-        'Sydowia Beih.': 'Sydowia',
-    }
+    # ``JOURNAL_NAME_ALIASES`` lived here pre-phase-3 as a flat dict
+    # of variant → canonical journal names.  Phase 3 migrated each
+    # entry into the ``aliases`` list of its owning ``JOURNALS`` row;
+    # consumers go through ``normalize_journal_name()`` (which now
+    # scans ``JOURNALS[*].aliases``) instead.
 
     # Robots.txt URLs for each source
     ROBOTS_URLS: Dict[str, str] = {
@@ -964,6 +989,28 @@ class PublicationRegistry:
                 return slug
         return None
 
+    # Cache: ``{alias_value: canonical_name}`` index built from
+    # every ``JOURNALS[*].aliases`` list on first call.
+    _ALIAS_INDEX: Optional[Dict[str, str]] = None
+
+    @classmethod
+    def _build_alias_index(cls) -> Dict[str, str]:
+        """Walk ``JOURNALS`` and flatten every entry's ``aliases``
+        list into a ``{alias: canonical_name}`` lookup table.
+
+        Cached on the class — invalidates only when the class is
+        reloaded.  This is the post-phase-3 replacement for the
+        legacy ``JOURNAL_NAME_ALIASES`` dict.
+        """
+        index: Dict[str, str] = {}
+        for entry in cls.JOURNALS.values():
+            canonical = entry.get('name')
+            if not canonical:
+                continue
+            for alias in entry.get('aliases', []) or []:
+                index[alias] = canonical
+        return index
+
     @classmethod
     def normalize_journal_name(cls, journal_name: str) -> str:
         """
@@ -973,9 +1020,9 @@ class PublicationRegistry:
         1. Strip a known publisher-disambiguating parenthetical
            suffix (``" (PMC)"`` etc.) — see
            :func:`strip_publisher_suffix`.
-        2. Apply the legacy ``JOURNAL_NAME_ALIASES`` mapping (phase 3
-           of the consolidation migrates these into JOURNALS[*].aliases
-           and deletes this branch).
+        2. Scan ``JOURNALS[*].aliases``: if the stripped name
+           matches an alias, return the owning journal's canonical
+           ``name``.
 
         Args:
             journal_name: The journal name to normalize
@@ -985,4 +1032,6 @@ class PublicationRegistry:
             normalization applies)
         """
         stripped = strip_publisher_suffix(journal_name)
-        return cls.JOURNAL_NAME_ALIASES.get(stripped, stripped)
+        if cls._ALIAS_INDEX is None:
+            cls._ALIAS_INDEX = cls._build_alias_index()
+        return cls._ALIAS_INDEX.get(stripped, stripped)

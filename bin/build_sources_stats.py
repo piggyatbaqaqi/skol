@@ -308,13 +308,22 @@ def build_sources_stats(
             'sanctioned_markers': stats.get('sanctioned_markers', 0),
         }
 
-        # Try to get additional information from PublicationRegistry
+        # Pull display fields from the JOURNALS entry — that's the
+        # canonical-name + publisher home post-consolidation.  Falls
+        # back to the SOURCES entry's address (scrape endpoint) only
+        # when the JOURNALS entry has no homepage filled in.
         if PublicationRegistry:
+            journal_entry = PublicationRegistry.get_journal(journal_name)
+            if journal_entry:
+                source_info['name'] = journal_entry.get('name', journal_name)
+                source_info['publisher'] = (
+                    journal_entry.get('publisher', 'Unknown')
+                )
+                if journal_entry.get('address'):
+                    source_info['website'] = journal_entry['address']
             pub_config = PublicationRegistry.get_by_journal(journal_name)
             if pub_config:
-                source_info['name'] = pub_config.get('name', journal_name)
-                source_info['publisher'] = pub_config.get('source', 'Unknown')
-                if pub_config.get('address'):
+                if pub_config.get('address') and not source_info.get('website'):
                     source_info['website'] = pub_config['address']
                 else:
                     # Fallback: try to extract website from various URL fields

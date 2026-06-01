@@ -231,5 +231,153 @@ class TestGetByJournalBackCompat(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# Phase 3 — alias migration into JOURNALS[*].aliases
+# ---------------------------------------------------------------------------
+
+
+class TestJournalsAliasesPopulated(unittest.TestCase):
+    """Phase 3 moves the entries of the legacy ``JOURNAL_NAME_ALIASES``
+    dict into ``aliases`` lists on the appropriate ``JOURNALS``
+    rows.  Pins which row owns each known alias variant."""
+
+    def _aliases(self, slug: str) -> list:
+        return list(
+            PublicationRegistry.JOURNALS[slug].get('aliases', []),
+        )
+
+    def test_persoonia_has_long_form_alias(self):
+        self.assertIn(
+            'Persoonia - Molecular Phylogeny and Evolution of Fungi',
+            self._aliases('persoonia'),
+        )
+
+    def test_cryptogamie_mycologie_has_punctuation_variants(self):
+        aliases = self._aliases('cryptogamie-mycologie')
+        self.assertIn('Cryptogamie. Mycologie', aliases)
+        self.assertIn('Cryptogamie Mycologie', aliases)
+
+    def test_mycosphere_lowercase_alias(self):
+        self.assertIn('mycosphere', self._aliases('mycosphere'))
+
+    def test_mycology_short_form_alias(self):
+        """872 docs have the bare short form ``'Mycology'``; alias it
+        to the long-form canonical."""
+        self.assertIn('Mycology', self._aliases('mycology'))
+
+    def test_oajmms_html_entity_alias(self):
+        self.assertIn(
+            'Open Access Journal of Mycology &amp; Mycological Sciences',
+            self._aliases(
+                'open-access-journal-of-mycology-mycological-sciences',
+            ),
+        )
+
+    def test_sydowia_beih_alias(self):
+        self.assertIn('Sydowia Beih.', self._aliases('sydowia'))
+
+
+class TestNormalizeJournalNameViaJournalsAliases(unittest.TestCase):
+    """After phase 3, ``normalize_journal_name`` reads
+    ``JOURNALS[*].aliases``.  The legacy ``JOURNAL_NAME_ALIASES``
+    dict is deleted; the publisher-suffix-strip step from phase 1B
+    still runs first."""
+
+    def test_persoonia_long_form_resolves(self):
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name(
+                'Persoonia - Molecular Phylogeny and Evolution of Fungi',
+            ),
+            'Persoonia',
+        )
+
+    def test_cryptogamie_variants_resolve(self):
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name(
+                'Cryptogamie. Mycologie',
+            ),
+            'Cryptogamie, Mycologie',
+        )
+
+    def test_mycosphere_lowercase_resolves(self):
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name('mycosphere'),
+            'Mycosphere',
+        )
+
+    def test_mycology_short_resolves_to_long(self):
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name('Mycology'),
+            'Mycology: An International Journal on Fungal Biology',
+        )
+
+    def test_unknown_name_passthrough(self):
+        """A name with no alias / no publisher suffix returns
+        unchanged."""
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name(
+                'Some Unknown Journal',
+            ),
+            'Some Unknown Journal',
+        )
+
+    def test_publisher_suffix_still_stripped(self):
+        """Phase-1B behaviour preserved — publisher suffix stripped
+        before alias resolution."""
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name(
+                'Journal of Fungi (PMC)',
+            ),
+            'Journal of Fungi',
+        )
+
+
+class TestAnnalsOfMissouriBotanicalGarden(unittest.TestCase):
+    """New JOURNALS row added in phase 3; rolls up the abbreviation
+    and three extraction-artifact aliases from the legacy dict."""
+
+    def test_entry_exists(self):
+        self.assertIn(
+            'annals-of-the-missouri-botanical-garden',
+            PublicationRegistry.JOURNALS,
+        )
+        entry = PublicationRegistry.JOURNALS[
+            'annals-of-the-missouri-botanical-garden'
+        ]
+        self.assertEqual(
+            entry['name'],
+            'Annals of the Missouri Botanical Garden',
+        )
+        self.assertEqual(entry.get('issn'), '0026-6493')
+
+    def test_abbreviation_resolves(self):
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name(
+                'Ann. Missouri Bot. Gard.',
+            ),
+            'Annals of the Missouri Botanical Garden',
+        )
+
+    def test_extraction_artifact_resolves(self):
+        self.assertEqual(
+            PublicationRegistry.normalize_journal_name(
+                'and Leucophlebs in North America. Ann. Missouri Bot. Gard.',
+            ),
+            'Annals of the Missouri Botanical Garden',
+        )
+
+
+class TestLegacyAliasDictRemoved(unittest.TestCase):
+    """After phase 3, ``JOURNAL_NAME_ALIASES`` is gone.  Tolerates
+    either deletion or an empty dict — both signal the migration
+    completed."""
+
+    def test_legacy_dict_empty_or_absent(self):
+        legacy = getattr(
+            PublicationRegistry, 'JOURNAL_NAME_ALIASES', {},
+        )
+        self.assertEqual(legacy, {})
+
+
 if __name__ == '__main__':
     unittest.main()

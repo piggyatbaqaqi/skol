@@ -117,12 +117,30 @@ def apply_renames(
 
 
 def main() -> int:
-    """CLI entry point — phase-2 default mapping is
-    ``strip_publisher_suffix`` (drop ``" (PMC)"`` /
-    ``" (Taylor & Francis)"`` / ``" (Internet Archive)"``)."""
+    """CLI entry point.
+
+    ``--mapping strip-publisher-suffix`` (the default) drops a known
+    publisher parenthetical (``" (PMC)"`` /
+    ``" (Taylor & Francis)"`` / ``" (Internet Archive)"``).  Phase 2
+    used this; live dry-run found 0 eligible rows (the suffixes
+    never made it into skol_dev's ``journal`` field).
+
+    ``--mapping normalize-journal-name`` uses the full
+    ``PublicationRegistry.normalize_journal_name`` — strips publisher
+    suffix AND consults ``JOURNALS[*].aliases``.  Phase 3 uses this;
+    rewrites the legacy-alias values (Persoonia long-form, Cryptogamie
+    punctuation variants, lowercase mycosphere, etc.) to their
+    canonical names.
+    """
     parser = argparse.ArgumentParser(
-        description='Rewrite compound journal names in skol_dev '
-                    'to their canonical form.',
+        description='Rewrite journal names in skol_dev via a '
+                    'pluggable mapping function.',
+    )
+    parser.add_argument(
+        '--mapping',
+        choices=('strip-publisher-suffix', 'normalize-journal-name'),
+        default='strip-publisher-suffix',
+        help='Mapping function applied to each doc\'s journal field.',
     )
     parser.add_argument('--dry-run', action='store_true',
                         help='Preview updates without writing.')
@@ -134,10 +152,17 @@ def main() -> int:
 
     # Lazy imports so the unit tests don't need couchdb / env_config.
     from env_config import get_env_config
-    from ingestors.publications import strip_publisher_suffix
+    from ingestors.publications import (
+        PublicationRegistry, strip_publisher_suffix,
+    )
     config = get_env_config()
     verbosity = (args.verbosity if args.verbosity is not None
                  else config.get('verbosity', 1))
+    mapping_fn = (
+        strip_publisher_suffix
+        if args.mapping == 'strip-publisher-suffix'
+        else PublicationRegistry.normalize_journal_name
+    )
 
     import couchdb
     server = couchdb.Server(config['couchdb_url'])
@@ -155,13 +180,11 @@ def main() -> int:
     if verbosity >= 1:
         print(f'Target DB: {db_name} '
               f'{"(DRY RUN)" if args.dry_run else ""}')
-        print(f'Mapping: strip_publisher_suffix '
-              f'(drop "(PMC)" / "(Taylor & Francis)" / '
-              f'"(Internet Archive)")')
+        print(f'Mapping: {args.mapping}')
 
     counts = apply_renames(
         db=server[db_name],
-        mapping_fn=strip_publisher_suffix,
+        mapping_fn=mapping_fn,
         dry_run=args.dry_run,
         limit=args.limit,
         verbosity=verbosity,

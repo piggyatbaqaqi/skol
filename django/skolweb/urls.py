@@ -322,10 +322,18 @@ def sources_view(request):
             }
 
             if PublicationRegistry:
+                # Display fields come from the JOURNALS entry — that's
+                # the canonical-name + publisher home post-phase-3.
+                journal_entry = PublicationRegistry.get_journal(journal_name)
+                if journal_entry:
+                    source_info['name'] = journal_entry.get('name', journal_name)
+                    source_info['publisher'] = (
+                        journal_entry.get('publisher', 'Unknown')
+                    )
+                    if journal_entry.get('address'):
+                        source_info['website'] = journal_entry['address']
                 pub_config = PublicationRegistry.get_by_journal(journal_name)
-                if pub_config:
-                    source_info['name'] = pub_config.get('name', journal_name)
-                    source_info['publisher'] = pub_config.get('source', 'Unknown')
+                if pub_config and not source_info.get('website'):
                     if pub_config.get('address'):
                         source_info['website'] = pub_config['address']
                     else:
