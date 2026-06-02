@@ -1417,7 +1417,7 @@ and their values from the provided species description and format them as struct
             doc_id = skipped.get('_id', 'unknown')
             print(
                 f"  ✗ Skipping stuck description:"
-                f" {taxon} ({doc_id})"
+                f" {treatment} ({doc_id})"
             )
             processed_ids.add(skipped['_id'])
             failure_count += 1
