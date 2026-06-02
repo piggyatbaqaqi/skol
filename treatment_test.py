@@ -7,7 +7,7 @@ import unittest
 from label import Label
 from line import Line
 from paragraph import Paragraph
-from treatment import Treatment, group_paragraphs
+from treatment import Treatment, _slim_ingest, group_paragraphs
 from finder import parse_annotated
 
 
@@ -688,11 +688,12 @@ class TestTreatmentNewFields(unittest.TestCase):
 
 class TestIngestSlimming(unittest.TestCase):
     """``Treatment.as_row()`` stores only the essential ingest keys
-    (``_id``, ``url``, ``pdf_url``, ``db_name``) — not the full source
-    CouchDB doc.  Phase B of the embedding-bloat fix:
-    skol_treatments_v3_dev was 1.5 GB and embed_treatments could not
-    pickle the full DataFrame because per-treatment ingest payloads
-    averaged 261 KB (the entire ingest doc was duplicated 1-to-many).
+    (``_id``, ``url``, ``pdf_url``, ``xml_url``, ``db_name``, ``doi``)
+    — not the full source CouchDB doc.  Phase B of the embedding-bloat
+    fix: skol_treatments_v3_dev was 1.5 GB and embed_treatments could
+    not pickle the full DataFrame because per-treatment ingest
+    payloads averaged 261 KB (the entire ingest doc was duplicated
+    1-to-many).
     """
 
     def _treatment_with_fat_ingest(self) -> "Treatment":
@@ -725,7 +726,7 @@ class TestIngestSlimming(unittest.TestCase):
         self.assertIsNotNone(row["ingest"])
         self.assertEqual(
             set(row["ingest"].keys()),
-            {"_id", "url", "pdf_url", "db_name"},
+            {"_id", "url", "pdf_url", "xml_url", "db_name", "doi"},
             msg=(
                 "Treatment.as_row() must drop non-essential ingest fields. "
                 "Storing the full ingest doc inflates the Treatment by "
@@ -759,10 +760,12 @@ class TestIngestSlimming(unittest.TestCase):
         row = t.as_row()
         self.assertEqual(
             set(row["ingest"].keys()),
-            {"_id", "url", "pdf_url", "db_name"},
+            {"_id", "url", "pdf_url", "xml_url", "db_name", "doi"},
         )
         self.assertIsNone(row["ingest"]["pdf_url"])
         self.assertIsNone(row["ingest"]["db_name"])
+        self.assertIsNone(row["ingest"]["doi"])
+        self.assertIsNone(row["ingest"]["xml_url"])
 
     def test_none_ingest_stays_none(self):
         """When the nomenclature line has no fileobj (synthetic stub
@@ -839,6 +842,91 @@ class TestSyntheticNomenclatureFlag(unittest.TestCase):
         self.assertEqual(len(taxa), 1)
         self.assertTrue(taxa[0].is_synthetic_nomenclature())
         self.assertTrue(taxa[0].as_row()["synthetic_nomenclature"])
+
+
+class TestSlimIngestPropagatesDoi(unittest.TestCase):
+    """``_slim_ingest`` projects the parent ingest doc down to a
+    small fixed-shape dict.  ``doi`` is included so each treatment
+    row carries the source article's DOI — useful for citation
+    rendering and for joining treatments back to the JOURNALS
+    registry without going through skol_dev."""
+
+    def test_doi_propagates_when_present(self):
+        slim = _slim_ingest({
+            '_id':     'doc1',
+            'url':     'https://example.com/x',
+            'pdf_url': 'https://example.com/x.pdf',
+            'xml_url': 'https://example.com/x.xml',
+            'db_name': 'skol_dev',
+            'doi':     '10.1234/test.001',
+        })
+        assert slim is not None
+        self.assertEqual(slim['doi'], '10.1234/test.001')
+
+    def test_xml_url_propagates_when_present(self):
+        """Mirrors ``doi`` — PMC and Pensoft docs carry an
+        ``xml_url`` (the OAI-PMH / journal XML fetch endpoint)
+        that consumers may need to re-fetch the canonical source."""
+        slim = _slim_ingest({
+            '_id':     'doc1',
+            'xml_url': 'https://pmc.ncbi.nlm.nih.gov/api/oai/v1/mh/'
+                       '?verb=GetRecord'
+                       '&identifier=oai:pubmedcentral.nih.gov:1234567'
+                       '&metadataPrefix=pmc',
+        })
+        assert slim is not None
+        self.assertIn('verb=GetRecord', slim['xml_url'])
+
+    def test_doi_is_none_when_absent_from_ingest(self):
+        """Stable 5-key shape — missing ``doi`` materialises as
+        ``None`` so downstream code can index without ``KeyError``."""
+        slim = _slim_ingest({'_id': 'doc1'})
+        assert slim is not None
+        self.assertIn('doi', slim)
+        self.assertIsNone(slim['doi'])
+
+    def test_none_input_returns_none(self):
+        self.assertIsNone(_slim_ingest(None))
+
+    def test_other_keys_still_dropped(self):
+        """Unknown keys on the ingest doc still get filtered out —
+        the slim projection is a strict allow-list."""
+        slim = _slim_ingest({
+            '_id':       'doc1',
+            'doi':       '10.x',
+            'title':     'Should Not Propagate',
+            'journal':   'Should Not Propagate',
+        })
+        assert slim is not None
+        self.assertNotIn('title', slim)
+        self.assertNotIn('journal', slim)
+        self.assertEqual(slim['doi'], '10.x')
+
+
+class TestAsRowExposesDoi(unittest.TestCase):
+    """Integration check: ``Treatment.as_row()['ingest']`` carries
+    the parent doc's DOI when present.  Walks the same materialisation
+    path the Spark extractor uses to write the treatments DB."""
+
+    def test_doi_present_in_as_row(self):
+        fake_ingest = {
+            '_id':     'doc123',
+            'pdf_url': 'http://example.com/x.pdf',
+            'doi':     '10.5678/test.042',
+        }
+        fileobj = MockFileObject(doc_id='doc123', ingest=fake_ingest)
+        nom_line = Line('[@Foo bar Smith#Nomenclature*]', fileobj)
+        nom_para = Paragraph(
+            labels=[Label('Nomenclature')],
+            lines=[nom_line],
+            paragraph_number=1,
+        )
+
+        treatment = Treatment()
+        treatment.add_nomenclature(nom_para)
+
+        row = treatment.as_row()
+        self.assertEqual(row['ingest']['doi'], '10.5678/test.042')
 
 
 if __name__ == "__main__":

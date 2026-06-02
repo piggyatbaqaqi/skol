@@ -90,7 +90,9 @@ _LABEL_TO_SPANS_FIELD: Dict[str, str] = {
 # dr-drafts-mycosearch) shows only these four keys are actually read.
 # All other ingest fields are still available via a CouchDB lookup
 # from ``ingest._id`` if needed.
-_ESSENTIAL_INGEST_KEYS = frozenset({"_id", "url", "pdf_url", "db_name"})
+_ESSENTIAL_INGEST_KEYS = frozenset({
+    "_id", "url", "pdf_url", "xml_url", "db_name", "doi",
+})
 
 
 def _slim_ingest(
