@@ -36,9 +36,12 @@ golden universe — directly comparable to v3 numbers.
 
 ## Goals
 
-1. Beat v3 baseline macro F1 (TBD numbers, expected in the
-   [production_v3_report.md](production_v3_report.md) after Step 5 of
-   the v3 plan completes).
+1. Beat v3 baseline macro F1 on `skol_golden_ann_hand_v2`: **v3_hand
+   0.459** (the hand-trained baseline; see
+   [production_v3_report.md](production_v3_report.md)). The
+   JATS-trained baseline (v3_jats macro F1 0.132) is the floor v4 must
+   clear if Pass 2's combined-corpus variant is to be considered viable
+   (see "Pass-2 training-corpus ablation" below).
 2. Demonstrate measurable improvement on the layout-rich PDF docs in
    `skol_golden_ann_hand_v2`. The hand gold has 17 distinct semantic
    tags including Page-header, Index, Bibliography, Table — categories
@@ -66,7 +69,7 @@ ACTIVE_TAGS_19 splits cleanly into two pass-specific spaces:
 
 | Space | Labels | Why |
 |---|---|---|
-| **Pass 1 — layout (7 + Other)** | Page-header, Figure-caption, Table, Key, Bibliography, Index, ToC-entry, *Other* | All physically inserted into narrative text; share structural cues (short lines, repetition, all-caps, isolated numbers); never carry treatment content. |
+| **Pass 1 — layout (7 from ACTIVE_TAGS_19 + synthetic `Other`)** | Page-header, Figure-caption, Table, Key, Bibliography, Index, ToC-entry, `Other` (sentinel) | All physically inserted into narrative text; share structural cues (short lines, repetition, all-caps, isolated numbers); never carry treatment content. |
 | **Pass 2 — treatment (12)** | Nomenclature, Description, Diagnosis, Etymology, Materials-examined, Materials-and-methods, Type-designation, Biology, Phylogeny, New-combinations, Notes, Misc-exposition | The treatment universe. Misc-exposition is the catch-all keeping the treatment-assembly state machine happy. |
 
 Union covers every ACTIVE_TAGS_19 tag exactly once. `*Other*` is a
@@ -234,7 +237,7 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 1.A | Implement (or reuse from [treatment_architecture.md §Phase 2](treatment_architecture.md)) `ingestors/gnfinder_client.py`, `gnparser_client.py`, `particle_detector.py`, `spans.py`. If those don't exist yet, write them per Phase 2's spec. | ⬜ |
+| 1.A | Implement (or reuse from [treatment_architecture.md §Phase 2](treatment_architecture.md)) `ingestors/gnfinder_client.py`, `gnparser_client.py`, `particle_detector.py`, `spans.py`. If those don't exist yet, write them per Phase 2's spec. **Precondition:** the existing clients default to `https://finder.globalnames.org` / `https://parser.globalnames.org`. v4 callers must pass `server_url='http://localhost:9080'` / `'http://localhost:9081'` (or equivalent env-config plumbing) to hit the local services whose cost is reported in §Span-layer cost. Don't rely on client defaults. | ⬜ |
 | 1.B | New: `ingestors/page_header_detector.py` implementing the heuristic from [page-header-detection.md](page-header-detection.md) (RANSAC sequence fit + recto/verso alternation + journal-name clustering + two-pass header block recovery). Output: `article.page-headers.json` listing line indices and per-line confidence. | ⬜ |
 | 1.C | New: `ingestors/section_header_detector.py`. Regex over short, title-case-or-all-caps lines matching known section names ("Taxonomy", "Systematics", "Introduction", "Materials and methods", etc.). Emit spans into `.spans.json` with `label="section-header"`. | ⬜ |
 | 1.D | `bin/annotate_v4.py`: orchestrator that runs the four detectors for every doc in a target DB, writes `.spans.json` and `.page-headers.json` attachments. Idempotent. | ⬜ |
@@ -270,7 +273,7 @@ follow-on:
 | # | Description | Status |
 |---|---|---|
 | 5.A | New module: `skol_classifier/v4/predictor.py`. `predict_doc(text)` runs feature assembly → Pass 1 → strip → Pass 2 → merge → coalesce consecutive labels → emit YEDDA-formatted .ann text. | ⬜ |
-| 5.B | New CLI: `bin/predict_v4.py` matching `bin/predict_classifier.py`'s flag surface (--experiment / --doc-id / --golden-db / --output-database / --skip-existing / --force / --dry-run). | ⬜ |
+| 5.B | New CLI: `bin/predict_v4.py`. Required flags: `--experiment <experiment_doc_id>` (to look up Pass-1/Pass-2 model keys in the experiment doc), `--golden-db <db_name>` (input docs), `--output-database <db_name>` (where to write `.ann` attachments). Env-var controls for `SKIP_EXISTING`, `FORCE`, `DRY_RUN` matching `predict_classifier.py`. Reuse env_config for COUCHDB_URL / credentials. (The v3 script's `--model` flag is replaced by `--experiment` because v4's two-CRF design is keyed by the experiment doc, not a single model name.) | ⬜ |
 | 5.C | Wire into `bin/manage_experiment.py` — new `predict_v4` step (or reuse `predict` with experiment doc `model_name: "v4_crf"`). Lean: new explicit step name so v3 and v4 can coexist per-experiment. | ⬜ |
 | 5.D | TDD: round-trip test — input plaintext → predict → assert output is parseable YEDDA. | ⬜ |
 
