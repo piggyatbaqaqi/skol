@@ -194,17 +194,32 @@ class TestComputeFieldUpdate(unittest.TestCase):
         update = compute_field_update(existing, _index_with_clavaria())
         self.assertEqual(update, {})
 
-    def test_non_literature_record_empty_update(self):
-        """If the index entry for this PDF has kind != journal_article /
-        book (e.g. ``kind=key`` for a taxonomic-key PDF), no
-        update."""
+    def test_kind_journal_record_empty_update(self):
+        """``kind=journal`` records belong to the journals ingestor's
+        domain; ``metadata_to_doc_fields`` returns {} for them so the
+        mykoweb backfill never overwrites a journal-volume doc."""
         existing = _existing(
-            pdf_url='https://mykoweb.com/systematics/keys/foo.pdf',
+            pdf_url='https://mykoweb.com/systematics/journals/foo.pdf',
         )
         index = {
-            'systematics/keys/foo.pdf': {
-                'kind':  'key',
-                'title': 'Some key',
+            'systematics/journals/foo.pdf': {
+                'kind':  'journal',
+                'title': 'Some journal',
+            },
+        }
+        update = compute_field_update(existing, index)
+        self.assertEqual(update, {})
+
+    def test_unknown_kind_empty_update(self):
+        """A record with an unrecognised ``kind`` produces no update —
+        the backfill must not invent an itemtype it can't justify."""
+        existing = _existing(
+            pdf_url='https://mykoweb.com/systematics/odd/foo.pdf',
+        )
+        index = {
+            'systematics/odd/foo.pdf': {
+                'kind':  'something_new',
+                'title': 'Mystery PDF',
             },
         }
         update = compute_field_update(existing, index)
