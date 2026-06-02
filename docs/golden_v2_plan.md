@@ -85,7 +85,7 @@ predictions. Together they define the experiment's evaluation universe.
 
 | # | Description | Status |
 |---|---|---|
-| 1.A | Backfill `databases.golden` + `databases.golden_ann` on every existing experiment doc (`production`, `hand_annotated`, `jats_v1`, `taxpub_v1`, `taxpub_v1_int8`, `taxpub_v1_onnx_int8`). Values per the table below. Script: `bin/backfill_experiment_golden_fields.py` (one-off, idempotent). | ✅ Done |
+| 1.A | Backfill `databases.golden` + `databases.golden_ann` on every existing experiment doc (`production`, `hand_annotated`, `jats_v1`, `taxpub_v1`, `taxpub_v1_int8`, `taxpub_v1_onnx_int8`). Values per the table below. Script: `fixes/backfill_experiment_golden_fields.py` (one-off, idempotent). | ✅ Done |
 | 1.B | Extend `bin/env_config.py`: add the experiment-doc mapping rows `('golden', ['golden_db_name'])` and `('golden_ann', ['golden_ann_db_name'])`. Default values: `'skol_golden'` and `'skol_golden_ann_hand'` (the v1 names). Add both keys to the CLI args allowlist. | ✅ Done |
 | 1.C | Rewire `bin/manage_experiment.py` evaluate step. Drop the hardcoded `"skol_golden"` and `"skol_golden_ann_hand"` literals at lines 493–505. Use `{golden_db_name}` and `{golden_ann_db_name}` placeholders (the existing `_apply()` substitution mechanism) so values flow from the resolved experiment config. | ✅ Done |
 | 1.D | Tests: `bin/manage_experiment_test.py` (or extension thereof) covering (a) the resolved command includes the experiment's golden values, (b) an experiment lacking the new fields falls back to v1 defaults, (c) per-experiment override works. | ✅ Done |
@@ -253,7 +253,7 @@ v1 experiments fully reproducible.
 
 All five sub-steps (1.A–1.E) landed across three skol commits.
 
-- 1.A: `bin/backfill_experiment_golden_fields.py` — 6 experiment docs
+- 1.A: `fixes/backfill_experiment_golden_fields.py` — 6 experiment docs
   updated; idempotent on re-runs.
 - 1.B: `bin/env_config.py` — added `('golden', …)` /
   `('golden_ann', …)` mapping rows, v1 defaults, CLI args allowlist.

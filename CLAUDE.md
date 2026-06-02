@@ -11,3 +11,4 @@
 * Priority order of CLI parameters is CLI --<parameter>, environment variable <PARAMETER>, config file (if we have one), and finally hardcoded default.
 * Changes are made with TDD. Write tests first, get them confirmed by a human, and then make the test pass with an implementation.
 * Whenever we create a new CouchDB database, please update docs/couchdbs.md.
+* Programs that are needed for one time fixes go in fixes/ rather than bin/.

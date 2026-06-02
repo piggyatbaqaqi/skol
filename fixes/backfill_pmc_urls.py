@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-"""Backfill ``journal`` onto skol_dev docs by URL / DOI fingerprint.
+"""Backfill ``pdf_url`` / ``xml_url`` onto skol_dev PMC docs that
+were ingested before the PMC ingestor started recording them.
 
-Walks the ingest database; for each doc whose ``journal`` field is
-missing or empty, tries fingerprint matching:
+Idempotent — re-runs no-op once URLs are populated.  Supports
+``--dry-run`` / ``--limit`` / ``--verbosity``.
 
-1. DOI → ``PublicationRegistry.find_journal_by_doi`` (matches
-   journal-level DOIs, e.g. ``10.23880/oajmms``).
-2. Ingenta URL → ``find_journal_by_ingenta_url`` (matches
-   ``ingentaconnect.com/contentone/<publisher>/<journal>/...``).
-
-When a match is found, writes the canonical journal name to the
-doc.  Idempotent; supports ``--dry-run`` / ``--limit`` / ``--verbosity``.
+The URLs are derived from the doc's existing ``pmcid`` field;
+no network calls.
 """
 from __future__ import annotations
 
@@ -20,39 +16,34 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 
 # ---------------------------------------------------------------------------
-# Pure helper (covered by backfill_fingerprint_journals_test.py)
+# Pure helpers (covered by backfill_pmc_urls_test.py)
 # ---------------------------------------------------------------------------
 
 
-def compute_fingerprint_update(doc: Dict[str, Any]) -> Dict[str, Any]:
-    """Try to recover a ``journal`` value for ``doc`` from its
-    DOI or pdf_url.  Returns ``{'journal': <canonical name>}`` on
-    a match, ``{}`` otherwise.
+def compute_pmc_url_update(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """Return the URL fields that would be added to ``doc``.
 
-    DOI takes priority over URL — it identifies a journal directly
-    when the DOI is a journal-level one (e.g. ``10.23880/oajmms``).
+    Empty dict means "no change needed":
+    - doc has no ``pmcid`` (not a PMC doc — out of scope);
+    - both URL fields are already populated with non-empty strings.
+
+    Otherwise returns just the missing field(s).
     """
-    existing = doc.get('journal')
-    if isinstance(existing, str) and existing.strip():
+    pmcid = doc.get('pmcid')
+    if not pmcid:
         return {}
-    from ingestors.publications import PublicationRegistry
-    # Try DOI first (most specific).
-    doi = doc.get('doi')
-    if isinstance(doi, str) and doi.strip():
-        slug = PublicationRegistry.find_journal_by_doi(doi.strip())
-        if slug is not None:
-            return {'journal': PublicationRegistry.JOURNALS[slug]['name']}
-    # Then Ingenta URL fingerprint.
-    url = doc.get('pdf_url') or doc.get('url')
-    if isinstance(url, str) and url.strip():
-        slug = PublicationRegistry.find_journal_by_ingenta_url(url)
-        if slug is not None:
-            return {'journal': PublicationRegistry.JOURNALS[slug]['name']}
-    return {}
+
+    from ingestors.pmc import PmcIngestor
+    update: Dict[str, Any] = {}
+    if not (doc.get('pdf_url') or '').strip():
+        update['pdf_url'] = PmcIngestor.pmc_article_url(pmcid)
+    if not (doc.get('xml_url') or '').strip():
+        update['xml_url'] = PmcIngestor.pmc_oai_xml_url(pmcid)
+    return update
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +52,7 @@ def compute_fingerprint_update(doc: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _iter_db(db: Any, verbosity: int = 1) -> Iterable[Dict[str, Any]]:
+    """Yield every non-design doc from ``db``."""
     for doc_id in db:
         if doc_id.startswith('_design/'):
             continue
@@ -78,35 +70,40 @@ def backfill(
     limit: Optional[int] = None,
     verbosity: int = 1,
 ) -> Dict[str, int]:
-    """Walk ``db``; apply ``compute_fingerprint_update`` to each
-    doc; persist matches.  Returns ``{scanned, updated}``."""
-    counts = {'scanned': 0, 'updated': 0}
+    """Walk ``db``; for each PMC doc missing URLs, apply the update.
+
+    Returns ``{scanned, eligible, written}``.
+    """
+    counts = {'scanned': 0, 'eligible': 0, 'written': 0}
     for doc in _iter_db(db, verbosity=verbosity):
         counts['scanned'] += 1
         if verbosity >= 2 and counts['scanned'] % 1000 == 0:
             print(f'  scanned {counts["scanned"]} docs...')
-        update = compute_fingerprint_update(doc)
+        update = compute_pmc_url_update(doc)
         if not update:
             continue
-        if limit is not None and counts['updated'] >= limit:
+        counts['eligible'] += 1
+        if limit is not None and counts['written'] >= limit:
             if verbosity >= 1:
                 print(f'  stop: hit --limit {limit}')
             break
         if verbosity >= 1:
             tag = '(DRY RUN) ' if dry_run else ''
-            print(f'  {tag}{doc["_id"]}: journal={update["journal"]!r}')
+            fields = ', '.join(sorted(update.keys()))
+            print(f'  {tag}{doc["_id"]}: + {fields}')
         if not dry_run:
             doc.update(update)
             db.save(doc)
-        counts['updated'] += 1
+        counts['written'] += 1
     return counts
 
 
 def main() -> int:
     """CLI entry point."""
     parser = argparse.ArgumentParser(
-        description='Backfill journal field via URL / DOI fingerprint '
-                    'matching against PublicationRegistry.JOURNALS.',
+        description='Backfill pdf_url / xml_url on PMC docs in '
+                    'skol_dev that were ingested before the URL '
+                    'fields were recorded.',
     )
     parser.add_argument('--dry-run', action='store_true',
                         help='Preview updates without writing.')
@@ -146,9 +143,10 @@ def main() -> int:
     )
 
     print()
-    print(f'Scanned: {counts["scanned"]}')
-    print(f'{"Would update" if args.dry_run else "Updated"}: '
-          f'{counts["updated"]}')
+    print(f'Scanned:   {counts["scanned"]}')
+    print(f'Eligible:  {counts["eligible"]}')
+    print(f'{"Would write" if args.dry_run else "Written"}: '
+          f'{counts["written"]}')
     return 0
 
 

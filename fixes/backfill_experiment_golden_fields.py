@@ -26,10 +26,10 @@ Two important details:
 Usage::
 
     # Print what would change, write nothing.
-    python bin/backfill_experiment_golden_fields.py --dry-run
+    python fixes/backfill_experiment_golden_fields.py --dry-run
 
     # Actually apply.
-    python bin/backfill_experiment_golden_fields.py --execute
+    python fixes/backfill_experiment_golden_fields.py --execute
 
 Environment variables (or ~/.skol_env):
     COUCHDB_URL         CouchDB server URL
@@ -44,7 +44,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config  # type: ignore[import]  # noqa: E402
 

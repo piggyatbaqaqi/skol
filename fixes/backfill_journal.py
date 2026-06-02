@@ -13,7 +13,7 @@ Idempotent — re-runs only touch docs that are still missing the
 field.  ``--dry-run`` previews without writing.
 
 Usage:
-    bin/backfill_journal.py [--limit N] [--dry-run] [--verbosity N]
+    fixes/backfill_journal.py [--limit N] [--dry-run] [--verbosity N]
 
 Environment variables:
     COUCHDB_URL, COUCHDB_USER, COUCHDB_PASSWORD  — connection
@@ -33,7 +33,7 @@ from typing import Any, Dict, Iterator, Optional
 # Add parent + bin dirs to path so this script runs both standalone
 # and via the with_skol wrapper.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 import couchdb
 from env_config import get_env_config

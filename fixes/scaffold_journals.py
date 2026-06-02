@@ -4,7 +4,7 @@ table, optionally enriching with Crossref ``/journals/{issn}`` lookups.
 
 Operator workflow:
 
-    bin/scaffold_journals.py --output ingestors/JOURNALS_draft.py [--all]
+    fixes/scaffold_journals.py --output ingestors/JOURNALS_draft.py [--all]
 
 Produces a Python literal that you hand-edit (fill in official
 websites, ISO 4 abbreviations, alias lists), then move into
@@ -12,7 +12,7 @@ websites, ISO 4 abbreviations, alias lists), then move into
 
 Re-runnable for a single journal when adding a new one:
 
-    bin/scaffold_journals.py --journal sydowia --output JOURNALS_draft.py
+    fixes/scaffold_journals.py --journal sydowia --output JOURNALS_draft.py
 
 The script never overwrites an existing ``JOURNALS`` row in
 ``publications.py`` — it only writes a draft file the operator
@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 
 # ``strip_publisher_suffix`` lives in ingestors/publications.py
@@ -191,7 +191,7 @@ def build_journal_draft_record(
 # ---------------------------------------------------------------------------
 
 
-_DRAFT_HEADER = '''"""Draft JOURNALS rows produced by bin/scaffold_journals.py.
+_DRAFT_HEADER = '''"""Draft JOURNALS rows produced by fixes/scaffold_journals.py.
 
 Hand-edit (fill in official-website URLs, abbreviations, aliases)
 then merge into ingestors/publications.py.  This file is intended

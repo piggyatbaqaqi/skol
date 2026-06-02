@@ -53,7 +53,7 @@ If no experiment is set or the experiment is not found, these views fall back to
 
 The Sources page groups documents by the ``journal`` field on each ingested doc.  That field is populated by:
 
-- Crossref lookups (``bin/backfill_journal.py``) for DOI- or ISSN-bearing documents;
+- Crossref lookups (``fixes/backfill_journal.py``) for DOI- or ISSN-bearing documents;
 - Local-mirror ingestors, which populate ``journal`` directly from curated metadata.  For mykoweb literature PDFs the source of truth is ``/data/skol/www/mykoweb.com/systematics_pdf_metadata.json`` (produced by ``bin/extract_mykoweb_pdf_metadata.py``); for mykoweb journals it comes from the on-disk directory layout.
 
 Documents whose ``journal`` is still empty after these passes land in the **Unknown** bucket on the Sources page.  No REST endpoint exposes ``itemtype`` or ``journal`` directly; the Sources page is a server-rendered Django template view, not a REST resource.

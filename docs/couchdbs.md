@@ -82,7 +82,7 @@ points at the databases and Redis keys that step scripts (under
 
 ### Golden-set wiring (`databases.golden` / `databases.golden_ann`)
 
-Added by `bin/backfill_experiment_golden_fields.py` (Step 1.A of
+Added by `fixes/backfill_experiment_golden_fields.py` (Step 1.A of
 `docs/golden_v2_plan.md`). `golden` is the plaintext DB used by
 `predict_classifier.py` on the golden set; `golden_ann` is the
 answer-key `.ann` DB `evaluate_golden.py` scores against.

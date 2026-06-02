@@ -1,4 +1,4 @@
-"""Tests for bin/backfill_experiment_golden_fields.py.
+"""Tests for fixes/backfill_experiment_golden_fields.py.
 
 Covers the per-experiment golden-DB value map, idempotency, the
 "don't overwrite existing values" guarantee, and dry-run mode.

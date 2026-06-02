@@ -101,7 +101,7 @@ The golden fields (`golden` / `golden_ann`) are the answer-key wiring:
 on the golden set; `databases.golden_ann` is the `.ann` DB
 `evaluate_golden.py` scores against. Per-experiment values are
 documented in `docs/couchdbs.md` (Experiments table) and the
-backfill is performed by `bin/backfill_experiment_golden_fields.py`.
+backfill is performed by `fixes/backfill_experiment_golden_fields.py`.
 
 **Priority** (highest to lowest):
 

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 
 # ---------------------------------------------------------------------------

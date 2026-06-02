@@ -228,7 +228,7 @@ website fields stay hand-edited.
 ### Scaffolding script — shape
 
 ```
-bin/scaffold_journals.py
+fixes/scaffold_journals.py
     --crossref-mailto piggy.yarroll+skol@gmail.com   # polite pool
     --output ingestors/JOURNALS_draft.py
     [--journal sydowia]                              # one at a time, OR
@@ -281,13 +281,13 @@ page yet — the rendered rows are driven by skol_dev's `journal`
 field, which still carries the old compound names from past
 ingestions.  That's fixed in phase 2.
 
-### Phase 2 — deliver `bin/rename_journals.py` (script only)
+### Phase 2 — deliver `fixes/rename_journals.py` (script only)
 
 **Goal**: deliver a generic rewrite-script that walks the ingest
 database, runs a mapping function over each doc's ``journal``
 field, and writes back when the mapping changes the value.
 
-1. Generic `bin/rename_journals.py` — takes a mapping function;
+1. Generic `fixes/rename_journals.py` — takes a mapping function;
    default for phase 2 is ``strip_publisher_suffix``.  Idempotent;
    supports ``--dry-run`` / ``--limit`` / ``--verbosity``.
 
@@ -341,7 +341,7 @@ Steps:
    ``JOURNALS[*].aliases``.  Keep a short back-compat branch that
    also checks ``JOURNAL_NAME_ALIASES``; remove it (and the dict)
    in a follow-up once verified.
-6. Run ``bin/rename_journals.py`` with ``normalize_journal_name``
+6. Run ``fixes/rename_journals.py`` with ``normalize_journal_name``
    as the mapping function.  The dry-run should show ~2400+
    updates from the table above.
 7. Apply; rebuild ``production_v3_hand`` Sources stats.
@@ -366,7 +366,7 @@ one row each.
 
 **Goal**: write `journal=<canonical>` onto skol_dev docs whose
 ISSN matches a JOURNALS entry, so downstream consumers don't have
-to re-resolve.  Mirrors the existing `bin/backfill_journal.py`
+to re-resolve.  Mirrors the existing `fixes/backfill_journal.py`
 ISSN pass but the source of truth is the in-tree registry rather
 than Crossref — useful exactly for cases (like Sydowia) where
 Crossref's ISSN endpoint has gaps.

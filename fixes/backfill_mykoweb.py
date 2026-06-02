@@ -14,7 +14,7 @@ saves only the docs that would actually change.  Idempotent — re-runs
 are no-ops on docs already at the target state.
 
 Usage:
-    bin/backfill_mykoweb.py [--dry-run] [--limit N] [--verbosity N]
+    fixes/backfill_mykoweb.py [--dry-run] [--limit N] [--verbosity N]
 
 Reads metadata from
 ``/data/skol/www/mykoweb.com/systematics_pdf_metadata.json`` by
@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from ingestors.mykoweb_metadata import (  # noqa: E402
     load_metadata_index,

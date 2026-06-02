@@ -47,7 +47,7 @@ class TestIsOrphan(unittest.TestCase):
 
     def test_pmcid_set_protects(self):
         """pmcid alone is enough to recover URLs via
-        bin/backfill_pmc_urls; not an orphan."""
+        fixes/backfill_pmc_urls; not an orphan."""
         self.assertFalse(is_orphan({'pmcid': '1234567'}))
 
     def test_empty_string_fields_are_missing(self):
