@@ -314,17 +314,19 @@ def process_doc(
 
 
 def _resolve_skip_existing(config: Dict[str, Any]) -> bool:
-    """Map env_config's tri-state ``skip_existing`` to a concrete bool.
+    """Decide whether to skip lines already cached in Redis.
 
-    ``--skip-existing`` is registered with ``action='store_true',
-    default=None``, so an unset flag produces ``None`` rather than
-    ``False``.  Per CLAUDE.md rule 11 the intended default is
-    "skip cached entries" (idempotent re-run), so ``None`` maps to
-    ``True``.  Without this resolver, ``bool(None)`` silently makes
-    the flag default to ``False`` and re-embeds every cached line.
+    For this embedder the only useful semantics are idempotent-by-
+    default with ``--force`` as the override.  env_config's own
+    ``skip_existing`` field is intentionally ignored: env_config
+    hardcodes it to ``False`` as the env-var default
+    (``_get_env('SKIP_EXISTING', '').lower() in ('1','true','yes')``
+    is ``False`` for an unset env var), which would make every run
+    re-embed every cached line.  Per CLAUDE.md rule 11 the hardcoded
+    default should reflect intent, and for a cache builder that's
+    "skip what's already cached."  ``--force`` flips it to re-embed.
     """
-    val = config.get('skip_existing')
-    return True if val is None else bool(val)
+    return not bool(config.get('force'))
 
 
 # ---------------------------------------------------------------------------

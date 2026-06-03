@@ -23,8 +23,6 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import redis  # noqa: E402
-
 from env_config import create_redis_client  # noqa: E402
 
 from embed_lines import (  # type: ignore[import]  # noqa: E402
@@ -238,24 +236,34 @@ class TestLoadPlaintext(unittest.TestCase):
 
 
 class TestResolveSkipExisting(unittest.TestCase):
-    """env_config's --skip-existing defaults to None when unspecified
-    (action='store_true', default=None).  Per CLAUDE.md rule 11 the
-    intended default behaviour is "skip" (idempotent re-runs), so we
-    must map None -> True.  bool(None) is False, which silently broke
-    the first 1884-doc run (cached_hits stayed at 0 because every line
-    was re-embedded).  The resolver locks the None -> True mapping."""
+    """Idempotent-by-default semantics for the cache builder:
+    skip_existing is True unless ``--force`` is set.  env_config's
+    own ``skip_existing`` field is ignored because it hardcodes False
+    as the env-var default — trusting it would re-embed every cached
+    line on every run (which is what happened in the first 1884-doc
+    pass: cached_hits stayed at 0)."""
 
-    def test_missing_key_defaults_true(self):
+    def test_default_no_force_is_skip(self):
+        """Empty / None / explicit-False force => skip cached lines."""
         self.assertTrue(_resolve_skip_existing({}))
+        self.assertTrue(_resolve_skip_existing({'force': None}))
+        self.assertTrue(_resolve_skip_existing({'force': False}))
 
-    def test_none_value_defaults_true(self):
-        self.assertTrue(_resolve_skip_existing({'skip_existing': None}))
+    def test_force_overrides_to_no_skip(self):
+        """--force re-embeds everything regardless of cache state."""
+        self.assertFalse(_resolve_skip_existing({'force': True}))
 
-    def test_explicit_true(self):
+    def test_skip_existing_field_is_ignored(self):
+        """env_config's own skip_existing value never affects the
+        decision — only --force matters."""
+        self.assertTrue(_resolve_skip_existing({'skip_existing': False}))
         self.assertTrue(_resolve_skip_existing({'skip_existing': True}))
-
-    def test_explicit_false(self):
-        self.assertFalse(_resolve_skip_existing({'skip_existing': False}))
+        self.assertFalse(
+            _resolve_skip_existing({'skip_existing': True, 'force': True}),
+        )
+        self.assertTrue(
+            _resolve_skip_existing({'skip_existing': False, 'force': False}),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -459,8 +467,8 @@ class TestProcessDocPdfFallback(unittest.TestCase):
 
 @unittest.skipUnless(_redis_available(), 'Requires Redis (env_config)')
 class TestProcessDocYeddaFallback(unittest.TestCase):
-    """Path #3 of the fallback chain: article.txt.ann only.
-    Covers the ~1724 JATS-derived docs in skol_training_v3_combined_no_golden."""
+    """Path #3 of the fallback chain: article.txt.ann only.  Covers
+    the ~1724 JATS-derived docs in skol_training_v3_combined_no_golden."""
 
     def setUp(self):
         self.prefix = _make_redis_namespace()
