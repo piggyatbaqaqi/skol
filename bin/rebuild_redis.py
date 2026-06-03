@@ -61,6 +61,15 @@ COMPONENTS = {
         'verbosity_style': 'flag',  # --verbosity N
         'description': 'Compute embeddings for taxa descriptions',
     },
+    'sbert_lines': {
+        'name': 'SBERT per-line embeddings (v4 classifier)',
+        'keys': ['skol:sbert:mpnet:*', 'skol:sbert:minilm:*'],
+        'script': 'embed_lines',
+        'args': ['--sbert-model', 'mpnet',
+                 '--source-db', 'skol_training_v3_combined_no_golden'],
+        'verbosity_style': 'flag',  # --verbosity N
+        'description': 'Cache SBERT line embeddings for v4 CRFs',
+    },
     'vocab_tree': {
         'name': 'Vocabulary Tree',
         'keys': ['skol:ui:menus_*', 'skol:ui:menus_latest'],
@@ -80,7 +89,9 @@ COMPONENTS = {
 }
 
 # Order matters: some components may depend on others
-BUILD_ORDER = ['classifier', 'embeddings', 'vocab_tree', 'fungaria']
+BUILD_ORDER = [
+    'classifier', 'embeddings', 'sbert_lines', 'vocab_tree', 'fungaria',
+]
 
 
 def list_existing_keys(redis_client, verbosity: int = 1) -> dict:
