@@ -20,8 +20,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ingestors.page_header_detector import (  # noqa: E402
     PageNumCandidate,
+    SequenceFit,
     collect_candidates,
+    fit_sequence,
 )
+
+
+def _cand(li: int, value: int, position: str = 'end') -> PageNumCandidate:
+    """Concise factory for sequence-fit test fixtures."""
+    return PageNumCandidate(
+        line_index=li, position=position, value=value,
+        raw_token=str(value), prefix='', suffix='',
+    )
 
 
 class TestCollectCandidates:
@@ -100,3 +110,77 @@ class TestCollectCandidates:
         result = collect_candidates(lines)
         indices = sorted(c.line_index for c in result)
         assert indices == [1, 3]
+
+
+class TestFitSequence:
+    """Per §Step 2: RANSAC fit ``value ≈ slope × line_index + intercept``
+    with a gap histogram quality score that's high when consecutive
+    inlier values differ by 1 (every page numbered) or 2 (every other).
+
+    Tests use a fixed numpy seed via the implementation's ``rng`` kwarg
+    so the RANSAC sampler is deterministic."""
+
+    def test_clean_monotonic_sequence(self) -> None:
+        """Pages 1..10 on evenly-spaced lines fit perfectly; all 10
+        candidates are inliers, gap_histogram peaks at 1, quality
+        ≥ 0.8."""
+        cands = [_cand(li=10 * (i + 1), value=i + 1) for i in range(10)]
+        fit = fit_sequence(cands, seed=42)
+        assert fit is not None
+        assert isinstance(fit, SequenceFit)
+        assert len(fit.inlier_line_indices) == 10
+        # gap_histogram: 9 consecutive gaps of 1.
+        assert fit.gap_histogram.get(1, 0) == 9
+        assert fit.quality_score >= 0.8
+
+    def test_outlier_excluded_from_inliers(self) -> None:
+        """An OCR transposition (page 6 misread as 38) gets rejected
+        by RANSAC even though it has the right line_index."""
+        cands = [_cand(li=10 * (i + 1), value=i + 1) for i in range(10)]
+        # Replace the 6th candidate's value with 38 (OCR transposition).
+        cands[5] = _cand(li=cands[5].line_index, value=38)
+        fit = fit_sequence(cands, seed=42)
+        assert fit is not None
+        outlier_index = cands[5].line_index
+        assert outlier_index not in fit.inlier_line_indices
+
+    def test_gap_two_sequence(self) -> None:
+        """Every-other-page numbering (gap 2) is a valid sequence."""
+        cands = [
+            _cand(li=10 * (i + 1), value=2 * i + 1)
+            for i in range(6)  # values 1, 3, 5, 7, 9, 11
+        ]
+        fit = fit_sequence(cands, seed=42)
+        assert fit is not None
+        # gap_histogram peak should be at 2.
+        assert fit.gap_histogram.get(2, 0) >= 4
+        assert fit.quality_score >= 0.6
+
+    def test_random_noise_returns_none_or_low_quality(self) -> None:
+        """Five scattered candidates with no underlying sequence
+        produce either ``None`` or a low-quality fit (< 0.4)."""
+        cands = [
+            _cand(li=5, value=42),
+            _cand(li=15, value=7),
+            _cand(li=25, value=199),
+            _cand(li=35, value=23),
+            _cand(li=45, value=88),
+        ]
+        fit = fit_sequence(cands, seed=42)
+        if fit is not None:
+            assert fit.quality_score < 0.4
+
+    def test_too_few_candidates_returns_none(self) -> None:
+        """Below 4 candidates the RANSAC floor kicks in and we
+        return ``None`` rather than over-fit on tiny inputs."""
+        assert fit_sequence([_cand(li=10, value=1)], seed=42) is None
+        assert fit_sequence(
+            [_cand(li=10, value=1), _cand(li=20, value=2)], seed=42,
+        ) is None
+        assert fit_sequence(
+            [_cand(li=10, value=1), _cand(li=20, value=2),
+             _cand(li=30, value=3)], seed=42,
+        ) is None
+
+    def test_empty_returns_none(self) -> None:
+        assert fit_sequence([], seed=42) is None

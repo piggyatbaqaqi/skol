@@ -22,8 +22,11 @@ dependency churn.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 
 
 # ---------------------------------------------------------------------------
@@ -121,4 +124,109 @@ def _try_end(line_index: int, stripped: str) -> PageNumCandidate | None:
         raw_token=token,
         prefix=stripped[:m.start(1)].strip(),
         suffix='',
+    )
+
+
+# ---------------------------------------------------------------------------
+# 1.B.2 — Sequence fitting via RANSAC
+# ---------------------------------------------------------------------------
+
+
+# RANSAC hyperparameters.  Chosen for journal-article docs which
+# typically have 1-50 pages of body text with ~1 header per page.
+_RANSAC_TRIALS = 50
+_RANSAC_INLIER_THRESHOLD = 1.0  # value units; |predicted - actual| <= 1.0
+_MIN_INLIERS = 4                # below this we don't trust the fit
+
+
+@dataclass(frozen=True)
+class SequenceFit:
+    """Result of fitting a monotonic sequence to page-number candidates.
+
+    ``value ≈ slope × line_index + intercept`` over the inliers.  The
+    gap histogram captures the first-difference distribution across
+    the inliers' values (after sorting by line_index); a sharp peak at
+    1 or 2 implies a real page-number sequence rather than noise.
+    """
+    slope: float
+    intercept: float
+    inlier_line_indices: Tuple[int, ...]
+    gap_histogram: Dict[int, int]
+    quality_score: float
+
+
+def fit_sequence(
+    candidates: List[PageNumCandidate],
+    *,
+    seed: Optional[int] = None,
+) -> Optional[SequenceFit]:
+    """Fit a monotonic page-number sequence via simple RANSAC.
+
+    Returns ``None`` when there aren't enough candidates to draw a
+    meaningful conclusion (fewer than ``_MIN_INLIERS``) or when the
+    best fit fails to gather that many inliers.  The ``seed`` kwarg
+    makes the RANSAC sampler deterministic for tests.
+    """
+    if len(candidates) < _MIN_INLIERS:
+        return None
+
+    xs = np.array([c.line_index for c in candidates], dtype=np.float64)
+    ys = np.array([c.value for c in candidates], dtype=np.float64)
+
+    rng = np.random.default_rng(seed)
+    n = len(candidates)
+
+    best_inlier_mask: Optional[np.ndarray] = None
+    best_slope = 0.0
+    best_intercept = 0.0
+
+    for _ in range(_RANSAC_TRIALS):
+        i, j = rng.choice(n, size=2, replace=False)
+        if xs[i] == xs[j]:
+            continue
+        slope = (ys[j] - ys[i]) / (xs[j] - xs[i])
+        intercept = ys[i] - slope * xs[i]
+        predicted = slope * xs + intercept
+        inliers = np.abs(predicted - ys) <= _RANSAC_INLIER_THRESHOLD
+        if best_inlier_mask is None or inliers.sum() > best_inlier_mask.sum():
+            best_inlier_mask = inliers
+            best_slope = float(slope)
+            best_intercept = float(intercept)
+
+    if best_inlier_mask is None or best_inlier_mask.sum() < _MIN_INLIERS:
+        return None
+
+    # Sort the surviving candidates by line_index for the gap histogram.
+    inlier_pairs = sorted(
+        (int(xs[k]), int(ys[k]))
+        for k in range(n) if bool(best_inlier_mask[k])
+    )
+    inlier_indices = tuple(li for li, _ in inlier_pairs)
+    inlier_values = [v for _, v in inlier_pairs]
+
+    diffs = [inlier_values[k + 1] - inlier_values[k]
+             for k in range(len(inlier_values) - 1)]
+    # Keep only positive gaps in the histogram — negative gaps would
+    # indicate a wrong line ordering (shouldn't happen after sorting
+    # by line_index for a real sequence).
+    positive_diffs = [d for d in diffs if d > 0]
+    histogram: Dict[int, int] = dict(Counter(positive_diffs))
+
+    if not positive_diffs:
+        return None
+
+    # Quality score: dominance of the most-frequent gap, but only
+    # rewarded if the dominant gap is 1 or 2 (per page-header-detection.md
+    # §Step 2 — those are the expected gaps for real page numbers).
+    max_gap, max_count = max(histogram.items(), key=lambda kv: kv[1])
+    if max_gap not in (1, 2):
+        return None
+    quality = max_count / len(positive_diffs)
+
+    return SequenceFit(
+        slope=best_slope,
+        intercept=best_intercept,
+        inlier_line_indices=inlier_indices,
+        gap_histogram=histogram,
+        quality_score=quality,
     )
