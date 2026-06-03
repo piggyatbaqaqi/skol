@@ -43,6 +43,39 @@ _DETECTOR_FLAG_THRESHOLD = 0.0  # per_line_confidence > this -> "flagged"
 # Same YEDDA block regex used by ingestors.extract_plaintext.
 _YEDDA_BLOCK_RE = re.compile(r"\[@\s*(.*?)\s*#([^*]+)\*\]", re.DOTALL)
 
+# A "section-header-shaped" line is short, all caps (no lowercase
+# letters), at least one alpha character.  Used by the scoring filter
+# to suppress false positives where the detector picked up section
+# titles like 'INFRAGENERIC CLASSIFICATION' that v4 Step 1.C will
+# detect separately.
+_SECTION_HEADER_MAX_LEN = 60
+
+
+def _is_section_header_shaped(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped or len(stripped) > _SECTION_HEADER_MAX_LEN:
+        return False
+    alpha = [ch for ch in stripped if ch.isalpha()]
+    if not alpha:
+        return False
+    return all(ch.isupper() for ch in alpha)
+
+
+def _scoring_excluded(line: str) -> bool:
+    """Lines that should NOT count in the confusion matrix:
+
+    * Blank lines: ``plaintext_from_yedda`` introduces ``\\n\\n``
+      between YEDDA blocks, so flagged-but-not-in-GT blank lines
+      reflect a reconstruction artifact, not a detector error.
+    * Section-header-shaped lines (short, ALL CAPS): v4 Step 1.C's
+      ``section_header_detector`` is the consumer responsible for
+      those; we shouldn't penalise the *page*-header detector for
+      catching them as a side effect of region recovery.
+    """
+    if not line.strip():
+        return True
+    return _is_section_header_shaped(line)
+
 
 def _open_golden_db() -> Any:
     """Return a couchdb.Database handle to the golden hand corpus or
@@ -123,14 +156,33 @@ def _evaluate_doc(db: Any, doc_id: str) -> Dict[str, Any]:
         li for li, c in enumerate(result['per_line_confidence'])
         if c > _DETECTOR_FLAG_THRESHOLD
     }
-    tp = len(flagged & gt_lines)
-    fp = len(flagged - gt_lines)
-    fn = len(gt_lines - flagged)
+
+    # Apply the Free + Cheap scoring filters: drop lines that are
+    # blank (reconstruction artifact of plaintext_from_yedda) or
+    # section-header-shaped (1.C's detector will handle those).  We
+    # exclude these lines from both the flagged and ground-truth
+    # sets so the confusion matrix measures detector behaviour on
+    # substantive lines only.
+    def excludable(li: int) -> bool:
+        return 0 <= li < len(detector_lines) and _scoring_excluded(
+            detector_lines[li],
+        )
+    flagged_scored = {li for li in flagged if not excludable(li)}
+    gt_scored = {li for li in gt_lines if not excludable(li)}
+
+    tp = len(flagged_scored & gt_scored)
+    fp = len(flagged_scored - gt_scored)
+    fn = len(gt_scored - flagged_scored)
     return {
         'doc_id': doc_id,
         'n_lines': n_lines,
-        'gt_header_lines': len(gt_lines),
-        'flagged_lines': len(flagged),
+        'gt_header_lines_raw': len(gt_lines),
+        'gt_header_lines_scored': len(gt_scored),
+        'flagged_lines_raw': len(flagged),
+        'flagged_lines_scored': len(flagged_scored),
+        'excluded_blanks_or_sections': (
+            len(flagged) - len(flagged_scored)
+        ),
         'tp': tp,
         'fp': fp,
         'fn': fn,
@@ -188,11 +240,22 @@ class TestPageHeaderGolden:
         total_tp = sum(s['tp'] for s in per_doc)
         total_fp = sum(s['fp'] for s in per_doc)
         total_fn = sum(s['fn'] for s in per_doc)
-        gt_total = sum(s['gt_header_lines'] for s in per_doc)
-        flagged_total = sum(s['flagged_lines'] for s in per_doc)
+        gt_raw = sum(s['gt_header_lines_raw'] for s in per_doc)
+        gt_scored = sum(s['gt_header_lines_scored'] for s in per_doc)
+        flagged_raw = sum(s['flagged_lines_raw'] for s in per_doc)
+        flagged_scored = sum(s['flagged_lines_scored'] for s in per_doc)
+        excluded = sum(
+            s['excluded_blanks_or_sections'] for s in per_doc
+        )
 
-        precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) else 0.0
-        recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) else 0.0
+        precision = (
+            total_tp / (total_tp + total_fp)
+            if (total_tp + total_fp) else 0.0
+        )
+        recall = (
+            total_tp / (total_tp + total_fn)
+            if (total_tp + total_fn) else 0.0
+        )
         f1 = (
             2 * precision * recall / (precision + recall)
             if (precision + recall) else 0.0
@@ -201,9 +264,14 @@ class TestPageHeaderGolden:
         # Tee the stats to stdout so they show up under pytest -s.
         print()
         print(f'=== page_header_detector @ {_GOLDEN_DB} '
-              f'({len(per_doc)} docs) ===')
-        print(f'  ground truth header lines : {gt_total}')
-        print(f'  detector-flagged lines    : {flagged_total}')
+              f'({len(per_doc)} docs, blank + section-shape lines '
+              'excluded from scoring) ===')
+        print(f'  ground truth lines  : raw={gt_raw}  '
+              f'scored={gt_scored}')
+        print(f'  detector-flagged    : raw={flagged_raw}  '
+              f'scored={flagged_scored}')
+        print(f'  excluded from FP    : {excluded} '
+              '(blanks / section-shape)')
         print(f'  TP={total_tp}  FP={total_fp}  FN={total_fn}')
         print(f'  precision={precision:.3f}  recall={recall:.3f}  '
               f'F1={f1:.3f}')
@@ -213,7 +281,12 @@ class TestPageHeaderGolden:
         print(f'  docs with a detected page sequence: '
               f'{docs_with_sequence}/{len(per_doc)}')
 
-        assert recall >= 0.10, (
-            f'Aggregate recall {recall:.3f} fell below 0.10 — the '
-            'detector found essentially nothing across the sample.'
+        assert precision >= 0.60, (
+            f'Aggregate precision {precision:.3f} fell below 0.60 — '
+            'something regressed in the detector or the scoring '
+            'filter (blank / section-shape exclusions).'
+        )
+        assert recall >= 0.30, (
+            f'Aggregate recall {recall:.3f} fell below 0.30 — '
+            'the detector is missing too many real headers.'
         )
