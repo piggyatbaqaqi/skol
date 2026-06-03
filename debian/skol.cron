@@ -90,6 +90,13 @@ SKIP_EXISTING=1
 # per-experiment treatments_full DB consumed by the Django JSON Features
 # endpoint).  Spaced 2h after embed to leave the GPU clear.
 0 18 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand treatments_to_json > ${LOGDIR}/v3_hand-treatments-to-json.log 2>&1
+# Sync Plazi treatment UUIDs onto skol_dev docs.  Daily at 2am
+# (quiet hours; off-peak for Plazi's small community service).  The
+# --re-check-after-days 14 freshness guard keeps most daily runs
+# cheap — only docs whose lookup is older than 14 days (≈ 1/14 of
+# the corpus per day plus any newly-ingested docs) get re-queried.
+# At the default 1-2 s/request pace, ≈ 1700 docs/day = ~20 min wall.
+0 2 * * * skol time /opt/skol/bin/backfill_plazi_uuids --re-check-after-days 14 --verbosity 1 > ${LOGDIR}/backfill-plazi.log 2>&1
 # Update sources statistics for the ingestion sources page daily at 7am
 0 7 * * * skol time /opt/skol/bin/build_sources_stats --verbosity=2 > ${LOGDIR}/build-sources-stats.log 2>&1
 # Per-experiment Ingestion Sources stats (writes the experiment-scoped
