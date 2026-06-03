@@ -25,7 +25,7 @@ import difflib
 import re
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -326,7 +326,8 @@ def _classify_cluster_kind(canonical: str) -> str:
     if not stripped:
         return 'other'
     alpha = ''.join(ch for ch in stripped if ch.isalpha())
-    if alpha and alpha.isupper() and len(stripped) <= _JOURNAL_CANONICAL_MAX_LEN:
+    short = len(stripped) <= _JOURNAL_CANONICAL_MAX_LEN
+    if alpha and alpha.isupper() and short:
         return 'journal'
     if len(stripped) > _JOURNAL_CANONICAL_MAX_LEN:
         return 'title'
@@ -387,3 +388,162 @@ def cluster_header_text(
             cluster_kind=_classify_cluster_kind(canonical),
         ))
     return results
+
+
+# ---------------------------------------------------------------------------
+# 1.B.5 — Two-pass block recovery + orchestrator
+# ---------------------------------------------------------------------------
+
+
+_HEADER_REGION_MAX_GROWTH = 5    # lines per direction
+_HEADER_SHORT_LINE_THRESHOLD = 30  # chars; lines shorter than this fold in
+
+
+@dataclass(frozen=True)
+class HeaderRegion:
+    """A contiguous range of lines marked as a running-header block.
+
+    The anchor is the line where the page-number candidate was
+    confirmed; ``start_line``/``end_line`` may extend beyond it to
+    cover adjacent volume/issue lines or blank separators.
+    """
+    start_line: int
+    end_line: int
+    confidence: float
+    anchor_value: Optional[int]
+
+
+def _is_extension_line(text: str) -> bool:
+    """A line is foldable into a header region if it's blank or
+    short (likely a volume/issue strip or running-title fragment)."""
+    return not text or len(text) < _HEADER_SHORT_LINE_THRESHOLD
+
+
+def recover_header_block(
+    lines: List[str],
+    confirmed: List[PageNumCandidate],
+) -> List[HeaderRegion]:
+    """Two-pass block recovery (§Step 5).
+
+    Pass 1 picked out the confirmed page-number anchors (the caller's
+    ``confirmed`` argument).  Pass 2 (here) extends each anchor's
+    region outward by up to ``_HEADER_REGION_MAX_GROWTH`` lines per
+    direction while adjacent lines are blank or short.
+    """
+    regions: List[HeaderRegion] = []
+    for c in confirmed:
+        start = c.line_index
+        end = c.line_index
+        # Extend backward
+        for step in range(1, _HEADER_REGION_MAX_GROWTH + 1):
+            li = c.line_index - step
+            if li < 0:
+                break
+            if _is_extension_line(lines[li].strip()):
+                start = li
+            else:
+                break
+        # Extend forward
+        for step in range(1, _HEADER_REGION_MAX_GROWTH + 1):
+            li = c.line_index + step
+            if li >= len(lines):
+                break
+            if _is_extension_line(lines[li].strip()):
+                end = li
+            else:
+                break
+        regions.append(HeaderRegion(
+            start_line=start,
+            end_line=end,
+            confidence=0.0,  # set by the orchestrator after scoring
+            anchor_value=c.value,
+        ))
+    return regions
+
+
+def detect_page_headers(
+    lines: List[str],
+    *,
+    seed: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Run the five-stage page-header detector end-to-end.
+
+    Returns a JSON-serialisable dict suitable for attachment as
+    ``article.page-headers.json``.  Schema is locked at v1; future
+    changes that need to invalidate downstream caches must bump
+    ``schema_version``.
+    """
+    n_lines = len(lines)
+    empty_result: Dict[str, Any] = {
+        'schema_version': '1',
+        'n_lines': n_lines,
+        'regions': [],
+        'per_line_confidence': [0.0] * n_lines,
+        'sequence_fit': None,
+        'alternation_score': 0.0,
+    }
+
+    candidates = collect_candidates(lines)
+    if not candidates:
+        return empty_result
+
+    sequence = fit_sequence(candidates, seed=seed)
+    alternation = partition_alternation(candidates, seed=seed)
+
+    if sequence is None:
+        # Without a confirmed sequence there's no point recovering
+        # blocks — anchors aren't trustworthy.
+        empty_result['alternation_score'] = alternation.alternation_score
+        return empty_result
+
+    inlier_set = set(sequence.inlier_line_indices)
+    confirmed = [c for c in candidates if c.line_index in inlier_set]
+    raw_regions = recover_header_block(lines, confirmed)
+
+    # Region confidence = sequence quality, blended with alternation
+    # so a confidently-fit sequence with clean recto/verso layout gets
+    # the highest score, but a non-alternating layout still keeps a
+    # baseline confidence (alternation is a positive signal, not a
+    # required one).
+    blend = 0.5 + 0.5 * alternation.alternation_score
+    base_confidence = max(0.0, min(1.0, sequence.quality_score * blend))
+
+    regions = [
+        HeaderRegion(
+            start_line=r.start_line,
+            end_line=r.end_line,
+            confidence=base_confidence,
+            anchor_value=r.anchor_value,
+        )
+        for r in raw_regions
+    ]
+    regions.sort(key=lambda r: r.start_line)
+
+    per_line_confidence = [0.0] * n_lines
+    for r in regions:
+        for li in range(r.start_line, r.end_line + 1):
+            if 0 <= li < n_lines:
+                per_line_confidence[li] = max(
+                    per_line_confidence[li], r.confidence,
+                )
+
+    return {
+        'schema_version': '1',
+        'n_lines': n_lines,
+        'regions': [
+            {
+                'start_line': r.start_line,
+                'end_line': r.end_line,
+                'confidence': r.confidence,
+                'anchor_value': r.anchor_value,
+            }
+            for r in regions
+        ],
+        'per_line_confidence': per_line_confidence,
+        'sequence_fit': {
+            'slope': sequence.slope,
+            'intercept': sequence.intercept,
+            'quality_score': sequence.quality_score,
+        },
+        'alternation_score': alternation.alternation_score,
+    }

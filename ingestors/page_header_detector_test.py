@@ -20,13 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ingestors.page_header_detector import (  # noqa: E402
     AlternationFit,
+    HeaderRegion,
     HeaderTextCluster,
     PageNumCandidate,
     SequenceFit,
     cluster_header_text,
     collect_candidates,
+    detect_page_headers,
     fit_sequence,
     partition_alternation,
+    recover_header_block,
 )
 
 
@@ -334,3 +337,157 @@ class TestClusterHeaderText:
         assert len(clusters) == 1
         assert clusters[0].cluster_kind == 'journal'
         assert isinstance(clusters[0], HeaderTextCluster)
+
+
+class TestRecoverHeaderBlock:
+    """Per §Step 5: extend each confirmed candidate's region outward
+    (up to 5 lines per direction) over blank or short adjacent lines
+    to capture volume/issue strings and blank separators."""
+
+    def test_single_anchor_extends_to_blank_above(self) -> None:
+        """One anchor with a blank line above grows to a 2-line region."""
+        lines = [
+            'body text body text body text body text body text body',
+            '',
+            '5  MYCOLOGIA',
+            'continuing body text continuing body text body text more',
+        ]
+        confirmed = [_verso(li=2, value=5, suffix='MYCOLOGIA')]
+        regions = recover_header_block(lines, confirmed)
+        assert len(regions) == 1
+        assert regions[0].start_line == 1
+        assert regions[0].end_line == 2
+        assert regions[0].anchor_value == 5
+
+    def test_extends_to_short_line(self) -> None:
+        """A short line adjacent to the anchor (volume number, etc.)
+        gets folded into the region."""
+        lines = [
+            'A long body line of body text body text body text body more',
+            'Vol. 99 Issue 3',
+            '7  Journal',
+            'long body text following the header body text body more',
+        ]
+        confirmed = [_verso(li=2, value=7, suffix='Journal')]
+        regions = recover_header_block(lines, confirmed)
+        assert len(regions) == 1
+        # 'Vol. 99 Issue 3' is short (< 30 chars) so it's folded in.
+        assert regions[0].start_line == 1
+
+    def test_no_extension_past_body_text(self) -> None:
+        """Long body-text lines around the anchor stop region growth."""
+        long_body = 'x' * 60
+        lines = [long_body, long_body, '5 Journal', long_body, long_body]
+        confirmed = [_verso(li=2, value=5, suffix='Journal')]
+        regions = recover_header_block(lines, confirmed)
+        assert len(regions) == 1
+        assert regions[0].start_line == 2
+        assert regions[0].end_line == 2
+
+    def test_caps_at_5_lines_back(self) -> None:
+        """Even when every preceding line is short/blank, region
+        growth caps at 5 lines per direction so we don't gobble
+        whole title pages."""
+        short = 'short'
+        lines = [short] * 10 + ['10 Journal'] + [short] * 10
+        confirmed = [_verso(li=10, value=10, suffix='Journal')]
+        regions = recover_header_block(lines, confirmed)
+        assert len(regions) == 1
+        # Cap at 5: anchor is line 10, region.start_line should be 5.
+        assert regions[0].start_line == 5
+        assert regions[0].end_line == 15
+
+    def test_multiple_anchors_yield_multiple_regions(self) -> None:
+        """Two non-overlapping anchors produce two regions."""
+        long_body = 'y' * 60
+        lines = (
+            [long_body] * 5
+            + ['3 Journal']           # anchor 1, line 5
+            + [long_body] * 10
+            + ['Journal  4']          # anchor 2, line 16
+            + [long_body] * 5
+        )
+        confirmed = [
+            _verso(li=5, value=3, suffix='Journal'),
+            _recto(li=16, value=4, prefix='Journal'),
+        ]
+        regions = recover_header_block(lines, confirmed)
+        assert len(regions) == 2
+        anchors = {r.anchor_value for r in regions}
+        assert anchors == {3, 4}
+
+    def test_empty_confirmed_yields_empty_regions(self) -> None:
+        lines = ['body'] * 5
+        assert recover_header_block(lines, []) == []
+
+
+class TestDetectPageHeaders:
+    """The orchestrator runs all five stages and packages the result
+    as a JSON-serialisable dict."""
+
+    def test_synthetic_doc_with_planted_headers(self) -> None:
+        """Build a doc where lines [2, 7, 12, 17, 22, 27] are headers
+        with monotonically-increasing page numbers; detector should
+        produce regions covering those lines."""
+        body = 'a body text line ' * 6  # long enough to defeat short-line
+        lines: List[str] = []
+        for page in range(1, 11):
+            lines.append(body)
+            lines.append(body)
+            lines.append(body)
+            lines.append(body)
+            lines.append(f'{page}  MYCOLOGIA')
+        # lines 4, 9, 14, 19, ..., 49 carry the page numbers.
+        result = detect_page_headers(lines)
+        assert result['schema_version'] == '1'
+        assert result['n_lines'] == len(lines)
+        assert len(result['regions']) > 0
+        # Confidence array length matches.
+        assert len(result['per_line_confidence']) == len(lines)
+        # At least some of the planted lines should be flagged.
+        planted = {4 + 5 * i for i in range(10)}
+        flagged = {li for li, c in enumerate(result['per_line_confidence'])
+                   if c > 0}
+        assert flagged & planted
+
+    def test_doc_with_no_sequence(self) -> None:
+        """Plain body text with no page markers -> empty regions,
+        all-zero per-line confidence, but the schema is still valid."""
+        lines = ['body text without page markers'] * 50
+        result = detect_page_headers(lines)
+        assert result['schema_version'] == '1'
+        assert result['regions'] == []
+        assert all(c == 0.0 for c in result['per_line_confidence'])
+        assert result['n_lines'] == 50
+
+    def test_result_is_json_serializable(self) -> None:
+        """The result must round-trip through json without loss so
+        Step 2 / annotate_v4.py can attach it to CouchDB."""
+        import json
+        lines = ['body text'] * 20 + ['5 Journal', 'body', '6 Journal']
+        result = detect_page_headers(lines)
+        encoded = json.dumps(result)
+        decoded = json.loads(encoded)
+        assert decoded['schema_version'] == '1'
+        assert decoded['n_lines'] == result['n_lines']
+
+    def test_per_line_confidence_length(self) -> None:
+        """Always exactly one confidence value per input line."""
+        lines = ['body'] * 13 + ['7 Journal'] + ['body'] * 12
+        result = detect_page_headers(lines)
+        assert len(result['per_line_confidence']) == 26
+
+    def test_empty_input(self) -> None:
+        """Empty line list -> empty everything."""
+        result = detect_page_headers([])
+        assert result['n_lines'] == 0
+        assert result['regions'] == []
+        assert result['per_line_confidence'] == []
+
+    def test_header_region_type(self) -> None:
+        """HeaderRegion dataclass shape is what the orchestrator
+        emits (separately from the JSON-serialised dict form)."""
+        r = HeaderRegion(start_line=1, end_line=2, confidence=0.5,
+                         anchor_value=42)
+        assert r.start_line == 1
+        assert r.end_line == 2
