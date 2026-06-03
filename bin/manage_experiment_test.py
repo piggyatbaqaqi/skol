@@ -149,3 +149,65 @@ class TestOtherStepsUnaffected:
         )
         assert len(cmds) == 1
         assert any('embed_treatments' in a for a in cmds[0])
+
+
+class TestPredictStepV4Dispatch:
+    """v5 Step 5.C: the 'predict' step dispatches on model_name —
+    v4_crf → predict_v4.py; everything else → predict_classifier.py.
+    Both v3 and v4 experiments use the same step name so the
+    pipeline shape stays uniform."""
+
+    def test_predict_step_dispatches_to_predict_classifier_for_v3(
+        self,
+    ) -> None:
+        cmds = _build_step_commands(
+            "predict", "production", force=False,
+            config={'model_name': 'logistic_sections'},
+        )
+        assert len(cmds) == 1
+        args = cmds[0]
+        assert any('predict_classifier' in a for a in args)
+        assert not any('predict_v4' in a for a in args)
+
+    def test_predict_step_dispatches_to_predict_v4_for_v4_crf(
+        self,
+    ) -> None:
+        cmds = _build_step_commands(
+            "predict", "production_v4", force=False,
+            config={'model_name': 'v4_crf'},
+        )
+        assert len(cmds) == 1
+        args = cmds[0]
+        assert any('predict_v4' in a for a in args)
+        assert not any('predict_classifier' in a for a in args)
+
+    def test_predict_step_defaults_to_v3_when_model_name_absent(
+        self,
+    ) -> None:
+        """An experiment doc without model_name (legacy / unset) keeps
+        the v3 path — no surprise upgrades."""
+        cmds = _build_step_commands(
+            "predict", "production", force=False, config={},
+        )
+        assert len(cmds) == 1
+        assert any('predict_classifier' in a for a in cmds[0])
+
+    def test_evaluate_step_predict_golden_also_dispatches(self) -> None:
+        """The evaluate step's first command (predict_golden) must
+        respect the same dispatch — otherwise v4 experiments would
+        evaluate against v3 predictions."""
+        cmds = _build_step_commands(
+            "evaluate", "production_v4", force=False,
+            config={
+                'model_name': 'v4_crf',
+                'golden_db_name': 'skol_golden_v2',
+                'golden_ann_db_name': 'skol_golden_ann_hand_v2',
+            },
+        )
+        # evaluate emits two commands: predict_golden then evaluate.
+        assert len(cmds) == 2
+        predict_golden_args = cmds[0]
+        assert any('predict_v4' in a for a in predict_golden_args)
+        assert not any(
+            'predict_classifier' in a for a in predict_golden_args
+        )

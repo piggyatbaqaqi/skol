@@ -455,6 +455,15 @@ def _build_step_commands(
     """
     if config is None:
         config = {}
+    # v3 vs v4 dispatch: experiments with model_name=='v4_crf' run the
+    # two-CRF v4 predictor; everything else runs the v3 single-model
+    # path.  Same step name ('predict') so v3 and v4 experiments share
+    # the same pipeline shape — the dispatch is invisible to operators.
+    predict_script = (
+        "predict_v4.py"
+        if config.get("model_name") == "v4_crf"
+        else "predict_classifier.py"
+    )
     # Steps with a single command template.
     single: Dict[str, List[str]] = {
         "train": [
@@ -463,7 +472,7 @@ def _build_step_commands(
             "--force",
         ],
         "predict": [
-            sys.executable, str(_BIN_DIR / "predict_classifier.py"),
+            sys.executable, str(_BIN_DIR / predict_script),
             "--experiment", "{name}",
             "--incremental", "--skip-existing",
         ],
@@ -532,7 +541,7 @@ def _build_step_commands(
             "golden_ann_db_name", "skol_golden_ann_hand"
         )
         predict_golden: List[str] = _apply([
-            sys.executable, str(_BIN_DIR / "predict_classifier.py"),
+            sys.executable, str(_BIN_DIR / predict_script),
             "--experiment", "{name}",
             "--golden-db", golden_db,
             "--skip-existing",

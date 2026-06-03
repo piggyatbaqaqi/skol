@@ -250,6 +250,11 @@ def _apply_experiment(
 
     redis_mapping = [
         ('classifier_model', 'classifier_model_key'),
+        # v4 introduces a two-CRF pipeline (layout + treatment) keyed
+        # by separate Redis bundles.  Experiment docs that opt into v4
+        # carry these alongside (or instead of) the v3 single-model key.
+        ('classifier_model_pass1', 'classifier_model_key_pass1'),
+        ('classifier_model_pass2', 'classifier_model_key_pass2'),
         ('embedding', 'embedding_name'),
         ('menus', 'menus_key'),
     ]
@@ -335,6 +340,11 @@ def get_env_config() -> Dict[str, Any]:
         # Model settings
         'model_version': _get_env('MODEL_VERSION', 'v2.0'),
         'classifier_model_key': '',  # Populated by experiment resolution
+        # v4 two-CRF Redis-key bundle.  Populated by experiment resolution
+        # (redis_keys.classifier_model_pass1 / _pass2) or left empty so
+        # predict_v4.resolve_redis_keys falls back to its defaults.
+        'classifier_model_key_pass1': '',
+        'classifier_model_key_pass2': '',
         'classifier_model_expire': _get_env('MODEL_EXPIRE', ''),
 
         # Local gnservices (gnfinder + gnparser) — see v4 plan §1.A.

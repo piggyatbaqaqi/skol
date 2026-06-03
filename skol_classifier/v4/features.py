@@ -64,6 +64,17 @@ _LAYOUT_DIM = 8
 _PAGE_HEADER_DIM = 2
 _SECTION_HEADER_DIM = 1
 
+_SBERT_DIM = 768
+
+FEATURE_DIM: int = (
+    _SBERT_DIM + _PARTICLE_DIM + _LAYOUT_DIM
+    + _PAGE_HEADER_DIM + _SECTION_HEADER_DIM
+)
+"""Total per-line feature width = 768 + 12 + 8 + 2 + 1 = 791.
+Canonical source of truth — both CRFs default to this.  Re-derived
+from the individual block sizes so the assertion stays correct if
+any block is resized in a later step."""
+
 _IS_SHORT_THRESHOLD = 30
 
 

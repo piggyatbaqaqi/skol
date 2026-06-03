@@ -86,6 +86,43 @@ class TestApplyExperimentGoldenMapping:
         )
         assert config['golden_db_name'] == 'cli_value'
 
+    def test_v4_pass1_redis_key_propagates(self) -> None:
+        """redis_keys.classifier_model_pass1 → classifier_model_key_pass1.
+        Drives Step 5's two-CRF predictor."""
+        config = _starter_config(classifier_model_key_pass1='')
+        exp = {'redis_keys': {
+            'classifier_model_pass1': 'skol:custom:v4_layout_hand',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert (
+            config['classifier_model_key_pass1']
+            == 'skol:custom:v4_layout_hand'
+        )
+
+    def test_v4_pass2_redis_key_propagates(self) -> None:
+        config = _starter_config(classifier_model_key_pass2='')
+        exp = {'redis_keys': {
+            'classifier_model_pass2': 'skol:custom:v4_pass2_combined',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert (
+            config['classifier_model_key_pass2']
+            == 'skol:custom:v4_pass2_combined'
+        )
+
+    def test_v4_both_redis_keys_together(self) -> None:
+        config = _starter_config(
+            classifier_model_key_pass1='',
+            classifier_model_key_pass2='',
+        )
+        exp = {'redis_keys': {
+            'classifier_model_pass1': 'skol:k:pass1',
+            'classifier_model_pass2': 'skol:k:pass2',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['classifier_model_key_pass1'] == 'skol:k:pass1'
+        assert config['classifier_model_key_pass2'] == 'skol:k:pass2'
+
     def test_other_databases_unaffected(self) -> None:
         """A no-op safety test: pre-existing mapping rows (ingest, training,
         treatments, etc.) keep working after the new rows are added."""
