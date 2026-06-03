@@ -230,3 +230,55 @@ def fit_sequence(
         gap_histogram=histogram,
         quality_score=quality,
     )
+
+
+# ---------------------------------------------------------------------------
+# 1.B.3 — Recto/verso alternation
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class AlternationFit:
+    """Result of the recto/verso alternation check (§Step 3).
+
+    ``verso_fit`` covers the even-valued candidates (left / verso
+    pages by convention), ``recto_fit`` covers the odd-valued ones
+    (right / recto).  ``alternation_score`` is the fraction of
+    adjacent candidate pairs (sorted by ``line_index``) whose values
+    differ in parity — high values imply a clean recto/verso layout.
+    """
+    verso_fit: Optional[SequenceFit]
+    recto_fit: Optional[SequenceFit]
+    alternation_score: float
+
+
+def partition_alternation(
+    candidates: List[PageNumCandidate],
+    *,
+    seed: Optional[int] = None,
+) -> AlternationFit:
+    """Fit even / odd candidate subsets independently and score how
+    cleanly the parities interleave by ``line_index``.
+
+    Always returns an ``AlternationFit`` — never None — so the
+    orchestrator can fold an empty result into the per-line confidence
+    array without special-casing.
+    """
+    even = [c for c in candidates if c.value % 2 == 0]
+    odd = [c for c in candidates if c.value % 2 == 1]
+    verso_fit = fit_sequence(even, seed=seed)
+    recto_fit = fit_sequence(odd, seed=seed)
+
+    if len(candidates) < 2:
+        return AlternationFit(verso_fit, recto_fit, 0.0)
+
+    sorted_cands = sorted(candidates, key=lambda c: c.line_index)
+    alternations = 0
+    pairs = 0
+    for a, b in zip(sorted_cands, sorted_cands[1:]):
+        pairs += 1
+        if (a.value % 2) != (b.value % 2):
+            alternations += 1
+
+    score = alternations / pairs if pairs else 0.0
+    return AlternationFit(verso_fit, recto_fit, score)

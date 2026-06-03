@@ -19,10 +19,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ingestors.page_header_detector import (  # noqa: E402
+    AlternationFit,
     PageNumCandidate,
     SequenceFit,
     collect_candidates,
     fit_sequence,
+    partition_alternation,
 )
 
 
@@ -184,3 +186,67 @@ class TestFitSequence:
 
     def test_empty_returns_none(self) -> None:
         assert fit_sequence([], seed=42) is None
+
+
+class TestPartitionAlternation:
+    """Per §Step 3: recto/verso layout produces page-number sequences
+    that interleave by parity (odd values on recto, even on verso, or
+    vice versa).  Split candidates by ``value % 2``, fit each subset,
+    and score how cleanly the parities alternate when the union of
+    candidates is sorted by ``line_index``."""
+
+    def test_strict_alternation_scores_high(self) -> None:
+        """Pages 1..10 sorted by line_index → every adjacent pair
+        alternates parity → alternation_score = 1.0.  Uses 10 pages
+        so each parity subset has 5 candidates (above fit_sequence's
+        4-inlier floor) and both verso_fit / recto_fit succeed."""
+        cands = [_cand(li=20 * (i + 1), value=i + 1) for i in range(10)]
+        fit = partition_alternation(cands, seed=42)
+        assert isinstance(fit, AlternationFit)
+        assert fit.verso_fit is not None
+        assert fit.recto_fit is not None
+        assert fit.alternation_score >= 0.8
+
+    def test_all_one_parity_scores_zero(self) -> None:
+        """All-odd (or all-even) values have nothing to alternate
+        against → alternation_score < 0.3 and the opposite-parity
+        fit is None."""
+        cands = [_cand(li=20 * (i + 1), value=2 * i + 1) for i in range(6)]
+        fit = partition_alternation(cands, seed=42)
+        assert fit.alternation_score < 0.3
+        # All values are odd; the even/verso subset is empty.
+        assert fit.verso_fit is None
+        assert fit.recto_fit is not None  # the odd sequence still fits
+
+    def test_only_even_values(self) -> None:
+        """Mirror of the above — only-even input populates verso_fit
+        and leaves recto_fit empty."""
+        cands = [_cand(li=20 * (i + 1), value=2 * (i + 1)) for i in range(6)]
+        fit = partition_alternation(cands, seed=42)
+        assert fit.alternation_score < 0.3
+        assert fit.verso_fit is not None
+        assert fit.recto_fit is None
+
+    def test_empty_input(self) -> None:
+        """Empty candidate list returns both fits None and score 0."""
+        fit = partition_alternation([], seed=42)
+        assert fit.verso_fit is None
+        assert fit.recto_fit is None
+        assert fit.alternation_score == 0.0
+
+    def test_partial_alternation_intermediate_score(self) -> None:
+        """A sequence with some parity violations sits between the
+        clean-alternation and no-alternation regimes."""
+        # Parities sorted by line_index: O E O O O O E -> 3 alternations
+        # across 6 adjacent pairs -> score = 0.5.
+        cands = [
+            _cand(li=20, value=1),
+            _cand(li=40, value=2),
+            _cand(li=60, value=3),
+            _cand(li=80, value=5),
+            _cand(li=100, value=7),
+            _cand(li=120, value=9),
+            _cand(li=140, value=10),
+        ]
+        fit = partition_alternation(cands, seed=42)
+        assert 0.3 <= fit.alternation_score < 0.8
