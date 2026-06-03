@@ -260,10 +260,10 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 3.A | Adopt `sklearn-crfsuite` or `pytorch-crf` for the CRF implementation. Lean: `pytorch-crf` because it integrates cleanly with PyTorch tensors (`W · x_t + b` is a `nn.Linear`). | ⬜ |
-| 3.B | New module: `skol_classifier/v4/crf_layout.py`. `class LayoutCRF(nn.Module)` with `forward(features) -> loss` and `decode(features) -> labels` (Viterbi). | ⬜ |
-| 3.C | New trainer: `bin/train_crf_layout.py`. Reads `skol_training_v2_no_golden` (minus 32-doc dev split), assembles features, fits the CRF. Saves to Redis `skol:classifier:model:v4_layout`. | ⬜ |
-| 3.D | TDD: synthetic-data test (handcrafted 10-line sequence) confirming Viterbi decodes correctly; idempotent training (same seed → same weights). | ⬜ |
+| 3.A | Adopt `sklearn-crfsuite` or `pytorch-crf` for the CRF implementation. Lean: `pytorch-crf` because it integrates cleanly with PyTorch tensors (`W · x_t + b` is a `nn.Linear`). | ✅ `pytorch-crf==0.7.2` pinned in `requirements.txt` and installed in the skol env. Library is ~500 LOC, MIT licensed, supports batch_first + variable-length sequences via masks. |
+| 3.B | New module: `skol_classifier/v4/crf_layout.py`. `class LayoutCRF(nn.Module)` with `forward(features) -> loss` and `decode(features) -> labels` (Viterbi). | ✅ `LayoutCRF(nn.Module)` with `nn.Linear(791, 8)` emission + `torchcrf.CRF(8, batch_first=True)`. Module is pure compute (device-agnostic). Persistence via `serialize()` / `deserialize()` (in-memory bytes) + `save_to_redis()` / `load_from_redis()` (two-key bundle: `skol:classifier:model:v4_layout` for state_dict bytes, `:meta` for the JSON metadata sidecar). |
+| 3.C | New trainer: `bin/train_crf_layout.py`. Reads `skol_training_v2_no_golden` (minus 32-doc dev split), assembles features, fits the CRF. Saves to Redis `skol:classifier:model:v4_layout`. | ⬜ Deferred to its own plan — too much I/O (CouchDB iteration + YEDDA-block → line-index alignment + inverse-freq class weights + Redis write) to bundle cleanly with the model layer. |
+| 3.D | TDD: synthetic-data test (handcrafted 10-line sequence) confirming Viterbi decodes correctly; idempotent training (same seed → same weights). | ✅ 14 tests across 6 classes covering label-space integrity, construction (default 791-d + custom dims), forward/decode shape contracts + mask handling, synthetic convergence (10-line identity task converges in ≤50 Adam steps), save/load round-trip (state-dict + metadata, rejects dim mismatch), idempotency (same seed → byte-identical state dicts; different seeds differ). |
 
 ### Step 4 — CRF Pass 2 (treatment)
 
