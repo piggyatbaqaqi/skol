@@ -17,6 +17,7 @@ from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
     parse_plazi_response,
     process_doc,
     query_plazi,
+    save_with_retry,
     should_skip,
 )
 
@@ -342,6 +343,77 @@ class TestProcessDocIntegration(unittest.TestCase):
         self.assertEqual(result, 'http_failure')
         # No plazi stamp on http failure — next run will retry.
         self.assertNotIn('plazi', doc)
+
+
+class FlakyDb:
+    """CouchDB stand-in whose ``.save()`` fails for the first
+    ``fail_count`` calls then succeeds.  Records every attempt."""
+
+    def __init__(self, fail_count: int = 0,
+                 exc: Optional[Exception] = None) -> None:
+        self.fail_count = fail_count
+        self.attempts: List[Dict[str, Any]] = []
+        self.exc = exc or RuntimeError('simulated transient failure')
+
+    def save(self, doc: Dict[str, Any]) -> None:
+        self.attempts.append({'_id': doc['_id'], **doc})
+        if len(self.attempts) <= self.fail_count:
+            raise self.exc
+
+
+class TestSaveWithRetry(unittest.TestCase):
+    """The live Plazi backfill against skol_dev returned 7 transient
+    413 'document_too_large' errors on docs that direct-PUT cleanly
+    moments later — same docs save fine on the next attempt.  The
+    one-retry path catches these without waiting a full day for the
+    cron to come back round.  Tests use a no-op sleep callable so we
+    don't wait in CI."""
+
+    def _no_sleep(self, _seconds: float) -> None:
+        return None
+
+    def test_first_attempt_succeeds(self):
+        db = FlakyDb(fail_count=0)
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=2, sleep_fn=self._no_sleep,
+        )
+        self.assertTrue(ok)
+        self.assertEqual(len(db.attempts), 1)
+
+    def test_retries_once_then_succeeds(self):
+        """Transient failure on attempt 1 should be retried, second
+        attempt succeeds."""
+        db = FlakyDb(fail_count=1)
+        sleeps: List[float] = []
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=2, sleep_fn=sleeps.append,
+        )
+        self.assertTrue(ok)
+        self.assertEqual(len(db.attempts), 2)
+        self.assertEqual(sleeps, [0.5])
+
+    def test_persistent_failure_counts_as_save_failure(self):
+        """Two failures in a row → caller treats this as a real
+        save failure (no stamp)."""
+        db = FlakyDb(fail_count=2)
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=2, sleep_fn=self._no_sleep,
+        )
+        self.assertFalse(ok)
+        self.assertEqual(len(db.attempts), 2)
+
+    def test_max_attempts_one_is_no_retry(self):
+        """Caller can opt out of retry by passing max_attempts=1."""
+        db = FlakyDb(fail_count=1)
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=1, sleep_fn=self._no_sleep,
+        )
+        self.assertFalse(ok)
+        self.assertEqual(len(db.attempts), 1)
 
 
 if __name__ == '__main__':

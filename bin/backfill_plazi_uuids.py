@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
@@ -216,6 +217,46 @@ def process_doc(
 
 
 # ---------------------------------------------------------------------------
+# Save with retry
+# ---------------------------------------------------------------------------
+
+
+def save_with_retry(
+    db: Any,
+    doc: Dict[str, Any],
+    *,
+    sleep_seconds: float = 0.5,
+    max_attempts: int = 2,
+    sleep_fn: Any = time.sleep,
+) -> bool:
+    """Call ``db.save(doc)`` with one polite retry on transient
+    failure.
+
+    The live Plazi backfill against skol_dev returned 7 transient
+    HTTP 413 ``document_too_large`` errors on docs whose direct PUT
+    cleanly succeeded moments later — same docs save fine on the
+    next attempt.  Retrying once with a small sleep clears these
+    without waiting for the cron's next pass.
+
+    Returns ``True`` on success, ``False`` after exhausting
+    ``max_attempts`` failures.  Caller increments its
+    ``save_failures`` counter on ``False`` and leaves the doc
+    unstamped so the next run retries it.
+
+    ``sleep_fn`` is injectable so the tests don't actually sleep.
+    """
+    for attempt in range(max_attempts):
+        try:
+            db.save(doc)
+            return True
+        except Exception:  # noqa: BLE001 — couchdb.http.ServerError + others
+            if attempt + 1 >= max_attempts:
+                return False
+            sleep_fn(sleep_seconds)
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Iteration
 # ---------------------------------------------------------------------------
 
@@ -315,7 +356,8 @@ def main() -> int:
 
     counts: Dict[str, int] = {
         'scanned': 0, 'skipped_fresh': 0, 'queried': 0,
-        'hits': 0, 'empty': 0, 'http_failure': 0, 'updated': 0,
+        'hits': 0, 'empty': 0, 'http_failure': 0,
+        'save_failure': 0, 'updated': 0,
     }
 
     if verbosity >= 1:
@@ -353,12 +395,13 @@ def main() -> int:
         else:
             counts['empty'] += 1
         if not dry_run:
-            try:
-                db.save(doc)
+            if save_with_retry(db, doc):
                 counts['updated'] += 1
-            except Exception as exc:  # noqa: BLE001
+            else:
+                counts['save_failure'] += 1
                 if verbosity >= 1:
-                    print(f'  ✗ {doc["_id"]}: save failed: {exc}')
+                    print(f'  ✗ {doc["_id"]}: save failed after retry '
+                          '(doc left unstamped; next run will retry)')
                 continue
         if verbosity >= 2:
             tag = '(DRY RUN) ' if dry_run else ''
@@ -377,6 +420,7 @@ def main() -> int:
         print(f'  queries with hits   : {counts["hits"]:>6}')
         print(f'  queries empty       : {counts["empty"]:>6}')
         print(f'  http failures       : {counts["http_failure"]:>6}')
+        print(f'  save failures       : {counts["save_failure"]:>6}')
         print(f'  docs updated        : {counts["updated"]:>6}')
         print(f'  hit rate            : {hit_rate:>6.1%}')
 
