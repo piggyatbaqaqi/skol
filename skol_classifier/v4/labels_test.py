@@ -1,0 +1,205 @@
+"""Tests for skol_classifier/v4/labels.py — Pass-1 label projection
+and YEDDA-block → line-index alignment."""
+from __future__ import annotations
+
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from skol_classifier.v4.crf_layout import (  # noqa: E402
+    LABEL_TO_INDEX,
+    OTHER_INDEX,
+)
+from skol_classifier.v4.labels import (  # noqa: E402
+    LAYOUT_YEDDA_TAGS,
+    build_label_sequence,
+    map_yedda_to_layout,
+    yedda_blocks_to_line_indices,
+)
+
+
+# ---------------------------------------------------------------------------
+# 1. map_yedda_to_layout
+# ---------------------------------------------------------------------------
+
+
+class TestMapYeddaToLayout(unittest.TestCase):
+    """Project the 19 ACTIVE_TAGS_19 down to the 8 Pass-1 labels."""
+
+    def test_layout_tag_passthrough(self):
+        for tag in LAYOUT_YEDDA_TAGS:
+            self.assertEqual(map_yedda_to_layout(tag), tag)
+
+    def test_unknown_tag_maps_to_other(self):
+        for tag in (
+            'Nomenclature', 'Description', 'Diagnosis',
+            'Etymology', 'Materials-examined', 'Notes',
+            'Phylogeny', 'Misc-exposition',
+        ):
+            self.assertEqual(map_yedda_to_layout(tag), 'Other')
+
+    def test_empty_string_maps_to_other(self):
+        self.assertEqual(map_yedda_to_layout(''), 'Other')
+
+    def test_case_insensitive_passthrough(self):
+        """``page-header`` should match ``Page-header`` — robust
+        against case drift in YEDDA files."""
+        self.assertEqual(
+            map_yedda_to_layout('page-header'), 'Page-header',
+        )
+        self.assertEqual(
+            map_yedda_to_layout('BIBLIOGRAPHY'), 'Bibliography',
+        )
+
+
+# ---------------------------------------------------------------------------
+# 2. yedda_blocks_to_line_indices
+# ---------------------------------------------------------------------------
+
+
+class TestYeddaBlocksToLineIndices(unittest.TestCase):
+    """char-offset → line-index conversion using the same
+    plaintext.count('\\n', 0, offset) convention used elsewhere
+    in v4."""
+
+    def test_single_block_single_line(self):
+        plaintext = 'Page header text\nbody line 0\nbody line 1\n'
+        blocks = [('Page-header', 0, 16)]   # covers "Page header text"
+        result = yedda_blocks_to_line_indices(plaintext, blocks)
+        self.assertEqual(result, [('Page-header', [0])])
+
+    def test_block_spans_two_lines(self):
+        plaintext = 'line zero\nline one\nline two\n'
+        # Cover from middle of line 0 to middle of line 1.
+        blocks = [('Page-header', 5, 13)]
+        result = yedda_blocks_to_line_indices(plaintext, blocks)
+        self.assertEqual(result, [('Page-header', [0, 1])])
+
+    def test_multiple_blocks_doc_order(self):
+        plaintext = (
+            'Top page header\n'        # line 0
+            'body\n'                   # line 1
+            'Footer page-num 5\n'      # line 2
+            'body\n'                   # line 3
+            'Top page header 2\n'      # line 4
+        )
+        blocks = [
+            ('Page-header', 0, 15),
+            ('Page-header', 21, 38),
+            ('Page-header', 43, 60),
+        ]
+        result = yedda_blocks_to_line_indices(plaintext, blocks)
+        labels = [r[0] for r in result]
+        self.assertEqual(labels, ['Page-header'] * 3)
+        # All three line indices appear, in order.
+        all_lines = [li for _, li_list in result for li in li_list]
+        self.assertEqual(sorted(all_lines), all_lines)
+
+    def test_block_past_eof_clamps(self):
+        """Defensive: end_offset > len(text) shouldn't crash."""
+        plaintext = 'short\n'
+        blocks = [('Page-header', 0, 100)]
+        result = yedda_blocks_to_line_indices(plaintext, blocks)
+        # The block should still be returned, mapped to all available
+        # line indices.
+        self.assertEqual(result, [('Page-header', [0])])
+
+    def test_empty_blocks_returns_empty_list(self):
+        self.assertEqual(
+            yedda_blocks_to_line_indices('x\n', []), [],
+        )
+
+
+# ---------------------------------------------------------------------------
+# 3. build_label_sequence
+# ---------------------------------------------------------------------------
+
+
+class TestBuildLabelSequence(unittest.TestCase):
+    """End-to-end per-doc label sequence: ann_text + plaintext → per-line
+    Pass-1 label indices."""
+
+    def _ann(self, *blocks: str) -> str:
+        return ''.join(blocks)
+
+    def test_layout_block_yields_correct_indices(self):
+        """A Page-header YEDDA block over the first two lines
+        produces Page-header indices at those positions; other
+        lines default to Other."""
+        plaintext = 'Page top\nVol 5 (2)\nBoletus edulis\nIntroduction text\n'
+        ann_text = self._ann(
+            '[@Page top\nVol 5 (2)#Page-header*]',
+            '[@Boletus edulis#Nomenclature*]',
+            '[@Introduction text#Misc-exposition*]',
+        )
+        seq = build_label_sequence(plaintext, ann_text)
+        # First two lines should be Page-header; rest Other.
+        self.assertEqual(seq[0], LABEL_TO_INDEX['Page-header'])
+        self.assertEqual(seq[1], LABEL_TO_INDEX['Page-header'])
+        self.assertEqual(seq[2], LABEL_TO_INDEX['Other'])
+        self.assertEqual(seq[3], LABEL_TO_INDEX['Other'])
+
+    def test_non_layout_tags_default_to_other(self):
+        plaintext = 'Boletus edulis Bull.\nA fine mushroom.\n'
+        ann_text = self._ann(
+            '[@Boletus edulis Bull.#Nomenclature*]',
+            '[@A fine mushroom.#Description*]',
+        )
+        seq = build_label_sequence(plaintext, ann_text)
+        for label_idx in seq[:2]:
+            self.assertEqual(label_idx, OTHER_INDEX)
+
+    def test_lines_outside_any_block_default_to_other(self):
+        """Whitespace-only gap lines between YEDDA blocks default to
+        Other (the projection from parse_yedda_sections leaves
+        between-block gap lines uncovered)."""
+        plaintext = 'Page-header\n\nNomenclature line\n'
+        ann_text = self._ann(
+            '[@Page-header#Page-header*]',
+            '[@Nomenclature line#Nomenclature*]',
+        )
+        seq = build_label_sequence(plaintext, ann_text)
+        # 4 elements: the trailing \n yields an empty 4th line.
+        self.assertEqual(len(seq), 4)
+        self.assertEqual(seq[0], LABEL_TO_INDEX['Page-header'])
+        # The gap line between blocks is Other.
+        self.assertEqual(seq[1], OTHER_INDEX)
+        # Nomenclature folds to Other.
+        self.assertEqual(seq[2], OTHER_INDEX)
+
+    def test_length_matches_plaintext_lines(self):
+        plaintext = 'a\nb\nc\nd\ne\n'
+        ann_text = '[@a\nb\nc#Page-header*][@d\ne#Bibliography*]'
+        seq = build_label_sequence(plaintext, ann_text)
+        # Plaintext has 6 lines (the trailing \n produces an empty
+        # 6th line after split).  Sequence length must match.
+        self.assertEqual(len(seq), len(plaintext.split('\n')))
+
+    def test_empty_inputs(self):
+        self.assertEqual(build_label_sequence('', ''), [])
+
+
+# ---------------------------------------------------------------------------
+# 4. Parity
+# ---------------------------------------------------------------------------
+
+
+class TestParity(unittest.TestCase):
+    """Same input -> identical output (no nondeterminism)."""
+
+    def test_idempotent_same_input(self):
+        plaintext = 'header line\nbody line\nfooter line\n'
+        ann_text = (
+            '[@header line#Page-header*]'
+            '[@body line#Description*]'
+            '[@footer line#Page-header*]'
+        )
+        a = build_label_sequence(plaintext, ann_text)
+        b = build_label_sequence(plaintext, ann_text)
+        self.assertEqual(a, b)
+
+
+if __name__ == '__main__':
+    unittest.main()
