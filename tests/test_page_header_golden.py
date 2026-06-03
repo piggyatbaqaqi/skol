@@ -49,6 +49,7 @@ from ingestors.extract_plaintext import (  # noqa: E402
 from ingestors.page_header_detector import (  # noqa: E402
     detect_page_headers,
 )
+from ingestors.particle_detector import detect_particles  # noqa: E402
 
 
 _GOLDEN_DB = 'skol_golden_ann_hand_v2'   # YEDDA annotations
@@ -239,6 +240,29 @@ def _evaluate_doc(
     return _evaluate_via_reconstruction(doc_id, ann_text)
 
 
+def _pdf_page_markers_from_text(
+    article_txt: str,
+) -> List[Tuple[int, int]]:
+    """Run particle_detector and convert PDF-page-marker spans to the
+    ``(line_index, page_number)`` shape ``detect_page_headers`` wants.
+
+    Mirrors what bin/annotate_v4.py (1.D) will eventually do: each
+    particle's character offset is mapped to a line index by counting
+    newlines up to ``span.start``.
+    """
+    spans = detect_particles(article_txt, redis_client=None)
+    markers: List[Tuple[int, int]] = []
+    for span in spans:
+        if span.label != 'PDF-page-marker':
+            continue
+        page_number = span.metadata.get('page_number')
+        if page_number is None:
+            continue
+        line_index = article_txt.count('\n', 0, span.start)
+        markers.append((line_index, int(page_number)))
+    return markers
+
+
 def _evaluate_via_alignment(
     doc_id: str, article_txt: str, ann_text: str,
 ) -> Dict[str, Any]:
@@ -250,6 +274,10 @@ def _evaluate_via_alignment(
     is the *ground-truth coordinate mapping*, not the detector's
     region-over-extension into blanks.  We keep the filter for an
     apples-to-apples comparison with path B.
+
+    PDF-page-marker particles (per v4 plan §1.B's particle hand-off
+    recommendation) are pulled from particle_detector and threaded
+    into ``detect_page_headers`` as sequence anchors.
     """
     gt_lines, blocks_total, blocks_aligned = (
         _align_yedda_to_article_txt(article_txt, ann_text)
@@ -258,7 +286,10 @@ def _evaluate_via_alignment(
     if not detector_lines:
         return {'doc_id': doc_id, 'skipped': 'empty'}
 
-    result = detect_page_headers(detector_lines, seed=42)
+    markers = _pdf_page_markers_from_text(article_txt)
+    result = detect_page_headers(
+        detector_lines, seed=42, pdf_page_markers=markers,
+    )
     flagged: Set[int] = {
         li for li, c in enumerate(result['per_line_confidence'])
         if c > _DETECTOR_FLAG_THRESHOLD

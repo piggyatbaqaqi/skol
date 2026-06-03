@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -491,3 +492,107 @@ class TestDetectPageHeaders:
                          anchor_value=42)
         assert r.start_line == 1
         assert r.end_line == 2
+
+
+class TestDetectPageHeadersWithMarkers:
+    """The orchestrator accepts an optional ``pdf_page_markers``
+    parameter — a list of ``(line_index, page_number)`` tuples from
+    particle_detector's PDF-page-marker spans.  Markers feed into the
+    sequence fitter as extra confirmed anchors, rescuing docs where
+    natural page-number candidates are absent or too sparse to fit a
+    line.  See v4 plan §1.B architectural recommendation."""
+
+    def test_param_is_optional(self) -> None:
+        """Pre-marker callers (no ``pdf_page_markers`` kwarg) still
+        work exactly as before."""
+        result = detect_page_headers(['body'] * 5)
+        assert result['n_lines'] == 5
+
+    def test_empty_marker_list_is_noop(self) -> None:
+        """Empty list should behave identically to no list at all."""
+        lines = ['body'] * 30 + ['7 Journal', 'body', '8 Journal']
+        result_no = detect_page_headers(lines, seed=42)
+        result_empty = detect_page_headers(
+            lines, seed=42, pdf_page_markers=[],
+        )
+        assert (result_no['per_line_confidence']
+                == result_empty['per_line_confidence'])
+
+    def test_markers_rescue_doc_with_no_natural_candidates(self) -> None:
+        """Body text with no digit tokens at line ends would normally
+        produce zero candidates and no regions.  Inject markers as
+        deterministic anchors: even with ``sequence_fit`` still None
+        (no *natural* sequence to fit), the markers themselves land
+        in flagged regions."""
+        lines: List[str] = []
+        marker_indices: List[int] = []
+        # 5 pages, marker on the first line of each, 9 body lines after.
+        for page in range(1, 6):
+            marker_indices.append(len(lines))
+            lines.append(f'--- PDF Page {page} Label {page} ---')
+            for _ in range(9):
+                lines.append('plain body text no digits anywhere ok')
+        baseline = detect_page_headers(lines, seed=42)
+        assert baseline['sequence_fit'] is None, (
+            'pre-condition: no natural sequence without markers'
+        )
+        assert baseline['regions'] == [], (
+            'pre-condition: no regions without markers either'
+        )
+
+        markers = list(zip(marker_indices, range(1, 6)))
+        with_markers = detect_page_headers(
+            lines, seed=42, pdf_page_markers=markers,
+        )
+        # sequence_fit stays None — markers don't participate in the
+        # natural-sequence fit (their page_number is a PDF-stream
+        # index, not the printed page number).
+        assert with_markers['sequence_fit'] is None
+        # But the markers do produce regions covering the marker lines.
+        assert with_markers['regions'], (
+            'markers must produce header regions even without a fit'
+        )
+        flagged = {
+            li for li, c in enumerate(with_markers['per_line_confidence'])
+            if c > 0
+        }
+        assert set(marker_indices) <= flagged, (
+            'all marker lines must be flagged when used as anchors'
+        )
+
+    def test_markers_augment_existing_sequence(self) -> None:
+        """Mixed: natural page numbers at line ends PLUS markers.  The
+        combined candidate pool should still fit a clean sequence and
+        the marker lines join the flagged set."""
+        lines: List[str] = []
+        marker_indices: List[int] = []
+        for page in range(1, 11):
+            marker_indices.append(len(lines))
+            lines.append(f'--- PDF Page {page} Label {page} ---')
+            lines.append('a body text line that is plenty long enough')
+            lines.append('another body text line of similar length')
+            lines.append(f'{page}  MYCOLOGIA')  # natural footer
+            lines.append('a body text line that is plenty long enough')
+
+        markers = list(zip(marker_indices, range(1, 11)))
+        result = detect_page_headers(
+            lines, seed=42, pdf_page_markers=markers,
+        )
+        assert result['sequence_fit'] is not None
+        flagged = {
+            li for li, c in enumerate(result['per_line_confidence'])
+            if c > 0
+        }
+        # Both the markers and the natural footers should appear.
+        assert set(marker_indices) <= flagged
+        natural_footers = {i + 3 for i in marker_indices}
+        assert natural_footers & flagged
+
+    def test_marker_out_of_range_is_ignored(self) -> None:
+        """A marker at an index past the line list shouldn't crash —
+        out-of-range markers are silently skipped."""
+        lines = ['body'] * 5
+        result = detect_page_headers(
+            lines, seed=42, pdf_page_markers=[(99, 1), (0, 2)],
+        )
+        assert result['n_lines'] == 5

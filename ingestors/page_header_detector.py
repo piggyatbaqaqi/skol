@@ -461,10 +461,43 @@ def recover_header_block(
     return regions
 
 
+def _synthesize_marker_candidates(
+    markers: List[Tuple[int, int]],
+    lines: List[str],
+) -> List[PageNumCandidate]:
+    """Synthesize PageNumCandidates from PDF-page-marker spans.
+
+    Markers are NOT merged into the sequence-fit candidate pool: the
+    marker's ``page_number`` is a synthetic PDF-stream index, not the
+    journal's printed page number, so the two number lines don't
+    share a slope/intercept.  Mixing them would split RANSAC's vote
+    and lose both signals.
+
+    Instead, the synthesized candidates are treated as already-
+    confirmed anchors for region recovery (§1.B.5).  Markers whose
+    line index is out of range are silently skipped.
+    """
+    n_lines = len(lines)
+    out: List[PageNumCandidate] = []
+    for line_index, page_number in markers:
+        if not 0 <= line_index < n_lines:
+            continue
+        out.append(PageNumCandidate(
+            line_index=line_index,
+            position='start',
+            value=int(page_number),
+            raw_token=str(page_number),
+            prefix='',
+            suffix=lines[line_index].strip(),
+        ))
+    return out
+
+
 def detect_page_headers(
     lines: List[str],
     *,
     seed: Optional[int] = None,
+    pdf_page_markers: Optional[List[Tuple[int, int]]] = None,
 ) -> Dict[str, Any]:
     """Run the five-stage page-header detector end-to-end.
 
@@ -472,6 +505,19 @@ def detect_page_headers(
     ``article.page-headers.json``.  Schema is locked at v1; future
     changes that need to invalidate downstream caches must bump
     ``schema_version``.
+
+    ``pdf_page_markers``: optional list of ``(line_index,
+    page_number)`` tuples derived from
+    :func:`ingestors.particle_detector.detect_particles`'s
+    ``PDF-page-marker`` spans.  Markers do NOT participate in the
+    sequence fit (their ``page_number`` is a PDF-stream index, not
+    the journal's printed page number — mixing the two splits
+    RANSAC's vote and loses both signals).  Instead, markers are
+    treated as already-confirmed anchors and joined to the natural
+    inlier set before region recovery, so the marker lines and their
+    neighbouring header text get flagged even when there's no
+    natural page-number convention.  Markers whose line index is
+    outside ``lines`` are silently skipped.
     """
     n_lines = len(lines)
     empty_result: Dict[str, Any] = {
@@ -483,30 +529,58 @@ def detect_page_headers(
         'alternation_score': 0.0,
     }
 
-    candidates = collect_candidates(lines)
-    if not candidates:
+    natural = collect_candidates(lines)
+    marker_anchors: List[PageNumCandidate] = (
+        _synthesize_marker_candidates(pdf_page_markers, lines)
+        if pdf_page_markers else []
+    )
+
+    if not natural and not marker_anchors:
         return empty_result
 
-    sequence = fit_sequence(candidates, seed=seed)
-    alternation = partition_alternation(candidates, seed=seed)
+    if natural:
+        sequence = fit_sequence(natural, seed=seed)
+        alternation = partition_alternation(natural, seed=seed)
+    else:
+        sequence = None
+        alternation = AlternationFit(
+            verso_fit=None, recto_fit=None, alternation_score=0.0,
+        )
 
-    if sequence is None:
-        # Without a confirmed sequence there's no point recovering
-        # blocks — anchors aren't trustworthy.
+    confirmed: List[PageNumCandidate] = []
+    if sequence is not None:
+        inlier_set = set(sequence.inlier_line_indices)
+        confirmed.extend(
+            c for c in natural if c.line_index in inlier_set
+        )
+    # Markers are deterministic — always join the confirmed set
+    # (deduped against any natural inlier on the same line index).
+    confirmed_indices = {c.line_index for c in confirmed}
+    confirmed.extend(
+        m for m in marker_anchors
+        if m.line_index not in confirmed_indices
+    )
+
+    if not confirmed:
         empty_result['alternation_score'] = alternation.alternation_score
         return empty_result
 
-    inlier_set = set(sequence.inlier_line_indices)
-    confirmed = [c for c in candidates if c.line_index in inlier_set]
     raw_regions = recover_header_block(lines, confirmed)
 
-    # Region confidence = sequence quality, blended with alternation
-    # so a confidently-fit sequence with clean recto/verso layout gets
-    # the highest score, but a non-alternating layout still keeps a
-    # baseline confidence (alternation is a positive signal, not a
-    # required one).
-    blend = 0.5 + 0.5 * alternation.alternation_score
-    base_confidence = max(0.0, min(1.0, sequence.quality_score * blend))
+    # Region confidence.  When we have a natural sequence fit, score
+    # is its quality blended with alternation (clean recto/verso
+    # raises confidence; non-alternation keeps a baseline).  When
+    # there's no natural sequence and we're working from marker
+    # anchors alone, use a flat 0.8 — the markers are deterministic,
+    # not heuristic, so they get a high baseline but not 1.0 since
+    # region growth around them is still heuristic.
+    if sequence is not None:
+        blend = 0.5 + 0.5 * alternation.alternation_score
+        base_confidence = max(
+            0.0, min(1.0, sequence.quality_score * blend),
+        )
+    else:
+        base_confidence = 0.8
 
     regions = [
         HeaderRegion(
@@ -540,10 +614,12 @@ def detect_page_headers(
             for r in regions
         ],
         'per_line_confidence': per_line_confidence,
-        'sequence_fit': {
-            'slope': sequence.slope,
-            'intercept': sequence.intercept,
-            'quality_score': sequence.quality_score,
-        },
+        'sequence_fit': (
+            None if sequence is None else {
+                'slope': sequence.slope,
+                'intercept': sequence.intercept,
+                'quality_score': sequence.quality_score,
+            }
+        ),
         'alternation_score': alternation.alternation_score,
     }
