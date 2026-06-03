@@ -333,18 +333,33 @@ def translate_treatments_to_json(
             if verbosity >= 1:
                 print(f"  Found {len(existing_ids)} existing records in destination")
 
-            # Filter out existing records using Spark
-            from pyspark.sql.functions import col
+            # Filter out existing records using Spark.
+            # Dest doc ids are a content hash of (treatment, description) --
+            # see generate_taxon_doc_id in treatments_json_translator. The
+            # source _id uses a different scheme, so comparing the raw source
+            # _id against existing dest ids never matches and skips nothing.
+            # Derive the dest id per row and test THAT for existence.
+            from pyspark.sql.functions import col, udf
+            from pyspark.sql.types import BooleanType
             existing_ids_broadcast = spark.sparkContext.broadcast(existing_ids)
 
-            def not_in_existing(doc_id):
-                return doc_id not in existing_ids_broadcast.value
+            def not_in_existing(treatment_text, description_text):
+                import hashlib
+                content = (
+                    (treatment_text or "").strip()
+                    + ":"
+                    + (description_text or "").strip()
+                )
+                dest_id = "taxon_" + hashlib.sha256(
+                    content.encode("utf-8")
+                ).hexdigest()
+                return dest_id not in existing_ids_broadcast.value
 
-            from pyspark.sql.functions import udf
-            from pyspark.sql.types import BooleanType
             not_existing_udf = udf(not_in_existing, BooleanType())
 
-            taxa_df = taxa_df.filter(not_existing_udf(col("_id")))
+            taxa_df = taxa_df.filter(
+                not_existing_udf(col("treatment"), col("description"))
+            )
             filtered_count = taxa_df.count()
             skipped_count = loaded_count - filtered_count
 
