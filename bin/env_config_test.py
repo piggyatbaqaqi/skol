@@ -206,3 +206,55 @@ class TestParseEmbeddingExpire:
     def test_none_argument(self) -> None:
         """Passed ``None`` directly (not the string) — defensive."""
         assert _parse_embedding_expire(None) is None
+
+
+class TestGnservicesUrls:
+    """gnfinder_url / gnparser_url default to the local services on
+    ports 9080 / 9081 (v4 plan §1.A).  CLAUDE.md rule 11 precedence:
+    CLI flag > env var > hardcoded default."""
+
+    def test_default_localhost(self, monkeypatch: Any) -> None:
+        """With no env vars and no CLI flags, both URLs point at
+        localhost with the same subpaths the public defaults use
+        (gnfinder /api/v1/find, gnparser /api/v1)."""
+        monkeypatch.delenv('GNFINDER_URL', raising=False)
+        monkeypatch.delenv('GNPARSER_URL', raising=False)
+        monkeypatch.setattr('sys.argv', ['envconfig_test'])
+        from env_config import get_env_config  # type: ignore[import]
+        cfg = get_env_config()
+        assert cfg['gnfinder_url'] == 'http://localhost:9080/api/v1/find'
+        assert cfg['gnparser_url'] == 'http://localhost:9081/api/v1'
+
+    def test_env_var_overrides_default(self, monkeypatch: Any) -> None:
+        """GNFINDER_URL / GNPARSER_URL env vars override the localhost
+        defaults — the env-var tier of rule 11."""
+        monkeypatch.setenv(
+            'GNFINDER_URL', 'http://prod-finder.example/api/v1/find',
+        )
+        monkeypatch.setenv(
+            'GNPARSER_URL', 'http://prod-parser.example/api/v1',
+        )
+        monkeypatch.setattr('sys.argv', ['envconfig_test'])
+        from env_config import get_env_config  # type: ignore[import]
+        cfg = get_env_config()
+        assert cfg['gnfinder_url'] == 'http://prod-finder.example/api/v1/find'
+        assert cfg['gnparser_url'] == 'http://prod-parser.example/api/v1'
+
+    def test_cli_overrides_env_var(self, monkeypatch: Any) -> None:
+        """``--gnfinder-url`` / ``--gnparser-url`` on the CLI override
+        the env vars — the CLI tier of rule 11."""
+        monkeypatch.setenv(
+            'GNFINDER_URL', 'http://env-finder.example/api/v1/find',
+        )
+        monkeypatch.setenv(
+            'GNPARSER_URL', 'http://env-parser.example/api/v1',
+        )
+        monkeypatch.setattr('sys.argv', [
+            'envconfig_test',
+            '--gnfinder-url', 'http://cli-finder.example/api/v1/find',
+            '--gnparser-url', 'http://cli-parser.example/api/v1',
+        ])
+        from env_config import get_env_config  # type: ignore[import]
+        cfg = get_env_config()
+        assert cfg['gnfinder_url'] == 'http://cli-finder.example/api/v1/find'
+        assert cfg['gnparser_url'] == 'http://cli-parser.example/api/v1'

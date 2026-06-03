@@ -396,11 +396,17 @@ def process_documents(
 
 
 def _open_db(config: Dict[str, Any], db_name: str) -> Any:
-    """Open a CouchDB database using *config*."""
-    host = config["couchdb_host"]
-    username = config["couchdb_username"]
-    password = config["couchdb_password"]
-    server = couchdb.Server(f"http://{username}:{password}@{host}")
+    """Open a CouchDB database using *config*.
+
+    Credentials are set via ``server.resource.credentials`` rather
+    than embedded in the URL — passwords containing ``@`` (or any
+    other URL-reserved character) break the embedded-credentials form.
+    """
+    server = couchdb.Server(config["couchdb_url"])
+    username = config.get("couchdb_username")
+    password = config.get("couchdb_password")
+    if username and password:
+        server.resource.credentials = (username, password)
     return server[db_name]
 
 
@@ -438,14 +444,18 @@ def main() -> None:
     parser.add_argument(
         "--gnfinder-url",
         metavar="URL",
-        default="https://finder.globalnames.org/api/v1/find",
-        help="gnfinder API endpoint URL.",
+        default=None,
+        help="gnfinder API endpoint URL. "
+             "Default: env_config's gnfinder_url "
+             "(GNFINDER_URL env var or http://localhost:9080/api/v1/find).",
     )
     parser.add_argument(
         "--gnparser-url",
         metavar="URL",
-        default="https://parser.globalnames.org/api/v1",
-        help="gnparser API endpoint URL.",
+        default=None,
+        help="gnparser API endpoint URL. "
+             "Default: env_config's gnparser_url "
+             "(GNPARSER_URL env var or http://localhost:9081/api/v1).",
     )
     parser.add_argument(
         "--skip-existing",
@@ -478,6 +488,14 @@ def main() -> None:
     args = parser.parse_args()
 
     config = get_env_config()
+
+    # CLAUDE.md rule 11: CLI > env var > config > hardcoded default.
+    # env_config has already merged the env var with its hardcoded
+    # default; we only override here if the CLI flag was given.
+    if args.gnfinder_url is None:
+        args.gnfinder_url = config['gnfinder_url']
+    if args.gnparser_url is None:
+        args.gnparser_url = config['gnparser_url']
 
     # Resolve database name
     db_name: Optional[str] = args.database

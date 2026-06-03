@@ -337,6 +337,16 @@ def get_env_config() -> Dict[str, Any]:
         'classifier_model_key': '',  # Populated by experiment resolution
         'classifier_model_expire': _get_env('MODEL_EXPIRE', ''),
 
+        # Local gnservices (gnfinder + gnparser) — see v4 plan §1.A.
+        # Defaults to the skol-gnservices.deb's localhost ports so v4
+        # callers avoid the ~10× slower public globalnames.org API.
+        'gnfinder_url': _get_env(
+            'GNFINDER_URL', 'http://localhost:9080/api/v1/find',
+        ),
+        'gnparser_url': _get_env(
+            'GNPARSER_URL', 'http://localhost:9081/api/v1',
+        ),
+
         # Embedding settings
         'embedding_name': _get_env('EMBEDDING_NAME', 'skol:embedding:v1.1'),
         'embedding_expire': _parse_embedding_expire(_get_env('EMBEDDING_EXPIRE', '')),  # default: no expiry
@@ -407,6 +417,7 @@ def get_env_config() -> Dict[str, Any]:
         'model_version', 'classifier_model_expire',
         'model_name', 'menus_key',
         'embedding_name',
+        'gnfinder_url', 'gnparser_url',
         'couchdb_pattern', 'pattern',
         'ncbi_api_key',
         'bahir_package', 'spark_driver_memory', 'spark_executor_memory'

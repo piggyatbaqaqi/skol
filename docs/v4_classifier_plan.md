@@ -237,7 +237,7 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 1.A | Implement (or reuse from [treatment_architecture.md §Phase 2](treatment_architecture.md)) `ingestors/gnfinder_client.py`, `gnparser_client.py`, `particle_detector.py`, `spans.py`. If those don't exist yet, write them per Phase 2's spec. **Precondition:** the existing clients default to `https://finder.globalnames.org` / `https://parser.globalnames.org`. v4 callers must pass `server_url='http://localhost:9080'` / `'http://localhost:9081'` (or equivalent env-config plumbing) to hit the local services whose cost is reported in §Span-layer cost. Don't rely on client defaults. | ⬜ |
+| 1.A | Implement (or reuse from [treatment_architecture.md §Phase 2](treatment_architecture.md)) `ingestors/gnfinder_client.py`, `gnparser_client.py`, `particle_detector.py`, `spans.py`. If those don't exist yet, write them per Phase 2's spec. | ✅ All four primitives already existed. Added `gnfinder_url` + `gnparser_url` to `env_config` with localhost defaults (`http://localhost:9080/api/v1/find` / `http://localhost:9081/api/v1`); `bin/annotate_spans.py` CLI defaults now fall back to env_config when not given. Installed `skol-gnservices.deb`; gnfinder.service + gnparser.service running. Smoke test: 3 docs from `skol_golden_v2` annotated in 0.73 s wall (≈ 0.24 s/doc, matches §Span-layer cost table). Drive-by fix to `_open_db()`: switched from URL-embedded credentials to `server.resource.credentials = ...` so passwords containing `@` work. |
 | 1.B | New: `ingestors/page_header_detector.py` implementing the heuristic from [page-header-detection.md](page-header-detection.md). Sub-steps 1.B.1–1.B.5 below mirror the five algorithm stages in that doc; each is its own TDD-able unit. Final output: `article.page-headers.json` listing line indices and per-line confidence (the score consumed as the `page_header_score[2]` feature in Step 2). | ⬜ |
 | 1.B.1 | **Candidate collection** ([§Step 1](page-header-detection.md)). `collect_candidates(lines) -> List[PageNumCandidate]` with fields `(line_index, position ∈ {'start','end'}, value: int, raw_token: str)`. Filters: 1–4 decimal digits; exclude tokens matching `(19\|20)\d{2}` at line-end (years); exclude tokens ≥5 digits (accession numbers, specimen IDs). TDD: hand-crafted line fixtures hitting each filter rule. | ⬜ |
 | 1.B.2 | **Sequence fitting** ([§Step 2](page-header-detection.md)). `fit_sequence(candidates) -> SequenceFit` returning a RANSAC-style fit `page_number ≈ a × doc_position + b` plus the gap-histogram quality score (sharp peak at 1 or 2 ⇒ confident; flat ⇒ noise). Accepts gap ≥ 2 for journals that omit numbers on some pages. TDD: synthetic sequences with planted OCR-substitution residuals to confirm RANSAC rejects them. | ⬜ |
@@ -356,13 +356,13 @@ free at corpus scale.
 
 **Operational work items unblocked by this finding:**
 
-- ⬜ **gnservices packaging.**  Decide between bundling the two
-  binaries in the main `skol.deb` (Option C — fastest) and shipping
-  a separate `skol-gnservices.deb` (Option B — the right
-  long-term answer; independent release cadence).  Either way, add
-  systemd units to start `gnfinder -p 9080` and `gnparser -j 8 -p 9081`
-  on boot.  Track as a Phase-D-blocker — needs to land before
-  v4 prod deployment.
+- ✅ **gnservices packaging.**  Resolved as Option B (separate
+  `skol-gnservices.deb`).  Deb at
+  `packaging/skol-gnservices_1.1.6+1.15.0-1_amd64.deb`; installs
+  binaries to `/opt/skol-gnservices/bin/`, runs them as the `skol-gn`
+  user via `gnfinder.service` + `gnparser.service` (ports from
+  `/etc/skol-gnservices/ports.conf`).  Installed and enabled on
+  puchpuchobs as part of Step 1.A.
 - ⬜ **Span cache.**  ``sha256(text) → spans`` Redis keyed by line
   content.  Cuts incremental-sweep runtime once we re-process the
   corpus on a future ingest cycle.  Defer to after first run.
