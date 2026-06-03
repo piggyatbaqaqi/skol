@@ -29,6 +29,7 @@ from env_config import create_redis_client  # noqa: E402
 
 from embed_lines import (  # type: ignore[import]  # noqa: E402
     LineEmbedder,
+    _resolve_skip_existing,
     iter_unique_lines,
     load_plaintext,
     process_doc,
@@ -232,7 +233,33 @@ class TestLoadPlaintext(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 4. Integration — process_doc + LineEmbedder against live Redis
+# 4. Pure helper — _resolve_skip_existing()
+# ---------------------------------------------------------------------------
+
+
+class TestResolveSkipExisting(unittest.TestCase):
+    """env_config's --skip-existing defaults to None when unspecified
+    (action='store_true', default=None).  Per CLAUDE.md rule 11 the
+    intended default behaviour is "skip" (idempotent re-runs), so we
+    must map None -> True.  bool(None) is False, which silently broke
+    the first 1884-doc run (cached_hits stayed at 0 because every line
+    was re-embedded).  The resolver locks the None -> True mapping."""
+
+    def test_missing_key_defaults_true(self):
+        self.assertTrue(_resolve_skip_existing({}))
+
+    def test_none_value_defaults_true(self):
+        self.assertTrue(_resolve_skip_existing({'skip_existing': None}))
+
+    def test_explicit_true(self):
+        self.assertTrue(_resolve_skip_existing({'skip_existing': True}))
+
+    def test_explicit_false(self):
+        self.assertFalse(_resolve_skip_existing({'skip_existing': False}))
+
+
+# ---------------------------------------------------------------------------
+# 5. Integration — process_doc + LineEmbedder against live Redis
 # ---------------------------------------------------------------------------
 
 

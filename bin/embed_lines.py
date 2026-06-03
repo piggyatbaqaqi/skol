@@ -238,7 +238,8 @@ class LineEmbedder:
 
     def get_existing(self, line: str) -> Optional[bytes]:
         """Return the cached bytes for ``line`` or ``None``."""
-        return self.redis_client.get(self.key_for(line))  # type: ignore[return-value]
+        result = self.redis_client.get(self.key_for(line))
+        return result  # type: ignore[return-value]
 
     def write_one(self, line: str, vector: np.ndarray) -> None:
         self.redis_client.set(
@@ -308,6 +309,25 @@ def process_doc(
 
 
 # ---------------------------------------------------------------------------
+# CLI helpers
+# ---------------------------------------------------------------------------
+
+
+def _resolve_skip_existing(config: Dict[str, Any]) -> bool:
+    """Map env_config's tri-state ``skip_existing`` to a concrete bool.
+
+    ``--skip-existing`` is registered with ``action='store_true',
+    default=None``, so an unset flag produces ``None`` rather than
+    ``False``.  Per CLAUDE.md rule 11 the intended default is
+    "skip cached entries" (idempotent re-run), so ``None`` maps to
+    ``True``.  Without this resolver, ``bool(None)`` silently makes
+    the flag default to ``False`` and re-embeds every cached line.
+    """
+    val = config.get('skip_existing')
+    return True if val is None else bool(val)
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -372,7 +392,7 @@ def main() -> int:
     config = get_env_config()
     verbosity = int(config.get('verbosity', 1) or 0)
     dry_run = bool(config.get('dry_run', False))
-    skip_existing = bool(config.get('skip_existing', True))
+    skip_existing = _resolve_skip_existing(config)
     force = bool(config.get('force', False))
     limit_raw = config.get('limit')
     limit = int(limit_raw) if limit_raw not in (None, '') else None
