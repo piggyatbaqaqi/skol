@@ -211,6 +211,72 @@ class TestDetectParticlesStatic(unittest.TestCase):
         self.assertTrue(all(s.source == "regex" for s in spans))
 
 
+class TestPDFPageMarker(unittest.TestCase):
+    """The skol PDF extractor injects ``--- PDF Page N Label M ---``
+    markers at every page break.  These are deterministic synthetic
+    tokens (not heuristic running-header text), so they live with the
+    other structured particles rather than in page_header_detector.
+
+    See the v4 plan §1.B recommendation for the architectural split.
+    """
+
+    def _detect(self, text: str) -> list:
+        with patch(
+            "ingestors.particle_detector._load_fungaria_codes",
+            return_value=[],
+        ):
+            return detect_particles(text, redis_client=None)
+
+    def test_detects_marker_with_label(self) -> None:
+        spans = self._detect("--- PDF Page 2 Label 2 ---")
+        labels = [s.label for s in spans]
+        self.assertIn("PDF-page-marker", labels)
+
+    def test_detects_marker_without_label(self) -> None:
+        """Some extractor configurations omit the ``Label N`` half."""
+        spans = self._detect("--- PDF Page 12 ---")
+        labels = [s.label for s in spans]
+        self.assertIn("PDF-page-marker", labels)
+
+    def test_metadata_carries_page_number(self) -> None:
+        spans = self._detect("--- PDF Page 7 Label 7 ---")
+        markers = [s for s in spans if s.label == "PDF-page-marker"]
+        self.assertEqual(len(markers), 1)
+        self.assertEqual(markers[0].metadata.get("page_number"), 7)
+        self.assertEqual(markers[0].metadata.get("label_number"), 7)
+
+    def test_metadata_omits_label_when_absent(self) -> None:
+        spans = self._detect("--- PDF Page 12 ---")
+        markers = [s for s in spans if s.label == "PDF-page-marker"]
+        self.assertEqual(markers[0].metadata.get("page_number"), 12)
+        self.assertNotIn("label_number", markers[0].metadata)
+
+    def test_must_be_line_anchored(self) -> None:
+        """Inline ``--- PDF Page 2 ---`` text inside a paragraph
+        shouldn't trigger — markers always sit on their own line."""
+        spans = self._detect(
+            "Some body text --- PDF Page 2 --- inline reference."
+        )
+        labels = [s.label for s in spans]
+        self.assertNotIn("PDF-page-marker", labels)
+
+    def test_multiple_markers_in_document(self) -> None:
+        text = (
+            "Some body text.\n"
+            "--- PDF Page 1 Label 1 ---\n"
+            "More body text.\n"
+            "--- PDF Page 2 Label 2 ---\n"
+            "Even more body text.\n"
+        )
+        spans = self._detect(text)
+        markers = [s for s in spans if s.label == "PDF-page-marker"]
+        self.assertEqual(len(markers), 2)
+        self.assertEqual(
+            [m.metadata['page_number'] for m in markers],
+            [1, 2],
+        )
+
+
 class TestIconographyHeader(unittest.TestCase):
     """Iconography-header pattern detects selected-icons section headings."""
 

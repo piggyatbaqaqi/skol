@@ -71,6 +71,21 @@ _PATTERNS: Dict[str, re.Pattern] = {  # type: ignore[type-arg]
         r'|iconograph(?:y|ies))\s*[.:\-\u2013]?',
         re.IGNORECASE,
     ),
+    # Synthetic page-boundary marker emitted by the skol PDF
+    # extractor.  Two forms observed in the corpus:
+    #   ``--- PDF Page 2 Label 2 ---`` (both numbers; usually equal)
+    #   ``--- PDF Page 12 ---``        (page only)
+    # MULTILINE anchors the regex to line starts so an inline mention
+    # in body text doesn't match.  Detection lets v4's layout CRF
+    # consume the marker as a particle (Step 2 ``particles[12]``
+    # feature) and rescues page_header_detector's sequence fit on
+    # docs where natural page-number runs are absent or weak \u2014 see
+    # v4 plan \u00a71.B "page_header_detector.py" recommendation.
+    "PDF-page-marker": re.compile(
+        r'^---\s*PDF\s+Page\s+(\d+)'
+        r'(?:\s+Label\s+(\d+))?\s*---\s*$',
+        re.MULTILINE | re.IGNORECASE,
+    ),
 }
 
 # Path to the personal fungaria JSON (relative to this module's package dir)
@@ -236,12 +251,14 @@ def detect_particles(
     for label, pattern in _PATTERNS.items():
         for m in pattern.finditer(text):
             metadata: Dict[str, Any] = {}
-            # CBS spans carry the accession in metadata for downstream
-            # consumers (e.g. linking to wi.knaw.nl/fungal_table).  If
-            # a second pattern grows the same need, factor this into a
-            # per-pattern hook map.
+            # Per-label metadata extraction.  Two cases so far; if a
+            # third lands, factor into a per-pattern hook map.
             if label == "CBS-number" and m.lastindex:
                 metadata["accession"] = m.group(1)
+            elif label == "PDF-page-marker":
+                metadata["page_number"] = int(m.group(1))
+                if m.group(2):
+                    metadata["label_number"] = int(m.group(2))
             spans.append(
                 Span(
                     start=m.start(),
