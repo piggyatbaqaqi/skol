@@ -1,24 +1,39 @@
 """Integration test for ``ingestors.page_header_detector`` against the
 hand-annotated golden corpus ``skol_golden_ann_hand_v2``.
 
-Loads a small sample of docs, derives ground-truth Page-header line
-indices from the YEDDA annotations, runs ``detect_page_headers`` on
-the reconstructed plaintext, and reports precision / recall / F1.
+Per-doc procedure:
 
-Per CLAUDE.md rule 5, functional tests live in ``tests/`` and need
-not be pytest-compatible — but this one is, so the unit-test runner
-discovers it automatically.  It's skipped when CouchDB is unreachable
-or the corpus isn't present, so it doesn't break offline runs.
+1. Fetch ``article.txt.ann`` from ``skol_golden_ann_hand_v2``.
+2. Fetch ``article.txt`` from ``skol_golden_v2`` (same _id; all 30
+   hand docs have it).
+3. Align each ``Page-header`` YEDDA block to ``article.txt`` line
+   indices via ``difflib.SequenceMatcher.find_longest_match`` —
+   that's the ground truth set.
+4. Run ``detect_page_headers`` on ``article.txt.split('\\n')``.
+5. Score precision / recall / F1 against the aligned ground truth.
 
-Sample size is small (default 10 docs) to keep the CI loop fast; bump
-``_SAMPLE_LIMIT`` when measuring detector quality more carefully.
+Compared to the original ``plaintext_from_yedda`` reconstruction
+path, this avoids:
+
+* the ``\\n\\n`` block-separator artifact (gap-blank FPs went away),
+* the section-header-shape filter hack (real lines, not blank gaps),
+* the need to second-guess whether a flagged line was a real header
+  or a reconstruction gap.
+
+Falls back to the old reconstruction + scoring-filter path for any
+doc whose ``article.txt`` is absent.  Per CLAUDE.md rule 5 the file
+lives in ``tests/`` but stays pytest-compatible.
+
+Sample size is small (default 10 docs); bump ``_SAMPLE_LIMIT`` for
+broader measurement.
 """
 from __future__ import annotations
 
+import difflib
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pytest
 
@@ -36,9 +51,12 @@ from ingestors.page_header_detector import (  # noqa: E402
 )
 
 
-_GOLDEN_DB = 'skol_golden_ann_hand_v2'
-_SAMPLE_LIMIT = 10              # docs to evaluate
-_DETECTOR_FLAG_THRESHOLD = 0.0  # per_line_confidence > this -> "flagged"
+_GOLDEN_DB = 'skol_golden_ann_hand_v2'   # YEDDA annotations
+_SOURCE_DB = 'skol_golden_v2'            # article.txt source (shares _id)
+_SAMPLE_LIMIT = 10                       # docs to evaluate
+_DETECTOR_FLAG_THRESHOLD = 0.0           # per_line_confidence > this -> "flagged"
+_ALIGNMENT_MIN_MATCH = 20                # min chars of contiguous match
+_ALIGNMENT_MIN_FRAC = 0.5                # min fraction of block matched
 
 # Same YEDDA block regex used by ingestors.extract_plaintext.
 _YEDDA_BLOCK_RE = re.compile(r"\[@\s*(.*?)\s*#([^*]+)\*\]", re.DOTALL)
@@ -77,26 +95,95 @@ def _scoring_excluded(line: str) -> bool:
     return _is_section_header_shaped(line)
 
 
-def _open_golden_db() -> Any:
-    """Return a couchdb.Database handle to the golden hand corpus or
-    raise an exception (the test harness skips on raise)."""
+def _open_server() -> Any:
+    """Authenticated couchdb.Server handle."""
     config = get_env_config()
     server = couchdb.Server(config['couchdb_url'])
     username = config.get('couchdb_username')
     password = config.get('couchdb_password')
     if username and password:
         server.resource.credentials = (username, password)
-    return server[_GOLDEN_DB]
+    return server
 
 
 def _golden_available() -> bool:
+    """True iff both the annotation DB and the article-text source DB
+    are reachable and non-empty."""
     try:
-        db = _open_golden_db()
-        # ``len(db)`` triggers a real round-trip; passes if the DB
-        # exists and we can authenticate against it.
-        return len(db) > 0
+        server = _open_server()
+        return len(server[_GOLDEN_DB]) > 0 and len(server[_SOURCE_DB]) > 0
     except Exception:
         return False
+
+
+def _read_attachment_text(db: Any, doc_id: str, name: str) -> Optional[str]:
+    """Fetch an attachment as decoded text, or return None if absent."""
+    raw = db.get_attachment(doc_id, name)
+    if raw is None:
+        return None
+    if hasattr(raw, 'read'):
+        raw = raw.read()
+    if isinstance(raw, bytes):
+        return raw.decode('utf-8', errors='ignore')
+    return str(raw)
+
+
+def _align_yedda_to_article_txt(
+    article_txt: str,
+    ann_text: str,
+) -> Tuple[Set[int], int, int]:
+    """Map each ``Page-header`` YEDDA block to ``article.txt`` line
+    indices via ``SequenceMatcher.find_longest_match``.
+
+    Returns ``(header_line_indices, blocks_total, blocks_aligned)``.
+    A block is considered aligned when the longest matching substring
+    covers at least ``_ALIGNMENT_MIN_MATCH`` characters AND at least
+    ``_ALIGNMENT_MIN_FRAC`` of the block's text — short matches like
+    a stray digit or single common word would otherwise produce wild
+    misalignments.
+    """
+    # Precompute (cumulative offset, line index) so an article-text
+    # byte position maps to a line index in O(log N).
+    line_starts: List[int] = [0]
+    for line in article_txt.split('\n'):
+        line_starts.append(line_starts[-1] + len(line) + 1)
+
+    header_lines: Set[int] = set()
+    blocks_total = 0
+    blocks_aligned = 0
+
+    for match in _YEDDA_BLOCK_RE.finditer(ann_text):
+        block_text = match.group(1).strip()
+        tag = match.group(2).strip()
+        if tag != 'Page-header' or not block_text:
+            continue
+        blocks_total += 1
+
+        sm = difflib.SequenceMatcher(
+            None, article_txt, block_text, autojunk=False,
+        )
+        m = sm.find_longest_match(
+            0, len(article_txt), 0, len(block_text),
+        )
+        threshold = max(
+            _ALIGNMENT_MIN_MATCH,
+            int(len(block_text) * _ALIGNMENT_MIN_FRAC),
+        )
+        if m.size < threshold:
+            continue
+
+        blocks_aligned += 1
+        start_offset = m.a
+        end_offset = m.a + m.size
+
+        # Walk the line-start table to find all overlapping lines.
+        for li in range(len(line_starts) - 1):
+            ls, le = line_starts[li], line_starts[li + 1]
+            if le <= start_offset or ls >= end_offset:
+                continue
+            header_lines.add(li)
+
+    return header_lines, blocks_total, blocks_aligned
 
 
 def _ground_truth_header_lines(ann_text: str) -> Tuple[Set[int], int]:
@@ -132,18 +219,89 @@ def _ground_truth_header_lines(ann_text: str) -> Tuple[Set[int], int]:
     return header_lines, total_lines
 
 
-def _evaluate_doc(db: Any, doc_id: str) -> Dict[str, Any]:
-    """Run the detector on one doc and return per-doc stats."""
-    raw = db.get_attachment(doc_id, 'article.txt.ann')
-    if raw is None:
-        return {'doc_id': doc_id, 'skipped': 'no_ann'}
-    if hasattr(raw, 'read'):
-        raw = raw.read()
-    if isinstance(raw, bytes):
-        ann_text = raw.decode('utf-8', errors='ignore')
-    else:
-        ann_text = str(raw)
+def _evaluate_doc(
+    ann_db: Any, src_db: Any, doc_id: str,
+) -> Dict[str, Any]:
+    """Run the detector on one doc and return per-doc stats.
 
+    Prefers the ``article.txt`` source from ``src_db`` aligned against
+    YEDDA blocks; falls back to ``plaintext_from_yedda`` + the
+    blank/section-shape scoring filter when ``article.txt`` is absent.
+    """
+    ann_text = _read_attachment_text(ann_db, doc_id, 'article.txt.ann')
+    if ann_text is None:
+        return {'doc_id': doc_id, 'skipped': 'no_ann'}
+
+    article_txt = _read_attachment_text(src_db, doc_id, 'article.txt')
+
+    if article_txt is not None:
+        return _evaluate_via_alignment(doc_id, article_txt, ann_text)
+    return _evaluate_via_reconstruction(doc_id, ann_text)
+
+
+def _evaluate_via_alignment(
+    doc_id: str, article_txt: str, ann_text: str,
+) -> Dict[str, Any]:
+    """Path A: article.txt + fuzzy alignment of Page-header blocks.
+
+    article.txt preserves the same ``\\n\\n``-between-paragraphs
+    layout that the YEDDA was authored against, so the blank-line +
+    section-shape scoring filter still applies — what alignment fixes
+    is the *ground-truth coordinate mapping*, not the detector's
+    region-over-extension into blanks.  We keep the filter for an
+    apples-to-apples comparison with path B.
+    """
+    gt_lines, blocks_total, blocks_aligned = (
+        _align_yedda_to_article_txt(article_txt, ann_text)
+    )
+    detector_lines = article_txt.split('\n')
+    if not detector_lines:
+        return {'doc_id': doc_id, 'skipped': 'empty'}
+
+    result = detect_page_headers(detector_lines, seed=42)
+    flagged: Set[int] = {
+        li for li, c in enumerate(result['per_line_confidence'])
+        if c > _DETECTOR_FLAG_THRESHOLD
+    }
+
+    def excludable(li: int) -> bool:
+        return 0 <= li < len(detector_lines) and _scoring_excluded(
+            detector_lines[li],
+        )
+    flagged_scored = {li for li in flagged if not excludable(li)}
+    gt_scored = {li for li in gt_lines if not excludable(li)}
+
+    tp = len(flagged_scored & gt_scored)
+    fp = len(flagged_scored - gt_scored)
+    fn = len(gt_scored - flagged_scored)
+    return {
+        'doc_id': doc_id,
+        'source': 'aligned',
+        'n_lines': len(detector_lines),
+        'gt_header_lines_raw': len(gt_lines),
+        'gt_header_lines_scored': len(gt_scored),
+        'flagged_lines_raw': len(flagged),
+        'flagged_lines_scored': len(flagged_scored),
+        'excluded_blanks_or_sections': (
+            len(flagged) - len(flagged_scored)
+        ),
+        'blocks_total': blocks_total,
+        'blocks_aligned': blocks_aligned,
+        'tp': tp,
+        'fp': fp,
+        'fn': fn,
+        'regions': len(result['regions']),
+        'sequence_quality': (
+            result['sequence_fit']['quality_score']
+            if result['sequence_fit'] is not None else None
+        ),
+    }
+
+
+def _evaluate_via_reconstruction(
+    doc_id: str, ann_text: str,
+) -> Dict[str, Any]:
+    """Path B: fall back to plaintext_from_yedda + scoring filter."""
     gt_lines, n_lines = _ground_truth_header_lines(ann_text)
     reconstructed = plaintext_from_yedda(ann_text)
     detector_lines = reconstructed.split('\n')
@@ -157,12 +315,6 @@ def _evaluate_doc(db: Any, doc_id: str) -> Dict[str, Any]:
         if c > _DETECTOR_FLAG_THRESHOLD
     }
 
-    # Apply the Free + Cheap scoring filters: drop lines that are
-    # blank (reconstruction artifact of plaintext_from_yedda) or
-    # section-header-shaped (1.C's detector will handle those).  We
-    # exclude these lines from both the flagged and ground-truth
-    # sets so the confusion matrix measures detector behaviour on
-    # substantive lines only.
     def excludable(li: int) -> bool:
         return 0 <= li < len(detector_lines) and _scoring_excluded(
             detector_lines[li],
@@ -175,6 +327,7 @@ def _evaluate_doc(db: Any, doc_id: str) -> Dict[str, Any]:
     fn = len(gt_scored - flagged_scored)
     return {
         'doc_id': doc_id,
+        'source': 'reconstructed',
         'n_lines': n_lines,
         'gt_header_lines_raw': len(gt_lines),
         'gt_header_lines_scored': len(gt_scored),
@@ -183,6 +336,8 @@ def _evaluate_doc(db: Any, doc_id: str) -> Dict[str, Any]:
         'excluded_blanks_or_sections': (
             len(flagged) - len(flagged_scored)
         ),
+        'blocks_total': 0,
+        'blocks_aligned': 0,
         'tp': tp,
         'fp': fp,
         'fn': fn,
@@ -205,35 +360,37 @@ class TestPageHeaderGolden:
         """Smoke-level: the detector must not raise on any sampled
         doc.  Even the docs where it finds nothing produce a valid
         empty result dict."""
-        db = _open_golden_db()
+        server = _open_server()
+        ann_db = server[_GOLDEN_DB]
+        src_db = server[_SOURCE_DB]
         sampled = 0
-        for doc_id in db:
+        for doc_id in ann_db:
             if doc_id.startswith('_design/'):
                 continue
             if sampled >= _SAMPLE_LIMIT:
                 break
-            stats = _evaluate_doc(db, doc_id)
+            stats = _evaluate_doc(ann_db, src_db, doc_id)
             assert 'doc_id' in stats
             sampled += 1
         assert sampled > 0, 'No docs were sampled — corpus empty?'
 
-    def test_aggregate_recall_above_floor(self) -> None:
-        """Aggregate recall floor.  The hand corpus's Page-header
-        tags are *very* permissive (synthetic ``--- PDF Page N ---``
-        markers count too); we don't expect the detector to flag the
-        markers, only the lines with running-page numbers.  Floor is
-        kept low (>= 0.10) so a single doc producing any true
-        positive across the 10-doc sample is enough to pass.  The
-        goal is a sanity check, not a quality bar — quality tuning
-        happens in Step 7."""
-        db = _open_golden_db()
+    def test_aggregate_precision_recall_floor(self) -> None:
+        """Aggregate precision and recall floor.  Path A (article.txt
+        alignment) is the primary measurement path: no reconstruction
+        artifacts, no scoring-filter hacks.  Path B (filtered YEDDA
+        reconstruction) kicks in only when ``article.txt`` is absent.
+        Quality tuning happens in Step 7; these floors just guard
+        against regression."""
+        server = _open_server()
+        ann_db = server[_GOLDEN_DB]
+        src_db = server[_SOURCE_DB]
         per_doc: List[Dict[str, Any]] = []
-        for doc_id in db:
+        for doc_id in ann_db:
             if doc_id.startswith('_design/'):
                 continue
             if len(per_doc) >= _SAMPLE_LIMIT:
                 break
-            stats = _evaluate_doc(db, doc_id)
+            stats = _evaluate_doc(ann_db, src_db, doc_id)
             if 'skipped' not in stats:
                 per_doc.append(stats)
 
@@ -261,17 +418,30 @@ class TestPageHeaderGolden:
             if (precision + recall) else 0.0
         )
 
+        n_aligned = sum(
+            1 for s in per_doc if s.get('source') == 'aligned'
+        )
+        n_reconstructed = sum(
+            1 for s in per_doc if s.get('source') == 'reconstructed'
+        )
+        blocks_total = sum(s['blocks_total'] for s in per_doc)
+        blocks_aligned = sum(s['blocks_aligned'] for s in per_doc)
+
         # Tee the stats to stdout so they show up under pytest -s.
         print()
         print(f'=== page_header_detector @ {_GOLDEN_DB} '
-              f'({len(per_doc)} docs, blank + section-shape lines '
-              'excluded from scoring) ===')
+              f'({len(per_doc)} docs) ===')
+        print(f'  scoring path        : aligned={n_aligned}  '
+              f'reconstructed={n_reconstructed}')
+        print(f'  alignment success   : '
+              f'{blocks_aligned}/{blocks_total} Page-header blocks')
         print(f'  ground truth lines  : raw={gt_raw}  '
               f'scored={gt_scored}')
         print(f'  detector-flagged    : raw={flagged_raw}  '
               f'scored={flagged_scored}')
-        print(f'  excluded from FP    : {excluded} '
-              '(blanks / section-shape)')
+        if excluded:
+            print(f'  excluded from scoring: {excluded} '
+                  '(blanks / section-shape)')
         print(f'  TP={total_tp}  FP={total_fp}  FN={total_fn}')
         print(f'  precision={precision:.3f}  recall={recall:.3f}  '
               f'F1={f1:.3f}')
