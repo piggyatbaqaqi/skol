@@ -14,9 +14,13 @@ from skol_classifier.v4.crf_layout import (  # noqa: E402
 )
 from skol_classifier.v4.labels import (  # noqa: E402
     LAYOUT_YEDDA_TAGS,
+    TREATMENT_YEDDA_TAGS,
     build_label_sequence,
+    build_treatment_label_sequence,
     map_yedda_to_layout,
+    map_yedda_to_treatment,
     yedda_blocks_to_line_indices,
+    yedda_tag_per_line,
 )
 
 
@@ -199,6 +203,117 @@ class TestParity(unittest.TestCase):
         a = build_label_sequence(plaintext, ann_text)
         b = build_label_sequence(plaintext, ann_text)
         self.assertEqual(a, b)
+
+
+# ---------------------------------------------------------------------------
+# 5. map_yedda_to_treatment
+# ---------------------------------------------------------------------------
+
+
+class TestMapYeddaToTreatment(unittest.TestCase):
+    """Project YEDDA tags down to the 12 Pass-2 treatment labels.
+    Pass-1 layout tags collapse to ``Misc-exposition`` (the
+    catch-all) since Pass 2 trains only on non-layout lines, but
+    defensive handling for any layout tags that slip through is
+    still useful."""
+
+    def test_treatment_tag_passthrough(self):
+        for tag in TREATMENT_YEDDA_TAGS:
+            self.assertEqual(map_yedda_to_treatment(tag), tag)
+
+    def test_layout_tag_maps_to_misc_exposition(self):
+        for tag in LAYOUT_YEDDA_TAGS:
+            self.assertEqual(
+                map_yedda_to_treatment(tag), 'Misc-exposition',
+            )
+
+    def test_unknown_tag_maps_to_misc_exposition(self):
+        self.assertEqual(map_yedda_to_treatment(''), 'Misc-exposition')
+        self.assertEqual(
+            map_yedda_to_treatment('SomeNewTag'), 'Misc-exposition',
+        )
+
+    def test_case_insensitive_passthrough(self):
+        self.assertEqual(
+            map_yedda_to_treatment('description'), 'Description',
+        )
+        self.assertEqual(
+            map_yedda_to_treatment('NOMENCLATURE'), 'Nomenclature',
+        )
+
+
+# ---------------------------------------------------------------------------
+# 6. yedda_tag_per_line
+# ---------------------------------------------------------------------------
+
+
+class TestYeddaTagPerLine(unittest.TestCase):
+    """Return the raw YEDDA tag for each line — lines outside any
+    block default to ``Misc-exposition``."""
+
+    def test_block_lines_carry_block_tag(self):
+        plaintext = 'Boletus edulis Bull.\nA fine mushroom.\n'
+        ann_text = (
+            '[@Boletus edulis Bull.#Nomenclature*]'
+            '[@A fine mushroom.#Description*]'
+        )
+        tags = yedda_tag_per_line(plaintext, ann_text)
+        self.assertEqual(tags[0], 'Nomenclature')
+        self.assertEqual(tags[1], 'Description')
+
+    def test_gap_lines_default_misc_exposition(self):
+        """A blank line between two YEDDA blocks gets
+        ``Misc-exposition`` — same default the catch-all gives."""
+        plaintext = 'Description line\n\nNotes line\n'
+        ann_text = (
+            '[@Description line#Description*]'
+            '[@Notes line#Notes*]'
+        )
+        tags = yedda_tag_per_line(plaintext, ann_text)
+        self.assertEqual(tags[0], 'Description')
+        self.assertEqual(tags[1], 'Misc-exposition')  # gap
+        self.assertEqual(tags[2], 'Notes')
+
+
+# ---------------------------------------------------------------------------
+# 7. build_treatment_label_sequence
+# ---------------------------------------------------------------------------
+
+
+class TestBuildTreatmentLabelSequence(unittest.TestCase):
+    """Per-line Pass-2 treatment label indices."""
+
+    def test_length_matches_plaintext_lines(self):
+        plaintext = 'a\nb\nc\n'
+        ann_text = '[@a#Nomenclature*][@b#Description*][@c#Notes*]'
+        seq = build_treatment_label_sequence(plaintext, ann_text)
+        self.assertEqual(len(seq), len(plaintext.split('\n')))
+
+    def test_treatment_tags_yield_correct_indices(self):
+        from skol_classifier.v4.crf_treatment import LABEL_TO_INDEX
+        plaintext = 'a\nb\n'
+        ann_text = '[@a#Nomenclature*][@b#Diagnosis*]'
+        seq = build_treatment_label_sequence(plaintext, ann_text)
+        self.assertEqual(seq[0], LABEL_TO_INDEX['Nomenclature'])
+        self.assertEqual(seq[1], LABEL_TO_INDEX['Diagnosis'])
+
+    def test_layout_tags_collapse_to_misc_exposition(self):
+        """A Page-header YEDDA block in the source ann_text should
+        be folded to Misc-exposition (we only get here for lines
+        Pass-1 says are non-layout, but the helper is defensive)."""
+        from skol_classifier.v4.crf_treatment import LABEL_TO_INDEX
+        plaintext = 'a\nb\n'
+        ann_text = '[@a#Page-header*][@b#Description*]'
+        seq = build_treatment_label_sequence(plaintext, ann_text)
+        self.assertEqual(
+            seq[0], LABEL_TO_INDEX['Misc-exposition'],
+        )
+        self.assertEqual(
+            seq[1], LABEL_TO_INDEX['Description'],
+        )
+
+    def test_empty_inputs(self):
+        self.assertEqual(build_treatment_label_sequence('', ''), [])
 
 
 if __name__ == '__main__':

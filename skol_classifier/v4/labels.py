@@ -39,9 +39,30 @@ LAYOUT_YEDDA_TAGS: Tuple[str, ...] = (
 )
 
 
-# Lowercase-keyed lookup so case drift in YEDDA files doesn't drop
-# blocks to Other.
+# The 12 YEDDA tags that map to themselves in the Pass-2 label space.
+# Anything not in this set (including the 7 layout tags) folds to
+# 'Misc-exposition' — the catch-all the v4 plan §Label-space
+# partition specifies for the treatment vocab.
+TREATMENT_YEDDA_TAGS: Tuple[str, ...] = (
+    'Nomenclature',
+    'Description',
+    'Diagnosis',
+    'Etymology',
+    'Materials-examined',
+    'Materials-and-methods',
+    'Type-designation',
+    'Biology',
+    'Phylogeny',
+    'New-combinations',
+    'Notes',
+    'Misc-exposition',
+)
+
+
+# Lowercase-keyed lookups so case drift in YEDDA files doesn't drop
+# blocks to the catch-all.
 _LAYOUT_BY_LOWER = {tag.lower(): tag for tag in LAYOUT_YEDDA_TAGS}
+_TREATMENT_BY_LOWER = {tag.lower(): tag for tag in TREATMENT_YEDDA_TAGS}
 
 
 def map_yedda_to_layout(yedda_tag: str) -> str:
@@ -52,6 +73,16 @@ def map_yedda_to_layout(yedda_tag: str) -> str:
     Case-insensitive on the input.
     """
     return _LAYOUT_BY_LOWER.get(yedda_tag.lower(), 'Other')
+
+
+def map_yedda_to_treatment(yedda_tag: str) -> str:
+    """Project a YEDDA tag to a Pass-2 treatment label.
+
+    Tags in :data:`TREATMENT_YEDDA_TAGS` pass through (with canonical
+    capitalization); the 7 layout tags + any unknown tag collapse to
+    ``'Misc-exposition'``.  Case-insensitive on the input.
+    """
+    return _TREATMENT_BY_LOWER.get(yedda_tag.lower(), 'Misc-exposition')
 
 
 # YEDDA block regex: ``[@text#Label*]``.  Same shape as
@@ -113,6 +144,57 @@ def yedda_blocks_to_line_indices(
         if line_indices:
             out.append((label, line_indices))
     return out
+
+
+def yedda_tag_per_line(
+    plaintext: str,
+    ann_text: str,
+) -> List[str]:
+    """Return the raw YEDDA tag for each line of ``plaintext``.
+
+    Lines outside any YEDDA block default to ``'Misc-exposition'``
+    — same catch-all the Pass-2 vocab uses.  Reuses
+    :func:`_parse_yedda_blocks` + :func:`yedda_blocks_to_line_indices`.
+    """
+    if not plaintext and not ann_text:
+        return []
+    n_lines = len(plaintext.split('\n')) if plaintext else 0
+    tags: List[str] = ['Misc-exposition'] * n_lines
+    blocks = _parse_yedda_blocks(ann_text, plaintext)
+    for label, line_indices in yedda_blocks_to_line_indices(
+        plaintext, blocks,
+    ):
+        for li in line_indices:
+            if 0 <= li < n_lines:
+                tags[li] = label
+    return tags
+
+
+def build_treatment_label_sequence(
+    plaintext: str,
+    ann_text: str,
+) -> List[int]:
+    """Per-line Pass-2 treatment label indices.
+
+    For each line: look up its raw YEDDA tag (or ``'Misc-exposition'``
+    when outside any block), project via :func:`map_yedda_to_treatment`,
+    and resolve to the index in
+    ``skol_classifier.v4.crf_treatment.LABEL_TO_INDEX``.  Length
+    always equals ``len(plaintext.split('\\n'))``.
+
+    Used by the trainer to construct the per-doc tag tensor that
+    Pass-2's CRF consumes — after the trainer has filtered to the
+    Pass-1 non-layout subsequence.  Lazy import keeps this module
+    free of a `crf_treatment` runtime dependency at module load
+    (the inverse dependency would create a cycle).
+    """
+    from skol_classifier.v4.crf_treatment import (
+        LABEL_TO_INDEX as TREATMENT_LABEL_TO_INDEX,
+    )
+    return [
+        TREATMENT_LABEL_TO_INDEX[map_yedda_to_treatment(tag)]
+        for tag in yedda_tag_per_line(plaintext, ann_text)
+    ]
 
 
 def build_label_sequence(

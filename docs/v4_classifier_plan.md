@@ -269,9 +269,9 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 4.A | New module: `skol_classifier/v4/crf_treatment.py`. Same shape as `LayoutCRF` but over 12 treatment labels. | ⬜ |
-| 4.B | New trainer: `bin/train_crf_treatment.py`. Reads `skol_training_v3_combined_no_golden`, filters out lines whose label is in the Pass-1 layout set, fits the CRF. Saves to Redis `skol:classifier:model:v4_treatment`. | ⬜ |
-| 4.C | TDD: parallel to Step 3.D. | ⬜ |
+| 4.A | New module: `skol_classifier/v4/crf_treatment.py`. Same shape as `LayoutCRF` but over 12 treatment labels. | ✅ `TreatmentCRF` mirrors `LayoutCRF` (791-d emission → 12 labels); `serialize`/`deserialize`/`save_to_redis`/`load_from_redis` parallel Pass-1. Default keys `skol:classifier:model:v4_treatment` + `:meta`. |
+| 4.B | New trainer: `bin/train_crf_treatment.py`. Reads `skol_training_v3_combined_no_golden`, filters out lines whose label is in the Pass-1 layout set, fits the CRF. Saves to Redis `skol:classifier:model:v4_treatment`. | ✅ `_prepare_doc_pass2` builds features for every line, then keeps only those where `build_label_sequence == LAYOUT_OTHER_INDEX` — pytorch-crf sees the contiguous non-layout subsequence. Live smoke (3 docs, 2 epochs) lands a 41 kB state-dict + 993 B meta in the smoke Redis key in ~11 s on the 5090. |
+| 4.C | TDD: parallel to Step 3.D. | ✅ 51 tests across `labels_test.py` (treatment helpers), `crf_treatment_test.py` (model contract), `train_crf_treatment_test.py` (trainer wiring + Pass-2 mask). |
 
 ### Step 5 — End-to-end predictor + YEDDA emitter
 
