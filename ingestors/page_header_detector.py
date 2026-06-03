@@ -21,6 +21,7 @@ dependency churn.
 """
 from __future__ import annotations
 
+import difflib
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -282,3 +283,107 @@ def partition_alternation(
 
     score = alternations / pairs if pairs else 0.0
     return AlternationFit(verso_fit, recto_fit, score)
+
+
+# ---------------------------------------------------------------------------
+# 1.B.4 — Journal-name clustering
+# ---------------------------------------------------------------------------
+
+
+_CLUSTER_SIMILARITY_THRESHOLD = 0.75
+_JOURNAL_CANONICAL_MAX_LEN = 30
+
+
+@dataclass(frozen=True)
+class HeaderTextCluster:
+    """A cluster of candidate header lines whose non-numeric text
+    matches under approximate string similarity (§Step 4).
+
+    ``canonical`` is the cluster's representative text (first member's
+    raw form).  ``members`` lists the ``line_index`` values that
+    belong to the cluster.  ``cluster_kind`` is a coarse classifier
+    that future stages can use to label runs (`journal`, `title`,
+    or `other`) — purely heuristic.
+    """
+    canonical: str
+    members: Tuple[int, ...]
+    cluster_kind: str
+
+
+def _normalize_header_text(text: str) -> str:
+    """Lowercase + drop non-alphanumeric for similarity comparison.
+
+    The drop step folds whitespace, punctuation, and accents-as-marks
+    into a single normalised form so 'Smith et al. 2023' and
+    'smithetal.2023' compare as equal under SequenceMatcher.
+    """
+    return ''.join(ch.lower() for ch in text if ch.isalnum())
+
+
+def _classify_cluster_kind(canonical: str) -> str:
+    """Heuristic kind label for a cluster's representative text."""
+    stripped = canonical.strip()
+    if not stripped:
+        return 'other'
+    alpha = ''.join(ch for ch in stripped if ch.isalpha())
+    if alpha and alpha.isupper() and len(stripped) <= _JOURNAL_CANONICAL_MAX_LEN:
+        return 'journal'
+    if len(stripped) > _JOURNAL_CANONICAL_MAX_LEN:
+        return 'title'
+    return 'other'
+
+
+def cluster_header_text(
+    confirmed: List[PageNumCandidate],
+) -> List[HeaderTextCluster]:
+    """Cluster the non-numeric portions of confirmed candidates.
+
+    Pulls ``suffix`` for start-position candidates and ``prefix`` for
+    end-position candidates, normalises for comparison, then greedy
+    agglomerates clusters whose representative texts have
+    ``difflib.SequenceMatcher.ratio() >= 0.75``.  Only clusters with
+    at least two members survive — singletons can't confirm a
+    repeated-header pattern.
+    """
+    items: List[Tuple[int, str]] = []
+    for c in confirmed:
+        text = (c.suffix if c.position == 'start' else c.prefix).strip()
+        if text:
+            items.append((c.line_index, text))
+
+    if len(items) < 2:
+        return []
+
+    # Start with one-element clusters; merge greedily.
+    clusters: List[List[Tuple[int, str]]] = [[it] for it in items]
+
+    merged = True
+    while merged:
+        merged = False
+        for i in range(len(clusters)):
+            for j in range(i + 1, len(clusters)):
+                a = _normalize_header_text(clusters[i][0][1])
+                b = _normalize_header_text(clusters[j][0][1])
+                if not a or not b:
+                    continue
+                ratio = difflib.SequenceMatcher(None, a, b).ratio()
+                if ratio >= _CLUSTER_SIMILARITY_THRESHOLD:
+                    clusters[i].extend(clusters[j])
+                    del clusters[j]
+                    merged = True
+                    break
+            if merged:
+                break
+
+    results: List[HeaderTextCluster] = []
+    for cluster in clusters:
+        if len(cluster) < 2:
+            continue
+        canonical = cluster[0][1]
+        members = tuple(li for li, _ in cluster)
+        results.append(HeaderTextCluster(
+            canonical=canonical,
+            members=members,
+            cluster_kind=_classify_cluster_kind(canonical),
+        ))
+    return results

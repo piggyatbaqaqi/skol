@@ -20,12 +20,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ingestors.page_header_detector import (  # noqa: E402
     AlternationFit,
+    HeaderTextCluster,
     PageNumCandidate,
     SequenceFit,
+    cluster_header_text,
     collect_candidates,
     fit_sequence,
     partition_alternation,
 )
+
+
+def _verso(li: int, value: int, suffix: str) -> PageNumCandidate:
+    """Verso (left page) candidate: digit at start, header text after."""
+    return PageNumCandidate(
+        line_index=li, position='start', value=value,
+        raw_token=str(value), prefix='', suffix=suffix,
+    )
+
+
+def _recto(li: int, value: int, prefix: str) -> PageNumCandidate:
+    """Recto (right page) candidate: digit at end, header text before."""
+    return PageNumCandidate(
+        line_index=li, position='end', value=value,
+        raw_token=str(value), prefix=prefix, suffix='',
+    )
 
 
 def _cand(li: int, value: int, position: str = 'end') -> PageNumCandidate:
@@ -250,3 +268,69 @@ class TestPartitionAlternation:
         ]
         fit = partition_alternation(cands, seed=42)
         assert 0.3 <= fit.alternation_score < 0.8
+
+
+class TestClusterHeaderText:
+    """Per §Step 4: the non-numeric portion of each confirmed candidate
+    is the journal name, author/title, or similar.  Cluster by
+    approximate similarity (difflib >= 0.75) so OCR / abbreviation
+    drift / case-flips fold into one cluster."""
+
+    def test_two_distinct_repeated_prefixes(self) -> None:
+        """A typical journal with running headers: verso pages show
+        the journal name 'MYCOLOGIA', recto pages show the author
+        line.  Each text repeats across multiple pages, so two
+        clusters surface."""
+        cands = [
+            _verso(li=20, value=2, suffix='MYCOLOGIA'),
+            _verso(li=60, value=4, suffix='MYCOLOGIA'),
+            _verso(li=100, value=6, suffix='MYCOLOGIA'),
+            _recto(li=40, value=3, prefix='Smith et al. 2023'),
+            _recto(li=80, value=5, prefix='Smith et al. 2023'),
+            _recto(li=120, value=7, prefix='Smith et al. 2023'),
+        ]
+        clusters = cluster_header_text(cands)
+        # Two non-trivial clusters, each containing three line indices.
+        assert len(clusters) == 2
+        sizes = sorted(len(c.members) for c in clusters)
+        assert sizes == [3, 3]
+        canonicals = {c.canonical for c in clusters}
+        assert 'MYCOLOGIA' in canonicals
+        assert 'Smith et al. 2023' in canonicals
+
+    def test_approximate_match_collapses(self) -> None:
+        """Three OCR variants of 'Mycologia' merge into a single
+        cluster — caps drop, single-char OCR error tolerated."""
+        cands = [
+            _verso(li=20, value=2, suffix='Mycologia'),
+            _verso(li=40, value=4, suffix='MYCOLOGIA'),
+            _verso(li=60, value=6, suffix='Mycoîogia'),
+        ]
+        clusters = cluster_header_text(cands)
+        assert len(clusters) == 1
+        assert len(clusters[0].members) == 3
+
+    def test_singletons_filtered_out(self) -> None:
+        """Each prefix appears once -> no cluster of size >= 2 -> empty
+        result.  We only emit clusters that confirm a header pattern."""
+        cands = [
+            _verso(li=20, value=2, suffix='alpha'),
+            _verso(li=40, value=4, suffix='beta'),
+            _verso(li=60, value=6, suffix='gamma'),
+        ]
+        clusters = cluster_header_text(cands)
+        assert clusters == []
+
+    def test_empty_input(self) -> None:
+        assert cluster_header_text([]) == []
+
+    def test_cluster_kind_journal_for_short_allcaps(self) -> None:
+        """Short, all-caps canonical -> 'journal'."""
+        cands = [
+            _verso(li=20, value=2, suffix='MYCOLOGIA'),
+            _verso(li=40, value=4, suffix='MYCOLOGIA'),
+        ]
+        clusters = cluster_header_text(cands)
+        assert len(clusters) == 1
+        assert clusters[0].cluster_kind == 'journal'
+        assert isinstance(clusters[0], HeaderTextCluster)
