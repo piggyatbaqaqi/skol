@@ -252,9 +252,9 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 2.A | New module: `skol_classifier/v4/features.py`. Public function `build_line_features(line_text, line_index, doc_lines, sbert_cache, spans, page_headers) -> LineFeatures`. | ⬜ |
-| 2.B | TDD: unit tests for each feature group (SBERT lookup, particle counts, layout, page-header score, section-header flag). | ⬜ |
-| 2.C | Train/inference parity test: feed a fixture doc through twice, assert identical feature vectors. | ⬜ |
+| 2.A | New module: `skol_classifier/v4/features.py`. Public function `build_line_features(line_text, line_index, doc_lines, sbert_cache, spans, page_headers) -> LineFeatures`. | ✅ `LineFeatures` dataclass with five blocks kept separate (so Step-7 ablations can zero a single block before `.concat()`). `sbert_lookup` is a `Callable[[str], Optional[np.ndarray]]` — caller owns cache population; misses fall back to a zero vector. `PARTICLE_VOCAB` (11 labels) + SP_NOV flag = 12 slots; `section-header` and `PDF-page-marker` excluded (their own features). Line-offset table cached via `compute_line_starts()`. |
+| 2.B | TDD: unit tests for each feature group (SBERT lookup, particle counts, layout, page-header score, section-header flag). | ✅ 30 tests across 7 classes covering each block + the orchestrator + the vocab integrity + block-ordering. |
+| 2.C | Train/inference parity test: feed a fixture doc through twice, assert identical feature vectors. | ✅ `TestParityAcrossTwoCalls::test_same_inputs_yield_identical_vectors`. Real-doc smoke: 232 lines from a JATS-derived `skol_training_v2_no_golden` doc assembled in **0.003 s total** (0.01 ms/line). 791-d float32 vectors; synthetic page-markers and DOIs surface in the right slots. |
 
 ### Step 3 — CRF Pass 1 (layout)
 
