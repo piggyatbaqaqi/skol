@@ -228,10 +228,10 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 0.A | Choose SBERT variant (`all-MiniLM-L6-v2` 384-dim vs `all-mpnet-base-v2` 768-dim). Lean: mpnet for accuracy; revisit if compute budget breaks. | ⬜ |
-| 0.B | Per-line embedder: `bin/embed_lines.py` reads a CouchDB DB, splits each `article.txt` into lines, computes SBERT per *unique* line (hash de-dup), writes to Redis `skol:sbert:<sha256>`. Idempotent on re-run. | ⬜ |
-| 0.C | Compute for `skol_training_v3_combined_no_golden` (1 884 docs) + `skol_golden_v2` (105 docs). Approx 1 M unique lines. | ⬜ |
-| 0.D | TDD: 5 tests against a FakeRedis stub covering hash-key collisions, idempotency, empty-line handling. | ⬜ |
+| 0.A | Choose SBERT variant (`all-MiniLM-L6-v2` 384-dim vs `all-mpnet-base-v2` 768-dim). Lean: mpnet for accuracy; revisit if compute budget breaks. | ✅ Both supported via `--sbert-model {mpnet,minilm}`; separate key namespaces (`skol:sbert:mpnet:*` / `skol:sbert:minilm:*`) so we can A/B without recomputing. mpnet used for the initial pass. |
+| 0.B | Per-line embedder: `bin/embed_lines.py` reads a CouchDB DB, splits each `article.txt` into lines, computes SBERT per *unique* line (hash de-dup), writes to Redis `skol:sbert:<model>:<sha256>`. Idempotent on re-run. | ✅ Lands in commit `1c3ecc6` (with `e06dfcf` skip-existing fix). 3-path plaintext fallback chain (article.txt → article.pdf via `plaintext_from_pdf` → article.txt.ann via `plaintext_from_yedda`). CLI: `--sbert-model`, `--source-db`, `--batch-size`, `--force`, env_config flags. |
+| 0.C | Compute for `skol_training_v3_combined_no_golden` (1 884 docs) + `skol_golden_v2` (105 docs). Approx 1 M unique lines. | ✅ Actual numbers: **293,922 unique lines** (≪ the 1 M estimate; the JATS-converted majority dedupe internally to ~177 unique lines/doc). Total wall time **~53 min** on puchpuchobs's RTX 5090 Laptop (~6 ms/line at batch 64). Training pass alone: 48 m 25 s for 236,743 keys; golden pass: 4 m 25 s for +57,179 keys. Redis memory: 1.95 GB. |
+| 0.D | TDD: tests covering hash-key derivation, idempotency, empty-line handling. | ✅ 21 tests in `bin/embed_lines_test.py` across 9 classes (4 pure-helper for key derivation, 4 for line iteration, 4 for the plaintext fallback chain, 3 for skip-existing semantics, 6 for live-Redis integration). FakeRedis stub dropped in favour of live Redis with namespaced `skol:sbert:test:<uuid>:` keys, per the project's existing convention. |
 
 ### Step 1 — Particle / span / page-header pipeline
 
