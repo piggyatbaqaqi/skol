@@ -134,5 +134,154 @@ class TestDetectSectionHeaders(unittest.TestCase):
         self.assertEqual(text[s.start:s.end], s.text)
 
 
+class TestTaxonomicSectionStarts(unittest.TestCase):
+    """User-supplied real-world taxonomic-section start phrases.  All
+    hint Nomenclature: treatments downstream of these headers
+    typically begin with a nomenclatural act."""
+
+    def _canonicals(self, text: str):
+        return [
+            s.metadata.get('canonical')
+            for s in detect_section_headers(text)
+        ]
+
+    def test_taxonomic_description(self):
+        self.assertEqual(
+            self._canonicals('Taxonomic description\n'),
+            ['taxonomic description'],
+        )
+
+    def test_taxonomic_revision(self):
+        self.assertEqual(
+            self._canonicals('Taxonomic revision\n'),
+            ['taxonomic revision'],
+        )
+
+    def test_taxonomic_part(self):
+        self.assertEqual(
+            self._canonicals('Taxonomic part\n'),
+            ['taxonomic part'],
+        )
+
+    def test_the_species(self):
+        self.assertEqual(
+            self._canonicals('The species\n'),
+            ['the species'],
+        )
+
+    def test_descriptive_part_all_caps(self):
+        self.assertEqual(
+            self._canonicals('DESCRIPTIVE PART\n'),
+            ['descriptive part'],
+        )
+
+    def test_descriptions_of_the_species_all_caps(self):
+        self.assertEqual(
+            self._canonicals('DESCRIPTIONS OF THE SPECIES\n'),
+            ['descriptions of the species'],
+        )
+
+    def test_taxa_studied(self):
+        self.assertEqual(
+            self._canonicals('Taxa studied\n'),
+            ['taxa studied'],
+        )
+
+    def test_species_recorded(self):
+        self.assertEqual(
+            self._canonicals('Species recorded\n'),
+            ['species recorded'],
+        )
+
+    def test_nomenclator_and_taxonomic_description(self):
+        """Real-world all-caps header from older systematic
+        treatments."""
+        self.assertEqual(
+            self._canonicals('NOMENCLATOR AND TAXONOMIC DESCRIPTION\n'),
+            ['nomenclator and taxonomic description'],
+        )
+
+    def test_all_hint_nomenclature(self):
+        """All taxonomic-section starts emit yedda_hint=Nomenclature
+        so the layout CRF learns a uniform downstream signal."""
+        text = (
+            'Taxonomic description\n'
+            'The species\n'
+            'DESCRIPTIVE PART\n'
+            'Taxa studied\n'
+        )
+        hints = {
+            s.metadata.get('yedda_hint')
+            for s in detect_section_headers(text)
+        }
+        self.assertEqual(hints, {'Nomenclature'})
+
+
+class TestNewSpeciesWildcard(unittest.TestCase):
+    """``A new species of <binomial>`` — variable trailing text after
+    the matcher, exercised via the full-regex override path."""
+
+    def test_a_new_species_of_boletus_uppercase(self):
+        """Real-world all-caps header style."""
+        spans = detect_section_headers(
+            'A NEW SPECIES OF BOLETUS\n'
+        )
+        self.assertEqual(len(spans), 1)
+        self.assertEqual(spans[0].metadata.get('yedda_hint'),
+                         'Nomenclature')
+
+    def test_a_new_species_of_boletus_titlecase(self):
+        spans = detect_section_headers(
+            'A new species of Boletus\n'
+        )
+        self.assertEqual(len(spans), 1)
+        self.assertEqual(spans[0].metadata.get('yedda_hint'),
+                         'Nomenclature')
+
+    def test_a_new_species_alone_still_matches(self):
+        """No trailing ``of X`` — header is just ``A new species``."""
+        spans = detect_section_headers('A new species\n')
+        self.assertEqual(len(spans), 1)
+
+    def test_a_new_species_of_multi_word_genus(self):
+        spans = detect_section_headers(
+            'A new species of Cintractiella from Micronesia\n'
+        )
+        self.assertEqual(len(spans), 1)
+
+    def test_inline_a_new_species_rejected(self):
+        """Body-text mention shouldn't match (no leading anchor on
+        the wildcard's full regex either)."""
+        spans = detect_section_headers(
+            'In this paper we describe a new species of Boletus '
+            'that was found in Patagonia.\n'
+        )
+        self.assertEqual(spans, [])
+
+
+class TestNotesBlockHint(unittest.TestCase):
+    """User rule: ``Discussion`` / ``Remarks`` / ``Comments`` /
+    ``Notes`` all default to Notes.  The Diagnosis disambiguation
+    is left to the downstream layout / treatment CRFs that see the
+    section body."""
+
+    def _hint_of(self, text: str):
+        spans = detect_section_headers(text)
+        return spans[0].metadata.get('yedda_hint') if spans else None
+
+    def test_discussion_now_hints_notes(self):
+        """Previously Misc-exposition; flipped per user choice."""
+        self.assertEqual(self._hint_of('Discussion\n'), 'Notes')
+
+    def test_remarks_hints_notes(self):
+        self.assertEqual(self._hint_of('Remarks\n'), 'Notes')
+
+    def test_comments_hints_notes(self):
+        self.assertEqual(self._hint_of('Comments\n'), 'Notes')
+
+    def test_notes_hints_notes(self):
+        self.assertEqual(self._hint_of('Notes\n'), 'Notes')
+
+
 if __name__ == '__main__':
     unittest.main()

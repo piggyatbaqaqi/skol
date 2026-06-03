@@ -27,68 +27,119 @@ not a header.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, NamedTuple, Tuple
 
 from ingestors.spans import Span
 from ingestors.yedda_tags import Tag
 
 
-# Vocabulary table: (regex-source matcher, YEDDA-tag value).  Ordered
-# from most-specific to least-specific so that alternation prefers
-# multi-word patterns (e.g. "materials and methods" before "methods").
-_SECTIONS: Tuple[Tuple[str, str], ...] = (
+class SectionEntry(NamedTuple):
+    """One row of the vocabulary table.
+
+    ``matcher``: a regex source.  By default it's the inner phrase
+    that gets wrapped in the leading-numbering / trailing-punct
+    template (see ``_TEMPLATED_LINE_RE`` below).  When ``is_full_regex``
+    is True the entry is compiled as-is — useful for entries that
+    need variable trailing content (e.g. ``A new species of <X>``).
+    ``hint``: the YEDDA-tag value the detector emits as
+    ``metadata['yedda_hint']`` for any line matching this entry.
+    """
+    matcher: str
+    hint: str
+    is_full_regex: bool = False
+
+
+_NOMENCLATURE = Tag.NOMENCLATURE.value
+
+
+# Vocabulary table.  Ordered from most-specific to least-specific so
+# that alternation prefers multi-word patterns (e.g. "materials and
+# methods" before "methods").
+#
+# Entries default to the templated path: ^numbering? body trailing? $
+# where ``body`` is the matcher and trailing/numbering are added by
+# the module-level regex.  Set ``is_full_regex=True`` and write the
+# anchors yourself when you need custom line shape (e.g. variable
+# trailing content for a wildcard phrase).
+_SECTIONS: Tuple[SectionEntry, ...] = (
     # Materials-examined synonyms (specific phrases first)
-    (r"materials?\s+examined", Tag.MATERIALS_EXAMINED.value),
-    (r"specimens?\s+examined", Tag.MATERIALS_EXAMINED.value),
-    (r"examined\s+material", Tag.MATERIALS_EXAMINED.value),
+    SectionEntry(r"materials?\s+examined", Tag.MATERIALS_EXAMINED.value),
+    SectionEntry(r"specimens?\s+examined", Tag.MATERIALS_EXAMINED.value),
+    SectionEntry(r"examined\s+material", Tag.MATERIALS_EXAMINED.value),
     # Materials-and-methods synonyms
-    (r"materials?\s+and\s+methods?", Tag.MATERIALS_AND_METHODS.value),
-    (r"methodology", Tag.MATERIALS_AND_METHODS.value),
-    (r"methods", Tag.MATERIALS_AND_METHODS.value),
+    SectionEntry(r"materials?\s+and\s+methods?",
+                 Tag.MATERIALS_AND_METHODS.value),
+    SectionEntry(r"methodology", Tag.MATERIALS_AND_METHODS.value),
+    SectionEntry(r"methods", Tag.MATERIALS_AND_METHODS.value),
     # Type-designation synonyms
-    (r"type\s+material", Tag.TYPE_DESIGNATION.value),
-    (r"type\s+designation", Tag.TYPE_DESIGNATION.value),
-    (r"holotype", Tag.TYPE_DESIGNATION.value),
-    (r"paratype", Tag.TYPE_DESIGNATION.value),
-    (r"isotype", Tag.TYPE_DESIGNATION.value),
+    SectionEntry(r"type\s+material", Tag.TYPE_DESIGNATION.value),
+    SectionEntry(r"type\s+designation", Tag.TYPE_DESIGNATION.value),
+    SectionEntry(r"holotype", Tag.TYPE_DESIGNATION.value),
+    SectionEntry(r"paratype", Tag.TYPE_DESIGNATION.value),
+    SectionEntry(r"isotype", Tag.TYPE_DESIGNATION.value),
     # Bibliography synonyms
-    (r"references\s+cited", Tag.BIBLIOGRAPHY.value),
-    (r"literature\s+cited", Tag.BIBLIOGRAPHY.value),
-    (r"references", Tag.BIBLIOGRAPHY.value),
-    (r"bibliography", Tag.BIBLIOGRAPHY.value),
+    SectionEntry(r"references\s+cited", Tag.BIBLIOGRAPHY.value),
+    SectionEntry(r"literature\s+cited", Tag.BIBLIOGRAPHY.value),
+    SectionEntry(r"references", Tag.BIBLIOGRAPHY.value),
+    SectionEntry(r"bibliography", Tag.BIBLIOGRAPHY.value),
     # Phylogeny synonyms
-    (r"phylogenetic\s+analys(?:i|e)s", Tag.PHYLOGENY.value),
-    (r"phylogenetic\s+analysis", Tag.PHYLOGENY.value),
-    (r"phylogeny", Tag.PHYLOGENY.value),
+    SectionEntry(r"phylogenetic\s+analys(?:i|e)s", Tag.PHYLOGENY.value),
+    SectionEntry(r"phylogenetic\s+analysis", Tag.PHYLOGENY.value),
+    SectionEntry(r"phylogeny", Tag.PHYLOGENY.value),
     # Key synonyms
-    (r"key\s+to\s+(?:species|genera|taxa|the\s+species)",
-     Tag.KEY.value),
+    SectionEntry(
+        r"key\s+to\s+(?:species|genera|taxa|the\s+species)",
+        Tag.KEY.value,
+    ),
     # New-combinations synonyms
-    (r"new\s+combinations?", Tag.NEW_COMBINATIONS.value),
-    (r"taxonomic\s+treatment", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"new\s+combinations?", Tag.NEW_COMBINATIONS.value),
+    # Taxonomic-section-start phrases (user-supplied real-world
+    # headers).  All hint Nomenclature: treatments downstream of
+    # these headers typically begin with a nomenclatural act.
+    SectionEntry(r"nomenclator\s+and\s+taxonomic\s+description",
+                 _NOMENCLATURE),
+    SectionEntry(r"descriptions?\s+of\s+the\s+species", _NOMENCLATURE),
+    SectionEntry(r"taxonomic\s+description", _NOMENCLATURE),
+    SectionEntry(r"taxonomic\s+revision", _NOMENCLATURE),
+    SectionEntry(r"taxonomic\s+treatment", _NOMENCLATURE),
+    SectionEntry(r"taxonomic\s+part", _NOMENCLATURE),
+    SectionEntry(r"descriptive\s+part", _NOMENCLATURE),
+    SectionEntry(r"the\s+species", _NOMENCLATURE),
+    SectionEntry(r"taxa\s+studied", _NOMENCLATURE),
+    SectionEntry(r"species\s+recorded", _NOMENCLATURE),
+    # "A new species" with optional " of <binomial>" — variable
+    # trailing content forces the full-regex override.
+    SectionEntry(
+        r"^[ \t]*a\s+new\s+species(?:\s+of\s+\S.*)?[ \t]*$",
+        _NOMENCLATURE,
+        is_full_regex=True,
+    ),
     # Single-word sections that map to specific YEDDA tags
-    (r"etymology", Tag.ETYMOLOGY.value),
-    (r"descriptions?", Tag.DESCRIPTION.value),
-    (r"diagnos(?:is|es)", Tag.DIAGNOSIS.value),
-    (r"biology", Tag.BIOLOGY.value),
-    (r"ecology", Tag.BIOLOGY.value),
-    (r"habitat", Tag.BIOLOGY.value),
-    (r"notes", Tag.NOTES.value),
-    (r"remarks", Tag.NOTES.value),
-    (r"comments", Tag.NOTES.value),
-    (r"distribution", Tag.DISTRIBUTION.value),
+    SectionEntry(r"etymology", Tag.ETYMOLOGY.value),
+    SectionEntry(r"descriptions?", Tag.DESCRIPTION.value),
+    SectionEntry(r"diagnos(?:is|es)", Tag.DIAGNOSIS.value),
+    SectionEntry(r"biology", Tag.BIOLOGY.value),
+    SectionEntry(r"ecology", Tag.BIOLOGY.value),
+    SectionEntry(r"habitat", Tag.BIOLOGY.value),
+    # Notes block.  Per user rule: Discussion / Remarks / Comments /
+    # Notes all default to Notes; downstream CRFs disambiguate when
+    # the body content is clearly Diagnosis.
+    SectionEntry(r"notes", Tag.NOTES.value),
+    SectionEntry(r"remarks", Tag.NOTES.value),
+    SectionEntry(r"comments", Tag.NOTES.value),
+    SectionEntry(r"discussion", Tag.NOTES.value),
+    SectionEntry(r"distribution", Tag.DISTRIBUTION.value),
     # Article-level sections that don't map to a specific
     # treatment-content YEDDA tag — they fall through to
     # Misc-exposition (matching jats_to_yedda's behaviour).
-    (r"introduction", Tag.MISC_EXPOSITION.value),
-    (r"abstract", Tag.MISC_EXPOSITION.value),
-    (r"discussion", Tag.MISC_EXPOSITION.value),
-    (r"results?", Tag.MISC_EXPOSITION.value),
-    (r"conclusions?", Tag.MISC_EXPOSITION.value),
-    (r"acknowledg(?:e)?ments?", Tag.MISC_EXPOSITION.value),
-    (r"appendix|appendices", Tag.MISC_EXPOSITION.value),
-    (r"taxonomy", Tag.MISC_EXPOSITION.value),
-    (r"systematics", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"introduction", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"abstract", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"results?", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"conclusions?", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"acknowledg(?:e)?ments?", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"appendix|appendices", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"taxonomy", Tag.MISC_EXPOSITION.value),
+    SectionEntry(r"systematics", Tag.MISC_EXPOSITION.value),
 )
 
 
@@ -101,42 +152,38 @@ _NUMBERING = r'^[ \t]*(?:[\divxIVX]{1,4}[.):\-\s]+\s*)?'
 # pushes the line back into body-text territory.
 _TRAILING = r'[ \t]*[.:\-—–]*[ \t]*$'
 
-_ALTERNATION = r'|'.join(m for m, _ in _SECTIONS)
 
-_LINE_RE = re.compile(
-    _NUMBERING + r'(' + _ALTERNATION + r')' + _TRAILING,
+_TEMPLATED_ENTRIES = tuple(e for e in _SECTIONS if not e.is_full_regex)
+_FULL_REGEX_ENTRIES = tuple(e for e in _SECTIONS if e.is_full_regex)
+
+_TEMPLATED_LINE_RE = re.compile(
+    _NUMBERING
+    + r'(' + r'|'.join(e.matcher for e in _TEMPLATED_ENTRIES) + r')'
+    + _TRAILING,
     re.MULTILINE | re.IGNORECASE,
 )
 
+_FULL_REGEX_COMPILED: Tuple[Tuple[re.Pattern[str], str], ...] = tuple(
+    (re.compile(e.matcher, re.MULTILINE | re.IGNORECASE), e.hint)
+    for e in _FULL_REGEX_ENTRIES
+)
 
-def _build_hint_lookup() -> Dict[str, str]:
-    """Build a {compiled matcher pattern: yedda_hint} lookup that
-    ``detect_section_headers`` uses to recover the canonical tag
-    after a successful overall match.
-    """
-    return {
-        re.compile(m, re.IGNORECASE).pattern: hint
-        for m, hint in _SECTIONS
-    }
-
-
-_HINT_BY_PATTERN = _build_hint_lookup()
-_COMPILED_PATTERNS: Tuple[Tuple[re.Pattern[str], str], ...] = tuple(
-    (re.compile(r'^' + m + r'$', re.IGNORECASE), hint)
-    for m, hint in _SECTIONS
+# Per-templated-entry hint lookup: anchored to the matcher's own
+# phrase so we can recover the hint from the captured group.
+_TEMPLATED_HINT_LOOKUP: Tuple[Tuple[re.Pattern[str], str], ...] = tuple(
+    (re.compile(r'^' + e.matcher + r'$', re.IGNORECASE), e.hint)
+    for e in _TEMPLATED_ENTRIES
 )
 
 
-def _lookup_yedda_hint(matched_phrase: str) -> str:
-    """Return the YEDDA-tag hint for the captured phrase.
+def _lookup_templated_hint(matched_phrase: str) -> str:
+    """Return the YEDDA-tag hint for a captured templated phrase.
 
-    Walks the _SECTIONS table in declaration order so the
-    most-specific (multi-word) entries match first — same behaviour
-    the main regex already gives us, but applied to the captured
-    substring rather than the original line.
+    Walks ``_TEMPLATED_HINT_LOOKUP`` in declaration order so the
+    most-specific (multi-word) entries match first.
     """
     candidate = matched_phrase.strip().lower()
-    for pat, hint in _COMPILED_PATTERNS:
+    for pat, hint in _TEMPLATED_HINT_LOOKUP:
         if pat.match(candidate):
             return hint
     return Tag.MISC_EXPOSITION.value
@@ -148,33 +195,58 @@ def detect_section_headers(text: str) -> List[Span]:
     Returns a list of :class:`Span` with ``label='section-header'``,
     ``source='regex'``, and ``metadata={'canonical', 'yedda_hint'}``.
 
-    Match rules:
+    Two regex passes per call:
 
-    1. Optional leading numbering (digit or Roman numeral, up to 4
-       characters, followed by ``.``/``)``/``:``/``-``/whitespace).
-    2. One of the vocabulary phrases (case-insensitive).
-    3. Optional trailing punctuation (``.``/``:``/``-``/em-dash/
-       en-dash) and end-of-line.
+    1. The templated alternation — fast, single-pattern scan over
+       every entry that uses the default leading-numbering + trailing-
+       punct line shape (the vast majority).
+    2. The full-regex entries — one ``finditer`` per entry, for the
+       rare patterns (e.g. wildcards) that need custom line shape.
 
-    Lines that contain additional words after the matcher don't
-    match — they're body text, not headers.
+    Lines matched by either pass become section-header spans.
     """
     if not text:
         return []
     spans: List[Span] = []
-    for m in _LINE_RE.finditer(text):
+    seen_ranges: List[Tuple[int, int]] = []
+
+    # Pass 1: templated entries.
+    for m in _TEMPLATED_LINE_RE.finditer(text):
         phrase = m.group(1)
         canonical = ' '.join(phrase.lower().split())
         metadata: Dict[str, Any] = {
             'canonical': canonical,
-            'yedda_hint': _lookup_yedda_hint(phrase),
+            'yedda_hint': _lookup_templated_hint(phrase),
         }
         spans.append(Span(
-            start=m.start(),
-            end=m.end(),
+            start=m.start(), end=m.end(),
             label='section-header',
             text=text[m.start():m.end()],
             source='regex',
             metadata=metadata,
         ))
+        seen_ranges.append((m.start(), m.end()))
+
+    # Pass 2: full-regex entries.  Skip matches that fully overlap
+    # an already-emitted templated span (defensive — keeps the per-
+    # line "one span" invariant).
+    for pat, hint in _FULL_REGEX_COMPILED:
+        for m in pat.finditer(text):
+            if any(
+                seen_start <= m.start() and m.end() <= seen_end
+                for seen_start, seen_end in seen_ranges
+            ):
+                continue
+            matched_text = text[m.start():m.end()]
+            canonical = ' '.join(matched_text.strip().lower().split())
+            spans.append(Span(
+                start=m.start(), end=m.end(),
+                label='section-header',
+                text=matched_text,
+                source='regex',
+                metadata={'canonical': canonical, 'yedda_hint': hint},
+            ))
+
+    # Final sort by start offset so callers see spans in doc order.
+    spans.sort(key=lambda s: s.start)
     return spans
