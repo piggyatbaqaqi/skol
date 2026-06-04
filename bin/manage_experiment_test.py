@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from manage_experiment import (  # type: ignore[import]  # noqa: E402
     _build_step_commands,
+    cmd_create,
 )
 
 
@@ -211,3 +212,103 @@ class TestPredictStepV4Dispatch:
         assert not any(
             'predict_classifier' in a for a in predict_golden_args
         )
+
+
+# ---------------------------------------------------------------------------
+# cmd_create + new --redis-key-pass1 / --redis-key-pass2 flags
+# ---------------------------------------------------------------------------
+
+
+class _FakeExperimentsDb:
+    """Minimal stand-in for the couchdb.Database used by cmd_create.
+    Supports __contains__, get, save, and view (for _all_docs)."""
+
+    def __init__(self) -> None:
+        self.docs: Dict[str, Dict[str, Any]] = {}
+        self.saves: int = 0
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.docs
+
+    def __getitem__(self, key: str) -> Dict[str, Any]:
+        return self.docs[key]
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self.docs.get(key, default)
+
+    def save(self, doc: Dict[str, Any]) -> Any:
+        self.saves += 1
+        doc.setdefault('_id', doc.get('_id', doc.get('name', '')))
+        doc.setdefault('_rev', '1-fake')
+        self.docs[doc['_id']] = doc
+        return doc['_id'], doc['_rev']
+
+    def view(self, _view_name: str, **_kwargs):
+        return iter([])
+
+
+def _create_args(**overrides: Any) -> Any:
+    """Build the argparse.Namespace shape cmd_create reads."""
+    import argparse
+    defaults = {
+        'name': 'test_exp', 'notes': None, 'comments': None,
+        'model_name': None,
+        'training_db': None, 'ingest_db': None, 'annotations_db': None,
+        'redis_key_pass1': None, 'redis_key_pass2': None,
+    }
+    defaults.update(overrides)
+    return argparse.Namespace(**defaults)
+
+
+class TestCmdCreateV4RedisKeys:
+    """v6 Step 6.0: cmd_create must accept --redis-key-pass1 /
+    --redis-key-pass2 and write them into ``redis_keys`` so the
+    v4 two-CRF predictor can resolve its Pass-1/Pass-2 bundles
+    from the experiment doc."""
+
+    def test_create_writes_pass1_redis_key(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            model_name='v4_crf',
+            redis_key_pass1='skol:custom:v4_layout_hand',
+        ))
+        doc = db.docs['production_v4']
+        assert (
+            doc['redis_keys']['classifier_model_pass1']
+            == 'skol:custom:v4_layout_hand'
+        )
+        assert doc['model_name'] == 'v4_crf'
+
+    def test_create_writes_pass2_redis_key(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            redis_key_pass2='skol:custom:v4_pass2_combined',
+        ))
+        doc = db.docs['production_v4']
+        assert (
+            doc['redis_keys']['classifier_model_pass2']
+            == 'skol:custom:v4_pass2_combined'
+        )
+
+    def test_create_writes_both_pass_keys(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            model_name='v4_crf',
+            redis_key_pass1='skol:k:p1',
+            redis_key_pass2='skol:k:p2',
+        ))
+        rk = db.docs['production_v4']['redis_keys']
+        assert rk['classifier_model_pass1'] == 'skol:k:p1'
+        assert rk['classifier_model_pass2'] == 'skol:k:p2'
+
+    def test_create_does_not_write_pass_keys_when_omitted(self) -> None:
+        """v3 experiments (no v4 flags) keep their default redis_keys
+        without any spurious pass1/pass2 entries."""
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='production_v3'))
+        rk = db.docs['production_v3']['redis_keys']
+        assert 'classifier_model_pass1' not in rk
+        assert 'classifier_model_pass2' not in rk

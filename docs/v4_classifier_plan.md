@@ -286,12 +286,12 @@ follow-on:
 
 | # | Description | Status |
 |---|---|---|
-| 6.A | New experiment doc `production_v4` in `skol_experiments`. Fields per the v3 pattern; `model_name: "v4_crf"`. Three training-database variants are not needed — v4 uses the combined corpus only (Pass 1 internally restricts to hand). | ⬜ |
-| 6.B | Run `train_crf_layout` (Pass 1). | ⬜ |
-| 6.C | Train **two** Pass-2 variants: `v4_pass2_hand` (hand-only) and `v4_pass2_combined` (full combined corpus). See "Training data scope" above. | ⬜ |
-| 6.D | Run `predict_v4` twice over `skol_golden_v2` — once with each Pass 2 variant. | ⬜ |
-| 6.E | Run `evaluate_golden.py` for each Pass 2 variant against `skol_golden_ann_hand_v2`. The variant with the higher macro F1 becomes `production_v4`'s real Pass 2. | ⬜ |
-| 6.F | Ablation: train a *single-CRF* baseline (no Pass 1 / Pass 2 split, full 19-label space, hand-only training) and compare. If the two-pass design doesn't beat the single-CRF baseline, that's a Step 7 decision to abandon the two-pass complexity. | ⬜ |
+| 6.A | New experiment doc `production_v4` in `skol_experiments`. Fields per the v3 pattern; `model_name: "v4_crf"`. Three training-database variants are not needed — v4 uses the combined corpus only (Pass 1 internally restricts to hand). | ✅ Created via `bin/manage_experiment create --name production_v4 --model-name v4_crf --redis-key-pass1 skol:classifier:model:v4_layout --redis-key-pass2 skol:classifier:model:v4_pass2_combined`.  Prerequisite Step 6.0 added `--redis-key-pass1` / `--redis-key-pass2` flags to `manage_experiment create` + `update`. |
+| 6.B | Run `train_crf_layout` (Pass 1). | ✅ Trained on `skol_training_v2_no_golden` (128 train + 32 dev), 20 epochs, dev macro F1 = 0.297.  Bundle in `skol:classifier:model:v4_layout` + `:meta`.  ~2 h 51 min wall on the 5090. |
+| 6.C | Train **two** Pass-2 variants: `v4_pass2_hand` (hand-only) and `v4_pass2_combined` (full combined corpus). See "Training data scope" above. | ✅ Hand: 128 train + 32 dev, dev macro F1 = 0.315, ~44 min wall.  Combined: 1 508 train + 376 dev, dev macro F1 = 0.678, ~3 h 01 min wall.  Both bundles in Redis under their respective `_pass2_hand` / `_pass2_combined` keys. |
+| 6.D | Run `predict_v4` twice over `skol_golden_v2` — once with each Pass 2 variant. | ✅ Wrote `article.txt.ann` to `skol_exp_production_v4_ann_hand` and `skol_exp_production_v4_ann_combined`; 105/105 docs predicted in each run (~45 s wall each). |
+| 6.E | Run `evaluate_golden.py` for each Pass 2 variant against `skol_golden_ann_hand_v2`. The variant with the higher macro F1 becomes `production_v4`'s real Pass 2. | ✅ Combined wins decisively: char-level macro F1 = 0.479 vs hand's 0.311 (delta +0.168).  Combined beats hand on every tag.  `production_v4.redis_keys.classifier_model_pass2` pinned to the combined bundle; `production_v4.evaluation` records the combined macro + per-tag F1.  Full table in [docs/production_v4_report.md](production_v4_report.md). |
+| 6.F | Ablation: train a *single-CRF* baseline (no Pass 1 / Pass 2 split, full 19-label space, hand-only training) and compare. If the two-pass design doesn't beat the single-CRF baseline, that's a Step 7 decision to abandon the two-pass complexity. | ⬜ Deferred to a focused follow-up.  Will land `skol_classifier/v4/crf_single.py` + `bin/train_crf_single.py` + tests, train hand-only, evaluate, and add the comparison row to `docs/production_v4_report.md`.  Step 7 reads it for the "two-pass vs single-CRF" decision. |
 
 ### Step 7 — Comparison report
 

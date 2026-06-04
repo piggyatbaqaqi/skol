@@ -230,6 +230,18 @@ def cmd_create(db, args) -> None:
         doc["databases"]["ingest"] = args.ingest_db
     if args.annotations_db:
         doc["databases"]["annotations"] = args.annotations_db
+    # v4 two-CRF Redis-key bundle (see env_config _apply_experiment
+    # mapping rows added in Step 5).  Only written when the operator
+    # opts in via the new flags, so v3 experiment docs keep their
+    # default redis_keys shape unchanged.
+    if getattr(args, "redis_key_pass1", None):
+        doc.setdefault("redis_keys", {})[
+            "classifier_model_pass1"
+        ] = args.redis_key_pass1
+    if getattr(args, "redis_key_pass2", None):
+        doc.setdefault("redis_keys", {})[
+            "classifier_model_pass2"
+        ] = args.redis_key_pass2
 
     db.save(doc)
     print(f"Created experiment '{name}'")
@@ -309,6 +321,16 @@ def cmd_update(db, args) -> None:
         changed = True
     if args.model_name is not None:
         doc["model_name"] = args.model_name
+        changed = True
+    if getattr(args, "redis_key_pass1", None):
+        doc.setdefault("redis_keys", {})[
+            "classifier_model_pass1"
+        ] = args.redis_key_pass1
+        changed = True
+    if getattr(args, "redis_key_pass2", None):
+        doc.setdefault("redis_keys", {})[
+            "classifier_model_pass2"
+        ] = args.redis_key_pass2
         changed = True
 
     if changed:
@@ -874,6 +896,18 @@ def main() -> None:
         "--annotations-db", type=str,
         help="Annotations output database name",
     )
+    p_create.add_argument(
+        "--redis-key-pass1", type=str, dest="redis_key_pass1",
+        help=(
+            "v4 Pass-1 (layout CRF) Redis state-key.  Written to "
+            "experiment.redis_keys.classifier_model_pass1; flows "
+            "into predict_v4 via env_config."
+        ),
+    )
+    p_create.add_argument(
+        "--redis-key-pass2", type=str, dest="redis_key_pass2",
+        help="v4 Pass-2 (treatment CRF) Redis state-key.",
+    )
 
     # list
     subparsers.add_parser("list", help="List all experiments")
@@ -899,6 +933,14 @@ def main() -> None:
     p_update.add_argument("--ingest-db", type=str, help="Ingest DB")
     p_update.add_argument(
         "--annotations-db", type=str, help="Annotations output DB",
+    )
+    p_update.add_argument(
+        "--redis-key-pass1", type=str, dest="redis_key_pass1",
+        help="v4 Pass-1 (layout CRF) Redis state-key.",
+    )
+    p_update.add_argument(
+        "--redis-key-pass2", type=str, dest="redis_key_pass2",
+        help="v4 Pass-2 (treatment CRF) Redis state-key.",
     )
 
     # archive
