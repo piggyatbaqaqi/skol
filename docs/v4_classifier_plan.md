@@ -314,6 +314,63 @@ follow-on:
 - **Cost** — total training time, prediction-throughput
   (docs/second), Redis memory for SBERT cache.
 
+### Step 8 — v3 vs Pass-1 on the removed layout classes (layout-filter decision)
+
+Pass 1 exists only to catch-and-discard the 7 layout classes
+(Page-header, Figure-caption, Table, Key, Bibliography, Index,
+ToC-entry; see [Label-space partition](#label-space-partition)) before
+Pass 2. If v3 is a *better* layout filter than CRF Pass 1, then Pass 1
+is dead weight and we should feed v3's layout decisions into Pass 2
+instead — a **v3 → Pass 2** pipeline.
+
+Two signals already point that way but neither settles it:
+
+- v3_hand has per-class numbers on those 7 classes
+  ([production_v3_report.md](production_v3_report.md)); CRF Pass 1
+  never got per-class metrics — only a dev-set **macro F1 0.297**
+  ([production_v4_report.md](production_v4_report.md)).
+- In that report the **single CRF beats the two-pass design 6/7** on
+  layout tags, naming Pass-1's 0.297 as the bottleneck.
+
+The blocker is that no *valid* v3-vs-Pass-1 comparison exists. v3's
+~0.33 macro-over-7 is **character-level** F1 on a different eval split;
+Pass-1's 0.297 is a different granularity on the dev set. Not
+like-for-like.
+
+**Work:**
+
+1. Run CRF Pass 1 over `skol_golden_v2`; emit per-class P/R/F1 on the
+   7 removed layout classes via [evaluate_golden.py](../bin/evaluate_golden.py)
+   (same evaluator — no new code).
+2. Re-score v3 on the **same** `skol_golden_v2` split at the **same**
+   granularity (both char-level or both line-level; pick one, apply to
+   both).
+3. Tabulate per-class v3 vs Pass-1 on the 7 classes, plus
+   macro-over-7.
+
+**Decision rule:**
+
+- If v3 beats Pass 1 by a material margin on those classes — say
+  macro-over-7 gap ≥ 0.05 *and* v3 wins a majority of the 7 — adopt v3
+  as the layout filter: v3 removes layout lines, Pass 2 (treatment CRF)
+  runs on the remainder in place of CRF Pass 1.
+- If they're close, keep CRF Pass 1 — it shares the SBERT
+  representation and avoids running two model families at inference.
+
+**Sequencing / dependency:** Step 8 decides only the *layout-filter*
+stage. How Pass 2 itself is run (GT-cleaned as-is vs scheduled sampling
+vs the single-CRF baseline) is a separate choice that **waits on the
+exposure-bias results** (Step 7's exposure-bias measurement and
+[Exposure bias](#exposure-bias-known-limitation)). The two compose:
+`layout-filter ∈ {CRF Pass 1, v3} × Pass-2 ∈ {as-is, scheduled-sampling,
+single-CRF}`.
+
+One interaction to re-check if v3 wins: Pass 2 trained on GT-cleaned
+sequences would then see **v3-cleaned** sequences at inference — a
+*different* exposure-bias profile than Pass-1-cleaned. So a v3 → Pass 2
+choice means re-measuring exposure bias under the v3 filter, not
+reusing the Pass-1 number.
+
 ## Intermediate-data storage policy
 
 | Artefact | Cost to recompute | Storage |
@@ -397,6 +454,8 @@ free at corpus scale.
    weights).
 5. **Step 5** end-to-end predictor wires it together.
 6. **Step 6** is the model run; **Step 7** is the writeup.
+7. **Step 8** is a follow-on decision once Step 7's per-class Pass-1
+   numbers land — it gates only the layout-filter choice, not Pass 2.
 
 ## Rollback
 
