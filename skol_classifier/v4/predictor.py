@@ -81,6 +81,7 @@ def predict_doc(
     treatment_crf: TreatmentCRF,
     sbert_lookup: SbertLookup,
     *,
+    ablate_particles: bool = False,
     device: str = 'cpu',
 ) -> Tuple[List[str], str]:
     """Run feature assembly + Pass 1 + Pass 2 + coalesce + emit.
@@ -89,6 +90,12 @@ def predict_doc(
     positions carry the Pass-1 YEDDA tag (Page-header /
     Figure-caption / ...); non-layout positions carry the Pass-2
     YEDDA tag (Nomenclature / Description / ...).
+
+    ``ablate_particles=True`` zeros the 12-d particle feature
+    block (``features.PARTICLE_SLICE``) of the assembled per-line
+    vector before decode.  Step 7.γ uses it at inference time to
+    measure how much the spans pipeline contributes to F1; no
+    retraining required.
 
     Raises ``ValueError`` if either CRF's ``feature_dim`` disagrees
     with the active ``features.FEATURE_DIM`` — protects against the
@@ -115,6 +122,8 @@ def predict_doc(
             line_starts=line_starts,
         )
         layout_feats[i] = lf.concat()
+    if ablate_particles:
+        layout_feats[:, _features.PARTICLE_SLICE] = 0.0
     # Pass 2 uses the same feature width — single per-line vector.
     treatment_feats = layout_feats
     return predict_from_features(
@@ -183,6 +192,7 @@ def predict_doc_single(
     single_crf: SingleCRF,
     sbert_lookup: SbertLookup,
     *,
+    ablate_particles: bool = False,
     device: str = 'cpu',
 ) -> Tuple[List[str], str]:
     """Single-CRF inference (no Pass-1/Pass-2 split).
@@ -190,6 +200,10 @@ def predict_doc_single(
     Same feature assembly as :func:`predict_doc`; one Viterbi
     decode over the 19-label space; coalesce + emit via the
     shared helpers.  Returns ``(per_line_tags, ann_text)``.
+
+    ``ablate_particles=True`` zeros the 12-d particle feature
+    block (``features.PARTICLE_SLICE``) before decode — see
+    :func:`predict_doc` for the rationale.
 
     Raises ``ValueError`` if ``single_crf.feature_dim`` disagrees
     with ``features.FEATURE_DIM``."""
@@ -214,6 +228,8 @@ def predict_doc_single(
             line_starts=line_starts,
         )
         feats[i] = lf.concat()
+    if ablate_particles:
+        feats[:, _features.PARTICLE_SLICE] = 0.0
 
     return predict_from_features_single(
         lines, feats, single_crf, device=device,

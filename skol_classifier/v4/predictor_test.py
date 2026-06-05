@@ -19,6 +19,7 @@ import sys
 import unittest
 from pathlib import Path
 from typing import List, Optional
+from unittest import mock
 
 import numpy as np
 import torch
@@ -571,6 +572,160 @@ class TestPredictDocSingleFeatureDim(unittest.TestCase):
                 _stub_sbert_lookup, device='cpu',
             )
         self.assertIn('feature_dim', str(cm.exception).lower())
+
+
+# ---------------------------------------------------------------------------
+# 8. Particle ablation (Step 7.γ)
+# ---------------------------------------------------------------------------
+
+
+class TestAblateParticles(unittest.TestCase):
+    """``predict_doc(..., ablate_particles=True)`` zeros the 12-d
+    particle slice of the assembled feature array *before* decoding
+    (no retraining required).  Step 7's report uses the F1 delta
+    to gauge how much the particle pipeline pulls its weight."""
+
+    def _captured_features(
+        self,
+        *,
+        ablate: bool,
+        spans_payload,
+    ):
+        """Run ``predict_doc`` with a spy on ``_crf_decode_one``;
+        return the (layout_features, treatment_features) tuple as
+        seen by Pass 1 and Pass 2.  Both feature tensors should
+        share the same particle-slice content when ablate=False."""
+        import skol_classifier.v4.predictor as predictor
+        from skol_classifier.v4.crf_layout import LayoutCRF
+        from skol_classifier.v4.crf_treatment import TreatmentCRF
+
+        plaintext = 'tax line\nbody line\n'
+        spans = {'version': '1', 'spans': spans_payload}
+        page_headers = {'per_line_confidence': [0.0, 0.0]}
+
+        captures = []
+        original = predictor._crf_decode_one
+
+        def spy(crf, feats_np, device):
+            captures.append(feats_np.copy())
+            return original(crf, feats_np, device)
+
+        with mock.patch.object(predictor, '_crf_decode_one', side_effect=spy):
+            predictor.predict_doc(
+                plaintext, spans, page_headers,
+                LayoutCRF(), TreatmentCRF(),
+                _stub_sbert_lookup,
+                ablate_particles=ablate,
+                device='cpu',
+            )
+        return captures
+
+    def test_kwarg_zeros_particle_slice_before_decode(self):
+        from skol_classifier.v4.features import PARTICLE_SLICE
+        # Synthetic span with a TaxonName label on line 0 — should
+        # populate the particle block under the default code path
+        # and stay zero under ablation.
+        spans = [{
+            'start': 0, 'end': 8, 'label': 'TaxonName',
+            'text': 'tax line', 'source': 'gnfinder',
+            'confidence': 1.0, 'metadata': {},
+        }]
+        ablated = self._captured_features(ablate=True, spans_payload=spans)
+        self.assertTrue(ablated, 'predict_doc must call _crf_decode_one')
+        for f in ablated:
+            self.assertTrue(
+                np.allclose(f[:, PARTICLE_SLICE], 0.0),
+                f'particle slice not zeroed: {f[:, PARTICLE_SLICE]}',
+            )
+
+    def test_default_leaves_particle_slice_intact(self):
+        from skol_classifier.v4.features import PARTICLE_SLICE
+        spans = [{
+            'start': 0, 'end': 8, 'label': 'TaxonName',
+            'text': 'tax line', 'source': 'gnfinder',
+            'confidence': 1.0, 'metadata': {},
+        }]
+        kept = self._captured_features(ablate=False, spans_payload=spans)
+        # Pass-1 features are the first capture.  Line 0 has a
+        # particle hit; its particle slice must contain a 1 (count
+        # of TaxonName overlaps for that line).
+        self.assertGreater(
+            float(kept[0][0, PARTICLE_SLICE].sum()),
+            0.0,
+            'non-ablated path must surface the particle hit',
+        )
+
+
+class TestAblateParticlesSingle(unittest.TestCase):
+    """Same contract for ``predict_doc_single`` (Step 6.F path)."""
+
+    def test_kwarg_zeros_particle_slice_before_decode(self):
+        import skol_classifier.v4.predictor as predictor
+        from skol_classifier.v4.crf_single import SingleCRF
+        from skol_classifier.v4.features import PARTICLE_SLICE
+
+        plaintext = 'tax line\nbody line\n'
+        spans = {'version': '1', 'spans': [{
+            'start': 0, 'end': 8, 'label': 'TaxonName',
+            'text': 'tax line', 'source': 'gnfinder',
+            'confidence': 1.0, 'metadata': {},
+        }]}
+        page_headers = {'per_line_confidence': [0.0, 0.0]}
+        captured = []
+        original = predictor._crf_decode_one
+
+        def spy(crf, feats_np, device):
+            captured.append(feats_np.copy())
+            return original(crf, feats_np, device)
+
+        with mock.patch.object(
+            predictor, '_crf_decode_one', side_effect=spy,
+        ):
+            predictor.predict_doc_single(
+                plaintext, spans, page_headers,
+                SingleCRF(),
+                _stub_sbert_lookup,
+                ablate_particles=True,
+                device='cpu',
+            )
+        self.assertTrue(captured)
+        for f in captured:
+            self.assertTrue(
+                np.allclose(f[:, PARTICLE_SLICE], 0.0),
+                f'particle slice not zeroed: {f[:, PARTICLE_SLICE]}',
+            )
+
+    def test_default_leaves_particle_slice_intact(self):
+        import skol_classifier.v4.predictor as predictor
+        from skol_classifier.v4.crf_single import SingleCRF
+        from skol_classifier.v4.features import PARTICLE_SLICE
+
+        plaintext = 'tax line\nbody line\n'
+        spans = {'version': '1', 'spans': [{
+            'start': 0, 'end': 8, 'label': 'TaxonName',
+            'text': 'tax line', 'source': 'gnfinder',
+            'confidence': 1.0, 'metadata': {},
+        }]}
+        page_headers = {'per_line_confidence': [0.0, 0.0]}
+        captured = []
+        original = predictor._crf_decode_one
+
+        def spy(crf, feats_np, device):
+            captured.append(feats_np.copy())
+            return original(crf, feats_np, device)
+
+        with mock.patch.object(
+            predictor, '_crf_decode_one', side_effect=spy,
+        ):
+            predictor.predict_doc_single(
+                plaintext, spans, page_headers,
+                SingleCRF(),
+                _stub_sbert_lookup,
+                device='cpu',
+            )
+        self.assertGreater(
+            float(captured[0][0, PARTICLE_SLICE].sum()), 0.0,
+        )
 
 
 if __name__ == '__main__':

@@ -66,6 +66,7 @@ from ingestors.spans import Span  # noqa: E402
 from skol_classifier.v4.crf_layout import (  # noqa: E402
     LABEL_TO_INDEX as LAYOUT_LABEL_TO_INDEX,
     OTHER_INDEX as LAYOUT_OTHER_INDEX,
+    load_from_redis as load_layout_from_redis,
 )
 from skol_classifier.v4.crf_treatment import (  # noqa: E402
     FEATURE_DIM,
@@ -223,19 +224,39 @@ def _prepare_doc_pass2(
     db: Any,
     doc_id: str,
     sbert_lookup: SbertLookup,
+    *,
+    use_predicted_layout: bool = False,
+    layout_crf: Any = None,
+    device: str = 'cpu',
 ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
     """Build (features_array, labels_array) for one Pass-2 doc.
 
-    Pass-1 oracle labels are computed from the doc's YEDDA blocks
-    (via ``build_label_sequence``).  Lines tagged with any of the
-    7 layout YEDDA tags are filtered out; what reaches the CRF is
-    the contiguous content subsequence of the doc.
+    The default (oracle) path computes Pass-1 labels from the doc's
+    YEDDA blocks via ``build_label_sequence``.  Step 7.δ's
+    ``use_predicted_layout=True`` mode replaces that with the
+    output of ``layout_crf.decode()`` — so Pass-2 is trained on the
+    same noisy subsequence it will see at inference, closing the
+    train/test distribution gap that exposure-bias measures.
+
+    In either case, lines whose layout label is one of the 7 layout
+    tags are filtered out; what reaches the CRF is the contiguous
+    content subsequence of the doc.
 
     Returns None when:
     - either v4 attachment is missing
     - plaintext / ann_text can't be loaded
     - no content lines survive Pass-1 filtering
+
+    Raises ``ValueError`` if ``use_predicted_layout=True`` but
+    ``layout_crf`` is missing — the caller must load Pass-1 from
+    Redis once and pass it in.
     """
+    if use_predicted_layout and layout_crf is None:
+        raise ValueError(
+            'use_predicted_layout=True requires layout_crf '
+            '(load it via crf_layout.load_from_redis).'
+        )
+
     spans_bytes = _read_attachment_bytes(
         db, doc_id, _SPANS_ATTACHMENT,
     )
@@ -257,27 +278,17 @@ def _prepare_doc_pass2(
     lines = plaintext.split('\n')
     line_starts = compute_line_starts(lines)
 
-    layout_seq = np.asarray(
-        build_label_sequence(plaintext, ann_text),
-        dtype=np.int64,
-    )
     treatment_seq = np.asarray(
         build_treatment_label_sequence(plaintext, ann_text),
         dtype=np.int64,
     )
-    if (
-        layout_seq.shape[0] != len(lines)
-        or treatment_seq.shape[0] != len(lines)
-    ):
-        return None
-
-    pass2_mask = layout_seq == LAYOUT_OTHER_INDEX
-    n_content = int(pass2_mask.sum())
-    if n_content == 0:
+    if treatment_seq.shape[0] != len(lines):
         return None
 
     # Build features for ALL lines first; filtering after avoids
     # the awkward double pass through the line_starts table.
+    # Pass-1 decode (exposure-bias mode) also needs the full
+    # feature tensor, so we always build it before deciding the mask.
     features_full = np.zeros(
         (len(lines), FEATURE_DIM), dtype=np.float32,
     )
@@ -290,6 +301,26 @@ def _prepare_doc_pass2(
             line_starts=line_starts,
         )
         features_full[i] = feats.concat()
+
+    if use_predicted_layout:
+        x = torch.from_numpy(features_full).unsqueeze(0).to(device)
+        mask = torch.ones(
+            1, len(lines), dtype=torch.bool, device=device,
+        )
+        layout_seq = np.asarray(
+            layout_crf.decode(x, mask)[0], dtype=np.int64,
+        )
+    else:
+        layout_seq = np.asarray(
+            build_label_sequence(plaintext, ann_text), dtype=np.int64,
+        )
+    if layout_seq.shape[0] != len(lines):
+        return None
+
+    pass2_mask = layout_seq == LAYOUT_OTHER_INDEX
+    n_content = int(pass2_mask.sum())
+    if n_content == 0:
+        return None
 
     features_filtered = features_full[pass2_mask]
     labels_filtered = treatment_seq[pass2_mask]
@@ -370,6 +401,8 @@ def train_one_run(
     dry_run: bool = False,
     skip_existing: bool = False,
     verbosity: int = 1,
+    use_predicted_layout: bool = False,
+    layout_crf: Any = None,
 ) -> Dict[str, Any]:
     """End-to-end Pass-2 training pass."""
     counts: Dict[str, Any] = {
@@ -395,7 +428,12 @@ def train_one_run(
     prepared: List[Tuple[str, np.ndarray, np.ndarray]] = []
     doc_lengths: List[Tuple[str, int]] = []
     for doc_id in doc_ids:
-        item = _prepare_doc_pass2(db, doc_id, sbert_lookup)
+        item = _prepare_doc_pass2(
+            db, doc_id, sbert_lookup,
+            use_predicted_layout=use_predicted_layout,
+            layout_crf=layout_crf,
+            device=device,
+        )
         if item is None:
             counts['skipped_no_spans'] += 1
             if verbosity >= 2:
@@ -572,6 +610,26 @@ def main() -> int:
     parser.add_argument(
         '--redis-meta-key', default=_DEFAULT_META_KEY,
     )
+    parser.add_argument(
+        '--use-predicted-layout',
+        dest='use_predicted_layout',
+        action='store_true',
+        help=(
+            'Step 7.δ exposure-bias mode: build the per-line '
+            'Pass-1 sequence by running --pass1-key\'s CRF over '
+            'the doc, instead of from the YEDDA oracle.  Trains '
+            'Pass-2 on sequences that match what it will see at '
+            'inference time.'
+        ),
+    )
+    parser.add_argument(
+        '--pass1-key', dest='pass1_key',
+        default='skol:classifier:model:v4_layout',
+        help=(
+            'Pass-1 (LayoutCRF) Redis state-key.  Only loaded '
+            'when --use-predicted-layout is on.'
+        ),
+    )
     args, _ = parser.parse_known_args()
 
     config = get_env_config()
@@ -602,6 +660,30 @@ def main() -> int:
     if verbosity >= 1:
         print(f'train_crf_treatment — db={db_name} device={device}')
 
+    layout_crf: Any = None
+    if args.use_predicted_layout:
+        try:
+            layout_crf, _layout_meta = load_layout_from_redis(
+                redis_client,
+                key=args.pass1_key,
+                meta_key=f'{args.pass1_key}:meta',
+                map_location=device,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f'✗ cannot load Pass-1 CRF from {args.pass1_key!r}: '
+                f'{exc}',
+                file=sys.stderr,
+            )
+            return 1
+        layout_crf.to(device)
+        layout_crf.eval()
+        if verbosity >= 1:
+            print(
+                f'  --use-predicted-layout ON — Pass-1 loaded '
+                f'from {args.pass1_key!r}',
+            )
+
     doc_ids = _iter_doc_ids(db, limit=limit)
     if verbosity >= 1:
         print(f'  scanning {len(doc_ids)} docs')
@@ -621,6 +703,8 @@ def main() -> int:
         dry_run=dry_run,
         skip_existing=skip_existing,
         verbosity=verbosity,
+        use_predicted_layout=args.use_predicted_layout,
+        layout_crf=layout_crf,
     )
 
     if verbosity >= 1:

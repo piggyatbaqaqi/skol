@@ -277,6 +277,124 @@ class TestPass2Mask(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# 5. Step 7.δ: --use-predicted-layout (exposure-bias mode)
+# ---------------------------------------------------------------------------
+
+
+class _StubLayoutCRF:
+    """LayoutCRF stand-in.  ``decode()`` returns
+    ``[stub_indices]`` regardless of features so the test asserts
+    flow of control, not model behaviour."""
+
+    def __init__(self, stub_indices):
+        self.stub_indices = list(stub_indices)
+        self.feature_dim = 791
+        self.calls = 0
+
+    def to(self, _device):
+        return self
+
+    def eval(self):
+        return self
+
+    def decode(self, _features, _mask):
+        self.calls += 1
+        return [list(self.stub_indices)]
+
+
+class TestPrepareDocPass2WithPredictedLayout(unittest.TestCase):
+    """Step 7.δ extends ``_prepare_doc_pass2`` with a
+    ``use_predicted_layout=True`` mode: the per-line layout sequence
+    comes from running the trained Pass-1 CRF on the doc's features
+    instead of from ``build_label_sequence``.  Trains Pass-2 on
+    sequences that match what it'll actually see at inference time.
+    """
+
+    def _zero_sbert(self, _line):
+        return np.zeros(768, dtype=np.float32)
+
+    def test_uses_layout_crf_decode_when_flag_set(self):
+        """3-line doc with annotations that label every line as
+        Description (Pass-1 oracle → 'Other' for all 3).  Predicted
+        Pass-1 says line 0 is Page-header (idx 0), so only lines 1+2
+        survive.  Assertion: pass2 features have 2 rows, not 3."""
+        from skol_classifier.v4.crf_layout import (
+            OTHER_INDEX as LAYOUT_OTHER_INDEX,
+        )
+        plaintext = 'Header line\nBody one\nBody two'
+        ann = (
+            '[@Header line#Description*]'
+            '[@Body one#Description*]'
+            '[@Body two#Description*]'
+        )
+        doc = _synth_doc(
+            'd', ann_text=ann, plaintext=plaintext,
+            spans_json_bytes=_empty_spans_json(),
+            page_headers_json_bytes=_empty_page_headers_json(plaintext),
+        )
+        db = FakeCouchDb({'d': doc})
+        # Stub predicts: [Page-header(0), Other(7), Other(7)]
+        stub = _StubLayoutCRF([0, LAYOUT_OTHER_INDEX, LAYOUT_OTHER_INDEX])
+
+        prepared = _prepare_doc_pass2(
+            db, 'd', sbert_lookup=self._zero_sbert,
+            use_predicted_layout=True, layout_crf=stub,
+            device='cpu',
+        )
+        self.assertIsNotNone(prepared)
+        features, labels = prepared
+        # Only 2 lines survive (the two predicted Other lines),
+        # NOT 3 (which would be the oracle Description-everywhere
+        # answer).  This is the load-bearing assertion: the
+        # predicted layout decides the mask, not the YEDDA blocks.
+        self.assertEqual(features.shape[0], 2)
+        self.assertEqual(labels.shape[0], 2)
+        self.assertEqual(stub.calls, 1)
+
+    def test_oracle_path_unchanged_when_flag_unset(self):
+        """When ``use_predicted_layout=False`` (the default), the
+        original oracle path is used and the layout CRF stub MUST
+        NOT be called."""
+        plaintext = 'Body line'
+        ann = '[@Body line#Description*]'
+        doc = _synth_doc(
+            'd', ann_text=ann, plaintext=plaintext,
+            spans_json_bytes=_empty_spans_json(),
+            page_headers_json_bytes=_empty_page_headers_json(plaintext),
+        )
+        db = FakeCouchDb({'d': doc})
+        stub = _StubLayoutCRF([0])  # would mark line as layout if used
+
+        prepared = _prepare_doc_pass2(
+            db, 'd', sbert_lookup=self._zero_sbert,
+            use_predicted_layout=False, layout_crf=stub,
+        )
+        self.assertIsNotNone(prepared)
+        features, _ = prepared
+        # Oracle says it's Description (non-layout) — 1 row.
+        self.assertEqual(features.shape[0], 1)
+        self.assertEqual(stub.calls, 0)
+
+    def test_layout_crf_required_when_flag_set(self):
+        """Passing use_predicted_layout=True without supplying a
+        layout_crf is an operator error and must raise clearly."""
+        plaintext = 'Body line'
+        ann = '[@Body line#Description*]'
+        doc = _synth_doc(
+            'd', ann_text=ann, plaintext=plaintext,
+            spans_json_bytes=_empty_spans_json(),
+            page_headers_json_bytes=_empty_page_headers_json(plaintext),
+        )
+        db = FakeCouchDb({'d': doc})
+        with self.assertRaises(ValueError) as cm:
+            _prepare_doc_pass2(
+                db, 'd', sbert_lookup=self._zero_sbert,
+                use_predicted_layout=True, layout_crf=None,
+            )
+        self.assertIn('layout_crf', str(cm.exception).lower())
+
+
+# ---------------------------------------------------------------------------
 # 5. Training loop integration
 # ---------------------------------------------------------------------------
 

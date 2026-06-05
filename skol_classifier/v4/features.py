@@ -75,6 +75,13 @@ Canonical source of truth — both CRFs default to this.  Re-derived
 from the individual block sizes so the assertion stays correct if
 any block is resized in a later step."""
 
+PARTICLE_SLICE = slice(_SBERT_DIM, _SBERT_DIM + _PARTICLE_DIM)
+"""Canonical slice of the 791-d feature vector covering the
+particle block (indices 768..779 today).  Re-derived from the
+block-size constants so it tracks any future resize.  Step 7.γ's
+ablation zeros this slice at inference to measure how much the
+spans pipeline contributes to F1."""
+
 _IS_SHORT_THRESHOLD = 30
 
 

@@ -277,6 +277,7 @@ def predict_all(
     dry_run: bool = False,
     limit: Optional[int] = None,
     verbosity: int = 1,
+    ablate_particles: bool = False,
 ) -> Dict[str, int]:
     """Walk ``input_db``, predict, write to ``output_db``.
 
@@ -318,6 +319,7 @@ def predict_all(
         per_line_tags, ann_text = predict_doc(
             plaintext, spans_dict, ph_dict,
             layout_crf, treatment_crf, sbert_lookup,
+            ablate_particles=ablate_particles,
             device=device,
         )
         counts['predicted'] += 1
@@ -359,6 +361,7 @@ def predict_all_single(
     dry_run: bool = False,
     limit: Optional[int] = None,
     verbosity: int = 1,
+    ablate_particles: bool = False,
 ) -> Dict[str, int]:
     """Single-CRF sibling of :func:`predict_all` (Step 6.F).
 
@@ -403,6 +406,7 @@ def predict_all_single(
         per_line_tags, ann_text = predict_doc_single(
             plaintext, spans_dict, ph_dict,
             single_crf, sbert_lookup,
+            ablate_particles=ablate_particles,
             device=device,
         )
         counts['predicted'] += 1
@@ -478,6 +482,16 @@ def main() -> int:
             'Run the v4 Step 6.F single-CRF baseline against this '
             'Redis state-key instead of the two-pass production '
             'path.  Mutually exclusive with --pass1-key / --pass2-key.'
+        ),
+    )
+    parser.add_argument(
+        '--ablate-particles', dest='ablate_particles',
+        action='store_true',
+        help=(
+            'Zero the 12-d particle feature block at inference '
+            '(features.PARTICLE_SLICE) before decode.  Step 7.γ '
+            'measurement — quantifies the spans pipeline\'s '
+            'contribution to F1.  Works with both dispatch modes.'
         ),
     )
     args, _ = parser.parse_known_args()
@@ -589,6 +603,7 @@ def main() -> int:
             skip_existing=skip_existing, force=force,
             dry_run=dry_run, limit=limit,
             verbosity=verbosity,
+            ablate_particles=args.ablate_particles,
         )
     else:
         try:
@@ -643,6 +658,7 @@ def main() -> int:
             skip_existing=skip_existing, force=force,
             dry_run=dry_run, limit=limit,
             verbosity=verbosity,
+            ablate_particles=args.ablate_particles,
         )
 
     if verbosity >= 1:

@@ -619,5 +619,84 @@ class TestSingleCRFMode(unittest.TestCase):
         self.assertEqual(len(output_db.puts), 2)
 
 
+# ---------------------------------------------------------------------------
+# Step 7.γ: --ablate-particles flag propagation
+# ---------------------------------------------------------------------------
+
+
+class TestAblateParticlesFlag(unittest.TestCase):
+    """``--ablate-particles`` threads ``ablate_particles=True`` into
+    the inner ``predict_doc`` / ``predict_doc_single`` call,
+    regardless of dispatch mode.  We patch the inner function and
+    inspect the kwargs."""
+
+    def _run_predict_all(self, *, ablate: bool):
+        input_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        output_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        seen = []
+
+        def spy(*args, **kwargs):
+            seen.append(kwargs)
+            return _stub_predict(*args, **kwargs)
+
+        with mock.patch('predict_v4.predict_doc', side_effect=spy):
+            predict_v4.predict_all(
+                input_db, output_db,
+                layout_crf=mock.MagicMock(),
+                treatment_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=False, limit=None,
+                verbosity=0,
+                ablate_particles=ablate,
+            )
+        return seen
+
+    def test_two_pass_forwards_ablate_true(self):
+        seen = self._run_predict_all(ablate=True)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0].get('ablate_particles'), True)
+
+    def test_two_pass_forwards_ablate_false_by_default(self):
+        seen = self._run_predict_all(ablate=False)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0].get('ablate_particles'), False)
+
+    def _run_predict_all_single(self, *, ablate: bool):
+        input_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        output_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        seen = []
+
+        def spy(*args, **kwargs):
+            seen.append(kwargs)
+            return _stub_predict_single(*args, **kwargs)
+
+        with mock.patch(
+            'predict_v4.predict_doc_single', side_effect=spy,
+        ):
+            predict_v4.predict_all_single(
+                input_db, output_db,
+                single_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=False, limit=None,
+                verbosity=0,
+                ablate_particles=ablate,
+            )
+        return seen
+
+    def test_single_crf_forwards_ablate_true(self):
+        seen = self._run_predict_all_single(ablate=True)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0].get('ablate_particles'), True)
+
+    def test_single_crf_forwards_ablate_false_by_default(self):
+        seen = self._run_predict_all_single(ablate=False)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0].get('ablate_particles'), False)
+
+
 if __name__ == '__main__':
     unittest.main()
