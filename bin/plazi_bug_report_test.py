@@ -27,7 +27,9 @@ from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
 )
 from plazi_bug_report import (  # type: ignore[import]  # noqa: E402
     EXPECTED,
+    all_failures,
     failure_csv,
+    filter_failures,
     find_failures,
     issue_body,
     live_observe,
@@ -261,18 +263,73 @@ class TestLiveObserve(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+class TestAllFailures(unittest.TestCase):
+    """Whole-log mode: every distinct failure, no ids listed."""
+
+    def _line(self, doc_id: str, reason: str, detail: str = 'x') -> str:
+        result = PlaziResult(
+            body=None, reason=reason, detail=detail,
+            url=f'http://x?DOI=10.1/{doc_id}&format=json')
+        return format_failure_log_line(doc_id, result, f'10.1/{doc_id}')
+
+    def test_returns_every_distinct_failure_last_wins(self):
+        lines = [
+            self._line('a', 'http_status', '500'),
+            self._line('b', 'runaway', '703118'),
+            self._line('a', 'bad_json', 'None'),  # 'a' retried, failed again
+            'unrelated noise',
+        ]
+        recs = all_failures(lines)
+        self.assertEqual([r.doc_id for r in recs], ['a', 'b'])
+        by_id = {r.doc_id: r for r in recs}
+        self.assertEqual(by_id['a'].reason, 'bad_json')  # most recent wins
+
+
+class TestFilterFailures(unittest.TestCase):
+    """Whole-log scoping: drop our own transient timeouts (request_error)
+    by default since they aren't Plazi's fault; allow opting in or
+    restricting to specific reasons."""
+
+    def _recs(self) -> List[FailureRecord]:
+        return [
+            _rec(doc_id='a', reason='http_status', detail='500'),
+            _rec(doc_id='b', reason='runaway', detail='703118'),
+            _rec(doc_id='c', reason='request_error', detail='ReadTimeout'),
+        ]
+
+    def test_excludes_transient_by_default(self):
+        out = filter_failures(self._recs(), include_transient=False)
+        self.assertEqual({r.doc_id for r in out}, {'a', 'b'})
+
+    def test_include_transient_keeps_request_error(self):
+        out = filter_failures(self._recs(), include_transient=True)
+        self.assertEqual({r.doc_id for r in out}, {'a', 'b', 'c'})
+
+    def test_reason_filter_restricts(self):
+        out = filter_failures(self._recs(), reasons=['runaway'])
+        self.assertEqual({r.doc_id for r in out}, {'b'})
+
+
 class TestMainIntegration(unittest.TestCase):
     def _write_log(self, path: Path) -> None:
-        lines = []
-        for doc_id, reason, detail, doi in [
+        self._write_cases(path, [
             ('a', 'http_status', '500', '10.1/a'),
             ('b', 'runaway', '703118', '10.1/b'),
-        ]:
+        ])
+
+    def _write_cases(self, path: Path, cases: List[Any]) -> None:
+        lines = []
+        for doc_id, reason, detail, doi in cases:
             result = PlaziResult(
                 body=None, reason=reason, detail=detail,
                 url=f'https://api.plazi.org/v1/x?DOI={doi}&format=json')
             lines.append(format_failure_log_line(doc_id, result, doi))
         path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+    def _csv_ids(self, out: Path) -> set:
+        parsed = list(csv.DictReader(io.StringIO(
+            (out / 'failure.csv').read_text(encoding='utf-8'))))
+        return {r['doc_id'] for r in parsed}
 
     def test_writes_csv_and_report(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -309,6 +366,59 @@ class TestMainIntegration(unittest.TestCase):
             # Still writes a report for the found ids, but signals that
             # some requested ids weren't in the log.
             self.assertEqual(rc, 2)
+
+    def test_whole_log_excludes_transient_by_default(self):
+        """No ids listed → report every failure in the log, minus our own
+        transient timeouts."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmpdir = Path(tmp)
+            log = tmpdir / 'run.log'
+            self._write_cases(log, [
+                ('a', 'http_status', '500', '10.1/a'),
+                ('b', 'runaway', '703118', '10.1/b'),
+                ('c', 'request_error', 'ReadTimeout', '10.1/c'),
+            ])
+            out = tmpdir / 'out'
+            rc = main(['--log', str(log), '--out-dir', str(out)])
+            self.assertEqual(rc, 0)
+            self.assertEqual(self._csv_ids(out), {'a', 'b'})
+
+    def test_whole_log_include_transient(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmpdir = Path(tmp)
+            log = tmpdir / 'run.log'
+            self._write_cases(log, [
+                ('a', 'http_status', '500', '10.1/a'),
+                ('c', 'request_error', 'ReadTimeout', '10.1/c'),
+            ])
+            out = tmpdir / 'out'
+            rc = main(['--log', str(log), '--out-dir', str(out),
+                       '--include-transient'])
+            self.assertEqual(rc, 0)
+            self.assertEqual(self._csv_ids(out), {'a', 'c'})
+
+    def test_whole_log_reason_filter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmpdir = Path(tmp)
+            log = tmpdir / 'run.log'
+            self._write_cases(log, [
+                ('a', 'http_status', '500', '10.1/a'),
+                ('b', 'runaway', '703118', '10.1/b'),
+            ])
+            out = tmpdir / 'out'
+            rc = main(['--log', str(log), '--out-dir', str(out),
+                       '--reason', 'runaway'])
+            self.assertEqual(rc, 0)
+            self.assertEqual(self._csv_ids(out), {'b'})
+
+    def test_empty_log_is_zero_exit_in_whole_log_mode(self):
+        """A clean log (no failures) is success, not an error."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmpdir = Path(tmp)
+            log = tmpdir / 'run.log'
+            log.write_text('just some unrelated lines\n', encoding='utf-8')
+            rc = main(['--log', str(log), '--out-dir', str(tmpdir / 'out')])
+            self.assertEqual(rc, 0)
 
 
 if __name__ == '__main__':

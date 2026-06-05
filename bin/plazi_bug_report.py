@@ -41,6 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
     FailureRecord,
     _USER_AGENT,
+    is_sticky_reason,
     parse_failure_log_line,
 )
 
@@ -87,6 +88,18 @@ done
 '''
 
 
+def _index_failures(lines: Iterable[str]) -> Dict[str, FailureRecord]:
+    """Map doc id -> its most-recent failure from log ``lines``.  A doc
+    that failed more than once (retried then failed again) keeps its last
+    line; first-appearance order is preserved (dict insertion order)."""
+    latest: Dict[str, FailureRecord] = {}
+    for line in lines:
+        rec = parse_failure_log_line(line)
+        if rec is not None:
+            latest[rec.doc_id] = rec
+    return latest
+
+
 def find_failures(
     lines: Iterable[str],
     identifiers: Sequence[str],
@@ -94,15 +107,10 @@ def find_failures(
     """Recover the failures for ``identifiers`` from log ``lines``.
 
     Returns ``(found, missing)``.  ``found`` follows the order of
-    ``identifiers``; when a doc id failed more than once (retried then
-    failed again) its *most recent* line wins.  ``missing`` lists ids
-    with no failure line at all.
+    ``identifiers`` (most-recent line per id); ``missing`` lists ids with
+    no failure line at all.
     """
-    latest: Dict[str, FailureRecord] = {}
-    for line in lines:
-        rec = parse_failure_log_line(line)
-        if rec is not None:
-            latest[rec.doc_id] = rec
+    latest = _index_failures(lines)
     found: List[FailureRecord] = []
     missing: List[str] = []
     for ident in identifiers:
@@ -112,6 +120,35 @@ def find_failures(
         else:
             found.append(rec)
     return found, missing
+
+
+def all_failures(lines: Iterable[str]) -> List[FailureRecord]:
+    """Every distinct failure in the log (most-recent line per id),
+    first-appearance order — the whole-log mode used when no ids are
+    named."""
+    return list(_index_failures(lines).values())
+
+
+def filter_failures(
+    records: Sequence[FailureRecord],
+    *,
+    include_transient: bool = False,
+    reasons: Optional[Sequence[str]] = None,
+) -> List[FailureRecord]:
+    """Scope a set of failures for a Plazi-facing report.
+
+    - ``reasons`` (if given) restricts to exactly those failure reasons —
+      handy for one report per failure class.
+    - otherwise transient ``request_error`` failures (our own
+      timeout / connection / DNS blips, not Plazi's fault) are dropped
+      unless ``include_transient`` is set.
+    """
+    if reasons:
+        wanted = set(reasons)
+        return [r for r in records if r.reason in wanted]
+    if include_transient:
+        return list(records)
+    return [r for r in records if is_sticky_reason(r.reason)]
 
 
 def observed_for(record: FailureRecord) -> str:
@@ -288,12 +325,25 @@ def main(argv: Optional[List[str]] = None) -> int:
                     'repro script) from logged searchByDOI failures.',
     )
     parser.add_argument(
-        'identifiers', nargs='+',
-        help='skol document _id(s) to include in the report.',
+        'identifiers', nargs='*',
+        help='skol document _id(s) to include. Omit to report every '
+             'failure in the log (whole-log mode).',
     )
     parser.add_argument(
         '--log', required=True,
         help='Backfill log file to scan for PLAZI_FAILURE lines.',
+    )
+    parser.add_argument(
+        '--include-transient', action='store_true',
+        help='Whole-log mode: also include transient request_error '
+             '(timeout/connection/DNS) failures, which are usually our '
+             "side rather than Plazi's. Ignored when ids are named.",
+    )
+    parser.add_argument(
+        '--reason', nargs='*', default=None,
+        help='Whole-log mode: restrict to these failure reasons (e.g. '
+             '`--reason runaway` for one report per class). Ignored when '
+             'ids are named.',
     )
     parser.add_argument(
         '--out-dir', default='.',
@@ -326,15 +376,27 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     lines = Path(args.log).read_text(encoding='utf-8').splitlines()
-    found, missing = find_failures(lines, args.identifiers)
+    if args.identifiers:
+        found, missing = find_failures(lines, args.identifiers)
+    else:
+        found = filter_failures(
+            all_failures(lines),
+            include_transient=args.include_transient,
+            reasons=args.reason,
+        )
+        missing = []
 
     if not found:
-        print(
-            'No matching PLAZI_FAILURE lines for: '
-            + ', '.join(args.identifiers),
-            file=sys.stderr,
-        )
-        return 2
+        if args.identifiers:
+            print(
+                'No matching PLAZI_FAILURE lines for: '
+                + ', '.join(args.identifiers),
+                file=sys.stderr,
+            )
+            return 2
+        print('No failures found in the log; nothing to report.',
+              file=sys.stderr)
+        return 0
 
     observed: Optional[Dict[str, str]] = None
     if args.live:
