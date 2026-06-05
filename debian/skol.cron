@@ -20,8 +20,6 @@
 
 MAILTO=piggy.yarroll+skol@gmail.com
 SKOL_SITE_URL="https://synoptickeyof.life/skol"
-COUCHDB_USER="admin"
-COUCHDB_PASSWORD="greatlyimprovedpassword"
 COUCHDB_URL="http://localhost:5984"
 INGEST_DATABASE="skol_dev"
 TAXON_DATABASE="skol_taxa_dev"
