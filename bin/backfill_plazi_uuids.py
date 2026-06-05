@@ -20,7 +20,7 @@ Plazi's small community service.  Default pacing: 1-2 s between
 requests (≈ 1.5 req/s avg).  ``--rate-limit-min-ms`` /
 ``--rate-limit-max-ms`` tune that.
 
-Storage shape:
+Storage shape (success):
 
     doc['plazi'] = {
         'uuids':        ['DOCUUID32CHAR...', ...],
@@ -28,15 +28,29 @@ Storage shape:
         'looked_up_at': '2026-06-03T17:42:31Z',
         'source':       'plazi:GgSrvApi:v1',
     }
+
+A *sticky* server-side failure instead stamps an error record (no
+``looked_up_at``/``uuids``, so it's never mistaken for a successful
+empty lookup).  The freshness guard backs it off for
+``--retry-failed-after-days`` days; transient (pre-response) failures
+are left unstamped and retried every run:
+
+    doc['plazi'] = {
+        'error':     {'reason': 'http_status', 'detail': '500',
+                      'url': 'https://api.plazi.org/.../searchByDOI?...'},
+        'failed_at': '2026-06-05T12:00:00Z',
+        'source':    'plazi:GgSrvApi:v1',
+    }
 """
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -63,6 +77,7 @@ _SOURCE_TAG = 'plazi:GgSrvApi:v1'
 _DEFAULT_RATE_LIMIT_MIN_MS = 1000
 _DEFAULT_RATE_LIMIT_MAX_MS = 2000
 _DEFAULT_RE_CHECK_AFTER_DAYS = 365
+_DEFAULT_RETRY_FAILED_AFTER_DAYS = 7
 
 # Plazi's searchByDOI sometimes returns its full ~700 k-entry index
 # for DOIs it has no real match on (observed 2026-06).  Stamping
@@ -71,6 +86,57 @@ _DEFAULT_RE_CHECK_AFTER_DAYS = 365
 # far below the misbehavior threshold, so the guard rejects only
 # the runaway responses.
 _MAX_PLAZI_ENTRIES = 100
+
+# Failure reasons.  All but ``request_error`` mean Plazi returned an
+# HTTP response we couldn't use ("server-engaged"); those are sticky and
+# earn the weak N-day backoff.  ``request_error`` is a pre-response
+# network failure (timeout / connection / DNS), retried every run.
+_STICKY_REASONS = frozenset(
+    {'http_status', 'bad_json', 'not_list', 'runaway'},
+)
+
+# Marker + grammar for the reproduction-grade failure log line.  The
+# bug-report tool parses these back out, so format/parse must stay in
+# lock-step (round-tripped in the tests).
+_FAILURE_MARKER = 'PLAZI_FAILURE'
+_FAILURE_LINE_RE = re.compile(
+    r'✗\s+(?P<doc_id>\S+):\s+' + _FAILURE_MARKER +
+    r'\s+reason=(?P<reason>\S+)'
+    r'\s+detail=(?P<detail>\S+)'
+    r'\s+doi=(?P<doi>\S+)'
+    r'\s+url=(?P<url>\S+)\s*$'
+)
+
+
+class PlaziResult(NamedTuple):
+    """Outcome of one ``searchByDOI`` call.
+
+    On success ``body`` is the parsed JSON array and ``reason`` is None.
+    On failure ``body`` is None and ``reason`` names the mode, with
+    ``detail`` carrying a stringified specifier (HTTP status code,
+    runaway entry count, or exception class name) where one applies.
+    ``url`` is always the exact URL queried, for reproduction.
+    """
+    body: Optional[List[Dict[str, Any]]]
+    reason: Optional[str]
+    detail: Optional[str]
+    url: str
+
+
+class FailureRecord(NamedTuple):
+    """A failure recovered from a log line, consumed by the bug-report
+    tool to build a reproduction."""
+    doc_id: str
+    reason: str
+    detail: str
+    doi: str
+    url: str
+
+
+def is_sticky_reason(reason: str) -> bool:
+    """True for failures that earn the weak N-day backoff; False for the
+    transient ``request_error`` (retried every run)."""
+    return reason in _STICKY_REASONS
 
 
 # ---------------------------------------------------------------------------
@@ -121,32 +187,99 @@ def compute_plazi_update(
     }
 
 
+def compute_plazi_error(result: PlaziResult, now_iso: str) -> Dict[str, Any]:
+    """Build the error record written to ``doc['plazi']`` for a sticky
+    failure.
+
+    Deliberately carries no ``looked_up_at``/``uuids`` so it can never be
+    mistaken for a successful (possibly empty) lookup.  The ``failed_at``
+    stamp is what ``should_skip`` reads to back the doc off for
+    ``--retry-failed-after-days`` days.
+    """
+    return {
+        'error': {
+            'reason': result.reason,
+            'detail': result.detail,
+            'url': result.url,
+        },
+        'failed_at': now_iso,
+        'source': _SOURCE_TAG,
+    }
+
+
+def format_failure_log_line(
+    doc_id: str, result: PlaziResult, doi: str,
+) -> str:
+    """One greppable, reproduction-grade line per failure: doc id, reason,
+    detail, DOI, and the exact URL.  Inverse of
+    ``parse_failure_log_line``."""
+    return (
+        f'✗ {doc_id}: {_FAILURE_MARKER} '
+        f'reason={result.reason} detail={result.detail} '
+        f'doi={doi} url={result.url}'
+    )
+
+
+def parse_failure_log_line(line: str) -> Optional[FailureRecord]:
+    """Recover a :class:`FailureRecord` from a failure log line (tolerant
+    of leading indentation/prefixes).  Returns None for non-failure
+    lines."""
+    m = _FAILURE_LINE_RE.search(line)
+    if m is None:
+        return None
+    return FailureRecord(
+        doc_id=m.group('doc_id'),
+        reason=m.group('reason'),
+        detail=m.group('detail'),
+        doi=m.group('doi'),
+        url=m.group('url'),
+    )
+
+
+def _within_days(then_iso: str, now_iso: str, days: int) -> bool:
+    """True when ``then_iso`` is less than ``days`` before ``now_iso``.
+    Unparseable timestamps return False so the caller proceeds rather
+    than blocking forever on a malformed stamp."""
+    try:
+        then = datetime.strptime(then_iso, '%Y-%m-%dT%H:%M:%SZ')
+        now = datetime.strptime(now_iso, '%Y-%m-%dT%H:%M:%SZ')
+    except ValueError:
+        return False
+    then = then.replace(tzinfo=timezone.utc)
+    now = now.replace(tzinfo=timezone.utc)
+    return (now - then) < timedelta(days=days)
+
+
 def should_skip(
     doc: Dict[str, Any],
     *,
     force: bool,
     re_check_after_days: int,
     now_iso: str,
+    retry_failed_after_days: int = _DEFAULT_RETRY_FAILED_AFTER_DAYS,
 ) -> bool:
-    """True when the doc has been looked up recently enough and
-    ``--force`` is not set.  Per CLAUDE.md rule 11, default behaviour
-    is idempotent."""
+    """True when the doc was checked or failed recently enough to skip and
+    ``--force`` is not set.  Per CLAUDE.md rule 11, default behaviour is
+    idempotent.
+
+    Two freshness windows:
+
+    - a successful ``looked_up_at`` within ``re_check_after_days``; and
+    - a sticky-failure ``failed_at`` within ``retry_failed_after_days``
+      (the weak block so restarts don't re-hit known-bad DOIs).
+    """
     if force:
         return False
     plazi = doc.get('plazi')
     if not isinstance(plazi, dict):
         return False
     looked_up = plazi.get('looked_up_at')
-    if not isinstance(looked_up, str) or not looked_up:
-        return False
-    try:
-        prev = datetime.strptime(looked_up, '%Y-%m-%dT%H:%M:%SZ')
-        prev = prev.replace(tzinfo=timezone.utc)
-        now = datetime.strptime(now_iso, '%Y-%m-%dT%H:%M:%SZ')
-        now = now.replace(tzinfo=timezone.utc)
-    except ValueError:
-        return False
-    return (now - prev) < timedelta(days=re_check_after_days)
+    if isinstance(looked_up, str) and looked_up:
+        return _within_days(looked_up, now_iso, re_check_after_days)
+    failed_at = plazi.get('failed_at')
+    if isinstance(failed_at, str) and failed_at:
+        return _within_days(failed_at, now_iso, retry_failed_after_days)
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -154,47 +287,59 @@ def should_skip(
 # ---------------------------------------------------------------------------
 
 
+def build_search_url(doi: str, plazi_url: str) -> str:
+    """Construct the ``searchByDOI`` URL.  Shared by ``query_plazi`` and
+    the bug-report tool so the reproduction URL matches what we queried.
+    Trims a trailing slash on ``plazi_url`` and percent-encodes the DOI
+    (otherwise Plazi's router parses the DOI's own slash as a path
+    separator)."""
+    base = plazi_url.rstrip('/')
+    return (
+        f'{base}/Treatments/searchByDOI'
+        f'?DOI={quote(doi, safe="")}'
+        f'&format=json'
+    )
+
+
 def query_plazi(
     doi: str,
     *,
     plazi_url: str,
     http_client: Any,
-) -> Optional[List[Dict[str, Any]]]:
+) -> PlaziResult:
     """Hit ``/Treatments/searchByDOI?DOI=<doi>&format=json`` via the
     shared rate-limited client.
 
-    Returns the parsed JSON array on 200, or ``None`` on any non-200
-    status, network timeout, connection error, or malformed JSON.
-    ``None`` is the caller's signal to leave the doc unstamped so the
-    next run retries it — important because Plazi's ReadTimeout
-    exception from a slow server response shouldn't crash a 24k-doc
-    backfill.
+    Returns a :class:`PlaziResult`.  On success ``reason`` is None and
+    ``body`` is the parsed array.  Each failure mode carries a distinct
+    ``reason`` so the caller can pick a disposition (sticky vs transient)
+    and log reproduction info:
+
+    - ``request_error`` — the GET raised before any response (timeout /
+      connection / DNS).  The lone *transient* reason; ``detail`` is the
+      exception class name.
+    - ``http_status``   — non-200 response; ``detail`` is the code.
+    - ``bad_json``      — 200 but the body didn't parse as JSON.
+    - ``not_list``      — 200, valid JSON, but not an array.
+    - ``runaway``       — 200 array larger than the sanity cap; ``detail``
+      is the entry count.  See ``_MAX_PLAZI_ENTRIES``.
     """
-    base = plazi_url.rstrip('/')
-    url = (
-        f'{base}/Treatments/searchByDOI'
-        f'?DOI={quote(doi, safe="")}'
-        f'&format=json'
-    )
+    url = build_search_url(doi, plazi_url)
     try:
         resp = http_client.get(url)
-    except Exception:  # noqa: BLE001 — ReadTimeout / ConnectionError / DNS
-        return None
+    except Exception as exc:  # noqa: BLE001 — ReadTimeout/ConnError/DNS
+        return PlaziResult(None, 'request_error', type(exc).__name__, url)
     if resp.status_code != 200:
-        return None
+        return PlaziResult(None, 'http_status', str(resp.status_code), url)
     try:
         body = resp.json()
     except Exception:  # noqa: BLE001 — malformed JSON
-        return None
+        return PlaziResult(None, 'bad_json', None, url)
     if not isinstance(body, list):
-        return None
+        return PlaziResult(None, 'not_list', None, url)
     if len(body) > _MAX_PLAZI_ENTRIES:
-        # Server-side misbehavior — treat as if the query failed so
-        # the doc is left unstamped and skipped on the next run too
-        # (further retries against a still-misbehaving API would
-        # keep losing).  See _MAX_PLAZI_ENTRIES comment.
-        return None
-    return body
+        return PlaziResult(None, 'runaway', str(len(body)), url)
+    return PlaziResult(body, None, None, url)
 
 
 # ---------------------------------------------------------------------------
@@ -209,25 +354,38 @@ def process_doc(
     plazi_url: str,
     now_iso: str,
     dry_run: bool = False,
-) -> str:
+) -> Tuple[str, Optional[PlaziResult]]:
     """Look up ``doc['doi']`` at Plazi and stamp ``doc['plazi']``.
 
-    Returns a status string: ``'updated'`` (doc was changed and, if
-    not dry-run, saved to the DB by the caller), ``'dry_run'`` (would
-    have updated; in-memory mutation done so verbose output can show
-    the diff), or ``'http_failure'`` (Plazi unreachable / non-200;
-    the doc is left untouched and will be retried on the next run).
+    Returns ``(status, result)``:
+
+    - ``('no_doi', None)``              — doc has no usable DOI.
+    - ``('updated', result)``           — success; ``doc['plazi']``
+      stamped (caller saves unless dry-run).
+    - ``('dry_run', result)``           — success; stamped in memory only.
+    - ``('sticky_failure', result)``    — server-engaged failure; an error
+      record is stamped (caller saves it unless dry-run) so the doc is
+      backed off on future runs.
+    - ``('transient_failure', result)`` — pre-response failure; the doc is
+      left untouched and retried on the very next run.
+
+    ``result`` is the :class:`PlaziResult` (None only for ``no_doi``) so
+    the caller can log reproduction info for failures.
     """
     doi = doc.get('doi')
     if not isinstance(doi, str) or not doi:
-        return 'no_doi'
-    body = query_plazi(doi, plazi_url=plazi_url, http_client=http_client)
-    if body is None:
-        return 'http_failure'
-    doc['plazi'] = compute_plazi_update(body, now_iso)
+        return ('no_doi', None)
+    result = query_plazi(doi, plazi_url=plazi_url, http_client=http_client)
+    if result.reason is not None:
+        if is_sticky_reason(result.reason):
+            doc['plazi'] = compute_plazi_error(result, now_iso)
+            return ('sticky_failure', result)
+        return ('transient_failure', result)
+    assert result.body is not None  # reason is None ⇒ success ⇒ body set
+    doc['plazi'] = compute_plazi_update(result.body, now_iso)
     if dry_run:
-        return 'dry_run'
-    return 'updated'
+        return ('dry_run', result)
+    return ('updated', result)
 
 
 # ---------------------------------------------------------------------------
@@ -350,6 +508,15 @@ def main() -> int:
             f'(default: {_DEFAULT_RE_CHECK_AFTER_DAYS}).'
         ),
     )
+    parser.add_argument(
+        '--retry-failed-after-days', type=int,
+        default=_DEFAULT_RETRY_FAILED_AFTER_DAYS,
+        help=(
+            f'Weak block: back off docs whose last lookup was a sticky '
+            f'server-side failure for N days before retrying '
+            f'(default: {_DEFAULT_RETRY_FAILED_AFTER_DAYS}).'
+        ),
+    )
     args, _ = parser.parse_known_args()
 
     config = get_env_config()
@@ -382,9 +549,11 @@ def main() -> int:
 
     counts: Dict[str, int] = {
         'scanned': 0, 'skipped_fresh': 0, 'queried': 0,
-        'hits': 0, 'empty': 0, 'http_failure': 0,
+        'hits': 0, 'empty': 0,
+        'sticky_failure': 0, 'transient_failure': 0,
         'save_failure': 0, 'updated': 0,
     }
+    failure_reasons: Dict[str, int] = {}
 
     if verbosity >= 1:
         print(f'Plazi backfill — db={db_name} plazi_url={args.plazi_url}')
@@ -399,20 +568,47 @@ def main() -> int:
         if should_skip(
             doc, force=force,
             re_check_after_days=args.re_check_after_days,
+            retry_failed_after_days=args.retry_failed_after_days,
             now_iso=now_iso,
         ):
             counts['skipped_fresh'] += 1
             continue
         counts['queried'] += 1
-        result = process_doc(
+        status, result = process_doc(
             doc, http_client=http_client,
             plazi_url=args.plazi_url,
             now_iso=now_iso, dry_run=dry_run,
         )
-        if result == 'http_failure':
-            counts['http_failure'] += 1
-            if verbosity >= 2:
-                print(f'  ✗ {doc["_id"]}: HTTP failure on {doc["doi"]!r}')
+        if status in ('sticky_failure', 'transient_failure'):
+            counts[status] += 1
+            if result is not None and result.reason is not None:
+                failure_reasons[result.reason] = (
+                    failure_reasons.get(result.reason, 0) + 1
+                )
+            # Reproduction-grade line: sticky failures are actionable
+            # (candidate Plazi bug reports) so log at -v1; transient
+            # network blips only at -v2.
+            should_log = (
+                verbosity >= 1 if status == 'sticky_failure'
+                else verbosity >= 2
+            )
+            if result is not None and should_log:
+                print('  ' + format_failure_log_line(
+                    doc['_id'], result, doc['doi']))
+            # Persist the sticky error stamp so the weak block survives
+            # restarts; transient failures are left unstamped to retry.
+            if status == 'sticky_failure' and not dry_run:
+                save_errors: List[str] = []
+                if not save_with_retry(
+                    db, doc, on_error=save_errors.append,
+                ):
+                    counts['save_failure'] += 1
+                    if verbosity >= 1:
+                        print(
+                            f'  ✗ {doc["_id"]}: error-stamp save failed '
+                            'after retry (will retry next run)',
+                            file=sys.stderr,
+                        )
             continue
         plazi = doc.get('plazi', {})
         n_uuids = len(plazi.get('uuids', []))
@@ -421,7 +617,7 @@ def main() -> int:
         else:
             counts['empty'] += 1
         if not dry_run:
-            save_errors: List[str] = []
+            save_errors = []
             if save_with_retry(db, doc, on_error=save_errors.append):
                 counts['updated'] += 1
             else:
@@ -451,7 +647,10 @@ def main() -> int:
         print(f'  queries issued      : {counts["queried"]:>6}')
         print(f'  queries with hits   : {counts["hits"]:>6}')
         print(f'  queries empty       : {counts["empty"]:>6}')
-        print(f'  http failures       : {counts["http_failure"]:>6}')
+        print(f'  sticky failures     : {counts["sticky_failure"]:>6}')
+        print(f'  transient failures  : {counts["transient_failure"]:>6}')
+        for reason in sorted(failure_reasons):
+            print(f'    - {reason:<15} : {failure_reasons[reason]:>6}')
         print(f'  save failures       : {counts["save_failure"]:>6}')
         print(f'  docs updated        : {counts["updated"]:>6}')
         print(f'  hit rate            : {hit_rate:>6.1%}')
