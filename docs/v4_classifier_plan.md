@@ -293,26 +293,43 @@ follow-on:
 | 6.E | Run `evaluate_golden.py` for each Pass 2 variant against `skol_golden_ann_hand_v2`. The variant with the higher macro F1 becomes `production_v4`'s real Pass 2. | ✅ Combined wins decisively: char-level macro F1 = 0.479 vs hand's 0.311 (delta +0.168).  Combined beats hand on every tag.  `production_v4.redis_keys.classifier_model_pass2` pinned to the combined bundle; `production_v4.evaluation` records the combined macro + per-tag F1.  Full table in [docs/production_v4_report.md](production_v4_report.md). |
 | 6.F | Ablation: train a *single-CRF* baseline (no Pass 1 / Pass 2 split, full 19-label space, hand-only training) and compare. If the two-pass design doesn't beat the single-CRF baseline, that's a Step 7 decision to abandon the two-pass complexity. | ✅ New module `skol_classifier/v4/crf_single.py` (19-label CRF) + `bin/train_crf_single.py` trainer + `bin/predict_v4 --single-crf-key` dispatch.  Trained on `skol_training_v2_no_golden` (128 train + 32 dev), 20 epochs, dev macro F1 = 0.344.  Golden-set macro F1 = **0.412** (vs two-pass-hand 0.311 and two-pass-combined 0.479).  Single-CRF beats two-pass-hand by **+0.10** on macro F1 and **+0.11** on char accuracy — i.e. given the same hand-only training data, the simpler architecture wins.  Two-pass survives only because Pass-2 can train on the 12× larger combined corpus.  Full per-tag table + Step 7 recommendation in [docs/production_v4_report.md](production_v4_report.md). |
 
-### Step 7 — Comparison report
+### Step 7 — Comparison report ✅
 
-`docs/production_v4_report.md` covering:
+[`docs/production_v4_report.md`](production_v4_report.md) Step 7 sections cover
+all five originally-listed deliverables.  Headline result: single-CRF
+trained on the combined corpus beats the production two-pass-combined pin
+by **+0.106 macro F1 (0.585 vs 0.479)** and **+0.10 char accuracy**.  v3
+logistic baseline floor is 0.127; every v4 variant beats it by ≥ 0.18.
 
-- **v4 vs v3 baseline grid** — macro F1 and per-tag F1 on both golden
-  DBs.
-- **Two-pass vs single-CRF ablation** (from 6.F). If the gap is small,
-  recommend the single CRF for simplicity.
-- **Per-tag improvements** — which categories did SBERT + CRF help most
-  on? Likely candidates: Page-header (sequence structure helps), Notes
-  (semantic disambiguation), Diagnosis (CRF transitions encode "after
-  Description, often comes Diagnosis").
-- **Particle feature contribution** — ablate by zeroing the particle
-  feature block; report the F1 delta. This tells us whether the spans
-  pipeline is pulling its weight.
-- **Exposure bias measurement** — re-train Pass 2 using Pass 1's
-  predicted labels (scheduled sampling, single iteration); report
-  whether the Pass-2 metrics shift.
-- **Cost** — total training time, prediction-throughput
-  (docs/second), Redis memory for SBERT cache.
+- **v4 vs v3 baseline grid** ✅ 7-row table in §7.α; v3 row at
+  macro F1 0.127 sets the floor every v4 variant clears by ≥ 0.18.
+- **Two-pass vs single-CRF ablation** ✅ §7.β: single-CRF combined
+  wins by +0.106 macro F1 vs two-pass combined; per-tag breakdown
+  shows 13 net F1 wins, 4 net regressions (largest: Bibliography
+  +0.72, Key +0.69, Table +0.19 layout wins; Etymology −0.14,
+  Phylogeny −0.13 treatment regressions).
+- **Per-tag improvements** ✅ folded into §7.α + §7.β per-tag
+  tables.  Layout tags dominate the single-CRF win because Pass-1's
+  0.297 dev F1 was the two-pass bottleneck; the joint Viterbi
+  formulation in single-CRF sidesteps it.
+- **Particle feature contribution** ✅ §7.γ: aggregate ablation
+  delta is negligible (−0.006 two-pass, −0.001 single-CRF); per-tag
+  effects are non-uniform but small.  Particle pipeline is largely
+  redundant with SBERT; keep it (no retirement cost) but de-prioritize.
+- **Exposure bias measurement** ✅ §7.δ: retraining Pass-2 on
+  predicted Pass-1 labels HURTS by −0.11 macro F1.  The standard
+  scheduled-sampling theory is reversed here because Pass-1's
+  predictions are too noisy (0.297 dev F1) to be useful training
+  signal — Pass-2 learns corpus-specific noise instead of true
+  transition structure.
+- **Cost** ✅ §7.ε: ~9 h total training compute on a single RTX
+  5090 Laptop GPU; 105-doc inference ~35-45 s; SBERT cache 0.84 GB
+  raw across 293 922 keys.
+
+**Recommendation**: cut over from two-pass-combined to single-CRF
+combined (`skol:classifier:model:v4_single_combined`).  Exact
+operator commands in [`docs/production_v4_report.md`](production_v4_report.md)
+§7 Recommendation.  Schema + dispatch changes are post-v4 follow-up.
 
 ### Step 8 — v3 vs Pass-1 on the removed layout classes (layout-filter decision)
 
