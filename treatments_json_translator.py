@@ -191,9 +191,15 @@ Result:
 def _chunk_budget_chars(max_length: int) -> int:
     """Char budget for one chunk, leaving ~768 tokens for the prompt scaffold.
 
-    ~3.5 chars/token is conservative for this corpus (unicode measurements, μm).
+    Token-dense taxonomic text (unicode measurements, μm, ×, digits,
+    scientific names) packs ~3.0 chars/token in the Mistral tokenizer, so
+    the factor must not exceed that floor; otherwise a full-budget chunk
+    plus the scaffold overflows ``max_length`` and trips the tokenizer's
+    "Token indices sequence length is longer than the specified maximum"
+    warning. An earlier 3.5 was optimistic and let chunks reach ~2053
+    tokens at max_length=2048.
     """
-    return max(1000, int((max_length - 768) * 3.5))
+    return max(1000, int((max_length - 768) * 3.0))
 
 
 def _raw_generate(model, tokenizer, prompt_template: str, description: str,

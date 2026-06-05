@@ -10,9 +10,13 @@ carries.
 Run with: python -m pytest treatments_json_translator_test.py -v
 """
 
+import math
 import unittest
 
-from treatments_json_translator import build_llm_input_text
+from treatments_json_translator import (
+    _chunk_budget_chars,
+    build_llm_input_text,
+)
 
 
 class TestBuildLlmInputText(unittest.TestCase):
@@ -73,6 +77,51 @@ class TestBuildLlmInputText(unittest.TestCase):
             {"description": None, "diagnosis": "D."},
         )
         self.assertFalse(out.startswith("\n"))
+
+
+class TestChunkBudget(unittest.TestCase):
+    """Contract for ``_chunk_budget_chars``.
+
+    A chunk's prompt is ``scaffold + content``. The budget reserves
+    ``SCAFFOLD_RESERVE_TOKENS`` for the scaffold and spends the rest on
+    content, converting tokens->chars by an implicit chars/token factor.
+    For the tokenizer not to exceed its configured ``model_max_length``
+    (which triggers the HF "Token indices sequence length is longer than
+    the specified maximum" warning), the *worst-case* token count of a
+    full-budget chunk plus the scaffold reserve must stay within
+    ``max_length``. That holds iff the implicit factor does not exceed
+    the corpus's worst-case character density.
+    """
+
+    # Token-dense taxonomic text (unicode measurements like "10-15 x 3-4 um",
+    # μm, ×, digits, scientific names) packs ~3.0 chars/token in the Mistral
+    # tokenizer. The budget's implicit factor must not exceed this floor.
+    WORST_CASE_CHARS_PER_TOKEN = 3.0
+    # Mirrors the reserve documented in _chunk_budget_chars.
+    SCAFFOLD_RESERVE_TOKENS = 768
+
+    def test_budget_stays_within_token_limit(self):
+        for max_length in (2048, 4096, 8192):
+            with self.subTest(max_length=max_length):
+                budget = _chunk_budget_chars(max_length)
+                worst_case_content_tokens = math.ceil(
+                    budget / self.WORST_CASE_CHARS_PER_TOKEN
+                )
+                total = worst_case_content_tokens + self.SCAFFOLD_RESERVE_TOKENS
+                self.assertLessEqual(
+                    total,
+                    max_length,
+                    f"max_length={max_length}: a full-budget chunk "
+                    f"({budget} chars) can reach {worst_case_content_tokens} "
+                    f"content tokens; with the {self.SCAFFOLD_RESERVE_TOKENS}-"
+                    f"token scaffold that is {total} tokens, exceeding "
+                    f"{max_length} and tripping the tokenizer overflow warning.",
+                )
+
+    def test_budget_honors_minimum_floor(self):
+        """When max_length is small enough that the computed budget would
+        fall below 1000 chars, the floor keeps it at 1000."""
+        self.assertEqual(_chunk_budget_chars(900), 1000)
 
 
 if __name__ == "__main__":
