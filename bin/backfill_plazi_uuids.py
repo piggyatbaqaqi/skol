@@ -78,6 +78,7 @@ _DEFAULT_RATE_LIMIT_MIN_MS = 1000
 _DEFAULT_RATE_LIMIT_MAX_MS = 2000
 _DEFAULT_RE_CHECK_AFTER_DAYS = 365
 _DEFAULT_RETRY_FAILED_AFTER_DAYS = 7
+_DEFAULT_HEARTBEAT_EVERY = 500
 
 # Plazi's searchByDOI sometimes returns its full ~700 k-entry index
 # for DOIs it has no real match on (observed 2026-06).  Stamping
@@ -137,6 +138,22 @@ def is_sticky_reason(reason: str) -> bool:
     """True for failures that earn the weak N-day backoff; False for the
     transient ``request_error`` (retried every run)."""
     return reason in _STICKY_REASONS
+
+
+def is_heartbeat_tick(scanned: int, every: int) -> bool:
+    """True when a progress heartbeat is due: every ``every`` scanned
+    docs.  ``every <= 0`` disables it, and zero scanned never fires (so a
+    fresh run doesn't print a spurious 0-line)."""
+    return every > 0 and scanned > 0 and scanned % every == 0
+
+
+def format_heartbeat(counts: Dict[str, int]) -> str:
+    """A one-line progress heartbeat for long, mostly-skipped runs that
+    would otherwise look frozen."""
+    return (
+        f'… scanned {counts["scanned"]} '
+        f'(skipped {counts["skipped_fresh"]}, queried {counts["queried"]})'
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -473,6 +490,13 @@ def _utc_now_iso() -> str:
 
 
 def main() -> int:
+    # Stream output even when stdout is redirected to a logfile: Python
+    # block-buffers a non-tty, so manual/cron runs otherwise show nothing
+    # until the buffer fills or the process exits.  (Guarded for test
+    # harnesses that replace stdout with a non-reconfigurable capture.)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(line_buffering=True)
+
     parser = argparse.ArgumentParser(
         description='Cross-reference skol_dev DOIs with Plazi UUIDs.',
     )
@@ -515,6 +539,15 @@ def main() -> int:
             f'Weak block: back off docs whose last lookup was a sticky '
             f'server-side failure for N days before retrying '
             f'(default: {_DEFAULT_RETRY_FAILED_AFTER_DAYS}).'
+        ),
+    )
+    parser.add_argument(
+        '--heartbeat-every', type=int,
+        default=_DEFAULT_HEARTBEAT_EVERY,
+        help=(
+            f'Print a progress line every N scanned docs so long, '
+            f'mostly-skipped runs visibly advance; 0 disables '
+            f'(default: {_DEFAULT_HEARTBEAT_EVERY}).'
         ),
     )
     args, _ = parser.parse_known_args()
@@ -562,6 +595,10 @@ def main() -> int:
 
     for doc in iter_doi_docs(db):
         counts['scanned'] += 1
+        if verbosity >= 1 and is_heartbeat_tick(
+            counts['scanned'], args.heartbeat_every,
+        ):
+            print(format_heartbeat(counts))
         if limit is not None and counts['queried'] >= limit:
             break
         now_iso = _utc_now_iso()

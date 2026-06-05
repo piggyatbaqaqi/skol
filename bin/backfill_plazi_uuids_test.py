@@ -17,6 +17,8 @@ from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
     compute_plazi_error,
     compute_plazi_update,
     format_failure_log_line,
+    format_heartbeat,
+    is_heartbeat_tick,
     is_sticky_reason,
     iter_doi_docs,
     parse_failure_log_line,
@@ -725,6 +727,37 @@ class TestFailureLogLine(unittest.TestCase):
         self.assertIsNone(parse_failure_log_line(
             '  d1: doi=\'10.1/x\' -> 0 uuid(s)'))
         self.assertIsNone(parse_failure_log_line('random log noise'))
+
+
+# ---------------------------------------------------------------------------
+# Heartbeat (progress line for long, mostly-skipped runs)
+# ---------------------------------------------------------------------------
+
+
+class TestHeartbeat(unittest.TestCase):
+    """A long run over an already-stamped DB skips almost everything and
+    prints nothing per-doc, so it can look frozen. A heartbeat every N
+    scanned docs shows it advancing."""
+
+    def test_tick_on_multiples_only(self):
+        self.assertTrue(is_heartbeat_tick(500, 500))
+        self.assertTrue(is_heartbeat_tick(1000, 500))
+        self.assertFalse(is_heartbeat_tick(499, 500))
+        self.assertFalse(is_heartbeat_tick(501, 500))
+
+    def test_no_tick_at_zero(self):
+        """scanned == 0 must not fire (0 % N == 0)."""
+        self.assertFalse(is_heartbeat_tick(0, 500))
+
+    def test_interval_zero_disables(self):
+        self.assertFalse(is_heartbeat_tick(500, 0))
+
+    def test_format_shows_scanned_skipped_queried(self):
+        counts = {'scanned': 500, 'skipped_fresh': 480, 'queried': 20}
+        line = format_heartbeat(counts)
+        self.assertIn('500', line)
+        self.assertIn('480', line)
+        self.assertIn('20', line)
 
 
 if __name__ == '__main__':
