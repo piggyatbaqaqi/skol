@@ -64,6 +64,14 @@ _DEFAULT_RATE_LIMIT_MIN_MS = 1000
 _DEFAULT_RATE_LIMIT_MAX_MS = 2000
 _DEFAULT_RE_CHECK_AFTER_DAYS = 365
 
+# Plazi's searchByDOI sometimes returns its full ~700 k-entry index
+# for DOIs it has no real match on (observed 2026-06).  Stamping
+# that into the doc balloons it past CouchDB's 8 MB document limit.
+# 100 is well above any plausible real match count for one DOI but
+# far below the misbehavior threshold, so the guard rejects only
+# the runaway responses.
+_MAX_PLAZI_ENTRIES = 100
+
 
 # ---------------------------------------------------------------------------
 # Pure helpers (covered by backfill_plazi_uuids_test.py)
@@ -180,6 +188,12 @@ def query_plazi(
         return None
     if not isinstance(body, list):
         return None
+    if len(body) > _MAX_PLAZI_ENTRIES:
+        # Server-side misbehavior — treat as if the query failed so
+        # the doc is left unstamped and skipped on the next run too
+        # (further retries against a still-misbehaving API would
+        # keep losing).  See _MAX_PLAZI_ENTRIES comment.
+        return None
     return body
 
 
@@ -228,15 +242,18 @@ def save_with_retry(
     sleep_seconds: float = 0.5,
     max_attempts: int = 2,
     sleep_fn: Any = time.sleep,
+    on_error: Any = None,
 ) -> bool:
     """Call ``db.save(doc)`` with one polite retry on transient
     failure.
 
-    The live Plazi backfill against skol_dev returned 7 transient
-    HTTP 413 ``document_too_large`` errors on docs whose direct PUT
-    cleanly succeeded moments later — same docs save fine on the
-    next attempt.  Retrying once with a small sleep clears these
-    without waiting for the cron's next pass.
+    The live Plazi backfill against skol_dev originally tripped a
+    handful of *transient* HTTP 413s that cleared on a second
+    attempt; the retry catches those.  But we later hit *permanent*
+    document_too_large errors caused by a 43 MB plazi response,
+    and the silent retry made that very hard to diagnose.  So the
+    failure path now surfaces the exception via ``on_error`` (the
+    CLI hooks it into stderr) instead of being swallowed.
 
     Returns ``True`` on success, ``False`` after exhausting
     ``max_attempts`` failures.  Caller increments its
@@ -244,12 +261,21 @@ def save_with_retry(
     unstamped so the next run retries it.
 
     ``sleep_fn`` is injectable so the tests don't actually sleep.
+    ``on_error`` is a ``Callable[[str], None]`` invoked once per
+    failed attempt with a one-line ``"attempt N/M: <type>: <msg>"``
+    string.  ``None`` (the default) drops the messages.
     """
     for attempt in range(max_attempts):
         try:
             db.save(doc)
             return True
-        except Exception:  # noqa: BLE001 — couchdb.http.ServerError + others
+        except Exception as exc:  # noqa: BLE001
+            # couchdb.http.ServerError + transport errors + …
+            if on_error is not None:
+                on_error(
+                    f'attempt {attempt + 1}/{max_attempts}: '
+                    f'{type(exc).__name__}: {exc}'
+                )
             if attempt + 1 >= max_attempts:
                 return False
             sleep_fn(sleep_seconds)
@@ -395,13 +421,19 @@ def main() -> int:
         else:
             counts['empty'] += 1
         if not dry_run:
-            if save_with_retry(db, doc):
+            save_errors: List[str] = []
+            if save_with_retry(db, doc, on_error=save_errors.append):
                 counts['updated'] += 1
             else:
                 counts['save_failure'] += 1
                 if verbosity >= 1:
-                    print(f'  ✗ {doc["_id"]}: save failed after retry '
-                          '(doc left unstamped; next run will retry)')
+                    print(
+                        f'  ✗ {doc["_id"]}: save failed after retry '
+                        '(doc left unstamped; next run will retry)',
+                        file=sys.stderr,
+                    )
+                    for line in save_errors:
+                        print(f'      {line}', file=sys.stderr)
                 continue
         if verbosity >= 2:
             tag = '(DRY RUN) ' if dry_run else ''

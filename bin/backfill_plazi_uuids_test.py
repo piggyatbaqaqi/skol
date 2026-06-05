@@ -415,6 +415,114 @@ class TestSaveWithRetry(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(len(db.attempts), 1)
 
+    def test_logs_exception_on_failure(self):
+        """Exhausted retries must surface the underlying exception
+        so the operator can tell a permanent 413 from a transient
+        503 (the original silent-retry made the live debugging of
+        the 43 MB doc_too_large issue much harder than necessary)."""
+        db = FlakyDb(
+            fail_count=2,
+            exc=RuntimeError('document_too_large: foo'),
+        )
+        captured: List[str] = []
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=2, sleep_fn=self._no_sleep,
+            on_error=captured.append,
+        )
+        self.assertFalse(ok)
+        self.assertEqual(len(captured), 2)
+        self.assertTrue(
+            all('document_too_large' in line for line in captured),
+            captured,
+        )
+
+    def test_on_error_skipped_when_attempt_succeeds(self):
+        """Successful attempts must not call on_error."""
+        db = FlakyDb(fail_count=0)
+        captured: List[str] = []
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=2, sleep_fn=self._no_sleep,
+            on_error=captured.append,
+        )
+        self.assertTrue(ok)
+        self.assertEqual(captured, [])
+
+    def test_on_error_called_for_each_retried_attempt(self):
+        """Two failures + a success would still log the first
+        failure, so the operator can see transient errors as they
+        happen rather than only when retries exhaust."""
+        db = FlakyDb(
+            fail_count=1,
+            exc=RuntimeError('temporary glitch'),
+        )
+        captured: List[str] = []
+        ok = save_with_retry(
+            db, {'_id': 'd1'}, sleep_seconds=0.5,
+            max_attempts=2, sleep_fn=self._no_sleep,
+            on_error=captured.append,
+        )
+        self.assertTrue(ok)
+        self.assertEqual(len(captured), 1)
+        self.assertIn('temporary glitch', captured[0])
+
+
+# ---------------------------------------------------------------------------
+# Plazi response size guard
+# ---------------------------------------------------------------------------
+
+
+class TestPlaziOversizeGuard(unittest.TestCase):
+    """The live Plazi API returned ~700 000 entries (66 MB) for
+    DOIs it has no real match on — clear server-side misbehavior.
+    Stamping that into the doc balloons it to 43 MB and trips
+    CouchDB's document_too_large.  ``query_plazi`` rejects responses
+    larger than a sanity cap so the affected docs are simply skipped
+    (no save, no failure that retries forever)."""
+
+    def test_oversize_response_returns_none(self):
+        from backfill_plazi_uuids import query_plazi, _MAX_PLAZI_ENTRIES
+
+        class FakeResp:
+            status_code = 200
+            def json(self) -> List[Dict[str, str]]:
+                # Just over the cap.
+                return [
+                    {'DocUuid': f'u{i}', 'LnkDoi': '10.x/y'}
+                    for i in range(_MAX_PLAZI_ENTRIES + 1)
+                ]
+
+        class FakeClient:
+            def get(self, _url: str) -> 'FakeResp':
+                return FakeResp()
+
+        body = query_plazi(
+            '10.foo/bar', plazi_url='http://x', http_client=FakeClient(),
+        )
+        self.assertIsNone(body)
+
+    def test_at_cap_size_still_passes(self):
+        from backfill_plazi_uuids import query_plazi, _MAX_PLAZI_ENTRIES
+
+        class FakeResp:
+            status_code = 200
+            def json(self) -> List[Dict[str, str]]:
+                return [
+                    {'DocUuid': f'u{i}', 'LnkDoi': '10.x/y'}
+                    for i in range(_MAX_PLAZI_ENTRIES)
+                ]
+
+        class FakeClient:
+            def get(self, _url: str) -> 'FakeResp':
+                return FakeResp()
+
+        body = query_plazi(
+            '10.foo/bar', plazi_url='http://x', http_client=FakeClient(),
+        )
+        self.assertIsNotNone(body)
+        self.assertEqual(len(body), _MAX_PLAZI_ENTRIES)
+
 
 if __name__ == '__main__':
     unittest.main()
