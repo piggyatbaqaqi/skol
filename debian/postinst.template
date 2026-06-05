@@ -223,8 +223,37 @@ chown skol:skol ${INSTALL_DIR}/bin/with_skol
 # Create symlinks for each command in the version-specific bin directory.
 # manage_experiment + extract_treatments_to_couchdb + embed_treatments are
 # needed by the v3_hand experiment cron jobs (see debian/skol.cron and
-# docs/v3_buildout.md §Phase E).
-for cmd in jats_to_yedda ingest train_classifier predict_classifier extract_treatments_to_couchdb embed_treatments treatments_to_json build_vocab_tree build_sources_stats manage_fungaria watch_install watch_incremental rebuild_redis manage_experiment extract_plaintext; do
+# docs/v3_buildout.md §Phase E).  One name per line, alphabetically
+# sorted so future drift vs the committed bin/<name> -> with_skol
+# symlinks is easy to spot in `diff`.
+for cmd in \
+    annotate_v4 \
+    backfill_plazi_uuids \
+    bioc_to_yedda \
+    build_sources_stats \
+    build_vocab_tree \
+    couchdb_attachments \
+    daily_report \
+    embed_lines \
+    embed_treatments \
+    extract_plaintext \
+    extract_treatments_to_couchdb \
+    ingest \
+    jats_to_yedda \
+    manage_experiment \
+    manage_fungaria \
+    predict_classifier \
+    predict_v4 \
+    rebuild_redis \
+    replicate_dbs \
+    replicate_experiment \
+    train_classifier \
+    train_crf_layout \
+    train_crf_treatment \
+    treatments_to_json \
+    watch_incremental \
+    watch_install \
+; do
     ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}
 done
 
@@ -267,10 +296,16 @@ done
 
 echo "SKOL ${VERSION} installation complete."
 echo "Commands available via ${BIN_SYMLINK}/:"
-echo "  jats_to_yedda, ingest, train_classifier, predict_classifier,"
-echo "  extract_treatments_to_couchdb, embed_treatments, treatments_to_json,"
-echo "  build_vocab_tree, manage_fungaria, watch_install, watch_incremental,"
-echo "  rebuild_redis, manage_experiment, extract_plaintext"
+echo "  Ingest:    ingest, jats_to_yedda, bioc_to_yedda, extract_plaintext,"
+echo "             annotate_v4, embed_lines, couchdb_attachments"
+echo "  v3 model:  train_classifier, predict_classifier"
+echo "  v4 model:  train_crf_layout, train_crf_treatment, predict_v4"
+echo "  Treatments: extract_treatments_to_couchdb, embed_treatments,"
+echo "             treatments_to_json"
+echo "  Pipeline:  manage_experiment, build_vocab_tree, build_sources_stats,"
+echo "             rebuild_redis, manage_fungaria"
+echo "  Ops:       watch_install, watch_incremental, daily_report,"
+echo "             replicate_dbs, replicate_experiment, backfill_plazi_uuids"
 echo "Or use: ${BIN_SYMLINK}/with_skol <command>"
 echo ""
 echo "Database services:"
