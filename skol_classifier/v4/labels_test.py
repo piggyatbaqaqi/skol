@@ -13,10 +13,13 @@ from skol_classifier.v4.crf_layout import (  # noqa: E402
     OTHER_INDEX,
 )
 from skol_classifier.v4.labels import (  # noqa: E402
+    ACTIVE_YEDDA_TAGS,
     LAYOUT_YEDDA_TAGS,
     TREATMENT_YEDDA_TAGS,
+    build_active_label_sequence,
     build_label_sequence,
     build_treatment_label_sequence,
+    map_yedda_to_active,
     map_yedda_to_layout,
     map_yedda_to_treatment,
     yedda_blocks_to_line_indices,
@@ -314,6 +317,106 @@ class TestBuildTreatmentLabelSequence(unittest.TestCase):
 
     def test_empty_inputs(self):
         self.assertEqual(build_treatment_label_sequence('', ''), [])
+
+
+# ---------------------------------------------------------------------------
+# 8. map_yedda_to_active (v4 Step 6.F — single-CRF baseline)
+# ---------------------------------------------------------------------------
+
+
+class TestMapYeddaToActive(unittest.TestCase):
+    """Project a YEDDA tag to the 19 ACTIVE_TAGS_19 label space.
+    Unknown tags collapse to 'Misc-exposition' — same catch-all
+    convention Pass-2 uses."""
+
+    def test_all_19_tags_pass_through(self):
+        """Every member of ACTIVE_YEDDA_TAGS round-trips through
+        the projector unchanged."""
+        for tag in ACTIVE_YEDDA_TAGS:
+            self.assertEqual(map_yedda_to_active(tag), tag)
+
+    def test_unknown_tag_maps_to_misc_exposition(self):
+        self.assertEqual(
+            map_yedda_to_active('NotARealTag'), 'Misc-exposition',
+        )
+        self.assertEqual(map_yedda_to_active(''), 'Misc-exposition')
+
+    def test_case_insensitive_passthrough(self):
+        self.assertEqual(
+            map_yedda_to_active('page-header'), 'Page-header',
+        )
+        self.assertEqual(
+            map_yedda_to_active('NOMENCLATURE'), 'Nomenclature',
+        )
+
+    def test_deprecated_tags_fold_to_misc(self):
+        """Holotype / Distribution / FIX (the DEPRECATED_TAGS set)
+        are NOT in ACTIVE_TAGS_19; they fold to Misc-exposition."""
+        self.assertEqual(map_yedda_to_active('Holotype'), 'Misc-exposition')
+        self.assertEqual(map_yedda_to_active('FIX'), 'Misc-exposition')
+
+
+# ---------------------------------------------------------------------------
+# 9. build_active_label_sequence
+# ---------------------------------------------------------------------------
+
+
+class TestBuildActiveLabelSequence(unittest.TestCase):
+    """Per-line 19-label index sequence used by Step 6.F's
+    single-CRF baseline trainer."""
+
+    def test_length_matches_plaintext_lines(self):
+        plaintext = 'a\nb\nc'
+        seq = build_active_label_sequence(plaintext, '')
+        self.assertEqual(len(seq), 3)
+
+    def test_block_lines_carry_block_tag_index(self):
+        """A tagged line gets the index of its YEDDA tag in the
+        ACTIVE_TAGS_19 ordering."""
+        from skol_classifier.v4.crf_single import LABEL_TO_INDEX
+        plaintext = 'header\nbody\nfooter'
+        ann_text = (
+            '[@header#Page-header*]'
+            '[@body#Description*]'
+            '[@footer#Bibliography*]'
+        )
+        seq = build_active_label_sequence(plaintext, ann_text)
+        self.assertEqual(seq[0], LABEL_TO_INDEX['Page-header'])
+        self.assertEqual(seq[1], LABEL_TO_INDEX['Description'])
+        self.assertEqual(seq[2], LABEL_TO_INDEX['Bibliography'])
+
+    def test_gap_lines_default_misc_exposition(self):
+        from skol_classifier.v4.crf_single import LABEL_TO_INDEX
+        plaintext = 'tagged\nuntagged\ntagged-too'
+        ann_text = (
+            '[@tagged#Description*]'
+            '[@tagged-too#Notes*]'
+        )
+        seq = build_active_label_sequence(plaintext, ann_text)
+        self.assertEqual(seq[0], LABEL_TO_INDEX['Description'])
+        self.assertEqual(seq[1], LABEL_TO_INDEX['Misc-exposition'])
+        self.assertEqual(seq[2], LABEL_TO_INDEX['Notes'])
+
+    def test_empty_inputs(self):
+        self.assertEqual(build_active_label_sequence('', ''), [])
+
+
+# ---------------------------------------------------------------------------
+# 10. ACTIVE_YEDDA_TAGS shape
+# ---------------------------------------------------------------------------
+
+
+class TestActiveYeddaTags(unittest.TestCase):
+
+    def test_19_members(self):
+        self.assertEqual(len(ACTIVE_YEDDA_TAGS), 19)
+
+    def test_superset_of_layout_and_treatment(self):
+        s = set(ACTIVE_YEDDA_TAGS)
+        for tag in LAYOUT_YEDDA_TAGS:
+            self.assertIn(tag, s)
+        for tag in TREATMENT_YEDDA_TAGS:
+            self.assertIn(tag, s)
 
 
 if __name__ == '__main__':

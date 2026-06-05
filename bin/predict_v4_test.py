@@ -484,5 +484,140 @@ class TestIterDocIds(unittest.TestCase):
         self.assertEqual(len(ids), 3)
 
 
+# ---------------------------------------------------------------------------
+# Step 6.F: --single-crf-key dispatch + predict_all_single
+# ---------------------------------------------------------------------------
+
+
+def _stub_predict_single(plaintext: str, *_args, **_kwargs):
+    """Stub for ``predict_doc_single`` — mirrors ``_stub_predict``."""
+    lines = plaintext.split('\n')
+    tags = ['Description'] * len(lines)
+    blocks = [f'[@{ln}#Description*]' for ln in lines if ln.strip()]
+    ann_text = '\n\n'.join(blocks) + ('\n' if blocks else '')
+    return tags, ann_text
+
+
+class TestSingleCRFMode(unittest.TestCase):
+    """Step 6.F adds an end-to-end single-CRF inference path to
+    ``predict_v4``.  These tests exercise the new
+    ``predict_all_single`` loop the same way ``TestWritePath``
+    exercises the two-pass ``predict_all``."""
+
+    def test_writes_ann_to_output_db_in_single_mode(self):
+        input_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        output_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+
+        with mock.patch(
+            'predict_v4.predict_doc_single',
+            side_effect=_stub_predict_single,
+        ):
+            counts = predict_v4.predict_all_single(
+                input_db, output_db,
+                single_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=False, limit=None,
+                verbosity=0,
+            )
+        self.assertEqual(counts['predicted'], 1)
+        self.assertEqual(len(output_db.puts), 1)
+        self.assertEqual(output_db.puts[0][1], 'article.txt.ann')
+
+    def test_skip_existing_skips_doc_with_ann_in_single_mode(self):
+        input_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        output_db = FakeCouchDb({
+            'doc_a': _synth_doc(
+                'doc_a', existing_ann=b'[@old#Description*]\n',
+            ),
+        })
+
+        with mock.patch(
+            'predict_v4.predict_doc_single',
+            side_effect=_stub_predict_single,
+        ):
+            counts = predict_v4.predict_all_single(
+                input_db, output_db,
+                single_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=True, force=False,
+                dry_run=False, limit=None,
+                verbosity=0,
+            )
+        self.assertEqual(counts['skipped_existing'], 1)
+        self.assertEqual(counts['predicted'], 0)
+        self.assertEqual(output_db.puts, [])
+
+    def test_missing_spans_skips_with_warning_in_single_mode(self):
+        input_db = FakeCouchDb({
+            'doc_a': _synth_doc('doc_a', spans_json=None),
+        })
+        output_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+
+        with mock.patch(
+            'predict_v4.predict_doc_single',
+            side_effect=_stub_predict_single,
+        ) as stub:
+            counts = predict_v4.predict_all_single(
+                input_db, output_db,
+                single_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=False, limit=None,
+                verbosity=0,
+            )
+        self.assertEqual(counts['skipped_no_attachments'], 1)
+        self.assertEqual(counts['predicted'], 0)
+        stub.assert_not_called()
+
+    def test_dry_run_does_not_write_in_single_mode(self):
+        input_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+        output_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+
+        with mock.patch(
+            'predict_v4.predict_doc_single',
+            side_effect=_stub_predict_single,
+        ) as stub:
+            counts = predict_v4.predict_all_single(
+                input_db, output_db,
+                single_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=True, limit=None,
+                verbosity=0,
+            )
+        stub.assert_called()
+        self.assertEqual(counts['predicted'], 1)
+        self.assertEqual(output_db.puts, [])
+
+    def test_limit_stops_after_n_docs_in_single_mode(self):
+        input_db = FakeCouchDb({
+            f'doc_{i}': _synth_doc(f'doc_{i}') for i in range(5)
+        })
+        output_db = FakeCouchDb({
+            f'doc_{i}': _synth_doc(f'doc_{i}') for i in range(5)
+        })
+
+        with mock.patch(
+            'predict_v4.predict_doc_single',
+            side_effect=_stub_predict_single,
+        ):
+            counts = predict_v4.predict_all_single(
+                input_db, output_db,
+                single_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=False, limit=2,
+                verbosity=0,
+            )
+        self.assertEqual(counts['predicted'], 2)
+        self.assertEqual(len(output_db.puts), 2)
+
+
 if __name__ == '__main__':
     unittest.main()

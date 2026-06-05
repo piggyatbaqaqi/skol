@@ -55,6 +55,10 @@ from skol_classifier.v4.crf_layout import (  # noqa: E402
     LayoutCRF,
     OTHER_INDEX as LAYOUT_OTHER_INDEX,
 )
+from skol_classifier.v4.crf_single import (  # noqa: E402
+    INDEX_TO_LABEL as ACTIVE_LABELS,
+    SingleCRF,
+)
 from skol_classifier.v4.crf_treatment import (  # noqa: E402
     INDEX_TO_LABEL as TREATMENT_LABELS,
     TreatmentCRF,
@@ -168,6 +172,76 @@ def predict_from_features(
 
 
 # ---------------------------------------------------------------------------
+# Single-CRF baseline (Step 6.F ablation)
+# ---------------------------------------------------------------------------
+
+
+def predict_doc_single(
+    plaintext: str,
+    spans_dict: Dict[str, Any],
+    page_headers_dict: Dict[str, Any],
+    single_crf: SingleCRF,
+    sbert_lookup: SbertLookup,
+    *,
+    device: str = 'cpu',
+) -> Tuple[List[str], str]:
+    """Single-CRF inference (no Pass-1/Pass-2 split).
+
+    Same feature assembly as :func:`predict_doc`; one Viterbi
+    decode over the 19-label space; coalesce + emit via the
+    shared helpers.  Returns ``(per_line_tags, ann_text)``.
+
+    Raises ``ValueError`` if ``single_crf.feature_dim`` disagrees
+    with ``features.FEATURE_DIM``."""
+    _check_feature_dim_single(single_crf)
+
+    lines = plaintext.split('\n')
+    if not lines or (len(lines) == 1 and lines[0] == ''):
+        return ([''] if plaintext == '' else []), ''
+
+    spans = _parse_spans(spans_dict)
+    line_starts = _features.compute_line_starts(lines)
+
+    feats = np.zeros(
+        (len(lines), single_crf.feature_dim), dtype=np.float32,
+    )
+    for i, line in enumerate(lines):
+        lf = _features.build_line_features(
+            line_text=line, line_index=i,
+            doc_lines=lines, spans=spans,
+            page_headers=page_headers_dict,
+            sbert_lookup=sbert_lookup,
+            line_starts=line_starts,
+        )
+        feats[i] = lf.concat()
+
+    return predict_from_features_single(
+        lines, feats, single_crf, device=device,
+    )
+
+
+def predict_from_features_single(
+    lines: Sequence[str],
+    features: np.ndarray,
+    single_crf: SingleCRF,
+    *,
+    device: str = 'cpu',
+) -> Tuple[List[str], str]:
+    """Decode + coalesce + emit, given a pre-built feature tensor.
+    Mirror of :func:`predict_from_features` but with one CRF over
+    the 19-label ACTIVE_TAGS_19 vocab."""
+    if len(lines) == 0:
+        return [], ''
+
+    indices = _crf_decode_one(single_crf, features, device)
+    per_line_tags = [ACTIVE_LABELS[idx] for idx in indices]
+
+    blocks = _coalesce_blocks(list(lines), per_line_tags)
+    ann_text = tagged_blocks_to_yedda(blocks) if blocks else ''
+    return per_line_tags, ann_text
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -187,6 +261,17 @@ def _check_feature_dims(
             f'Treatment CRF feature_dim {treatment_crf.feature_dim} '
             f'does not match features.FEATURE_DIM={expected}.  '
             'Retrain Pass 2 against the current feature assembler.'
+        )
+
+
+def _check_feature_dim_single(single_crf: SingleCRF) -> None:
+    expected = _features.FEATURE_DIM
+    if single_crf.feature_dim != expected:
+        raise ValueError(
+            f'Single CRF feature_dim {single_crf.feature_dim} does '
+            f'not match features.FEATURE_DIM={expected}.  '
+            'Retrain the single CRF against the current feature '
+            'assembler.'
         )
 
 

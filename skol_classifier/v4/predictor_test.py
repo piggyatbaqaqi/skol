@@ -434,5 +434,144 @@ class TestFeatureDimMismatch(unittest.TestCase):
         self.assertIn('feature_dim', str(cm.exception).lower())
 
 
+# ---------------------------------------------------------------------------
+# 5. predict_doc_single (Step 6.F single-CRF baseline)
+# ---------------------------------------------------------------------------
+
+
+def _identity_single_crf():
+    """SingleCRF with feature_dim == n_labels == 19 and identity
+    emission, so ``decode([one_hot_at_k]) == [k]`` deterministically
+    without training."""
+    from skol_classifier.v4.crf_single import SingleCRF
+    model = SingleCRF(feature_dim=19, n_labels=19)
+    with torch.no_grad():
+        model.emission.weight.copy_(torch.eye(19))
+        model.emission.bias.zero_()
+        model.crf.transitions.zero_()
+        model.crf.start_transitions.zero_()
+        model.crf.end_transitions.zero_()
+    return model
+
+
+def _single_one_hot(label_idx: int) -> np.ndarray:
+    v = np.zeros(19, dtype=np.float32)
+    v[label_idx] = 1.0
+    return v
+
+
+class TestPredictDocSingle(unittest.TestCase):
+    """Single-CRF inference: features → decode → coalesce → emit.
+    Mirrors :class:`TestPredictDoc` but for the 19-label CRF, which
+    decides every line directly (no Pass-1 / Pass-2 split)."""
+
+    def test_returns_one_tag_per_line(self):
+        from skol_classifier.v4.crf_single import LABEL_TO_INDEX
+        from skol_classifier.v4.predictor import predict_from_features_single
+
+        lines = [
+            'Header A',                # 0 — Page-header
+            'Body text',               # 1 — Description
+            'Bibliography entry',      # 2 — Bibliography
+        ]
+        feats = np.stack([
+            _single_one_hot(LABEL_TO_INDEX['Page-header']),
+            _single_one_hot(LABEL_TO_INDEX['Description']),
+            _single_one_hot(LABEL_TO_INDEX['Bibliography']),
+        ])
+        tags, ann = predict_from_features_single(
+            lines, feats, _identity_single_crf(), device='cpu',
+        )
+        self.assertEqual(
+            tags, ['Page-header', 'Description', 'Bibliography'],
+        )
+        # 3 different labels in a row → 3 blocks.
+        self.assertEqual(ann.count('[@'), 3)
+
+    def test_round_trip_through_yedda_tag_per_line(self):
+        """Predict → emit → re-parse: every non-blank line's tag
+        round-trips."""
+        from skol_classifier.v4.crf_single import LABEL_TO_INDEX
+        from skol_classifier.v4.predictor import predict_from_features_single
+
+        lines = [
+            'Header',                  # 0 — Page-header
+            '',                        # 1 — blank
+            'Nomen line',              # 2 — Nomenclature
+            'Desc line 1',             # 3 — Description
+            'Desc line 2',             # 4 — Description
+        ]
+        feats = np.stack([
+            _single_one_hot(LABEL_TO_INDEX['Page-header']),
+            _single_one_hot(LABEL_TO_INDEX['Misc-exposition']),
+            _single_one_hot(LABEL_TO_INDEX['Nomenclature']),
+            _single_one_hot(LABEL_TO_INDEX['Description']),
+            _single_one_hot(LABEL_TO_INDEX['Description']),
+        ])
+        tags, ann = predict_from_features_single(
+            lines, feats, _identity_single_crf(), device='cpu',
+        )
+        plaintext = '\n'.join(lines)
+        parsed = yedda_tag_per_line(plaintext, ann)
+        for li, line in enumerate(lines):
+            if line.strip():
+                self.assertEqual(
+                    parsed[li], tags[li],
+                    f'round-trip mismatch on line {li}: '
+                    f'predicted {tags[li]!r}, parsed {parsed[li]!r}',
+                )
+
+    def test_returns_empty_for_empty_input(self):
+        from skol_classifier.v4.predictor import predict_from_features_single
+
+        tags, ann = predict_from_features_single(
+            [], np.zeros((0, 19), dtype=np.float32),
+            _identity_single_crf(), device='cpu',
+        )
+        self.assertEqual(tags, [])
+        self.assertEqual(ann, '')
+
+
+class TestPredictDocSingleFullPipeline(unittest.TestCase):
+    """``predict_doc_single`` end-to-end with feature assembly."""
+
+    def test_returns_one_tag_per_plaintext_line(self):
+        from skol_classifier.v4.crf_single import (
+            ACTIVE_LABELS, SingleCRF,
+        )
+        from skol_classifier.v4.predictor import predict_doc_single
+
+        plaintext = 'Line one\nLine two\nLine three'
+        spans = {'version': '1', 'spans': []}
+        page_headers = {'per_line_confidence': [0.0, 0.0, 0.0]}
+        single = SingleCRF()
+        tags, ann = predict_doc_single(
+            plaintext, spans, page_headers, single,
+            _stub_sbert_lookup, device='cpu',
+        )
+        self.assertEqual(len(tags), 3)
+        valid = set(ACTIVE_LABELS)
+        for t in tags:
+            self.assertIn(t, valid)
+        self.assertTrue(ann.endswith('\n') or ann == '')
+
+
+class TestPredictDocSingleFeatureDim(unittest.TestCase):
+
+    def test_raises_when_single_crf_feature_dim_disagrees(self):
+        from skol_classifier.v4.crf_single import SingleCRF
+        from skol_classifier.v4.predictor import predict_doc_single
+
+        bad_single = SingleCRF(feature_dim=100, n_labels=19)
+        with self.assertRaises(ValueError) as cm:
+            predict_doc_single(
+                'one line', {'version': '1', 'spans': []},
+                {'per_line_confidence': [0.0]},
+                bad_single,
+                _stub_sbert_lookup, device='cpu',
+            )
+        self.assertIn('feature_dim', str(cm.exception).lower())
+
+
 if __name__ == '__main__':
     unittest.main()

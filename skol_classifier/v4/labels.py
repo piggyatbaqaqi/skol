@@ -21,6 +21,7 @@ from typing import List, Sequence, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+from ingestors.yedda_tags import ACTIVE_TAGS_19
 from skol_classifier.v4.crf_layout import (
     LABEL_TO_INDEX,
     OTHER_INDEX,
@@ -59,10 +60,18 @@ TREATMENT_YEDDA_TAGS: Tuple[str, ...] = (
 )
 
 
+# The 19 YEDDA tags spanning Pass 1 ∪ Pass 2 — the label space the
+# Step 6.F single-CRF baseline operates on directly.  Order matches
+# ``ingestors/yedda_tags.ACTIVE_TAGS_19`` (the Tag-enum declaration
+# order), so the index identities stay stable across builds.
+ACTIVE_YEDDA_TAGS: Tuple[str, ...] = tuple(t.value for t in ACTIVE_TAGS_19)
+
+
 # Lowercase-keyed lookups so case drift in YEDDA files doesn't drop
 # blocks to the catch-all.
 _LAYOUT_BY_LOWER = {tag.lower(): tag for tag in LAYOUT_YEDDA_TAGS}
 _TREATMENT_BY_LOWER = {tag.lower(): tag for tag in TREATMENT_YEDDA_TAGS}
+_ACTIVE_BY_LOWER = {tag.lower(): tag for tag in ACTIVE_YEDDA_TAGS}
 
 
 def map_yedda_to_layout(yedda_tag: str) -> str:
@@ -83,6 +92,17 @@ def map_yedda_to_treatment(yedda_tag: str) -> str:
     ``'Misc-exposition'``.  Case-insensitive on the input.
     """
     return _TREATMENT_BY_LOWER.get(yedda_tag.lower(), 'Misc-exposition')
+
+
+def map_yedda_to_active(yedda_tag: str) -> str:
+    """Project a YEDDA tag to the 19-label ACTIVE_TAGS_19 vocab.
+
+    Members of :data:`ACTIVE_YEDDA_TAGS` pass through (case-
+    insensitive); deprecated tags (Holotype / Distribution / FIX) and
+    any unknown tag collapse to ``'Misc-exposition'`` — same catch-all
+    Pass-2 uses, which keeps round-tripping intuitive.
+    """
+    return _ACTIVE_BY_LOWER.get(yedda_tag.lower(), 'Misc-exposition')
 
 
 # YEDDA block regex: ``[@text#Label*]``.  Same shape as
@@ -193,6 +213,29 @@ def build_treatment_label_sequence(
     )
     return [
         TREATMENT_LABEL_TO_INDEX[map_yedda_to_treatment(tag)]
+        for tag in yedda_tag_per_line(plaintext, ann_text)
+    ]
+
+
+def build_active_label_sequence(
+    plaintext: str,
+    ann_text: str,
+) -> List[int]:
+    """Per-line 19-label index sequence for Step 6.F's single-CRF
+    baseline.
+
+    For each line: look up its raw YEDDA tag (defaulting to
+    ``'Misc-exposition'`` outside any block), project via
+    :func:`map_yedda_to_active`, and resolve to the index in
+    ``skol_classifier.v4.crf_single.LABEL_TO_INDEX``.  Length always
+    equals ``len(plaintext.split('\\n'))``.  Lazy import avoids a
+    `crf_single` → `labels` → `crf_single` cycle at module load.
+    """
+    from skol_classifier.v4.crf_single import (
+        LABEL_TO_INDEX as ACTIVE_LABEL_TO_INDEX,
+    )
+    return [
+        ACTIVE_LABEL_TO_INDEX[map_yedda_to_active(tag)]
         for tag in yedda_tag_per_line(plaintext, ann_text)
     ]
 

@@ -70,6 +70,54 @@ COMPONENTS = {
         'verbosity_style': 'flag',  # --verbosity N
         'description': 'Cache SBERT line embeddings for v4 CRFs',
     },
+    'v4_layout': {
+        'name': 'v4 Pass-1 layout CRF',
+        'keys': ['skol:classifier:model:v4_layout',
+                 'skol:classifier:model:v4_layout:meta'],
+        'script': 'train_crf_layout',
+        'args': ['--source-db', 'skol_training_v2_no_golden'],
+        'verbosity_style': 'flag',
+        'description': 'Train the v4 Pass-1 layout CRF (hand corpus).',
+    },
+    'v4_pass2_hand': {
+        'name': 'v4 Pass-2 treatment CRF (hand corpus)',
+        'keys': ['skol:classifier:model:v4_pass2_hand',
+                 'skol:classifier:model:v4_pass2_hand:meta'],
+        'script': 'train_crf_treatment',
+        'args': ['--source-db', 'skol_training_v2_no_golden',
+                 '--redis-key', 'skol:classifier:model:v4_pass2_hand',
+                 '--redis-meta-key',
+                 'skol:classifier:model:v4_pass2_hand:meta'],
+        'verbosity_style': 'flag',
+        'description': 'Train Pass-2 on the hand corpus.',
+    },
+    'v4_pass2_combined': {
+        'name': 'v4 Pass-2 treatment CRF (combined corpus)',
+        'keys': ['skol:classifier:model:v4_pass2_combined',
+                 'skol:classifier:model:v4_pass2_combined:meta'],
+        'script': 'train_crf_treatment',
+        'args': ['--source-db', 'skol_training_v3_combined_no_golden',
+                 '--redis-key', 'skol:classifier:model:v4_pass2_combined',
+                 '--redis-meta-key',
+                 'skol:classifier:model:v4_pass2_combined:meta'],
+        'verbosity_style': 'flag',
+        'description': (
+            'Train Pass-2 on the combined corpus — the production_v4 '
+            'pinned variant.'
+        ),
+    },
+    'v4_single_hand': {
+        'name': 'v4 single-CRF baseline (Step 6.F ablation)',
+        'keys': ['skol:classifier:model:v4_single_hand',
+                 'skol:classifier:model:v4_single_hand:meta'],
+        'script': 'train_crf_single',
+        'args': ['--source-db', 'skol_training_v2_no_golden'],
+        'verbosity_style': 'flag',
+        'description': (
+            'Train the 19-label single-CRF baseline that the '
+            'two-pass design is measured against.'
+        ),
+    },
     'vocab_tree': {
         'name': 'Vocabulary Tree',
         'keys': ['skol:ui:menus_*', 'skol:ui:menus_latest'],
@@ -88,9 +136,13 @@ COMPONENTS = {
     },
 }
 
-# Order matters: some components may depend on others
+# Order matters: some components may depend on others.
+# The v4 trainers depend on sbert_lines being warm (cold misses make
+# the trainer call the SBERT model directly, which is much slower).
 BUILD_ORDER = [
-    'classifier', 'embeddings', 'sbert_lines', 'vocab_tree', 'fungaria',
+    'classifier', 'embeddings', 'sbert_lines',
+    'v4_layout', 'v4_pass2_hand', 'v4_pass2_combined', 'v4_single_hand',
+    'vocab_tree', 'fungaria',
 ]
 
 

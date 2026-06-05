@@ -58,10 +58,16 @@ from ingestors.extract_plaintext import (  # noqa: E402
 from skol_classifier.v4.crf_layout import (  # noqa: E402
     load_from_redis as load_layout_from_redis,
 )
+from skol_classifier.v4.crf_single import (  # noqa: E402
+    load_from_redis as load_single_from_redis,
+)
 from skol_classifier.v4.crf_treatment import (  # noqa: E402
     load_from_redis as load_treatment_from_redis,
 )
-from skol_classifier.v4.predictor import predict_doc  # noqa: E402
+from skol_classifier.v4.predictor import (  # noqa: E402
+    predict_doc,
+    predict_doc_single,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -341,6 +347,89 @@ def predict_all(
     return counts
 
 
+def predict_all_single(
+    input_db: Any,
+    output_db: Any,
+    *,
+    single_crf: Any,
+    sbert_lookup: SbertLookup,
+    device: str = 'cpu',
+    skip_existing: bool = False,
+    force: bool = False,
+    dry_run: bool = False,
+    limit: Optional[int] = None,
+    verbosity: int = 1,
+) -> Dict[str, int]:
+    """Single-CRF sibling of :func:`predict_all` (Step 6.F).
+
+    Same iteration shell + skip semantics; the inner call is
+    ``predict_doc_single`` against one CRF over the 19-label
+    ACTIVE_TAGS_19 vocab.  Decoupled from ``predict_all`` so the
+    two-pass production path stays untouched."""
+    counts = {
+        'scanned': 0,
+        'skipped_existing': 0,
+        'skipped_no_attachments': 0,
+        'skipped_no_plaintext': 0,
+        'predicted': 0,
+    }
+    for doc_id in _iter_doc_ids(input_db, limit=limit):
+        counts['scanned'] += 1
+
+        if skip_existing and not force:
+            if _has_existing_ann(output_db, doc_id):
+                counts['skipped_existing'] += 1
+                if verbosity >= 2:
+                    print(f'  skip {doc_id}: .ann already present')
+                continue
+
+        plaintext, spans_dict, ph_dict = _prepare_doc_inputs(
+            input_db, doc_id,
+        )
+        if spans_dict is None or ph_dict is None:
+            counts['skipped_no_attachments'] += 1
+            if verbosity >= 1:
+                print(
+                    f'  skip {doc_id}: missing spans / page-headers '
+                    '— re-run annotate_v4',
+                )
+            continue
+        if plaintext is None:
+            counts['skipped_no_plaintext'] += 1
+            if verbosity >= 1:
+                print(f'  skip {doc_id}: no plaintext source')
+            continue
+
+        per_line_tags, ann_text = predict_doc_single(
+            plaintext, spans_dict, ph_dict,
+            single_crf, sbert_lookup,
+            device=device,
+        )
+        counts['predicted'] += 1
+
+        if dry_run:
+            if verbosity >= 1:
+                n_blocks = ann_text.count('[@')
+                print(
+                    f'  dry-run {doc_id}: {len(per_line_tags)} lines '
+                    f'→ {n_blocks} blocks ({len(ann_text)} bytes)',
+                )
+            continue
+
+        if doc_id not in output_db:
+            output_db.save({'_id': doc_id})
+        target_doc = output_db[doc_id]
+        output_db.put_attachment(
+            target_doc, ann_text.encode('utf-8'),
+            filename=_ANN_ATTACHMENT,
+            content_type='text/plain',
+        )
+        if verbosity >= 2:
+            print(f'  wrote {doc_id} ({len(ann_text)} bytes)')
+
+    return counts
+
+
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
@@ -383,7 +472,23 @@ def main() -> int:
         '--pass2-key', dest='pass2_key', default=None,
         help='Same as --pass1-key for the Pass-2 (treatment) CRF.',
     )
+    parser.add_argument(
+        '--single-crf-key', dest='single_crf_key', default=None,
+        help=(
+            'Run the v4 Step 6.F single-CRF baseline against this '
+            'Redis state-key instead of the two-pass production '
+            'path.  Mutually exclusive with --pass1-key / --pass2-key.'
+        ),
+    )
     args, _ = parser.parse_known_args()
+
+    if args.single_crf_key and (args.pass1_key or args.pass2_key):
+        print(
+            '✗ --single-crf-key is mutually exclusive with '
+            '--pass1-key / --pass2-key',
+            file=sys.stderr,
+        )
+        return 1
 
     config = get_env_config()
     verbosity = int(config.get('verbosity', 1) or 0)
@@ -444,63 +549,101 @@ def main() -> int:
     redis_client = create_redis_client(decode_responses=False)
     device = _resolve_device(args.device)
 
-    try:
-        layout_crf, layout_meta = load_layout_from_redis(
-            redis_client,
-            key=redis_keys['pass1_state'],
-            meta_key=redis_keys['pass1_meta'],
-            map_location=device,
-        )
-    except Exception as exc:  # noqa: BLE001
-        print(
-            f'✗ cannot load Pass-1 CRF from '
-            f'{redis_keys["pass1_state"]!r}: {exc}',
-            file=sys.stderr,
-        )
-        return 1
-    try:
-        treatment_crf, treatment_meta = load_treatment_from_redis(
-            redis_client,
-            key=redis_keys['pass2_state'],
-            meta_key=redis_keys['pass2_meta'],
-            map_location=device,
-        )
-    except Exception as exc:  # noqa: BLE001
-        print(
-            f'✗ cannot load Pass-2 CRF from '
-            f'{redis_keys["pass2_state"]!r}: {exc}',
-            file=sys.stderr,
-        )
-        return 1
-    layout_crf.to(device)
-    treatment_crf.to(device)
-    layout_crf.eval()
-    treatment_crf.eval()
-
     sbert_lookup = make_sbert_lookup(
         redis_client, model_tag=args.sbert_model,
     )
 
-    if verbosity >= 1:
-        print(
-            f'predict_v4 — in={input_db_name} out={output_db_name} '
-            f'device={device}',
-        )
-        print(
-            f'  pass1={redis_keys["pass1_state"]} '
-            f'pass2={redis_keys["pass2_state"]}',
-        )
+    if args.single_crf_key:
+        # Step 6.F: single-CRF baseline path.  Disjoint from the
+        # two-pass production loop so a regression here can't break
+        # production_v4.
+        try:
+            single_crf, _single_meta = load_single_from_redis(
+                redis_client,
+                key=args.single_crf_key,
+                meta_key=f'{args.single_crf_key}:meta',
+                map_location=device,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f'✗ cannot load single CRF from '
+                f'{args.single_crf_key!r}: {exc}',
+                file=sys.stderr,
+            )
+            return 1
+        single_crf.to(device)
+        single_crf.eval()
 
-    counts = predict_all(
-        input_db, output_db,
-        layout_crf=layout_crf,
-        treatment_crf=treatment_crf,
-        sbert_lookup=sbert_lookup,
-        device=device,
-        skip_existing=skip_existing, force=force,
-        dry_run=dry_run, limit=limit,
-        verbosity=verbosity,
-    )
+        if verbosity >= 1:
+            print(
+                f'predict_v4 — in={input_db_name} '
+                f'out={output_db_name} device={device}',
+            )
+            print(f'  single={args.single_crf_key}')
+
+        counts = predict_all_single(
+            input_db, output_db,
+            single_crf=single_crf,
+            sbert_lookup=sbert_lookup,
+            device=device,
+            skip_existing=skip_existing, force=force,
+            dry_run=dry_run, limit=limit,
+            verbosity=verbosity,
+        )
+    else:
+        try:
+            layout_crf, layout_meta = load_layout_from_redis(
+                redis_client,
+                key=redis_keys['pass1_state'],
+                meta_key=redis_keys['pass1_meta'],
+                map_location=device,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f'✗ cannot load Pass-1 CRF from '
+                f'{redis_keys["pass1_state"]!r}: {exc}',
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            treatment_crf, treatment_meta = load_treatment_from_redis(
+                redis_client,
+                key=redis_keys['pass2_state'],
+                meta_key=redis_keys['pass2_meta'],
+                map_location=device,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f'✗ cannot load Pass-2 CRF from '
+                f'{redis_keys["pass2_state"]!r}: {exc}',
+                file=sys.stderr,
+            )
+            return 1
+        layout_crf.to(device)
+        treatment_crf.to(device)
+        layout_crf.eval()
+        treatment_crf.eval()
+
+        if verbosity >= 1:
+            print(
+                f'predict_v4 — in={input_db_name} '
+                f'out={output_db_name} device={device}',
+            )
+            print(
+                f'  pass1={redis_keys["pass1_state"]} '
+                f'pass2={redis_keys["pass2_state"]}',
+            )
+
+        counts = predict_all(
+            input_db, output_db,
+            layout_crf=layout_crf,
+            treatment_crf=treatment_crf,
+            sbert_lookup=sbert_lookup,
+            device=device,
+            skip_existing=skip_existing, force=force,
+            dry_run=dry_run, limit=limit,
+            verbosity=verbosity,
+        )
 
     if verbosity >= 1:
         print()
