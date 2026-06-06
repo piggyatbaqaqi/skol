@@ -342,25 +342,41 @@ char accuracy** on the golden set.  The win is robust:
 - §7.δ rules out exposure bias as a fixable two-pass disadvantage:
   retraining Pass-2 on predicted-Pass-1 sequences *worsens* F1.
 
-**Recommended cutover** (a human operator runs these; not part
-of this report's commits):
+**Recommended cutover** (executed 2026-06-06; commits be28861 +
+the cutover-completion commit follow):
 
-1. Add a `classifier_model_single` field to the experiment-doc
-   schema in `bin/manage_experiment.py` (mirrors the existing
-   `classifier_model_pass1`/`_pass2`) and the same in
-   `bin/env_config.py:_apply_experiment`'s `redis_mapping`.
-2. Update production_v4:
+1. ✅ Schema landed in `be28861`:
+   `bin/env_config.py:_apply_experiment` now maps
+   `redis_keys.classifier_model_single` →
+   `config['classifier_model_key_single']`.
+   `bin/manage_experiment.py` accepts `--redis-key-single` on
+   both `create` and `update`.
+2. ✅ Production_v4 updated:
    ```
    bin/manage_experiment update production_v4 \
        --redis-key-single skol:classifier:model:v4_single_combined
    ```
-3. Decide whether `predict_v4`'s default dispatch should flip to
-   single-CRF when the experiment doc carries a
-   `classifier_model_single` key.  Conservative: keep two-pass
-   default; switch by passing `--single-crf-key` explicitly.
-4. Optionally retire `skol:classifier:model:v4_pass2_hand` and
+   The experiment doc now carries `classifier_model_single`
+   alongside the existing `pass1`/`pass2` keys (kept as fallback).
+3. ✅ Dispatch policy: when `classifier_model_single` is set on
+   the experiment doc AND no explicit `--pass1-key`/`--pass2-key`
+   CLI flag was passed, `predict_v4` defaults to single-CRF mode
+   against that key.  Explicit CLI flags still force two-pass for
+   ad-hoc A/B runs (precedence: explicit CLI > experiment doc).
+4. ☐ Optional cleanup: retire
+   `skol:classifier:model:v4_pass2_hand` and
    `…:v4_pass2_combined_exposure` from Redis (~80 KB saved).
-   The combined Pass-2 bundle stays for now as a fallback.
+   The combined Pass-2 bundle stays as a fallback for the
+   `--pass1-key`/`--pass2-key` explicit-CLI path.  Deferred.
+
+Live verification: `bin/predict_v4 --experiment production_v4
+--golden-db skol_golden_v2 --output-database
+skol_exp_production_v4_ann_combined --limit 3 --dry-run` prints
+`single=skol:classifier:model:v4_single_combined` and decodes
+the docs in single-CRF mode (~0.4 s/doc on the 5090).  Forcing
+two-pass with `--pass1-key skol:classifier:model:v4_layout
+--pass2-key skol:classifier:model:v4_pass2_combined` falls back
+to the legacy production behavior cleanly.
 
 The single-CRF combined bundle (`skol:classifier:model:v4_single_combined`)
 + Pass-1 (`skol:classifier:model:v4_layout`) are now the

@@ -331,6 +331,15 @@ combined (`skol:classifier:model:v4_single_combined`).  Exact
 operator commands in [`docs/production_v4_report.md`](production_v4_report.md)
 §7 Recommendation.  Schema + dispatch changes are post-v4 follow-up.
 
+**Cutover landed 2026-06-06** (`be28861` schema + dispatch code;
+operational `manage_experiment update production_v4 --redis-key-single
+skol:classifier:model:v4_single_combined` recorded in the cutover-
+completion commit).  `bin/predict_v4 --experiment production_v4`
+now defaults to single-CRF mode against
+`skol:classifier:model:v4_single_combined`.  The two-pass
+`pass1`/`pass2` keys remain on the experiment doc as a fallback
+reachable via explicit `--pass1-key`/`--pass2-key` CLI flags.
+
 ### Step 8 — v3 vs Pass-1 on the removed layout classes (layout-filter decision)
 
 Pass 1 exists only to catch-and-discard the 7 layout classes
