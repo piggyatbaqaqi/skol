@@ -255,6 +255,12 @@ def _apply_experiment(
         # carry these alongside (or instead of) the v3 single-model key.
         ('classifier_model_pass1', 'classifier_model_key_pass1'),
         ('classifier_model_pass2', 'classifier_model_key_pass2'),
+        # The post-Step-7 single-CRF cutover: when an experiment doc
+        # sets ``redis_keys.classifier_model_single``, predict_v4
+        # defaults to single-CRF mode against that key.  CLI flags
+        # (--single-crf-key / --pass1-key / --pass2-key) still
+        # override the experiment-doc resolution.
+        ('classifier_model_single', 'classifier_model_key_single'),
         ('embedding', 'embedding_name'),
         ('menus', 'menus_key'),
     ]
@@ -345,6 +351,11 @@ def get_env_config() -> Dict[str, Any]:
         # predict_v4.resolve_redis_keys falls back to its defaults.
         'classifier_model_key_pass1': '',
         'classifier_model_key_pass2': '',
+        # Post-Step-7 single-CRF cutover key.  When non-empty (i.e. set
+        # on the experiment doc), predict_v4 defaults to single-CRF
+        # mode against this key.  Empty means "no opinion — fall
+        # through to two-pass defaults".
+        'classifier_model_key_single': '',
         'classifier_model_expire': _get_env('MODEL_EXPIRE', ''),
 
         # Local gnservices (gnfinder + gnparser) — see v4 plan §1.A.

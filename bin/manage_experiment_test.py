@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from manage_experiment import (  # type: ignore[import]  # noqa: E402
     _build_step_commands,
     cmd_create,
+    cmd_update,
 )
 
 
@@ -255,6 +256,21 @@ def _create_args(**overrides: Any) -> Any:
         'model_name': None,
         'training_db': None, 'ingest_db': None, 'annotations_db': None,
         'redis_key_pass1': None, 'redis_key_pass2': None,
+        'redis_key_single': None,
+    }
+    defaults.update(overrides)
+    return argparse.Namespace(**defaults)
+
+
+def _update_args(**overrides: Any) -> Any:
+    """Build the argparse.Namespace shape cmd_update reads."""
+    import argparse
+    defaults = {
+        'name': 'test_exp', 'notes': None, 'comments': None,
+        'status': None, 'model_name': None,
+        'training_db': None, 'ingest_db': None, 'annotations_db': None,
+        'redis_key_pass1': None, 'redis_key_pass2': None,
+        'redis_key_single': None,
     }
     defaults.update(overrides)
     return argparse.Namespace(**defaults)
@@ -312,3 +328,109 @@ class TestCmdCreateV4RedisKeys:
         rk = db.docs['production_v3']['redis_keys']
         assert 'classifier_model_pass1' not in rk
         assert 'classifier_model_pass2' not in rk
+        assert 'classifier_model_single' not in rk
+
+    def test_create_writes_single_redis_key(self) -> None:
+        """Post-Step-7: cmd_create accepts --redis-key-single and
+        writes redis_keys.classifier_model_single.  When this field
+        is set on production_v4, predict_v4 defaults to single-CRF."""
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            model_name='v4_crf',
+            redis_key_single='skol:classifier:model:v4_single_combined',
+        ))
+        doc = db.docs['production_v4']
+        assert (
+            doc['redis_keys']['classifier_model_single']
+            == 'skol:classifier:model:v4_single_combined'
+        )
+        assert doc['model_name'] == 'v4_crf'
+
+    def test_create_writes_all_three_pass_keys_together(self) -> None:
+        """A v4 experiment can hold pass1 + pass2 + single side by
+        side — operators set whichever the dispatch hierarchy needs.
+        """
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            model_name='v4_crf',
+            redis_key_pass1='skol:k:p1',
+            redis_key_pass2='skol:k:p2',
+            redis_key_single='skol:k:single',
+        ))
+        rk = db.docs['production_v4']['redis_keys']
+        assert rk['classifier_model_pass1'] == 'skol:k:p1'
+        assert rk['classifier_model_pass2'] == 'skol:k:p2'
+        assert rk['classifier_model_single'] == 'skol:k:single'
+
+
+class TestCmdUpdateV4RedisKeys:
+    """The production cutover lands via ``manage_experiment update``,
+    not ``create``.  These tests pin the update-path semantics for
+    every v4 redis-key flag — cmd_update's pass1/pass2 path was
+    previously untested."""
+
+    def _seeded_db(self) -> _FakeExperimentsDb:
+        """Db pre-populated with a v4 experiment that has the doc
+        shape produced by cmd_create."""
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4', model_name='v4_crf',
+            redis_key_pass1='skol:k:original_p1',
+            redis_key_pass2='skol:k:original_p2',
+        ))
+        return db
+
+    def test_update_writes_pass1_redis_key(self) -> None:
+        db = self._seeded_db()
+        cmd_update(db, _update_args(
+            name='production_v4',
+            redis_key_pass1='skol:k:new_p1',
+        ))
+        rk = db.docs['production_v4']['redis_keys']
+        assert rk['classifier_model_pass1'] == 'skol:k:new_p1'
+        # Unaffected siblings stay put.
+        assert rk['classifier_model_pass2'] == 'skol:k:original_p2'
+
+    def test_update_writes_pass2_redis_key(self) -> None:
+        db = self._seeded_db()
+        cmd_update(db, _update_args(
+            name='production_v4',
+            redis_key_pass2='skol:k:new_p2',
+        ))
+        rk = db.docs['production_v4']['redis_keys']
+        assert rk['classifier_model_pass2'] == 'skol:k:new_p2'
+        assert rk['classifier_model_pass1'] == 'skol:k:original_p1'
+
+    def test_update_writes_single_redis_key(self) -> None:
+        """The actual cutover command's effect: setting
+        classifier_model_single on a previously two-pass experiment
+        doc — leaves pass1/pass2 alone so they remain available as
+        fallbacks for explicit-CLI two-pass invocations."""
+        db = self._seeded_db()
+        cmd_update(db, _update_args(
+            name='production_v4',
+            redis_key_single='skol:classifier:model:v4_single_combined',
+        ))
+        rk = db.docs['production_v4']['redis_keys']
+        assert (
+            rk['classifier_model_single']
+            == 'skol:classifier:model:v4_single_combined'
+        )
+        # Pass-1 + Pass-2 still present so explicit --pass1-key /
+        # --pass2-key two-pass invocations still resolve.
+        assert rk['classifier_model_pass1'] == 'skol:k:original_p1'
+        assert rk['classifier_model_pass2'] == 'skol:k:original_p2'
+
+    def test_update_does_not_write_single_when_omitted(self) -> None:
+        """Omitting --redis-key-single from an update call leaves
+        the field untouched (defensive against accidental clobbering
+        by other update operations like --notes)."""
+        db = self._seeded_db()
+        cmd_update(db, _update_args(
+            name='production_v4',
+            notes='just touching notes',
+        ))
+        rk = db.docs['production_v4']['redis_keys']
+        assert 'classifier_model_single' not in rk

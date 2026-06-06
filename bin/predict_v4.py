@@ -559,6 +559,19 @@ def main() -> int:
         config['classifier_model_key_pass1'] = args.pass1_key
     if args.pass2_key:
         config['classifier_model_key_pass2'] = args.pass2_key
+    # Post-Step-7 implicit-default-flip: if the experiment doc carries
+    # ``redis_keys.classifier_model_single`` and the operator passed
+    # NO explicit two-pass override on the CLI, default to single-CRF
+    # mode against that key.  Explicit --pass1-key / --pass2-key
+    # still force two-pass for ad-hoc A/B runs (precedence enforced
+    # below).  See plan / docs/production_v4_report.md §7 Recommendation.
+    if (
+        not args.single_crf_key
+        and not args.pass1_key
+        and not args.pass2_key
+        and config.get('classifier_model_key_single')
+    ):
+        args.single_crf_key = config['classifier_model_key_single']
     redis_keys = resolve_redis_keys(config)
     redis_client = create_redis_client(decode_responses=False)
     device = _resolve_device(args.device)

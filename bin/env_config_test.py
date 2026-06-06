@@ -123,6 +123,56 @@ class TestApplyExperimentGoldenMapping:
         assert config['classifier_model_key_pass1'] == 'skol:k:pass1'
         assert config['classifier_model_key_pass2'] == 'skol:k:pass2'
 
+    def test_v4_single_redis_key_propagates(self) -> None:
+        """redis_keys.classifier_model_single → classifier_model_key_single.
+        Drives the post-Step-7 production cutover: when this field is
+        set on an experiment doc, predict_v4 defaults to single-CRF
+        mode against that key."""
+        config = _starter_config(classifier_model_key_single='')
+        exp = {'redis_keys': {
+            'classifier_model_single': 'skol:custom:v4_single_combined',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert (
+            config['classifier_model_key_single']
+            == 'skol:custom:v4_single_combined'
+        )
+
+    def test_v4_all_three_redis_keys_together(self) -> None:
+        """A v4 experiment can carry pass1 + pass2 + single
+        simultaneously; predict_v4 chooses which to use at dispatch
+        time (single wins by default; CLI flags override).  This
+        test only asserts that env_config faithfully propagates all
+        three — the dispatch rule lives in predict_v4."""
+        config = _starter_config(
+            classifier_model_key_pass1='',
+            classifier_model_key_pass2='',
+            classifier_model_key_single='',
+        )
+        exp = {'redis_keys': {
+            'classifier_model_pass1': 'skol:k:pass1',
+            'classifier_model_pass2': 'skol:k:pass2',
+            'classifier_model_single': 'skol:k:single',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['classifier_model_key_pass1'] == 'skol:k:pass1'
+        assert config['classifier_model_key_pass2'] == 'skol:k:pass2'
+        assert config['classifier_model_key_single'] == 'skol:k:single'
+
+    def test_v4_single_redis_key_default_empty_string(self) -> None:
+        """An experiment doc that omits ``classifier_model_single``
+        leaves the starter empty string in place — no spurious
+        non-empty default that would auto-flip dispatch."""
+        config = _starter_config(
+            classifier_model_key_single='__sentinel__',
+        )
+        exp = {'redis_keys': {
+            'classifier_model_pass1': 'skol:k:pass1',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        # Starter value untouched.
+        assert config['classifier_model_key_single'] == '__sentinel__'
+
     def test_other_databases_unaffected(self) -> None:
         """A no-op safety test: pre-existing mapping rows (ingest, training,
         treatments, etc.) keep working after the new rows are added."""

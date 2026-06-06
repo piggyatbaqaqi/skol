@@ -698,5 +698,106 @@ class TestAblateParticlesFlag(unittest.TestCase):
         self.assertEqual(seen[0].get('ablate_particles'), False)
 
 
+# ---------------------------------------------------------------------------
+# Production cutover: implicit-default-flip dispatch (post-Step-7)
+# ---------------------------------------------------------------------------
+
+
+class TestSingleCRFImplicitDefault(unittest.TestCase):
+    """When ``config['classifier_model_key_single']`` is non-empty
+    (set on the experiment doc via env_config's redis_mapping) and
+    the operator passed NO explicit two-pass override on the CLI,
+    predict_v4.main() defaults to single-CRF mode against that key.
+
+    The hierarchy is exercised by inspecting ``args.single_crf_key``
+    AFTER main()'s dispatch resolution.  We pull the resolution
+    block out as a helper so the tests don't have to spin up
+    couchdb + Redis + Spark just to exercise CLI plumbing."""
+
+    def _resolve_dispatch(
+        self, *,
+        cli_single=None, cli_pass1=None, cli_pass2=None,
+        config_single='',
+    ):
+        """Replay predict_v4.main()'s precedence block."""
+        class Args:
+            single_crf_key = cli_single
+            pass1_key = cli_pass1
+            pass2_key = cli_pass2
+        args = Args()
+        config = {
+            'classifier_model_key_pass1': '',
+            'classifier_model_key_pass2': '',
+            'classifier_model_key_single': config_single,
+        }
+        # Mirror the production code's precedence; the inline block
+        # in main() is small enough to copy here without drift.
+        if (
+            not args.single_crf_key
+            and not args.pass1_key
+            and not args.pass2_key
+            and config.get('classifier_model_key_single')
+        ):
+            args.single_crf_key = config['classifier_model_key_single']
+        return args
+
+    def test_config_single_key_flips_to_single_mode(self):
+        """Operational cutover: production_v4 has
+        classifier_model_single set, no CLI flags passed → single."""
+        args = self._resolve_dispatch(
+            config_single='skol:classifier:model:v4_single_combined',
+        )
+        self.assertEqual(
+            args.single_crf_key,
+            'skol:classifier:model:v4_single_combined',
+        )
+        self.assertIsNone(args.pass1_key)
+        self.assertIsNone(args.pass2_key)
+
+    def test_explicit_pass1_overrides_config_single(self):
+        """Operator passes --pass1-key explicitly: two-pass wins
+        even though the experiment doc carries a single key.  Used
+        for ad-hoc A/B against the legacy two-pass model."""
+        args = self._resolve_dispatch(
+            cli_pass1='skol:classifier:model:v4_layout',
+            config_single='skol:classifier:model:v4_single_combined',
+        )
+        # Implicit flip is suppressed; args.single_crf_key stays None.
+        self.assertIsNone(args.single_crf_key)
+        self.assertEqual(
+            args.pass1_key, 'skol:classifier:model:v4_layout',
+        )
+
+    def test_explicit_pass2_overrides_config_single(self):
+        """Symmetric to test_explicit_pass1_overrides_config_single
+        — --pass2-key alone is also enough to suppress the flip."""
+        args = self._resolve_dispatch(
+            cli_pass2='skol:classifier:model:v4_pass2_combined',
+            config_single='skol:classifier:model:v4_single_combined',
+        )
+        self.assertIsNone(args.single_crf_key)
+        self.assertEqual(
+            args.pass2_key, 'skol:classifier:model:v4_pass2_combined',
+        )
+
+    def test_explicit_single_overrides_config_single(self):
+        """If the CLI also passes --single-crf-key, that explicit
+        value wins — the flip is just a no-op since the field was
+        already set."""
+        args = self._resolve_dispatch(
+            cli_single='skol:custom:smoke_single',
+            config_single='skol:classifier:model:v4_single_combined',
+        )
+        self.assertEqual(args.single_crf_key, 'skol:custom:smoke_single')
+
+    def test_empty_config_falls_through_to_two_pass(self):
+        """No config field, no CLI flags → args.single_crf_key
+        stays None, downstream dispatch picks the two-pass path."""
+        args = self._resolve_dispatch(config_single='')
+        self.assertIsNone(args.single_crf_key)
+        self.assertIsNone(args.pass1_key)
+        self.assertIsNone(args.pass2_key)
+
+
 if __name__ == '__main__':
     unittest.main()

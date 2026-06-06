@@ -242,6 +242,13 @@ def cmd_create(db, args) -> None:
         doc.setdefault("redis_keys", {})[
             "classifier_model_pass2"
         ] = args.redis_key_pass2
+    # Post-Step-7 single-CRF cutover key.  When set on the experiment
+    # doc, predict_v4 defaults to single-CRF mode (see env_config
+    # mapping + the dispatch hierarchy in predict_v4.main()).
+    if getattr(args, "redis_key_single", None):
+        doc.setdefault("redis_keys", {})[
+            "classifier_model_single"
+        ] = args.redis_key_single
 
     db.save(doc)
     print(f"Created experiment '{name}'")
@@ -331,6 +338,13 @@ def cmd_update(db, args) -> None:
         doc.setdefault("redis_keys", {})[
             "classifier_model_pass2"
         ] = args.redis_key_pass2
+        changed = True
+    # Post-Step-7 single-CRF cutover.  Setting this on an existing
+    # two-pass experiment doc flips predict_v4's default dispatch.
+    if getattr(args, "redis_key_single", None):
+        doc.setdefault("redis_keys", {})[
+            "classifier_model_single"
+        ] = args.redis_key_single
         changed = True
 
     if changed:
@@ -908,6 +922,15 @@ def main() -> None:
         "--redis-key-pass2", type=str, dest="redis_key_pass2",
         help="v4 Pass-2 (treatment CRF) Redis state-key.",
     )
+    p_create.add_argument(
+        "--redis-key-single", type=str, dest="redis_key_single",
+        help=(
+            "v4 single-CRF Redis state-key (the Step 7 winner).  "
+            "When set on production_v4, predict_v4 defaults to "
+            "single-CRF mode against this key.  Recommended pin: "
+            "skol:classifier:model:v4_single_combined"
+        ),
+    )
 
     # list
     subparsers.add_parser("list", help="List all experiments")
@@ -941,6 +964,14 @@ def main() -> None:
     p_update.add_argument(
         "--redis-key-pass2", type=str, dest="redis_key_pass2",
         help="v4 Pass-2 (treatment CRF) Redis state-key.",
+    )
+    p_update.add_argument(
+        "--redis-key-single", type=str, dest="redis_key_single",
+        help=(
+            "v4 single-CRF Redis state-key (Step 7 winner).  "
+            "Setting this on an existing experiment flips "
+            "predict_v4's default to single-CRF mode."
+        ),
     )
 
     # archive
