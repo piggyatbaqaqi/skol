@@ -183,6 +183,24 @@ class TestBuildReplicationPayload(unittest.TestCase):
         )
         self.assertFalse(body.get('create_target'))
 
+    def test_default_leaves_use_bulk_get_unset(self):
+        """When the caller doesn't ask, leave ``use_bulk_get`` out of
+        the payload — CouchDB then uses its own default (``true`` on
+        modern releases).  Don't surprise operators by forcing a
+        slower fallback on every replication."""
+        body = build_replication_payload(self.SRC, self.TGT, 'skol_dev')
+        self.assertNotIn('use_bulk_get', body)
+
+    def test_use_bulk_get_false_emits_payload_key(self):
+        """``--no-bulk-get`` opt-out: when the remote's `_bulk_get`
+        is broken (e.g. multipart corruption — see
+        couch_replicator_api_wrap:bulk_get in the CouchDB log),
+        the replicator falls back to per-doc _open_revs GETs."""
+        body = build_replication_payload(
+            self.SRC, self.TGT, 'skol_dev', use_bulk_get=False,
+        )
+        self.assertIs(body['use_bulk_get'], False)
+
 
 # ---------------------------------------------------------------------------
 # recreate_target_db

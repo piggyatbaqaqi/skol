@@ -111,14 +111,23 @@ def resolve_endpoint(
 def build_replication_payload(
     source: Endpoint, target: Endpoint, db_name: str,
     *, create_target: bool = True,
+    use_bulk_get: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Build the JSON body to POST to a CouchDB ``/_replicate`` endpoint.
 
     Uses the object form of source / target so the password lives
     inside ``auth.basic.password`` rather than being embedded in the
     URL — the latter trips up on any URL-reserved character.
+
+    ``use_bulk_get`` (default None ⇒ omit) controls the replicator's
+    ``_bulk_get`` optimization.  Pass ``False`` to fall back to
+    per-doc ``_open_revs`` GETs when the remote returns a multipart
+    body the replicator can't decode (CouchDB worker_died with
+    ``{invalid_json,{3,invalid_string}}`` in ``bulk_get`` — see the
+    CRASH REPORTs in the production log if you've hit this).  The
+    fallback is slower but universally supported.
     """
-    return {
+    payload: Dict[str, Any] = {
         'source': {
             'url': f'{source.url}/{db_name}',
             'auth': {'basic': {
@@ -135,6 +144,9 @@ def build_replication_payload(
         },
         'create_target': create_target,
     }
+    if use_bulk_get is not None:
+        payload['use_bulk_get'] = use_bulk_get
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +194,7 @@ def _replicate_one_hop(
     http: Any, verify: bool = False,
     create_target: bool = True,
     recreate: bool = False,
+    use_bulk_get: Optional[bool] = None,
     verbosity: int = 1,
 ) -> Dict[str, Any]:
     """Do one ``source → target`` replication via source's
@@ -194,6 +207,7 @@ def _replicate_one_hop(
 
     payload = build_replication_payload(
         source, target, db_name, create_target=create_target,
+        use_bulk_get=use_bulk_get,
     )
     url = f'{source.url}/_replicate'
     if verbosity >= 1:
@@ -217,6 +231,7 @@ def replicate_chain(
     http: Any, verify: bool = False,
     create_target: bool = True,
     recreate: bool = False,
+    use_bulk_get: Optional[bool] = None,
     dry_run: bool = False,
     verbosity: int = 1,
 ) -> List[Dict[str, Any]]:
@@ -238,6 +253,7 @@ def replicate_chain(
         result = _replicate_one_hop(
             prev, nxt, db_name, http=http, verify=verify,
             create_target=create_target, recreate=recreate,
+            use_bulk_get=use_bulk_get,
             verbosity=verbosity,
         )
         results.append(result)
@@ -322,6 +338,18 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        '--no-bulk-get', dest='no_bulk_get', action='store_true',
+        help=(
+            'Disable the replicator\'s _bulk_get optimization (passes '
+            '{"use_bulk_get": false} in the payload).  Falls back to '
+            'per-doc _open_revs GETs.  Slower but works around remotes '
+            'where the multipart _bulk_get response trips the CouchDB '
+            'JSON decoder ({invalid_json,{3,invalid_string}} in the '
+            'log).  Useful when target CouchDB / proxy mishandles '
+            'multipart/mixed responses.'
+        ),
+    )
+    parser.add_argument(
         '--dry-run', action='store_true',
         help='Print the chain interpretation; make no HTTP requests.',
     )
@@ -357,6 +385,7 @@ def main() -> int:
             endpoints, args.db, http=sess, verify=verify,
             create_target=not args.no_create_target,
             recreate=args.recreate_target,
+            use_bulk_get=False if args.no_bulk_get else None,
             dry_run=args.dry_run,
             verbosity=args.verbosity,
         )
