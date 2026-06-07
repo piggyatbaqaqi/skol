@@ -68,14 +68,15 @@ class FakeSession:
 class TestResolveEndpoint(unittest.TestCase):
     """Endpoint name -> (url, username, password) via env vars.
 
-    Convention: <NAME>_COUCHDB_URL + <NAME>_COUCHDB_USERNAME +
-    <NAME>_COUCHDB_PASSWORD.  'local' / 'default' / 'self' / '' fall
-    back to COUCHDB_URL / COUCHDB_USER / COUCHDB_PASSWORD."""
+    Convention: <NAME>_COUCHDB_URL + <NAME>_COUCHDB_USER +
+    <NAME>_COUCHDB_PASSWORD.  Matches the local-alias convention
+    (COUCHDB_URL / COUCHDB_USER / COUCHDB_PASSWORD) and the rest
+    of the project's env-var naming."""
 
     def test_named_endpoint_full(self):
         env = {
             'TSQALI_COUCHDB_URL': 'https://tsq.example:16984',
-            'TSQALI_COUCHDB_USERNAME': 'admin',
+            'TSQALI_COUCHDB_USER': 'admin',
             'TSQALI_COUCHDB_PASSWORD': 'secret',
         }
         ep = resolve_endpoint('tsqali', env)
@@ -93,6 +94,19 @@ class TestResolveEndpoint(unittest.TestCase):
         self.assertEqual(ep.url, 'https://skol.example:6984')
         self.assertEqual(ep.username, 'admin')  # default
         self.assertEqual(ep.password, 'prod-secret')
+
+    def test_named_endpoint_picks_up_user_env_var(self):
+        """Regression: the named-endpoint path used to look for
+        ``_COUCHDB_USERNAME`` which never matched what
+        ``/home/skol/.skol_env`` actually sets, so production
+        replication silently fell back to 'admin' and 401'd."""
+        env = {
+            'SKOL_COUCHDB_URL': 'https://skol.example:6984',
+            'SKOL_COUCHDB_USER': 'skol',
+            'SKOL_COUCHDB_PASSWORD': 'prod-secret',
+        }
+        ep = resolve_endpoint('skol', env)
+        self.assertEqual(ep.username, 'skol')
 
     def test_local_falls_back_to_default_couchdb_vars(self):
         env = {

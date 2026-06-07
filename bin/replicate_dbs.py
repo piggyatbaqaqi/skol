@@ -10,7 +10,7 @@ Endpoints are named.  Each name resolves to a URL + admin
 credentials via env vars::
 
     <NAME>_COUCHDB_URL          (required)
-    <NAME>_COUCHDB_USERNAME     (default: 'admin')
+    <NAME>_COUCHDB_USER         (default: 'admin')
     <NAME>_COUCHDB_PASSWORD     (required if URL needs auth)
 
 ``local`` / ``default`` / ``self`` fall back to the standard
@@ -68,11 +68,13 @@ def resolve_endpoint(
 ) -> Endpoint:
     """Resolve an endpoint name to a populated :class:`Endpoint`.
 
-    Convention: ``<NAME>_COUCHDB_URL`` + ``<NAME>_COUCHDB_USERNAME``
-    + ``<NAME>_COUCHDB_PASSWORD``.  The aliases ``local`` /
-    ``default`` / ``self`` (and the empty string) fall back to the
-    standard ``COUCHDB_URL`` / ``COUCHDB_USER`` / ``COUCHDB_PASSWORD``
-    pair the rest of skol uses.
+    Convention: ``<NAME>_COUCHDB_URL`` + ``<NAME>_COUCHDB_USER``
+    + ``<NAME>_COUCHDB_PASSWORD`` — matches both the local-alias
+    fallback (``COUCHDB_USER``) and the rest of the project's
+    env-var naming (e.g. ``/home/skol/.skol_env``).  The aliases
+    ``local`` / ``default`` / ``self`` (and the empty string)
+    fall back to the unprefixed ``COUCHDB_URL`` / ``COUCHDB_USER``
+    / ``COUCHDB_PASSWORD`` triple.
 
     Raises ``ValueError`` if no URL is found.
     """
@@ -84,7 +86,7 @@ def resolve_endpoint(
     else:
         prefix = name.upper()
         url = env.get(f'{prefix}_COUCHDB_URL')
-        username = env.get(f'{prefix}_COUCHDB_USERNAME', 'admin')
+        username = env.get(f'{prefix}_COUCHDB_USER', 'admin')
         password = env.get(f'{prefix}_COUCHDB_PASSWORD', '')
         resolved_name = name
     if not url:
@@ -277,7 +279,7 @@ def main() -> int:
         description=(
             'Replicate a CouchDB database through a chain of endpoints. '
             'Endpoints are named; each name resolves to '
-            '<NAME>_COUCHDB_URL / _USERNAME / _PASSWORD env vars.'
+            '<NAME>_COUCHDB_URL / _USER / _PASSWORD env vars.'
         ),
     )
     parser.add_argument(
