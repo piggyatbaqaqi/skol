@@ -69,7 +69,7 @@ services:
 
   #couchdb_skol#
   couchdb_skol:
-    image: couchdb:3.3.3
+    image: couchdb:3.4
     restart: always
     # Host networking so the replicator can reach LAN peers (e.g.
     # the new CouchDB at 10.42.0.99).  5984 is still constrained to
