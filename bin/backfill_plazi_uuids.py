@@ -309,19 +309,28 @@ def build_search_url(doi: str, plazi_url: str) -> str:
     the bug-report tool so the reproduction URL matches what we queried.
 
     Trims a trailing slash on ``plazi_url`` and percent-encodes the
-    *quoted* DOI as one token.  The double-quotes are load-bearing:
-    Plazi's parser treats a bare ``-`` in the DOI value as a range
-    operator (so e.g. ``10.3852/11-180`` returns every record with a
-    DOI between ``10.3852/11`` and ``180``, a ~700 k-entry runaway).
-    Wrapping the DOI in ``"..."`` switches Plazi to exact-match mode.
-    See the 2026-06 plazi@plazi.org reply (and the
-    ``_MAX_PLAZI_ENTRIES`` defensive guard, which existed to catch
-    this until we fixed it at the source)."""
+    DOI (otherwise Plazi's router parses the DOI's own slash as a
+    path separator).
+
+    KNOWN PLAZI QUIRK — DOIs with a dash trigger range parsing.
+    Plazi's 2026-06 reply recommended wrapping the DOI in
+    double-quotes for exact match, but a live probe showed:
+
+    - ``DOI=%22<dash-DOI>%22`` still returns ~700 k entries.
+    - ``DOI="<dash-DOI>"`` (raw quote in URL) returns HTTP 400.
+    - ``DOI=%22<no-dash-DOI>%22`` returns 0 entries — quoting
+      actively BREAKS exact-match for DOIs that would otherwise
+      work, so we cannot ship the quoted form.
+
+    So we send the bare DOI.  The ``_MAX_PLAZI_ENTRIES`` cap in
+    ``query_plazi`` catches the runaway responses and rejects them
+    as if Plazi were unreachable, leaving the doc unstamped for a
+    later retry once Plazi documents a syntax that actually works.
+    """
     base = plazi_url.rstrip('/')
-    quoted_doi = f'"{doi}"'
     return (
         f'{base}/Treatments/searchByDOI'
-        f'?DOI={quote(quoted_doi, safe="")}'
+        f'?DOI={quote(doi, safe="")}'
         f'&format=json'
     )
 
