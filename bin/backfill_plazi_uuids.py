@@ -307,13 +307,21 @@ def should_skip(
 def build_search_url(doi: str, plazi_url: str) -> str:
     """Construct the ``searchByDOI`` URL.  Shared by ``query_plazi`` and
     the bug-report tool so the reproduction URL matches what we queried.
-    Trims a trailing slash on ``plazi_url`` and percent-encodes the DOI
-    (otherwise Plazi's router parses the DOI's own slash as a path
-    separator)."""
+
+    Trims a trailing slash on ``plazi_url`` and percent-encodes the
+    *quoted* DOI as one token.  The double-quotes are load-bearing:
+    Plazi's parser treats a bare ``-`` in the DOI value as a range
+    operator (so e.g. ``10.3852/11-180`` returns every record with a
+    DOI between ``10.3852/11`` and ``180``, a ~700 k-entry runaway).
+    Wrapping the DOI in ``"..."`` switches Plazi to exact-match mode.
+    See the 2026-06 plazi@plazi.org reply (and the
+    ``_MAX_PLAZI_ENTRIES`` defensive guard, which existed to catch
+    this until we fixed it at the source)."""
     base = plazi_url.rstrip('/')
+    quoted_doi = f'"{doi}"'
     return (
         f'{base}/Treatments/searchByDOI'
-        f'?DOI={quote(doi, safe="")}'
+        f'?DOI={quote(quoted_doi, safe="")}'
         f'&format=json'
     )
 

@@ -317,8 +317,12 @@ class TestQueryPlazi(unittest.TestCase):
         self.assertEqual(result.reason, 'not_list')
 
     def test_constructs_correct_url(self):
-        """DOI is URL-encoded, format=json is set, the path matches
-        the OpenAPI spec exactly (``/Treatments/searchByDOI``)."""
+        """DOI is wrapped in double-quotes (Plazi treats unquoted
+        dashes as range-operators, so an unquoted DOI containing a
+        dash returns ~700 k entries instead of an exact match), and
+        URL-encoded as one piece so the slashes and quotes both
+        survive transport.  format=json must be set; the path
+        matches the OpenAPI spec exactly."""
         client = FakeHttpClient(default=FakeResponse(200, []))
         query_plazi(
             '10.5281/zenodo.7105224',
@@ -328,10 +332,10 @@ class TestQueryPlazi(unittest.TestCase):
         url = client.urls_seen[0]
         self.assertIn('/Treatments/searchByDOI', url)
         self.assertIn('format=json', url)
-        # Slashes in the DOI must be percent-encoded — without it the
-        # Plazi router parses ``10.5281`` as the DOI and ``zenodo.X``
-        # as part of the path.
-        self.assertIn('DOI=10.5281%2Fzenodo.7105224', url)
+        # %22 is the encoded double-quote, %2F is the slash.
+        # Plazi's exact-match form is ``DOI="<value>"`` — the quotes
+        # are part of the value, both encoded.
+        self.assertIn('DOI=%2210.5281%2Fzenodo.7105224%22', url)
 
 
 class TestBuildSearchUrl(unittest.TestCase):
@@ -340,11 +344,23 @@ class TestBuildSearchUrl(unittest.TestCase):
 
     PLAZI_URL = 'https://api.plazi.org/GgSrvApi/v1'
 
-    def test_encodes_doi_and_sets_format(self):
+    def test_quotes_doi_for_exact_match(self):
+        """Plazi treats an unquoted dash as a range operator; without
+        the double-quotes a DOI containing ``-`` returns ~700 k
+        runaway entries.  See _MAX_PLAZI_ENTRIES, which used to
+        catch this."""
         url = build_search_url('10.5281/zenodo.7105224', self.PLAZI_URL)
         self.assertIn('/Treatments/searchByDOI', url)
         self.assertIn('format=json', url)
-        self.assertIn('DOI=10.5281%2Fzenodo.7105224', url)
+        self.assertIn('DOI=%2210.5281%2Fzenodo.7105224%22', url)
+
+    def test_quotes_doi_containing_dashes(self):
+        """The regression case: a DOI with a literal dash must come
+        through as a single quoted value, not a Plazi range query."""
+        url = build_search_url(
+            '10.3852/11-180', self.PLAZI_URL,
+        )
+        self.assertIn('DOI=%2210.3852%2F11-180%22', url)
 
     def test_trims_trailing_slash(self):
         url = build_search_url('10.1/x', self.PLAZI_URL + '/')
