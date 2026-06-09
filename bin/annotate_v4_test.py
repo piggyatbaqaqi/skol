@@ -389,5 +389,125 @@ class TestProcessDocumentsV4(unittest.TestCase):
         self.assertEqual(len(db.put_calls), 0)
 
 
+# ---------------------------------------------------------------------------
+# _xml_attachments_present — diagnostic helper for the "no plaintext
+# source" error path
+# ---------------------------------------------------------------------------
+
+
+class TestXmlAttachmentsPresent(unittest.TestCase):
+    """When a doc lacks ``article.txt`` / ``article.pdf`` /
+    ``article.txt.ann`` we can't process it — but the doc may still
+    carry an ``article.jats.xml`` (or similar) attachment that
+    indicates it's not actually an orphan, just unfit for the
+    plaintext pipeline.  Flag that in the error message so operators
+    don't waste time hunting a doc that has content we just can't
+    read yet."""
+
+    def test_returns_xml_attachment_names(self):
+        from annotate_v4 import _xml_attachments_present
+        doc = {
+            '_attachments': {
+                'article.jats.xml': {'content_type': 'application/xml'},
+                'article.txt': {'content_type': 'text/plain'},
+            },
+        }
+        self.assertEqual(
+            _xml_attachments_present(doc),
+            ['article.jats.xml'],
+        )
+
+    def test_returns_empty_list_when_no_xml(self):
+        from annotate_v4 import _xml_attachments_present
+        doc = {
+            '_attachments': {
+                'article.pdf': {'content_type': 'application/pdf'},
+            },
+        }
+        self.assertEqual(_xml_attachments_present(doc), [])
+
+    def test_returns_empty_list_for_doc_without_attachments(self):
+        from annotate_v4 import _xml_attachments_present
+        self.assertEqual(_xml_attachments_present({}), [])
+        self.assertEqual(
+            _xml_attachments_present({'_attachments': None}), [],
+        )
+
+    def test_matches_any_dot_xml_suffix(self):
+        """Some sources name the JATS attachment differently
+        (``article.xml``, ``jats.xml``, ``pmc.xml`` …).  Match by
+        suffix rather than by exact name so we surface any of them."""
+        from annotate_v4 import _xml_attachments_present
+        doc = {
+            '_attachments': {
+                'article.xml': {},
+                'jats.xml': {},
+                'metadata.json': {},
+            },
+        }
+        self.assertEqual(
+            sorted(_xml_attachments_present(doc)),
+            ['article.xml', 'jats.xml'],
+        )
+
+
+class TestMissingPlaintextMessageMentionsXml(unittest.TestCase):
+    """The user-facing diagnostic when plaintext loading fails
+    should mention any ``*.xml`` attachments present, so operators
+    can see at a glance whether the doc is a real orphan or just
+    one we can't read yet."""
+
+    def test_message_includes_xml_attachment_when_present(self):
+        """A doc with only ``article.jats.xml`` and none of the
+        plaintext sources prints the JATS attachment name in the
+        error so the operator sees it's not orphaned."""
+        from io import StringIO
+        db = FakeDb({
+            'd1': {
+                '_id': 'd1', '_rev': '5-x',
+                '_attachments': {
+                    'article.jats.xml': {
+                        'content_type': 'application/xml'},
+                },
+            },
+        })
+        captured = StringIO()
+        with mock.patch('sys.stdout', captured):
+            process_documents_v4(
+                db, ['d1'],
+                skip_existing=False, force=False, dry_run=False,
+                gnfinder_url='http://x', gnparser_url='http://y',
+                verbosity=1,
+            )
+        out = captured.getvalue()
+        self.assertIn('d1', out)
+        self.assertIn('no plaintext source', out)
+        # The actionable signal — operator knows the doc has JATS
+        # content we just can't yet feed to the v4 pipeline.
+        self.assertIn('article.jats.xml', out)
+
+    def test_message_omits_xml_line_when_no_xml_present(self):
+        """A truly orphan doc (no useful attachments at all) gets
+        the original error — no spurious 'xml present' claim."""
+        from io import StringIO
+        db = FakeDb({
+            'd1': {
+                '_id': 'd1', '_rev': '5-x',
+                '_attachments': {},
+            },
+        })
+        captured = StringIO()
+        with mock.patch('sys.stdout', captured):
+            process_documents_v4(
+                db, ['d1'],
+                skip_existing=False, force=False, dry_run=False,
+                gnfinder_url='http://x', gnparser_url='http://y',
+                verbosity=1,
+            )
+        out = captured.getvalue()
+        self.assertIn('no plaintext source', out)
+        self.assertNotIn('.xml', out)
+
+
 if __name__ == '__main__':
     unittest.main()

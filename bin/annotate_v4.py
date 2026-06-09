@@ -156,6 +156,26 @@ def _load_plaintext_v4(
     return None, 'missing'
 
 
+def _xml_attachments_present(
+    doc: Dict[str, Any],
+) -> List[str]:
+    """Return a list of ``*.xml`` attachment names on ``doc``.
+
+    Used in the "no plaintext source" diagnostic so operators
+    can tell at a glance whether a doc that can't be processed
+    is truly orphan (no attachments at all) or just carries
+    its content in a format (JATS XML, etc.) the v4 pipeline
+    doesn't yet read directly.  We match on suffix because the
+    JATS attachment name varies across ingestors (``article.jats.xml``
+    from PMC, ``article.xml`` from Pensoft, ``jats.xml`` for some
+    hand-imported corpora).
+    """
+    atts = (doc.get('_attachments') or {}) if isinstance(doc, dict) else {}
+    return sorted(
+        name for name in atts.keys() if name.lower().endswith('.xml')
+    )
+
+
 def _both_attachments_present(db: Any, doc_id: str) -> bool:
     """True iff doc has BOTH v4 attachments already."""
     try:
@@ -385,9 +405,25 @@ def process_documents_v4(
         if plaintext is None:
             counts['errors'] += 1
             if verbosity >= 1:
-                print(f'  ✗ {doc_id}: no plaintext source '
-                      f'({_PLAINTEXT_ATTACHMENT}, article.pdf, '
-                      f'{_ANN_ATTACHMENT} all absent)')
+                try:
+                    doc = db[doc_id]
+                except Exception:  # noqa: BLE001
+                    doc = {}
+                xml_present = _xml_attachments_present(doc)
+                msg = (
+                    f'  ✗ {doc_id}: no plaintext source '
+                    f'({_PLAINTEXT_ATTACHMENT}, article.pdf, '
+                    f'{_ANN_ATTACHMENT} all absent)'
+                )
+                if xml_present:
+                    # Operator hint: doc isn't orphan — it has JATS /
+                    # other XML content the v4 pipeline doesn't yet
+                    # consume directly.
+                    msg += (
+                        f' — but XML attachment present: '
+                        f'{", ".join(xml_present)}'
+                    )
+                print(msg)
             continue
         ann_text = _read_attachment_text(
             db, doc_id, _ANN_ATTACHMENT,
