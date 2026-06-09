@@ -5,7 +5,6 @@ import sys
 import unittest
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -338,6 +337,63 @@ class TestReplicateChain(unittest.TestCase):
         self.assertEqual(
             body['source']['auth']['basic']['password'], 'a@b@c',
         )
+
+    def test_push_default_uses_source_auth(self):
+        """Complement to the pull tests: by default the POST goes out
+        with the *source's* credentials (source coordinates)."""
+        sess = FakeSession()
+        replicate_chain([self.LOCAL, self.TSQALI], 'skol_dev', http=sess)
+        post = next(c for c in sess.calls if c['method'] == 'POST')
+        self.assertEqual(post['auth'], ('admin', 'lpw'))  # local = source
+
+    def test_pull_single_hop_target_coordinates(self):
+        """--pull: the target coordinates and pulls from the source.
+        Motivating case — copy skol → local when local has no inbound
+        port skol can reach, so local must initiate."""
+        sess = FakeSession()
+        replicate_chain(
+            [self.PROD, self.LOCAL], 'skol_dev', http=sess, pull=True,
+        )
+        posts = [c for c in sess.calls if c['method'] == 'POST']
+        self.assertEqual(len(posts), 1)
+        # Coordinator is the target (local), so the POST hits local's
+        # /_replicate with local's credentials...
+        self.assertEqual(posts[0]['url'], 'http://localhost:5984/_replicate')
+        self.assertEqual(posts[0]['auth'], ('admin', 'lpw'))
+        # ...but the data still flows source (skol) → target (local).
+        body = posts[0]['json']
+        self.assertEqual(body['source']['url'],
+                         'https://skol.example:6984/skol_dev')
+        self.assertEqual(body['target']['url'],
+                         'http://localhost:5984/skol_dev')
+
+    def test_pull_two_hop_posts_to_each_target(self):
+        """In pull mode each downstream node coordinates its own hop
+        (B pulls from A, C pulls from B)."""
+        sess = FakeSession()
+        replicate_chain(
+            [self.LOCAL, self.TSQALI, self.PROD],
+            'skol_dev', http=sess, pull=True,
+        )
+        posts = [c['url'] for c in sess.calls if c['method'] == 'POST']
+        self.assertEqual(posts, [
+            'https://tsq.example:16984/_replicate',   # tsqali pulls local
+            'https://skol.example:6984/_replicate',   # skol pulls tsqali
+        ])
+
+    def test_pull_dry_run_prints_target_coordinator(self):
+        import contextlib
+        import io
+        sess = FakeSession()
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            replicate_chain(
+                [self.PROD, self.LOCAL], 'skol_dev', http=sess,
+                pull=True, dry_run=True, verbosity=1,
+            )
+        self.assertEqual(sess.calls, [])
+        # The dry-run preview shows the coordinator (local), not skol.
+        self.assertIn('http://localhost:5984/_replicate', buf.getvalue())
 
 
 if __name__ == '__main__':

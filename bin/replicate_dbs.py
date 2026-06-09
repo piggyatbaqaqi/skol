@@ -195,10 +195,18 @@ def _replicate_one_hop(
     create_target: bool = True,
     recreate: bool = False,
     use_bulk_get: Optional[bool] = None,
+    pull: bool = False,
     verbosity: int = 1,
 ) -> Dict[str, Any]:
-    """Do one ``source → target`` replication via source's
-    ``/_replicate`` endpoint."""
+    """Do one ``source → target`` replication.
+
+    The data always flows ``source → target``.  ``pull`` only changes
+    *which node coordinates* it (runs ``/_replicate``): the source by
+    default (push), or the target when ``pull`` is set.  The coordinator
+    must be able to reach both ends, so pull is the right mode when the
+    source can't reach the target but the target can reach the source.
+    """
+    coordinator = target if pull else source
     if recreate:
         if verbosity >= 1:
             print(f'  → {target.name}/{db_name}: recreate '
@@ -209,12 +217,14 @@ def _replicate_one_hop(
         source, target, db_name, create_target=create_target,
         use_bulk_get=use_bulk_get,
     )
-    url = f'{source.url}/_replicate'
+    url = f'{coordinator.url}/_replicate'
     if verbosity >= 1:
-        print(f'  → POST {url}  ({source.name} → {target.name}/{db_name})')
+        mode = 'pull' if pull else 'push'
+        print(f'  → POST {url}  ({source.name} → {target.name}/{db_name}'
+              f', {mode} via {coordinator.name})')
     resp = http.post(
         url, json=payload,
-        auth=(source.username, source.password),
+        auth=(coordinator.username, coordinator.password),
         verify=verify,
     )
     if resp.status_code not in (200, 201, 202):
@@ -232,11 +242,16 @@ def replicate_chain(
     create_target: bool = True,
     recreate: bool = False,
     use_bulk_get: Optional[bool] = None,
+    pull: bool = False,
     dry_run: bool = False,
     verbosity: int = 1,
 ) -> List[Dict[str, Any]]:
-    """Walk the chain pairwise: ``endpoints[i]`` pushes to
+    """Walk the chain pairwise: data flows ``endpoints[i]`` →
     ``endpoints[i+1]`` for each consecutive pair.
+
+    By default the upstream node coordinates each hop (push).  With
+    ``pull=True`` the downstream node coordinates instead (pulls from its
+    upstream) — same data direction, different initiator.
 
     With ``dry_run=True`` no HTTP traffic is sent — useful for
     confirming the chain interpretation before pulling the trigger.
@@ -246,14 +261,15 @@ def replicate_chain(
         if verbosity >= 1:
             print('  *** DRY RUN — no HTTP traffic ***')
             for prev, nxt in zip(endpoints, endpoints[1:]):
-                print(f'  would POST {prev.url}/_replicate  '
+                coordinator = nxt if pull else prev
+                print(f'  would POST {coordinator.url}/_replicate  '
                       f'({prev.name} → {nxt.name}/{db_name})')
         return results
     for prev, nxt in zip(endpoints, endpoints[1:]):
         result = _replicate_one_hop(
             prev, nxt, db_name, http=http, verify=verify,
             create_target=create_target, recreate=recreate,
-            use_bulk_get=use_bulk_get,
+            use_bulk_get=use_bulk_get, pull=pull,
             verbosity=verbosity,
         )
         results.append(result)
@@ -350,6 +366,17 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        '--pull', action='store_true',
+        help=(
+            'Initiate each hop from the target (which pulls from the '
+            'source) instead of the source pushing.  Data direction is '
+            "unchanged; only the coordinating node changes.  Use when the "
+            "source can't reach the target but the target can reach the "
+            'source — e.g. copying skol → local when local has no inbound '
+            'port: --source skol --target local --pull.'
+        ),
+    )
+    parser.add_argument(
         '--dry-run', action='store_true',
         help='Print the chain interpretation; make no HTTP requests.',
     )
@@ -377,6 +404,8 @@ def main() -> int:
             f'Replicating {args.db!r} through chain: ' +
             ' → '.join(f'{ep.name} ({ep.url})' for ep in endpoints)
         )
+        if args.pull:
+            print('  (pull mode: each hop initiated by the target)')
         if args.recreate_target:
             print('  (each target dropped + recreated first)')
 
@@ -386,6 +415,7 @@ def main() -> int:
             create_target=not args.no_create_target,
             recreate=args.recreate_target,
             use_bulk_get=False if args.no_bulk_get else None,
+            pull=args.pull,
             dry_run=args.dry_run,
             verbosity=args.verbosity,
         )
