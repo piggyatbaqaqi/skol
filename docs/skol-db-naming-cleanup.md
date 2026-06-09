@@ -43,13 +43,19 @@ applies to *code*, not *data*.  When a pipeline step processes a
 truncated dataset (golden set, ablation hold-out, etc.) it
 writes to an `_eval`-suffixed DB.
 
-The convention is:
+The convention (using the new role names settled later in
+the plan):
 
 | Role | Production DB | Eval DB |
 |---|---|---|
-| Annotations | `skol_exp_<X>_ann` | `skol_exp_<X>_ann_eval` |
-| Taxa | `skol_exp_<X>_taxa` | `skol_exp_<X>_taxa_eval` |
-| Taxa full | `skol_exp_<X>_taxa_full` | `skol_exp_<X>_taxa_full_eval` |
+| Annotations | `skol_exp_<X>_01_00_ann` | `skol_exp_<X>_01_00_ann_eval` |
+| Prose treatments | `skol_exp_<X>_02_00_treatments_prose` | `skol_exp_<X>_02_00_treatments_prose_eval` |
+| Structured treatments | `skol_exp_<X>_03_00_treatments_structured` | `skol_exp_<X>_03_00_treatments_structured_eval` |
+
+Eval DBs sort alphabetically immediately after their
+production counterparts (the trailing `_eval` puts them right
+next to the production DB they're paired with).  Confirmed
+2026-06-09 as the desired listing order.
 
 The variable substitution layer
 ([bin/pipelines/base.py:build_variables](../bin/pipelines/base.py))
@@ -98,11 +104,17 @@ skol_exp_<EXPERIMENT>_<STAGE>_<ROLE>[_eval]
   `production_v4`, `production_v3_hand`).
 - `<STAGE>` — decimal-numeric ordering tag matching the
   pipeline-step write order: `01_00` annotations, `02_00`
-  taxa, `03_00` taxa_full.  Underscore separator (CouchDB DB
-  names disallow `.`).  Insertion-friendly:  a future step
-  whose output sorts between annotations and taxa gets
-  `01_50` without renumbering existing DBs.
-- `<ROLE>` — the data shape (`ann`, `taxa`, `taxa_full`, …).
+  prose treatments, `03_00` structured treatments.
+  Underscore separator (CouchDB DB names disallow `.`).
+  Insertion-friendly: a future step whose output sorts
+  between annotations and prose treatments gets `01_50`
+  without renumbering existing DBs.
+- `<ROLE>` — the data shape: `ann` (YEDDA-tagged annotations
+  from predict), `treatments_prose` (extracted treatment text
+  blocks — Nomenclature, Description, Etymology …), or
+  `treatments_structured` (LLM-annotated JSON with named
+  fields per treatment).  Today's `taxa` / `taxa_full` are
+  retired — see Role-naming cleanup section below.
 - `_eval` (optional suffix) — present iff the DB carries
   predictions over a truncated dataset (golden set / ablation
   hold-out), distinct from production data.  See the
@@ -113,10 +125,10 @@ Example listing for `production_v4`:
 ```
 skol_exp_production_v4_01_00_ann
 skol_exp_production_v4_01_00_ann_eval
-skol_exp_production_v4_02_00_taxa
-skol_exp_production_v4_02_00_taxa_eval
-skol_exp_production_v4_03_00_taxa_full
-skol_exp_production_v4_03_00_taxa_full_eval
+skol_exp_production_v4_02_00_treatments_prose
+skol_exp_production_v4_02_00_treatments_prose_eval
+skol_exp_production_v4_03_00_treatments_structured
+skol_exp_production_v4_03_00_treatments_structured_eval
 ```
 
 All six group together in `_all_dbs`; within the group, stage
@@ -152,24 +164,50 @@ no marker is needed to distinguish them visually.
 ```
 skol_dev
 skol_exp_production_v3_hand_01_00_ann
-skol_exp_production_v3_hand_02_00_taxa
-skol_exp_production_v3_hand_03_00_taxa_full
+skol_exp_production_v3_hand_02_00_treatments_prose
+skol_exp_production_v3_hand_03_00_treatments_structured
 skol_exp_production_v3_jats_01_00_ann
-skol_exp_production_v3_jats_02_00_taxa
+skol_exp_production_v3_jats_02_00_treatments_prose
 skol_exp_production_v4_01_00_ann
 skol_exp_production_v4_01_00_ann_eval
-skol_exp_production_v4_02_00_taxa
-skol_exp_production_v4_02_00_taxa_eval
-skol_exp_production_v4_03_00_taxa_full
-skol_exp_production_v4_03_00_taxa_full_eval
+skol_exp_production_v4_02_00_treatments_prose
+skol_exp_production_v4_02_00_treatments_prose_eval
+skol_exp_production_v4_03_00_treatments_structured
+skol_exp_production_v4_03_00_treatments_structured_eval
 skol_experiments
 skol_golden_ann_hand_v2
 skol_golden_v2
 skol_training_v3_combined_no_golden
 ```
 
-All per-experiment data clusters; shared data lives at the top
-and bottom of the list around the `skol_exp_*` block.
+All per-experiment data clusters; eval DBs sort directly next
+to their production counterparts within each group; shared data
+lives at the top and bottom of the list around the
+`skol_exp_*` block.
+
+### Role-naming cleanup — settled 2026-06-09
+
+`taxa` / `taxa_full` are historical: when the pipeline was
+primarily taxonomic-name parsing, the role name reflected that.
+The actual data shape is *treatments* (Nomenclature +
+Description + Etymology + … blocks for one organism each), and
+the codebase has been steadily renaming in that direction:
+`bin/extract_treatments_to_couchdb.py`, `bin/treatments_to_json.py`,
+`bin/embed_treatments.py` all already use the term.  This pass
+finishes the rename.
+
+Two tiers:
+
+- `treatments_prose` — text blocks of natural language
+  (Nomenclature, Description, Etymology, …) extracted from
+  predict's YEDDA output by `extract_treatments_to_couchdb`.
+- `treatments_structured` — LLM-annotated JSON with named
+  fields per treatment, output of `treatments_to_json`.
+
+Symmetric `_prose` + `_structured` naming makes the
+relationship between tiers obvious: same `treatments` root,
+different transformation.  The `_full` suffix (which suggested
+"more complete" but actually meant "more processed") is gone.
 
 ## Scope — what gets renamed
 
@@ -189,11 +227,11 @@ and bottom of the list around the `skol_exp_*` block.
 | `skol_golden_ann_bioc` | unchanged |
 | `skol_exp_<X>_ann` | `skol_exp_<X>_01_00_ann` |
 | `skol_exp_<X>_ann_combined` | `skol_exp_<X>_01_00_ann_combined` (or fold `combined` into the experiment name; see open question 5) |
-| `skol_exp_<X>_taxa` | `skol_exp_<X>_02_00_taxa` |
-| `skol_exp_<X>_taxa_full` | `skol_exp_<X>_03_00_taxa_full` |
+| `skol_exp_<X>_taxa` | `skol_exp_<X>_02_00_treatments_prose` |
+| `skol_exp_<X>_taxa_full` | `skol_exp_<X>_03_00_treatments_structured` |
 | (new) `skol_exp_<X>_01_00_ann_eval` | eval predictions land here, separate from production |
-| (new) `skol_exp_<X>_02_00_taxa_eval` | as above |
-| (new) `skol_exp_<X>_03_00_taxa_full_eval` | as above |
+| (new) `skol_exp_<X>_02_00_treatments_prose_eval` | as above |
+| (new) `skol_exp_<X>_03_00_treatments_structured_eval` | as above |
 | `skol_experiments` | unchanged |
 | `skol_treatments_v3_dev` | drop after migration (legacy) |
 | `skol_treatments_v3_jats` etc. | drop after migration (legacy) |
@@ -202,6 +240,68 @@ Most of the rename pass is **adding** per-experiment stage tags
 to the experiment-specific DBs.  The shared / global DBs mostly
 stay the same.  This makes the migration cheaper than the
 original plan suggested.
+
+### Surfaces beyond DB names
+
+Renaming `taxa` / `taxa_full` → `treatments_prose` /
+`treatments_structured` propagates through several
+non-CouchDB surfaces.  All must be migrated in the same pass
+so the experiment doc, the pipeline modules, and the running
+code stay consistent.
+
+1. **Experiment-doc fields** —
+   [bin/manage_experiment.py:_default_experiment](../bin/manage_experiment.py)
+   currently builds `databases.taxa` / `databases.taxa_full`.
+   These rename to `databases.treatments_prose` /
+   `databases.treatments_structured`.  Plus the migration
+   touches every existing doc in `skol_experiments`.
+2. **env_config mapping** —
+   [bin/env_config.py:_apply_experiment](../bin/env_config.py)
+   has mapping rows for `databases.taxa` →
+   `treatments_database` / `taxa_full` → `treatments_full_database`.
+   These flip to `treatments_prose_database` /
+   `treatments_structured_database` (and the legacy keys retire).
+3. **Per-family pipeline modules** —
+   [bin/pipelines/v3_logistic.py](../bin/pipelines/v3_logistic.py)
+   and [bin/pipelines/v4_crf.py](../bin/pipelines/v4_crf.py)
+   both have an `extract_taxa` step running
+   `bin/extract_treatments_to_couchdb.py`.  Rename the step to
+   `extract_treatments` to match the script name + new DB role.
+   (The lazy-repair in `_ensure_pipeline` will leave the old
+   `extract_taxa` step entry on existing experiment docs as a
+   fossil; the migration script needs to delete it.)
+4. **Pipeline variables** —
+   [bin/pipelines/base.py:build_variables](../bin/pipelines/base.py)
+   exposes `{annotations_db}`.  Add `{treatments_prose_db}` /
+   `{treatments_structured_db}` for steps that read either
+   tier explicitly (today's `embed`, `treatments_to_json`,
+   `annotate_spans`, `build_vocab`, `build_sources_stats` all
+   reach the tiers indirectly via `--experiment {name}` → env_config
+   resolution, so most pipeline modules don't need updates;
+   only the eval-variant steps need explicit variable substitution).
+5. **Cron** — [debian/skol.cron](../debian/skol.cron) references
+   the `extract_taxa` step name at line 84.  Update to
+   `extract_treatments`.  Any other step-name references stay
+   the same.
+6. **Django code** — search UI, REST endpoints, and templates
+   reference `databases.taxa_full` for treatment display
+   (haven't inventoried specific files yet; need a grep pass
+   over `django/search/` and `django/skolweb/` before execution).
+7. **Per-experiment script flags** —
+   `bin/treatments_to_json.py`, `bin/embed_treatments.py`,
+   `bin/build_vocab_tree.py` etc. read the relevant DB names
+   from env_config so they pick up the rename automatically.
+   But any ad-hoc shell scripts or CLI invocations hard-coding
+   `--source-db skol_exp_X_taxa_full` need updating.
+8. **docs/couchdbs.md, docs/api-reference.md** — both reference
+   the old role names.
+9. **rebuild_redis** — if any Redis keys derive from the role
+   names (e.g. embedding-cache keys), the rename touches there
+   too.  Audit [bin/rebuild_redis.py](../bin/rebuild_redis.py)
+   during execution.
+
+This is the work the user signed up for on 2026-06-09 ("the
+deeper scope is expected and a price I want to pay soon").
 
 Plus: every experiment doc's `databases.annotations`,
 `databases.taxa`, `databases.taxa_full` fields get rewritten to
