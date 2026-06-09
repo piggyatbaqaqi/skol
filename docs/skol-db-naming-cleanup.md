@@ -86,6 +86,68 @@ Trade-offs accepted (full discussion in conversation log):
   corpus size.  For the 105-doc golden set: ~500 MB/experiment;
   negligible at current scale.
 
+### Why `_eval` stays at the DB level, not in the experiment name
+
+Considered 2026-06-09: should `_eval` be folded into the
+experiment name (e.g. `production_v4` and `production_v4_eval`
+as separate experiment docs), symmetric with the Option B
+treatment of `_combined` (a model-corpus variant)?
+
+**Decision: keep `_eval` as a DB-level suffix.**  The reasoning
+draws a principled line between two kinds of "variant":
+
+| Property | `_combined` (variant) | `_eval` (measurement) |
+|---|---|---|
+| Different model? | Yes | No |
+| Different production outputs? | Yes | No (same `.ann`, different doc set) |
+| Belongs in a research write-up as a separate experiment? | Yes | No — eval IS the measurement |
+
+`_combined` is a different experimental condition (different
+training corpus → different model → different outputs);
+folding it into the experiment name is appropriate.  `_eval`
+is the same experiment evaluated against a smaller dataset
+with known answer keys; folding it into the experiment name
+would force a conceptual split between production and its
+measurement.  Costs of doing so: paired experiment docs to
+maintain, redis-key sharing convention to define, awkward
+`train` step semantics on the eval doc ("which model does it
+train?"), and the rhetorical question "production_v4 achieved
+F1=X — but the F1 is on the production_v4_eval doc, and the
+production_v4 doc has F1=null".
+
+### Deferred follow-on: UI synthetic-selector for eval browsing
+
+The DB-level approach leaves one operator concern open: the
+search-UI experiment-selector shows `production_v4` but
+operators may want to browse the 105 golden-set treatments
+separately from the 30k production treatments.
+
+**Deferred mini-project (post-rename)**: extend the Django
+experiment-selector to compute a synthetic "production_v4
+(eval)" entry that points at the same experiment doc but with
+a `view: eval` flag the view layer reads.  When eval-view is
+selected, all DB-name resolutions in the search code swap from
+production DBs (e.g. `..._03_00_treatments_structured`) to
+their `_eval` siblings (`..._03_00_treatments_structured_eval`).
+
+Estimated scope: ~20 lines in `django/search/` view code +
+selector template, plus a convention that any per-experiment-doc
+UI element accepts a `?view=eval` query param.  Single place
+to maintain the convention.
+
+Sequenced after this rename pass lands, so the
+`{eval_*_db}` variable substitution layer is already in place.
+Captured here so we don't forget the operator-convenience hook
+when we get there.
+
+**Open caveat**: if eval ever becomes writable through the UI
+(hand-corrections of eval predictions that should propagate to
+the eval DB), the synthetic-selector approach needs the writer
+code to also honor the `view` flag, with non-trivial
+write-to-wrong-DB risk.  Today eval is read-only from the UI,
+so this isn't a current concern — flag it if/when the
+hand-correction interface gets extended to eval data.
+
 ## Naming convention — settled 2026-06-09
 
 Two distinct shapes, one for per-experiment data, one for
