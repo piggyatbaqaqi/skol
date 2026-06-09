@@ -214,6 +214,115 @@ class TestPredictStepV4Dispatch:
             'predict_classifier' in a for a in predict_golden_args
         )
 
+    def test_predict_step_passes_ingest_db_as_input_for_v4(self) -> None:
+        """The pipeline's predict step must process the FULL
+        production corpus, not the 105-doc golden set predict_v4
+        would otherwise default to via env_config resolution.
+        For v4_crf, we explicitly pass --source-db <ingest_db>."""
+        cmds = _build_step_commands(
+            "predict", "production_v4", force=False,
+            config={
+                'model_name': 'v4_crf',
+                'ingest_db_name': 'skol_dev',
+            },
+        )
+        args = cmds[0]
+        assert '--source-db' in args
+        sd_idx = args.index('--source-db')
+        assert args[sd_idx + 1] == 'skol_dev'
+
+    def test_predict_step_does_not_inject_source_db_for_v3(self) -> None:
+        """The v3 path keeps its existing behaviour: predict_classifier
+        reads from the ingest DB by default, no --source-db flag."""
+        cmds = _build_step_commands(
+            "predict", "production", force=False,
+            config={
+                'model_name': 'logistic_sections',
+                'ingest_db_name': 'skol_dev',
+            },
+        )
+        assert '--source-db' not in cmds[0]
+
+
+class TestTrainStepV4Dispatch:
+    """The pipeline's 'train' step needs the same model_name dispatch
+    Step 5 gave 'predict'.  Without it, runnext on a v4_crf
+    experiment immediately fails with ``Unknown model: v4_crf``
+    from train_classifier.py."""
+
+    def test_train_step_dispatches_to_train_classifier_for_v3(
+        self,
+    ) -> None:
+        cmds = _build_step_commands(
+            "train", "production", force=False,
+            config={'model_name': 'logistic_sections'},
+        )
+        assert len(cmds) == 1
+        args = cmds[0]
+        assert any('train_classifier' in a for a in args)
+        assert not any('train_crf_single' in a for a in args)
+
+    def test_train_step_dispatches_to_train_crf_single_for_v4_crf(
+        self,
+    ) -> None:
+        cmds = _build_step_commands(
+            "train", "production_v4", force=False,
+            config={
+                'model_name': 'v4_crf',
+                'training_database': 'skol_training_v3_combined_no_golden',
+                'classifier_model_key_single':
+                    'skol:classifier:model:v4_single_combined',
+            },
+        )
+        args = cmds[0]
+        assert any('train_crf_single' in a for a in args)
+        # Must thread the training DB + the Redis state-key through.
+        assert '--source-db' in args
+        sd_idx = args.index('--source-db')
+        assert args[sd_idx + 1] == 'skol_training_v3_combined_no_golden'
+        assert '--redis-key' in args
+        rk_idx = args.index('--redis-key')
+        assert (
+            args[rk_idx + 1]
+            == 'skol:classifier:model:v4_single_combined'
+        )
+
+    def test_train_step_falls_back_to_safe_defaults_for_v4_crf(
+        self,
+    ) -> None:
+        """If the experiment doc omits training_database or
+        classifier_model_key_single, the dispatch uses the same
+        defaults Step 6/Step 7 documented as production — i.e.
+        nothing is silently broken when an operator forgets to
+        populate those fields."""
+        cmds = _build_step_commands(
+            "train", "production_v4", force=False,
+            config={'model_name': 'v4_crf'},
+        )
+        args = cmds[0]
+        assert any('train_crf_single' in a for a in args)
+        sd_idx = args.index('--source-db')
+        # Step 6.B used the combined corpus for the production pin.
+        assert (
+            args[sd_idx + 1] == 'skol_training_v3_combined_no_golden'
+        )
+        rk_idx = args.index('--redis-key')
+        assert (
+            args[rk_idx + 1]
+            == 'skol:classifier:model:v4_single_combined'
+        )
+
+    def test_train_step_defaults_to_v3_when_model_name_absent(
+        self,
+    ) -> None:
+        cmds = _build_step_commands(
+            "train", "production", force=False, config={},
+        )
+        assert any('train_classifier' in a for a in cmds[0])
+        assert not any(
+            'train_crf_single' in a for a in cmds[0]
+        )
+
 
 # ---------------------------------------------------------------------------
 # cmd_create + new --redis-key-pass1 / --redis-key-pass2 flags

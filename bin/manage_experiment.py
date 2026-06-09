@@ -495,21 +495,52 @@ def _build_step_commands(
     # two-CRF v4 predictor; everything else runs the v3 single-model
     # path.  Same step name ('predict') so v3 and v4 experiments share
     # the same pipeline shape — the dispatch is invisible to operators.
+    is_v4 = config.get("model_name") == "v4_crf"
     predict_script = (
-        "predict_v4.py"
-        if config.get("model_name") == "v4_crf"
-        else "predict_classifier.py"
+        "predict_v4.py" if is_v4 else "predict_classifier.py"
     )
+    # v4 training (Step 7's pinned production architecture) is
+    # train_crf_single against the combined corpus.  The script
+    # short-circuits via skip_existing when the Redis state-key is
+    # already populated (Step 6 + Step 7 already did this), so a
+    # repeat ``runnext`` no-ops the step in ~2 s instead of dying
+    # with ``Unknown model: v4_crf``.
+    train_script = (
+        "train_crf_single.py" if is_v4 else "train_classifier.py"
+    )
+    # v4 predict pipeline runs need the FULL production corpus
+    # (ingest_db), not the 105-doc golden set predict_v4 would
+    # otherwise fall through to.  Without this the search UI sees
+    # 105 docs with real titles and "Untitled" for everything else.
+    predict_v4_extra = []
+    if is_v4:
+        ingest_db = config.get('ingest_db_name', 'skol_dev')
+        predict_v4_extra = ['--source-db', ingest_db]
     # Steps with a single command template.
     single: Dict[str, List[str]] = {
         "train": [
-            sys.executable, str(_BIN_DIR / "train_classifier.py"),
-            "--experiment", "{name}",
-            "--force",
+            sys.executable, str(_BIN_DIR / train_script),
+            *(
+                [
+                    '--source-db',
+                    config.get(
+                        'training_database',
+                        'skol_training_v3_combined_no_golden',
+                    ),
+                    '--redis-key',
+                    config.get(
+                        'classifier_model_key_single',
+                        'skol:classifier:model:v4_single_combined',
+                    ),
+                ]
+                if is_v4 else
+                ['--experiment', "{name}", '--force']
+            ),
         ],
         "predict": [
             sys.executable, str(_BIN_DIR / predict_script),
             "--experiment", "{name}",
+            *predict_v4_extra,
             "--incremental", "--skip-existing",
         ],
         "annotate_jats": [

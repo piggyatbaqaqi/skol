@@ -444,8 +444,21 @@ def main() -> int:
         description='v4 end-to-end predictor.',
     )
     parser.add_argument(
+        '--source-db', dest='source_db', default=None,
+        help=(
+            'CouchDB database to predict over.  Default falls '
+            'through env_config: ingest_db_name first (whole-corpus '
+            'production runs), then golden_db_name (eval set).'
+        ),
+    )
+    parser.add_argument(
         '--golden-db', dest='golden_db', default=None,
-        help='Source DB (default: env_config golden_db_name).',
+        help=(
+            'Deprecated alias for --source-db (the flag was '
+            'historically misnamed: it always took the input DB, '
+            'not specifically the eval set).  Still accepted so '
+            'existing scripts and shell history keep working.'
+        ),
     )
     parser.add_argument(
         '--output-database', dest='output_database', default=None,
@@ -514,14 +527,22 @@ def main() -> int:
         int(limit_raw) if limit_raw not in (None, '') else None
     )
 
+    # Hierarchy: --source-db wins, --golden-db alias next, then
+    # the ingest DB (whole-corpus production default), then the
+    # golden set (legacy eval fallback).  Reversing the env_config
+    # order — ingest before golden — is what makes the
+    # manage_experiment runnext predict step process the full
+    # production corpus instead of the 105-doc golden subset.
     input_db_name = (
-        args.golden_db
-        or config.get('golden_db_name')
+        args.source_db
+        or args.golden_db
         or config.get('ingest_db_name')
+        or config.get('golden_db_name')
     )
     if not input_db_name:
         print(
-            '✗ --golden-db (or env_config golden_db_name) is required.',
+            '✗ --source-db (or env_config ingest_db_name / '
+            'golden_db_name) is required.',
             file=sys.stderr,
         )
         return 1

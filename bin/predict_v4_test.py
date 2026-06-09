@@ -799,5 +799,79 @@ class TestSingleCRFImplicitDefault(unittest.TestCase):
         self.assertIsNone(args.pass2_key)
 
 
+# ---------------------------------------------------------------------------
+# Input-DB flag rename: --source-db (canonical) + --golden-db (alias)
+# ---------------------------------------------------------------------------
+
+
+class TestSourceDbFlag(unittest.TestCase):
+    """``--golden-db`` is misnamed — it's the *input* DB, not specifically
+    the golden set.  The pipeline calls predict_v4 with the ingest DB and
+    expects the full corpus to be predicted, not the eval set.  Rename
+    to ``--source-db`` (canonical); keep ``--golden-db`` as a back-compat
+    alias.  And reverse the env_config fallback so the ingest DB (rather
+    than the golden set) is the implicit default when neither flag is
+    passed."""
+
+    def _resolve_input(
+        self, *,
+        cli_source=None, cli_golden=None,
+        config_ingest='', config_golden='',
+    ):
+        """Replay predict_v4.main()'s input-DB resolution."""
+        class Args:
+            source_db = cli_source
+            golden_db = cli_golden
+        args = Args()
+        config = {
+            'ingest_db_name': config_ingest,
+            'golden_db_name': config_golden,
+        }
+        # Mirror production: --source-db wins; --golden-db is the
+        # backward-compat alias; env_config fallback prefers the
+        # ingest DB (whole-corpus default) over the golden set.
+        return (
+            args.source_db
+            or args.golden_db
+            or config.get('ingest_db_name')
+            or config.get('golden_db_name')
+        )
+
+    def test_cli_source_db_wins(self):
+        assert self._resolve_input(
+            cli_source='skol_dev',
+            config_ingest='ignored',
+        ) == 'skol_dev'
+
+    def test_cli_golden_db_alias_still_works(self):
+        """Operators with shell history using --golden-db keep working."""
+        assert self._resolve_input(
+            cli_golden='skol_golden_v2',
+        ) == 'skol_golden_v2'
+
+    def test_source_db_wins_over_alias(self):
+        """When both are passed (script + alias), source wins."""
+        assert self._resolve_input(
+            cli_source='skol_dev',
+            cli_golden='skol_golden_v2',
+        ) == 'skol_dev'
+
+    def test_falls_back_to_ingest_db_not_golden(self):
+        """The Step-7-cutover bug fix: with neither CLI flag passed,
+        env_config gives the ingest DB precedence so the manage_experiment
+        predict step processes the full production corpus."""
+        assert self._resolve_input(
+            config_ingest='skol_dev',
+            config_golden='skol_golden_v2',
+        ) == 'skol_dev'
+
+    def test_falls_through_to_golden_when_no_ingest(self):
+        """If no ingest DB is configured (legacy evaluate-only setup),
+        the golden-set fallback still kicks in."""
+        assert self._resolve_input(
+            config_golden='skol_golden_v2',
+        ) == 'skol_golden_v2'
+
+
 if __name__ == '__main__':
     unittest.main()
