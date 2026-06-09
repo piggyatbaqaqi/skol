@@ -39,6 +39,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import couchdb  # type: ignore[import]  # noqa: E402
 import redis  # noqa: E402
 
+from annotate_v4 import (  # type: ignore[import]  # noqa: E402
+    _xml_attachments_present,
+)
+
 from env_config import (  # type: ignore[import]  # noqa: E402
     create_redis_client, get_env_config,
 )
@@ -278,7 +282,20 @@ def process_doc(
     counts['source'] = source
     if text is None:
         if verbosity >= 2:
-            print(f'  {doc_id}: no plaintext source available')
+            msg = f'  {doc_id}: no plaintext source available'
+            try:
+                doc = db[doc_id]
+            except Exception:  # noqa: BLE001
+                doc = {}
+            xml_present = _xml_attachments_present(doc)
+            if xml_present:
+                # Operator hint: doc isn't orphan — see annotate_v4
+                # for the same diagnostic.
+                msg += (
+                    f' — but XML attachment present: '
+                    f'{", ".join(xml_present)}'
+                )
+            print(msg)
         return counts
 
     raw_lines = text.split('\n')

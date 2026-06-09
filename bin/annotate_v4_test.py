@@ -451,6 +451,23 @@ class TestXmlAttachmentsPresent(unittest.TestCase):
         )
 
 
+class TestXmlHelperSharedAcrossV4Scripts(unittest.TestCase):
+    """``predict_v4`` and ``embed_lines`` import the same helper from
+    ``annotate_v4`` so the three "no plaintext source" diagnostics
+    stay consistent — operators see the same XML-hint regardless of
+    which script ran."""
+
+    def test_predict_v4_imports_xml_helper_from_annotate_v4(self):
+        from annotate_v4 import _xml_attachments_present as src
+        from predict_v4 import _xml_attachments_present as dest
+        self.assertIs(src, dest)
+
+    def test_embed_lines_imports_xml_helper_from_annotate_v4(self):
+        from annotate_v4 import _xml_attachments_present as src
+        from embed_lines import _xml_attachments_present as dest
+        self.assertIs(src, dest)
+
+
 class TestMissingPlaintextMessageMentionsXml(unittest.TestCase):
     """The user-facing diagnostic when plaintext loading fails
     should mention any ``*.xml`` attachments present, so operators

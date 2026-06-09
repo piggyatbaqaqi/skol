@@ -48,6 +48,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import couchdb  # type: ignore[import]  # noqa: E402
 
+from annotate_v4 import (  # type: ignore[import]  # noqa: E402
+    _xml_attachments_present,
+)
 from env_config import (  # type: ignore[import]  # noqa: E402
     create_redis_client, get_env_config,
 )
@@ -232,6 +235,29 @@ def _resolve_device(choice: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _no_plaintext_message(input_db: Any, doc_id: str) -> str:
+    """The ``skip {doc_id}: no plaintext source`` line, optionally
+    annotated with any ``*.xml`` attachments the doc carries.
+
+    The XML hint distinguishes a truly orphan doc from a JATS-only
+    doc whose content is sitting there as ``article.jats.xml`` etc.
+    — useful when a corpus mixes both and the operator needs to
+    triage which docs to ingest properly.
+    """
+    msg = f'  skip {doc_id}: no plaintext source'
+    try:
+        doc = input_db[doc_id]
+    except Exception:  # noqa: BLE001
+        return msg
+    xml_present = _xml_attachments_present(doc)
+    if xml_present:
+        msg += (
+            f' — but XML attachment present: '
+            f'{", ".join(xml_present)}'
+        )
+    return msg
+
+
 def _prepare_doc_inputs(
     input_db: Any, doc_id: str,
 ) -> Tuple[Optional[str], Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
@@ -313,7 +339,7 @@ def predict_all(
         if plaintext is None:
             counts['skipped_no_plaintext'] += 1
             if verbosity >= 1:
-                print(f'  skip {doc_id}: no plaintext source')
+                print(_no_plaintext_message(input_db, doc_id))
             continue
 
         per_line_tags, ann_text = predict_doc(
@@ -400,7 +426,7 @@ def predict_all_single(
         if plaintext is None:
             counts['skipped_no_plaintext'] += 1
             if verbosity >= 1:
-                print(f'  skip {doc_id}: no plaintext source')
+                print(_no_plaintext_message(input_db, doc_id))
             continue
 
         per_line_tags, ann_text = predict_doc_single(
