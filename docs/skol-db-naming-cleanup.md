@@ -370,35 +370,96 @@ risk of corruption.  Not worth the savings.
 - Cross-tenant separation (production / staging / dev all share
   one CouchDB cluster today; this is fine for current scale).
 
-## Open questions
+## Decisions
 
-1. ~~**Prefix scheme**~~ — settled 2026-06-09: per-experiment
-   stage tag `<EXPERIMENT>_<STAGE_NUM>_<ROLE>` (e.g.
-   `skol_exp_production_v4_01_00_ann`); shared DBs role-named
-   with no stage tag.
-2. **Eval-DB lifecycle** — auto-delete after N days?  Or
-   long-lived?  Tied to whether you trust the `_eval`-suffix
-   convention enough to prune.
-3. **One DB rename pass or staged?** — All-at-once is simpler but
-   the migration window is longer; staged (training first, then
-   golden, then experiments) means more total work but smaller
-   blast radius per step.
-4. **Legacy DB pruning** — `skol_treatments_v3_dev` and friends:
-   drop, archive, or leave behind?
-5. **Model-variant tags in DB name vs experiment name** — today's
-   ``skol_exp_production_v4_ann_combined`` carries the
-   ``_combined`` corpus-variant tag at the DB level.  Two paths:
-   (a) Keep at DB level — rename to
-   ``skol_exp_production_v4_01_00_ann_combined``.  Simple
-   migration; experiment-doc shape unchanged.  Downside: the
-   variant lives at the DB-name level, not in the
-   experiment-doc schema, so operators inspecting an experiment
-   doc don't see which corpus variant its outputs were built
-   from.
-   (b) Fold into experiment name — rename the EXPERIMENT to
-   ``production_v4_combined`` so the doc-name carries the
-   variant tag, then DB name becomes the clean
-   ``skol_exp_production_v4_combined_01_00_ann``.  Bigger
-   migration (touches the experiment doc + every Redis key
-   referencing it + the cron entries naming it), but the
-   resulting schema is cleaner.
+All four open questions resolved 2026-06-09.
+
+### 1. Prefix scheme
+
+Per-experiment stage tag `<EXPERIMENT>_<STAGE_NUM>_<ROLE>` (e.g.
+`skol_exp_production_v4_01_00_ann`); shared DBs role-named with
+no stage tag.
+
+### 2. Eval-DB lifecycle — keep long-lived, add freshness check
+
+Eval DBs persist alongside production DBs, NOT auto-deleted.
+Recompute on a 105-doc golden set is cheap, but the debug value
+of having exact predictions saved (grep "which doc did treatment
+X come from") outweighs the storage cost.
+
+**Mitigation against stale-data-as-truth syndrome**: add a
+freshness check to
+[bin/evaluate_golden.py](../bin/evaluate_golden.py) — refuse to
+run `score_golden` unless the eval predictions were generated
+against the current model Redis key (compare a timestamp /
+model-key fingerprint stamped onto the eval DB on
+`predict_golden`).  Require `--force` to override.  ~10 lines.
+
+Without this, an F1 number you cite today could be from a
+predict commit 3 months stale — exactly the failure mode the
+eval-DB split was supposed to prevent.
+
+### 3. Migration — one all-at-once pass, single session
+
+Staged-across-sessions actually increases hallucination risk
+because it forces inter-session memory reconstruction
+("where are we in the migration?") — the failure mode I'm most
+prone to.  All-at-once in a single dedicated session with full
+context loaded is lower-risk *if*:
+
+1. **Exhaustive grep first**: build a checklist of every match
+   for the old names (`taxa`, `taxa_full`, `_full` in
+   DB context, `extract_taxa` step name, `databases.taxa`,
+   `treatments_full_database` config key, etc.) before
+   changing any code.
+2. **Incremental commits within the session**, one logical
+   surface per commit so PR review stays tractable:
+   pipeline modules → env_config → experiment-doc fields →
+   evaluate_golden freshness check → Django → cron → docs.
+3. **Test suite + grep regression** at the end as a safety
+   net.
+4. **Q5 experiment-doc rename committed LAST and separately**
+   — that touches the doc `_id`, Redis keys, cron-references,
+   and is the highest-blast-radius single surface.
+
+### 4. Legacy DB pruning
+
+Drop after migration: `skol_treatments_v3_dev`,
+`skol_treatments_v3_jats`, and any other ad-hoc legacy DBs
+that predate the experiment-doc-driven naming.  No archive —
+they're reproducible from the original ingest + experiment
+doc if ever needed.
+
+### 5. Model-variant tags → fold into experiment name
+
+`production_v4` with DB `skol_exp_production_v4_ann_combined`
+becomes experiment `production_v4_combined` with DB
+`skol_exp_production_v4_combined_01_00_ann`.
+
+Rationale: the experiment doc is what shows up in the
+search-UI experiment selector, so the variant tag being part
+of the experiment identity (not a hidden DB-name suffix) means
+operators see "I'm looking at production_v4_combined" rather
+than "I'm looking at production_v4 but somehow this is the
+combined variant."
+
+**Extra migration burden**: the doc `_id` is the experiment
+key, so renaming is not in-place.  Touches:
+
+- CouchDB: copy doc to new `_id`, delete the old (no
+  in-place doc rename in CouchDB).
+- Per-experiment DBs: rename incorporates the variant into
+  the slug, same migration path as everything else.
+- Redis keys derived from experiment name:
+  `skol:embedding:production_v4` → `skol:embedding:production_v4_combined`,
+  same for `skol:classifier:model:*` if pinned per-experiment,
+  same for `skol:ui:menus_*`.
+- Cron entries referencing the experiment name
+  ([debian/skol.cron](../debian/skol.cron) does reference
+  experiment names).
+- The pipeline-state field on the doc (preserved as part of
+  the copy).
+
+This is the highest-blast-radius single change in the plan;
+commit it last and separately so a problem here doesn't
+contaminate the DB-rename commits.
