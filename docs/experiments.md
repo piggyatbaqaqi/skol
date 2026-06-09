@@ -147,10 +147,39 @@ Valid status values: `draft`, `testing`, `evaluated`, `deployed`, `archived`.
 
 ## Pipeline orchestration
 
-Every experiment has a built-in pipeline that runs the full workflow in order.
-Use these subcommands instead of invoking the individual scripts directly.
+Every experiment has a per-family pipeline that runs the full workflow in
+order.  Use these subcommands instead of invoking the individual scripts
+directly.
 
-### Step order and dependencies
+### Required `pipeline:` field
+
+Since the pipeline restructure (commit landed 2026-06-09), every
+experiment doc carries a required string field naming a per-family
+Python module under [bin/pipelines/](../bin/pipelines/):
+
+- `pipeline: v3_logistic` — legacy logistic-regression family.
+- `pipeline: v4_crf` — SBERT + CRF family.
+
+The family module owns the canonical step list and the per-step
+commands.  Adding a new experiment of an existing family is a
+CouchDB-only operation; no source changes needed.
+
+Experiment docs that have not been migrated raise a clear error on
+any pipeline subcommand:
+
+```
+✗ Experiment 'production' lacks the 'pipeline' field
+  (required since the pipeline restructure).  Set it via:
+      bin/manage_experiment update production --pipeline v3_logistic
+      bin/manage_experiment update production --pipeline v4_crf
+```
+
+The one-shot migration command also promotes the pre-restructure
+`pipeline` dict (state) to the new `pipeline_state` field, so
+existing step status records carry over and `runnext` continues
+from where it left off.
+
+### Step order and dependencies — `v3_logistic`
 
 ```
 1. train                ─┐
@@ -160,16 +189,87 @@ Use these subcommands instead of invoking the individual scripts directly.
 5. embed                 │
 6. treatments_to_json    │
 7. annotate_spans       ─┘
-8.  evaluate             ─┐  independent: each requires steps 1-7 done,
-9.  build_vocab          ─│  but they can run in any order relative to
-10. build_sources_stats  ─┘  one another
+8.  predict_golden       ─┐  trailing: each requires steps 1-7 done, but
+9.  score_golden          │  they can run in any order relative to one
+10. build_vocab           │  another (sequential=False).  predict_golden
+11. build_sources_stats  ─┘  + score_golden together replace the legacy
+                             single `evaluate` step.
 ```
 
+### Step order and dependencies — `v4_crf`
+
+```
+1.  annotate            ─┐  v4 prerequisites: write the per-line
+2.  embed_lines          │  feature attachments to ingest_db so the
+3.  train                │  CRF predictor has features at predict time.
+4.  predict              │
+5.  annotate_jats        │  same as v3 from here
+6.  extract_taxa         │
+7.  embed                │
+8.  treatments_to_json   │
+9.  annotate_spans      ─┘
+10. predict_golden       ─┐  trailing (sequential=False)
+11. score_golden          │
+12. build_vocab           │
+13. build_sources_stats  ─┘
+```
+
+- `annotate` writes `article.spans.v4.json` + `article.page-headers.json`
+  to every doc in `ingest_db` (idempotent — skips docs that already have
+  both attachments).
+- `embed_lines` populates the SBERT cache for any new lines in `ingest_db`.
 - `predict` runs the ML classifier on non-TaxPub documents (`is_taxpub=False`)
 - `annotate_jats` runs `jats_to_yedda` on TaxPub documents (`is_taxpub=True`)
 - Both write to `databases.annotations`; both must complete before `extract_taxa`
 - `treatments_to_json` runs the LLM annotator over `databases.treatments` and writes JSON-annotated docs to `databases.treatments_full` — consumed by the Django JSON Features endpoint
 - `build_sources_stats` scans the experiment's `ingest` + `treatments` databases and writes the per-experiment Ingestion Sources page stats to Redis (`skol:sources:stats:<experiment>`)
+
+### Eval vs production
+
+Running a production pass and running an evaluation use the **same
+pipeline list**, just different steps.  No code changes, no different
+pipeline files.
+
+| Intent | Steps to run | Input DB | Output DB |
+|---|---|---|---|
+| Production pass | `train` → `predict` → `extract_taxa` → … → `annotate_spans` | `{input_db}` (ingest) | `{annotations_db}` |
+| Evaluation | `predict_golden` → `score_golden` | `{golden_db}` | `{eval_ann_db}` (defaults to `{annotations_db}`) |
+
+```bash
+# Production pass (sequential block, auto-driven by runnext)
+bin/manage_experiment runnext production_v4
+
+# Evaluation against the golden corpus, written next to production
+bin/manage_experiment runstep production_v4 predict_golden,score_golden
+```
+
+To direct eval predictions to a separate database, set
+`eval_annotations_db_name` on the experiment doc; otherwise eval
+predictions land alongside production predictions in `{annotations_db}`.
+
+### Adding a new family (rare)
+
+When the existing families don't fit — e.g. a fundamentally different
+model architecture — drop a new module under [bin/pipelines/](../bin/pipelines/) and register it:
+
+1. Copy [`bin/pipelines/v4_crf.py`](../bin/pipelines/v4_crf.py) to `bin/pipelines/<your_family>.py` and edit the `PIPELINE` tuple to fit.
+2. Add the name to `_REGISTRY` in [`bin/pipelines/__init__.py`](../bin/pipelines/__init__.py).
+3. Add a matching `<your_family>_test.py` next to the new module that asserts at least step-name order and the rendering of any non-trivial step.
+
+A pipeline step is a `PipelineStep` dataclass with four fields:
+
+```python
+PipelineStep(
+    name='predict',                    # matches experiment-doc step_name
+    script='predict_v4',               # bin/{script}.py
+    args=('--experiment', '{experiment}',
+          '--source-db', '{input_db}',
+          '--skip-existing'),
+    sequential=True,                   # False for trailing steps
+)
+```
+
+Variable substitution happens at render time via [`bin/pipelines/base.build_variables`](../bin/pipelines/base.py).  Available variables: `experiment`, `input_db`, `training_db`, `annotations_db`, `golden_db`, `golden_ann_db`, `eval_ann_db`, `model_key_single`, `model_key_pass1`, `model_key_pass2`, `sbert_model`.  Unknown `{var}` tokens raise `KeyError` at render time, not runtime.
 
 ### `pipeline` — show status
 

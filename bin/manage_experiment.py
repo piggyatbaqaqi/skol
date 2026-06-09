@@ -65,6 +65,8 @@ if __name__ == "__main__" and __package__ is None:
         sys.path.insert(0, bin_dir)
 
 from env_config import get_env_config
+from bin import pipelines
+from bin.pipelines.base import PipelineStep, build_variables, render_step
 
 
 # ---------------------------------------------------------------------------
@@ -89,43 +91,66 @@ def _default_step(name: str) -> Dict[str, Any]:
     }
 
 
-# Ordered list of pipeline step names.
-_PIPELINE_STEPS = [
-    "train",
-    "predict",
-    "annotate_jats",
-    "extract_taxa",
-    "embed",
-    "treatments_to_json",
-    "annotate_spans",
-    "evaluate",
-    "build_vocab",
-    "build_sources_stats",
-]
-
 # Statuses that count as "done" for dependency purposes.
 _DONE_STATUSES = ("completed", "skipped")
 
-# Steps that must all be done before the trailing evaluate / build_vocab steps
-# can run.  The leading steps (train ... annotate_spans) are sequential among
-# themselves (each requires the prior one done).
-_SEQUENTIAL_COUNT = 7  # train, predict, annotate_jats, extract_taxa, embed,
-                       # treatments_to_json, annotate_spans
+
+def _pipeline_for(doc_or_config: Dict[str, Any]) -> tuple:
+    """Load the pipeline module the experiment doc / resolved config
+    names.  Raises ``ValueError`` if the ``pipeline`` field is
+    missing or names an unknown module — the message guides operators
+    to the migration command.
+
+    Accepts either a raw experiment doc (with ``pipeline`` field at
+    the top level) or a resolved env_config dict (also with
+    ``pipeline`` after env_config._apply_experiment flowed it
+    through).  Both call sites need this.
+    """
+    name = doc_or_config.get("pipeline")
+    if not name or not isinstance(name, str):
+        doc_id = doc_or_config.get("_id", "<unknown>")
+        raise ValueError(
+            f"Experiment {doc_id!r} lacks the 'pipeline' field "
+            f"(required since the pipeline restructure).  Set it via:\n"
+            f"    bin/manage_experiment update {doc_id} "
+            f"--pipeline v3_logistic\n"
+            f"    bin/manage_experiment update {doc_id} "
+            f"--pipeline v4_crf\n"
+            f"Available pipelines: {', '.join(pipelines.available())}"
+        )
+    try:
+        return pipelines.load(name)
+    except ValueError as exc:
+        raise ValueError(
+            f"{exc!s}\n"
+            f"Available: {', '.join(pipelines.available())}"
+        ) from None
 
 
-def _default_pipeline() -> Dict[str, Any]:
-    """Build the default pipeline tracking structure."""
+def _default_pipeline_state(pipeline_name: str) -> Dict[str, Any]:
+    """Build the per-step status records for a fresh experiment.
+
+    Reads the canonical step list from the family module so adding
+    or splitting steps doesn't touch this function."""
+    canonical = pipelines.load(pipeline_name)
     return {
         "current_step": 0,
-        "steps": [_default_step(name) for name in _PIPELINE_STEPS],
+        "steps": [_default_step(s.name) for s in canonical],
     }
 
 
-def _default_experiment(name: str) -> Dict[str, Any]:
-    """Build a default experiment document."""
+def _default_experiment(
+    name: str, pipeline_name: str = "v3_logistic",
+) -> Dict[str, Any]:
+    """Build a default experiment document.
+
+    ``pipeline_name`` picks the per-family module that owns the
+    pipeline shape; defaults to ``v3_logistic`` so new experiments
+    that don't specify a family stay on the legacy path."""
     return {
         "_id": name,
         "model_name": "",
+        "pipeline": pipeline_name,
         "notes": "",
         "comments": "",
         "status": "draft",
@@ -143,7 +168,7 @@ def _default_experiment(name: str) -> Dict[str, Any]:
             "menus": f"skol:ui:menus_{name}",
         },
         "evaluation": None,
-        "pipeline": _default_pipeline(),
+        "pipeline_state": _default_pipeline_state(pipeline_name),
         "created_at": _now_iso(),
         "updated_at": _now_iso(),
     }
@@ -151,7 +176,7 @@ def _default_experiment(name: str) -> Dict[str, Any]:
 
 def _production_experiment() -> Dict[str, Any]:
     """Build the default production experiment document."""
-    doc = _default_experiment("production")
+    doc = _default_experiment("production", pipeline_name="v3_logistic")
     doc["notes"] = (
         "Current production pipeline: logistic regression on "
         "hand-annotated training data"
@@ -217,7 +242,10 @@ def cmd_create(db, args) -> None:
         print(f"Error: experiment '{name}' already exists.", file=sys.stderr)
         sys.exit(1)
 
-    doc = _default_experiment(name)
+    pipeline_name = getattr(args, "pipeline", "v3_logistic") or "v3_logistic"
+    # Validate up front so a typo fails create (no half-built doc):
+    pipelines.load(pipeline_name)
+    doc = _default_experiment(name, pipeline_name=pipeline_name)
     if args.notes:
         doc["notes"] = args.notes
     if args.comments:
@@ -329,6 +357,21 @@ def cmd_update(db, args) -> None:
     if args.model_name is not None:
         doc["model_name"] = args.model_name
         changed = True
+    if getattr(args, "pipeline", None):
+        # One-shot migration: validate the family name, promote the
+        # legacy ``pipeline`` dict (state) to ``pipeline_state`` if
+        # that field doesn't already exist, then set ``pipeline``
+        # to the new family-name string.  ``_ensure_pipeline`` on
+        # the next runnext rebuilds steps against the family's
+        # canonical list.
+        pipelines.load(args.pipeline)
+        legacy = doc.get("pipeline")
+        if isinstance(legacy, dict) and "pipeline_state" not in doc:
+            doc["pipeline_state"] = legacy
+        doc["pipeline"] = args.pipeline
+        if "pipeline_state" not in doc:
+            doc["pipeline_state"] = _default_pipeline_state(args.pipeline)
+        changed = True
     if getattr(args, "redis_key_pass1", None):
         doc.setdefault("redis_keys", {})[
             "classifier_model_pass1"
@@ -419,21 +462,30 @@ def cmd_deploy(db, args) -> None:
 # Pipeline helpers
 # ---------------------------------------------------------------------------
 
-_BIN_DIR = Path(__file__).resolve().parent
-
 
 def _ensure_pipeline(doc: Dict[str, Any]) -> None:
-    """Lazily add/repair the pipeline field on pre-existing experiment docs."""
-    if "pipeline" not in doc:
-        doc["pipeline"] = _default_pipeline()
+    """Validate the ``pipeline`` field and lazily repair
+    ``pipeline_state`` against the family's canonical step list.
+
+    Raises ``ValueError`` if the ``pipeline`` field is missing or
+    names an unknown module — :func:`_pipeline_for` produces the
+    error message with the migration command.
+
+    Lazy repair: any step name that's in the family list but not in
+    ``pipeline_state.steps`` gets added with ``status='pending'``;
+    existing entries are preserved by name."""
+    canonical = _pipeline_for(doc)
+    state = doc.get("pipeline_state")
+    if not isinstance(state, dict):
+        doc["pipeline_state"] = _default_pipeline_state(doc["pipeline"])
         return
-    # Ensure all current step names are present (handles newly-added steps).
     existing: Dict[str, Dict[str, Any]] = {
-        s["name"]: s for s in doc["pipeline"].get("steps", [])
+        s["name"]: s for s in state.get("steps", [])
     }
-    doc["pipeline"]["steps"] = [
-        existing.get(name, _default_step(name)) for name in _PIPELINE_STEPS
+    state["steps"] = [
+        existing.get(s.name, _default_step(s.name)) for s in canonical
     ]
+    state.setdefault("current_step", 0)
 
 
 def _find_step(steps: List[Dict[str, Any]], name: str) -> Optional[int]:
@@ -445,184 +497,69 @@ def _find_step(steps: List[Dict[str, Any]], name: str) -> Optional[int]:
 
 
 def _check_dependencies(
-    steps: List[Dict[str, Any]], step_idx: int,
+    steps: List[Dict[str, Any]],
+    step_idx: int,
+    canonical: tuple,
 ) -> Optional[str]:
-    """Return an error message if dependencies for step_idx are not met."""
-    if step_idx < _SEQUENTIAL_COUNT:
-        # Sequential block: each step requires all prior steps to be done.
-        for i in range(step_idx):
-            prev = steps[i]
-            if prev["status"] not in _DONE_STATUSES:
-                return (
-                    f"Step {i + 1} ({prev['name']}) must be completed or "
-                    f"skipped first (current status: {prev['status']})"
-                )
+    """Return an error message if dependencies for ``step_idx`` are not met.
+
+    ``canonical`` is the family's PipelineStep tuple (in order); we
+    read ``sequential`` from each.  Sequential steps require all
+    prior sequential steps done; non-sequential (trailing) steps
+    require all sequential steps done.
+    """
+    step = canonical[step_idx]
+    sequential_indices = [
+        i for i, s in enumerate(canonical) if s.sequential
+    ]
+    if step.sequential:
+        # This is a sequential step itself — it requires all
+        # earlier sequential steps to be done.
+        prereq_idxs = [i for i in sequential_indices if i < step_idx]
     else:
-        # Steps after the sequential block require all sequential steps done.
-        for i in range(_SEQUENTIAL_COUNT):
-            prev = steps[i]
-            if prev["status"] not in _DONE_STATUSES:
-                return (
-                    f"Step {i + 1} ({prev['name']}) must be completed or "
-                    f"skipped first (current status: {prev['status']})"
-                )
+        # A trailing step — it requires the entire sequential block done.
+        prereq_idxs = sequential_indices
+    for i in prereq_idxs:
+        prev = steps[i]
+        if prev["status"] not in _DONE_STATUSES:
+            return (
+                f"Step {i + 1} ({prev['name']}) must be completed or "
+                f"skipped first (current status: {prev['status']})"
+            )
     return None
 
 
-def _build_step_commands(
+def _render_pipeline_step(
     step_name: str,
     experiment_name: str,
     force: bool = False,
     config: Optional[Dict[str, Any]] = None,
-) -> List[List[str]]:
-    """Build the subprocess command list(s) for a pipeline step.
+) -> List[str]:
+    """Render one pipeline step's argv list ready for subprocess.
 
-    Returns a list of commands to run in sequence.  Most steps have one
-    command; ``evaluate`` has two: predict on the golden set first, then
-    run the evaluation comparison.
+    Thin wrapper around :func:`bin.pipelines.base.render_step` — it
+    loads the family module the experiment doc names, finds the
+    step by name, then delegates the argv construction.
 
-    ``config`` is the resolved env_config + experiment-doc dict.  For
-    the ``evaluate`` step we read ``golden_db_name`` (plaintext source)
-    and ``golden_ann_db_name`` (answer key) so the evaluation runs
-    against the per-experiment golden DBs recorded on the experiment
-    doc, rather than the previously-hardcoded ``skol_golden`` /
-    ``skol_golden_ann_hand`` literals.  When ``config`` is omitted, v1
-    defaults apply (Step 1.C of docs/golden_v2_plan.md).
+    Raises ``ValueError`` if the step name isn't in the family's
+    pipeline list, or if the ``pipeline`` field is missing /
+    unknown (via :func:`_pipeline_for`).
     """
     if config is None:
         config = {}
-    # v3 vs v4 dispatch: experiments with model_name=='v4_crf' run the
-    # two-CRF v4 predictor; everything else runs the v3 single-model
-    # path.  Same step name ('predict') so v3 and v4 experiments share
-    # the same pipeline shape — the dispatch is invisible to operators.
-    is_v4 = config.get("model_name") == "v4_crf"
-    predict_script = (
-        "predict_v4.py" if is_v4 else "predict_classifier.py"
+    canonical = _pipeline_for(config)
+    step: Optional[PipelineStep] = next(
+        (s for s in canonical if s.name == step_name), None,
     )
-    # v4 training (Step 7's pinned production architecture) is
-    # train_crf_single against the combined corpus.  The script
-    # short-circuits via skip_existing when the Redis state-key is
-    # already populated (Step 6 + Step 7 already did this), so a
-    # repeat ``runnext`` no-ops the step in ~2 s instead of dying
-    # with ``Unknown model: v4_crf``.
-    train_script = (
-        "train_crf_single.py" if is_v4 else "train_classifier.py"
-    )
-    # v4 predict pipeline runs need the FULL production corpus
-    # (ingest_db), not the 105-doc golden set predict_v4 would
-    # otherwise fall through to.  Without this the search UI sees
-    # 105 docs with real titles and "Untitled" for everything else.
-    predict_v4_extra = []
-    if is_v4:
-        ingest_db = config.get('ingest_db_name', 'skol_dev')
-        predict_v4_extra = ['--source-db', ingest_db]
-    # Steps with a single command template.
-    single: Dict[str, List[str]] = {
-        "train": [
-            sys.executable, str(_BIN_DIR / train_script),
-            *(
-                [
-                    '--source-db',
-                    config.get(
-                        'training_database',
-                        'skol_training_v3_combined_no_golden',
-                    ),
-                    '--redis-key',
-                    config.get(
-                        'classifier_model_key_single',
-                        'skol:classifier:model:v4_single_combined',
-                    ),
-                ]
-                if is_v4 else
-                ['--experiment', "{name}", '--force']
-            ),
-        ],
-        "predict": [
-            sys.executable, str(_BIN_DIR / predict_script),
-            "--experiment", "{name}",
-            *predict_v4_extra,
-            "--incremental", "--skip-existing",
-        ],
-        "annotate_jats": [
-            sys.executable, str(_BIN_DIR / "jats_to_yedda.py"),
-            "--experiment", "{name}",
-            "--all",
-            "--output-to", "couchdb",
-            "--skip-existing",
-        ],
-        "extract_taxa": [
-            sys.executable, str(_BIN_DIR / "extract_treatments_to_couchdb.py"),
-            "--experiment", "{name}",
-            "--skip-existing",
-        ],
-        "embed": [
-            sys.executable, str(_BIN_DIR / "embed_treatments.py"),
-            "--experiment", "{name}",
-            "--force",
-            # Belt-and-suspenders with the env_config default change to
-            # _parse_embedding_expire (no expiry by default): if a future
-            # operator sets EMBEDDING_EXPIRE in the cron environment, this
-            # ensures the per-experiment runstep still produces persistent
-            # embeddings — matching the v1 cron's explicit ``--expire None``.
-            "--expire", "None",
-        ],
-        "treatments_to_json": [
-            sys.executable, str(_BIN_DIR / "treatments_to_json.py"),
-            "--experiment", "{name}",
-            "--incremental",
-            "--skip-existing",
-            "--use-constrained-decoding",
-            "--graceful-degradation",
-            "--timeout", "1200",
-        ],
-        "annotate_spans": [
-            sys.executable, str(_BIN_DIR / "annotate_spans.py"),
-            "--experiment", "{name}",
-            "--skip-existing",
-        ],
-        "build_vocab": [
-            sys.executable, str(_BIN_DIR / "build_vocab_tree.py"),
-            "--experiment", "{name}",
-        ],
-        "build_sources_stats": [
-            sys.executable, str(_BIN_DIR / "build_sources_stats.py"),
-            "--experiment", "{name}",
-            "--verbosity", "2",
-        ],
-    }
-
-    def _apply(template: List[str]) -> List[str]:
-        cmd = [arg.format(name=experiment_name) for arg in template]
-        if force:
-            cmd = [
-                "--force" if arg == "--skip-existing" else arg
-                for arg in cmd
-            ]
-        return cmd
-
-    if step_name == "evaluate":
-        # The plaintext source for predict + evaluate.
-        golden_db = config.get("golden_db_name", "skol_golden")
-        # The answer-key .ann database scored against.
-        golden_ann_db = config.get(
-            "golden_ann_db_name", "skol_golden_ann_hand"
+    if step is None:
+        names = [s.name for s in canonical]
+        raise ValueError(
+            f"Step {step_name!r} is not in the "
+            f"{config['pipeline']!r} pipeline.  Available: "
+            f"{', '.join(names)}",
         )
-        predict_golden: List[str] = _apply([
-            sys.executable, str(_BIN_DIR / predict_script),
-            "--experiment", "{name}",
-            "--golden-db", golden_db,
-            "--skip-existing",
-        ])
-        evaluate_cmd: List[str] = _apply([
-            sys.executable, str(_BIN_DIR / "evaluate_golden.py"),
-            "--experiment", "{name}",
-            "--golden-db", golden_ann_db,
-            "--plaintext-db", golden_db,
-            "--save-to-experiment",
-        ])
-        return [predict_golden, evaluate_cmd]
-
-    return [_apply(single[step_name])]
+    variables = build_variables(experiment_name, config)
+    return render_step(step, variables, force=force)
 
 
 def _run_step(
@@ -641,26 +578,26 @@ def _run_step(
     ``config`` is the resolved env_config + experiment-doc dict used by
     the evaluate-step builder to look up the per-experiment golden DBs.
     """
-    step = doc["pipeline"]["steps"][step_idx]
+    step = doc["pipeline_state"]["steps"][step_idx]
     step_name = step["name"]
     if config is None:
-        # Resolve the experiment-aware config so the evaluate-step builder
-        # sees the per-experiment golden DBs from the doc.
+        # Resolve the experiment-aware config so the renderer sees
+        # per-experiment DBs + the pipeline-family field.
         from env_config import _apply_experiment
         config = get_env_config()
         _apply_experiment(config, doc, cli_explicit_keys=set())
-    cmds = _build_step_commands(
+    cmd = _render_pipeline_step(
         step_name, experiment_name, force=force, config=config,
     )
+    canonical = _pipeline_for(config)
 
     if verbosity >= 1:
         print(
             f"\nRunning step {step_idx + 1}/"
-            f"{len(_PIPELINE_STEPS)}: {step_name}"
+            f"{len(canonical)}: {step_name}"
         )
         if verbosity >= 2:
-            for cmd in cmds:
-                print(f"  Command: {' '.join(cmd)}")
+            print(f"  Command: {' '.join(cmd)}")
 
     # Mark step as running and persist.
     step["status"] = "running"
@@ -669,21 +606,19 @@ def _run_step(
     doc["updated_at"] = _now_iso()
     db.save(doc)
 
-    # Execute the step (one or more commands in sequence).
+    # Execute the step.
     exit_code = 0
-    for cmd in cmds:
-        try:
-            result = subprocess.run(cmd, check=False)
-            exit_code = result.returncode
-        except Exception as exc:
-            print(f"Error launching step: {exc}", file=sys.stderr)
-            exit_code = 1
-        if exit_code != 0:
-            break
+    try:
+        result = subprocess.run(cmd, check=False)
+        exit_code = result.returncode
+    except Exception as exc:
+        print(f"Error launching step: {exc}", file=sys.stderr)
+        exit_code = 1
 
     # Reload doc to get latest _rev (subprocess may have updated it).
     doc_fresh = db[doc["_id"]]
-    step_fresh = doc_fresh["pipeline"]["steps"][step_idx]
+    _ensure_pipeline(doc_fresh)
+    step_fresh = doc_fresh["pipeline_state"]["steps"][step_idx]
 
     if exit_code == 0:
         step_fresh["status"] = "completed"
@@ -717,7 +652,7 @@ def cmd_pipeline(db: Any, args: Any) -> None:
         sys.exit(1)
 
     _ensure_pipeline(doc)
-    steps = doc["pipeline"]["steps"]
+    steps = doc["pipeline_state"]["steps"]
 
     fmt_hdr = "{:<4} {:<15} {:<10} {:<25} {}"
     fmt_row = "{:<4} {:<15} {:<10} {:<25} {}"
@@ -775,7 +710,7 @@ def cmd_runnext(db: Any, args: Any) -> None:
         sys.exit(1)
 
     _ensure_pipeline(doc)
-    steps = doc["pipeline"]["steps"]
+    steps = doc["pipeline_state"]["steps"]
 
     # Find the first pending step.
     step_idx = None
@@ -803,7 +738,7 @@ def cmd_runnext(db: Any, args: Any) -> None:
         return
 
     # Check dependencies.
-    err = _check_dependencies(steps, step_idx)
+    err = _check_dependencies(steps, step_idx, _pipeline_for(doc))
     if err:
         print(
             f"Cannot run step {step_idx + 1} "
@@ -827,7 +762,7 @@ def cmd_runstep(db: Any, args: Any) -> None:
         sys.exit(1)
 
     _ensure_pipeline(doc)
-    steps = doc["pipeline"]["steps"]
+    steps = doc["pipeline_state"]["steps"]
 
     step_names = [s.strip() for s in args.steps.split(",") if s.strip()]
     for step_name in step_names:
@@ -835,7 +770,8 @@ def cmd_runstep(db: Any, args: Any) -> None:
         if step_idx is None:
             print(
                 f"Error: unknown step '{step_name}'. "
-                f"Valid steps: {', '.join(_PIPELINE_STEPS)}",
+                f"Valid steps: "
+                f"{', '.join(s.name for s in _pipeline_for(doc))}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -843,7 +779,7 @@ def cmd_runstep(db: Any, args: Any) -> None:
         # Reload doc before each step to get latest _rev.
         fresh_doc: Dict[str, Any] = db[args.name]
         _ensure_pipeline(fresh_doc)
-        steps = fresh_doc["pipeline"]["steps"]
+        steps = fresh_doc["pipeline_state"]["steps"]
 
         success = _run_step(
             db, fresh_doc, step_idx, args.name,
@@ -861,7 +797,7 @@ def cmd_resetstep(db: Any, args: Any) -> None:
         sys.exit(1)
 
     _ensure_pipeline(doc)
-    steps = doc["pipeline"]["steps"]
+    steps = doc["pipeline_state"]["steps"]
 
     step_names = [s.strip() for s in args.steps.split(",") if s.strip()]
     for step_name in step_names:
@@ -869,7 +805,8 @@ def cmd_resetstep(db: Any, args: Any) -> None:
         if step_idx is None:
             print(
                 f"Error: unknown step '{step_name}'. "
-                f"Valid steps: {', '.join(_PIPELINE_STEPS)}",
+                f"Valid steps: "
+                f"{', '.join(s.name for s in _pipeline_for(doc))}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -890,7 +827,7 @@ def cmd_skipstep(db: Any, args: Any) -> None:
         sys.exit(1)
 
     _ensure_pipeline(doc)
-    steps = doc["pipeline"]["steps"]
+    steps = doc["pipeline_state"]["steps"]
 
     step_names = [s.strip() for s in args.steps.split(",") if s.strip()]
     for step_name in step_names:
@@ -898,7 +835,8 @@ def cmd_skipstep(db: Any, args: Any) -> None:
         if step_idx is None:
             print(
                 f"Error: unknown step '{step_name}'. "
-                f"Valid steps: {', '.join(_PIPELINE_STEPS)}",
+                f"Valid steps: "
+                f"{', '.join(s.name for s in _pipeline_for(doc))}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -925,6 +863,15 @@ def main() -> None:
     p_create.add_argument("--name", required=True, help="Experiment name")
     p_create.add_argument("--notes", type=str, help="Description/notes")
     p_create.add_argument("--comments", type=str, help="Free-form comments")
+    p_create.add_argument(
+        "--pipeline", type=str, default="v3_logistic",
+        help=(
+            "Pipeline family.  Determines step list + per-step "
+            "commands.  Required field on every experiment doc; "
+            "defaults to v3_logistic for new experiments.  "
+            f"Available: {', '.join(pipelines.available())}."
+        ),
+    )
     p_create.add_argument(
         "--model-name", type=str,
         help="Model config name (e.g. logistic_sections_taxpub_v1)",
@@ -978,6 +925,16 @@ def main() -> None:
     p_update.add_argument(
         "--status", type=str,
         help=f"Set status ({', '.join(_STATUS_VALUES)})",
+    )
+    p_update.add_argument(
+        "--pipeline", type=str,
+        help=(
+            "Switch pipeline family (one-shot migration command).  "
+            "Promotes the legacy 'pipeline' dict (state) to "
+            "'pipeline_state' and sets 'pipeline' to the new "
+            "family name.  "
+            f"Available: {', '.join(pipelines.available())}."
+        ),
     )
     p_update.add_argument(
         "--model-name", type=str,

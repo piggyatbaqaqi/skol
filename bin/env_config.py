@@ -273,6 +273,15 @@ def _apply_experiment(
     if experiment_doc.get('model_name') and 'model_name' not in cli_explicit_keys:
         config['model_name'] = experiment_doc['model_name']
 
+    # Pipeline restructure: per-family pipeline modules look this
+    # up via ``config['pipeline']``.  Required field — manage_experiment
+    # rejects experiments that don't set it, with a migration hint.
+    if (
+        experiment_doc.get('pipeline')
+        and 'pipeline' not in cli_explicit_keys
+    ):
+        config['pipeline'] = experiment_doc['pipeline']
+
 
 def get_env_config() -> Dict[str, Any]:
     """
@@ -342,6 +351,12 @@ def get_env_config() -> Dict[str, Any]:
         'redis_password': _get_env('REDIS_PASSWORD', ''),
         'redis_tls': _get_env('REDIS_TLS', '').lower() in ('1', 'true', 'yes'),
         'redis_url': _get_env('REDIS_URL', ''),  # Built dynamically if not set
+
+        # Pipeline family — required on every experiment doc; the
+        # empty default is the sentinel manage_experiment rejects
+        # with a migration hint.  See bin/pipelines/__init__.py for
+        # the registry of known names.
+        'pipeline': '',
 
         # Model settings
         'model_version': _get_env('MODEL_VERSION', 'v2.0'),

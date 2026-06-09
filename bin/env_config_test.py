@@ -173,6 +173,34 @@ class TestApplyExperimentGoldenMapping:
         # Starter value untouched.
         assert config['classifier_model_key_single'] == '__sentinel__'
 
+    def test_pipeline_field_propagates(self) -> None:
+        """experiment.pipeline → config['pipeline'].  The
+        manage_experiment dispatcher reads this and loads the
+        matching ``bin/pipelines/<name>.py`` module."""
+        config = _starter_config(pipeline='')
+        exp = {'pipeline': 'v4_crf'}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['pipeline'] == 'v4_crf'
+
+    def test_pipeline_field_omitted_leaves_default(self) -> None:
+        """An experiment doc without ``pipeline`` field leaves the
+        starter empty string in place — the manage_experiment
+        runtime catches that with a clear migration message."""
+        config = _starter_config(pipeline='')
+        exp = {'redis_keys': {}}   # no pipeline field
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['pipeline'] == ''
+
+    def test_pipeline_field_cli_explicit_blocks_override(self) -> None:
+        """If the operator passed ``--pipeline`` on the CLI, the
+        experiment doc value MUST NOT win."""
+        config = _starter_config(pipeline='cli_value')
+        exp = {'pipeline': 'v4_crf'}
+        _apply_experiment(
+            config, exp, cli_explicit_keys={'pipeline'},
+        )
+        assert config['pipeline'] == 'cli_value'
+
     def test_other_databases_unaffected(self) -> None:
         """A no-op safety test: pre-existing mapping rows (ingest, training,
         treatments, etc.) keep working after the new rows are added."""

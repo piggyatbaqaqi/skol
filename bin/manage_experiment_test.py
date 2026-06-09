@@ -1,19 +1,22 @@
-"""Tests for bin/manage_experiment.py — the evaluate-step builder.
+"""Tests for bin/manage_experiment.py.
 
-Focused on Step 1.C of docs/golden_v2_plan.md: ``_build_step_commands``
-must no longer hardcode "skol_golden" / "skol_golden_ann_hand"; it must
-read the values from the resolved config (which flowed in from the
-experiment doc via ``_apply_experiment`` in env_config).
+Post-restructure: per-family pipeline modules in ``bin/pipelines/``
+own step-command construction.  This file pins the manage_experiment
+glue: the required ``pipeline`` field, the lazy-repair logic, the
+``--pipeline`` CLI flags on create + update, and the redis-key
+flags that were there pre-restructure.
 """
 
 import sys
 from pathlib import Path
 from typing import Any, Dict
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from manage_experiment import (  # type: ignore[import]  # noqa: E402
-    _build_step_commands,
+    _ensure_pipeline,
+    _render_pipeline_step,
     cmd_create,
     cmd_update,
 )
@@ -37,294 +40,157 @@ def _flatten(cmds):
     return out
 
 
-class TestEvaluateStepGoldenWiring:
-    """The evaluate step builds two commands (predict-golden, evaluate);
-    both must use the per-experiment golden DB names from config."""
-
-    def test_uses_v1_defaults_when_unset(self) -> None:
-        """With v1-default config the resulting commands match the
-        pre-rewire behaviour — backward compatibility guarantee."""
-        cfg = _config()
-        cmds = _build_step_commands(
-            "evaluate", "production", force=False, config=cfg,
-        )
-        args = _flatten(cmds)
-        assert "skol_golden" in args
-        assert "skol_golden_ann_hand" in args
-
-    def test_uses_v2_values_when_config_overrides(self) -> None:
-        """A v2 experiment whose doc points at the v2 golden DBs results in
-        the v2 names showing up in the commands."""
-        cfg = _config(
-            golden_db_name='skol_golden_v2',
-            golden_ann_db_name='skol_golden_ann_hand_v2',
-        )
-        cmds = _build_step_commands(
-            "evaluate", "production_v2", force=False, config=cfg,
-        )
-        args = _flatten(cmds)
-        assert "skol_golden_v2" in args
-        assert "skol_golden_ann_hand_v2" in args
-        # Old hardcoded literals must not survive in the rewired version.
-        assert "skol_golden_ann_hand" not in args  # superseded by v2 value
-
-    def test_jats_experiment_scores_against_jats_silver(self) -> None:
-        """jats_v1's experiment doc carries databases.golden_ann =
-        skol_golden_ann_jats; the evaluate step must pick that up
-        instead of the hand standard the hardcoded literal used."""
-        cfg = _config(golden_ann_db_name='skol_golden_ann_jats')
-        cmds = _build_step_commands(
-            "evaluate", "jats_v1", force=False, config=cfg,
-        )
-        args = _flatten(cmds)
-        assert "skol_golden_ann_jats" in args
-        # The plaintext-db arg still uses golden_db_name (plaintext source
-        # is the same DB across hand/silver tracks).
-        assert "skol_golden" in args
-
-    def test_predict_command_uses_golden_db_name(self) -> None:
-        """The predict_classifier.py invocation carries --golden-db pointing
-        at the plaintext DB (databases.golden), not the answer-key DB."""
-        cfg = _config(
-            golden_db_name='skol_golden_v2',
-            golden_ann_db_name='skol_golden_ann_hand_v2',
-        )
-        cmds = _build_step_commands(
-            "evaluate", "production_v2", force=False, config=cfg,
-        )
-        predict_cmd = next(
-            c for c in cmds if any('predict_classifier' in a for a in c)
-        )
-        # Find the --golden-db value in the predict command.
-        i = predict_cmd.index('--golden-db')
-        assert predict_cmd[i + 1] == 'skol_golden_v2'
-
-    def test_evaluate_command_separates_golden_and_plaintext(self) -> None:
-        """evaluate_golden.py gets --golden-db = answer key,
-        --plaintext-db = source plaintext DB."""
-        cfg = _config(
-            golden_db_name='skol_golden_v2',
-            golden_ann_db_name='skol_golden_ann_jats_v2',
-        )
-        cmds = _build_step_commands(
-            "evaluate", "jats_v2", force=False, config=cfg,
-        )
-        eval_cmd = next(
-            c for c in cmds if any('evaluate_golden' in a for a in c)
-        )
-        # answer-key DB (--golden-db on evaluate_golden) = golden_ann
-        gi = eval_cmd.index('--golden-db')
-        assert eval_cmd[gi + 1] == 'skol_golden_ann_jats_v2'
-        # plaintext DB (--plaintext-db on evaluate_golden) = golden
-        pi = eval_cmd.index('--plaintext-db')
-        assert eval_cmd[pi + 1] == 'skol_golden_v2'
+# ---------------------------------------------------------------------------
+# Pipeline-field requirement + render glue
+# ---------------------------------------------------------------------------
 
 
-class TestEvaluateStepForceFlag:
-    """Sanity check that the --force semantics still work after the rewire."""
+class TestRequiresPipelineField:
+    """``_ensure_pipeline`` is the gatekeeper that ensures every
+    experiment doc names a known pipeline before any step builder
+    runs.  The error message guides operators to the migration
+    command."""
 
-    def test_force_replaces_skip_existing(self) -> None:
-        cfg = _config()
-        cmds = _build_step_commands(
-            "evaluate", "production", force=True, config=cfg,
-        )
-        args = _flatten(cmds)
-        assert "--force" in args
-        assert "--skip-existing" not in args
+    def test_missing_field_raises_with_migration_hint(self) -> None:
+        import pytest
+        doc: Dict[str, Any] = {'_id': 'production'}
+        with pytest.raises(ValueError) as exc:
+            _ensure_pipeline(doc)
+        msg = str(exc.value)
+        assert 'pipeline' in msg.lower()
+        assert 'update' in msg
+        assert 'production' in msg
 
-
-class TestOtherStepsUnaffected:
-    """Non-evaluate steps don't need golden DB names — they should build
-    successfully even when config doesn't carry the new keys."""
-
-    def test_train_step_does_not_require_golden_keys(self) -> None:
-        cmds = _build_step_commands(
-            "train", "production", force=False, config={},
-        )
-        # Just verifying it runs without KeyError.
-        assert len(cmds) == 1
-        assert any('train_classifier' in a for a in cmds[0])
-
-    def test_embed_step_does_not_require_golden_keys(self) -> None:
-        cmds = _build_step_commands(
-            "embed", "production", force=False, config={},
-        )
-        assert len(cmds) == 1
-        assert any('embed_treatments' in a for a in cmds[0])
+    def test_unknown_pipeline_name_raises_with_known_names(self) -> None:
+        import pytest
+        doc: Dict[str, Any] = {
+            '_id': 'production', 'pipeline': 'not_a_real_pipeline',
+        }
+        with pytest.raises(ValueError) as exc:
+            _ensure_pipeline(doc)
+        msg = str(exc.value)
+        assert 'v3_logistic' in msg
+        assert 'v4_crf' in msg
 
 
-class TestPredictStepV4Dispatch:
-    """v5 Step 5.C: the 'predict' step dispatches on model_name —
-    v4_crf → predict_v4.py; everything else → predict_classifier.py.
-    Both v3 and v4 experiments use the same step name so the
-    pipeline shape stays uniform."""
+class TestEnsurePipelineRepair:
+    """Lazy repair against the family's canonical step list — the
+    same behaviour as pre-restructure ``_ensure_pipeline`` but
+    sourced from the pipeline module instead of a global list."""
 
-    def test_predict_step_dispatches_to_predict_classifier_for_v3(
-        self,
-    ) -> None:
-        cmds = _build_step_commands(
-            "predict", "production", force=False,
-            config={'model_name': 'logistic_sections'},
-        )
-        assert len(cmds) == 1
-        args = cmds[0]
-        assert any('predict_classifier' in a for a in args)
-        assert not any('predict_v4' in a for a in args)
+    def test_repair_adds_missing_steps_as_pending(self) -> None:
+        """Doc has only the first v4 step recorded under
+        ``pipeline_state.steps``; repair fills in the rest from
+        the v4_crf canonical list with ``status='pending'`` while
+        preserving any pre-existing entries.
 
-    def test_predict_step_dispatches_to_predict_v4_for_v4_crf(
-        self,
-    ) -> None:
-        cmds = _build_step_commands(
-            "predict", "production_v4", force=False,
-            config={'model_name': 'v4_crf'},
-        )
-        assert len(cmds) == 1
-        args = cmds[0]
-        assert any('predict_v4' in a for a in args)
-        assert not any('predict_classifier' in a for a in args)
-
-    def test_predict_step_defaults_to_v3_when_model_name_absent(
-        self,
-    ) -> None:
-        """An experiment doc without model_name (legacy / unset) keeps
-        the v3 path — no surprise upgrades."""
-        cmds = _build_step_commands(
-            "predict", "production", force=False, config={},
-        )
-        assert len(cmds) == 1
-        assert any('predict_classifier' in a for a in cmds[0])
-
-    def test_evaluate_step_predict_golden_also_dispatches(self) -> None:
-        """The evaluate step's first command (predict_golden) must
-        respect the same dispatch — otherwise v4 experiments would
-        evaluate against v3 predictions."""
-        cmds = _build_step_commands(
-            "evaluate", "production_v4", force=False,
-            config={
-                'model_name': 'v4_crf',
-                'golden_db_name': 'skol_golden_v2',
-                'golden_ann_db_name': 'skol_golden_ann_hand_v2',
+        Field shape: post-restructure the experiment doc carries
+        ``pipeline`` (str, the family name) and ``pipeline_state``
+        (the per-step status records).  The legacy field name
+        ``pipeline`` (dict) is replaced — see the migration in
+        docs/experiments.md."""
+        doc: Dict[str, Any] = {
+            '_id': 'production_v4',
+            'pipeline': 'v4_crf',
+            'pipeline_state': {
+                'current_step': 0,
+                'steps': [
+                    {'name': 'annotate', 'status': 'completed',
+                     'started_at': None, 'completed_at': None},
+                ],
             },
-        )
-        # evaluate emits two commands: predict_golden then evaluate.
-        assert len(cmds) == 2
-        predict_golden_args = cmds[0]
-        assert any('predict_v4' in a for a in predict_golden_args)
-        assert not any(
-            'predict_classifier' in a for a in predict_golden_args
-        )
+        }
+        _ensure_pipeline(doc)
+        names = [s['name'] for s in doc['pipeline_state']['steps']]
+        assert 'annotate' in names
+        assert 'embed_lines' in names
+        assert 'predict' in names
 
-    def test_predict_step_passes_ingest_db_as_input_for_v4(self) -> None:
-        """The pipeline's predict step must process the FULL
-        production corpus, not the 105-doc golden set predict_v4
-        would otherwise default to via env_config resolution.
-        For v4_crf, we explicitly pass --source-db <ingest_db>."""
-        cmds = _build_step_commands(
-            "predict", "production_v4", force=False,
-            config={
-                'model_name': 'v4_crf',
-                'ingest_db_name': 'skol_dev',
+    def test_repair_preserves_existing_step_status(self) -> None:
+        doc = {
+            '_id': 'production_v4',
+            'pipeline': 'v4_crf',
+            'pipeline_state': {
+                'current_step': 0,
+                'steps': [
+                    {'name': 'annotate', 'status': 'completed',
+                     'started_at': '2026-06-01', 'completed_at': '2026-06-01'},
+                ],
             },
+        }
+        _ensure_pipeline(doc)
+        annotate = next(
+            s for s in doc['pipeline_state']['steps']
+            if s['name'] == 'annotate'
         )
-        args = cmds[0]
-        assert '--source-db' in args
-        sd_idx = args.index('--source-db')
-        assert args[sd_idx + 1] == 'skol_dev'
+        assert annotate['status'] == 'completed'
+        assert annotate['started_at'] == '2026-06-01'
 
-    def test_predict_step_does_not_inject_source_db_for_v3(self) -> None:
-        """The v3 path keeps its existing behaviour: predict_classifier
-        reads from the ingest DB by default, no --source-db flag."""
-        cmds = _build_step_commands(
-            "predict", "production", force=False,
-            config={
-                'model_name': 'logistic_sections',
-                'ingest_db_name': 'skol_dev',
-            },
-        )
-        assert '--source-db' not in cmds[0]
-
-
-class TestTrainStepV4Dispatch:
-    """The pipeline's 'train' step needs the same model_name dispatch
-    Step 5 gave 'predict'.  Without it, runnext on a v4_crf
-    experiment immediately fails with ``Unknown model: v4_crf``
-    from train_classifier.py."""
-
-    def test_train_step_dispatches_to_train_classifier_for_v3(
-        self,
-    ) -> None:
-        cmds = _build_step_commands(
-            "train", "production", force=False,
-            config={'model_name': 'logistic_sections'},
-        )
-        assert len(cmds) == 1
-        args = cmds[0]
-        assert any('train_classifier' in a for a in args)
-        assert not any('train_crf_single' in a for a in args)
-
-    def test_train_step_dispatches_to_train_crf_single_for_v4_crf(
-        self,
-    ) -> None:
-        cmds = _build_step_commands(
-            "train", "production_v4", force=False,
-            config={
-                'model_name': 'v4_crf',
-                'training_database': 'skol_training_v3_combined_no_golden',
-                'classifier_model_key_single':
-                    'skol:classifier:model:v4_single_combined',
-            },
-        )
-        args = cmds[0]
-        assert any('train_crf_single' in a for a in args)
-        # Must thread the training DB + the Redis state-key through.
-        assert '--source-db' in args
-        sd_idx = args.index('--source-db')
-        assert args[sd_idx + 1] == 'skol_training_v3_combined_no_golden'
-        assert '--redis-key' in args
-        rk_idx = args.index('--redis-key')
-        assert (
-            args[rk_idx + 1]
-            == 'skol:classifier:model:v4_single_combined'
-        )
-
-    def test_train_step_falls_back_to_safe_defaults_for_v4_crf(
-        self,
-    ) -> None:
-        """If the experiment doc omits training_database or
-        classifier_model_key_single, the dispatch uses the same
-        defaults Step 6/Step 7 documented as production — i.e.
-        nothing is silently broken when an operator forgets to
-        populate those fields."""
-        cmds = _build_step_commands(
-            "train", "production_v4", force=False,
-            config={'model_name': 'v4_crf'},
-        )
-        args = cmds[0]
-        assert any('train_crf_single' in a for a in args)
-        sd_idx = args.index('--source-db')
-        # Step 6.B used the combined corpus for the production pin.
-        assert (
-            args[sd_idx + 1] == 'skol_training_v3_combined_no_golden'
-        )
-        rk_idx = args.index('--redis-key')
-        assert (
-            args[rk_idx + 1]
-            == 'skol:classifier:model:v4_single_combined'
-        )
-
-    def test_train_step_defaults_to_v3_when_model_name_absent(
-        self,
-    ) -> None:
-        cmds = _build_step_commands(
-            "train", "production", force=False, config={},
-        )
-        assert any('train_classifier' in a for a in cmds[0])
-        assert not any(
-            'train_crf_single' in a for a in cmds[0]
+    def test_repair_initialises_from_scratch_when_state_absent(self) -> None:
+        doc = {'_id': 'production_v4', 'pipeline': 'v4_crf'}
+        _ensure_pipeline(doc)
+        assert 'pipeline_state' in doc
+        names = [s['name'] for s in doc['pipeline_state']['steps']]
+        assert names[0] == 'annotate'   # v4 prereq goes first
+        assert all(
+            s['status'] == 'pending'
+            for s in doc['pipeline_state']['steps']
         )
 
 
 # ---------------------------------------------------------------------------
+# Render glue — manage_experiment.py's thin wrapper around
+# pipelines.base.render_step
+# ---------------------------------------------------------------------------
+
+
+class TestRenderPipelineStep:
+    """The dispatcher just (a) loads the family, (b) finds the
+    step by name, (c) builds the variable dict, (d) calls
+    pipelines.base.render_step.  These tests pin the integration
+    boundary."""
+
+    def test_v3_predict_step_renders_predict_classifier(self) -> None:
+        config = {'pipeline': 'v3_logistic'}
+        cmd = _render_pipeline_step(
+            'predict', 'production', force=False, config=config,
+        )
+        assert any('predict_classifier' in t for t in cmd)
+        assert '--experiment' in cmd
+        assert 'production' in cmd
+
+    def test_v4_predict_step_renders_predict_v4_with_source_db(self) -> None:
+        config = {
+            'pipeline': 'v4_crf',
+            'ingest_db_name': 'skol_dev',
+        }
+        cmd = _render_pipeline_step(
+            'predict', 'production_v4', force=False, config=config,
+        )
+        assert any('predict_v4' in t for t in cmd)
+        assert '--source-db' in cmd
+        sd_idx = cmd.index('--source-db')
+        assert cmd[sd_idx + 1] == 'skol_dev'
+
+    def test_unknown_step_raises(self) -> None:
+        import pytest
+        with pytest.raises(ValueError):
+            _render_pipeline_step(
+                'nonexistent_step', 'production',
+                force=False,
+                config={'pipeline': 'v3_logistic'},
+            )
+
+    def test_force_propagates_to_render(self) -> None:
+        config = {'pipeline': 'v4_crf', 'ingest_db_name': 'skol_dev'}
+        cmd = _render_pipeline_step(
+            'predict', 'production_v4', force=True, config=config,
+        )
+        # predict has --skip-existing in args; force flips it.
+        assert '--force' in cmd
+        assert '--skip-existing' not in cmd
+
+
 # cmd_create + new --redis-key-pass1 / --redis-key-pass2 flags
 # ---------------------------------------------------------------------------
 
@@ -362,6 +228,7 @@ def _create_args(**overrides: Any) -> Any:
     import argparse
     defaults = {
         'name': 'test_exp', 'notes': None, 'comments': None,
+        'pipeline': 'v3_logistic',
         'model_name': None,
         'training_db': None, 'ingest_db': None, 'annotations_db': None,
         'redis_key_pass1': None, 'redis_key_pass2': None,
@@ -376,7 +243,9 @@ def _update_args(**overrides: Any) -> Any:
     import argparse
     defaults = {
         'name': 'test_exp', 'notes': None, 'comments': None,
-        'status': None, 'model_name': None,
+        'status': None,
+        'pipeline': None,
+        'model_name': None,
         'training_db': None, 'ingest_db': None, 'annotations_db': None,
         'redis_key_pass1': None, 'redis_key_pass2': None,
         'redis_key_single': None,
@@ -543,3 +412,104 @@ class TestCmdUpdateV4RedisKeys:
         ))
         rk = db.docs['production_v4']['redis_keys']
         assert 'classifier_model_single' not in rk
+
+
+# ---------------------------------------------------------------------------
+# --pipeline flag on create + update
+# ---------------------------------------------------------------------------
+
+
+class TestCmdCreatePipelineField:
+    """``bin/manage_experiment create --pipeline X`` must write
+    the family name into ``doc['pipeline']`` so future ``runnext``
+    invocations can dispatch the right step list."""
+
+    def test_create_writes_pipeline_field(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='new_v4', pipeline='v4_crf'))
+        doc = db.docs['new_v4']
+        assert doc['pipeline'] == 'v4_crf'
+
+    def test_create_writes_default_pipeline_when_omitted(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='new_legacy'))
+        doc = db.docs['new_legacy']
+        # _create_args defaults to v3_logistic, matching the
+        # operator-facing default on the CLI flag.
+        assert doc['pipeline'] == 'v3_logistic'
+
+    def test_create_initialises_pipeline_state_from_family(self) -> None:
+        """A fresh v4_crf experiment gets pipeline_state.steps
+        populated from the family's canonical list — `annotate`
+        first, `embed_lines` second."""
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='new_v4', pipeline='v4_crf'))
+        names = [
+            s['name']
+            for s in db.docs['new_v4']['pipeline_state']['steps']
+        ]
+        assert names[0] == 'annotate'
+        assert names[1] == 'embed_lines'
+
+    def test_create_rejects_unknown_pipeline_with_clear_error(self) -> None:
+        import pytest
+        db = _FakeExperimentsDb()
+        with pytest.raises(ValueError) as exc:
+            cmd_create(db, _create_args(
+                name='new_x', pipeline='not_a_real_pipeline',
+            ))
+        assert 'v3_logistic' in str(exc.value)
+        assert 'v4_crf' in str(exc.value)
+
+
+class TestCmdUpdatePipelineField:
+    """``bin/manage_experiment update --pipeline X`` is the
+    one-shot migration command for legacy experiment docs."""
+
+    def _seeded_legacy_db(self) -> _FakeExperimentsDb:
+        """A db with a legacy-shape doc: ``pipeline`` is the dict
+        (current_step + steps), no ``pipeline_state`` field."""
+        db = _FakeExperimentsDb()
+        db.docs['legacy_v3'] = {
+            '_id': 'legacy_v3',
+            'model_name': 'logistic_sections',
+            'pipeline': {
+                'current_step': 2,
+                'steps': [
+                    {'name': 'train', 'status': 'completed',
+                     'started_at': None, 'completed_at': None},
+                ],
+            },
+        }
+        return db
+
+    def test_update_writes_pipeline_field_string(self) -> None:
+        db = self._seeded_legacy_db()
+        cmd_update(db, _update_args(
+            name='legacy_v3', pipeline='v3_logistic',
+        ))
+        assert db.docs['legacy_v3']['pipeline'] == 'v3_logistic'
+
+    def test_update_migrates_legacy_pipeline_dict_to_state(self) -> None:
+        """The legacy ``pipeline`` dict becomes ``pipeline_state``;
+        any per-step status records the legacy doc had are
+        preserved."""
+        db = self._seeded_legacy_db()
+        cmd_update(db, _update_args(
+            name='legacy_v3', pipeline='v3_logistic',
+        ))
+        state = db.docs['legacy_v3']['pipeline_state']
+        assert state['current_step'] == 2
+        train_step = next(
+            s for s in state['steps'] if s['name'] == 'train'
+        )
+        assert train_step['status'] == 'completed'
+
+    def test_update_rejects_unknown_pipeline_with_clear_error(self) -> None:
+        import pytest
+        db = self._seeded_legacy_db()
+        with pytest.raises(ValueError) as exc:
+            cmd_update(db, _update_args(
+                name='legacy_v3', pipeline='bogus',
+            ))
+        assert 'v3_logistic' in str(exc.value)
