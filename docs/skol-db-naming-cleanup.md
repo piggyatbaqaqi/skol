@@ -80,111 +80,128 @@ Trade-offs accepted (full discussion in conversation log):
   corpus size.  For the 105-doc golden set: ~500 MB/experiment;
   negligible at current scale.
 
-## Naming-convention options for the rename pass
+## Naming convention — settled 2026-06-09
 
-Three styles, in decreasing order of operator-readability:
+Two distinct shapes, one for per-experiment data, one for
+shared / global data.  Sort order is "experiment first, stage
+second" — operators care that all DBs for ONE experiment
+cluster together; the relative order of `production_v3_hand`
+vs `production_v4` in the listing doesn't matter.
 
-### Option A — decimal-numeric prefix (RECOMMENDED, user-proposed 2026-06-09)
-
-```
-skol_01_00_ingest_dev
-skol_02_00_training
-skol_02_00_training_v3_combined_no_golden
-skol_02_00_training_v3_hand
-skol_02_00_training_v3_jats
-skol_02_50_training_v2_no_golden   # inserted later; no renumbering
-skol_03_00_golden_v1
-skol_03_00_golden_ann_hand_v1
-skol_03_00_golden_v2
-skol_03_00_golden_ann_hand_v2
-skol_03_00_golden_ann_jats
-skol_03_00_golden_ann_bioc
-skol_04_00_exp_<X>_ann
-skol_04_00_exp_<X>_ann_eval
-skol_05_00_exp_<X>_taxa
-skol_05_00_exp_<X>_taxa_eval
-skol_05_00_exp_<X>_taxa_full
-skol_05_00_exp_<X>_taxa_full_eval
-skol_99_00_experiments
-```
-
-Sort order: lexicographic gives `01_00 < 01_50 < 02_00 < 02_50
-< 10_00 < 99_00`, matching pipeline order.
-
-**Insertion property**: a new stage between 2 and 3 gets
-`02_50`; between 2 and 2_50 gets `02_25`.  No renumbering churn.
-
-**CouchDB constraint** noted: DB names must match
-`[a-z][a-z0-9_$()+/-]*` — periods are not allowed.  The
-underscore separator (`01_00` not `01.00`) keeps the design
-property within the CouchDB-legal character set.
-
-Pros: self-documenting, sorts correctly, extensible without
-renaming.
-Cons: longer names than alphabetic; slight cognitive load
-mapping numbers to roles until the mapping is internalised.
-
-### Option B — alphabetic prefix matching pipeline step order
+### Per-experiment DBs
 
 ```
-skol_a_ingest_dev
-skol_b_training_v3_combined_no_golden
-skol_c_golden_v2
-skol_c_golden_ann_hand_v2
-skol_d_exp_<X>_ann
-skol_d_exp_<X>_ann_eval
-skol_e_exp_<X>_taxa
-skol_e_exp_<X>_taxa_eval
-skol_zz_experiments
+skol_exp_<EXPERIMENT>_<STAGE>_<ROLE>[_eval]
 ```
 
-Pros: sorts in pipeline order; cheap to insert a new stage
-("between b and c, use ba_…").  No re-renumbering churn.
-Cons: less self-documenting than the role name itself; operator
-has to learn the letter-to-role mapping.
+- `<EXPERIMENT>` — the experiment doc's `_id` (e.g.
+  `production_v4`, `production_v3_hand`).
+- `<STAGE>` — decimal-numeric ordering tag matching the
+  pipeline-step write order: `01_00` annotations, `02_00`
+  taxa, `03_00` taxa_full.  Underscore separator (CouchDB DB
+  names disallow `.`).  Insertion-friendly:  a future step
+  whose output sorts between annotations and taxa gets
+  `01_50` without renumbering existing DBs.
+- `<ROLE>` — the data shape (`ann`, `taxa`, `taxa_full`, …).
+- `_eval` (optional suffix) — present iff the DB carries
+  predictions over a truncated dataset (golden set / ablation
+  hold-out), distinct from production data.  See the
+  Eval / production split section above.
 
-### Option C — role-named, no ordering prefix
+Example listing for `production_v4`:
 
 ```
-skol_ingest_dev
+skol_exp_production_v4_01_00_ann
+skol_exp_production_v4_01_00_ann_eval
+skol_exp_production_v4_02_00_taxa
+skol_exp_production_v4_02_00_taxa_eval
+skol_exp_production_v4_03_00_taxa_full
+skol_exp_production_v4_03_00_taxa_full_eval
+```
+
+All six group together in `_all_dbs`; within the group, stage
+order is preserved.
+
+### Shared / global DBs
+
+Shared DBs follow role-named conventions with no stage prefix —
+they're outside any per-experiment ordering by design:
+
+```
+skol_dev                          # ingest corpus, shared
+skol_training                     # default training corpus
 skol_training_v3_combined_no_golden
-skol_golden_v2
+skol_training_v3_hand
+skol_training_v3_jats
+skol_training_v2_no_golden
+skol_golden_v1                    # eval plaintext, v1
+skol_golden_v2                    # eval plaintext, v2
+skol_golden_ann_hand_v1           # eval answer-key, hand-annotated, v1
 skol_golden_ann_hand_v2
-skol_exp_<X>_ann
-skol_exp_<X>_ann_eval
-skol_exp_<X>_taxa
-skol_exp_<X>_taxa_eval
-skol_experiments
+skol_golden_ann_jats
+skol_golden_ann_bioc
+skol_experiments                  # the experiment-doc registry
 ```
 
-Pros: self-documenting, no prefix-numbering decisions.
-Cons: doesn't satisfy the "sort in process order" goal — the
-list still scrambles `experiments` between `exp_X` entries.
+These sort outside the `skol_exp_*` grouping naturally
+(`skol_d…` and `skol_g…` and `skol_t…` < `skol_exp_…` < …) so
+no marker is needed to distinguish them visually.
 
-**Recommendation**: Option A.  Self-documenting + sortable +
-extensible without renames.  Settled 2026-06-09.
+### Combined listing
+
+```
+skol_dev
+skol_exp_production_v3_hand_01_00_ann
+skol_exp_production_v3_hand_02_00_taxa
+skol_exp_production_v3_hand_03_00_taxa_full
+skol_exp_production_v3_jats_01_00_ann
+skol_exp_production_v3_jats_02_00_taxa
+skol_exp_production_v4_01_00_ann
+skol_exp_production_v4_01_00_ann_eval
+skol_exp_production_v4_02_00_taxa
+skol_exp_production_v4_02_00_taxa_eval
+skol_exp_production_v4_03_00_taxa_full
+skol_exp_production_v4_03_00_taxa_full_eval
+skol_experiments
+skol_golden_ann_hand_v2
+skol_golden_v2
+skol_training_v3_combined_no_golden
+```
+
+All per-experiment data clusters; shared data lives at the top
+and bottom of the list around the `skol_exp_*` block.
 
 ## Scope — what gets renamed
 
-| Old name | New name (Option A — decimal-numeric) |
+| Old name | New name |
 |---|---|
-| `skol_dev` | `skol_01_00_ingest_dev` |
-| `skol_training` | `skol_02_00_training` |
-| `skol_training_v3_combined_no_golden` | `skol_02_00_training_v3_combined_no_golden` |
-| `skol_training_v3_hand` | `skol_02_00_training_v3_hand` |
-| `skol_training_v3_jats` | `skol_02_00_training_v3_jats` |
-| `skol_training_v2_no_golden` | `skol_02_00_training_v2_no_golden` |
-| `skol_golden` | `skol_03_00_golden_v1` |
-| `skol_golden_v2` | `skol_03_00_golden_v2` |
-| `skol_golden_ann_hand` | `skol_03_00_golden_ann_hand_v1` |
-| `skol_golden_ann_hand_v2` | `skol_03_00_golden_ann_hand_v2` |
-| `skol_golden_ann_jats` | `skol_03_00_golden_ann_jats` |
-| `skol_golden_ann_bioc` | `skol_03_00_golden_ann_bioc` |
-| `skol_exp_<X>_ann*` | `skol_04_00_exp_<X>_ann*` |
-| `skol_exp_<X>_taxa*` | `skol_05_00_exp_<X>_taxa*` |
-| `skol_experiments` | `skol_99_00_experiments` |
+| `skol_dev` | unchanged (shared) |
+| `skol_training` | unchanged (shared) |
+| `skol_training_v3_combined_no_golden` | unchanged (shared) |
+| `skol_training_v3_hand` | unchanged (shared) |
+| `skol_training_v3_jats` | unchanged (shared) |
+| `skol_training_v2_no_golden` | unchanged (shared) |
+| `skol_golden` | `skol_golden_v1` (version disambiguation) |
+| `skol_golden_v2` | unchanged |
+| `skol_golden_ann_hand` | `skol_golden_ann_hand_v1` (version disambiguation) |
+| `skol_golden_ann_hand_v2` | unchanged |
+| `skol_golden_ann_jats` | unchanged |
+| `skol_golden_ann_bioc` | unchanged |
+| `skol_exp_<X>_ann` | `skol_exp_<X>_01_00_ann` |
+| `skol_exp_<X>_ann_combined` | `skol_exp_<X>_01_00_ann_combined` (or fold `combined` into the experiment name; see open question 5) |
+| `skol_exp_<X>_taxa` | `skol_exp_<X>_02_00_taxa` |
+| `skol_exp_<X>_taxa_full` | `skol_exp_<X>_03_00_taxa_full` |
+| (new) `skol_exp_<X>_01_00_ann_eval` | eval predictions land here, separate from production |
+| (new) `skol_exp_<X>_02_00_taxa_eval` | as above |
+| (new) `skol_exp_<X>_03_00_taxa_full_eval` | as above |
+| `skol_experiments` | unchanged |
 | `skol_treatments_v3_dev` | drop after migration (legacy) |
 | `skol_treatments_v3_jats` etc. | drop after migration (legacy) |
+
+Most of the rename pass is **adding** per-experiment stage tags
+to the experiment-specific DBs.  The shared / global DBs mostly
+stay the same.  This makes the migration cheaper than the
+original plan suggested.
 
 Plus: every experiment doc's `databases.annotations`,
 `databases.taxa`, `databases.taxa_full` fields get rewritten to
@@ -255,8 +272,10 @@ risk of corruption.  Not worth the savings.
 
 ## Open questions
 
-1. ~~**Prefix scheme**~~ — settled 2026-06-09: Option A
-   (decimal-numeric, e.g. `skol_01_00_ingest_dev`).
+1. ~~**Prefix scheme**~~ — settled 2026-06-09: per-experiment
+   stage tag `<EXPERIMENT>_<STAGE_NUM>_<ROLE>` (e.g.
+   `skol_exp_production_v4_01_00_ann`); shared DBs role-named
+   with no stage tag.
 2. **Eval-DB lifecycle** — auto-delete after N days?  Or
    long-lived?  Tied to whether you trust the `_eval`-suffix
    convention enough to prune.
@@ -266,3 +285,20 @@ risk of corruption.  Not worth the savings.
    blast radius per step.
 4. **Legacy DB pruning** — `skol_treatments_v3_dev` and friends:
    drop, archive, or leave behind?
+5. **Model-variant tags in DB name vs experiment name** — today's
+   ``skol_exp_production_v4_ann_combined`` carries the
+   ``_combined`` corpus-variant tag at the DB level.  Two paths:
+   (a) Keep at DB level — rename to
+   ``skol_exp_production_v4_01_00_ann_combined``.  Simple
+   migration; experiment-doc shape unchanged.  Downside: the
+   variant lives at the DB-name level, not in the
+   experiment-doc schema, so operators inspecting an experiment
+   doc don't see which corpus variant its outputs were built
+   from.
+   (b) Fold into experiment name — rename the EXPERIMENT to
+   ``production_v4_combined`` so the doc-name carries the
+   variant tag, then DB name becomes the clean
+   ``skol_exp_production_v4_combined_01_00_ann``.  Bigger
+   migration (touches the experiment doc + every Redis key
+   referencing it + the cron entries naming it), but the
+   resulting schema is cleaner.
