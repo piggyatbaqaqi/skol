@@ -369,6 +369,101 @@ Plus: every experiment doc's `databases.annotations`,
 `databases.taxa`, `databases.taxa_full` fields get rewritten to
 the new names.  Add the eval counterparts at the same time.
 
+## Cross-project ordering — settled 2026-06-09
+
+This rename pass is one of four related pieces of work.  Their
+order matters because each blocks or simplifies the next.
+
+### The four-step sequence
+
+```
+1. Migrate prod's experiment docs to the pipeline: field
+   (carryover from the 2026-06-09 pipeline restructure;
+   commit 5dde6d4 already shipped the code)
+2. DB rename pass on dev (the scope of THIS plan)
+3. Coordinated deploy + prod rename:
+   a. Replicate renamed DBs dev → prod
+   b. Install new deb package on prod (new cron + new code)
+   c. Update prod's experiment docs to new DB names + step names
+   d. Verify search UI
+   e. Drop old prod DBs after a soak window (~1 week)
+4. Ansible Stage 0 — per-host capability-driven cron
+   (separate plan: ~/.claude/plans/ansible-deployment-stage0.md)
+```
+
+### Key simplifying insight
+
+Dev (puchpuchobs) currently holds all of prod's data, so the
+rename only needs to happen ONCE on dev — the renamed DBs
+replicate over to prod in step 3.  Every code path the rename
+touches gets exercised once with full data on the box where
+breakage is recoverable; the prod side is just data movement.
+
+This wouldn't be true if dev had a strict subset of prod's
+data (typical for many shops); SKOL's dev-as-superset state
+is a windfall we should take advantage of.
+
+### Why this order
+
+**Step 1 first**: it's cheap insurance — four `update` calls
+on prod's experiment docs.  No code change.  Doing it now
+unblocks running ``runnext`` on prod if step 3 needs to be
+rolled back partway through.
+
+**Step 2 (this plan)**: the rename pass on dev.  The
+single-session-with-incremental-commits approach (per
+Decision 3) only works on one host at a time, and dev is
+where the safety net is (can wipe and restart if needed).
+Lands the new code in source control as a single coherent
+change; ships in the next deb package.
+
+**Step 3 (deploy + prod rename)**: tightly coupled because
+the new code expects the new schema.  Prod can't run
+new-code with old-DB-names (it'd break) nor old-code with
+new-DB-names (also break).  Plan this as a maintenance-window
+operation; the replicate-DBs-then-install-package atomicity
+limits the blast radius.
+
+**Step 4 last** — Ansible can happen anytime.  Two reasons
+to put it after the rename:
+
+1. **The rename changes the cron file anyway.**  `extract_taxa`
+   → `extract_treatments`, plus any other step renames.
+   Doing ansible BEFORE means writing per-host cron entries
+   for the old step names, then rewriting them right after
+   the rename.  AFTER means one clean ansible pass against
+   the final cron shape.
+2. **Surface inventory is simpler with one cron source.**
+   Step 2's grep-for-old-names pass is much easier against
+   one ``debian/skol.cron`` than against N per-host ansible
+   templates.  The risk of missing a per-host reference grows
+   with N.
+
+### Caveats worth knowing
+
+**For step 3 (replicate-from-dev)**: assumes dev's renamed
+DBs are byte-identical to what prod would have produced with
+its own rename.  True for the data (replication is
+content-preserving), but NOT for per-host state — CouchDB
+``_local`` checkpoints, view-index shards, design-doc state.
+For SKOL DBs this should be fine because:
+
+- ``_local`` checkpoints rebuild on first read.
+- Design docs are part of replicated content.
+- Per-experiment views are derived from the DBs, not stored
+  separately.
+
+But if any per-host view-index caches or design-doc state
+exists that we wouldn't want re-built from scratch on prod,
+the replicate-from-dev approach loses it.  Audit before
+step 3 starts.
+
+**For step 4 (ansible)**: the Stage 0 plan was originally
+sequenced "post-v4".  Whether the post-rename point counts as
+"post-v4" depends on whether v4 is judged stable by then.
+No hard dependency between rename and ansible — re-evaluate
+when we get there.
+
 ## Migration approach
 
 CouchDB doesn't support in-place database rename.  Two paths:
