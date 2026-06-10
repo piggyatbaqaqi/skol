@@ -120,6 +120,16 @@ class TestDefaults(unittest.TestCase):
             any('static' in p and p.endswith('.css') for p in paths))
         self.assertIn('/favicon.ico', paths)
 
+    def test_brat_route_is_a_routing_guard(self):
+        """/brat proxies to an on-demand backend (:8001). The probe
+        guards routing, not service uptime: 200 (up) and 503 (Apache
+        reached brat but the backend is down) both prove it is NOT
+        falling through to the CouchDB catch-all, which would 404."""
+        brat = next(c for c in DEFAULT_CHECKS if c.path == '/brat/')
+        self.assertIn(200, brat.expect_status)
+        self.assertIn(503, brat.expect_status)
+        self.assertNotIn(404, brat.expect_status)
+
 
 class TestReportAndExit(unittest.TestCase):
     def test_format_lists_pass_and_fail(self):

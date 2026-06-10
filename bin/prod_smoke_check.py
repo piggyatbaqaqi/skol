@@ -65,6 +65,11 @@ DEFAULT_CHECKS: List[Check] = [
     Check('django-static-css', '/skol/static/admin/css/base.css',
           (200,), 'text/css'),
     Check('favicon', '/favicon.ico', (200,)),
+    # brat proxies to an on-demand backend (:8001). 200 = up, 503 =
+    # Apache reached brat but the backend is down — both prove routing
+    # didn't fall through to CouchDB (which would 404). Routing guard,
+    # not an uptime check.
+    Check('brat', '/brat/', (200, 503)),
 ]
 
 
