@@ -244,6 +244,7 @@ for cmd in \
     manage_fungaria \
     predict_classifier \
     predict_v4 \
+    prod_smoke_check \
     rebuild_redis \
     replicate_dbs \
     replicate_experiment \
