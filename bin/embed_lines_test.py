@@ -27,6 +27,8 @@ from env_config import create_redis_client  # noqa: E402
 
 from embed_lines import (  # type: ignore[import]  # noqa: E402
     LineEmbedder,
+    _acquire_lock,
+    _release_lock,
     _resolve_skip_existing,
     iter_unique_lines,
     load_plaintext,
@@ -498,6 +500,75 @@ class TestProcessDocYeddaFallback(unittest.TestCase):
         for line in ('yedda line one', 'yedda line two'):
             key = redis_key(line, 'mpnet', prefix=self.prefix)
             self.assertTrue(self.r.exists(key))
+
+
+# ---------------------------------------------------------------------------
+# Build lock — value carries hostname:pid for "is the holder dead?" probes
+# ---------------------------------------------------------------------------
+
+
+class TestBuildLockHolderIdentity(unittest.TestCase):
+    """The build-lock value carries ``<hostname>:<pid>`` so an
+    operator who sees a stuck lock can immediately tell which
+    process to check (``ps -p <pid>`` / ``/proc/<pid>/cmdline``)
+    instead of having to scan all hosts.  Lock SEMANTICS are
+    unchanged — only the value content changes; nothing in the
+    codebase reads the value today."""
+
+    def setUp(self):
+        self.r = create_redis_client(decode_responses=False)
+        # Distinct key per test so the suite is order-independent.
+        self.lock_key = (
+            f'skol:build:sbert:test-{uuid.uuid4().hex[:8]}:lock'
+        )
+
+    def tearDown(self):
+        self.r.delete(self.lock_key)
+
+    def test_acquire_stores_hostname_and_pid(self):
+        import os, socket
+        ok = _acquire_lock(self.r, self.lock_key, verbosity=0)
+        self.assertTrue(ok)
+        value = self.r.get(self.lock_key)
+        self.assertIsNotNone(value)
+        decoded = value.decode()
+        expected = f'{socket.gethostname()}:{os.getpid()}'
+        self.assertEqual(decoded, expected)
+
+    def test_acquire_collision_reports_existing_holder(self):
+        """When a second invocation collides, the diagnostic
+        prints WHO currently holds the lock — that's the whole
+        point of the value change."""
+        import io
+        from contextlib import redirect_stdout
+        self.assertTrue(
+            _acquire_lock(self.r, self.lock_key, verbosity=1),
+        )
+        existing_value = self.r.get(self.lock_key).decode()
+        # Simulate a second invocation hitting the held lock.
+        captured = io.StringIO()
+        with redirect_stdout(captured):
+            ok = _acquire_lock(self.r, self.lock_key, verbosity=1)
+        self.assertFalse(ok)
+        out = captured.getvalue()
+        # The collision message must surface WHO holds it so an
+        # operator can decide whether the holder is still alive.
+        self.assertIn(existing_value, out)
+        self.assertIn(self.lock_key, out)
+
+    def test_release_deletes_value(self):
+        _acquire_lock(self.r, self.lock_key, verbosity=0)
+        self.assertIsNotNone(self.r.get(self.lock_key))
+        _release_lock(self.r, self.lock_key, verbosity=0)
+        self.assertIsNone(self.r.get(self.lock_key))
+
+    def test_value_is_not_legacy_building_string(self):
+        """Regression: the old value was the literal ``b'building'``.
+        This test pins the new shape so a future refactor doesn't
+        silently revert."""
+        _acquire_lock(self.r, self.lock_key, verbosity=0)
+        value = self.r.get(self.lock_key)
+        self.assertNotEqual(value, b'building')
 
 
 if __name__ == '__main__':

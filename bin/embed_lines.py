@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
+import socket
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -354,13 +356,39 @@ def _resolve_skip_existing(config: Dict[str, Any]) -> bool:
 def _acquire_lock(
     r: 'redis.Redis', lock_key: str, verbosity: int = 1,
 ) -> bool:
-    acquired = r.set(lock_key, b'building', nx=True, ex=_LOCK_TTL)
+    """Acquire the build lock.
+
+    Stores ``<hostname>:<pid>`` as the lock value so an operator
+    looking at a stuck lock can immediately tell which process to
+    check (e.g. ``ps -p <pid>`` / ``/proc/<pid>/cmdline``) instead
+    of having to scan every host that might run embed_lines.
+
+    The semantics (existence + TTL) are unchanged from the
+    pre-2026-06-10 ``b'building'`` placeholder — nothing in the
+    codebase reads the value today, so this is purely additive
+    diagnostic data.
+    """
+    holder = f'{socket.gethostname()}:{os.getpid()}'.encode()
+    acquired = r.set(lock_key, holder, nx=True, ex=_LOCK_TTL)
     if not acquired:
+        existing = r.get(lock_key)
+        existing_str = (
+            existing.decode(errors='replace')
+            if isinstance(existing, bytes) else str(existing)
+        )
         if verbosity >= 1:
-            print(f'Another build holds {lock_key}; exiting.')
+            print(
+                f'Another build holds {lock_key} '
+                f'(held by {existing_str}); exiting.  '
+                f'Check ``ps -p <pid>`` on that host to see if '
+                f'the holder is still alive.'
+            )
         return False
     if verbosity >= 1:
-        print(f'Acquired build lock: {lock_key} (TTL {_LOCK_TTL}s)')
+        print(
+            f'Acquired build lock: {lock_key} '
+            f'(holder={holder.decode()}, TTL {_LOCK_TTL}s)'
+        )
     return True
 
 
