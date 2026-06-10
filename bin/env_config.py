@@ -200,19 +200,22 @@ def _apply_experiment(
     """Apply experiment values to config, skipping CLI-explicit keys.
 
     Mapping from experiment document fields to config keys:
-        experiment.databases.ingest          -> ingest_db_name
-        experiment.databases.training        -> training_database
-        experiment.databases.annotations     -> annotations_db_name
-        experiment.databases.treatments      -> treatments_db_name, source_db
-        experiment.databases.treatments_full -> dest_db
-        experiment.databases.taxa            -> treatments_db_name, source_db (deprecated alias)
-        experiment.databases.taxa_full       -> dest_db                       (deprecated alias)
-        experiment.databases.golden          -> golden_db_name
-        experiment.databases.golden_ann      -> golden_ann_db_name
-        experiment.redis_keys.classifier_model -> classifier_model_key
-        experiment.redis_keys.embedding        -> embedding_name
-        experiment.redis_keys.menus            -> menus_key
-        experiment.model_name                  -> model_name
+        experiment.databases.ingest                  -> ingest_db_name
+        experiment.databases.training                -> training_database
+        experiment.databases.annotations             -> annotations_db_name
+        experiment.databases.annotations_eval        -> eval_annotations_db_name
+        experiment.databases.treatments_prose        -> treatments_db_name, source_db, treatments_prose_db_name
+        experiment.databases.treatments_structured   -> dest_db, treatments_structured_db_name
+        experiment.databases.treatments              -> treatments_db_name, source_db    (deprecated alias)
+        experiment.databases.treatments_full         -> dest_db                          (deprecated alias)
+        experiment.databases.taxa                    -> treatments_db_name, source_db    (deprecated alias)
+        experiment.databases.taxa_full               -> dest_db                          (deprecated alias)
+        experiment.databases.golden                  -> golden_db_name
+        experiment.databases.golden_ann              -> golden_ann_db_name
+        experiment.redis_keys.classifier_model       -> classifier_model_key
+        experiment.redis_keys.embedding              -> embedding_name
+        experiment.redis_keys.menus                  -> menus_key
+        experiment.model_name                        -> model_name
 
     Args:
         config: The config dict to modify in place.
@@ -226,15 +229,34 @@ def _apply_experiment(
         ('ingest', ['ingest_db_name']),
         ('training', ['training_database']),
         ('annotations', ['annotations_db_name']),
+        # Decision 2026-06-09: eval predictions land in a sibling
+        # DB with the ``_eval`` suffix.  ``annotations_eval`` is the
+        # experiment-doc field that lets operators override the
+        # default (otherwise build_variables synthesises
+        # ``{annotations_db}_eval`` automatically).
+        ('annotations_eval', ['eval_annotations_db_name']),
         # Backward-compat: legacy doc-field names from before the
-        # Step-3 migration.  Listed FIRST so a later assignment of the
-        # canonical 'treatments' / 'treatments_full' field can overwrite
+        # Step-3 (taxa→treatments) and 2026-06-10 (treatments→
+        # treatments_prose/_structured) migrations.  Listed FIRST so
+        # a later assignment of the canonical name can overwrite
         # them when both are present.
         ('taxa', ['treatments_db_name', 'source_db']),
         ('taxa_full', ['dest_db']),
-        # Post-Step-3 canonical doc-field names.
         ('treatments', ['treatments_db_name', 'source_db']),
         ('treatments_full', ['dest_db']),
+        # Post-2026-06-10 canonical doc-field names.  The prose tier
+        # is what extract_treatments_to_couchdb writes; the
+        # structured tier is what treatments_to_json writes.  Each
+        # populates the legacy script-level key (treatments_db_name
+        # / dest_db) AND the new role-named key so consumers can
+        # opt into either.
+        ('treatments_prose', [
+            'treatments_db_name', 'source_db',
+            'treatments_prose_db_name',
+        ]),
+        ('treatments_structured', [
+            'dest_db', 'treatments_structured_db_name',
+        ]),
         # Golden-set wiring (Step 1.B of docs/golden_v2_plan.md).
         # An experiment doc that omits these keys keeps the v1 default
         # values set in get_env_config(); v1 experiments stay correct.
@@ -335,6 +357,25 @@ def get_env_config() -> Dict[str, Any]:
 
         # Annotations output database (empty = write to ingest DB)
         'annotations_db_name': _get_env('ANNOTATIONS_DB_NAME', ''),
+
+        # Decision 2026-06-09: per-experiment eval predictions live
+        # in a sibling DB with the ``_eval`` suffix.  Empty default
+        # = no opinion; build_variables will synthesise
+        # ``{annotations_db_name}_eval`` from the production value.
+        'eval_annotations_db_name': _get_env(
+            'EVAL_ANNOTATIONS_DB_NAME', '',
+        ),
+
+        # Post-2026-06-10 canonical role names for the two treatment
+        # tiers.  Empty defaults = no opinion; the legacy
+        # treatments_db_name / dest_db keys (above) still flow from
+        # the same experiment-doc fields for script consumers.
+        'treatments_prose_db_name': _get_env(
+            'TREATMENTS_PROSE_DB_NAME', '',
+        ),
+        'treatments_structured_db_name': _get_env(
+            'TREATMENTS_STRUCTURED_DB_NAME', '',
+        ),
 
         # Golden evaluation set wiring.  Defaults are v1 names so any
         # script run without an --experiment / experiment-doc context

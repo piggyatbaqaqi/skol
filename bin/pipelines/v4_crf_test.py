@@ -123,14 +123,16 @@ class TestV4CRFPipeline(unittest.TestCase):
         self.assertIn('--source-db', cmd)
         sd_idx = cmd.index('--source-db')
         self.assertEqual(cmd[sd_idx + 1], 'skol_golden_v2')
-        # Output DB defaults to the production annotations DB so
-        # the 105 golden predictions land alongside production —
-        # operators who want a separate eval DB set
-        # eval_annotations_db_name on the experiment doc.
+        # Decision 2026-06-09: eval DBs use the ``_eval`` suffix
+        # so they sort directly next to their production
+        # counterparts and CANNOT pollute production data.
+        # Operators wanting the legacy shared-DB behaviour set
+        # ``eval_annotations_db_name`` on the experiment doc.
         self.assertIn('--output-database', cmd)
         od_idx = cmd.index('--output-database')
         self.assertEqual(
-            cmd[od_idx + 1], 'skol_exp_production_v4_ann_combined',
+            cmd[od_idx + 1],
+            'skol_exp_production_v4_ann_combined_eval',
         )
 
     def test_score_golden_uses_golden_ann_and_plaintext_dbs(self):

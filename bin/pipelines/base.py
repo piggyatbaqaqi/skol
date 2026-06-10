@@ -76,6 +76,16 @@ def build_variables(
     omits most fields still produces sensible commands.
     """
     annotations = config.get('annotations_db_name', '')
+    treatments_prose = config.get('treatments_prose_db_name', '')
+    treatments_structured = config.get('treatments_structured_db_name', '')
+    # Eval predictions go to a sibling DB by default — the
+    # ``_eval`` suffix keeps them sorted directly next to their
+    # production counterparts in ``_all_dbs`` while preventing
+    # eval runs from poisoning the production data the search
+    # UI reads.  Operators wanting the legacy shared-DB behaviour
+    # set ``eval_annotations_db_name`` on the doc.  Convention
+    # settled 2026-06-09; see docs/skol-db-naming-cleanup.md.
+    default_eval_ann = f'{annotations}_eval' if annotations else ''
     return {
         'experiment':       experiment_name,
         'input_db':         config.get('ingest_db_name', 'skol_dev'),
@@ -83,13 +93,15 @@ def build_variables(
             'training_database',
             'skol_training_v3_combined_no_golden',
         ),
-        'annotations_db':   annotations,
+        'annotations_db':           annotations,
+        'treatments_prose_db':      treatments_prose,
+        'treatments_structured_db': treatments_structured,
         'golden_db':        config.get('golden_db_name', 'skol_golden'),
         'golden_ann_db':    config.get(
             'golden_ann_db_name', 'skol_golden_ann_hand',
         ),
         'eval_ann_db':      config.get(
-            'eval_annotations_db_name', annotations,
+            'eval_annotations_db_name', default_eval_ann,
         ),
         'model_key_single': config.get(
             'classifier_model_key_single',

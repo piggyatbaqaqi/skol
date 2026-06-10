@@ -147,6 +147,16 @@ def _default_experiment(
     ``pipeline_name`` picks the per-family module that owns the
     pipeline shape; defaults to ``v3_logistic`` so new experiments
     that don't specify a family stay on the legacy path."""
+    # Post-2026-06-10 naming convention for per-experiment DBs:
+    # `skol_exp_<name>_<stage_num>_<role>[_eval]`.  Stage numbers
+    # are decimal-numeric (`01_00` for annotations, `02_00` for
+    # prose treatments, `03_00` for structured treatments) so
+    # `_all_dbs` listings cluster by experiment AND sort in
+    # pipeline order within each experiment.  See
+    # docs/skol-db-naming-cleanup.md for the full convention.
+    ann_db = f"skol_exp_{name}_01_00_ann"
+    prose_db = f"skol_exp_{name}_02_00_treatments_prose"
+    structured_db = f"skol_exp_{name}_03_00_treatments_structured"
     return {
         "_id": name,
         "model_name": "",
@@ -157,10 +167,17 @@ def _default_experiment(
         "databases": {
             "ingest": "skol_dev",
             "training": "skol_training",
-            "annotations": f"skol_exp_{name}_ann",
-            "spans": f"skol_exp_{name}_ann",
-            "taxa": f"skol_exp_{name}_taxa",
-            "taxa_full": f"skol_exp_{name}_taxa_full",
+            "annotations": ann_db,
+            # Decision 2026-06-09: eval predictions live in a
+            # sibling DB with the ``_eval`` suffix so they sort
+            # next to their production counterpart in `_all_dbs`
+            # AND cannot pollute the production data.
+            "annotations_eval": f"{ann_db}_eval",
+            "spans": ann_db,
+            "treatments_prose": prose_db,
+            "treatments_prose_eval": f"{prose_db}_eval",
+            "treatments_structured": structured_db,
+            "treatments_structured_eval": f"{structured_db}_eval",
         },
         "redis_keys": {
             "classifier_model": f"skol:classifier:model:{name}",

@@ -24,13 +24,13 @@ class TestV3LogisticPipeline(unittest.TestCase):
 
     def test_step_names_match_current_v3_pipeline(self):
         """The legacy list was: train, predict, annotate_jats,
-        extract_taxa, embed, treatments_to_json, annotate_spans,
+        extract_treatments, embed, treatments_to_json, annotate_spans,
         evaluate, build_vocab, build_sources_stats.  Evaluate
         splits into predict_golden + score_golden — everything
         else stays."""
         names = tuple(s.name for s in self.pipeline)
         self.assertEqual(names, (
-            'train', 'predict', 'annotate_jats', 'extract_taxa',
+            'train', 'predict', 'annotate_jats', 'extract_treatments',
             'embed', 'treatments_to_json', 'annotate_spans',
             'predict_golden', 'score_golden',
             'build_vocab', 'build_sources_stats',
@@ -43,7 +43,7 @@ class TestV3LogisticPipeline(unittest.TestCase):
         in any order."""
         sequential = tuple(s.name for s in self.pipeline if s.sequential)
         self.assertEqual(sequential, (
-            'train', 'predict', 'annotate_jats', 'extract_taxa',
+            'train', 'predict', 'annotate_jats', 'extract_treatments',
             'embed', 'treatments_to_json', 'annotate_spans',
         ))
 

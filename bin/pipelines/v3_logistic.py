@@ -35,7 +35,7 @@ PIPELINE = (
         ),
     ),
     PipelineStep(
-        name='extract_taxa',
+        name='extract_treatments',
         script='extract_treatments_to_couchdb',
         args=('--experiment', '{experiment}', '--skip-existing'),
     ),

@@ -278,6 +278,72 @@ class TestApplyExperimentTreatmentsMapping:
         assert config['treatments_db_name'] == 'new_value'
 
 
+class TestApplyExperimentTreatmentsProseStructuredMapping:
+    """Post-2026-06-10 rename: databases.treatments → treatments_prose,
+    databases.treatments_full → treatments_structured.  The new
+    fields populate BOTH the legacy script-level keys
+    (treatments_db_name / dest_db) AND the new role-named keys."""
+
+    def test_treatments_prose_field_propagates(self) -> None:
+        config = {
+            'treatments_db_name':      'skol_treatments_dev',
+            'source_db':               'skol_treatments_dev',
+            'treatments_prose_db_name': '',
+        }
+        exp = {'databases': {
+            'treatments_prose': 'skol_exp_x_02_00_treatments_prose',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        # Legacy keys still get populated so existing script consumers
+        # work unchanged.
+        assert (config['treatments_db_name']
+                == 'skol_exp_x_02_00_treatments_prose')
+        assert (config['source_db']
+                == 'skol_exp_x_02_00_treatments_prose')
+        # New role-named key for downstream consumers that opt in.
+        assert (config['treatments_prose_db_name']
+                == 'skol_exp_x_02_00_treatments_prose')
+
+    def test_treatments_structured_field_propagates(self) -> None:
+        config = {
+            'dest_db':                       'skol_treatments_full_dev',
+            'treatments_structured_db_name': '',
+        }
+        exp = {'databases': {
+            'treatments_structured': 'skol_exp_x_03_00_treatments_structured',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert (config['dest_db']
+                == 'skol_exp_x_03_00_treatments_structured')
+        assert (config['treatments_structured_db_name']
+                == 'skol_exp_x_03_00_treatments_structured')
+
+    def test_new_role_names_win_when_all_present(self) -> None:
+        """Doc carrying treatments_prose AND legacy treatments AND
+        legacy taxa — the new role name wins because the mapping
+        list places it last (later assignment overwrites)."""
+        config = {'treatments_db_name': ''}
+        exp = {'databases': {
+            'treatments_prose': 'new_prose_db',
+            'treatments':       'mid_treatments_db',
+            'taxa':             'legacy_taxa_db',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert config['treatments_db_name'] == 'new_prose_db'
+
+    def test_eval_annotations_db_field_propagates(self) -> None:
+        """databases.annotations_eval lets operators override the
+        synthesised ``{annotations_db}_eval`` default in
+        build_variables."""
+        config = {'eval_annotations_db_name': ''}
+        exp = {'databases': {
+            'annotations_eval': 'skol_exp_x_01_00_ann_eval_custom',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert (config['eval_annotations_db_name']
+                == 'skol_exp_x_01_00_ann_eval_custom')
+
+
 class TestParseEmbeddingExpire:
     """Embedding TTLs default to *no* expiry — only set one when the
     caller explicitly asks for a positive integer.  This is the policy

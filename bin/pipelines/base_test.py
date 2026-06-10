@@ -204,19 +204,52 @@ class TestBuildVariables(unittest.TestCase):
             self.assertIn(key, vars_, f'missing variable {key}')
         self.assertEqual(vars_['experiment'], 'production_v4')
 
-    def test_eval_ann_db_defaults_to_annotations_db(self):
-        """Step 7's behaviour: eval predictions go to the same DB
-        as production unless an operator overrides via
-        ``eval_annotations_db_name`` on the experiment doc."""
+    def test_eval_ann_db_defaults_to_eval_suffixed_sibling(self):
+        """Decision 2026-06-09: eval predictions go to a sibling
+        DB by default with the ``_eval`` suffix.  Sorts directly
+        next to the production DB in ``_all_dbs`` AND prevents
+        eval runs from poisoning the production data the search
+        UI reads."""
         vars_ = build_variables('x', {'annotations_db_name': 'shared_ann'})
-        self.assertEqual(vars_['eval_ann_db'], 'shared_ann')
+        self.assertEqual(vars_['eval_ann_db'], 'shared_ann_eval')
 
     def test_eval_ann_db_override_wins(self):
+        """Operators wanting the legacy shared-DB behaviour or a
+        custom DB path set ``eval_annotations_db_name`` on the
+        experiment doc — the explicit value wins."""
         vars_ = build_variables('x', {
             'annotations_db_name': 'prod_ann',
             'eval_annotations_db_name': 'eval_ann',
         })
         self.assertEqual(vars_['eval_ann_db'], 'eval_ann')
+
+    def test_eval_ann_db_empty_when_no_annotations(self):
+        """Defensive: with no annotations DB resolved, the eval
+        sibling stays empty (rather than a bare ``_eval`` string
+        that would otherwise fall out of f-string formatting)."""
+        vars_ = build_variables('x', {})
+        self.assertEqual(vars_['eval_ann_db'], '')
+
+    def test_treatments_prose_and_structured_db_variables(self):
+        """Decision 2026-06-09: the per-experiment treatment tiers
+        get their own variable slots so pipeline steps can address
+        them explicitly without falling through env_config in
+        every consumer.  Defaults are empty (no opinion) — the
+        per-experiment env_config resolution populates them at
+        runtime."""
+        vars_ = build_variables('x', {
+            'treatments_prose_db_name': 'skol_exp_x_02_00_treatments_prose',
+            'treatments_structured_db_name':
+                'skol_exp_x_03_00_treatments_structured',
+        })
+        self.assertEqual(
+            vars_['treatments_prose_db'],
+            'skol_exp_x_02_00_treatments_prose',
+        )
+        self.assertEqual(
+            vars_['treatments_structured_db'],
+            'skol_exp_x_03_00_treatments_structured',
+        )
 
     def test_safe_defaults_when_config_silent(self):
         """If env_config didn't pick up overrides, we don't crash —
