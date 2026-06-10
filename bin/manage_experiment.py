@@ -41,7 +41,7 @@ Examples:
     python manage_experiment.py skipstep jats_v1 annotate_jats
 
     # Reset a failed step to retry
-    python manage_experiment.py resetstep jats_v1 extract_taxa
+    python manage_experiment.py resetstep jats_v1 extract_treatments
 
     # Deploy an experiment to production
     python manage_experiment.py deploy jats_v1
