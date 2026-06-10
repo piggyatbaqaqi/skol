@@ -49,6 +49,7 @@ Examples:
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -480,6 +481,50 @@ def cmd_deploy(db, args) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _log_path_for_step(step_name: str) -> str:
+    """Per-step log path for the ``--log`` convenience flag.
+
+    The directory is ``$SKOL_LOG_DIR`` (default ``/var/log/skol``);
+    the file name is ``manage-experiment-<step>.log``.  Operators
+    who run the same step across multiple experiments share one
+    log per phase — typical workflow is ``tail -f`` on the file
+    matching the step they care about.
+    """
+    log_dir = os.environ.get('SKOL_LOG_DIR', '/var/log/skol')
+    return os.path.join(log_dir, f'manage-experiment-{step_name}.log')
+
+
+def _redirect_to_log(step_name: str) -> None:
+    """Open the per-step log in append mode and dup it onto
+    stdout + stderr so any subsequent ``print``, ``logging``, or
+    ``subprocess`` output lands in the file.
+
+    Prepends a timestamped header so a long-tailed log stays
+    scannable across cron invocations.  Idempotent within one
+    process invocation — call once at the start of cmd_runnext /
+    cmd_runstep.
+    """
+    log_path = _log_path_for_step(step_name)
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    # Flush before dup2 so any output that was already buffered
+    # in sys.stdout / sys.stderr lands on the original streams,
+    # not in the new log.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    fd = os.open(
+        log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644,
+    )
+    os.dup2(fd, 1)
+    os.dup2(fd, 2)
+    os.close(fd)
+    # Header for the new invocation.
+    print(
+        f'\n=== {_now_iso()} '
+        f'manage_experiment runstep/runnext step={step_name} ===',
+        flush=True,
+    )
+
+
 def _ensure_pipeline(doc: Dict[str, Any]) -> None:
     """Validate the ``pipeline`` field and lazily repair
     ``pipeline_state`` against the family's canonical step list.
@@ -764,6 +809,9 @@ def cmd_runnext(db: Any, args: Any) -> None:
         )
         sys.exit(1)
 
+    if getattr(args, "log", False):
+        _redirect_to_log(steps[step_idx]["name"])
+
     success = _run_step(
         db, doc, step_idx, args.name, force=getattr(args, "force", False),
     )
@@ -797,6 +845,12 @@ def cmd_runstep(db: Any, args: Any) -> None:
         fresh_doc: Dict[str, Any] = db[args.name]
         _ensure_pipeline(fresh_doc)
         steps = fresh_doc["pipeline_state"]["steps"]
+
+        if getattr(args, "log", False):
+            # Per-step redirect: each step in a multi-step run gets
+            # its own log file.  Inter-step status lines land in
+            # the log of whichever step is current.
+            _redirect_to_log(step_name)
 
         success = _run_step(
             db, fresh_doc, step_idx, args.name,
@@ -1005,6 +1059,17 @@ def main() -> None:
         action="store_true",
         help="Replace --skip-existing with --force in the step command",
     )
+    p_runnext.add_argument(
+        "--log",
+        action="store_true",
+        help=(
+            "Append stdout + stderr to "
+            "$SKOL_LOG_DIR/manage-experiment-<step>.log "
+            "(default $SKOL_LOG_DIR is /var/log/skol).  "
+            "Saves the typical ``> $LOGDIR/...log 2>&1`` "
+            "redirect in cron and shell history."
+        ),
+    )
 
     # runstep
     p_runstep = subparsers.add_parser(
@@ -1022,6 +1087,17 @@ def main() -> None:
         "--force",
         action="store_true",
         help="Replace --skip-existing with --force in the step command",
+    )
+    p_runstep.add_argument(
+        "--log",
+        action="store_true",
+        help=(
+            "Append stdout + stderr to "
+            "$SKOL_LOG_DIR/manage-experiment-<step>.log "
+            "(default $SKOL_LOG_DIR is /var/log/skol).  "
+            "For multi-step runs (--steps a,b,c) each step's "
+            "output goes to its own log file."
+        ),
     )
 
     # resetstep

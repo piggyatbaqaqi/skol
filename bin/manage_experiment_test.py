@@ -513,3 +513,36 @@ class TestCmdUpdatePipelineField:
                 name='legacy_v3', pipeline='bogus',
             ))
         assert 'v3_logistic' in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# --log convenience: stdout/stderr → /var/log/skol/manage-experiment-<step>.log
+# ---------------------------------------------------------------------------
+
+
+class TestLogPathResolution:
+    """``runnext`` / ``runstep --log`` redirect output to a
+    per-step log file under SKOL_LOG_DIR (default
+    ``/var/log/skol``).  Operators no longer have to remember
+    the ``> ${LOGDIR}/...`` redirect in shell history or cron."""
+
+    def test_default_path(self, monkeypatch: Any) -> None:
+        from manage_experiment import _log_path_for_step
+        monkeypatch.delenv('SKOL_LOG_DIR', raising=False)
+        assert _log_path_for_step('predict') == (
+            '/var/log/skol/manage-experiment-predict.log'
+        )
+
+    def test_env_overrides_dir(self, monkeypatch: Any) -> None:
+        from manage_experiment import _log_path_for_step
+        monkeypatch.setenv('SKOL_LOG_DIR', '/tmp/skol-logs')
+        assert _log_path_for_step('predict') == (
+            '/tmp/skol-logs/manage-experiment-predict.log'
+        )
+
+    def test_step_name_propagates(self, monkeypatch: Any) -> None:
+        from manage_experiment import _log_path_for_step
+        monkeypatch.setenv('SKOL_LOG_DIR', '/var/log/skol')
+        assert _log_path_for_step('extract_treatments') == (
+            '/var/log/skol/manage-experiment-extract_treatments.log'
+        )
