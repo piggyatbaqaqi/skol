@@ -74,12 +74,24 @@ class FakeHttpClient:
 
 
 class TestParsePlaziResponse(unittest.TestCase):
-    """Convert the Plazi API JSON array to (uuids, lnk_dois) tuple."""
+    """Convert the Plazi srsStats data list to (uuids, dois) tuple.
+
+    Post-2026-06-10 migration: the endpoint is ``srsStats/stats``
+    and entries carry ``PubLnkArticleDoi`` (the DOI of the article
+    each treatment was *extracted from*), not the legacy
+    ``LnkDoi`` (which was the DOI the treatment merely linked to).
+    The doc-level field name ``lnk_dois`` is preserved for storage
+    backward-compat — every doc previously written carries that
+    key, and renaming would require a full corpus migration."""
 
     def test_with_hits(self):
         body = [
-            {'DocCount': 1, 'DocUuid': 'AAAA', 'LnkDoi': '10.5281/zenodo.1'},
-            {'DocCount': 1, 'DocUuid': 'BBBB', 'LnkDoi': '10.5281/zenodo.2'},
+            {'DocCount': 1, 'DocUuid': 'AAAA',
+             'PubLnkArticleDoi': '10.5281/zenodo.1',
+             'TaxName': 'Genus species A'},
+            {'DocCount': 1, 'DocUuid': 'BBBB',
+             'PubLnkArticleDoi': '10.5281/zenodo.2',
+             'TaxName': 'Genus species B'},
         ]
         uuids, lnk_dois = parse_plazi_response(body)
         self.assertEqual(uuids, ['AAAA', 'BBBB'])
@@ -93,18 +105,36 @@ class TestParsePlaziResponse(unittest.TestCase):
     def test_entry_without_docuuid_is_skipped(self):
         """Defensive: API shape drift shouldn't crash us."""
         body = [
-            {'DocCount': 1, 'LnkDoi': '10.5281/zenodo.x'},  # no DocUuid
-            {'DocCount': 1, 'DocUuid': 'CCCC', 'LnkDoi': '10.5281/zenodo.y'},
+            {'DocCount': 1, 'PubLnkArticleDoi': '10.5281/zenodo.x'},
+            {'DocCount': 1, 'DocUuid': 'CCCC',
+             'PubLnkArticleDoi': '10.5281/zenodo.y'},
         ]
         uuids, lnk_dois = parse_plazi_response(body)
         self.assertEqual(uuids, ['CCCC'])
         self.assertEqual(lnk_dois, ['10.5281/zenodo.y'])
 
-    def test_entry_without_lnkdoi_keeps_uuid(self):
-        """LnkDoi can legitimately be absent for some treatments."""
+    def test_entry_without_articledoi_keeps_uuid(self):
+        """PubLnkArticleDoi can legitimately be absent for some
+        treatments — keep the UUID, blank slot in the parallel
+        list so the two stay index-aligned."""
         body = [{'DocCount': 1, 'DocUuid': 'DDDD'}]
         uuids, lnk_dois = parse_plazi_response(body)
         self.assertEqual(uuids, ['DDDD'])
+        self.assertEqual(lnk_dois, [''])
+
+    def test_legacy_lnkdoi_field_ignored(self):
+        """Regression: pre-migration responses carried ``LnkDoi``
+        (treatment-references-this-DOI semantics).  After the
+        srsStats migration we want ``PubLnkArticleDoi`` only —
+        ``LnkDoi`` would silently bring back the wrong semantics
+        if we accepted it as a fallback."""
+        body = [
+            {'DocCount': 1, 'DocUuid': 'EEEE',
+             'LnkDoi': '10.5281/zenodo.legacy'},  # should be ignored
+        ]
+        uuids, lnk_dois = parse_plazi_response(body)
+        self.assertEqual(uuids, ['EEEE'])
+        # No PubLnkArticleDoi field present → blank slot.
         self.assertEqual(lnk_dois, [''])
 
 
@@ -117,13 +147,16 @@ class TestComputePlaziUpdate(unittest.TestCase):
     """Build the dict that goes at ``doc['plazi']``."""
 
     def test_with_hits(self):
-        body = [{'DocCount': 1, 'DocUuid': 'AAAA', 'LnkDoi': '10.5281/x'}]
+        body = [
+            {'DocCount': 1, 'DocUuid': 'AAAA',
+             'PubLnkArticleDoi': '10.5281/x'},
+        ]
         now = '2026-06-03T12:00:00Z'
         update = compute_plazi_update(body, now)
         self.assertEqual(update['uuids'], ['AAAA'])
         self.assertEqual(update['lnk_dois'], ['10.5281/x'])
         self.assertEqual(update['looked_up_at'], now)
-        self.assertEqual(update['source'], 'plazi:GgSrvApi:v1')
+        self.assertEqual(update['source'], 'plazi:GgServer:srsStats:v1')
 
     def test_empty_still_stamps(self):
         """An empty Plazi hit still produces a fully-formed plazi
@@ -133,7 +166,7 @@ class TestComputePlaziUpdate(unittest.TestCase):
         self.assertEqual(update['uuids'], [])
         self.assertEqual(update['lnk_dois'], [])
         self.assertEqual(update['looked_up_at'], '2026-06-03T12:00:00Z')
-        self.assertEqual(update['source'], 'plazi:GgSrvApi:v1')
+        self.assertEqual(update['source'], 'plazi:GgServer:srsStats:v1')
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +228,7 @@ class TestShouldSkip(unittest.TestCase):
                 'error': {'reason': 'http_status', 'detail': '500',
                           'url': 'http://x'},
                 'failed_at': failed_at,
-                'source': 'plazi:GgSrvApi:v1',
+                'source': 'plazi:GgServer:srsStats:v1',
             },
         }
 
@@ -261,19 +294,26 @@ class TestQueryPlazi(unittest.TestCase):
     ``PlaziResult`` carrying either the parsed ``body`` (reason is None) or
     a structured failure ``reason``/``detail``, plus the exact ``url``."""
 
-    PLAZI_URL = 'https://api.plazi.org/GgSrvApi/v1'
+    PLAZI_URL = 'https://tb.plazi.org/GgServer'
 
     def test_success_returns_body_and_no_reason(self):
-        body = [{'DocCount': 1, 'DocUuid': 'AAAA', 'LnkDoi': '10.5281/x'}]
+        """srsStats returns {data: [...rows...]}; query_plazi unwraps
+        to the inner list so downstream code can iterate uniformly."""
+        rows = [
+            {'DocCount': 1, 'DocUuid': 'AAAA',
+             'PubLnkArticleDoi': '10.5281/x',
+             'TaxName': 'Genus species'},
+        ]
+        body = {'data': rows}
         client = FakeHttpClient(default=FakeResponse(200, body))
         result = query_plazi(
             '10.3897/mycokeys.99.107606',
             plazi_url=self.PLAZI_URL, http_client=client,
         )
         self.assertIsInstance(result, PlaziResult)
-        self.assertEqual(result.body, body)
+        self.assertEqual(result.body, rows)
         self.assertIsNone(result.reason)
-        self.assertIn('/Treatments/searchByDOI', result.url)
+        self.assertIn('/srsStats/stats', result.url)
 
     def test_non_200_reports_http_status_with_code(self):
         client = FakeHttpClient(default=FakeResponse(503, None))
@@ -308,64 +348,113 @@ class TestQueryPlazi(unittest.TestCase):
         self.assertIsNone(result.body)
         self.assertEqual(result.reason, 'bad_json')
 
-    def test_non_list_body_reports_not_list(self):
-        client = FakeHttpClient(default=FakeResponse(200, {'error': 'nope'}))
+    def test_non_dict_body_reports_not_list(self):
+        """srsStats wraps the rows in ``{data: [...]}``.  A response
+        that isn't a dict (or whose ``data`` isn't a list) carries
+        the legacy ``not_list`` reason for caller-disposition
+        compatibility."""
+        client = FakeHttpClient(default=FakeResponse(200, 'plain text'))
         result = query_plazi(
             '10.1/x', plazi_url=self.PLAZI_URL, http_client=client,
         )
         self.assertIsNone(result.body)
         self.assertEqual(result.reason, 'not_list')
 
-    def test_constructs_correct_url(self):
-        """DOI is URL-encoded, format=json is set, the path matches
-        the OpenAPI spec exactly (``/Treatments/searchByDOI``).
+    def test_data_key_missing_treated_as_empty(self):
+        """Defensive: a dict without ``data`` is treated as
+        zero-hit, not an error.  Plazi sometimes returns an empty
+        response shape; the caller writes ``uuids=[]`` and moves
+        on."""
+        client = FakeHttpClient(
+            default=FakeResponse(200, {'message': 'no data'})
+        )
+        result = query_plazi(
+            '10.1/x', plazi_url=self.PLAZI_URL, http_client=client,
+        )
+        self.assertEqual(result.body, [])
+        self.assertIsNone(result.reason)
 
-        Note: Plazi's 2026-06 advice to wrap the DOI in double-quotes
-        for exact match was tested live and did not work — see the
-        docstring of ``build_search_url`` for the data.  Until Plazi
-        documents a working syntax we send the bare DOI."""
-        client = FakeHttpClient(default=FakeResponse(200, []))
+    def test_constructs_correct_url(self):
+        """Post-2026-06-10: the endpoint is ``/srsStats/stats``,
+        the DOI is wrapped in URL-encoded double-quotes so Plazi's
+        parser does exact match (without quotes the dash-as-range
+        bug fires on any DOI containing ``-``).  The output and
+        grouping fields project enough for the parser to extract
+        UUIDs."""
+        client = FakeHttpClient(
+            default=FakeResponse(200, {'data': []})
+        )
         query_plazi(
             '10.5281/zenodo.7105224',
             plazi_url=self.PLAZI_URL, http_client=client,
         )
         self.assertEqual(len(client.urls_seen), 1)
         url = client.urls_seen[0]
-        self.assertIn('/Treatments/searchByDOI', url)
-        self.assertIn('format=json', url)
-        # Slashes encoded so Plazi's router doesn't parse them as
-        # path separators.  No quotes around the DOI — quoting
-        # breaks the lookup (confirmed live 2026-06-08).
-        self.assertIn('DOI=10.5281%2Fzenodo.7105224', url)
-        self.assertNotIn('%22', url)
+        self.assertIn('/srsStats/stats', url)
+        self.assertIn('format=JSON', url)
+        # FP-pubLnk.articleDoi=%22<encoded-doi>%22 — the quotes
+        # are part of the value, both encoded.
+        self.assertIn(
+            'FP-pubLnk.articleDoi=%2210.5281%2Fzenodo.7105224%22',
+            url,
+        )
+        # outputFields + groupingFields project the columns the
+        # parser reads.
+        self.assertIn('outputFields=doc.uuid', url)
+        self.assertIn('groupingFields=doc.uuid', url)
 
 
 class TestBuildSearchUrl(unittest.TestCase):
     """The URL builder is shared by query_plazi and the bug-report tool,
-    so it's a named helper."""
+    so it's a named helper.  Post-2026-06-10 migration: srsStats/stats
+    endpoint with FP-pubLnk.articleDoi filter and quoted DOI."""
 
-    PLAZI_URL = 'https://api.plazi.org/GgSrvApi/v1'
+    PLAZI_URL = 'https://tb.plazi.org/GgServer'
 
-    def test_encodes_doi_and_sets_format(self):
+    def test_uses_srsstats_endpoint(self):
         url = build_search_url('10.5281/zenodo.7105224', self.PLAZI_URL)
-        self.assertIn('/Treatments/searchByDOI', url)
-        self.assertIn('format=json', url)
-        self.assertIn('DOI=10.5281%2Fzenodo.7105224', url)
+        self.assertIn('/srsStats/stats', url)
+        self.assertNotIn('/Treatments/searchByDOI', url)
 
-    def test_does_not_wrap_doi_in_quotes(self):
-        """Regression: a previous attempt to wrap the DOI in
-        ``%22...%22`` (per Plazi 2026-06 advice) broke every lookup,
-        returning 0 entries for DOIs that previously matched.  The
-        quoted form must not be re-introduced without an
-        accompanying live verification."""
+    def test_quotes_doi_for_exact_match(self):
+        """Quoting defeats Plazi's dash-as-range bug.  On the
+        srsStats endpoint the quote-strip works correctly (unlike
+        the legacy searchByDOI endpoint, where quoted DOIs returned
+        0 even for known-good no-dash DOIs because that endpoint
+        matched ``LnkDoi`` rather than ``pubLnk.articleDoi``)."""
+        url = build_search_url('10.7717/peerj-cs.2153', self.PLAZI_URL)
+        # %22 around the URL-encoded DOI value.
+        self.assertIn(
+            'FP-pubLnk.articleDoi=%2210.7717%2Fpeerj-cs.2153%22',
+            url,
+        )
+
+    def test_quotes_doi_containing_dash_regression(self):
+        """The case that motivated the migration: 10.3852/11-180
+        triggered the dash-as-range parser on searchByDOI returning
+        ~700 k entries; on srsStats with quoting it exact-matches."""
         url = build_search_url('10.3852/11-180', self.PLAZI_URL)
-        self.assertNotIn('%22', url)
-        # Bare percent-encoded DOI, dash and all.
-        self.assertIn('DOI=10.3852%2F11-180', url)
+        self.assertIn(
+            'FP-pubLnk.articleDoi=%2210.3852%2F11-180%22', url,
+        )
+
+    def test_sets_format_json(self):
+        url = build_search_url('10.5281/zenodo.7105224', self.PLAZI_URL)
+        self.assertIn('format=JSON', url)
+
+    def test_projects_output_and_grouping_fields(self):
+        """The stats endpoint requires explicit output + grouping
+        field projection.  We project the minimum the parser needs:
+        doc.uuid + pubLnk.articleDoi + tax.name."""
+        url = build_search_url('10.5281/zenodo.7105224', self.PLAZI_URL)
+        self.assertIn('outputFields=doc.uuid', url)
+        self.assertIn('groupingFields=doc.uuid', url)
+        self.assertIn('pubLnk.articleDoi', url)
+        self.assertIn('tax.name', url)
 
     def test_trims_trailing_slash(self):
         url = build_search_url('10.1/x', self.PLAZI_URL + '/')
-        self.assertNotIn('//Treatments', url)
+        self.assertNotIn('//srsStats', url)
 
 
 # ---------------------------------------------------------------------------
@@ -420,12 +509,16 @@ class TestProcessDocIntegration(unittest.TestCase):
         self.now = '2026-06-03T12:00:00Z'
 
     def test_hit_writes_plazi_field(self):
-        body = [{'DocCount': 1, 'DocUuid': 'AAAA', 'LnkDoi': '10.5281/x'}]
-        client = FakeHttpClient(default=FakeResponse(200, body))
+        rows = [
+            {'DocCount': 1, 'DocUuid': 'AAAA',
+             'PubLnkArticleDoi': '10.3897/mycokeys.99.107606',
+             'TaxName': 'Genus species'},
+        ]
+        client = FakeHttpClient(default=FakeResponse(200, {'data': rows}))
         doc = {'_id': 'd1', 'doi': '10.3897/mycokeys.99.107606'}
         status, result = process_doc(
             doc, http_client=client,
-            plazi_url='https://api.plazi.org/GgSrvApi/v1',
+            plazi_url='https://tb.plazi.org/GgServer',
             now_iso=self.now, dry_run=False,
         )
         self.assertEqual(status, 'updated')
@@ -435,11 +528,11 @@ class TestProcessDocIntegration(unittest.TestCase):
         self.assertEqual(doc['plazi']['looked_up_at'], self.now)
 
     def test_miss_still_stamps(self):
-        client = FakeHttpClient(default=FakeResponse(200, []))
+        client = FakeHttpClient(default=FakeResponse(200, {'data': []}))
         doc = {'_id': 'd1', 'doi': '10.3390/jof11090688'}
         status, _ = process_doc(
             doc, http_client=client,
-            plazi_url='https://api.plazi.org/GgSrvApi/v1',
+            plazi_url='https://tb.plazi.org/GgServer',
             now_iso=self.now, dry_run=False,
         )
         self.assertEqual(status, 'updated')
@@ -447,12 +540,15 @@ class TestProcessDocIntegration(unittest.TestCase):
         self.assertEqual(doc['plazi']['looked_up_at'], self.now)
 
     def test_dry_run_skips_save(self):
-        body = [{'DocCount': 1, 'DocUuid': 'AAAA', 'LnkDoi': '10.5281/x'}]
-        client = FakeHttpClient(default=FakeResponse(200, body))
+        rows = [
+            {'DocCount': 1, 'DocUuid': 'AAAA',
+             'PubLnkArticleDoi': '10.3897/mycokeys.99.107606'},
+        ]
+        client = FakeHttpClient(default=FakeResponse(200, {'data': rows}))
         doc = {'_id': 'd1', 'doi': '10.3897/mycokeys.99.107606'}
         status, _ = process_doc(
             doc, http_client=client,
-            plazi_url='https://api.plazi.org/GgSrvApi/v1',
+            plazi_url='https://tb.plazi.org/GgServer',
             now_iso=self.now, dry_run=True,
         )
         self.assertEqual(status, 'dry_run')
@@ -468,7 +564,7 @@ class TestProcessDocIntegration(unittest.TestCase):
         doc = {'_id': 'd1', 'doi': '10.3897/mycokeys.99.107606'}
         status, result = process_doc(
             doc, http_client=client,
-            plazi_url='https://api.plazi.org/GgSrvApi/v1',
+            plazi_url='https://tb.plazi.org/GgServer',
             now_iso=self.now, dry_run=False,
         )
         self.assertEqual(status, 'sticky_failure')
@@ -486,7 +582,7 @@ class TestProcessDocIntegration(unittest.TestCase):
         doc = {'_id': 'd1', 'doi': '10.3897/mycokeys.99.107606'}
         status, result = process_doc(
             doc, http_client=client,
-            plazi_url='https://api.plazi.org/GgSrvApi/v1',
+            plazi_url='https://tb.plazi.org/GgServer',
             now_iso=self.now, dry_run=False,
         )
         self.assertEqual(status, 'transient_failure')
@@ -633,8 +729,11 @@ class TestPlaziOversizeGuard(unittest.TestCase):
     def test_oversize_response_is_runaway_with_count(self):
         from backfill_plazi_uuids import _MAX_PLAZI_ENTRIES
         over = _MAX_PLAZI_ENTRIES + 1
-        body = [{'DocUuid': f'u{i}', 'LnkDoi': '10.x/y'} for i in range(over)]
-        client = FakeHttpClient(default=FakeResponse(200, body))
+        rows = [
+            {'DocUuid': f'u{i}', 'PubLnkArticleDoi': '10.x/y'}
+            for i in range(over)
+        ]
+        client = FakeHttpClient(default=FakeResponse(200, {'data': rows}))
         result = query_plazi(
             '10.foo/bar', plazi_url='http://x', http_client=client,
         )
@@ -645,11 +744,11 @@ class TestPlaziOversizeGuard(unittest.TestCase):
 
     def test_at_cap_size_still_passes(self):
         from backfill_plazi_uuids import _MAX_PLAZI_ENTRIES
-        body = [
-            {'DocUuid': f'u{i}', 'LnkDoi': '10.x/y'}
+        rows = [
+            {'DocUuid': f'u{i}', 'PubLnkArticleDoi': '10.x/y'}
             for i in range(_MAX_PLAZI_ENTRIES)
         ]
-        client = FakeHttpClient(default=FakeResponse(200, body))
+        client = FakeHttpClient(default=FakeResponse(200, {'data': rows}))
         result = query_plazi(
             '10.foo/bar', plazi_url='http://x', http_client=client,
         )
@@ -684,15 +783,15 @@ class TestComputePlaziError(unittest.TestCase):
     def test_shape(self):
         result = PlaziResult(
             body=None, reason='http_status', detail='500',
-            url='https://api.plazi.org/GgSrvApi/v1/Treatments/'
-                'searchByDOI?DOI=10.1%2Fx&format=json',
+            url='https://tb.plazi.org/GgServer/srsStats/stats'
+                '?FP-pubLnk.articleDoi=%2210.1%2Fx%22&format=JSON',
         )
         stamp = compute_plazi_error(result, '2026-06-05T12:00:00Z')
         self.assertEqual(stamp['error']['reason'], 'http_status')
         self.assertEqual(stamp['error']['detail'], '500')
         self.assertEqual(stamp['error']['url'], result.url)
         self.assertEqual(stamp['failed_at'], '2026-06-05T12:00:00Z')
-        self.assertEqual(stamp['source'], 'plazi:GgSrvApi:v1')
+        self.assertEqual(stamp['source'], 'plazi:GgServer:srsStats:v1')
         self.assertNotIn('looked_up_at', stamp)
         self.assertNotIn('uuids', stamp)
 

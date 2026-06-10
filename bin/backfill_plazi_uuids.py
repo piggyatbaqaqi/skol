@@ -26,7 +26,7 @@ Storage shape (success):
         'uuids':        ['DOCUUID32CHAR...', ...],
         'lnk_dois':     ['10.5281/zenodo.X', ...],   # parallel to uuids
         'looked_up_at': '2026-06-03T17:42:31Z',
-        'source':       'plazi:GgSrvApi:v1',
+        'source':       'plazi:GgServer:srsStats:v1',
     }
 
 A *sticky* server-side failure instead stamps an error record (no
@@ -37,9 +37,9 @@ are left unstamped and retried every run:
 
     doc['plazi'] = {
         'error':     {'reason': 'http_status', 'detail': '500',
-                      'url': 'https://api.plazi.org/.../searchByDOI?...'},
+                      'url': 'https://tb.plazi.org/.../srsStats/stats?...'},
         'failed_at': '2026-06-05T12:00:00Z',
-        'source':    'plazi:GgSrvApi:v1',
+        'source':    'plazi:GgServer:srsStats:v1',
     }
 """
 from __future__ import annotations
@@ -68,12 +68,17 @@ from ingestors.rate_limited_client import (  # noqa: E402
 # Constants
 # ---------------------------------------------------------------------------
 
-_DEFAULT_PLAZI_URL = 'https://api.plazi.org/GgSrvApi/v1'
+_DEFAULT_PLAZI_URL = 'https://tb.plazi.org/GgServer'
 _USER_AGENT = (
     'skol-plazi-backfill/1.0 '
     '(https://synoptickeyof.life)'
 )
-_SOURCE_TAG = 'plazi:GgSrvApi:v1'
+# Source tag bumped 2026-06-10 to mark the srsStats migration.
+# Docs whose `source` is the old `plazi:GgSrvApi:v1` were stamped
+# via the searchByDOI endpoint (which matched against LnkDoi); a
+# fresh re-run under the new tag will overwrite with the more
+# accurate `pubLnk.articleDoi`-matched data.
+_SOURCE_TAG = 'plazi:GgServer:srsStats:v1'
 _DEFAULT_RATE_LIMIT_MIN_MS = 1000
 _DEFAULT_RATE_LIMIT_MAX_MS = 2000
 _DEFAULT_RE_CHECK_AFTER_DAYS = 365
@@ -164,12 +169,25 @@ def format_heartbeat(counts: Dict[str, int]) -> str:
 def parse_plazi_response(
     body: List[Dict[str, Any]],
 ) -> Tuple[List[str], List[str]]:
-    """Decompose the Plazi searchByDOI JSON array into parallel
+    """Decompose the Plazi srsStats data list into parallel
     ``(uuids, lnk_dois)`` lists.
 
+    Post-2026-06-10 migration: entries carry ``PubLnkArticleDoi``
+    (the DOI of the article each treatment was *extracted from*),
+    not the legacy ``LnkDoi`` (which was the DOI the treatment
+    merely *linked to*).  The doc-level field name ``lnk_dois`` is
+    preserved for storage backward-compat — every doc previously
+    written carries that key, and renaming would require a full
+    corpus migration.
+
     Entries without ``DocUuid`` are dropped (defensive against API
-    shape drift).  Entries without ``LnkDoi`` keep an empty string in
-    the parallel slot so the two lists stay index-aligned.
+    shape drift).  Entries without ``PubLnkArticleDoi`` keep an
+    empty string in the parallel slot so the two lists stay
+    index-aligned.
+
+    Legacy ``LnkDoi`` is deliberately NOT accepted as a fallback —
+    its semantics differ from ``PubLnkArticleDoi`` and silently
+    bringing those back would mask shape drift.
     """
     uuids: List[str] = []
     lnk_dois: List[str] = []
@@ -180,8 +198,10 @@ def parse_plazi_response(
         if not isinstance(uuid, str) or not uuid:
             continue
         uuids.append(uuid)
-        lnk = entry.get('LnkDoi')
-        lnk_dois.append(lnk if isinstance(lnk, str) else '')
+        article_doi = entry.get('PubLnkArticleDoi')
+        lnk_dois.append(
+            article_doi if isinstance(article_doi, str) else '',
+        )
     return uuids, lnk_dois
 
 
@@ -305,33 +325,52 @@ def should_skip(
 
 
 def build_search_url(doi: str, plazi_url: str) -> str:
-    """Construct the ``searchByDOI`` URL.  Shared by ``query_plazi`` and
-    the bug-report tool so the reproduction URL matches what we queried.
+    """Construct the Plazi srsStats query URL.  Shared by
+    ``query_plazi`` and the bug-report tool so the reproduction
+    URL matches what we queried.
 
     Trims a trailing slash on ``plazi_url`` and percent-encodes the
-    DOI (otherwise Plazi's router parses the DOI's own slash as a
-    path separator).
+    *quoted* DOI as one token.
 
-    KNOWN PLAZI QUIRK — DOIs with a dash trigger range parsing.
-    Plazi's 2026-06 reply recommended wrapping the DOI in
-    double-quotes for exact match, but a live probe showed:
+    Post-2026-06-10 migration: switched from
+    ``/Treatments/searchByDOI?DOI=<doi>`` to
+    ``/srsStats/stats?FP-pubLnk.articleDoi="<doi>"&outputFields=…``
+    for two reasons:
 
-    - ``DOI=%22<dash-DOI>%22`` still returns ~700 k entries.
-    - ``DOI="<dash-DOI>"`` (raw quote in URL) returns HTTP 400.
-    - ``DOI=%22<no-dash-DOI>%22`` returns 0 entries — quoting
-      actively BREAKS exact-match for DOIs that would otherwise
-      work, so we cannot ship the quoted form.
+    1. **Semantics**: searchByDOI matched against ``LnkDoi``
+       (treatments that *reference* the DOI), but we want
+       treatments *extracted from* an article with that DOI —
+       which is ``pubLnk.articleDoi`` on the stats endpoint.
+    2. **Dash bug**: Plazi's parser treats a bare ``-`` in the
+       DOI value as a range operator.  On searchByDOI the quote-
+       strip was broken, so quoting returned 0 even for
+       no-dash DOIs that should have matched (because the
+       semantics were wrong too — see #1).  On srsStats the
+       quote-strip works correctly, so quoted DOIs exact-match
+       and dashes no longer trigger the runaway.
 
-    So we send the bare DOI.  The ``_MAX_PLAZI_ENTRIES`` cap in
-    ``query_plazi`` catches the runaway responses and rejects them
-    as if Plazi were unreachable, leaving the doc unstamped for a
-    later retry once Plazi documents a syntax that actually works.
+    Live verification 2026-06-10:
+    - ``FP-pubLnk.articleDoi=%22<no-dash-DOI>%22`` returns the
+      treatments for that DOI (Plazi's example: 15 rows).
+    - ``FP-pubLnk.articleDoi=%22<dash-DOI>%22`` exact-matches
+      correctly (0 rows if Plazi lacks the article, N rows if
+      they have it).
+    - ``FP-pubLnk.articleDoi=<dash-DOI>`` (unquoted) still
+      triggers the range bug — that's why the quotes are
+      load-bearing.
+
+    The ``_MAX_PLAZI_ENTRIES`` cap in ``query_plazi`` remains as
+    defense-in-depth.
     """
     base = plazi_url.rstrip('/')
+    quoted_doi = f'"{doi}"'
+    fields = 'doc.uuid+pubLnk.articleDoi+tax.name'
     return (
-        f'{base}/Treatments/searchByDOI'
-        f'?DOI={quote(doi, safe="")}'
-        f'&format=json'
+        f'{base}/srsStats/stats'
+        f'?outputFields={fields}'
+        f'&groupingFields={fields}'
+        f'&FP-pubLnk.articleDoi={quote(quoted_doi, safe="")}'
+        f'&format=JSON'
     )
 
 
@@ -341,22 +380,32 @@ def query_plazi(
     plazi_url: str,
     http_client: Any,
 ) -> PlaziResult:
-    """Hit ``/Treatments/searchByDOI?DOI=<doi>&format=json`` via the
-    shared rate-limited client.
+    """Hit ``/srsStats/stats?…&FP-pubLnk.articleDoi="<doi>"&format=JSON``
+    via the shared rate-limited client.
 
-    Returns a :class:`PlaziResult`.  On success ``reason`` is None and
-    ``body`` is the parsed array.  Each failure mode carries a distinct
-    ``reason`` so the caller can pick a disposition (sticky vs transient)
-    and log reproduction info:
+    Returns a :class:`PlaziResult` carrying the unwrapped ``data``
+    list (i.e. the rows) — callers don't need to know about the
+    outer ``{data: [...]}`` envelope.
 
-    - ``request_error`` — the GET raised before any response (timeout /
-      connection / DNS).  The lone *transient* reason; ``detail`` is the
-      exception class name.
+    Each failure mode carries a distinct ``reason`` so the caller
+    can pick a disposition (sticky vs transient) and log
+    reproduction info:
+
+    - ``request_error`` — the GET raised before any response
+      (timeout / connection / DNS).  The lone *transient* reason;
+      ``detail`` is the exception class name.
     - ``http_status``   — non-200 response; ``detail`` is the code.
     - ``bad_json``      — 200 but the body didn't parse as JSON.
-    - ``not_list``      — 200, valid JSON, but not an array.
-    - ``runaway``       — 200 array larger than the sanity cap; ``detail``
-      is the entry count.  See ``_MAX_PLAZI_ENTRIES``.
+    - ``not_list``      — 200, valid JSON, but not a dict (or its
+      ``data`` value isn't a list).  Reason name preserved from
+      the pre-migration era for caller-disposition stability.
+    - ``runaway``       — 200 data list larger than the sanity cap;
+      ``detail`` is the entry count.  See ``_MAX_PLAZI_ENTRIES``.
+
+    A dict response with no ``data`` key (or with ``data`` absent)
+    is treated as zero hits, not an error — Plazi sometimes
+    returns that shape and the caller's contract is "store an
+    empty uuids list and move on" in that case.
     """
     url = build_search_url(doi, plazi_url)
     try:
@@ -369,11 +418,14 @@ def query_plazi(
         body = resp.json()
     except Exception:  # noqa: BLE001 — malformed JSON
         return PlaziResult(None, 'bad_json', None, url)
-    if not isinstance(body, list):
+    if not isinstance(body, dict):
         return PlaziResult(None, 'not_list', None, url)
-    if len(body) > _MAX_PLAZI_ENTRIES:
-        return PlaziResult(None, 'runaway', str(len(body)), url)
-    return PlaziResult(body, None, None, url)
+    data = body.get('data', [])
+    if not isinstance(data, list):
+        return PlaziResult(None, 'not_list', None, url)
+    if len(data) > _MAX_PLAZI_ENTRIES:
+        return PlaziResult(None, 'runaway', str(len(data)), url)
+    return PlaziResult(data, None, None, url)
 
 
 # ---------------------------------------------------------------------------
