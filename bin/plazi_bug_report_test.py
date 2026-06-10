@@ -351,8 +351,11 @@ class TestMainIntegration(unittest.TestCase):
             self.assertEqual(len(reports), 1)
             report_text = reports[0].read_text()
             self.assertIn('failure.csv', report_text)
-            # Retrieval instructions default to production CouchDB.
-            self.assertIn('synoptickeyof.life', report_text)
+            # Retrieval defaults to the Django attachment API under the
+            # production /skol script-name prefix.
+            self.assertIn(
+                'https://synoptickeyof.life/skol/api/pdf/skol/a/',
+                report_text)
 
     def test_missing_id_is_a_nonzero_exit(self):
         with tempfile.TemporaryDirectory() as tmp:

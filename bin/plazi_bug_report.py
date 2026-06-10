@@ -46,7 +46,7 @@ from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
 )
 
 
-_DEFAULT_SITE_URL = 'https://synoptickeyof.life'
+_DEFAULT_SITE_URL = 'https://synoptickeyof.life/skol'
 _DEFAULT_SOURCE_DB = 'skol'
 _DEFAULT_SCRIPT_NAME = 'reproduce.sh'
 _CSV_NAME = 'failure.csv'
