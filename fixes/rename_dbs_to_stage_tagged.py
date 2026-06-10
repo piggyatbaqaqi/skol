@@ -44,9 +44,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
@@ -138,8 +137,12 @@ def _post_replication(
         'create_target': create_target,
         'use_bulk_get': False,    # multipart-bug workaround
     }
+    # CouchDB 3.x requires auth on the request itself (to
+    # /_replicate), independent of the embedded source/target
+    # credentials in the body.
     resp = sess.post(
-        f'{couchdb_url}/_replicate', json=body, timeout=60,
+        f'{couchdb_url}/_replicate', json=body, timeout=600,
+        auth=creds,
     )
     if resp.status_code not in (200, 202):
         raise RuntimeError(

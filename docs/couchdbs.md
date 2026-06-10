@@ -9,6 +9,36 @@ Whenever a new database is added, update the relevant section below.  (See
 `CLAUDE.md` — `Whenever we create a new CouchDB database, please update
 docs/couchdbs.md`.)
 
+## 2026-06-10 rename pass — in progress
+
+Per the cleanup pass settled in
+[skol-db-naming-cleanup.md](skol-db-naming-cleanup.md), every
+per-experiment DB is being renamed to a stage-tagged shape:
+
+| Old role                       | New role                                   |
+|--------------------------------|--------------------------------------------|
+| `skol_exp_<X>_ann`             | `skol_exp_<X>_01_00_ann`                   |
+| `skol_exp_<X>_ann_eval`        | `skol_exp_<X>_01_00_ann_eval`              |
+| `skol_exp_<X>_taxa`            | `skol_exp_<X>_02_00_treatments_prose`      |
+| `skol_exp_<X>_treatments`      | `skol_exp_<X>_02_00_treatments_prose`      |
+| `skol_exp_<X>_taxa_full`       | `skol_exp_<X>_03_00_treatments_structured` |
+| `skol_exp_<X>_treatments_full` | `skol_exp_<X>_03_00_treatments_structured` |
+
+Stage tags cluster per-experiment DBs in `_all_dbs` listings AND
+sort them in pipeline order within each experiment.  The role
+names (`treatments_prose` / `treatments_structured`) replace
+the prior `treatments` / `treatments_full` pair.  An `_eval`-
+suffixed sibling exists for every per-experiment DB so eval
+predictions cannot poison production data the search UI reads.
+
+Shared DBs (no `_exp_` prefix) stay role-named with no stage
+tag — they sort outside the per-experiment grouping naturally.
+
+The legacy per-experiment DBs (e.g. `skol_exp_production_v4_ann_combined`)
+remain in place during the transition window so in-flight code that
+still reads them keeps working.  They'll be dropped in a follow-up
+pass once every consumer is verified on the new names.
+
 ## At a glance
 
 | DB | Docs | Size | Role |

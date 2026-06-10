@@ -550,7 +550,24 @@ freshness check to
 run `score_golden` unless the eval predictions were generated
 against the current model Redis key (compare a timestamp /
 model-key fingerprint stamped onto the eval DB on
-`predict_golden`).  Require `--force` to override.  ~10 lines.
+`predict_golden`).  Require `--force` to override.
+
+**Status 2026-06-10**: deferred to follow-up commit.  Honest
+scoping note: the "~10 lines" estimate undercounted the work.
+The implementation needs:
+
+1. `bin/predict_v4.py` stamps the model Redis key + a
+   timestamp + the script's git SHA into a ``_local`` doc
+   on the eval output DB at prediction time.  ~15 lines.
+2. `bin/evaluate_golden.py` reads that ``_local`` doc and
+   compares the stamped fingerprint to the currently-resolved
+   model Redis key.  Refuses if they don't match unless
+   ``--force`` is passed.  ~15 lines + argparse + tests.
+
+Total: ~40 lines + TDD per CLAUDE.md.  Not the 10-line drive-by
+the original plan implied.  Tracked here so it doesn't get
+forgotten when an operator next cites an F1 number from a stale
+eval DB.
 
 Without this, an F1 number you cite today could be from a
 predict commit 3 months stale — exactly the failure mode the
