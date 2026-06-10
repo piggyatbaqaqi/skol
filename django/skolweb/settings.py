@@ -263,7 +263,13 @@ TREATMENTS_DB_NAME = os.environ.get(
 # Deprecated alias — read by legacy code paths.
 TAXON_DB_NAME = TREATMENTS_DB_NAME
 
-# Vocabulary tree configuration
+# Vocabulary tree configuration.  Default points at the legacy
+# shared structured-treatments DB; per-experiment resolution
+# (via resolve_treatments_structured_db in search/views.py) walks
+# the full migration chain (treatments_structured → treatments_full
+# → taxa_full) before falling back to this default, so a doc on
+# any point of the partial-migration timeline still resolves to
+# the right DB.  Override via VOCAB_TREE_DB env var.
 VOCAB_TREE_DB = os.environ.get('VOCAB_TREE_DB', 'skol_treatments_full_dev')
 
 # Path to SKOL bin scripts (embed_treatments.py, build_vocab_tree.py, etc.)

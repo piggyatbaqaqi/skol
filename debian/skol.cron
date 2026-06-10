@@ -22,7 +22,12 @@ MAILTO=piggy.yarroll+skol@gmail.com
 SKOL_SITE_URL="https://synoptickeyof.life/skol"
 COUCHDB_URL="http://localhost:5984"
 INGEST_DATABASE="skol_dev"
+# Legacy variable kept for backward-compat with un-migrated scripts that
+# still read $TAXON_DATABASE.  The post-2026-06-10 canonical role name
+# is `treatments_prose`; per-experiment runs read the DB through
+# env_config's experiment.databases.treatments_prose mapping instead.
 TAXON_DATABASE="skol_taxa_dev"
+TREATMENTS_PROSE_DATABASE="skol_treatments_dev"
 LOGDIR=/var/log/skol
 VERBOSITY=1
 REDIS_PORT=6380
@@ -73,7 +78,7 @@ SKIP_EXISTING=1
 0 4 * * * skol time /opt/skol/bin/extract_treatments_to_couchdb --verbosity=2 > ${LOGDIR}/extract-treatments-to-couchdb.log 2>&1
 0 6 * * * skol time /opt/skol/bin/embed_treatments --verbosity=2 --expire None --force > ${LOGDIR}/embed-treatments.log 2>&1
 0 22 * * * skol time /opt/skol/bin/treatments_to_json --verbosity=2 --incremental --skip-existing --use-constrained-decoding --graceful-degradation --timeout 1200 > ${LOGDIR}/treatments-to-json.log 2>&1
-0 22 * * 0,2,4,6 skol time /opt/skol/bin/build_vocab_tree --verbosity=2 --db=skol_taxa_full_dev > ${LOGDIR}/build-vocab-tree.log 2>&1
+0 22 * * 0,2,4,6 skol time /opt/skol/bin/build_vocab_tree --verbosity=2 --db=skol_treatments_full_dev > ${LOGDIR}/build-vocab-tree.log 2>&1
 # v3_hand experiment — keeps the v3 hand-only baseline up to date so the
 # v3_hand Treatments + embeddings track new docs ingested into skol_dev.
 # Slots are offset from the v1 jobs (predict 00:00, extract 04:00, embed
@@ -81,7 +86,7 @@ SKIP_EXISTING=1
 # v3_hand training corpus is fixed.  See docs/v3_buildout.md §Phase E.
 30 3 * * 0 skol time /opt/skol/bin/manage_experiment runstep production_v3_hand train > ${LOGDIR}/v3_hand-train.log 2>&1
 0 12 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand predict > ${LOGDIR}/v3_hand-predict.log 2>&1
-0 14 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand extract_taxa > ${LOGDIR}/v3_hand-extract.log 2>&1
+0 14 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand extract_treatments > ${LOGDIR}/v3_hand-extract.log 2>&1
 0 16 * * * skol time /opt/skol/bin/manage_experiment runstep production_v3_hand embed > ${LOGDIR}/v3_hand-embed.log 2>&1
 # treatments_to_json runs last in the v3_hand daily chain — LLM-based and
 # slow, but independent of embed (reads from treatments DB, writes to the

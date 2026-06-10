@@ -76,6 +76,50 @@ def get_user_experiment(request):
     return experiment_name, doc
 
 
+# Resolution fallback chain for the structured-treatments DB.
+# Walked in order; the first non-empty value wins.  The chain
+# spans every name the DB has been called across the partial
+# migrations (taxa_full → treatments_full → treatments_structured)
+# so a doc anywhere on that timeline still resolves to a real DB.
+_TREATMENTS_STRUCTURED_DB_FIELDS = (
+    'treatments_structured',  # post-2026-06-10 canonical
+    'treatments_full',        # 2026 mid-migration name
+    'taxa_full',              # pre-2026 legacy name
+)
+_TREATMENTS_PROSE_DB_FIELDS = (
+    'treatments_prose',       # post-2026-06-10 canonical
+    'treatments',             # 2026 mid-migration name
+    'taxa',                   # pre-2026 legacy name
+)
+
+
+def resolve_treatments_structured_db(exp, default):
+    """Walk the per-experiment fallback chain to find the
+    structured-treatments DB name.  ``exp`` may be None (no
+    experiment context); ``default`` is the value to return
+    when none of the per-experiment fields are populated."""
+    if not exp:
+        return default
+    databases = exp.get('databases', {}) or {}
+    for field in _TREATMENTS_STRUCTURED_DB_FIELDS:
+        value = databases.get(field)
+        if value:
+            return value
+    return default
+
+
+def resolve_treatments_prose_db(exp, default):
+    """Same fallback chain for the prose-treatments DB."""
+    if not exp:
+        return default
+    databases = exp.get('databases', {}) or {}
+    for field in _TREATMENTS_PROSE_DB_FIELDS:
+        value = databases.get(field)
+        if value:
+            return value
+    return default
+
+
 class ExperimentListView(APIView):
     """
     API endpoint to list available experiments.
@@ -405,7 +449,7 @@ class BuildVocabTreeView(APIView):
     Request body (optional):
         {
             "force": false,  // Set to true to rebuild even if exists
-            "db_name": "skol_taxa_full_dev"  // Optional database override
+            "db_name": "skol_treatments_full_dev"  // Optional database override
         }
 
     Returns:
@@ -473,16 +517,18 @@ class BuildVocabTreeView(APIView):
                 (request.user.is_staff or request.user.is_superuser)
             )
 
-            # Get parameters - force and db_name only allowed for admins
+            # Get parameters - force and db_name only allowed for admins.
+            # Resolve the structured-treatments DB via the per-experiment
+            # fallback chain (treatments_structured → treatments_full →
+            # taxa_full) so a doc anywhere on the partial-migration
+            # timeline still picks the right DB.
             _, exp = get_user_experiment(request)
-            if exp:
-                default_db = exp.get(
-                    'databases', {}
-                ).get('taxa_full', 'skol_taxa_full_dev')
-            else:
-                default_db = getattr(
-                    settings, 'VOCAB_TREE_DB', 'skol_taxa_full_dev'
-                )
+            settings_default = getattr(
+                settings, 'VOCAB_TREE_DB', 'skol_treatments_full_dev',
+            )
+            default_db = resolve_treatments_structured_db(
+                exp, settings_default,
+            )
 
             if is_admin:
                 force = request.data.get('force', False)
@@ -2403,20 +2449,18 @@ class JsonClassifierView(APIView):
                 sys.path.insert(0, skol_root)
             from treatments_classifier.treatments_json_classifier import TreatmentsJSONClassifier
 
-            # Resolve the per-experiment ``treatments_full`` DB (the
-            # one bin/treatments_to_json.py writes JSON-annotated docs
-            # into).  Fallback chain: experiment.databases.treatments_full
+            # Resolve the per-experiment structured-treatments DB
+            # (where bin/treatments_to_json.py writes JSON-annotated
+            # docs).  Per-experiment field fallback chain via
+            # resolve_treatments_structured_db:
+            # treatments_structured → treatments_full → taxa_full
             # → settings.VOCAB_TREE_DB → "skol_treatments_full_dev".
-            # Same migration-gap fix as the text classifier above.
             _, exp = get_user_experiment(request)
             default_full_db = getattr(
                 settings, 'VOCAB_TREE_DB', 'skol_treatments_full_dev',
             )
-            classifier_db = (
-                exp.get('databases', {}).get(
-                    'treatments_full', default_full_db,
-                )
-                if exp else default_full_db
+            classifier_db = resolve_treatments_structured_db(
+                exp, default_full_db,
             )
             classifier = TreatmentsJSONClassifier(
                 couchdb_url=settings.COUCHDB_URL,
