@@ -10,5 +10,8 @@
 * Update docs/api-reference.md every time we change REST APIs.
 * Priority order of CLI parameters is CLI --<parameter>, environment variable <PARAMETER>, config file (if we have one), and finally hardcoded default.
 * Changes are made with TDD. Write tests first, get them confirmed by a human, and then make the test pass with an implementation.
+* When failing tests are checked into git, they get pytest xfail tags so the head always has all tests passing--this allows bisect bug searches.
+* A correllary of the last two constraints is that we need to implement bare skeletons of implementations so that there's enough to import--we can not xfail an import failure.
 * Whenever we create a new CouchDB database, please update docs/couchdbs.md.
 * Programs that are needed for one time fixes go in fixes/ rather than bin/.
+* Please don't check credentials (especially passwords) into git.
