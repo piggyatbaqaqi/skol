@@ -1,0 +1,5 @@
+python manage.py shell -c "
+from allauth.socialaccount.models import SocialAccount
+for sa in SocialAccount.objects.select_related('user').order_by('provider','user__username'):
+    print(f'{sa.provider:<8} {sa.user.username:<25} {sa.user.email:<35} last_login={sa.user.last_login}')
+"
