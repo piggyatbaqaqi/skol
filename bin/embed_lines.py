@@ -197,7 +197,7 @@ class LineEmbedder:
         dim: Optional[int] = None,
         encoder: Optional[EncoderFn] = None,
         key_prefix: str = _DEFAULT_KEY_PREFIX,
-        batch_size: int = 64,
+        batch_size: int = 256,
     ) -> None:
         if model_tag not in _MODEL_NAMES:
             raise ValueError(
@@ -243,15 +243,60 @@ class LineEmbedder:
         return redis_key(line, self.model_tag, prefix=self.key_prefix)
 
     def get_existing(self, line: str) -> Optional[bytes]:
-        """Return the cached bytes for ``line`` or ``None``."""
+        """Return the cached bytes for ``line`` or ``None``.
+
+        Single-line helper.  Hot-path callers should use
+        :meth:`get_existing_batch` so the Redis round trips are
+        amortized across the doc rather than incurred per line."""
         result = self.redis_client.get(self.key_for(line))
         return result  # type: ignore[return-value]
 
+    def get_existing_batch(
+        self, lines: List[str],
+    ) -> List[Optional[bytes]]:
+        """Return cached bytes for each line, parallel to ``lines``.
+
+        Single ``MGET`` round trip; ``None`` for cache misses.
+        Replaces N per-line ``get_existing`` calls inside the doc
+        loop — at ~1 k lines per doc on a 30 k-doc corpus, the
+        round-trip savings dominate wall-clock.
+        """
+        if not lines:
+            return []
+        keys = [self.key_for(line) for line in lines]
+        return list(self.redis_client.mget(keys))
+
     def write_one(self, line: str, vector: np.ndarray) -> None:
+        """Cache one line→vector pair.
+
+        Single-line helper.  Hot-path callers should use
+        :meth:`write_many` so the writes for one doc go in a single
+        pipelined burst."""
         self.redis_client.set(
             self.key_for(line),
             vector.astype(np.float32).tobytes(),
         )
+
+    def write_many(
+        self, items: 'List[Tuple[str, np.ndarray]]',
+    ) -> None:
+        """Cache multiple ``(line, vector)`` pairs in one pipelined
+        Redis burst.
+
+        ``transaction=False`` because the writes are independent —
+        atomicity isn't required and non-transactional pipelined
+        writes are faster (the server can interleave them with
+        other clients' commands).
+        """
+        if not items:
+            return
+        pipe = self.redis_client.pipeline(transaction=False)
+        for line, vec in items:
+            pipe.set(
+                self.key_for(line),
+                vec.astype(np.float32).tobytes(),
+            )
+        pipe.execute()
 
 
 # ---------------------------------------------------------------------------
@@ -310,9 +355,14 @@ def process_doc(
     if force:
         to_embed = unique_lines
     else:
+        # ONE MGET round trip covers the whole doc.  Pre-batching
+        # this was the dominant wall-clock cost on mostly-cached
+        # corpora because the previous per-line GET loop forced
+        # the GPU to sit idle waiting on Redis I/O.
+        existing = embedder.get_existing_batch(unique_lines)
         to_embed = []
-        for line in unique_lines:
-            if skip_existing and embedder.get_existing(line) is not None:
+        for line, val in zip(unique_lines, existing):
+            if skip_existing and val is not None:
                 counts['cached_hits'] += 1
             else:
                 to_embed.append(line)
@@ -321,8 +371,10 @@ def process_doc(
         return counts
 
     vectors = embedder.embed_batch(to_embed)
-    for line, vec in zip(to_embed, vectors):
-        embedder.write_one(line, vec)
+    # ONE pipelined burst writes every new embedding for this doc;
+    # the previous per-line SET loop had the same round-trip
+    # amplification issue as the cache check above.
+    embedder.write_many(list(zip(to_embed, vectors)))
     counts['embedded'] = len(to_embed)
     return counts
 
@@ -421,8 +473,10 @@ def main() -> int:
         help='CouchDB database to walk.',
     )
     parser.add_argument(
-        '--batch-size', type=int, default=64, metavar='N',
-        help='SentenceTransformer batch size (default: 64).',
+        '--batch-size', type=int, default=256, metavar='N',
+        help='SentenceTransformer batch size (default: 256, sized '
+             'for an RTX 5090 with ~25 GB VRAM; for smaller GPUs '
+             '(3050, 4080 12 GB) pass an explicit smaller value).',
     )
     parser.add_argument(
         '--skip-lock', action='store_true',

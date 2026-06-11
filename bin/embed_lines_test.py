@@ -571,5 +571,160 @@ class TestBuildLockHolderIdentity(unittest.TestCase):
         self.assertNotEqual(value, b'building')
 
 
+# ---------------------------------------------------------------------------
+# Batched Redis primitives — MGET for cache check, pipeline for writes
+# ---------------------------------------------------------------------------
+
+
+class TestBatchedRedisOperations(unittest.TestCase):
+    """The cache-check (every doc's unique lines, mostly already-cached)
+    and write (the new lines, rarely the majority) loops in
+    ``process_doc`` are the hot path when running over a 30k-doc
+    corpus.  Both must batch into single Redis round trips per doc
+    rather than per-line round trips — when most lines are cached,
+    per-line GETs are the wall-clock dominator and the GPU sits
+    idle waiting for I/O."""
+
+    def setUp(self):
+        self.r = create_redis_client(decode_responses=False)
+        # Per-test prefix so the suite is order-independent.
+        self.prefix = f'test:embed:{uuid.uuid4().hex[:8]}:'
+        # Fake-encoder LineEmbedder (no real SBERT load).
+        self.embedder = LineEmbedder(
+            model_tag='mpnet',
+            redis_client=self.r,
+            key_prefix=self.prefix,
+            encoder=lambda lines: np.zeros(
+                (len(lines), 768), dtype=np.float32,
+            ),
+        )
+
+    def tearDown(self):
+        # Drop any keys this test wrote.
+        for key in self.r.scan_iter(match=f'{self.prefix}*', count=1000):
+            self.r.delete(key)
+
+    def test_get_existing_batch_returns_parallel_list(self):
+        """Result list is parallel to the input ``lines`` list.
+        Hits are the cached bytes; misses are ``None``."""
+        # Cache one line so it's a hit; leave the others as misses.
+        self.embedder.write_one(
+            'cached', np.zeros((1, 768), dtype=np.float32),
+        )
+        result = self.embedder.get_existing_batch(
+            ['cached', 'missing1', 'missing2'],
+        )
+        self.assertEqual(len(result), 3)
+        self.assertIsNotNone(result[0])
+        self.assertIsNone(result[1])
+        self.assertIsNone(result[2])
+
+    def test_get_existing_batch_empty_input(self):
+        """An empty input must not hit Redis at all — no MGET on
+        an empty key list (which redis-py would treat as an error
+        on some clients)."""
+        self.assertEqual(self.embedder.get_existing_batch([]), [])
+
+    def test_write_many_caches_all_pairs(self):
+        """All ``(line, vector)`` pairs land in Redis under the
+        expected keys after one ``write_many`` call."""
+        vecs = np.ones((3, 768), dtype=np.float32)
+        items = [
+            ('alpha', vecs[0]),
+            ('beta',  vecs[1]),
+            ('gamma', vecs[2]),
+        ]
+        self.embedder.write_many(items)
+        for line, _ in items:
+            key = redis_key(line, 'mpnet', prefix=self.prefix)
+            self.assertIsNotNone(self.r.get(key))
+
+    def test_write_many_empty_input(self):
+        """Empty input is a no-op (no exceptions, no Redis traffic)."""
+        self.embedder.write_many([])  # must not raise.
+
+    def test_process_doc_uses_mget_not_per_line_get(self):
+        """Mock the Redis client to assert the contract: one ``mget``
+        for the cache check, ZERO per-line ``get`` calls.  This is
+        the regression guard for the optimization — without it a
+        future refactor could silently put us back on the slow
+        per-line loop."""
+        mock_r = mock.MagicMock()
+        # Three lines, none cached.
+        mock_r.mget.return_value = [None, None, None]
+        # Pipeline is also called for the writes; return a mock that
+        # accepts .set() and .execute() calls.
+        mock_r.pipeline.return_value = mock.MagicMock()
+        embedder = LineEmbedder(
+            model_tag='mpnet',
+            redis_client=mock_r,
+            key_prefix=self.prefix,
+            encoder=lambda lines: np.zeros(
+                (len(lines), 768), dtype=np.float32,
+            ),
+        )
+        # Fake db that yields three lines for the one doc.
+        fake_db = mock.MagicMock()
+        fake_db.get_attachment.side_effect = (
+            lambda doc_id, name: b'l1\nl2\nl3\n'
+            if name == 'article.txt' else None
+        )
+        process_doc(
+            fake_db, 'd1', embedder,
+            skip_existing=True, force=False, dry_run=False,
+        )
+        # The hot-path assertions: exactly one MGET, zero per-line
+        # GETs for the cache check.
+        self.assertEqual(mock_r.mget.call_count, 1)
+        self.assertEqual(mock_r.get.call_count, 0)
+
+    def test_process_doc_uses_pipeline_for_writes(self):
+        """Mock-based: one pipeline burst per doc for the writes,
+        no per-line ``redis_client.set`` calls."""
+        mock_r = mock.MagicMock()
+        mock_r.mget.return_value = [None, None, None]  # all need embedding
+        pipe = mock.MagicMock()
+        mock_r.pipeline.return_value = pipe
+        embedder = LineEmbedder(
+            model_tag='mpnet',
+            redis_client=mock_r,
+            key_prefix=self.prefix,
+            encoder=lambda lines: np.zeros(
+                (len(lines), 768), dtype=np.float32,
+            ),
+        )
+        fake_db = mock.MagicMock()
+        fake_db.get_attachment.side_effect = (
+            lambda doc_id, name: b'l1\nl2\nl3\n'
+            if name == 'article.txt' else None
+        )
+        process_doc(
+            fake_db, 'd1', embedder,
+            skip_existing=True, force=False, dry_run=False,
+        )
+        # One pipeline acquired; 3 sets via pipeline; pipeline.execute
+        # called exactly once for the doc.
+        self.assertEqual(mock_r.pipeline.call_count, 1)
+        self.assertEqual(pipe.set.call_count, 3)
+        self.assertEqual(pipe.execute.call_count, 1)
+        # And zero direct (non-pipelined) sets.
+        self.assertEqual(mock_r.set.call_count, 0)
+
+
+class TestDefaultBatchSize(unittest.TestCase):
+    """Default batch size is 256, sized for the RTX 5090.  Smaller
+    GPUs (3050, 4080 12 GB) should pass ``--batch-size`` explicitly."""
+
+    def test_lineembedder_default_batch_size_is_256(self):
+        embedder = LineEmbedder(
+            model_tag='mpnet',
+            redis_client=mock.MagicMock(),
+            encoder=lambda lines: np.zeros(
+                (len(lines), 768), dtype=np.float32,
+            ),
+        )
+        self.assertEqual(embedder.batch_size, 256)
+
+
 if __name__ == '__main__':
     unittest.main()
