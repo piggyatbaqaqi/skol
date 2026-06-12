@@ -1,6 +1,7 @@
 *~
 *checkpoint.ipynb
 .mypy_cache
+nohup.out
 
 # Environment variables (contains sensitive credentials)
 .env
