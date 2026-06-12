@@ -1,4 +1,4 @@
-skol-gnservices (1.1.6+1.15.0-2) unstable; urgency=medium
+skol-gnservices (1.1.6+1.15.0-3) unstable; urgency=medium
 
   * Initial packaging.  Bundles gnfinder v1.1.6 and gnparser v1.15.0
     as systemd services on localhost:9080 (gnfinder) and localhost:9081
