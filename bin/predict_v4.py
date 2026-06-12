@@ -331,10 +331,19 @@ def predict_all(
         if spans_dict is None or ph_dict is None:
             counts['skipped_no_attachments'] += 1
             if verbosity >= 1:
-                print(
-                    f'  skip {doc_id}: missing spans / page-headers '
-                    '— re-run annotate_v4',
-                )
+                if plaintext is None:
+                    # Both spans AND plaintext missing — this is an
+                    # orphan, not a re-annotate situation.  The
+                    # _no_plaintext_message helper surfaces the
+                    # XML-availability hint if applicable, so the
+                    # operator can decide whether to re-ingest from
+                    # XML rather than chase annotate_v4.
+                    print(_no_plaintext_message(input_db, doc_id))
+                else:
+                    print(
+                        f'  skip {doc_id}: missing spans / '
+                        'page-headers — re-run annotate_v4',
+                    )
             continue
         if plaintext is None:
             counts['skipped_no_plaintext'] += 1
@@ -418,10 +427,19 @@ def predict_all_single(
         if spans_dict is None or ph_dict is None:
             counts['skipped_no_attachments'] += 1
             if verbosity >= 1:
-                print(
-                    f'  skip {doc_id}: missing spans / page-headers '
-                    '— re-run annotate_v4',
-                )
+                if plaintext is None:
+                    # Both spans AND plaintext missing — this is an
+                    # orphan, not a re-annotate situation.  The
+                    # _no_plaintext_message helper surfaces the
+                    # XML-availability hint if applicable, so the
+                    # operator can decide whether to re-ingest from
+                    # XML rather than chase annotate_v4.
+                    print(_no_plaintext_message(input_db, doc_id))
+                else:
+                    print(
+                        f'  skip {doc_id}: missing spans / '
+                        'page-headers — re-run annotate_v4',
+                    )
             continue
         if plaintext is None:
             counts['skipped_no_plaintext'] += 1

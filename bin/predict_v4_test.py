@@ -298,6 +298,45 @@ class TestMissingAttachments(unittest.TestCase):
         self.assertEqual(counts['skipped_no_plaintext'], 1)
         self.assertEqual(counts['predicted'], 0)
 
+    def test_missing_spans_AND_plaintext_distinguishes_orphan(self):
+        """When BOTH spans and plaintext are missing, the doc is an
+        orphan (no plaintext to annotate from) — the diagnostic
+        should NOT say "re-run annotate_v4" because that's a dead
+        end.  Instead it should surface the no-plaintext situation
+        so the operator immediately sees the doc needs re-ingestion
+        rather than re-annotation."""
+        import io
+        from contextlib import redirect_stdout
+        # Build a doc with NO spans AND NO plaintext attachment.
+        doc = _synth_doc('doc_a', plaintext=b'', spans_json=None)
+        del doc['_attachments']['article.txt']  # truly no plaintext
+        input_db = FakeCouchDb({'doc_a': doc})
+        output_db = FakeCouchDb({'doc_a': _synth_doc('doc_a')})
+
+        captured = io.StringIO()
+        with mock.patch(
+            'predict_v4.predict_doc', side_effect=_stub_predict,
+        ), redirect_stdout(captured):
+            predict_v4.predict_all(
+                input_db, output_db,
+                layout_crf=mock.MagicMock(),
+                treatment_crf=mock.MagicMock(),
+                sbert_lookup=lambda _t: None,
+                device='cpu',
+                skip_existing=False, force=False,
+                dry_run=False, limit=None,
+                verbosity=1,
+            )
+        out = captured.getvalue()
+        # Operator-facing assertion: the message must NOT mislead
+        # the operator into re-running annotate_v4 when the
+        # underlying problem is missing plaintext source.
+        self.assertNotIn('re-run annotate_v4', out)
+        # Must mention that plaintext is missing so the operator
+        # understands the dead end.
+        self.assertIn('no plaintext source', out)
+        self.assertIn('doc_a', out)
+
 
 # ---------------------------------------------------------------------------
 # 3. write path + dry-run + limit
