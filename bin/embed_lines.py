@@ -197,7 +197,7 @@ class LineEmbedder:
         dim: Optional[int] = None,
         encoder: Optional[EncoderFn] = None,
         key_prefix: str = _DEFAULT_KEY_PREFIX,
-        batch_size: int = 256,
+        batch_size: int = 128,
     ) -> None:
         if model_tag not in _MODEL_NAMES:
             raise ValueError(
@@ -473,10 +473,14 @@ def main() -> int:
         help='CouchDB database to walk.',
     )
     parser.add_argument(
-        '--batch-size', type=int, default=256, metavar='N',
-        help='SentenceTransformer batch size (default: 256, sized '
-             'for an RTX 5090 with ~25 GB VRAM; for smaller GPUs '
-             '(3050, 4080 12 GB) pass an explicit smaller value).',
+        '--batch-size', type=int, default=128, metavar='N',
+        help='SentenceTransformer batch size (default: 128). '
+             '192 and 256 have caused hard GPU lockups on '
+             'puchpuchobs (RTX 5090, driver 595, CUDA 13.2) — '
+             'likely a driver-level Blackwell edge case, not a '
+             'soft OOM PyTorch could recover from.  128 is '
+             'operationally verified.  For smaller GPUs (3050, '
+             '4080 12 GB) pass an even smaller explicit value.',
     )
     parser.add_argument(
         '--skip-lock', action='store_true',

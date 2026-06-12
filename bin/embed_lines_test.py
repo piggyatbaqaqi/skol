@@ -712,10 +712,15 @@ class TestBatchedRedisOperations(unittest.TestCase):
 
 
 class TestDefaultBatchSize(unittest.TestCase):
-    """Default batch size is 256, sized for the RTX 5090.  Smaller
-    GPUs (3050, 4080 12 GB) should pass ``--batch-size`` explicitly."""
+    """Default batch size is 128.  History: started at 64 (safe for
+    every GPU we run on), bumped to 256 to target the 5090, then
+    walked back to 128 after 2026-06-12 incident where 192 caused
+    a hard GPU lockup on puchpuchobs (RTX 5090, driver 595, CUDA
+    13.2) requiring a host reboot.  192 wasn't a soft OOM that
+    PyTorch could recover from — likely a driver-level edge case
+    on Blackwell.  128 has been operationally verified."""
 
-    def test_lineembedder_default_batch_size_is_256(self):
+    def test_lineembedder_default_batch_size_is_128(self):
         embedder = LineEmbedder(
             model_tag='mpnet',
             redis_client=mock.MagicMock(),
@@ -723,7 +728,7 @@ class TestDefaultBatchSize(unittest.TestCase):
                 (len(lines), 768), dtype=np.float32,
             ),
         )
-        self.assertEqual(embedder.batch_size, 256)
+        self.assertEqual(embedder.batch_size, 128)
 
 
 if __name__ == '__main__':
