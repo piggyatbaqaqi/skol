@@ -54,7 +54,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Allow running as a script or as a module.
 if __name__ == "__main__" and __package__ is None:
@@ -624,6 +624,30 @@ def _render_pipeline_step(
     return render_step(step, variables, force=force)
 
 
+def _split_passthrough_args(
+    argv: List[str],
+) -> 'Tuple[List[str], List[str]]':
+    """Split ``argv`` at the first ``--`` into (main, passthrough).
+
+    Unix-convention separator: ``manage_experiment runstep NAME STEP
+    --log -- --verbosity 2`` puts everything before ``--`` on
+    manage_experiment's own argparse and everything after onto the
+    subprocess command verbatim.
+
+    Only the FIRST ``--`` is the split — any later ``--`` in the
+    passthrough rides along to the subprocess, in case the
+    forwarded-to script uses ``--`` for its own purposes.
+
+    Empty passthrough (``--`` with nothing after) and absent
+    separator both yield ``passthrough = []``.
+    """
+    try:
+        idx = argv.index('--')
+    except ValueError:
+        return list(argv), []
+    return list(argv[:idx]), list(argv[idx + 1:])
+
+
 def _run_step(
     db: Any,
     doc: Dict[str, Any],
@@ -632,6 +656,7 @@ def _run_step(
     verbosity: int = 1,
     force: bool = False,
     config: Optional[Dict[str, Any]] = None,
+    extra_args: Optional[List[str]] = None,
 ) -> bool:
     """Run a pipeline step, updating CouchDB status before and after.
 
@@ -651,6 +676,13 @@ def _run_step(
     cmd = _render_pipeline_step(
         step_name, experiment_name, force=force, config=config,
     )
+    if extra_args:
+        # `--` passthrough: anything after `--` on
+        # `manage_experiment runstep|runnext` flows verbatim to the
+        # subprocess script.  Appended AFTER the rendered template
+        # args so the passthrough takes precedence on duplicates
+        # (most argparse parsers use the last-seen value).
+        cmd = list(cmd) + list(extra_args)
     canonical = _pipeline_for(config)
 
     if verbosity >= 1:
@@ -814,6 +846,7 @@ def cmd_runnext(db: Any, args: Any) -> None:
 
     success = _run_step(
         db, doc, step_idx, args.name, force=getattr(args, "force", False),
+        extra_args=getattr(args, "passthrough_args", None),
     )
     if not success:
         sys.exit(1)
@@ -855,6 +888,7 @@ def cmd_runstep(db: Any, args: Any) -> None:
         success = _run_step(
             db, fresh_doc, step_idx, args.name,
             force=getattr(args, "force", False),
+            extra_args=getattr(args, "passthrough_args", None),
         )
         if not success:
             sys.exit(1)
@@ -1052,6 +1086,16 @@ def main() -> None:
     # runnext
     p_runnext = subparsers.add_parser(
         "runnext", help="Run the next pending pipeline step",
+        epilog=(
+            "Pass `--` to forward extra args verbatim to the "
+            "subprocess script (Unix convention).  Example:\n\n"
+            "  bin/manage_experiment runnext production_v4 --log "
+            "-- --verbosity 2 --batch-size 192\n\n"
+            "The `--verbosity 2 --batch-size 192` portion lands on "
+            "the underlying script's argv after the args produced "
+            "by the pipeline template."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_runnext.add_argument("name", help="Experiment name")
     p_runnext.add_argument(
@@ -1074,6 +1118,15 @@ def main() -> None:
     # runstep
     p_runstep = subparsers.add_parser(
         "runstep", help="Run one or more named pipeline steps",
+        epilog=(
+            "Pass `--` to forward extra args verbatim to the "
+            "subprocess script (Unix convention).  Example:\n\n"
+            "  bin/manage_experiment runstep production_v4 "
+            "embed_lines --log -- --verbosity 2 --batch-size 192\n\n"
+            "For multi-step runs the same extra args are applied "
+            "to every step in the comma list."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_runstep.add_argument("name", help="Experiment name")
     p_runstep.add_argument(
@@ -1120,7 +1173,14 @@ def main() -> None:
         help="Comma-separated step name(s) to skip",
     )
 
-    args, _ = parser.parse_known_args()
+    # `--` passthrough: split argv at the first ``--`` so anything
+    # after it skips our own argparse and gets forwarded verbatim to
+    # the subprocess script that runnext / runstep launches.  See
+    # _split_passthrough_args and the docstring for the runnext /
+    # runstep ``--`` help.
+    main_argv, passthrough_args = _split_passthrough_args(sys.argv[1:])
+    args, _ = parser.parse_known_args(main_argv)
+    args.passthrough_args = passthrough_args
     config = get_env_config()
     db = _connect_experiments_db(config)
 

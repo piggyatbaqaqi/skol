@@ -546,3 +546,159 @@ class TestLogPathResolution:
         assert _log_path_for_step('extract_treatments') == (
             '/var/log/skol/manage-experiment-extract_treatments.log'
         )
+
+
+# ---------------------------------------------------------------------------
+# `--` passthrough — forward args after `--` to the subprocess script
+# ---------------------------------------------------------------------------
+
+
+class TestSplitPassthroughArgs:
+    """``manage_experiment runstep|runnext`` accepts ``--`` as a
+    Unix-convention separator between its own argparse args and
+    extra args to forward verbatim to the underlying script.  E.g.
+
+      bin/manage_experiment runstep production_v4 embed_lines --log \\
+          -- --verbosity 2 --batch-size 192
+
+    The ``--verbosity 2 --batch-size 192`` portion lands on the
+    embed_lines.py argv after the pipeline-template-rendered args.
+    """
+
+    def test_split_returns_main_only_when_no_separator(self) -> None:
+        from manage_experiment import _split_passthrough_args
+        main, passthrough = _split_passthrough_args(
+            ['runstep', 'production_v4', 'embed_lines', '--log'],
+        )
+        assert main == ['runstep', 'production_v4', 'embed_lines', '--log']
+        assert passthrough == []
+
+    def test_split_at_separator(self) -> None:
+        from manage_experiment import _split_passthrough_args
+        main, passthrough = _split_passthrough_args(
+            ['runstep', 'production_v4', 'embed_lines', '--log',
+             '--', '--verbosity', '2', '--batch-size', '192'],
+        )
+        assert main == ['runstep', 'production_v4', 'embed_lines', '--log']
+        assert passthrough == [
+            '--verbosity', '2', '--batch-size', '192',
+        ]
+
+    def test_split_empty_passthrough_after_separator(self) -> None:
+        """``-- `` with nothing after is degenerate but valid; the
+        passthrough is empty, not an error."""
+        from manage_experiment import _split_passthrough_args
+        main, passthrough = _split_passthrough_args(
+            ['runstep', 'production_v4', 'embed_lines', '--'],
+        )
+        assert main == ['runstep', 'production_v4', 'embed_lines']
+        assert passthrough == []
+
+    def test_split_only_first_separator_is_the_split(self) -> None:
+        """If the passthrough itself contains ``--`` (e.g. forwarding
+        to a script that uses ``--`` for its own purposes), the
+        FIRST ``--`` is the manage_experiment-vs-subprocess split;
+        any later ``--`` rides along to the subprocess."""
+        from manage_experiment import _split_passthrough_args
+        main, passthrough = _split_passthrough_args(
+            ['runstep', 'production_v4', 'embed_lines',
+             '--', '--foo', '--', '--bar'],
+        )
+        assert main == ['runstep', 'production_v4', 'embed_lines']
+        assert passthrough == ['--foo', '--', '--bar']
+
+
+class TestRunStepExtraArgs:
+    """``_run_step`` accepts an ``extra_args`` kwarg that gets
+    appended to the rendered subprocess command, after the args
+    that ``render_step`` produces from the pipeline template."""
+
+    def _seeded_db(self) -> _FakeExperimentsDb:
+        """Doc with a v3_logistic pipeline so the steps resolve."""
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            pipeline='v3_logistic',
+        ))
+        return db
+
+    def test_extra_args_appended_to_subprocess_command(self) -> None:
+        """``extra_args`` lands at the end of the argv that
+        ``subprocess.run`` receives."""
+        from unittest import mock
+        from manage_experiment import _run_step
+        db = self._seeded_db()
+        doc = db.docs['production_v4']
+        # The first pipeline step in v3_logistic is `train`.
+        with mock.patch(
+            'manage_experiment.subprocess.run',
+        ) as mock_run, mock.patch(
+            'manage_experiment._render_pipeline_step',
+            return_value=['python', 'bin/train_classifier.py',
+                          '--experiment', 'production_v4'],
+        ):
+            mock_run.return_value = mock.MagicMock(returncode=0)
+            _run_step(
+                db, doc, 0, 'production_v4',
+                verbosity=0, force=False,
+                extra_args=['--verbosity', '2', '--batch-size', '192'],
+            )
+        called_cmd = mock_run.call_args[0][0]
+        assert called_cmd == [
+            'python', 'bin/train_classifier.py',
+            '--experiment', 'production_v4',
+            '--verbosity', '2', '--batch-size', '192',
+        ]
+
+    def test_no_extra_args_leaves_command_unchanged(self) -> None:
+        """Default behaviour: when no ``extra_args``, the rendered
+        command is what subprocess.run gets."""
+        from unittest import mock
+        from manage_experiment import _run_step
+        db = self._seeded_db()
+        doc = db.docs['production_v4']
+        with mock.patch(
+            'manage_experiment.subprocess.run',
+        ) as mock_run, mock.patch(
+            'manage_experiment._render_pipeline_step',
+            return_value=['python', 'bin/train_classifier.py',
+                          '--experiment', 'production_v4'],
+        ):
+            mock_run.return_value = mock.MagicMock(returncode=0)
+            _run_step(
+                db, doc, 0, 'production_v4',
+                verbosity=0, force=False,
+                # extra_args=None — default
+            )
+        called_cmd = mock_run.call_args[0][0]
+        assert called_cmd == [
+            'python', 'bin/train_classifier.py',
+            '--experiment', 'production_v4',
+        ]
+
+    def test_empty_extra_args_leaves_command_unchanged(self) -> None:
+        """An empty list of extra args is equivalent to no extra
+        args — important for the ``-- `` (separator with nothing
+        after) edge case."""
+        from unittest import mock
+        from manage_experiment import _run_step
+        db = self._seeded_db()
+        doc = db.docs['production_v4']
+        with mock.patch(
+            'manage_experiment.subprocess.run',
+        ) as mock_run, mock.patch(
+            'manage_experiment._render_pipeline_step',
+            return_value=['python', 'bin/train_classifier.py',
+                          '--experiment', 'production_v4'],
+        ):
+            mock_run.return_value = mock.MagicMock(returncode=0)
+            _run_step(
+                db, doc, 0, 'production_v4',
+                verbosity=0, force=False,
+                extra_args=[],
+            )
+        called_cmd = mock_run.call_args[0][0]
+        assert called_cmd == [
+            'python', 'bin/train_classifier.py',
+            '--experiment', 'production_v4',
+        ]
