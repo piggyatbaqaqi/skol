@@ -372,7 +372,15 @@ def main() -> int:
     results = []
     for db in dbs:
         result = replicate(
-            source_admin_url=src_admin_url,
+            # With the new endpoint resolution, the POST target
+            # (_replicate endpoint) and the replicator's source
+            # URL are the same; the creds travel separately via
+            # source_creds.  Pre-refactor they came from
+            # different places (env_config's admin URL had
+            # embedded creds; build_couchdb_url stripped them) —
+            # the same-string convention is the post-refactor
+            # simplification.
+            source_admin_url=src_url,
             source_creds=src_creds,
             source_url=src_url,
             target_url=tgt_url,
