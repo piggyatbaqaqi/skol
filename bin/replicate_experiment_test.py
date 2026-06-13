@@ -12,6 +12,7 @@ hand; no fixture for that here.
 import sys
 import unittest
 from pathlib import Path
+from typing import Any, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -231,6 +232,161 @@ class TestBuildReplicateBody(unittest.TestCase):
         )
         self.assertEqual(body['source'], 'http://localhost:5984/db')
         self.assertEqual(body['target'], 'http://h:5984/db')
+
+
+# ---------------------------------------------------------------------------
+# Endpoint shortcuts — same NAME-based credential resolution as
+# bin/replicate_dbs
+# ---------------------------------------------------------------------------
+
+
+class TestResolveTargetEndpoint(unittest.TestCase):
+    """``--target NAME`` resolves credentials via the same env-var
+    convention as ``bin/replicate_dbs.resolve_endpoint``:
+    ``<NAME>_COUCHDB_URL`` / ``_USER`` / ``_PASSWORD``.
+
+    Falls back to the legacy ``--target-host`` / ``--target-port``
+    / ``--target-scheme`` / ``--target-user`` / ``--target-pass``
+    flags when the new ``--target NAME`` is not provided."""
+
+    def _args(
+        self, *,
+        target: Optional[str] = None,
+        target_host: Optional[str] = None,
+        target_port: int = 5984,
+        target_scheme: str = 'http',
+        target_user: Optional[str] = None,
+        target_pass: Optional[str] = None,
+    ) -> Any:
+        import argparse
+        return argparse.Namespace(
+            target=target,
+            target_host=target_host,
+            target_port=target_port,
+            target_scheme=target_scheme,
+            target_user=target_user,
+            target_pass=target_pass,
+        )
+
+    def test_target_name_resolves_via_env_vars(self) -> None:
+        from replicate_experiment import _resolve_target_endpoint
+        env = {
+            'PROD_COUCHDB_URL':      'https://prod.example.com:5984',
+            'PROD_COUCHDB_USER':     'prod_admin',
+            'PROD_COUCHDB_PASSWORD': 'prod_secret',
+        }
+        ep = _resolve_target_endpoint(self._args(target='prod'), env)
+        self.assertEqual(ep.url, 'https://prod.example.com:5984')
+        self.assertEqual(ep.username, 'prod_admin')
+        self.assertEqual(ep.password, 'prod_secret')
+
+    def test_target_local_alias_uses_unprefixed_vars(self) -> None:
+        """The ``local`` / ``default`` aliases (matching the
+        replicate_dbs convention) resolve via the bare
+        ``COUCHDB_URL`` triple."""
+        from replicate_experiment import _resolve_target_endpoint
+        env = {
+            'COUCHDB_URL':      'http://localhost:5984',
+            'COUCHDB_USER':     'admin',
+            'COUCHDB_PASSWORD': 'localpass',
+        }
+        ep = _resolve_target_endpoint(self._args(target='local'), env)
+        self.assertEqual(ep.url, 'http://localhost:5984')
+        self.assertEqual(ep.username, 'admin')
+        self.assertEqual(ep.password, 'localpass')
+
+    def test_legacy_target_host_still_works(self) -> None:
+        """No ``--target NAME`` provided ⇒ assemble from the legacy
+        ``--target-host`` / ``-port`` / ``-scheme`` / ``-user`` /
+        ``-pass`` flags.  Preserves backward compat with any
+        existing cron entries or scripts."""
+        from replicate_experiment import _resolve_target_endpoint
+        args = self._args(
+            target_host='10.42.0.99',
+            target_port=6984,
+            target_scheme='https',
+            target_user='admin',
+            target_pass='legacy_pw',
+        )
+        ep = _resolve_target_endpoint(args, env={})
+        self.assertEqual(ep.url, 'https://10.42.0.99:6984')
+        self.assertEqual(ep.username, 'admin')
+        self.assertEqual(ep.password, 'legacy_pw')
+
+    def test_new_target_name_wins_over_legacy_flags(self) -> None:
+        """When both ``--target NAME`` and the legacy flags are
+        present, the new shortcut takes precedence.  Avoids the
+        worst-of-both-worlds where an operator passes the new flag
+        but a stale legacy flag silently overrides it."""
+        from replicate_experiment import _resolve_target_endpoint
+        env = {
+            'PROD_COUCHDB_URL':      'https://prod.example.com:5984',
+            'PROD_COUCHDB_USER':     'prod_admin',
+            'PROD_COUCHDB_PASSWORD': 'prod_secret',
+        }
+        args = self._args(
+            target='prod',
+            target_host='ignore_me.example.com',
+            target_user='legacy',
+        )
+        ep = _resolve_target_endpoint(args, env)
+        self.assertEqual(ep.url, 'https://prod.example.com:5984')
+        self.assertEqual(ep.username, 'prod_admin')
+
+    def test_no_target_at_all_raises(self) -> None:
+        """Neither ``--target NAME`` nor ``--target-host`` ⇒ user
+        error.  Surface it loudly rather than silently picking
+        defaults."""
+        from replicate_experiment import _resolve_target_endpoint
+        with self.assertRaises(ValueError):
+            _resolve_target_endpoint(self._args(), env={})
+
+    def test_target_name_missing_url_env_raises(self) -> None:
+        """``--target prod`` with no ``PROD_COUCHDB_URL`` env var
+        ⇒ ValueError (the resolve_endpoint contract from
+        replicate_dbs)."""
+        from replicate_experiment import _resolve_target_endpoint
+        with self.assertRaises(ValueError):
+            _resolve_target_endpoint(
+                self._args(target='prod'), env={},
+            )
+
+
+class TestResolveSourceEndpoint(unittest.TestCase):
+    """``--source NAME`` (default ``local``) follows the same
+    naming convention.  Existing operational reality is "source
+    is always the local CouchDB the script runs on", so default
+    behaviour resolves to ``local``."""
+
+    def test_default_source_is_local(self) -> None:
+        """No ``--source`` argument ⇒ resolve as ``local``."""
+        import argparse
+        from replicate_experiment import _resolve_source_endpoint
+        env = {
+            'COUCHDB_URL':      'http://localhost:5984',
+            'COUCHDB_USER':     'admin',
+            'COUCHDB_PASSWORD': 'localpass',
+        }
+        ep = _resolve_source_endpoint(
+            argparse.Namespace(source=None), env,
+        )
+        self.assertEqual(ep.url, 'http://localhost:5984')
+        self.assertEqual(ep.username, 'admin')
+
+    def test_named_source_resolves_via_env(self) -> None:
+        """``--source skol`` resolves ``SKOL_COUCHDB_*``."""
+        import argparse
+        from replicate_experiment import _resolve_source_endpoint
+        env = {
+            'SKOL_COUCHDB_URL':      'https://synoptickeyof.life:5984',
+            'SKOL_COUCHDB_USER':     'admin',
+            'SKOL_COUCHDB_PASSWORD': 'prod_pw',
+        }
+        ep = _resolve_source_endpoint(
+            argparse.Namespace(source='skol'), env,
+        )
+        self.assertEqual(ep.url, 'https://synoptickeyof.life:5984')
+        self.assertEqual(ep.password, 'prod_pw')
 
 
 if __name__ == '__main__':

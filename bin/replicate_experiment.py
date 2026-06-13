@@ -25,14 +25,21 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 import time
 import urllib.parse
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+# Shared endpoint-resolution convention with bin/replicate_dbs:
+# named endpoints look up `<NAME>_COUCHDB_URL/USER/PASSWORD` env
+# vars; ``local`` / ``default`` / ``self`` fall back to the bare
+# ``COUCHDB_*`` triple.
+from replicate_dbs import Endpoint, resolve_endpoint  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +89,66 @@ def build_couchdb_url(
     admin password) silently fail when embedded in the URL.
     """
     return f'{scheme}://{host}:{port}'
+
+
+def _resolve_target_endpoint(
+    args: argparse.Namespace,
+    env: Mapping[str, str],
+) -> Endpoint:
+    """Resolve the target endpoint.
+
+    Prefers the new ``--target NAME`` shortcut — same env-var
+    convention as :func:`bin.replicate_dbs.resolve_endpoint`:
+    ``<NAME>_COUCHDB_URL`` / ``_USER`` / ``_PASSWORD``, with
+    ``local`` / ``default`` / ``self`` falling back to the bare
+    ``COUCHDB_*`` triple.
+
+    Falls back to the legacy ``--target-host`` / ``-port`` /
+    ``-scheme`` / ``-user`` / ``-pass`` flags when ``--target NAME``
+    is not provided — preserves cron entries and operator habits
+    from before the shortcut existed.
+
+    When both are present, the ``--target NAME`` shortcut wins; a
+    stale legacy flag won't silently override the new one.
+
+    Raises ``ValueError`` when neither path can produce a target.
+    """
+    if getattr(args, 'target', None):
+        return resolve_endpoint(args.target, env)
+    if not getattr(args, 'target_host', None):
+        raise ValueError(
+            'No target specified.  Use `--target NAME` '
+            '(preferred — resolves <NAME>_COUCHDB_URL/USER/PASSWORD '
+            'env vars) or the legacy `--target-host`.'
+        )
+    url = build_couchdb_url(
+        host=args.target_host,
+        port=args.target_port,
+        scheme=args.target_scheme,
+    )
+    return Endpoint(
+        name=args.target_host,
+        url=url.rstrip('/'),
+        username=args.target_user or 'admin',
+        password=args.target_pass or '',
+    )
+
+
+def _resolve_source_endpoint(
+    args: argparse.Namespace,
+    env: Mapping[str, str],
+) -> Endpoint:
+    """Resolve the source endpoint.
+
+    Default behaviour is ``local`` (the script's host CouchDB) —
+    matches the existing operational reality where
+    ``replicate_experiment`` pushes from the box it runs on.
+
+    Pass ``--source NAME`` to override; same env-var convention as
+    :func:`_resolve_target_endpoint`.
+    """
+    name = getattr(args, 'source', None) or 'local'
+    return resolve_endpoint(name, env)
 
 
 def _wrap_side(
@@ -201,17 +268,37 @@ def main() -> int:
     parser.add_argument('--experiment', required=True,
                         help='Experiment doc name in skol_experiments '
                              '(e.g. production_v3_hand)')
-    parser.add_argument('--target-host', required=True,
-                        help='Target CouchDB host (e.g. 10.42.0.99)')
+    parser.add_argument(
+        '--source', default=None, metavar='NAME',
+        help=(
+            'Source endpoint NAME — resolves '
+            '<NAME>_COUCHDB_URL / _USER / _PASSWORD env vars '
+            '(matches the bin/replicate_dbs convention).  '
+            '"local" / "default" fall back to the bare COUCHDB_URL '
+            'triple.  Default: local.'
+        ),
+    )
+    parser.add_argument(
+        '--target', default=None, metavar='NAME',
+        help=(
+            'Target endpoint NAME — same env-var convention as '
+            '--source.  Preferred over the legacy --target-host / '
+            '--target-port / --target-user / --target-pass flags '
+            '(which still work when --target is omitted).'
+        ),
+    )
+    parser.add_argument('--target-host', default=None,
+                        help='Target CouchDB host (legacy — use '
+                             '--target NAME instead).')
     parser.add_argument('--target-port', type=int, default=5984,
-                        help='Target CouchDB port (default: 5984)')
+                        help='Target CouchDB port (legacy).')
     parser.add_argument('--target-scheme', default='http',
                         choices=('http', 'https'),
-                        help='Target CouchDB URL scheme (default: http)')
+                        help='Target CouchDB URL scheme (legacy).')
     parser.add_argument('--target-user', default=None,
-                        help='Target CouchDB username (default: no auth)')
+                        help='Target CouchDB username (legacy).')
     parser.add_argument('--target-pass', default=None,
-                        help='Target CouchDB password')
+                        help='Target CouchDB password (legacy).')
     parser.add_argument('--continuous', action='store_true',
                         help='Set continuous=true on each replication '
                              '(creates a persistent _replicator job '
@@ -233,37 +320,29 @@ def main() -> int:
     # pass through instead of erroring out as unknown.
     args, _unknown = parser.parse_known_args()
 
-    # Lazy imports so the unit tests don't need couchdb / env_config.
-    from env_config import get_env_config
-    config = get_env_config()
+    # Resolve source and target via the shared NAME-shortcut
+    # convention (see _resolve_source_endpoint / _resolve_target_endpoint).
+    try:
+        source_ep = _resolve_source_endpoint(args, os.environ)
+        target_ep = _resolve_target_endpoint(args, os.environ)
+    except ValueError as exc:
+        print(f'error: {exc}', file=sys.stderr)
+        return 2
 
-    src_admin_url = config['couchdb_url']
-    src_user = config.get('couchdb_username') or ''
-    src_pass = config.get('couchdb_password') or ''
-    src_creds = (src_user, src_pass) if (src_user and src_pass) else None
-    # The source URL embedded in the replicate body must be reachable
-    # from the local CouchDB process.  ``localhost`` is the common
-    # case; the rest of the URL is reconstructed from the admin URL
-    # to honour any non-default port.
-    parsed = urllib.parse.urlparse(src_admin_url)
-    src_url = build_couchdb_url(
-        host=parsed.hostname or 'localhost',
-        port=parsed.port or 5984,
-        scheme=parsed.scheme or 'http',
+    src_url = source_ep.url
+    src_creds = (
+        (source_ep.username, source_ep.password)
+        if source_ep.username and source_ep.password else None
     )
-    tgt_url = build_couchdb_url(
-        host=args.target_host,
-        port=args.target_port,
-        scheme=args.target_scheme,
-    )
+    tgt_url = target_ep.url
     tgt_auth = (
-        (args.target_user, args.target_pass)
-        if (args.target_user and args.target_pass) else None
+        (target_ep.username, target_ep.password)
+        if target_ep.username and target_ep.password else None
     )
 
-    # Resolve the experiment doc.
+    # Resolve the experiment doc from the source endpoint.
     import couchdb
-    server = couchdb.Server(src_admin_url)
+    server = couchdb.Server(src_url)
     if src_creds:
         server.resource.credentials = src_creds
     try:
@@ -278,8 +357,8 @@ def main() -> int:
     )
 
     if args.verbosity >= 1:
-        print(f'Replicating experiment {args.experiment} → '
-              f'{args.target_host}:{args.target_port}')
+        print(f'Replicating experiment {args.experiment}: '
+              f'{source_ep.name} → {target_ep.name}')
         print(f'  Mode: {"CONTINUOUS" if args.continuous else "one-shot"}'
               f'{" (DRY RUN)" if args.dry_run else ""}')
         print(f'  Databases ({len(dbs)}):')
