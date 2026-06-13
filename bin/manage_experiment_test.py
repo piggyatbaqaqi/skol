@@ -18,6 +18,7 @@ from manage_experiment import (  # type: ignore[import]  # noqa: E402
     _ensure_pipeline,
     _render_pipeline_step,
     cmd_create,
+    cmd_deploy,
     cmd_update,
 )
 
@@ -702,3 +703,58 @@ class TestRunStepExtraArgs:
             'python', 'bin/train_classifier.py',
             '--experiment', 'production_v4',
         ]
+
+
+# ---------------------------------------------------------------------------
+# Production-experiment seed removal — Step 5 of the DB-naming cleanup
+# (2026-06-13).  No more hardcoded ``_production_experiment`` seed with
+# legacy ``taxa`` / ``taxa_full`` field names.  Operators create the
+# production doc explicitly via ``manage_experiment create``.
+# ---------------------------------------------------------------------------
+
+
+class TestProductionExperimentSeedRemoved:
+    """Regression guard: the ``_production_experiment`` helper is
+    gone.  Re-adding it would re-introduce the legacy field names
+    (``taxa`` / ``taxa_full``) on every fresh CouchDB
+    initialization.  See docs/skol-db-naming-cleanup.md."""
+
+    def test_production_experiment_helper_no_longer_exists(self) -> None:
+        import manage_experiment
+        assert not hasattr(manage_experiment, '_production_experiment'), (
+            'The _production_experiment seed was deliberately removed '
+            'as part of Step 5 of the DB-naming cleanup (2026-06-13). '
+            'Operators now create the production doc explicitly via '
+            '`manage_experiment create --name production '
+            '--pipeline v3_logistic` after a fresh setup.'
+        )
+
+
+class TestCmdDeployRequiresExplicitProduction:
+    """``cmd_deploy`` no longer silently creates a 'production' doc
+    when one doesn't exist — the operator must create it
+    explicitly first.  Eliminates the legacy-field-names-on-seed
+    leak (see TestProductionExperimentSeedRemoved)."""
+
+    def test_deploy_errors_when_production_doc_missing(self) -> None:
+        """Without a pre-existing 'production' doc, cmd_deploy
+        exits non-zero with an operator-actionable message rather
+        than silently auto-creating one."""
+        import argparse
+        import io
+        import pytest
+        from contextlib import redirect_stderr
+        db = _FakeExperimentsDb()
+        # Seed a non-production source experiment to deploy from.
+        cmd_create(db, _create_args(
+            name='my_exp', pipeline='v3_logistic',
+        ))
+        captured = io.StringIO()
+        with redirect_stderr(captured), pytest.raises(SystemExit) as exc:
+            cmd_deploy(db, argparse.Namespace(name='my_exp'))
+        assert exc.value.code != 0
+        # The error message must surface the migration hint so an
+        # operator knows the fix.
+        err = captured.getvalue()
+        assert 'production' in err.lower()
+        assert 'create' in err.lower()

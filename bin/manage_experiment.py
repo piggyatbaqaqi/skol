@@ -192,26 +192,21 @@ def _default_experiment(
     }
 
 
-def _production_experiment() -> Dict[str, Any]:
-    """Build the default production experiment document."""
-    doc = _default_experiment("production", pipeline_name="v3_logistic")
-    doc["notes"] = (
-        "Current production pipeline: logistic regression on "
-        "hand-annotated training data"
-    )
-    doc["status"] = "deployed"
-    doc["databases"] = {
-        "ingest": "skol_dev",
-        "training": "skol_training",
-        "taxa": "skol_taxa_dev",
-        "taxa_full": "skol_taxa_full_dev",
-    }
-    doc["redis_keys"] = {
-        "classifier_model": "skol:classifier:model:logistic_sections_v2.0",
-        "embedding": "skol:embedding:v1.1",
-        "menus": "skol:ui:menus_latest",
-    }
-    return doc
+# _production_experiment was removed 2026-06-13 as part of Step 5 of
+# the DB-naming cleanup (docs/skol-db-naming-cleanup.md).  It used to
+# seed a 'production' doc with legacy ``taxa`` / ``taxa_full`` field
+# names on every fresh CouchDB initialization — re-introducing the
+# legacy convention each time a host was reset.  Operators now create
+# the production doc explicitly with:
+#
+#   bin/manage_experiment create --name production \
+#       --pipeline v3_logistic
+#
+# after a fresh setup, or:
+#
+#   bin/manage_experiment deploy <source_experiment>
+#
+# which requires the production doc to already exist.
 
 
 # ---------------------------------------------------------------------------
@@ -231,9 +226,17 @@ def _connect_experiments_db(config: Dict[str, Any]):
     db_name = config.get("experiments_database", "skol_experiments")
     if db_name not in server:
         db = server.create(db_name)
-        # Seed with production experiment
-        prod = _production_experiment()
-        db.save(prod)
+        # Empty registry — operator creates the production doc
+        # explicitly with `manage_experiment create --name production
+        # --pipeline v3_logistic`.  See Step 5 cleanup note above
+        # _default_experiment.
+        print(
+            f"Created empty {db_name!r} registry.  To bootstrap the "
+            "production experiment doc, run:\n"
+            "  bin/manage_experiment create --name production "
+            "--pipeline v3_logistic",
+            file=sys.stderr,
+        )
     else:
         db = server[db_name]
 
@@ -450,10 +453,19 @@ def cmd_deploy(db, args) -> None:
               file=sys.stderr)
         sys.exit(1)
 
-    # Get or create production record
+    # The production doc must already exist — no more on-the-fly
+    # seeding (Step 5 of the DB-naming cleanup, 2026-06-13).
+    # Operators create it explicitly via `manage_experiment create`.
     prod = _get_experiment(db, "production")
     if prod is None:
-        prod = _production_experiment()
+        print(
+            "Error: 'production' experiment doc not found.  "
+            "Create it first with:\n"
+            "  bin/manage_experiment create --name production "
+            "--pipeline v3_logistic",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Copy databases and redis_keys from the deployed experiment
     prod["databases"] = dict(doc.get("databases", {}))
