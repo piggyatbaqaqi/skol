@@ -108,6 +108,94 @@ class TestDatabasesForExperiment(unittest.TestCase):
         result = databases_for_experiment(exp)
         self.assertEqual(result, ['skol_experiments', 'skol_dev'])
 
+    def test_legacy_taxa_full_skipped_when_treatments_structured_present(self):
+        """Post-2026-06-10 DB-naming migration kept legacy
+        ``taxa`` / ``taxa_full`` / ``treatments`` / ``treatments_full``
+        fields alongside the canonical ``treatments_prose`` /
+        ``treatments_structured`` for transition-window backward
+        compat.  Once the canonical fields are present, the legacy
+        DB names point at stale snapshots and shouldn't be
+        replicated.  The current canonical field wins; the legacy
+        field is dropped."""
+        exp = {
+            '_id': 'production_v4',
+            'databases': {
+                'ingest': 'skol_dev',
+                'taxa': 'skol_exp_production_v4_taxa',
+                'taxa_full': 'skol_exp_production_v4_taxa_full',
+                'treatments_prose':
+                    'skol_exp_production_v4_02_00_treatments_prose',
+                'treatments_structured':
+                    'skol_exp_production_v4_03_00_treatments_structured',
+            },
+        }
+        result = databases_for_experiment(exp)
+        self.assertIn(
+            'skol_exp_production_v4_02_00_treatments_prose', result,
+        )
+        self.assertIn(
+            'skol_exp_production_v4_03_00_treatments_structured', result,
+        )
+        self.assertNotIn('skol_exp_production_v4_taxa', result)
+        self.assertNotIn('skol_exp_production_v4_taxa_full', result)
+
+    def test_legacy_treatments_skipped_when_treatments_prose_present(self):
+        """Mid-migration ``treatments`` / ``treatments_full`` field
+        names also get superseded by the canonical
+        ``treatments_prose`` / ``treatments_structured``."""
+        exp = {
+            'databases': {
+                'treatments': 'skol_treatments_v3_dev',
+                'treatments_full': 'skol_treatments_full_v3_dev',
+                'treatments_prose':
+                    'skol_exp_x_02_00_treatments_prose',
+                'treatments_structured':
+                    'skol_exp_x_03_00_treatments_structured',
+            },
+        }
+        result = databases_for_experiment(exp)
+        self.assertNotIn('skol_treatments_v3_dev', result)
+        self.assertNotIn('skol_treatments_full_v3_dev', result)
+        self.assertIn(
+            'skol_exp_x_02_00_treatments_prose', result,
+        )
+        self.assertIn(
+            'skol_exp_x_03_00_treatments_structured', result,
+        )
+
+    def test_legacy_fields_kept_when_canonical_absent(self):
+        """Unmigrated experiment doc (only legacy fields, no
+        canonical replacement) ⇒ legacy DB names ARE replicated.
+        Backward compat: don't drop data on the floor when the
+        operator hasn't migrated the doc yet."""
+        exp = {
+            'databases': {
+                'taxa': 'skol_taxa_dev',
+                'taxa_full': 'skol_taxa_full_dev',
+            },
+        }
+        result = databases_for_experiment(exp)
+        self.assertIn('skol_taxa_dev', result)
+        self.assertIn('skol_taxa_full_dev', result)
+
+    def test_mixed_partial_migration_one_pair_per_decision(self):
+        """A doc partway through migration — one legacy/canonical
+        pair fully migrated, the other only legacy — gets each
+        pair's decision independently."""
+        exp = {
+            'databases': {
+                # Migrated: skip legacy taxa, keep canonical prose.
+                'taxa': 'skol_legacy_prose',
+                'treatments_prose': 'skol_canonical_prose',
+                # Not migrated: keep legacy taxa_full.
+                'taxa_full': 'skol_legacy_structured',
+            },
+        }
+        result = databases_for_experiment(exp)
+        self.assertNotIn('skol_legacy_prose', result)
+        self.assertIn('skol_canonical_prose', result)
+        self.assertIn('skol_legacy_structured', result)
+
 
 class TestBuildCouchdbUrl(unittest.TestCase):
     """Bare CouchDB base URL — no credential embedding (credentials

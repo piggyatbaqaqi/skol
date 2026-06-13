@@ -44,6 +44,19 @@ from replicate_dbs import Endpoint, resolve_endpoint  # noqa: E402
 logger = logging.getLogger(__name__)
 
 
+# Legacy/canonical field-name pairs from the 2026-06-10 DB-naming
+# migration.  The schema migration kept both names on each doc for
+# transition-window backward compat; once the canonical field is
+# present, the legacy field points at a stale snapshot of the same
+# data and shouldn't be replicated.
+_LEGACY_TO_CANONICAL: Dict[str, str] = {
+    'taxa':            'treatments_prose',
+    'treatments':      'treatments_prose',
+    'taxa_full':       'treatments_structured',
+    'treatments_full': 'treatments_structured',
+}
+
+
 def databases_for_experiment(
     experiment_doc: Dict[str, Any],
     include_golden: bool = False,
@@ -59,13 +72,28 @@ def databases_for_experiment(
     ``include_golden=False`` (default) drops the ``golden`` and
     ``golden_ann`` references, which are typically already shared
     across experiments and may already exist on the target.
+
+    Legacy field names from the 2026-06-10 DB-naming migration
+    (``taxa`` / ``taxa_full`` / ``treatments`` / ``treatments_full``)
+    are dropped when their canonical counterpart (``treatments_prose``
+    / ``treatments_structured``) is present.  Unmigrated docs that
+    carry only the legacy fields still get their DBs replicated so
+    backward compat is preserved for any operator who hasn't yet
+    run the schema migration on their doc.
     """
     excluded_keys = set()
     if not include_golden:
         excluded_keys.update({'golden', 'golden_ann'})
 
-    seen: List[str] = ['skol_experiments']
     db_block = (experiment_doc.get('databases') or {})
+    # Skip a legacy field iff its canonical counterpart is present
+    # AND populated on the same doc.  This is per-pair: one pair
+    # can be migrated while another isn't.
+    for legacy_key, canonical_key in _LEGACY_TO_CANONICAL.items():
+        if db_block.get(canonical_key):
+            excluded_keys.add(legacy_key)
+
+    seen: List[str] = ['skol_experiments']
     for key in sorted(db_block):
         if key in excluded_keys:
             continue
