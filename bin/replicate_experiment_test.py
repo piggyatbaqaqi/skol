@@ -389,5 +389,148 @@ class TestResolveSourceEndpoint(unittest.TestCase):
         self.assertEqual(ep.password, 'prod_pw')
 
 
+# ---------------------------------------------------------------------------
+# main() smoke test — would have caught the src_admin_url NameError
+# that landed in 7b8de33 and was fixed in 62e8ad4.
+# ---------------------------------------------------------------------------
+
+
+class TestMainDryRunSmoke(unittest.TestCase):
+    """End-to-end smoke test of ``main()`` on the ``--dry-run``
+    path.  Mocks the couchdb library so no real server is needed.
+    Catches NameError / AttributeError / unhandled-exception
+    classes of bug in the main() body that the helper-level unit
+    tests can't see (the helpers are tested in isolation, but
+    main() composes them and threads variables through the
+    replicate() call site)."""
+
+    def _run_main_with_args(
+        self,
+        argv: list,
+        env: dict,
+        experiment_doc: dict,
+    ) -> int:
+        """Invoke main() with ``argv`` and ``env`` overrides, with
+        the couchdb module patched to return ``experiment_doc``.
+
+        Returns the int exit code."""
+        from unittest import mock
+        import os as _os
+        import replicate_experiment
+
+        # Fake couchdb.Server that returns a dict-like
+        # skol_experiments db with our pre-baked experiment doc.
+        fake_skol_experiments = {experiment_doc['_id']: experiment_doc}
+
+        class _FakeServer:
+            def __init__(self, url: str) -> None:
+                self.resource = mock.MagicMock()
+
+            def __getitem__(self, name: str) -> dict:
+                if name == 'skol_experiments':
+                    return fake_skol_experiments
+                raise KeyError(name)
+
+        # Patch the couchdb module's Server constructor.  main()
+        # imports couchdb lazily, so the patch has to apply at the
+        # module level — sys.modules trick is cleaner than nested
+        # context managers for our purposes.
+        fake_couchdb = mock.MagicMock()
+        fake_couchdb.Server.side_effect = _FakeServer
+
+        # Snapshot env + argv, restore on exit.
+        saved_env = dict(_os.environ)
+        saved_argv = list(sys.argv)
+        try:
+            _os.environ.clear()
+            _os.environ.update(env)
+            sys.argv = ['bin/replicate_experiment.py', *argv]
+            with mock.patch.dict(
+                sys.modules, {'couchdb': fake_couchdb},
+            ):
+                return replicate_experiment.main()
+        finally:
+            _os.environ.clear()
+            _os.environ.update(saved_env)
+            sys.argv = saved_argv
+
+    def test_dry_run_returns_zero_no_exception(self) -> None:
+        """The canonical smoke test: a --dry-run invocation with
+        well-formed args and env should return 0 cleanly.  Any
+        NameError, AttributeError, or unhandled exception in the
+        main() body fails this test loudly."""
+        env = {
+            'COUCHDB_URL': 'http://localhost:5984',
+            'COUCHDB_USER': 'admin',
+            'COUCHDB_PASSWORD': 'localpass',
+            'TSQALI_COUCHDB_URL': 'https://skol.synoptickeyof.life:16984',
+            'TSQALI_COUCHDB_USER': 'admin',
+            'TSQALI_COUCHDB_PASSWORD': 'remotepass',
+        }
+        doc = {
+            '_id': 'production_v3_hand',
+            'databases': {
+                'ingest': 'skol_dev',
+                'annotations': 'skol_exp_production_v3_hand_01_00_ann',
+                'training': 'skol_training_v3_combined_no_golden',
+            },
+        }
+        rc = self._run_main_with_args(
+            argv=[
+                '--experiment', 'production_v3_hand',
+                '--source', 'local',
+                '--target', 'tsqali',
+                '--dry-run',
+            ],
+            env=env,
+            experiment_doc=doc,
+        )
+        self.assertEqual(rc, 0)
+
+    def test_dry_run_with_legacy_target_host_flags(self) -> None:
+        """The legacy ``--target-host`` path also exits 0 cleanly
+        on --dry-run.  This catches NameError-class bugs that
+        only fire when --target NAME is absent and the legacy
+        branch runs."""
+        env = {
+            'COUCHDB_URL': 'http://localhost:5984',
+            'COUCHDB_USER': 'admin',
+            'COUCHDB_PASSWORD': 'localpass',
+        }
+        doc = {
+            '_id': 'production_v3_hand',
+            'databases': {'ingest': 'skol_dev'},
+        }
+        rc = self._run_main_with_args(
+            argv=[
+                '--experiment', 'production_v3_hand',
+                '--target-host', '10.42.0.99',
+                '--target-user', 'admin',
+                '--target-pass', 'legacy_pw',
+                '--dry-run',
+            ],
+            env=env,
+            experiment_doc=doc,
+        )
+        self.assertEqual(rc, 0)
+
+    def test_dry_run_no_target_at_all_returns_nonzero(self) -> None:
+        """Neither --target NAME nor --target-host ⇒ main() exits
+        non-zero with the resolve-endpoint error message.  Pins
+        the operator-visible error behaviour."""
+        env = {
+            'COUCHDB_URL': 'http://localhost:5984',
+            'COUCHDB_USER': 'admin',
+            'COUCHDB_PASSWORD': 'localpass',
+        }
+        doc = {'_id': 'x', 'databases': {}}
+        rc = self._run_main_with_args(
+            argv=['--experiment', 'x', '--dry-run'],
+            env=env,
+            experiment_doc=doc,
+        )
+        self.assertEqual(rc, 2)
+
+
 if __name__ == '__main__':
     unittest.main()
