@@ -7,13 +7,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="skol-django",
-    version="0.2.0",
+    version="0.3.0",
     description="Django web application for SKOL taxonomic search and user management",
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     license="GPL-3.0-or-later",
     packages=find_packages(include=["skolweb", "skolweb.*", "search", "search.*", "accounts", "accounts.*", "contact", "contact.*"]),
     include_package_data=True,
-    python_requires=">=3.10",
+    python_requires=">=3.14",
     install_requires=[
         "Django>=4.2,<5.0",
         "djangorestframework>=3.14.0",

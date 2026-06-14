@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skol-django"
-version = "0.2.0"
+version = "0.3.0"
 description = "Django web application for SKOL taxonomic search and user management"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -31,7 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 
 dependencies = [
     "Django>=4.2,<5.0",

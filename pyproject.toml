@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skol"
-version = "0.1.0"
+version = "0.3.0"
 description = "Taxonomic text classification and extraction pipeline for mycological literature"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -34,7 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 
 dependencies = [
     "CouchDB>=1.2",
@@ -218,7 +218,7 @@ select = ["E", "F", "W", "I"]
 ignore = ["E501"]  # Line too long - handled by formatter
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.14"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
