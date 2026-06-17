@@ -47,6 +47,18 @@ python3 -m build --wheel --outdir dist/
 # Copy wheel to staging area
 cp dist/*.whl staging${WHEEL_DIR}/
 
+# Pre-build the outlines_core Rust wheel so target installs (which
+# may not have rustc/cargo) don't have to compile from source.  pyo3
+# 0.22.6 (which outlines_core bundles) refuses to build on cp314 by
+# default; PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 tells it to use the
+# stable ABI and trust forward compatibility.  Pinned <0.2 because the
+# 0.2.x line pulls openssl/ring/native-tls/bincode-2 transitively.
+echo "Pre-building outlines_core wheel (PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1)..."
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 python3 -m pip wheel \
+    'outlines_core<0.2.0' \
+    --no-deps --no-cache-dir \
+    --wheel-dir "staging${WHEEL_DIR}/"
+
 # Copy bin/*.py scripts to staging area
 echo "Copying bin scripts..."
 cp bin/*.py staging${VERSION_DIR}/bin/
@@ -113,8 +125,8 @@ fpm -s dir -t deb \
     --category "python" \
     --architecture all \
     --no-auto-depends \
-    --depends python3.13 \
-    --depends python3.13-venv \
+    --depends python3.14 \
+    --depends python3.14-venv \
     --deb-user root \
     --deb-group root \
     --after-install staging_scripts/postinst \
