@@ -51,8 +51,11 @@ cp dist/*.whl staging${WHEEL_DIR}/
 # may not have rustc/cargo) don't have to compile from source.  pyo3
 # 0.22.6 (which outlines_core bundles) refuses to build on cp314 by
 # default; PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 tells it to use the
-# stable ABI and trust forward compatibility.  Pinned <0.2 because the
-# 0.2.x line pulls openssl/ring/native-tls/bincode-2 transitively.
+# stable ABI and trust forward compatibility.  Pinned ==0.1.26 because
+# outlines 0.1.14 declares 'Requires-Dist: outlines_core==0.1.26' (a
+# hard pin, not a floor) — bundling any other version causes pip to
+# resolve outlines's transitive dep at install time, downgrade to
+# 0.1.26 via a fresh PyPI sdist, and rebuild from source.
 #
 # Must use the python3.14 interpreter explicitly — even inside an
 # activated conda env, 'python3' can land on system python3.13 via
@@ -68,7 +71,7 @@ if [[ "$PY_VER" != "3.14" ]]; then
 fi
 echo "Pre-building outlines_core wheel against $PYTHON_BIN (Python $PY_VER, PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1)..."
 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 "$PYTHON_BIN" -m pip wheel \
-    'outlines_core<0.2.0' \
+    'outlines_core==0.1.26' \
     --no-deps --no-cache-dir \
     --wheel-dir "staging${WHEEL_DIR}/"
 
