@@ -7,7 +7,7 @@ INSTALL_DIR="/opt/skol/django-versions/${VERSION}"
 
 SKOL_HOME=/opt/skol
 SKOL_DJANGO_VENV=${SKOL_HOME}/django-venv
-PYTHON=python3.13
+PYTHON=python3.14
 
 # Symlink target
 DJANGO_SYMLINK="${SKOL_HOME}/django"
