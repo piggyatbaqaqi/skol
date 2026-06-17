@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Convert Taxa Descriptions to Structured JSON
+Convert Treatment Descriptions to Structured JSON
 
-This standalone program loads taxa descriptions from one CouchDB database,
+This standalone program loads treatment descriptions from one CouchDB database,
 translates them to structured JSON using a fine-tuned Mistral model, and
 saves the enriched records to another CouchDB database.
 
@@ -12,7 +12,7 @@ Usage:
                            [--verbosity LEVEL] [--incremental]
 
 Example:
-    # Default: load from skol_taxa_dev, save to skol_taxa_full
+    # Default: load from skol_exp_<experiment>_02_00_treatments_prose, save to skol_exp_<experiment>_03_00_treatments_structured
     python treatments_to_json.py
 
     # Specify databases
@@ -58,8 +58,8 @@ from env_config import get_env_config
 # Default Configuration
 # ============================================================================
 
-DEFAULT_SOURCE_DB = 'skol_taxa_dev'
-DEFAULT_DEST_DB = 'skol_taxa_full_dev'
+DEFAULT_SOURCE_DB = 'skol_exp_production_04_02_00_treatments_prose'
+DEFAULT_DEST_DB = 'skol_exp_production_04_03_00_treatments_structured'
 DEFAULT_BATCH_SIZE = 10
 DEFAULT_PATTERN = '*'
 
@@ -140,7 +140,7 @@ def translate_treatments_to_json(
     password = config['couchdb_password']
 
     print(f"\n{'='*70}")
-    print(f"Taxa to JSON Translation")
+    print(f"Treatments to JSON Translation")
     print(f"{'='*70}")
     print(f"CouchDB: {couchdb_url}")
     print(f"Source database: {source_db}")
@@ -185,7 +185,7 @@ def translate_treatments_to_json(
         print("Initializing Spark...")
 
     spark = SparkSession.builder \
-        .appName("Taxa JSON Translation") \
+        .appName("Treatments JSON Translation") \
         .master(f"local[{config['cores']}]") \
         .config("spark.driver.host", "127.0.0.1") \
         .config("spark.driver.bindAddress", "127.0.0.1") \

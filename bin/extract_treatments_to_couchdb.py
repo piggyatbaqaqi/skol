@@ -5,7 +5,7 @@ Pipeline to extract Treatment objects from CouchDB annotated files and save back
 This module provides a UDF-based PySpark pipeline that:
 1. Reads annotated files from an ingest CouchDB database
 2. Extracts Treatment objects using the SKOL pipeline
-3. Saves Taxa as JSON documents to a taxon CouchDB database
+3. Saves Treatments as JSON documents to a treatment CouchDB database
 4. Ensures idempotent operations using composite keys: (doc_id, url, line_number)
 """
 
@@ -261,7 +261,7 @@ def extract_taxa_from_partition(
     ingest_db_name: str
 ) -> Iterator[Treatment]:
     """
-    Extract Taxa from a partition of CouchDB rows via the dispatcher.
+    Extract Treatments from a partition of CouchDB rows via the dispatcher.
 
     Each row is wrapped in a per-doc dict and run through
     :class:`Dispatcher` (see ``skol_classifier/extraction/``).  The
@@ -393,24 +393,24 @@ def convert_taxa_to_rows(partition: Iterator[Treatment]) -> Iterator[Row]:
 
 class TreatmentExtractor:
     """
-    Extract and save Taxa from CouchDB annotated files.
+    Extract and save treatment from CouchDB annotated files.
 
     This class encapsulates the complete pipeline for:
     1. Loading annotated documents from a CouchDB annotations database
     2. Extracting Treatment objects using the SKOL pipeline
-    3. Saving Taxa to a CouchDB taxon database with idempotent keys
+    3. Saving treatment to a CouchDB treatment database with idempotent keys
 
     Args:
         spark: SparkSession for distributed processing
         ingest_couchdb_url: URL of ingest CouchDB server
         ingest_db_name: Name of ingest database (where PDFs live, e.g. skol_dev).
-            Stored in each taxa record as ``ingest.db_name`` so that views can
+            Stored in each treatment record as ``ingest.db_name`` so that views can
             retrieve the PDF directly without guessing.
         treatments_db_name: Name of taxon database
         annotations_db_name: Name of annotations database (where .ann files live,
             e.g. skol_exp_NAME_ann).  Defaults to ``ingest_db_name`` for
             backward-compatibility with setups where annotations live in the
-            ingest DB.  Stored in each taxa record as ``annotations_db``.
+            ingest DB.  Stored in each treatment record as ``annotations_db``.
         taxon_couchdb_url: URL of taxon CouchDB server (defaults to ingest_couchdb_url)
         ingest_username: Optional username for ingest database
         ingest_password: Optional password for ingest database
@@ -424,8 +424,8 @@ class TreatmentExtractor:
         ...     spark=spark,
         ...     ingest_couchdb_url="http://localhost:5984",
         ...     ingest_db_name="skol_dev",
-        ...     annotations_db_name="skol_exp_myexp_ann",
-        ...     treatments_db_name="skol_exp_myexp_taxa",
+        ...     annotations_db_name="skol_exp_myexp_02_00_ann_prose",
+        ...     treatments_db_name="skol_exp_myexp_03_00_ann_structured",
         ...     ingest_username="admin",
         ...     ingest_password="secret"
         ... )
@@ -997,7 +997,7 @@ class TreatmentExtractor:
         This method:
         1. Loads annotated files from ingest CouchDB database
         2. Extracts Treatment objects in parallel using mapPartitions
-        3. Saves Taxa to taxon CouchDB database with idempotent keys
+        3. Saves treatments to treatment CouchDB database with idempotent keys
         4. Returns a DataFrame with success/failure results
 
         When incremental=True, processes documents in batches and saves after each
@@ -1136,7 +1136,7 @@ class TreatmentExtractor:
                 print(f"  Documents processed: {total_docs}")
                 print(f"  Treatments extracted: {total_taxa}")
                 if not dry_run:
-                    print(f"  Taxa saved: {total_saved}")
+                    print(f"  Treatments saved: {total_saved}")
                     print(f"  Errors: {total_errors}")
 
             # Return combined results DataFrame
@@ -1208,7 +1208,7 @@ if __name__ == "__main__":
     config = get_env_config()
 
     parser = argparse.ArgumentParser(
-        description="Extract Taxa from CouchDB annotated files and save to CouchDB",
+        description="Extract Treatments from CouchDB annotated files and save to CouchDB",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Configuration (via environment variables or command-line arguments):
