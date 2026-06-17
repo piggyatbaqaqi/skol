@@ -53,8 +53,21 @@ cp dist/*.whl staging${WHEEL_DIR}/
 # default; PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 tells it to use the
 # stable ABI and trust forward compatibility.  Pinned <0.2 because the
 # 0.2.x line pulls openssl/ring/native-tls/bincode-2 transitively.
-echo "Pre-building outlines_core wheel (PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1)..."
-PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 python3 -m pip wheel \
+#
+# Must use the python3.14 interpreter explicitly — even inside an
+# activated conda env, 'python3' can land on system python3.13 via
+# pip's build-isolation subshell, producing a cp313-cp313 wheel that
+# tsqali (cp314) then rejects, falling back to a source build that
+# lacks the ABI3 env var.  Override with PYTHON_BIN= if needed.
+PYTHON_BIN="${PYTHON_BIN:-python3.14}"
+PY_VER="$("$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+if [[ "$PY_VER" != "3.14" ]]; then
+    echo "ERROR: $PYTHON_BIN reports Python $PY_VER, expected 3.14." >&2
+    echo "       Set PYTHON_BIN=/path/to/python3.14 and retry." >&2
+    exit 1
+fi
+echo "Pre-building outlines_core wheel against $PYTHON_BIN (Python $PY_VER, PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1)..."
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 "$PYTHON_BIN" -m pip wheel \
     'outlines_core<0.2.0' \
     --no-deps --no-cache-dir \
     --wheel-dir "staging${WHEEL_DIR}/"
