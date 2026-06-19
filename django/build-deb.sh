@@ -140,8 +140,8 @@ fpm -s dir -t deb \
     --category "python" \
     --architecture all \
     --no-auto-depends \
-    --depends python3.13 \
-    --depends python3.13-venv \
+    --depends python3.14 \
+    --depends python3.14-venv \
     --depends skol \
     --deb-user root \
     --deb-group root \

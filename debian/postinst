@@ -3,7 +3,7 @@ set -e
 
 SKOL_HOME=/opt/skol
 SKOL_VENV=${SKOL_HOME}/venv
-PYTHON=python3.13
+PYTHON=python3.14
 
 # Create skol group if it doesn't exist
 if ! getent group skol > /dev/null 2>&1; then
@@ -84,7 +84,7 @@ if getent passwd www-data > /dev/null 2>&1; then
 fi
 
 # Create Python virtual environment and install dependencies
-echo "Creating Python 3.13 virtual environment at ${SKOL_VENV}..."
+echo "Creating Python 3.14 virtual environment at ${SKOL_VENV}..."
 ${PYTHON} -m venv ${SKOL_VENV}
 
 echo "Upgrading pip..."

@@ -7,3 +7,4 @@ requests>=2.28.0
 
 # PostgreSQL support (optional - only needed if using PostgreSQL instead of SQLite)
 psycopg2-binary>=2.9.0
+jwt
