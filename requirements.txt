@@ -21,7 +21,7 @@ setuptools>=80.9.0
 spark-nlp>=6.3.1
 # torch wheel carries a +cu129 local version tag; install from the
 # official PyTorch index, e.g. --extra-index-url=https://download.pytorch.org/whl/cu129
-torch==2.9.1+cu129
+torch>=2.9.1+cu129,<3
 # Linear-chain CRF on top of torch — used by v4 layout + treatment passes.
 pytorch-crf>=0.7.2
 transformers>=4.57.6
