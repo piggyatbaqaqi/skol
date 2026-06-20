@@ -65,8 +65,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-LOCAL_RDB = Path("/tmp/mirror_redis.rdb")
-REMOTE_RDB = "/tmp/mirror_redis.rdb"
+# Snapshot files live under /data/tmp (a real disk-backed tmpdir available
+# on all three skol hosts), not /tmp.  /tmp is tmpfs on these boxes, and
+# the SBERT-cache RDB is ~52 GB — landing a snapshot there would OOM the
+# host long before the transfer completed.
+LOCAL_RDB = Path("/data/tmp/mirror_redis.rdb")
+REMOTE_RDB = "/data/tmp/mirror_redis.rdb"
 DEFAULT_COMPOSE_FILE = "/opt/skol/advanced-databases/docker-compose.yaml"
 DEFAULT_COMPOSE_SERVICE = "redis"
 
