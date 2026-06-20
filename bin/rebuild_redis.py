@@ -162,7 +162,8 @@ def list_existing_keys(redis_client, verbosity: int = 1) -> dict:
     for component, config in COMPONENTS.items():
         matching_keys = []
         for pattern in config['keys']:
-            keys = redis_client.keys(pattern)
+            # scan_iter, not keys(), for RedisCluster compatibility.
+            keys = redis_client.scan_iter(match=pattern)
             matching_keys.extend([k.decode() if isinstance(k, bytes) else k for k in keys])
         results[component] = sorted(set(matching_keys))
 

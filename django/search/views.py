@@ -192,12 +192,12 @@ class EmbeddingListView(APIView):
             # Connect to Redis
             r = get_redis_client(decode_responses=True)
 
-            # Get all keys matching the pattern
-            keys = r.keys('skol:embedding:*')
+            # scan_iter, not keys('skol:embedding:*'): RedisCluster has no
+            # KEYS command — it can't operate across shards in one call.
+            # scan_iter works on both single-node and cluster (the cluster
+            # client transparently fans out to every shard and concatenates).
+            keys = sorted(r.scan_iter(match='skol:embedding:*'))
             logger.info(f"Found {len(keys)} embeddings: {keys}")
-
-            # Sort keys
-            keys.sort()
 
             return Response({
                 'embeddings': keys,
@@ -2170,8 +2170,9 @@ class VocabTreeVersionsView(APIView):
         try:
             r = get_redis_client(decode_responses=True)
 
-            # Find all vocab tree keys
-            keys = r.keys('skol:ui:menus_*')
+            # Find all vocab tree keys (scan_iter, not keys, for RedisCluster
+            # compatibility — see EmbeddingListView for full rationale).
+            keys = list(r.scan_iter(match='skol:ui:menus_*'))
 
             # Filter out the "latest" pointer
             version_keys = [k for k in keys if k != 'skol:ui:menus_latest']
