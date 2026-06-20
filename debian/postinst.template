@@ -308,6 +308,16 @@ if [ -d "${INSTALL_DIR}/advanced-databases" ]; then
         fi
     done
 
+    # Restore the +x bit on shell scripts.  The blanket 'find ... chmod 644'
+    # earlier in this postinst strips execute from every file under
+    # INSTALL_DIR (only INSTALL_DIR/bin gets 755 back), so by the time
+    # the loop above copies redis-entrypoint.sh out, it's already 644 —
+    # and docker can't exec it, breaking 'docker compose up redis' with
+    # 'permission denied'.
+    if [ -f "$ADVANCED_DB_DIR/redis-entrypoint.sh" ]; then
+        chmod 755 "$ADVANCED_DB_DIR/redis-entrypoint.sh"
+    fi
+
     # Ensure subdirectories exist
     mkdir -p "$ADVANCED_DB_DIR/neo4j/conf"
     mkdir -p "$ADVANCED_DB_DIR/neo4j/certificates"
