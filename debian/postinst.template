@@ -75,6 +75,14 @@ mkdir -p ${SKOL_DATA_ROOT}/couchdb/etc/local.d
 mkdir -p ${SKOL_DATA_ROOT}/redis/data
 mkdir -p ${SKOL_DATA_ROOT}/neo4j/data
 
+# Disk-backed tmpdir for large transient files (e.g. the ~52G RDB
+# snapshot bin/mirror_redis.py stages during cross-host transfers).
+# /tmp is tmpfs on these hosts, too small to hold the embedding cache.
+# Permissions match /tmp's: world-rwx with the sticky bit so users can
+# only delete files they own.
+mkdir -p /data/tmp
+chmod ugo=rwxt /data/tmp
+
 # Initialize CouchDB config if not present (preserves existing config on upgrade)
 if [ ! -f ${SKOL_DATA_ROOT}/couchdb/etc/local.ini ]; then
     echo "Initializing CouchDB configuration..."
@@ -270,12 +278,36 @@ find ${INSTALL_DIR}/bin -type f -exec chmod 755 {} \;
 # Update advanced-databases directory (non-versioned, preserves customizations)
 # ============================================================
 mkdir -p "$ADVANCED_DB_DIR"
-# Copy new files from package, but don't overwrite existing files
-# This preserves user customizations while adding new files
+# Copy new files from package, but don't overwrite existing files.
+# This preserves user customizations (notably neo4j/conf and
+# neo4j/certificates) while adding new files.
 if [ -d "${INSTALL_DIR}/advanced-databases" ]; then
     echo "Updating advanced-databases directory..."
     # Use cp -n (no-clobber) to not overwrite existing files
     cp -rn "${INSTALL_DIR}/advanced-databases"/* "$ADVANCED_DB_DIR"/ 2>/dev/null || true
+
+    # SKOL-managed files: force-update so config changes shipped in the
+    # .deb actually land.  cp -rn above preserves user customizations,
+    # but for these three files SKOL owns the canonical version.
+    #
+    # Also guard against the docker-bind-mount-auto-creation footgun: if
+    # docker compose starts before these files exist on the host, docker
+    # silently creates them as empty *directories* (its default for
+    # missing bind-mount sources).  cp -f to a directory fails, so we
+    # remove the directory first.  Without this, a corrupted state can
+    # persist undetected across every subsequent .deb install.
+    for f in docker-compose.yaml redis.conf redis-entrypoint.sh; do
+        src="${INSTALL_DIR}/advanced-databases/$f"
+        dst="$ADVANCED_DB_DIR/$f"
+        if [ -f "$src" ]; then
+            if [ -d "$dst" ]; then
+                echo "  WARNING: $dst was a directory (likely from docker bind-mount auto-creation); removing before overwrite"
+                rm -rf "$dst"
+            fi
+            cp -f "$src" "$dst"
+        fi
+    done
+
     # Ensure subdirectories exist
     mkdir -p "$ADVANCED_DB_DIR/neo4j/conf"
     mkdir -p "$ADVANCED_DB_DIR/neo4j/certificates"
