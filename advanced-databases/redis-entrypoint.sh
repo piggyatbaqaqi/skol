@@ -50,7 +50,10 @@ REDIS_PID=$!
 # All admin operations go via TLS+localhost.  --insecure because the cert is
 # for synoptickeyof.life, not 127.0.0.1, and hostname verification has no
 # security value when we're staying entirely in-container.
-RCLI="redis-cli --tls --insecure -h 127.0.0.1 -p 6379 -a ${REDIS_PASSWORD} --no-auth-warning"
+#
+# --user admin is required: redis.conf disables the 'default' user (off, nopass),
+# so the legacy '-a PASSWORD' form (which AUTHs as default) fails with NOAUTH.
+RCLI="redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a ${REDIS_PASSWORD} --no-auth-warning"
 
 echo "Waiting for Redis to start..."
 i=0
@@ -67,11 +70,23 @@ done
 # Bootstrap all 16384 slots if none have been assigned yet.  Redis persists
 # slot ownership in cluster-config-file (nodes.conf), so this is a one-time
 # op per data dir — restarts pick up the existing assignment.
+#
+# We don't trust redis-cli's exit code: it returns 0 even when the server
+# replies with -ERR (e.g. NOAUTH or NOPERM), printing the error to stdout
+# rather than failing.  So we re-check CLUSTER INFO after the attempt and
+# fail loudly if slots are still unassigned, instead of cheerfully reporting
+# 'Slot assignment complete' over a silent NOAUTH.
 SLOTS_ASSIGNED=$($RCLI CLUSTER INFO 2>/dev/null | grep ^cluster_slots_assigned: | tr -d '\r' | cut -d: -f2)
 if [ "${SLOTS_ASSIGNED:-0}" -lt 16384 ]; then
     echo "Assigning all 16384 hash slots to this node..."
     $RCLI CLUSTER ADDSLOTSRANGE 0 16383
-    echo "Slot assignment complete"
+    POST_ASSIGNED=$($RCLI CLUSTER INFO 2>/dev/null | grep ^cluster_slots_assigned: | tr -d '\r' | cut -d: -f2)
+    if [ "${POST_ASSIGNED:-0}" -lt 16384 ]; then
+        echo "ERROR: slot assignment failed — still ${POST_ASSIGNED:-0}/16384 assigned" >&2
+        kill -TERM "$REDIS_PID" 2>/dev/null || true
+        exit 1
+    fi
+    echo "Slot assignment complete (${POST_ASSIGNED}/16384)"
 else
     echo "All 16384 slots already assigned (preserved from nodes.conf)"
 fi
