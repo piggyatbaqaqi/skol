@@ -15,3 +15,4 @@
 * Whenever we create a new CouchDB database, please update docs/couchdbs.md.
 * Programs that are needed for one time fixes go in fixes/ rather than bin/.
 * Please don't check credentials (especially passwords) into git.
+* Keep wheel versions and their corresponding deb versions in sync.
