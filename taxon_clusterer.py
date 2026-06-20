@@ -10,17 +10,23 @@ This module provides functionality to:
    - Relationships labeled with cosine similarity distances
 """
 
+import sys
+from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Any
 import pickle
 import numpy as np
 import pandas as pd
-import redis
 from scipy.cluster.hierarchy import linkage, to_tree
 from scipy.spatial.distance import cosine
 from neo4j import GraphDatabase
 from dataclasses import dataclass
 
 from treatment import get_ingest_field
+
+# bin/ holds env_config (the canonical Redis-client factory).  Adding it
+# to sys.path is the same pattern bin/ scripts use to import each other.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "bin"))
+from env_config import create_redis_client  # type: ignore[import]  # noqa: E402
 
 
 
@@ -46,12 +52,10 @@ class TaxonClusterer:
 
     Example:
         >>> clusterer = TaxonClusterer(
-        ...     redis_host="localhost",
-        ...     redis_port=6379,
         ...     neo4j_uri="bolt://localhost:7687",
         ...     neo4j_user="neo4j",
         ...     neo4j_password="password"
-        ... )
+        ... )  # Redis comes from env_config (REDIS_HOST, REDIS_PORT, etc.)
         >>> clusterer.load_embeddings("skol:embedding:v1.1")
         >>> clusterer.cluster(method="average", metric="cosine")
         >>> clusterer.store_in_neo4j(root_name="Fungi")
@@ -59,8 +63,8 @@ class TaxonClusterer:
 
     def __init__(
         self,
-        redis_host: str = "localhost",
-        redis_port: int = 6379,
+        redis_host: Optional[str] = None,
+        redis_port: Optional[int] = None,
         redis_db: int = 0,
         neo4j_uri: str = "bolt://localhost:7687",
         neo4j_user: str = "neo4j",
@@ -70,24 +74,28 @@ class TaxonClusterer:
         Initialize the TaxonClusterer.
 
         Args:
-            redis_host: Redis server host
-            redis_port: Redis server port
-            redis_db: Redis database number
+            redis_host: Redis server host (default: from REDIS_HOST env var
+                        via env_config)
+            redis_port: Redis server port (default: from REDIS_PORT env var
+                        via env_config)
+            redis_db: Redis database number (default: 0)
             neo4j_uri: Neo4j connection URI
             neo4j_user: Neo4j username
             neo4j_password: Neo4j password
         """
-        self.redis_host = redis_host
-        self.redis_port = redis_port
-        self.redis_db = redis_db
-
-        # Connect to Redis
-        self.redis_client = redis.Redis(
+        # Connect to Redis via the env_config factory.  This handles TLS,
+        # ACL auth, and (in Phase 2 step 4) RedisCluster vs Redis dispatch.
+        # Explicit host/port still override env_config when supplied.
+        self.redis_client = create_redis_client(
             host=redis_host,
             port=redis_port,
             db=redis_db,
-            decode_responses=False
+            decode_responses=False,
         )
+        conn = self.redis_client.connection_pool.connection_kwargs
+        self.redis_host = conn.get('host')
+        self.redis_port = conn.get('port')
+        self.redis_db = conn.get('db', 0)
 
         # Connect to Neo4j
         self.neo4j_driver = GraphDatabase.driver(
@@ -102,8 +110,8 @@ class TaxonClusterer:
         self.linkage_matrix: Optional[np.ndarray] = None
         self.root_node: Optional[ClusterNode] = None
 
-        print(f"TaxonClusterer initialized")
-        print(f"  Redis: {redis_host}:{redis_port}/{redis_db}")
+        print("TaxonClusterer initialized")
+        print(f"  Redis: {self.redis_host}:{self.redis_port}/{self.redis_db}")
         print(f"  Neo4j: {neo4j_uri}")
 
     def load_embeddings(self, embedding_key: str) -> Tuple[np.ndarray, List[str]]:
@@ -469,11 +477,8 @@ def example_usage():
     """
     Example usage of TaxonClusterer.
     """
-    # Initialize clusterer
+    # Initialize clusterer.  Redis params default to env_config (REDIS_HOST etc.).
     clusterer = TaxonClusterer(
-        redis_host="localhost",
-        redis_port=6379,
-        redis_db=0,
         neo4j_uri="bolt://localhost:7687",
         neo4j_user="neo4j",
         neo4j_password="password"
