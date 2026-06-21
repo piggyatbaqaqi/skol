@@ -163,7 +163,10 @@ def list_existing_keys(redis_client, verbosity: int = 1) -> dict:
         matching_keys = []
         for pattern in config['keys']:
             # scan_iter, not keys(), for RedisCluster compatibility.
-            keys = redis_client.scan_iter(match=pattern)
+            # count=10000 to keep the per-pattern iteration tolerable on a
+            # large keyspace — default of 10 produces ~1.4M round trips on
+            # a 14M-key DB.
+            keys = redis_client.scan_iter(match=pattern, count=10000)
             matching_keys.extend([k.decode() if isinstance(k, bytes) else k for k in keys])
         results[component] = sorted(set(matching_keys))
 

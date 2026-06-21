@@ -196,7 +196,12 @@ class EmbeddingListView(APIView):
             # KEYS command — it can't operate across shards in one call.
             # scan_iter works on both single-node and cluster (the cluster
             # client transparently fans out to every shard and concatenates).
-            keys = sorted(r.scan_iter(match='skol:embedding:*'))
+            # count=10000 cuts the round-trip count ~1000x vs the default 10
+            # — on a 14M-key DB the default was producing 1.4M RTTs per
+            # request, which made the UI dropdown take minutes to populate.
+            # Long-term fix is a maintained index key (SADD on write, SREM
+            # on delete, SMEMBERS to list) instead of full-keyspace scan.
+            keys = sorted(r.scan_iter(match='skol:embedding:*', count=10000))
             logger.info(f"Found {len(keys)} embeddings: {keys}")
 
             return Response({
@@ -2171,8 +2176,9 @@ class VocabTreeVersionsView(APIView):
             r = get_redis_client(decode_responses=True)
 
             # Find all vocab tree keys (scan_iter, not keys, for RedisCluster
-            # compatibility — see EmbeddingListView for full rationale).
-            keys = list(r.scan_iter(match='skol:ui:menus_*'))
+            # compatibility — see EmbeddingListView for full rationale,
+            # including why count=10000 matters on large keyspaces).
+            keys = list(r.scan_iter(match='skol:ui:menus_*', count=10000))
 
             # Filter out the "latest" pointer
             version_keys = [k for k in keys if k != 'skol:ui:menus_latest']
