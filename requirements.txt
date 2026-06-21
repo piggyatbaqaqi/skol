@@ -19,9 +19,11 @@ scipy>=1.17.0
 sentence-transformers[onnx-gpu]>=5.2.0
 setuptools>=80.9.0
 spark-nlp>=6.3.1
-# torch wheel carries a +cu129 local version tag; install from the
-# official PyTorch index, e.g. --extra-index-url=https://download.pytorch.org/whl/cu129
-torch>=2.9.1+cu129,<3
+# torch wheel carries a +cu130 local version tag; install from the
+# official PyTorch index, e.g. --extra-index-url=https://download.pytorch.org/whl/cu130
+# Must use == (not >=): PEP 440 forbids local-version labels with inequality
+# operators.  Bump the pin by hand when you're ready to test a new torch.
+torch==2.12.0+cu130
 # Linear-chain CRF on top of torch — used by v4 layout + treatment passes.
 pytorch-crf>=0.7.2
 transformers>=4.57.6
