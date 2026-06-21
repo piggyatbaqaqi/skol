@@ -5,7 +5,18 @@ Snapshots the source Redis (via ``redis-cli --rdb``, which uses the SYNC
 protocol — no filesystem coordination needed on the source side), ships
 the RDB file to the target via SSH, and atomically swaps it into place
 on the target's Docker volume mount (stop the redis service → backup
-the old dump → install the new dump → start the redis service).
+the old dump → install the new dump → start the redis service → wait
+for RDB load → convert to AOF → restart cleanly).
+
+On Redis 7+ with ``appendonly yes`` (skol's config), a freshly-placed
+dump.rdb is NOT loaded on startup unless we first flip appendonly to
+no.  So the script edits ``redis.conf`` to ``appendonly no`` before
+starting the container, waits for the RDB load to finish, then uses
+``CONFIG SET appendonly yes`` to trigger an immediate AOF rewrite
+that captures the in-memory state into a fresh AOF base file, and
+finally restores ``appendonly yes`` in the conf so future restarts
+load from the (now-populated) AOF.  An EXIT trap ensures the conf
+restoration happens even if the script aborts partway.
 
 All three skol hosts (puchpuchobs, tsqali, skol.synoptickeyof.life) run
 Redis under ``docker compose``, so the swap goes through ``docker
@@ -49,6 +60,10 @@ prefix:
                                     ``/opt/skol/advanced-databases/docker-compose.yaml``.
 ``${PREFIX}_COMPOSE_SERVICE``       Redis service name in the compose file.
                                     Defaults to ``redis``.
+``${PREFIX}_REDIS_CONF``            Path to redis.conf on the target host (used
+                                    to temporarily flip appendonly during the
+                                    swap).  Defaults to
+                                    ``/opt/skol/advanced-databases/redis.conf``.
 ==================================  ==========================================
 
 For ``LOCAL`` (sentinel), drop the prefix from the variable name: just
@@ -93,6 +108,7 @@ LOCAL_RDB = Path("/data/tmp/mirror_redis.rdb")
 REMOTE_RDB = "/data/tmp/mirror_redis.rdb"
 DEFAULT_COMPOSE_FILE = "/opt/skol/advanced-databases/docker-compose.yaml"
 DEFAULT_COMPOSE_SERVICE = "redis"
+DEFAULT_REDIS_CONF = "/opt/skol/advanced-databases/redis.conf"
 
 
 def env_var_name(prefix: str, suffix: str) -> str:
@@ -232,6 +248,7 @@ def main() -> None:
     ssh_target = f"{ssh_user}@{ssh_host}"
     compose_file = get_env(dst, "COMPOSE_FILE") or DEFAULT_COMPOSE_FILE
     compose_service = get_env(dst, "COMPOSE_SERVICE") or DEFAULT_COMPOSE_SERVICE
+    redis_conf = get_env(dst, "REDIS_CONF") or DEFAULT_REDIS_CONF
 
     print(f"[3/4] Shipping snapshot to {ssh_target} and swapping in place...")
     # rsync over ssh, not scp: --partial preserves whatever bytes
@@ -257,6 +274,7 @@ def main() -> None:
 set -euo pipefail
 COMPOSE_FILE={shlex.quote(compose_file)}
 SERVICE={shlex.quote(compose_service)}
+CONF={shlex.quote(redis_conf)}
 DBFILENAME={shlex.quote(target_file)}
 
 CID=$(docker compose -f "$COMPOSE_FILE" ps -q "$SERVICE")
@@ -271,6 +289,13 @@ if [ -z "$HOST_DIR" ]; then
 fi
 TARGET_RDB="$HOST_DIR/$DBFILENAME"
 echo "  Target host path: $TARGET_RDB"
+echo "  Redis conf path:  $CONF"
+
+# Ensure 'appendonly yes' is restored in the conf on script exit, even
+# if we abort partway.  Otherwise a half-finished mirror leaves the
+# host in a state where every container restart loads dump.rdb and
+# ignores subsequent AOF writes — silent data loss waiting to happen.
+trap 'sed -i "s/^appendonly no$/appendonly yes/" "$CONF" 2>/dev/null || true' EXIT
 
 docker compose -f "$COMPOSE_FILE" stop "$SERVICE"
 
@@ -285,17 +310,12 @@ if [ -f "$TARGET_RDB" ]; then
     echo "  Backed up old rdb: $BACKUP"
 fi
 
-# Back up any AOF artifacts.  This is critical: redis.conf has
-# 'appendonly yes', and Redis prefers the AOF over the RDB on load —
-# so if we install a fresh dump.rdb but leave the AOF in place, our
-# mirror is silently ignored at startup.  Move it aside (don't rm)
-# so a failed mirror is recoverable.
-#
-# Layout differs by Redis version:
+# Back up any AOF artifacts.  Move (don't rm) so a failed mirror is
+# recoverable.  Layout differs by Redis version:
 #   Redis 7.x: multi-part bundle under $HOST_DIR/appendonlydir/
 #              (manifest + .base.rdb + .incr.aof files)
 #   Redis 6.x: single $HOST_DIR/appendonly.aof file
-# Handle both; mv -T to avoid mv-into-dir if the backup dir somehow
+# Handle both; mv -T avoids mv-into-dir if the backup name somehow
 # already exists.
 if [ -d "$HOST_DIR/appendonlydir" ]; then
     mv -T "$HOST_DIR/appendonlydir" "$HOST_DIR/appendonlydir.before-mirror-$TS"
@@ -312,7 +332,83 @@ cp {shlex.quote(REMOTE_RDB)} "$TARGET_RDB"
 chown --reference="$HOST_DIR" "$TARGET_RDB"
 chmod 660 "$TARGET_RDB"
 
+# Disable appendonly in the conf BEFORE starting redis.  Reason:
+# Redis 7+ with 'appendonly yes' and no AOF manifest on disk does NOT
+# fall back to dump.rdb — it starts empty and creates a fresh empty
+# AOF.  The dump.rdb we just placed would be ignored entirely.
+# Flipping appendonly to no makes redis load from dump.rdb; we flip
+# it back to yes via CONFIG SET (which triggers an immediate AOF
+# rewrite of the just-loaded state) once the load completes.
+sed -i 's/^appendonly yes$/appendonly no/' "$CONF"
+echo "  Temporarily set appendonly=no in $CONF (for the RDB load)"
+
 docker compose -f "$COMPOSE_FILE" start "$SERVICE"
+
+# Wait for the RDB load to complete.  PING starts succeeding as soon
+# as the listener is up; CONFIG, DBSIZE, etc. reply LOADING until
+# the in-memory load finishes.  47G takes ~80 sec on nvme; allow
+# up to an hour for slower disks or larger datasets.
+#
+# Auth: docker compose exec runs the redis-cli inside the container,
+# where REDIS_PASSWORD is already in env via env_file.  The single
+# quotes around the sh -c argument preserve the literal $REDIS_PASSWORD
+# so it's expanded INSIDE the container (not in our outer bash, where
+# the var isn't defined).
+echo "  Waiting for redis to finish loading dataset..."
+i=0
+while true; do
+    LOADING=$(docker compose -f "$COMPOSE_FILE" exec -T "$SERVICE" sh -c \\
+        'redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a "$REDIS_PASSWORD" --no-auth-warning INFO persistence' \\
+        2>/dev/null | grep ^loading: | tr -d '\\r' | cut -d: -f2)
+    [ "${{LOADING:-1}}" = "0" ] && break
+    i=$((i + 1))
+    if [ "$i" -ge 7200 ]; then
+        echo "ERROR: redis did not finish loading within 1 hour" >&2
+        exit 1
+    fi
+    sleep 0.5
+done
+LOADED=$(docker compose -f "$COMPOSE_FILE" exec -T "$SERVICE" sh -c \\
+    'redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a "$REDIS_PASSWORD" --no-auth-warning DBSIZE')
+echo "  Loaded keys: $LOADED"
+
+# Flip to AOF.  CONFIG SET appendonly yes triggers an immediate
+# background AOF rewrite that writes the in-memory state to a fresh
+# appendonlydir/appendonly.aof.X.base.rdb.  Canonical 'convert from
+# RDB-only to AOF-enabled' procedure.
+echo "  Flipping appendonly=yes (triggers AOF rewrite)..."
+docker compose -f "$COMPOSE_FILE" exec -T "$SERVICE" sh -c \\
+    'redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a "$REDIS_PASSWORD" --no-auth-warning CONFIG SET appendonly yes' \\
+    > /dev/null
+
+# Wait for the AOF rewrite to complete.  Comparable size to the RDB,
+# so similar time budget.
+echo "  Waiting for AOF rewrite to complete..."
+i=0
+while true; do
+    REWRITING=$(docker compose -f "$COMPOSE_FILE" exec -T "$SERVICE" sh -c \\
+        'redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a "$REDIS_PASSWORD" --no-auth-warning INFO persistence' \\
+        2>/dev/null | grep ^aof_rewrite_in_progress: | tr -d '\\r' | cut -d: -f2)
+    [ "${{REWRITING:-1}}" = "0" ] && break
+    i=$((i + 1))
+    if [ "$i" -ge 7200 ]; then
+        echo "ERROR: AOF rewrite did not complete within 1 hour" >&2
+        exit 1
+    fi
+    sleep 1
+done
+AOF_SIZE=$(docker compose -f "$COMPOSE_FILE" exec -T "$SERVICE" sh -c \\
+    'redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a "$REDIS_PASSWORD" --no-auth-warning INFO persistence' \\
+    2>/dev/null | grep ^aof_base_size: | tr -d '\\r' | cut -d: -f2)
+echo "  AOF rewrite complete: aof_base_size=$AOF_SIZE bytes"
+
+# Restore appendonly=yes in the conf so future container restarts
+# load from the (now-populated) AOF.  The trap above also runs this
+# on error paths; doing it explicitly here means the trap becomes a
+# no-op (sed find-no-match) on normal exit.
+sed -i 's/^appendonly no$/appendonly yes/' "$CONF"
+echo "  Restored appendonly=yes in $CONF"
+
 rm {shlex.quote(REMOTE_RDB)}
 """
 
