@@ -56,9 +56,10 @@ For ``LOCAL`` (sentinel), drop the prefix from the variable name: just
 
 Privilege model on the SSH target:
 
-  * scp transfers to ``/data/tmp`` as the SSH user — no root needed
-    (the directory is sticky-world-writable, 1777, created by skol's
-    postinst).
+  * rsync (over ssh, with ``--partial`` so interrupted transfers
+    resume from where they stopped) ships the snapshot to
+    ``/data/tmp`` as the SSH user — no root needed (the directory
+    is sticky-world-writable, 1777, created by skol's postinst).
   * The swap script (docker, cp into the redis volume, chown to the
     redis container's UID, mv aside the AOF) needs root.  It runs
     under a single ``sudo bash <script>`` invocation via ``ssh -t``.
@@ -233,8 +234,15 @@ def main() -> None:
     compose_service = get_env(dst, "COMPOSE_SERVICE") or DEFAULT_COMPOSE_SERVICE
 
     print(f"[3/4] Shipping snapshot to {ssh_target} and swapping in place...")
+    # rsync over ssh, not scp: --partial preserves whatever bytes
+    # already made it on a previous run, so an interrupted 47G transfer
+    # resumes from where it stopped instead of restarting at zero.
+    # --progress shows live bytes/sec during the transfer.  -a is
+    # archive mode (preserves perms/times); we don't strictly need it
+    # for a single file but it's cheap and idiomatic.
     subprocess.run(
-        ["scp", str(LOCAL_RDB), f"{ssh_target}:{REMOTE_RDB}"],
+        ["rsync", "-av", "--partial", "--progress",
+         str(LOCAL_RDB), f"{ssh_target}:{REMOTE_RDB}"],
         check=True,
     )
 
