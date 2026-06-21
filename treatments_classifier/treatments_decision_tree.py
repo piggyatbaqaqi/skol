@@ -229,8 +229,12 @@ class TreatmentsDecisionTreeClassifier:
             desc = doc.get('description', '')
             treatment = doc.get('treatment', '')
 
-            # Combine taxon name and description for richer features
-            text = f"{taxon} {desc}".strip()
+            # Combine treatment name and description for richer features.
+            # Previously used a 'taxon' variable that no longer exists
+            # post-migration (the .get(...) above was renamed but this
+            # f-string was missed, surfacing as NameError 'taxon' is not
+            # defined at runtime).
+            text = f"{treatment} {desc}".strip()
 
             if text:
                 descriptions.append(text)
