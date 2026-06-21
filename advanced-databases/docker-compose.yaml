@@ -55,10 +55,21 @@ services:
     env_file:
       - /home/skol/.skol_env
     ports:
-      # TLS port exposed to localhost only (current setup)
+      # Loopback on 6380 — preserves local clients (skol bin/ scripts,
+      # Django) that hit 127.0.0.1:6380 directly.
       - "127.0.0.1:6380:6379"
-      # Future: Uncomment to expose to other hosts for replication
-      # - "6379:6379"
+      # LAN exposure on the standard Redis port for cross-host cluster
+      # clients (Phase 2 verification + Phase 4 prod-skol → tsqali
+      # cutover).  TLS-ONLY inside the container: redis.conf has
+      # ``port 0`` (plain TCP listener disabled) and ``tls-port 6379``
+      # (only TLS listens), so binding to 0.0.0.0 exposes no
+      # clear-text endpoint on a routable address.  Auth is mandatory
+      # too (requirepass + ACL admin user).
+      - "0.0.0.0:6379:6379"
+      # Cluster bus port — TLS (tls-cluster yes in redis.conf).  Only
+      # opened by Redis when REDIS_CLUSTER_ENABLED=yes, so mapping it
+      # unconditionally is a no-op on non-cluster hosts.
+      - "0.0.0.0:16379:16379"
     volumes:
       - /data/skol/redis/data:/data
       - /opt/skol/advanced-databases/redis.conf:/usr/local/etc/redis/redis.conf.template:ro
