@@ -41,8 +41,9 @@ prefix:
                                     (root-readable — run as root).
 ``${PREFIX}_SSH_HOST``              SSH endpoint for the file swap (target
                                     only).  Defaults to ``${PREFIX}_REDIS_HOST``.
-``${PREFIX}_SSH_USER``              SSH user (target only).  Defaults to
-                                    ``root``.
+``${PREFIX}_SSH_USER``              SSH user (target only).  Defaults to the
+                                    current local user (``getpass.getuser()``)
+                                    — root SSH is not required.
 ``${PREFIX}_COMPOSE_FILE``          Path to docker-compose.yaml on the target
                                     host.  Defaults to
                                     ``/opt/skol/advanced-databases/docker-compose.yaml``.
@@ -53,12 +54,30 @@ prefix:
 For ``LOCAL`` (sentinel), drop the prefix from the variable name: just
 ``REDIS_HOST``, ``REDIS_PORT``, etc.
 
-Run as root so the LE cert (if used) is readable and the docker
-operations on the target succeed.
+Privilege model on the SSH target:
+
+  * scp transfers to ``/data/tmp`` as the SSH user — no root needed
+    (the directory is sticky-world-writable, 1777, created by skol's
+    postinst).
+  * The swap script (docker, cp into the redis volume, chown to the
+    redis container's UID, mv aside the AOF) needs root.  It runs
+    under a single ``sudo bash <script>`` invocation via ``ssh -t``.
+    Sudo prompts for the SSH user's password ONCE (interactive TTY)
+    and the cached credentials cover the rest of the run.
+
+For fully unattended operation (e.g. cron), add a NOPASSWD entry on
+the target like::
+
+    <ssh_user> ALL=(root) NOPASSWD: /usr/bin/bash /data/tmp/mirror_redis_swap.sh
+
+Run locally as whoever can read ``${PREFIX}_REDIS_CACERT`` — LE certs
+are typically root-only, so this script is usually invoked as root
+even though the SSH side isn't.
 """
 from __future__ import annotations
 
 import argparse
+import getpass
 import os
 import shlex
 import subprocess
@@ -201,7 +220,14 @@ def main() -> None:
     print(f"  In-container path: {target_dir}/{target_file}")
 
     ssh_host = get_env(dst, "SSH_HOST") or require_env(dst, "REDIS_HOST")
-    ssh_user = get_env(dst, "SSH_USER") or "root"
+    # Default SSH user is the operator's own account, not root.  /data/tmp
+    # is sticky-world-writable (1777) so any user can scp into it; the
+    # privileged swap operations get a single sudo wrapping the bash run
+    # below.  Operators with NOPASSWD sudo for /usr/bin/bash (or for the
+    # swap script path) run unattended.  Without NOPASSWD, sudo prompts
+    # once via the ssh -t TTY and caches credentials for the rest of the
+    # session.
+    ssh_user = get_env(dst, "SSH_USER") or getpass.getuser()
     ssh_target = f"{ssh_user}@{ssh_host}"
     compose_file = get_env(dst, "COMPOSE_FILE") or DEFAULT_COMPOSE_FILE
     compose_service = get_env(dst, "COMPOSE_SERVICE") or DEFAULT_COMPOSE_SERVICE
@@ -281,10 +307,29 @@ chmod 660 "$TARGET_RDB"
 docker compose -f "$COMPOSE_FILE" start "$SERVICE"
 rm {shlex.quote(REMOTE_RDB)}
 """
+
+    # Two-call SSH so we can do the privileged work via 'sudo bash' with
+    # a TTY for the password prompt — 'ssh -t' conflicts with feeding the
+    # script via stdin (-tt + stdin redirection garbles input on some
+    # terminals).  So:
+    #   1. First SSH (no TTY, stdin = script): write the script to a
+    #      tempfile under /data/tmp (writable by any user, 1777).
+    #   2. Second SSH (-t for TTY): sudo bash the tempfile.  sudo prompts
+    #      for password if needed; one prompt covers the whole script
+    #      since everything runs inside that one sudo invocation.
+    #      Tempfile cleanup happens inside the SAME ssh -t call so
+    #      stranding it on failure is rare.
+    swap_path = "/data/tmp/mirror_redis_swap.sh"
     subprocess.run(
-        ["ssh", ssh_target, "bash", "-s"],
+        ["ssh", ssh_target,
+         f"cat > {swap_path} && chmod 700 {swap_path}"],
         input=remote_script,
         text=True,
+        check=True,
+    )
+    subprocess.run(
+        ["ssh", "-t", ssh_target,
+         f"sudo bash {swap_path}; rc=$?; rm -f {swap_path}; exit $rc"],
         check=True,
     )
 
