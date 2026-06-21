@@ -214,11 +214,38 @@ echo "  Target host path: $TARGET_RDB"
 
 docker compose -f "$COMPOSE_FILE" stop "$SERVICE"
 
-BACKUP="${{TARGET_RDB}}.before-mirror-$(date +%Y%m%d-%H%M%S)"
+# Single timestamp shared by every backup taken in this swap so they
+# all line up when reading 'ls' later.
+TS=$(date +%Y%m%d-%H%M%S)
+
+# Back up the RDB.
+BACKUP="${{TARGET_RDB}}.before-mirror-$TS"
 if [ -f "$TARGET_RDB" ]; then
     mv "$TARGET_RDB" "$BACKUP"
     echo "  Backed up old rdb: $BACKUP"
 fi
+
+# Back up any AOF artifacts.  This is critical: redis.conf has
+# 'appendonly yes', and Redis prefers the AOF over the RDB on load —
+# so if we install a fresh dump.rdb but leave the AOF in place, our
+# mirror is silently ignored at startup.  Move it aside (don't rm)
+# so a failed mirror is recoverable.
+#
+# Layout differs by Redis version:
+#   Redis 7.x: multi-part bundle under $HOST_DIR/appendonlydir/
+#              (manifest + .base.rdb + .incr.aof files)
+#   Redis 6.x: single $HOST_DIR/appendonly.aof file
+# Handle both; mv -T to avoid mv-into-dir if the backup dir somehow
+# already exists.
+if [ -d "$HOST_DIR/appendonlydir" ]; then
+    mv -T "$HOST_DIR/appendonlydir" "$HOST_DIR/appendonlydir.before-mirror-$TS"
+    echo "  Backed up appendonlydir/ (Redis 7.x AOF bundle)"
+fi
+if [ -f "$HOST_DIR/appendonly.aof" ]; then
+    mv "$HOST_DIR/appendonly.aof" "$HOST_DIR/appendonly.aof.before-mirror-$TS"
+    echo "  Backed up appendonly.aof (Redis 6.x legacy)"
+fi
+
 cp {shlex.quote(REMOTE_RDB)} "$TARGET_RDB"
 # Match ownership of the volume dir so the in-container redis user can
 # read (and later rewrite) the file.
@@ -241,8 +268,9 @@ rm {shlex.quote(REMOTE_RDB)}
     print(f"  {src} DBSIZE: {src_size}")
     print(f"  {dst} DBSIZE: {dst_size}")
     if src_size != dst_size:
-        print("  WARNING: sizes differ — source may have moved keys since snapshot,")
-        print("           or target has AOF persistence that overrode the RDB load.")
+        print("  WARNING: sizes differ — source may have moved keys since snapshot")
+        print("           started (writes during the snapshot window are normal).")
+        print("           For a frozen comparison, pause writes on the source first.")
 
     LOCAL_RDB.unlink()
     print("Done.")
