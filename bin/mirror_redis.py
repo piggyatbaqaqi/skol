@@ -127,17 +127,30 @@ def run_redis(prefix: str, insecure: bool, *cmd: str, capture: bool = False) -> 
 
     Password flows via REDISCLI_AUTH env var so it doesn't show up in
     /proc/<pid>/cmdline (and thus ps / journalctl).
+
+    On non-zero exit when capture is True, prints the captured stdout
+    and stderr to the terminal before re-raising — otherwise the
+    operator sees only a CalledProcessError traceback with no clue
+    what redis-cli actually complained about.
     """
     env = os.environ.copy()
     env["REDISCLI_AUTH"] = require_env(prefix, "REDIS_PASSWORD")
     argv = ["redis-cli", *redis_cli_argv(prefix, insecure), *cmd]
-    result = subprocess.run(
-        argv,
-        env=env,
-        capture_output=capture,
-        text=capture,
-        check=True,
-    )
+    try:
+        result = subprocess.run(
+            argv,
+            env=env,
+            capture_output=capture,
+            text=capture,
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        if capture:
+            if exc.stdout:
+                print(exc.stdout, end="", file=sys.stderr)
+            if exc.stderr:
+                print(exc.stderr, end="", file=sys.stderr)
+        raise
     return result.stdout.strip() if capture else ""
 
 
@@ -157,17 +170,30 @@ def main() -> None:
     p.add_argument("--to", dest="dst", default="SKOL",
                    help="Target env-var prefix (default: SKOL)")
     p.add_argument("--insecure", action="store_true",
-                   help="Skip TLS verification (use for self-signed certs)")
+                   help="Skip TLS verification (use for self-signed certs, or "
+                        "when the cert SAN doesn't match the connection hostname)")
+    p.add_argument("--reuse-snapshot", action="store_true",
+                   help=f"Skip step 1 if {LOCAL_RDB} already exists on disk.  "
+                        "Useful for resuming after a step 2-4 failure without "
+                        "burning the snapshot time again — assumes the source "
+                        "hasn't drifted enough since the original snapshot to "
+                        "matter for your use case.")
     args = p.parse_args()
 
     src, dst, insecure = args.src, args.dst, args.insecure
 
-    print(f"[1/4] Snapshotting {src} Redis -> {LOCAL_RDB}...")
-    if LOCAL_RDB.exists():
-        LOCAL_RDB.unlink()
-    run_redis(src, insecure, "--rdb", str(LOCAL_RDB))
-    size = LOCAL_RDB.stat().st_size
-    print(f"  {size:,} bytes")
+    if args.reuse_snapshot and LOCAL_RDB.exists():
+        size = LOCAL_RDB.stat().st_size
+        print(f"[1/4] Reusing existing snapshot at {LOCAL_RDB} ({size:,} bytes).")
+        print(f"      Source {src} may have drifted; pass without --reuse-snapshot "
+              "to re-snapshot.")
+    else:
+        print(f"[1/4] Snapshotting {src} Redis -> {LOCAL_RDB}...")
+        if LOCAL_RDB.exists():
+            LOCAL_RDB.unlink()
+        run_redis(src, insecure, "--rdb", str(LOCAL_RDB))
+        size = LOCAL_RDB.stat().st_size
+        print(f"  {size:,} bytes")
 
     print(f"[2/4] Locating {dst} dump.rdb in-container path...")
     target_dir = config_get(dst, insecure, "dir").rstrip("/")
