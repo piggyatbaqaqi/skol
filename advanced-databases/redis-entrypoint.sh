@@ -22,6 +22,14 @@ fi
 REDIS_CLUSTER_ENABLED="${REDIS_CLUSTER_ENABLED:-no}"
 REDIS_CLUSTER_ANNOUNCE_IP="${REDIS_CLUSTER_ANNOUNCE_IP:-127.0.0.1}"
 REDIS_CLUSTER_ANNOUNCE_PORT="${REDIS_CLUSTER_ANNOUNCE_PORT:-6379}"
+# Separate TLS-port announce: in tls-cluster mode (which our redis.conf
+# enables), Redis emits cluster-announce-tls-port — NOT
+# cluster-announce-port — in CLUSTER NODES.  Default matches the
+# tls-port (6379) so an in-container localhost cluster still works,
+# but any host with a port-translation layer (docker-compose host
+# mapping, SSH reverse tunnel) MUST set this to the externally-visible
+# TLS port or clients will follow the wrong address on MOVED redirect.
+REDIS_CLUSTER_ANNOUNCE_TLS_PORT="${REDIS_CLUSTER_ANNOUNCE_TLS_PORT:-6379}"
 REDIS_CLUSTER_ANNOUNCE_BUS_PORT="${REDIS_CLUSTER_ANNOUNCE_BUS_PORT:-16379}"
 
 # Render the template.
@@ -30,11 +38,12 @@ sed -i \
     -e "s|PLACEHOLDER_WILL_BE_SET_BY_ENTRYPOINT|${REDIS_PASSWORD}|g" \
     -e "s|PLACEHOLDER_CLUSTER_ENABLED|${REDIS_CLUSTER_ENABLED}|g" \
     -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_IP|${REDIS_CLUSTER_ANNOUNCE_IP}|g" \
+    -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_TLS_PORT|${REDIS_CLUSTER_ANNOUNCE_TLS_PORT}|g" \
     -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_PORT|${REDIS_CLUSTER_ANNOUNCE_PORT}|g" \
     -e "s|PLACEHOLDER_CLUSTER_ANNOUNCE_BUS_PORT|${REDIS_CLUSTER_ANNOUNCE_BUS_PORT}|g" \
     "$CONFIG_FILE"
 
-echo "Redis configuration rendered (cluster=${REDIS_CLUSTER_ENABLED}, announce=${REDIS_CLUSTER_ANNOUNCE_IP}:${REDIS_CLUSTER_ANNOUNCE_PORT})"
+echo "Redis configuration rendered (cluster=${REDIS_CLUSTER_ENABLED}, announce=${REDIS_CLUSTER_ANNOUNCE_IP}:${REDIS_CLUSTER_ANNOUNCE_TLS_PORT})"
 
 # Non-cluster mode: nothing to bootstrap.  Exec so redis-server becomes PID 1.
 if [ "$REDIS_CLUSTER_ENABLED" != "yes" ]; then

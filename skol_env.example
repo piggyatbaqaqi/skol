@@ -26,6 +26,37 @@ REDIS_PASSWORD=CHANGEME_redis_password
 # Enable TLS for Redis connections (true/false)
 REDIS_TLS=true
 
+# -----------------------------------------------------------------------------
+# Redis Cluster (Phase 2+ of skol→tsqali migration)
+# -----------------------------------------------------------------------------
+# Server side: when REDIS_CLUSTER_ENABLED=yes the redis docker container
+# starts with cluster mode on and the entrypoint bootstraps all 16384 slots
+# to itself.  Set ONLY on the host that runs the cluster node (tsqali).
+# Default: unset (no cluster mode).
+#REDIS_CLUSTER_ENABLED=yes
+#
+# Address that clients see in CLUSTER NODES output and use for MOVED
+# redirects.  MUST be reachable from every client (the public IP, the LAN
+# hostname, or 127.0.0.1 for a single-host setup).  Required when ENABLED=yes.
+#REDIS_CLUSTER_ANNOUNCE_IP=23.25.95.129
+#
+# Ports the cluster announces.  Both PORT and TLS_PORT exist because Redis
+# emits *cluster-announce-tls-port* (NOT cluster-announce-port) when
+# tls-cluster is enabled in redis.conf — which it is in our setup.  So
+# REDIS_CLUSTER_ANNOUNCE_TLS_PORT is the load-bearing one in practice; set
+# both to keep them consistent in case tls-cluster is ever flipped off.
+# Match these to whatever externally-visible port maps to the container's
+# tls-port (6379 inside) — e.g. the SSH reverse-tunnel port on skol, or
+# the docker-compose host-side mapping.
+#REDIS_CLUSTER_ANNOUNCE_PORT=6381
+#REDIS_CLUSTER_ANNOUNCE_TLS_PORT=6381
+#REDIS_CLUSTER_ANNOUNCE_BUS_PORT=16381
+#
+# Client side: when REDIS_CLUSTER_MODE=yes, env_config.create_redis_client
+# returns a redis.cluster.RedisCluster instance instead of redis.Redis.
+# Set on every host whose skol app code talks to the cluster.
+#REDIS_CLUSTER_MODE=yes
+
 # =============================================================================
 # Email Configuration (for notifications and error reports)
 # =============================================================================
