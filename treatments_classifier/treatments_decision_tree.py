@@ -240,7 +240,7 @@ class TreatmentsDecisionTreeClassifier:
 
     def fit(
         self,
-        taxa_ids: Optional[List[str]] = None,
+        treatment_ids: Optional[List[str]] = None,
         documents: Optional[List[Dict[str, Any]]] = None,
         test_size: float = 0.2,
         limit: Optional[int] = None
@@ -248,17 +248,20 @@ class TreatmentsDecisionTreeClassifier:
         """Train the classifier on treatment descriptions.
 
         Args:
-            taxa_ids: List of specific taxon IDs to train on. If None, uses all.
-            documents: Pre-fetched documents (alternative to taxa_ids)
+            treatment_ids: List of specific treatment IDs to train on. If None, uses all.
+            documents: Pre-fetched documents (alternative to treatment_ids)
             test_size: Fraction of data to use for testing (0.0-1.0)
-            limit: Maximum number of documents to use (when taxa_ids is None)
+            limit: Maximum number of documents to use (when treatment_ids is None)
 
         Returns:
             Dictionary with training statistics including accuracy, classification report
         """
-        # Fetch documents if not provided
+        # Fetch documents if not provided.  fetch_taxa's signature still uses
+        # the legacy 'taxa_ids' name (passed positionally so the rename is
+        # internal only).  The broader fetch_taxa rename rides along with
+        # the rest of the taxa→treatments migration.
         if documents is None:
-            documents = self.fetch_taxa(taxa_ids, limit=limit)
+            documents = self.fetch_taxa(treatment_ids, limit=limit)
 
         if len(documents) < 2:
             raise ValueError(f"Need at least 2 treatment documents for training, got {len(documents)}")

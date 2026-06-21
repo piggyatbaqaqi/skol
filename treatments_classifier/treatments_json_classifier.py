@@ -313,7 +313,7 @@ class TreatmentsJSONClassifier:
 
     def fit(
         self,
-        taxa_ids: Optional[List[str]] = None,
+        treatment_ids: Optional[List[str]] = None,
         documents: Optional[List[Dict[str, Any]]] = None,
         test_size: float = 0.2,
         limit: Optional[int] = None
@@ -321,16 +321,19 @@ class TreatmentsJSONClassifier:
         """Train the classifier on treatment JSON annotations.
 
         Args:
-            taxa_ids: List of specific treatment IDs to train on
-            documents: Pre-fetched documents (alternative to taxa_ids)
+            treatment_ids: List of specific treatment IDs to train on
+            documents: Pre-fetched documents (alternative to treatment_ids)
             test_size: Fraction of data for testing (0.0-1.0)
             limit: Maximum number of documents
 
         Returns:
             Dictionary with training statistics
         """
+        # fetch_taxa's signature is still legacy 'taxa_ids' — passed
+        # positionally so this rename is internal only.  The broader
+        # fetch_taxa rename rides along with the taxa→treatments migration.
         if documents is None:
-            documents = self.fetch_taxa(taxa_ids, limit=limit)
+            documents = self.fetch_taxa(treatment_ids, limit=limit)
 
         if len(documents) < 2:
             raise ValueError(f"Need at least 2 documents, got {len(documents)}")
