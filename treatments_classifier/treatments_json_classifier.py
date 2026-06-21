@@ -336,7 +336,22 @@ class TreatmentsJSONClassifier:
             documents = self.fetch_taxa(treatment_ids, limit=limit)
 
         if len(documents) < 2:
-            raise ValueError(f"Need at least 2 documents, got {len(documents)}")
+            if len(documents) == 0:
+                # fetch_taxa returns only docs whose json_annotated field is
+                # populated — the empty result almost always means none of
+                # the records in the database have been through the
+                # treatments-to-json step yet, not that the database is
+                # empty.  Tell the user which it likely is and how to fix.
+                raise ValueError(
+                    "None of the available records have structured "
+                    "annotations (json_annotated field is empty or unset).  "
+                    "Run bin/treatments_to_json.py for this experiment "
+                    "to extract structured annotations, then retry."
+                )
+            raise ValueError(
+                f"Need at least 2 records with structured annotations "
+                f"to train, got {len(documents)}."
+            )
 
         if self.verbosity >= 1:
             print("Preparing training data...")
