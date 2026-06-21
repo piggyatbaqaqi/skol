@@ -64,12 +64,37 @@ REDIS_PID=$!
 # so the legacy '-a PASSWORD' form (which AUTHs as default) fails with NOAUTH.
 RCLI="redis-cli --tls --insecure -h 127.0.0.1 -p 6379 --user admin -a ${REDIS_PASSWORD} --no-auth-warning"
 
-echo "Waiting for Redis to start..."
+echo "Waiting for Redis to accept connections..."
 i=0
 while ! $RCLI ping >/dev/null 2>&1; do
     i=$((i + 1))
     if [ "$i" -ge 60 ]; then
-        echo "ERROR: Redis did not become ready within 30s" >&2
+        echo "ERROR: Redis did not become reachable within 30s" >&2
+        kill -TERM "$REDIS_PID" 2>/dev/null || true
+        exit 1
+    fi
+    sleep 0.5
+done
+
+# PING starts succeeding as soon as the network listener is up, but most
+# commands (CLUSTER INFO, CLUSTER ADDSLOTSRANGE) reply with
+# 'LOADING Redis is loading the dataset in memory' until the RDB/AOF
+# load completes.  Wait for loading:0 in INFO persistence before
+# touching cluster state — otherwise our bootstrap reads a 0-slots
+# response, thinks the cluster needs initialization, fails the
+# ADDSLOTSRANGE call, and kills redis mid-load.  Bumped the ceiling to
+# 1 hour so even a multi-tens-of-GB RDB has time to finish (the 47G
+# SBERT cache takes ~3-5 min in practice).
+echo "Waiting for Redis to finish loading dataset..."
+i=0
+while true; do
+    LOADING=$($RCLI INFO persistence 2>/dev/null | grep ^loading: | tr -d '\r' | cut -d: -f2)
+    if [ "${LOADING:-1}" = "0" ]; then
+        break
+    fi
+    i=$((i + 1))
+    if [ "$i" -ge 7200 ]; then
+        echo "ERROR: Redis did not finish loading within 1 hour" >&2
         kill -TERM "$REDIS_PID" 2>/dev/null || true
         exit 1
     fi
