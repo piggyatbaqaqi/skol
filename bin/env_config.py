@@ -685,14 +685,16 @@ def create_redis_client(
     password: Optional[str] = None,
     tls: Optional[bool] = None,
     db: int = 0,
-    decode_responses: bool = False
+    decode_responses: bool = False,
+    cluster_mode: Optional[bool] = None,
 ):
     """
     Create a Redis client with proper TLS and authentication configuration.
 
     This is the recommended way to create Redis connections in SKOL.
     It handles TLS certificates and authentication automatically based on
-    environment configuration.
+    environment configuration, and dispatches to redis.cluster.RedisCluster
+    when cluster mode is on.
 
     Args:
         host: Redis host (default: from REDIS_HOST env var)
@@ -700,11 +702,16 @@ def create_redis_client(
         username: Redis username (default: from REDIS_USERNAME env var)
         password: Redis password (default: from REDIS_PASSWORD env var)
         tls: Use TLS (default: from REDIS_TLS env var)
-        db: Redis database number (default: 0)
+        db: Redis database number (default: 0).  Ignored when cluster_mode
+            is True — Redis Cluster only supports database 0.
         decode_responses: Whether to decode responses as strings (default: False)
+        cluster_mode: When True, return a redis.cluster.RedisCluster instance
+            (which discovers the full cluster topology from the given host
+            via CLUSTER NODES) instead of a redis.Redis (single-node).
+            Default: from REDIS_CLUSTER_MODE env var.
 
     Returns:
-        redis.Redis: Configured Redis client
+        redis.Redis or redis.cluster.RedisCluster: Configured client.
 
     Example:
         >>> from env_config import create_redis_client
@@ -720,12 +727,12 @@ def create_redis_client(
     username = username if username is not None else config['redis_username']
     password = password if password is not None else config['redis_password']
     use_tls = tls if tls is not None else config['redis_tls']
+    use_cluster = cluster_mode if cluster_mode is not None else config['redis_cluster_mode']
 
-    # Build connection kwargs
+    # Build connection kwargs (shared between Redis and RedisCluster).
     kwargs: Dict[str, Any] = {
         'host': host,
         'port': port,
-        'db': db,
         'decode_responses': decode_responses,
     }
 
@@ -742,4 +749,13 @@ def create_redis_client(
         # Don't verify hostname (cert is for synoptickeyof.life but we connect to localhost)
         kwargs['ssl_check_hostname'] = False
 
+    if use_cluster:
+        # Redis Cluster has no multi-db concept (everything is on db 0), so
+        # we don't pass `db` through.  If the caller asked for a non-zero
+        # db while in cluster mode it's almost certainly a config mistake;
+        # ignoring silently is cheaper than erroring at construction.
+        from redis.cluster import RedisCluster
+        return RedisCluster(**kwargs)
+
+    kwargs['db'] = db
     return redis.Redis(**kwargs)

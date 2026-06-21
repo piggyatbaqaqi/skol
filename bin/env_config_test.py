@@ -496,3 +496,76 @@ class TestRedisClusterMode:
         monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
         from env_config import get_redis_config  # type: ignore[import]
         assert get_redis_config()['cluster_mode'] is True
+
+
+class TestCreateRedisClientDispatch:
+    """create_redis_client returns redis.Redis vs redis.cluster.RedisCluster
+    based on cluster_mode (param > REDIS_CLUSTER_MODE env var > default
+    False).  Tests mock RedisCluster because its constructor tries to
+    connect to bootstrap the cluster topology.
+    """
+
+    def _isolate(self, monkeypatch: Any) -> None:
+        monkeypatch.delenv('REDIS_CLUSTER_MODE', raising=False)
+        monkeypatch.setattr('env_config._load_skol_env', lambda: {})
+        monkeypatch.setattr('sys.argv', ['envconfig_test'])
+
+    def test_default_returns_redis(self, monkeypatch: Any) -> None:
+        """No cluster_mode arg, no env var → plain Redis.  Redis() is
+        lazy (no connection until first command), so this can construct
+        cleanly without a server."""
+        self._isolate(monkeypatch)
+        import redis
+        from env_config import create_redis_client  # type: ignore[import]
+        client = create_redis_client(host='localhost', port=6379)
+        assert isinstance(client, redis.Redis)
+        assert not isinstance(client, redis.cluster.RedisCluster)
+
+    def test_env_var_enables_cluster(self, monkeypatch: Any) -> None:
+        """REDIS_CLUSTER_MODE=yes routes to RedisCluster.  We mock the
+        constructor to avoid the real CLUSTER NODES handshake."""
+        self._isolate(monkeypatch)
+        monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
+
+        captured: Dict[str, Any] = {}
+        class MockRedisCluster:
+            def __init__(self, **kwargs: Any) -> None:
+                captured.update(kwargs)
+        monkeypatch.setattr('redis.cluster.RedisCluster', MockRedisCluster)
+
+        from env_config import create_redis_client  # type: ignore[import]
+        client = create_redis_client(host='tsqali', port=6379, password='pw')
+        assert isinstance(client, MockRedisCluster)
+        assert captured['host'] == 'tsqali'
+        assert captured['port'] == 6379
+        assert captured['password'] == 'pw'
+
+    def test_cluster_mode_strips_db(self, monkeypatch: Any) -> None:
+        """RedisCluster doesn't support multi-db.  When cluster_mode is
+        on, db must NOT appear in the constructor kwargs even if the
+        caller explicitly passed db != 0."""
+        self._isolate(monkeypatch)
+        monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
+
+        captured: Dict[str, Any] = {}
+        class MockRedisCluster:
+            def __init__(self, **kwargs: Any) -> None:
+                captured.update(kwargs)
+        monkeypatch.setattr('redis.cluster.RedisCluster', MockRedisCluster)
+
+        from env_config import create_redis_client  # type: ignore[import]
+        create_redis_client(host='tsqali', port=6379, db=3)
+        assert 'db' not in captured
+
+    def test_param_overrides_env_var(self, monkeypatch: Any) -> None:
+        """Explicit cluster_mode=False param defeats REDIS_CLUSTER_MODE=yes
+        env var.  Useful for tests/CLI scripts that need to force a
+        non-cluster client on a host whose env says otherwise."""
+        self._isolate(monkeypatch)
+        monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
+
+        import redis
+        from env_config import create_redis_client  # type: ignore[import]
+        client = create_redis_client(host='localhost', port=6379, cluster_mode=False)
+        assert isinstance(client, redis.Redis)
+        assert not isinstance(client, redis.cluster.RedisCluster)

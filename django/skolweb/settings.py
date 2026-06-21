@@ -239,6 +239,10 @@ REDIS_PORT = int(os.environ.get('REDIS_PORT', '6380'))
 REDIS_USERNAME = os.environ.get('REDIS_USERNAME', 'admin')
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
 REDIS_TLS = os.environ.get('REDIS_TLS', '').lower() in ('1', 'true', 'yes')
+# When True, get_redis_client returns a RedisCluster instance instead of
+# Redis.  Default off — set REDIS_CLUSTER_MODE=yes in the host env
+# (e.g. /home/skol/.skol_env) once the host is pointed at a Redis Cluster.
+REDIS_CLUSTER_MODE = os.environ.get('REDIS_CLUSTER_MODE', '').lower() in ('1', 'true', 'yes')
 # Build URL with proper scheme (rediss:// for TLS)
 _redis_scheme = 'rediss' if REDIS_TLS else 'redis'
 if REDIS_USERNAME and REDIS_PASSWORD:
