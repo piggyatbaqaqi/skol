@@ -439,3 +439,60 @@ class TestGnservicesUrls:
         cfg = get_env_config()
         assert cfg['gnfinder_url'] == 'http://cli-finder.example/api/v1/find'
         assert cfg['gnparser_url'] == 'http://cli-parser.example/api/v1'
+
+
+class TestRedisClusterMode:
+    """REDIS_CLUSTER_MODE env var → config['redis_cluster_mode'] boolean.
+
+    This is the toggle that determines whether create_redis_client returns
+    a redis.Redis() or a redis.cluster.RedisCluster() (Phase 2 step 4 of
+    the skol→tsqali Redis migration).  Default off so dev environments
+    and non-cluster prod boxes keep using single-node Redis until they
+    opt in by setting REDIS_CLUSTER_MODE=yes in /home/skol/.skol_env.
+    """
+
+    def _isolate(self, monkeypatch: Any) -> None:
+        """Strip REDIS_CLUSTER_MODE from os.environ and stub out
+        _load_skol_env so host-specific .skol_env files can't leak
+        into the test outcome."""
+        monkeypatch.delenv('REDIS_CLUSTER_MODE', raising=False)
+        monkeypatch.setattr('env_config._load_skol_env', lambda: {})
+        monkeypatch.setattr('sys.argv', ['envconfig_test'])
+
+    def test_default_false(self, monkeypatch: Any) -> None:
+        """With no env var set, default is False (single-node Redis)."""
+        self._isolate(monkeypatch)
+        from env_config import get_env_config  # type: ignore[import]
+        assert get_env_config()['redis_cluster_mode'] is False
+
+    def test_truthy_values_enable(self, monkeypatch: Any) -> None:
+        """'yes', 'true', '1' (case-insensitive) flip cluster mode on.
+        Matches the existing REDIS_TLS parsing convention."""
+        for truthy in ('yes', 'YES', 'true', 'True', '1'):
+            self._isolate(monkeypatch)
+            monkeypatch.setenv('REDIS_CLUSTER_MODE', truthy)
+            from env_config import get_env_config  # type: ignore[import]
+            assert get_env_config()['redis_cluster_mode'] is True, (
+                f'{truthy!r} should enable cluster mode'
+            )
+
+    def test_falsy_values_leave_disabled(self, monkeypatch: Any) -> None:
+        """Anything else — including 'no', 'false', '0', and typos —
+        leaves cluster mode off.  Defensive: we don't want a typo'd
+        env var to silently route traffic at a non-existent cluster."""
+        for falsy in ('', 'no', 'false', '0', 'off', 'cluster', 'on'):
+            self._isolate(monkeypatch)
+            monkeypatch.setenv('REDIS_CLUSTER_MODE', falsy)
+            from env_config import get_env_config  # type: ignore[import]
+            assert get_env_config()['redis_cluster_mode'] is False, (
+                f'{falsy!r} should NOT enable cluster mode'
+            )
+
+    def test_propagates_to_get_redis_config(self, monkeypatch: Any) -> None:
+        """get_redis_config() surfaces cluster_mode alongside the other
+        connection fields — that's how the Django factory will read it
+        in Phase 2 step 4."""
+        self._isolate(monkeypatch)
+        monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
+        from env_config import get_redis_config  # type: ignore[import]
+        assert get_redis_config()['cluster_mode'] is True

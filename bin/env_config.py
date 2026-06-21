@@ -391,6 +391,11 @@ def get_env_config() -> Dict[str, Any]:
         'redis_username': _get_env('REDIS_USERNAME', 'admin'),
         'redis_password': _get_env('REDIS_PASSWORD', ''),
         'redis_tls': _get_env('REDIS_TLS', '').lower() in ('1', 'true', 'yes'),
+        # When True, create_redis_client returns a RedisCluster instance
+        # instead of Redis.  Default False — only tsqali and (eventually)
+        # prod set REDIS_CLUSTER_MODE=yes in /home/skol/.skol_env.  See
+        # docs/skol-redis-migration.md (TODO) for the migration plan.
+        'redis_cluster_mode': _get_env('REDIS_CLUSTER_MODE', '').lower() in ('1', 'true', 'yes'),
         'redis_url': _get_env('REDIS_URL', ''),  # Built dynamically if not set
 
         # Pipeline family — required on every experiment doc; the
@@ -591,6 +596,7 @@ def get_redis_config() -> Dict[str, Any]:
         'username': config['redis_username'],
         'password': config['redis_password'],
         'tls': config['redis_tls'],
+        'cluster_mode': config['redis_cluster_mode'],
         'url': config['redis_url'] or build_redis_url(),
     }
 
