@@ -58,4 +58,10 @@ else
     unset REDIS_CLUSTER_MODE
     echo "skol app env: LOCAL ($REDIS_HOST:$REDIS_PORT, single-node)"
 fi
+
+# Surface the current target for prompt integration.  See
+# docs/redis-target-switcher.md for the ~/.bashrc snippet that
+# conditionally prepends [skol:tsqali] / [skol:local] to PS1.
+export SKOL_REDIS_TARGET=local
+
 echo "Local redis container: running"

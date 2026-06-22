@@ -67,6 +67,11 @@ export REDIS_TLS=yes
 export REDIS_CACERT="$TSQALI_REDIS_CACERT"
 export REDIS_CLUSTER_MODE=yes
 
+# Surface the current target for prompt integration.  See
+# docs/redis-target-switcher.md for the ~/.bashrc snippet that
+# conditionally prepends [skol:tsqali] / [skol:local] to PS1.
+export SKOL_REDIS_TARGET=tsqali
+
 unset _v
 echo "skol app env: TSQALI ($REDIS_HOST:$REDIS_PORT, cluster mode)"
 echo "Local redis container: stopped"

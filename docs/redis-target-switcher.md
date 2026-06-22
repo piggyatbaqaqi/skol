@@ -55,6 +55,49 @@ Round-tripping (local → tsqali → local) restores the original
 so the second `local` invocation puts you exactly back where you
 started — no manual cleanup of overrides needed.
 
+## Optional: show the active target in your shell prompt
+
+Each switcher exports `SKOL_REDIS_TARGET=tsqali` or `=local`.  Add
+this snippet to `~/.bashrc` to surface it as a `[skol:tsqali]` /
+`[skol:local]` prefix on your shell prompt:
+
+```bash
+# Show the active SKOL Redis target in the prompt.  Place AFTER the
+# conda init block (so $CONDA_PROMPT_MODIFIER is already exported)
+# and AFTER any line that re-assigns PS1.  The guard prevents
+# re-prepending if .bashrc is re-sourced (the indicator is already
+# there).  The :+ expansion means: only show the prefix when
+# SKOL_REDIS_TARGET is set — no indicator before either switcher
+# has been sourced (avoiding misleading 'local' in a default shell).
+if [[ "$PS1" != *SKOL_REDIS_TARGET* ]]; then
+    PS1='${SKOL_REDIS_TARGET:+[skol:$SKOL_REDIS_TARGET] }'"$PS1"
+fi
+```
+
+How this composes with the things already in your `PS1`:
+
+- **Conda's `(envname)` prefix** — set via `$CONDA_PROMPT_MODIFIER`,
+  which conda re-exports on each `activate`/`deactivate`.  We don't
+  touch that variable; our prefix just sits in front of (or behind)
+  it depending on where in PS1 you place this snippet.
+- **Terminal title escapes** — the `\[\e]0;…\a\]` sequence inside PS1
+  that updates the xterm/iTerm title bar stays intact.  Our prefix
+  is plain text, doesn't break the escape.
+- **PS1 re-assignment** — if a later line in `~/.bashrc` does
+  `PS1='...'` (overwriting rather than appending), our prefix is
+  lost.  Put the snippet AFTER any such line.  The guard makes
+  it safe to source `.bashrc` multiple times.
+
+After adding and re-sourcing `.bashrc`, the prompt looks something
+like:
+
+```
+(skol3.14) [skol:tsqali] piggy@puchpuchobs:~/src/skol$
+```
+
+— at a glance you know which Redis the next bin/ script or Django
+launch will hit.
+
 ## Test matrix
 
 Run each step against `local` first to capture the baseline, then
