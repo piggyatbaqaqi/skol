@@ -153,20 +153,46 @@ Reads many `skol:sources*` keys, computes per-source statistics,
 writes one summary key.  Output should be identical against both
 targets (modulo source data drift since the mirror).
 
-### 4. Read+write bin/ script with embeddings
+### 4. Read+write smoke test (synthetic, exercises the chunked path)
 
-Pick one document, run embed_treatments on it:
+`bin/embed_treatments.py` has no single-doc mode — invoking it
+processes the entire treatments database (~50 min, GPU-bound).
+That's a fine validation if you happen to want the embeddings,
+but for a Phase 3.5 sanity check the synthetic test below
+exercises the same Redis code path (multi-MB SETRANGE-chunked
+write + read back) in seconds:
 
 ```bash
-bin/embed_treatments.py --experiment production_v4 --doc-id <some-doc-id> --force
+python -c "
+import sys, os; sys.path.insert(0, 'bin')
+from env_config import create_redis_client
+
+r = create_redis_client()
+print(type(r).__name__, 'connected')
+
+big = os.urandom(40 * 1024 * 1024)   # 40 MB → SETRANGE chunking kicks in
+key = 'skol:test:phase35:chunked'
+import bin.embed_treatments as et
+et.redis_set_chunked(r, key, big, verbosity=2)
+got = r.get(key)
+print(f'roundtrip {len(got):,} bytes, match={got == big}')
+r.delete(key)
+"
 ```
 
 Watch for:
-- `redis.cluster.RedisCluster` mentioned in the connection log
+- `RedisCluster` (not plain `Redis`) printed by the type() call
 - No `MOVED` redirect errors (cluster client should follow transparently)
-- No `LOADING` errors (cluster bootstrap should be complete by now)
-- Embedding key written successfully (verify via DBSIZE delta or a
-  direct GET of the new key)
+- No socket-write timeouts (the chunk-size fix in `596c10f` made
+  64 MB → 8 MB chunks; tune via `SKOL_REDIS_CHUNK_SIZE` if your
+  link needs even smaller)
+- Final `match=True` proving the full payload round-tripped intact
+
+For a real workload run (only when you actually want the
+embeddings, not just connectivity validation):
+```bash
+bin/embed_treatments.py --experiment production_v4 --force
+```
 
 ### 5. End-to-end pipeline (optional, high-confidence)
 
