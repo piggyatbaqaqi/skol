@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
     FailureRecord,
     PlaziResult,
+    _SOURCE_TAG,
     build_search_url,
     compute_plazi_error,
     compute_plazi_update,
@@ -192,7 +193,8 @@ class TestShouldSkip(unittest.TestCase):
         recent = (datetime(2026, 6, 1, tzinfo=timezone.utc)
                   .strftime('%Y-%m-%dT%H:%M:%SZ'))
         self.assertTrue(should_skip(
-            {'doi': '10.1/x', 'plazi': {'looked_up_at': recent}},
+            {'doi': '10.1/x',
+             'plazi': {'looked_up_at': recent, 'source': _SOURCE_TAG}},
             force=False, re_check_after_days=365, now_iso=self.NOW,
         ))
 
@@ -201,7 +203,8 @@ class TestShouldSkip(unittest.TestCase):
         old = (datetime(2025, 1, 1, tzinfo=timezone.utc)
                .strftime('%Y-%m-%dT%H:%M:%SZ'))
         self.assertFalse(should_skip(
-            {'doi': '10.1/x', 'plazi': {'looked_up_at': old}},
+            {'doi': '10.1/x',
+             'plazi': {'looked_up_at': old, 'source': _SOURCE_TAG}},
             force=False, re_check_after_days=365, now_iso=self.NOW,
         ))
 
@@ -267,6 +270,40 @@ class TestShouldSkip(unittest.TestCase):
         valid backoff marker, so we re-query rather than block forever."""
         self.assertFalse(should_skip(
             {'doi': '10.1/x', 'plazi': {'error': {'reason': 'runaway'}}},
+            force=False, re_check_after_days=365,
+            retry_failed_after_days=7, now_iso=self.NOW,
+        ))
+
+    def test_old_source_lookup_is_requeried(self):
+        """Migration: a recent success stamp from the old searchByDOI
+        source tag carries stale/wrong data and must be re-queried under
+        the new srsStats endpoint — not skipped on freshness alone."""
+        recent = (datetime(2026, 6, 1, tzinfo=timezone.utc)
+                  .strftime('%Y-%m-%dT%H:%M:%SZ'))
+        self.assertFalse(should_skip(
+            {'doi': '10.1/x', 'plazi': {
+                'looked_up_at': recent, 'source': 'plazi:GgSrvApi:v1'}},
+            force=False, re_check_after_days=365, now_iso=self.NOW,
+        ))
+
+    def test_missing_source_lookup_is_requeried(self):
+        """A stamp with no source tag predates the convention; re-query."""
+        recent = (datetime(2026, 6, 1, tzinfo=timezone.utc)
+                  .strftime('%Y-%m-%dT%H:%M:%SZ'))
+        self.assertFalse(should_skip(
+            {'doi': '10.1/x', 'plazi': {'looked_up_at': recent}},
+            force=False, re_check_after_days=365, now_iso=self.NOW,
+        ))
+
+    def test_old_source_failure_is_requeried(self):
+        """A recent sticky-failure stamp from the old source tag is
+        re-queried too, not held by the weak block."""
+        recent = (datetime(2026, 6, 1, tzinfo=timezone.utc)
+                  .strftime('%Y-%m-%dT%H:%M:%SZ'))
+        self.assertFalse(should_skip(
+            {'doi': '10.1/x', 'plazi': {
+                'error': {'reason': 'http_status'},
+                'failed_at': recent, 'source': 'plazi:GgSrvApi:v1'}},
             force=False, re_check_after_days=365,
             retry_failed_after_days=7, now_iso=self.NOW,
         ))

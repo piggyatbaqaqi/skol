@@ -294,12 +294,16 @@ def should_skip(
     re_check_after_days: int,
     now_iso: str,
     retry_failed_after_days: int = _DEFAULT_RETRY_FAILED_AFTER_DAYS,
+    current_source: str = _SOURCE_TAG,
 ) -> bool:
     """True when the doc was checked or failed recently enough to skip and
     ``--force`` is not set.  Per CLAUDE.md rule 11, default behaviour is
     idempotent.
 
-    Two freshness windows:
+    A stamp from a *different* ``source`` tag than ``current_source`` is
+    never skipped: it predates an endpoint/semantics migration (e.g. the
+    pre-srsStats ``searchByDOI`` data) and must be re-queried regardless
+    of freshness.  Otherwise two freshness windows apply:
 
     - a successful ``looked_up_at`` within ``re_check_after_days``; and
     - a sticky-failure ``failed_at`` within ``retry_failed_after_days``
@@ -309,6 +313,8 @@ def should_skip(
         return False
     plazi = doc.get('plazi')
     if not isinstance(plazi, dict):
+        return False
+    if plazi.get('source') != current_source:
         return False
     looked_up = plazi.get('looked_up_at')
     if isinstance(looked_up, str) and looked_up:
