@@ -434,6 +434,32 @@ def query_plazi(
     return PlaziResult(data, None, None, url)
 
 
+class CachingHttpClient:
+    """Memoize GET responses by URL for the lifetime of one run.
+
+    A DOI is per-article, but many docs can share it; with the URL being
+    a deterministic function of the DOI, this caches the response so each
+    distinct DOI hits Plazi — and the rate limiter — exactly once.  It
+    wraps the rate-limited client (checked *first*), so cache hits return
+    immediately without sleeping or making a request.
+    """
+
+    def __init__(self, inner: Any) -> None:
+        self._inner = inner
+        self._cache: Dict[str, Any] = {}
+        self.hits = 0
+        self.misses = 0
+
+    def get(self, url: str, **kwargs: Any) -> Any:
+        if url in self._cache:
+            self.hits += 1
+            return self._cache[url]
+        self.misses += 1
+        resp = self._inner.get(url, **kwargs)
+        self._cache[url] = resp
+        return resp
+
+
 # ---------------------------------------------------------------------------
 # Per-doc processing
 # ---------------------------------------------------------------------------
@@ -648,12 +674,14 @@ def main() -> int:
         return 1
     db = server[db_name]
 
-    http_client = RateLimitedHttpClient(
+    # Dedup-by-DOI: cache responses so a DOI shared by multiple docs
+    # hits Plazi (and the rate limiter) only once per run.
+    http_client = CachingHttpClient(RateLimitedHttpClient(
         user_agent=_USER_AGENT,
         verbosity=max(0, verbosity - 1),
         rate_limit_min_ms=args.rate_limit_min_ms,
         rate_limit_max_ms=args.rate_limit_max_ms,
-    )
+    ))
 
     counts: Dict[str, int] = {
         'scanned': 0, 'skipped_fresh': 0, 'queried': 0,
@@ -766,6 +794,8 @@ def main() -> int:
         print(f'  save failures       : {counts["save_failure"]:>6}')
         print(f'  docs updated        : {counts["updated"]:>6}')
         print(f'  hit rate            : {hit_rate:>6.1%}')
+        print(f'  plazi calls (deduped): {http_client.misses:>5}'
+              f'  (saved {http_client.hits} duplicate-DOI calls)')
 
     return 0
 

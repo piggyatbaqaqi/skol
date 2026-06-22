@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from backfill_plazi_uuids import (  # type: ignore[import]  # noqa: E402
+    CachingHttpClient,
     FailureRecord,
     PlaziResult,
     _SOURCE_TAG,
@@ -911,6 +912,43 @@ class TestHeartbeat(unittest.TestCase):
         self.assertIn('500', line)
         self.assertIn('480', line)
         self.assertIn('20', line)
+
+
+class TestCachingHttpClient(unittest.TestCase):
+    """Dedup-by-DOI: a DOI shared by many docs must hit Plazi (and the
+    rate limiter) only once per run.  The cache wraps the rate-limited
+    client, so repeats short-circuit before any sleep or network."""
+
+    class _Counter:
+        def __init__(self) -> None:
+            self.n = 0
+
+        def get(self, url: str, **kw: Any) -> Any:
+            self.n += 1
+            return FakeResponse(200, {'data': [{'DocUuid': url}]})
+
+    def test_repeated_url_hits_inner_once(self):
+        inner = self._Counter()
+        client = CachingHttpClient(inner)
+        r1 = client.get('https://x/a')
+        r2 = client.get('https://x/a')
+        r3 = client.get('https://x/b')
+        self.assertEqual(inner.n, 2)        # 'a' once, 'b' once
+        self.assertIs(r1, r2)               # same cached response object
+        self.assertIsNot(r1, r3)
+        self.assertEqual(client.hits, 1)
+        self.assertEqual(client.misses, 2)
+
+    def test_passes_kwargs_through_on_miss(self):
+        seen = {}
+
+        class _Recorder:
+            def get(self, url: str, **kw: Any) -> Any:
+                seen.update(kw)
+                return FakeResponse(200, {'data': []})
+
+        CachingHttpClient(_Recorder()).get('u', timeout=5, verify=False)
+        self.assertEqual(seen, {'timeout': 5, 'verify': False})
 
 
 if __name__ == '__main__':
