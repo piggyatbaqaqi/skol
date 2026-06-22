@@ -14,6 +14,7 @@ Example:
 """
 
 import argparse
+import os
 import sys
 from typing import Any, Dict, Optional
 from pathlib import Path
@@ -46,8 +47,20 @@ LOCK_TTL = 7260  # 121 minutes
 # Redis Helpers
 # ============================================================================
 
-# 64 MB chunks — well under typical TLS buffer limits
-_CHUNK_SIZE = 64 * 1024 * 1024
+# Chunk size for SETRANGE-based writes of large values (embedding
+# pickles can be many tens of MB).  Default 8 MB balances:
+#   * loopback: one extra round trip per 8 MB is microseconds on lo,
+#     total time barely changes vs a single 64 MB chunk
+#   * tunneled/WAN: 8 MB is ~1 second of wire time at typical home
+#     upload speeds, well under any socket-write timeout.  64 MB
+#     chunks timed out the underlying TLS sendall when going through
+#     the skol→tsqali SSH tunnel.
+# Override via env var if a deployment needs different tuning (e.g.
+# very fast LAN: bump up for throughput; very slow link: bump down
+# further).
+_CHUNK_SIZE = int(
+    os.environ.get("SKOL_REDIS_CHUNK_SIZE", str(8 * 1024 * 1024))
+)
 
 
 def redis_set_chunked(
