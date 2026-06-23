@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import re
 
 import couchdb
-from env_config import get_env_config, create_redis_client
+from env_config import common_parser, create_redis_client, get_env_config
 
 # Default Redis key for sources statistics (v1 / anonymous-user
 # fallback).  Experiment-scoped runs append ``:{experiment_name}``
@@ -424,9 +424,8 @@ def main():
     """Main entry point."""
     import argparse
 
-    config = get_env_config()
-
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description="Build ingestion sources statistics and store in Redis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -453,7 +452,8 @@ Environment Variables:
 """
     )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
+    config = get_env_config(cli_args=args)
 
     # Get configuration
     couchdb_url = config['couchdb_url']
