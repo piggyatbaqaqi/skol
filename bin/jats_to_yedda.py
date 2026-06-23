@@ -35,7 +35,7 @@ if __name__ == "__main__" and __package__ is None:
     if bin_dir not in sys.path:
         sys.path.insert(0, bin_dir)
 
-from env_config import get_env_config
+from env_config import common_parser, get_env_config
 from ingestors.jats_to_yedda import jats_xml_to_yedda
 
 
@@ -235,16 +235,12 @@ def _process_doc(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description="Convert TaxPub XML documents to YEDDA-annotated text."
     )
 
     # Document selection (mutually exclusive).
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "--doc-id",
-        type=str,
-        help="CouchDB document ID to process.",
-    )
     group.add_argument(
         "--all",
         action="store_true",
@@ -303,27 +299,6 @@ def main() -> None:
 
     # Work-skipping and partial computation options.
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be processed without writing.",
-    )
-    parser.add_argument(
-        "--skip-existing",
-        action="store_true",
-        help="Skip documents that already have output.",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite existing output (overrides --skip-existing).",
-    )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Process at most N documents.",
-    )
-    parser.add_argument(
         "-v",
         "--verbose",
         action="count",
@@ -337,10 +312,10 @@ def main() -> None:
         help="Suppress output.",
     )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     verbosity = 0 if args.quiet else args.verbose
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
 
     # Merge env_config defaults with explicit CLI flags.
     skip_existing = (
@@ -406,8 +381,8 @@ def main() -> None:
     # Collect document IDs to process.
     doc_ids: List[str] = []
     excluded_count = 0
-    if args.doc_id:
-        doc_ids = [args.doc_id]
+    if config.get('doc_ids'):
+        doc_ids = config['doc_ids']
     elif args.all:
         doc_ids = select_doc_ids(
             source_db, exclude_ids=exclude_ids, include_ids=include_ids,

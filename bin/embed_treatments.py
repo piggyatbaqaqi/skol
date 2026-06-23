@@ -31,7 +31,7 @@ import skol_compat  # noqa: F401 (imported for side effects)
 
 from dr_drafts_mycosearch.data import SKOL_TAXA, SKOL_COLLECTIONS
 from dr_drafts_mycosearch.compute_embeddings import EmbeddingsComputer
-from env_config import get_env_config, create_redis_client, build_redis_url
+from env_config import common_parser, get_env_config, create_redis_client, build_redis_url
 import pandas as pd
 
 
@@ -514,6 +514,7 @@ def main():
     """Main entry point for the embedding program."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='Compute sBERT embeddings for taxa and save to Redis',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -565,23 +566,8 @@ Examples:
         help='Expiration time in seconds, or "None" for no expiration (default: 172800 = 2 days)'
     )
 
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Preview what would be computed without saving'
-    )
 
-    parser.add_argument(
-        '--skip-existing',
-        action='store_true',
-        help='Skip if embeddings already exist (default behavior)'
-    )
 
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Recompute embeddings even if they already exist in Redis'
-    )
 
     parser.add_argument(
         '--include-collections',
@@ -646,10 +632,10 @@ Examples:
         ),
     )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     # Get configuration
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
 
     # Handle expire argument:
     # - If user didn't provide --expire: attribute doesn't exist, use config default

@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import couchdb  # type: ignore[import]  # noqa: E402
 
-from env_config import get_env_config  # type: ignore[import]  # noqa: E402
+from env_config import common_parser, get_env_config  # type: ignore[import]  # noqa: E402
 from ingestors.extract_plaintext import (  # noqa: E402
     plaintext_from_pdf, plaintext_from_yedda,
 )
@@ -497,27 +497,16 @@ def process_documents_v4(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='v4 Step-1 detector orchestrator.',
     )
     parser.add_argument(
         '--database', default=None,
         help='CouchDB database (default: env_config couchdb_database).',
     )
-    parser.add_argument(
-        '--doc-id', dest='doc_id', default=None,
-        help='Process only this doc instead of iterating the DB.',
-    )
-    parser.add_argument(
-        '--gnfinder-url', default=None,
-        help='gnfinder API URL (default: env_config gnfinder_url).',
-    )
-    parser.add_argument(
-        '--gnparser-url', default=None,
-        help='gnparser API URL (default: env_config gnparser_url).',
-    )
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
     verbosity = int(config.get('verbosity', 1) or 0)
     dry_run = bool(config.get('dry_run', False))
     force = bool(config.get('force', False))
@@ -550,8 +539,8 @@ def main() -> int:
         if dry_run:
             print('  *** DRY RUN — no attachments written ***')
 
-    if args.doc_id:
-        doc_ids = [args.doc_id]
+    if config.get('doc_ids'):
+        doc_ids = config['doc_ids']
     else:
         doc_ids = list(_iter_doc_ids(db, limit=limit))
 

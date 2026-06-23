@@ -51,7 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
 import skol_compat  # noqa: F401 (imported for side effects)
 
-from env_config import get_env_config
+from env_config import common_parser, get_env_config
 
 
 # ============================================================================
@@ -816,6 +816,7 @@ def main():
     """Main entry point for the taxa to JSON translation program."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='Convert taxa descriptions to structured JSON using a fine-tuned Mistral model',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -913,7 +914,7 @@ Examples:
     )
 
     parser.add_argument(
-        '--pattern',
+        '--doc-id-pattern',
         type=str,
         default=DEFAULT_PATTERN,
         metavar='PATTERN',
@@ -928,13 +929,6 @@ Examples:
         help=f'Number of descriptions per batch (default: {DEFAULT_BATCH_SIZE})'
     )
 
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=None,
-        metavar='N',
-        help='Maximum number of records to process (default: all)'
-    )
 
     parser.add_argument(
         '--no-validate',
@@ -942,23 +936,8 @@ Examples:
         help='Skip JSON validation step'
     )
 
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be done without saving changes'
-    )
 
-    parser.add_argument(
-        '--incremental',
-        action='store_true',
-        help='Save each record as it completes (recommended for long jobs, crash-resistant)'
-    )
 
-    parser.add_argument(
-        '--skip-existing',
-        action='store_true',
-        help='Skip records that already exist in destination database (for cheap restarts)'
-    )
 
     parser.add_argument(
         '--recompute-invalid',
@@ -1060,19 +1039,11 @@ Examples:
         help='Max consecutive subprocess restarts without a result before giving up (default: 3)'
     )
 
-    parser.add_argument(
-        '--verbosity',
-        type=int,
-        choices=[0, 1, 2],
-        default=None,
-        metavar='LEVEL',
-        help='Verbosity level: 0=silent, 1=info, 2=debug (default: 1)'
-    )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     # Get configuration from environment
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
 
     # Override config with command-line arguments
     source_db = args.source_db or config.get('source_db') or DEFAULT_SOURCE_DB
@@ -1118,7 +1089,7 @@ Examples:
             dest_db=dest_db,
             checkpoint_path=checkpoint_path,
             base_model_id=base_model_id,
-            pattern=args.pattern,
+            pattern=args.doc_id_pattern,
             batch_size=args.batch_size,
             limit=limit,
             verbosity=verbosity,
