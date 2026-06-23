@@ -132,7 +132,7 @@ python extract_treatments_to_couchdb.py \
     --taxon-database mycobank_taxa \
     --ingest-username admin \
     --ingest-password secret \
-    --pattern "*.txt.ann"
+    --attachment-pattern "*.txt.ann"
 ```
 
 **Arguments:**
@@ -144,7 +144,7 @@ python extract_treatments_to_couchdb.py \
 - `--taxon-database`: Name of taxon database (required)
 - `--taxon-username`: Username for taxon database (defaults to ingest-username)
 - `--taxon-password`: Password for taxon database (defaults to ingest-password)
-- `--pattern`: Attachment pattern (default: *.txt.ann)
+- `--attachment-pattern`: Attachment pattern (default: *.txt.ann)
 
 ### Advanced: Using Individual Functions
 

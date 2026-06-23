@@ -133,7 +133,7 @@ This document summarizes the current state of work-skipping options across SKOL 
 |--------|-------------|
 | `--doc-id DOC_ID` | Process only specific document |
 | `--dry-run` | Preview without saving |
-| `--pattern PATTERN` | Filter by attachment pattern |
+| `--attachment-pattern PATTERN` | Filter by attachment pattern |
 
 **Skip Behavior:**
 - Implicit eager mode (always regenerates)
@@ -240,7 +240,7 @@ Work Control:
 Partial Processing:
   --limit N           Process at most N records
   --doc-id ID         Process only the specified document ID
-  --pattern PATTERN   Filter by document/attachment pattern
+  --attachment-pattern PATTERN  Filter by attachment pattern
 
 Incremental Mode:
   --incremental       Save each record as it completes (crash-resistant)

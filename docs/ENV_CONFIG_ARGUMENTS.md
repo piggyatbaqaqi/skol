@@ -69,7 +69,6 @@ In this example:
 --couchdb-username <username>    # CouchDB username
 --couchdb-password <password>    # CouchDB password
 --couchdb-database <database>    # Main CouchDB database name
---couchdb-pattern <pattern>      # Attachment pattern (e.g., *.txt)
 ```
 
 ### Ingest Database Settings
@@ -123,7 +122,6 @@ In this example:
 ### Prediction Settings
 
 ```bash
---pattern <pattern>              # Pattern for annotated files
 --prediction-batch-size <size>   # Prediction batch size (integer)
 --num-workers <num>              # Number of workers (integer)
 --union-batch-size <size>        # DataFrame union batch size (integer, default: 1000)

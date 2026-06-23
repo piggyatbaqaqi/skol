@@ -312,7 +312,7 @@ python examples/extract_treatments_from_couchdb.py \
     --db-name mycobank \
     --username admin \
     --password secret \
-    --pattern "*.txt.ann"
+    --attachment-pattern "*.txt.ann"
 ```
 
 That's it! You're now extracting taxa from CouchDB with full metadata tracking and distributed processing.

@@ -214,7 +214,7 @@ cd /data/piggy/src/github.com/piggyatbaqaqi/skol
 # 2. Run prediction with line-level classification
 ./bin/with_skol bin/predict_classifier.py \
     --model logistic_sections \
-    --pattern "*.txt"
+    --attachment-pattern "*.txt"
 
 # 3. Check that page markers appear in .txt.ann file
 # They should be present as raw lines (not YEDDA formatted)

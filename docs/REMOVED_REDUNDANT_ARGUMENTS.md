@@ -1,5 +1,11 @@
 # Removed Redundant Command-Line Arguments
 
+> **Update (2026-06-23):** `--pattern` and `--couchdb-pattern` have since
+> been moved *out* of the common space — each was used by only one
+> command. They are now a per-command **`--attachment-pattern`** flag
+> (`extract_treatments_to_couchdb`, `predict_classifier`). The historical
+> examples below predate that change. See `docs/bin-argparse-strict.md`.
+
 ## Overview
 
 Following the implementation of centralized command-line argument parsing in `bin/env_config.py`, redundant argument definitions have been removed from individual scripts. Configuration can now be set via command-line arguments to `env_config` rather than duplicating argument parsers in each script.
