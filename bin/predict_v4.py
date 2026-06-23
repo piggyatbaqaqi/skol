@@ -52,7 +52,7 @@ from annotate_v4 import (  # type: ignore[import]  # noqa: E402
     _xml_attachments_present,
 )
 from env_config import (  # type: ignore[import]  # noqa: E402
-    create_redis_client, get_env_config,
+    common_parser, create_redis_client, get_env_config,
 )
 from ingestors.extract_plaintext import (  # noqa: E402
     plaintext_from_pdf, plaintext_from_yedda,
@@ -485,6 +485,7 @@ def predict_all_single(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='v4 end-to-end predictor.',
     )
     parser.add_argument(
@@ -551,7 +552,7 @@ def main() -> int:
             'contribution to F1.  Works with both dispatch modes.'
         ),
     )
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     if args.single_crf_key and (args.pass1_key or args.pass2_key):
         print(
@@ -561,7 +562,7 @@ def main() -> int:
         )
         return 1
 
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
     verbosity = int(config.get('verbosity', 1) or 0)
     dry_run = bool(config.get('dry_run', False))
     force = bool(config.get('force', False))

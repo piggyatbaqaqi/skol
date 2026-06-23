@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.classifier_v2 import SkolClassifierV2
 from skol_classifier.utils import get_file_list
-from env_config import get_env_config, create_redis_client
+from env_config import common_parser, get_env_config, create_redis_client
 
 
 # ============================================================================
@@ -372,6 +372,7 @@ def main():
     """Main entry point for the training program."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='Train SKOL classifier and save to Redis',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -445,7 +446,7 @@ Environment Variables:
         help='List available model configurations and exit'
     )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     # List models if requested
     if args.list_models:
@@ -461,7 +462,7 @@ Environment Variables:
         return
 
     # Get configuration
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
 
     # Resolve model name: CLI arg > experiment model_name > default
     model_name = args.model_name or config.get('model_name') or 'logistic_sections'

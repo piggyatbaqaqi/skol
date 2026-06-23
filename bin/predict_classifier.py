@@ -51,7 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.classifier_v2 import SkolClassifierV2
-from env_config import get_env_config, create_redis_client
+from env_config import common_parser, get_env_config, create_redis_client
 from ingestors import RateLimitedHttpClient
 from ingestors.timestamps import set_timestamps
 
@@ -1407,6 +1407,7 @@ def main():
     """Main entry point for the prediction program."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='Predict labels using SKOL classifier from Redis',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -1538,7 +1539,7 @@ Note: Command-line arguments override environment variables.
         ),
     )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     # List models if requested
     if args.list_models:
@@ -1552,7 +1553,7 @@ Note: Command-line arguments override environment variables.
         return
 
     # Get configuration
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
 
     # Apply --output-database override (takes precedence over experiment)
     if args.output_database:

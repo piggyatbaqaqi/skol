@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import couchdb  # type: ignore[import]  # noqa: E402
 
 from env_config import (  # type: ignore[import]  # noqa: E402
-    create_redis_client, get_env_config,
+    common_parser, create_redis_client, get_env_config,
 )
 from ingestors.extract_plaintext import (  # noqa: E402
     plaintext_from_pdf, plaintext_from_yedda,
@@ -543,6 +543,7 @@ def _resolve_device(choice: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description='Train the v4 Pass-1 layout CRF.',
     )
     parser.add_argument(
@@ -570,9 +571,9 @@ def main() -> int:
     parser.add_argument(
         '--redis-meta-key', default=_DEFAULT_META_KEY,
     )
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
     verbosity = int(config.get('verbosity', 1) or 0)
     dry_run = bool(config.get('dry_run', False))
     force = bool(config.get('force', False))
