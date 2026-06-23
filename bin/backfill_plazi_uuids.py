@@ -58,7 +58,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import couchdb  # type: ignore[import]  # noqa: E402
 
-from env_config import get_env_config  # type: ignore[import]  # noqa: E402
+from env_config import (  # type: ignore[import]  # noqa: E402
+    common_parser,
+    get_env_config,
+)
 from ingestors.rate_limited_client import (  # noqa: E402
     RateLimitedHttpClient,
 )
@@ -600,6 +603,7 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(
         description='Cross-reference skol_dev DOIs with Plazi UUIDs.',
+        parents=[common_parser()],
     )
     parser.add_argument(
         '--source-db', default=None,
@@ -651,9 +655,9 @@ def main() -> int:
             f'(default: {_DEFAULT_HEARTBEAT_EVERY}).'
         ),
     )
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
-    config = get_env_config()
+    config = get_env_config(cli_args=args)
     verbosity = int(config.get('verbosity', 1) or 0)
     dry_run = bool(config.get('dry_run', False))
     force = bool(config.get('force', False))
