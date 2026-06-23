@@ -5,15 +5,20 @@ of the golden-v2 plan: ``databases.golden`` → ``golden_db_name`` and
 ``databases.golden_ann`` → ``golden_ann_db_name``.
 """
 
+import argparse
 import sys
 from pathlib import Path
 from typing import Any, Dict
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_config import (  # type: ignore[import]  # noqa: E402
     _apply_experiment,
     _parse_embedding_expire,
+    common_parser,
+    get_env_config,
 )
 
 
@@ -569,3 +574,55 @@ class TestCreateRedisClientDispatch:
         client = create_redis_client(host='localhost', port=6379, cluster_mode=False)
         assert isinstance(client, redis.Redis)
         assert not isinstance(client, redis.cluster.RedisCluster)
+
+
+class TestCommonParser:
+    """The shared parent parser holding the common env_config flags."""
+
+    def test_parses_config_flags(self) -> None:
+        ns = common_parser().parse_args(
+            ['--couchdb-url', 'http://x', '--limit', '7', '--force'])
+        assert ns.couchdb_url == 'http://x'
+        assert ns.limit == 7
+        assert ns.force is True
+
+    def test_usable_as_argparse_parent(self) -> None:
+        """parents=[common_parser()] inherits the common flags; the child
+        adds its own and parses strictly (the whole point)."""
+        child = argparse.ArgumentParser(parents=[common_parser()])
+        child.add_argument('--source-db')
+        ns = child.parse_args(['--source-db', 'db', '--limit', '3'])
+        assert ns.source_db == 'db'
+        assert ns.limit == 3
+
+    def test_child_rejects_unknown_flag(self) -> None:
+        child = argparse.ArgumentParser(parents=[common_parser()])
+        with pytest.raises(SystemExit):
+            child.parse_args(['--definitely-not-a-flag'])
+
+
+class TestGetEnvConfigCliArgs:
+    """get_env_config can take an already-parsed namespace (the parent
+    pattern) instead of re-parsing sys.argv."""
+
+    def test_applies_cli_namespace_override(self) -> None:
+        ns = common_parser().parse_args(
+            ['--couchdb-database', 'mydb', '--limit', '5'])
+        cfg = get_env_config(cli_args=ns)
+        assert cfg['couchdb_database'] == 'mydb'
+        assert cfg['limit'] == 5
+
+    def test_ignores_script_specific_namespace_keys(self) -> None:
+        """A parent-pattern namespace also carries the script's own flags;
+        a name that is NOT a common config key must not leak into the
+        config dict."""
+        ns = common_parser().parse_args(['--couchdb-database', 'mydb'])
+        setattr(ns, 'zzz_script_only_flag', 'should-be-ignored')
+        cfg = get_env_config(cli_args=ns)
+        assert 'zzz_script_only_flag' not in cfg
+        assert cfg['couchdb_database'] == 'mydb'
+
+    def test_standalone_still_returns_dict(self) -> None:
+        cfg = get_env_config()
+        assert isinstance(cfg, dict)
+        assert 'couchdb_url' in cfg

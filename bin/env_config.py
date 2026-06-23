@@ -305,7 +305,75 @@ def _apply_experiment(
         config['pipeline'] = experiment_doc['pipeline']
 
 
-def get_env_config() -> Dict[str, Any]:
+def common_parser() -> argparse.ArgumentParser:
+    """The shared parser holding the common (env_config) CLI flags.
+
+    ``add_help=False`` so it can serve as an argparse ``parents=[...]``
+    parent: a ``bin/`` script builds its own parser with
+    ``parents=[common_parser()]``, adds its script-specific flags, and
+    calls ``parse_args()`` — getting strict typo-rejection and a ``-h``
+    listing every flag, while the common flags are defined once, here.
+    Pass the resulting namespace to ``get_env_config(cli_args=...)``.
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+
+    # Add arguments for each configuration key
+    # String arguments
+    for key in [
+        'couchdb_url', 'couchdb_host', 'couchdb_username', 'couchdb_password', 'couchdb_database',
+        'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
+        'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'treatments_db_name',
+        'golden_db_name', 'golden_ann_db_name',
+        'training_database', 'annotations_db_name',
+        'redis_host', 'redis_url', 'redis_username', 'redis_password',
+        'model_version', 'classifier_model_expire',
+        'model_name', 'menus_key',
+        'embedding_name',
+        'gnfinder_url', 'gnparser_url',
+        'couchdb_pattern', 'pattern',
+        'ncbi_api_key',
+        'bahir_package', 'spark_driver_memory', 'spark_executor_memory'
+    ]:
+        arg_name = '--' + key.replace('_', '-')
+        parser.add_argument(arg_name, type=str, default=None, dest=key)
+
+    # Integer arguments
+    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size', 'incremental_batch_size']:
+        arg_name = '--' + key.replace('_', '-')
+        parser.add_argument(arg_name, type=int, default=None, dest=key)
+
+    # Path arguments
+    parser.add_argument('--annotated-path', type=str, default=None, dest='annotated_path')
+    parser.add_argument('--brat-data-dir', type=str, default=None, dest='brat_data_dir')
+
+    # Work-skipping and partial computation options
+    parser.add_argument('--dry-run', action='store_true', default=None, dest='dry_run',
+                        help='Preview what would be done without making changes')
+    parser.add_argument('--skip-existing', action='store_true', default=None, dest='skip_existing',
+                        help='Skip records/documents that already have output')
+    parser.add_argument('--force', action='store_true', default=None, dest='force',
+                        help='Process even if output already exists (overrides --skip-existing)')
+    parser.add_argument('--incremental', action='store_true', default=None, dest='incremental',
+                        help='Save each record as it completes (crash-resistant)')
+    parser.add_argument('--taxonomy-filter', action='store_true', default=None, dest='taxonomy_filter',
+                        help='Only process documents with taxonomy abbreviations')
+    parser.add_argument('--skip-golden', action='store_true', default=None, dest='skip_golden',
+                        help='Skip documents marked as part of the golden dataset')
+    parser.add_argument('--limit', type=int, default=None, dest='limit',
+                        help='Process at most N records')
+    parser.add_argument('--doc-id', '--doc-ids', type=str, default=None, dest='doc_ids',
+                        help='Process only specific document ID(s), comma-separated')
+
+    # Experiment flag (resolves databases and Redis keys from experiment record)
+    parser.add_argument('--experiment', type=str, default=None, dest='experiment_name',
+                        help='Experiment name — resolves databases and Redis keys from skol_experiments')
+
+    return parser
+
+
+def get_env_config(
+    cli_args: Optional[argparse.Namespace] = None,
+) -> Dict[str, Any]:
     """
     Get complete environment configuration from command-line args, environment variables, or defaults.
 
@@ -484,67 +552,22 @@ def get_env_config() -> Dict[str, Any]:
         'doc_ids': _parse_doc_ids(_get_env('DOC_IDS', '')),
     }
 
-    # Parse command-line arguments to override config
-    parser = argparse.ArgumentParser(add_help=False)  # Don't add -h/--help to avoid conflicts
-
-    # Add arguments for each configuration key
-    # String arguments
-    for key in [
-        'couchdb_url', 'couchdb_host', 'couchdb_username', 'couchdb_password', 'couchdb_database',
-        'ingest_url', 'ingest_database', 'ingest_username', 'ingest_password', 'ingest_db_name',
-        'taxon_url', 'taxon_database', 'taxon_username', 'taxon_password', 'treatments_db_name',
-        'golden_db_name', 'golden_ann_db_name',
-        'training_database', 'annotations_db_name',
-        'redis_host', 'redis_url', 'redis_username', 'redis_password',
-        'model_version', 'classifier_model_expire',
-        'model_name', 'menus_key',
-        'embedding_name',
-        'gnfinder_url', 'gnparser_url',
-        'couchdb_pattern', 'pattern',
-        'ncbi_api_key',
-        'bahir_package', 'spark_driver_memory', 'spark_executor_memory'
-    ]:
-        arg_name = '--' + key.replace('_', '-')
-        parser.add_argument(arg_name, type=str, default=None, dest=key)
-
-    # Integer arguments
-    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size', 'incremental_batch_size']:
-        arg_name = '--' + key.replace('_', '-')
-        parser.add_argument(arg_name, type=int, default=None, dest=key)
-
-    # Path arguments
-    parser.add_argument('--annotated-path', type=str, default=None, dest='annotated_path')
-    parser.add_argument('--brat-data-dir', type=str, default=None, dest='brat_data_dir')
-
-    # Work-skipping and partial computation options
-    parser.add_argument('--dry-run', action='store_true', default=None, dest='dry_run',
-                        help='Preview what would be done without making changes')
-    parser.add_argument('--skip-existing', action='store_true', default=None, dest='skip_existing',
-                        help='Skip records/documents that already have output')
-    parser.add_argument('--force', action='store_true', default=None, dest='force',
-                        help='Process even if output already exists (overrides --skip-existing)')
-    parser.add_argument('--incremental', action='store_true', default=None, dest='incremental',
-                        help='Save each record as it completes (crash-resistant)')
-    parser.add_argument('--taxonomy-filter', action='store_true', default=None, dest='taxonomy_filter',
-                        help='Only process documents with taxonomy abbreviations')
-    parser.add_argument('--skip-golden', action='store_true', default=None, dest='skip_golden',
-                        help='Skip documents marked as part of the golden dataset')
-    parser.add_argument('--limit', type=int, default=None, dest='limit',
-                        help='Process at most N records')
-    parser.add_argument('--doc-id', '--doc-ids', type=str, default=None, dest='doc_ids',
-                        help='Process only specific document ID(s), comma-separated')
-
-    # Experiment flag (resolves databases and Redis keys from experiment record)
-    parser.add_argument('--experiment', type=str, default=None, dest='experiment_name',
-                        help='Experiment name — resolves databases and Redis keys from skol_experiments')
-
-    # Parse known args (ignore unknown args to avoid breaking scripts with their own arguments)
-    args, _ = parser.parse_known_args()
+    # Parse the common CLI flags via the shared parent parser.  A script
+    # using the parents=[common_parser()] pattern passes its already-
+    # parsed namespace as cli_args, in which case we don't touch sys.argv.
+    parser = common_parser()
+    if cli_args is None:
+        args, _ = parser.parse_known_args()
+    else:
+        args = cli_args
 
     # Override base config with command-line arguments (if provided)
     # Track which keys were explicitly set via CLI so experiment values don't override them
     cli_explicit_keys: Set[str] = set()
-    for key, value in vars(args).items():
+    # Only the common parser's own keys — a parent-pattern namespace also
+    # carries the script's flags, which must not leak into the config.
+    for key in (action.dest for action in parser._actions):
+        value = getattr(args, key, None)
         if value is not None:
             cli_explicit_keys.add(key)
             if key in ('annotated_path', 'brat_data_dir'):
