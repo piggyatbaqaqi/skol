@@ -9,6 +9,7 @@
 * A missing package on production is a packaging error.
 * Update docs/api-reference.md every time we change REST APIs.
 * Priority order of CLI parameters is CLI --<parameter>, environment variable <PARAMETER>, config file (if we have one), and finally hardcoded default.
+* `bin/` CLIs parse strictly: build the parser with `parents=[common_parser()]` and call `parse_args()`, then `get_env_config(cli_args=args)` — never `parse_known_args()` (it silently swallows typo'd flags). Justify any deliberate subprocess passthrough with a `# pragma: argparse-passthrough` comment. Single-use flags stay out of `common_parser()`. See `docs/bin-argparse-strict.md`.
 * Changes are made with TDD. Write tests first, get them confirmed by a human, and then make the test pass with an implementation.
 * When failing tests are checked into git, they get pytest xfail tags so the head always has all tests passing--this allows bisect bug searches.
 * A correllary of the last two constraints is that we need to implement bare skeletons of implementations so that there's enough to import--we can not xfail an import failure.
