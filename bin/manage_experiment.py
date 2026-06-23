@@ -1191,6 +1191,12 @@ def main() -> None:
     # _split_passthrough_args and the docstring for the runnext /
     # runstep ``--`` help.
     main_argv, passthrough_args = _split_passthrough_args(sys.argv[1:])
+    # pragma: argparse-passthrough -- parse_known_args is required here:
+    # get_env_config() below independently reads the common flags
+    # (--couchdb-url, --couchdb-username, ...) straight from sys.argv, so
+    # they are unknown to this subcommand parser and must pass through
+    # rather than error. (Typos in common flags are still silently
+    # ignored here -- the one place the strict refactor cannot reach.)
     args, _ = parser.parse_known_args(main_argv)
     args.passthrough_args = passthrough_args
     config = get_env_config()

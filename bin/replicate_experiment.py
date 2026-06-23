@@ -343,10 +343,10 @@ def main() -> int:
     parser.add_argument('--timeout', type=int, default=7200,
                         help='Per-database replicate POST timeout in '
                              'seconds (default: 7200 = 2h)')
-    # Use parse_known_args so env_config's auto-generated flags
-    # (--couchdb-username, --couchdb-password, --couchdb-url, etc.)
-    # pass through instead of erroring out as unknown.
-    args, _unknown = parser.parse_known_args()
+    # This script resolves endpoints from os.environ (the bin/replicate_dbs
+    # NAME convention), not env_config's CLI flags, so parse strictly:
+    # an unknown flag here is a typo, not a passthrough.
+    args = parser.parse_args()
 
     # Resolve source and target via the shared NAME-shortcut
     # convention (see _resolve_source_endpoint / _resolve_target_endpoint).
