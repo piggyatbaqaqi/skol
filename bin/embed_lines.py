@@ -491,8 +491,9 @@ def main() -> int:
         '--key-prefix', default=_DEFAULT_KEY_PREFIX, metavar='STR',
         help=f'Redis key prefix (default: {_DEFAULT_KEY_PREFIX!r}).',
     )
-    # env_config injects --dry-run, --force, --skip-existing, --limit,
-    # --verbosity, --couchdb-url, --redis-host, etc. via parse_known_args.
+    # common_parser() (the parents= above) contributes --dry-run, --force,
+    # --skip-existing, --limit, --verbosity, --couchdb-url, --redis-host,
+    # etc., so parse_args() accepts them while rejecting typos.
     args = parser.parse_args()
 
     config = get_env_config(cli_args=args)

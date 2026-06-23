@@ -556,6 +556,9 @@ def get_env_config(
     # parsed namespace as cli_args, in which case we don't touch sys.argv.
     parser = common_parser()
     if cli_args is None:
+        # pragma: argparse-passthrough -- standalone fallback for callers
+        # that don't pass a parsed namespace; the caller's own parser does
+        # the strict parse, so here we only skim the common flags.
         args, _ = parser.parse_known_args()
     else:
         args = cli_args
