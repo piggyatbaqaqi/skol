@@ -12,11 +12,11 @@ taxonomy abbreviations (sp., var., gen., etc.). Documents are marked with a
 Usage:
     python predict_classifier.py [--model MODEL_NAME] [--verbosity LEVEL]
                                 [--read-text] [--save-text {eager,lazy}]
-                                [--couchdb-pattern PATTERN] [--prediction-batch-size SIZE]
+                                [--attachment-pattern PATTERN] [--prediction-batch-size SIZE]
 
 Example:
     python predict_classifier.py --model logistic_sections --verbosity 2
-    python predict_classifier.py --couchdb-pattern "*.pdf" --prediction-batch-size 96
+    python predict_classifier.py --attachment-pattern "*.pdf" --prediction-batch-size 96
 
     # Skip documents that already have .ann attachments
     python predict_classifier.py --skip-existing
@@ -1442,7 +1442,7 @@ Configuration (via environment variables or command-line arguments):
   --redis-host            Redis host (default: localhost)
   --redis-port            Redis port (default: 6379)
   --model-version         Model version tag (default: v2.0)
-  --couchdb-pattern       File pattern to match (default: *.txt)
+  --attachment-pattern    Attachment-name glob to classify (default: *.txt)
   --prediction-batch-size Batch size for predictions (default: 24)
   --num-workers           Number of workers (default: 4)
   --cores                 Number of Spark cores (default: 4)
@@ -1460,7 +1460,7 @@ Environment Variables for Work Control:
   DOC_IDS=id1,id2,...     Same as --doc-id
 
 Note: Command-line arguments override environment variables.
-      Use --couchdb-pattern instead of --pattern
+      Use --attachment-pattern to select which attachments to classify
       Use --prediction-batch-size instead of --batch-size
 """
     )
@@ -1470,6 +1470,10 @@ Note: Command-line arguments override environment variables.
         dest='model_name',
         default=None,
         help='Model configuration to use (or set via --experiment model_name)'
+    )
+    parser.add_argument(
+        '--attachment-pattern', dest='attachment_pattern', default='*.txt',
+        help='Attachment-name glob to classify (default: %(default)s).',
     )
 
     parser.add_argument(
@@ -1554,6 +1558,9 @@ Note: Command-line arguments override environment variables.
 
     # Get configuration
     config = get_env_config(cli_args=args)
+    # --attachment-pattern (formerly the common --couchdb-pattern) feeds
+    # the pattern the model-loading path reads as config['couchdb_pattern'].
+    config['couchdb_pattern'] = args.attachment_pattern
 
     # Apply --output-database override (takes precedence over experiment)
     if args.output_database:

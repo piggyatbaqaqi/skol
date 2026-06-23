@@ -330,7 +330,6 @@ def common_parser() -> argparse.ArgumentParser:
         'model_name', 'menus_key',
         'embedding_name',
         'gnfinder_url', 'gnparser_url',
-        'couchdb_pattern', 'pattern',
         'ncbi_api_key',
         'bahir_package', 'spark_driver_memory', 'spark_executor_memory'
     ]:

@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skol_classifier.couchdb_io import CouchDBConnection
-from env_config import get_env_config
+from env_config import common_parser, get_env_config
 from ingestors.timestamps import set_timestamps
 
 from couchdb_file import read_couchdb_partition
@@ -1204,10 +1204,8 @@ class TreatmentExtractor:
 if __name__ == "__main__":
     import argparse
 
-    # Get environment configuration
-    config = get_env_config()
-
     parser = argparse.ArgumentParser(
+        parents=[common_parser()],
         description="Extract Treatments from CouchDB annotated files and save to CouchDB",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -1220,7 +1218,7 @@ Configuration (via environment variables or command-line arguments):
   --taxon-database        Name of taxon database
   --taxon-username        Username for taxon database
   --taxon-password        Password for taxon database
-  --pattern               Pattern for attachment names (default: *.ann, matches both .txt.ann and .pdf.ann)
+  --attachment-pattern    Pattern for attachment names (default: *.ann, matches both .txt.ann and .pdf.ann)
 
 Work Control Options (from env_config):
   --dry-run               Preview what would be extracted without saving
@@ -1257,13 +1255,13 @@ Script-specific Options:
         help="Only trace this specific document ID (optional, for focused debugging)"
     )
     parser.add_argument(
-        "--skip-existing",
-        action="store_true",
-        default=None,
-        help="Skip ingest documents that already have treatments extracted"
+        '--attachment-pattern', dest='attachment_pattern', default='*.ann',
+        help='Attachment-name glob to extract (default: %(default)s; '
+             'matches both .txt.ann and .pdf.ann).',
     )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
+    config = get_env_config(cli_args=args)
 
     # Set up debug tracing (modify module-level variables)
     import sys
@@ -1349,7 +1347,7 @@ Script-specific Options:
             print(f"Limiting to {config['limit']} documents")
 
     results = extractor.run_pipeline(
-        pattern=config['pattern'],
+        pattern=args.attachment_pattern,
         doc_ids=config.get('doc_ids'),
         dry_run=config.get('dry_run', False),
         limit=config.get('limit'),
