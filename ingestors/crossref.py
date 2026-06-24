@@ -53,6 +53,7 @@ class CrossrefIngestor(Ingestor):
         max_articles: Optional[int] = None,
         allow_scihub: bool = True,
         api_batch_delay: float = 0.1,
+        respect_robots_txt: bool = True,
         **kwargs: Any
     ) -> None:
         """
@@ -64,6 +65,9 @@ class CrossrefIngestor(Ingestor):
             max_articles: Maximum number of articles to ingest (None = all)
             allow_scihub: Whether to allow pypaperretriever to use Sci-Hub as fallback
             api_batch_delay: Delay in seconds between Crossref API batch requests (default: 0.1)
+            respect_robots_txt: Forwarded to PaperRetriever's HttpClient — enables
+                robots.txt checks and Crawl-Delay enforcement on per-publisher fetches.
+                Defaults to True for bulk academic crawling.
             **kwargs: Additional parameters passed to Ingestor base class (including max_retries, retry_base_wait_time, retry_backoff_multiplier)
         """
         super().__init__(**kwargs)
@@ -72,6 +76,7 @@ class CrossrefIngestor(Ingestor):
         self.max_articles = max_articles
         self.allow_scihub = allow_scihub
         self.api_batch_delay = api_batch_delay
+        self.respect_robots_txt = respect_robots_txt
 
     def ingest(self) -> None:
         """
@@ -282,7 +287,9 @@ class CrossrefIngestor(Ingestor):
             set_timestamps(doc, is_new=True)
             _doc_id, _doc_rev = self.db.save(doc)
 
-        # Download PDF using TDM links, pypaperretriever, or paperscraper
+        # Try four PDF sources in order: TDM link, citation_pdf_url meta-tag,
+        # pypaperretriever's publisher resolver, then paperscraper as last
+        # resort.  Each falls through to the next on failure.
         attachment_data = self._download_pdf_with_pypaperretriever(doi, work)
 
         if attachment_data:
@@ -494,12 +501,17 @@ class CrossrefIngestor(Ingestor):
                 if self.verbosity >= 3:
                     print(f"  Using temp directory: {temp_dir}")
 
-                # Download using pypaperretriever
+                # Download using pypaperretriever.  Polite-mode features
+                # (429 retry honoring Retry-After / RateLimit-Reset, 503/504
+                # exponential backoff with gradual decay, 403 domain
+                # suppression with doi.org/dx.doi.org exemption) run
+                # automatically inside PaperRetriever's HttpClient.
                 retriever = PaperRetriever(
                     email=self.mailto,
                     doi=doi,
                     download_directory=str(temp_path),
-                    allow_scihub=self.allow_scihub
+                    allow_scihub=self.allow_scihub,
+                    respect_robots_txt=self.respect_robots_txt,
                 )
 
                 retriever.download()
@@ -530,7 +542,10 @@ class CrossrefIngestor(Ingestor):
                     if self.verbosity >= 1:
                         print(f"  WARNING: Failed to clean up temp directory {temp_dir}: {e}")
 
-        # Use the base class retry wrapper
+        # Base-class retry wrapper.  pypaperretriever now owns 429/503/504
+        # retry internally, so this outer wrapper mainly catches exceptions
+        # from the temp-dir / file-reading code path or unhandled errors
+        # from publisher-specific resolvers below the polite-mode floor.
         return self._retry_with_backoff(
             _download_with_habanero,
             operation_name="pypaperretriever"
