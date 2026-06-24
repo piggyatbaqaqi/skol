@@ -209,3 +209,47 @@ OntoGPT/SPIRES). The pipeline above deliberately sidesteps the need for a perfec
 ontology by *inducing-then-freezing* a task schema — but the standalone ontology
 would feed back into this pipeline as a stronger prior and is worth pursuing once
 the extraction pipeline is stable.
+
+---
+
+## 9. XP Planning Game estimate
+
+**Calibration unit:** 1 point = the work to build a PDF scraper for a new
+journal (subclass `Ingestor`, map the journal's URL structure, handle its
+PDF flow, tests; ~1–2 days of focused work for someone familiar with the
+codebase).
+
+**Total: ~19 points** (with ±5 variance — most of it concentrated in Pass A).
+
+| Step (from §8) | Item | Pts | Notes |
+|---|---|---|---|
+| 1 | Segmenter stage interface from existing SBERT+CRF | 1 | Existing code, refactor + thin wrapper. |
+| 2 | Hand-written schema + constrained-fill loop (one feature, end-to-end) | 3 | `outlines` is already a dep; new infra but well-trodden. |
+| 3 | Batched inference (vLLM / TGI) + throughput measurement | 2 | Standard work; lots of recipes available. |
+| 4 | Pass A induction + Aggregation (LLM tuple-gen, embedding cluster, path merge, dead-layer prune, type detect, schema emit) | **8** | **The high-variance bit.** Could be 4 if prompts converge quickly; could be 15 if cluster quality, distance thresholds, or type detection misbehave and you iterate on prompts + dedup rules for a few weeks. |
+| 5 | Second-clade generalization (swap gazetteers, re-run, validate abstraction) | 3 | First clade is the hard one; second mostly proves the seams. |
+| —  | Integration with existing `treatments_to_json` + tests (per CLAUDE.md) + docs | 2 | Stable but real. |
+|    | **Total** | **19** | |
+
+**What pushes it bigger than its line count suggests:**
+- §4 (Pass A) is research-shaped work.  "Discover the candidate structure" is
+  a phrase that's easy to write and very hard to estimate; convergence on a
+  stable schema after aggregation is the gate.
+- §3 step 1 ("canonicalize terms" with SBERT clustering) is one line in the
+  doc but several days of distance-threshold + cluster-validation tuning in
+  practice.
+- Schema-driven pipelines tend to have a long tail of "this corner case broke
+  decoding" — the real cost is the third and fourth feature you add, not the
+  first.
+
+**What makes it *not* enormous:**
+- Most of the Pass B machinery already exists (CRF segmenter, SBERT
+  embeddings, gazetteer pattern from the gnfinder integration, `outlines`
+  in deps).
+- The taxon-portability story is mostly about *not* hard-coding clade
+  specifics — easier to validate than to build.
+
+**Cheapest variance-reducer:** §8 step 2 in isolation.  Hand-write a schema
+for one well-understood feature (pileus) and get a single constrained-fill
+call working end-to-end.  1–2 days of work that de-risks the next 17
+points by proving the constrained-decoding loop is real.
