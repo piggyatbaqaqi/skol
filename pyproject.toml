@@ -106,7 +106,7 @@ gpu = [
     "cuml-cu12",
     "cugraph-cu12",
 ]
-dev = [
+tools = [
     "pytest>=8.0",
     "pytest-cov",
     "pytest-xdist",
@@ -114,8 +114,19 @@ dev = [
     "ruff",
     "mypy",
 ]
+# Normal dev install — everything runtime AND testing/linting, but
+# NOT gpu (which needs --extra-index-url=https://pypi.nvidia.com to
+# resolve, so a plain `pip install -e '.[dev]'` would fail otherwise).
+# Use this 99% of the time:
+#   pip install -e '.[dev]'
+dev = [
+    "skol[ml,pdf,ingest,mcp,neo4j,tools]",
+]
+# Absolutely everything, including RAPIDS GPU acceleration.  Requires
+# the NVIDIA index URL:
+#   pip install --extra-index-url=https://pypi.nvidia.com -e '.[all]'
 all = [
-    "skol[ml,pdf,ingest,mcp,neo4j,gpu,dev]",
+    "skol[dev,gpu]",
 ]
 
 [project.urls]
