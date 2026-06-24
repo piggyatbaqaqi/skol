@@ -41,7 +41,7 @@ def test_strings_output_basic():
         input_source='files',
         file_paths=['data/annotated/*.ann'],
         output_dest='strings',  # Output to strings
-        model_type='rnn',
+        model_type='logistic',
         line_level=True,
         coalesce_labels=False,
         verbosity=0
@@ -97,7 +97,7 @@ def test_strings_output_with_save_annotated():
         input_source='files',
         file_paths=['data/annotated/*.ann'],
         output_dest='strings',
-        model_type='rnn',
+        model_type='logistic',
         verbosity=0
     )
 
@@ -131,7 +131,7 @@ def test_strings_output_files_returns_none():
         file_paths=['data/annotated/*.ann'],
         output_dest='files',
         output_path='/tmp/test_output',
-        model_type='rnn',
+        model_type='logistic',
         verbosity=0
     )
 
@@ -186,7 +186,7 @@ def main():
         input_source='files',
         file_paths=['data/annotated/*.ann'],
         output_dest='strings',  # Return as list of strings
-        model_type='rnn',
+        model_type='logistic',
         verbosity=1
     )
 

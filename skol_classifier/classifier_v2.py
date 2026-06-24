@@ -133,20 +133,8 @@ class SkolClassifierV2:
                                 Used when extraction_mode='section' to create TF-IDF features from section names
 
     Model Configuration:
-        model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted', 'rnn')
+        model_type: Type of model ('logistic', 'random_forest', 'gradient_boosted')
         **model_params: Additional parameters passed to the model
-
-        RNN Model Parameters (when model_type='rnn'):
-            input_size: Size of input feature vectors (default: auto-calculated from vocab sizes)
-                       Automatically set to word_vocab_size + suffix_vocab_size
-            hidden_size: LSTM hidden state size (default: 128)
-            num_layers: Number of LSTM layers (default: 2)
-            num_classes: Number of output classes (default: 3)
-            dropout: Dropout rate (default: 0.3)
-            window_size: Maximum sequence length (default: 50)
-            batch_size: Batch size for training (default: 32)
-            epochs: Number of training epochs (default: 10)
-            num_workers: Number of Spark workers (default: 4)
 
     Methods:
     -------
@@ -425,27 +413,8 @@ class SkolClassifierV2:
         # Get labels from feature extractor (available after fit_transform)
         labels = self._feature_extractor.get_labels()
 
-        # Calculate input_size based on vocabulary sizes
-        # This ensures consistency between feature extraction and model input
-        calculated_input_size = (
-            self.word_vocab_size
-            + (self.suffix_vocab_size if self.use_suffixes else 0)
-            + (2 if self.use_line_lengths else 0)
-        )
-
-        # Set input_size in model_params if not already specified
-        if 'input_size' not in self.model_params:
-            self.model_params['input_size'] = calculated_input_size
-        elif self.model_params['input_size'] != calculated_input_size:
-            # Warn if user-provided input_size doesn't match vocabulary configuration
-            if self.verbosity >= 1:
-                print(f"[Classifier] WARNING: input_size ({self.model_params['input_size']}) doesn't match "
-                      f"calculated size ({calculated_input_size}) from word_vocab_size ({self.word_vocab_size}) "
-                      f"+ suffix_vocab_size ({self.suffix_vocab_size}). Using user-provided value.")
-
-        # Train model with correct features column using factory
-        # The label column is always "label_indexed" from the feature extractor
-        # Pass labels to create_model so RNN can use them for class weights
+        # Train model with correct features column using factory.
+        # The label column is always "label_indexed" from the feature extractor.
         self._model = create_model(
             model_type=self.model_type,
             features_col=features_col,
@@ -1111,13 +1080,6 @@ class SkolClassifierV2:
         from pyspark.sql.functions import udf
         from pyspark.sql.types import StringType
 
-        # Standardize column names for consistency
-        # RNN models use 'filename' and 'pos', others use 'doc_id'
-        if "filename" in predictions_df.columns and "doc_id" not in predictions_df.columns:
-            predictions_df = predictions_df.withColumnRenamed("filename", "doc_id")
-        if "pos" in predictions_df.columns and "line_number" not in predictions_df.columns:
-            predictions_df = predictions_df.withColumnRenamed("pos", "line_number")
-
         # Create UDF to map indices to labels
         label_map = self._reverse_label_mapping
 
@@ -1425,34 +1387,12 @@ class SkolClassifierV2:
         self._reverse_label_mapping = {v: k for k, v in self._label_mapping.items()}
         model_type = metadata['config']['model_type']
 
-        # Load classifier model (different approach for RNN vs traditional ML)
+        # Load classifier model as PipelineModel.  The .h5 path name is
+        # historical (it was used for both Keras .h5 files and Spark
+        # PipelineModel directories before the RNN model was removed); kept
+        # to preserve compatibility with already-saved models on disk.
         classifier_path = model_dir / "classifier_model.h5"
-        if model_type == 'rnn':
-            # For RNN models, load the Keras .h5 file directly
-            from tensorflow import keras
-            import tensorflow as tf
-
-            # Define dummy loss functions for deserialization
-            def weighted_categorical_crossentropy(y_true, y_pred):
-                """Dummy loss function for model deserialization. Not used for prediction."""
-                return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
-
-            def mean_f1_loss(y_true, y_pred):
-                """Dummy loss function for model deserialization. Not used for prediction."""
-                return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
-
-            custom_objects = {
-                'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
-                'mean_f1_loss': mean_f1_loss
-            }
-            classifier_model = keras.models.load_model(
-                str(classifier_path),
-                custom_objects=custom_objects,
-                compile=False
-            )
-        else:
-            # For traditional ML models, load as PipelineModel
-            classifier_model = PipelineModel.load(str(classifier_path))
+        classifier_model = PipelineModel.load(str(classifier_path))
 
         # Recreate the SkolModel wrapper using factory
         features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
@@ -1520,29 +1460,7 @@ class SkolClassifierV2:
             classifier_path = temp_path / "classifier_model.h5"
             classifier_model.save(str(classifier_path))
 
-            # Save metadata
-            # For RNN models, save the actual model parameters (not the original params)
-            if self.model_type == 'rnn':
-                actual_model_params = {
-                    'input_size': self._model.input_size,
-                    'hidden_size': self._model.hidden_size,
-                    'num_layers': self._model.num_layers,
-                    'num_classes': self._model.num_classes,
-                    'dropout': self._model.dropout,
-                    'window_size': self._model.window_size,
-                    'batch_size': self._model.batch_size,
-                    'epochs': self._model.epochs,
-                    'num_workers': self._model.num_workers,
-                    'verbosity': self._model.verbosity,
-                }
-                if hasattr(self._model, 'prediction_stride'):
-                    actual_model_params['prediction_stride'] = self._model.prediction_stride
-                if hasattr(self._model, 'prediction_batch_size'):
-                    actual_model_params['prediction_batch_size'] = self._model.prediction_batch_size
-                if hasattr(self._model, 'name'):
-                    actual_model_params['name'] = self._model.name
-            else:
-                actual_model_params = self.model_params
+            actual_model_params = self.model_params
 
             metadata = {
                 'label_mapping': self._label_mapping,
@@ -1613,37 +1531,10 @@ class SkolClassifierV2:
             pipeline_path = temp_path / "feature_pipeline"
             self._feature_pipeline = PipelineModel.load(str(pipeline_path))
 
-            # Load classifier model (different approach for RNN vs traditional ML)
+            # Load classifier model as PipelineModel.  See _load_model_from_disk
+            # for the note on the historical .h5 path name.
             classifier_path = temp_path / "classifier_model.h5"
-
-            if model_type == 'rnn':
-                # For RNN models, load the Keras .h5 file directly
-                # Load without compiling to avoid issues with custom loss functions
-                from tensorflow import keras
-                import tensorflow as tf
-
-                # Define dummy loss functions for deserialization
-                def weighted_categorical_crossentropy(y_true, y_pred):
-                    """Dummy loss function for model deserialization. Not used for prediction."""
-                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
-
-                def mean_f1_loss(y_true, y_pred):
-                    """Dummy loss function for model deserialization. Not used for prediction."""
-                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred)
-
-                custom_objects = {
-                    'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
-                    'mean_f1_loss': mean_f1_loss
-                }
-                keras_model = keras.models.load_model(
-                    str(classifier_path),
-                    custom_objects=custom_objects,
-                    compile=False
-                )
-                classifier_model = keras_model  # This is the Keras model itself
-            else:
-                # For traditional ML models, load as PipelineModel
-                classifier_model = PipelineModel.load(str(classifier_path))
+            classifier_model = PipelineModel.load(str(classifier_path))
 
             # Recreate the SkolModel wrapper using factory
             features_col = self._feature_extractor.get_features_col() if self._feature_extractor else "combined_idf"
