@@ -17,6 +17,7 @@ setup(
         "ingestors", "ingestors.*",
         "training", "training.*",
         "yedda_parser", "yedda_parser.*",
+        "treatments_classifier", "treatments_classifier.*",
         "bin",
     ]),
     py_modules=[

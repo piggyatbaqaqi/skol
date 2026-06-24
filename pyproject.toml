@@ -156,8 +156,8 @@ include = [
     "training.*",
     "yedda_parser",
     "yedda_parser.*",
-    "taxa_classifier",
-    "taxa_classifier.*",
+    "treatments_classifier",
+    "treatments_classifier.*",
     "bin",
 ]
 exclude = [
