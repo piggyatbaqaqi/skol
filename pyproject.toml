@@ -48,8 +48,20 @@ dependencies = [
     "scikit-learn>=1.0.0",
     "tqdm",
     "python-dateutil>=2.9.0",
-    # Required by ingestors package which is part of core distribution
+    # Required by the ingestors package which is part of the core
+    # distribution.  ingestors/__init__.py exports Ingestor (imports
+    # bibtexparser, feedparser, beautifulsoup4 at module load) and
+    # RateLimitedHttpClient (imports pypaperretriever).  Moving any of
+    # these to the [ingest] optional group breaks `from ingestors
+    # import ...` in every bin/ script that touches publication data.
     "bibtexparser>=2.0.0b3",
+    "feedparser>=6.0.12",
+    "beautifulsoup4>=4.14.2",
+    "pypaperretriever",
+    # Linear-chain CRF on top of torch — used by v4 layout + treatment
+    # passes (skol_classifier/v4/crf_layout.py imports torchcrf
+    # unconditionally at module load).
+    "pytorch-crf>=0.7.2",
 ]
 
 [project.optional-dependencies]
@@ -73,12 +85,13 @@ pdf = [
     "pytesseract",
 ]
 ingest = [
-    "beautifulsoup4",
-    "feedparser",
     "habanero",
     "internetarchive",
     "paperscraper",
-    # bibtexparser moved to core dependencies (required by ingestors package)
+    # bibtexparser, feedparser, beautifulsoup4, pypaperretriever, and
+    # pytorch-crf moved to core dependencies — they're imported
+    # unconditionally by modules in ingestors/__init__.py and
+    # skol_classifier/v4/, so they can't be optional.
 ]
 mcp = [
     "mcp>=1.22.0",

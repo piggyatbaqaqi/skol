@@ -39,3 +39,8 @@ outlines>=0.1.14
 datasets>=4.5.0
 beautifulsoup4>=4.14.2
 feedparser>=6.0.12
+# Polite HTTP client + DOI→PDF resolver — used by ingestors.crossref
+# and (since 2026-06-24) ingestors.rate_limited_client, the latter
+# being in ingestors/__init__.py — so this is a hard dep for any
+# module that imports `ingestors`.
+pypaperretriever
