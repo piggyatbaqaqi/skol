@@ -76,48 +76,30 @@ def get_user_experiment(request):
     return experiment_name, doc
 
 
-# Resolution fallback chain for the structured-treatments DB.
-# Walked in order; the first non-empty value wins.  The chain
-# spans every name the DB has been called across the partial
-# migrations (taxa_full → treatments_full → treatments_structured)
-# so a doc anywhere on that timeline still resolves to a real DB.
-_TREATMENTS_STRUCTURED_DB_FIELDS = (
-    'treatments_structured',  # post-2026-06-10 canonical
-    'treatments_full',        # 2026 mid-migration name
-    'taxa_full',              # pre-2026 legacy name
-)
-_TREATMENTS_PROSE_DB_FIELDS = (
-    'treatments_prose',       # post-2026-06-10 canonical
-    'treatments',             # 2026 mid-migration name
-    'taxa',                   # pre-2026 legacy name
-)
-
-
+# Canonical post-2026-06-10 DB field names.  Experiment docs on disk
+# are migrated to these via fixes/migrate_treatments_to_prose.py;
+# legacy ``treatments`` / ``treatments_full`` / ``taxa`` / ``taxa_full``
+# fields are no longer consulted.  If you find yourself adding a
+# fallback to an older name, run the migration on that environment
+# instead.
 def resolve_treatments_structured_db(exp, default):
-    """Walk the per-experiment fallback chain to find the
-    structured-treatments DB name.  ``exp`` may be None (no
-    experiment context); ``default`` is the value to return
-    when none of the per-experiment fields are populated."""
+    """Return ``exp.databases.treatments_structured`` or ``default``.
+    ``exp`` may be None (no experiment context)."""
     if not exp:
         return default
-    databases = exp.get('databases', {}) or {}
-    for field in _TREATMENTS_STRUCTURED_DB_FIELDS:
-        value = databases.get(field)
-        if value:
-            return value
-    return default
+    return (exp.get('databases', {}) or {}).get(
+        'treatments_structured', default,
+    )
 
 
 def resolve_treatments_prose_db(exp, default):
-    """Same fallback chain for the prose-treatments DB."""
+    """Return ``exp.databases.treatments_prose`` or ``default``.
+    ``exp`` may be None (no experiment context)."""
     if not exp:
         return default
-    databases = exp.get('databases', {}) or {}
-    for field in _TREATMENTS_PROSE_DB_FIELDS:
-        value = databases.get(field)
-        if value:
-            return value
-    return default
+    return (exp.get('databases', {}) or {}).get(
+        'treatments_prose', default,
+    )
 
 
 class ExperimentListView(APIView):
@@ -161,9 +143,7 @@ class ExperimentListView(APIView):
                     'embedding': doc.get(
                         'redis_keys', {}
                     ).get('embedding', ''),
-                    'treatments_db': doc.get(
-                        'databases', {}
-                    ).get('treatments', ''),
+                    'treatments_db': resolve_treatments_prose_db(doc, ''),
                 })
 
             return Response({
@@ -1110,24 +1090,17 @@ class TreatmentsInfoView(APIView):
             auth = HTTPBasicAuth(settings.COUCHDB_USERNAME, settings.COUCHDB_PASSWORD)
 
             # Use experiment's treatments DB if not explicitly provided.
-            # NB: the experiment doc key is ``treatments`` (per the post-Step-3
-            # rename, commits 81be957 / 6150663) — NOT ``taxa``.  Reading
-            # ``taxa`` here used to silently fall through to the legacy
-            # skol_taxa_dev DB, which on v3_hand caused every lookup to 404
-            # (content-hash IDs don't match across DBs) and the search to
-            # hang on per-result migration-mapping scans.  See v3_buildout.md
-            # §Phase C.4 follow-up.
+            # Resolved via resolve_treatments_prose_db (canonical
+            # ``databases.treatments_prose`` field — see the module-level
+            # comment above the resolver).
             default_treatments_db = getattr(
                 settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
             )
             if treatments_db is None:
                 _, exp = get_user_experiment(request)
-                if exp:
-                    treatments_db = exp.get('databases', {}).get(
-                        'treatments', default_treatments_db,
-                    )
-                else:
-                    treatments_db = default_treatments_db
+                treatments_db = resolve_treatments_prose_db(
+                    exp, default_treatments_db,
+                )
 
             # Determine the correct database based on document ID prefix
             if treatment_id.startswith('collection_'):
@@ -2373,9 +2346,8 @@ class TextClassifierView(APIView):
             default_treatments_db = getattr(
                 settings, 'TREATMENTS_DB_NAME', 'skol_treatments_dev',
             )
-            classifier_db = (
-                exp.get('databases', {}).get('treatments', default_treatments_db)
-                if exp else default_treatments_db
+            classifier_db = resolve_treatments_prose_db(
+                exp, default_treatments_db,
             )
             classifier = TreatmentsDecisionTreeClassifier(
                 couchdb_url=settings.COUCHDB_URL,
@@ -2644,19 +2616,15 @@ class SourceContextView(APIView):
             field = request.GET.get('field', 'description')
             context_chars = int(request.GET.get('context_chars', 500))
 
-            # Resolve taxa DB from user's experiment.  The experiment-doc
-            # field name moved from 'taxa' → 'treatments' in Step 3-dev
-            # (docs/taxon_to_treatment_plan.md); the default value also
-            # flipped to skol_treatments_dev.
+            # Resolve taxa DB from user's experiment via the canonical
+            # ``databases.treatments_prose`` field (see the resolver
+            # above for the post-2026-06-10 cleanup rationale).
             treatments_db = request.GET.get('treatments_db')
             if not treatments_db:
                 _, exp = get_user_experiment(request)
-                if exp:
-                    treatments_db = exp.get(
-                        'databases', {}
-                    ).get('treatments', 'skol_treatments_dev')
-                else:
-                    treatments_db = 'skol_treatments_dev'
+                treatments_db = resolve_treatments_prose_db(
+                    exp, 'skol_treatments_dev',
+                )
 
             _VALID_FIELDS = frozenset({
                 'nomenclature', 'description', 'diagnosis', 'etymology',
