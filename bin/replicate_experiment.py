@@ -30,7 +30,7 @@ import sys
 import time
 import urllib.parse
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -60,6 +60,7 @@ _LEGACY_TO_CANONICAL: Dict[str, str] = {
 def databases_for_experiment(
     experiment_doc: Dict[str, Any],
     include_golden: bool = False,
+    suppress: Iterable[str] = (),
 ) -> List[str]:
     """Return the unique CouchDB database names referenced by an
     experiment doc's ``databases.*`` block.
@@ -72,6 +73,14 @@ def databases_for_experiment(
     ``include_golden=False`` (default) drops the ``golden`` and
     ``golden_ann`` references, which are typically already shared
     across experiments and may already exist on the target.
+
+    ``suppress`` filters specific DB *names* out of the result, by
+    exact match.  Useful when a particular DB is already known to be
+    in sync across hosts (the common case: ``skol_dev``, which all
+    three boxes share).  A name in ``suppress`` that isn't present in
+    the experiment is silently ignored — no error, no warning.
+    ``skol_experiments`` cannot be suppressed; the registry always
+    travels with the experiment.
 
     Legacy field names from the 2026-06-10 DB-naming migration
     (``taxa`` / ``taxa_full`` / ``treatments`` / ``treatments_full``)
@@ -93,12 +102,23 @@ def databases_for_experiment(
         if db_block.get(canonical_key):
             excluded_keys.add(legacy_key)
 
+    # Suppress applies to DB names (values), not to databases.* keys.
+    # skol_experiments is exempt — the registry must travel with the
+    # experiment doc itself, or the target has no record of the
+    # experiment after replication.
+    suppress_set = {name for name in suppress if name != 'skol_experiments'}
+
     seen: List[str] = ['skol_experiments']
     for key in sorted(db_block):
         if key in excluded_keys:
             continue
         value = db_block[key]
-        if isinstance(value, str) and value and value not in seen:
+        if (
+            isinstance(value, str)
+            and value
+            and value not in seen
+            and value not in suppress_set
+        ):
             seen.append(value)
     return seen
 
@@ -335,6 +355,13 @@ def main() -> int:
                         help='Also replicate experiment.databases.golden '
                              'and .golden_ann (off by default — these '
                              'tend to be shared across experiments)')
+    parser.add_argument('--suppress', default='', metavar='DB[,DB,...]',
+                        help='Comma-separated list of database NAMES to '
+                             'skip even when the experiment references '
+                             'them.  Common case: --suppress skol_dev '
+                             'when the ingest DB is already synced '
+                             'across hosts.  Names that aren\'t present '
+                             'in the experiment are silently ignored.')
     parser.add_argument('--dry-run', action='store_true',
                         help='List the databases that would be '
                              'replicated; do not POST')
@@ -380,8 +407,13 @@ def main() -> int:
               f'{exc}', file=sys.stderr)
         return 2
 
+    suppress_list = [
+        name.strip() for name in args.suppress.split(',') if name.strip()
+    ]
     dbs = databases_for_experiment(
-        experiment_doc, include_golden=args.include_golden,
+        experiment_doc,
+        include_golden=args.include_golden,
+        suppress=suppress_list,
     )
 
     if args.verbosity >= 1:

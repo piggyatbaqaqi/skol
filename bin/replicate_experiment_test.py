@@ -94,6 +94,45 @@ class TestDatabasesForExperiment(unittest.TestCase):
             ['skol_experiments'],
         )
 
+    def test_suppress_removes_listed_db_name(self):
+        """The common operator case: --suppress skol_dev when the
+        ingest DB is already in sync across hosts."""
+        exp = {
+            'databases': {
+                'ingest': 'skol_dev',
+                'training': 'skol_training_v2_no_golden',
+                'annotations': 'skol_exp_production_v3_hand_ann',
+            },
+        }
+        result = databases_for_experiment(exp, suppress=['skol_dev'])
+        self.assertNotIn('skol_dev', result)
+        self.assertIn('skol_training_v2_no_golden', result)
+        self.assertIn('skol_exp_production_v3_hand_ann', result)
+
+    def test_suppress_silently_ignores_unknown_name(self):
+        """A name in suppress that isn't in the experiment is a no-op
+        — not an error, not a warning.  Lets operators carry a
+        standing ``--suppress skol_dev`` flag across experiments
+        without worrying whether each one references it."""
+        exp = {'databases': {'training': 'skol_training_v2_no_golden'}}
+        result = databases_for_experiment(
+            exp, suppress=['not_in_this_experiment', 'skol_dev'],
+        )
+        self.assertEqual(
+            result, ['skol_experiments', 'skol_training_v2_no_golden'],
+        )
+
+    def test_suppress_cannot_drop_skol_experiments(self):
+        """The registry DB always travels with the experiment doc —
+        replicating an experiment without its metadata would leave
+        the target unable to find the experiment by name.  Listing
+        skol_experiments in suppress is a no-op, not an error."""
+        exp = {'databases': {'ingest': 'skol_dev'}}
+        result = databases_for_experiment(
+            exp, suppress=['skol_experiments', 'skol_dev'],
+        )
+        self.assertEqual(result, ['skol_experiments'])
+
     def test_skips_empty_string_values(self):
         """Some experiment docs carry an explicit empty string for
         unused fields (e.g., ``"annotations": ""`` in v1).  Those
