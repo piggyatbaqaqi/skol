@@ -12,7 +12,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-VERSION="0.3.0"
+VERSION="0.9.0"
 PACKAGE="skol"
 WHEEL_DIR="/opt/skol/wheels"
 

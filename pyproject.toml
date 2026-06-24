@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skol"
-version = "0.3.0"
+version = "0.9.0"
 description = "Taxonomic text classification and extraction pipeline for mycological literature"
 readme = "README.md"
 license = {file = "LICENSE"}

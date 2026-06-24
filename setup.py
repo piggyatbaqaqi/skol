@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="skol",
-    version="0.3.0",
+    version="0.9.0",
     description="Taxonomic text classification and extraction pipeline for mycological literature",
     author="Christopher Murphy, La Monte Henry Piggy Yarroll, David Caspers",
     license="GPL-3.0-or-later",
