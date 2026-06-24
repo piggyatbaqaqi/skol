@@ -42,19 +42,9 @@ setup(
     ],
     include_package_data=True,
     python_requires=">=3.14",
-    install_requires=[
-        "CouchDB>=1.2",
-        "numpy",
-        "pandas",
-        "pyspark>=3.5.0,<4.0",
-        "redis>=4.0.0",
-        "regex>=2024.0.0",
-        "requests>=2.32.0",
-        "scikit-learn>=1.0.0",
-        "sentence-transformers[onnx-gpu]>=3.0.1",
-        "tqdm",
-        "python-dateutil>=2.9.0",
-    ],
+    # install_requires lives in pyproject.toml [project].dependencies — the
+    # canonical declaration under PEP 517 build backends.  Keeping a second
+    # list here just drifts out of sync (it did, repeatedly).
     extras_require={
         # RAPIDS GPU acceleration
         # Install with: pip install --extra-index-url=https://pypi.nvidia.com skol[gpu]
