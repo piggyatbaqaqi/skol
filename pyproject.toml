@@ -66,8 +66,12 @@ dependencies = [
 
 [project.optional-dependencies]
 ml = [
-    "tensorflow",
-    "tf-keras",
+    # tensorflow + tf-keras intentionally absent: the only remaining TF code
+    # is legacy RNN paths (skol_classifier/rnn_model.py and the RNN branches
+    # of classifier_v2.py), all gated by try/except ImportError → KERAS_AVAILABLE
+    # fallbacks.  v3 logistic + v4 CRF (the actually-used pipelines) use
+    # torch / transformers, not TF.  TF also doesn't ship for Python 3.14
+    # yet, so listing it as an optional dep would break `pip install`.
     "torch",
     "transformers>=4.44.0",
     "sentence-transformers[onnx-gpu]>=3.0.1",
