@@ -80,6 +80,20 @@ echo "Copying bin scripts..."
 cp bin/*.py staging${VERSION_DIR}/bin/
 chmod 755 staging${VERSION_DIR}/bin/*.py
 
+# Also copy any subpackages of bin/ (directories with __init__.py).
+# Necessary because /opt/skol/versions/<ver>/bin/ is on sys.path[0]
+# when manage_experiment.py runs from there — that shadows the wheel
+# install's bin/ in site-packages, so subpackages like bin/pipelines/
+# must travel with the operational copy, not just with the wheel.
+# Caught in 0.9.0-130: ImportError: cannot import name 'pipelines'.
+for subpkg_init in bin/*/__init__.py; do
+    [ -f "$subpkg_init" ] || continue
+    subpkg_dir="$(dirname "$subpkg_init")"
+    cp -r "$subpkg_dir" "staging${VERSION_DIR}/bin/"
+    find "staging${VERSION_DIR}/$subpkg_dir" -type d -name __pycache__ \
+        -exec rm -rf {} + 2>/dev/null || true
+done
+
 # Copy cron job to /etc/cron.d/
 echo "Copying cron configuration..."
 mkdir -p staging/etc/cron.d
