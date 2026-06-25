@@ -18,7 +18,7 @@ setup(
         "training", "training.*",
         "yedda_parser", "yedda_parser.*",
         "treatments_classifier", "treatments_classifier.*",
-        "bin",
+        "bin", "bin.*",
     ]),
     py_modules=[
         "constants",

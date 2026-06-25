@@ -159,6 +159,7 @@ include = [
     "treatments_classifier",
     "treatments_classifier.*",
     "bin",
+    "bin.*",
 ]
 exclude = [
     "build*",
