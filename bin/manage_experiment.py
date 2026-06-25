@@ -437,6 +437,45 @@ def cmd_archive(db, args) -> None:
     print(f"Archived experiment '{args.name}'")
 
 
+def cmd_approve(db, args) -> None:
+    """Mark an experiment as approved.
+
+    Approved experiments are the default visible set in the web UI's
+    Experiments dropdown.  Operators can toggle "Enable all experiments"
+    to see unapproved ones too.
+    """
+    doc = _get_experiment(db, args.name)
+    if doc is None:
+        print(f"Error: experiment '{args.name}' not found.", file=sys.stderr)
+        sys.exit(1)
+    if doc.get("approved") is True:
+        print(f"Experiment '{args.name}' is already approved.")
+        return
+    doc["approved"] = True
+    doc["updated_at"] = _now_iso()
+    db.save(doc)
+    print(f"Approved experiment '{args.name}'")
+
+
+def cmd_unapprove(db, args) -> None:
+    """Remove approval from an experiment.
+
+    Unapproved experiments are hidden from the web UI's Experiments
+    dropdown unless the user toggles "Enable all experiments".
+    """
+    doc = _get_experiment(db, args.name)
+    if doc is None:
+        print(f"Error: experiment '{args.name}' not found.", file=sys.stderr)
+        sys.exit(1)
+    if doc.get("approved") is not True:
+        print(f"Experiment '{args.name}' is not approved.")
+        return
+    doc["approved"] = False
+    doc["updated_at"] = _now_iso()
+    db.save(doc)
+    print(f"Unapproved experiment '{args.name}'")
+
+
 def cmd_deploy(db, args) -> None:
     """Promote an experiment to production.
 
@@ -1083,6 +1122,17 @@ def main() -> None:
     p_archive = subparsers.add_parser("archive", help="Archive experiment")
     p_archive.add_argument("name", help="Experiment name")
 
+    # approve / unapprove
+    p_approve = subparsers.add_parser(
+        "approve", help="Mark experiment as approved (visible by default in UI)",
+    )
+    p_approve.add_argument("name", help="Experiment name")
+    p_unapprove = subparsers.add_parser(
+        "unapprove",
+        help="Remove approval (hidden from UI unless 'Enable all experiments')",
+    )
+    p_unapprove.add_argument("name", help="Experiment name")
+
     # deploy
     p_deploy = subparsers.add_parser(
         "deploy", help="Promote experiment to production",
@@ -1212,6 +1262,10 @@ def main() -> None:
         cmd_update(db, args)
     elif args.command == "archive":
         cmd_archive(db, args)
+    elif args.command == "approve":
+        cmd_approve(db, args)
+    elif args.command == "unapprove":
+        cmd_unapprove(db, args)
     elif args.command == "deploy":
         cmd_deploy(db, args)
     elif args.command == "pipeline":

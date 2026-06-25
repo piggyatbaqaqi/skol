@@ -107,7 +107,14 @@ class ExperimentListView(APIView):
     API endpoint to list available experiments.
 
     GET /api/experiments/
-    Returns: List of experiments with name, notes, and status.
+        Default: returns only experiments with ``approved == True`` —
+        the curated set the operator endorses for general use.
+    GET /api/experiments/?include_unapproved=true
+        Returns all experiments regardless of approval status.  Used
+        when the operator toggles "Enable all experiments" in the UI.
+
+    Per result, the response includes an ``approved`` boolean so the
+    frontend can render a badge for the unfiltered view.
     """
 
     def get(self, request):
@@ -131,15 +138,24 @@ class ExperimentListView(APIView):
             resp.raise_for_status()
             data = resp.json()
 
+            # Default: hide unapproved.  Query string opt-in shows all.
+            include_unapproved = request.GET.get(
+                'include_unapproved', ''
+            ).lower() in ('1', 'true', 'yes')
+
             experiments = []
             for row in data.get('rows', []):
                 doc = row.get('doc', {})
                 if doc.get('_id', '').startswith('_design/'):
                     continue
+                approved = doc.get('approved') is True
+                if not approved and not include_unapproved:
+                    continue
                 experiments.append({
                     'name': doc.get('_id'),
                     'notes': doc.get('notes', ''),
                     'status': doc.get('status', ''),
+                    'approved': approved,
                     'embedding': doc.get(
                         'redis_keys', {}
                     ).get('embedding', ''),
@@ -149,6 +165,7 @@ class ExperimentListView(APIView):
             return Response({
                 'experiments': experiments,
                 'count': len(experiments),
+                'include_unapproved': include_unapproved,
             })
         except Exception as e:
             logger.error("Failed to list experiments: %s", e)

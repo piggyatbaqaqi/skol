@@ -17,8 +17,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from manage_experiment import (  # type: ignore[import]  # noqa: E402
     _ensure_pipeline,
     _render_pipeline_step,
+    cmd_approve,
     cmd_create,
     cmd_deploy,
+    cmd_unapprove,
     cmd_update,
 )
 
@@ -758,3 +760,75 @@ class TestCmdDeployRequiresExplicitProduction:
         err = captured.getvalue()
         assert 'production' in err.lower()
         assert 'create' in err.lower()
+
+
+class TestCmdApprove:
+    """``approve <name>`` sets approved=True on the experiment doc.
+    Used by the web UI's default-visible filter."""
+
+    def test_approve_sets_flag_to_true(self) -> None:
+        import argparse
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='exp1', pipeline='v3_logistic'))
+        cmd_approve(db, argparse.Namespace(name='exp1'))
+        assert db.docs['exp1']['approved'] is True
+
+    def test_approve_updates_updated_at(self) -> None:
+        import argparse
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='exp1', pipeline='v3_logistic'))
+        prior = db.docs['exp1'].get('updated_at', '')
+        cmd_approve(db, argparse.Namespace(name='exp1'))
+        assert db.docs['exp1']['updated_at'] != ''
+        # We don't assert > prior because both timestamps may be the
+        # same wall-clock second; just that the field is rewritten.
+
+    def test_approve_idempotent_when_already_approved(self) -> None:
+        """Re-approving an already-approved experiment is a no-op
+        (prints "already approved", does not bump _rev)."""
+        import argparse
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='exp1', pipeline='v3_logistic'))
+        cmd_approve(db, argparse.Namespace(name='exp1'))
+        saves_after_first = db.saves
+        cmd_approve(db, argparse.Namespace(name='exp1'))
+        assert db.saves == saves_after_first
+
+    def test_approve_missing_experiment_exits_nonzero(self) -> None:
+        import argparse
+        import pytest
+        db = _FakeExperimentsDb()
+        with pytest.raises(SystemExit) as exc:
+            cmd_approve(db, argparse.Namespace(name='does_not_exist'))
+        assert exc.value.code != 0
+
+
+class TestCmdUnapprove:
+    """``unapprove <name>`` sets approved=False on the experiment doc."""
+
+    def test_unapprove_sets_flag_to_false(self) -> None:
+        import argparse
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='exp1', pipeline='v3_logistic'))
+        cmd_approve(db, argparse.Namespace(name='exp1'))
+        cmd_unapprove(db, argparse.Namespace(name='exp1'))
+        assert db.docs['exp1']['approved'] is False
+
+    def test_unapprove_idempotent_when_not_approved(self) -> None:
+        """Unapproving an experiment that was never approved is a
+        no-op — doesn't write approved=False just to make a point."""
+        import argparse
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='exp1', pipeline='v3_logistic'))
+        saves_before = db.saves
+        cmd_unapprove(db, argparse.Namespace(name='exp1'))
+        assert db.saves == saves_before
+        assert 'approved' not in db.docs['exp1']
+
+    def test_unapprove_missing_experiment_exits_nonzero(self) -> None:
+        import argparse
+        import pytest
+        db = _FakeExperimentsDb()
+        with pytest.raises(SystemExit) as exc:
+            cmd_unapprove(db, argparse.Namespace(name='does_not_exist'))
+        assert exc.value.code != 0

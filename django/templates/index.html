@@ -1170,6 +1170,10 @@
                         <select id="experiment" name="experiment" onchange="switchExperiment(this.value)">
                             <option value="production">production</option>
                         </select>
+                        <label style="display: block; margin-top: 0.25rem; font-weight: normal; font-size: 0.875rem;">
+                            <input type="checkbox" class="show-all-experiments" onchange="toggleShowAllExperiments(this.checked)">
+                            Enable all experiments
+                        </label>
                     </div>
                     <div class="form-group">
                         <label for="embedding">Embedding Model</label>
@@ -1235,6 +1239,10 @@
                         <select id="experiment" name="experiment" onchange="switchExperiment(this.value)">
                             <option value="production">production</option>
                         </select>
+                        <label style="display: block; margin-top: 0.25rem; font-weight: normal; font-size: 0.875rem;">
+                            <input type="checkbox" class="show-all-experiments" onchange="toggleShowAllExperiments(this.checked)">
+                            Enable all experiments
+                        </label>
                     </div>
                     <div class="form-group">
                         <label for="embedding">Embedding Model</label>
@@ -2364,10 +2372,32 @@
         // Map experiment name → default embedding key
         const experimentEmbeddings = {};
 
-        // Load available experiments and populate dropdowns
+        // Per-session state for the "Enable all experiments" toggle.
+        // Default off — the dropdown shows only approved experiments.
+        // Not persisted: refreshing the page resets to approved-only.
+        let showAllExperiments = false;
+
+        // Called by the checkbox onchange.  Syncs the paired checkboxes
+        // across the two settings menus (config tab + sidebar) and
+        // re-fetches the experiment list with the new filter.
+        function toggleShowAllExperiments(checked) {
+            showAllExperiments = checked;
+            document.querySelectorAll('.show-all-experiments').forEach(cb => {
+                cb.checked = checked;
+            });
+            loadExperiments();
+        }
+
+        // Load available experiments and populate dropdowns.
+        // Honors `showAllExperiments`: when true, sends
+        // ?include_unapproved=true and the backend returns everything;
+        // when false (default), backend filters to approved-only.
         async function loadExperiments() {
             try {
-                const resp = await fetch(`${API_BASE}/api/experiments/`);
+                const qs = showAllExperiments
+                    ? '?include_unapproved=true'
+                    : '';
+                const resp = await fetch(`${API_BASE}/api/experiments/${qs}`);
                 if (!resp.ok) return;
                 const data = await resp.json();
                 const selects = document.querySelectorAll('#experiment');
@@ -2377,7 +2407,13 @@
                     (data.experiments || []).forEach(exp => {
                         const opt = document.createElement('option');
                         opt.value = exp.name;
-                        opt.textContent = exp.name;
+                        // When showing all, suffix unapproved entries
+                        // with " (unapproved)" so the operator can
+                        // see at a glance which ones aren't in the
+                        // curated set.
+                        opt.textContent = (showAllExperiments && !exp.approved)
+                            ? `${exp.name} (unapproved)`
+                            : exp.name;
                         if (exp.notes) opt.title = exp.notes;
                         sel.appendChild(opt);
                         if (exp.embedding) {
