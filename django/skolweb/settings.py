@@ -7,6 +7,14 @@ import os
 import pwd
 from pathlib import Path
 
+# Python 3.14 / Django 4.2 compat shim — patches
+# template.context.BaseContext.__copy__ so the admin (and DRF's
+# browsable API) render without the
+# "'super' object has no attribute 'dicts'" error.  Applied at
+# settings-import time so it lands before any template rendering.
+# Remove the import (and the module) when Django is upgraded to 5.2+.
+from . import _py314_django_compat  # noqa: F401
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
