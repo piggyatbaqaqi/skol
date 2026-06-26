@@ -18,6 +18,7 @@ setup(
         "training", "training.*",
         "yedda_parser", "yedda_parser.*",
         "treatments_classifier", "treatments_classifier.*",
+        "treatments_to_structured", "treatments_to_structured.*",
         "bin", "bin.*",
     ]),
     py_modules=[

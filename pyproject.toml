@@ -158,6 +158,8 @@ include = [
     "yedda_parser.*",
     "treatments_classifier",
     "treatments_classifier.*",
+    "treatments_to_structured",
+    "treatments_to_structured.*",
     "bin",
     "bin.*",
 ]

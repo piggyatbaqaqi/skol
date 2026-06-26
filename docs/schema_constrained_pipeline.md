@@ -203,7 +203,7 @@ The promise: new taxon group = new *data files*, not new code.
 
 **Scope contract:** Phase 1 ends the moment a reviewer can open brat
 on a synthetic per-treatment document, see Claude-API-generated
-feature annotations on `description_spans` / `diagnosis_spans`,
+feature annotations on the `description` and `diagnosis` prose,
 correct them, and have the corrections land in CouchDB as
 training-quality ground truth.  No production extractor, no Pass A
 induction, no schema freeze — just enough scaffolding to start
@@ -251,25 +251,32 @@ missing package on production is a packaging error.
 ### 10.2 Synthetic brat document layout
 
 One brat document per Treatment.  Constructed by concatenating the
-`description_spans` and `diagnosis_spans` field texts (each a list
-of source-plaintext ranges from CRF extraction).  Section markers
-make the field boundary visible to both the reviewer and the
-classifier:
+Treatment's top-level `description` and `diagnosis` string fields
+(each may be `null` if the source had no content for that field;
+either may be present alone).  Section markers make the field
+boundary visible to both the reviewer and the classifier:
 
 ```
-=== description_spans ===
+=== description ===
 A small mushroom with a brown pileus 3–5 cm wide.  Lamellae cream
 when young, turning ochre.  Stipe 4 cm long, cylindrical, smooth.
 
-=== diagnosis_spans ===
+=== diagnosis ===
 Differs from M. brevicaulis by the absence of a partial veil and
 the consistently smaller stipe diameter.
 ```
 
-Concatenation joins the within-field source-plaintext spans with
-`\n\n` (paragraph break — survives page-header / figure-caption
-interruptions cleanly).  Between-field joiner is
+If a field is `null` or empty, its section header is omitted —
+brat doesn't render a `=== diagnosis ===` block when the
+treatment has no diagnosis.  Between-field joiner is
 `\n\n=== <field_name> ===\n\n`.
+
+The `description_spans` / `diagnosis_spans` lists on the
+Treatment carry source-plaintext char offsets, not text — they're
+used only by the annotation writer to populate `source_spans` on
+each annotation (the durable backref to source-plaintext
+coordinates).  The brat-visible text comes from the top-level
+prose fields.
 
 ### 10.3 Storage shape
 
@@ -281,7 +288,7 @@ feature) annotation):
   "_id": "<treatment_id>:<feature_label>:<offset_hash>",
   "treatment_id": "taxon_xxx",
   "doc_id": "source_plaintext_doc_yyy",
-  "field": "description_spans",
+  "field": "description",                // or "diagnosis"
   "start": 142,
   "end": 256,
   "source_spans": [
@@ -393,12 +400,18 @@ import pytest
 from treatments_to_structured.complexity import complexity_score
 
 
-def _make_treatment(description='', diagnosis=''):
-    """Minimal Treatment-doc fixture for complexity_score()."""
+def _make_treatment(description=None, diagnosis=None):
+    """Minimal Treatment-doc fixture for complexity_score().
+
+    Matches the production Treatment shape: top-level ``description``
+    and ``diagnosis`` are STRING fields holding the prose; either
+    may be ``None`` (CouchDB null) for treatments whose prose lives
+    elsewhere (notes, biology) — those are out of scope for Phase 1.
+    """
     return {
         '_id': 'taxon_test',
-        'description_spans': [{'text': description}] if description else [],
-        'diagnosis_spans': [{'text': diagnosis}] if diagnosis else [],
+        'description': description,
+        'diagnosis': diagnosis,
     }
 
 
