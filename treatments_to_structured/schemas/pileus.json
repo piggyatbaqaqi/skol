@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/piggyatbaqaqi/skol/treatments_to_structured/schemas/pileus.json",
+  "title": "Pileus",
+  "description": "The cap of a basidiomycete fruiting body — the visible top surface borne on a stipe (or sometimes sessile). Mycological treatments typically characterize the pileus along five axes: size (one or two diameter measurements), shape (often progressing with age), surface texture, color, and underlying context (flesh visible at a cut surface). This schema is the hand-authored Phase 1 seed; later phases replace it with corpus-induced versions via Pass A.\n\nWorked example: Aureoboletus miniatoaurantiacus (taxon_0029f1413f69fd6d270f11e5aa0f806d3ba8687c0c1a5826330988ca90c02c06 in skol_exp_production_v4_02_00_treatments_prose). Pileus block: \"Pileus 2.6–8 cm diam, subhemispherical when young, then convex to applanate; surface tomentose or pulverous, slightly wrinkled, yellowish orange to orange; context white, unchanging in colour when injured.\"",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "size_mm": {
+      "description": "Pileus diameter range in millimeters (mycologists report in cm or mm; we canonicalize to mm). Typically a min/max pair; some species add a parenthetical max_observed for rare outliers (\"Pileus 38–75(–120) mm\" → min=38, max=75, max_observed=120). Aureoboletus example: \"Pileus 2.6–8 cm diam\" → {min: 26, max: 80}.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Lower bound of the typical range, mm."
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Upper bound of the typical range, mm. Must be ≥ min."
+        },
+        "min_observed": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional. Smaller than min, recorded as a rare outlier (parenthetical-extension form: \"(2–)3–8 cm\")."
+        },
+        "max_observed": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional. Larger than max, recorded as a rare outlier."
+        }
+      },
+      "required": ["min", "max"]
+    },
+    "shape": {
+      "description": "One or more shape descriptors. When more than one, the list is ordered by age progression (young → mature → old). Aureoboletus example: \"subhemispherical when young, then convex to applanate\" → [\"subhemispherical\", \"convex\", \"applanate\"]. Free text — the controlled vocabulary will be induced in a later phase; for now the values are whatever the source text uses.",
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "examples": [
+        ["subhemispherical", "convex", "applanate"],
+        ["hemispherical", "plano-convex"],
+        ["convex", "infundibuliform"],
+        ["umbonate"]
+      ]
+    },
+    "surface_texture": {
+      "description": "Texture as observed by hand/lens. Often multiple descriptors are combined: \"tomentose or pulverous, slightly wrinkled\" → [\"tomentose\", \"pulverous\", \"wrinkled\"]. Common single-state values: glabrous (smooth), tomentose (felty), pulverous (powdery), squamulose (small scales), squamose (scales), viscid (sticky), velutinous (velvety), wrinkled, polished, dry. Free text in Phase 1; controlled-vocabulary induction is later.",
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "examples": [
+        ["tomentose", "pulverous", "wrinkled"],
+        ["glabrous", "viscid"],
+        ["squamose"]
+      ]
+    },
+    "color": {
+      "description": "Pileus surface color, given as the descriptive text from the treatment. Often a range (\"pale yellowish at first but gradually darkening to dull tan\"), sometimes accompanied by Munsell or hex codes in detailed treatments. Aureoboletus example: \"yellowish orange to orange\". Free text in Phase 1.",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "yellowish orange to orange",
+        "pale yellowish at first but gradually darkening to dull tan",
+        "fuscous to pale chestnut"
+      ]
+    },
+    "context_color": {
+      "description": "Color of the pileus context (the flesh just under the surface), as seen at a cut. May differ from the surface color. Aureoboletus example: \"context white\" → \"white\". Free text in Phase 1.",
+      "type": "string",
+      "minLength": 1,
+      "examples": ["white", "cream", "pale yellow", "reddish brown"]
+    },
+    "context_change_on_injury": {
+      "description": "How the pileus context changes color when cut or bruised. Diagnostic for many genera (Boletus stains blue; Lactarius exudes milk of various colors). Common single-state values: \"unchanging\", \"staining blue\", \"staining red\", \"staining brown\", \"milky white\", \"milky orange\". Free text in Phase 1.",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "unchanging",
+        "staining blue",
+        "milky white exudate"
+      ]
+    }
+  }
+}
