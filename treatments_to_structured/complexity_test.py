@@ -4,17 +4,9 @@ Comparative semantics: richer prose → higher score.  We don't
 bake in absolute weights here — the calibration step (Phase 1
 deliverable 1, see docs/schema_constrained_pipeline.md §10.4)
 tunes those by inspection.
-
-The three comparative tests carry ``pytest.mark.xfail`` until
-the implementation lands; per CLAUDE.md, HEAD must always have
-all tests passing so bisect-style debugging works.  Remove the
-xfail markers when complexity_score graduates from
-NotImplementedError to a real implementation.
 """
 
 from typing import Any, Dict, Optional
-
-import pytest
 
 from treatments_to_structured.complexity import complexity_score
 
@@ -50,30 +42,15 @@ class TestComplexityScore:
     as these orderings hold.
     """
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_returns_float(self) -> None:
         result = complexity_score(_make_treatment(description='hi.'))
         assert isinstance(result, float)
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_empty_treatment_scores_zero(self) -> None:
         """A treatment with no description / diagnosis prose scores
         0.0 — nothing to annotate, nothing to weight."""
         assert complexity_score(_make_treatment()) == 0.0
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_null_prose_treated_as_empty_string(self) -> None:
         """Many production Treatments have ``description: null`` or
         ``diagnosis: null`` (the prose lives in ``notes`` or another
@@ -84,11 +61,6 @@ class TestComplexityScore:
         assert complexity_score(all_null) == complexity_score(all_empty)
         assert complexity_score(all_null) == 0.0
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_one_field_null_other_populated(self) -> None:
         """The Trichoderma sample (docs/schema_constrained_pipeline.md
         §10.1) has ``description: null`` with a short ``diagnosis``.
@@ -102,11 +74,6 @@ class TestComplexityScore:
         assert isinstance(score, float)
         assert score > 0.0
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_richer_description_scores_higher_than_minimal(self) -> None:
         minimal = _make_treatment(description='A small fungus.')
         rich = _make_treatment(description=(
@@ -116,11 +83,6 @@ class TestComplexityScore:
         ))
         assert complexity_score(rich) > complexity_score(minimal)
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_measurement_density_raises_score(self) -> None:
         """Two descriptions of similar word count, one with
         measurements, one without — measurements should win."""
@@ -134,11 +96,6 @@ class TestComplexityScore:
         ))
         assert complexity_score(measured) > complexity_score(bland)
 
-    @pytest.mark.xfail(
-        reason='complexity_score not yet implemented '
-               '(Phase 1 deliverable 1)',
-        strict=True,
-    )
     def test_diagnosis_contributes_to_score(self) -> None:
         """Both fields count; a treatment with both Description AND
         Diagnosis prose scores higher than one with Description alone
