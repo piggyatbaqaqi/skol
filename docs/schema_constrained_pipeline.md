@@ -199,6 +199,286 @@ The promise: new taxon group = new *data files*, not new code.
 
 ---
 
+## 10. Phase 1 plan — bootstrap to editable training data
+
+**Scope contract:** Phase 1 ends the moment a reviewer can open brat
+on a synthetic per-treatment document, see Claude-API-generated
+feature annotations on `description_spans` / `diagnosis_spans`,
+correct them, and have the corrections land in CouchDB as
+training-quality ground truth.  No production extractor, no Pass A
+induction, no schema freeze — just enough scaffolding to start
+editing.
+
+Out of scope for Phase 1 (deliberately): production §4.3
+constrained-fill loop, batched inference, Pass A schema induction,
+second-clade generalization, the §3 aggregation pipeline.  These
+are all later phases against the doc above.
+
+### 10.1 Module layout
+
+New top-level package `treatments_to_structured/` — sibling to
+`skol_classifier/` and `treatments_classifier/`.  Named
+symmetrically with `bin/treatments_to_json` to make the "v5 starts
+where v4 ends" relationship visible in directory listings.
+
+```
+treatments_to_structured/
+    __init__.py
+    complexity.py             # complexity_score(treatment_doc) -> float
+    schemas/
+        pileus.json           # JSON Schema for one feature (seed)
+    brat_render.py            # Treatment → (.txt, .ann) synthesis +
+                              # annotation ↔ (field-relative,
+                              # source-plaintext) coordinate maps
+    storage.py                # CouchDB read/write for annotations
+    storage_test.py
+    complexity_test.py
+    brat_render_test.py
+
+bin/
+    select_for_annotation.py  # CLI: complexity-scored sampler
+    llm_annotate_features.py  # CLI: Claude-API bootstrap pass
+    brat_ingest.py            # CLI: read brat .ann back to CouchDB
+    promote_to_golden.py      # CLI: candidate → golden + set marker
+```
+
+`treatments_to_structured/` and `bin/bin.*` go in the wheel
+include lists (`pyproject.toml` + `setup.py`) at the same time as
+the package is created — avoids the repeated "missing package on
+prod" bug we hit during the 0.9.0 cycle.  Per `CLAUDE.md`: a
+missing package on production is a packaging error.
+
+### 10.2 Synthetic brat document layout
+
+One brat document per Treatment.  Constructed by concatenating the
+`description_spans` and `diagnosis_spans` field texts (each a list
+of source-plaintext ranges from CRF extraction).  Section markers
+make the field boundary visible to both the reviewer and the
+classifier:
+
+```
+=== description_spans ===
+A small mushroom with a brown pileus 3–5 cm wide.  Lamellae cream
+when young, turning ochre.  Stipe 4 cm long, cylindrical, smooth.
+
+=== diagnosis_spans ===
+Differs from M. brevicaulis by the absence of a partial veil and
+the consistently smaller stipe diameter.
+```
+
+Concatenation joins the within-field source-plaintext spans with
+`\n\n` (paragraph break — survives page-header / figure-caption
+interruptions cleanly).  Between-field joiner is
+`\n\n=== <field_name> ===\n\n`.
+
+### 10.3 Storage shape
+
+**Per-annotation document** (one CouchDB doc per (treatment_id,
+feature) annotation):
+
+```json
+{
+  "_id": "<treatment_id>:<feature_label>:<offset_hash>",
+  "treatment_id": "taxon_xxx",
+  "doc_id": "source_plaintext_doc_yyy",
+  "field": "description_spans",
+  "start": 142,
+  "end": 256,
+  "source_spans": [
+    {"start": 5842, "end": 5900},
+    {"start": 6010, "end": 6056}
+  ],
+  "source_text": "the brown cap ... edges flaring",
+  "feature_label": "Pileus",
+  "model": "claude-opus-4-7",
+  "created_at": "2026-06-26T..."
+}
+```
+
+Invariant: source plaintext joined from `source_spans` in order
+equals `source_text`, equals `concatenated_field_text[start:end]`.
+Validated at every write; mismatch raises rather than silently
+storing drift.
+
+**Two databases**, same shape:
+
+- `skol_exp_<name>_features_candidate` — Claude API output, pre-
+  review.  Per-experiment because the prompt and seed schema
+  evolve per-experiment.
+- `skol_golden_features` — post-review ground truth.  Global,
+  mirrors the `skol_golden_ann_hand` convention.
+
+**Marker on source Treatment** in `skol_exp_<name>_treatments_prose`:
+field `in_golden_features: true` flags a treatment whose
+annotations have been promoted.  Train-set generators filter
+these out; eval scorers operate on the complement.
+
+Per `CLAUDE.md`: add both new DBs to `docs/couchdbs.md` as part of
+this work.
+
+### 10.4 Deliverables (and order)
+
+1. **Complexity scorer** — `treatments_to_structured/complexity.py`.
+   Pure function over a Treatment doc returning a float.  First-cut
+   definition: weighted combo of (a) total prose word count across
+   description + diagnosis, (b) feature-keyword hits from a small
+   seed gazetteer (pileus, lamellae, stipe, spores, …), (c)
+   measurement-pattern count (`\d+(\.\d+)?\s*(mm|cm|µm|µ|nm)`).
+   Tunable; comparative semantics — we'll calibrate by inspecting
+   scored samples, not by hitting an absolute threshold.
+
+2. **Sample selector CLI** — `bin/select_for_annotation.py`.  Reads
+   the experiment's treatments_prose DB, scores each treatment via
+   (1), emits N treatment IDs split across complexity bands.
+   Example: `bin/select_for_annotation --experiment production_v4
+   --n 100 --bands low:25,mid:50,high:25` → 100 IDs printed.
+
+3. **Tiny hand-written schema** — `treatments_to_structured/schemas/pileus.json`.
+   One feature, JSON Schema, used as a structural prompt
+   ingredient.  Pass A induction is later; for Phase 1 the schema
+   is hand-authored from operator knowledge.
+
+4. **brat-render module** — `treatments_to_structured/brat_render.py`.
+   Functions:
+   - `render(treatment) -> (txt: str, span_map: SpanMap)` — builds
+     the synthetic .txt and a map for (field-relative ↔ source-
+     plaintext) coordinate translation.
+   - `annotations_to_brat(annotations, span_map) -> str` — produces
+     the `.ann` file body (brat T-entity lines).
+   - `parse_brat_ann(ann_text, span_map) -> annotations` —
+     round-trip for `brat_ingest.py`.
+
+5. **Claude-API bootstrap annotator** — `bin/llm_annotate_features.py`.
+   Reads treatment IDs from stdin (pipe from selector), for each:
+   renders the synthetic .txt, sends to Claude with the seed schema,
+   parses Claude's JSON response into the annotation schema, validates
+   the source-text invariant, writes to candidate DB.  Idempotent on
+   `_id` (re-runs overwrite).  Model + created_at recorded mechanically.
+
+6. **brat ingestion CLI** — `bin/brat_ingest.py`.  Reads a brat
+   working directory (`.txt` + `.ann` files), translates back to
+   annotation docs, writes to candidate DB.  Same shape as (5)'s
+   output but originating from a human-edited `.ann`.
+
+7. **Promotion to golden** — `bin/promote_to_golden.py`.  Per-
+   treatment: reads from candidate, writes to `skol_golden_features`,
+   sets `in_golden_features: true` on the source Treatment doc.  Per
+   `manage_experiment` conventions: hard-fail on unknown treatment
+   IDs.
+
+8. **Docs** — `docs/couchdbs.md` entries for the two new DBs;
+   a brief operator runbook in `docs/treatments_to_structured.md`
+   covering the select → annotate → review-in-brat → promote loop.
+
+The first three (complexity, selector, schema) deliver no end-user
+value on their own but are the dependencies for (5).  Item (5) is
+the first moment a reviewer can see candidate output.  Items (6)
+and (7) close the editing loop.
+
+### 10.5 LLM choice for the bootstrap pass
+
+**Claude API**.  Top-quality on the seed data, no GPU infra
+needed, per-token cost is bounded by the sample size from (2).
+Operationally: Anthropic Python SDK, model selection via env
+var (`SKOL_BOOTSTRAP_LLM_MODEL`, default `claude-opus-4-7`),
+API key from `~/.skol_env` (`ANTHROPIC_API_KEY`).  Local-Mistral
+production §4.3 path stays open; this is bootstrap-only.
+
+### 10.6 First failing test (TDD entry point)
+
+`treatments_to_structured/complexity_test.py`:
+
+```python
+import pytest
+from treatments_to_structured.complexity import complexity_score
+
+
+def _make_treatment(description='', diagnosis=''):
+    """Minimal Treatment-doc fixture for complexity_score()."""
+    return {
+        '_id': 'taxon_test',
+        'description_spans': [{'text': description}] if description else [],
+        'diagnosis_spans': [{'text': diagnosis}] if diagnosis else [],
+    }
+
+
+class TestComplexityScore:
+    """Comparative semantics: richer prose → higher score.  We
+    don't bake in absolute weights here — the calibration step
+    (Phase 1 deliverable 1) tunes those by inspection."""
+
+    def test_returns_float(self):
+        assert isinstance(
+            complexity_score(_make_treatment(description='hi.')), float,
+        )
+
+    def test_empty_treatment_scores_zero(self):
+        assert complexity_score(_make_treatment()) == 0.0
+
+    def test_richer_description_scores_higher_than_minimal(self):
+        minimal = _make_treatment(description='A small fungus.')
+        rich = _make_treatment(
+            description=(
+                'Pileus brown, 3-5 cm wide.  Lamellae cream-colored '
+                'when young, ochre at maturity.  Stipe 4 cm long, '
+                'cylindrical, smooth.'
+            ),
+        )
+        assert complexity_score(rich) > complexity_score(minimal)
+
+    def test_measurement_density_raises_score(self):
+        """Two descriptions of similar word count, one with
+        measurements, one without — measurements should win."""
+        bland = _make_treatment(
+            description=(
+                'Pileus brown.  Lamellae cream.  Stipe long and '
+                'cylindrical and smooth and pale.'
+            ),
+        )
+        measured = _make_treatment(
+            description=(
+                'Pileus brown 3 cm.  Lamellae cream 5 mm.  Stipe '
+                '4 cm long 8 mm wide cylindrical smooth.'
+            ),
+        )
+        assert complexity_score(measured) > complexity_score(bland)
+
+    def test_diagnosis_contributes_to_score(self):
+        """Both fields count; a treatment with both Description AND
+        Diagnosis prose scores higher than one with Description alone
+        (controlling for description content)."""
+        desc_only = _make_treatment(
+            description='Pileus brown, 3 cm wide.',
+        )
+        both = _make_treatment(
+            description='Pileus brown, 3 cm wide.',
+            diagnosis='Differs from M. brevicaulis by the absent veil.',
+        )
+        assert complexity_score(both) > complexity_score(desc_only)
+```
+
+These define `complexity_score`'s contract behaviorally (comparative,
+no absolute thresholds).  Next session: make them pass with the
+weighted-combo implementation in `complexity.py`.  When the first
+test is green, deliverable (1) is done and (2) can start.
+
+### 10.7 Phase-1 done means
+
+- A reviewer has opened brat on a candidate-DB treatment, edited
+  the annotations, and seen the edits land in CouchDB via
+  `brat_ingest`.
+- At least one Treatment has been promoted to
+  `skol_golden_features` and carries `in_golden_features: true`.
+- The complexity scorer, sample selector, render/ingest module,
+  and Claude annotator all have green tests.
+
+What this leaves for Phase 2+: Pass A schema induction, the
+production §4.3 constrained-fill loop, batched inference, second-
+clade generalization.  All deferred but unlocked by the editable
+training data Phase 1 produces.
+
+---
+
 ## ⏭️ Reminder: second project — automatic ontology building
 
 **Come back to the ontology-learning track as a separate effort.** It overlaps
