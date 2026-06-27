@@ -123,7 +123,14 @@ def resolve_candidate_db_name(
     explicit = dbs.get('features_candidate')
     if explicit:
         return explicit
-    fallback = f'skol_exp_{experiment_name}_features_candidate'
+    # 02_50 slots between the 02_00 treatments_prose extraction and
+    # the 03_00 treatments_structured SLM output, per the
+    # sort-in-pipeline-order convention from
+    # docs/skol-db-naming-cleanup.md (also memory:
+    # project_db_naming_cleanup.md).
+    fallback = (
+        f'skol_exp_{experiment_name}_02_50_features_candidate'
+    )
     if verbosity >= 1:
         print(
             f"NOTE: experiment.databases.features_candidate not set; "

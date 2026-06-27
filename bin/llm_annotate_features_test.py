@@ -76,7 +76,11 @@ class TestResolveCandidateDbName:
         name = resolve_candidate_db_name(
             'production_v4', exp, verbosity=1, warn_stream=warn,
         )
-        assert name == 'skol_exp_production_v4_features_candidate'
+        # 02_50 sorts between the 02_00 treatments_prose extraction
+        # and the 03_00 treatments_structured SLM output.
+        assert name == (
+            'skol_exp_production_v4_02_50_features_candidate'
+        )
         assert 'NOTE' in warn.getvalue()
         assert 'production_v4' in warn.getvalue()
 
@@ -87,7 +91,7 @@ class TestResolveCandidateDbName:
         name = resolve_candidate_db_name(
             'legacy', {}, verbosity=0, warn_stream=warn,
         )
-        assert name == 'skol_exp_legacy_features_candidate'
+        assert name == 'skol_exp_legacy_02_50_features_candidate'
 
     def test_silent_at_verbosity_zero(self) -> None:
         warn = io.StringIO()

@@ -309,11 +309,16 @@ storing drift.
 
 **Two databases**, same shape:
 
-- `skol_exp_<name>_features_candidate` — Claude API output, pre-
-  review.  Per-experiment because the prompt and seed schema
-  evolve per-experiment.
+- `skol_exp_<name>_02_50_features_candidate` — Claude API output,
+  pre-review.  Per-experiment because the prompt and seed schema
+  evolve per-experiment.  The ``02_50`` slot sorts between
+  ``02_00_treatments_prose`` (CRF extraction output) and
+  ``03_00_treatments_structured`` (SLM field-extraction output),
+  per the sort-in-pipeline-order convention in
+  ``docs/skol-db-naming-cleanup.md``.
 - `skol_golden_features` — post-review ground truth.  Global,
-  mirrors the `skol_golden_ann_hand` convention.
+  mirrors the `skol_golden_ann_hand` convention (no ``XX_YY``
+  prefix — globals don't carry pipeline order).
 
 **Marker on source Treatment** in `skol_exp_<name>_treatments_prose`:
 field `in_golden_features: true` flags a treatment whose
@@ -363,7 +368,7 @@ this work.
 
    * **`bin/manage_experiment` (cmd_create / cmd_update)**: write
      `databases.features_candidate` per the naming convention
-     `skol_exp_<name>_features_candidate`.  Derived from the
+     `skol_exp_<name>_02_50_features_candidate`.  Derived from the
      experiment name; no explicit `--features-candidate-db` flag.
      Matches the existing `treatments_prose` /
      `treatments_structured` pattern.  Tests cover
