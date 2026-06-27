@@ -146,6 +146,20 @@ class TestReadTreatmentIds:
             read_treatment_ids(None, io.StringIO(''), stdin_isatty=True)
         assert 'no treatment IDs' in str(exc.value)
 
+    def test_string_input_raises_type_error(self) -> None:
+        """Defensive guard against the bug from the first live run:
+        passing the raw ``args.doc_ids`` string instead of the parsed
+        ``config['doc_ids']`` list silently iterated characters and
+        spammed 'skipping <single char>: not found' lines.  TypeError
+        now surfaces the bug immediately with the actionable fix in
+        the message."""
+        with pytest.raises(TypeError) as exc:
+            read_treatment_ids(
+                'taxon_a,taxon_b', io.StringIO(''), stdin_isatty=False,
+            )
+        assert 'doc_ids' in str(exc.value)
+        assert 'list' in str(exc.value)
+
 
 # ---------------------------------------------------------------------------
 # filter_already_annotated

@@ -142,15 +142,25 @@ def read_treatment_ids(
     stdin_isatty: bool,
 ) -> List[str]:
     """Resolve treatment IDs from ``--doc-id`` (pre-parsed by
-    common_parser) or stdin.
+    ``get_env_config``) or stdin.
 
     Either source must produce at least one non-empty ID.  Stdin is
     consumed only when it isn't a TTY (otherwise the script would
     block waiting for typed input).
 
     Raises ``ValueError`` with an operator-actionable message if
-    neither source yields IDs.
+    neither source yields IDs.  Raises ``TypeError`` if ``doc_ids``
+    is a string (the un-parsed form from ``args.doc_ids``) — silent
+    character-iteration was the symptom of the first run's bug;
+    failing loudly catches a recurrence immediately.
     """
+    if doc_ids is not None and not isinstance(doc_ids, list):
+        raise TypeError(
+            f"doc_ids must be a list (or None), not "
+            f"{type(doc_ids).__name__}.  Pass config['doc_ids'] from "
+            f"get_env_config, NOT args.doc_ids (which is the raw "
+            f"comma-separated string from argparse)."
+        )
     if doc_ids:
         # common_parser already split and stripped; filter empties
         # defensively in case anyone passed a list with blanks.
@@ -371,7 +381,7 @@ def main() -> int:
     verbosity = int(config.get('verbosity', 1) or 0)
     dry_run = bool(config.get('dry_run', False))
     skip_existing = bool(config.get('skip_existing', False))
-    experiment = config.get('experiment')
+    experiment = config.get('experiment_name')
     if not experiment:
         print("error: --experiment is required", file=sys.stderr)
         return 2
@@ -392,10 +402,13 @@ def main() -> int:
         or args.schema.title()
     )
 
-    # Treatment IDs (--doc-id resolves to args.doc_ids via common_parser)
+    # Treatment IDs (--doc-id is parsed from string to list by
+    # get_env_config; use config['doc_ids'], NOT args.doc_ids which
+    # is still the raw comma-separated string).
     try:
         treatment_ids = read_treatment_ids(
-            args.doc_ids, sys.stdin, stdin_isatty=sys.stdin.isatty(),
+            config.get('doc_ids'), sys.stdin,
+            stdin_isatty=sys.stdin.isatty(),
         )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
