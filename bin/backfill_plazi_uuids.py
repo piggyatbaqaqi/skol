@@ -14,6 +14,21 @@ Plazi's coverage grows and as new docs with DOIs are ingested.  The
 freshness guard makes recurring sweeps cheap (only re-queries entries
 older than the threshold).
 
+.. note::
+   ``--skip-existing`` and ``--incremental`` are accepted because
+   ``common_parser()`` declares them, but **this script does not
+   consume them** — they're no-ops here.  The actual freshness
+   controls are ``--re-check-after-days`` (success window, default
+   365) and ``--retry-failed-after-days`` (sticky-failure window,
+   default 7); use those instead.  Passing the no-op flags prints a
+   reminder on stderr at startup.
+
+   Separately, a stamp from an older ``source`` tag (e.g.
+   pre-srsStats ``searchByDOI`` data) is re-queried regardless of
+   freshness windows — that's the source-tag migration kicker in
+   ``should_skip``, deliberate so endpoint changes don't leave
+   stale data unchecked.
+
 Uses the canonical rate-limited HTTP client
 (``ingestors/rate_limited_client.py``) so we play nicely with
 Plazi's small community service.  Default pacing: 1-2 s between
@@ -656,6 +671,28 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+
+    # --skip-existing / --incremental are declared by common_parser()
+    # but this script doesn't consume them.  Warn rather than silently
+    # ignore — silent no-ops were the diagnostic-trap that surfaced the
+    # "I asked for --skip-existing but everything got re-queried" report.
+    # See the module docstring for the actual freshness flags
+    # (--re-check-after-days / --retry-failed-after-days).
+    if args.skip_existing is True:
+        print(
+            "NOTE: --skip-existing is a no-op for backfill_plazi_uuids.  "
+            "To control re-querying of already-checked DOIs, use "
+            "--re-check-after-days N (default 365).",
+            file=sys.stderr,
+        )
+    if args.incremental is True:
+        print(
+            "NOTE: --incremental is a no-op for backfill_plazi_uuids — "
+            "the script is always incremental (one DOI at a time, with "
+            "per-doc freshness gating).  Use --limit N to constrain "
+            "per-run work.",
+            file=sys.stderr,
+        )
 
     config = get_env_config(cli_args=args)
     verbosity = int(config.get('verbosity', 1) or 0)
