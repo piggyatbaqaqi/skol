@@ -1,0 +1,38 @@
+{
+  "name": "fungi",
+  "description": "Seed examples of anatomical features used in mycological treatments. INTENTIONALLY NOT EXHAUSTIVE — the LLM annotator should use these labels when the corresponding feature is described AND should invent similar canonical anatomical names for features not in this list. The labels here cover obvious macro features that recur across Basidiomycota and Ascomycota sporocarp groups. Future taxon-specific seeds (e.g., seeds/plants.json for botanical treatments, seeds/lichens.json for lichenology) drop in next to this file with the same shape; the annotator picks the seed via --feature-set <name>.\n\nOmitted on purpose so we can verify the open-ended part of the prompt works: Hymenophore (boletes / polypores), Odour, Pileipellis / Stipitipellis, Pleurocystidia / Cheilocystidia, Trama variants, Clamp connections.  After the first live run validates Claude invents these, follow-ups may canonicalize a subset by adding them here.",
+  "examples": [
+    {
+      "name": "Pileus",
+      "description": "Sporocarp cap — top surface and underlying flesh (context).  Features like color, shape progression (e.g., 'convex to applanate'), surface texture (tomentose, viscid), and size go here.  NOT pileipellis (cellular cuticle), NOT hymenophore (spore-bearing underside)."
+    },
+    {
+      "name": "Lamellae",
+      "description": "Gills — radial spore-bearing blades on the underside of agaric caps.  Attachment (adnate, free, decurrent), spacing, color belong here.  Boletes use pores/tubes instead and would NOT have a Lamellae block."
+    },
+    {
+      "name": "Stipe",
+      "description": "Stem — the supporting structure between substrate and pileus.  Dimensions, surface, attachment, base shape go here.  NOT stipitipellis (cellular surface)."
+    },
+    {
+      "name": "Annulus",
+      "description": "Ring on the stipe, remnant of a partial veil.  Present in many agarics, absent in many boletes."
+    },
+    {
+      "name": "Volva",
+      "description": "Basal cup or sac at the stipe base, remnant of a universal veil."
+    },
+    {
+      "name": "Spores",
+      "description": "Basidiospores or ascospores — the propagules themselves.  Microscopic features (size, shape, surface ornamentation, amyloidity, color in KOH or Melzer's) go here."
+    },
+    {
+      "name": "Basidia",
+      "description": "Spore-bearing cells of basidiomycetes.  Dimensions, sterigmata, wall thickness."
+    },
+    {
+      "name": "Cystidia",
+      "description": "Sterile structural cells in the hymenium.  When the treatment distinguishes pleuro- vs cheilo- (or other types), use the specific term as a separate label."
+    }
+  ]
+}

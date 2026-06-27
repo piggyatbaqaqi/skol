@@ -24,28 +24,40 @@ from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     annotate_one_treatment,
     estimate_tokens,
     filter_already_annotated,
-    load_schema,
+    load_seed,
     read_treatment_ids,
     resolve_candidate_db_name,
 )
 
 
 # ---------------------------------------------------------------------------
-# load_schema
+# load_seed
 # ---------------------------------------------------------------------------
 
 
-class TestLoadSchema:
-    """Resolves schemas/<NAME>.json relative to the package."""
+class TestLoadSeed:
+    """Resolves seeds/<NAME>.json relative to the package."""
 
-    def test_loads_pileus_schema(self) -> None:
-        schema = load_schema('pileus')
-        assert schema['title'] == 'Pileus'
-        assert 'properties' in schema
+    def test_loads_fungi_seed(self) -> None:
+        seed = load_seed('fungi')
+        assert seed['name'] == 'fungi'
+        assert 'examples' in seed
+        assert any(
+            ex.get('name') == 'Pileus' for ex in seed['examples']
+        )
 
-    def test_missing_schema_raises_filenotfound(self) -> None:
+    def test_fungi_seed_intentionally_omits_hymenophore(self) -> None:
+        """Phase-1 deliberate test point: Hymenophore is left out of
+        the seed so we can verify Claude invents the label for the
+        Aureoboletus pores/tubes block.  If a future commit adds
+        Hymenophore, update or drop this test consciously."""
+        seed = load_seed('fungi')
+        names = {ex['name'] for ex in seed['examples']}
+        assert 'Hymenophore' not in names
+
+    def test_missing_seed_raises_filenotfound(self) -> None:
         with pytest.raises(FileNotFoundError):
-            load_schema('this_feature_does_not_exist_anywhere')
+            load_seed('this_kingdom_does_not_exist_anywhere')
 
 
 # ---------------------------------------------------------------------------
@@ -195,32 +207,35 @@ class _FakeCandidateDb:
 
 
 class TestFilterAlreadyAnnotated:
-    """Drop treatment IDs that already have annotations in the
-    candidate DB for the same feature."""
+    """Drop treatment IDs that already have ANY annotation in the
+    candidate DB.  The multi-feature bootstrap annotates the whole
+    treatment in one call, so per-feature scoping no longer makes
+    sense — re-running on an annotated treatment would just
+    duplicate work."""
 
     def test_keeps_unannotated_only(self) -> None:
         db = _FakeCandidateDb(existing_prefixes=[
-            'taxon_a:Pileus:',
+            'taxon_a:',
         ])
         result = filter_already_annotated(
-            ['taxon_a', 'taxon_b'], db, 'Pileus',
+            ['taxon_a', 'taxon_b'], db,
         )
         assert result == ['taxon_b']
 
-    def test_different_feature_label_does_not_collide(self) -> None:
-        """An existing 'Lamellae' annotation for taxon_a doesn't
-        prevent us from annotating taxon_a for 'Pileus'."""
+    def test_annotated_under_any_label_counts_as_done(self) -> None:
+        """Existing annotations (any feature label) on a treatment
+        mean we don't re-run.  The bootstrap pass writes ALL
+        feature labels per treatment in one go; a prior run already
+        produced them."""
         db = _FakeCandidateDb(existing_prefixes=[
-            'taxon_a:Lamellae:',
+            'taxon_a:',  # any prior annotation, regardless of feature
         ])
-        result = filter_already_annotated(
-            ['taxon_a'], db, 'Pileus',
-        )
-        assert result == ['taxon_a']
+        result = filter_already_annotated(['taxon_a'], db)
+        assert result == []
 
     def test_empty_input(self) -> None:
         db = _FakeCandidateDb()
-        assert filter_already_annotated([], db, 'Pileus') == []
+        assert filter_already_annotated([], db) == []
 
 
 # ---------------------------------------------------------------------------
@@ -313,11 +328,13 @@ def _make_mock_messages_client(claude_response_text: str) -> Any:
     return client
 
 
-_PILEUS_SCHEMA = {
-    'title': 'Pileus',
-    'description': 'The cap.',
-    'type': 'object',
-    'properties': {},
+_TEST_SEED = {
+    'name': 'fungi',
+    'description': "Test seed: not exhaustive.",
+    'examples': [
+        {'name': 'Pileus', 'description': 'The cap.'},
+        {'name': 'Stipe', 'description': 'The stem.'},
+    ],
 }
 
 
@@ -327,12 +344,14 @@ class TestAnnotateOneTreatment:
     def test_happy_path_returns_annotations(self) -> None:
         treatment = _make_treatment()
         claude_response = json.dumps({
-            'spans': [{'text': 'Pileus brown 3 cm.'}],
+            'spans': [{
+                'text': 'Pileus brown 3 cm.',
+                'feature_label': 'Pileus',
+            }],
         })
         client = _make_mock_messages_client(claude_response)
         result = annotate_one_treatment(
-            client, treatment, _PILEUS_SCHEMA, 'Pileus',
-            'claude-opus-4-7',
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
         assert isinstance(result, list)
         assert len(result) == 1
@@ -342,6 +361,50 @@ class TestAnnotateOneTreatment:
         assert ann['treatment_id'] == 'taxon_test'
         assert ann['doc_id'] == 'src_doc_xyz'
         assert ann['model'] == 'claude-opus-4-7'
+
+    def test_multiple_features_in_one_call(self) -> None:
+        """The whole point of the pivot: one API call returns
+        spans for multiple distinct feature labels."""
+        treatment = _make_treatment(
+            description='Pileus brown 3 cm.  Stipe 5 cm long.',
+        )
+        claude_response = json.dumps({
+            'spans': [
+                {
+                    'text': 'Pileus brown 3 cm.',
+                    'feature_label': 'Pileus',
+                },
+                {
+                    'text': 'Stipe 5 cm long.',
+                    'feature_label': 'Stipe',
+                },
+            ],
+        })
+        client = _make_mock_messages_client(claude_response)
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        labels = [a['feature_label'] for a in result]
+        assert labels == ['Pileus', 'Stipe']
+
+    def test_invented_label_propagates(self) -> None:
+        """If Claude returns a label not in the seed (e.g.
+        Hymenophore, the deliberate test point on the live run),
+        annotate_one_treatment passes it through unchanged."""
+        treatment = _make_treatment(
+            description='Hymenophore poroid, depressed around apex.',
+        )
+        claude_response = json.dumps({
+            'spans': [{
+                'text': 'Hymenophore poroid, depressed around apex.',
+                'feature_label': 'Hymenophore',
+            }],
+        })
+        client = _make_mock_messages_client(claude_response)
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result[0]['feature_label'] == 'Hymenophore'
 
     def test_empty_treatment_returns_empty_list(self) -> None:
         """A treatment with neither description nor diagnosis renders
@@ -355,24 +418,22 @@ class TestAnnotateOneTreatment:
         }
         client = _make_mock_messages_client('')
         result = annotate_one_treatment(
-            client, empty, _PILEUS_SCHEMA, 'Pileus',
-            'claude-opus-4-7',
+            client, empty, _TEST_SEED, 'claude-opus-4-7',
         )
         assert result == []
         # No API call should have been made.
         client.messages.create.assert_not_called()
 
     def test_no_spans_returned(self) -> None:
-        """Claude says 'no pileus mentions' — that's a legitimate
-        outcome, not an error."""
+        """Claude says 'no anatomical features mentioned' — that's
+        a legitimate outcome, not an error."""
         treatment = _make_treatment(
             description='No anatomy here, just metadata.',
         )
         claude_response = json.dumps({'spans': []})
         client = _make_mock_messages_client(claude_response)
         result = annotate_one_treatment(
-            client, treatment, _PILEUS_SCHEMA, 'Pileus',
-            'claude-opus-4-7',
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
         assert result == []
 
@@ -382,7 +443,6 @@ class TestAnnotateOneTreatment:
         treatment = _make_treatment()
         client = _make_mock_messages_client('not valid json')
         result = annotate_one_treatment(
-            client, treatment, _PILEUS_SCHEMA, 'Pileus',
-            'claude-opus-4-7',
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
         assert isinstance(result, Exception)

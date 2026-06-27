@@ -42,17 +42,22 @@ _SYSTEM_PROMPT = (
 
 def build_user_prompt(
     synth_txt: str,
-    schema: Dict[str, Any],
-    feature_label: str,
+    seed: Dict[str, Any],
 ) -> str:
     """Assemble the user-turn prompt for one Treatment.
 
-    Combines the feature schema (full JSON, including the
-    anatomical-boundary guidance from the schema's ``description``)
-    with the synthetic brat ``.txt`` of the Treatment.  Asks Claude
-    to return a JSON object with a ``"spans"`` array, each entry a
-    ``{"text": "..."}`` carrying the verbatim source text of one
-    feature mention.
+    Takes a seed file (an open-ended example list, NOT an
+    exhaustive vocabulary — see ``seeds/fungi.json``) plus the
+    synthetic brat ``.txt``.  Asks Claude to return a JSON object
+    with a ``"spans"`` array, each entry a ``{"text": "...",
+    "feature_label": "..."}`` carrying the verbatim source text of
+    one feature mention and the label Claude chose for it.
+
+    Open-ended labelling: Claude is told to *use* the example
+    labels when applicable and to *invent* canonical anatomical
+    names for features not in the seed.  This keeps the
+    architecture taxon-agnostic — swapping ``seeds/fungi.json`` for
+    ``seeds/plants.json`` is enough to retarget the annotator.
 
     Source-text-only output (rather than start/end offsets) keeps
     the contract robust: offsets are recovered downstream by
@@ -60,33 +65,48 @@ def build_user_prompt(
     sidesteps off-by-one and Unicode-width ambiguities that LLM
     offset arithmetic is notoriously bad at.
     """
-    schema_json = json.dumps(schema, indent=2, ensure_ascii=False)
+    seed_examples = seed.get('examples') or []
+    examples_block = '\n'.join(
+        f"  - **{ex['name']}** — {ex['description']}"
+        for ex in seed_examples
+    )
+    seed_description = seed.get('description', '')
     return (
-        f"Annotate every span in the treatment below that describes "
-        f"the **{feature_label}** feature, as defined by the schema.\n"
-        f"\n"
-        f"Read the schema's `description` field carefully — it specifies "
-        f"both what counts AS this feature AND what does NOT (the\n"
-        f"anatomical-boundary section).  Spans for other features must "
-        f"NOT be returned.\n"
-        f"\n"
-        f"SCHEMA:\n"
-        f"```json\n"
-        f"{schema_json}\n"
-        f"```\n"
-        f"\n"
-        f"OUTPUT FORMAT (return exactly this JSON envelope, nothing else):\n"
-        f"```json\n"
-        f'{{"spans": [{{"text": "..."}}, ...]}}\n'
-        f"```\n"
-        f"\n"
-        f"Each `text` value must be a verbatim substring of the treatment "
-        f"text below (whitespace and punctuation included; do not "
-        f"paraphrase or normalize).  Use as many or as few entries as the "
-        f"text supports; empty `spans` is valid when the feature is not "
-        f"mentioned.\n"
-        f"\n"
-        f"TREATMENT TEXT:\n"
+        "Annotate every span of text in the treatment below that "
+        "describes one specific anatomical feature of the specimen.\n"
+        "\n"
+        "LABELLING RULES:\n"
+        "  1. Use the example labels below when the corresponding "
+        "feature is described.\n"
+        "  2. For features NOT in the example list, invent a similar "
+        "canonical anatomical name (e.g., 'Hymenophore', "
+        "'Pileipellis', 'Conidiophores').  Use the most specific "
+        "term the treatment uses when it offers one.\n"
+        "  3. Each span describes ONE feature.  If a block of text "
+        "discusses multiple features, split it into separate "
+        "annotations.\n"
+        "  4. Read the seed's `description` for the anatomical-"
+        "boundary discipline you should apply throughout.\n"
+        "\n"
+        f"SEED CONTEXT:\n"
+        f"{seed_description}\n"
+        "\n"
+        "EXAMPLE LABELS:\n"
+        f"{examples_block}\n"
+        "\n"
+        "OUTPUT FORMAT (return exactly this JSON envelope, nothing "
+        "else — no preamble, no markdown fences, no commentary):\n"
+        "```json\n"
+        '{"spans": [{"text": "...", "feature_label": "..."}, ...]}\n'
+        "```\n"
+        "\n"
+        "Each `text` value must be a verbatim substring of the "
+        "treatment text below (whitespace and punctuation included; "
+        "do not paraphrase or normalize).  Use as many or as few "
+        "entries as the text supports; empty `spans` is valid when "
+        "no anatomical features are described.\n"
+        "\n"
+        "TREATMENT TEXT:\n"
         f"{synth_txt}"
     )
 
@@ -118,7 +138,6 @@ class ClaudeResponseError(ValueError):
 def parse_claude_response(
     response_text: str,
     span_map: SpanMap,
-    feature_label: str,
     model_name: str,
     treatment_id: str,
     doc_id: str,
@@ -126,22 +145,20 @@ def parse_claude_response(
 ) -> List[Dict[str, Any]]:
     """Parse Claude's JSON response into annotation dicts.
 
-    For each ``{"text": "..."}`` span Claude emits, locates that
-    text in ``span_map.synth_text`` left-to-right (each search
-    starts after the previous match's end so repeated phrases
-    don't all collapse to the same offsets), then translates the
-    recovered synth-doc offsets into the durable storage shape:
+    For each ``{"text": "...", "feature_label": "..."}`` span Claude
+    emits, locates the text in ``span_map.synth_text`` left-to-right
+    (each search starts after the previous match's end so repeated
+    phrases don't all collapse to the same offsets), then translates
+    the recovered synth-doc offsets into the durable storage shape:
     ``(field, field-relative start, field-relative end,
-    source_spans, source_text)`` per the
-    docs/schema_constrained_pipeline.md §10.3 schema.
+    source_spans, source_text)`` per
+    docs/schema_constrained_pipeline.md §10.3.
 
     Args:
         response_text: Raw text from Claude's message response.
             May or may not include ```json fences (tolerated).
         span_map: From ``brat_render.render`` against the same
             Treatment.
-        feature_label: The label to attach to every annotation
-            (e.g. "Pileus").
         model_name: Recorded on each annotation for provenance.
         treatment_id: The Treatment's ``_id``.
         doc_id: The source ingest doc's ``_id`` (from
@@ -149,13 +166,18 @@ def parse_claude_response(
         created_at: ISO-8601 timestamp for the annotation batch.
 
     Returns:
-        List of annotation dicts matching the §10.3 schema.  Empty
-        list if Claude returned ``{"spans": []}`` — a legitimate
-        signal that the feature isn't mentioned in this Treatment.
+        List of annotation dicts matching the §10.3 schema.  Each
+        annotation carries the ``feature_label`` Claude chose for
+        the span — may be a seed label OR an invented canonical
+        name (e.g. ``"Hymenophore"`` for the pores+tubes block of
+        a bolete).  Empty list if Claude returned ``{"spans": []}``
+        — a legitimate signal that no annotatable features are
+        present.
 
     Raises:
-        ClaudeResponseError: invalid JSON, wrong envelope shape, or
-            any span's ``text`` not found in the synth doc.
+        ClaudeResponseError: invalid JSON, wrong envelope shape, a
+            span missing ``text`` or ``feature_label``, or any
+            span's ``text`` not found in the synth doc.
     """
     cleaned = _strip_json_fences(response_text)
     try:
@@ -187,11 +209,22 @@ def parse_claude_response(
             raise ClaudeResponseError(
                 f"spans[{i}] missing 'text' key; got {span!r}"
             )
+        if 'feature_label' not in span:
+            raise ClaudeResponseError(
+                f"spans[{i}] missing 'feature_label' key; got {span!r}"
+            )
         wanted = span['text']
+        feature_label = span['feature_label']
         if not isinstance(wanted, str) or not wanted:
             raise ClaudeResponseError(
                 f"spans[{i}].text must be a non-empty string; got {wanted!r}"
             )
+        if not isinstance(feature_label, str) or not feature_label.strip():
+            raise ClaudeResponseError(
+                f"spans[{i}].feature_label must be a non-empty string; "
+                f"got {feature_label!r}"
+            )
+        feature_label = feature_label.strip()
 
         # Left-to-right search from cursor; if not found there, try
         # from the start (Claude may have emitted spans out of

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bootstrap-pass Claude annotator: one feature, one Treatment per call.
+"""Bootstrap-pass Claude annotator: all features for one Treatment per call.
 
 Phase 1 deliverable 5 of treatments_to_structured.  See
 docs/schema_constrained_pipeline.md §10.4.
@@ -8,16 +8,24 @@ Pipes from ``bin/select_for_annotation`` (item 2): reads treatment
 IDs on stdin (or via ``--doc-id``), fetches each Treatment from
 the experiment's ``treatments_prose`` DB, renders the synthetic
 brat ``.txt`` (item 4's ``treatments_to_structured.brat_render.render``),
-sends it to Claude with the feature schema (item 3) as a structural
-prompt ingredient, parses the response into annotation docs
-(item 5 part 1's ``parse_claude_response``), and writes them to
-the experiment's candidate annotations DB.
+sends it to Claude with the feature SEED (item 3, e.g.
+``seeds/fungi.json``) as an open-ended example vocabulary, parses
+the response into annotation docs (item 5 part 1's
+``parse_claude_response``), and writes them to the experiment's
+candidate annotations DB.
+
+One Claude call per Treatment returns spans for ALL anatomical
+features it identifies, each tagged with its own
+``feature_label``.  Labels not in the seed are accepted — Claude
+is instructed to invent canonical anatomical names for them.
+Cross-kingdom generalization is a seed swap: ``--feature-set
+plants`` would point at a future ``seeds/plants.json``.
 
 The candidate DB name comes from the experiment doc's
 ``databases.features_candidate`` field (Phase 1 deliverable 4.5),
 with a naming-convention fallback to
-``skol_exp_<experiment>_features_candidate`` when 4.5 hasn't been
-run yet.
+``skol_exp_<experiment>_02_50_features_candidate`` when 4.5
+hasn't been run on the experiment.
 
 Usage::
 
@@ -33,9 +41,9 @@ Usage::
     bin/llm_annotate_features --experiment production_v4 \\
         --doc-id taxon_abc --estimate
 
-    # Different feature schema (when more land in schemas/):
-    bin/llm_annotate_features --experiment production_v4 \\
-        --schema lamellae --doc-id taxon_abc
+    # Different feature seed (when more land in seeds/):
+    bin/llm_annotate_features --experiment plant_treatments_v1 \\
+        --feature-set plants --doc-id specimen_abc
 
 Environment:
     ANTHROPIC_API_KEY — required for both --estimate (count_tokens)
@@ -70,10 +78,10 @@ _DEFAULT_MODEL = 'claude-opus-4-7'
 _DEFAULT_WORKERS = 5
 _DEFAULT_MAX_TOKENS = 4096
 
-_SCHEMAS_DIR = (
+_SEEDS_DIR = (
     Path(__file__).resolve().parent.parent
     / 'treatments_to_structured'
-    / 'schemas'
+    / 'seeds'
 )
 
 # Pricing per 1M tokens (USD).  Mirrors bin/llm_relabel.py's _PRICING
@@ -93,13 +101,19 @@ _PRICING: Dict[str, Dict[str, float]] = {
 # ---------------------------------------------------------------------------
 
 
-def load_schema(name: str) -> Dict[str, Any]:
-    """Load a JSON Schema from ``treatments_to_structured/schemas/<name>.json``.
+def load_seed(name: str) -> Dict[str, Any]:
+    """Load a feature-seed file from
+    ``treatments_to_structured/seeds/<name>.json``.
 
-    Raises ``FileNotFoundError`` if the schema isn't present so the
+    A seed file is the bootstrap annotator's open-ended example
+    list of anatomical feature labels (see ``seeds/fungi.json`` for
+    the worked example).  Not exhaustive — Claude is expected to
+    invent canonical labels for features the seed doesn't list.
+
+    Raises ``FileNotFoundError`` if the seed isn't present so the
     CLI can convert to a clean stderr message.
     """
-    path = _SCHEMAS_DIR / f'{name}.json'
+    path = _SEEDS_DIR / f'{name}.json'
     with path.open('r') as f:
         return json.load(f)
 
@@ -193,19 +207,25 @@ def read_treatment_ids(
 def filter_already_annotated(
     treatment_ids: Iterable[str],
     candidate_db: Any,
-    feature_label: str,
 ) -> List[str]:
-    """Return the subset of treatment IDs without existing
-    annotations for ``feature_label`` in ``candidate_db``.
+    """Return the subset of treatment IDs without ANY existing
+    annotations in ``candidate_db``.
 
-    Annotation docs are keyed ``<treatment_id>:<feature_label>:<offset>``
-    so a single ``_all_docs`` range query per treatment ID tells us
-    whether any annotation already exists.  Cheap on small candidate
-    DBs; if this becomes hot at scale, swap to a view.
+    Annotation docs are keyed ``<treatment_id>:<feature_label>:<offset>``,
+    so a single ``_all_docs`` range query per treatment ID checks
+    whether the bootstrap pass has already touched this treatment
+    (under any feature label).  Cheap on small candidate DBs; if
+    this becomes hot at scale, swap to a view.
+
+    Since the bootstrap annotator now writes annotations for ALL
+    features of a treatment in one call, "already annotated" is a
+    per-treatment property rather than per-feature.  Re-running the
+    bootstrap on a treatment requires explicitly omitting
+    ``--skip-existing`` or deleting prior annotations.
     """
     out: List[str] = []
     for tid in treatment_ids:
-        prefix = f'{tid}:{feature_label}:'
+        prefix = f'{tid}:'
         rows = candidate_db.view(
             '_all_docs', startkey=prefix, endkey=prefix + '￰',
             limit=1,
@@ -258,14 +278,18 @@ def estimate_tokens(
 def annotate_one_treatment(
     client: Any,
     treatment: Dict[str, Any],
-    schema: Dict[str, Any],
-    feature_label: str,
+    seed: Dict[str, Any],
     model: str,
     system_prompt: str = _SYSTEM_PROMPT,
     max_tokens: int = _DEFAULT_MAX_TOKENS,
 ) -> Union[List[Dict[str, Any]], Exception]:
     """Render, prompt, call Claude, parse — returns annotations or
     the exception that interrupted the pipeline.
+
+    Returns annotations for ALL anatomical features Claude
+    identifies in the treatment, each tagged with its own
+    ``feature_label`` (either a seed-listed label or one Claude
+    invented per the prompt's open-ended labelling rules).
 
     Returning the exception (rather than raising) keeps the parallel
     worker pool tidy: the outer loop logs per-treatment failures
@@ -277,7 +301,7 @@ def annotate_one_treatment(
         synth_txt, span_map = render(treatment)
         if not synth_txt:
             return []
-        user_prompt = build_user_prompt(synth_txt, schema, feature_label)
+        user_prompt = build_user_prompt(synth_txt, seed)
         response = client.messages.create(
             model=model,
             max_tokens=max_tokens,
@@ -287,7 +311,7 @@ def annotate_one_treatment(
         response_text = response.content[0].text
         now = datetime.now(timezone.utc).isoformat()
         return parse_claude_response(
-            response_text, span_map, feature_label, model,
+            response_text, span_map, model,
             treatment_id, doc_id, now,
         )
     except Exception as exc:  # noqa: BLE001 — propagate per-worker
@@ -335,18 +359,13 @@ def main() -> int:
         epilog=__doc__,
     )
     parser.add_argument(
-        '--schema', default='pileus', metavar='NAME',
+        '--feature-set', default='fungi', metavar='NAME',
         help=(
-            'Feature schema name (looked up in '
-            'treatments_to_structured/schemas/<NAME>.json).  '
-            'Default: pileus.'
-        ),
-    )
-    parser.add_argument(
-        '--feature-label', default=None, metavar='LABEL',
-        help=(
-            "Annotation label (defaults to the schema's 'title', "
-            "e.g., 'Pileus' for schemas/pileus.json)."
+            'Seed-vocabulary file (looked up in '
+            'treatments_to_structured/seeds/<NAME>.json).  Defines '
+            "the open-ended example labels for the bootstrap pass.  "
+            "Default: fungi.  Swap to seeds/plants.json (or wherever "
+            "future seed files land) for non-fungal corpora."
         ),
     )
     # --doc-id is provided by common_parser() (dest='doc_ids', already
@@ -393,21 +412,16 @@ def main() -> int:
         print("error: --experiment is required", file=sys.stderr)
         return 2
 
-    # Schema
+    # Seed (open-ended feature-label vocabulary)
     try:
-        schema = load_schema(args.schema)
+        seed = load_seed(args.feature_set)
     except FileNotFoundError:
         print(
-            f"error: schema {args.schema!r} not found in "
-            f"{_SCHEMAS_DIR}",
+            f"error: seed {args.feature_set!r} not found in "
+            f"{_SEEDS_DIR}",
             file=sys.stderr,
         )
         return 2
-    feature_label = (
-        args.feature_label
-        or schema.get('title')
-        or args.schema.title()
-    )
 
     # Treatment IDs (--doc-id is parsed from string to list by
     # get_env_config; use config['doc_ids'], NOT args.doc_ids which
@@ -492,18 +506,22 @@ def main() -> int:
     else:
         candidate_db = server[candidate_db_name]
 
-    # Skip-existing filter
+    # Skip-existing filter: drop treatments with ANY annotation
+    # already in the candidate DB.  Bootstrap pass annotates the
+    # whole treatment in one call, so re-annotating it would
+    # duplicate work.  Operator can force a re-run by omitting
+    # --skip-existing or deleting prior annotations.
     if skip_existing and candidate_db is not None:
         before = len(treatment_ids)
         treatment_ids = filter_already_annotated(
-            treatment_ids, candidate_db, feature_label,
+            treatment_ids, candidate_db,
         )
         if verbosity >= 1:
             skipped = before - len(treatment_ids)
             if skipped > 0:
                 print(
                     f"--skip-existing: dropped {skipped} treatments "
-                    f"already annotated for {feature_label}",
+                    f"already annotated",
                     file=sys.stderr,
                 )
 
@@ -545,7 +563,7 @@ def main() -> int:
                 continue
             prompts.append((
                 t['_id'],
-                build_user_prompt(synth_txt, schema, feature_label),
+                build_user_prompt(synth_txt, seed),
             ))
         if not prompts:
             print(
@@ -577,9 +595,8 @@ def main() -> int:
         with ThreadPoolExecutor(max_workers=args.workers) as pool:
             futures = {
                 pool.submit(
-                    annotate_one_treatment, client, t, schema,
-                    feature_label, args.model, _SYSTEM_PROMPT,
-                    args.max_tokens,
+                    annotate_one_treatment, client, t, seed,
+                    args.model, _SYSTEM_PROMPT, args.max_tokens,
                 ): t['_id']
                 for t in treatments
             }
@@ -614,8 +631,11 @@ def main() -> int:
                     continue
                 if not dry_run and candidate_db is not None:
                     for ann in anns:
+                        # feature_label is per-annotation in the
+                        # multi-feature bootstrap (each span carries
+                        # its own label from Claude).
                         ann['_id'] = annotation_doc_id(
-                            tid, feature_label, ann['start'],
+                            tid, ann['feature_label'], ann['start'],
                         )
                         if ann['_id'] in candidate_db:
                             ann['_rev'] = (
