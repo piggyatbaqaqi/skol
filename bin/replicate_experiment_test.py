@@ -60,6 +60,30 @@ class TestDatabasesForExperiment(unittest.TestCase):
         self.assertNotIn('skol_golden_v2', result)
         self.assertNotIn('skol_golden_ann_hand_v2', result)
 
+    def test_features_candidate_replicates_for_free(self):
+        """Phase 1 deliverable 4.5 added ``databases.features_candidate``
+        to experiment docs.  ``databases_for_experiment`` enumerates
+        every string value in the ``databases`` block, so the new
+        key replicates without any code change — this test pins
+        that contract."""
+        exp = {
+            '_id': 'production_v4',
+            'databases': {
+                'ingest': 'skol_dev',
+                'treatments_prose':
+                    'skol_exp_production_v4_02_00_treatments_prose',
+                'features_candidate':
+                    'skol_exp_production_v4_02_50_features_candidate',
+                'treatments_structured':
+                    'skol_exp_production_v4_03_00_treatments_structured',
+            },
+        }
+        result = databases_for_experiment(exp)
+        self.assertIn(
+            'skol_exp_production_v4_02_50_features_candidate',
+            result,
+        )
+
     def test_include_golden_adds_them(self):
         exp = {
             'databases': {

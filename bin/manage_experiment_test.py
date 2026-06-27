@@ -832,3 +832,102 @@ class TestCmdUnapprove:
         with pytest.raises(SystemExit) as exc:
             cmd_unapprove(db, argparse.Namespace(name='does_not_exist'))
         assert exc.value.code != 0
+
+
+# ---------------------------------------------------------------------------
+# §10.4 deliverable 4.5 — features_candidate DB key on the experiment doc
+# ---------------------------------------------------------------------------
+
+
+class TestCmdCreateFeaturesCandidate:
+    """``cmd_create`` writes ``databases.features_candidate`` via the
+    naming convention (no flag — derived from the experiment name).
+
+    Convention: ``skol_exp_<name>_02_50_features_candidate`` — the
+    02_50 slot sorts between 02_00_treatments_prose extraction and
+    03_00_treatments_structured SLM output, per
+    docs/schema_constrained_pipeline.md §10.3 and
+    docs/skol-db-naming-cleanup.md.
+    """
+
+    def test_create_writes_features_candidate(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='production_v4'))
+        doc = db.docs['production_v4']
+        assert doc['databases']['features_candidate'] == (
+            'skol_exp_production_v4_02_50_features_candidate'
+        )
+
+    def test_create_does_not_emit_features_candidate_flag(self) -> None:
+        """The flag is deliberately absent: option (b) — convention
+        only, derived from the experiment name.  If a future change
+        adds a flag, this test catches the regression."""
+        # _create_args's default Namespace has no
+        # 'features_candidate_db' attribute (per option b).  If
+        # cmd_create starts reading one, that'd be a deviation.
+        args = _create_args(name='production_v4')
+        assert not hasattr(args, 'features_candidate_db')
+
+
+class TestCmdUpdateFeaturesCandidateSelfRepair:
+    """``cmd_update`` fills in ``databases.features_candidate`` if
+    missing (lazy repair for legacy experiment docs).  Doesn't
+    overwrite if already set — preserves an operator's custom value.
+    """
+
+    def test_update_backfills_missing_field(self) -> None:
+        """Legacy doc with no features_candidate field gets it
+        populated on the next bare ``update <name>``."""
+        import argparse
+        db = _FakeExperimentsDb()
+        # Hand-craft a legacy doc shape (no features_candidate)
+        db.docs['legacy'] = {
+            '_id': 'legacy',
+            'pipeline': 'v3_logistic',
+            'pipeline_state': {'current_step': 0, 'steps': []},
+            'databases': {
+                'ingest': 'skol_dev',
+                'treatments_prose': 'skol_treatments_dev',
+            },
+        }
+        cmd_update(db, _update_args(name='legacy'))
+        assert db.docs['legacy']['databases'][
+            'features_candidate'
+        ] == 'skol_exp_legacy_02_50_features_candidate'
+
+    def test_update_preserves_existing_custom_value(self) -> None:
+        """Operator-set custom name is left alone — repair only
+        when missing."""
+        import argparse
+        db = _FakeExperimentsDb()
+        db.docs['custom'] = {
+            '_id': 'custom',
+            'pipeline': 'v3_logistic',
+            'pipeline_state': {'current_step': 0, 'steps': []},
+            'databases': {
+                'ingest': 'skol_dev',
+                'features_candidate': 'my_special_features_db',
+            },
+        }
+        saves_before = db.saves
+        cmd_update(db, _update_args(name='custom'))
+        assert db.docs['custom']['databases'][
+            'features_candidate'
+        ] == 'my_special_features_db'
+        # No-op because the field was already present.
+        assert db.saves == saves_before
+
+    def test_update_creates_databases_block_if_absent(self) -> None:
+        """A doc with no 'databases' key at all should still get
+        the field populated (defensive setdefault)."""
+        import argparse
+        db = _FakeExperimentsDb()
+        db.docs['bare'] = {
+            '_id': 'bare',
+            'pipeline': 'v3_logistic',
+            'pipeline_state': {'current_step': 0, 'steps': []},
+        }
+        cmd_update(db, _update_args(name='bare'))
+        assert db.docs['bare']['databases'][
+            'features_candidate'
+        ] == 'skol_exp_bare_02_50_features_candidate'
