@@ -355,6 +355,37 @@ this work.
    - `parse_brat_ann(ann_text, span_map) -> annotations` —
      round-trip for `brat_ingest.py`.
 
+4.5. **Experiment-schema integration** — cross-cutting between (4)
+   and (5).  Required because deliverable (5) writes to a
+   per-experiment candidate database, and the experiment doc's
+   `databases.*` block is where that location is canonically
+   recorded.
+
+   * **`bin/manage_experiment` (cmd_create / cmd_update)**: write
+     `databases.features_candidate` per the naming convention
+     `skol_exp_<name>_features_candidate`.  Derived from the
+     experiment name; no explicit `--features-candidate-db` flag.
+     Matches the existing `treatments_prose` /
+     `treatments_structured` pattern.  Tests cover
+     create-writes-it and update-rewrites-it.
+   * **`bin/replicate_experiment`**: no code change expected —
+     `databases_for_experiment` already enumerates any string
+     value in the `databases` block, so a new key replicates for
+     free.  Add a test that confirms `features_candidate` shows up
+     in the replicate list when the source experiment doc carries
+     it.
+   * **`bin/llm_annotate_features` (deliverable 5)**: resolve the
+     target DB by reading `experiment.databases.features_candidate`
+     rather than computing the name inline.  Falls back to the
+     naming convention if the field is missing on legacy docs
+     (operator-actionable warning, not a crash).
+   * **Global golden DB**: `skol_golden_features` does NOT belong
+     in `experiment.databases` (it's global, not per-experiment —
+     matches `skol_golden_ann_hand` precedent).  Declare the name
+     as a constant in `treatments_to_structured/storage.py` or
+     similar so promotion / eval tooling references it from one
+     place.
+
 5. **Claude-API bootstrap annotator** — `bin/llm_annotate_features.py`.
    Reads treatment IDs from stdin (pipe from selector), for each:
    renders the synthetic .txt, sends to Claude with the seed schema,
