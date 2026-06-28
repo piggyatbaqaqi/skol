@@ -147,6 +147,64 @@ Because decoding is constrained:
 - measurements are forced into the typed value shape;
 - it is typically **faster**, because no tokens are wasted on invalid structure.
 
+### 4.4 Feature grouping (open design point — deferred)
+
+The Pass A bootstrap annotator emits a flat list of annotations.
+Biologically-related ones often belong to a shared parent feature
+that Pass A doesn't represent. Concrete examples from the live
+2026-06-28 sample:
+
+- *Amanita magniverrucata* (`taxon_841d5cbed…`) — one Universal
+  veil with four annotations: `Universal veil on pileus`,
+  `Universal veil on stipe`, `Universal veil (microscopic, on
+  pileus)`, `Universal veil (microscopic, on stipe base)`.  Plus
+  Partial veil × 2 (macro + microscopic).  Plus Pileus context
+  × 2, Stipe context × 2.
+- *Aureoboletus* (`taxon_0029f1413f…`) — Cystidia subdivides into
+  sibling Cheilocystidia and Pleurocystidia.  Are these peers
+  or children of a Cystidia parent?
+
+Three places this grouping *could* happen:
+
+1. **At annotation time** (in the Pass A prompt) — Claude emits
+   a `parent_feature_label` per annotation.  Rejected for Phase 1:
+   couples the open-ended labelling rule to a hierarchy we don't
+   yet know, and the grouping rule is taxon-specific (each
+   kingdom would need seed-equivalent hints).
+2. **Post-review, pre-Pass-B** — algorithmic grouping by
+   canonical parent name on the candidate / golden annotations.
+   A standalone step the reviewer audits.
+3. **In Pass B itself** — Pass B's schema-constrained fill
+   (§4.3) targets hierarchical schemas (e.g., Universal veil →
+   {macro: {…}, microscopic: {pileus: {…}, stipe: {…}}}).  The
+   classifier (§4.2) routes each Pass A annotation to the right
+   slot of the right parent; Pass B accumulates across siblings.
+
+**This document picks (3) when Pass B is designed in detail.**
+The cleanest design coupling is at the point where structured
+output actually needs the hierarchy — the structured schema
+defines the parents, Pass B's classifier maps annotations to
+schema slots, and Pass A stays a flat-list producer that doesn't
+need to know the eventual hierarchy.
+
+Two prerequisites surface ahead of that work:
+
+- **Label canonicalization is the bigger problem first.**  Even
+  within "Universal veil" Claude varied between `microstructure`
+  and `(microscopic)` across runs of the same prompt.  Any
+  grouping logic has to solve this regardless; a normalization
+  step early in Pass B (or as a small post-Pass-A pass) cleans
+  up the label vocabulary and is reusable across grouping
+  strategies.
+- **Optional `parent_feature_label` field** on the candidate
+  annotation schema (default null) plants a flag without
+  committing to any specific grouping logic.  Future Pass B
+  code populates it; current code keeps working unchanged.
+
+Decision deferred until Pass B is being designed in detail —
+that's where the biological model and the data model converge
+and we'll know what shape the parents should take.
+
 ---
 
 ## 5. How this addresses the original problems
