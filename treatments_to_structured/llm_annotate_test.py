@@ -395,6 +395,202 @@ class TestParseClaudeResponse:
                 response, span_map, 'm', 'tid', 'did', 'ts',
             )
 
+    # ------------------------------------------------------------------
+    # Whitespace-tolerant fallback search.
+    #
+    # LLMs routinely normalize unicode whitespace (narrow no-break
+    # space U+202F, non-breaking space U+00A0, thin space U+2009,
+    # newlines collapsed to spaces) when echoing source text in JSON
+    # output.  Exact str.find then fails on visually-identical text.
+    # The fuzzy fallback rebuilds a regex where any whitespace run
+    # matches any non-empty whitespace run in the source.
+    # ------------------------------------------------------------------
+
+    def test_narrow_no_break_space_matches_plain_space(self) -> None:
+        """The Persoonia / Fungal Planet case: source uses U+202F
+        for unit spacing ('av. = 98'); Claude's echo collapses
+        U+202F to U+0020.  Real bug observed on Calonectria
+        pentaseptata 2026-06-28.
+
+        Source uses explicit \\u202f escapes so the test's bytes
+        are unambiguous (some editors silently insert U+202F when
+        you type spaces around symbols).
+        """
+        source = 'av.\u202f=\u202f98 mm, smooth.'
+        treatment = _make_treatment(
+            description=source,
+            description_spans=[
+                {'start_char': 0, 'end_char': len(source)},
+            ],
+        )
+        _, span_map = render(treatment)
+        # Claude's echo: U+202F → U+0020.
+        response = json.dumps({
+            'spans': [{
+                'text': 'av. = 98 mm, smooth.',
+                'feature_label': 'Spores',
+            }],
+        })
+        anns = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert len(anns) == 1
+        # source_text MUST be the source's verbatim bytes (U+202F
+        # preserved), NOT Claude's normalized echo.  Downstream brat
+        # rendering uses source_text against the actual plaintext
+        # attachment, so source bytes must win.
+        assert '\u202f' in anns[0]['source_text']
+        assert anns[0]['source_text'] == source
+
+    def test_non_breaking_space_matches_plain_space(self) -> None:
+        """U+00A0 (NBSP) is common in journals that copy-paste from
+        Word.  Same normalization pattern as U+202F."""
+        source = 'Pileus\u00a03\u00a0cm wide.'
+        treatment = _make_treatment(
+            description=source,
+            description_spans=[
+                {'start_char': 0, 'end_char': len(source)},
+            ],
+        )
+        _, span_map = render(treatment)
+        response = json.dumps({
+            'spans': [{
+                'text': 'Pileus 3 cm wide.',
+                'feature_label': 'Pileus',
+            }],
+        })
+        anns = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert len(anns) == 1
+        assert '\u00a0' in anns[0]['source_text']
+        assert anns[0]['source_text'] == source
+
+    def test_newline_in_source_matches_space_in_claude(self) -> None:
+        """Multi-line descriptions: source has line breaks where
+        Claude's echo collapses to a single space."""
+        source = 'Pileus brown,\n3 cm wide,\nsmooth.'
+        treatment = _make_treatment(
+            description=source,
+            description_spans=[
+                {'start_char': 0, 'end_char': len(source)},
+            ],
+        )
+        _, span_map = render(treatment)
+        response = json.dumps({
+            'spans': [{
+                'text': 'Pileus brown, 3 cm wide, smooth.',
+                'feature_label': 'Pileus',
+            }],
+        })
+        anns = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert len(anns) == 1
+        # Original source preserved — newlines and all.
+        assert '\n' in anns[0]['source_text']
+        assert anns[0]['source_text'] == source
+
+    def test_multiple_whitespace_chars_collapse_to_one(self) -> None:
+        """Source has double spaces; Claude returns single.  Should
+        still match."""
+        treatment = _make_treatment(
+            description='Pileus  brown  3  cm.',
+            description_spans=[{'start_char': 0, 'end_char': 21}],
+        )
+        _, span_map = render(treatment)
+        response = json.dumps({
+            'spans': [{
+                'text': 'Pileus brown 3 cm.',
+                'feature_label': 'Pileus',
+            }],
+        })
+        anns = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert len(anns) == 1
+
+    def test_fuzzy_does_not_trigger_when_exact_matches(self) -> None:
+        """Regression: when exact str.find succeeds, the fuzzy path
+        must NOT run.  The fuzzy regex is more permissive and could
+        match a different (incorrect) span elsewhere in a treatment
+        that has whitespace variation across paragraphs."""
+        # Source has 'Pileus brown' at offset 0, and a later
+        # 'Pileus  brown' (double space) at offset 30.  Claude
+        # returns 'Pileus brown'.  Exact-find should match at 0.
+        # If fuzzy ran first or in addition, it could match at 30
+        # (since '\\s+' matches one or many).
+        treatment = _make_treatment(
+            description=(
+                'Pileus brown 3 cm wide.\n\n'
+                'Pileus  brown 5 cm wide.'  # double-space variant
+            ),
+            description_spans=[{'start_char': 0, 'end_char': 49}],
+        )
+        _, span_map = render(treatment)
+        response = json.dumps({
+            'spans': [{
+                'text': 'Pileus brown',
+                'feature_label': 'Pileus',
+            }],
+        })
+        anns = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        # Must hit the EXACT match at start, not the fuzzy match
+        # at offset 25 (after '\n\n').
+        assert anns[0]['start'] == 0
+        assert anns[0]['end'] == 12
+
+    def test_fuzzy_still_raises_on_non_whitespace_differences(
+        self,
+    ) -> None:
+        """The fallback is whitespace-tolerant ONLY.  Word-level
+        paraphrases / hallucinations must still fail loudly."""
+        span_map = self._setup()
+        with pytest.raises(ClaudeResponseError) as exc:
+            parse_claude_response(
+                ('{"spans": [{"text": "Pileus red 3 cm wide.", '
+                 '"feature_label": "Pileus"}]}'),
+                span_map, 'm', 'tid', 'did', 'ts',
+            )
+        # New error message names BOTH failure modes so operators
+        # know fuzzy was tried.
+        assert 'whitespace-tolerant' in str(exc.value)
+
+    def test_fuzzy_match_offsets_advance_cursor(self) -> None:
+        """After a fuzzy match, the cursor should advance to the END
+        of the matched span in the source (NOT cursor + len(wanted),
+        which would be wrong when the source spans were longer due
+        to extra whitespace)."""
+        treatment = _make_treatment(
+            description=(
+                'av. = 98 µm.  Another av. = 50 µm later.'
+            ),
+            description_spans=[{'start_char': 0, 'end_char': 41}],
+        )
+        _, span_map = render(treatment)
+        response = json.dumps({
+            'spans': [
+                {  # fuzzy match; source uses U+202F
+                    'text': 'av. = 98 µm.',
+                    'feature_label': 'First',
+                },
+                {  # exact match; should land AFTER the first
+                    'text': 'av. = 50 µm later.',
+                    'feature_label': 'Second',
+                },
+            ],
+        })
+        anns = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert len(anns) == 2
+        # Second annotation must start AFTER first ends; if cursor
+        # advancement was buggy the second find would re-hit the
+        # first 'av. =' inside the first span.
+        assert anns[1]['start'] > anns[0]['end']
+
 
 # ---------------------------------------------------------------------------
 # annotation_doc_id

@@ -22,7 +22,7 @@ with CouchDB I/O, the Anthropic SDK, parallel workers, and the
 
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from treatments_to_structured.brat_render import (
     SpanMap,
@@ -232,14 +232,47 @@ def parse_claude_response(
         idx = synth.find(wanted, cursor)
         if idx < 0:
             idx = synth.find(wanted)
-        if idx < 0:
-            raise ClaudeResponseError(
-                f"spans[{i}].text not found in synthetic doc: "
-                f"{wanted[:120]!r}"
-            )
 
-        synth_start = idx
-        synth_end = idx + len(wanted)
+        if idx >= 0:
+            synth_start = idx
+            synth_end = idx + len(wanted)
+        else:
+            # Fallback: whitespace-tolerant regex search.  LLMs
+            # routinely normalize narrow no-break space (U+202F),
+            # non-breaking space (U+00A0), thin space (U+2009),
+            # and other unicode whitespace to U+0020 when echoing
+            # source text.  Persoonia / Fungal Planet treatments
+            # use U+202F for unit spacing ("av. = 98");
+            # exact str.find then fails on whitespace-only
+            # differences that are visually identical.
+            #
+            # Build a regex from the wanted text where any
+            # whitespace run matches any non-empty whitespace run
+            # in the source.  We search in the ORIGINAL synth_text
+            # so the recovered start/end remain in original
+            # coordinates — no offset translation needed.
+            #
+            # Splitting on `\s+` before escaping (rather than
+            # substituting after) sidesteps a Python 3.13 surprise:
+            # re.escape() escapes literal spaces to `\ ` (backslash-
+            # space), so a naive `re.sub(r'\s+', r'\\s+', escaped)`
+            # leaves the backslash in front of each space and the
+            # resulting pattern matches a LITERAL backslash, not
+            # whitespace.  Split-then-rejoin avoids that.
+            parts = re.split(r'\s+', wanted)
+            fuzzy = r'\s+'.join(re.escape(p) for p in parts)
+            fuzzy_re = re.compile(fuzzy)
+            m = fuzzy_re.search(synth, cursor)
+            if m is None:
+                m = fuzzy_re.search(synth)
+            if m is None:
+                raise ClaudeResponseError(
+                    f"spans[{i}].text not found in synthetic doc "
+                    f"(exact and whitespace-tolerant search both "
+                    f"failed): {wanted[:120]!r}"
+                )
+            synth_start = m.start()
+            synth_end = m.end()
         cursor = synth_end
 
         try:
@@ -257,12 +290,19 @@ def parse_claude_response(
             fr_start, fr_end, ext.source_spans,
         )
 
+        # Store source_text from the SOURCE (synth slice), NOT from
+        # Claude's echo.  In the exact-match case these are equal;
+        # in the fuzzy-match case Claude's `wanted` has normalized
+        # whitespace while the source preserves original chars
+        # (U+202F, U+00A0, newlines).  Downstream brat rendering
+        # uses source_text to lay out spans against the actual
+        # plaintext attachment, so source bytes must win.
         annotations.append({
             'feature_label': feature_label,
             'field': field,
             'start': fr_start,
             'end': fr_end,
-            'source_text': wanted,
+            'source_text': synth[synth_start:synth_end],
             'source_spans': source_spans,
             'model': model_name,
             'created_at': created_at,
