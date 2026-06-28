@@ -145,6 +145,37 @@ for these experiments (no `skol_exp_jats_v1_treatments`, no
 the experiments are re-run; until then those experiment configs are valid
 on paper but cannot be executed end-to-end.
 
+### Phase 1 feature-annotation wiring (`databases.features_candidate` / `databases.features_status`)
+
+Added per `docs/schema_constrained_pipeline.md` §10.4 deliverable 4.5.
+The bootstrap Claude annotator (`bin/llm_annotate_features`) writes
+to two sibling DBs per experiment:
+
+- **`features_candidate`** — one doc per `(treatment, feature_label,
+  field-relative offset)` from the bootstrap annotator's output.
+  Reviewed in brat, promoted to `skol_golden_features`.
+  Naming-convention fallback when unset:
+  `skol_exp_<experiment>_02_50_features_candidate`.
+- **`features_status`** — one doc per processed treatment carrying
+  run-level metadata: `status` (`success` / `partial` / `error`),
+  `annotation_count`, `dropped_span_count`, the `dropped_spans`
+  recovery queue (LLM-returned spans that couldn't be coordinate-
+  recovered), `attempt_count`, `last_attempt_at`, `model`,
+  `error_message`.  Naming-convention fallback when unset:
+  `skol_exp_<experiment>_02_50_features_status`.  Schema lives in
+  `treatments_to_structured/status.py`.
+
+The status DB is queryable: `partial` treatments are the offline-
+recovery script's input, `error` treatments are the retry queue,
+`success` is what's safe to skip on the next bootstrap run.  See
+the discussion in `docs/data_quality_production_v4_model.md` and
+the `llm_annotate_features --force` / `--skip-existing` flags for
+the operator controls.
+
+| Experiment | features_candidate | features_status |
+|---|---|---|
+| `production_v4` | `skol_exp_production_v4_02_50_features_candidate` | _(naming-convention fallback)_ |
+
 ## Lineage graph
 
 ```

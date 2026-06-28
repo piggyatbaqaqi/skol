@@ -58,7 +58,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -68,9 +68,19 @@ from env_config import common_parser, get_env_config  # noqa: E402
 from treatments_to_structured.brat_render import render  # noqa: E402
 from treatments_to_structured.llm_annotate import (  # noqa: E402
     _SYSTEM_PROMPT,
+    ClaudeResponseError,
     annotation_doc_id,
     build_user_prompt,
     parse_claude_response,
+)
+from treatments_to_structured.status import (  # noqa: E402
+    STATUS_ERROR,
+    STATUS_PARTIAL,
+    STATUS_SUCCESS,
+    AnnotationResult,
+    classify_result,
+    make_status_doc,
+    status_doc_id,
 )
 
 
@@ -204,34 +214,87 @@ def read_treatment_ids(
     )
 
 
+def resolve_status_db_name(
+    experiment_name: str,
+    experiment_doc: Dict[str, Any],
+    *,
+    verbosity: int = 1,
+    warn_stream: TextIO = sys.stderr,
+) -> str:
+    """Find the status DB name for an experiment.
+
+    Mirrors ``resolve_candidate_db_name``: prefers
+    ``experiment.databases.features_status``, falls back to the
+    ``skol_exp_<name>_02_50_features_status`` naming convention
+    with a one-line warning for experiments that haven't been
+    migrated yet.
+
+    Sibling DB to ``features_candidate`` — Design Y from the
+    per-span-isolation discussion.  See
+    ``treatments_to_structured/status.py`` for the doc schema.
+    """
+    dbs = experiment_doc.get('databases') or {}
+    explicit = dbs.get('features_status')
+    if explicit:
+        return explicit
+    fallback = (
+        f'skol_exp_{experiment_name}_02_50_features_status'
+    )
+    if verbosity >= 1:
+        print(
+            f"NOTE: experiment.databases.features_status not set; "
+            f"using naming-convention fallback {fallback!r}.  Run "
+            f"`bin/manage_experiment update {experiment_name}` to "
+            f"make this canonical.",
+            file=warn_stream,
+        )
+    return fallback
+
+
 def filter_already_annotated(
     treatment_ids: Iterable[str],
-    candidate_db: Any,
+    status_db: Any,
+    *,
+    mode: str = 'default',
 ) -> List[str]:
-    """Return the subset of treatment IDs without ANY existing
-    annotations in ``candidate_db``.
+    """Return the subset of treatment IDs that should be processed
+    based on their status doc state.
 
-    Annotation docs are keyed ``<treatment_id>:<feature_label>:<offset>``,
-    so a single ``_all_docs`` range query per treatment ID checks
-    whether the bootstrap pass has already touched this treatment
-    (under any feature label).  Cheap on small candidate DBs; if
-    this becomes hot at scale, swap to a view.
+    Three modes (mapped from CLI flags):
 
-    Since the bootstrap annotator now writes annotations for ALL
-    features of a treatment in one call, "already annotated" is a
-    per-treatment property rather than per-feature.  Re-running the
-    bootstrap on a treatment requires explicitly omitting
-    ``--skip-existing`` or deleting prior annotations.
+      * ``'default'`` — skip treatments with status ``success``.
+        Retry ``error`` and ``partial`` (the offline-recovery
+        script might have updated them, or a re-run with fresh
+        prompt might succeed).
+      * ``'skip_existing'`` — skip treatments with ANY status
+        doc, regardless of state.  Operator override for "don't
+        spend API budget on retries right now."
+      * ``'force'`` — re-process everything; ignore status docs
+        entirely.  Used after a prompt change.
+
+    Returns the surviving IDs in the original order.  Status DB
+    lookups are individual ``__getitem__`` calls; cheap on a
+    treatment-id-keyed doc (no view scan).
     """
+    if mode == 'force':
+        return list(treatment_ids)
     out: List[str] = []
     for tid in treatment_ids:
-        prefix = f'{tid}:'
-        rows = candidate_db.view(
-            '_all_docs', startkey=prefix, endkey=prefix + '￰',
-            limit=1,
-        ).rows
-        if not rows:
+        doc_id = status_doc_id(tid)
+        try:
+            status_doc = status_db[doc_id]
+        except Exception:  # noqa: BLE001 — couchdb.ResourceNotFound
+            # No status doc → never attempted → process.
             out.append(tid)
+            continue
+        existing_status = status_doc.get('status')
+        if mode == 'skip_existing':
+            # Any status doc → skip.
+            continue
+        # mode == 'default': retry error/partial, skip success.
+        if existing_status == STATUS_SUCCESS:
+            continue
+        out.append(tid)
     return out
 
 
@@ -282,25 +345,42 @@ def annotate_one_treatment(
     model: str,
     system_prompt: str = _SYSTEM_PROMPT,
     max_tokens: int = _DEFAULT_MAX_TOKENS,
-) -> Union[List[Dict[str, Any]], Exception]:
-    """Render, prompt, call Claude, parse — returns annotations or
-    the exception that interrupted the pipeline.
+) -> AnnotationResult:
+    """Render, prompt, call Claude, parse — return one
+    ``AnnotationResult`` per Treatment regardless of outcome.
 
-    Returns annotations for ALL anatomical features Claude
-    identifies in the treatment, each tagged with its own
-    ``feature_label`` (either a seed-listed label or one Claude
-    invented per the prompt's open-ended labelling rules).
+    Returns an ``AnnotationResult`` with one of three statuses:
 
-    Returning the exception (rather than raising) keeps the parallel
-    worker pool tidy: the outer loop logs per-treatment failures
-    without unwinding healthy concurrent calls.
+      * ``success`` — every span Claude returned was recovered.
+        Includes the legitimate "Claude returned no spans" case
+        (annotations is empty list).
+      * ``partial`` — Claude returned at least one span we
+        couldn't recover (e.g., unicode normalization too
+        aggressive, span crossed a field boundary).
+        ``dropped_spans`` lists them for the offline-recovery
+        fixes/ script.  ``annotations`` may also be non-empty
+        with the spans that DID recover.
+      * ``error`` — catastrophic failure before any spans could
+        be parsed (Anthropic API error, invalid JSON, envelope
+        violations, network failure).  ``error_message`` carries
+        the diagnostic.
+
+    Never raises — the parallel worker pool stays healthy.  Per-
+    treatment failures show up as ``status='error'`` results in
+    the main loop, alongside the successful results.
     """
     treatment_id = treatment['_id']
     doc_id = (treatment.get('ingest') or {}).get('_id') or ''
     try:
         synth_txt, span_map = render(treatment)
         if not synth_txt:
-            return []
+            # Empty synth doc — Treatment had no description /
+            # diagnosis.  Legitimate success: there were no
+            # features to find, so we "found" none.
+            return AnnotationResult(
+                treatment_id=treatment_id,
+                status=STATUS_SUCCESS,
+            )
         user_prompt = build_user_prompt(synth_txt, seed)
         response = client.messages.create(
             model=model,
@@ -310,12 +390,35 @@ def annotate_one_treatment(
         )
         response_text = response.content[0].text
         now = datetime.now(timezone.utc).isoformat()
-        return parse_claude_response(
+        annotations, dropped_spans = parse_claude_response(
             response_text, span_map, model,
             treatment_id, doc_id, now,
         )
+        return AnnotationResult(
+            treatment_id=treatment_id,
+            status=classify_result(annotations, dropped_spans, None),
+            annotations=annotations,
+            dropped_spans=dropped_spans,
+        )
+    except ClaudeResponseError as exc:
+        # Envelope-level failure (invalid JSON, missing 'spans'
+        # key, span missing 'text'/'feature_label').  Recovery
+        # requires a re-prompt; classify as error so retry logic
+        # picks it up.
+        return AnnotationResult(
+            treatment_id=treatment_id,
+            status=STATUS_ERROR,
+            error_message=f'{type(exc).__name__}: {exc}',
+        )
     except Exception as exc:  # noqa: BLE001 — propagate per-worker
-        return exc
+        # Anthropic API error, network failure, anything else.
+        # Same classification — error doc with diagnostic, parallel
+        # workers continue.
+        return AnnotationResult(
+            treatment_id=treatment_id,
+            status=STATUS_ERROR,
+            error_message=f'{type(exc).__name__}: {exc}',
+        )
 
 
 def _print_estimate(stats: Dict[str, Any], model: str) -> None:
@@ -401,6 +504,12 @@ def main() -> int:
             f'{_DEFAULT_MAX_TOKENS}).'
         ),
     )
+    # --skip-existing and --force are both provided by common_parser().
+    # Their semantics in this script:
+    #   default (neither flag): skip status=success, retry error/partial
+    #   --skip-existing:        skip ANY treatment with a status doc
+    #   --force:                ignore status DB entirely; re-process all
+    # See filter_already_annotated() for the rules.
     args = parser.parse_args()
 
     config = get_env_config(cli_args=args)
@@ -487,41 +596,54 @@ def main() -> int:
     candidate_db_name = resolve_candidate_db_name(
         experiment, exp_doc, verbosity=verbosity,
     )
-    if candidate_db_name not in server:
+    status_db_name = resolve_status_db_name(
+        experiment, exp_doc, verbosity=verbosity,
+    )
+
+    def _get_or_create(name: str, kind: str) -> Any:
+        """Create the DB on demand; honor --dry-run by returning None."""
+        if name in server:
+            return server[name]
         if dry_run:
             if verbosity >= 1:
                 print(
-                    f"[dry-run] would create candidate DB "
-                    f"{candidate_db_name!r}",
+                    f"[dry-run] would create {kind} DB {name!r}",
                     file=sys.stderr,
                 )
-            candidate_db = None
-        else:
-            if verbosity >= 1:
-                print(
-                    f"Creating candidate DB {candidate_db_name!r}",
-                    file=sys.stderr,
-                )
-            candidate_db = server.create(candidate_db_name)
-    else:
-        candidate_db = server[candidate_db_name]
+            return None
+        if verbosity >= 1:
+            print(
+                f"Creating {kind} DB {name!r}", file=sys.stderr,
+            )
+        return server.create(name)
 
-    # Skip-existing filter: drop treatments with ANY annotation
-    # already in the candidate DB.  Bootstrap pass annotates the
-    # whole treatment in one call, so re-annotating it would
-    # duplicate work.  Operator can force a re-run by omitting
-    # --skip-existing or deleting prior annotations.
-    if skip_existing and candidate_db is not None:
+    candidate_db = _get_or_create(candidate_db_name, 'candidate')
+    status_db = _get_or_create(status_db_name, 'status')
+
+    # Status-aware skip / retry filter.  Default behavior: retry
+    # error and partial treatments, skip success.  --skip-existing
+    # widens skip to any status doc.  --force ignores status
+    # entirely.  See filter_already_annotated for the full rules.
+    if status_db is not None:
+        # Read --force from config so env var / experiment doc
+        # overrides work the same way --skip-existing already does.
+        force_mode = bool(config.get('force', False))
+        if force_mode:
+            mode = 'force'
+        elif skip_existing:
+            mode = 'skip_existing'
+        else:
+            mode = 'default'
         before = len(treatment_ids)
         treatment_ids = filter_already_annotated(
-            treatment_ids, candidate_db,
+            treatment_ids, status_db, mode=mode,
         )
         if verbosity >= 1:
             skipped = before - len(treatment_ids)
             if skipped > 0:
                 print(
-                    f"--skip-existing: dropped {skipped} treatments "
-                    f"already annotated",
+                    f"status filter (mode={mode}): dropped "
+                    f"{skipped} treatments",
                     file=sys.stderr,
                 )
 
@@ -580,9 +702,11 @@ def main() -> int:
         args.log_file
         or f"llm_annotate_{int(time.time())}.jsonl"
     )
-    success_count = 0
-    error_count = 0
-    empty_count = 0
+    counts: Dict[str, int] = {
+        STATUS_SUCCESS: 0, STATUS_PARTIAL: 0, STATUS_ERROR: 0,
+    }
+    total_annotations_stored = 0
+    total_spans_dropped = 0
 
     if verbosity >= 1:
         print(
@@ -602,38 +726,18 @@ def main() -> int:
             }
             for fut in as_completed(futures):
                 tid = futures[fut]
-                result = fut.result()
-                if isinstance(result, Exception):
-                    error_count += 1
-                    if verbosity >= 1:
-                        print(
-                            f"  ERROR {tid}: {result}",
-                            file=sys.stderr,
-                        )
-                    log_f.write(json.dumps({
-                        'treatment_id': tid,
-                        'status': 'error',
-                        'error': str(result),
-                    }) + '\n')
-                    continue
-                anns = result
-                if not anns:
-                    empty_count += 1
-                    if verbosity >= 2:
-                        print(
-                            f"  {tid}: no annotations",
-                            file=sys.stderr,
-                        )
-                    log_f.write(json.dumps({
-                        'treatment_id': tid,
-                        'status': 'empty',
-                    }) + '\n')
-                    continue
+                result: AnnotationResult = fut.result()
+                counts[result.status] = counts.get(
+                    result.status, 0,
+                ) + 1
+                total_spans_dropped += len(result.dropped_spans)
+
+                # Persist surviving annotations.  Even on
+                # status='partial' we save what we got; the
+                # status doc carries the dropped_spans queue
+                # for offline recovery.
                 if not dry_run and candidate_db is not None:
-                    for ann in anns:
-                        # feature_label is per-annotation in the
-                        # multi-feature bootstrap (each span carries
-                        # its own label from Claude).
+                    for ann in result.annotations:
                         ann['_id'] = annotation_doc_id(
                             tid, ann['feature_label'], ann['start'],
                         )
@@ -643,32 +747,102 @@ def main() -> int:
                             )
                         try:
                             candidate_db.save(ann)
+                            total_annotations_stored += 1
                         except Exception as exc:
-                            error_count += 1
                             if verbosity >= 1:
                                 print(
                                     f"  ERROR saving {ann['_id']}: "
                                     f"{exc}",
                                     file=sys.stderr,
                                 )
-                success_count += 1
-                if verbosity >= 1:
-                    print(
-                        f"  {tid}: {len(anns)} annotation(s)",
-                        file=sys.stderr,
+
+                # Persist the per-treatment status doc (Design Y).
+                # Always written: success, partial, AND error.
+                # Operators can query the status DB to see what
+                # was attempted, what failed, and what's eligible
+                # for offline recovery.
+                if not dry_run and status_db is not None:
+                    now_iso = datetime.now(timezone.utc).isoformat()
+                    prior_attempts = 0
+                    prior_rev = None
+                    try:
+                        prior_doc = status_db[status_doc_id(tid)]
+                        prior_attempts = int(
+                            prior_doc.get('attempt_count', 0)
+                        )
+                        prior_rev = prior_doc.get('_rev')
+                    except Exception:  # noqa: BLE001
+                        pass
+                    status_doc = make_status_doc(
+                        result, args.model, now_iso,
+                        attempt_count=prior_attempts + 1,
                     )
+                    if prior_rev is not None:
+                        status_doc['_rev'] = prior_rev
+                    try:
+                        status_db.save(status_doc)
+                    except Exception as exc:
+                        if verbosity >= 1:
+                            print(
+                                f"  ERROR saving status for {tid}: "
+                                f"{exc}",
+                                file=sys.stderr,
+                            )
+
+                # Per-treatment stderr line — same shape as before
+                # plus an explicit (drop) note when partial.
+                if verbosity >= 1:
+                    if result.status == STATUS_ERROR:
+                        print(
+                            f"  ERROR {tid}: {result.error_message}",
+                            file=sys.stderr,
+                        )
+                    elif result.status == STATUS_PARTIAL:
+                        print(
+                            f"  PARTIAL {tid}: "
+                            f"{len(result.annotations)} stored, "
+                            f"{len(result.dropped_spans)} dropped",
+                            file=sys.stderr,
+                        )
+                    elif result.annotations:
+                        print(
+                            f"  {tid}: "
+                            f"{len(result.annotations)} annotation(s)",
+                            file=sys.stderr,
+                        )
+                    elif verbosity >= 2:
+                        print(
+                            f"  {tid}: no annotations",
+                            file=sys.stderr,
+                        )
+
                 log_f.write(json.dumps({
                     'treatment_id': tid,
-                    'status': 'success',
-                    'n_annotations': len(anns),
+                    'status': result.status,
+                    'n_annotations': len(result.annotations),
+                    'n_dropped': len(result.dropped_spans),
+                    'error': result.error_message,
                 }) + '\n')
 
+    # End-of-run summary (always printed, even at verbosity=0).
+    # The dropped-span line is the operator's signal that an
+    # offline-recovery fixes/ script run is worthwhile.
     print(
-        f"\nDone: {success_count} with annotations, "
-        f"{empty_count} empty, {error_count} errors"
+        f"\nDone: {counts[STATUS_SUCCESS]} success, "
+        f"{counts[STATUS_PARTIAL]} partial, "
+        f"{counts[STATUS_ERROR]} error"
     )
+    print(
+        f"      {total_annotations_stored} annotations stored, "
+        f"{total_spans_dropped} spans dropped"
+    )
+    if total_spans_dropped > 0:
+        print(
+            f"      (run an offline-recovery script against "
+            f"{status_db_name} to retry dropped spans)"
+        )
     print(f"Log: {log_path}")
-    return 0 if error_count == 0 else 1
+    return 0 if counts[STATUS_ERROR] == 0 else 1
 
 
 if __name__ == '__main__':

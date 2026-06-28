@@ -149,7 +149,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Pileus',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'claude-opus-4-7',
             'taxon_test', 'src_doc', '2026-06-27T00:00:00Z',
         )
@@ -171,7 +171,7 @@ class TestParseClaudeResponse:
         signal."""
         span_map = self._setup()
         response = json.dumps({'spans': []})
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert anns == []
@@ -190,7 +190,7 @@ class TestParseClaudeResponse:
                 {'text': 'Stipe long.', 'feature_label': 'Stipe'},
             ],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert [a['feature_label'] for a in anns] == ['Pileus', 'Stipe']
@@ -211,7 +211,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Hymenophore',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert anns[0]['feature_label'] == 'Hymenophore'
@@ -221,7 +221,7 @@ class TestParseClaudeResponse:
         response = json.dumps({
             'spans': [{'text': 'brown', 'feature_label': 'Pileus'}],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         # 'brown' is at field-relative offset 7-12
@@ -241,7 +241,7 @@ class TestParseClaudeResponse:
                 {'text': 'Pileus also wide.', 'feature_label': 'Pileus'},
             ],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         # First 'Pileus' at field-rel 0, second at field-rel 15
@@ -257,7 +257,7 @@ class TestParseClaudeResponse:
             '{"spans": [{"text": "brown", "feature_label": "Pileus"}]}\n'
             '```'
         )
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 1
@@ -270,7 +270,7 @@ class TestParseClaudeResponse:
             '{"spans": [{"text": "brown", "feature_label": "Pileus"}]}\n'
             '```'
         )
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 1
@@ -356,27 +356,60 @@ class TestParseClaudeResponse:
                 'feature_label': '  Pileus  ',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert anns[0]['feature_label'] == 'Pileus'
 
-    def test_text_not_found_in_synth_raises(self) -> None:
-        """Claude hallucinated text that's not in the synthetic doc.
-        Better to fail than silently invent offsets."""
+    def test_text_not_found_in_synth_drops_span(self) -> None:
+        """Per-span isolation: Claude hallucinated text that's not
+        in the synthetic doc.  The span is dropped (recorded in
+        dropped_spans for offline recovery) rather than raising —
+        other valid spans in the same response still get stored."""
         span_map = self._setup()
-        with pytest.raises(ClaudeResponseError) as exc:
-            parse_claude_response(
-                ('{"spans": [{"text": "Lamellae cream-colored.", '
-                 '"feature_label": "Lamellae"}]}'),
-                span_map, 'm', 'tid', 'did', 'ts',
-            )
-        assert 'not found' in str(exc.value)
+        anns, dropped = parse_claude_response(
+            ('{"spans": [{"text": "Lamellae cream-colored.", '
+             '"feature_label": "Lamellae"}]}'),
+            span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert anns == []
+        assert len(dropped) == 1
+        assert dropped[0]['feature_label'] == 'Lamellae'
+        assert dropped[0]['claude_text'] == 'Lamellae cream-colored.'
+        assert 'not found' in dropped[0]['reason']
 
-    def test_span_crossing_field_boundary_raises(self) -> None:
+    def test_text_not_found_does_not_kill_sibling_spans(
+        self,
+    ) -> None:
+        """The whole point of per-span isolation: one bad span in
+        a response does not block the others from being stored."""
+        span_map = self._setup()
+        # Two spans: first hallucinated, second valid.
+        response = json.dumps({
+            'spans': [
+                {
+                    'text': 'Lamellae cream-colored.',
+                    'feature_label': 'Lamellae',
+                },
+                {
+                    'text': 'Pileus brown 3 cm wide.',
+                    'feature_label': 'Pileus',
+                },
+            ],
+        })
+        anns, dropped = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert len(anns) == 1
+        assert anns[0]['feature_label'] == 'Pileus'
+        assert len(dropped) == 1
+        assert dropped[0]['feature_label'] == 'Lamellae'
+
+    def test_span_crossing_field_boundary_drops_span(self) -> None:
         """An annotation that overlaps the synthetic-doc gap between
-        description and diagnosis isn't a valid annotation — fail
-        loudly so the operator can split it manually."""
+        description and diagnosis is dropped rather than raising.
+        The reviewer can resolve manually if it represents a real
+        anatomical mention."""
         treatment = _make_treatment(
             description='Pileus brown.',
             description_spans=[{'start_char': 100, 'end_char': 113}],
@@ -390,10 +423,12 @@ class TestParseClaudeResponse:
                 'feature_label': 'Pileus',
             }],
         })
-        with pytest.raises(ClaudeResponseError):
-            parse_claude_response(
-                response, span_map, 'm', 'tid', 'did', 'ts',
-            )
+        anns, dropped = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert anns == []
+        assert len(dropped) == 1
+        assert 'field boundary' in dropped[0]['reason']
 
     # ------------------------------------------------------------------
     # Whitespace-tolerant fallback search.
@@ -431,7 +466,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Spores',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 1
@@ -459,7 +494,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Pileus',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 1
@@ -483,7 +518,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Pileus',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 1
@@ -505,7 +540,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Pileus',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 1
@@ -534,7 +569,7 @@ class TestParseClaudeResponse:
                 'feature_label': 'Pileus',
             }],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         # Must hit the EXACT match at start, not the fuzzy match
@@ -542,21 +577,24 @@ class TestParseClaudeResponse:
         assert anns[0]['start'] == 0
         assert anns[0]['end'] == 12
 
-    def test_fuzzy_still_raises_on_non_whitespace_differences(
+    def test_fuzzy_still_drops_on_non_whitespace_differences(
         self,
     ) -> None:
         """The fallback is whitespace-tolerant ONLY.  Word-level
-        paraphrases / hallucinations must still fail loudly."""
+        paraphrases / hallucinations land in dropped_spans (NOT
+        raised) so sibling spans survive.  The drop reason names
+        both failure modes (exact + fuzzy) so the operator and
+        the offline-recovery script can distinguish whitespace
+        normalization from genuine hallucination."""
         span_map = self._setup()
-        with pytest.raises(ClaudeResponseError) as exc:
-            parse_claude_response(
-                ('{"spans": [{"text": "Pileus red 3 cm wide.", '
-                 '"feature_label": "Pileus"}]}'),
-                span_map, 'm', 'tid', 'did', 'ts',
-            )
-        # New error message names BOTH failure modes so operators
-        # know fuzzy was tried.
-        assert 'whitespace-tolerant' in str(exc.value)
+        anns, dropped = parse_claude_response(
+            ('{"spans": [{"text": "Pileus red 3 cm wide.", '
+             '"feature_label": "Pileus"}]}'),
+            span_map, 'm', 'tid', 'did', 'ts',
+        )
+        assert anns == []
+        assert len(dropped) == 1
+        assert 'whitespace-tolerant' in dropped[0]['reason']
 
     def test_fuzzy_match_offsets_advance_cursor(self) -> None:
         """After a fuzzy match, the cursor should advance to the END
@@ -582,7 +620,7 @@ class TestParseClaudeResponse:
                 },
             ],
         })
-        anns = parse_claude_response(
+        anns, _ = parse_claude_response(
             response, span_map, 'm', 'tid', 'did', 'ts',
         )
         assert len(anns) == 2

@@ -22,7 +22,7 @@ with CouchDB I/O, the Anthropic SDK, parallel workers, and the
 
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from treatments_to_structured.brat_render import (
     SpanMap,
@@ -142,7 +142,7 @@ def parse_claude_response(
     treatment_id: str,
     doc_id: str,
     created_at: str,
-) -> List[Dict[str, Any]]:
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Parse Claude's JSON response into annotation dicts.
 
     For each ``{"text": "...", "feature_label": "..."}`` span Claude
@@ -153,6 +153,17 @@ def parse_claude_response(
     ``(field, field-relative start, field-relative end,
     source_spans, source_text)`` per
     docs/schema_constrained_pipeline.md §10.3.
+
+    Per-span isolation: a span that fails offset recovery or
+    field-boundary translation is collected into ``dropped_spans``
+    rather than raising — the surviving spans still get stored.
+    This trades atomic-success semantics for partial-storage +
+    offline-recovery semantics (see ``status.py`` and the
+    fixes/-side recovery script).
+
+    Envelope-level failures (invalid JSON, missing ``spans`` key,
+    spans not a list) still raise — those are catastrophic, not
+    per-span.
 
     Args:
         response_text: Raw text from Claude's message response.
@@ -166,18 +177,27 @@ def parse_claude_response(
         created_at: ISO-8601 timestamp for the annotation batch.
 
     Returns:
-        List of annotation dicts matching the §10.3 schema.  Each
-        annotation carries the ``feature_label`` Claude chose for
-        the span — may be a seed label OR an invented canonical
-        name (e.g. ``"Hymenophore"`` for the pores+tubes block of
-        a bolete).  Empty list if Claude returned ``{"spans": []}``
-        — a legitimate signal that no annotatable features are
-        present.
+        ``(annotations, dropped_spans)`` tuple:
+
+        * ``annotations`` — list of annotation dicts matching the
+          §10.3 schema.  Each carries the ``feature_label`` Claude
+          chose for the span (may be a seed label OR an invented
+          canonical name).  Empty when Claude returned
+          ``{"spans": []}`` (legitimate "no features" signal) OR
+          when every span failed recovery.
+        * ``dropped_spans`` — list of ``{"feature_label", "claude_text",
+          "reason"}`` dicts capturing spans Claude returned that
+          we couldn't recover offsets for.  Empty in the happy
+          path.  Becomes the recovery queue for the offline
+          ``fixes/`` script.
 
     Raises:
-        ClaudeResponseError: invalid JSON, wrong envelope shape, a
-            span missing ``text`` or ``feature_label``, or any
-            span's ``text`` not found in the synth doc.
+        ClaudeResponseError: invalid JSON, missing ``spans`` key,
+            ``spans`` not a list, individual span missing
+            ``text`` or ``feature_label`` keys, or empty/whitespace
+            ``text`` or ``feature_label``.  These are envelope-
+            level contract violations — Claude returned something
+            we can't reason about at all.
     """
     cleaned = _strip_json_fences(response_text)
     try:
@@ -202,9 +222,15 @@ def parse_claude_response(
         )
 
     annotations: List[Dict[str, Any]] = []
+    dropped_spans: List[Dict[str, Any]] = []
     cursor = 0  # next synth-doc position to search from
     synth = span_map.synth_text
     for i, span in enumerate(spans):
+        # Envelope-shape violations on individual spans STILL
+        # raise — these mean Claude returned something we can't
+        # reason about at the per-span level (missing keys,
+        # non-string values).  Recovery is impossible without
+        # re-prompting Claude entirely.
         if not isinstance(span, dict) or 'text' not in span:
             raise ClaudeResponseError(
                 f"spans[{i}] missing 'text' key; got {span!r}"
@@ -266,11 +292,21 @@ def parse_claude_response(
             if m is None:
                 m = fuzzy_re.search(synth)
             if m is None:
-                raise ClaudeResponseError(
-                    f"spans[{i}].text not found in synthetic doc "
-                    f"(exact and whitespace-tolerant search both "
-                    f"failed): {wanted[:120]!r}"
-                )
+                # Per-span recovery failure → drop and continue.
+                # Offline ``fixes/`` script reads dropped_spans to
+                # retry with more aggressive normalization
+                # (NFKD, dash unification, etc.) without a new
+                # API call.
+                dropped_spans.append({
+                    'feature_label': feature_label,
+                    'claude_text': wanted,
+                    'reason': (
+                        'text not found in synthetic doc '
+                        '(exact and whitespace-tolerant search '
+                        'both failed)'
+                    ),
+                })
+                continue
             synth_start = m.start()
             synth_end = m.end()
         cursor = synth_end
@@ -280,11 +316,20 @@ def parse_claude_response(
                 synth_start, synth_end, span_map,
             )
         except ValueError as exc:
-            raise ClaudeResponseError(
-                f"spans[{i}] at synth offsets ({synth_start}, "
-                f"{synth_end}) crosses a field boundary or lands in "
-                f"a section header: {exc}"
-            ) from exc
+            # Per-span recovery failure → drop and continue.
+            # Span crossed a field boundary or landed in a section
+            # header.  The reviewer can resolve manually if it
+            # represents a real anatomical mention.
+            dropped_spans.append({
+                'feature_label': feature_label,
+                'claude_text': wanted,
+                'reason': (
+                    f'span at synth offsets ({synth_start}, '
+                    f'{synth_end}) crosses a field boundary or '
+                    f'lands in a section header: {exc}'
+                ),
+            })
+            continue
 
         source_spans = _field_relative_to_source_spans(
             fr_start, fr_end, ext.source_spans,
@@ -309,7 +354,7 @@ def parse_claude_response(
             'treatment_id': treatment_id,
             'doc_id': doc_id,
         })
-    return annotations
+    return annotations, dropped_spans
 
 
 def annotation_doc_id(

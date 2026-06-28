@@ -12,7 +12,7 @@ import io
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -27,6 +27,13 @@ from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     load_seed,
     read_treatment_ids,
     resolve_candidate_db_name,
+    resolve_status_db_name,
+)
+from treatments_to_structured.status import (  # noqa: E402
+    AnnotationResult,
+    STATUS_ERROR,
+    STATUS_PARTIAL,
+    STATUS_SUCCESS,
 )
 
 
@@ -114,6 +121,46 @@ class TestResolveCandidateDbName:
 
 
 # ---------------------------------------------------------------------------
+# resolve_status_db_name (Design Y sibling DB)
+# ---------------------------------------------------------------------------
+
+
+class TestResolveStatusDbName:
+    """Sibling DB to features_candidate; same fallback shape."""
+
+    def test_uses_databases_features_status_when_set(self) -> None:
+        exp = {
+            'databases': {
+                'features_status': 'skol_exp_X_features_status',
+            },
+        }
+        warn = io.StringIO()
+        name = resolve_status_db_name(
+            'production_v4', exp, verbosity=1, warn_stream=warn,
+        )
+        assert name == 'skol_exp_X_features_status'
+        assert warn.getvalue() == ''
+
+    def test_falls_back_to_naming_convention_when_unset(self) -> None:
+        exp = {'databases': {}}
+        warn = io.StringIO()
+        name = resolve_status_db_name(
+            'production_v4', exp, verbosity=1, warn_stream=warn,
+        )
+        # Same 02_50 slot as the candidate DB — keeps the pair
+        # sorted together in Fauxton.
+        assert name == 'skol_exp_production_v4_02_50_features_status'
+        assert 'NOTE' in warn.getvalue()
+
+    def test_silent_at_verbosity_zero(self) -> None:
+        warn = io.StringIO()
+        resolve_status_db_name(
+            'v', {'databases': {}}, verbosity=0, warn_stream=warn,
+        )
+        assert warn.getvalue() == ''
+
+
+# ---------------------------------------------------------------------------
 # read_treatment_ids
 # ---------------------------------------------------------------------------
 
@@ -182,60 +229,104 @@ class TestReadTreatmentIds:
 # ---------------------------------------------------------------------------
 
 
-class _FakeView:
-    """Mimics couchdb.Database.view() return shape."""
+class _FakeStatusDb:
+    """Stand-in for the status DB.  Keyed by treatment_id; each
+    value is a dict with at least a 'status' key."""
 
-    def __init__(self, rows: List[Any]) -> None:
-        self.rows = rows
+    def __init__(self, docs: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+        self.docs = docs or {}
 
-
-class _FakeCandidateDb:
-    """Stand-in for the candidate annotations DB."""
-
-    def __init__(
-        self, existing_prefixes: List[str] = (),
-    ) -> None:
-        self.existing_prefixes = set(existing_prefixes)
-
-    def view(self, _name: str, **kwargs: Any) -> _FakeView:
-        startkey = kwargs['startkey']
-        # Any prefix in existing_prefixes that's a substring of
-        # startkey counts as "this annotation exists".
-        if any(p == startkey for p in self.existing_prefixes):
-            return _FakeView(rows=[{'id': 'fake', 'key': startkey}])
-        return _FakeView(rows=[])
+    def __getitem__(self, doc_id: str) -> Dict[str, Any]:
+        if doc_id not in self.docs:
+            # Real couchdb raises ResourceNotFound; the production
+            # code catches Exception broadly so any exception is
+            # fine for the test contract.
+            raise KeyError(doc_id)
+        return self.docs[doc_id]
 
 
 class TestFilterAlreadyAnnotated:
-    """Drop treatment IDs that already have ANY annotation in the
-    candidate DB.  The multi-feature bootstrap annotates the whole
-    treatment in one call, so per-feature scoping no longer makes
-    sense — re-running on an annotated treatment would just
-    duplicate work."""
+    """Status-aware skip/retry: filter against the features_status
+    DB rather than per-annotation lookups."""
 
-    def test_keeps_unannotated_only(self) -> None:
-        db = _FakeCandidateDb(existing_prefixes=[
-            'taxon_a:',
-        ])
+    def test_default_skips_success_retries_partial_and_error(
+        self,
+    ) -> None:
+        """Default mode: success treatments are skipped; partial
+        and error are retried (re-prompt might succeed, or the
+        offline-recovery script may have updated dropped_spans)."""
+        db = _FakeStatusDb({
+            'taxon_success': {'status': 'success'},
+            'taxon_partial': {'status': 'partial'},
+            'taxon_error': {'status': 'error'},
+        })
+        # taxon_new has no status doc → process
         result = filter_already_annotated(
-            ['taxon_a', 'taxon_b'], db,
+            ['taxon_success', 'taxon_partial', 'taxon_error',
+             'taxon_new'],
+            db, mode='default',
         )
-        assert result == ['taxon_b']
+        assert result == ['taxon_partial', 'taxon_error', 'taxon_new']
 
-    def test_annotated_under_any_label_counts_as_done(self) -> None:
-        """Existing annotations (any feature label) on a treatment
-        mean we don't re-run.  The bootstrap pass writes ALL
-        feature labels per treatment in one go; a prior run already
-        produced them."""
-        db = _FakeCandidateDb(existing_prefixes=[
-            'taxon_a:',  # any prior annotation, regardless of feature
-        ])
-        result = filter_already_annotated(['taxon_a'], db)
-        assert result == []
+    def test_skip_existing_drops_any_status(self) -> None:
+        """--skip-existing widens skip to ANY status doc — operator
+        opted out of automatic retries."""
+        db = _FakeStatusDb({
+            'taxon_success': {'status': 'success'},
+            'taxon_partial': {'status': 'partial'},
+            'taxon_error': {'status': 'error'},
+        })
+        result = filter_already_annotated(
+            ['taxon_success', 'taxon_partial', 'taxon_error',
+             'taxon_new'],
+            db, mode='skip_existing',
+        )
+        assert result == ['taxon_new']
+
+    def test_force_processes_everything(self) -> None:
+        """--force ignores status entirely — every input ID is
+        processed.  Used after a prompt or seed change."""
+        db = _FakeStatusDb({
+            'taxon_success': {'status': 'success'},
+        })
+        result = filter_already_annotated(
+            ['taxon_success', 'taxon_new'], db, mode='force',
+        )
+        assert result == ['taxon_success', 'taxon_new']
+
+    def test_input_order_preserved(self) -> None:
+        """Order matters: the worker pool's progress display, the
+        log file, and any per-treatment summary expect the
+        original input ordering."""
+        db = _FakeStatusDb()
+        result = filter_already_annotated(
+            ['c', 'a', 'b'], db, mode='default',
+        )
+        assert result == ['c', 'a', 'b']
 
     def test_empty_input(self) -> None:
-        db = _FakeCandidateDb()
-        assert filter_already_annotated([], db) == []
+        db = _FakeStatusDb()
+        assert filter_already_annotated([], db, mode='default') == []
+        assert (
+            filter_already_annotated([], db, mode='skip_existing')
+            == []
+        )
+        assert (
+            filter_already_annotated([], db, mode='force') == []
+        )
+
+    def test_missing_status_field_treated_as_retry(self) -> None:
+        """Status doc with no 'status' field (corrupt or pre-v2
+        record) → not success → retry under default mode.  Better
+        to over-retry than to silently skip a treatment we can't
+        confirm completed."""
+        db = _FakeStatusDb({
+            'taxon_weird': {'attempt_count': 1},  # no 'status'
+        })
+        result = filter_already_annotated(
+            ['taxon_weird'], db, mode='default',
+        )
+        assert result == ['taxon_weird']
 
 
 # ---------------------------------------------------------------------------
@@ -339,9 +430,14 @@ _TEST_SEED = {
 
 
 class TestAnnotateOneTreatment:
-    """End-to-end with a mocked Anthropic client."""
+    """End-to-end with a mocked Anthropic client.
 
-    def test_happy_path_returns_annotations(self) -> None:
+    Returns AnnotationResult (always — never raises) carrying
+    status, annotations, dropped_spans, error_message.  See
+    treatments_to_structured/status.py for the schema.
+    """
+
+    def test_happy_path_returns_success_result(self) -> None:
         treatment = _make_treatment()
         claude_response = json.dumps({
             'spans': [{
@@ -353,9 +449,13 @@ class TestAnnotateOneTreatment:
         result = annotate_one_treatment(
             client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
-        assert isinstance(result, list)
-        assert len(result) == 1
-        ann = result[0]
+        assert isinstance(result, AnnotationResult)
+        assert result.status == STATUS_SUCCESS
+        assert result.treatment_id == 'taxon_test'
+        assert result.error_message is None
+        assert result.dropped_spans == []
+        assert len(result.annotations) == 1
+        ann = result.annotations[0]
         assert ann['feature_label'] == 'Pileus'
         assert ann['field'] == 'description'
         assert ann['treatment_id'] == 'taxon_test'
@@ -384,7 +484,8 @@ class TestAnnotateOneTreatment:
         result = annotate_one_treatment(
             client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
-        labels = [a['feature_label'] for a in result]
+        assert result.status == STATUS_SUCCESS
+        labels = [a['feature_label'] for a in result.annotations]
         assert labels == ['Pileus', 'Stipe']
 
     def test_invented_label_propagates(self) -> None:
@@ -404,11 +505,16 @@ class TestAnnotateOneTreatment:
         result = annotate_one_treatment(
             client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
-        assert result[0]['feature_label'] == 'Hymenophore'
+        assert result.status == STATUS_SUCCESS
+        assert result.annotations[0]['feature_label'] == 'Hymenophore'
 
-    def test_empty_treatment_returns_empty_list(self) -> None:
-        """A treatment with neither description nor diagnosis renders
-        to an empty synth doc; annotate skips the API call entirely."""
+    def test_empty_treatment_returns_success_no_annotations(
+        self,
+    ) -> None:
+        """A treatment with neither description nor diagnosis
+        renders to an empty synth doc; annotate skips the API call
+        and returns a success result with zero annotations.  Same
+        classification as 'Claude found nothing'."""
         empty = {
             '_id': 'taxon_empty',
             'description': None,
@@ -420,13 +526,16 @@ class TestAnnotateOneTreatment:
         result = annotate_one_treatment(
             client, empty, _TEST_SEED, 'claude-opus-4-7',
         )
-        assert result == []
+        assert result.status == STATUS_SUCCESS
+        assert result.annotations == []
+        assert result.dropped_spans == []
         # No API call should have been made.
         client.messages.create.assert_not_called()
 
-    def test_no_spans_returned(self) -> None:
+    def test_no_spans_returned_is_success(self) -> None:
         """Claude says 'no anatomical features mentioned' — that's
-        a legitimate outcome, not an error."""
+        a legitimate outcome, classified as success (NOT error,
+        NOT partial)."""
         treatment = _make_treatment(
             description='No anatomy here, just metadata.',
         )
@@ -435,14 +544,67 @@ class TestAnnotateOneTreatment:
         result = annotate_one_treatment(
             client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
-        assert result == []
+        assert result.status == STATUS_SUCCESS
+        assert result.annotations == []
+        assert result.dropped_spans == []
 
-    def test_invalid_response_returns_exception(self) -> None:
-        """Bad JSON from Claude → exception returned (NOT raised),
-        so the parallel worker pool keeps its other futures alive."""
+    def test_invalid_response_returns_error_result(self) -> None:
+        """Bad JSON from Claude → status='error' with diagnostic
+        in error_message.  No raise — parallel worker pool stays
+        healthy."""
         treatment = _make_treatment()
         client = _make_mock_messages_client('not valid json')
         result = annotate_one_treatment(
             client, treatment, _TEST_SEED, 'claude-opus-4-7',
         )
-        assert isinstance(result, Exception)
+        assert isinstance(result, AnnotationResult)
+        assert result.status == STATUS_ERROR
+        assert result.error_message is not None
+        assert 'JSON' in result.error_message or 'json' in result.error_message
+        assert result.annotations == []
+
+    def test_partial_when_some_spans_fail_recovery(self) -> None:
+        """If Claude returns N spans and one fails offset recovery
+        (e.g., hallucinated text not in the source), the surviving
+        spans are stored in annotations and the failed one lands
+        in dropped_spans.  Status: 'partial'."""
+        treatment = _make_treatment(
+            description='Pileus brown 3 cm.',
+        )
+        claude_response = json.dumps({
+            'spans': [
+                {
+                    'text': 'Pileus brown 3 cm.',
+                    'feature_label': 'Pileus',
+                },
+                {
+                    # Hallucinated — not in the source.
+                    'text': 'Lamellae cream-colored.',
+                    'feature_label': 'Lamellae',
+                },
+            ],
+        })
+        client = _make_mock_messages_client(claude_response)
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.status == STATUS_PARTIAL
+        assert len(result.annotations) == 1
+        assert result.annotations[0]['feature_label'] == 'Pileus'
+        assert len(result.dropped_spans) == 1
+        assert result.dropped_spans[0]['feature_label'] == 'Lamellae'
+
+    def test_anthropic_api_error_returns_error_result(self) -> None:
+        """A network / API error from the SDK becomes an error
+        AnnotationResult rather than propagating.  Critical for
+        parallel worker isolation."""
+        treatment = _make_treatment()
+        client = MagicMock()
+        client.messages.create.side_effect = RuntimeError(
+            'simulated network failure',
+        )
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.status == STATUS_ERROR
+        assert 'simulated network failure' in result.error_message
