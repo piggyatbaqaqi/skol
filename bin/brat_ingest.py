@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Read a reviewer's edited brat .ann files and write the diff
-result to the experiment's features_reviewed DB.
+result to the experiment's features_hand DB.
 
 Phase 1 deliverable 6 of treatments_to_structured.  See
 docs/schema_constrained_pipeline.md §10.4.
@@ -14,10 +14,10 @@ For each treatment whose .ann file is processed:
      annotation dicts in the durable storage shape.
   3. Diff against the candidate-DB annotations for the same
      treatment (see treatments_to_structured.brat_ingest).
-  4. Write `kept` and `added` annotations to the features_reviewed
+  4. Write `kept` and `added` annotations to the features_hand
      DB with reviewer metadata (reviewer, reviewed_at,
      reviewer_action) attached.  `deleted` annotations are
-     simply absent from the reviewed DB.
+     simply absent from the hand DB.
 
 Filename convention: brat .ann file is named ``<treatment_id>.ann``.
 The CLI accepts either ``--ann-dir DIR`` (scan for taxon_*.ann) or
@@ -70,31 +70,31 @@ from treatments_to_structured.brat_render import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 
-def resolve_reviewed_db_name(
+def resolve_hand_db_name(
     experiment_name: str,
     experiment_doc: Dict[str, Any],
     *,
     verbosity: int = 1,
     warn_stream: TextIO = sys.stderr,
 ) -> str:
-    """Find the reviewed DB name for an experiment.
+    """Find the hand DB name for an experiment.
 
     Mirrors ``resolve_candidate_db_name`` / ``resolve_status_db_name``
     in bin/llm_annotate_features.py.  Prefers
-    ``experiment.databases.features_reviewed``; falls back to
-    ``skol_exp_<name>_02_50_features_reviewed`` with a one-line
+    ``experiment.databases.features_hand``; falls back to
+    ``skol_exp_<name>_02_55_features_hand`` with a one-line
     warning.
     """
     dbs = experiment_doc.get('databases') or {}
-    explicit = dbs.get('features_reviewed')
+    explicit = dbs.get('features_hand')
     if explicit:
         return explicit
     fallback = (
-        f'skol_exp_{experiment_name}_02_50_features_reviewed'
+        f'skol_exp_{experiment_name}_02_55_features_hand'
     )
     if verbosity >= 1:
         print(
-            f"NOTE: experiment.databases.features_reviewed not set; "
+            f"NOTE: experiment.databases.features_hand not set; "
             f"using naming-convention fallback {fallback!r}.  Run "
             f"`bin/manage_experiment update {experiment_name}` to "
             f"make this canonical.",
@@ -307,26 +307,26 @@ def main() -> int:
         return 2
     candidate_db = server[candidate_db_name]
 
-    reviewed_db_name = resolve_reviewed_db_name(
+    hand_db_name = resolve_hand_db_name(
         experiment, exp_doc, verbosity=verbosity,
     )
-    if reviewed_db_name in server:
-        reviewed_db = server[reviewed_db_name]
+    if hand_db_name in server:
+        hand_db = server[hand_db_name]
     elif dry_run:
         if verbosity >= 1:
             print(
-                f"[dry-run] would create reviewed DB "
-                f"{reviewed_db_name!r}",
+                f"[dry-run] would create hand DB "
+                f"{hand_db_name!r}",
                 file=sys.stderr,
             )
-        reviewed_db = None
+        hand_db = None
     else:
         if verbosity >= 1:
             print(
-                f"Creating reviewed DB {reviewed_db_name!r}",
+                f"Creating hand DB {hand_db_name!r}",
                 file=sys.stderr,
             )
-        reviewed_db = server.create(reviewed_db_name)
+        hand_db = server.create(hand_db_name)
 
     # Per-treatment processing
     totals = {'kept': 0, 'added': 0, 'deleted': 0, 'errors': 0}
@@ -389,8 +389,8 @@ def main() -> int:
         }
         doc_id = (treatment.get('ingest') or {}).get('_id') or ''
 
-        # Write to reviewed DB
-        if not dry_run and reviewed_db is not None:
+        # Write to hand DB
+        if not dry_run and hand_db is not None:
             # Delete stale reviewed docs first.  Each ingest is the
             # source-of-truth for the treatment's reviewed state —
             # if the reviewer relabeled or deleted an annotation on
@@ -403,7 +403,7 @@ def main() -> int:
                     f"{tid}:{r['feature_label']}:{int(r['start'])}"
                 )
             prefix = f'{tid}:'
-            stale_rows = reviewed_db.view(
+            stale_rows = hand_db.view(
                 '_all_docs',
                 startkey=prefix,
                 endkey=prefix + '￰',
@@ -416,7 +416,7 @@ def main() -> int:
                 if doc['_id'] in kept_added_ids:
                     continue
                 try:
-                    reviewed_db.delete(doc)
+                    hand_db.delete(doc)
                     if verbosity >= 2:
                         print(
                             f"    × stale reviewed doc removed: "
@@ -438,10 +438,10 @@ def main() -> int:
                         annotation_key(r),
                     ),
                 )
-                if rd['_id'] in reviewed_db:
-                    rd['_rev'] = reviewed_db[rd['_id']]['_rev']
+                if rd['_id'] in hand_db:
+                    rd['_rev'] = hand_db[rd['_id']]['_rev']
                 try:
-                    reviewed_db.save(rd)
+                    hand_db.save(rd)
                 except Exception as exc:  # noqa: BLE001
                     print(
                         f"  ERROR saving {rd['_id']}: {exc}",
@@ -454,10 +454,10 @@ def main() -> int:
                     action='added',
                     candidate_match=None,
                 )
-                if rd['_id'] in reviewed_db:
-                    rd['_rev'] = reviewed_db[rd['_id']]['_rev']
+                if rd['_id'] in hand_db:
+                    rd['_rev'] = hand_db[rd['_id']]['_rev']
                 try:
-                    reviewed_db.save(rd)
+                    hand_db.save(rd)
                 except Exception as exc:  # noqa: BLE001
                     print(
                         f"  ERROR saving {rd['_id']}: {exc}",

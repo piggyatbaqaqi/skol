@@ -22,13 +22,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from brat_ingest import (  # type: ignore[import]  # noqa: E402
     discover_ann_files,
     fetch_candidate_anns_for_treatment,
-    resolve_reviewed_db_name,
+    resolve_hand_db_name,
     reviewer_label_from_env,
 )
 
 
 # ---------------------------------------------------------------------------
-# resolve_reviewed_db_name
+# resolve_hand_db_name
 # ---------------------------------------------------------------------------
 
 
@@ -38,12 +38,12 @@ class TestResolveReviewedDbName:
     def test_uses_databases_features_reviewed_when_set(self) -> None:
         exp = {
             'databases': {
-                'features_reviewed':
+                'features_hand':
                     'skol_exp_X_features_reviewed',
             },
         }
         warn = io.StringIO()
-        name = resolve_reviewed_db_name(
+        name = resolve_hand_db_name(
             'production_v4', exp, verbosity=1, warn_stream=warn,
         )
         assert name == 'skol_exp_X_features_reviewed'
@@ -52,19 +52,19 @@ class TestResolveReviewedDbName:
     def test_falls_back_to_naming_convention(self) -> None:
         exp = {'databases': {}}
         warn = io.StringIO()
-        name = resolve_reviewed_db_name(
+        name = resolve_hand_db_name(
             'production_v4', exp, verbosity=1, warn_stream=warn,
         )
         # 02_50 slot matches candidate + status — keeps the triple
         # together in Fauxton.
         assert name == (
-            'skol_exp_production_v4_02_50_features_reviewed'
+            'skol_exp_production_v4_02_55_features_hand'
         )
         assert 'NOTE' in warn.getvalue()
 
     def test_silent_at_verbosity_zero(self) -> None:
         warn = io.StringIO()
-        resolve_reviewed_db_name(
+        resolve_hand_db_name(
             'x', {'databases': {}}, verbosity=0, warn_stream=warn,
         )
         assert warn.getvalue() == ''
