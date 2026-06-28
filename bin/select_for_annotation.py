@@ -154,6 +154,12 @@ def main() -> int:
         return 2
 
     config = get_env_config(cli_args=args)
+    # common_parser declares --verbosity without an argparse default,
+    # so verbosity is None when the flag isn't passed.
+    # get_env_config defaults to 1 via _get_env('VERBOSITY', '1').
+    # Use the config-resolved value (NOT verbosity) so the
+    # "no flag" case doesn't TypeError on `verbosity >= 1`.
+    verbosity = int(config.get('verbosity', 1) or 0)
     treatments_db_name = (
         config.get('treatments_prose_db_name')
         or config.get('treatments_db_name')
@@ -177,13 +183,13 @@ def main() -> int:
         return 2
 
     treatments_db = server[treatments_db_name]
-    if args.verbosity >= 1:
+    if verbosity >= 1:
         print(
             f"Scanning {treatments_db_name}...",
             file=sys.stderr,
         )
 
-    scored = score_treatments_in_db(treatments_db, args.verbosity)
+    scored = score_treatments_in_db(treatments_db, verbosity)
     if not scored:
         print(
             "error: no treatments with non-zero complexity score were "
