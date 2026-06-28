@@ -11,7 +11,7 @@
 ##   ./train_classifier --help       # Runs: python train_classifier.py --help
 
 source "${HOME}/miniconda3/etc/profile.d/conda.sh" && \
-conda activate skol
+conda activate skol3.14
 
 # Get the name this script was invoked as
 SCRIPT_NAME=$(basename "$0")
