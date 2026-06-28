@@ -210,19 +210,43 @@ class TestAnnotationsToBrat:
         # The embedded \n became space.
         assert 'Line one Line two' in ann
 
-    def test_feature_label_with_space_raises(self) -> None:
-        """Brat T-line syntax: type is single-token; spaces forbidden."""
+    def test_feature_label_with_space_becomes_underscore(
+        self,
+    ) -> None:
+        """Brat T-line types are single-token (no whitespace).
+        Phase 1's bootstrap routinely produces multi-word labels
+        ('Basal mycelium', 'Universal veil on pileus'), so on the
+        wire the space becomes an underscore.  parse_brat_ann
+        reverses the substitution."""
+        _, span_map = render(_make_treatment(
+            description='ignored',
+            description_spans=[{'start_char': 0, 'end_char': 7}],
+        ))
+        ann_text = annotations_to_brat([{
+            'feature_label': 'Pileus surface',  # space!
+            'field': 'description',
+            'start': 0, 'end': 7,
+        }], span_map)
+        # Wire format has the underscore...
+        assert 'Pileus_surface' in ann_text
+        # ...and round-trip restores the space.
+        round_tripped = parse_brat_ann(ann_text, span_map)
+        assert round_tripped[0]['feature_label'] == 'Pileus surface'
+
+    def test_feature_label_with_tab_still_raises(self) -> None:
+        """Tabs are an actual format violation (delimiter), not
+        a normalization concern.  Still rejected."""
         _, span_map = render(_make_treatment(
             description='ignored',
             description_spans=[{'start_char': 0, 'end_char': 7}],
         ))
         with pytest.raises(ValueError) as exc:
             annotations_to_brat([{
-                'feature_label': 'Pileus surface',  # space!
+                'feature_label': 'a\tb',
                 'field': 'description',
                 'start': 0, 'end': 7,
             }], span_map)
-        assert 'whitespace' in str(exc.value).lower()
+        assert 'tab' in str(exc.value).lower()
 
     def test_unknown_field_raises(self) -> None:
         """Annotation pointing at a field not in span_map → error."""

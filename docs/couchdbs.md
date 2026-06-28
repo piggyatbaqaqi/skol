@@ -164,6 +164,18 @@ to two sibling DBs per experiment:
   `error_message`.  Naming-convention fallback when unset:
   `skol_exp_<experiment>_02_50_features_status`.  Schema lives in
   `treatments_to_structured/status.py`.
+- **`features_reviewed`** — one doc per reviewer-accepted annotation
+  after the bootstrap output has been reviewed in brat and ingested
+  via `bin/brat_ingest`.  Same shape as the candidate annotation
+  plus review fields: `reviewer`, `reviewed_at`, `reviewer_action`
+  (`kept` or `added`).  Bootstrap-provenance fields (`model`,
+  `created_at`) are preserved on `kept` annotations; `null` on
+  reviewer-added annotations.  Same `_id` scheme as the candidate
+  DB (`<treatment_id>:<feature_label>:<start>`), so the two DBs
+  can be joined by `_id` to compare bootstrap-vs-reviewed.
+  Deleted annotations (rejected by the reviewer) are simply absent
+  from the reviewed DB.  Naming-convention fallback when unset:
+  `skol_exp_<experiment>_02_50_features_reviewed`.
 
 The status DB is queryable: `partial` treatments are the offline-
 recovery script's input, `error` treatments are the retry queue,
@@ -172,9 +184,9 @@ the discussion in `docs/data_quality_production_v4_model.md` and
 the `llm_annotate_features --force` / `--skip-existing` flags for
 the operator controls.
 
-| Experiment | features_candidate | features_status |
-|---|---|---|
-| `production_v4` | `skol_exp_production_v4_02_50_features_candidate` | _(naming-convention fallback)_ |
+| Experiment | features_candidate | features_status | features_reviewed |
+|---|---|---|---|
+| `production_v4` | `skol_exp_production_v4_02_50_features_candidate` | _(naming-convention fallback)_ | _(naming-convention fallback)_ |
 
 ## Lineage graph
 

@@ -300,11 +300,18 @@ def annotations_to_brat(
     lines: List[str] = []
     for i, ann in enumerate(annotations, start=1):
         label = ann['feature_label']
-        if ' ' in label or '\t' in label:
+        # Brat T-line types must be single tokens (no whitespace).
+        # Phase 1's Claude bootstrap routinely produces multi-word
+        # labels ("Basal mycelium", "Universal veil on pileus"),
+        # so substitute spaces with underscores for the wire format
+        # and reverse on parse.  Tabs are rejected — they're a
+        # genuine format violation, not a normalization concern.
+        if '\t' in label:
             raise ValueError(
-                f"feature_label {label!r} contains whitespace; "
-                f"brat T-line syntax requires single-token types"
+                f"feature_label {label!r} contains tab; brat "
+                f"T-line syntax can't represent tabs in types"
             )
+        wire_label = label.replace(' ', '_')
         synth_start, synth_end = _field_relative_to_synth(
             ann['field'], ann['start'], ann['end'], span_map,
         )
@@ -314,7 +321,7 @@ def annotations_to_brat(
         # line of prose, but defensive).
         text = text.replace('\n', ' ').replace('\r', ' ')
         lines.append(
-            f"T{i}\t{label} {synth_start} {synth_end}\t{text}"
+            f"T{i}\t{wire_label} {synth_start} {synth_end}\t{text}"
         )
     return '\n'.join(lines) + '\n'
 
@@ -353,7 +360,14 @@ def parse_brat_ann(
             continue
         synth_start = int(m.group('start'))
         synth_end = int(m.group('end'))
-        feature_label = m.group('type')
+        # Reverse the wire-format substitution from
+        # annotations_to_brat — underscores in the on-wire type
+        # come back as spaces in the feature_label.  Round-trip is
+        # lossless for labels that contain spaces; labels that
+        # originally contained underscores would be returned as
+        # spaces (uncommon for anatomical names, acceptable
+        # ambiguity for Phase 1).
+        feature_label = m.group('type').replace('_', ' ')
 
         field, field_start, field_end, ext = _synth_to_field_relative(
             synth_start, synth_end, span_map,
