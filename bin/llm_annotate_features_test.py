@@ -744,3 +744,32 @@ class TestAnnotateOneTreatment:
         # api_latency and wall_clock are still populated — they
         # don't depend on usage.
         assert result.metrics['api_latency_seconds'] is not None
+
+    def test_empty_response_content_returns_clean_error(
+        self,
+    ) -> None:
+        """Claude can return response.content == [] when it
+        refuses an input (e.g., the 2026-06-29 Colletotrichum
+        treatment whose diagnosis was hundreds of U+FFFD
+        replacement chars from corrupt OCR — Claude returned 1
+        output token and zero content blocks, which used to raise
+        IndexError in our worker).  We now surface this as a
+        STATUS_ERROR with a clear diagnostic instead."""
+        treatment = _make_treatment()
+        client = MagicMock()
+        response = MagicMock()
+        response.content = []  # the refusal case
+        response.usage = MagicMock(input_tokens=2346, output_tokens=1)
+        response.stop_reason = 'end_turn'
+        client.messages.create.return_value = response
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.status == STATUS_ERROR
+        assert 'empty content' in result.error_message
+        assert 'stop_reason' in result.error_message
+        # output_tokens captured so the operator can see the
+        # 1-token-no-output pattern that signals refusal.
+        assert result.metrics['output_tokens'] == 1
+        # stop_reason captured in metrics too.
+        assert result.metrics.get('stop_reason') == 'end_turn'

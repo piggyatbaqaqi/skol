@@ -437,6 +437,36 @@ def annotate_one_treatment(
             metrics['output_tokens'] = getattr(
                 usage, 'output_tokens', None,
             )
+        # Capture stop_reason for diagnostics — when Claude returns
+        # empty content (e.g., refusal on corrupt-input treatments
+        # with garbled text), stop_reason names the cause.
+        stop_reason = getattr(response, 'stop_reason', None)
+        if stop_reason is not None:
+            metrics['stop_reason'] = stop_reason
+        # Defensive: Claude may return an empty content list when
+        # the input triggers a refusal (e.g., the 2026-06-29
+        # Colletotrichum treatment whose diagnosis was hundreds of
+        # U+FFFD replacement chars from corrupt OCR — Claude
+        # responded with 1 output token and content=[], which used
+        # to raise IndexError here).  Surface as a clean error with
+        # actionable diagnostic instead.
+        if not response.content:
+            metrics['wall_clock_seconds'] = (
+                time.monotonic() - wall_clock_start
+            )
+            return AnnotationResult(
+                treatment_id=treatment_id,
+                status=STATUS_ERROR,
+                error_message=(
+                    f'Claude returned empty content '
+                    f'(stop_reason={stop_reason!r}, '
+                    f'output_tokens={metrics.get("output_tokens")}). '
+                    f'Often signals an input the model refused — '
+                    f'check the treatment for corrupt text '
+                    f'(replacement chars, OCR gibberish).'
+                ),
+                metrics=metrics,
+            )
         response_text = response.content[0].text
         now = datetime.now(timezone.utc).isoformat()
         annotations, dropped_spans = parse_claude_response(

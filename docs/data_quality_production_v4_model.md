@@ -413,3 +413,42 @@ What this captures is "issues that exist", not "issues that
 dominate."  The next round of sample-then-review (Phase 1
 deliverable 6+) will expand the visible surface; revisit the
 severity ordering and corpus-rate guesses then.
+### 9. Corrupt OCR text (U+FFFD runs in `diagnosis` / `description`)
+
+**Symptom**: a Treatment field contains long runs of
+`�` (U+FFFD REPLACEMENT CHARACTER), the Python decoder's
+substitute for bytes it can't interpret as UTF-8.  Visible in
+Fauxton as long strings of replacement-glyph boxes.
+
+**Evidence**:
+
+* **`taxon_cda95f9f...`** (Colletotrichum, discovered during the
+  2026-06-29 50-treatment intermediate run).  The `diagnosis`
+  field has hundreds of U+FFFD characters interleaved with
+  legible English fragments — looks like an OCR pass where
+  every other line failed and got byte-stuffed.  Claude refused
+  to annotate it (returned `content=[]`, 1 output token); the
+  Phase 1 bootstrap reports as `status: error` with the
+  diagnostic message added in commit (to-be).
+
+**Affected treatments**: `taxon_cda95f9f...`; likely others —
+worth a corpus-wide scan with `count_replacement_chars(text) /
+len(text) > 0.05` as the heuristic.
+
+**Likely stage**: upstream of the v4 layout CRF — the original
+ingest (`bin/ingest.py`) extracted text from PDFs where some
+pages OCR'd cleanly and others didn't, and the failures got
+encoded as U+FFFD instead of being skipped.  Possibly a
+pdftotext / pdf2txt edge case on damaged or stylized fonts.
+
+**Severity**: low — affects a small fraction of treatments
+(rough guess from one hit in 50 sampled: ~2%); the bootstrap
+annotator handles them cleanly as `status: error` (since the
+fix in commit (to-be)) and they're excluded from features_hand
+by §0 rule 2 if a reviewer encounters one.
+
+**Operator action**: skip the whole treatment per §0 rule 2 —
+no anatomical features can be extracted from gibberish.
+Eventually the upstream OCR step should detect and quarantine
+these rather than producing corrupt extracts.
+
