@@ -361,6 +361,40 @@ class TestParseClaudeResponse:
         )
         assert anns[0]['feature_label'] == 'Pileus'
 
+    def test_feature_label_sanitized_to_brat_safe(self) -> None:
+        """Labels with parens / commas / periods are sanitized at
+        parse time so the candidate DB has brat-safe labels from
+        the start.  Otherwise the export → review → ingest
+        round-trip would diff every paren'd label as delete+add
+        (candidate has parens, reviewer's brat-saved form does
+        not).  Real case from the 2026-06-29 live brat test."""
+        span_map = self._setup()
+        response = json.dumps({
+            'spans': [{
+                'text': 'brown',
+                'feature_label': 'Partial veil (microscopic)',
+            }],
+        })
+        anns, _ = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        # No parens or other special chars in the stored label.
+        assert anns[0]['feature_label'] == 'Partial veil microscopic'
+
+    def test_feature_label_all_special_chars_drops_span(
+        self,
+    ) -> None:
+        """Defensive: a label that's entirely special chars
+        sanitizes to empty.  Better to raise (envelope-level)
+        than store a blank-labelled annotation."""
+        span_map = self._setup()
+        with pytest.raises(ClaudeResponseError) as exc:
+            parse_claude_response(
+                '{"spans": [{"text": "brown", "feature_label": "(.)"}]}',
+                span_map, 'm', 'tid', 'did', 'ts',
+            )
+        assert 'sanitized to empty' in str(exc.value)
+
     def test_text_not_found_in_synth_drops_span(self) -> None:
         """Per-span isolation: Claude hallucinated text that's not
         in the synthetic doc.  The span is dropped (recorded in

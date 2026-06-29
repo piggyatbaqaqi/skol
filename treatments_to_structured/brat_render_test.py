@@ -13,6 +13,7 @@ from treatments_to_structured.brat_render import (
     FieldExtent,
     SpanMap,
     annotations_to_brat,
+    brat_safe_type,
     parse_brat_ann,
     render,
 )
@@ -247,6 +248,119 @@ class TestAnnotationsToBrat:
                 'start': 0, 'end': 7,
             }], span_map)
         assert 'tab' in str(exc.value).lower()
+
+    def test_label_with_parens_sanitized_to_brat_safe(
+        self,
+    ) -> None:
+        """Parens / commas / periods get stripped on the wire so
+        brat doesn't auto-mangle (and silently corrupt the
+        reviewer's saved .ann).  Real case observed live on
+        2026-06-29: 'Partial veil (microscopic)' produced the
+        brat warning 'is not appropriate for storage'."""
+        _, span_map = render(_make_treatment(
+            description='ignored',
+            description_spans=[{'start_char': 0, 'end_char': 7}],
+        ))
+        ann_text = annotations_to_brat([{
+            'feature_label': 'Partial veil (microscopic)',
+            'field': 'description',
+            'start': 0, 'end': 7,
+        }], span_map)
+        # Wire form: brat-safe, no parens, no double underscores.
+        assert 'Partial_veil_microscopic' in ann_text
+        assert '(' not in ann_text.split('\t')[1].split(' ')[0]
+        # Round-trip: parse restores spaces.  Parens are
+        # information-lost (we can't recover them); the label
+        # becomes 'Partial veil microscopic'.
+        round_tripped = parse_brat_ann(ann_text, span_map)
+        assert (
+            round_tripped[0]['feature_label']
+            == 'Partial veil microscopic'
+        )
+
+
+class TestBratSafeType:
+    """The brat-storage-regex-conforming label sanitizer."""
+
+    def test_ascii_alnum_label_unchanged(self) -> None:
+        """Simple labels with no special chars pass through."""
+        assert brat_safe_type('Pileus') == 'Pileus'
+
+    def test_underscore_label_unchanged(self) -> None:
+        """Already-sanitized labels with internal underscores
+        pass through (idempotency precondition)."""
+        assert brat_safe_type('Basal_mycelium') == 'Basal_mycelium'
+
+    def test_space_becomes_underscore(self) -> None:
+        assert (
+            brat_safe_type('Basal mycelium') == 'Basal_mycelium'
+        )
+
+    def test_parens_stripped(self) -> None:
+        """Brat regex ^[a-zA-Z0-9_-]*$ doesn't allow parens."""
+        assert (
+            brat_safe_type('Pileus (cap)') == 'Pileus_cap'
+        )
+
+    def test_commas_stripped(self) -> None:
+        assert (
+            brat_safe_type('Veil, on pileus')
+            == 'Veil_on_pileus'
+        )
+
+    def test_multi_special_chars_collapse_to_one(self) -> None:
+        """The Phase 1 motivating case: 'Universal veil
+        (microscopic, on pileus)' must produce a clean wire
+        form with no consecutive underscores."""
+        result = brat_safe_type(
+            'Universal veil (microscopic, on pileus)',
+        )
+        assert result == 'Universal_veil_microscopic_on_pileus'
+        # No double underscores anywhere.
+        assert '__' not in result
+        # No leading or trailing underscore.
+        assert not result.startswith('_')
+        assert not result.endswith('_')
+
+    def test_period_stripped(self) -> None:
+        """Common in Claude output like 'av. = 98' but unusual
+        in feature labels.  Still sanitized."""
+        assert brat_safe_type('a.b') == 'a_b'
+
+    def test_idempotent(self) -> None:
+        """Applying twice gives the same result as applying once.
+        Important property because parse_claude_response and
+        annotations_to_brat both sanitize defensively."""
+        cases = [
+            'Pileus',
+            'Basal mycelium',
+            'Pileus (cap)',
+            'Universal veil (microscopic, on pileus)',
+            'Veil, on pileus',
+        ]
+        for label in cases:
+            once = brat_safe_type(label)
+            twice = brat_safe_type(once)
+            assert once == twice, (
+                f'{label!r} not idempotent: '
+                f'once={once!r} twice={twice!r}'
+            )
+
+    def test_hyphen_preserved(self) -> None:
+        """Hyphens are in the brat regex's allowed set
+        ([a-zA-Z0-9_-]), so they pass through unchanged."""
+        assert brat_safe_type('thick-walled') == 'thick-walled'
+
+    def test_empty_input(self) -> None:
+        """Empty stays empty (no crash on edge case)."""
+        assert brat_safe_type('') == ''
+
+    def test_all_special_chars_becomes_empty(self) -> None:
+        """A label that's entirely special chars (would be
+        rejected upstream by 'non-empty' validation, but be
+        defensive) collapses to empty after stripping."""
+        assert brat_safe_type('()') == ''
+        assert brat_safe_type(' , . ') == ''
 
     def test_unknown_field_raises(self) -> None:
         """Annotation pointing at a field not in span_map → error."""

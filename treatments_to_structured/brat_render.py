@@ -268,6 +268,41 @@ _BRAT_T_LINE_RE = re.compile(
     r'(?P<text>.*)$'
 )
 
+# Brat's storage regex for entity types: '^[a-zA-Z0-9_-]*$'.
+# Anything else gets auto-mangled by brat (with a startup warning),
+# and the mangled form is what gets saved when the reviewer hits
+# save — so the round-trip silently degrades.  We sanitize at
+# write time so brat has nothing to mangle and the wire form is
+# stable across the export → review → ingest cycle.
+_BRAT_TYPE_INVALID_RE = re.compile(r'[^A-Za-z0-9_-]+')
+
+
+def brat_safe_type(label: str) -> str:
+    """Convert a feature_label into a brat-safe entity-type token.
+
+    Three transformations:
+
+      1. Replace whitespace with underscore (already required for
+         brat T-line single-token types).
+      2. Replace any run of non-``[A-Za-z0-9_-]`` characters with
+         a single underscore — strips parens, commas, periods,
+         etc. that LLM-invented labels routinely include.
+      3. Collapse adjacent underscores and strip leading/trailing
+         underscores so labels read cleanly in brat's sidebar.
+
+    Lossy: ``Partial veil (microscopic)`` becomes
+    ``Partial_veil_microscopic`` — parens are dropped, not encoded.
+    Parens carry no semantic load in mycological vocabulary; the
+    biological identity is the words, not the punctuation.
+
+    Idempotent: ``brat_safe_type(brat_safe_type(x)) == brat_safe_type(x)``.
+    """
+    if not label:
+        return label
+    s = _BRAT_TYPE_INVALID_RE.sub('_', label)
+    s = re.sub(r'_+', '_', s)
+    return s.strip('_')
+
 
 def annotations_to_brat(
     annotations: List[Dict[str, Any]],
@@ -300,18 +335,21 @@ def annotations_to_brat(
     lines: List[str] = []
     for i, ann in enumerate(annotations, start=1):
         label = ann['feature_label']
-        # Brat T-line types must be single tokens (no whitespace).
-        # Phase 1's Claude bootstrap routinely produces multi-word
-        # labels ("Basal mycelium", "Universal veil on pileus"),
-        # so substitute spaces with underscores for the wire format
-        # and reverse on parse.  Tabs are rejected — they're a
-        # genuine format violation, not a normalization concern.
+        # Brat T-line types must be single tokens that match
+        # ``^[a-zA-Z0-9_-]*$``.  Phase 1's Claude bootstrap
+        # routinely produces multi-word labels with parens /
+        # commas / periods ("Universal veil (microscopic, on
+        # pileus)").  brat_safe_type does the full conversion
+        # in one shot; without it, brat auto-mangles at load
+        # time and the round-trip silently degrades.  Tabs are
+        # rejected up-front — they're a format violation, not
+        # a normalization concern.
         if '\t' in label:
             raise ValueError(
                 f"feature_label {label!r} contains tab; brat "
                 f"T-line syntax can't represent tabs in types"
             )
-        wire_label = label.replace(' ', '_')
+        wire_label = brat_safe_type(label)
         synth_start, synth_end = _field_relative_to_synth(
             ann['field'], ann['start'], ann['end'], span_map,
         )

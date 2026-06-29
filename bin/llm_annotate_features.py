@@ -89,7 +89,14 @@ from treatments_to_structured.status import (  # noqa: E402
 
 _DEFAULT_MODEL = 'claude-opus-4-7'
 _DEFAULT_WORKERS = 5
-_DEFAULT_MAX_TOKENS = 4096
+# 4096 was too tight on large treatments (Amanita magniverrucata
+# triggered output truncation 2026-06-29: Claude began emitting
+# a 10KB description verbatim as the first span's `text` and ran
+# out of tokens partway through, producing un-fenced JSON that
+# failed the parser).  16384 leaves headroom for treatments with
+# 30+ annotations + long greedy text spans.  Operator override:
+# pass --max-tokens.
+_DEFAULT_MAX_TOKENS = 16384
 
 _SEEDS_DIR = (
     Path(__file__).resolve().parent.parent

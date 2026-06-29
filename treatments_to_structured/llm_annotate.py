@@ -28,6 +28,7 @@ from treatments_to_structured.brat_render import (
     SpanMap,
     _field_relative_to_source_spans,
     _synth_to_field_relative,
+    brat_safe_type,
 )
 
 
@@ -250,7 +251,24 @@ def parse_claude_response(
                 f"spans[{i}].feature_label must be a non-empty string; "
                 f"got {feature_label!r}"
             )
-        feature_label = feature_label.strip()
+        # Canonicalize to brat-safe form at parse time so the
+        # candidate DB and the brat wire form share one vocabulary.
+        # Without this, the export → review → ingest round-trip
+        # would diff every paren'd label as delete+add because the
+        # candidate label ("Universal veil (microscopic, on pileus)")
+        # differs from the brat-mangled form parse_brat_ann reads
+        # back.  brat_safe_type returns the wire form (underscores);
+        # the candidate DB stores spaces — matching existing data
+        # and what parse_brat_ann produces on the inverse direction.
+        # See treatments_to_structured.brat_render.brat_safe_type for
+        # the sanitization rules.
+        wire_form = brat_safe_type(feature_label.strip())
+        if not wire_form:
+            raise ClaudeResponseError(
+                f"spans[{i}].feature_label sanitized to empty "
+                f"string; original was {span['feature_label']!r}"
+            )
+        feature_label = wire_form.replace('_', ' ')
 
         # Left-to-right search from cursor; if not found there, try
         # from the start (Claude may have emitted spans out of
