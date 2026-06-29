@@ -1,0 +1,9 @@
+{
+  "_comment": "Drift-to-canonical label mapping for the Phase 1 bootstrap annotator's output.  Keys are the labels Claude has emitted; values are the canonical label.  Absent labels are identity (already canonical).  Maintained by hand: open the annotation.conf produced by bin/brat_export after each bootstrap run, eyeball drift pairs (same anatomy, different label string), and add them here.  Consumed by notebooks/heaps_law_analysis.ipynb (computes drift fraction) and any future canonicalization Pass.",
+  "Odor": "Odour",
+  "Partial_veil_microstructure": "Partial_veil_(microscopic)",
+  "Pileus_context_microstructure": "Pileus_context_(microscopic)",
+  "Stipe_context_microstructure": "Stipe_context_(microscopic)",
+  "Universal_veil_microstructure_on_pileus": "Universal_veil_(microscopic,_on_pileus)",
+  "Universal_veil_microstructure_on_stipe_base": "Universal_veil_(microscopic,_on_stipe_base)"
+}

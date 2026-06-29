@@ -55,6 +55,13 @@ class AnnotationResult:
 
     The main loop calls ``to_status_doc`` to convert before
     writing.
+
+    ``metrics`` carries cost / performance instrumentation
+    collected during the run — see ``make_status_doc`` for the
+    expected shape (wall_clock_seconds, api_latency_seconds,
+    input_tokens, output_tokens, synth_doc_chars,
+    complexity_score).  ``None`` when the run errored before
+    instrumentation could be collected.
     """
 
     treatment_id: str
@@ -62,6 +69,7 @@ class AnnotationResult:
     annotations: List[Dict[str, Any]] = field(default_factory=list)
     dropped_spans: List[Dict[str, Any]] = field(default_factory=list)
     error_message: Optional[str] = None
+    metrics: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
         if self.status not in _VALID_STATUSES:
@@ -96,7 +104,13 @@ def make_status_doc(
 
     Args:
         result: ``AnnotationResult`` from
-            ``annotate_one_treatment``.
+            ``annotate_one_treatment``.  Carries the optional
+            ``metrics`` sub-dict (cost / perf instrumentation);
+            see the field on AnnotationResult for the expected
+            keys.  When None, the metrics field is omitted from
+            the doc (rather than emitted as null) — keeps old
+            status docs and new ones easy to distinguish in
+            Mango queries (``selector: {metrics: {$exists: false}}``).
         model: Claude model name (e.g., ``"claude-opus-4-7"``).
         created_at: ISO-8601 timestamp.
         attempt_count: Number of times this treatment has been
@@ -110,7 +124,7 @@ def make_status_doc(
         included — caller must merge with the existing doc's
         ``_rev`` for overwrite (or use ``--force`` semantics).
     """
-    return {
+    doc: Dict[str, Any] = {
         '_id': status_doc_id(result.treatment_id),
         'treatment_id': result.treatment_id,
         'status': result.status,
@@ -122,6 +136,14 @@ def make_status_doc(
         'last_attempt_at': created_at,
         'model': model,
     }
+    # Include metrics only when collected — omitting (rather than
+    # null-ing) keeps the pre-instrumentation status docs easy to
+    # identify in queries: `selector: {metrics: {$exists: false}}`
+    # selects rows that need recomputation if metrics are ever
+    # backfilled.
+    if result.metrics is not None:
+        doc['metrics'] = dict(result.metrics)
+    return doc
 
 
 def classify_result(

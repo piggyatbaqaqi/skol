@@ -254,3 +254,80 @@ class TestMakeStatusDoc:
         })
         # Doc was not affected
         assert len(doc['dropped_spans']) == 1
+
+    # ------------------------------------------------------------------
+    # metrics sub-dict — cost / perf instrumentation
+    # ------------------------------------------------------------------
+
+    def test_metrics_omitted_when_result_has_none(self) -> None:
+        """Pre-instrumentation behavior preserved: when the result
+        carries no metrics, the doc has no 'metrics' key (not
+        null).  Lets Mango queries distinguish old docs from new:
+        `selector: {metrics: {$exists: false}}`."""
+        result = AnnotationResult(
+            treatment_id='taxon_a', status=STATUS_SUCCESS,
+        )
+        doc = make_status_doc(result, 'm', 't')
+        assert 'metrics' not in doc
+
+    def test_metrics_passed_through(self) -> None:
+        """When the worker collected metrics, they flow through
+        verbatim into the status doc.  Notebook code reads them
+        directly off the status doc — no transformation."""
+        result = AnnotationResult(
+            treatment_id='taxon_a',
+            status=STATUS_SUCCESS,
+            metrics={
+                'wall_clock_seconds': 12.3,
+                'api_latency_seconds': 11.8,
+                'input_tokens': 3942,
+                'output_tokens': 587,
+                'synth_doc_chars': 2104,
+                'complexity_score': 0.85,
+            },
+        )
+        doc = make_status_doc(result, 'm', 't')
+        assert doc['metrics']['wall_clock_seconds'] == 12.3
+        assert doc['metrics']['api_latency_seconds'] == 11.8
+        assert doc['metrics']['input_tokens'] == 3942
+        assert doc['metrics']['output_tokens'] == 587
+        assert doc['metrics']['synth_doc_chars'] == 2104
+        assert doc['metrics']['complexity_score'] == 0.85
+
+    def test_metrics_dict_is_copied(self) -> None:
+        """Same defensive-copy pattern as dropped_spans: mutating
+        the AnnotationResult's metrics after make_status_doc must
+        not affect the doc that's about to be saved."""
+        m = {'wall_clock_seconds': 1.0}
+        result = AnnotationResult(
+            treatment_id='taxon_a', status=STATUS_SUCCESS,
+            metrics=m,
+        )
+        doc = make_status_doc(result, 'm', 't')
+        m['wall_clock_seconds'] = 999.0
+        assert doc['metrics']['wall_clock_seconds'] == 1.0
+
+    def test_metrics_partial_in_error_result(self) -> None:
+        """The annotator collects what it can before an exception
+        propagates — e.g., complexity_score and synth_doc_chars
+        are computed BEFORE the API call, so they're present on
+        error results even when input_tokens stays None.  Partial
+        metrics are still useful for diagnostics ('did the API
+        fail on big inputs?')."""
+        result = AnnotationResult(
+            treatment_id='taxon_a',
+            status=STATUS_ERROR,
+            error_message='simulated API failure',
+            metrics={
+                'complexity_score': 0.5,
+                'synth_doc_chars': 2000,
+                'api_latency_seconds': None,
+                'input_tokens': None,
+                'output_tokens': None,
+                'wall_clock_seconds': 0.05,
+            },
+        )
+        doc = make_status_doc(result, 'm', 't')
+        assert doc['status'] == 'error'
+        assert doc['metrics']['complexity_score'] == 0.5
+        assert doc['metrics']['input_tokens'] is None

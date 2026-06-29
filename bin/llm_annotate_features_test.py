@@ -409,12 +409,31 @@ def _make_treatment(
     }
 
 
-def _make_mock_messages_client(claude_response_text: str) -> Any:
+def _make_mock_messages_client(
+    claude_response_text: str,
+    *,
+    input_tokens: Optional[int] = 100,
+    output_tokens: Optional[int] = 25,
+) -> Any:
     """A MagicMock client whose messages.create returns a single-block
-    response carrying the given text."""
+    response carrying the given text.
+
+    Token counts default to small non-None values so the
+    instrumentation path (response.usage.input_tokens /
+    output_tokens) is exercised by every test.  Pass None for
+    either to simulate an SDK that doesn't return usage (covered
+    by a dedicated regression test)."""
     client = MagicMock()
     response = MagicMock()
     response.content = [MagicMock(text=claude_response_text)]
+    if input_tokens is None and output_tokens is None:
+        # Strip the usage attribute entirely so getattr returns None.
+        del response.usage
+    else:
+        response.usage = MagicMock(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
     client.messages.create.return_value = response
     return client
 
@@ -608,3 +627,118 @@ class TestAnnotateOneTreatment:
         )
         assert result.status == STATUS_ERROR
         assert 'simulated network failure' in result.error_message
+
+    # ------------------------------------------------------------------
+    # metrics instrumentation
+    # ------------------------------------------------------------------
+
+    def test_metrics_collected_on_happy_path(self) -> None:
+        """Every successful run carries the full metrics dict —
+        the Heaps' Law notebook and the cost/perf regressions
+        depend on these being present whenever Claude was actually
+        called."""
+        treatment = _make_treatment()
+        claude_response = json.dumps({
+            'spans': [{
+                'text': 'Pileus brown 3 cm.',
+                'feature_label': 'Pileus',
+            }],
+        })
+        client = _make_mock_messages_client(
+            claude_response, input_tokens=3942, output_tokens=587,
+        )
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.metrics is not None
+        # All six instrumentation fields populated.
+        m = result.metrics
+        assert m['input_tokens'] == 3942
+        assert m['output_tokens'] == 587
+        assert m['synth_doc_chars'] > 0
+        assert m['complexity_score'] >= 0.0
+        assert m['api_latency_seconds'] is not None
+        assert m['api_latency_seconds'] >= 0.0
+        assert m['wall_clock_seconds'] is not None
+        # Wall-clock must be at least api-latency (wall-clock
+        # subsumes the API call plus pre/post-processing).
+        assert (
+            m['wall_clock_seconds'] >= m['api_latency_seconds']
+        )
+
+    def test_metrics_on_empty_synth_doc_skips_api_fields(
+        self,
+    ) -> None:
+        """A treatment with neither description nor diagnosis
+        skips the API call.  Metrics captures the work that DID
+        happen (complexity, synth_doc_chars=0, wall_clock) and
+        leaves the API-dependent fields as None.  Useful in the
+        notebook for filtering 'real' runs from empty-shortcut
+        runs."""
+        empty = {
+            '_id': 'taxon_empty',
+            'description': None,
+            'description_spans': [],
+            'diagnosis': None,
+            'diagnosis_spans': [],
+        }
+        client = _make_mock_messages_client('')
+        result = annotate_one_treatment(
+            client, empty, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.metrics is not None
+        assert result.metrics['synth_doc_chars'] == 0
+        assert result.metrics['api_latency_seconds'] is None
+        assert result.metrics['input_tokens'] is None
+        assert result.metrics['output_tokens'] is None
+        # Wall-clock and complexity still populated.
+        assert result.metrics['wall_clock_seconds'] is not None
+        assert 'complexity_score' in result.metrics
+        client.messages.create.assert_not_called()
+
+    def test_metrics_on_api_error_carries_partial_data(self) -> None:
+        """When the API call raises, metrics carries what was
+        collected before the raise — complexity, synth_doc_chars,
+        wall_clock — but the API-dependent fields stay None.
+        Useful diagnostic: 'did the API fail on big inputs?'"""
+        treatment = _make_treatment()
+        client = MagicMock()
+        client.messages.create.side_effect = RuntimeError(
+            'simulated network failure',
+        )
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.status == STATUS_ERROR
+        assert result.metrics is not None
+        assert result.metrics['synth_doc_chars'] > 0
+        assert result.metrics['complexity_score'] >= 0.0
+        assert result.metrics['input_tokens'] is None
+        assert result.metrics['wall_clock_seconds'] is not None
+
+    def test_metrics_when_sdk_omits_usage(self) -> None:
+        """Defensive: if the SDK ever returns a response without
+        a `usage` attribute (older versions, mocks that forget),
+        the worker doesn't crash — input/output tokens stay None
+        and the run still classifies as success."""
+        treatment = _make_treatment()
+        claude_response = json.dumps({
+            'spans': [{
+                'text': 'Pileus brown 3 cm.',
+                'feature_label': 'Pileus',
+            }],
+        })
+        client = _make_mock_messages_client(
+            claude_response,
+            input_tokens=None, output_tokens=None,
+        )
+        result = annotate_one_treatment(
+            client, treatment, _TEST_SEED, 'claude-opus-4-7',
+        )
+        assert result.status == STATUS_SUCCESS
+        assert result.metrics is not None
+        assert result.metrics['input_tokens'] is None
+        assert result.metrics['output_tokens'] is None
+        # api_latency and wall_clock are still populated — they
+        # don't depend on usage.
+        assert result.metrics['api_latency_seconds'] is not None

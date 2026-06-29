@@ -66,6 +66,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from env_config import common_parser, get_env_config  # noqa: E402
 
 from treatments_to_structured.brat_render import render  # noqa: E402
+from treatments_to_structured.complexity import (  # noqa: E402
+    complexity_score,
+)
 from treatments_to_structured.llm_annotate import (  # noqa: E402
     _SYSTEM_PROMPT,
     ClaudeResponseError,
@@ -371,53 +374,103 @@ def annotate_one_treatment(
     """
     treatment_id = treatment['_id']
     doc_id = (treatment.get('ingest') or {}).get('_id') or ''
+    # Instrumentation — collected as we go and stamped into the
+    # status doc's `metrics` sub-dict.  Captures everything needed
+    # to plot Heaps' Law (label growth) and the cost / perf
+    # regressions in the analysis notebook.
+    wall_clock_start = time.monotonic()
+    metrics: Dict[str, Any] = {
+        'complexity_score': complexity_score(treatment),
+        'synth_doc_chars': 0,
+        'api_latency_seconds': None,
+        'input_tokens': None,
+        'output_tokens': None,
+        'wall_clock_seconds': None,
+    }
     try:
         synth_txt, span_map = render(treatment)
+        metrics['synth_doc_chars'] = len(synth_txt)
         if not synth_txt:
             # Empty synth doc — Treatment had no description /
             # diagnosis.  Legitimate success: there were no
-            # features to find, so we "found" none.
+            # features to find, so we "found" none.  No API call
+            # was made, so token / latency stay None.
+            metrics['wall_clock_seconds'] = (
+                time.monotonic() - wall_clock_start
+            )
             return AnnotationResult(
                 treatment_id=treatment_id,
                 status=STATUS_SUCCESS,
+                metrics=metrics,
             )
         user_prompt = build_user_prompt(synth_txt, seed)
+        api_start = time.monotonic()
         response = client.messages.create(
             model=model,
             max_tokens=max_tokens,
             system=system_prompt,
             messages=[{'role': 'user', 'content': user_prompt}],
         )
+        metrics['api_latency_seconds'] = (
+            time.monotonic() - api_start
+        )
+        # response.usage is the Anthropic SDK's measured token
+        # counts.  Replaces our 1/4-of-input output-token
+        # estimate with the real value, so cost analysis is
+        # exact rather than guessed.  Guarded with getattr so
+        # tests that mock the response don't have to add usage.
+        usage = getattr(response, 'usage', None)
+        if usage is not None:
+            metrics['input_tokens'] = getattr(
+                usage, 'input_tokens', None,
+            )
+            metrics['output_tokens'] = getattr(
+                usage, 'output_tokens', None,
+            )
         response_text = response.content[0].text
         now = datetime.now(timezone.utc).isoformat()
         annotations, dropped_spans = parse_claude_response(
             response_text, span_map, model,
             treatment_id, doc_id, now,
         )
+        metrics['wall_clock_seconds'] = (
+            time.monotonic() - wall_clock_start
+        )
         return AnnotationResult(
             treatment_id=treatment_id,
             status=classify_result(annotations, dropped_spans, None),
             annotations=annotations,
             dropped_spans=dropped_spans,
+            metrics=metrics,
         )
     except ClaudeResponseError as exc:
         # Envelope-level failure (invalid JSON, missing 'spans'
         # key, span missing 'text'/'feature_label').  Recovery
         # requires a re-prompt; classify as error so retry logic
         # picks it up.
+        metrics['wall_clock_seconds'] = (
+            time.monotonic() - wall_clock_start
+        )
         return AnnotationResult(
             treatment_id=treatment_id,
             status=STATUS_ERROR,
             error_message=f'{type(exc).__name__}: {exc}',
+            metrics=metrics,
         )
     except Exception as exc:  # noqa: BLE001 — propagate per-worker
         # Anthropic API error, network failure, anything else.
         # Same classification — error doc with diagnostic, parallel
-        # workers continue.
+        # workers continue.  Metrics may be partial (e.g., API call
+        # never returned, so input_tokens stays None) — that's a
+        # useful signal too.
+        metrics['wall_clock_seconds'] = (
+            time.monotonic() - wall_clock_start
+        )
         return AnnotationResult(
             treatment_id=treatment_id,
             status=STATUS_ERROR,
             error_message=f'{type(exc).__name__}: {exc}',
+            metrics=metrics,
         )
 
 
