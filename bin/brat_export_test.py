@@ -230,6 +230,18 @@ class TestRenderAnnotationConf:
         conf = render_annotation_conf(['Pileus'])
         assert conf.endswith('\n')
 
+    def test_emits_empty_relations_events_attributes(self) -> None:
+        """Brat warns at load time if any of [relations] /
+        [events] / [attributes] is missing — 'Project
+        configuration: missing section ... may be wrong'.
+        Phase 1 only uses entities, but we emit empty sections
+        anyway so brat reads the config as 'intentionally
+        entity-only' rather than 'incomplete'."""
+        conf = render_annotation_conf(['Pileus'])
+        assert '[relations]' in conf
+        assert '[events]' in conf
+        assert '[attributes]' in conf
+
 
 # ---------------------------------------------------------------------------
 # select_treatment_ids
