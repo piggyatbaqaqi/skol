@@ -205,6 +205,72 @@ Decision deferred until Pass B is being designed in detail —
 that's where the biological model and the data model converge
 and we'll know what shape the parents should take.
 
+### 4.5 Conjunction labels (open design point — deferred)
+
+Inverse of §4.4: where §4.4 is about MERGING related annotations
+into one parent feature, this is about SPLITTING one annotation
+into multiple features.  Pass B has to handle both.
+
+Concrete example from the 2026-06-29 live sample (*Calonectria
+pentaseptata*, `taxon_2114314b…`):
+
+```
+T18  Megaconidia_and_microconidia  Megaconidia and microconidia not seen.
+```
+
+The single annotation carries two features sharing the same
+value.  Structured form is:
+
+```json
+{
+  "Megaconidia": ["not seen"],
+  "Microconidia": ["not seen"]
+}
+```
+
+Claude's `"Megaconidia and microconidia"` label is OK as Pass A
+output — the conjunction is honest about what's in the source
+text — but Pass B has to split it.  Common conjunction patterns
+worth handling:
+
+- `"X and Y"` — two features, same value
+- `"X or Y"` — uncertainty between two features (rarer; usually
+  reflects taxonomist's hedge, not a Pass-A error)
+- `"X, Y, and Z"` — three or more features, same value (e.g.,
+  `"Pleurocystidia, cheilocystidia, and caulocystidia absent"`)
+- `"X but not Y"` — distinct value per feature (`"Lamellae
+  adnate but not decurrent"` → Lamellae attachment = adnate; not
+  a Microconidia=not-seen-style split)
+
+Where this could happen in the pipeline:
+
+1. **At annotation time** — prompt Claude to split conjunctions
+   into separate spans.  Rejected for same reasons as §4.4
+   (couples Pass A to Pass B's schema; taxon-specific rules).
+2. **In Pass B's classifier (§4.2)** — when routing an
+   annotation to a schema slot, detect conjunction patterns in
+   the feature_label and emit multiple (slot, value) pairs from
+   one annotation.  Lives naturally next to the canonicalization
+   step (both transform labels before structured fill).
+3. **As a dedicated splitting pass between §4.2 and §4.3** —
+   keeps the classifier simple; the splitter has its own rule
+   set.  Likely cleanest if conjunction patterns grow beyond
+   a handful.
+
+**This document picks (2) or (3) — to be decided when Pass B is
+designed in detail.**  The choice depends on how many distinct
+conjunction patterns we see across kingdoms.  If just `"X and
+Y"`-style same-value-multiple-features dominates, (2) is enough.
+If we need different value-merging strategies per pattern (e.g.,
+`"X but not Y"` produces opposite values), (3) is cleaner.
+
+Worth noting that the conjunction pattern is BIOLOGICAL
+shorthand, not a Pass A failure.  The taxonomist's prose
+"Megaconidia and microconidia not seen" packs negative-evidence
+about two features into one statement because that's how
+mycologists write.  Pass B's job is to expand the shorthand,
+not to penalize Claude for preserving it.
+
 ---
 
 ## 5. How this addresses the original problems
