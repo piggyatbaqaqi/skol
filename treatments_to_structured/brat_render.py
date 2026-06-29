@@ -354,10 +354,15 @@ def annotations_to_brat(
             ann['field'], ann['start'], ann['end'], span_map,
         )
         text = span_map.synth_text[synth_start:synth_end]
-        # Brat text in T-line can't contain literal newlines; replace
-        # with spaces (rare in feature annotations within a single
-        # line of prose, but defensive).
-        text = text.replace('\n', ' ').replace('\r', ' ')
+        # The custom skol brat fork unescapes `\n` (literal
+        # backslash + n) in the T-line text field to a real
+        # newline before verifying against the .txt at the
+        # offsets.  Without this escape, our newline-to-space
+        # substitution would mismatch the .txt content (which
+        # has the real newline) and brat would reject the line
+        # with "Unable to parse".  Convention established by
+        # bin/yedda_to_brat.py.
+        text = text.replace('\n', '\\n').replace('\r', '\\r')
         lines.append(
             f"T{i}\t{wire_label} {synth_start} {synth_end}\t{text}"
         )

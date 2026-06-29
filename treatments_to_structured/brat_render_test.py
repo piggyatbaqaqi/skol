@@ -193,9 +193,19 @@ class TestAnnotationsToBrat:
         assert 'Pileus' in lines[0]
         assert 'Stipe' in lines[1]
 
-    def test_annotation_text_strips_embedded_newlines(self) -> None:
-        """Brat T-lines can't contain literal newlines in the text
-        column — defensive replacement with spaces."""
+    def test_annotation_text_escapes_embedded_newlines(self) -> None:
+        """T-line text can't contain literal newlines (brat reads
+        one T-line per file line), so we escape with literal
+        backslash-n.  The custom skol brat fork unescapes back to
+        a real newline before verifying against the .txt file
+        (which has the real newline at the offsets).  Same
+        convention as bin/yedda_to_brat.py.
+
+        Without this: brat would either (a) reject the T-line as
+        malformed if we kept the newline, or (b) reject the text
+        as not matching the .txt offsets if we replaced with a
+        space.
+        """
         _, span_map = render(_make_treatment(
             description='Line one\nLine two',
             description_spans=[{'start_char': 0, 'end_char': 17}],
@@ -206,10 +216,11 @@ class TestAnnotationsToBrat:
             'start': 0, 'end': 17,
         }]
         ann = annotations_to_brat(annotations, span_map)
-        # Only the trailing \n that terminates the line.
+        # One newline per T-line plus the trailing one.
         assert ann.count('\n') == 1
-        # The embedded \n became space.
-        assert 'Line one Line two' in ann
+        # The embedded \n is escaped to literal backslash + n
+        # (brat unescapes on read).
+        assert 'Line one\\nLine two' in ann
 
     def test_feature_label_with_space_becomes_underscore(
         self,
