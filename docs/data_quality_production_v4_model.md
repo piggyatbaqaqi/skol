@@ -233,20 +233,44 @@ two or more distinct species.
   paragraphs that read like three different *Laccaria* species'
   descriptions stuck together.  `biology` has three TYPE LOCALITY
   / HABITAT / DISTRIBUTION triples (one per species).
+* **`taxon_592128a8...`** — discovered during the 2026-06-29
+  50-treatment intermediate run as a 161-annotation outlier
+  (vs. median ~9).  From a multi-species reference book; many
+  species treatments in quick succession got concatenated under
+  a single Nomenclature.  Critical structural detail noted by
+  the operator: **each constituent species treatment has its
+  normal sections internally** — description, diagnosis, etc.
+  appear correctly per-species — so the grouper broke purely at
+  the inter-species boundary, NOT inside individual treatments.
+  Argues the layout CRF labelled the per-species sections
+  correctly but the treatment-grouper failed to split when one
+  Nomenclature was immediately followed (after section labels)
+  by another Nomenclature.  Easier failure mode to fix than the
+  T3/T5 cases because the section structure is intact.
 
-**Affected treatments**: T3, T5.
+**Affected treatments**: T3, T5, `taxon_592128a8...`.
 
 **Likely stage**: treatment-grouper's species-boundary detection.
 In T3 the boundary lines are `I.` / `3.` numbered headings which
 the layout CRF didn't tag as Nomenclature.  In T5 the boundaries
 may be even more subtle (just blank lines + a Pileus paragraph).
-Related to §1 — when the layout CRF mis-labels a heading, the
-grouper has no signal to split on.
+The `taxon_592128a8` case suggests a different sub-failure:
+section labels were preserved per-species but the grouper missed
+the per-species reset signal.  Related to §1 in T3 / T5
+(mis-labeled headings); independent failure mode in `taxon_592128a8`.
 
 **Severity**: high — multi-species treatments break per-species
 aggregation, dataset statistics, and the bootstrap annotator's
 single-taxon assumption.  Phase 1 review work explicitly needs
 single-species treatments.
+
+**Bootstrap-cost signal**: when a multi-species treatment goes
+through Phase 1 annotation, the API spend scales with the merged
+treatment's size (161-annotation case used proportionally more
+output tokens).  A pre-bootstrap "is this suspiciously large?"
+filter on `bin/select_for_annotation` could quarantine likely
+multi-species treatments for the grouper-fix queue rather than
+spending API budget on them.
 
 ### 7. `key` field contains wrong-genus content
 
