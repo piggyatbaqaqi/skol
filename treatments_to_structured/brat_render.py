@@ -27,7 +27,7 @@ translate without re-reading the Treatment.
 
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 # Fields we annotate in Phase 1.  Order matters: drives the section
@@ -258,15 +258,40 @@ def _synth_to_field_relative(
     )
 
 
-# Brat T-line format:  T<id>\t<type> <start> <end>\t<text>
-# For disjoint entities, multiple "start end" pairs separated by ';'.
-# Phase 1 only emits contiguous entities (single pair).
+# Brat T-line format:  T<id>\t<type> <start> <end>[;<start> <end>]*\t<text>
+# Phase 1 EMITS contiguous entities (single pair) using \n-escape for
+# multi-line text — see annotations_to_brat.  But brat itself may
+# REWRITE annotations on save into the discontinuous form (the user
+# select-drags across a newline → brat emits two offset pairs
+# separated by ';').  We accept both forms on parse so the round-trip
+# survives any brat-side reformatting; discontinuous spans are
+# collapsed to their outer min/max range, since our annotation
+# model uses a single contiguous (start, end) per annotation.
 _BRAT_T_LINE_RE = re.compile(
     r'^T(?P<num>\d+)\t'
     r'(?P<type>\S+) '
-    r'(?P<start>\d+) (?P<end>\d+)\t'
+    r'(?P<offsets>\d+ \d+(?:;\d+ \d+)*)\t'
     r'(?P<text>.*)$'
 )
+
+
+def _parse_brat_offsets(offsets_str: str) -> Tuple[int, int]:
+    """Parse a brat T-line offsets field into (outer_start, outer_end).
+
+    Brat's discontinuous-span syntax is ``start1 end1;start2 end2;...``
+    where the segments cover a single logical entity split at
+    whitespace / newlines / annotator hand-edits.  Our annotation
+    model represents this as one contiguous range from the smallest
+    start to the largest end — the gap between segments is just
+    formatting brat introduced.
+
+    Returns:
+        ``(outer_start, outer_end)`` covering every segment.
+    """
+    segments = [seg.split(' ', 1) for seg in offsets_str.split(';')]
+    starts = [int(s) for s, _ in segments]
+    ends = [int(e) for _, e in segments]
+    return min(starts), max(ends)
 
 # Brat's storage regex for entity types: '^[a-zA-Z0-9_-]*$'.
 # Anything else gets auto-mangled by brat (with a startup warning),
@@ -401,8 +426,14 @@ def parse_brat_ann(
         m = _BRAT_T_LINE_RE.match(line)
         if not m:
             continue
-        synth_start = int(m.group('start'))
-        synth_end = int(m.group('end'))
+        # `offsets` may be a single 'start end' pair OR a brat
+        # discontinuous form 'start1 end1;start2 end2;...' that brat
+        # emits when an annotation spans a newline.  We collapse to
+        # the outer min/max — the gap between segments is brat
+        # formatting, not a semantic discontinuity in our model.
+        synth_start, synth_end = _parse_brat_offsets(
+            m.group('offsets'),
+        )
         # Reverse the wire-format substitution from
         # annotations_to_brat — underscores in the on-wire type
         # come back as spaces in the feature_label.  Round-trip is

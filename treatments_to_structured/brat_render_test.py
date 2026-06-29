@@ -535,6 +535,92 @@ class TestParseBratAnn:
         with pytest.raises(ValueError):
             parse_brat_ann(ann_text, span_map)
 
+    def test_discontinuous_offsets_collapsed_to_outer_range(
+        self,
+    ) -> None:
+        """Brat may write 'start1 end1;start2 end2' when a span
+        crosses a newline.  Our parser accepts this on input
+        (since brat may rewrite our \\n-escaped output into this
+        form on save) and collapses to the outer min/max — the
+        gap between segments is brat formatting, not a semantic
+        discontinuity in our annotation model.
+
+        Real case from the 2026-06-29 hand-review of
+        taxon_841d5cbed... (Amanita): three annotations the
+        reviewer made with text crossing newlines were silently
+        dropped from features_hand because parse_brat_ann's
+        regex only matched single-segment offsets."""
+        treatment = _make_treatment(
+            description=(
+                'Pileus brown,\n'
+                '3 cm wide.'
+            ),
+            description_spans=[{'start_char': 0, 'end_char': 24}],
+        )
+        _, span_map = render(treatment)
+        ss = span_map.field_extents[0].synth_start
+        # Annotation spans from synth offset ss to ss+24 but
+        # written as two segments around the newline at ss+13.
+        ann_text = (
+            f'T1\tPileus {ss} {ss + 13};{ss + 14} {ss + 24}'
+            '\tPileus brown,\\n3 cm wide.\n'
+        )
+        result = parse_brat_ann(ann_text, span_map)
+        assert len(result) == 1
+        # Collapsed to outer range (start = ss, end = ss + 24).
+        assert result[0]['start'] == 0
+        assert result[0]['end'] == 24
+        # source_text covers the full span including the newline
+        # (matches the candidate DB's contiguous-with-newline form).
+        assert result[0]['source_text'] == 'Pileus brown,\n3 cm wide.'
+
+    def test_three_segment_discontinuous_collapsed(self) -> None:
+        """Four-or-more-segment discontinuous spans are rare but
+        valid (real example: a Universal_veil annotation in the
+        Amanita hand-review had four segments split at multiple
+        newlines).  Collapses the same way: outer min to outer
+        max."""
+        treatment = _make_treatment(
+            description=(
+                'Pileus brown,\nwide,\nsmooth,\nfirm.'
+            ),
+            description_spans=[{'start_char': 0, 'end_char': 33}],
+        )
+        _, span_map = render(treatment)
+        ss = span_map.field_extents[0].synth_start
+        # Three segments around two newlines.
+        ann_text = (
+            f'T1\tPileus '
+            f'{ss} {ss + 13};{ss + 14} {ss + 19};{ss + 20} {ss + 33}'
+            '\tignored text\n'
+        )
+        result = parse_brat_ann(ann_text, span_map)
+        assert len(result) == 1
+        assert result[0]['start'] == 0
+        assert result[0]['end'] == 33
+
+    def test_discontinuous_offsets_out_of_order_still_collapses(
+        self,
+    ) -> None:
+        """Defensive: even if brat (or a manual editor) emits
+        segments in non-ascending order, we still take the
+        outer min/max correctly via min(starts) and max(ends)."""
+        treatment = _make_treatment(
+            description='Pileus brown wide.',
+            description_spans=[{'start_char': 0, 'end_char': 18}],
+        )
+        _, span_map = render(treatment)
+        ss = span_map.field_extents[0].synth_start
+        # Reversed order: later segment first
+        ann_text = (
+            f'T1\tPileus '
+            f'{ss + 13} {ss + 18};{ss} {ss + 12}\tignored\n'
+        )
+        result = parse_brat_ann(ann_text, span_map)
+        assert len(result) == 1
+        assert result[0]['start'] == 0
+        assert result[0]['end'] == 18
+
 
 # ---------------------------------------------------------------------------
 # Round-trip
