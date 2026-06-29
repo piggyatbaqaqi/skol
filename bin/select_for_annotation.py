@@ -30,7 +30,7 @@ import argparse
 import random
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -95,6 +95,37 @@ def score_treatments_in_db(
     return scored
 
 
+def fetch_annotated_treatment_ids(candidate_db: Any) -> Set[str]:
+    """Return the set of treatment IDs that already have at least
+    one annotation in ``candidate_db``.
+
+    Annotation _ids are ``<treatment_id>:<feature_label>:<offset>``.
+    A single ``_all_docs`` scan reads every key; we take the prefix
+    before the first ``:`` as the treatment_id.  Cheap on the
+    hundreds-of-treatments scale Phase 1 + Phase 2 are targeting;
+    if this ever scales past tens of thousands, swap to a view.
+    """
+    ids: Set[str] = set()
+    for row in candidate_db.view('_all_docs').rows:
+        key = row.id if hasattr(row, 'id') else row.get('id', '')
+        if not key or ':' not in key or key.startswith('_design/'):
+            continue
+        ids.add(key.split(':', 1)[0])
+    return ids
+
+
+def filter_excluded(
+    scored: List[Tuple[str, float]],
+    excluded_ids: Set[str],
+) -> List[Tuple[str, float]]:
+    """Drop any scored entry whose treatment_id is in
+    ``excluded_ids``.  Preserves the input order of survivors so the
+    downstream banding sees the same complexity distribution shape."""
+    if not excluded_ids:
+        return scored
+    return [(tid, sc) for tid, sc in scored if tid not in excluded_ids]
+
+
 def _resolve_band_specs(
     bands_flag: str,
     n: int,
@@ -142,6 +173,17 @@ def main() -> int:
         help=(
             "Random seed for reproducibility.  Omit for "
             "nondeterministic sampling."
+        ),
+    )
+    parser.add_argument(
+        '--exclude-annotated', action='store_true',
+        help=(
+            'Skip treatments that already have annotations in the '
+            "experiment's features_candidate DB.  Use when extending "
+            'an existing selection — guarantees the --n count is N '
+            'NEW treatments, not N including repeats of work in '
+            'progress.  Requires --experiment (so the candidate DB '
+            'can be resolved).'
         ),
     )
     # --verbosity is provided by common_parser() — don't re-declare.
@@ -198,6 +240,55 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+
+    if args.exclude_annotated:
+        experiment = config.get('experiment_name')
+        if not experiment:
+            print(
+                "error: --exclude-annotated requires --experiment "
+                "(needed to resolve the candidate DB name)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            exp_doc = server['skol_experiments'][experiment]
+        except Exception:
+            print(
+                f"error: experiment {experiment!r} not found in "
+                f"skol_experiments",
+                file=sys.stderr,
+            )
+            return 2
+        # Reuse the candidate-DB resolver from bin/llm_annotate_features
+        # so the fallback naming convention stays in one place.
+        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+            resolve_candidate_db_name,
+        )
+        candidate_db_name = resolve_candidate_db_name(
+            experiment, exp_doc, verbosity=verbosity,
+        )
+        if candidate_db_name in server:
+            excluded_ids = fetch_annotated_treatment_ids(
+                server[candidate_db_name],
+            )
+            before = len(scored)
+            scored = filter_excluded(scored, excluded_ids)
+            if verbosity >= 1:
+                print(
+                    f"  --exclude-annotated: dropped "
+                    f"{before - len(scored)} already-annotated "
+                    f"treatments from the selection pool "
+                    f"({len(excluded_ids)} in candidate DB; "
+                    f"{len(scored)} remain to sample from)",
+                    file=sys.stderr,
+                )
+        elif verbosity >= 1:
+            print(
+                f"  --exclude-annotated: candidate DB "
+                f"{candidate_db_name!r} does not exist yet; "
+                f"no exclusions applied",
+                file=sys.stderr,
+            )
 
     rng = (
         random.Random(args.seed)
