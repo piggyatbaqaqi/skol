@@ -274,6 +274,99 @@ flora-style documents.
 **Severity**: medium — key fields aren't currently part of any
 training-data pipeline but corrupt the per-treatment view.
 
+### 8. Key-body content in the `description` field
+
+**Symptom**: a Treatment's `description` contains dichotomous-key
+couplet text (telegraphic feature/value pairs like "Pileus white
+... 2", "Pileus brown ... 3") instead of (or alongside) the
+specimen's actual prose description.  Inverse failure mode of §7
+— there, key text lands in the right field but for the wrong
+genus; here, key text lands in the wrong field entirely.
+
+**Evidence**:
+
+* Discovered 2026-06-29 during hand-review of the production_v4
+  sample.  (Treatment ID to be filled in by the reviewer who
+  encountered it.)  The description contains key-style couplet
+  pairs rather than (or in addition to) the specimen's
+  descriptive prose.
+
+**Affected treatments**: (fill in)
+
+**Likely stage** (best guess): treatment-grouper boundary
+detection fails to recognize the transition from in-treatment
+description prose to in-document key prose.  Possibly related
+to §6 (multi-species merge) — when a treatment is sliced from
+a flora chapter that contains both a species description AND
+the genus-level key, the slice may include both without a
+boundary signal.
+
+**Severity**: medium — pollutes the bootstrap input with
+non-treatment text.  The bootstrap annotator wastes API budget
+on key couplets; the human reviewer wastes review time deciding
+whether to annotate them; the resulting golden set risks
+absorbing a different prose genre than what Pass B is being
+trained for.
+
+**Reviewer action** (until the extraction is fixed — see §0
+below): leave key-body content unannotated.  Reasons:
+
+  * Key couplets are biologically valid statements about
+    anatomy ("Pileus white" IS a Pileus feature), but they're
+    *contrastive choices*, not *asserted properties of this
+    specimen*.  Annotating them mixes two prose genres in the
+    training data.
+  * Surface form differs: key couplets are telegraphic
+    ("Pileus white ... 2") while descriptions are detailed
+    ("Pileus 60–156 mm wide, white to whitish at first ...").
+    Training on the union risks teaching the SLM to favor
+    brief, decontextualized patterns.
+  * Pass B's structured extraction will treat key couplets
+    differently from descriptions anyway (one expresses
+    eligibility, the other expresses values).  Leaving them
+    unannotated in Phase 1 keeps the golden set genre-pure.
+  * If the misplaced-key problem turns out to be common, a
+    future Phase 2 enhancement could annotate key content with
+    a distinct `field: "key_leaked_into_description"` marker
+    so the SLM treats it as a separate genre — but that's not
+    Phase 1 scope.
+
+## §0. Hand-review conventions
+
+These rules apply to the reviewer's brat work on bootstrap
+candidate annotations.  They consolidate the per-issue
+"Reviewer action" notes above into one place.
+
+1. **Don't annotate misplaced content.**  When a treatment
+   field contains content that obviously belongs in a different
+   field (taxonomic citation in description, key body in
+   description, wrong-genus key in key field, article-body prose
+   in biology), leave it unmarked.  An unannotated span is
+   visible to future reviewers as "passed over intentionally"
+   and to future automated cleanup as "available for moving."
+
+2. **Don't promote false-positive treatments to golden.**  If
+   the treatment is from a non-taxonomic paper (§5), skip the
+   whole treatment rather than annotating the few stray fragments
+   that happen to look feature-like.  Phase 1 golden should
+   only contain real treatments.
+
+3. **Multi-species treatments**: annotate the FIRST species's
+   features only.  Subsequent species in the same treatment doc
+   (§6) are a separate failure mode; mixing their features into
+   one treatment's golden record creates training noise.
+
+4. **Reviewer-only labels are welcome.**  If Claude missed a
+   feature the description clearly names (e.g., a hymenophore
+   in a bolete treatment), add it.  The diff (in
+   `features_hand`) will flag these as `reviewer_action: added`
+   — useful signal for tuning the bootstrap prompt.
+
+5. **When in doubt about a label, leave the annotation in but
+   note your hesitation.**  Brat supports `AnnotatorNotes`
+   (`#N\tAnnotatorNotes T<n>\tnote text`) — the ingest path
+   doesn't strip these, so future canonicalization can use them.
+
 ## Notes for fix sequencing
 
 These issues are deferred — not blocking Phase 1 bootstrap-annotation
