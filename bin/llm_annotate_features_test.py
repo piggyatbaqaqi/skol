@@ -354,7 +354,9 @@ class TestEstimateTokens:
         )
         assert stats['doc_count'] == 1
         assert stats['total_input_tokens'] == 1000
-        assert stats['est_output_tokens'] == 250
+        # Output estimate is 1/2 of input — calibrated 2026-06-29
+        # from measured 47.12% ratio in the live 6-treatment sample.
+        assert stats['est_output_tokens'] == 500
 
     def test_three_prompts_sum_tokens(self) -> None:
         client = _make_mock_count_tokens_client(500)
@@ -364,7 +366,7 @@ class TestEstimateTokens:
             'claude-opus-4-7',
         )
         assert stats['total_input_tokens'] == 1500
-        assert stats['est_output_tokens'] == 375
+        assert stats['est_output_tokens'] == 750
 
     def test_cost_calculated_from_pricing_table(self) -> None:
         client = _make_mock_count_tokens_client(1_000_000)
@@ -372,10 +374,10 @@ class TestEstimateTokens:
             client, [('a', 'p')], 'claude-opus-4-7',
         )
         # 1M input tokens × $15.00/1M = $15.00 input cost
-        # 250k output tokens × $75.00/1M = $18.75 output cost
+        # 500k output tokens × $75.00/1M = $37.50 output cost
         assert stats['est_input_cost_usd'] == 15.00
-        assert stats['est_output_cost_usd'] == 18.75
-        assert stats['est_total_cost_usd'] == 33.75
+        assert stats['est_output_cost_usd'] == 37.50
+        assert stats['est_total_cost_usd'] == 52.50
 
     def test_unknown_model_uses_sonnet_pricing(self) -> None:
         """Defensive fallback so a typo in --llm-model doesn't crash

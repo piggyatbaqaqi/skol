@@ -317,11 +317,14 @@ def estimate_tokens(
     """Count input tokens via Anthropic ``count_tokens``; estimate
     output tokens and total cost.
 
-    Output tokens are estimated at 1/4 of input — annotation output
-    is a small JSON envelope (a few short text fields per span),
-    typically much smaller than the prompt's schema-plus-treatment
-    payload.  Calibrate after the first real run if the ratio
-    proves systematically off.
+    Output tokens are estimated at 1/2 of input.  Calibrated 2026-06-29
+    from 6 live treatments under the multi-feature bootstrap prompt:
+    measured output/input ratio was 47.12%.  The original estimate
+    (1/4) was a guess from before the multi-feature pivot —
+    annotations now greedily echo whole feature blocks as
+    ``source_text``, so the output is much closer to the input size
+    than the old per-feature variant.  Re-calibrate from the
+    notebook's metrics cell when the corpus grows.
     """
     total_input = 0
     for _treatment_id, user_prompt in prompts:
@@ -331,7 +334,7 @@ def estimate_tokens(
             messages=[{'role': 'user', 'content': user_prompt}],
         )
         total_input += result.input_tokens
-    est_output = total_input // 4
+    est_output = total_input // 2
     pricing = _PRICING.get(
         model, {'input': 15.00, 'output': 75.00},
     )
