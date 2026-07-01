@@ -377,9 +377,9 @@ def main() -> int:
         )
         reviewed_ids: Set[str] = set()
         if hand_db_name in server:
-            reviewed_ids |= list_annotated_treatment_ids(
+            reviewed_ids |= set(list_annotated_treatment_ids(
                 server[hand_db_name],
-            )
+            ))
         if status_db_name in server:
             reviewed_ids |= fetch_reviewer_touched_ids(
                 server[status_db_name],
@@ -402,9 +402,9 @@ def main() -> int:
                 )
             else:
                 print(
-                    f"  --exclude-reviewed: no prior reviewed "
-                    f"treatments found (features_hand + "
-                    f"features_status both empty); no exclusions",
+                    "  --exclude-reviewed: no prior reviewed "
+                    "treatments found (features_hand + "
+                    "features_status both empty); no exclusions",
                     file=sys.stderr,
                 )
 
