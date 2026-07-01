@@ -38,6 +38,19 @@ treatment but its species heading was never extracted.
 **Symptom**: the bibliographic / nomenclatural heading text lands in
 `description` rather than in `nomenclature` or its own slot.
 
+**Semantic distinction — Description vs Diagnosis**: A
+`description` field should describe the properties of ONE
+specimen (this taxon's own anatomy).  It should NOT contain
+formal taxonomic citations for other taxa — those are
+extractor errors and reliable merge signals.
+
+A `diagnosis` field, by contrast, is a comparative statement
+about how this taxon differs from related taxa, and CAN
+legitimately contain citations to related taxa for comparison
+purposes (e.g., "differs from *X. yz* Author (Journal 42:
+17) in having smaller spores").  A citation in `diagnosis`
+is not necessarily an error; a citation in `description` is.
+
 **Evidence**:
 
 * **T3** — `description` begins:
@@ -52,8 +65,24 @@ treatment but its species heading was never extracted.
   ```
   i.e. a SECOND species heading buried inside what's labelled as a
   single Description block.
+* **`taxon_2a9d07e6...`** — discovered 2026-07-01 in the
+  50-treatment run.  Nomenclature is
+  `Teratosphaeria dunnii Crous & Carnegie, Persoonia 42: 327.`
+  (a real, non-synthetic citation).  Mid-`description` sits a
+  full second citation:
+  ```
+  Teratosphaeria obscuris (P.A. Barber & T.I. Burgess)
+      P.A. Barber & T.I. Burgess, Persoonia 23: 115. 2009.
+  Diagnosis: Leaf spots primarily epiphyllous ...
+  ```
+  Followed by another full anatomical description block.
+  Co-occurs with §6 (multi-species merge — same treatment
+  contains both *T. dunnii* and *T. obscuris* descriptions).
+  This citation would have parsed cleanly via gnparser
+  (`http://localhost:9081`) as author+year+journal+page —
+  strong signal for automatic detection.
 
-**Affected treatments**: T3.
+**Affected treatments**: T3, `taxon_2a9d07e6...`.
 
 **Likely stage** (best guess, not investigated): the layout CRF
 labelled these short numbered heading lines as `Description`
@@ -64,6 +93,19 @@ it to a Nomenclature slot.
 **Cascade effect**: T3 was also flagged with a synthetic Nomenclature
 stub, presumably because the first paragraph the grouper saw
 already had `Description` label rather than `Nomenclature`.
+`taxon_2a9d07e6` did NOT — the initial `Teratosphaeria dunnii`
+citation reached Nomenclature correctly.  Only the second
+species's citation slipped into Description.
+
+**Detection idea**: scan every treatment's `description` field
+with gnfinder (`http://localhost:9080`) and gnparser
+(`http://localhost:9081`).  Any hit on an authored binomial
+inside a Description is either an error (§1 case) or a
+comparison mention worth flagging.  gnparser distinguishes bare
+names ("Pileus lorem ipsum") from cited names ("*X.* Author,
+Year"), so the false-positive rate should be low.  Complementary
+to the merge-metric approach — catches the exact taxon_2a9d07e6
+case that the metric missed (metric = 0).
 
 ### 2. Taxonomic citation not extracted at all
 
@@ -271,6 +313,22 @@ two or more distinct species.
   Compact 2-species merges where species are similar
   (congenerics, same family) are a documented blind spot of
   the current metric — see 'Merge-metric limitations' below.
+* **`taxon_2a9d07e6...`** — discovered 2026-07-01.  Nomenclature
+  `Teratosphaeria dunnii Crous & Carnegie` correctly parsed;
+  description contains a SECOND full species description
+  (*Teratosphaeria obscuris* with its own formal citation).
+  **Two structural markers** that would have caught the merge:
+  (1) the `description` field contains the literal string
+  `Diagnosis:` twice (once at the top for T. dunnii, once
+  mid-body for T. obscuris) — a properly-single-species
+  description has one such header at most; (2) the second
+  citation would parse cleanly via gnparser as an authored
+  binomial, and no legitimate `description` field should
+  contain a formal citation (see §1's Description-vs-Diagnosis
+  distinction).  **Slipped past the merge-metric filter with
+  metric = 0** — 7 annotations total across 6 labels; both
+  species are compact enough that no term reaches k=5.  Worst
+  of the observed blind spots.
 
 **Affected treatments**: T3, T5, `taxon_592128a8...`.
 
@@ -321,23 +379,49 @@ alongside a close relative for comparison.
 
 Ideas for a better metric that would catch these:
 
-  1. **Count section-header repetitions**: `Asci: 2` in the
-     candidate DB annotations is a strong signal even at low
-     per-term counts.  Requires post-bootstrap analysis (uses
-     Claude's output), not pre-bootstrap filtering.
-  2. **Count `sp. nov.` / `nov. sp.` / numbered species-heading
+  1. **Parse `description` for taxonomic citations via gnfinder /
+     gnparser** (`http://localhost:9080` / `9081`).  A
+     `description` field should describe ONE specimen and
+     should contain NO formal citations of other taxa (see
+     §1's Description-vs-Diagnosis distinction).  gnparser
+     distinguishes bare mentions ("similar to X") from formally-
+     cited names ("X. yz Author, Year") — the latter in a
+     Description is a near-certain merge signal.  Would have
+     caught the taxon_2a9d07e6 case (which the term-frequency
+     metric missed with a value of 0).  Pre-bootstrap; no API
+     spend needed.  Compatible with the existing local
+     gnfinder/gnparser install.
+  2. **Count `Diagnosis:` / `Description:` / other section-
+     header string repetitions in the raw description**.  A
+     single-species treatment has exactly one `Diagnosis:`
+     header at most; two or more is a strong merge signal.
+     `taxon_2a9d07e6` had two.  Pre-bootstrap; cheap regex
+     scan.
+  3. **Count `sp. nov.` / `nov. sp.` / numbered species-heading
      occurrences** in the raw description.  Complementary to
      the term-frequency approach; catches compact merges.
-  3. **Watch for repeated `Basionym:` / `Type:` / `Holotype:`
+  4. **Count section-header repetitions in the candidate DB
+     annotations**: `Asci: 2` in the annotation output is a
+     strong signal even at low per-term counts.  Requires
+     post-bootstrap analysis (uses Claude's output), not
+     pre-bootstrap filtering — so useful for retroactive audit
+     rather than avoiding API spend.
+  5. **Watch for repeated `Basionym:` / `Type:` / `Holotype:`
      entries** in the description or materials_examined.
-  4. **Compare description length distribution** — a treatment
+  6. **Compare description length distribution** — a treatment
      with an unusually long description for its per-annotation
      count is a warning sign.
 
-None implemented yet; noted here as follow-up work.  For the
-2026-07-01 review round, treatments in this blind-spot pattern
-must be caught by the reviewer (§0 rule 3: annotate first
-species only) rather than automatically quarantined.
+Priority ordering for follow-up work: #1 and #2 are cheap
+pre-bootstrap filters that would catch the observed
+blind-spot cases (taxon_173204, taxon_2a9d07e6) that the
+term-frequency metric missed.  Worth implementing before the
+next big bootstrap run.
+
+For the 2026-07-01 review round, treatments in these
+blind-spot patterns must be caught by the reviewer (§0 rule 3:
+annotate first species only) rather than automatically
+quarantined.
 
 ### 7. `key` field contains wrong-genus content
 
