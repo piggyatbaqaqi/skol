@@ -329,6 +329,31 @@ two or more distinct species.
   metric = 0** — 7 annotations total across 6 labels; both
   species are compact enough that no term reaches k=5.  Worst
   of the observed blind spots.
+* **`taxon_572d470e...`** — discovered 2026-07-01 in the
+  50-treatment run.  Nomenclature is
+  `Saccobolus sphaerosporus Brumm., spec. nov.`; description
+  contains multiple species descriptions from a pre-2012
+  mycological monograph.  Structural signal noted by the
+  operator: **alternating Latin and English blocks**.  The
+  standard format is ONE Latin diagnosis + ONE English
+  description per species; the description here has multiple
+  Latin↔English cycles (e.g., `Apothecia angustata parva
+  sessilia ...` [Latin, S. sphaerosporus] → `Apothecia
+  solitary or closely crowded ...` [English, same species]
+  → discussion / comparison → `Saccobolus purpureus Brumm.,
+  spec. nov.` [heading] → `Apothecia sessilia, 0.15-0.50 mm
+  diam. Receptaculum ...` [Latin, S. purpureus] ...).  Two
+  Latin blocks in one description is a very strong merge
+  signal.  gnfinder / gnparser would help here IN PRINCIPLE
+  but the binomials in this treatment have heavy OCR
+  corruption (`Brumm., spec. llOU.` for `Brumm., spec.
+  nov.`) so parser-based detection would return low
+  confidence.  Language-alternation is more robust to OCR
+  noise since Latin's morphology signal survives typos.
+  **Caught by the merge-metric filter** (metric = 66) but
+  the Latin/English signal is more interpretable and
+  survives compact 2-species cases the term-frequency
+  approach misses.
 
 **Affected treatments**: T3, T5, `taxon_592128a8...`.
 
@@ -379,7 +404,21 @@ alongside a close relative for comparison.
 
 Ideas for a better metric that would catch these:
 
-  1. **Parse `description` for taxonomic citations via gnfinder /
+  1. **Detect alternating Latin ↔ English blocks in the
+     description**.  In pre-2012 taxonomic literature (still
+     the majority of the ingested corpus), the standard
+     format is ONE Latin diagnosis + ONE English description
+     per species.  A description containing MORE THAN ONE
+     Latin block is a very strong merge signal.  Detection
+     is robust to OCR corruption (Latin morphology — endings
+     `-us`, `-a`, `-um`, `-orum`, `-arum`, `-ibus`; vocabulary
+     `apothecia`, `sessilia`, `ascosporae` — survives typos
+     that break binomial parsing).  Cheap to compute
+     paragraph-by-paragraph via langdetect / pycld3 / a
+     Latin-suffix heuristic.  Would have caught the
+     `taxon_572d470e` case cleanly.  Pre-bootstrap; no API
+     spend needed.
+  2. **Parse `description` for taxonomic citations via gnfinder /
      gnparser** (`http://localhost:9080` / `9081`).  A
      `description` field should describe ONE specimen and
      should contain NO formal citations of other taxa (see
@@ -390,31 +429,35 @@ Ideas for a better metric that would catch these:
      caught the taxon_2a9d07e6 case (which the term-frequency
      metric missed with a value of 0).  Pre-bootstrap; no API
      spend needed.  Compatible with the existing local
-     gnfinder/gnparser install.
-  2. **Count `Diagnosis:` / `Description:` / other section-
+     gnfinder/gnparser install.  Caveat: fails on
+     heavily-OCR-corrupted binomials (e.g., `taxon_572d470e`'s
+     `spec. llOU.` for `spec. nov.`) — the Latin/English
+     signal is more OCR-robust.
+  3. **Count `Diagnosis:` / `Description:` / other section-
      header string repetitions in the raw description**.  A
      single-species treatment has exactly one `Diagnosis:`
      header at most; two or more is a strong merge signal.
      `taxon_2a9d07e6` had two.  Pre-bootstrap; cheap regex
      scan.
-  3. **Count `sp. nov.` / `nov. sp.` / numbered species-heading
+  4. **Count `sp. nov.` / `nov. sp.` / numbered species-heading
      occurrences** in the raw description.  Complementary to
      the term-frequency approach; catches compact merges.
-  4. **Count section-header repetitions in the candidate DB
+  5. **Count section-header repetitions in the candidate DB
      annotations**: `Asci: 2` in the annotation output is a
      strong signal even at low per-term counts.  Requires
      post-bootstrap analysis (uses Claude's output), not
      pre-bootstrap filtering — so useful for retroactive audit
      rather than avoiding API spend.
-  5. **Watch for repeated `Basionym:` / `Type:` / `Holotype:`
+  6. **Watch for repeated `Basionym:` / `Type:` / `Holotype:`
      entries** in the description or materials_examined.
-  6. **Compare description length distribution** — a treatment
+  7. **Compare description length distribution** — a treatment
      with an unusually long description for its per-annotation
      count is a warning sign.
 
-Priority ordering for follow-up work: #1 and #2 are cheap
+Priority ordering for follow-up work: #1, #2, #3 are cheap
 pre-bootstrap filters that would catch the observed
-blind-spot cases (taxon_173204, taxon_2a9d07e6) that the
+blind-spot cases (taxon_173204, taxon_2a9d07e6) plus the
+Latin-alternation-detectable cases (taxon_572d470e) that the
 term-frequency metric missed.  Worth implementing before the
 next big bootstrap run.
 
