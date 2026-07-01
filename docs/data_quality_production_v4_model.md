@@ -257,6 +257,20 @@ two or more distinct species.
   Nomenclature was immediately followed (after section labels)
   by another Nomenclature.  Easier failure mode to fix than the
   T3/T5 cases because the section structure is intact.
+* **`taxon_173204...`** — discovered 2026-07-01 in the 50-
+  treatment run.  Real nomenclature (`Setiferotheca nipponica
+  Matsush.`), then a description field containing TWO similar-
+  species descriptions concatenated.  Label distribution shows
+  the tell-tale doubling: Asci × 2, Ascomata × 2, Ascospores
+  × 2, Peridium × 2, plus singletons (Chlamydospores, Mycelium,
+  Necks, Subiculum).  Only 12 annotations total — well within
+  the single-species range for a rich ascomycete.  **Slipped
+  past the merge-metric filter** (metric value 2, threshold 10)
+  because the two species share anatomical vocabulary and each
+  term appears only ~2 times, below the k=5 count threshold.
+  Compact 2-species merges where species are similar
+  (congenerics, same family) are a documented blind spot of
+  the current metric — see 'Merge-metric limitations' below.
 
 **Affected treatments**: T3, T5, `taxon_592128a8...`.
 
@@ -280,7 +294,50 @@ treatment's size (161-annotation case used proportionally more
 output tokens).  A pre-bootstrap "is this suspiciously large?"
 filter on `bin/select_for_annotation` could quarantine likely
 multi-species treatments for the grouper-fix queue rather than
-spending API budget on them.
+spending API budget on them.  Implemented 2026-07-01 as
+``--exclude-suspected-merges`` — but see the merge-metric
+limitations below.
+
+**Merge-metric limitations** (as of 2026-07-01 calibration):
+
+The default metric (`n_terms_above_k` with k=5, threshold 10)
+catches ~16.5% of the corpus (7568 of 45871 scored treatments
+on production_v4).  Empirically it hits the T3/T5 pattern and
+the `taxon_592128a8` mass-merge cleanly.  But it misses:
+
+  * **Compact 2-species merges of similar species**
+    (`taxon_173204` case).  When two congeneric or same-family
+    species are described together, shared anatomical vocabulary
+    appears only ~2 times per term.  Each term stays below k=5,
+    so the metric returns a low value (2 in the taxon_173204
+    case) and the merge slips through the filter.
+  * **Short merges regardless of similarity**.  If two species
+    descriptions are terse (~200 words each), no single term
+    hits the k=5 count and the metric misses the merge.
+
+Neither pattern is rare — 2-species compact merges seem common
+in fungal-focused papers where a new species is described
+alongside a close relative for comparison.
+
+Ideas for a better metric that would catch these:
+
+  1. **Count section-header repetitions**: `Asci: 2` in the
+     candidate DB annotations is a strong signal even at low
+     per-term counts.  Requires post-bootstrap analysis (uses
+     Claude's output), not pre-bootstrap filtering.
+  2. **Count `sp. nov.` / `nov. sp.` / numbered species-heading
+     occurrences** in the raw description.  Complementary to
+     the term-frequency approach; catches compact merges.
+  3. **Watch for repeated `Basionym:` / `Type:` / `Holotype:`
+     entries** in the description or materials_examined.
+  4. **Compare description length distribution** — a treatment
+     with an unusually long description for its per-annotation
+     count is a warning sign.
+
+None implemented yet; noted here as follow-up work.  For the
+2026-07-01 review round, treatments in this blind-spot pattern
+must be caught by the reviewer (§0 rule 3: annotate first
+species only) rather than automatically quarantined.
 
 ### 7. `key` field contains wrong-genus content
 
