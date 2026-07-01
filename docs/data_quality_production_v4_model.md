@@ -508,8 +508,51 @@ genus; here, key text lands in the wrong field entirely.
   encountered it.)  The description contains key-style couplet
   pairs rather than (or in addition to) the specimen's
   descriptive prose.
+* **`taxon_5b0a8ce7...`** — discovered 2026-07-01.
+  Nomenclature is `Amanita chlorinosma.` (real, non-synthetic).
+  Description is 406 chars — the ENTIRE description consists
+  of two numbered dichotomous-key couplets:
+  ```
+  15. Basal bulb may be elongate, almost always doglegged;
+      clamps present or absent; universal veil with
+      occasional to plentiful hyphae; with or without strong
+      odor.
 
-**Affected treatments**: (fill in)
+  16. Basal bulb ovoid to ventricose; clamps absent at bases
+      of basidia; odorless or with slight odor of a tide pool
+      or the seashore; spores (7.8-) 9.8 - 14.0 (-21) x (3.9-)
+      4.9 - 6.3 (-9.8) jam, with Q « (1.85-) L.04.- 2:48
+      (2.50)... coronas
+  ```
+  No real descriptive prose; the treatment's description
+  content is purely key text.  Operator note: key detection
+  is weaker than expected — the numbered `15.` / `16.`
+  prefixes should be a strong signal for the layout CRF to
+  label these paragraphs as `Key`, not `Description`.
+
+**Affected treatments**: `taxon_5b0a8ce7...`; almost certainly
+others — the fact that a treatment with `Amanita chlorinosma`
+as its nomenclature ends up with ZERO real description content
+suggests the pattern isn't rare.
+
+**Detection ideas** (for a future extraction-audit script):
+
+  1. **Numbered-couplet prefix at line start**: `^[0-9]+[a-z]?\.?\s+`
+     followed by a short anatomical clause is a dichotomous-key
+     signature.  Two or more such lines in a Description field is
+     a near-certain sign of key content leakage.
+     `taxon_5b0a8ce7` would be caught: it has `15.` and `16.`
+     as line starts, both followed by anatomical prose.
+  2. **Description-length-vs-content-density anomaly**:
+     `taxon_5b0a8ce7`'s description is 406 chars and mentions
+     multiple anatomical features (basal bulb, clamps, universal
+     veil, odor, spores).  Real single-species descriptions of
+     comparable feature coverage are typically 1500+ chars.
+     Very short descriptions covering many features are key-like.
+  3. **Contrastive/hedging language patterns**: "may be X ...",
+     "with or without Y", "present or absent" — key couplets
+     use conditionals to describe the choice space, real
+     descriptions assert.
 
 **Likely stage** (best guess): treatment-grouper boundary
 detection fails to recognize the transition from in-treatment
@@ -517,7 +560,9 @@ description prose to in-document key prose.  Possibly related
 to §6 (multi-species merge) — when a treatment is sliced from
 a flora chapter that contains both a species description AND
 the genus-level key, the slice may include both without a
-boundary signal.
+boundary signal.  Alternatively: the layout CRF may be
+mis-labeling numbered key couplets as Description continuations
+because the couplets DO contain anatomical vocabulary.
 
 **Severity**: medium — pollutes the bootstrap input with
 non-treatment text.  The bootstrap annotator wastes API budget
