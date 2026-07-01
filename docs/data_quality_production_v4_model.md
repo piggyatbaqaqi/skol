@@ -91,8 +91,18 @@ Treatment doc.
   appears throughout the text and in `figure_captions` ("Amanita
   magniverrucata, habit, mature specimens") but never made it to
   the Nomenclature field.
+* **`taxon_acd88732...`** — discovered during 2026-07-01
+  hand-inspection.  Real Perithecia-bearing treatment (probably
+  Colletotrichum), 2 valid annotations (Perithecia + Spores)
+  correctly produced by Claude.  `synthetic_nomenclature: true`,
+  Nomenclature is `Nomen ignotum`; the species name / citation
+  never reached the Nomenclature field.  Co-occurs with §10
+  (description starts mid-sentence) — the description was
+  clipped at the top, which is likely where the citation lived
+  in the source plaintext.
 
-**Affected treatments**: T1 (vacuously), T2, T3, T4.
+**Affected treatments**: T1 (vacuously), T2, T3, T4,
+`taxon_acd88732...`.
 
 **Likely stage**: layout CRF likely labels formal-citation paragraphs
 as `Figure-caption` (T2) or misses them entirely (T4).  Where the
@@ -476,3 +486,59 @@ no anatomical features can be extracted from gibberish.
 Eventually the upstream OCR step should detect and quarantine
 these rather than producing corrupt extracts.
 
+### 10. Description starts mid-sentence
+
+**Symptom**: a Treatment's `description` field begins with
+punctuation (`;`, `,`, `.`) or a lowercase letter, indicating
+the layout CRF's `Description` label started at a paragraph
+boundary that wasn't actually where the source description
+began.  The treatment is real; it's just clipped at the top.
+Different from §5 (whole treatment invalid) — this is a real
+treatment with valid downstream content, just missing its
+opening.
+
+**Evidence**:
+
+* **`taxon_acd88732...`** — discovered during 2026-07-01
+  hand-inspection.  `description` field verbatim:
+  ```
+  ; perithecia epiphyllous, slightly prominent, black, shining;
+  spores subcylindrical, straight or somewhat curved, or
+  subflexuous
+  ```
+  The leading `; ` is a dead giveaway that the source sentence
+  started before this cut point.  Claude correctly identified
+  the 2 features that ARE described (Perithecia + Spores) and
+  labelled them cleanly.  Also co-occurs with §2 (taxonomic
+  citation not extracted) — presumably the citation lived in
+  the clipped-off head of the sentence.
+
+**Affected treatments**: `taxon_acd88732...`; unknown
+corpus-wide rate — worth a scan.
+
+**Detection**: reviewer-detectable by eye (leading punctuation
+or lowercase first char).  Automated detection is easy: regex
+match against `^[;,.\-\s]*[a-z;,.]` on the raw description
+field.  Worth adding to a data-quality audit script.
+
+**Likely stage**: layout CRF's Description label boundary
+detection.  When the actual description-opening sentence spans
+a page break, an inline formatting boundary, or a partial-OCR
+skip, the CRF may pick up mid-sentence rather than at the
+paragraph head.  Correlates with §2 (missing citations) —
+citations often precede the description on the same or previous
+line, so clipping the description head also loses the citation.
+
+**Severity**: low-to-medium.  Claude's annotator handles these
+correctly (produces valid annotations on the surviving
+content); downstream training won't be poisoned since the
+features that ARE labelled are legitimate.  Impact is on
+completeness — those treatments contribute fewer features to
+the training corpus than they should.  If this pattern is
+common, a corpus-wide detect + re-extract pass would restore
+significant training signal.
+
+**Operator action** (Phase 1 hand-review): annotate the
+features that ARE present (per usual conventions); flag the
+treatment for the re-extract queue via a brat AnnotatorNote so
+the eventual re-extraction pass can pick it up.
