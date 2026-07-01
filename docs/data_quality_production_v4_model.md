@@ -542,3 +542,79 @@ significant training signal.
 features that ARE present (per usual conventions); flag the
 treatment for the re-extract queue via a brat AnnotatorNote so
 the eventual re-extraction pass can pick it up.
+
+### 11. Genus + species-in-genus concatenation (`gen. nov.` + `sp. nov.` pattern)
+
+**Symptom**: a treatment doc contains BOTH a new genus
+diagnosis and one or more species descriptions within that
+genus in the same fields.  Distinct from §6 (arbitrary
+multi-species merge) because the two taxa are hierarchically
+related — the species IS a member of the new genus, and both
+sets of anatomical characters are semantically meaningful in
+their own right.
+
+**Evidence**:
+
+* **`taxon_01a01c54...`** — discovered during 2026-07-01
+  hand-review of the 50-treatment intermediate run.
+  `description` field opens with:
+  ```
+  Pseudotrichia Kirschst. gen. nov.
+  Perithecia dispersa vel gregaria, superficialia, solida,
+      carbonacea, coactis vestita; ostiolo papillato ...
+  Asci euparaphysati, clavati vel cylindracei, 8-spori.
+  Sporidia fusiformia, hyalina, pluriseptata.
+  102. Pseudotrichia stromatophila Kirschst.
+  ```
+  The genus diagnosis (`Pseudotrichia … gen. nov.`) followed
+  by its type species (`102. Pseudotrichia stromatophila`)
+  land in the same description field.  Claude correctly
+  identified the dual-level anatomical content — 8 annotations
+  across 5 labels, with 2 each for Asci / Perithecia / Spores
+  (one from the genus diagnosis, one from the species
+  description).
+
+**Affected treatments**: `taxon_01a01c54...`; likely
+representative of a broader pattern in taxonomic papers that
+propose a new genus alongside its type species.
+
+**Likely stage**: layout CRF + treatment-grouper.  The CRF
+labels the paragraph containing both `gen. nov.` and the
+numbered species heading as one Description block; the grouper
+treats the pair as a single treatment.  Not clearly a
+"missed nomenclature boundary" the way §1/§3 are, since both
+nomenclatures ARE recognizable — the question is whether they
+should be split into a parent+child pair or preserved as one
+hierarchical treatment.
+
+**Severity**: medium.  Requires a different sub-fix from §6:
+
+  * **Splitting at the `sp. nov.` boundary** gives us one
+    genus treatment (correct anatomical scope) and one species
+    treatment (also correct anatomical scope), but loses the
+    parent-child taxonomic relationship — the species record
+    no longer "knows" it belongs to the genus.
+  * **Keeping as one treatment** makes downstream tools that
+    assume one-specimen-per-treatment misinterpret the doc.
+    Also inflates annotation counts (double-counting shared
+    features).
+  * A **hierarchical schema** (species treatment carries a
+    ``parent_genus_treatment_id``, or the two are stored as
+    linked docs) captures both correctly, but is a larger
+    change to the pipeline.
+
+**Reviewer action** (Phase 1 hand-review): both sets of
+anatomical descriptions are real and valid.  Two acceptable
+approaches, at reviewer's judgment:
+
+  * Annotate the FIRST taxon only (the genus in this case) —
+    matches §6's "first-species" rule and gives a clean single-
+    taxon golden record.
+  * Annotate BOTH sets and flag the treatment via a brat
+    AnnotatorNote — captures more training signal per API
+    dollar, at the cost of one blended golden record until the
+    grouper fix arrives.
+
+Either way, add a brat AnnotatorNote flagging the treatment
+for the section-classifier re-review queue.  The Trello / fix
+work should treat this as a distinct sub-case from §6.
