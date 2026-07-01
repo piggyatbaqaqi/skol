@@ -40,9 +40,15 @@ from typing import Any, Dict, List, Optional
 STATUS_SUCCESS = 'success'
 STATUS_PARTIAL = 'partial'
 STATUS_ERROR = 'error'
+# Written by bin/select_for_annotation when a treatment is filtered
+# out by the merge-suspect detector BEFORE any bootstrap attempt.
+# Distinguishes 'we decided not to try' from 'we tried and it
+# succeeded/errored/partial'.  See make_skip_status_doc.
+STATUS_SKIPPED_MERGE_SUSPECT = 'skipped_merge_suspect'
 
 _VALID_STATUSES = frozenset({
     STATUS_SUCCESS, STATUS_PARTIAL, STATUS_ERROR,
+    STATUS_SKIPPED_MERGE_SUSPECT,
 })
 
 
@@ -146,6 +152,50 @@ def make_status_doc(
     return doc
 
 
+def make_skip_status_doc(
+    treatment_id: str,
+    metric_value: int,
+    threshold: int,
+    metric_name: str,
+    decided_at: str,
+) -> Dict[str, Any]:
+    """Build the CouchDB status doc for a treatment SKIPPED before
+    the bootstrap pass — e.g., filtered out by the merge-suspect
+    detector in ``bin/select_for_annotation``.
+
+    Distinct from ``make_status_doc`` (which requires an
+    ``AnnotationResult`` from an attempted Claude call): a
+    skipped treatment was never attempted, so ``attempt_count``
+    is 0, ``model`` is None, and ``last_attempt_at`` is None.
+    ``decided_at`` records when the skip decision was made
+    instead.
+
+    The metric value + name + threshold in effect are stored so
+    the decision is reproducible — if the threshold changes
+    later, the operator can re-evaluate skipped treatments by
+    comparing their stored metric_value against the new
+    threshold.  ``bin/select_for_annotation --force`` triggers
+    that re-evaluation.
+    """
+    return {
+        '_id': status_doc_id(treatment_id),
+        'treatment_id': treatment_id,
+        'status': STATUS_SKIPPED_MERGE_SUSPECT,
+        'annotation_count': 0,
+        'dropped_span_count': 0,
+        'dropped_spans': [],
+        'error_message': None,
+        'attempt_count': 0,
+        'last_attempt_at': None,
+        'model': None,
+        'metrics': {
+            metric_name: metric_value,
+            'merge_threshold': threshold,
+            'decided_at': decided_at,
+        },
+    }
+
+
 def classify_result(
     annotations: List[Dict[str, Any]],
     dropped_spans: List[Dict[str, Any]],
@@ -179,7 +229,9 @@ __all__ = (
     'STATUS_SUCCESS',
     'STATUS_PARTIAL',
     'STATUS_ERROR',
+    'STATUS_SKIPPED_MERGE_SUSPECT',
     'status_doc_id',
     'make_status_doc',
+    'make_skip_status_doc',
     'classify_result',
 )

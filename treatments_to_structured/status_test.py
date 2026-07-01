@@ -6,8 +6,10 @@ from treatments_to_structured.status import (
     AnnotationResult,
     STATUS_ERROR,
     STATUS_PARTIAL,
+    STATUS_SKIPPED_MERGE_SUSPECT,
     STATUS_SUCCESS,
     classify_result,
+    make_skip_status_doc,
     make_status_doc,
     status_doc_id,
 )
@@ -331,3 +333,74 @@ class TestMakeStatusDoc:
         assert doc['status'] == 'error'
         assert doc['metrics']['complexity_score'] == 0.5
         assert doc['metrics']['input_tokens'] is None
+
+
+# ---------------------------------------------------------------------------
+# make_skip_status_doc — for the pre-annotation skip case
+# (bin/select_for_annotation's merge-suspect filter)
+# ---------------------------------------------------------------------------
+
+
+class TestMakeSkipStatusDoc:
+    """The skip-status-doc shape.  Distinguishes 'never attempted'
+    (this) from 'attempted and failed/succeeded' (make_status_doc)."""
+
+    def test_status_and_never_attempted_fields(self) -> None:
+        doc = make_skip_status_doc(
+            'taxon_a',
+            metric_value=42,
+            threshold=10,
+            metric_name='n_terms_above_5',
+            decided_at='2026-07-01T00:00:00Z',
+        )
+        assert doc['_id'] == 'taxon_a'
+        assert doc['treatment_id'] == 'taxon_a'
+        assert doc['status'] == STATUS_SKIPPED_MERGE_SUSPECT
+        # Never-attempted markers.
+        assert doc['annotation_count'] == 0
+        assert doc['dropped_span_count'] == 0
+        assert doc['dropped_spans'] == []
+        assert doc['error_message'] is None
+        assert doc['attempt_count'] == 0
+        assert doc['last_attempt_at'] is None
+        assert doc['model'] is None
+
+    def test_metrics_carry_decision_context(self) -> None:
+        """Metric value + name + threshold + timestamp are all
+        needed to reproduce (or re-evaluate) the skip decision if
+        the threshold changes later."""
+        doc = make_skip_status_doc(
+            'taxon_a',
+            metric_value=42,
+            threshold=10,
+            metric_name='n_terms_above_5',
+            decided_at='2026-07-01T00:00:00Z',
+        )
+        assert doc['metrics']['n_terms_above_5'] == 42
+        assert doc['metrics']['merge_threshold'] == 10
+        assert doc['metrics']['decided_at'] == '2026-07-01T00:00:00Z'
+
+    def test_metric_name_parameterized(self) -> None:
+        """The metric name is passed in rather than hardcoded so
+        future detectors (Zipf slope, entropy, ...) can reuse the
+        same skip-doc shape without a new function."""
+        doc = make_skip_status_doc(
+            'taxon_a',
+            metric_value=0.75,
+            threshold=0.5,
+            metric_name='zipf_slope',
+            decided_at='ts',
+        )
+        assert doc['metrics']['zipf_slope'] == 0.75
+        assert 'n_terms_above_5' not in doc['metrics']
+
+    def test_no_rev_in_returned_doc(self) -> None:
+        """Same rule as make_status_doc: caller manages _rev for
+        overwrite.  A --force pass may need to overwrite a prior
+        skip doc with a re-evaluated metric."""
+        doc = make_skip_status_doc(
+            'taxon_a',
+            metric_value=42, threshold=10,
+            metric_name='n_terms_above_5', decided_at='ts',
+        )
+        assert '_rev' not in doc

@@ -39,9 +39,17 @@ from env_config import common_parser, get_env_config  # noqa: E402
 from treatments_to_structured.complexity import (  # noqa: E402
     complexity_score,
 )
+from treatments_to_structured.merge_metric import (  # noqa: E402
+    treatment_merge_metric,
+)
 from treatments_to_structured.select import (  # noqa: E402
     parse_band_spec,
     select_treatments,
+)
+from treatments_to_structured.status import (  # noqa: E402
+    STATUS_SKIPPED_MERGE_SUSPECT,
+    make_skip_status_doc,
+    status_doc_id,
 )
 
 
@@ -59,9 +67,15 @@ def _connect_server(config: Dict[str, Any]) -> Any:
 def score_treatments_in_db(
     treatments_db: Any,
     verbosity: int = 1,
-) -> List[Tuple[str, float]]:
+) -> Tuple[List[Tuple[str, float]], Dict[str, int]]:
     """Iterate every doc in ``treatments_db``, score each, return
-    ``(treatment_id, score)`` for treatments with score > 0.
+    ``(scored, merge_metrics)`` where:
+
+      * ``scored`` — list of ``(treatment_id, complexity_score)``
+        tuples for treatments with score > 0.
+      * ``merge_metrics`` — dict mapping treatment_id → merge
+        metric value.  Populated in the same doc-read pass so no
+        second scan is needed.
 
     Skips _design docs and any doc whose read raises (transient CouchDB
     errors — the build_sources_stats convention).  Treatments scoring
@@ -69,6 +83,7 @@ def score_treatments_in_db(
     be annotated and would only crowd the low band.
     """
     scored: List[Tuple[str, float]] = []
+    merge_metrics: Dict[str, int] = {}
     count = 0
     for doc_id in treatments_db:
         if doc_id.startswith('_design/'):
@@ -86,13 +101,14 @@ def score_treatments_in_db(
         score = complexity_score(doc)
         if score > 0:
             scored.append((doc_id, score))
+            merge_metrics[doc_id] = treatment_merge_metric(doc)
     if verbosity >= 1:
         print(
             f"  Scored {count} treatments total; "
             f"{len(scored)} with non-zero score.",
             file=sys.stderr,
         )
-    return scored
+    return scored, merge_metrics
 
 
 def fetch_annotated_treatment_ids(candidate_db: Any) -> Set[str]:
@@ -124,6 +140,72 @@ def filter_excluded(
     if not excluded_ids:
         return scored
     return [(tid, sc) for tid, sc in scored if tid not in excluded_ids]
+
+
+def fetch_prior_merge_skip_ids(status_db: Any) -> Set[str]:
+    """Return the set of treatment IDs previously flagged as
+    suspected merges (``status == skipped_merge_suspect``).
+
+    Used by ``--exclude-suspected-merges`` in its default
+    (non-``--force``) mode: skip whatever was previously flagged
+    without recomputing the metric, so re-runs converge quickly.
+    ``--force`` bypasses this and recomputes fresh.
+    """
+    ids: Set[str] = set()
+    for row in status_db.view('_all_docs', include_docs=True).rows:
+        if row.doc is None:
+            continue
+        if row.doc.get('status') == STATUS_SKIPPED_MERGE_SUSPECT:
+            ids.add(row.doc['treatment_id'])
+    return ids
+
+
+def apply_merge_filter(
+    scored: List[Tuple[str, float]],
+    merge_metrics: Dict[str, int],
+    threshold: int,
+    already_flagged: Set[str],
+) -> Tuple[
+    List[Tuple[str, float]],
+    List[Tuple[str, int]],
+]:
+    """Filter suspected-merge treatments out of the scored pool.
+
+    Args:
+        scored: The scored population to filter.
+        merge_metrics: id → metric-value map (from
+            ``score_treatments_in_db``).
+        threshold: Metric value at or above which a treatment is
+            flagged as a suspected merge.
+        already_flagged: IDs previously written to the status DB
+            as ``STATUS_SKIPPED_MERGE_SUSPECT`` — filtered out
+            without recomputation.  Pass an empty set to force
+            re-evaluation of every treatment (the ``--force``
+            path).
+
+    Returns:
+        ``(surviving, newly_flagged)`` where:
+          * ``surviving`` — scored entries that survived the
+            filter (kept the same tuple shape so banding /
+            selection still works).
+          * ``newly_flagged`` — list of ``(treatment_id,
+            metric_value)`` for treatments the caller must
+            write skip status docs for.  Excludes
+            already_flagged (those have status docs already).
+    """
+    surviving: List[Tuple[str, float]] = []
+    newly_flagged: List[Tuple[str, int]] = []
+    for tid, score in scored:
+        if tid in already_flagged:
+            # Was previously flagged; drop from pool without
+            # rewriting its status doc.
+            continue
+        metric_value = merge_metrics.get(tid, 0)
+        if metric_value >= threshold:
+            newly_flagged.append((tid, metric_value))
+            continue
+        surviving.append((tid, score))
+    return surviving, newly_flagged
 
 
 def _resolve_band_specs(
@@ -186,7 +268,37 @@ def main() -> int:
             'can be resolved).'
         ),
     )
-    # --verbosity is provided by common_parser() — don't re-declare.
+    # Multi-species-merge filter.  Default ON: hand-inspected
+    # merges get flagged via features_status without leaking into
+    # bootstrap runs.  --no-exclude-suspected-merges to bypass.
+    parser.add_argument(
+        '--exclude-suspected-merges',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Drop treatments whose merge-detection metric "
+            "(treatments_to_structured.merge_metric."
+            "n_terms_above_k) exceeds --merge-threshold, and "
+            "write features_status skip docs recording the "
+            "decision.  Default: on.  Also honors prior skip "
+            "decisions from the status DB unless --force is "
+            "passed (see --force behavior)."
+        ),
+    )
+    parser.add_argument(
+        '--merge-threshold', type=int, default=10, metavar='N',
+        help=(
+            'Treatments whose n_terms_above_5 metric is >= this '
+            'value are flagged as suspected merges when '
+            '--exclude-suspected-merges is on.  Default 10, '
+            'calibrated 2026-07-01 on the 56-treatment sample.  '
+            'Higher threshold = fewer flagged = more permissive.'
+        ),
+    )
+    # --verbosity, --force, --experiment are provided by
+    # common_parser().  --force here means: recompute the merge
+    # metric fresh instead of trusting cached decisions from
+    # features_status.  Useful after tweaking --merge-threshold.
     args = parser.parse_args()
 
     try:
@@ -231,7 +343,9 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    scored = score_treatments_in_db(treatments_db, verbosity)
+    scored, merge_metrics = score_treatments_in_db(
+        treatments_db, verbosity,
+    )
     if not scored:
         print(
             "error: no treatments with non-zero complexity score were "
@@ -287,6 +401,92 @@ def main() -> int:
                 f"  --exclude-annotated: candidate DB "
                 f"{candidate_db_name!r} does not exist yet; "
                 f"no exclusions applied",
+                file=sys.stderr,
+            )
+
+    if args.exclude_suspected_merges:
+        experiment = config.get('experiment_name')
+        if not experiment:
+            print(
+                "error: --exclude-suspected-merges requires "
+                "--experiment (needed to resolve the status DB name)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            exp_doc = server['skol_experiments'][experiment]
+        except Exception:
+            print(
+                f"error: experiment {experiment!r} not found in "
+                f"skol_experiments",
+                file=sys.stderr,
+            )
+            return 2
+        # Reuse the status-DB resolver from bin/llm_annotate_features.
+        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+            resolve_status_db_name,
+        )
+        status_db_name = resolve_status_db_name(
+            experiment, exp_doc, verbosity=verbosity,
+        )
+        # Ensure the status DB exists — we may need to write skip
+        # docs even on the first run.
+        if status_db_name not in server:
+            if verbosity >= 1:
+                print(
+                    f"  Creating status DB {status_db_name!r}",
+                    file=sys.stderr,
+                )
+            status_db = server.create(status_db_name)
+        else:
+            status_db = server[status_db_name]
+
+        # --force bypasses the "trust cached decisions" path and
+        # recomputes the metric fresh.  Without --force, previously
+        # flagged treatments are trusted (no re-computation cost).
+        force_recompute = bool(config.get('force', False))
+        if force_recompute:
+            already_flagged: Set[str] = set()
+        else:
+            already_flagged = fetch_prior_merge_skip_ids(status_db)
+
+        before = len(scored)
+        scored, newly_flagged = apply_merge_filter(
+            scored, merge_metrics, args.merge_threshold,
+            already_flagged=already_flagged,
+        )
+        # Write skip docs for newly-flagged.  Overwrites any prior
+        # doc with fresh metric + threshold + timestamp (matters
+        # under --force).
+        from datetime import datetime, timezone
+        decided_at = datetime.now(timezone.utc).isoformat()
+        for tid, metric_value in newly_flagged:
+            doc = make_skip_status_doc(
+                tid,
+                metric_value=metric_value,
+                threshold=args.merge_threshold,
+                metric_name='n_terms_above_5',
+                decided_at=decided_at,
+            )
+            existing_id = status_doc_id(tid)
+            if existing_id in status_db:
+                doc['_rev'] = status_db[existing_id]['_rev']
+            try:
+                status_db.save(doc)
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"  ERROR writing skip doc for {tid}: {exc}",
+                    file=sys.stderr,
+                )
+        if verbosity >= 1:
+            print(
+                f"  --exclude-suspected-merges "
+                f"(threshold={args.merge_threshold}, "
+                f"{'--force' if force_recompute else 'trust prior'}): "
+                f"dropped {before - len(scored)} treatments "
+                f"({len(already_flagged)} previously flagged; "
+                f"{len(newly_flagged)} newly flagged; "
+                f"{len(scored)} remain to sample from)",
                 file=sys.stderr,
             )
 

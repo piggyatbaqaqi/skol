@@ -18,9 +18,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from select_for_annotation import (  # type: ignore[import]  # noqa: E402
     _resolve_band_specs,
+    apply_merge_filter,
     fetch_annotated_treatment_ids,
+    fetch_prior_merge_skip_ids,
     filter_excluded,
     score_treatments_in_db,
+)
+from treatments_to_structured.status import (  # noqa: E402
+    STATUS_ERROR,
+    STATUS_SKIPPED_MERGE_SUSPECT,
+    STATUS_SUCCESS,
 )
 
 
@@ -95,7 +102,7 @@ class TestScoreTreatmentsInDb:
             '_design/views': {'fake': 'design doc'},
             'taxon_a': {'description': 'Pileus brown 3 cm.'},
         })
-        scored = score_treatments_in_db(db, verbosity=0)
+        scored, _merge_metrics = score_treatments_in_db(db, verbosity=0)
         assert {doc_id for doc_id, _ in scored} == {'taxon_a'}
 
     def test_filters_zero_score_treatments(self) -> None:
@@ -109,7 +116,7 @@ class TestScoreTreatmentsInDb:
                 'description': 'Pileus brown 3 cm.',
             },
         })
-        scored = score_treatments_in_db(db, verbosity=0)
+        scored, _merge_metrics = score_treatments_in_db(db, verbosity=0)
         ids = {doc_id for doc_id, _ in scored}
         assert ids == {'taxon_populated'}
 
@@ -119,7 +126,7 @@ class TestScoreTreatmentsInDb:
             'taxon_a': {'description': 'Pileus brown 3 cm.'},
             'taxon_b': {'description': 'Stipe 5 mm long.'},
         })
-        scored = score_treatments_in_db(db, verbosity=0)
+        scored, _merge_metrics = score_treatments_in_db(db, verbosity=0)
         assert len(scored) == 2
         for doc_id, score in scored:
             assert doc_id.startswith('taxon_')
@@ -136,12 +143,12 @@ class TestScoreTreatmentsInDb:
             },
             raise_on={'taxon_broken'},
         )
-        scored = score_treatments_in_db(db, verbosity=0)
+        scored, _merge_metrics = score_treatments_in_db(db, verbosity=0)
         ids = {doc_id for doc_id, _ in scored}
         assert ids == {'taxon_ok'}
 
     def test_empty_db_returns_empty_list(self) -> None:
-        scored = score_treatments_in_db(_FakeTreatmentsDb({}), verbosity=0)
+        scored, _merge_metrics = score_treatments_in_db(_FakeTreatmentsDb({}), verbosity=0)
         assert scored == []
 
 
@@ -247,3 +254,188 @@ class TestFilterExcluded:
         scored = [('taxon_a', 0.5), ('taxon_b', 0.7)]
         result = filter_excluded(scored, {'taxon_a', 'taxon_b'})
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# score_treatments_in_db also returns merge_metrics
+# ---------------------------------------------------------------------------
+
+
+class TestScoreTreatmentsInDbMergeMetrics:
+    """Post-2026-07-01: the scorer computes merge metrics in the
+    same doc-read pass so the CLI's --exclude-suspected-merges
+    filter doesn't need a second scan of the treatments_prose DB."""
+
+    def test_merge_metrics_populated_for_scored_treatments(self) -> None:
+        """Every treatment that scores > 0 gets a merge_metric."""
+        db = _FakeTreatmentsDb({
+            'taxon_a': {'description': 'Pileus brown 3 cm.'},
+            'taxon_b': {'description': 'Stipe 5 mm long.'},
+        })
+        scored, merge_metrics = score_treatments_in_db(db, verbosity=0)
+        for tid, _score in scored:
+            assert tid in merge_metrics
+            assert isinstance(merge_metrics[tid], int)
+            assert merge_metrics[tid] >= 0
+
+    def test_high_repetition_treatment_scores_high_metric(
+        self,
+    ) -> None:
+        """A treatment where a technical term is repeated many
+        times gets a high merge metric.  Sanity check that the
+        pipeline actually invokes the metric function."""
+        db = _FakeTreatmentsDb({
+            'taxon_merged': {
+                'description': 'perithecia ' * 10 + 'spores ' * 10
+                    + 'asci ' * 10,
+            },
+        })
+        _scored, merge_metrics = score_treatments_in_db(
+            db, verbosity=0,
+        )
+        # 3 terms each appearing 10 times → 3 above k=5.
+        assert merge_metrics['taxon_merged'] == 3
+
+
+# ---------------------------------------------------------------------------
+# fetch_prior_merge_skip_ids — reads previously-flagged treatments
+# out of the status DB so re-runs don't re-flag them.
+# ---------------------------------------------------------------------------
+
+
+class _FakeStatusRow:
+    def __init__(self, doc: Any) -> None:
+        self.doc = doc
+
+
+class _FakeStatusView:
+    def __init__(self, rows: Any) -> None:
+        self.rows = list(rows)
+
+
+class _FakeStatusDb:
+    """Stand-in for the status DB supporting
+    ``view('_all_docs', include_docs=True)``.  Docs indexed by _id."""
+
+    def __init__(self, docs: Any) -> None:
+        self._docs = list(docs)
+
+    def view(self, _name: str, **_kwargs: Any) -> _FakeStatusView:
+        return _FakeStatusView(_FakeStatusRow(d) for d in self._docs)
+
+
+class TestFetchPriorMergeSkipIds:
+    def test_only_skip_status_returned(self) -> None:
+        """Only status=='skipped_merge_suspect' docs contribute."""
+        db = _FakeStatusDb([
+            {
+                'treatment_id': 'taxon_a',
+                'status': STATUS_SKIPPED_MERGE_SUSPECT,
+            },
+            {
+                'treatment_id': 'taxon_b',
+                'status': STATUS_SUCCESS,
+            },
+            {
+                'treatment_id': 'taxon_c',
+                'status': STATUS_ERROR,
+            },
+            {
+                'treatment_id': 'taxon_d',
+                'status': STATUS_SKIPPED_MERGE_SUSPECT,
+            },
+        ])
+        assert fetch_prior_merge_skip_ids(db) == {
+            'taxon_a', 'taxon_d',
+        }
+
+    def test_skips_none_doc_rows(self) -> None:
+        """Defensive: a view row with doc=None (couchdb-python
+        can produce this on deleted docs) is silently skipped."""
+        class _Row:
+            doc = None
+        db = _FakeStatusDb([])
+        # Inject a None-doc row directly
+        db._docs = []
+        db.view = lambda *_, **__: _FakeStatusView([_Row()])
+        assert fetch_prior_merge_skip_ids(db) == set()
+
+    def test_empty_db_returns_empty_set(self) -> None:
+        assert fetch_prior_merge_skip_ids(_FakeStatusDb([])) == set()
+
+
+# ---------------------------------------------------------------------------
+# apply_merge_filter — the core drop-suspected-merges logic
+# ---------------------------------------------------------------------------
+
+
+class TestApplyMergeFilter:
+    def test_filters_by_threshold(self) -> None:
+        """Treatments with metric >= threshold are moved to
+        newly_flagged; others survive."""
+        scored = [
+            ('taxon_low', 0.5),
+            ('taxon_high', 0.7),
+        ]
+        metrics = {'taxon_low': 3, 'taxon_high': 15}
+        surviving, newly_flagged = apply_merge_filter(
+            scored, metrics, threshold=10, already_flagged=set(),
+        )
+        assert surviving == [('taxon_low', 0.5)]
+        assert newly_flagged == [('taxon_high', 15)]
+
+    def test_at_threshold_is_flagged(self) -> None:
+        """>= threshold — at-boundary counts as suspect."""
+        surviving, flagged = apply_merge_filter(
+            [('taxon_a', 0.5)], {'taxon_a': 10},
+            threshold=10, already_flagged=set(),
+        )
+        assert surviving == []
+        assert flagged == [('taxon_a', 10)]
+
+    def test_already_flagged_excluded_without_reflagging(
+        self,
+    ) -> None:
+        """A treatment in already_flagged is silently dropped
+        from the pool AND does NOT reappear in newly_flagged
+        (so we don't rewrite its status doc on every run)."""
+        scored = [('taxon_prior', 0.5), ('taxon_new', 0.7)]
+        metrics = {'taxon_prior': 20, 'taxon_new': 15}
+        surviving, newly_flagged = apply_merge_filter(
+            scored, metrics, threshold=10,
+            already_flagged={'taxon_prior'},
+        )
+        assert surviving == []
+        assert newly_flagged == [('taxon_new', 15)]
+
+    def test_missing_metric_treated_as_zero(self) -> None:
+        """Defensive: a treatment without a merge_metric entry
+        (e.g., excluded during scoring) shouldn't crash the
+        filter — treat as safely-below-threshold."""
+        surviving, flagged = apply_merge_filter(
+            [('taxon_a', 0.5)], {},
+            threshold=10, already_flagged=set(),
+        )
+        assert surviving == [('taxon_a', 0.5)]
+        assert flagged == []
+
+    def test_empty_input_returns_empty(self) -> None:
+        surviving, flagged = apply_merge_filter(
+            [], {}, threshold=10, already_flagged=set(),
+        )
+        assert surviving == []
+        assert flagged == []
+
+    def test_preserves_input_order_of_survivors(self) -> None:
+        """Banding downstream depends on the scored-order being
+        intact after filtering."""
+        scored = [
+            ('taxon_c', 0.9),
+            ('taxon_a', 0.5),
+            ('taxon_b', 0.7),
+        ]
+        metrics = {'taxon_c': 3, 'taxon_a': 15, 'taxon_b': 4}
+        surviving, _ = apply_merge_filter(
+            scored, metrics, threshold=10, already_flagged=set(),
+        )
+        assert surviving == [('taxon_c', 0.9), ('taxon_b', 0.7)]
