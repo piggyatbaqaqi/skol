@@ -234,6 +234,18 @@ def main() -> int:
             'inspection of prior-reviewed work.'
         ),
     )
+    parser.add_argument(
+        '--exclude-reviewed', action='store_true',
+        help=(
+            'Skip treatments that already have annotations in '
+            'features_hand.  Use when extending an existing '
+            'review batch — the exported directory then contains '
+            'only treatments still needing review, so opening it '
+            'in brat gives a clean queue with no already-done '
+            'work to skip past.  No-op when --source hand '
+            '(everything would be excluded).'
+        ),
+    )
     args = parser.parse_args()
 
     config = get_env_config(cli_args=args)
@@ -315,6 +327,48 @@ def main() -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    # Optional exclusion: drop treatments already in features_hand.
+    # No-op when --source is already 'hand' (would exclude everything).
+    if args.exclude_reviewed and args.source != 'hand':
+        from brat_ingest import (  # type: ignore[import]  # noqa: E402
+            resolve_hand_db_name,
+        )
+        hand_db_name = resolve_hand_db_name(
+            experiment, exp_doc, verbosity=verbosity,
+        )
+        if hand_db_name in server:
+            reviewed_ids = list_annotated_treatment_ids(
+                server[hand_db_name],
+            )
+            before = len(treatment_ids)
+            treatment_ids = [
+                tid for tid in treatment_ids
+                if tid not in reviewed_ids
+            ]
+            if verbosity >= 1:
+                print(
+                    f"  --exclude-reviewed: dropped "
+                    f"{before - len(treatment_ids)} treatments "
+                    f"already in {hand_db_name!r} "
+                    f"({len(reviewed_ids)} reviewed; "
+                    f"{len(treatment_ids)} remain to export)",
+                    file=sys.stderr,
+                )
+        elif verbosity >= 1:
+            print(
+                f"  --exclude-reviewed: hand DB "
+                f"{hand_db_name!r} does not exist yet; no "
+                f"exclusions applied",
+                file=sys.stderr,
+            )
+
+    if not treatment_ids:
+        print(
+            "No treatments to export after filters applied.",
+            file=sys.stderr,
+        )
+        return 0
 
     if verbosity >= 1:
         print(
