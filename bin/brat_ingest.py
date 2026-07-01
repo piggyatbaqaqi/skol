@@ -63,6 +63,9 @@ from treatments_to_structured.brat_render import (  # noqa: E402
     parse_brat_ann,
     render,
 )
+from treatments_to_structured.status import (  # noqa: E402
+    status_doc_id,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +331,34 @@ def main() -> int:
             )
         hand_db = server.create(hand_db_name)
 
+    # Resolve the status DB — brat_ingest writes a `reviewer_action`
+    # sub-doc to each treatment's status doc, so 'reviewed but
+    # empty' cases (all annotations rejected) are still detectable
+    # by downstream tools that filter on 'already reviewed'.
+    # Without this, features_hand alone can't distinguish
+    # 'reviewer said no to everything' from 'not yet reviewed'.
+    from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+        resolve_status_db_name,
+    )
+    status_db_name = resolve_status_db_name(
+        experiment, exp_doc, verbosity=verbosity,
+    )
+    if status_db_name in server:
+        status_db = server[status_db_name]
+    else:
+        # If the status DB doesn't exist, the treatment was
+        # (probably) not bootstrapped via Design Y — skip the
+        # reviewer_action write.  brat_ingest still succeeds; the
+        # user just misses the 'reviewed-empty' detection benefit.
+        if verbosity >= 1:
+            print(
+                f"NOTE: status DB {status_db_name!r} does not "
+                f"exist; skipping reviewer_action write "
+                f"(features_hand alone is still authoritative)",
+                file=sys.stderr,
+            )
+        status_db = None
+
     # Per-treatment processing
     totals = {'kept': 0, 'added': 0, 'deleted': 0, 'errors': 0}
     reviewed_at = datetime.now(timezone.utc).isoformat()
@@ -461,6 +492,38 @@ def main() -> int:
                 except Exception as exc:  # noqa: BLE001
                     print(
                         f"  ERROR saving {rd['_id']}: {exc}",
+                        file=sys.stderr,
+                    )
+
+        # Update the treatment's status doc with a reviewer_action
+        # sub-doc so downstream tools can detect "reviewed even
+        # if empty" (all annotations rejected → features_hand has
+        # no entries for this treatment_id).  See the module
+        # docstring for the design rationale.
+        if not dry_run and status_db is not None:
+            sd_id = status_doc_id(tid)
+            try:
+                sd = dict(status_db[sd_id])
+            except Exception:  # noqa: BLE001
+                # No status doc for this treatment — pre-Design-Y
+                # data or manually-imported treatment.  Skip; the
+                # user's features_hand entries are still
+                # authoritative.
+                sd = None
+            if sd is not None:
+                sd['reviewer_action'] = {
+                    'reviewer': reviewer,
+                    'reviewed_at': reviewed_at,
+                    'kept_count': len(result.kept),
+                    'added_count': len(result.added),
+                    'deleted_count': len(result.deleted),
+                }
+                try:
+                    status_db.save(sd)
+                except Exception as exc:  # noqa: BLE001
+                    print(
+                        f"  ERROR writing reviewer_action for "
+                        f"{tid}: {exc}",
                         file=sys.stderr,
                     )
 

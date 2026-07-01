@@ -17,6 +17,7 @@ from brat_export import (  # type: ignore[import]  # noqa: E402
     collect_entity_types,
     fetch_anns_for_treatment,
     list_annotated_treatment_ids,
+    fetch_reviewer_touched_ids,
     render_annotation_conf,
     select_treatment_ids,
 )
@@ -294,3 +295,111 @@ class TestSelectTreatmentIds:
         with pytest.raises(ValueError) as exc:
             select_treatment_ids(db, None)
         assert 'no annotations' in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# fetch_reviewer_touched_ids — reviewed-even-if-empty detection
+# via features_status.reviewer_action (written by brat_ingest).
+# ---------------------------------------------------------------------------
+
+
+class TestFetchReviewerTouchedIds:
+    """Treatments that brat_ingest touched, including the case
+    where the reviewer rejected every annotation (features_hand
+    ends up empty for them).  Complements
+    list_annotated_treatment_ids on features_hand — either
+    presence in features_hand OR presence of reviewer_action in
+    features_status counts as 'reviewed'."""
+
+    def test_only_reviewer_action_docs_returned(self) -> None:
+        docs = [
+            {
+                '_id': 'taxon_reviewed_empty',
+                'treatment_id': 'taxon_reviewed_empty',
+                'status': 'success',
+                'annotation_count': 0,
+                'reviewer_action': {
+                    'reviewer': 'operator@host',
+                    'reviewed_at': '2026-07-01T00:00:00Z',
+                    'kept_count': 0, 'added_count': 0,
+                    'deleted_count': 1,
+                },
+            },
+            {
+                '_id': 'taxon_reviewed_with_kept',
+                'treatment_id': 'taxon_reviewed_with_kept',
+                'status': 'success',
+                'annotation_count': 5,
+                'reviewer_action': {
+                    'reviewer': 'operator@host',
+                    'reviewed_at': '2026-07-01T00:00:00Z',
+                    'kept_count': 5, 'added_count': 0,
+                    'deleted_count': 0,
+                },
+            },
+            {
+                # No reviewer_action — bootstrapped but not
+                # reviewed.  Must NOT appear.
+                '_id': 'taxon_not_reviewed',
+                'treatment_id': 'taxon_not_reviewed',
+                'status': 'success',
+                'annotation_count': 8,
+            },
+            {
+                # skipped_merge_suspect — also not reviewed.
+                '_id': 'taxon_skipped',
+                'treatment_id': 'taxon_skipped',
+                'status': 'skipped_merge_suspect',
+            },
+        ]
+        db = _FakeAnnDb(docs)
+        assert fetch_reviewer_touched_ids(db) == {
+            'taxon_reviewed_empty',
+            'taxon_reviewed_with_kept',
+        }
+
+    def test_reviewed_empty_case_detected(self) -> None:
+        """The headline benefit: a treatment that was reviewed
+        and had every annotation rejected (features_hand empty
+        for it) still counts as reviewed via reviewer_action."""
+        db = _FakeAnnDb([{
+            '_id': 'taxon_empty',
+            'treatment_id': 'taxon_empty',
+            'status': 'success',
+            'annotation_count': 1,  # bootstrap produced 1
+            'reviewer_action': {
+                'kept_count': 0,
+                'added_count': 0,
+                'deleted_count': 1,  # reviewer rejected the 1
+                'reviewer': 'r', 'reviewed_at': 't',
+            },
+        }])
+        assert 'taxon_empty' in fetch_reviewer_touched_ids(db)
+
+    def test_skips_none_doc_rows(self) -> None:
+        """Defensive: deleted-doc rows have doc=None; skip."""
+        class _RowNone:
+            id = 'taxon_deleted'
+            doc = None
+
+        class _StubDb:
+            def view(self, *_, **__):
+                class _V:
+                    rows = [_RowNone()]
+                return _V()
+        assert fetch_reviewer_touched_ids(_StubDb()) == set()
+
+    def test_empty_db(self) -> None:
+        assert fetch_reviewer_touched_ids(_FakeAnnDb([])) == set()
+
+    def test_falls_back_to_row_id_when_treatment_id_missing(
+        self,
+    ) -> None:
+        """Defensive: if a status doc is missing the
+        ``treatment_id`` field (shouldn't happen but defensive
+        against malformed data), fall back to the row _id."""
+        db = _FakeAnnDb([{
+            '_id': 'taxon_a',
+            'reviewer_action': {'kept_count': 0},
+        }])
+        assert fetch_reviewer_touched_ids(db) == {'taxon_a'}

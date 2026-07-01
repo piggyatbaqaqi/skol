@@ -91,6 +91,31 @@ def list_annotated_treatment_ids(
     return sorted(ids)
 
 
+def fetch_reviewer_touched_ids(status_db: Any) -> Set[str]:
+    """Return the set of treatment IDs whose status docs carry a
+    ``reviewer_action`` sub-doc — i.e., the reviewer opened the
+    treatment in brat and hit save, regardless of whether they
+    kept any annotations.
+
+    Written by ``bin/brat_ingest`` since 2026-07-01.  Fills the
+    gap that ``list_annotated_treatment_ids`` on features_hand
+    can't: treatments where the reviewer rejected every
+    annotation leave features_hand empty for that treatment_id,
+    so a hand-DB scan alone can't distinguish 'reviewed and
+    rejected' from 'not yet reviewed'.  The status doc's
+    ``reviewer_action`` field makes the distinction explicit.
+    """
+    ids: Set[str] = set()
+    rows = status_db.view('_all_docs', include_docs=True).rows
+    for row in rows:
+        if row.doc is None:
+            continue
+        if 'reviewer_action' in row.doc:
+            tid = row.doc.get('treatment_id') or row.id
+            ids.add(tid)
+    return ids
+
+
 def fetch_anns_for_treatment(
     annotations_db: Any,
     treatment_id: str,
@@ -328,40 +353,60 @@ def main() -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    # Optional exclusion: drop treatments already in features_hand.
-    # No-op when --source is already 'hand' (would exclude everything).
+    # Optional exclusion: drop treatments already reviewed.
+    # 'Reviewed' comes from two sources:
+    #   1. features_hand — treatments with any kept/added annotation
+    #   2. features_status.reviewer_action — treatments the reviewer
+    #      touched even if all Claude annotations were rejected
+    #      (features_hand has zero entries for them).  Written by
+    #      bin/brat_ingest since 2026-07-01.
+    # Union of the two = complete "already reviewed" set.
+    # No-op when --source is 'hand' (would exclude everything).
     if args.exclude_reviewed and args.source != 'hand':
         from brat_ingest import (  # type: ignore[import]  # noqa: E402
             resolve_hand_db_name,
         )
+        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+            resolve_status_db_name,
+        )
         hand_db_name = resolve_hand_db_name(
             experiment, exp_doc, verbosity=verbosity,
         )
+        status_db_name = resolve_status_db_name(
+            experiment, exp_doc, verbosity=verbosity,
+        )
+        reviewed_ids: Set[str] = set()
         if hand_db_name in server:
-            reviewed_ids = list_annotated_treatment_ids(
+            reviewed_ids |= list_annotated_treatment_ids(
                 server[hand_db_name],
             )
-            before = len(treatment_ids)
-            treatment_ids = [
-                tid for tid in treatment_ids
-                if tid not in reviewed_ids
-            ]
-            if verbosity >= 1:
+        if status_db_name in server:
+            reviewed_ids |= fetch_reviewer_touched_ids(
+                server[status_db_name],
+            )
+        before = len(treatment_ids)
+        treatment_ids = [
+            tid for tid in treatment_ids
+            if tid not in reviewed_ids
+        ]
+        if verbosity >= 1:
+            n_dropped = before - len(treatment_ids)
+            if reviewed_ids:
                 print(
                     f"  --exclude-reviewed: dropped "
-                    f"{before - len(treatment_ids)} treatments "
-                    f"already in {hand_db_name!r} "
-                    f"({len(reviewed_ids)} reviewed; "
+                    f"{n_dropped} treatments "
+                    f"({len(reviewed_ids)} reviewed via "
+                    f"features_hand + features_status; "
                     f"{len(treatment_ids)} remain to export)",
                     file=sys.stderr,
                 )
-        elif verbosity >= 1:
-            print(
-                f"  --exclude-reviewed: hand DB "
-                f"{hand_db_name!r} does not exist yet; no "
-                f"exclusions applied",
-                file=sys.stderr,
-            )
+            else:
+                print(
+                    f"  --exclude-reviewed: no prior reviewed "
+                    f"treatments found (features_hand + "
+                    f"features_status both empty); no exclusions",
+                    file=sys.stderr,
+                )
 
     if not treatment_ids:
         print(
