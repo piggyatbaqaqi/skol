@@ -248,8 +248,29 @@ no actual taxonomic treatments.
   characters of Discussion as `biology`, and bibliography
   fragments in `figure_captions`.  The Treatment is genuinely a
   false positive.
+* **`taxon_fb7bd18d...`** — noted 2026-07-02.  Source paper:
+  "Paraphysoderma sedebokerense GlnS III Is Essential for the
+  Infection of Its Host Haematococcus lacustris" (*Journal of
+  Fungi*, DOI 10.3390/jof8060561).  Experimental gene-function
+  / infection study, not a species description — no
+  `sp. nov.`.  The extracted `description` is verbatim
+  Results/Discussion prose: `is clear from the comparison of
+  the control, featuring a totally collapsed algal culture
+  (Figure 2C) compared with the culture treated with
+  glufosinate remaining green ...`.
+  **Self-quarantining behaviour confirmed**: Claude returned
+  0 annotations on the non-taxonomic prose (correct behaviour),
+  and `bin/brat_export` iterates the candidate DB, so the
+  treatment doesn't appear in the review directory at all.
+  §5 false positives silently drop out of the reviewer queue
+  when Claude finds no anatomical features — same mechanism
+  that filters the §9 taxon_cda95f9f case.  Detection: the
+  `annotation_count = 0` field in the status doc is a
+  post-hoc signal for §5 candidates; combined with
+  `synthetic_nomenclature = True` (§2 flag) it's a strong
+  post-bootstrap marker for corpus-cleanup work.
 
-**Affected treatments**: T1.
+**Affected treatments**: T1, `taxon_fb7bd18d...`.
 
 **Likely stage**: the treatment-grouper's
 `synthetic_nomenclature` fallback (`treatment.py:360-366`) creates
