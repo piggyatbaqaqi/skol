@@ -1083,6 +1083,27 @@ opening.
   Combines with §6 findings (this treatment is a multi-species
   merge) — the Nomenclature-tail leak here is the *first* of
   several fragmentary citations that ended up in Description.
+* **`taxon_23d479f4...`** — noted 2026-07-02, revised.
+  Description opens with a list of carbon-source
+  substrates (`glycerol, methanol, hexadecane,
+  erythritol, levulinic acid, …`).  Nomenclature is
+  real; single species.  Missing lines at both top AND
+  bottom of the description.  Two-ended clipping
+  variant — same class as taxon_d2d26d25 but here the
+  clipping falls on legitimate description content
+  rather than a mis-routed diagnosis.
+  **Correction 2026-07-02 (operator)**: Cultural
+  characteristics DO generally belong in Description;
+  this is NOT a §12 leak.  The v4 layout CRF does not
+  emit "Methods" / "Results" section labels either.
+  What we see is a Cultural characteristics section of
+  a legitimate treatment that was clipped at both ends
+  during extraction.  §10 detector fired correctly
+  (leading `glycerol,` lowercase); the double-ended
+  clipping needs a separate detector — text ends with a
+  clause fragment or trailing comma rather than a
+  sentence-final period could serve as the tail-clip
+  signal.
 * **`taxon_7fbc71a8...`** — noted 2026-07-02.  Clean
   low-noise §10 case: description opens with
   `subcuticular, black, elliptical to elongated-elliptical,
@@ -1332,36 +1353,6 @@ assembly**:
     ending up in prose fields.  Assembly-aware routing
     (`Type` label → `type_designation` field, not
     `description`) would fix it.
-  * **`taxon_23d479f4`** — Description field contains
-    what looks like carbon-source utilization data
-    (opens with `glycerol, methanol, hexadecane,
-    erythritol, levulinic acid, …`) rather than a
-    normal anatomical description.  Missing lines at
-    both top AND bottom.  Nomenclature is real
-    (`synthetic_nomenclature = False`) and the
-    treatment appears to be a single species; only the
-    Description content is off.  Two interpretations
-    the operator floated:
-      (a) content is legitimate Cultural characteristics
-          (some asexual moulds and yeasts include
-          detailed physiological / carbon-source
-          assays in their treatments) that landed in
-          Description via a lost label.  A label-aware
-          assembler would route it to a `Cultural
-          characteristics` field.
-      (b) content is from experimental Methods /
-          Results sections not intended as taxonomic
-          content, extracted by mistake.
-    Distinguishing between (a) and (b) requires source
-    inspection; the extracted content alone reads
-    consistent with either.  Detection: `§10:mid_sentence`
-    fired correctly (leading `glycerol,` is lowercase).
-    Adds a distinct sub-shape to the §12 leak list —
-    experimental/physiological content in Description,
-    distinct from the anatomical-block leaks
-    (Diagnosis-into-Description, Materials-examined-into-
-    Description) and from the figure-caption leak in
-    taxon_ea7b0ed7.
   * **`taxon_ea7b0ed7`** — a figure caption landed
     embedded mid-Description instead of the doc's
     `figure_captions` field.  The treatment is otherwise
