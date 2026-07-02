@@ -1080,6 +1080,32 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_83e36037...`** — noted 2026-07-02.  **All
+  current §6 detectors missed** this two-species merge:
+  merge_metric = 4 (below threshold), no header repetition,
+  no `sp. nov.` count, no Latin blocks, no
+  mid-body `Description:` header, no §10 clipping.  The
+  single strong marker is a **formally-cited authored
+  binomial in the middle of the description field**:
+  `Trichaptum perrottetii (Lév.) Ryvarden`.  No
+  legitimate description field should contain a formal
+  authored citation — this is the §6-idea-#2 (gnfinder /
+  gnparser) target signal in its cleanest form.  Adds
+  urgency to implementing gnfinder detection ahead of
+  the next bootstrap run.
+
+  **Diagnosis-scoping caveat reinforced**: the diagnosis
+  field contains **3 legitimate taxonomic citations** —
+  comparisons with related species, which is what a
+  diagnosis DOES (same insight as taxon_9e048013's
+  comparative-diagnosis false positive).  gnfinder
+  detection must scope to `description` only; folding
+  the diagnosis in would guarantee false positives on
+  every comparative diagnosis.  This treatment is a
+  precise validation of the Description-only scoping
+  rule: 1 citation in Description (merge) vs 3
+  citations in Diagnosis (normal).
+
 * **`taxon_a21a83f4...`** — noted 2026-07-02.  Extreme
   §10 + missed-§6 case.  Description opens with a **single
   clipped word `inconspicuous.`** — the tail of a sentence
