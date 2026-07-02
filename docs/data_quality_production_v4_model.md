@@ -376,6 +376,36 @@ two or more distinct species.
   survives compact 2-species cases the term-frequency
   approach misses.
 
+  **Follow-up 2026-07-02**: closer inspection surfaces three
+  additional details that recontextualize the case.
+    - **Diagnosis-block leak into Description**: most of what
+      SHOULD have been in the `diagnosis` field is present in
+      `description` instead — another instance of the
+      §12 assembly-loses-labels pattern.  The layout CRF
+      likely tagged the block `Diagnosis`; the grouper
+      flattened it into Description.
+    - **Heterogeneous OCR quality within one treatment**: the
+      previously-noted `Brumm., spec. llOU.` is the worst
+      case, but not universal.  Some embedded citations are
+      only lightly corrupted — e.g., `Mycostigtna Jiilich,
+      gm . nov.` is one character (`m`→`n`) plus one stray
+      space away from `Mycostigtna Jülich, gn. nov.` (§11's
+      `gen. nov.` pattern under OCR).  gnfinder + fuzzy
+      matching would have partial coverage even here: the
+      lightly-corrupted citations parse; heavily-corrupted
+      ones don't.  Argues gnfinder detection (§6 idea #2)
+      is worth trying even on high-OCR-noise treatments,
+      not written off wholesale.
+    - **§11 hierarchical pattern is also present** —
+      `Mycostigtna … gn. nov.` is a new genus (§11) buried
+      inside this multi-species merge.  This treatment
+      compounds §6 (multi-species merge), §11 (new genus),
+      §10 (Nomenclature-tail leak into Description), and
+      §12 (Diagnosis leaked into Description).  Useful as
+      a compound-failure exemplar for regression testing —
+      a fixer that clears one class shouldn't regress the
+      others.
+
 **Affected treatments**: T3, T5, `taxon_592128a8...`.
 
 **Likely stage**: treatment-grouper's species-boundary detection.
@@ -924,6 +954,13 @@ assembly**:
     Description because the classifier lacked a `Key` label.
     Adding one gives assembly a way to route them elsewhere
     without reaching for regex.
+  * **`taxon_572d470e`** — most of a `Diagnosis` block leaked
+    into the Description field.  Same shape as
+    taxon_2a9d07e6's Diagnosis-header duplication, but this
+    time it's not just the header — it's the entire block
+    that got mislabelled/relocated.  A label-aware assembler
+    would route Diagnosis-tagged segments to `diagnosis` and
+    leave Description clean.
 
 **Proposal (not a plan yet)**: pass segment-level
 `(section_label, text)` tuples through to the assembly stage
