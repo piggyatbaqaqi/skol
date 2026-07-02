@@ -405,6 +405,43 @@ two or more distinct species.
       a compound-failure exemplar for regression testing —
       a fixer that clears one class shouldn't regress the
       others.
+* **`taxon_95dbdfb9...`** — noted 2026-07-02.  Compound
+  §6 + §9 + §12 case with a **detector-topology observation**:
+  the merge-metric filter returned 7 (**below** the
+  threshold of 10) — MISSED — but the header-count
+  detector counted 3 `Description:` headers and flagged
+  it correctly (`§6:multi_description`).  First observed
+  case where §6 idea #3 catches a merge that the
+  term-frequency metric doesn't.  Argues header-count
+  should be promoted to a first-class filter, not just an
+  idea in the follow-up list.
+    - **3 `Illustration:` + `Description:` header pairs**
+      — one per constituent species, in the illustrated-
+      monograph format ("Illustration: Braun et al. …"
+      then a Description block).  Adds `Illustration:` to
+      the §6 idea #3 keyword watchlist.
+    - **U+FFFD noise runs embedded interstitially** —
+      several long strings of `�` characters within the
+      description.  Text before and after the noise
+      sometimes flows together (OCR dropped a word or two)
+      and sometimes reads like something bigger got lost.
+      Distinct from taxon_cda95f9f's §9 case (which was
+      whole-block corruption that killed Claude entirely);
+      here Claude produced 19 annotations, so the
+      interstitial noise is partial rather than fatal.
+      See §9 for the extended pattern.
+    - **Holotype designation at end of Description** —
+      Type/Holotype content that should have been under a
+      Type block landed in Description.  Same
+      assembly-drops-labels shape as taxon_572d470e's
+      Diagnosis-in-Description and taxon_f00f8353's
+      Materials_examined-in-Description leaks.  Another
+      §12 instance.
+  Reviewer treatment: 3-species merge; apply the §0
+  first-species-only rule.  The interstitial U+FFFD noise
+  may force skipping some anatomical clauses per §0 rule
+  2 if the noise obscures the feature value.
+
 * **`taxon_876c18ec...`** — noted 2026-07-02.  Description
   opens with **4 `Colonies (Fig. 1)` blocks** — one per
   constituent species — plus 4 downstream lowercase
@@ -674,12 +711,15 @@ Ideas for a better metric that would catch these:
      section-header keyword appearing at most once; two or
      more of the same header is a strong merge signal.
      Concrete headers to watch — `Diagnosis:`, `Description:`,
-     `Observations:`, `Cultural characteristics`, `Culture
-     characteristics`, `Colonies on`, `Etymology:`,
-     `Habitat:`, `Type:`, `Holotype:`.  `taxon_2a9d07e6` had
-     two `Diagnosis:` headers; `taxon_592128a8` had three
-     `Observations:` headers; `taxon_e74d89b1` had many
-     `Cultural characteristics` sections.  Pre-bootstrap;
+     `Observations:`, `Illustration:`, `Cultural
+     characteristics`, `Culture characteristics`,
+     `Colonies on`, `Etymology:`, `Habitat:`, `Type:`,
+     `Holotype:`.  `taxon_2a9d07e6` had two `Diagnosis:`
+     headers; `taxon_592128a8` had three `Observations:`
+     headers; `taxon_e74d89b1` had many `Cultural
+     characteristics` sections; `taxon_95dbdfb9` had 3
+     `Illustration:` + 3 `Description:` pairs (illustrated
+     monograph format).  Pre-bootstrap;
      cheap case-insensitive regex scan.  Culturally-heavy
      treatments (asexual moulds, yeasts, plant pathogens)
      require the extended keyword list — the
@@ -938,8 +978,23 @@ Fauxton as long strings of replacement-glyph boxes.
   to annotate it (returned `content=[]`, 1 output token); the
   Phase 1 bootstrap reports as `status: error` with the
   diagnostic message added in commit (to-be).
+* **`taxon_95dbdfb9...`** (interstitial-noise variant,
+  noted 2026-07-02).  Description contains several long
+  U+FFFD runs but text before and after each run is legible
+  and mostly coherent — sometimes the surrounding text flows
+  together (looks like the OCR dropped a word or two);
+  sometimes it reads like a bigger chunk got lost.  **Not
+  fatal to the annotator**: Claude produced 19 annotations
+  (contrast with cda95f9f where Claude gave up entirely).
+  Sub-symptom shape distinguished from cda95f9f: interstitial
+  noise inside otherwise-recoverable prose vs. whole-block
+  corruption.  Detection would use the same U+FFFD-density
+  metric but with a lower threshold — e.g., any single run
+  of ≥ 20 consecutive U+FFFD chars is a partial-corruption
+  signal even when the overall density stays under 5 %.
 
-**Affected treatments**: `taxon_cda95f9f...`; likely others —
+**Affected treatments**: `taxon_cda95f9f...` (fatal),
+`taxon_95dbdfb9...` (interstitial); likely others —
 worth a corpus-wide scan with `count_replacement_chars(text) /
 len(text) > 0.05` as the heuristic.
 
@@ -1155,6 +1210,14 @@ assembly**:
     that got mislabelled/relocated.  A label-aware assembler
     would route Diagnosis-tagged segments to `diagnosis` and
     leave Description clean.
+  * **`taxon_95dbdfb9`** — Holotype designation landed at
+    the end of Description instead of under a `Type` /
+    `Holotype` block.  Same class as
+    taxon_f00f8353's Materials_examined leak and
+    taxon_572d470e's Diagnosis leak — Type-family metadata
+    ending up in prose fields.  Assembly-aware routing
+    (`Type` label → `type_designation` field, not
+    `description`) would fix it.
 
 **Proposal (not a plan yet)**: pass segment-level
 `(section_label, text)` tuples through to the assembly stage
