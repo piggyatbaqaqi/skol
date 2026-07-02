@@ -1285,6 +1285,25 @@ assembly**:
     ending up in prose fields.  Assembly-aware routing
     (`Type` label → `type_designation` field, not
     `description`) would fix it.
+  * **`taxon_d2d26d25`** — a partial Diagnosis block sits
+    at the end of Description, missing leading AND
+    trailing content (fragmentary at both ends), while the
+    Diagnosis field itself is EMPTY.  Compound failure:
+    (1) routing — Diagnosis label mis-routed to
+    Description; (2) clipping — the diagnosis fragment has
+    been truncated at both ends, so text that WAS in the
+    original diagnosis is nowhere in the doc.  Distinct
+    from taxon_572d470e's whole-Diagnosis leak (which
+    preserved the block, just put it in the wrong field);
+    here content is also lost.  Label-aware assembly would
+    fix (1); a "diagnosis boundaries clipped" detector
+    would catch (2) — a heuristic like "description ends
+    with a telegraphic Latin-morphology clause" or "diag
+    field empty AND description contains a
+    morphologically-Latin tail" could surface these.
+    Currently no detector fires (merge_metric = 3;
+    diagnosis field empty; description doesn't start
+    mid-sentence).
 
 **Proposal (not a plan yet)**: pass segment-level
 `(section_label, text)` tuples through to the assembly stage
