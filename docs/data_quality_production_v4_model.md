@@ -96,11 +96,16 @@ is not necessarily an error; a citation in `description` is.
   taxon_2a9d07e6 and T3.  Detector implications: neither
   §10 `desc_starts_mid_sentence` (starts with a capital)
   nor `mid_body_description_header` (no `Description:`
-  header) fires.  The gnfinder detection idea below would
-  catch it if scoped to the FIRST LINE of Description; a
-  cheaper regex signal is "description first-line matches
-  the shape `Genus species (Author) Author, …`" which
-  survives OCR errors of the kind we see here.
+  header) fires.  gnfinder would NOT catch this specific case — 2026-07-02
+  testing confirmed the `/` mid-genus (`Mycovellosiel/a`)
+  defeats both gnfinder and gnparser even with fuzzy
+  options enabled.  This treatment falls in the "mid-word
+  character-substitution" gap in the §6 idea #2 OCR
+  tolerance measurements.  Cheaper regex signal that would
+  catch it: "description first-line matches the shape
+  `Genus[-alpha-] species[-alpha-] (Author) Author, …`" —
+  a shape-based regex tolerating slashes/dots/digits
+  inside the token positions where letters should be.
 
 **Affected treatments**: T3, `taxon_2a9d07e6...`,
 `taxon_2f276bfa...`.
@@ -427,16 +432,21 @@ two or more distinct species.
       likely tagged the block `Diagnosis`; the grouper
       flattened it into Description.
     - **Heterogeneous OCR quality within one treatment**: the
-      previously-noted `Brumm., spec. llOU.` is the worst
-      case, but not universal.  Some embedded citations are
-      only lightly corrupted — e.g., `Mycostigtna Jiilich,
-      gm . nov.` is one character (`m`→`n`) plus one stray
-      space away from `Mycostigtna Jülich, gn. nov.` (§11's
-      `gen. nov.` pattern under OCR).  gnfinder + fuzzy
-      matching would have partial coverage even here: the
-      lightly-corrupted citations parse; heavily-corrupted
-      ones don't.  Argues gnfinder detection (§6 idea #2)
-      is worth trying even on high-OCR-noise treatments,
+      previously-noted `Brumm., spec. llOU.` looked like the
+      worst case, but 2026-07-02 curl testing against local
+      gnfinder revealed the picture is more favourable than
+      assumed.  **The binomial `Saccobolus sphaerosporus`
+      matches cleanly** even followed by the garbage
+      `Brumm., spec. llOU.` — gnfinder tolerates
+      authority-suffix corruption.  What still fails is
+      mid-word character substitution inside the binomial
+      itself: `Mycostigtna` (the same treatment's genus
+      name) doesn't match at all.  So gnfinder catches
+      more of this treatment's citations than expected —
+      just not the `gm . nov.` fragment whose genus is
+      itself corrupted.  Argues gnfinder detection (§6
+      idea #2) is worth trying even on high-OCR-noise
+      treatments,
       not written off wholesale.
     - **§11 hierarchical pattern is also present** —
       `Mycostigtna … gn. nov.` is a new genus (§11) buried
@@ -760,10 +770,32 @@ Ideas for a better metric that would catch these:
      caught the taxon_2a9d07e6 case (which the term-frequency
      metric missed with a value of 0).  Pre-bootstrap; no API
      spend needed.  Compatible with the existing local
-     gnfinder/gnparser install.  Caveat: fails on
-     heavily-OCR-corrupted binomials (e.g., `taxon_572d470e`'s
-     `spec. llOU.` for `spec. nov.`) — the Latin/English
-     signal is more OCR-robust.
+     gnfinder/gnparser install.
+     **OCR tolerance — measured 2026-07-02** (curl tests
+     against `http://localhost:9080/9081`):
+       * Clean binomials matched: `Trichaptum perrottetii
+         (Lév.) Ryvarden` (taxon_83e36037) → match.
+       * Binomials with clean genus/species tokens but
+         corrupt AUTHORITY tokens matched: `Saccobolus
+         sphaerosporus Brumm., spec. llOU.`
+         (taxon_572d470e) → binomial matched cleanly; the
+         `spec. llOU.` garbage was ignored.  So the
+         earlier "gnfinder defeated by OCR" caveat was too
+         pessimistic — authority-suffix corruption is
+         tolerated.
+       * Binomials with mid-word character substitution
+         DID fail: `Mycovellosiel/a micranlhae`
+         (taxon_2f276bfa; `/` substituting for `l` in
+         genus) → no match, even with `allMatches=True`
+         and `oddsDetails=True`.  Similarly
+         `Mycostigtna` (taxon_572d470e's `gm . nov.`
+         fragment).
+     Net: gnfinder covers more of the corpus than we
+     initially thought; only mid-word character substitution
+     defeats it.  Installing `gnverifier` (fuzzy match
+     against a reference database — not currently running
+     locally) would extend coverage further at the cost of
+     network / storage / one more service.
   3. **Count section-header keyword repetitions in the raw
      description**.  A single-species treatment has each
      section-header keyword appearing at most once; two or
