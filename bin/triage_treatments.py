@@ -73,6 +73,7 @@ CSV_COLUMNS: List[str] = [
     'n_key_couplets',
     'desc_starts_mid_sentence',
     'latin_block_count',
+    'mid_body_description_header',
     'synthetic_nomenclature',
     'predicted_issues',
     'first_line',
@@ -189,6 +190,7 @@ def build_row(
             'n_key_couplets': 0,
             'desc_starts_mid_sentence': False,
             'latin_block_count': 0,
+            'mid_body_description_header': False,
             'synthetic_nomenclature': False,
         }
         merge_metric = 0
@@ -234,6 +236,8 @@ def build_row(
         'desc_starts_mid_sentence':
             signals['desc_starts_mid_sentence'],
         'latin_block_count': signals['latin_block_count'],
+        'mid_body_description_header':
+            signals['mid_body_description_header'],
         'synthetic_nomenclature':
             signals['synthetic_nomenclature'],
         'predicted_issues': issues,

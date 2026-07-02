@@ -7,6 +7,7 @@ from treatments_to_structured.triage_signals import (
     count_sp_nov,
     desc_starts_mid_sentence,
     latin_block_count,
+    mid_body_description_header,
     predicted_issues,
     treatment_signals,
 )
@@ -33,6 +34,75 @@ class TestCountDiagnosisHeaders:
 
     def test_empty(self) -> None:
         assert count_diagnosis_headers('') == 0
+
+    def test_em_dash_header(self) -> None:
+        """The taxon_8f93bded case: `Diagnosis —` (em-dash)
+        should count as a Diagnosis header, not just the
+        literal-colon form."""
+        text = 'Diagnosis — Robust bright reddish orange basidiomes'
+        assert count_diagnosis_headers(text) == 1
+
+    def test_en_dash_and_hyphen_forms(self) -> None:
+        """Any of colon, hyphen, en-dash, em-dash after
+        `Diagnosis` counts as a header."""
+        assert count_diagnosis_headers('Diagnosis- brown') == 1
+        assert count_diagnosis_headers('Diagnosis – brown') == 1  # en-dash
+        assert count_diagnosis_headers('Diagnosis: brown') == 1
+
+    def test_prose_mention_not_counted(self) -> None:
+        """`Diagnosis` used in prose (no header punctuation)
+        must not count."""
+        text = 'A diagnosis of this species is difficult.'
+        assert count_diagnosis_headers(text) == 0
+
+
+class TestMidBodyDescriptionHeader:
+    """Fires when a `Description:` header appears at offset > 0
+    inside a description field without a preceding Diagnosis
+    header (§6 refinement for taxon_a21a83f4)."""
+
+    def test_no_header_is_false(self) -> None:
+        assert not mid_body_description_header('Pileus brown 3 cm.')
+
+    def test_offset_zero_is_false(self) -> None:
+        """A single `Description:` at position 0 is the field's
+        own header — not a species boundary."""
+        text = 'Description: Pileus brown 3 cm.'
+        assert not mid_body_description_header(text)
+
+    def test_mid_body_no_diagnosis_fires(self) -> None:
+        """The taxon_a21a83f4 case: description opens with
+        clipped anatomy, then a mid-body `Description:` starts
+        species 2."""
+        text = (
+            'inconspicuous. Mycelium internal; hyphae branched, '
+            'septate.  Later text ...\n'
+            'Description: Second species starts here.'
+        )
+        assert mid_body_description_header(text)
+
+    def test_after_diagnosis_is_false(self) -> None:
+        """The taxon_8f93bded-shape case: `Diagnosis —` block
+        followed by `Description:` is a legitimate single-species
+        two-section structure, NOT a merge."""
+        text = (
+            'Diagnosis — Robust reddish-orange basidiomes with '
+            'plane pileus.\n'
+            'Description: Pileus 30-60 mm.'
+        )
+        assert not mid_body_description_header(text)
+
+    def test_after_diagnosis_colon_is_false(self) -> None:
+        """Same as above but with the literal-colon Diagnosis
+        form."""
+        text = (
+            'Diagnosis: Basidiomes reddish orange.\n'
+            'Description: Pileus 30-60 mm.'
+        )
+        assert not mid_body_description_header(text)
+
+    def test_empty_is_false(self) -> None:
+        assert not mid_body_description_header('')
 
 
 class TestCountDescriptionHeaders:
@@ -172,6 +242,7 @@ class TestTreatmentSignals:
             'n_diagnosis_headers', 'n_description_headers',
             'n_sp_nov', 'n_key_couplets',
             'desc_starts_mid_sentence', 'latin_block_count',
+            'mid_body_description_header',
             'synthetic_nomenclature',
         }
         assert set(s.keys()) == expected_keys
@@ -240,6 +311,24 @@ class TestPredictedIssues:
         assert '§6:multi_sp_nov' in result
         assert '§6:latin_alt' in result
         assert '|' in result
+
+    def test_mid_body_desc_flag(self) -> None:
+        """The taxon_a21a83f4 refinement: signals dict carries
+        a `mid_body_description_header` boolean; predicted_issues
+        fires §6:mid_body_desc when True."""
+        signals = {
+            'desc_length': 2000,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 1,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'mid_body_description_header': True,
+        }
+        result = predicted_issues(signals, merge_metric=5)
+        assert '§6:mid_body_desc' in result
 
     def test_key_short_triggers(self) -> None:
         """The taxon_5b0a8ce7 pattern: short description with

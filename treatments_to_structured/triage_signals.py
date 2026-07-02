@@ -61,19 +61,29 @@ _LATIN_VOCAB = frozenset({
 _TOKEN_RE = re.compile(r"[a-zA-Z]+")
 
 
+# Diagnosis / Description header punctuation.  Sources use any of
+# `:`, `-`, `–` (en-dash), `—` (em-dash) between the label and the
+# body — all count as headers.  taxon_8f93bded's `Diagnosis —`
+# opener slipped past the earlier literal-colon regex.
+_DIAG_HEADER_RE = re.compile(r'\bDiagnosis\s*[-–—:]')
+_DESC_HEADER_RE = re.compile(r'\bDescription\s*[-–—:]')
+
+
 def count_diagnosis_headers(text: str) -> int:
-    """Count `Diagnosis:` header occurrences.
+    """Count `Diagnosis:` / `Diagnosis —` / `Diagnosis –` /
+    `Diagnosis-` header occurrences.
 
     Two or more in one description is a strong multi-species
     signal (each species has its own Diagnosis section).  §6.
     """
     if not text:
         return 0
-    return len(re.findall(r'\bDiagnosis:', text))
+    return len(_DIAG_HEADER_RE.findall(text))
 
 
 def count_description_headers(text: str) -> int:
-    """Count `Description:` header occurrences.
+    """Count `Description:` / `Description —` / `Description –` /
+    `Description-` header occurrences.
 
     Similar to count_diagnosis_headers but weaker (some real
     descriptions may include the word 'Description' in prose).
@@ -81,7 +91,33 @@ def count_description_headers(text: str) -> int:
     """
     if not text:
         return 0
-    return len(re.findall(r'\bDescription:', text))
+    return len(_DESC_HEADER_RE.findall(text))
+
+
+def mid_body_description_header(text: str) -> bool:
+    """True if a `Description:` header appears at offset > 0
+    inside the raw description field WITHOUT a preceding
+    Diagnosis header — a species-boundary signal (§6 refinement
+    from taxon_a21a83f4).
+
+    Rationale: the description field IS the description.  The
+    only legitimate offset for a `Description:` header inside
+    it is 0 (if the field carries its own header at all).  A
+    mid-body `Description:` at offset > 0 signals a second
+    species — UNLESS a `Diagnosis` block precedes it, in which
+    case the `Description:` is a section boundary within one
+    species (Latin/English Diagnosis followed by the main
+    English Description; taxon_8f93bded-shape structure).
+    """
+    if not text:
+        return False
+    match = _DESC_HEADER_RE.search(text)
+    if match is None or match.start() == 0:
+        return False
+    preceding = text[:match.start()]
+    if _DIAG_HEADER_RE.search(preceding):
+        return False
+    return True
 
 
 def count_sp_nov(text: str) -> int:
@@ -213,6 +249,8 @@ def treatment_signals(treatment: Dict[str, Any]) -> Dict[str, Any]:
         'desc_starts_mid_sentence':
             desc_starts_mid_sentence(desc),
         'latin_block_count': latin_block_count(desc),
+        'mid_body_description_header':
+            mid_body_description_header(desc),
         'synthetic_nomenclature':
             bool(treatment.get('synthetic_nomenclature')),
     }
@@ -244,6 +282,12 @@ def predicted_issues(
         flags.append('§6:multi_diagnosis')
     if signals.get('n_description_headers', 0) >= 2:
         flags.append('§6:multi_description')
+    # §6 refinement (taxon_a21a83f4): a `Description:` header at
+    # offset > 0 without a preceding Diagnosis header marks a
+    # species boundary even when count == 1.  Independent of the
+    # multi_description flag — both can fire.
+    if signals.get('mid_body_description_header'):
+        flags.append('§6:mid_body_desc')
     if signals.get('n_sp_nov', 0) >= 2:
         flags.append('§6:multi_sp_nov')
     if signals.get('latin_block_count', 0) >= 2:
@@ -260,6 +304,7 @@ __all__ = (
     'count_key_couplets',
     'desc_starts_mid_sentence',
     'latin_block_count',
+    'mid_body_description_header',
     'treatment_signals',
     'predicted_issues',
 )
