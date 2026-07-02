@@ -1302,6 +1302,48 @@ hierarchical treatment.
     linked docs) captures both correctly, but is a larger
     change to the pipeline.
 
+**Search-UX revision (operator, 2026-07-02)**: on
+re-inspection of taxon_01a01c54, the operator questions
+whether "one treatment per taxon" is even the right target
+for the search product.  A `gen. nov.` and its type
+species genuinely belong together in the reader's model —
+a search hit that surfaces the genus AND its type species
+in the same result panel is arguably more useful than two
+separate hits users have to correlate manually.  This
+shifts the design question:
+
+  * If the search product treats the gen. nov. + type sp.
+    pair as ONE natural search unit, then the "single
+    treatment with both" outcome (option 2 above) becomes
+    the intended behaviour rather than an assembly failure.
+    Downstream tools that assume one-specimen-per-treatment
+    are the thing that's wrong.
+  * The hierarchical schema (option 3) is still cleaner
+    for structured queries ("all species in genus X") but
+    the flat "genus + type species as one search unit"
+    representation may be what's needed for the
+    reader-facing search product.
+
+Not a decision yet — recorded because it changes the
+framing of the §11 "fix" question.  Might make sense to
+prototype a search UI over the current corpus (which
+already contains these blended treatments) before
+committing to a schema change.
+
+**Latin-only observation (operator, 2026-07-02)**: for
+taxon_01a01c54 specifically, only the LATIN description
+was captured; the matching English descriptions were not
+picked up.  The Latin is the ICBN-required diagnosis; the
+English is the modern-reader description.  Missing the
+English is a separate assembly-drops-content issue —
+argues the extractor treated the English description
+paragraphs as different section labels (or dropped them
+entirely at a language boundary).  Another §12
+label-aware-assembly instance: preserving segment labels
+would make the "capture BOTH the Latin diagnosis AND the
+English description under this treatment" rule
+tractable.
+
 **Reviewer action** (Phase 1 hand-review): both sets of
 anatomical descriptions are real and valid.  Two acceptable
 approaches, at reviewer's judgment:
