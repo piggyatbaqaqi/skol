@@ -405,6 +405,40 @@ two or more distinct species.
       a compound-failure exemplar for regression testing —
       a fixer that clears one class shouldn't regress the
       others.
+* **`taxon_f00f8353...`** — noted 2026-07-02.  Compound
+  §6 + §10 case:
+    - **Description opens with `thick.`** — a canonical
+      clipped-anatomical-dimension opening.  The source line
+      was almost certainly `Apothecia 200 µm thick.` or
+      similar; only the tail survived.  See §10 for the
+      general pattern.
+    - **Two separate diagnosis blocks** in the description,
+      but **the triage detector missed them** —
+      `n_diagnosis_headers` = 0 despite the operator seeing
+      two distinct diagnoses on inspection.  The
+      diagnosis-header regex in `triage_signals.py` is
+      literal `\bDiagnosis:`; this treatment uses a different
+      boundary marker (likely the layout CRF labelled the
+      blocks `Diagnosis` internally but the header text in
+      the source is something else — `Ascomata:`,
+      un-headered, or a species-heading transition).  Argues
+      §6 idea #3 needs the extended keyword list from the
+      taxon_e74d89b1 note AND a "diagnosis-shaped block
+      without a literal header" secondary detector — likely
+      an assembly-time signal (§12) rather than a regex.
+    - **5 `Apothecia → Margin` clause pairs** in the
+      description — same repetition-count signal class as
+      taxon_e6402cd3's 7 Conidiomata sections and
+      taxon_592128a8's 16 Pileus clauses, this time on a
+      compound feature pair.
+    - **Habitat clause** and **short Materials_examined
+      block** embedded in Description — same
+      Diagnosis-block-in-Description assembly failure noted
+      for taxon_572d470e (see §12).
+  Caught by BOTH the merge-metric filter (value = 26) AND
+  the §10 mid-sentence detector.  A cleanly-worked
+  compound-detection case: two of the current detectors
+  flag it independently.
 * **`taxon_e74d89b1...`** — noted 2026-07-02.  Description
   contains **many `Cultural characteristics` segments** — one
   per constituent species, each describing colony growth on a
