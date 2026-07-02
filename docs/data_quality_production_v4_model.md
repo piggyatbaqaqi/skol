@@ -1344,6 +1344,55 @@ would make the "capture BOTH the Latin diagnosis AND the
 English description under this treatment" rule
 tractable.
 
+**Design-riff continuation (operator + Claude, 2026-07-02)**
+on how the search product should represent the gen.-nov.
++ type-sp. pair.  Three complementary levers to consider:
+
+  1. **SBERT-neighborhood aggregation** — post-process
+     search results to cluster genus + its type species
+     when they co-appear in the top-K.  No schema change.
+     Testable cheaply on taxon_01a01c54: pull the nearest
+     neighbors of its vector and see whether other
+     Pseudotrichia species-level content clusters tightly
+     nearby.
+  2. **Blended-treatments-as-search-units** — if we do
+     NOT fix cases like taxon_01a01c54 (per the search-UX
+     revision above), option 1 works essentially for free
+     because the blended vector implicitly carries signal
+     from both the genus and the type species.  "Feature,
+     not bug" reframing.
+  3. **Taxonomic-rank tagging** — tag each treatment with
+     the rank it primarily describes (species / genus /
+     higher).  Keep ONE SBERT index, facet the search UI
+     by rank.  Cheaper than separate rank-indexed spaces
+     and works around the data-sparsity concern (higher
+     ranks are thinly represented — mostly just genus
+     circumscriptions in gen. nov. treatments, and even
+     less family-level content).  Users get the "your
+     collection could be one of these genera and one of
+     these species" affordance without cold-start
+     problems.
+
+Three levers compose cleanly.  Blended treatments get
+tagged as both "genus-scope" AND "species-scope"; SBERT
+does within-rank ranking; the UI clusters or facets as
+appropriate.
+
+**Use-case caveat**: "your collection could be one of
+these genera / species" implies an IDENTIFICATION
+workflow (user has a specimen, wants to know what it
+is).  That's distinct from literature-discovery ("show
+me everything on genus X").  The two might want
+different result-panel layouts; worth distinguishing
+which use case each design idea optimizes for before
+committing.
+
+Nothing decided; recorded to keep the design thread
+alive.  A cheap prototype: run the current search UI
+against a query that should match taxon_01a01c54 (e.g.,
+`Pseudotrichia` or a phrase from its Latin diagnosis)
+and inspect the top-K neighborhood by hand.
+
 **Reviewer action** (Phase 1 hand-review): both sets of
 anatomical descriptions are real and valid.  Two acceptable
 approaches, at reviewer's judgment:
