@@ -289,16 +289,37 @@ two or more distinct species.
   50-treatment intermediate run as a 161-annotation outlier
   (vs. median ~9).  From a multi-species reference book; many
   species treatments in quick succession got concatenated under
-  a single Nomenclature.  Critical structural detail noted by
-  the operator: **each constituent species treatment has its
-  normal sections internally** — description, diagnosis, etc.
-  appear correctly per-species — so the grouper broke purely at
-  the inter-species boundary, NOT inside individual treatments.
-  Argues the layout CRF labelled the per-species sections
-  correctly but the treatment-grouper failed to split when one
-  Nomenclature was immediately followed (after section labels)
-  by another Nomenclature.  Easier failure mode to fix than the
-  T3/T5 cases because the section structure is intact.
+  a single Nomenclature.  Initial 2026-06-29 assessment (that
+  each constituent species had intact internal sections) was
+  **revised 2026-07-02 on closer inspection** — the constituent
+  sections are themselves fragmented, and the failure is
+  distributed across the whole treatment, not confined to
+  inter-species boundaries.  Observed:
+    - **Description opens with the tail fragment of a
+      taxonomic citation** — the extraction clipped the start
+      of the run's first Nomenclature and the citation-tail
+      leaked into the Description field.  See §10 for the
+      general pattern.
+    - **Multiple fractional taxonomic citations** embedded in
+      the description, several containing `sp. nov.` or close
+      variants.  These are per-species Nomenclatures that
+      should have anchored per-species treatments; instead
+      they landed as loose fragments inside a single
+      Description.
+    - **Multiple Latin blocks** in the description, matching
+      the `taxon_572d470e` alternation pattern (below) — each
+      Latin↔English cycle marks another species.
+    - **Three separate `Observations:` headers** in the
+      diagnosis.  Analogous to the `Diagnosis:` count signal
+      that caught `taxon_2a9d07e6` (below): a well-formed
+      single-species treatment has at most one Observations
+      block; three is a strong multi-species signal.
+    - Sixteen `Pileus` clauses (previously noted) also match.
+  The revised picture: the layout CRF DID identify per-species
+  section boundaries, but the treatment-grouper collapsed them
+  into flat fields (Description, Diagnosis) without preserving
+  the segment labels, so the fragments now interleave.  See
+  §12 for the strategic response.
 * **`taxon_173204...`** — discovered 2026-07-01 in the 50-
   treatment run.  Real nomenclature (`Setiferotheca nipponica
   Matsush.`), then a description field containing TWO similar-
@@ -741,9 +762,23 @@ opening.
   labelled them cleanly.  Also co-occurs with §2 (taxonomic
   citation not extracted) — presumably the citation lived in
   the clipped-off head of the sentence.
+* **`taxon_592128a8...`** (Nomenclature-tail variant) —
+  reported 2026-07-02.  The description opens with the trailing
+  fragment of a taxonomic citation ("... should have been
+  Nomenclature").  Same class of extraction failure as
+  taxon_acd88732 (Description head clipped), but the clipped
+  material is identifiable content: a description starting
+  with citation punctuation (`, Author, Year`), a partial
+  species epithet, or `sp. nov.` fragment is almost certainly
+  a Nomenclature-tail leak — a stronger signal for automated
+  detection than the generic "starts with lowercase" rule.
+  Combines with §6 findings (this treatment is a multi-species
+  merge) — the Nomenclature-tail leak here is the *first* of
+  several fragmentary citations that ended up in Description.
 
-**Affected treatments**: `taxon_acd88732...`; unknown
-corpus-wide rate — worth a scan.
+**Affected treatments**: `taxon_acd88732...`,
+`taxon_592128a8...` (variant); unknown corpus-wide rate —
+worth a scan.
 
 **Detection**: reviewer-detectable by eye (leading punctuation
 or lowercase first char).  Automated detection is easy: regex
@@ -847,3 +882,78 @@ approaches, at reviewer's judgment:
 Either way, add a brat AnnotatorNote flagging the treatment
 for the section-classifier re-review queue.  The Trello / fix
 work should treat this as a distinct sub-case from §6.
+
+### 12. Segment classification as an aid to Treatment assembly (design note)
+
+**Motivation**: the accumulating §6, §10, §11 evidence points
+at a shared root cause.  The treatment-grouper collapses per-
+segment section labels (Nomenclature, Description, Diagnosis,
+Etymology, Observations, Discussion) into flat treatment
+fields WITHOUT preserving those labels through assembly.  Once
+the labels are dropped, downstream tooling (memo detectors,
+bootstrap annotator, reviewer) has to rediscover section
+boundaries from prose — the signal was already computed one
+stage upstream and thrown away.
+
+**Observed failures that would benefit from label-aware
+assembly**:
+
+  * **`taxon_592128a8`** — multiple constituent species had
+    their Nomenclature blocks broken across the Description
+    field.  Preserving segment labels would have kept per-
+    species Nomenclature/Description/Diagnosis grouped
+    correctly instead of interleaved.
+  * **`taxon_acd88732` and `taxon_592128a8` (§10 variant)** —
+    Description opens with a Nomenclature tail.  If the
+    segment classifier had labelled that leading fragment
+    `Nomenclature`, assembly wouldn't have appended it to
+    Description.
+  * **`taxon_2a9d07e6`** — two `Diagnosis:` headers survived
+    into the Description field because they are the literal
+    Diagnosis-label boundary marker.  Label-aware assembly
+    could treat a second `Diagnosis:` label as a species-
+    boundary signal directly, without needing the
+    Diagnosis-count post-hoc detector.
+  * **`taxon_01a01c54` (`gen. nov.` + `sp. nov.`)** — both the
+    genus and species had proper Nomenclature labels but
+    assembly still merged them.  Labels alone aren't
+    sufficient here; a hierarchical assembly rule ("second
+    Nomenclature under a `gen. nov.` genus creates a linked
+    species treatment") is what's needed.
+  * **`taxon_5b0a8ce7`** — key-body couplets landed in
+    Description because the classifier lacked a `Key` label.
+    Adding one gives assembly a way to route them elsewhere
+    without reaching for regex.
+
+**Proposal (not a plan yet)**: pass segment-level
+`(section_label, text)` tuples through to the assembly stage
+instead of flat field dicts.  Assembly rules become label-
+aware:
+
+  * One `Nomenclature` per treatment; a second `Nomenclature`
+    (except under the §11 `gen. nov.` hierarchical pattern)
+    marks a species boundary.
+  * The `description` field contains only segments labelled
+    `Description`; Nomenclature-tail fragments and Diagnosis
+    blocks don't leak.
+  * `Diagnosis:` / `Observations:` / `Discussion:` header
+    multiplicities become species-count signal by
+    construction — no separate detector needed.
+  * A `Key` label routes numbered-couplet segments out of
+    Description.
+
+**Cost**: a schema change through `treatments_prose`
+(currently flat).  The v4 layout CRF already emits per-line
+section labels; the plumbing to preserve them exists but is
+discarded at assembly.
+
+**Testability**: incrementally verifiable by running a
+label-aware assembler alongside the existing extractor and
+diffing.  Every §6/§10/§11 case above is a golden regression
+target with a known expected split.
+
+**Timing**: overlaps with the pipeline restructure in
+`~/.claude/plans/cozy-forging-locket.md` (per-family Python
+modules).  Likely a Phase 3+ candidate after v4 lands —
+useful to record now so §6 fix work explicitly weighs
+"tighten the merge detector" vs "fix assembly to not need one."
