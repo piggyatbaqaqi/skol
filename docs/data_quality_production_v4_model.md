@@ -420,6 +420,42 @@ two or more distinct species.
   pattern.  Caught by the merge-metric filter (metric = 35);
   triage CSV first-line = "On Potato carrot agar (PCA),
   mycelium consisting of pale".
+
+**Merge-metric false positives** (2026-07-02):
+
+* **`taxon_b9a62329...`** — flagged by the merge-metric
+  filter (value = 27, threshold = 10) but **on inspection
+  is a single species with an unusually detailed
+  culture-morphology description**.  Description length
+  7385 chars, no diagnosis field; describes one plant-
+  pathogen species in exhaustive detail including its
+  behaviour on multiple culture media.  The metric caught
+  it because anatomical terms (`mycelium`, `hyphae`,
+  `conidia`) repeat many times across the multi-medium
+  culture description — but they refer to the SAME
+  organism observed under different growth conditions,
+  not different organisms.  Triage CSV first-line:
+  "Mycelium internal, hyphae (4)-6-(10) jlm in diameter,
+  forming lesions on".
+
+  **Distinguishing signal from taxon_e74d89b1 (true
+  positive)**: e74d89b1's `Cultural characteristics`
+  sections each describe a DIFFERENT species on a
+  different medium; b9a6232's culture sections describe
+  the SAME species on different media.  Both trip the
+  raw header-count heuristic; the distinguishing feature
+  is whether each cultural section is anchored to its own
+  Nomenclature/citation or all reference the same taxon.
+  This argues §6 idea #3 needs a refinement: a header
+  repetition inside one Nomenclature scope is normal
+  detailed description; a header repetition ACROSS
+  multiple Nomenclatures / citations is a merge.
+
+  **Reviewer treatment**: this is a legitimate single-
+  species treatment.  Annotate normally per §0
+  conventions.  Consider flagging it as a false-positive
+  regression target so future merge-detector work knows
+  not to drop it.
 * **`taxon_e6402cd3...`** — noted 2026-07-02.  Fits the same
   compound-merge shape as taxon_572d470e and taxon_592128a8:
     - **Seven `Conidiomata` sections** in the description —
