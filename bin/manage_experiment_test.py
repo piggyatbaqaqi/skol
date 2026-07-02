@@ -234,6 +234,7 @@ def _create_args(**overrides: Any) -> Any:
         'pipeline': 'v3_logistic',
         'model_name': None,
         'training_db': None, 'ingest_db': None, 'annotations_db': None,
+        'features_status_db': None, 'features_hand_db': None,
         'redis_key_pass1': None, 'redis_key_pass2': None,
         'redis_key_single': None,
     }
@@ -250,6 +251,8 @@ def _update_args(**overrides: Any) -> Any:
         'pipeline': None,
         'model_name': None,
         'training_db': None, 'ingest_db': None, 'annotations_db': None,
+        'features_status_db': None, 'features_hand_db': None,
+        'discover_databases': False, 'force': False,
         'redis_key_pass1': None, 'redis_key_pass2': None,
         'redis_key_single': None,
     }
@@ -516,6 +519,293 @@ class TestCmdUpdatePipelineField:
                 name='legacy_v3', pipeline='bogus',
             ))
         assert 'v3_logistic' in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# Features DB flags + discover_databases
+# ---------------------------------------------------------------------------
+
+
+class TestCmdCreateFeaturesDbs:
+    """cmd_create accepts --features-status-db and --features-hand-db
+    so the naming-convention fallback warnings in
+    resolve_status_db_name / resolve_hand_db_name never fire on
+    freshly-created experiments."""
+
+    def test_create_writes_features_status_db(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            features_status_db=(
+                'skol_exp_production_v4_02_50_features_status'
+            ),
+        ))
+        doc = db.docs['production_v4']
+        assert (
+            doc['databases']['features_status']
+            == 'skol_exp_production_v4_02_50_features_status'
+        )
+
+    def test_create_writes_features_hand_db(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4',
+            features_hand_db=(
+                'skol_exp_production_v4_02_55_features_hand'
+            ),
+        ))
+        doc = db.docs['production_v4']
+        assert (
+            doc['databases']['features_hand']
+            == 'skol_exp_production_v4_02_55_features_hand'
+        )
+
+    def test_create_omits_features_dbs_when_not_passed(self) -> None:
+        """Backwards-compat: existing v3 create invocations that
+        don't pass the new flags don't grow spurious empty keys."""
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='production_v3'))
+        databases = db.docs['production_v3']['databases']
+        assert 'features_status' not in databases
+        assert 'features_hand' not in databases
+
+
+class TestCmdUpdateFeaturesDbs:
+    """cmd_update accepts the same two flags for post-hoc
+    canonicalization of legacy docs that predate the
+    features_status / features_hand fields."""
+
+    def _seeded_db(self) -> _FakeExperimentsDb:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4', pipeline='v4_crf',
+        ))
+        return db
+
+    def test_update_writes_features_status_db(self) -> None:
+        db = self._seeded_db()
+        cmd_update(db, _update_args(
+            name='production_v4',
+            features_status_db=(
+                'skol_exp_production_v4_02_50_features_status'
+            ),
+        ))
+        databases = db.docs['production_v4']['databases']
+        assert (
+            databases['features_status']
+            == 'skol_exp_production_v4_02_50_features_status'
+        )
+
+    def test_update_writes_features_hand_db(self) -> None:
+        db = self._seeded_db()
+        cmd_update(db, _update_args(
+            name='production_v4',
+            features_hand_db=(
+                'skol_exp_production_v4_02_55_features_hand'
+            ),
+        ))
+        databases = db.docs['production_v4']['databases']
+        assert (
+            databases['features_hand']
+            == 'skol_exp_production_v4_02_55_features_hand'
+        )
+
+    def test_update_omits_features_dbs_when_not_passed(self) -> None:
+        db = self._seeded_db()
+        cmd_update(db, _update_args(name='production_v4'))
+        databases = db.docs['production_v4']['databases']
+        assert 'features_status' not in databases
+        assert 'features_hand' not in databases
+
+
+class TestDiscoverDatabases:
+    """Pure-function sweep of the canonical naming convention.
+
+    Non-mutating — returns the {added, kept, missing} triage
+    the caller applies to ``doc['databases']``.
+    """
+
+    def _existing_all_v4_dbs(self) -> set:
+        """The full set of canonical DB names for the
+        production_v4 experiment.  Substitutes for a server
+        iteration in a live run."""
+        return {
+            'skol_exp_production_v4_01_00_ann',
+            'skol_exp_production_v4_02_00_treatments_prose',
+            'skol_exp_production_v4_02_50_features_candidate',
+            'skol_exp_production_v4_02_50_features_status',
+            'skol_exp_production_v4_02_55_features_hand',
+            'skol_exp_production_v4_03_00_treatments_structured',
+        }
+
+    def test_adds_missing_roles(self) -> None:
+        from manage_experiment import (  # type: ignore[import]
+            discover_databases,
+        )
+        result = discover_databases(
+            self._existing_all_v4_dbs(),
+            'production_v4',
+            current_dbs={},
+        )
+        assert (
+            result['added']['features_status']
+            == 'skol_exp_production_v4_02_50_features_status'
+        )
+        assert (
+            result['added']['features_hand']
+            == 'skol_exp_production_v4_02_55_features_hand'
+        )
+        # eval-suffixed DBs don't exist in our fake server →
+        # they should appear in 'missing', not 'added'.
+        assert 'annotations_eval' in result['missing']
+
+    def test_preserves_existing_by_default(self) -> None:
+        """When databases.features_hand is already set to a
+        non-canonical name, discovery keeps it — operators
+        may have deliberate overrides."""
+        from manage_experiment import (  # type: ignore[import]
+            discover_databases,
+        )
+        current = {
+            'features_hand': 'custom_review_pool',
+        }
+        result = discover_databases(
+            self._existing_all_v4_dbs(),
+            'production_v4',
+            current_dbs=current,
+        )
+        assert 'features_hand' not in result['added']
+        assert result['kept']['features_hand'] == 'custom_review_pool'
+
+    def test_force_overwrites_existing(self) -> None:
+        """--force flips the preserve behaviour: the canonical
+        name replaces the operator's existing entry when the
+        canonical DB actually exists on the server."""
+        from manage_experiment import (  # type: ignore[import]
+            discover_databases,
+        )
+        current = {
+            'features_hand': 'custom_review_pool',
+        }
+        result = discover_databases(
+            self._existing_all_v4_dbs(),
+            'production_v4',
+            current_dbs=current,
+            force=True,
+        )
+        assert (
+            result['added']['features_hand']
+            == 'skol_exp_production_v4_02_55_features_hand'
+        )
+
+    def test_force_keeps_custom_when_canonical_absent(self) -> None:
+        """--force with a missing canonical DB should NOT null
+        out the operator's existing entry — refusing to point at
+        a nonexistent DB is safer than clearing the field."""
+        from manage_experiment import (  # type: ignore[import]
+            discover_databases,
+        )
+        current = {'features_hand': 'custom_review_pool'}
+        # Server has NO features_hand DB at the canonical name:
+        existing_no_hand = self._existing_all_v4_dbs() - {
+            'skol_exp_production_v4_02_55_features_hand',
+        }
+        result = discover_databases(
+            existing_no_hand,
+            'production_v4',
+            current_dbs=current,
+            force=True,
+        )
+        assert result['kept']['features_hand'] == 'custom_review_pool'
+        assert 'features_hand' not in result['added']
+
+    def test_reports_missing_roles(self) -> None:
+        """A role whose canonical DB doesn't exist and isn't
+        in the doc appears in 'missing' so the operator can
+        see which stages haven't been provisioned."""
+        from manage_experiment import (  # type: ignore[import]
+            discover_databases,
+        )
+        # Server has NOTHING for this experiment:
+        result = discover_databases(
+            set(), 'brand_new_exp', current_dbs={},
+        )
+        assert result['added'] == {}
+        assert 'features_status' in result['missing']
+        assert 'features_hand' in result['missing']
+
+    def test_does_not_mutate_input(self) -> None:
+        from manage_experiment import (  # type: ignore[import]
+            discover_databases,
+        )
+        current = {'features_hand': 'custom'}
+        before = dict(current)
+        discover_databases(
+            self._existing_all_v4_dbs(),
+            'production_v4',
+            current_dbs=current,
+        )
+        assert current == before
+
+
+class TestCmdUpdateDiscoverDatabases:
+    """cmd_update --discover-databases end-to-end: writes newly
+    discovered DBs into the experiment doc, preserves existing
+    entries by default."""
+
+    class _FakeServer:
+        """Iterable-of-db-names stand-in for couchdb.Server."""
+
+        def __init__(self, names) -> None:
+            self._names = set(names)
+
+        def __contains__(self, name: str) -> bool:
+            return name in self._names
+
+    def _seeded_db(self) -> _FakeExperimentsDb:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(
+            name='production_v4', pipeline='v4_crf',
+        ))
+        return db
+
+    def test_discover_writes_features_status_and_hand(self) -> None:
+        db = self._seeded_db()
+        server = self._FakeServer([
+            'skol_exp_production_v4_02_50_features_status',
+            'skol_exp_production_v4_02_55_features_hand',
+        ])
+        cmd_update(
+            db,
+            _update_args(
+                name='production_v4', discover_databases=True,
+            ),
+            server=server,
+        )
+        databases = db.docs['production_v4']['databases']
+        assert (
+            databases['features_status']
+            == 'skol_exp_production_v4_02_50_features_status'
+        )
+        assert (
+            databases['features_hand']
+            == 'skol_exp_production_v4_02_55_features_hand'
+        )
+
+    def test_discover_without_server_errors(self) -> None:
+        """Guardrail: running --discover-databases from a
+        server-less test context must raise a clear error rather
+        than silently no-op."""
+        import pytest
+        db = self._seeded_db()
+        with pytest.raises(SystemExit):
+            cmd_update(
+                db,
+                _update_args(
+                    name='production_v4', discover_databases=True,
+                ),
+                # server=None (default) — the flag needs one
+            )
 
 
 # ---------------------------------------------------------------------------

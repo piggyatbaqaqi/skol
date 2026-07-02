@@ -140,6 +140,100 @@ def _default_pipeline_state(pipeline_name: str) -> Dict[str, Any]:
     }
 
 
+# Canonical per-experiment DB naming convention (see
+# docs/skol-db-naming-cleanup.md).  Each entry maps a
+# ``databases.<role>`` key to a ``str.format(name=...)``-style
+# template that produces the expected DB name for a given
+# experiment.  Used by:
+#   * ``_default_experiment`` — seeds new experiment docs;
+#   * ``discover_databases`` — scans an existing CouchDB server
+#     and canonicalizes any un-recorded-but-present DB into the
+#     experiment doc's ``databases`` sub-doc.
+#
+# Non-per-experiment DB roles (``ingest``, ``training``) are
+# omitted — those don't follow the ``skol_exp_<name>_...`` shape
+# and can't be discovered by convention.
+_CANONICAL_DB_TEMPLATES: Dict[str, str] = {
+    'annotations':
+        'skol_exp_{name}_01_00_ann',
+    'annotations_eval':
+        'skol_exp_{name}_01_00_ann_eval',
+    'spans':
+        'skol_exp_{name}_01_00_ann',
+    'treatments_prose':
+        'skol_exp_{name}_02_00_treatments_prose',
+    'treatments_prose_eval':
+        'skol_exp_{name}_02_00_treatments_prose_eval',
+    'features_candidate':
+        'skol_exp_{name}_02_50_features_candidate',
+    'features_status':
+        'skol_exp_{name}_02_50_features_status',
+    'features_hand':
+        'skol_exp_{name}_02_55_features_hand',
+    'treatments_structured':
+        'skol_exp_{name}_03_00_treatments_structured',
+    'treatments_structured_eval':
+        'skol_exp_{name}_03_00_treatments_structured_eval',
+}
+
+
+def discover_databases(
+    existing_db_names: Any,
+    experiment_name: str,
+    current_dbs: Dict[str, str],
+    *,
+    force: bool = False,
+) -> Dict[str, Any]:
+    """Compute which canonical DBs to write to an experiment doc.
+
+    Args:
+        existing_db_names: Iterable (typically a
+            ``couchdb.Server`` or a set) that supports
+            ``name in existing_db_names`` presence checks — i.e.,
+            the DBs that actually exist on the server.
+        experiment_name: The experiment's ``_id``; substituted
+            into every naming-convention template.
+        current_dbs: The existing ``doc['databases']`` mapping
+            (may be missing keys).
+        force: When True, overwrite already-set entries with the
+            canonical name if the canonical DB exists.  When False
+            (the default), preserve any existing entry — operators
+            may have set a non-canonical name deliberately and we
+            don't want to clobber it.
+
+    Returns:
+        Dict with three keys:
+          * ``added``  — ``{role: dbname}`` entries the caller
+                         should merge into ``doc['databases']``;
+          * ``kept``   — ``{role: dbname}`` entries already
+                         present in the doc, unchanged;
+          * ``missing`` — list of roles whose canonical DB is
+                          absent from the server (unset in the
+                          doc and no DB to point at).
+
+    Pure function: does not mutate ``current_dbs``.
+    """
+    added: Dict[str, str] = {}
+    kept: Dict[str, str] = {}
+    missing: List[str] = []
+    for role, template in _CANONICAL_DB_TEMPLATES.items():
+        expected = template.format(name=experiment_name)
+        current = current_dbs.get(role)
+        if current and not force:
+            kept[role] = current
+            continue
+        if expected in existing_db_names:
+            added[role] = expected
+        elif not current:
+            missing.append(role)
+        else:
+            # force=True but the canonical DB doesn't exist —
+            # keep the operator's existing value rather than
+            # blank the field out.
+            kept[role] = current
+    return {'added': added, 'kept': kept, 'missing': missing}
+
+
 def _default_experiment(
     name: str, pipeline_name: str = "v3_logistic",
 ) -> Dict[str, Any]:
@@ -221,7 +315,13 @@ def _default_experiment(
 # ---------------------------------------------------------------------------
 
 def _connect_experiments_db(config: Dict[str, Any]):
-    """Connect to the experiments database, creating it if needed."""
+    """Connect to CouchDB and return ``(server, experiments_db)``.
+
+    The server is returned alongside the DB so subcommands that
+    need to check the presence of *other* DBs on the same server
+    (e.g. ``cmd_update --discover-databases``) don't have to
+    build a second connection from the same credentials.
+    """
     import couchdb as couchdb_lib
 
     server = couchdb_lib.Server(config["couchdb_url"])
@@ -247,7 +347,7 @@ def _connect_experiments_db(config: Dict[str, Any]):
     else:
         db = server[db_name]
 
-    return db
+    return server, db
 
 
 def _get_experiment(db, name: str) -> Optional[Dict[str, Any]]:
@@ -286,6 +386,10 @@ def cmd_create(db, args) -> None:
         doc["databases"]["ingest"] = args.ingest_db
     if args.annotations_db:
         doc["databases"]["annotations"] = args.annotations_db
+    if getattr(args, "features_status_db", None):
+        doc["databases"]["features_status"] = args.features_status_db
+    if getattr(args, "features_hand_db", None):
+        doc["databases"]["features_hand"] = args.features_hand_db
     # v4 two-CRF Redis-key bundle (see env_config _apply_experiment
     # mapping rows added in Step 5).  Only written when the operator
     # opts in via the new flags, so v3 experiment docs keep their
@@ -349,8 +453,16 @@ def cmd_show(db, args) -> None:
     print(json.dumps(display, indent=2, default=str))
 
 
-def cmd_update(db, args) -> None:
-    """Update experiment fields."""
+def cmd_update(db, args, server: Any = None) -> None:
+    """Update experiment fields.
+
+    ``server`` is the ``couchdb.Server`` handle carrying the
+    experiments DB.  Required only for ``--discover-databases``
+    (which iterates the server to find canonical per-experiment
+    DBs); other flags do not touch the server directly.  Defaults
+    to None so existing tests that don't exercise discovery pass
+    the two-arg form unchanged.
+    """
     doc = _get_experiment(db, args.name)
     if doc is None:
         print(f"Error: experiment '{args.name}' not found.", file=sys.stderr)
@@ -381,6 +493,16 @@ def cmd_update(db, args) -> None:
         changed = True
     if args.annotations_db:
         doc.setdefault("databases", {})["annotations"] = args.annotations_db
+        changed = True
+    if getattr(args, "features_status_db", None):
+        doc.setdefault("databases", {})[
+            "features_status"
+        ] = args.features_status_db
+        changed = True
+    if getattr(args, "features_hand_db", None):
+        doc.setdefault("databases", {})[
+            "features_hand"
+        ] = args.features_hand_db
         changed = True
     if args.model_name is not None:
         doc["model_name"] = args.model_name
@@ -417,6 +539,53 @@ def cmd_update(db, args) -> None:
             "classifier_model_single"
         ] = args.redis_key_single
         changed = True
+
+    # --discover-databases: sweep the server for every canonical
+    # per-experiment DB (see _CANONICAL_DB_TEMPLATES) and record
+    # any that exist but haven't been written to the doc yet.
+    # By default preserves already-set entries; --force
+    # overwrites with the canonical name where it exists.
+    #
+    # Requires the server handle — main() passes it through when
+    # discovery is requested.  Callers exercising cmd_update in
+    # tests without a server can only invoke this flag by also
+    # passing server=<fake>.
+    if getattr(args, "discover_databases", False):
+        if server is None:
+            print(
+                "Error: --discover-databases requires a live "
+                "CouchDB server; cannot run in server-less test "
+                "mode.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        databases = doc.setdefault("databases", {})
+        result = discover_databases(
+            server,
+            args.name,
+            databases,
+            force=bool(getattr(args, "force", False)),
+        )
+        for role, dbname in result['added'].items():
+            databases[role] = dbname
+        if result['added']:
+            changed = True
+        # Report to the operator — one line per outcome bucket
+        # so scripts can grep for 'added:' vs 'missing:'.
+        added_str = (
+            ', '.join(f"{r}={n}" for r, n in result['added'].items())
+            or '(none)'
+        )
+        missing_str = (
+            ', '.join(result['missing']) or '(none)'
+        )
+        print(
+            f"discover: added: {added_str}", file=sys.stderr,
+        )
+        print(
+            f"discover: missing (no DB on server): {missing_str}",
+            file=sys.stderr,
+        )
 
     # Self-repair: fill in databases.features_candidate if a
     # legacy experiment doc predates the field.  Idempotent — only
@@ -1066,6 +1235,23 @@ def main() -> None:
         help="Annotations output database name",
     )
     p_create.add_argument(
+        "--features-status-db", type=str, dest="features_status_db",
+        help=(
+            "Per-treatment bootstrap status DB name (Design Y).  "
+            "Written to experiment.databases.features_status; "
+            "consumed by resolve_status_db_name in bin/llm_annotate_"
+            "features."
+        ),
+    )
+    p_create.add_argument(
+        "--features-hand-db", type=str, dest="features_hand_db",
+        help=(
+            "Hand-reviewed feature-annotation DB name.  Written "
+            "to experiment.databases.features_hand; consumed by "
+            "resolve_hand_db_name in bin/brat_ingest."
+        ),
+    )
+    p_create.add_argument(
         "--redis-key-pass1", type=str, dest="redis_key_pass1",
         help=(
             "v4 Pass-1 (layout CRF) Redis state-key.  Written to "
@@ -1121,6 +1307,41 @@ def main() -> None:
     p_update.add_argument("--ingest-db", type=str, help="Ingest DB")
     p_update.add_argument(
         "--annotations-db", type=str, help="Annotations output DB",
+    )
+    p_update.add_argument(
+        "--features-status-db", type=str, dest="features_status_db",
+        help=(
+            "Per-treatment bootstrap status DB name (canonicalizes "
+            "the resolve_status_db_name naming-fallback warning)."
+        ),
+    )
+    p_update.add_argument(
+        "--features-hand-db", type=str, dest="features_hand_db",
+        help=(
+            "Hand-reviewed feature-annotation DB name "
+            "(canonicalizes the resolve_hand_db_name "
+            "naming-fallback warning)."
+        ),
+    )
+    p_update.add_argument(
+        "--discover-databases", action="store_true",
+        dest="discover_databases",
+        help=(
+            "Scan CouchDB for every canonical per-experiment DB "
+            "(see _CANONICAL_DB_TEMPLATES) and record any that "
+            "exist but haven't been written to the doc yet.  "
+            "Preserves already-set entries unless --force is also "
+            "passed.  Idempotent — safe to re-run."
+        ),
+    )
+    p_update.add_argument(
+        "--force", action="store_true",
+        help=(
+            "With --discover-databases: overwrite existing "
+            "databases.<role> entries with the canonical name "
+            "where the canonical DB exists.  No effect on other "
+            "flags."
+        ),
     )
     p_update.add_argument(
         "--redis-key-pass1", type=str, dest="redis_key_pass1",
@@ -1271,7 +1492,7 @@ def main() -> None:
     args, _ = parser.parse_known_args(main_argv)
     args.passthrough_args = passthrough_args
     config = get_env_config()
-    db = _connect_experiments_db(config)
+    server, db = _connect_experiments_db(config)
 
     if args.command == "create":
         cmd_create(db, args)
@@ -1280,7 +1501,7 @@ def main() -> None:
     elif args.command == "show":
         cmd_show(db, args)
     elif args.command == "update":
-        cmd_update(db, args)
+        cmd_update(db, args, server=server)
     elif args.command == "archive":
         cmd_archive(db, args)
     elif args.command == "approve":
