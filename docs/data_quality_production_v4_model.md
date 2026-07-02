@@ -405,6 +405,21 @@ two or more distinct species.
       a compound-failure exemplar for regression testing —
       a fixer that clears one class shouldn't regress the
       others.
+* **`taxon_e74d89b1...`** — noted 2026-07-02.  Description
+  contains **many `Cultural characteristics` segments** — one
+  per constituent species, each describing colony growth on a
+  different lab medium (PCA, PDA, CMA).  Same class of
+  repetition signal as taxon_592128a8's Pileus clauses and
+  taxon_e6402cd3's Conidiomata sections, but on a section-
+  header keyword the current detectors don't watch for.
+  Broadens the §6-idea-#3 header-count list beyond
+  `Diagnosis:` / `Description:` — the general principle is
+  "count any section-header keyword repetition in the raw
+  description."  Culturally-heavy treatments (asexual moulds,
+  yeasts, plant pathogens) are the natural home of this
+  pattern.  Caught by the merge-metric filter (metric = 35);
+  triage CSV first-line = "On Potato carrot agar (PCA),
+  mycelium consisting of pale".
 * **`taxon_e6402cd3...`** — noted 2026-07-02.  Fits the same
   compound-merge shape as taxon_572d470e and taxon_592128a8:
     - **Seven `Conidiomata` sections** in the description —
@@ -504,12 +519,21 @@ Ideas for a better metric that would catch these:
      heavily-OCR-corrupted binomials (e.g., `taxon_572d470e`'s
      `spec. llOU.` for `spec. nov.`) — the Latin/English
      signal is more OCR-robust.
-  3. **Count `Diagnosis:` / `Description:` / other section-
-     header string repetitions in the raw description**.  A
-     single-species treatment has exactly one `Diagnosis:`
-     header at most; two or more is a strong merge signal.
-     `taxon_2a9d07e6` had two.  Pre-bootstrap; cheap regex
-     scan.
+  3. **Count section-header keyword repetitions in the raw
+     description**.  A single-species treatment has each
+     section-header keyword appearing at most once; two or
+     more of the same header is a strong merge signal.
+     Concrete headers to watch — `Diagnosis:`, `Description:`,
+     `Observations:`, `Cultural characteristics`, `Culture
+     characteristics`, `Colonies on`, `Etymology:`,
+     `Habitat:`, `Type:`, `Holotype:`.  `taxon_2a9d07e6` had
+     two `Diagnosis:` headers; `taxon_592128a8` had three
+     `Observations:` headers; `taxon_e74d89b1` had many
+     `Cultural characteristics` sections.  Pre-bootstrap;
+     cheap case-insensitive regex scan.  Culturally-heavy
+     treatments (asexual moulds, yeasts, plant pathogens)
+     require the extended keyword list — the
+     `Diagnosis:`/`Description:` pair alone misses them.
   4. **Count `sp. nov.` / `nov. sp.` / numbered species-heading
      occurrences** in the raw description.  Complementary to
      the term-frequency approach; catches compact merges.
