@@ -1288,7 +1288,10 @@ assembly**:
   * **`taxon_d2d26d25`** — a partial Diagnosis block sits
     at the end of Description, missing leading AND
     trailing content (fragmentary at both ends), while the
-    Diagnosis field itself is EMPTY.  Compound failure:
+    Diagnosis field itself is EMPTY.  The diagnosis
+    fragment is **English comparative** style
+    (differentiating from other species by feature) — NOT
+    Latin.  Compound failure:
     (1) routing — Diagnosis label mis-routed to
     Description; (2) clipping — the diagnosis fragment has
     been truncated at both ends, so text that WAS in the
@@ -1296,14 +1299,16 @@ assembly**:
     from taxon_572d470e's whole-Diagnosis leak (which
     preserved the block, just put it in the wrong field);
     here content is also lost.  Label-aware assembly would
-    fix (1); a "diagnosis boundaries clipped" detector
-    would catch (2) — a heuristic like "description ends
-    with a telegraphic Latin-morphology clause" or "diag
-    field empty AND description contains a
-    morphologically-Latin tail" could surface these.
-    Currently no detector fires (merge_metric = 3;
-    diagnosis field empty; description doesn't start
-    mid-sentence).
+    fix (1).  For (2), a detector along the lines of
+    "diag field empty AND description tail mentions
+    multiple binomials or uses comparative-diagnosis
+    language (`differs from …`, `similar to …`)" could
+    surface these — the gnfinder / comparative-language
+    signals from §6 idea #2 applied only to the last N
+    chars of Description.  Latin-morphology heuristics do
+    NOT apply here — the fragment is English.  Currently
+    no detector fires (merge_metric = 3; diagnosis field
+    empty; description doesn't start mid-sentence).
 
 **Proposal (not a plan yet)**: pass segment-level
 `(section_label, text)` tuples through to the assembly stage
