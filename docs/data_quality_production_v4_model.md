@@ -1352,3 +1352,59 @@ colon required.  taxon_8f93bded's block starts with
 extension: match `\bDiagnosis\s*[-—–:]` (colon, hyphen,
 em-dash, en-dash).  Filed alongside the taxon_f00f8353
 detector-miss note in §6.
+
+### 14. Shared diagnosis serving multiple species (structural note)
+
+**Symptom**: a treatment doc has an **empty** `description`
+field and a substantial `diagnosis` field.  It represents a
+diagnosis section from an article covering N species where
+ONE diagnosis serves multiple per-species descriptions —
+the extraction split them apart and orphaned the diagnosis
+as its own treatment_prose doc.
+
+**Evidence**:
+
+* **`taxon_715c2164...`** — noted 2026-07-02.  Perfectly
+  clean 2139-char diagnosis; description length 0.
+  Sibling treatment_prose docs (not yet enumerated) hold
+  each of the 6 species' descriptions with empty
+  diagnosis fields.  Article covers 6 species (5 new);
+  the diagnosis differentiates them collectively.
+  Triage detector flags this as
+  `§2:synth_nomen` — correctly, because no proper
+  Nomenclature attaches to a shared-diagnosis block.
+
+**Likely stage**: treatment-grouper's assumption that each
+treatment has exactly one (Nomenclature, Description,
+Diagnosis) tuple.  When a paper's structure fans-out (1
+shared Diagnosis → N Descriptions), the grouper splits
+along Nomenclature boundaries and orphans the shared
+Diagnosis as a standalone treatment.
+
+**Severity**: low — probably rare (multi-new-species papers
+with a shared diagnosis format aren't the norm).
+Consequence is one orphaned diagnosis doc + N descriptions
+each missing their diagnosis.  Downstream annotation still
+works on the descriptions; only the diagnosis-derived
+signal is lost.
+
+**Assembly-aware fix (§12 reinforcement)**: label-aware
+assembly could recognize the shared-diagnosis pattern and
+either (a) duplicate the diagnosis onto each per-species
+treatment (simple, materializes the join, but adds
+N-fold weight to shared clauses in training), or (b)
+maintain a reference relationship (species treatments
+carry a `shared_diagnosis_treatment_id` pointing at the
+orphan diagnosis).  Option (a) is simpler and probably
+sufficient given the rarity; option (b) is cleaner but
+requires a schema change.
+
+**Reviewer treatment**: skip (per §0 rule 2 — no
+Nomenclature, no target species to annotate).  If a
+future assembler fixes the fan-out, this treatment
+disappears from the corpus.  Not worth Phase 1 review
+effort at current-rarity estimates.
+
+**Detection**: `desc_length == 0 and diag_length > 0`.
+Trivial; can be added to `triage_signals` as an
+"orphan_diagnosis" flag.
