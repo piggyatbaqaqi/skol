@@ -594,9 +594,10 @@ two or more distinct species.
 
   **Concrete refinement**: change `treatment_merge_metric`
   to scan `description` only, not `description +
-  diagnosis`.  A comparative diagnosis is by construction
-  multi-species-name-heavy; folding it into the term
-  count guarantees this class of false positive.  Any
+  diagnosis`.  A Differential Diagnosis (see §13
+  polysemy note) is by construction multi-species-name-
+  heavy; folding it into the term count guarantees this
+  class of false positive.  Any
   merge signal worth detecting will surface in
   Description alone.  Would eliminate taxon_9e048013
   from the flagged set; needs measurement on the
@@ -1097,14 +1098,15 @@ opening.
   **Diagnosis-scoping caveat reinforced**: the diagnosis
   field contains **3 legitimate taxonomic citations** —
   comparisons with related species, which is what a
-  diagnosis DOES (same insight as taxon_9e048013's
-  comparative-diagnosis false positive).  gnfinder
-  detection must scope to `description` only; folding
-  the diagnosis in would guarantee false positives on
-  every comparative diagnosis.  This treatment is a
-  precise validation of the Description-only scoping
-  rule: 1 citation in Description (merge) vs 3
-  citations in Diagnosis (normal).
+  **Differential Diagnosis** (§13 polysemy note) DOES
+  (same insight as taxon_9e048013's false positive).
+  gnfinder detection must scope to `description` only;
+  folding the diagnosis in would guarantee false
+  positives on every Differential Diagnosis.  This
+  treatment is a precise validation of the
+  Description-only scoping rule: 1 citation in
+  Description (merge) vs 3 citations in Diagnosis
+  (normal).
 
 * **`taxon_a21a83f4...`** — noted 2026-07-02.  Extreme
   §10 + missed-§6 case.  Description opens with a **single
@@ -1301,12 +1303,13 @@ assembly**:
     here content is also lost.  Label-aware assembly would
     fix (1).  For (2), a detector along the lines of
     "diag field empty AND description tail mentions
-    multiple binomials or uses comparative-diagnosis
+    multiple binomials or uses Differential-Diagnosis
     language (`differs from …`, `similar to …`)" could
     surface these — the gnfinder / comparative-language
     signals from §6 idea #2 applied only to the last N
-    chars of Description.  Latin-morphology heuristics do
-    NOT apply here — the fragment is English.  Currently
+    chars of Description.  The fragment is a
+    **Differential Diagnosis** (§13 term), not Latin —
+    Latin-morphology heuristics do NOT apply.  Currently
     no detector fires (merge_metric = 3; diagnosis field
     empty; description doesn't start mid-sentence).
 
@@ -1413,28 +1416,49 @@ require regex-scraping today.
 **"Diagnosis" is polysemous in taxonomic literature**:
 
 The single word `Diagnosis` covers three semantically
-distinct block types, ALL of which Claude appears to skip:
+distinct block types.  The taxonomic literature has
+technical names for the two English variants — worth
+using them consistently:
 
   1. **Latin Diagnosis** — formal Latin morphology block,
      once required by the ICBN.  Dense, telegraphic.
      Hardest to annotate; the Diagnosis→skip rule's
      original motivation.
-  2. **English comparative Diagnosis** — differentiates
-     the target species from close relatives.  Contains
-     multiple species names (which is legitimate — see
-     the taxon_9e048013 false-positive discussion in §6).
-  3. **English diagnostic-traits Diagnosis** — defining
-     features of THIS species.  Reads like a Description
+  2. **Differential Diagnosis** — differentiates the
+     target species from close relatives.  Contains
+     multiple species names / binomials (legitimate — the
+     comparison IS the content).  Evidence:
+     taxon_9e048013 (false-positive discussion in §6),
+     taxon_d2d26d25 (leaked-into-description fragment,
+     §12), taxon_83e36037's 3 legitimate diagnosis
+     citations.
+  3. **Diagnostic Characters** — defining features of
+     THIS species.  Reads like a Description
      (taxon_8f93bded is this variant).  Semantically
-     description-like, but the header naming convention
-     keeps it labelled `Diagnosis`.
+     description-like; the source may still call it
+     `Diagnosis` in the header, but the content is
+     distinct from a Differential Diagnosis.
 
 The section classifier isn't necessarily wrong to label a
-diagnostic-traits paragraph as `Diagnosis` — the source
-header says so, and the reviewer can defend either call.
-For the operational question (should we skip?) the answer
-is the same across all three: yes.  The `--skip-diagnosis`
-rule doesn't need to distinguish between the sub-types.
+Diagnostic Characters paragraph as `Diagnosis` — the
+source header says so, and the reviewer can defend either
+call.  For the operational question (should we skip?) the
+answer is the same across all three: yes.  The
+`--skip-diagnosis` rule doesn't need to distinguish
+between the sub-types.
+
+**Training-data audit item (2026-07-02)**: the training
+set mostly uses `Diagnosis` to mean **Differential
+Diagnosis** (the comparative form).  Worth a corpus-wide
+audit to check whether any **Diagnostic Characters**
+paragraphs have been labelled as `Diagnosis` in the golden
+data — if so, that's mis-labelled training signal that
+should be re-tagged (either promoted to `Description`, or
+distinguished with a `Diagnostic_characters` label).  This
+would matter if a future model tries to LEARN the
+distinction rather than treating all `Diagnosis` blocks as
+one class.  Deferred until the label-aware assembly work
+(§12) forces the schema question.
 
 **Detector-miss (related)**: `count_diagnosis_headers` in
 `triage_signals.py` uses the regex `\bDiagnosis:` — literal
