@@ -405,6 +405,39 @@ two or more distinct species.
       a compound-failure exemplar for regression testing —
       a fixer that clears one class shouldn't regress the
       others.
+* **`taxon_876c18ec...`** — noted 2026-07-02.  Description
+  opens with **4 `Colonies (Fig. 1)` blocks** — one per
+  constituent species — plus 4 downstream lowercase
+  `colonies` continuation sentences (8 mentions total).
+  **Several blocks include the literal binomial inline**
+  (rather than a properly-labelled Nomenclature header).
+  Caught by the merge-metric filter (metric = 12, barely
+  above threshold) AND by `synthetic_nomenclature = True`
+  (§2) — the missing per-species Nomenclature block
+  triggered the synth fallback.
+    - **Fig. 1 mystery, resolved**: all 4 species reference
+      "Fig. 1".  Not from different articles.  Single ingest
+      source (`skol_dev/845a45f89f9e...`); all 7
+      description spans in one contiguous line range
+      (29118-29377).  This is a single monograph with a
+      **composite Fig. 1** showing colony habits for all
+      new species side-by-side — a common taxonomic
+      convention for multi-new-species papers.  The
+      shared-figure reference is itself a diagnostic
+      signal: 4 species pointing at the same figure means
+      1 paper, not 4.
+    - **Assembly failure**: the source has per-species
+      Nomenclatures (binomials appear in the description
+      body); the layout CRF or grouper lost them.  Yet
+      another §12 instance — labels present in the source
+      but discarded at assembly.
+    - **Labeling question opened**: are `Colony` /
+      `Colonies` / `Cultural_characteristics` /
+      `Culture_characteristics` the same anatomical
+      entity?  Discussion + recommendation to canonicalize
+      to `Colony` recorded in the operator log 2026-07-02;
+      pending drift-map addition to
+      `docs/feature_label_canonicalization.json`.
 * **`taxon_f00f8353...`** — noted 2026-07-02.  Compound
   §6 + §10 case:
     - **Description opens with `thick.`** — a canonical
