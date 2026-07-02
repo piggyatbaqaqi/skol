@@ -719,7 +719,20 @@ Ideas for a better metric that would catch these:
      headers; `taxon_e74d89b1` had many `Cultural
      characteristics` sections; `taxon_95dbdfb9` had 3
      `Illustration:` + 3 `Description:` pairs (illustrated
-     monograph format).  Pre-bootstrap;
+     monograph format).
+     **Position refinement (taxon_a21a83f4)**: a header
+     appearing at ANY offset > 0 inside the raw description
+     field is a merge signal, not just count ≥ 2.  The
+     `description` field IS the description; the ONLY
+     legitimate place for a `Description:` header inside
+     it is offset 0 (if any).  A mid-body `Description:`
+     marks the start of a second species even when there
+     is no repeat.  taxon_a21a83f4 had exactly one
+     `Description:` (below the current ≥ 2 threshold) but
+     it was clearly a species boundary; the current
+     detector missed the merge.  Refinement: fire on
+     `first_mid_body_offset > 0 OR count >= 2`.
+     Pre-bootstrap;
      cheap case-insensitive regex scan.  Culturally-heavy
      treatments (asexual moulds, yeasts, plant pathogens)
      require the extended keyword list — the
@@ -1067,6 +1080,21 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_a21a83f4...`** — noted 2026-07-02.  Extreme
+  §10 + missed-§6 case.  Description opens with a **single
+  clipped word `inconspicuous.`** — the tail of a sentence
+  whose head was omitted (e.g., "Ascomata …
+  inconspicuous.").  Even shorter than taxon_acd88732's
+  `; perithecia …` opening; establishes that §10 clipping
+  can be arbitrarily short.  The `desc_starts_mid_sentence`
+  detector fired correctly.
+  **Co-occurring uncaught §6 signal**: a literal
+  `Description:` header appears mid-body, marking the
+  start of a second species' description.  merge_metric
+  = 5 (below threshold); `count_description_headers` = 1
+  (below the ≥ 2 firing threshold).  Both current §6
+  detectors missed the merge.  See §6 for the mid-body
+  header refinement this case argues for.
 
 **Affected treatments**: `taxon_acd88732...`,
 `taxon_592128a8...` (variant), `taxon_7fbc71a8...`;
