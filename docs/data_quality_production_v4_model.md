@@ -1415,10 +1415,26 @@ require regex-scraping today.
 
 **"Diagnosis" is polysemous in taxonomic literature**:
 
-The single word `Diagnosis` covers three semantically
-distinct block types.  The taxonomic literature has
-technical names for the two English variants — worth
-using them consistently:
+The polysemy has been debated within systematics.  Cifelli
+& Kielan-Jaworowska (2005), *Acta Palaeontologica Polonica*
+50(3): 650-652 ("Diagnosis: Differing interpretations of
+the ICZN") argue that per Linnaeus's *differentia specifica*
+and ICZN Art. 13.1.1 + Recommendation 13A, **a diagnosis
+must be differential** — it must include, at least
+implicitly, comparison to similar taxa.  They quote Mayr
+& Ashlock (1991: 391): "Respectable taxonomists go well
+beyond this minimal requirement… by comparing the newly
+proposed taxon with its closest relative(s) AND describing
+the diagnostic characters carefully."  So the ICZN-
+preferred sense IS Differential Diagnosis; non-differential
+character lists labeled "Diagnosis" are informal/loose
+usage the discipline is arguing against.  This matches the
+skol training corpus: `Diagnosis` mostly means Differential
+Diagnosis.
+
+The single word `Diagnosis` still covers three
+semantically distinct block types in practice.  Using the
+technical names consistently:
 
   1. **Latin Diagnosis** — formal Latin morphology block,
      once required by the ICBN.  Dense, telegraphic.
@@ -1438,6 +1454,19 @@ using them consistently:
      description-like; the source may still call it
      `Diagnosis` in the header, but the content is
      distinct from a Differential Diagnosis.
+     **Note (Cifelli & Kielan-Jaworowska 2005; Mayr &
+     Ashlock 1991)**: a proper Differential Diagnosis
+     WILL describe the target's diagnostic characters as
+     part of the comparison ("differs from X by having
+     larger P4, longer m1, …").  So a "Diagnostic
+     Characters" block existing on its own — without any
+     comparative framing — is the informal/loose usage
+     the ICZN discussion argues against, not a legitimate
+     distinct category.  For the skol schema this
+     matters because our current training data would
+     flatten both onto `Diagnosis`; only if we ever
+     needed to LEARN the distinction would the split
+     become important.
 
 The section classifier isn't necessarily wrong to label a
 Diagnostic Characters paragraph as `Diagnosis` — the
@@ -1449,16 +1478,21 @@ between the sub-types.
 
 **Training-data audit item (2026-07-02)**: the training
 set mostly uses `Diagnosis` to mean **Differential
-Diagnosis** (the comparative form).  Worth a corpus-wide
-audit to check whether any **Diagnostic Characters**
-paragraphs have been labelled as `Diagnosis` in the golden
-data — if so, that's mis-labelled training signal that
-should be re-tagged (either promoted to `Description`, or
-distinguished with a `Diagnostic_characters` label).  This
-would matter if a future model tries to LEARN the
-distinction rather than treating all `Diagnosis` blocks as
-one class.  Deferred until the label-aware assembly work
-(§12) forces the schema question.
+Diagnosis** (the comparative form) — consistent with the
+ICZN-preferred sense per Cifelli & Kielan-Jaworowska
+(2005).  Worth a corpus-wide audit to check whether any
+**Diagnostic Characters**-only paragraphs (no comparative
+framing) have been labelled as `Diagnosis` in the golden
+data — per the C&KJ argument these are borderline
+mis-labelled; they SHOULD have been either promoted to
+`Description` or paired with a Comparisons/Remarks block
+to complete the differential form.  Concrete audit
+signal: `Diagnosis`-labelled spans containing zero
+authored binomials and zero comparative-language
+markers (`differs from`, `similar to`, `distinguished
+from`, etc.) are candidates.  Cheap manual scan on the
+~30-treatment golden set; deferred until the label-aware
+assembly work (§12) forces the schema question.
 
 **Detector-miss (related)**: `count_diagnosis_headers` in
 `triage_signals.py` uses the regex `\bDiagnosis:` — literal
