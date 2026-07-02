@@ -1081,6 +1081,36 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_ed2a6f1c...`** — noted 2026-07-02.  Two-species
+  merge with the same structural pattern as
+  taxon_173204 (compact-congenerics): **2 sets of Asci
+  clauses + 2 sets of Paraphyses clauses**.  Anatomy
+  vocabulary doubling is exactly 2-fold, so no term hits
+  the k=5 count threshold — merge_metric = 2, below the
+  10-threshold, MISSED.  No header repetition, no
+  binomial, no `sp. nov.`.
+  The §10 detector DID fire (desc_starts_mid_sentence
+  = True) — first line "s ·ocarps intraepid rmal, …"
+  shows both an OCR-corrupted head (middot substitutions
+  and dropped characters: `·` for `c`, missing `e` in
+  `epidermal`) AND clipped content — the leading `s` is
+  a leftover from a previous sentence.
+  Diagnosis is a legitimate Differential Diagnosis (§13
+  sense), 981 chars, but the operator notes it's "a
+  little chopped up" — same class as taxon_d2d26d25's
+  clipped-diagnosis pattern (§12) but milder: the block
+  is in the right field, just with damaged boundaries.
+  Refinement idea (same class as the compact-congenerics
+  discussion around taxon_173204): a "structural
+  anatomy doubling" secondary metric that fires on
+  count == 2 for a small list of specific structural
+  words (Asci, Paraphyses, Ascospores, Basidia, Pileus,
+  Stipe, Ascomata, Basidiomata, Conidiomata, …) would
+  catch this class without inflating false positives
+  from ordinary anatomy repetition in single-species
+  descriptions.  Requires calibration against the
+  taxon_b9a6232 / taxon_9e048013 false positives.
+
 * **`taxon_83e36037...`** — noted 2026-07-02.  **All
   current §6 detectors missed** this two-species merge:
   merge_metric = 4 (below threshold), no header repetition,
