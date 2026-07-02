@@ -468,16 +468,31 @@ two or more distinct species.
       body); the layout CRF or grouper lost them.  Yet
       another §12 instance — labels present in the source
       but discarded at assembly.
-    - **Labeling decision (2026-07-02)**: `Colony`,
-      `Colonies`, `Cultural_characteristics`,
-      `Culture_characteristics` (with underscore or space
-      variants) all canonicalize to `Colony`.  Rationale:
-      consistent with the anatomical-entity naming pattern
-      (Pileus, Stipe, Ascomata, Conidiomata, Perithecia —
-      all singular anatomical nouns).
-      "Cultural characteristics" is a section-header name,
-      not an anatomical entity.  Drift-map entries added to
-      `docs/feature_label_canonicalization.json`.
+    - **Labeling decision (2026-07-02, revised
+      2026-07-02 by taxon_9e68c26b)**: `Colony` and
+      `Cultural characteristics` are distinct anatomical
+      entities and MUST NOT be collapsed onto each other.
+      Evidence: taxon_9e68c26b differentiates colonies on
+      the natural substrate (ecological/observational)
+      from colonies on PDA (experimental / laboratory
+      culture) within a single treatment.  A single
+      canonical label would erase that distinction.
+      Current mapping:
+        * `Colonies` → `Colony` (plural → singular
+          normalization; the anatomical entity in natural
+          context)
+        * `Culture_characteristics` /
+          `Culture characteristics` /
+          `Cultural_characteristics` → `Cultural
+          characteristics` (spelling/underscore
+          normalization; laboratory-culture behaviour)
+      The earlier 2026-07-02 decision folding both onto
+      `Colony` (rationale: "consistent with anatomical-
+      entity naming pattern") was too aggressive — the
+      operator's taxon_9e68c26b review revealed the
+      hidden semantic distinction.  Drift-map in
+      `docs/feature_label_canonicalization.json` updated
+      accordingly.
 * **`taxon_f00f8353...`** — noted 2026-07-02.  Compound
   §6 + §10 case:
     - **Description opens with `thick.`** — a canonical
