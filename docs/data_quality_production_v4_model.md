@@ -1054,10 +1054,23 @@ opening.
   Combines with §6 findings (this treatment is a multi-species
   merge) — the Nomenclature-tail leak here is the *first* of
   several fragmentary citations that ended up in Description.
+* **`taxon_7fbc71a8...`** — noted 2026-07-02.  Clean
+  low-noise §10 case: description opens with
+  `subcuticular, black, elliptical to elongated-elliptical,
+  raising the substrate` (a lowercase start).  Operator
+  confirmed the treatment is otherwise a good single-
+  species description; just missing a line or two at the
+  top.  No co-occurring §2 / §6 signals (merge_metric = 5,
+  synth_nomen = False).  Contrast with taxon_acd88732
+  (co-occurring §2 missing citation) and taxon_592128a8
+  variant (compound with a multi-species merge) —
+  taxon_7fbc71a8 is the cleanest observed instance of
+  §10-only, showing the detector fires reliably on
+  otherwise-unremarkable treatments.
 
 **Affected treatments**: `taxon_acd88732...`,
-`taxon_592128a8...` (variant); unknown corpus-wide rate —
-worth a scan.
+`taxon_592128a8...` (variant), `taxon_7fbc71a8...`;
+unknown corpus-wide rate — worth a scan.
 
 **Detection**: reviewer-detectable by eye (leading punctuation
 or lowercase first char).  Automated detection is easy: regex
