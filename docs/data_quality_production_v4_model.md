@@ -526,6 +526,50 @@ two or more distinct species.
   conventions.  Consider flagging it as a false-positive
   regression target so future merge-detector work knows
   not to drop it.
+
+* **`taxon_9e048013...`** — flagged by the merge-metric
+  filter (value = 10, right at threshold) but **on
+  inspection is essentially perfectly extracted**.
+  Description = 439 chars, diagnosis = 2045 chars —
+  diagnosis is nearly 5× the length of the description.
+
+  **Root cause of the false positive**: the diagnosis
+  legitimately compares the target species to several
+  closely-related species — that's what a diagnosis IS.
+  Comparative diagnoses recycle anatomy vocabulary
+  (`pileus`, `stipe`, `spores`) across each comparison,
+  which pushes term-frequency counts above threshold when
+  the metric aggregates over Description + Diagnosis.
+  `merge_metric` currently computes over both fields
+  joined; on this treatment the description alone would
+  score near zero.
+
+  **Description also has legitimate anatomical
+  repetition**: pileus texture in one sentence, pileus
+  color in a later sentence; stipe texture + odor
+  together, then stipe color + color change; spore shape
+  separate from spore dimensions.  This multi-pass
+  literary style is common and does not signal a merge.
+  Not the cause of the false-positive flag here (the
+  description is too short to matter), but a general
+  reminder that raw anatomy-word repetition is a weaker
+  signal than structural markers.
+
+  **Concrete refinement**: change `treatment_merge_metric`
+  to scan `description` only, not `description +
+  diagnosis`.  A comparative diagnosis is by construction
+  multi-species-name-heavy; folding it into the term
+  count guarantees this class of false positive.  Any
+  merge signal worth detecting will surface in
+  Description alone.  Would eliminate taxon_9e048013
+  from the flagged set; needs measurement on the
+  true-positive corpus (taxon_592128a8, taxon_572d470e,
+  taxon_e6402cd3, taxon_e74d89b1) to confirm they still
+  score above threshold on Description-only.
+
+  **Reviewer treatment**: single-species and cleanly
+  extracted; annotate normally.  Add to the false-
+  positive regression list.
 * **`taxon_e6402cd3...`** — noted 2026-07-02.  Fits the same
   compound-merge shape as taxon_572d470e and taxon_592128a8:
     - **Seven `Conidiomata` sections** in the description —
