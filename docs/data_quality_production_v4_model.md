@@ -405,6 +405,26 @@ two or more distinct species.
       a compound-failure exemplar for regression testing —
       a fixer that clears one class shouldn't regress the
       others.
+* **`taxon_e6402cd3...`** — noted 2026-07-02.  Fits the same
+  compound-merge shape as taxon_572d470e and taxon_592128a8:
+    - **Seven `Conidiomata` sections** in the description —
+      the same repetition-count signal as taxon_592128a8's
+      16 Pileus clauses, on a smaller scale.
+    - **Alternating English↔Latin↔English↔Latin** blocks in
+      the description — matches taxon_572d470e's language-
+      alternation pattern.  Continues to argue Latin-block
+      count (§6 detection idea #1) is broadly applicable.
+    - **A cleanly-OCR'd complete taxonomic citation embedded
+      in the description**: `(13) Septoria lycopersici Speg.,
+      Anales Soc. Ci. Argent. 12: 115 (1882)`.  Author,
+      journal, volume, page, year all present and readable.
+      Confirms §6 detection idea #2 (gnfinder / gnparser)
+      works reliably on clean-OCR treatments — the noisy
+      taxon_572d470e case is the exception, not the rule.
+      This is a strong single-signal detection: no
+      legitimate `description` field should contain a
+      complete authored citation.  Caught by the merge-
+      metric filter (metric = 41).
 
 **Affected treatments**: T3, T5, `taxon_592128a8...`.
 
@@ -994,3 +1014,55 @@ target with a known expected split.
 modules).  Likely a Phase 3+ candidate after v4 lands —
 useful to record now so §6 fix work explicitly weighs
 "tighten the merge detector" vs "fix assembly to not need one."
+
+### 13. Diagnosis segments may not be worth Claude annotation (operational note)
+
+**Observation** (operator, 2026-07-02): during hand-review of
+the round-1 + round-2 treatments, labelling anatomical
+features INSIDE `diagnosis` blocks is harder than labelling
+the same anatomy inside `description`.  Diagnosis text is
+Latin-morphology-heavy, dense, and typically one long
+paragraph rather than the `Feature: value; Feature: value;`
+structure that Description has.  Anatomical terms in a
+diagnosis (`asci clavati`, `basidia ovoidea`) share
+vocabulary with the labelled feature classes but the label
+attribution is often arbitrary without context the Diagnosis's
+telegraphic style withholds — `clavati` alone could apply to
+Asci, Basidia, or Paraphyses.
+
+**Consequence**: Claude's annotator produces Diagnosis
+annotations at the same rate it produces Description
+annotations, but a larger fraction of them get rejected in
+review.  API spend on Diagnosis annotation buys less golden-
+data signal per dollar than the equivalent Description spend.
+
+**Proposal (not a plan yet)**: skip Diagnosis blocks in
+`bin/llm_annotate_features`.  Two implementation shapes:
+
+  * **`--skip-diagnosis` CLI flag** (default False initially;
+    consider flipping the default once measured).  Simplest
+    change; keeps the option open.
+  * **Downweight, not skip** — annotate as today, but tag
+    Diagnosis-derived candidates so review filtering can
+    prioritize Description-derived ones.  Doesn't save
+    API spend but improves reviewer-throughput.
+
+**Data needed before deciding**: the kept-vs-rejected rate
+by source field (`description` vs `diagnosis`) across the
+round-1 + round-2 hand review.  `bin/triage_treatments`
+already surfaces per-treatment kept/added/deleted counts —
+extending it (or a companion script) to split by candidate
+source-field would give the ratio directly.
+
+**Cost estimate**: Diagnosis blocks are typically 20-40%
+of a treatment's synth doc by character count.  Skipping
+them would cut per-treatment API spend by roughly that
+fraction on multi-field treatments — meaningful at
+production-corpus scale (30 k+ treatments).
+
+**Interaction with §12**: label-aware assembly makes this
+trivial to implement — Diagnosis-labelled segments simply
+don't get routed to the Claude annotator.  Reinforces the
+§12 case: passing labels through gives us cheap operational
+levers (skip Diagnosis, route Key elsewhere, etc.) that
+require regex-scraping today.
