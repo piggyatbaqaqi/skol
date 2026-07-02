@@ -965,6 +965,31 @@ candidate annotations.  They consolidate the per-issue
    (`#N\tAnnotatorNotes T<n>\tnote text`) — the ingest path
    doesn't strip these, so future canonicalization can use them.
 
+## §0.5. Poster-child treatments (reference)
+
+The rest of this memo catalogs what goes wrong.  For
+balance and calibration, this section records
+extraction-poster-child treatments the operator has
+called out — what a clean, correctly-extracted single-
+species treatment looks like.  Useful when explaining
+"what right looks like" to future reviewers, and as
+regression targets: any future detector or assembler
+tightening MUST NOT surface these as false positives.
+
+* **`taxon_0cfe582f...`** — noted 2026-07-02.  A
+  substantial single-species bolete description (1948
+  chars, 16 annotations).  Clean anatomical opening:
+  `Basidiomata medium large sized, boletoid. Pileus
+  30–80 mm diam, initially hemispheric …`.  All triage
+  detectors correctly silent.  Real Nomenclature; no
+  diagnosis field, which is fine (not every species has
+  a separate diagnosis block).  Structured anatomy
+  proceeds through the expected sections without
+  clipping, header repetition, mid-body Nomenclature
+  fragments, or OCR corruption.  Operator called it
+  "a poster child — this is what an extract description
+  should look like."
+
 ## Notes for fix sequencing
 
 These issues are deferred — not blocking Phase 1 bootstrap-annotation
