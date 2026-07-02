@@ -1240,3 +1240,52 @@ don't get routed to the Claude annotator.  Reinforces the
 §12 case: passing labels through gives us cheap operational
 levers (skip Diagnosis, route Key elsewhere, etc.) that
 require regex-scraping today.
+
+**Concrete evidence (2026-07-02, `taxon_8f93bded...`)**:
+
+* Description opens with a literal `Diagnosis —` block
+  followed by a detailed description.  Total 17
+  annotations came out of this treatment; **Claude
+  skipped the entire Diagnosis paragraph** — every
+  annotation traces to the description body downstream.
+  Empirical support for the "skip Diagnosis" hypothesis:
+  Claude is ALREADY skipping Diagnosis-flavoured blocks
+  implicitly.  Making the skip explicit via
+  `--skip-diagnosis` would save the tokens spent parsing
+  the Diagnosis text (currently sent to the API but
+  produces no annotations) — pure cost reduction with no
+  observed signal loss.
+
+**"Diagnosis" is polysemous in taxonomic literature**:
+
+The single word `Diagnosis` covers three semantically
+distinct block types, ALL of which Claude appears to skip:
+
+  1. **Latin Diagnosis** — formal Latin morphology block,
+     once required by the ICBN.  Dense, telegraphic.
+     Hardest to annotate; the Diagnosis→skip rule's
+     original motivation.
+  2. **English comparative Diagnosis** — differentiates
+     the target species from close relatives.  Contains
+     multiple species names (which is legitimate — see
+     the taxon_9e048013 false-positive discussion in §6).
+  3. **English diagnostic-traits Diagnosis** — defining
+     features of THIS species.  Reads like a Description
+     (taxon_8f93bded is this variant).  Semantically
+     description-like, but the header naming convention
+     keeps it labelled `Diagnosis`.
+
+The section classifier isn't necessarily wrong to label a
+diagnostic-traits paragraph as `Diagnosis` — the source
+header says so, and the reviewer can defend either call.
+For the operational question (should we skip?) the answer
+is the same across all three: yes.  The `--skip-diagnosis`
+rule doesn't need to distinguish between the sub-types.
+
+**Detector-miss (related)**: `count_diagnosis_headers` in
+`triage_signals.py` uses the regex `\bDiagnosis:` — literal
+colon required.  taxon_8f93bded's block starts with
+`Diagnosis —` (em-dash) and slipped past.  Simple
+extension: match `\bDiagnosis\s*[-—–:]` (colon, hyphen,
+em-dash, en-dash).  Filed alongside the taxon_f00f8353
+detector-miss note in §6.
