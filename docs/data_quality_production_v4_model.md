@@ -1332,6 +1332,23 @@ assembly**:
     ending up in prose fields.  Assembly-aware routing
     (`Type` label → `type_designation` field, not
     `description`) would fix it.
+  * **`taxon_ea7b0ed7`** — a figure caption landed
+    embedded mid-Description instead of the doc's
+    `figure_captions` field.  The treatment is otherwise
+    clean (both Description and Diagnosis look good).
+    **Claude implicitly skipped the embedded caption** —
+    10 annotations came out, none of them touching the
+    caption text.  Same pattern as §13's observation
+    that Claude implicitly skips Diagnosis-labelled
+    content: the model recognizes section content that
+    doesn't fit the anatomical-feature schema and
+    silently drops it, even when the block is
+    mis-routed into Description.  Argues Claude's
+    label-recognition capability is stronger than the
+    assembler's — label-aware assembly (§12) could use
+    Claude's implicit skip behaviour as a training
+    signal for what content-vs-anatomy segmentation
+    should look like.
   * **`taxon_d2d26d25`** — a partial Diagnosis block sits
     at the end of Description, missing leading AND
     trailing content (fragmentary at both ends), while the
