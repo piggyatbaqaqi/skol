@@ -431,12 +431,15 @@ two or more distinct species.
       body); the layout CRF or grouper lost them.  Yet
       another §12 instance — labels present in the source
       but discarded at assembly.
-    - **Labeling question opened**: are `Colony` /
-      `Colonies` / `Cultural_characteristics` /
-      `Culture_characteristics` the same anatomical
-      entity?  Discussion + recommendation to canonicalize
-      to `Colony` recorded in the operator log 2026-07-02;
-      pending drift-map addition to
+    - **Labeling decision (2026-07-02)**: `Colony`,
+      `Colonies`, `Cultural_characteristics`,
+      `Culture_characteristics` (with underscore or space
+      variants) all canonicalize to `Colony`.  Rationale:
+      consistent with the anatomical-entity naming pattern
+      (Pileus, Stipe, Ascomata, Conidiomata, Perithecia —
+      all singular anatomical nouns).
+      "Cultural characteristics" is a section-header name,
+      not an anatomical entity.  Drift-map entries added to
       `docs/feature_label_canonicalization.json`.
 * **`taxon_f00f8353...`** — noted 2026-07-02.  Compound
   §6 + §10 case:
