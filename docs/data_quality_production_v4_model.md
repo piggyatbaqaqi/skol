@@ -82,7 +82,28 @@ is not necessarily an error; a citation in `description` is.
   (`http://localhost:9081`) as author+year+journal+page —
   strong signal for automatic detection.
 
-**Affected treatments**: T3, `taxon_2a9d07e6...`.
+* **`taxon_2f276bfa...`** — noted 2026-07-02.  **Sub-shape:
+  full citation at the HEAD of Description, not
+  mid-body.**  First line is a complete authored citation:
+  `Mycovellosiel/a micranlhae (Muller & Chupp) Dianese &
+  Furlanetto, …` (single OCR error: `l/a` for `lla` in the
+  genus).  The description proper starts AFTER the
+  citation, with a capital-letter opener and ends with a
+  period — so once the head citation is stripped, the
+  description content is clean and well-formed.  This is
+  the "Nomenclature line landed at the top of Description"
+  variant, distinct from the mid-body citation of
+  taxon_2a9d07e6 and T3.  Detector implications: neither
+  §10 `desc_starts_mid_sentence` (starts with a capital)
+  nor `mid_body_description_header` (no `Description:`
+  header) fires.  The gnfinder detection idea below would
+  catch it if scoped to the FIRST LINE of Description; a
+  cheaper regex signal is "description first-line matches
+  the shape `Genus species (Author) Author, …`" which
+  survives OCR errors of the kind we see here.
+
+**Affected treatments**: T3, `taxon_2a9d07e6...`,
+`taxon_2f276bfa...`.
 
 **Likely stage** (best guess, not investigated): the layout CRF
 labelled these short numbered heading lines as `Description`
