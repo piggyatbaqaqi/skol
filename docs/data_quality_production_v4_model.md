@@ -1332,6 +1332,36 @@ assembly**:
     ending up in prose fields.  Assembly-aware routing
     (`Type` label → `type_designation` field, not
     `description`) would fix it.
+  * **`taxon_23d479f4`** — Description field contains
+    what looks like carbon-source utilization data
+    (opens with `glycerol, methanol, hexadecane,
+    erythritol, levulinic acid, …`) rather than a
+    normal anatomical description.  Missing lines at
+    both top AND bottom.  Nomenclature is real
+    (`synthetic_nomenclature = False`) and the
+    treatment appears to be a single species; only the
+    Description content is off.  Two interpretations
+    the operator floated:
+      (a) content is legitimate Cultural characteristics
+          (some asexual moulds and yeasts include
+          detailed physiological / carbon-source
+          assays in their treatments) that landed in
+          Description via a lost label.  A label-aware
+          assembler would route it to a `Cultural
+          characteristics` field.
+      (b) content is from experimental Methods /
+          Results sections not intended as taxonomic
+          content, extracted by mistake.
+    Distinguishing between (a) and (b) requires source
+    inspection; the extracted content alone reads
+    consistent with either.  Detection: `§10:mid_sentence`
+    fired correctly (leading `glycerol,` is lowercase).
+    Adds a distinct sub-shape to the §12 leak list —
+    experimental/physiological content in Description,
+    distinct from the anatomical-block leaks
+    (Diagnosis-into-Description, Materials-examined-into-
+    Description) and from the figure-caption leak in
+    taxon_ea7b0ed7.
   * **`taxon_ea7b0ed7`** — a figure caption landed
     embedded mid-Description instead of the doc's
     `figure_captions` field.  The treatment is otherwise
