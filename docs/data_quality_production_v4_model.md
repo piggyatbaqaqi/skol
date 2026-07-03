@@ -1063,6 +1063,31 @@ tightening MUST NOT surface these as false positives.
   fragments, or OCR corruption.  Operator called it
   "a poster child — this is what an extract description
   should look like."
+* **`taxon_d65547ed...`** — noted 2026-07-03.  A clean
+  asexual-mould / plant-pathogen shape (contrast with
+  taxon_0cfe582f's bolete).  750-char description
+  covering ONLY cultural characteristics — legitimate
+  for taxa where the anatomy is essentially the colony
+  (asexual moulds, yeasts, some plant pathogens).
+  Opens `Description. Colonies on PDA approx. 6−7 cm
+  diam. after 7 d at 25 °C, surface f…`.  Real
+  Nomenclature; no diagnosis field.  Natural start and
+  finish per operator.  All triage detectors correctly
+  silent, though see the detector-gap note below.
+  **Detector-gap observation**: description starts with
+  the literal string `Description.` — with a PERIOD as
+  the header terminator, not a colon or em-dash.  My
+  `_DESC_HEADER_RE` regex matches only `\bDescription\s*
+  [-–—:]` (colon, hyphen, en-dash, em-dash); a period
+  slips past.  Not a bug in this true-negative case
+  (offset-0 header is legitimate and doesn't need to
+  fire the multi_description merge flag) but the same
+  gap would let a mid-body `Description.` marker at
+  offset > 0 through the `mid_body_description_header`
+  detector.  Consider extending the regex to include
+  `.` when followed by whitespace-then-capital-letter
+  (period-terminated header form) — a straightforward
+  addition to `treatments_to_structured/triage_signals.py`.
 
 ## Notes for fix sequencing
 
