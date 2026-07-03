@@ -1101,6 +1101,20 @@ tightening MUST NOT surface these as false positives.
   fragments, or OCR corruption.  Operator called it
   "a poster child — this is what an extract description
   should look like."
+* **`taxon_38b5b1c6...`** — noted 2026-07-03.
+  Plant-pathogen ascomycete opening with the proper
+  anatomical noun preserved: `Ascomata separate,
+  immersed in leaf tissue, becoming erumpent, …`.
+  920-char description, 6 annotations, all triage
+  detectors silent.  Useful as the **control case
+  for the anatomical-noun-clip pattern** noted at
+  taxon_7fbc71a8 and taxon_418bf6b7: this is what
+  those two would look like if the extractor had
+  preserved the anatomical noun.  Opens with `Ascomata`
+  as the sentence subject rather than dropping to the
+  adjective-only continuation (`immersed, scattered
+  or in groups. Venter …`).  Operator: "another
+  poster child."
 * **`taxon_e534e6a9...`** — noted 2026-07-03.
   Ascomycete-with-both-morphs shape.  1304-char
   description opens `Saprobic on decaying wood. Sexual
