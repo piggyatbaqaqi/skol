@@ -1509,6 +1509,55 @@ opening.
   where the noun sits alone on the line above.
   Detector fires correctly; content is annotate-able (9
   annotations from a 1367-char description).
+* **`taxon_67cc93d2...`** — round-2 reviewed by
+  piggy@puchpuchobs, noted 2026-07-03.  At least 2
+  species of slime mold (Myxomycota) — a new clade
+  for the memo, distinct from the basidio/asco/lichen
+  cases catalogued so far.  Multiple detection
+  signals present but each partially caught:
+
+  * **§1 head-of-Description citation**: opens with a
+    cleanly-OCR'd full taxonomic citation
+    `Comatotricha  afroalpina  Rammeloo,  Bull.  Jard.
+    Bot.  Belg.  53:  297,  1983 …` (with double-
+    spaced characters — plausible OCR artifact from
+    the source typography).  Same head-of-Description
+    class as taxon_2f276bfa but with a clean binomial
+    that gnfinder would parse successfully.
+  * **§6 idea #1(b) E→L→E target**: the operator
+    identified the English → Latin → English
+    ordering pattern (a Latin diagnosis sandwiched
+    between English content).  Would be caught by the
+    order-aware Latin-block detector that fires on
+    single Latin blocks in non-terminal position.
+    Current `latin_block_count = 0` (probably 1
+    non-firing block) and the ordering detector
+    isn't implemented yet.
+  * **§12 leak**: the Latin diagnosis carries habitat
+    and type designation lines that should have been
+    in the treatment's own `habitat` /
+    `type_designation` fields.
+
+  **Detectors that fired**: `§2:synth_nomen` correctly
+  (nomenclature not attached despite the citation
+  being visible in Description).
+  **Detectors that missed**: `§6:merge_metric = 7`
+  (below threshold — 2 slime mold species with
+  clade-specific anatomy don't accumulate above
+  k=5), no header repetition, no `sp. nov.` count.
+  If §6 idea #1(b) or §6 idea #2 (gnfinder) were
+  implemented, this treatment would be caught.
+
+  **Reviewer data**: kept 26, added 7, deleted 0.
+  Zero deletions on a multi-species merge is unusual
+  (contrast taxon_09507677 with 3 deletions on its
+  3-species merge).  Suggests Claude did a
+  particularly clean job on this treatment despite
+  the compound problems, or the reviewer applied §0
+  rule 3 (annotate first species only) strictly and
+  the 26 Claude annotations happened to line up with
+  species 1's coverage.
+
 * **`taxon_09507677...`** — round-2 reviewed by
   piggy@puchpuchobs.  At least 3 descriptions
   concatenated (per operator's Basidiocarp-clause
