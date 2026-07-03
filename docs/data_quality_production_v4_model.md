@@ -1399,6 +1399,81 @@ opening.
   where the noun sits alone on the line above.
   Detector fires correctly; content is annotate-able (9
   annotations from a 1367-char description).
+* **`taxon_d41b87e4...`** — noted 2026-07-03.  Three
+  complete basidiomycete descriptions merged in one
+  treatment.  All three species have the same
+  anatomical structure (Pileus + Lamellae + Spores +
+  Stipe), so ~3 mentions of each anatomy term across
+  a 1675-char description — each stays below the k=5
+  count threshold, so `merge_metric = 0`, MISSED.
+  Compact-multi-species pattern generalized to 3+
+  species (earlier congeneric-2 cases: taxon_173204,
+  taxon_ed2a6f1c).
+
+  **Structure per operator**:
+    - Species 1: description → `Illustration:` reference
+      → taxonomic citation with `sp. nov.` (a new
+      species).
+    - Species 2: description → type designation →
+      DISTRIBUTION line → taxonomic citation → detailed
+      taxonomic citation with publication details.
+      Species 2 is a redescription of an existing
+      species (no `sp. nov.`, hence n_sp_nov = 1 total
+      not 3).
+    - Species 3: same shape.
+
+  **Detectors that fired correctly**:
+    - `§8:key_couplets` fires (`n_key_couplets = 2`) —
+      the numbered species headings (e.g., `2.
+      Species-name`) trip the couplet-line regex.
+      Semantically not key couplets, but they ARE
+      species boundary markers, so the fire is
+      operationally correct even if the sub-label is
+      wrong.  Argues the `n_key_couplets` detector is
+      doing double duty: real key couplets (§8) AND
+      numbered species headings (§6).  Worth
+      distinguishing later — e.g., is the numbered
+      line followed by a species name (Genus species)
+      or by anatomical prose?  For now, both fire the
+      same flag.
+    - The `Illustration:` header appears in species 1's
+      tail; confirms the taxon_95dbdfb9 watchlist
+      addition was worth it.
+
+  **Detectors that missed**:
+    - `merge_metric = 0` — as noted above, 3-fold
+      repetition of shared anatomy terms doesn't reach
+      k=5.
+    - `n_sp_nov = 1` — correctly counted the single new
+      species, not a miss but a reminder that sp.-nov.
+      counts fire only when the merge involves multiple
+      NEW species.  Redescriptions of existing species
+      don't add to the count.
+    - `latin_block_count = 0` — description is English
+      throughout.
+    - Header-count detectors: no `Diagnosis:` or
+      `Description:` headers repeated.
+
+  **§12 sub-symptoms in the same treatment**:
+    - **Type designation in Description** (species 2's
+      tail) — should have been in the
+      `type_designation` field.  Same class as
+      taxon_95dbdfb9's Holotype-in-Description leak.
+    - **DISTRIBUTION line in Description** — should
+      have been in its own field.  **New §12 leak
+      target**: `DISTRIBUTION` sub-content in prose.
+      The treatment_prose schema DOES have a
+      `distribution` field (see taxon_876c18ec doc
+      dump earlier); the layout CRF is likely
+      mis-labelling these lines as `Description`.
+    - **Taxonomic citations in Description** (both
+      species 2's brief and the followup with
+      publication details) — §1 pattern, gnfinder
+      would catch.
+
+  Reviewer treatment: 3-species merge; apply §0 rule
+  3 (first species only).
+
 * **`taxon_e0d2e4bb...`** — noted 2026-07-03.  Compound
   §6 + §9 case with an important epistemological question
   from the operator.  Multiple U+FFFD noise runs
@@ -1836,6 +1911,18 @@ assembly**:
     ending up in prose fields.  Assembly-aware routing
     (`Type` label → `type_designation` field, not
     `description`) would fix it.
+  * **`taxon_d41b87e4`** — **DISTRIBUTION line in
+    Description**.  New leak target: the
+    `treatments_prose` schema has a `distribution`
+    field, but the layout CRF is labeling
+    DISTRIBUTION lines as `Description` content in
+    at least this case.  Same class as
+    Materials-examined and Type-designation leaks,
+    on a different destination field.  Species 2 of
+    the 3-species merge in this treatment had a
+    DISTRIBUTION line embedded in Description.
+    Assembly-aware routing (`DISTRIBUTION` label →
+    `distribution` field) would fix.
   * **`taxon_8d70e41a`** — **whole-treatment content
     loss** with only a truncated Diagnosis tail
     surviving.  desc_length = 0 (empty Description),
