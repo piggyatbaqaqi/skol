@@ -1492,6 +1492,41 @@ opening.
   where the noun sits alone on the line above.
   Detector fires correctly; content is annotate-able (9
   annotations from a 1367-char description).
+* **`taxon_09507677...`** — round-2 reviewed by
+  piggy@puchpuchobs.  At least 3 descriptions
+  concatenated (per operator's Basidiocarp-clause
+  count).  **First observed 3-species case CAUGHT by
+  merge_metric** (value = 15 vs threshold 10) —
+  contrast with taxon_d41b87e4 (3 species, metric =
+  0, MISSED).  The difference: this treatment's 4017-
+  char description gives ~1339 chars per species, so
+  shared basidiomycete anatomy terms (Basidiocarps,
+  Pileus, Stipe, etc.) accumulate to 5+ mentions
+  each.  taxon_d41b87e4 was denser (1675 chars / 3
+  species ≈ 558 chars each) and fell below the
+  count threshold.
+
+  **"Basidiocarp counting" as the operator's manual
+  signal** is exactly the "structural anatomy
+  doubling" (or here trebling) idea suggested for
+  taxon_ed2a6f1c.  Automated form: for a curated
+  list of specific structural words (Basidiocarps,
+  Basidiomata, Ascomata, Asci, Paraphyses,
+  Conidiomata, Conidia, Pileus, Stipe, …), fire on
+  count >= 2 (compact congenerics) or >= 3 (3+
+  species).
+
+  **Reviewer data**: kept 31 Claude annotations,
+  added 6, DELETED 3.  First non-zero deletion count
+  in the recently-reviewed set (round-1 2b793602 and
+  841d5cbe both had 0 deletions).  The multi-species
+  content probably caused some cross-species
+  annotation confusion Claude couldn't resolve.
+  Interesting operational data: even with §0 rule 3
+  ("annotate first species only"), multi-species
+  treatments generate more reviewer-rejected
+  annotations than clean single-species ones.
+
 * **`taxon_2b793602...`** — round-1 reviewed by
   piggy@puchpuchobs (kept 19 Claude annotations, added
   1, deleted 0 — Claude did well despite the compound
