@@ -1132,6 +1132,23 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_0029f141...`** — round-1 reviewed by
+  piggy@puchpuchobs, noted 2026-07-03.  **First
+  review-confirmed poster-child**: 16 Claude
+  annotations, all 16 kept, 0 added, 0 deleted —
+  perfect signal from both the annotator and the
+  reviewer.  2037-char basidiomycete description
+  opening `Description: Basidiomata small to medium-
+  sized. Pileus 2.6–8 cm`, with a 331-char Diagnosis
+  (Differential Diagnosis).  Single `Description:`
+  header at offset 0 (correctly does NOT fire
+  multi_description).  merge_metric = 9, just below
+  the 10-threshold — validates the threshold
+  calibration.  Stronger regression target than the
+  detector-only poster-children: any future
+  tightening that surfaces this treatment as a false
+  positive would be regressing against a round-1
+  review confirmation.
 * **`taxon_0cfe582f...`** — noted 2026-07-02.  A
   substantial single-species bolete description (1948
   chars, 16 annotations).  Clean anatomical opening:
