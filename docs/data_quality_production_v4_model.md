@@ -1350,6 +1350,17 @@ opening.
   production_v4 corpus likely qualifies.  Not
   blocking Phase 1 review work; a candidate for
   post-Phase-1 corpus-cleanup tooling.
+
+  **Advisory-only, not gating (operator note
+  2026-07-03, taxon_ae45a05e)**: the flag surfaces
+  low-content treatments for triage/review priority,
+  but MUST NOT quarantine them from the search
+  product.  Truncated descriptions of legitimate
+  species (e.g., taxon_ae45a05e's 378-char
+  tail-clipped basidiomycete) retain search value
+  even with missing content.  The completeness
+  signal informs the operator's re-extraction queue,
+  not the search index.
 * **`taxon_592128a8...`** (Nomenclature-tail variant) —
   reported 2026-07-02.  The description opens with the trailing
   fragment of a taxonomic citation ("... should have been
@@ -1397,6 +1408,30 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_ae45a05e...`** — noted 2026-07-03.  **First
+  pure TAIL-CLIP case** in §10.  Description starts
+  cleanly (`Basidiomata small to medium-sized, dry to
+  glutinous, yellowish to greenish. Pil…`) and just
+  runs out — 378 chars, no proper sentence-final
+  punctuation at the tail.  Head-only §10 detector
+  (`desc_starts_mid_sentence`) correctly stays silent;
+  no current detector catches tail-only clipping.
+  Would be caught by the mid-word tail-clip detector
+  idea recorded for taxon_9ecad903 (`[a-z]-\s*$`) or
+  by a "description doesn't end with a sentence-final
+  period" heuristic.  Distinct from taxon_23d479f4
+  (both-ends clipped) and from taxon_acd88732 (head +
+  tail clipped) — first case observed of tail-only.
+  **Search-UX operator note (2026-07-03)**: "This
+  would be an OK result to return in a search."  Even
+  truncated, the treatment carries useful anatomy
+  content for surface-level identification.  Refines
+  the completeness-detection plan of record
+  (§10 SBERT-neighborhood): flagging as
+  "under-populated" should be **advisory only** —
+  driving triage/review priority — NOT gating search
+  inclusion.  Truncated descriptions of legitimate
+  species retain search value.
 * **`taxon_418bf6b7...`** — noted 2026-07-03.  Second
   clean §10-only case; single-species ascomycete
   treatment, description opens `immersed, scattered or
