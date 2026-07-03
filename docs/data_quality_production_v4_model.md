@@ -1484,6 +1484,46 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_3c218a38...`** — round-2 reviewed by
+  piggy@puchpuchobs, noted 2026-07-03.  Genus
+  treatment of Cordyceps-like fungi (Ophiocordyceps
+  or a related segregate genus).  **Compound §1 +
+  §10 head/tail + §12 case**:
+    - **Head-clipped emendation-and-synonym leak**:
+      description opens `emend. G.H. Sung, J.M. Sung,
+      Hywel-Jones & Spatafora= Cordycepioideus
+      Stifler, …` — the tail of a genus emendation
+      (`emend. Authors`) followed by a heterotypic
+      synonym (`= Cordycepioideus Stifler`).  The
+      genus name and original citation preceded
+      "emend." and got clipped.  New §1 sub-variant:
+      genus-emendation tails, distinct from the
+      binomial-tail variants of taxon_592128a8 and
+      taxon_2f276bfa.  Detection: the token `emend.`
+      at description head is a strong signal
+      independent of binomial parsing.
+    - **Type designation clause in Description** —
+      §12 leak, same class as
+      taxon_95dbdfb9/taxon_f00f8353's Holotype-in-
+      Description.
+    - **Tail-clipped**: per operator, description
+      "finishes with an adjective and no punctuation"
+      — pure tail-clip like taxon_ae45a05e.
+    - **§6 stays quiet correctly** (single-genus
+      treatment, not multi-species).
+    - **§10 fires correctly** on the head clip.
+  **Reviewer data notable — 1:1 add ratio**: kept 9,
+  added 9, deleted 0.  Highest ratio observed in the
+  reviewed set (compare to round-1 clean species
+  which typically add 0-6 to Claude's baseline).
+  Suggests Claude was under-annotating on this
+  Cordyceps-like genus description — possibly because
+  its vocabulary is under-represented in the seed
+  examples, or because the genus-level anatomical
+  granularity is different from species-level.
+  Worth watching for other genus-treatment reviews to
+  see if the pattern holds.
+
 * **`taxon_ae45a05e...`** — noted 2026-07-03.  **First
   pure TAIL-CLIP case** in §10.  Description starts
   cleanly (`Basidiomata small to medium-sized, dry to
