@@ -1063,6 +1063,19 @@ tightening MUST NOT surface these as false positives.
   fragments, or OCR corruption.  Operator called it
   "a poster child — this is what an extract description
   should look like."
+* **`taxon_e534e6a9...`** — noted 2026-07-03.
+  Ascomycete-with-both-morphs shape.  1304-char
+  description opens `Saprobic on decaying wood. Sexual
+  morph Undetermined. Asexual morph Colonies on …`.
+  The explicit "Sexual morph / Asexual morph" pair
+  (with one marked Undetermined) is a convention for
+  ascomycetes that have alternating sexual and asexual
+  reproductive stages — the treatment describes the
+  known one and marks the unknown one explicitly, which
+  is more informative than silently omitting.  8
+  annotations from a modest description length; all
+  triage detectors correctly silent.  Operator: "looks
+  perfect."
 * **`taxon_d65547ed...`** — noted 2026-07-03.  A clean
   asexual-mould / plant-pathogen shape (contrast with
   taxon_0cfe582f's bolete).  750-char description
