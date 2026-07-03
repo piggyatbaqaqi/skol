@@ -646,6 +646,50 @@ two or more distinct species.
   regression target so future merge-detector work knows
   not to drop it.
 
+* **`taxon_841d5cbe...`** — flagged by the merge-metric
+  filter (value = 33, well above threshold=10) but
+  **on inspection is a single species with a very
+  complete description** — 8933 chars, opens `PILEUS:
+  60–156 mm wide, white to whitish at first, darkening
+  slightly when …`.  Round-1 reviewer
+  (piggy@puchpuchobs) kept all 20 Claude annotations
+  AND added 6 more the model missed — a high-recall
+  reviewer pass, confirming the treatment is
+  legitimate rich content, not a merge.  Diagnosis
+  is a proper Differential Diagnosis (§13 sense) that
+  matches the description.
+
+  **New false-positive sub-cause**: the description is
+  simply thorough.  Distinct from taxon_b9a6232
+  (single species × multiple media) and taxon_9e048013
+  (short description + long comparative diagnosis) —
+  this one has a normal single-species format but
+  covers each anatomical feature exhaustively.  Any
+  term (pileus, lamellae, spores, stipe) appears
+  many times across a rich 8933-char description
+  because the treatment enumerates every colour,
+  size range, developmental stage, etc.
+
+  Consolidates a pattern across the three
+  false-positive cases: **`merge_metric` is measuring
+  content richness, not multi-species content**.  A
+  very thorough single-species description trips it
+  the same way a multi-species merge does.  Refines
+  the earlier taxon_9e048013 refinement suggestion:
+  scoping to Description-only helps with the diagnosis-
+  inflation false positive but doesn't help with this
+  case (Description was where the richness lived).
+  The deeper fix has to be the structural-boundary
+  approach (§6 idea #3 headers, §6 idea #2 gnfinder
+  binomials, §6 idea #1(b) E→L→E ordering) — signals
+  that distinguish "many mentions with a boundary
+  between them" from "many mentions of a rich
+  single-species description."
+
+  Also fired `§2:synth_nomen` correctly — the
+  Nomenclature field wasn't parsed cleanly.
+  Independent of the §6 misfire.
+
 * **`taxon_9e048013...`** — flagged by the merge-metric
   filter (value = 10, right at threshold) but **on
   inspection is essentially perfectly extracted**.
