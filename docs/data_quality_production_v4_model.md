@@ -1162,6 +1162,22 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_62a712ab...`** — round-2 reviewed by
+  piggy@puchpuchobs, noted 2026-07-03 as the last
+  treatment inspected in the triage-CSV review pass.
+  Plant-pathogen ascomycete on cherry (Prunus
+  cerasus), 1402-char description opening
+  `Description. Saprobic on decaying branches of
+  Prunus cerasus. Sexual morph: Str…`.  Note the
+  period-form `Description.` header (same as
+  taxon_d65547ed) — still not detected by the
+  current `_DESC_HEADER_RE`, filed under the
+  detector-gap for period-terminated header form.
+  **Reviewer data**: kept 8, added 2, deleted 0.
+  Second review-confirmed poster-child (after
+  taxon_0029f141's 16/0/0).  20% add ratio — normal
+  for a clean single-species treatment where Claude
+  gets most features and reviewer adds a couple.
 * **`taxon_0029f141...`** — round-1 reviewed by
   piggy@puchpuchobs, noted 2026-07-03.  **First
   review-confirmed poster-child**: 16 Claude
