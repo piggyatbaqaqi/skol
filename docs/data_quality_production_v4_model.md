@@ -1295,6 +1295,22 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_418bf6b7...`** — noted 2026-07-03.  Second
+  clean §10-only case; single-species ascomycete
+  treatment, description opens `immersed, scattered or
+  in groups. Venter 390–500 μm diam, …`.  Operator:
+  "the gross description of the ascomata is missing."
+  Same specific clip pattern as taxon_7fbc71a8:
+  **anatomical-noun clip** — an adjective (`immersed`,
+  `subcuticular`) describing an anatomical noun
+  (`Ascomata`) survives extraction, but the head noun
+  itself gets clipped off.  Two cases in the sample now
+  makes this a repeatable extraction failure mode —
+  worth a distinct label if it recurs.  Layout CRF likely
+  splits the `<Noun> <adj-run>` phrase at a line boundary
+  where the noun sits alone on the line above.
+  Detector fires correctly; content is annotate-able (9
+  annotations from a 1367-char description).
 * **`taxon_e0d2e4bb...`** — noted 2026-07-03.  Compound
   §6 + §9 case with an important epistemological question
   from the operator.  Multiple U+FFFD noise runs
