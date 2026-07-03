@@ -958,6 +958,24 @@ genus; here, key text lands in the wrong field entirely.
   is weaker than expected — the numbered `15.` / `16.`
   prefixes should be a strong signal for the layout CRF to
   label these paragraphs as `Key`, not `Description`.
+  **Follow-up 2026-07-03**: operator suspects these are
+  **terminal couplets** — the end-of-key steps that each
+  point at a specific species.  Couplet 15 distinguishes
+  Amanita chlorinosma from the alternative at 16 (elongate
+  vs. ovoid basal bulb; clamp presence; odor).  Couplet 16
+  also appears **tail-clipped**: ends `... coronas` after
+  what looks like a truncated spore-shape clause.  Extra
+  detail: terminal-couplet content extracted as if it
+  were the treatment's own description is a subtly
+  distinct failure from "key content leaked from
+  elsewhere in the paper" — the key text HAPPENS to be
+  about this species, it's just not the species' own
+  descriptive prose.  Treatment-grouper likely landed on
+  the terminal couplet because it mentions the target
+  species by name.  Suggests a fix angle: when the layout
+  CRF sees numbered-couplet text pointing at a species
+  name, route it to `key`, NOT `description` — even when
+  the target species matches the treatment's Nomenclature.
 
 **Affected treatments**: `taxon_5b0a8ce7...`; almost certainly
 others — the fact that a treatment with `Amanita chlorinosma`
