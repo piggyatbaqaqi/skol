@@ -381,22 +381,37 @@ two or more distinct species.
   Compact 2-species merges where species are similar
   (congenerics, same family) are a documented blind spot of
   the current metric — see 'Merge-metric limitations' below.
-* **`taxon_2a9d07e6...`** — discovered 2026-07-01.  Nomenclature
-  `Teratosphaeria dunnii Crous & Carnegie` correctly parsed;
-  description contains a SECOND full species description
-  (*Teratosphaeria obscuris* with its own formal citation).
-  **Two structural markers** that would have caught the merge:
-  (1) the `description` field contains the literal string
-  `Diagnosis:` twice (once at the top for T. dunnii, once
-  mid-body for T. obscuris) — a properly-single-species
-  description has one such header at most; (2) the second
-  citation would parse cleanly via gnparser as an authored
-  binomial, and no legitimate `description` field should
-  contain a formal citation (see §1's Description-vs-Diagnosis
-  distinction).  **Slipped past the merge-metric filter with
-  metric = 0** — 7 annotations total across 6 labels; both
-  species are compact enough that no term reaches k=5.  Worst
-  of the observed blind spots.
+* **`taxon_2a9d07e6...`** — discovered 2026-07-01, extended
+  2026-07-03.  Nomenclature `Teratosphaeria dunnii Crous &
+  Carnegie` correctly parsed; description contains a SECOND
+  full species treatment (`Teratosphaeria obscuris` with its
+  own formal citation).  **Three structural markers** would
+  have caught the merge:
+    (1) the `description` field contains the literal string
+    `Diagnosis:` twice (once at the top for T. dunnii, once
+    mid-body for T. obscuris) — a properly-single-species
+    description has one such header at most;
+    (2) the second citation would parse cleanly via
+    gnfinder / gnparser as an authored binomial with clean
+    OCR (operator-confirmed 2026-07-03), and no legitimate
+    `description` field should contain a formal citation
+    (see §1's Description-vs-Diagnosis distinction);
+    (3) each of the two diagnostic-traits clauses
+    (§13 sense — Diagnostic Characters, per Cifelli &
+    Kielan-Jaworowska 2005) ends with a `Description and
+    illustration:` citation.  This is a NEW header keyword
+    pattern — the paper's format is "brief diagnoses with
+    external references to full descriptions," a legitimate
+    publication style for keys and revisions.  Adds
+    `Description and illustration:` to the §6 idea #3
+    header watchlist.  Two occurrences = two species'
+    references = independent merge signal beyond the
+    `Diagnosis:` count.
+  **Slipped past the merge-metric filter with metric = 0**
+  — 7 annotations total across 6 labels; both species are
+  compact enough that no term reaches k=5.  Worst of the
+  observed blind spots for the term-frequency metric alone,
+  but multiple orthogonal header signals catch it.
 * **`taxon_572d470e...`** — discovered 2026-07-01 in the
   50-treatment run.  Nomenclature is
   `Saccobolus sphaerosporus Brumm., spec. nov.`; description
@@ -822,15 +837,20 @@ Ideas for a better metric that would catch these:
      section-header keyword appearing at most once; two or
      more of the same header is a strong merge signal.
      Concrete headers to watch — `Diagnosis:`, `Description:`,
-     `Observations:`, `Illustration:`, `Cultural
-     characteristics`, `Culture characteristics`,
-     `Colonies on`, `Etymology:`, `Habitat:`, `Type:`,
-     `Holotype:`.  `taxon_2a9d07e6` had two `Diagnosis:`
-     headers; `taxon_592128a8` had three `Observations:`
-     headers; `taxon_e74d89b1` had many `Cultural
-     characteristics` sections; `taxon_95dbdfb9` had 3
-     `Illustration:` + 3 `Description:` pairs (illustrated
-     monograph format).
+     `Description and illustration:`, `Observations:`,
+     `Illustration:`, `Cultural characteristics`,
+     `Culture characteristics`, `Colonies on`,
+     `Etymology:`, `Habitat:`, `Type:`, `Holotype:`.
+     `taxon_2a9d07e6` had two `Diagnosis:` headers AND
+     two `Description and illustration:` citations (each
+     diagnostic-traits clause terminates with an
+     external-reference citation — the "brief diagnoses
+     with external descriptions" paper style used in
+     revisions and keys); `taxon_592128a8` had three
+     `Observations:` headers; `taxon_e74d89b1` had many
+     `Cultural characteristics` sections; `taxon_95dbdfb9`
+     had 3 `Illustration:` + 3 `Description:` pairs
+     (illustrated monograph format).
      **Position refinement (taxon_a21a83f4)**: a header
      appearing at ANY offset > 0 inside the raw description
      field is a merge signal, not just count ≥ 2.  The
