@@ -749,16 +749,37 @@ Ideas for a better metric that would catch these:
      description**.  In pre-2012 taxonomic literature (still
      the majority of the ingested corpus), the standard
      format is ONE Latin diagnosis + ONE English description
-     per species.  A description containing MORE THAN ONE
-     Latin block is a very strong merge signal.  Detection
-     is robust to OCR corruption (Latin morphology — endings
-     `-us`, `-a`, `-um`, `-orum`, `-arum`, `-ibus`; vocabulary
-     `apothecia`, `sessilia`, `ascosporae` — survives typos
-     that break binomial parsing).  Cheap to compute
-     paragraph-by-paragraph via langdetect / pycld3 / a
-     Latin-suffix heuristic.  Would have caught the
-     `taxon_572d470e` case cleanly.  Pre-bootstrap; no API
-     spend needed.
+     per species — Latin comes FIRST, followed by its
+     English translation or the English description proper.
+     Two order-independent merge signals:
+       (a) **More than one Latin block** anywhere in the
+           description (`latin_block_count >= 2`).  Already
+           implemented in `triage_signals.latin_block_count`;
+           fires §6:latin_alt when count >= 2.  Would have
+           caught taxon_572d470e cleanly.
+       (b) **A single Latin block sandwiched between two
+           English blocks** (E → L → E ordering).
+           Operator note 2026-07-03 (taxon_9ecad903): a
+           mid-description Latin block with English on
+           BOTH sides is a pathology even when
+           `latin_block_count == 1`.  Normal structure
+           puts Latin first (or lets the two languages
+           live in separate labelled sections); Latin
+           sandwiched by English means the assembler
+           collapsed adjacent species' content across a
+           Latin diagnosis that should have anchored one
+           of them.  Detector requires an order-aware
+           pass (not just a count): score each paragraph
+           as Latin or English, then flag when a Latin
+           paragraph is neither at the start nor at the
+           end of the run.
+     Detection is robust to OCR corruption (Latin
+     morphology — endings `-us`, `-a`, `-um`, `-orum`,
+     `-arum`, `-ibus`; vocabulary `apothecia`, `sessilia`,
+     `ascosporae` — survives typos that break binomial
+     parsing).  Cheap to compute paragraph-by-paragraph
+     via langdetect / pycld3 / a Latin-suffix heuristic.
+     Pre-bootstrap; no API spend needed.
   2. **Parse `description` for taxonomic citations via gnfinder /
      gnparser** (`http://localhost:9080` / `9081`).  A
      `description` field should describe ONE specimen and
@@ -1227,11 +1248,19 @@ opening.
        strong signal that a page or paragraph break wasn't
        handled by the extractor.  Cheap regex detector:
        description ends with `[a-z]-\s*$`.
-    2. **Latin/English translation pair** — the Latin
-       diagnosis and its English translation appear
-       consecutively, exactly as the source paper laid
-       them out.  This pairing is standard taxonomic-
-       paper structure, not itself a merge signal.
+    2. **Latin block sandwiched between two English
+       blocks (E → L → E)** — the Latin diagnosis appears
+       between species 1's clipped English description and
+       species 2's clipped English description.  **This
+       ordering IS a pathology** (operator correction
+       2026-07-03): normal taxonomic-paper structure puts
+       Latin BEFORE its matching English translation (or
+       the two live in separate labelled sections).  Latin
+       appearing MID-body, surrounded by English on both
+       sides, means the assembler collapsed adjacent
+       species' content across a Latin diagnosis that was
+       supposed to anchor one of them.  See §6 idea #1(b)
+       below for the order-aware detector.
     3. **Species 2 Description** — starts lowercase after
        the previous sentence's period, so head-clipped
        (§10 classic).  My `desc_starts_mid_sentence`
