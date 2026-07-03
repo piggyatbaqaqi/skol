@@ -2215,6 +2215,28 @@ as its own treatment_prose doc.
   Triage detector flags this as
   `§2:synth_nomen` — correctly, because no proper
   Nomenclature attaches to a shared-diagnosis block.
+* **`taxon_7af2e7c8...`** (variant, noted 2026-07-03) —
+  **Distinct sub-shape**: a treatment with a REAL
+  Nomenclature (`synthetic_nomenclature = False`),
+  desc_length = 0, and only a short Differential
+  Diagnosis (188 chars).  1 Claude annotation total.
+  Not a shared-diagnosis orphan (that class has
+  synth_nomen) — this is a legitimate single-species
+  treatment whose source paper carried nothing but a
+  brief diagnostic snippet, likely a redescription
+  associated with a key or an existing-species mention
+  in a monograph.  Operator judgment: "we probably
+  don't care about this treatment" — accurate; too
+  little content to bootstrap meaningfully, and the
+  little that's there is Differential Diagnosis
+  (§13-skippable per the operator's earlier note).
+  **Detection**: `desc_length == 0 AND diag_length <
+  500 AND synthetic_nomenclature == False` — the
+  synth_nomen distinction separates this "legitimate
+  low-value" case from taxon_715c2164's shared-diagnosis
+  orphan.  **Reviewer treatment**: skip per §0 rule 2
+  (not enough content to annotate).  Not a
+  data-quality bug; catalog for triage completeness.
 
 **Likely stage**: treatment-grouper's assumption that each
 treatment has exactly one (Nomenclature, Description,
