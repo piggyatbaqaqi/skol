@@ -1279,40 +1279,63 @@ opening.
     > "I'm not sure how we could decide that we have
     > enough of the features documented, but this pair
     > is clearly not enough."
-  **Completeness-detection design ideas** (recorded
-  for future work; nothing implemented):
-    (a) **Feature-count threshold** — descriptions with
-        fewer than N distinct features are suspect.
-        Simple but clade-sensitive: asexual moulds can
-        legitimately have 2-3 features (see
-        taxon_d65547ed poster-child, cultural-only);
-        boletes need 6+.  Threshold must be
-        clade-conditional.
-    (b) **Clade-expected feature set** — for a bolete,
-        expect Pileus + Stipe + Lamellae + Spores at
-        minimum.  For an ascomycete, expect
-        Ascomata + Asci + Ascospores + Paraphyses.
-        For a lichen, Thallus + Apothecia.  Requires
-        upstream clade inference from the Nomenclature.
-    (c) **SBERT-neighborhood comparison** —
-        data-driven: if similar species (by SBERT
-        similarity to this treatment) all have more
-        features documented, this one is likely
-        incomplete.  Zero-config; uses existing
-        infrastructure (the same embedding space the
-        search product already uses).
-    (d) **Description-length percentile** — short
-        descriptions are suspect.  Clade-sensitive
-        again; same caveat as (a).
-  Option (c) is probably the most robust — it inherits
-  clade-appropriateness from the neighborhood without
-  needing explicit clade classification.  Cheap to
-  test: for each treatment, pull top-K SBERT
-  neighbors, compute their annotation-count
-  distribution, and flag treatments whose count is
-  below the 10th percentile of their neighborhood.
-  This would surface taxon_acd88732 (2 features vs
-  ascomycete neighborhood's 8-10) reliably.
+  **Completeness detection — plan of record (decided
+  2026-07-03)**: SBERT-neighborhood comparison.
+  Rationale: inherits clade-appropriateness from the
+  neighborhood without needing explicit clade
+  classification; zero-config; uses the same
+  embedding space the search product already
+  computes.  taxon_acd88732 (2 features) sits near
+  other ascomycetes (typically 8-10 features per
+  treatment), so it flags reliably against the
+  neighborhood's distribution.  Legitimate
+  clade-appropriate short descriptions like
+  taxon_d65547ed (asexual mould, cultural-only,
+  ~6 features) sit near other asexual moulds with
+  similar counts and do NOT flag.
+
+  **Concrete rule**: for each treatment, pull top-K
+  SBERT neighbors, compute their `annotation_count`
+  distribution, flag treatments whose count is below
+  the 10th percentile of their neighborhood.  K to be
+  calibrated during implementation (initial guess:
+  K = 20).  Threshold percentile also calibrated
+  against the false-positive corpus (taxon_b9a6232,
+  taxon_9e048013 — must not flag as incomplete
+  since they ARE complete for their taxa).
+
+  **Alternatives considered and rejected** (recorded
+  so future work doesn't need to re-derive the
+  reasoning):
+    (a) **Feature-count threshold** — rejected
+        because clade-sensitive.  Asexual moulds
+        legitimately have 2-3 features
+        (taxon_d65547ed poster-child); boletes need
+        6+.  A global threshold would either flag
+        legitimate short descriptions or miss
+        incomplete ascomycete descriptions.
+    (b) **Clade-expected feature set** — rejected
+        because it requires upstream clade
+        inference from the Nomenclature.  Would work
+        in principle but the plumbing (nomenclature
+        → clade → expected-features table) is
+        substantial infrastructure vs. option (c)'s
+        zero-config approach.  Might revisit if
+        SBERT-neighborhood proves too noisy.
+    (d) **Description-length percentile** — rejected
+        for the same clade-sensitivity reason as (a),
+        AND because character length is a weaker
+        proxy for completeness than the annotation
+        count (a wordy but repetitive description
+        would fool it).
+
+  **Implementation gate**: the SBERT space needs to
+  be reasonably populated first — we need enough
+  neighbors per treatment for the percentile to be
+  meaningful.  The current 45 k-treatment
+  production_v4 corpus likely qualifies.  Not
+  blocking Phase 1 review work; a candidate for
+  post-Phase-1 corpus-cleanup tooling.
 * **`taxon_592128a8...`** (Nomenclature-tail variant) —
   reported 2026-07-02.  The description opens with the trailing
   fragment of a taxonomic citation ("... should have been
