@@ -1448,6 +1448,45 @@ opening.
   where the noun sits alone on the line above.
   Detector fires correctly; content is annotate-able (9
   annotations from a 1367-char description).
+* **`taxon_2b793602...`** — round-1 reviewed by
+  piggy@puchpuchobs (kept 19 Claude annotations, added
+  1, deleted 0 — Claude did well despite the compound
+  problems).  Revisited 2026-07-03 with the accumulated
+  round-2 lens.  Large (7875-char) treatment stacking
+  **three distinct failure modes**:
+    - **§6 3+ species merge** — three basidiomycete
+      descriptions (Pileus + Lamellae + Spores +
+      Stipe), each followed by taxonomic citations.
+      merge_metric = 39, correctly flagged.
+    - **§11 genus + type-species addition** — one of
+      the "descriptions" is actually a GENUS
+      description that includes the type species,
+      same shape as taxon_01a01c54.
+    - **§8 key content in Description tail** — a run
+      of key couplets appended at the end of the
+      Description.
+  Two detector-gap observations:
+    (1) **Numberless couplets** — the trailing key
+        content has the couplet numbers STRIPPED
+        (`_COUPLET_LINE_RE = ^\s*\d+[a-z]?[.)]\s+[A-Z]`
+        requires the leading digit; numberless couplets
+        slip past entirely).  Cause: probably a source
+        typography choice or an extraction step that
+        removed line-leading numbers.  Detector
+        refinement: fall back to a shape-based signal
+        when no leading number is present — see (2).
+    (2) **Terse 1-to-2-features-per-line format** —
+        the couplet run has very short lines (a
+        feature or two per line) while normal
+        description prose has multi-sentence
+        paragraphs.  Refinement: score lines by
+        approximate word count; a run of consecutive
+        short lines (<20 words) inside an otherwise
+        prose-heavy description is a §8 signal even
+        without couplet numbers.  Would compose with
+        the existing numbered-couplet regex — either
+        signal fires flag §8.
+
 * **`taxon_d41b87e4...`** — noted 2026-07-03.  Three
   complete basidiomycete descriptions merged in one
   treatment.  All three species have the same
