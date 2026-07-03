@@ -1262,6 +1262,61 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_e0d2e4bb...`** — noted 2026-07-03.  Compound
+  §6 + §9 case with an important epistemological question
+  from the operator.  Multiple U+FFFD noise runs
+  interspersed with legible prose (§9 interstitial-noise
+  variant — text before and after the noise aligns in at
+  least one instance).  Two species descriptions clearly
+  concatenated: 2 sets of Stromata + 2 sets of
+  Conidiophores + 2 sets of Conidia.  Mid-body boundary
+  marker present:
+    ```
+    Illustration: Nakashina et al.[FFFD run] Description[FFFD run]
+    ```
+  — the same `Illustration:` + `Description:` header pair
+  documented in taxon_95dbdfb9 (illustrated-monograph
+  format), except here U+FFFD noise sits BETWEEN the label
+  word and the content, so the current
+  `\bDescription\s*[-–—:]` regex doesn't count the
+  mid-body occurrence.  `n_description_headers = 1` (only
+  the offset-0 header is counted), below the ≥ 2
+  threshold, MISSED.  merge_metric = 1, also MISSED.
+
+  **U+FFFD-tolerant header refinement**: extend
+  `_DESC_HEADER_RE` (and its Diagnosis sibling) to accept
+  U+FFFD noise as a header terminator alongside the
+  existing `[-–—:]` set.  Concrete regex to avoid
+  false-positive prose matches: `\bDescription
+  [\s�]*(?=[A-Z])` — Description followed by any
+  mix of whitespace / U+FFFD then a capital letter (the
+  start of new content).  Similarly for Diagnosis and
+  Illustration.  Would have caught this treatment.
+
+  **Operator epistemological note (2026-07-03)**:
+    > "I'm not sure how we'd readily distinguish this from
+    > a description with different subfeatures for a given
+    > feature, e.g. Conidia shapes, and later Conidia
+    > color."
+  The answer emerging from the accumulated §6 evidence:
+  **use structural boundary markers, not anatomy-mention
+  counts, to make the merge call**.  A single species can
+  legitimately mention Conidia twice (shapes early, colors
+  later — taxon_b9a6232 / taxon_9e048013 false-positive
+  pattern).  What distinguishes a real merge is a
+  BOUNDARY BETWEEN the two mentions: a Description: /
+  Illustration: / Nomenclature header, a formally-cited
+  binomial (§6 idea #2), or a Latin/English switch (§6
+  idea #1).  In taxon_e0d2e4bb the boundary marker IS
+  present — the `Illustration: … Description …` pair —
+  but obscured by OCR noise, hence the detector miss.
+  When NO boundary is present, treat as single-species:
+  accept the risk of missing compact congeneric merges
+  (taxon_173204, taxon_ed2a6f1c) so we can catch them via
+  §0 rule 3 reviewer inspection rather than automatic
+  quarantine.  This is the operating principle
+  reflected in the current detector suite.
+
 * **`taxon_9ecad903...`** — noted 2026-07-03.
   2-or-3-species merge stacking half a dozen sub-symptoms
   in one treatment.  Structure per operator:
