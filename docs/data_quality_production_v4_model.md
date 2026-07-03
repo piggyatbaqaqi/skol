@@ -53,7 +53,7 @@ is not necessarily an error; a citation in `description` is.
 
 **Evidence**:
 
-* **T3** — `description` begins:
+* **T3 / `taxon_22346900...`** — `description` begins:
   ```
   I. Gymnopilus laeticolor sp. nov.
   Pileus convex or somen-hat conic to subexpanded ...
@@ -64,7 +64,22 @@ is not necessarily an error; a citation in `description` is.
   3. Gymnopilus ornatulus sp. nov.
   ```
   i.e. a SECOND species heading buried inside what's labelled as a
-  single Description block.
+  single Description block.  **Follow-up 2026-07-03** (operator):
+  in fact there are **3 (possibly complete) descriptions** —
+  counting Pileus clauses gives three, though only positions 1
+  (`I.`) and 3 have `sp. nov.` citations, suggesting species 2
+  may be a redescription of an existing species.  Numbering
+  itself is **mixed Roman (`I.`) and Arabic (`3.`)** — a
+  detector-gap observation: my
+  `_COUPLET_LINE_RE = ^\s*\d+[a-z]?[.)]\s+[A-Z]` matches the
+  Arabic `3.` but slips past the Roman `I.` (n_key_couplets =
+  1 not 2 for this treatment).  Refinement: allow either
+  Arabic digits OR Roman numerals at the couplet-line start
+  (`^\s*(?:\d+[a-z]?|[IVXLC]+)[.)]\s+[A-Z]`).
+  **Round-1 review data**: piggy@puchpuchobs kept all 13
+  Claude annotations, added 0, deleted 0 — Claude covered
+  species 1 cleanly per §0 rule 3.  Perfect signal from both
+  ends.
 * **`taxon_2a9d07e6...`** — discovered 2026-07-01 in the
   50-treatment run.  Nomenclature is
   `Teratosphaeria dunnii Crous & Carnegie, Persoonia 42: 327.`
