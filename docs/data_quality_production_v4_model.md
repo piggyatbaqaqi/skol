@@ -382,20 +382,35 @@ two or more distinct species.
   into flat fields (Description, Diagnosis) without preserving
   the segment labels, so the fragments now interleave.  See
   §12 for the strategic response.
-* **`taxon_173204...`** — discovered 2026-07-01 in the 50-
-  treatment run.  Real nomenclature (`Setiferotheca nipponica
-  Matsush.`), then a description field containing TWO similar-
-  species descriptions concatenated.  Label distribution shows
-  the tell-tale doubling: Asci × 2, Ascomata × 2, Ascospores
-  × 2, Peridium × 2, plus singletons (Chlamydospores, Mycelium,
-  Necks, Subiculum).  Only 12 annotations total — well within
-  the single-species range for a rich ascomycete.  **Slipped
-  past the merge-metric filter** (metric value 2, threshold 10)
-  because the two species share anatomical vocabulary and each
-  term appears only ~2 times, below the k=5 count threshold.
-  Compact 2-species merges where species are similar
-  (congenerics, same family) are a documented blind spot of
-  the current metric — see 'Merge-metric limitations' below.
+* **`taxon_173204...`** — discovered 2026-07-01, revisited
+  2026-07-03 (round-2 review by piggy@puchpuchobs).  Real
+  nomenclature (`Setiferotheca nipponica Matsush.`), then a
+  description field containing TWO similar-species descriptions
+  concatenated.  Label distribution shows the tell-tale
+  doubling: Asci × 2, Ascomata × 2, Ascospores × 2, Peridium
+  × 2, plus singletons (Chlamydospores, Mycelium, Necks,
+  Subiculum).  Only 12 annotations total — well within the
+  single-species range for a rich ascomycete.  **Slipped past
+  the merge-metric filter** (metric value 2, threshold 10)
+  because the two species share anatomical vocabulary and
+  each term appears only ~2 times, below the k=5 count
+  threshold.  Compact 2-species merges where species are
+  similar (congenerics, same family) are a documented blind
+  spot of the current metric — see 'Merge-metric limitations'
+  below.
+  **2026-07-03 revisit — boundary marker present**: the
+  operator identifies the two species as separated by a
+  **complete taxonomic citation for the genus
+  Syspastospora** — a formally-cited GENUS name between the
+  two species descriptions.  This is a strong §6 idea #2
+  (gnfinder) target — a formally-cited authored name inside
+  a Description is a merge signal (§1 rule).  The genus
+  citation for Syspastospora would parse cleanly through
+  gnfinder; the fact that gnfinder detection isn't
+  implemented yet is the reason this compact-congenerics
+  case remains a blind spot.  Round-2 reviewer data:
+  kept 12, added 2, deleted 0 — Claude covered species 1
+  cleanly; reviewer added 2 features per §0 rule 3.
 * **`taxon_2a9d07e6...`** — discovered 2026-07-01, extended
   2026-07-03.  Nomenclature `Teratosphaeria dunnii Crous &
   Carnegie` correctly parsed; description contains a SECOND
