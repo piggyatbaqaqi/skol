@@ -1253,8 +1253,8 @@ opening.
 
 **Evidence**:
 
-* **`taxon_acd88732...`** — discovered during 2026-07-01
-  hand-inspection.  `description` field verbatim:
+* **`taxon_acd88732...`** — discovered during 2026-07-01,
+  extended 2026-07-03.  `description` field verbatim:
   ```
   ; perithecia epiphyllous, slightly prominent, black, shining;
   spores subcylindrical, straight or somewhat curved, or
@@ -1266,6 +1266,53 @@ opening.
   labelled them cleanly.  Also co-occurs with §2 (taxonomic
   citation not extracted) — presumably the citation lived in
   the clipped-off head of the sentence.
+  **2026-07-03 follow-up**: operator suspects
+  **tail-clipping too** — the description ends
+  mid-clause (`subflexuous` without a period or a
+  connecting-clause resolution).  Two-ended clipping,
+  same shape as taxon_23d479f4 and taxon_9ecad903's
+  sub-symptom.  Also: **the description is
+  clade-incomplete** — an ascomycete treatment showing
+  only Perithecia and Spores omits the usual Ascomata,
+  Asci, Ascospores, Paraphyses, Peridium, Ostiole
+  content.  Operator epistemological note:
+    > "I'm not sure how we could decide that we have
+    > enough of the features documented, but this pair
+    > is clearly not enough."
+  **Completeness-detection design ideas** (recorded
+  for future work; nothing implemented):
+    (a) **Feature-count threshold** — descriptions with
+        fewer than N distinct features are suspect.
+        Simple but clade-sensitive: asexual moulds can
+        legitimately have 2-3 features (see
+        taxon_d65547ed poster-child, cultural-only);
+        boletes need 6+.  Threshold must be
+        clade-conditional.
+    (b) **Clade-expected feature set** — for a bolete,
+        expect Pileus + Stipe + Lamellae + Spores at
+        minimum.  For an ascomycete, expect
+        Ascomata + Asci + Ascospores + Paraphyses.
+        For a lichen, Thallus + Apothecia.  Requires
+        upstream clade inference from the Nomenclature.
+    (c) **SBERT-neighborhood comparison** —
+        data-driven: if similar species (by SBERT
+        similarity to this treatment) all have more
+        features documented, this one is likely
+        incomplete.  Zero-config; uses existing
+        infrastructure (the same embedding space the
+        search product already uses).
+    (d) **Description-length percentile** — short
+        descriptions are suspect.  Clade-sensitive
+        again; same caveat as (a).
+  Option (c) is probably the most robust — it inherits
+  clade-appropriateness from the neighborhood without
+  needing explicit clade classification.  Cheap to
+  test: for each treatment, pull top-K SBERT
+  neighbors, compute their annotation-count
+  distribution, and flag treatments whose count is
+  below the 10th percentile of their neighborhood.
+  This would surface taxon_acd88732 (2 features vs
+  ascomycete neighborhood's 8-10) reliably.
 * **`taxon_592128a8...`** (Nomenclature-tail variant) —
   reported 2026-07-02.  The description opens with the trailing
   fragment of a taxonomic citation ("... should have been
