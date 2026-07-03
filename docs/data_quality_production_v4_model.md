@@ -1766,6 +1766,32 @@ assembly**:
     ending up in prose fields.  Assembly-aware routing
     (`Type` label → `type_designation` field, not
     `description`) would fix it.
+  * **`taxon_8d70e41a`** — **whole-treatment content
+    loss** with only a truncated Diagnosis tail
+    surviving.  desc_length = 0 (empty Description),
+    diag_length = 336 (short Diagnosis, head-clipped
+    but ending correctly), synthetic_nomenclature =
+    True (no Nomenclature), 2 annotations total.  Third
+    observed instance of Diagnosis-field head-clipping
+    (after taxon_e44e35bc's both-ends clip and
+    taxon_9ecad903's head-clip) — enough recurrences
+    to promote this from "worth watching" to an
+    implementable detector: apply the
+    `desc_starts_mid_sentence` rule to the `diagnosis`
+    field as well, gated on `diag_length > 0`.  What
+    makes taxon_8d70e41a a distinct sub-shape is the
+    accompanying **complete loss of Description
+    content** — the Description field is empty, not
+    just mis-filled.  Distinct from §14's
+    shared-diagnosis orphan (which has a COMPLETE
+    diagnosis serving multiple sibling species-treatments
+    intentionally); here the missing content is a
+    failure, not a source-intended fan-out.  Detection
+    for this specific sub-shape: `desc_length == 0 AND
+    diag_length < 500 AND diag_head_clipped` — the
+    combined signals distinguish "diagnosis-only
+    orphan" (§14, likely complete) from "everything
+    lost except a diagnosis fragment" (this case).
   * **`taxon_ea7b0ed7`** — a figure caption landed
     embedded mid-Description instead of the doc's
     `figure_captions` field.  The treatment is otherwise
