@@ -2000,7 +2000,29 @@ assembly**:
     lost except a diagnosis fragment" (this case).
   * **`taxon_ea7b0ed7`** — a figure caption landed
     embedded mid-Description instead of the doc's
-    `figure_captions` field.  The treatment is otherwise
+    `figure_captions` field.
+  * **`taxon_d552598708...`** — multi-caption
+    variant of the taxon_ea7b0ed7 pattern.
+    Complete single-species description of a smut
+    fungus (`Sori (Fig. 2) in ovaries …`; intra-
+    description figure references are normal),
+    then **TWO figure captions appended** at the
+    tail, with the **second caption head-clipped**.
+    Two new sub-observations:
+      (1) The leak isn't always a single caption —
+          the treatment-grouper can pick up a RUN of
+          consecutive captions.  Detection should
+          count captions, not just detect one.
+      (2) The captions themselves can carry their
+          own clipping — the second caption is
+          head-truncated where the run began.
+          Combined with the boundary between species
+          content and the caption run, this is
+          another instance of "extractor lost the
+          boundary and clipped what it did capture."
+    All triage detectors correctly silent — Claude
+    produced 5 annotations, presumably skipping the
+    caption run per its §13-analogous behaviour.  The treatment is otherwise
     clean (both Description and Diagnosis look good).
     **Claude implicitly skipped the embedded caption** —
     10 annotations came out, none of them touching the
