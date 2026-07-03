@@ -152,6 +152,11 @@ def desc_starts_mid_sentence(text: str) -> bool:
     header like `Pileus`) or a Latin word (also capitalized).
     Openings like `; perithecia ...` (taxon_acd88732) or
     `, hyaline ...` are telltale extraction failures.
+
+    Reused for the diagnosis field via the
+    ``diag_starts_mid_sentence`` key in ``treatment_signals``
+    — the same head-clip predicate applies regardless of
+    which field the text came from.
     """
     if not text:
         return False
@@ -165,6 +170,52 @@ def desc_starts_mid_sentence(text: str) -> bool:
     if first.islower():
         return True
     return False
+
+
+# Sentence-final characters that indicate a description reached
+# its natural end.  Ellipsis (…) is stylistic but common at
+# genuine tails; treat as terminal to avoid flagging legitimate
+# uses.
+_SENTENCE_FINAL_CHARS = frozenset('.?!…')
+
+# Mid-word hyphen at description tail — the taxon_9ecad903
+# canonical shape (`cinnamon or red-`).  Strong signal that a
+# page or paragraph break wasn't handled during extraction.
+# Requires a lowercase letter before the hyphen so that
+# proper hyphenated compounds ending in a period
+# (`reddish-brown.`) don't match.
+_MID_WORD_HYPHEN_TAIL_RE = re.compile(r'[a-z]-\s*$')
+
+
+def tail_clipped(text: str) -> bool:
+    """True if the description's tail looks truncated (§10
+    tail-clip pattern).
+
+    Two OR'd sub-signals:
+
+      * **Mid-word hyphen**: text ends with a lowercase letter
+        followed by a hyphen (`[a-z]-\\s*$`).  The taxon_9ecad903
+        canonical case — page-break marker the extractor
+        preserved without joining.
+      * **No sentence-final punctuation**: after stripping
+        trailing whitespace, the last non-whitespace character
+        is neither `.` nor `?` nor `!` nor `…`.  Catches
+        taxon_ae45a05e's `Pileus 5-10 mm, … Pil` tail (just
+        runs out) and taxon_23d479f4's two-ended clip.
+
+    Closing brackets / parens followed by sentence-final
+    punctuation are handled correctly because we scan back to
+    the last non-whitespace char — `(Fig. 2).` ends with `.`.
+    """
+    if not text:
+        return False
+    stripped = text.rstrip()
+    if not stripped:
+        return False
+    if _MID_WORD_HYPHEN_TAIL_RE.search(stripped):
+        return True
+    last = stripped[-1]
+    return last not in _SENTENCE_FINAL_CHARS
 
 
 def _latin_ratio(text: str) -> float:
@@ -251,6 +302,12 @@ def treatment_signals(treatment: Dict[str, Any]) -> Dict[str, Any]:
         'latin_block_count': latin_block_count(desc),
         'mid_body_description_header':
             mid_body_description_header(desc),
+        'tail_clipped': tail_clipped(desc),
+        # Reuse the same head-clip predicate on the diagnosis
+        # field.  Gated on non-empty implicitly by the
+        # predicate itself (empty text returns False).
+        'diag_starts_mid_sentence':
+            desc_starts_mid_sentence(diag),
         'synthetic_nomenclature':
             bool(treatment.get('synthetic_nomenclature')),
     }
@@ -272,6 +329,10 @@ def predicted_issues(
         flags.append('§2:synth_nomen')
     if signals.get('desc_starts_mid_sentence'):
         flags.append('§10:mid_sentence')
+    if signals.get('tail_clipped'):
+        flags.append('§10:tail_clip')
+    if signals.get('diag_starts_mid_sentence'):
+        flags.append('§10:diag_head_clip')
     if signals.get('desc_length', 0) < 500 and signals.get(
         'n_key_couplets', 0,
     ) >= 1:
@@ -305,6 +366,7 @@ __all__ = (
     'desc_starts_mid_sentence',
     'latin_block_count',
     'mid_body_description_header',
+    'tail_clipped',
     'treatment_signals',
     'predicted_issues',
 )

@@ -9,6 +9,7 @@ from treatments_to_structured.triage_signals import (
     latin_block_count,
     mid_body_description_header,
     predicted_issues,
+    tail_clipped,
     treatment_signals,
 )
 
@@ -187,6 +188,108 @@ class TestDescStartsMidSentence:
         assert not desc_starts_mid_sentence('')
 
 
+class TestDiagStartsMidSentence:
+    """The head-clip predicate applied to the diagnosis
+    field (§10-diag).  Reuses `desc_starts_mid_sentence`
+    on the diagnosis text — new key
+    `diag_starts_mid_sentence` in the signals dict, not a
+    new function.  End-to-end tests via `treatment_signals`
+    live in TestTreatmentSignals; the direct-predicate
+    tests here confirm the same rule applies to arbitrary
+    text regardless of which field it came from."""
+
+    def test_empty_is_false(self) -> None:
+        assert not desc_starts_mid_sentence('')
+
+    def test_capital_letter_start_ok(self) -> None:
+        assert not desc_starts_mid_sentence(
+            'Differs from X by having larger spores.'
+        )
+
+    def test_semicolon_start(self) -> None:
+        """The taxon_e44e35bc / taxon_9ecad903 shape:
+        diagnosis starts abruptly with punctuation."""
+        assert desc_starts_mid_sentence(
+            '; larger spores, longer stipe.'
+        )
+
+    def test_lowercase_start(self) -> None:
+        assert desc_starts_mid_sentence(
+            'differs from X in having a smaller pileus.'
+        )
+
+    def test_leading_whitespace_stripped(self) -> None:
+        assert desc_starts_mid_sentence(
+            '  ; larger spores'
+        )
+
+    def test_capital_diagnosis_not_clipped(self) -> None:
+        """A comparative-diagnosis opening with a capital
+        letter is not clipped."""
+        assert not desc_starts_mid_sentence(
+            'Similar to Y in having short conidia; '
+            'differs from Y by …'
+        )
+
+
+class TestTailClipped:
+    def test_empty_is_false(self) -> None:
+        assert not tail_clipped('')
+
+    def test_ends_with_period_ok(self) -> None:
+        assert not tail_clipped('Pileus brown.')
+
+    def test_ends_with_question_ok(self) -> None:
+        assert not tail_clipped('X shape?')
+
+    def test_ends_with_exclamation_ok(self) -> None:
+        assert not tail_clipped('X!')
+
+    def test_trailing_whitespace_tolerated(self) -> None:
+        assert not tail_clipped('Pileus brown.  \n')
+
+    def test_mid_word_hyphen(self) -> None:
+        """The taxon_9ecad903 canonical case: description
+        ends with a hyphen mid-word, signalling a page /
+        paragraph break the extractor didn't handle."""
+        assert tail_clipped('cinnamon or red-')
+
+    def test_hyphen_at_word_boundary_is_false(self) -> None:
+        """A hyphenated compound followed by a period ends
+        cleanly — the hyphen is intra-word, not a
+        line-break marker."""
+        assert not tail_clipped('reddish-brown.')
+
+    def test_ends_with_comma(self) -> None:
+        assert tail_clipped('Pileus brown,')
+
+    def test_ends_with_semicolon(self) -> None:
+        assert tail_clipped('Pileus brown;')
+
+    def test_ends_with_lowercase_no_punctuation(self) -> None:
+        """taxon_ae45a05e-shape tail: description just runs
+        out mid-clause without any terminal punctuation."""
+        assert tail_clipped('Pileus brown')
+
+    def test_ends_with_word_fragment(self) -> None:
+        """taxon_ae45a05e first-line ends `Pil…` — with the
+        ellipsis stripped for testing, `Pil` alone is
+        clipped."""
+        assert tail_clipped('Pil')
+
+    def test_ends_with_ellipsis_ok(self) -> None:
+        """Some descriptions legitimately end with `…`
+        (stylistic).  Treat it as sentence-final."""
+        assert not tail_clipped('Pileus brown …')
+
+    def test_ends_with_period_after_paren_ok(self) -> None:
+        """`(Fig. 2).` is a common description ending."""
+        assert not tail_clipped('Pileus brown (Fig. 2).')
+
+    def test_ends_with_period_after_close_bracket_ok(self) -> None:
+        assert not tail_clipped('Pileus brown [see Fig. 2].')
+
+
 class TestLatinBlockCount:
     def test_pure_english_zero(self) -> None:
         """Long English text with no Latin morphology."""
@@ -243,6 +346,8 @@ class TestTreatmentSignals:
             'n_sp_nov', 'n_key_couplets',
             'desc_starts_mid_sentence', 'latin_block_count',
             'mid_body_description_header',
+            'tail_clipped',
+            'diag_starts_mid_sentence',
             'synthetic_nomenclature',
         }
         assert set(s.keys()) == expected_keys
@@ -254,10 +359,45 @@ class TestTreatmentSignals:
         assert s['desc_length'] == 0
         assert s['diag_length'] == 0
         assert s['n_diagnosis_headers'] == 0
+        assert s['tail_clipped'] is False
+        assert s['diag_starts_mid_sentence'] is False
 
     def test_synthetic_nomenclature_flag(self) -> None:
         s = treatment_signals({'synthetic_nomenclature': True})
         assert s['synthetic_nomenclature'] is True
+
+    def test_tail_clipped_fires_end_to_end(self) -> None:
+        """taxon_9ecad903 shape: description ends with a
+        mid-word hyphen."""
+        t = {
+            'description': 'Pileus brown, cinnamon or red-',
+            'diagnosis': '',
+        }
+        s = treatment_signals(t)
+        assert s['tail_clipped'] is True
+
+    def test_diag_head_clip_fires_end_to_end(self) -> None:
+        """taxon_e44e35bc shape: diagnosis starts abruptly
+        with a lowercase letter."""
+        t = {
+            'description': 'Pileus brown 3 cm.',
+            'diagnosis': 'larger spores, longer stipe.',
+        }
+        s = treatment_signals(t)
+        assert s['diag_starts_mid_sentence'] is True
+
+    def test_diag_head_clip_gated_on_non_empty(self) -> None:
+        """Empty diagnosis field must not fire the diag-
+        head-clip flag (empty ≠ clipped).  Distinguishes
+        legitimate diagnosis-less treatments (e.g.,
+        §0.5 poster-child taxon_0cfe582f) from clipped
+        ones."""
+        t = {
+            'description': 'Pileus brown 3 cm.',
+            'diagnosis': '',
+        }
+        s = treatment_signals(t)
+        assert s['diag_starts_mid_sentence'] is False
 
 
 class TestPredictedIssues:
@@ -345,3 +485,38 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§8:key_content_short' in result
+
+    def test_tail_clip_flag(self) -> None:
+        """taxon_9ecad903 / taxon_ae45a05e shape: tail_clipped
+        boolean → §10:tail_clip flag in predicted_issues."""
+        signals = {
+            'desc_length': 400,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'tail_clipped': True,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§10:tail_clip' in result
+
+    def test_diag_head_clip_flag(self) -> None:
+        """taxon_e44e35bc / taxon_8d70e41a shape:
+        diag_starts_mid_sentence → §10:diag_head_clip
+        flag in predicted_issues."""
+        signals = {
+            'desc_length': 400,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'diag_starts_mid_sentence': True,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§10:diag_head_clip' in result
