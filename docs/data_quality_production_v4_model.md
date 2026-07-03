@@ -1216,6 +1216,53 @@ opening.
   taxon_7fbc71a8 is the cleanest observed instance of
   §10-only, showing the detector fires reliably on
   otherwise-unremarkable treatments.
+* **`taxon_9ecad903...`** — noted 2026-07-03.
+  2-or-3-species merge stacking half a dozen sub-symptoms
+  in one treatment.  Structure per operator:
+    1. **Species 1 Description** — starts fine (`Pileus
+       5-10 mm, semicircular, …`) but ends abruptly with
+       `cinnamon or red-` (trailing hyphen mid-word).
+       **New §10 sub-shape: mid-word tail-clip** —
+       trailing hyphen at the end of description text is a
+       strong signal that a page or paragraph break wasn't
+       handled by the extractor.  Cheap regex detector:
+       description ends with `[a-z]-\s*$`.
+    2. **Latin/English translation pair** — the Latin
+       diagnosis and its English translation appear
+       consecutively, exactly as the source paper laid
+       them out.  This pairing is standard taxonomic-
+       paper structure, not itself a merge signal.
+    3. **Species 2 Description** — starts lowercase after
+       the previous sentence's period, so head-clipped
+       (§10 classic).  My `desc_starts_mid_sentence`
+       detector does NOT fire because the FIELD starts
+       with the capital `P` of species 1; the mid-body
+       lowercase-after-period boundary is invisible to
+       the current head-only §10 rule.  New refinement
+       idea: scan for `.\s+[a-z]` transitions inside the
+       description body — a full stop followed by a
+       lowercase letter marks a truncated new species
+       start.
+    4. **Species 2 body** — appears complete, but has a
+       **figure caption appended** at the end (§12 leak,
+       same shape as taxon_ea7b0ed7).
+    5. **Diagnosis field head-clipped** — starts abruptly,
+       ends reasonably.  Second observed instance of a
+       clipped Diagnosis field (after taxon_e44e35bc's
+       double-clipped diagnosis).  Confirms clipping is
+       not Description-only.  Detector idea: apply the
+       same `desc_starts_mid_sentence` rule to the
+       `diagnosis` field.
+  Detector coverage: merge_metric = 1 (missed), all §6
+  header counts = 0, `latin_block_count = 1` (single
+  Latin block is normal — the Latin diagnosis of species
+  1 — doesn't trip the ≥ 2 flag).  Zero §6 flags fired
+  despite a clear 2-3 species merge.  Argues for the
+  refinements listed above: mid-word-hyphen tail-clip,
+  mid-body `.\s+[a-z]` transitions, diagnosis-field
+  clipping detection — all cheap, orthogonal to the
+  existing signals.
+
 * **`taxon_ed2a6f1c...`** — noted 2026-07-02.  Two-species
   merge with the same structural pattern as
   taxon_173204 (compact-congenerics): **2 sets of Asci
