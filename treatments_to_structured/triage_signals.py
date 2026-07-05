@@ -196,6 +196,81 @@ def count_repeated_section_headers(text: str) -> int:
     return distinct_repeated
 
 
+# §6 idea #4 conservative watchlist.  Top-level fruiting-body /
+# macro-anatomy terms that a single-species treatment mentions
+# AT MOST ONCE at paragraph start — repetition signals a species
+# boundary.  Deliberately EXCLUDES micro-anatomy (Asci,
+# Paraphyses, Conidia, Ascospores, Basidia, Basidiospores) — a
+# single species may discuss these in multiple paragraph
+# contexts (macro clause, then microscopic section).  Also
+# excludes Pileus / Stipe — same false-positive risk.  See
+# docs/plans/clade-agnostic-detectors.md for the migration
+# path to a corpus-derived watchlist.
+_STRUCTURAL_ANATOMY_WATCHLIST = (
+    'Basidiocarp', 'Basidiocarps',
+    'Basidiome', 'Basidiomata',
+    'Ascoma', 'Ascomata',
+    'Perithecium', 'Perithecia',
+    'Apothecium', 'Apothecia',
+    'Sporocarp', 'Sporocarps',
+    'Aethalia',
+    'Conidioma', 'Conidiomata',
+    'Thallus',
+)
+
+
+# Paragraph-start anchor: text start, or after a blank line
+# (`\n\s*\n`).  Matches at the position immediately before the
+# candidate word.  Same paragraph model `latin_block_count`
+# uses.
+_PARAGRAPH_START_RE_PREFIX = r'(?:^|\n\s*\n\s*)'
+
+
+def _paragraph_start_regex(word: str) -> 're.Pattern[str]':
+    """Build a regex matching ``word`` at paragraph start."""
+    return re.compile(
+        rf'{_PARAGRAPH_START_RE_PREFIX}{re.escape(word)}\b'
+    )
+
+
+_STRUCTURAL_ANATOMY_REGEXES = {
+    word: _paragraph_start_regex(word)
+    for word in _STRUCTURAL_ANATOMY_WATCHLIST
+}
+
+
+def count_repeated_structural_anatomy(text: str) -> int:
+    """Count DISTINCT structural-anatomy watchlist words that
+    appear at paragraph start ≥2 times in ``text``.  §6 idea #4
+    aggregate detector.
+
+    Paragraph-start = absolute start of ``text`` or immediately
+    after a blank line (``\\n\\s*\\n``).  Same paragraph model
+    ``latin_block_count`` uses; consistent with how the
+    extractor preserves section breaks.
+
+    Case-sensitive — matches only capitalized watchlist words,
+    which reflects typical section-header capitalization in
+    taxonomic treatments.  Lowercase prose mentions
+    (``these ascomata``) don't fire.
+
+    Fires ``§6:multi_structural_anatomy`` in ``predicted_issues``.
+
+    Example: taxon_173204's two ``Ascomata`` paragraphs (species
+    A + species B, similar-anatomy compact congenerics) → 1.
+    taxon_09507677's three ``Basidiocarps`` paragraphs (3-species
+    basidiomycete merge) → 1.  A treatment repeating BOTH
+    ``Ascomata`` AND ``Perithecia`` at paragraph start → 2.
+    """
+    if not text:
+        return 0
+    distinct_repeated = 0
+    for regex in _STRUCTURAL_ANATOMY_REGEXES.values():
+        if len(regex.findall(text)) >= 2:
+            distinct_repeated += 1
+    return distinct_repeated
+
+
 def mid_body_description_header(text: str) -> bool:
     """True if a `Description:` header appears at offset > 0
     inside the raw description field WITHOUT a preceding
@@ -460,6 +535,8 @@ def treatment_signals(
         'n_description_headers': count_description_headers(desc),
         'n_repeated_section_headers':
             count_repeated_section_headers(desc),
+        'n_repeated_structural_anatomy':
+            count_repeated_structural_anatomy(desc),
         'n_sp_nov': count_sp_nov(desc),
         'n_key_couplets': count_key_couplets(desc),
         'desc_starts_mid_sentence':
@@ -517,6 +594,8 @@ def predicted_issues(
         flags.append('§6:multi_description')
     if signals.get('n_repeated_section_headers', 0) >= 1:
         flags.append('§6:multi_section_header')
+    if signals.get('n_repeated_structural_anatomy', 0) >= 1:
+        flags.append('§6:multi_structural_anatomy')
     # §6 refinement (taxon_a21a83f4): a `Description:` header at
     # offset > 0 without a preceding Diagnosis header marks a
     # species boundary even when count == 1.  Independent of the
@@ -540,6 +619,7 @@ __all__ = (
     'count_diagnosis_headers',
     'count_description_headers',
     'count_repeated_section_headers',
+    'count_repeated_structural_anatomy',
     'count_sp_nov',
     'count_key_couplets',
     'desc_starts_mid_sentence',

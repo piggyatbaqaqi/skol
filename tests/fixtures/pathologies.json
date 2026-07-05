@@ -409,7 +409,8 @@
       "expected_flags": [
         "§10:tail_clip",
         "§6:authored_binomial",
-        "§6:merge_metric"
+        "§6:merge_metric",
+        "§6:multi_structural_anatomy"
       ],
       "known_missed_flags": [],
       "notes": "Whole-Diagnosis leak into Description field; heterogeneous OCR quality within one treatment; latin_block_count=1 (single merged block) but merge_metric=66 catches."

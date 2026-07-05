@@ -5,6 +5,7 @@ from treatments_to_structured.triage_signals import (
     count_diagnosis_headers,
     count_key_couplets,
     count_repeated_section_headers,
+    count_repeated_structural_anatomy,
     count_sp_nov,
     desc_starts_mid_sentence,
     latin_between_english,
@@ -467,6 +468,162 @@ class TestCountRepeatedSectionHeaders:
         assert count_repeated_section_headers('') == 0
 
 
+class TestCountRepeatedStructuralAnatomy:
+    """§6 idea #4 aggregate detector: counts DISTINCT top-level
+    fruiting-body / macro-anatomy terms that appear at paragraph
+    start ≥2 times.
+
+    Conservative watchlist (fungi-macro terms).  Words that a
+    single-species treatment mentions AT MOST ONCE at paragraph
+    start — repetition signals a species boundary.
+
+    Paragraph-start = absolute start OR immediately after a
+    blank line (`\\n\\s*\\n`).  Same paragraph model
+    `latin_block_count` uses.  Fungi-specific vocabulary is a
+    known clade-agnostic-design violation; see
+    docs/plans/clade-agnostic-detectors.md."""
+
+    def test_no_repetition_zero(self) -> None:
+        text = (
+            'Ascomata dispersed, black.\n\n'
+            'Asci clavati.\n\nParaphyses hyaline.'
+        )
+        # Ascomata appears once at paragraph start.  Asci and
+        # Paraphyses are NOT in the conservative watchlist.
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_single_occurrence_not_counted(self) -> None:
+        """A single Ascomata paragraph-start is not a
+        repetition."""
+        text = (
+            'Some intro text.\n\n'
+            'Ascomata dispersed, black.\n\n'
+            'Other prose here.'
+        )
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_ascomata_repeated_fires(self) -> None:
+        """taxon_173204 shape: 2 similar-species Ascomata
+        blocks at paragraph starts."""
+        text = (
+            'Ascomata perpetua, 200 um, dispersed.\n\n'
+            'Asci clavati.\n\n'
+            'Ascomata dispersa, 300 um, aggregated.\n\n'
+            'Asci obovate.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_basidiocarps_repeated_fires(self) -> None:
+        """taxon_09507677 shape: 3 species with Basidiocarp
+        clauses at paragraph starts."""
+        text = (
+            'Basidiocarps to 0.6-1.5 cm.\n\n'
+            'Basidiocarps small.\n\n'
+            'Basidiocarps large, colored.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_multiple_distinct_repeated_watchlist_words(
+        self,
+    ) -> None:
+        """Ascomata AND Perithecia both repeated → 2."""
+        text = (
+            'Ascomata black.\n\n'
+            'Perithecia dispersed.\n\n'
+            'Ascomata brown.\n\n'
+            'Perithecia clustered.'
+        )
+        assert count_repeated_structural_anatomy(text) == 2
+
+    def test_perithecia_repeated_fires(self) -> None:
+        text = (
+            'Perithecia dispersed.\n\nSome text.\n\n'
+            'Perithecia clustered.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_apothecia_repeated_fires(self) -> None:
+        text = (
+            'Apothecia sessile.\n\n'
+            'Apothecia stipitate.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_sporocarp_repeated_fires(self) -> None:
+        """Slime mold shape."""
+        text = (
+            'Sporocarp small.\n\n'
+            'Sporocarp large.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_thallus_repeated_fires(self) -> None:
+        """Lichen shape."""
+        text = (
+            'Thallus foliose.\n\n'
+            'Thallus crustose.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_micro_anatomy_NOT_in_watchlist(self) -> None:
+        """Asci, Paraphyses, Conidia, Ascospores are EXCLUDED
+        from the conservative watchlist — single-species
+        treatments legitimately discuss these in multiple
+        contexts (e.g., macro then microscopic sections).
+        taxon_ed2a6f1c would fire on Asci/Paraphyses but that
+        FP risk is deferred until §6 idea evaluation shows
+        it's worth accepting."""
+        text = (
+            'Asci clavati.\n\nSome discussion.\n\n'
+            'Asci wall structure microscopic.'
+        )
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_mid_sentence_occurrence_not_counted(self) -> None:
+        """Mid-paragraph mentions don't count — only paragraph
+        starts.  Single-species descriptions can mention the
+        top-level structure name multiple times WITHIN a
+        paragraph legitimately."""
+        text = (
+            'Detailed prose here.  The Ascomata are large.\n\n'
+            'More prose.  These Ascomata differ from usual.'
+        )
+        # Neither `Ascomata` is at a paragraph start.
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_position_zero_counts_as_paragraph_start(self) -> None:
+        """Word at text position 0 (no preceding blank line)
+        still counts as a paragraph start."""
+        text = 'Ascomata early.\n\nAscomata late.'
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_case_sensitive(self) -> None:
+        """Only capitalized Watch words count — matches typical
+        section-header capitalization.  Lowercase mentions in
+        prose (`these ascomata`) don't fire."""
+        text = (
+            'ascomata mentioned here.\n\n'
+            'ascomata mentioned there.'
+        )
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_plural_and_singular_forms(self) -> None:
+        """Basidiome AND Basidiomata are distinct watchlist
+        entries — both count.  A treatment mixing them
+        (`Basidiome X.\\n\\nBasidiomata Y.`) hits neither
+        watchlist entry twice → 0.  Mixed use is unusual;
+        typically a treatment sticks with one form."""
+        text = (
+            'Basidiome small.\n\n'
+            'Basidiomata large.'
+        )
+        # Different watchlist entries, each occurring once.
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_empty_zero(self) -> None:
+        assert count_repeated_structural_anatomy('') == 0
+
+
 class TestLatinBlockCount:
     def test_pure_english_zero(self) -> None:
         """Long English text with no Latin morphology."""
@@ -627,6 +784,7 @@ class TestTreatmentSignals:
             'desc_length', 'diag_length',
             'n_diagnosis_headers', 'n_description_headers',
             'n_repeated_section_headers',
+            'n_repeated_structural_anatomy',
             'n_sp_nov', 'n_key_couplets',
             'desc_starts_mid_sentence', 'latin_block_count',
             'latin_between_english',
@@ -893,3 +1051,20 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§6:multi_section_header' in result
+
+    def test_multi_structural_anatomy_flag(self) -> None:
+        """M2 Group B: n_repeated_structural_anatomy >= 1
+        fires §6:multi_structural_anatomy."""
+        signals = {
+            'desc_length': 2000,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'n_repeated_structural_anatomy': 1,
+            'synthetic_nomenclature': False,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§6:multi_structural_anatomy' in result
