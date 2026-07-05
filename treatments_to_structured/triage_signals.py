@@ -355,13 +355,25 @@ def latin_between_english(
 # ---------------------------------------------------------------------------
 
 
-def treatment_signals(treatment: Dict[str, Any]) -> Dict[str, Any]:
+def treatment_signals(
+    treatment: Dict[str, Any],
+    *,
+    authored_binomial_in_desc: Any = None,
+) -> Dict[str, Any]:
     """Compute all triage signals for a Treatment doc, return
     as a flat dict suitable for CSV columns.
 
     The returned dict is intentionally verbose — every derived
     value is a column so operators can eyeball the raw signals,
     not just the summary verdict.
+
+    ``authored_binomial_in_desc`` is an OPTIONAL keyword arg for
+    the gnfinder+gnparser-based §6:authored_binomial signal.
+    Pass in the pre-computed boolean from
+    ``gn_client.authored_binomial_in_text`` — this function stays
+    pure Python (no HTTP) so unit tests don't need mocked
+    services.  ``None`` (default) is treated as "not evaluated"
+    → False in the output dict.
     """
     desc = treatment.get('description') or ''
     diag = treatment.get('diagnosis') or ''
@@ -385,6 +397,11 @@ def treatment_signals(treatment: Dict[str, Any]) -> Dict[str, Any]:
         # predicate itself (empty text returns False).
         'diag_starts_mid_sentence':
             desc_starts_mid_sentence(diag),
+        # §6 idea #2 (gnfinder+gnparser): supplied by the caller
+        # via keyword arg.  None → False in the output; a bool
+        # passes through.
+        'authored_binomial_in_desc':
+            bool(authored_binomial_in_desc),
         'synthetic_nomenclature':
             bool(treatment.get('synthetic_nomenclature')),
     }
@@ -432,6 +449,8 @@ def predicted_issues(
         flags.append('§6:latin_alt')
     if signals.get('latin_between_english'):
         flags.append('§6:latin_ele')
+    if signals.get('authored_binomial_in_desc'):
+        flags.append('§6:authored_binomial')
     if merge_metric >= merge_threshold:
         flags.append(f'§6:merge_metric={merge_metric}')
     return '|'.join(flags)

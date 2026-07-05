@@ -456,6 +456,7 @@ class TestTreatmentSignals:
             'mid_body_description_header',
             'tail_clipped',
             'diag_starts_mid_sentence',
+            'authored_binomial_in_desc',
             'synthetic_nomenclature',
         }
         assert set(s.keys()) == expected_keys
@@ -506,6 +507,22 @@ class TestTreatmentSignals:
         }
         s = treatment_signals(t)
         assert s['diag_starts_mid_sentence'] is False
+
+    def test_authored_binomial_flag_flows_through(self) -> None:
+        """Pass-through of the caller-supplied authored-binomial
+        boolean (§6 idea #2).  gn_client computes it via HTTP;
+        treatment_signals just relays."""
+        t = {'description': 'Pileus brown 3 cm.', 'diagnosis': ''}
+        s = treatment_signals(t, authored_binomial_in_desc=True)
+        assert s['authored_binomial_in_desc'] is True
+
+    def test_authored_binomial_default_is_false(self) -> None:
+        """Default (kwarg not supplied) → False.  Preserves the
+        "not evaluated" == "not fired" behaviour for CLI runs
+        where gn services are unavailable."""
+        t = {'description': 'Pileus brown 3 cm.', 'diagnosis': ''}
+        s = treatment_signals(t)
+        assert s['authored_binomial_in_desc'] is False
 
     def test_latin_between_english_fires_end_to_end(self) -> None:
         """The taxon_9ecad903 shape flows through
@@ -663,3 +680,21 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§6:latin_ele' in result
+
+    def test_authored_binomial_flag(self) -> None:
+        """taxon_83e36037 / taxon_2a9d07e6 shape:
+        authored_binomial_in_desc True → §6:authored_binomial
+        flag.  Detection via gnfinder+gnparser (§6 idea #2)."""
+        signals = {
+            'desc_length': 2000,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'authored_binomial_in_desc': True,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§6:authored_binomial' in result

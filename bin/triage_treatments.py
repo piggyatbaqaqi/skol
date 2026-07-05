@@ -77,6 +77,7 @@ CSV_COLUMNS: List[str] = [
     'mid_body_description_header',
     'tail_clipped',
     'diag_starts_mid_sentence',
+    'authored_binomial_in_desc',
     'synthetic_nomenclature',
     'predicted_issues',
     'first_line',
@@ -175,6 +176,8 @@ def build_row(
     status_doc: Optional[Dict[str, Any]],
     reviewed_hand_ids: Set[str],
     merge_threshold: int,
+    *,
+    authored_binomial: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Compose one CSV row for a single treatment.
 
@@ -182,6 +185,13 @@ def build_row(
     later deleted, or a status-only entry) produces a row with
     all signal columns 0 and a ``predicted_issues`` value of
     ``'no_prose_doc'`` so the operator sees the gap.
+
+    ``authored_binomial`` is the caller-supplied gn_client result
+    (or None if gn services are unavailable / not queried).
+    Threaded in rather than computed here so the network cost
+    happens once per treatment in ``main`` where the
+    service-unavailability warning can be issued once per
+    invocation.
     """
     if treatment_doc is None:
         signals = {
@@ -197,13 +207,17 @@ def build_row(
             'mid_body_description_header': False,
             'tail_clipped': False,
             'diag_starts_mid_sentence': False,
+            'authored_binomial_in_desc': False,
             'synthetic_nomenclature': False,
         }
         merge_metric = 0
         first_line = ''
         issues = 'no_prose_doc'
     else:
-        signals = treatment_signals(treatment_doc)
+        signals = treatment_signals(
+            treatment_doc,
+            authored_binomial_in_desc=authored_binomial,
+        )
         merge_metric = treatment_merge_metric(treatment_doc)
         first_line = _first_nonempty_line(
             treatment_doc.get('description') or ''
@@ -249,6 +263,8 @@ def build_row(
         'tail_clipped': signals['tail_clipped'],
         'diag_starts_mid_sentence':
             signals['diag_starts_mid_sentence'],
+        'authored_binomial_in_desc':
+            signals['authored_binomial_in_desc'],
         'synthetic_nomenclature':
             signals['synthetic_nomenclature'],
         'predicted_issues': issues,
@@ -439,6 +455,21 @@ def main() -> int:
             file=sys.stderr,
         )
 
+    # §6 idea #2: gnfinder + gnparser detector for authored
+    # binomials in Description.  Configured URLs come from
+    # env_config (skol-gnservices deb defaults localhost).
+    # First failure to reach the services is warned once; all
+    # subsequent treatments get authored_binomial=None (not
+    # fired) without repeated noise.
+    from treatments_to_structured import gn_client  # noqa: E402
+    gnfinder_url = config.get(
+        'gnfinder_url', gn_client.DEFAULT_GNFINDER_URL,
+    )
+    gnparser_url = config.get(
+        'gnparser_url', gn_client.DEFAULT_GNPARSER_URL,
+    )
+    gn_unavailable = False
+
     rows: List[Dict[str, Any]] = []
     for tid in treatment_ids:
         try:
@@ -449,12 +480,32 @@ def main() -> int:
             treatment_doc = dict(treatments_db[tid])
         except Exception:
             treatment_doc = None
+
+        authored_binomial: Optional[bool] = None
+        if treatment_doc is not None and not gn_unavailable:
+            desc = treatment_doc.get('description') or ''
+            try:
+                authored_binomial = (
+                    gn_client.authored_binomial_in_text(
+                        desc, gnfinder_url, gnparser_url,
+                    )
+                )
+            except gn_client.GnServiceUnavailable as exc:
+                print(
+                    f"warning: gn services unavailable "
+                    f"({exc}); §6:authored_binomial will not "
+                    f"fire for the remainder of this run",
+                    file=sys.stderr,
+                )
+                gn_unavailable = True
+
         rows.append(build_row(
             treatment_id=tid,
             treatment_doc=treatment_doc,
             status_doc=status_doc,
             reviewed_hand_ids=reviewed_hand_ids,
             merge_threshold=int(args.merge_threshold),
+            authored_binomial=authored_binomial,
         ))
 
     rows = sort_rows(rows)
