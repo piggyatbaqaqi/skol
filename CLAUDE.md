@@ -17,3 +17,5 @@
 * Programs that are needed for one time fixes go in fixes/ rather than bin/.
 * Please don't check credentials (especially passwords) into git.
 * Keep wheel versions and their corresponding deb versions in sync.
+* Prompt me about writing a skill if you see the same basic procedure happening at least 3 times.
+* Detector work: pathology + poster-child cases live in `tests/fixtures/pathologies.json` with prose narrative in `docs/data_quality_production_v4_model.md`. Every taxon referenced in the memo needs a fixture entry. Conventions and walkthrough in `tests/fixtures/README.md`.

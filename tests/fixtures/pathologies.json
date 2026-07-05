@@ -1,0 +1,484 @@
+{
+  "_schema_version": 1,
+  "_docs": "See tests/fixtures/README.md",
+  "poster_children": [
+    {
+      "id": "taxon_0cfe582fd5345b0a9a7775fb0f8bf4d0527645584bee0a1419d6940686af9be3",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-f344778d2458730c9e32aea01e858306",
+      "class": "bolete",
+      "description": "Basidiomata medium large sized, boletoid. Pileus 30‒80 mm diam, initially hemispherical, becoming convex, greyish yellow (2B3–4, 2C3–4, Kornerup & Wanscher 1978), darker in the centre (2D3–4, 3D3–4), paler towards the margin (up to 2A2–3), surface dry, velutinous, tomentous or felted. Hymenophore adnate to shortly decurrent to the stipe, 6–8 mm thick, light yellow to greenish yellow (1A4–6), becoming greyish yellow (2B4–5, 3B5–6, 4B4–5); pores irregular, 1–2 mm diam. Stipe 60–90 × 10–20 mm, cylindrical or fusiform, often tapered towards the base, dry, deeply broadly alveolate-reticulate, pale yellow (2A3–4), staining pale orange near the base (5A3–5). Context pale yellow (2A2–4), staining in the stipe brownish red when bruised, with reddish spots in the stipe base. Smell weak, taste not reported. Spores (11–)12–12.5(–15) × (8–)8.5–9.5(–11) μm, Q = (1.2–)1.3–1.4(–1.5), dark brown, ellipsoid in outline: amygdaliform with 1–2 μm broad longitudinal wings, sometimes with outgrowths and crystals (SEM). Basidia 38–48 × 11–12 μm, 4-spored, narrowly clavate to clavate, clampless. Cheilocystidia 52–99 × 5–18 μm, fusoid to lageniform with more or less long neck, pleurocystidia similar. Hymenophoral trama regular, made up of long, thin, cylindrical hyphae, 70–250 × 4–6 μm. Pileipellis a trichoderm, made up of cylindrical hyphae, 5–9 μm wide, with brown intracellular and in some hyphae also incrusting pigment. Dermatocystidia of two types: simple lageniform, 37–52 × 8–10 μm, with intracellular light brown pigment, and complex, abundant in the central part, 18–80 × 6–10 μm, fusiform, lageniform, septate: basal part with light brown diffuse intracellular pigment and apical – with bluish black agglutinate intracellular and sometimes additionally incrusting pigment. Stipitipellis a hymeniderm of basidiolae-like clavate cells, 19–30 × 7–10 μm. Caulocystidia 68–130 × 11–16 μm, lageniform, sometimes septate. Clamp connections absent.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Basidiomycete; opens \"Basidiomata medium large sized, boletoid.\""
+    },
+    {
+      "id": "taxon_d65547edec20a718cfd415f8dbd3c19501c51b221a49c2a88a37f6b19185c466",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "2-c56506111457923bd6427e1bdd5ce569",
+      "class": "asexual-mould-culture-only",
+      "description": "Description. Colonies on PDA approx. 6−7 cm diam. after 7 d at 25 °C, surface funiculose, greenish-grey, velutinous with some aerial mycelium, margin fimbriate. Hyphae hyaline, branched, septate, 3−4 µm in width. Conidiophores erect, straight to flexuous, slightly geniculate towards apex, pale brown to brown, sometimes paler towards the apex, septate, up to 200 µm long, 4−5 µm wide. Conidiogenous cells integrated, terminal or intercalary, with sympodial proliferation, pale brown to brown, smooth, mono- or polytretic, with darkened scars. Conidia ellipsoidal to obclavate, straight, third cell from pore swollen, brown, end cells paler, smooth, (28–) 31–35 (–39) × (10–) 12–13 (–14) µm, mostly 3 septate; hila inconspicuous, sometimes darkened.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Plant-pathogen ascomycete; cultural-characteristics-only description; opens with period-form \"Description.\" header"
+    },
+    {
+      "id": "taxon_e534e6a9f1229fe9e4d5d8eade9b665a42f66e4ce417383b4b866e224aa10adf",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-4f1a754567e4b79384afc93b9bbaac77",
+      "class": "ascomycete-both-morphs",
+      "description": "Saprobic on decaying wood. Sexual morph Undetermined. Asexual morph Colonies on\nnatural substrate superficial, effuse, greyish-brown. Mycelium partly immersed, composed of\nseptate, branched, brown, guttulate, 1.5−3 μm wide hyphae. Conidiophores 130−260 μm long,\nmacronematous, mononematous, occasionally fasciculate, dark brown at base, paler towards the\napex, thick-walled, erect, straight or slightly flexuous, minutely verruculose, septate, unbranched,\nwider at the sub-section. Conidiogenous cells 15−28 μm long (  = 22.35 μm, n = 15), polytretic,\nterminal and intercalary, proliferating asymmetrically, integrated, brown, minutely verrucose,\nenlarged at vertex. Conidia 16−26 × 2.5−4.4 μm ( = 12.09 × 3.59 μm, n = 25), solitary to catenate,\nwhen catenate in acropetal chains, fusiform to ellipsoidal, rounded at apex, truncate at the base,\npale brown, aseptate when young, brown or dark brown, 3(4)-septate when mature, slightly\nconstricted at septa, thick-walled, verrucose.\nCulture characteristics – Conidia germinated on WA (Water Agar) within 24 hours. One or\ntwo germ tubes produced from both ends. Colonies reached about 5 cm diameter after 2 weeks on\nPDA at 25°C. Mycelia are superficial, with entire edge, floccose at the center, white to light brown\nfrom above and light brown from below. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "\"Saprobic on ... Sexual morph: ... Asexual morph:\" convention with one morph Undetermined"
+    },
+    {
+      "id": "taxon_38b5b1c61a846fd2ba9c096988c59e5f9f89fe8d83b8ea3bad121093cf694734",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "6-316f93f085578a80a31012944d2c2be0",
+      "class": "ascomycete-ascomata-opener",
+      "description": "Ascomata separate, immersed in leaf tissue, becoming erumpent,\nglobose, brown, 70–150 μm diam with central ostiole, 10–15 μm\ndiam, lined with hyaline periphyses; wall of 3–4 layers of\nbrown textura angularis. Asci stipitate, arranged in a rosette,\nsubcylindrical to obovoid, bitunicate, 8-spored with visible apical chamber, 1.5–2 μm diam, 35–50 × 8–10 μm. Ascospores\nmultiseriate, fusoid-ellipsoid, straight, medianly 1-septate,\nwidest in middle of apical cell; each cell with two large, prominent guttules, hyaline, smooth, not constricted at septum,\n(11–)12–14(–17) × 3(–3.5) μm; ascospores germinating irregularly, spores becoming constricted as median septum, and\nverruculose, 6–7 μm diam.\n\nCulture characteristics — Colonies erumpent, spreading,\nfolded, with moderate aerial mycelium and smooth, lobate\nmargin, reaching 6 mm diam after 2 wk at 25 °C. On MEA, PDA\nand OA surface olivaceous grey, reverse iron grey.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Control case for the taxon_7fbc71a8/taxon_418bf6b7 anatomical-noun-clip pattern; opens with proper \"Ascomata separate...\""
+    },
+    {
+      "id": "taxon_0029f1413f69fd6d270f11e5aa0f806d3ba8687c0c1a5826330988ca90c02c06",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "6-eaefb3457dd2dd58176afbaf8766b26f",
+      "class": "bolete-review-confirmed",
+      "description": "Description: Basidiomata small to medium-sized. Pileus 2.6–8 cm\ndiam, subhemispherical when young, then convex to applanate;\nsurface tomentose or pulverous, slightly wrinkled, yellowish\norange to orange; context white, unchanging in colour when\ninjured. Hymenophore poroid, depressed around apex of stipe;\npores angular, 0.5–1 mm, yellowish, unchanging in colour when\ninjured; tubes 0.5–1 cm in length, pale yellow, unchanging in colour\nwhen injured. Stipe 3–5.5 × 0.3–0.8 cm, central, subcylindrical\nor subclavate; surface orangish yellow to orange; context white,\nunchanging in colour when injured. Basal mycelium white. Odour\nindistinct.\nBasidia 32–40 × 10.5–13 μm, clavate, thin- to slightly thickwalled (up to 1 μm), 4-spored, hyaline or yellowish in KOH;\nsterigmata 3.5–5 μm in length. Basidiospores [140/7/2] 7–9(–10) ×\n4.5–5.5(–6) μm, Q = 1.4–1.8(–2), Qm = 1.6 ± 0.13, ovoid, slightly\nthick-walled (up to 1 μm), smooth, olive brown to yellowish brown\nin KOH. Cheilocystidia 42–56 × 10–15 μm, fusoid-ventricose\nto clavate, thin- to slightly thick-walled (up to 1.5 μm), yellowish\nwhite or hyaline in KOH. Pleurocystidia 50–60 × 10–15 μm, fusoidventricose, yellowish in KOH, thin- to slightly thick-walled (up to 1\nμm). Hymenophoral trama bilateral, composed of hyphae 5–10 μm\nwide, thin- to slightly thick-walled (up to 1 μm), yellowish in KOH.\nPileipellis a trichoderm 250–350 μm thick, made up of hyphae\n6–13 μm diam, occasionally branched, yellowish white or hyaline in\nKOH; terminal cells 35–55 × 8–11 μm, subclavate or subcylindrical,\nwith obtuse apex. Pileal trama composed of hyphae 2–7 μm diam,\nslightly thick-walled (up to 1 μm), hyaline in KOH. Stipitipellis a\ntrichoderm-like structure 150–250 μm thick, made up of hyphae\n3–27 μm diam, thin-walled, hyaline in KOH; terminal cells 15–27 ×\n5–6 μm, broadly clavate, subcylindrical, or subfusiform, with obtuse\napex. Stipe trama composed of parallel hyphae 5–10 μm wide,\nthin- to slightly thick-walled (up to 1 μm), hyaline in KOH. Clamp\nconnections absent in all tissues.\n",
+      "diagnosis": "Aureoboletus by Zhang et al. (2019a). The species is characterised\nby a small to medium-sized basidioma, a dry, yellowish orange to\norange pileus with a tomentose or pulverous surface, a yellowish\nhymenophore surface, and a trichodermal pileipellis composed of\nmostly uninflated hyphae (up to 13 μm). It is common in tropical and \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Round-1 reviewer kept 16/added 0/deleted 0; merge_metric=9 just below threshold"
+    },
+    {
+      "id": "taxon_62a712ab49b329033eb8d21d8614fb771eaf9011ad6438aa29a5b819ee413909",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-f0d7a8323eb6ce78b0e4847fbc394059",
+      "class": "ascomycete-review-confirmed",
+      "description": "Description. Saprobic on decaying branches of Prunus cerasus. Sexual morph: Stromata immersed in bark, covering surface of host, irregular in shape, widely effused, flat, margin diffuse, surface dark brown to black, with punctiform ostioles scattered at surface. Endostroma consists of an outer layer of black, small, dense, thin parenchymal cells and an inner layer of white, large, loose parenchymal cells. Perithecium semi-immersed in stroma, globose to subglobose, glabrous, with cylindrical neck, brevicollous 203–304 μm high, 346–477 μm diam. (av. = 408 × 250 μm, n = 10), ovoid, obovoid to oblong. Ostiole opening separately, papillate or apapillate, central. Peridium 30–50 μm thick, dark brown to hyaline with textura angularis cell layers. Asci 83.2–120 × 5.1–8.2 μm (av. = 104.4 × 6.3 μm n = 30) 8–spored clavate, unitunicate, rounded to truncate apex, apical rings inamyloid. Ascospores 7.3–9.9 × 1.4–2 μm (av. = 8.5 × 1.7 μm, n = 30), overlapping, allantoid, slightly curved, subhyaline, smooth, aseptate, usually with oil droplets. Asexual morph: undetermined.\n\nCulture characteristics. Ascospores germinating on PDA within 24 hours. Colonies on PDA, white when young, became pale yellow, irregular in shape, medium dense, flat or effuse, white from above, reverse white at margin, pale yellow at centre, no pigmentation produced on PDA medium, no conidia observed on PDA or on OA media.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Plant-pathogen ascomycete on Prunus cerasus; period-form \"Description.\" header; reviewed 8/2/0"
+    },
+    {
+      "id": "taxon_feaa170a1402dd5ccb5c07b353ec4ea78fc3cea6c4bfdd0cc757df072721df74",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-0bc008a1da678e69c8ca1849dd6017f5",
+      "class": "discomycete",
+      "description": "Saprobic on dead stems. Sexual morph: Apothecia 1–3 × 4–8 cm arising singly or\ngregarious, stipitate, deep or more shallow cupulate, yellow to orange when fresh, stalk 220 × 1.5\nmm. Receptacle concave. Disc yellow to orange when fresh, nearly smooth except at the margin\nwhere it is minutely furfuraceous. Margins entire, lighter in colour than disc. Hymenium yellow,\nsmooth. Ectal excipulum 70–100 µm ( x  = 79.8 µm, n = 10) composed of large, thin-walled,\nhyaline cells of textura prismatica to globulosa. Medullary excipulum 100–140 µm (x  = 117.9 µm,\nn = 10), composed of hyaline cells of textura intricata. Paraphyses 2.5–4.5 µm wide (x  = 3.3 µm,\nn = 20), numerous, filiform, septate, highly branched and slightly swollen at the apex forming the\nepithecium. Asci 420–520 × 24–30 µm (x  = 487.2 × 27.1 µm, n = 30), unitunicate, operculate,\ncylindrical, base narrow-hyphoid, short pedicellate, thick-walled, apices obtuse, non-amyloid.\nAscospores 31–37 × 14–16 µm ( x  = 33.6 × 14.9 µm, n = 40), uniseriate, 1-celled, ovoid, ends\nslightly narrow, often inequilateral, hyaline with 3 guttules or multiguttulate, aseptate,\nornamentation of fine longitudinal, parallel ridges. Asexual morph: Undetermined (description\nmodified from Iturriaga & Pfister 2006). \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Saprobic on dead stems; \"Sexual morph: Apothecia\" opener"
+    }
+  ],
+  "pathologies": [
+    {
+      "id": "taxon_2f276bfa9f81b356f030acbb78e175cce254064c89e7252eb816ddad19f0253f",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-e46b67630b74863832807178293a59dd",
+      "class": "§1-head-of-Description-citation",
+      "description": "Mycovellosiel/a micranlhae (Muller & Chupp) Dianese & Furlanetto,\nFilopatol. Bras . 21, 406. 1996.\nLeaf spots amphigenous, irregular to sub-circular, 2-6 mm diam.,\nmedium brown, borders indistinct, margins absent.\nMycelium\ninternal and ex1:emal, composed of finely verruculose, branched,\nlight brown hyphae, 4-5\n~tm diam.\nCaespituli fasciculate,\namphigenous, medium brown. Conidiophores arising sing.ly from\nsuperficial mycelium, or aggregated in loose fascicles, arising \n\nfrom the upper cells of a weakly developed brown stroma;\nconidiophores medium brown, finely vemtculose, branched\nabove, subcylindtical, straight to geniculate-sinuous, 2-6-septate,\n40- I 00 x 3-5 J.lm.\nConidiogenous cells integrated, terminal,\nunbranched, light brown, finely verruculose, subcylindrical,\ntapering to truncate or subtruncate apices with inconspicuous\nloci, proliferating sympodially, J 0-45 x 3-5 fJm. Conidia solitary ,\nolivaceous to pale brown, finely verruculose, guttulate, narrowly\nobclavate, apex subobtuse, base obconically truncate, straight to\ncurved, 4-11-septate, 45-180 x 3.5-6 J.lm ~ hila inconspicuous. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Full authored citation at line 0 of Description (\"Mycovellosiel/a micranlhae (Muller & Chupp)...\").  Single OCR error `l/a` mid-word defeats gnfinder (documented Trello #395 gap)."
+    },
+    {
+      "id": "taxon_2a9d07e6b49b3b94be3abfa11fca7ad457014661d35f6c82e472a3a22c90f07f",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-acfae2c533f2bdcce1877b166042bccb",
+      "class": "§1-mid-body-citation",
+      "description": "Diagnosis: Conidiomata pycnidial, solitary, brown, globose,\n90–200 μm diam. Conidiophores lining the inner cavity, subcylindrical,\n\n7–20 × 2.5–4 μm. Conidiogenous cells subcylindrical to doliiform, medium brown, verruculose, proliferating percurrently at\napex, 5–8 × 3.5–4 μm. Conidia solitary, aseptate, thick-walled,\nguttulate, golden brown, verruculose, subcylindrical to fusoid-\n\nellipsoid, apex subobtuse, base truncate, 1.5–2 μm diam with\nminute marginal frill, (6–)8–9(–11) × (2.5–)3(–3.5) μm.\nDescription and illustration: Crous et al. (2019a).\n\nTeratosphaeria obscuris (P.A. Barber & T.I. Burgess) P.A. Barber\n& T.I. Burgess, Persoonia 23: 115. 2009.\nDiagnosis: Leaf spots primarily epiphyllous to hypophyllous,\nangular to irregular, purple with an indistinct border, 0.5–3 mm\ndiam, but brown spots up to 7(–25) mm diam with red-purple\nmargins are frequently observed in the field. Ascospores multiseriate, overlapping, colourless, guttulate, thin-walled, straight to\ncurved, obovoid with obtuse ends, widest near apex, medianly 1septate, not constricted at septum, tapering more prominently\ntoward base (10–)11–12(–13) × (2.5–)3–3.5 μm. Conidia\nholoblastic,\n\n30–35(–55) × (4–)5–6 μm, verruculose, 0–5-transversely\neuseptate, guttulate, straight to variously curved, obclavate to\nsubcylindrical, apex rounded to obtuse, base truncate to obconictruncate with a marginal frill; primary conidia frequently forming\nlateral branches or secondary conidia via microcyclic conidiation.\nDescriptions and illustrations: Walker et al. (1992), Crous &\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:authored_binomial",
+        "§6:multi_diagnosis"
+      ],
+      "known_missed_flags": [],
+      "notes": "Two Diagnosis: headers + mid-body Teratosphaeria obscuris citation; gnfinder catches cleanly."
+    },
+    {
+      "id": "taxon_fb7bd18d486cfaa13ec3426c6dae25b956e17bc7662fb56e305294d6f50b1568",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-7d04b2d2c394f5b2d7d0b11cb9ccef98",
+      "class": "§5-non-taxonomic-paper",
+      "description": "is clear from the comparison of the control, featuring a totally collapsed algal culture\n(Figure 2C) compared with the culture treated with glufosinate remaining green with most\nof the algal cells uninfected and healthy nine days after inoculation (Figure 2D). In this case,\nthe cells did not accumulate significant amounts of astaxanthin, respectively, and did not\nchange their color since the light intensity during the exposure to glufosinate was very low.\n\ndevelopment in the higher concentration (25 > 15 > 5 mM). We used two different negative\ncontrols, mBG11, which doesn’t contains nitrogen source at all, and BGM w/o N, which\ncontains nitrogen at trace level (0.5 mM) and sucrose. We found poor growth in BGM\nw/o N and in low nitrate concentrations (5 and 15 mM), but absolutely no growth in\nmBG11. We also found low growth in ammonia and glutamine at a low concentration\n(5 mM). The growth with nitrate at a higher concentration (25 mM) is between poor and\nlow, but statistically different from BGM w/o N since the confidence intervals at 95% are\n\ncocultures after 7 days. Left: coculture in the presence of 2.5 mM of glufosinate; Right: coculture in\nthe presence of 2.5 mM of glufosinate and 12.5 mM of glutamine.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:mid_sentence",
+        "§2:synth_nomen"
+      ],
+      "known_missed_flags": [],
+      "notes": "Journal of Fungi gene-function study.  Description is Results/Discussion prose about glufosinate treatment.  Claude returned 0 annotations (self-quarantine)."
+    },
+    {
+      "id": "taxon_173204126fbc7e27e4018accd4684ddf002b1bc7b1c09998587033c67e2c2bcc",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-77da18ae791d3a9b10dc7032cafa0bf0",
+      "class": "§6-compact-congenerics",
+      "description": "Saprobic on litter in forest. Sexual morph: Subiculum white, composed of hyaline, septate\nhyphae. Ascomata perithecial, superficial, gregarious to solitary, globose to subglobose, pale brown\nto brown, translucent, membranaceous, with inconspicuous ostioles, surrounded by straight, rigid,\ntapering, dark brown to black setae. Peridium membranaceous, composed of pale brown cells of\ntextura angularis. Asci 4- to 8-spored, clavate to cylindrical, evanescent. Ascospores usually biseriate, brown, ellipsoidal, smooth-walled, rounded apex, terminal apiculate base with germ pore.\nSexual morph: Undetermined (adapted from Matsushima 1995). \n\nSyspastospora P.F. Cannon & D. Hawksw., J. Linn. Soc., Bot. 84(2): 152 (1982)\nParasitic on various moniliaceous hyphomycetes, or isolated from soil, or lichenicolous.\nSexual morph: Ascomata perithecial or without an external opening, solitary, superficial to \n\nimmersed, globose to subglobose, sometimes with long necks, pale brown to brown,\nmembranaceous, glabrous or setose or hairy, with or lacking ostioles. Necks absent or cylindrical,\ncomposed of fasciculate, cylindrical, septate hyphae, straight or slightly curved. Peridium\nmembranaceous, composed of pale brown to brown cells of textura angularis. Asci 8-spored,\nunitunicate, clavate, evanescent. Ascospores irregular or bi-seriate, hyaline becoming brown or\nolivaceous brown, broadly fusiform to cylindrical to doliiform, truncate at both ends, aseptate,\nsmooth-walled or with reticulate ribs on surface, with a large depressed germ pore at each end,\nmostly with guttules. Asexual morph: Hyphomycetous. Mycelium consisting of hyaline to\nyellowish brown, branched, septate, smooth-walled hyphae. Chlamydospores terminal to\nintercalary, globose to ovoid, hyaline to brown (adapted from Cannon & Hawksworth 1982, Horie\net al. 1986, García et al. 2002, Etayo & Sancho 2008). \n",
+      "diagnosis": "Notes – Syspastospora was established as a genus similar to Melanospora, and its generic\ntype, S. parasitica, has cylindrical to doliiform ascospores with large terminal depressed germ\npores at each end, whereas Melanospora has ellipsoidal to citriform ascospores (Cannon &\nHawksworth 1982). The strain of S. parasitica nested in Hypocreales (Zhang & Blackwell 2002).\nThis genus was accepted as a member of Ceratostomataceae based on multi-gene analyses (MarinFelix et al. 2018, Hyde et al. 2020e, Wijayawardene et al. 2020). In this study, Syspastospora is\nsister to Gonatobotrys and Vittatispora in Ceratostomataceae (54%ML/0.99BY, Fig. 1). \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§6:authored_binomial"
+      ],
+      "known_missed_flags": [],
+      "notes": "Canonical compact-congenerics blind spot: 2 similar species (Setiferotheca).  merge_metric=2 misses; gnfinder catches Syspastospora genus citation between species."
+    },
+    {
+      "id": "taxon_83e36037883336a1a30e100365071ff3a8c663bf35d7629ac433466d21bad801",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-1c3c093868ae1d081aee0534982718c3",
+      "class": "§6-single-authored-binomial-only",
+      "description": "Effused-reflexed basidiomes show characteristic, coarsely-strigose upper surface, greyish tan\nto whitish, and large angular pores 1–2 per mm, purplish when fresh, dull purplish brown on\ndrying, which become lacerate and partly lamellate towards the margin (Fig. 5A). The\nbasidiospores are cylindric, 5.5–8 × 2–2.5\nbroader, subcylindric, 5.5–7 × 2.2–\n\nTrichaptum perrottetii (Lév.) Ryvarden\nThe basidiocarps are pileate, broadly-attached and not decurrent on substrate, 5–10 cm wide\nand up to 2 cm thick, with unique, 0.5 cm thick, blackish mat of entangled strigose and forked hairs\non pileal surface, reminding of Hexagonia hydnoides pileal cover. Pores violet, on drying becoming\nbrown, 2–3 per mm, later with incised dissepiments. Unmistakable species but rather rare, \n",
+      "diagnosis": "Trichaptum sp. 1512/18-J\nThis species is similar to T. byssogenum but can be distinguished by extremely thin or almost\nmissing context, lack of purplish colors on pores, which are also somewhat larger, 0.5–2 per mm, \n\nisodiametric and without tendency to become lamellate towards the margin (Fig. 5B). Spores are\nbroadly ellipsoid, 6.5–8 × 3.3–4 μm, which is unique in Trichaptum. The ITS sequence is related to\nT. byssogenum, but distinctly different. We have found this species only once in Costa Rica; the\nsame sequence, however, is present several times in GenBank as “Uncultured fungus”- see\nDiscussion. Ryvarden and Johansen (1980) show a picture of Trametes versatilis Berk 1842\nfeatures (synonym of Trichaptum byssogenum, collected in the USA) where the spores perfectly\ncorrespond to our Trichaptum sp. spores. We have not seen the type deposited in Kew and so we\ncannot decide now if our Trichaptum sp. is identical with Trametes versatilis or not. \n\nTrichaptum fumosoavellaneum (Romell) Raichenb.\nLargest of all Trichaptum species, showing massive pilei up to 40 cm in diam. and 10 cm\nthick (Fig. 6A). Thick context, isodiametric, entire pores, similar spores and ITS sequence indicate\nrelationship with T. agricola described above. Nevertheless, except for its size, T.\nfumosoavellaneum is distinguished by smaller pores 3–4 per mm, and usually distinct violet colors. \n\nTrichaptum griseofuscens (Mont.) Ryvarden & Iturr.\nThis species is similar and related to T. sector but with a hydnoid hymenophore from the very\nbeginning (Fig. 6B), more brownish pilei, and narrower spores. \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:authored_binomial"
+      ],
+      "known_missed_flags": [],
+      "notes": "ALL non-gnfinder detectors miss.  Single formally-cited authored binomial (Trichaptum perrottetii (Lév.) Ryvarden) mid-Description.  merge_metric=4."
+    },
+    {
+      "id": "taxon_67cc93d2860f4f8a451c25f478a16eff4b5362e79d8cb44806a4ce9d05fad5e0",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-64fa1e5256cf7b64b525d9d0232246ab",
+      "class": "§6-slime-mold-merge",
+      "description": "Comatotricha  afroalpina  Rammeloo,  Bull.  Jard.  Bot.  Belg.  53:  297,  1983  (Figs.  1-10)\nSporocarps  scattered,  generally  a  few  only,  stalked,  1-2mm  tall.  Sporophores\nglobose,  dark  brown.  Stalk  cylindrical,  reddish-blackish,  fibrous  at  base,  mostly  up  to\nImm long. Columella a continuation of the stalk reaching about the centre of the sporophore,  its  apex  merging  into  the  thick  capillitium  branches.  Capillitium  scanty,  pale\nbrown,  attached  perpendicularly  to  the  columella  along  its  whole  length,  branches\nthick  and  anastomosing  freely,  especially  towards  the  periphery,  forming  an  incomplete surface net. Spores globose, pale brown, 8-10 jim diam., baculate/warted all over\n(SEM shows baculae with lobed apices).\n\nSporocarps  in  small  groups  of  5-20,  cylindrical  with  convex  apex,  stalked,\n0.2-0.35  cm  tall.  Hypothallus  membranous,  translucent,  with  a  clear  colour.  Stalk\nshort,  1/3  to  1/4  of  the  total  height,  dark  brown,  with  a  fibrous  base.  Peridium  early\nevanescent.  Columella  attenuate  from  base  to  apex.  Capillitium  abundant,  reddish-\n\nbrown,  thin,  with  a  scarcely  developed  peridial  net  and  with  numerous  free  ends.\nSpores  pale  brown,  globose,  7.5-10  lim  diam.,  densely  warted;  because  of  the  coalescence of the warts, some partial reticulation, more or less extensive in some zones, can\n\ndiam. et 0,4-1,2mm alta. Stipes niger, erectus, ad summum usque ad tertiam partem altitudinis  totalis  surgens,  basis  valde  lata  gradatim  versus  apicem  minuens.  Peridium\nfugax. Columella crassa gradatim macrescens, dimidium sporocarpium attinens. Capill-\nitium  valde  ramosum  et  anastomosans  filamentis  valde  angustis  constitutum  minus\nquam  ]  um  diam.  latis,  pallido-brunneis,  multas  ramificationes  liberas,  papillas  parvas\net  nullum  nodulum  latum  habentibus.  Sporae  7-9  um  diam.,  verrucosae,  S.E.M.  explo-\nratae longa bacula inaequaliter distributa exhibentes.\nHabitat:  In  foliis  Ulmi  minoris,  Fuente  la  Reina,  Castellón,  leg.  A.  Burguete,\n31.1.1990,  AH  12867  Holotypus.  (Isotypus  in  herbario  privato  Nannengae-Bremekamp,\nsub n° 16.690)\nSporocarps  in  small  clusters,  gregarious,  stalked,  0.4-1.2  mm  tall.  Sporophores  globose,  about  0.3  mm  diam.,  red-brown.  Hypothallus  discoid,  black.  Stalk\nblack, nearly half the total height, base very wide, attenuated upwards, reaching to the\ncentre or a little over in the sporophore, where it splits into a few capillitium branches,\nslightly webbed at the base between the branches. Capillitium dense, thin, less than 1\nHm  diam.,  pale  brown,  (Rayner)  rosy  buff,  with  very  abundant  small  papillae,  joined\nperpendicularly  to  the  columella  along  its  whole  length,  branched  and  anastomosing,\naxils not widened, base, except on the apex, not webbed, forming 2-3 somewhat elongate meshes on the radius, and with about 35-45 um long free ends pointing outwards.\nSpores  globose,  pale  rosy  or  pale  brown,  7-9  шт  diam.,  irregularly,  minutely  baculate\n(SEM; under the light microscope appearing spinulose) the baculae (spinules) less than\n0.5 um long. Plasmodium not observed.\n",
+      "diagnosis": "Specimens  AH  12085  and  12871  were  confirmed  by  Dr.  Rammeloo.  Collection  AH\n13285 has ellipsoid spores which are up to 11 pm diam.\nThe  outstanding  characters  of  this  species  are  the  structure  of  the  capillitium\nand spores. The capillitium is differentiated into strong primary branches which ramify\nin  thinner  filaments,  anastomosing  especially  near  the  periphery.  The  spores  are  pale\n\nRammeloo  (1976)  indicated  in  his  original  description  that  the  spore  size  was\n9-10  ит  diam.  Kowalski  &  Demaree  (1987)  collected  this  species  in  California  and\nthey  especially  noted  the  smaller  spore  size  of  their  specimen,  i.e.  8-9  um.  This\nagrees better with our collection AH 13025 in which the spores are 7.5-9 um diam.\nComatricha  anomala  is  a  species  with  a  unique  spore  ornamentation  in  this\ngenus, consisting of warts which coalesce into a nearly complete reticulation.\n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§6:authored_binomial"
+      ],
+      "known_missed_flags": [],
+      "notes": "Slime mold (Myxomycota) 2-species merge.  Head opens with full authored citation \"Comatotricha afroalpina Rammeloo, Bull. Jard. Bot. Belg. 53: 297, 1983\".  gnfinder catches; Latin heuristic misses (bilingual paragraph)."
+    },
+    {
+      "id": "taxon_b9a623297a26a323128e38372b95a6f3c675ef302f2a597aa4a9b7d8442c100e",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-44107d69eeb46ee88ea2570ae78a3d31",
+      "class": "§6-false-positive-detailed-single",
+      "description": "Mycelium internal, hyphae (4)-6-(10) jlm in diameter, forming lesions on\nleaves. Lesions or two distinct types; in one t)pe, the lesions frrst appear as sunken,\nova1 to irregu1ar, slightly chlorotic £1ec1c:s, ca. 0.5 mm wide, scattered on leaflet.\nOlder lesions reddish-brown to brown in center, with light yeUow halo, up to 1 mm\nwide, sometimes coalescin& becoming brown to black when mature. Lesions\noccurring on both sides of leafle~ but adaxial lesions more frequent. The second\ntype of lesion occws as a broad necrotic area that may form on leaflet margin or\nas a wedge-shaped tip lesion that develops along the midrib toward tbe petiole.\nAscoma an ostiolate pseudothecium, solitary, scattered, immersed in tissue or\nleafspnt (Fig. 4), formed in fallen leaves. Pseudothecia dark brown to black,\nsubglobose to broadly oval or obpyriform, glabrous, (76)-99-(146) jlm high X\n(70)-86-(126) I'm wide, with an\nerumpent, papillate,\nostiolar neck, usually\nepiphyllous. Pseudothecial waU 1Q-12jlm wide, composed of angular to somewhat\nelongated cells with pigmented walls, cells at apex and around ostiolar neck darker\nbrown. Paraphyses lac1c:.ing, but remnants of crushed centrum tissue may occur\nbetween the asci. Asci 3-18 in number, completely filling the locule when mature.\nAsci initially clavate, then saccate or ovoid to broadly obclavatc, bitunicatc \n\n(r.ssitunicate), with inner wall layer greatly thickened at apex and becoming thinner\nalong sides and base, (30)-46-(60) j.lm long X (12)- Z7-(40) j.lm wide, 8-spored. \n\nphragrnosporous, with 3-5 transverse and 0-2 longitudinal septa, oval to oblong or\nellipsoid and slightly constricted at the septa, (20)-24-(26) j.lm long X (4)-8-(10)\np.m wide, surrounded by a thin gelatinous sheath, hyaline when marure, becoming\nyellowish to light brown upon discharge.\nIn culture:\nOn V8: Colony hyaline when young, barely visible, hyphae appressed to agar\nsurface, becoming black with development of pseudothecia, sectors of colony\nsometimes becoming covered with a flat, felt-like layer of white aerial hyphae.\nColony diameter from single spores 3-5 mm after 2 days and 16-18 mm after 3\ndays. Vegetative hyphae hyaline, thin-walled, 2-8 j.lm wide; fertile hyphae darker\nand wider than vegetative hyphae, 8-18 Jlm in width, thicker walled, usually septate\nat shorter intervals, becoming inflated and frequently strongly constricted at the\nsepta. Pseudotbecia with mature ascospores present after 3 days. Pseudothecia\nsolitary and scattered or sometimes aggregated in small clusters (F''S. 1), partially\nto entirely immersed in agar, subglobose to broadly oval or obpyriform, glabrous,\n(90)-135-(180) j.lm high x (82)-127-(180) j.lm wide, lightly pigmented with\ntranslucent walls when young. appearing black when mature, with a broad pore in\na raised ostiolar neck (Fig. 2). Pseudothecial wall8-10 j.lm thick; wall cells angular\nto oblong (Fig. 3), with slightly thickened walls, dark brown when mature, cells\naround base of ostiolar neck black, forming a distinct ring. Ostiolar neck papillate\nto elongate, composed or subbyaline cells. Paraphyses lacking. but remnants of\ncentrum tissne may oeeur between asci. Asci clavate when young (Fog. 8), becoming\nsaccate or ovoid to broadly obelavate (Fig. 9), (58)-71-(84) j.lm high x (30)-42-(52)\nj.lm wide, 8-spored, bitunicate (r.ssitunicate), the inner wall layer (endotunica) \n\nwidest above the middle, rounded at the top and tapering toward the bottom,\nslightly constricted at the septa, (28)-3~(38) IJm long x (10)-15-(20) IJm wide,\nsurrounded by a thin gelatinous sheath (Fig. 6), hyaline when mature, becoming\ntight brown upon release.\nOn MEA: Colony development as on V8 agar, but fertile hyphae quickly\nbecome darkly pigmented, forming an opaque colony with a fiat, shiny black surface\nthat may become partly covered by a Oat layer of gray aerial hyphae (Fig. 11).\nPseudothecia scattered or in small clusters, (132)-175-(240) 11m high X\n(84)-130-(180) IJm wide. Wall cells of pseudothecia soon becoming black aod\nopaque. Asci (54)-67-(80) X (24)-37-(44) 11m, formed as on V8, but maturing more\nslowly, with many immature after one week. Aseospores as on V8, (26)-27-(32) long\nX (10)-11-(14) IJm wide, hyaline while in ascus, but quickly becoming dark brown\nupon discharge, mostly dictyosporous, but phragmospores common. \n\na diameter of 8 em after two weeks. Mycelium dark, appressed to surface of agar,\nforming a pellicle-like layer, bearing numerous pseudothecia. Basal mycelium\ncovered by a white, cottony aerial mycelium that partially obscures the\npseudotbecia. Colony reverse dark, giving grayish aspect to aerial mycelium.\nPseudotbccia as in other isolates, but maturing more erratically. Some pseudotbecia\nhave mature ascospores in four days, but in albers the asci marure more slowly.\nForcible discharge of ascospores limited; most ascospores collect in a mass at\nmouth of ostiolc. Discharged ascospores remain hyaline or become only lightly\npigmented and arc not visible on petri plate lid. Ascospore discharge was effected\nby extension of the eodotunica through the ostiole (Fig. 15). When placed in water,\nthe gelatinous sheath surrounding the ascosporcs expanded considerably (Fig. 14)\nand ascospores were capable of germination immediately upon discharge (Fig. 16}.\nOn MEA. Hyphae growing outward as a singJe colony, reaching 9 em after\ntwo weeks. Colony similar to that on V8, except that the aerial mycelium forms a\nthick, flat, white, felt-like layer that completely obscures the pseudothecia. Colony\nreverse black. Forcible ascospore discharge very limited, but ascosporcs become\nmore darkly pigmented than on VS. Most ascospores coUcct at the mouth of\nostiole.\nNeotype Isolate. When grown in continuous light, colony diameter on agar rarely\nexceeded 2 em, as growth ceased with maturation of the pseudotbecia. Subsequent\ndevelopment of colonies in the periphery of the petri plate from discharged\nascosporcs filled the plate within one week.\nThe difference in appearance of colonies on VS and MEA is striking. On VS\nthe pigmented hyphae are subhyaline or light brown and the colony remains\ntranslucent, with distinct light areas between the pseudothecia (F.g. 12). On MEA,\nhowever, the intense pigmentation of the fertile hyphae results in a black, opaque\ncolony in which individual pseudothecia can be distinguished only at the lighter\nmargins of the colony (Fig. 11}. Ascospore discharge onto the petri plate lid \n\npseudothccia that formed under the covered portion developed darker pigmentation\nthan those in directligb~ so that the colony appeared black instead of brown. After\npseudothecium development, most of the outer area of the colony became covered\nwith a thick mat of cottony, white mycelium that later turned dark gray.\nOccasionally pseudothecia formed on the surface of this mycelial mat. When freshly\ninoculated agar plates were grown in the dark, the resulting colonies bad abundant\naerial hyphae. When such plates were later placed in light, aerial hyphae were\ngreatly reduced on the new growth and pseudotbecium formation was abundant. \n\nsubmembranaccous, short papillate, 5().120 p. diam.; asci broadly clavate,\nthick-walled, 8-spored, 45-75 X 25-45 11; aparaphysate; spores oblong-obovate, 21-27\nX 8- 12 IJ, hyaline or subhya6oe, transverse septa 3-5, longitudinal septa 0-2,\nconstricted at middle septum, slightly constricted at other septa. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§6:merge_metric"
+      ],
+      "known_missed_flags": [],
+      "notes": "False positive: single plant-pathogen species with detailed culture-morphology across multiple media.  merge_metric=27 fires but treatment is legitimately single-species.  Regression target: future detector tightening MUST NOT push this into merge classification."
+    },
+    {
+      "id": "taxon_9e04801321bec3dbc3fd75aa7c26770a07b5ee303e71280906f34f3de9ddc586",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-dce2d9d7be7c8106b24c31d46b780083",
+      "class": "§6-false-positive-comparative-diagnosis",
+      "description": "Pileus finely-fibrillose to rimose, not squamulose; basidia hyaline\nStipe smooth or somewhat fibrillose but not furfuraceous, some species staining or with noticeable odor,\nspores often bean-shaped (phaseoliform, subreniform)\nPileus brownish yellow or whitish beige; stipe white, slowly red where bruised (pileus also turning red),\nspores 10-13.5 x 5.5-7 µm; rare, known only from a single collection in Michigan under hardwoods (in need \n",
+      "diagnosis": "µm, yellowish brown in KOH; under oak or pine, also poplars at high elevations or spruce;\nwidely distributed in the U.S. (Maine, Florida, Arizona), also east Asia and Europe\nMallocybe latifolia (E. Ludw.) Matheny & Esteve-Rav.\nPileus not umbonate, with a distinct hairy white vesture; spores 8-10 x 4.5-5.5 µm,\nyellowish brown in KOH; under oak or pine, Florida to Arizona [cf. M. leucoloma, an alpine\nand conifer associate in western North America and Quebec]\nMallocybe leucothrix Matheny & M.E. Sm., nom. prov.\nOdor often noticeable – fruity, like bruised Geranium leaves (Pelargonium), fishy, green corn, spermatic,\nor like green corn; flesh reddening or not; basidia typically not necropigmented in temperate taxa; stipe\nlength much longer than the pileus diameter\nStipe surface fibrillose, flesh reddening\nOdor spermatic or absent, lower part of stipe with green-gray shades; arctic (Dryas) to Nova Scotia\n(Picea) and New York (Betula, Picea)\nInosperma hirsutum (Lasch) Matheny & Esteve-Rav. sensu Grund & D.E. Stuntz\nOdor floral, aromatic, or strong and persistent of green corn, green (or blue) shades absent on stipe\nInosperma subrubescens (G.F. Atk.) Matheny & Esteve-Rav. (=I. cervicolor sensu D.E. Stuntz)\nOdor like ‘old wine’ or of ‘dank casks’, green (or blue) shades absent on stipe\nInosperma cervicolor (Pers.) Matheny & Esteve-Rav. sensu Eur. auct.\nStipe surface with recurved scales or fibrillose-scaly, flesh reddening or not\nStipe without blue-green on lower part, odor absent or like Pelargonium when cut; in conifer forest\nunder spruce, flesh not reddening\nSpores on average 10-11 x 5.2-6 µm, under Picea, Nova Scotia to North Carolina\nInosperma mutatum (Peck) Matheny & Esteve-Rav. (Syn. I. leptocystella G.F. Atk.? See ‘doubtful\nspecies’; syn. In. apiosmotum (Grund & D.E. Stuntz) Matheny & Esteve-Rav.\nSpores on average 13.0 x 6.5 µm, under Picea, West Virginia\nInosperma geraniodorum J. Favre (cf. I. leptocystella G.F. Atk.)\nStipe with blue-green or blackish green on lower part, sometimes throughout the stipe, flesh \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:diag_head_clip",
+        "§10:tail_clip",
+        "§6:merge_metric"
+      ],
+      "known_missed_flags": [],
+      "notes": "False positive: 439-char description + 2045-char Differential Diagnosis; merge_metric=10 inflated by diagnosis-field content.  Regression target."
+    },
+    {
+      "id": "taxon_5b0a8ce745bf2f7a3f8ac5e44c1390f4af91d1a844922bb3dd748aed94a6d359",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-fbeefd9605b02862fa2bcedc97fce44f",
+      "class": "§8-key-couplets-in-description",
+      "description": "15. Basal bulb may be elongate, almost always doglegged; clamps\npresent or absent; universal veil with occasional to plentiful\nhyphae; with or without strong odor.\n\n16. Basal bulb ovoid to ventricose; clamps absent at bases of\nbasidia; odorless or with slight odor of a tide pool or the\nseashore; spores (7.8-) 9.8 - 14.0 (-21) x (3.9-) 4.9 - 6.3 (-9.8)\njam, with Q « (1.85-) L.04.- 2:48 (2.50)... coronas\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§8:key_content_short"
+      ],
+      "known_missed_flags": [],
+      "notes": "Amanita chlorinosma treatment description contains only terminal key couplets 15./16., no descriptive prose."
+    },
+    {
+      "id": "taxon_cda95f9fdeccf29044c71c577df2be9048002671ca0fefbcec233cf6c83f3f81",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-d4729d38032673e0331e6abbdd1e1a7d",
+      "class": "§9-fatal-OCR-corruption",
+      "description": "",
+      "diagnosis": "species of Colletotrichum are morphologically cryptic, and\n��������������������������������������������������������������\nfeatures alone, C. caudatum s.l. is easy to recognize through\nvisual examination of the asexual spores (Sutton 1980,\nHyde et al. 2009). The fungus produces falcate-shaped\n�������������������������������������������������������������\nthat makes C. caudatum s.l. unique, relative to all other\nknown Colletotrichum species (Fig. 1I–K; Nag Raj 1973).\nColletotrichum caudatum�����������������������������������\nAmerican native grass Sorghastrum nutans (indiangrass)\nduring the late nineteenth century (Saccardo 1880) but was\n����������������������������������������������������������\nBased on the presence of the diagnostic conidial appendage,\nC. caudatum s.l. has been reported from numerous C4 grass\nhosts worldwide, including Bothriochloa bladhii, Cymbopogon\nspp., Eremochloa ophiuroides, Eragrostis spp., Imperata \n\nfungus is easily differentiated from other Colletotrichum������������������������������������������������������������\nat the apex of the conidium. Multi-locus phylogenetic analysis of four DNA sequence markers from 21 isolates\nof C. caudatum s.l. from six grass hosts recovered the morphospecies as a well-supported monophyletic group.\nAlthough closely related to other Colletotrichum species pathogenic to warm-season grasses (e.g. C. sublineola,\nC. falcatum, C. navitas, C. graminicola), the sister taxon placement of C. caudatum remained unclear. Four major\n���������������������������������������������������������������C. caudatum s.l. isolates. Despite the presence\n�����������������������������������������������������������������������������������������������������������\napplication of genealogical concordance species recognition criteria diagnosed the four subgroups as phylogenetic\n�������������������������������������������������������������C. caudatum as one species with a broad host\nrange; however, multi-locus phylogenetic analyses refuted this model. Instead, isolates from different hosts were\nmainly segregated into different lineages. In particular, isolates from the type locale and host (USA, Sorghastrum\nnutans) collected within a 400 km radius were divided into three distinct species that corresponded with the three\nsampling sites. These data established that traditional morphological and ecological features are not informative for\nrecognition of taxa within C. caudatum s.l��������������������������������������������������������������������������\nTo stabilize the application of the name C. caudatum, DNA sequence data from the lectotype was generated, an\nepitype strain consistent with the type was designated and illustrated, and an emended description of C. caudatum\nsensu stricto is provided. Colletotrichum alcornii, C. baltimorense, C. somersetense, and C. zoysiae are described\nas new morphologically cryptic species related to C. caudatum s.s.\n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:diag_head_clip",
+        "§2:synth_nomen"
+      ],
+      "known_missed_flags": [],
+      "notes": "Colletotrichum diagnosis has hundreds of U+FFFD chars; Claude returned content=[] (0 annotations, status=error).  Self-quarantines from brat export."
+    },
+    {
+      "id": "taxon_95dbdfb9da5c3ed9b6bb5ca4eea6e0e294e356cba0663b57eafc00224349372f",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-eaf5f8cd82e3930dd7fcf7e454aa6607",
+      "class": "§9-interstitial-OCR-noise",
+      "description": "Illustration: Braun et al. �������������������\nDescription: Leaf spots amphigenous, oblong, spread along\n������������������������������������������������������������\nparts of the leaves, pale to dark brown, reddish brown, later\npale straw-coloured to dull greyish white, with brown to\nreddish brown border. Caespituli amphigenous, punctiform,\ndark brown, loose to dense, pale dingy olivaceous to greyish\nwhite by abundant conidial formation. Mycelium internal.\nStromata lacking or small, substomatal, 10–30 μm diam,\nolivaceous-brown. Conidiophores in small to moderately\nlarge fascicles, loose to dense, arising from internal hyphae\nor stromata, through stomata, erect, straight, subcylindrical����������������������������������������������������������\noccasionally to 6 μm wide at the very base, conidiophores\noften appearing to be longer by persistent conidia,\n0–1-septate, subhyaline to pale olivaceous or olivaceousbrown, thin-walled, smooth; conidiogenous cells integrated,\nterminal or conidiophores reduced to conidiogenous\ncells, 5–20 μm long, sympodial, conidiogenous loci\ninconspicuous. Conidia �����������������������������������\n��������������������������������������������������������\ndroplets when fresh, subhyaline to pale olivaceous, thinwalled, smooth, apex subacute, base truncate or gradually\nattenuated towards the base (i.e. only slightly obconically\ntruncate), (1.5–)2(–2.5) μm wide, hila unthickened, not\ndarkened.\n\nIllustration������������������������������������\nDescription: Leaf spots ��������������������������������������\nmm. Caespituli amphigenous, scattered, punctiform, blackish.\nMycelium ������������������������������������������������������\nbranched, septate, 4–6 μm wide, smooth to verruculose,\nforming\nsmall\nsubstomatal\nstromatic\naggregations.\nConidiophores fasciculate, 2–8, arising from stromatic hyphal\naggregations, forming small conidiomata, 13–30 μm diam,\nemerging through stomata, erect, subcylindrical, straight or\nonce geniculate, unbranched or only branched at the base,\n����������������������������������������������������������\nverruculose; conidiogenous cells integrated, terminal or\nconidiophores aseptate, i.e. reduced to conidiogenous cells,\ntapering to a rounded end, brown, verruculose, percurrently\nproliferating, with 1–3 irregular annellations, conidiogenous\nlocus neither thickened nor darkened. Conidia solitary,\nholoblastic, subcylindrical, straight to somewhat curved,\n������������������������������������������������������\nwith longitudinal striations, apex obtuse, broadly rounded,\nbase truncate to subtruncate, with marginal frill, but neither \n\nIllustration����������������������������\nDescription: Leaf spots ��������������������������������\n�����������������������������Caespituli amphigenous.\nMycelium internal, forming substomatal stromata, 10–35 μm\ndiam, yellowish brown. Conidiophores in dense fascicles,\narising from stromata, emerging through stomata, straight,\n�������������������������������������������������������������\nμm, aseptate, subhyaline, pale olivaceous to medium brown,\nthin-walled, smooth; conidiophores reduced to conidiogenous\ncells, conidiogenous loci minute, 1–2 μm diam, somewhat\nthickened and darkened. Conidia solitary, acicular, rarely\n������������������������������������������������������������\nthin-walled, smooth, apex pointed, base truncate, 1–2.5 μm\nwide, hila somewhat thickened and darkened.\nHolotype: USA: New York: Selkirk, on Juncus marginatus, \n",
+      "diagnosis": "Notes: Due to didymo- to phragmosporous, distoseptate\nconidia, this species is morphologically close to the type\nspecies of Stigmina, which proved to be a species of\nPseudocercospora based on its phylogenetic position.\nTherefore, Stigmina was reduced to synonymy with\nPseudocercospora. On the other hand, S. diramae is\ncharacterised by having verruculose conidiophores and\nconidia which is reminiscent of Pseudoasperisporium.\nHowever, the latter genus differs by its euseptate conidia.\nStigmina dieramae has not yet been cultured and its \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:mid_body_desc",
+        "§6:multi_description"
+      ],
+      "known_missed_flags": [],
+      "notes": "Interstitial U+FFFD runs between coherent prose; NOT fatal (19 annotations).  3-species illustrated-monograph merge with \"Illustration:\" + \"Description:\" headers."
+    },
+    {
+      "id": "taxon_7fbc71a8ba4363c73eb124cc937d3b3a6f07f8701b762d3a2798e01022702878",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "6-1e441e650f5183d0d0e20c02ac7efa90",
+      "class": "§10-head-clip-only",
+      "description": "subcuticular, black, elliptical to elongated-elliptical, raising the substrate\nsurface, (0.4–)0.8–2.7 × 0.3–0.6 mm, opening by a single longitudinal split,\nlips grey, clypeus thickened towards the lips. Lip cells hyaline, 14–20.5 ×\n2.5–3.5 µm.  Asci unitunicate, clavate, long-stalked, (75–)90–125 ×\n10–14.5 µm, 8-spored. Ascospores hyaline, aseptate, guttulate, elongated-\n\nC = 0.5 mm; D = 100 µm; E, H, K = 5 µm; F, G = 10 µm; I = 200 µm; J = 50 µm; L = 2 µm.\nclavate to cylindrical, bent towards the top end, 18–25 × 2.5–3.5 µm, usually\nnot covered by a gelatinous sheath but sometimes clad in a thin sheath. \n\nParaphyses hyaline, filiform, septate, branched or unbranched, not swollen\nat the apex, as long as mature asci, covered by a gelatinous sheath. Pycnidia\nsubcuticular, black, circular, (80–)105–220 µm diam., opening by 1–2\nsmall central ostioles, accompanying the hysterothecia. Conidiogenous\ncells cylindrical, tapering towards the apex, hyaline, 7–12 × 1–2 µm.\nConidia cylindrical, sometimes allantoid, hyaline, aseptate, 2–4 × 1 µm.\nZone lines black, thin.\n",
+      "diagnosis": "Rhododendron sp. (Hou & Piepenbring 2006, Hou et al. 2007). They differ\nfrom H. rubi mainly by the shape and position of their hysterothecia as well\nas ascospore characteristics. Hypoderma rhododendri-mariesii has smaller\n(<860 µm long) hysterothecia, asci with cylindric-fusiform ascospores,\nand shorter ((9–)11–17 µm) ascospores; H. cuspidatum has intraepidermal\nhysterothecia with acute ends, ascospores with thick gelatinous sheaths, and\nunbranched paraphyses; H. shiqii has intraepidermal hysterothecia without\nlips that often open with one slit and additional lateral fissures, clavate asci\nwith bifusiform ascospores, and ascospores with thick gelatinous sheaths;\nand H. urniforme is characterised by urniform, intraepidermal hysterothecia\nwith red-brown lips and almost cylindrical asci with ellipsoidal to longellipsoidal ascospores with irregular gelatinous sheaths. H. cuspidatum,\nH. shiqii, and H. urniforme often occur together on the same twigs (Hou et \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:mid_sentence"
+      ],
+      "known_missed_flags": [],
+      "notes": "Clean single-species; description opens \"subcuticular, black,...\" with the anatomical noun (Ascomata) clipped off."
+    },
+    {
+      "id": "taxon_ae45a05e110f7cb695e0f829e1e7d2573ec83db9ee0973a6077ecb0d1d3cd9e8",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "6-d3e8c3b501d05c73b456c1247cfb35fa",
+      "class": "§10-tail-clip-only",
+      "description": "Basidiomata small to medium-sized, dry to glutinous, yellowish to greenish. Pileus 10–60 mm diam, greenish, often with\nyellow or blue tints, minutely silky. Stipe cylindrical, pale green,\nflavescent or blushing. Lamellae citrinous, often blushing. Veil\ngreenish, sparse. Context pale green to pale yellowish. Alkaline\nreaction blood red. Spores ellipsoid to amygdaloid, 8–10 × \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [],
+      "notes": "Description opens cleanly, runs out at 378 chars with no sentence-final punctuation.  \"OK result for search\" per operator (§10 advisory-only)."
+    },
+    {
+      "id": "taxon_23d479f4f8ec864d35527d0db16ea944947d7dad18c4a37922ac089fd095f51c",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-3032c7576c2970f948a9bf939a567b73",
+      "class": "§10-both-ends-clip",
+      "description": "glycerol, methanol, hexadecane, erythritol, levulinic acid,\nbutane-2,3-diol, isopropanol, propane-1,2-diol. The following\nsole nitrogen compounds can be assimilated: Ammonium\nsulphate, L-lysine, ethylamine hydrochloride (delayed or\ndelayed and weak), cadaverine dihydrochloride (delayed),\npotassium nitrate (sometimes delayed). The following sole\nnitrogen compound cannot be assimilated: sodium nitrite.\nGrowth in vitamin-free medium is positive. Growth is negative\nor weak at 25 °C, but negative at 28 °C. Optimal growth\ntemperature is between 4 °C and 20 °C. Growth in 0.01 %\ncycloheximide (w/v) is negative. Growth on 10 % NaCl +\n5 % glucose medium (w/v) and 50 % glucose agar (w/w) are\nnegative. Extracellular starch-like compounds are produced.\nUrease reaction is positive. Diazonium Blue B reaction is \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:mid_sentence",
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [],
+      "notes": "Cultural characteristics content (glycerol, methanol...); description head+tail both clipped.  Legitimate single species; Description is where Cultural characteristics belong."
+    },
+    {
+      "id": "taxon_acd88732fb57adb42e2ccfd41a7648cf00d69bb5c9cbabaadc2fc1c36912f6c9",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-f864fb9df6d0edfd619fc32331d93a9f",
+      "class": "§10-head-Nomen-tail-variant",
+      "description": "; perithecia epiphyllous, slightly prominent, black, shining;\nspores subcylindrical, straight or somewhat curved, or subflexuous\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:mid_sentence",
+        "§10:tail_clip",
+        "§2:synth_nomen"
+      ],
+      "known_missed_flags": [],
+      "notes": "Description opens with \"; perithecia...\" (Nomenclature-tail leak).  Extremely short: only Perithecia + Spores content."
+    },
+    {
+      "id": "taxon_01a01c54b9dc0c5a067971f696b76b255b08f82a3454a70179c71beadb94cb19",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-807a8408d5ec4afd1a86c5243fe364bb",
+      "class": "§11-gen-nov-plus-type-species",
+      "description": "Pseudotrichia Kirschst. gen. nov.\nPerithecia dispersa vel gregaria, superficialia, solida, carbonacea, coactis\nvestita; ostiolo papillato vel conico instructa.\nAsci euparaphysati, clavati\nvel cylindracei, 8-spori.\nSporidia fusiformia, hyalina, pluriseptata.\n102. Pseudotrichia stromatophila Kirschst. sp. n.\nPeritheciis dispersis vel acervis parvis, superficialibus, globosis, rigidis,\nnigris, carbonaceis, coactis viridiflavis vel brunneolis vestitis, ostiolo pa-\npilloso et conico quoque, interdum indistincte sulcato praeditis, 500—750 u\ndiam.; contextu denso, melaeno.\nAscis anguste clavatis, apice rotundatis,\nparietibus incrassatis, paulatim in stipitem sublongum attenuatis, 8-sporis,\n135—190 x7 13—15 u. Sporidiis sursum\ndistichis, deorsum monostichis,\nfusiformibus, utrinque obtusis, initio 4-guttulatis, serius interiore parte\nvalde nitente 4-locularibus, postremo 3-septatis, in duabus cellulis mediis\nglobose subamplificatis, hyalinis, saepius chlorinis, in septis vix, maxime\nin medio constrictis, rectis, interdum paulum inaequalibus, strato gelatinoso\ncinctis. Paraphysibus numerosis, tenuifiliformibus, ramosis, circa 1u crassis, \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:authored_binomial"
+      ],
+      "known_missed_flags": [],
+      "notes": "Pseudotrichia gen. nov. + type species P. stromatophila sp. nov. in same treatment.  Latin-only content (English descriptions not extracted)."
+    },
+    {
+      "id": "taxon_572d470e955a515d2a42157eca330cd00ebc54f489f15d45be38b595f2986ee7",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-1dbdabc706f4f68bc5a0e753dbb35e1d",
+      "class": "§12-Diagnosis-leaked-into-Description",
+      "description": "Apothccia angustara parva scssilia, o,l!-o,5 mm diam. Receptaculum initio globularc usque\novoideum ct album, deniquc appl;maturn usque pulvinatum ct dilute bnanncum, lacve.\nExcipulum ad basim strato supcrficiali c tc...:tura globulosa pracditurn. /\\:sci initio late obovati,\ndcniquc late clavati, a pice tholiformcs, 72- 100 x 25-36 pm, 8--spori, parietc iodo cacrulcsccntc.\nSporarurn fasciculi sacpc clongati (44-85 x 11- 22 t•m), interdum compactissimi (29X 22 J•m).\n1\\scosporae saepc in series irregulariter dispositae, sphaericac, ''iolasccntcs, g,8 11,2( 12,9) 11m\ndiam., fissuris brevibus foveolisque minutis ornatae. Paraphyses sparsim rarnosae, cylindricoclav:uae, 1,8 2,2 pm latae, apice lcviter inflatae, cellulis terminalibus materia lutea replctis. \n\nApothecia solitary or closely crowded, superficial, sessile 0 11 a rather narrow base,\n0.2-o.s mm across, 0 .2- 0 .4 mm high, watery-fleshy. Receptacle at first globular to\novoid and white, then flattened to pulvinate and pale brownish, smooth, without\nmargin. Disk at first convex and yellow to amber-coloured, then more flattened and\nbecoming brownish, dotted with the dark-brown protruding tips of asci. I !ymcnium\n50 8o J.lffi thick. Ilypothccium very thin, of only a few layers of subglobular or ellipsoid cells 3 1 o X 3 -4-5 J.lffi. Flesh not clearly differentiated. Excipulum consisting of\na group of closely compacted subglobular cells 3 6 X 3 4/.Lm ( textura globulosa)\nncar the base of the fru•t-body and a palisade of thin-walled hyaline hyphae up to\n4 J.lrn wide more upwards. Asci at first broadly obovate, then broadly clavate,\ngradually tapering downwards into a rather thick base, with broad dome-shaped\napex, 72-1 oo x 25- 36 J.lffi, 8-spored, the wall blue in Melzer's reagent. Spore-clusters\nusually elongated, 44-85 X 1 1-22 ltm, but sometimes also very compacted down to\n29 X 22 f.tm. Ascospores irregularly disposed in a cluster, ofien in one row of eight \n\nspores or two rows of one to seven spores, more rarely densely united in an ellipsoid\nmass, spherical, at first hyaline, then pinkish-violet. finally violet to purplish-brown,\ng.8-11.2(-12.g) ttm in diameter, ornamented with a very fine pattern of small pits\nand short more or less branching curved fiSsures; pigment o.4- o.8(-1.2) pm th1ck.\nParaphyses cylindric-clavate, sparsely branched, septate, 1.8-2.21tm thick, enlarged\nup to 3·5 ftlll thick at the tip, especially the upp::r part with yellow contents. \n\narrangement of the spores in a cluster.\nJudging by the occasionally very compact spore-clusters, the ornamentation and\nthe volume of the ascospores, S. sphaerospoms is related to S. tnmcallt.s Vel.\nAnother species which seems to be related is Saccobolu.r plaleusis Gam. & Ran. But\nhere the spores are subfusoid with truncate ends, while longitudinal shortening of the\nspore-cluster is not reported by Camundi & Ranalli ( rg6g).\nSaccobolus purpureus Brumm., spec. nov.- Fig. 2\n1\\po1hccia scssilia, o,rs-o,so mm diam. Receptaculum initio hcmisphacricurn et dilute\npurpureo-roseum, dl'nique obconicum ct magis fusco-purpurrum, postrcmo pulvinatum vel\nraro subcylindricum, lacvc·. Excipulum strato supcrficiali e tcxtura globulosa pracditum,\npigmcnto rosco-purpurco incnJStalUm. t\\sci clavati, a pice truncati, rro-120 x 22- 26 1•m,\n8-spori, parictc iodo cacmlcsccntc. Sporarum fasciculi clongati. arctr adprcssi, 34- 36 X 14 15\n1•m. Ascosporae secundum lypum I [ dispositac, initio fusiformi-cllipsoidcae ct hyalinae,\ndenique asymmetricae, trigonac vel vcnlricosac Cl intense purpurco-violasccntcs, 13,8 15,6 X\n7,3-8,3 Jtm, lacvcs, saepe lincis irrcguJaribus tcnuissimis ornatac. Paraphyses ramosac,\ncylindricae, 2,5 3,7 11m latac, apice lc,•iter inflatae, intcrdum pigrncnto purpurco-rosco\nobtcctae. In limo :uinorum ct animalis inscctivori ignoti invenitur.\nTv1•~.:s: oon Brummtltn 3290, prope.Jabo in Djcbcl 'cfusa, Libya (L).\nApothccia solitary or in small groups, superficial, sessile on a broad base, 0.150.50 mm across, 0.25-<>·35 nun hi~h, watery-neshy. Receptacle at first hemispherical\nand pale purple-red, then obcomcal and more brownish vurplc, finally pulvinate\nor rarely subcylindrical; surface smooth; margin not differentiated. Disk convex,\nat first colourless, then dark violet from ripe ascospores, rou~hencd by the protruding\ntips of ripe asci. llymcnium 8o 100 ftm thick. lfypothccmm very thin, of only a\nvery few layers ofisodiametric cells 2.5 7 x 2.5- 6 ttm. Flesh not clearly differentiated.\nExcipulum 6- 10 ttm thick, of one or two layers of isodiametric or slightly oblong\ncells 5-9 X 3 7 I'm (textura globulosa), with maturity restricted to the base of the\nfruit-body, with purple-red, amorphous, intercellular, w~ltcr-solublc pigment. Asci\nclavate, with truncate apex, tro-120 X 22--26 pm, 8-sporcd, the wall blue in Melzer's \n\nreagent. Spore-clusters very compact, elongated, 34- 36 x 14- 15 p.m, with unilateral\nmucilaginous substance. Ascosporcs arranged accordmg to a very compact form of\npattcm IJ , at first fusiform-ellipsoid and hyaline, then asymmetrical, subtrigonal,\nor ventricose and dark purple-violet, finally brownish-purple, 13.8-1 5.6 X 7.3-8.3\nJtm, smooth with a few irregular secundary cracks takinf: the shape of delicate lines\nover the whole of the spore-cluster; pigment in a rather th1ck layer (0.5-1.3 ttm thick).\nParaphyses branched, septate, cylindrical, 2.5- 3. 7 ttm thick, not or very slightfy\nenlarged up to 5 p.m at the tip, w1th colourless contents; the apex sometimes covered\nwith small purple-red crystals.\nHADtTAT.- On dung of donkey and of unknown insectivorous animal. \n\nisolated warts, while the receptacle is wh i ti.~h with a shade of violet.\nSaccobolus parvisporus 13mmm., JfJer. nov.Fig. 3\nApothccia scssil i<~ , solitaria, intcrdum canOucntia, a,3-o,6 mm diam. Receptaculum initio\nsubglabularc c1 dilute rosctllll u~quc dilute vialaccum, dcniquc pulvinatum ct sordidc roscum\nLUque dilute carncum, lacvc. Excipulum strata supcrficiali tcxtura glabulosa praeditum,\nhyalinum. /Uti clavati, apicc Lruncati, 122 132X 15-18pm, 8-spori, parictc ioda intense\ncaerulesccnte. Sporarum fasciculi clangati, valdc lui. rara campacti, (23 )27-29 X 10 11 pm.\nAscosporae secundum typum II vel interdum secundum l)'pum lila dispositae, cllipsoidcae,\nvialasccntcs, g,s- ra,3 X5,1 6,3 tan. J.::pisporium pigmcnri disposita vcrrucis admodum grossis\ngranulisque irregularibus abtectum, basi sacpc strata tenui. Paraphyses simplices vel ramosae,\ncylindraceae, r ,B-2,3 r•m latac, a pice lev iter inOatac, hylllinae. In fimo asinorum invenitur.\nTVPus: va11 8nmtmtlmJ288, propc j abo in Djcbel . cfusa, Libya (L).\nApothecia solitary or in small coherent groups, sometimes apparently confluent,\nsuperficial, sessile on a broad base, 0.3-o.6 mm across, 0.3 0.4 mm high, wateryfleshy. Receptacle at first suuglouular and pale pinkish to pale violet, then pulvinate\nand dingy pinkish to pale flesh-coloured, smooth, without margin. Disk convex,\ntranslucent pale pinkish, roughened by protr·uding asci. Hymenium go-1 10 I'm\nthick. Hypothccium thin, of closely compacted isodiamctrrc cells 3- 7.5 ;tm in\ndiameter. Flesh not differentiated. Excipulum very thin, consisting of sub~lobular\ncells (textura globulosa), hyaline, scarcely pigmented, with maturity restnctcd to\nbase of fruit-body. 1\\sci clavate, with a long stalk, with truncate apex, 122- 132 X\n15- 18 J.OTI, 8-spored ; the wall deep blue in Melzer's reagent. Spore-clusters elongated,\n27~9 X 1o-11 /~m, sometimes becoming more compact 23 26 x 11 Jtm. Ascospores\nrather loosely united in a cluster, arranged according to pattern II, sometimes\nchangin$ into pattern Ilia. ellipsoid, at first hyaline, then pale violet, becoming\ndarker m concentrations of prgmcnt, g.s- ro.~ x s.• 6.31tm; ornamented with\nirregular large warts and granules, often with thm uniform layer at base; mucilaginous substance very fugacious or absent. Paraphyses simple or branched, septate,\ncylindrical, r.B-2.3 pm thick, slightly enlarged up to 4 pm at the tip, colourless. \n\nApothccia scssilia, basi angu.nata, o,1o o,!!!) mm diam. Receptaculum initio subglobulnrc\nc1 dilute roscum, dcniquc applanntum usque pulvinntum ct malvinum, lcvitcr aspcrum.\nExcipulum strato supcrliciali c tcxturn globulosn praeditum. Asci cylindrico-clavnli, npicc\ntruncati, 95- 120 x 22 27 /tm, 8-spori, parictc iodo cacrulqccmc. porarum fasciculi cJongmi,\nva.ldc laxi, facile soluli. Ascospornc non congrcgntac, secundum typum 11 dispositnc, elongntodlipsoidcac, initio hyalinac, dcniquc violasccntcs, 16,!)-17,5 X 6,4- 7,6 11m. Episporium \n\ndcstitutis. Paraphyses \\·aide ramosac, irrcgularitcr filiformcs, 2-3 1•m latae, apice lcviter\ninflatae, pigmcnto dilute rosco obtectac. In fimo Phasiani colchici invcnitur.\nTvrt;s: A. Vcrulitl, Ekercn propc i\\ntverpiam, Rclgia, 28.ll. t971 (L).\nApothccia solitary or in small groups, not conflucm, superficial, sessile on a\nnarrow base, 0.10- 0.25 mm across, o.tQ-0.15 mm high, soft fleshy. Receptacle at\nfirst subglobular and pale pinkish, then flattened to pulvinate and pale purplish\npink, in a few cases slightly yellowish; surface finely roughened by subglobular cells;\nmargin not differentiated. Disk convex, at first pink, then pale purplish pink,\nroughened by the pale violet protruding tips of ripe asci. Hymenium go-too 11m\nthick. llypothecium very thin, of subglobular cells 5 '51'm in diameter {tcxtura\nglobulosa). Asci cylindric-clavate, with a short stalk, truncate at the apex, 95- 120 x\n22- 27 ~1m, 8-spored; the wall blue in :\\1elzer's reagent. Spore-clusters elongated,\nvery loose. Ascospores not cemented together by their pigment, at first free, then\nclinging together according to pattern II, finally often more or less free, ellipsoid or\nelon~ tcd-cllipso id (length-breadth ratio 2.2--2. 7), often somewhat ventricose;\nhyalme, then pale violet, finally pale purplish brown; 16.5-•7·5 x 6.4- 7·6 pm;\nornamented with very irregu lar coarse warts and thick lumps of pigment, leaving\nlarge parts of the wall uncovered; with common un ilateral mucilaginous substance.\nParaphyses rather frequently branched, septate, irregularly filifot·m, 2-3 1-1m thick,\nnot or only slightly enlarged up to 4 pm at the tip; covered ncar the ends with pale\npinkish, amorphous pigment; pigment staining brownish red with iodine. \n\nApothecia solitary, superficial, sessile, 0.2o-o.25 mm across, about 0.20 mm hi~h.\nReceptacle at first obconical with a narrow base, then more expanded, whue,\nsmooth; margin retracted towards the base at maturity. Disk convex, translucent\nwhite, then pale violet, dotted with the brown protruding tips of ripe asci. llymenium\nup to about 65 pm thick. H ypothecium very dtin, of isodiameu·ic cells 4-8 pro wide.\nFlesh not or scarcely dilfcrcntiatcd. Excipulum of only one layer of isodiametric or\nslightly elongated (sometimes angular) cells 8-14 X8-ro 11m (textura globulosa to\nangularis), hyaline. Asci broadly clavate, gradually tapering downwards into a\nrather thick base, with truncate apex, 73-86 X21-231tm, (7-)8-spored; the wall\nblue in Melzer's reagent. Spore-clusters rather loose, 27-32 X 1o-1 2 pm. Ascospores\nloosely arranged according to pattern 11 or more often irregularly disposed, broadly\nellipsoid to ellipsoid (length-breadth ratio 1.5- 1.9), at first hyalme, then very pale\nviolet, finally pale brownish violet, g.~- 1 o. 7 X 5·3 6.5 11m, usually wholly smooth,\nmore rarely finely punctate; pigment rn a very thin layer 0.2 0.411m duck. Paraphyses simple, septate, irregularly cylindrical, 1. 7 2.2 11m thick, frequently hooked\nat the slighliy enlarged tips (up to 3 pm), hyaline. \n\nMycostigtna Jiilich, gm . nov.\nCarposomat3 globulis minutis constant, scparata vel saepe aggregata sed haud conAuenlia,\nhyphis hyalinis mutuo conjuncta. Systema hypharum monomiticum. Hyphae hyalinac,\ncylindraceac vel paulo 1orulosae, tenui-tunicatac, circa~ 3 flm in diam., probabilitcr fibulatac.\nCystidia vel glococy-stidia dcsunt. Basidia hyalina, clavata, tenui-tunic:na, parva, tetraspora.\nS1>orac hyalinac, ~lli psoidcac, lcnui-tunicatar, laevcs, inamyloidcac.\nT vPus: Corlicium ntgeriloidu Bourd. & Galz. 1911.\nBasidiocarps consisting of minute globules, separated or aggregated but never\nconfluent, connected by a few hyaline hyphae. Hypha! system monomitic. Hyphae\nhyaline, cylindrical or somewhat torulose, thin-walled, c. 2- 3 J.lm in diam., probably\nwith clamps. Cystidia or glococystidia lacking. Basidia hyaline, clavate, thin-walled,\nrather small, probably clamped, 4-spored.\npores hyaline, ellipsoid, thin-walled,\nsmooth, inamyloid.\nMycostigtna aegeritoii:les (Bourd. & Galz.) J iilich, comb. 110v.\nFig. 1\nCorlicium aegtriloidcs Bourd. & Galz. in Bull. lrimcst. Soc. mycol. Fr. 27: 249· 191 1 {basionym).\nBasidiocarp annual, whitish to cream-colou red, globose to subglobose, more or\nless smooth, 0.02 o. 1 mm in d iam., dispersed or somewhat aggregated, never confluent, separate or connected by very few delicate hyaline hyphae; consistency\nmembranaceous. Hyphal system monomitic. Hyphae hyaline, rather indistinct and\neasily collapsing, thm-walled, flexuous-cylindrical, probably with clamps, 2- 3 J.lm in\ndiam.; crystals lacking. Cystidia and glococ>:tidia absent. Basidia hyaline, thinwalled. clavate, 11- 18 X4.5-6 p m, probably wnh clamp at base; 4-spored; sterigmata\nsubulate and slightly curved, c. 3- 3.7 X 0.8- 1 11m. Spores hyaline, smooth, thinwalled, globose to subgloix>se or broadly ellipso1dal, 1- 4.5 p.m in diam., will1 large,\nconspicuous apiculus, c. 1- 1.2 Xo.8- 1 J.lm ; non-amyl01d. Conidial state absent.\nREACTIONS.-~o part of basidiocarp amyloid, dextrinoid, or cyanophilous.\nSuBSTRATE. O n petioles of ferns. \n\nbased on Australian material, at the same time stating that conidia were not present.\nWhen no basidiocarp with hymenial layer is developed, the fungus consists of an\neffused glutinous layer of hyphae with gelatinized walls, closely attached to the\ncuticle of the grass. From this almost invisible layer the thin, clavarioid or isarioid\ntufts emerge, which have a bright coral pink colour when fresh and arc easily discernible from a distance of scver-dl meters. These tufts arc sterile. The perfect state is\n(in Europe) not formed until late in autumn (in Australia in J une-July). This \n",
+      "diagnosis": "This is a representative of Saccobolus sect. Eriobolus Sacc. Obviously Saccobo/us\npurpureus is close to S. vmicolor (P. Karst.) P. Karst., from which it can be distinguished\nby the conspicuous purple-red colour and the very compact spore-clusters. l n S.\nversicolor the pigment of the receptacle is bluish-violet and docs not tend to purple-red.\nThe spore-clusters in S. versicolor may sometimes be rather compact. They measure\n4o-62 X 14- 19 (~3) 11m (van Brummclcn, 1967), which is considerably longer than\nin S. purpureus.\nIn Saccobo/us verrucisporus Brumm. ascosporcs and spore-clusters of the same shape\nand size occur, but in this species the ascosporcs arc ornamrntcd with coarse, \n\nJudging by the arrangement of the ascospores in the cluster and the absence of\nyellowish pigment in the paraphyses this is a typical representative of Saccobolus sect.\nEriobolus. The ascospores arc longitudinally disposed with two rows of three and one\nrow of two spores. In rare cases the cluster becomes longitudinally contracted with\nrather irregular arrangement of the spores.\nAs a result of the irregular distribution of the pigment the ascospores arc only\nloosely united in the cluster. In squash-preparations the spores will easily break apart.\nThis species resembles Saccobolus lhaxteri Brumm. in many respects. However, the \n\ndifferences arc evident. In Sauobolus paruisporus the ascosporcs arc considerably\nsmaller, the length-breadth ratio is higher, the spore-clusters are more slender, and\nthe asci arc much longer.\n1 n Saccobolus irifestaiiS (Batista & Pontual) Brumm. ascosporcs of about the same\nsize (g- t 1 x 5-6.5 /lm) occur, but the arrangement of the spores in the clustrr is\nquite diff<·rcnL {c.f. van Rmrnmclen, 1967) .\nSaccobolus eleutherosporus Brumm., spec. 11011.- Fig. 4 \n\nspore was found to be bigger than the others, measuring 1 1 .g-1 3-4 x 6.5-7.0 I'm.\nSaccobolus diaphanus is a representative of Saccobolus sect. En'obolus. Sacc. that\nshould be placed close to Snccobolus dejJaupernlus (Bcrk. & Broome) E. C. Hansen.\nF'rom this it can be distinguished by the pale, somewhat smaller (especially shorter)\nascospores, that arc only loosely united \n\nidentification. The latter described it in 1873 under the name lsariafucifomtis Bcrk.\nThe specific name refers to the alga-like appearance of the fungus when dry, and\nthe species was placed in the genus Isaria because of its isarioid fruitbody, from the\napical part of which Berkeley described minute conidia. Berkeley's short description\nruns as follows: ' Pallid, slender, filiform, sparingly branched, branches acute;\nspores very minute, globular.' This species was reported in 1883 from Dublin and\nin 1884 from the southern counties of England, in both cases as a parasite of grass,\nespecially of Festuca ouina. \\Vith regard to the reproduction of the fungus, the presence\nof globular conidia wa.~ generally accepted ; Massee ( 1 8g3) gave the size of the conidia\nas 211m.\nll was not until 1906, that the true affinities of the species were recognized. In this\nyear McAlpine described the basidiocarp of the fungus and placed it in the genus\nHypochnus. He correctly described the isarioid structures as peripheral hypha! fascicles\nof a resupinate basidiomycete and gave the first description of the basidia and spores, \n\nThe species has been placed in Isaria, Ifypochnus, Epithele, and Corticium, but it\nbclonb'S to none of these genera. The systematic position among the genera of the\nC'..orticiaccae is rather difficult to establish. llowever, the finn membranaceous to\nceraceous basidiocarp with clampless hyphae, the rather large and thin-walled\nspores as well as the multinucleate basal hypha! cells indicate a close relationship \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:authored_binomial",
+        "§6:merge_metric"
+      ],
+      "known_missed_flags": [],
+      "notes": "Whole-Diagnosis leak into Description field; heterogeneous OCR quality within one treatment; latin_block_count=1 (single merged block) but merge_metric=66 catches."
+    },
+    {
+      "id": "taxon_ea7b0ed777eeb039294db97b0cd07956db8705063face2016ed77da5ef1e3ecf",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "6-5afd3d50b522f5a1f51a145f5e60eb31",
+      "class": "§12-figure-caption-in-Description",
+      "description": "Pseudostromata embedded in bark or wood, reduced to substrate blackening and scurf, sometimes slightly elevating the\nsubstrate, distinctly blackening the host surface and commonly\ncovered by a bright yellow, yellowish green to turquoise scurf.\nAscomata perithecial, 130–420 µm diam, c. 230–270 µm high,\nFig. 5   Furfurella luteostiolata (WU 39989, holotype). a–c. Ostioles erumpent through bark with sulphur yellow scurf in surface or side view; d. pseudostroma\nwith two perithecia in vertical section; e–f. vertical sections of perithecial walls (e. from upper part of two adjacent perithecia, f. lateral); g. vertical section\nof pseudostroma around ostioles, yellow brown colour originating from yellow scurf dissolved in KOH; h–j. asci; k. ascus apex; l. septate paraphysis; m–x.\nascospores. All in water, except e–g in 3 % KOH, j–l in Lugol after KOH pre-treatment. — Scale bars: a–d = 200 µm; e–x = 10 μm.\n\nembedded in bark or wood, solitary or aggregated in groups,\nlenticular, subglobose to pyriform, horizontally compressed\nwhen dry, with a central apical ostiole. Peridium 11–22 µm\nthick, light brown, KOH-, becoming hyaline towards the centrum,\npseudoparenchymatous to prosenchymatous, consisting of\nthin-walled, light brown, isodiametric to elongated cells 5–11 ×\n1–3.5 µm forming a textura angularis to prismatica, becoming\nhyaline towards the centrum; perithecial contents dull orange,\nwaxy when dry. Ostioles either flat, non-protruding, or distinctly\ncylindrical to conical and projecting up to 200 µm, 80–100 µm\nwide, black, of thick-walled, dark brown cells with narrow lumen;\nwhen protruding ostiole laterally covered by a sulphur yellow to\nyellowish green scurf. Hamathecium composed of elongate, hyaline, septate, occasionally branched paraphyses up to 5.5 µm\nwide at the base, gradually tapering to 1.3 µm towards the distal\nends. Asci (64–)72–89(–99) × (10.5–)11.5–13.2(–14.5) µm\n(n = 35), fusoid, clavate to cylindrical, straight or slightly curved,\nthin-walled, with fissurate dehiscence, containing 8 asco-\nspores biseriately arranged or in two fascicles, without a stipe\nand an apical apparatus, inamyloid. Ascospores variable in\nlength, (18–)20–29(–35) × (4.0–)4.5–5.2(–6.0) μm, l/w =\n(3.7–)4.2–5.9(–7.2) (n = 157), allantoid, aseptate, hyaline, thin-\nwalled, smooth, with rounded apices, without appendages or\ngelatinous sheath. Asexual morph unknown.\n\nCulture characteristics — On CMD colony radius up to 34\nmm after 29 d at 22 °C. Colony whitish, soon cream, very dense,\nwith abundant bright yellow mycelium in the centre; odour fruity\nto yeast-like.\n",
+      "diagnosis": "Notes — Compared to the other two species of the genus,\nFurfurella nigrescens is more inconspicuous as its scurf is less\nprominent and sometimes even entirely absent. However, it\nis distinctly blackening the host surface, ranging from circular\nand clypeus-like around single ascomata in bark to extensive\nirregular patches around aggregated ascomata embedded in\nwood. In addition, its cultures develop a bright yellow aerial \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Single figure caption embedded mid-Description instead of figure_captions field.  Claude implicitly skipped the caption."
+    },
+    {
+      "id": "taxon_8f93bded0292c57443738564dc65e72c652ee5daf250538bd90cc0ac11e37192",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "6-0eddf250dfbdf2d9a9528081d78ce23b",
+      "class": "§13-Diagnostic-Characters-block",
+      "description": "Diagnosis — Robust bright reddish orange basidiomes with plane to upturned pileus, decurrent white to pale fawn lamellae discolouring orange\nbrown, and a cylindrical stipe that is slightly paler than the pileus with white\nto cream-coloured context; white latex not abundant. Strong fishy smell\nwhen dry. Basidiospores are globose to ellipsoid with robust reticulate\nornamentation (ridges up to 2 µm high), hymenial cystidia are relatively\nshort (less than 50 µm long).\nPileus up to 75 mm diam, convex to plane and centrally depressed, becoming evenly upturned, bright reddish orange with\ndarker patch in central depression, margin straight and entire to\nslightly wavy; surface smooth or minutely rugulose from centre,\nminutely pubescent and occasionally rivulose; context whitish\nto pale yellow and solid. Lamellae decurrent, close to crowded\n(21–29 L + l/cm), moderately broad (0.1–0.4 mm), 2–2.5 mm\ndeep, whitish cream to pale fawn, discolouring orange-brown\nwhen damaged, fragile, occasionally forked, lamellulae intermixed (l = 9–32/half pileus). Stipe up to 28 mm long and 10 mm\nwide at base, up to 15 mm wide at lamellae junction, cylindrical\nand tapering towards base, pale yellowish orange to reddish\norange, mostly darker towards base, discolouring orange-brown\nwhen damaged, surface smooth and minutely pubescent; stipe\ncontext whitish to cream-coloured, solid and contiguous with\nthat of pileus.latex white, not abundant; observed only in one\ncollection. Odour not distinctive when fresh; strong fishy when\ndry. Taste not obvious.\nBasidiospores 7–10 × 6–9 µm (x̄  = 8.55 ± 0.83 × 7.79 ± 0.95,\nn = 17), globose to ellipsoid (Q = 1.00–1.25 (x̄  = 1.10 ± 0.08,\nn = 17)), ornamentation forming a wide and mostly complete\nreticulum with ridges up to 2 µm, isolated warts occasionally present, plage not or distally amyloid. Basidia 36–58 ×\n8–14 µm (x̄  = 45.08 ± 7.63 × 10.25 ± 1.48, n = 22), 3–6 µm\nwide at base (x̄  = 4.17 ± 0.94, n = 22), clavate to subfusiform,\nmostly 2-spored (70–75 % of basidia) but occasionally 3- or\n4-spored; sterigmata 3–12 × 1–3 µm (x̄  = 8.38 ± 2.90 × 2.00 ±\n0.71, n = 18); basidioles 30–49 × 6–11 µm (x̄  = 35.29 ± 4.86 ×\n9.14 ± 1.41, n = 19), 2–5 µm wide at base (x̄  = 3.36 ± 0.74,\nn = 18). Hymenophoral trama comprising interwoven hyphae\n2–3 µm diam, sinuous laticiferous hyphae 5–7 µm diam and\nFig. 20   Subgenus Pseudogymnocarpi Lactifluus sp. 8 basidiomes.\n\nsphaerocytes 32–56 × 17–32 µm; subhymenium up to 60 µm\nwide, composed of hyphae and 3–4 layers of inflated, round,\nor angular polygonal cells 8–30 × 6–24 µm (x̄  = 16.40 ± 6.10 ×\n11.40 ± 5.62, n = 25), laticiferous hyphae present and occasionally extending into hymenium as cystidia. Pleurolamprocystidia\n18–41 × 3–10 µm (x̄  = 27.50 ± 7.56 × 6.63 ± 2.56, n = 8), narrow-cylindrical to subfusiform, tapering toward apex and base\nand occasionally pagodaform or nearly so, apex obtuse or\ncapitate, slightly emergent above hymenium, abundant. Pleuropseudocystidia 2–6 µm diam (x̄  = 4.25 ± 1.39, n = 8), subcylindrical or tortuose, sometimes branching, sometimes septate,\napex obtuse or lobed and branched, rarely emergent above\nhymenium, scarce. Cheilolamprocystidia 23–36 × 3–12 µm\n(x̄  = 30.60 ± 4.77 × 9.30 ± 2.75, n = 10), subcylindrical to\nsubfusiform, tapering toward apex and base and occasionally\npagodaform or nearly so, apex capitulate or obtuse and mostly\nnarrowing in one or two segmented tiers, emergent above\nhymenium, often arising from subhymenium. Pileipellis a lampropalisade: subpellis a 3–7-layered epithelium consisting of\nround, angular or elongate thick-walled polygonal cells, 11–32 ×\n6–16 µm (x̄  = 16.92 ± 5.68 × 10.00 ± 2.86, n = 12); terminal\nelements elongate, 16–41 × 3–7 µm (x̄  = 25.88 ± 9.62 × 4.63 ±\n1.20, n = 16), thick-walled, narrow-cylindrical, slightly swollen\nwhere attached to polygonal cells at base, tapering towards\napex, apex acuminate to subobtuse, outline slightly sinuate;\npileus trama similar to hymenophoral trama, heteromerous.\nStipitipellis a lampropalisade: subpellis consisting of several\nlayers of round or angular, thick-walled polygonal cells 7–12 ×\n4–7 µm; terminal elements elongate, 18–31 × 2–3 µm (x̄  =\n26.20 ± 5.54 × 2.40 ± 0.55, n = 5), narrow-cylindrical, tapering\ntowards apex, apex acuminate or sharply pointed; stipe trama\nsimilar to hymenophoral trama, heteromerous and tightly\npacked.\n",
+      "diagnosis": "Notes — Lactifluus jetiae is found in eucalypt forests of\nsouthern Victoria, likely in mycorrhizal association with species of Myrtaceae. It can be recognised by its striking bright\nreddish orange pileus, which becomes upturned without an\nincurved margin, basidiospores with robust ornamentation up\nto 2.0 µm high, relatively long sterigmata on mostly 2-spored\nbasidia, relatively short hymenial cystidia (occasionally having\npagodaform shape; see notes for Lactifluus pagodicystidiatus\nfor explanation), and terminal elements of pileipellis less than\n100 µm long. Microscopy is required to differentiate Lf. jetiae, \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§6:authored_binomial"
+      ],
+      "known_missed_flags": [],
+      "notes": "English \"Diagnosis --\" block at head of Description (Diagnostic Characters variant, per Cifelli & Kielan-Jaworowska 2005).  Claude skipped the Diagnosis paragraph.  ALSO fires §6:authored_binomial FALSE POSITIVE via \"Subgenus Pseudogymnocarpi Lactifluus\" subgenus notation."
+    },
+    {
+      "id": "taxon_715c2164cdbd951be277ce50c3eda91e7d7fe2dc4ff4ec17dbfda4a35bdf0571",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-f98ebcf736332a5cce1302b4d5a70b56",
+      "class": "§14-shared-diagnosis-orphan",
+      "description": "",
+      "diagnosis": "Absidia abundans is closely related to A. panacisoli T. Yuan Zhang et al. based on the ITS and\nLSU rDNA sequences (Figure 2). However, A. panacisoli is distinguished from A. abundans\nby a higher maximum growth temperature (33 ◦C vs. 31 ◦C), shape of sporangia (spherical\nor subpyriform vs. oval to subglobose), sporangiospores (short cylindrical vs. cylindrical,\noval or subglobose), and azygospores (present vs. absent; [16]). Moreover, swellings below\nsporangia are always observed in A. abundans, while absent in A. panacisoli [16].\nAbsidia lobata is closely related to A. glauca and A. globospora T.K. Zong and\nX.Y. Liu (Figure 2), while distinguished by a lower maximum growth temperature (26 °C in\nA. lobata, 29 ◦C in A. glauca, 37 ◦C in A. globospora) [15,52]. Besides, sporangia are globose in\nA. globospora, while pyriform in A. lobata and A. glauca [15,52]. Moreover, zygospores and\nchlamydospores are produced in A. glauca, but not in A. lobata and A. globospora [15,52].\nAbsidia radiata is related to A. yunnanensis with full support (Figure 3). However,\nA. yunnanensis differs from A. radiata by colonies (light brown vs. dark brown), shape of\nsporangiospores (cylindrical vs. oval), and swellings below sporangia (present vs. absent).\nAbsidia sichuanensis is most closely related to A. frigida H. Zhao et al. and A. psychrophilia (Figure 4), but differs by a higher maximum growth temperature (28 ◦C in\nA. sichuanensis, 24 ◦C in A. frigida, and 25 ◦C in A. psychrophilia), sporangia (17.0–21.5 µm\nwide in A. sichuanensis, 12.5–32.0 µm wide in A. frigida, and 20.0–50.0 µm wide in\nA. psychrophilia), columellae (8.0–15.5 µm wide in A. sichuanensis, 15.5–18.0 µm wide\nin A. frigida, and 6.5–30.0 µm wide in A. psychrophilia), and number of whorls (1–5 in\nA. sichuanensis, 1–4 in A. frigida, and 1–8 in A. psychrophilia [8,16]. In addition, collars are always absent in A. sichuanensis and A. frigida but present in A. psychrophilia [8,16]. Moreover,\na morphological feature table including six species of Absidia without DNA sequences is\nlisted for distinguishing between the five new species proposed in this study (Table 4).\n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§2:synth_nomen"
+      ],
+      "known_missed_flags": [],
+      "notes": "Shared-diagnosis fan-out: paper covers 6 species (5 new); this treatment IS the shared diagnosis with empty Description.  synth_nomen fires correctly."
+    },
+    {
+      "id": "taxon_8d70e41aa142ab46be411307e0ae2826922271607b32f7be26e8708179159e08",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-05",
+      "captured_rev": "3-e6a69e9696ad1d2509c016a9121d3e57",
+      "class": "§12-whole-treatment-content-loss",
+      "description": "",
+      "diagnosis": "brick-red to brownish hairs, and filiform paraphyses, does not fit the\ngeneric description of Unguicu/el/a (HClhnel, 1906; Dennis, 1949;\nRaitviir, 1970), but it is a good species of Unguicu/ariopsis.\nUnguicu/ariopsis is distinguished from Unguicu/el/a in excipular\nstructure, excipular cell color, hair color, and shape of paraphyses. \n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:diag_head_clip",
+        "§2:synth_nomen"
+      ],
+      "known_missed_flags": [],
+      "notes": "Empty Description, head-clipped 336-char Diagnosis, synth_nomen; whole-content loss with only Diagnosis tail surviving."
+    }
+  ]
+}

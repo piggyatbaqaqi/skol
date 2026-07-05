@@ -9,6 +9,15 @@ doesn't start from scratch.
 
 Tracking: see the corresponding Trello item.
 
+**Pairing convention (added 2026-07-05)**: every taxon referenced in
+this memo should have a corresponding entry in
+[`tests/fixtures/pathologies.json`](../tests/fixtures/pathologies.json)
+capturing the actual treatment content plus labelled detector output.
+That file is the machine-readable pathology catalog; this memo is the
+narrative reasoning about it.  See
+[`tests/fixtures/README.md`](../tests/fixtures/README.md) for the
+schema and the walkthrough for adding new entries.
+
 ## Sample treatments
 
 Source database:
