@@ -4,6 +4,7 @@ from treatments_to_structured.triage_signals import (
     count_description_headers,
     count_diagnosis_headers,
     count_key_couplets,
+    count_repeated_section_headers,
     count_sp_nov,
     desc_starts_mid_sentence,
     latin_between_english,
@@ -56,6 +57,28 @@ class TestCountDiagnosisHeaders:
         must not count."""
         text = 'A diagnosis of this species is difficult.'
         assert count_diagnosis_headers(text) == 0
+
+    def test_period_form_header(self) -> None:
+        """M2 refinement: `Diagnosis. Something…` (period as
+        header terminator) counts as a header when followed by
+        whitespace and a capital letter."""
+        assert count_diagnosis_headers(
+            'Diagnosis. Distinguished by larger spores.',
+        ) == 1
+
+    def test_period_form_lowercase_after_not_header(self) -> None:
+        """M2 refinement: `Diagnosis. lowercase…` is prose (a
+        sentence ending in `Diagnosis`), not a header."""
+        assert count_diagnosis_headers(
+            'The morphological Diagnosis. more discussion follows.',
+        ) == 0
+
+    def test_ufffd_after_diagnosis(self) -> None:
+        """M2 refinement: OCR-noise (U+FFFD run) between
+        `Diagnosis` and content still counts as a header —
+        taxon_e0d2e4bb shape."""
+        text = 'Diagnosis��� Species differs by larger spores.'
+        assert count_diagnosis_headers(text) == 1
 
 
 class TestMidBodyDescriptionHeader:
@@ -113,6 +136,37 @@ class TestCountDescriptionHeaders:
 
     def test_two(self) -> None:
         text = 'Description: sp A ...\nDescription: sp B ...\n'
+        assert count_description_headers(text) == 2
+
+    def test_period_form_header(self) -> None:
+        """M2 refinement: `Description. Colonies on PDA…`
+        (period as header terminator) counts as a header —
+        taxon_d65547ed shape."""
+        assert count_description_headers(
+            'Description. Colonies on PDA reaching 4 cm.',
+        ) == 1
+
+    def test_period_form_lowercase_after_not_header(self) -> None:
+        """M2 refinement: `Description. lowercase…` is prose,
+        not a header."""
+        assert count_description_headers(
+            'This description. the next sentence continues.',
+        ) == 0
+
+    def test_ufffd_after_description(self) -> None:
+        """M2 refinement: OCR-noise (U+FFFD run) between
+        `Description` and content still counts as a header —
+        taxon_e0d2e4bb / taxon_95dbdfb9 shape."""
+        text = 'Description��� Leaf spots narrow, oblong.'
+        assert count_description_headers(text) == 1
+
+    def test_mid_body_period_form_repeated(self) -> None:
+        """Two `Description.` headers in one description →
+        multi-species merge signal."""
+        text = (
+            'Description. Species A pileus 3 cm.\n'
+            'Description. Species B pileus 5 cm.'
+        )
         assert count_description_headers(text) == 2
 
 
@@ -291,6 +345,128 @@ class TestTailClipped:
         assert not tail_clipped('Pileus brown [see Fig. 2].')
 
 
+class TestCountRepeatedSectionHeaders:
+    """Aggregate detector: counts DISTINCT watchlist section
+    headers that appear at least twice in the description.
+    §6 idea #3 — a header repetition anywhere in the description
+    signals a species boundary.
+
+    Watchlist excludes Description / Diagnosis (handled by
+    dedicated counters) and substrate-specific subtypes
+    (Cultural characteristics, Colonies on — a single species
+    on multiple media legitimately repeats these).
+    """
+
+    def test_no_headers_zero(self) -> None:
+        assert count_repeated_section_headers(
+            'Pileus brown. Stipe long. Spores ellipsoid.'
+        ) == 0
+
+    def test_single_occurrence_not_counted(self) -> None:
+        """A single header (Observations once) is not a
+        repetition."""
+        text = 'Pileus brown.\n\nObservations: notable feature X.'
+        assert count_repeated_section_headers(text) == 0
+
+    def test_observations_repeated(self) -> None:
+        """taxon_592128a8 pattern: two Observations headers
+        signal species boundary."""
+        text = (
+            'Pileus brown.\n\nObservations: notes for species A.'
+            '\n\nStipe long.\n\nObservations: notes for species B.'
+        )
+        assert count_repeated_section_headers(text) == 1
+
+    def test_illustration_repeated(self) -> None:
+        """taxon_95dbdfb9 pattern: illustrated-monograph format
+        with repeated Illustration headers."""
+        text = (
+            'Illustration: Braun et al. species A.\n\n'
+            'Illustration: species B ref.'
+        )
+        assert count_repeated_section_headers(text) == 1
+
+    def test_multiple_distinct_repeated_headers(self) -> None:
+        """taxon_2a9d07e6 shape: Description and illustration
+        + Diagnosis-like repetition patterns combined.  Each
+        DISTINCT header keyword repeated counts as 1 toward
+        the aggregate."""
+        text = (
+            'Description and illustration: A ref.\n\n'
+            'Etymology: from Greek.\n\n'
+            'Description and illustration: B ref.\n\n'
+            'Etymology: honoring so-and-so.'
+        )
+        # Two distinct keywords each repeated → 2.
+        assert count_repeated_section_headers(text) == 2
+
+    def test_habitat_repeated(self) -> None:
+        """Two species with distinct habitats each headed
+        `Habitat:` → repetition."""
+        text = (
+            'Habitat: on decaying wood.\n\n'
+            'Species B.\n\nHabitat: parasitic on Quercus.'
+        )
+        assert count_repeated_section_headers(text) == 1
+
+    def test_type_repeated(self) -> None:
+        text = (
+            'Type: USA, holotype.\n\n' * 2
+        )
+        assert count_repeated_section_headers(text) == 1
+
+    def test_holotype_repeated(self) -> None:
+        text = (
+            'Holotype: NY 1234.\n\n' * 2
+        )
+        assert count_repeated_section_headers(text) == 1
+
+    def test_etymology_repeated(self) -> None:
+        text = 'Etymology: from Greek.\n\nEtymology: from Latin.'
+        assert count_repeated_section_headers(text) == 1
+
+    def test_cultural_characteristics_NOT_in_watchlist(
+        self,
+    ) -> None:
+        """Cultural characteristics is EXCLUDED from the
+        watchlist — single-species treatments legitimately
+        repeat this header across substrates (PDA, CMA, MEA).
+        taxon_b9a6232 false-positive prevention."""
+        text = (
+            'Cultural characteristics: PDA grows to 4 cm.\n\n'
+            'Cultural characteristics: CMA growth differs.'
+        )
+        assert count_repeated_section_headers(text) == 0
+
+    def test_colonies_on_NOT_in_watchlist(self) -> None:
+        """Colonies on is EXCLUDED from the watchlist — a single
+        species can have `Colonies on PDA`, `Colonies on MEA`
+        legitimately."""
+        text = (
+            'Colonies on PDA: fluffy white.\n\n'
+            'Colonies on MEA: floccose brown.'
+        )
+        assert count_repeated_section_headers(text) == 0
+
+    def test_description_and_diagnosis_NOT_double_counted(
+        self,
+    ) -> None:
+        """Description and Diagnosis are handled by dedicated
+        counters (n_description_headers, n_diagnosis_headers)
+        and MUST NOT appear in this aggregate to avoid
+        double-flagging the same merge signal."""
+        text = (
+            'Description: A.\n\nDescription: B.\n\n'
+            'Diagnosis: A.\n\nDiagnosis: B.'
+        )
+        # Watchlist doesn't include Description or Diagnosis
+        # → aggregate = 0.  Dedicated counters catch these.
+        assert count_repeated_section_headers(text) == 0
+
+    def test_empty_zero(self) -> None:
+        assert count_repeated_section_headers('') == 0
+
+
 class TestLatinBlockCount:
     def test_pure_english_zero(self) -> None:
         """Long English text with no Latin morphology."""
@@ -450,6 +626,7 @@ class TestTreatmentSignals:
         expected_keys = {
             'desc_length', 'diag_length',
             'n_diagnosis_headers', 'n_description_headers',
+            'n_repeated_section_headers',
             'n_sp_nov', 'n_key_couplets',
             'desc_starts_mid_sentence', 'latin_block_count',
             'latin_between_english',
@@ -698,3 +875,21 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§6:authored_binomial' in result
+
+    def test_multi_section_header_flag(self) -> None:
+        """M2: n_repeated_section_headers >= 1 fires
+        §6:multi_section_header.  Independent of dedicated
+        Description / Diagnosis counters."""
+        signals = {
+            'desc_length': 2000,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_repeated_section_headers': 1,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§6:multi_section_header' in result

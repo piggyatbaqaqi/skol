@@ -87,12 +87,26 @@ _LATIN_VOCAB = frozenset({
 _TOKEN_RE = re.compile(r"[a-zA-Z]+")
 
 
-# Diagnosis / Description header punctuation.  Sources use any of
-# `:`, `-`, `–` (en-dash), `—` (em-dash) between the label and the
-# body — all count as headers.  taxon_8f93bded's `Diagnosis —`
-# opener slipped past the earlier literal-colon regex.
-_DIAG_HEADER_RE = re.compile(r'\bDiagnosis\s*[-–—:]')
-_DESC_HEADER_RE = re.compile(r'\bDescription\s*[-–—:]')
+# Diagnosis / Description header terminators.  Three forms accepted:
+#
+#   1. Punctuation `:`, `-`, `–` (en-dash), `—` (em-dash) —
+#      the standard colon/dash form.  taxon_8f93bded uses em-dash.
+#   2. Period followed by whitespace and a capital letter
+#      (M2 refinement, taxon_d65547ed's `Description. Colonies on
+#      PDA…` form).  Requires the capital-letter lookahead to
+#      distinguish header form from prose ending in
+#      `…description. the next sentence…`.
+#   3. One-or-more U+FFFD replacement characters (M2 refinement,
+#      taxon_e0d2e4bb / taxon_95dbdfb9 shape where OCR noise sits
+#      between the label and the content).  U+FFFD is
+#      pipeline-specific (Python decode(errors='replace') artefact);
+#      if we swap the ingest decoder, this pattern needs revisiting.
+_DIAG_HEADER_RE = re.compile(
+    r'\bDiagnosis\s*(?:[-–—:]|\.\s+(?=[A-Z])|�+)'
+)
+_DESC_HEADER_RE = re.compile(
+    r'\bDescription\s*(?:[-–—:]|\.\s+(?=[A-Z])|�+)'
+)
 
 
 def count_diagnosis_headers(text: str) -> int:
@@ -118,6 +132,68 @@ def count_description_headers(text: str) -> int:
     if not text:
         return 0
     return len(_DESC_HEADER_RE.findall(text))
+
+
+# §6 idea #3 aggregate watchlist.  Section-header keywords that
+# each fire a merge signal when repeated within one description.
+# EXCLUDES `Description` and `Diagnosis` (dedicated counters
+# handle those and firing here too would double-count the same
+# merge signal).  EXCLUDES `Cultural characteristics`,
+# `Culture characteristics`, and `Colonies on` (substrate-specific
+# subtypes — a single species on multiple culture media
+# legitimately repeats these; taxon_b9a6232 false-positive
+# prevention).  Ordered from longest to shortest so multi-word
+# keywords match before their shorter prefixes.
+_SECTION_HEADER_WATCHLIST = (
+    'Description and illustration',
+    'Illustration',
+    'Observations',
+    'Etymology',
+    'Habitat',
+    'Holotype',
+    'Type',
+)
+
+
+def _watchlist_header_regex(keyword: str) -> 're.Pattern[str]':
+    """Build a header-terminator regex for a watchlist keyword.
+    Same three-form terminator (colon/dash, period + capital,
+    U+FFFD run) as `_DIAG_HEADER_RE` / `_DESC_HEADER_RE`."""
+    return re.compile(
+        rf'\b{re.escape(keyword)}\s*(?:[-–—:]|\.\s+(?=[A-Z])|�+)'
+    )
+
+
+_WATCHLIST_HEADER_REGEXES = {
+    kw: _watchlist_header_regex(kw)
+    for kw in _SECTION_HEADER_WATCHLIST
+}
+
+
+def count_repeated_section_headers(text: str) -> int:
+    """Count DISTINCT watchlist section-header keywords that
+    appear at least twice in ``text``.  §6 idea #3 aggregate
+    detector.
+
+    Independent of ``count_description_headers`` /
+    ``count_diagnosis_headers`` — those keywords are excluded
+    from the watchlist so both signals don't fire on the same
+    merge.  Fires ``§6:multi_section_header`` in
+    ``predicted_issues``.
+
+    Example: taxon_592128a8 has three ``Observations:`` blocks
+    → this returns 1 (one distinct header keyword repeated).
+    taxon_2a9d07e6 has two ``Description and illustration:``
+    citations AND two implicit species-boundary markers
+    of another type → returns 2.
+    """
+    if not text:
+        return 0
+    distinct_repeated = 0
+    for regex in _WATCHLIST_HEADER_REGEXES.values():
+        if len(regex.findall(text)) >= 2:
+            distinct_repeated += 1
+    return distinct_repeated
 
 
 def mid_body_description_header(text: str) -> bool:
@@ -382,6 +458,8 @@ def treatment_signals(
         'diag_length': len(diag),
         'n_diagnosis_headers': count_diagnosis_headers(desc),
         'n_description_headers': count_description_headers(desc),
+        'n_repeated_section_headers':
+            count_repeated_section_headers(desc),
         'n_sp_nov': count_sp_nov(desc),
         'n_key_couplets': count_key_couplets(desc),
         'desc_starts_mid_sentence':
@@ -437,6 +515,8 @@ def predicted_issues(
         flags.append('§6:multi_diagnosis')
     if signals.get('n_description_headers', 0) >= 2:
         flags.append('§6:multi_description')
+    if signals.get('n_repeated_section_headers', 0) >= 1:
+        flags.append('§6:multi_section_header')
     # §6 refinement (taxon_a21a83f4): a `Description:` header at
     # offset > 0 without a preceding Diagnosis header marks a
     # species boundary even when count == 1.  Independent of the
@@ -459,6 +539,7 @@ def predicted_issues(
 __all__ = (
     'count_diagnosis_headers',
     'count_description_headers',
+    'count_repeated_section_headers',
     'count_sp_nov',
     'count_key_couplets',
     'desc_starts_mid_sentence',

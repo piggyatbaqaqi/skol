@@ -300,7 +300,8 @@
       "expected_flags": [
         "§10:tail_clip",
         "§6:mid_body_desc",
-        "§6:multi_description"
+        "§6:multi_description",
+        "§6:multi_section_header"
       ],
       "known_missed_flags": [],
       "notes": "Interstitial U+FFFD runs between coherent prose; NOT fatal (19 annotations).  3-species illustrated-monograph merge with \"Illustration:\" + \"Description:\" headers."

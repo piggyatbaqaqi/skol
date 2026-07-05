@@ -69,6 +69,7 @@ CSV_COLUMNS: List[str] = [
     'diag_length',
     'n_diagnosis_headers',
     'n_description_headers',
+    'n_repeated_section_headers',
     'n_sp_nov',
     'n_key_couplets',
     'desc_starts_mid_sentence',
@@ -199,6 +200,7 @@ def build_row(
             'diag_length': 0,
             'n_diagnosis_headers': 0,
             'n_description_headers': 0,
+            'n_repeated_section_headers': 0,
             'n_sp_nov': 0,
             'n_key_couplets': 0,
             'desc_starts_mid_sentence': False,
@@ -251,6 +253,8 @@ def build_row(
         'diag_length': signals['diag_length'],
         'n_diagnosis_headers': signals['n_diagnosis_headers'],
         'n_description_headers': signals['n_description_headers'],
+        'n_repeated_section_headers':
+            signals['n_repeated_section_headers'],
         'n_sp_nov': signals['n_sp_nov'],
         'n_key_couplets': signals['n_key_couplets'],
         'desc_starts_mid_sentence':
