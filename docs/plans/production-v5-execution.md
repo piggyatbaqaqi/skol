@@ -131,9 +131,18 @@ detector ideas from the memo.
 * Roman-numeral couplet-line support in
   `_COUPLET_LINE_RE`.
 * U+FFFD-tolerant header regex extension.
-* Mid-body `.\s+[a-z]` transition detector for the
+* ~~Mid-body `.\s+[a-z]` transition detector for the
   head-only-clip → new-species-start pattern
-  (taxon_9ecad903).
+  (taxon_9ecad903).~~  **TRIED AND REJECTED (M2 Group
+  C, 2026-07-05)**.  Fixture regression revealed a
+  fatal FP class — some legit single-species
+  treatments use lowercase-continuation paragraph
+  style (fires 3× on taxon_b9a6232, a fixture-tracked
+  regression target).  Detector reverted; see the
+  taxon_9ecad903 memo entry for the writeup.  Robust
+  mid-body boundary detection requires
+  paragraph-level section classification (M3
+  dependency), not regex.
 
 **Deliverable**: rerun triage CSV, additional flags
 surfaced.

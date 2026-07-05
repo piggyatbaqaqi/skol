@@ -1887,11 +1887,27 @@ opening.
        detector does NOT fire because the FIELD starts
        with the capital `P` of species 1; the mid-body
        lowercase-after-period boundary is invisible to
-       the current head-only §10 rule.  New refinement
-       idea: scan for `.\s+[a-z]` transitions inside the
-       description body — a full stop followed by a
-       lowercase letter marks a truncated new species
-       start.
+       the current head-only §10 rule.
+       **Refinement TRIED and REJECTED (M2 Group C,
+       2026-07-05)**: implemented and tested a
+       `mid_body_species_boundary` detector matching
+       `[a-z]{4,}\.\s*\n\s*[a-z]` (period after a real
+       word, newline, lowercase start).  Fixture
+       regression exposed a fatal FP class: some
+       legitimate single-species treatments write new
+       paragraphs starting with lowercase adjectives
+       as stylistic continuation (e.g., taxon_b9a6232
+       fires 3× on `phragrnosporous`, `a diameter of…`,
+       `submembranaccous` — all legit prose within one
+       species).  taxon_b9a6232 is a fixture-tracked
+       false-positive regression target; any detector
+       firing on it is disqualified.  Additionally, this
+       detector wouldn't have caught taxon_9ecad903
+       itself since species 1's boundary is a
+       trailing hyphen, not a period.  Reverted.  A
+       robust mid-body boundary detector needs
+       paragraph-level section classification (M3
+       segment classifier), not a regex.
     4. **Species 2 body** — appears complete, but has a
        **figure caption appended** at the end (§12 leak,
        same shape as taxon_ea7b0ed7).
