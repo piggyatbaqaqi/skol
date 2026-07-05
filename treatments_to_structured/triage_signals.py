@@ -47,6 +47,7 @@ _LATIN_SUFFIXES = (
 # Latin vocabulary words that appear regularly in Latin
 # diagnoses.
 _LATIN_VOCAB = frozenset({
+    # Ascomycete / basidiomycete anatomical Latin (original set)
     'apothecia', 'ascomata', 'ascospora', 'ascosporae',
     'ascosporum', 'asci', 'basidia', 'basidiomata', 'conidiomata',
     'conidia', 'excipulum', 'hyphae', 'lamellae', 'paraphyses',
@@ -57,6 +58,31 @@ _LATIN_VOCAB = frozenset({
     'ovoideus', 'brevis', 'brevi', 'longa', 'longi',
     'hyalina', 'hyalinum', 'hyalinus', 'ecoloratus', 'aurea',
     'aureus', 'aureum',
+    # Slime mold (Myxomycota) anatomical Latin — added 2026-07-05
+    # per taxon_67cc93d2 evidence.  Fungi-agnostic goal violated
+    # locally as a stopgap; see docs/plans/lotl-detector.md.
+    'capillitium', 'capillitia', 'capillities',
+    'pseudocapillitium',
+    'columella', 'columellae', 'columellula',
+    'sporocarpium', 'sporocarpia',
+    'aethalium', 'aethalia',
+    'plasmodiocarpium', 'plasmodiocarpa',
+    'sporangium', 'sporangia',
+    'plasmodium', 'plasmodia',
+    'hypothallus', 'calyculus', 'calyculata',
+    # General mycological Latin morphology terms (fungi-agnostic)
+    # that appear across clades and slipped past the suffix
+    # heuristic.  Enriches signal for any Latin diagnosis.
+    'fugax', 'valde', 'gradatim', 'usque', 'quam',
+    'niger', 'nigra', 'nigrum',
+    'crassa', 'crassum', 'crassus', 'crassior',
+    'ramosum', 'ramosa', 'ramosus', 'ramosior',
+    'anastomosans', 'attinens', 'macrescens',
+    'constitutum', 'constituta', 'constitutus',
+    'brunneus', 'brunnea', 'brunneum', 'brunneis',
+    'angustus', 'angusta', 'angustum', 'angustis',
+    'pallido', 'pallidus', 'pallida', 'pallidum',
+    'apicem', 'partem', 'tertiam',
 })
 _TOKEN_RE = re.compile(r"[a-zA-Z]+")
 
