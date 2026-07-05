@@ -6,6 +6,7 @@ from treatments_to_structured.triage_signals import (
     count_key_couplets,
     count_sp_nov,
     desc_starts_mid_sentence,
+    latin_between_english,
     latin_block_count,
     mid_body_description_header,
     predicted_issues,
@@ -330,6 +331,112 @@ class TestLatinBlockCount:
         assert latin_block_count('') == 0
 
 
+class TestLatinBetweenEnglish:
+    """Fires when the description has a Latin paragraph
+    sandwiched by English paragraphs on BOTH sides
+    (E → L → E ordering, §6 idea #1(b)).  Independent of
+    `latin_block_count` — fires even when only ONE Latin
+    block exists, so long as it sits in a non-terminal
+    position."""
+
+    def test_empty_is_false(self) -> None:
+        assert not latin_between_english('')
+
+    def test_pure_english_false(self) -> None:
+        """Three English paragraphs, no Latin  → False."""
+        text = (
+            'The mushroom cap is convex and brown.\n\n'
+            'The stem is white and slightly bulbous.\n\n'
+            'The gills are attached and turn dark.'
+        )
+        assert not latin_between_english(text)
+
+    def test_pure_latin_false(self) -> None:
+        """Contiguous Latin paragraphs, no English between.
+        Merges into one block; no sandwich possible."""
+        text = (
+            'Apothecia sessilia, asci clavati.\n\n'
+            'Ascosporae hyalinae globosae.'
+        )
+        assert not latin_between_english(text)
+
+    def test_latin_first_english_after_false(self) -> None:
+        """L → E: normal structure — Latin diagnosis
+        followed by English translation or English
+        description."""
+        text = (
+            'Apothecia sessilia, asci clavati, ascosporae '
+            'hyalinae globosae.\n\n'
+            'The mushroom is small, brown, with a convex '
+            'cap. The base is bulbous.'
+        )
+        assert not latin_between_english(text)
+
+    def test_english_first_latin_after_false(self) -> None:
+        """E → L: also legit — English description
+        followed by trailing Latin."""
+        text = (
+            'The mushroom cap is convex and brown when '
+            'young. The stem is white.\n\n'
+            'Apothecia sessilia, asci clavati, ascosporae '
+            'hyalinae globosae.'
+        )
+        assert not latin_between_english(text)
+
+    def test_english_latin_english_fires(self) -> None:
+        """The taxon_9ecad903 canonical shape: Latin
+        diagnosis sandwiched between two English
+        description paragraphs → merge signal."""
+        text = (
+            'The mushroom cap is convex and brown when '
+            'young. The stem is white.\n\n'
+            'Apothecia sessilia, asci clavati, ascosporae '
+            'hyalinae globosae.\n\n'
+            'The stem is short with a bulbous base. '
+            'Spores are ellipsoid.'
+        )
+        assert latin_between_english(text)
+
+    def test_repeated_pattern_fires(self) -> None:
+        """E → L → E → L → E: species-boundary run.  Also
+        caught by latin_block_count >= 2, but the E→L→E
+        detector fires independently — additive coverage."""
+        text = (
+            'English description one.  Pileus brown.  '
+            'Stipe long and thin.\n\n'
+            'Apothecia sessilia asci clavati ascosporae '
+            'hyalinae globosae.\n\n'
+            'English description two.  Pileus red.  Stipe '
+            'short and thick.\n\n'
+            'Apothecia globulare asci cylindracei '
+            'ascosporae fusiformes.\n\n'
+            'English description three.  Pileus yellow.  '
+            'Stipe tall.'
+        )
+        assert latin_between_english(text)
+
+    def test_single_paragraph_false(self) -> None:
+        """No paragraph breaks — even if the paragraph
+        mixes languages, the detector can't distinguish
+        blocks.  Documented limitation."""
+        text = (
+            'Apothecia sessilia asci clavati mixed with '
+            'English text everywhere in one line.'
+        )
+        assert not latin_between_english(text)
+
+    def test_short_english_before_still_fires(self) -> None:
+        """Even brief English paragraphs on each side of
+        the Latin block trigger the sandwich detection."""
+        text = (
+            'Introduction paragraph.\n\n'
+            'Apothecia sessilia, asci clavati, ascosporae '
+            'hyalinae globosae longa fusiformes.\n\n'
+            'Conclusion paragraph.'
+        )
+        assert latin_between_english(text)
+
+
 class TestTreatmentSignals:
     def test_full_shape(self) -> None:
         """The composed helper returns all the individual signals
@@ -345,6 +452,7 @@ class TestTreatmentSignals:
             'n_diagnosis_headers', 'n_description_headers',
             'n_sp_nov', 'n_key_couplets',
             'desc_starts_mid_sentence', 'latin_block_count',
+            'latin_between_english',
             'mid_body_description_header',
             'tail_clipped',
             'diag_starts_mid_sentence',
@@ -398,6 +506,23 @@ class TestTreatmentSignals:
         }
         s = treatment_signals(t)
         assert s['diag_starts_mid_sentence'] is False
+
+    def test_latin_between_english_fires_end_to_end(self) -> None:
+        """The taxon_9ecad903 shape flows through
+        treatment_signals via the description field."""
+        t = {
+            'description': (
+                'The mushroom cap is convex and brown.  '
+                'Stipe long.\n\n'
+                'Apothecia sessilia, asci clavati, '
+                'ascosporae hyalinae globosae.\n\n'
+                'The stem is short with a bulbous base. '
+                'Spores ellipsoid.'
+            ),
+            'diagnosis': '',
+        }
+        s = treatment_signals(t)
+        assert s['latin_between_english'] is True
 
 
 class TestPredictedIssues:
@@ -520,3 +645,21 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§10:diag_head_clip' in result
+
+    def test_latin_ele_flag(self) -> None:
+        """The taxon_9ecad903 shape: latin_between_english
+        True → §6:latin_ele flag.  Independent of
+        latin_block_count (can fire when count == 1)."""
+        signals = {
+            'desc_length': 2000,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 1,
+            'latin_between_english': True,
+            'synthetic_nomenclature': False,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§6:latin_ele' in result

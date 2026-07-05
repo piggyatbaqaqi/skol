@@ -12,7 +12,7 @@ Combining several catches more issues than any one alone.
 """
 
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 # Numbered dichotomous-key couplet — matches lines that start
@@ -275,6 +275,55 @@ def latin_block_count(text: str, threshold: float = 0.35) -> int:
     return block_count
 
 
+def latin_between_english(
+    text: str, threshold: float = 0.35,
+) -> bool:
+    """True if the description contains a Latin paragraph
+    with English paragraphs on BOTH sides (E → L → E
+    ordering).  §6 idea #1(b) — the operator's 2026-07-03
+    correction: a Latin block sandwiched by English is a
+    merge signal even when only ONE Latin block exists
+    (below the ``latin_block_count >= 2`` threshold).
+
+    Rationale: normal taxonomic-paper structure puts Latin
+    FIRST (or lets the two languages live in separate
+    labelled sections).  Latin appearing mid-description
+    with English on both sides means the assembler
+    collapsed adjacent species' content across a Latin
+    diagnosis that should have anchored one of them.
+    Canonical case: taxon_9ecad903.
+
+    Composes with ``latin_block_count`` — both can fire
+    on the same treatment.  Multi-Latin patterns
+    (``L → E → L``) get ``§6:latin_alt``; the sandwich
+    (``E → L → E``) gets ``§6:latin_ele``; the doubled
+    sandwich (``E → L → E → L → E``) fires both.
+
+    Limitation: requires paragraph structure.  A
+    single-paragraph description with intra-paragraph
+    mixed language can't be detected — no block boundaries
+    to score.  Empirically the failure mode preserves
+    paragraph breaks between merged species' content, so
+    this covers the observed cases.
+    """
+    if not text:
+        return False
+    labels = []
+    for p in re.split(r'\n\s*\n', text):
+        if not p.strip():
+            continue
+        labels.append('L' if _latin_ratio(p) >= threshold else 'E')
+    # Merge consecutive same-labels: e.g., [L, L, E, L] → [L, E, L].
+    merged: List[str] = []
+    for lab in labels:
+        if not merged or merged[-1] != lab:
+            merged.append(lab)
+    if len(merged) < 3:
+        return False
+    # Interior 'L' (not first, not last) means English on both sides.
+    return any(lab == 'L' for lab in merged[1:-1])
+
+
 # ---------------------------------------------------------------------------
 # Composed helpers over a full Treatment doc
 # ---------------------------------------------------------------------------
@@ -300,6 +349,8 @@ def treatment_signals(treatment: Dict[str, Any]) -> Dict[str, Any]:
         'desc_starts_mid_sentence':
             desc_starts_mid_sentence(desc),
         'latin_block_count': latin_block_count(desc),
+        'latin_between_english':
+            latin_between_english(desc),
         'mid_body_description_header':
             mid_body_description_header(desc),
         'tail_clipped': tail_clipped(desc),
@@ -353,6 +404,8 @@ def predicted_issues(
         flags.append('§6:multi_sp_nov')
     if signals.get('latin_block_count', 0) >= 2:
         flags.append('§6:latin_alt')
+    if signals.get('latin_between_english'):
+        flags.append('§6:latin_ele')
     if merge_metric >= merge_threshold:
         flags.append(f'§6:merge_metric={merge_metric}')
     return '|'.join(flags)
@@ -364,6 +417,7 @@ __all__ = (
     'count_sp_nov',
     'count_key_couplets',
     'desc_starts_mid_sentence',
+    'latin_between_english',
     'latin_block_count',
     'mid_body_description_header',
     'tail_clipped',
