@@ -193,8 +193,30 @@ Treatment doc.
   clipped at the top, which is likely where the citation lived
   in the source plaintext.
 
+**Nomenclature-vs-synth-nomen inconsistency subclass**
+(2026-07-07): two treatments in batch-2 exhibit a
+distinct data-quality bug — the `nomenclature` field is
+EMPTY but `synthetic_nomenclature = False`.  Expected
+behavior: synth flag should be True when the extractor
+couldn't identify a nomenclature.  Observed cases:
+
+  * `taxon_9b787247...` — Rhizogene Syd. gen. nov. from
+    a 1920 German paper.  Nomenclature line clearly
+    present in source ("Rhizogene Syd. nov. gen.") but
+    not extracted to the `nomenclature` field.
+  * `taxon_c9181340...` — Materials_examined-leak case.
+    Nomenclature clearly present in source (complete
+    conidial fungus treatment) but not extracted.
+
+Two occurrences suggests a pattern in the
+nomenclature-extraction / synth-flag interaction
+worth tracing.  Distinct from the §2 primary cases
+where synth flag CORRECTLY fires (T4,
+taxon_acd88732).
+
 **Affected treatments**: T1 (vacuously), T2, T3, T4,
-`taxon_acd88732...`.
+`taxon_acd88732...`.  Nomenclature-vs-synth inconsistency
+subclass: `taxon_9b787247...`, `taxon_c9181340...`.
 
 **Likely stage**: layout CRF likely labels formal-citation paragraphs
 as `Figure-caption` (T2) or misses them entirely (T4).  Where the
@@ -2423,6 +2445,15 @@ assembly**:
     combined signals distinguish "diagnosis-only
     orphan" (§14, likely complete) from "everything
     lost except a diagnosis fragment" (this case).
+  * **`taxon_c9181340`** — Materials_examined citation
+    appended to Description (`Specimen examined: USA,
+    Florida, on seed of Podocarpus maki … ex-type
+    culture ` with trailing-space truncation).
+    `materials_examined` field itself is EMPTY.  Same
+    class as taxon_f00f8353's Materials_examined leak,
+    from batch-2.  §10:tail_clip fires on the trailing
+    space.  Cultural characteristics upstream correctly
+    stays in Description (per 2026-07-02 clarification).
   * **`taxon_adcb2fcc`** — description assembled from TWO
     NON-CONTIGUOUS source spans (description_spans: lines
     11262-11266 + lines 11282-11283, 15-line gap between

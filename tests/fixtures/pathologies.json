@@ -561,6 +561,23 @@
       ],
       "known_missed_flags": [],
       "notes": "Description assembled from TWO NON-CONTIGUOUS source regions (description_spans: lines 11262-11266 + lines 11282-11283, 15-line gap between them).  Operator PDF cross-check identifies three source fragments across two species: (1) fragment 1 - lowercase-truncated content from middle of species 1 Notes section (which per PDF should have been Diagnosis-classified, not Description).  (2) fragment 2 - \"In addition, there is no important\" sentence-start from a few lines below fragment 1, same species.  (3) fragment 3 - \"irregularly scattered perithecia...\" from next species, both-ends-truncated, also diagnostic-like content.  All three merged into one description field.  §10:mid_sentence fires on lowercase field-open; §10:tail_clip fires on final trailing space.  Deeper §12 assembly failure (fragments-from-disjoint-source-regions + section-mislabeling + multi-species) not currently detectable.  Detection idea: \"n_description_span_gaps\" - count large line-number gaps between consecutive description_spans entries.  For this treatment: 1 gap > threshold (15 lines).  Requires plumbing span data through to treatment_signals.  Complementary to §12 label-aware assembly (M3+)."
+    },
+    {
+      "id": "taxon_c91813404deebff6d06b17771576777930cbc547aa87d5867b4c529cac8cad0b",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-c39b0387ae96c25a70daf405576d64cf",
+      "class": "§12-materials-examined-leaked-into-Description",
+      "description": "Conidiomata (on PNA) pycnidial, solitary, black, erumpent, globose,\nexuding colourless to opaque conidial masses; pycnidia up to 200\nμm diam; pycnidial wall of 3–6 layers of brown textura angularis;\ninner wall of hyaline textura angularis. Ostiole central, up to 20\nμm diam. Conidiophores subcylindrical to ampulliform, reduced\nto conidiogenous cells, or with 1–2 supporting cells, at times\nbranched at base, 10–25 × 4–6 μm. Conidiogenous cells terminal,\nsubcylindrical to doliiform, hyaline, smooth, coated in a mucoid\nlayer, 10–17 × 4–6 μm; proliferating several times percurrently\nnear apex. Conidia 12–13(–16) × 8–9(–9.5) μm, solitary, hyaline,\naseptate, thin and smooth walled, coarsely guttulate, or with a\nsingle large central guttule, broadly ellipsoid, tapering towards a\nnarrow truncate base, 2–5 μm diam, enclosed in a thin, persistent\nmucoid sheath, 3–4 μm thick, and bearing a hyaline, apical mucoid\nappendage, (25–)30–45(–55) × 3–4(–5) μm, flexible, unbranched,\ntapering towards an acutely rounded tip.\nCulture characteristics: Colonies after 3 wk reaching 30 mm diam\non MEA, 60 mm on PDA and OA. Colonies flattened, spreading,\nwith sparse aerial mycelium and feathery margins. On MEA surface\nand reverse olivaceous-grey; on OA olivaceous-grey; on PDA irongrey on surface and reverse.\nSpecimen examined: USA, Florida, on seed of Podocarpus maki (intercepted in\nNew Zealand), Sep. 1979, G. Laundon (holotype CBS H-13109; ex-type culture \n",
+      "diagnosis": "Notes: The isolate described here as Phyllosticta podocarpicola\n(CBS 728.79) was originally treated as part of the G. philoprina\nspecies complex, from which it is phylogenetically distinct (Figs\n1, 2). It is also distinct from Phyllosticta podocarpi, which was\noriginally described from Podocarpus elongatus leaf litter collected\nin South Africa [conidia (10–)14(–17) × (8–)9(–10) μm, appendages\n10–40 × 1.5–2 μm; Crous et al. 1996].\n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [],
+      "notes": "Complete conidial fungus description (Conidiomata, Ostiole, Conidiophores, Conidiogenous cells, Conidia + Culture characteristics on MEA/PDA/OA) followed by an almost-complete Materials_examined citation leaked into Description: \"Specimen examined: USA, Florida, on seed of Podocarpus maki (intercepted in New Zealand), Sep. 1979, G. Laundon (holotype CBS H-13109; ex-type culture \" (tail-truncated).  The materials_examined field itself is EMPTY.  Same class as taxon_f00f8353 Materials_examined leak.  Cultural characteristics correctly stays in Description (per 2026-07-02 clarification).  §10:tail_clip fires on the trailing space at \"ex-type culture \".  Nomenclature-vs-synth inconsistency: nomenclature field empty but synthetic_nomenclature=False (SECOND occurrence in batch-2 after taxon_9b787247 — worth tracking as a pattern)."
     }
   ]
 }
