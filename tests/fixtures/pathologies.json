@@ -151,6 +151,21 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Endolithic lichen (grows inside sandstone) — first lichen poster-child, adds a distinct clade shape (Thallus + algal cells + apothecia) to the reference set.  1780-char description + 440-char diagnosis; opens \"Description. Thallus endolithic up to 0.2 mm deep, up to 5 cm wide, algal cells ca. 5–10 µm wide...\" with period-form header (same as taxon_d65547ed / taxon_62a712ab).  Real Nomenclature; 18 Claude annotations, status=success.  merge_metric=1.  From batch-2 selection (2026-07-07).  Operator: \"another poster child.\""
+    },
+    {
+      "id": "taxon_9f0c41343d3ac73d1c5c253cbff71595ad876e658f5f213186443d41b8e9c667",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-14e3625ade457cafa5f03afbd1cfbbb2",
+      "class": "xylariales-stromatic-ascomycete",
+      "description": "Description. Saprobic on fallen leaves of an unknown plant. Sexual morph: Stromata 1–4.2 cm total length, solitary, upright or prostrate, cylindrical, unbranched, straight to most often sinuous to contorted, the stipe glabrous, 4–18 mm long, the base slightly swollen; fertile part 5–16 × 1–2 mm, cylindrical, surface blackish, with conspicuous to half-exposed perithecial mounds, externally black, interior white. Perithecia 371–776 μm diam., subglobose to globose, texture soft. Ostioles papillate. Asci 84–144 × 5.6–8.6 μm (x̄= 119 × 7.5 μm, n = 30), 8-spored, unitunicate, cylindrical, apically rounded, with a J+, hat-shaped, apical apparatus bluing in Melzer’s reagent, 4–6 × 4–5.5 μm (x̄ = 4.9 × 5.0 μm, n = 30). Ascospores 13.5–17 × 5–8 μm (x̄ = 15.1 × 6.5 μm, n = 30), uniseriate, unicellular, brown to dark brown, ellipsoid to inequilateral, with broadly rounded ends, smooth, with a straight germ slit, equal to the length of the spores, lacking sheath; surrounded with a hyaline sheath swelling at both ends to form papillate non-cellular appendages, sometimes retaining a cellular appendage within a noncellular appendage, epispore smooth. Asexual morph: Undetermined.\n\nCulture characteristics. Colonies on OA reaching 1.5–2 mm diam. after 2 weeks at 25 °C, white at first, with irregular margins, then extension spreading toward the edge of the Petri dish; the overall color is light white.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Xylariales-type stromatic ascomycete (Stromata + perithecia anatomy, distinct from taxon_38b5b1c6's Ascomata-opener plant-pathogen shape).  1405-char description opening \"Description. Saprobic on fallen leaves of an unknown plant. Sexual morph: Stromata 1-4.2 cm total length, solitary, upright or prostrate, cylindrical...\" with period-form Description. header (same shape as taxon_d65547ed, taxon_62a712ab, taxon_d7ffc349).  Real Nomenclature; 7 Claude annotations, status=success.  merge_metric=0.  All triage detectors correctly silent.  From batch-2 selection (2026-07-07).  Operator: \"another description poster child.\"  Adds a distinct stromatic-Xylariales clade shape to the reference set."
     }
   ],
   "pathologies": [

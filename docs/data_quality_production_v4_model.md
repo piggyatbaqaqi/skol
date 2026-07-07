@@ -1305,6 +1305,18 @@ tightening MUST NOT surface these as false positives.
   fragments, or OCR corruption.  Operator called it
   "a poster child — this is what an extract description
   should look like."
+* **`taxon_9f0c4134...`** — noted 2026-07-07 from batch-2.
+  Xylariales-type stromatic ascomycete (`Saprobic on
+  fallen leaves of an unknown plant. Sexual morph:
+  Stromata 1-4.2 cm total length, solitary, upright or
+  prostrate, cylindrical, unbranched…`).  1405-char
+  description, real Nomenclature, 7 Claude annotations,
+  merge_metric = 0.  Period-form `Description.` header.
+  Distinct clade shape from the other §0.5 ascomycetes
+  (taxon_38b5b1c6 is plant-pathogen leaf-immersed;
+  taxon_e534e6a9 is both-morphs; this one is stromatic
+  Xylariales-type).  Operator: "another description
+  poster child."
 * **`taxon_38b5b1c6...`** — noted 2026-07-03.
   Plant-pathogen ascomycete opening with the proper
   anatomical noun preserved: `Ascomata separate,
