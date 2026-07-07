@@ -2153,6 +2153,24 @@ their own right.
       detector correctly fires on non-sentence-final
       punctuation.  `§10:tail_clip` is the current
       captured flag.
+    - **Line-classifier granularity limitation (operator
+      note 2026-07-07)**: the trailing line
+      `tantum immaturi visi. — Einzige Art:
+      R. Symphoricarpi Syd. (= Zaszobotrys Symphoricarpi
+      Syd.).` is a physical line containing THREE
+      sections (Latin description tail, em-dash
+      separator, German type designation).  The v4
+      layout CRF classifies at line granularity — it
+      picks one label per line, losing the others.
+      This pattern is more common in **older texts
+      (pre-1950 typography)** where authors compressed
+      sections onto single lines to save space.
+      Concrete evidence for §12's segment-classifier-
+      as-assembly-aid plan: sub-line granularity is
+      required to handle dense typography without
+      losing content.  Segment classifier + em-dash-
+      aware post-processing at M3 would recover this
+      content class.
   Fixture-tracked as
   §11-gen-nov-latin-german-truncated.
 
@@ -2304,6 +2322,24 @@ the labels are dropped, downstream tooling (memo detectors,
 bootstrap annotator, reviewer) has to rediscover section
 boundaries from prose — the signal was already computed one
 stage upstream and thrown away.
+
+**Line-classifier granularity limitation (2026-07-07,
+taxon_9b787247)**: the v4 layout CRF classifies at LINE
+granularity — one label per physical line.  In older
+taxonomic texts (pre-1950 typography), authors commonly
+compressed multiple sections onto single lines to save
+space, using em-dashes or explicit markers to separate
+them.  Example from taxon_9b787247 (1920 German paper):
+`tantum immaturi visi. — Einzige Art: R. Symphoricarpi
+Syd. (= Zaszobotrys Symphoricarpi Syd.).` — one line
+containing description-tail + em-dash + type-designation
+in German + Latin taxonomic reference.  The line-level
+CRF must pick one label, dropping the others.
+Sub-line granularity (segment classifier) is required
+to handle this content class without loss.  Reinforces
+the M3 flagship: segment-level classification isn't just
+for cross-species boundaries; it also unlocks intra-line
+section detection for dense typographic conventions.
 
 **Observed failures that would benefit from label-aware
 assembly**:
