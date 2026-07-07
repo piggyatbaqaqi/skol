@@ -1171,6 +1171,18 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_d7ffc349...`** — noted 2026-07-07 from batch-2.
+  **First lichen poster-child** (endolithic lichen — grows
+  inside sandstone).  1780-char description + 440-char
+  diagnosis opening `Description. Thallus endolithic up to
+  0.2 mm deep, up to 5 cm wide, algal cells ca. 5-10 µm
+  wide…`.  Period-form `Description.` header (same shape
+  as taxon_d65547ed and taxon_62a712ab).  Real Nomenclature;
+  18 Claude annotations, status = success, merge_metric = 1.
+  All triage detectors correctly silent.  Adds a distinct
+  clade shape to the §0.5 reference set — Thallus + algal
+  cells + apothecia is anatomically different from the
+  basidio/asco/asexual-mould shapes previously covered.
 * **`taxon_d2a4c584...`** — noted 2026-07-07 from
   batch-2.  **Latin diagnosis + matching English
   description** — a legitimate single-species convention

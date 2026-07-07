@@ -136,6 +136,21 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Latin diagnosis + matching English description — a common legitimate single-species convention.  2667-char description; opens Latin (\"Basidiomata solitaria. Pileus 1.5-3 mm latus, campanulatus, siccus...\"), transitions to English (\"Basidiomata solitary. Pileus 1.5-3 mm broad, campanulate...\"), 32 Claude annotations status=success.  merge_metric=2.  Motivated the 2026-07-07 count_repeated_structural_anatomy refinement to skip Latin paragraphs — before the fix, Basidiomata at para 0 (Latin) + para 2 (English) fired §6:multi_structural_anatomy.  Post-fix: all triage detectors silent as expected for a poster-child."
+    },
+    {
+      "id": "taxon_d7ffc34944ad99edce959a1bf6a0977dbd7d7bed4d71df23ccf8ec17080b8d40",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-7c2f24b21ec0b99817ea83a4789ba993",
+      "class": "endolithic-lichen",
+      "description": "Description. Thallus endolithic up to 0.2 mm deep, up to 5 cm wide, algal cells ca. 5–10 µm wide, algal layer variable, continuous below and between apothecia, the sandstone often spongy when wet to the touch, or discontinuous deep in substrate. Apothecia round to irregular, 0.3–1.3 mm wide, 0.4–0.5 mm tall, sometimes elevated on white mycelial base or emerging from white stromata. Margin thick, 100–250 µm wide, outer layer carbonized, inner layer reddish to hyaline, widths variable, hyphae 1–2 µm wide, rim smooth when young, slightly elevated above the disc, becoming segmented. Disc reddish-brown to black, at first usually without epihymenial accretions, then developing an umbo or several small dots of melanin, eventually dense and sometimes gyrose, excluding the margin. Hymenium (100–)120–150(–180) µm tall, epihymenium uneven (10–)20–30 µm tall, paraphyses (1.5–)2.0–2.5(–3.5) µm wide, branched and anastomosed, apices expanded to 4.5 µm with black pigment mark, hymenial gel IKI+ light blue, turning red in squash, hemiamyloid. Asci 120–160 × 10–30 µm, often cylindrical, rarely becoming inflated, ascospores usually broadly ellipsoid, sometimes with small globose ascospores (1–)2–3(–6) × 1.0–3.4 µm, variable (n = 40), oil drops absent or one large oil drop, sometimes a second smaller one. Subhymenium up to 30 µm tall, IKI+ blue. Hypothecium 20–30 µm tall, with hyphae 1–2 µm thick, continuous with margin. Occasionally with white stromata 100–300 µm wide, a black dot often on top and some scattered algae cells in a thalline wall around pycnidia. Pycnidia up to 200 µm across with long, thick conidiogenous cells 30 × 3 µm, producing abundant conidia 2–3 × 1 µm. Eventually producing a single apothecium from each stroma. Not producing secondary metabolites.\n",
+      "diagnosis": "Diagnosis. Similar to Acarospora austrooccidentalis with a high hymenium, differing in having globose to broadly ellipsoid ascospores (1–)2–3(–6) × 1.0–3.4 µm vs. ellipsoid ascospores (1.5–)4.0–4.6(–5.1) × (1.0–)2.0(–2.8), thicker paraphyses (1.5–)2.0–2.5(–3.5) µm vs. 1.0–1.5(–2.0) µm, in occasionally producing white stromata, and with young apothecia often having in early development a smooth margin and lacking epihymenial accretions.\n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Endolithic lichen (grows inside sandstone) — first lichen poster-child, adds a distinct clade shape (Thallus + algal cells + apothecia) to the reference set.  1780-char description + 440-char diagnosis; opens \"Description. Thallus endolithic up to 0.2 mm deep, up to 5 cm wide, algal cells ca. 5–10 µm wide...\" with period-form header (same as taxon_d65547ed / taxon_62a712ab).  Real Nomenclature; 18 Claude annotations, status=success.  merge_metric=1.  From batch-2 selection (2026-07-07).  Operator: \"another poster child.\""
     }
   ],
   "pathologies": [
