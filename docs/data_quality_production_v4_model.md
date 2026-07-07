@@ -2423,6 +2423,25 @@ assembly**:
     combined signals distinguish "diagnosis-only
     orphan" (§14, likely complete) from "everything
     lost except a diagnosis fragment" (this case).
+  * **`taxon_adcb2fcc`** — description assembled from TWO
+    NON-CONTIGUOUS source spans (description_spans: lines
+    11262-11266 + lines 11282-11283, 15-line gap between
+    them).  Per operator PDF cross-check: fragments come
+    from species 1's Notes section (should have been
+    Diagnosis-classified) + species 2's diagnostic content
+    (should have been a separate treatment).  Three
+    logical fragments assembled into one Description
+    field.  §10:mid_sentence and §10:tail_clip fire
+    correctly; the deeper §12 assembly failure isn't
+    directly detectable from the flat prose.
+    **Detection idea recorded**: `n_description_span_gaps`
+    — count line-number gaps between consecutive
+    description_spans that exceed a threshold (e.g., >5
+    lines).  Would fire on this treatment (1 gap of 15
+    lines).  Requires plumbing span metadata through to
+    treatment_signals — the span info exists on the
+    treatment_prose doc but isn't currently consumed by
+    detectors.  Cheap once wired.
   * **`taxon_ea7b0ed7`** — a figure caption landed
     embedded mid-Description instead of the doc's
     `figure_captions` field.
