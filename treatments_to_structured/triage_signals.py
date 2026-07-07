@@ -239,15 +239,31 @@ _STRUCTURAL_ANATOMY_REGEXES = {
 }
 
 
-def count_repeated_structural_anatomy(text: str) -> int:
+def count_repeated_structural_anatomy(
+    text: str, latin_threshold: float = 0.35,
+) -> int:
     """Count DISTINCT structural-anatomy watchlist words that
-    appear at paragraph start ≥2 times in ``text``.  §6 idea #4
-    aggregate detector.
+    appear at paragraph start ≥2 times WITHIN A SINGLE LANGUAGE
+    in ``text``.  §6 idea #4 aggregate detector.
 
     Paragraph-start = absolute start of ``text`` or immediately
     after a blank line (``\\n\\s*\\n``).  Same paragraph model
     ``latin_block_count`` uses; consistent with how the
     extractor preserves section breaks.
+
+    **Language-aware counting** (per taxon_d2a4c584 2026-07-07
+    refinement, operator correction): paragraphs are scored as
+    Latin or English via ``_latin_ratio`` and counts accumulate
+    within each language independently.  Fires when EITHER
+    language has ≥2 paragraph-start mentions of a watchlist
+    word.
+
+    Rationale: a Latin diagnosis + matching English description
+    is a legitimate single-species convention (once each in
+    Latin and English is NOT a merge signal, taxon_d2a4c584).
+    But two separate Latin descriptions IS a merge signal —
+    and would have been silently dropped by an English-only
+    filter.  Language-aware counting handles both correctly.
 
     Case-sensitive — matches only capitalized watchlist words,
     which reflects typical section-header capitalization in
@@ -256,17 +272,41 @@ def count_repeated_structural_anatomy(text: str) -> int:
 
     Fires ``§6:multi_structural_anatomy`` in ``predicted_issues``.
 
-    Example: taxon_173204's two ``Ascomata`` paragraphs (species
-    A + species B, similar-anatomy compact congenerics) → 1.
-    taxon_09507677's three ``Basidiocarps`` paragraphs (3-species
-    basidiomycete merge) → 1.  A treatment repeating BOTH
-    ``Ascomata`` AND ``Perithecia`` at paragraph start → 2.
+    Examples:
+      * taxon_572d470e's two English Apothecia paragraphs → 1.
+      * Hypothetical merge with two Latin Ascomata paragraphs → 1.
+      * taxon_d2a4c584's Basidiomata in Latin para 0 + English
+        para 2 → 0 (one mention per language, neither ≥ 2).
+      * A treatment with Basidiomata in Latin para 0 AND Latin
+        para 4 AND English para 6 → 1 (Latin count = 2 fires).
     """
     if not text:
         return 0
+    # Score each non-empty paragraph as Latin or English.
+    paragraphs = [p for p in re.split(r'\n\s*\n', text) if p.strip()]
+    if not paragraphs:
+        return 0
+    latin_paras = [
+        p for p in paragraphs
+        if _latin_ratio(p) >= latin_threshold
+    ]
+    english_paras = [
+        p for p in paragraphs
+        if _latin_ratio(p) < latin_threshold
+    ]
+    # Reassemble each language's text so paragraph-start
+    # regexes still anchor correctly.
+    latin_text = '\n\n'.join(latin_paras)
+    english_text = '\n\n'.join(english_paras)
     distinct_repeated = 0
     for regex in _STRUCTURAL_ANATOMY_REGEXES.values():
-        if len(regex.findall(text)) >= 2:
+        latin_hits = (
+            len(regex.findall(latin_text)) if latin_text else 0
+        )
+        english_hits = (
+            len(regex.findall(english_text)) if english_text else 0
+        )
+        if latin_hits >= 2 or english_hits >= 2:
             distinct_repeated += 1
     return distinct_repeated
 

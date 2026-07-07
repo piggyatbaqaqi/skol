@@ -504,22 +504,27 @@ class TestCountRepeatedStructuralAnatomy:
 
     def test_ascomata_repeated_fires(self) -> None:
         """taxon_173204 shape: 2 similar-species Ascomata
-        blocks at paragraph starts."""
+        blocks at English paragraph starts."""
         text = (
-            'Ascomata perpetua, 200 um, dispersed.\n\n'
-            'Asci clavati.\n\n'
-            'Ascomata dispersa, 300 um, aggregated.\n\n'
-            'Asci obovate.'
+            'Ascomata dispersed on the substrate surface, '
+            'black in color when mature and dried.\n\n'
+            'Additional prose describing anatomy continues '
+            'through the treatment body.\n\n'
+            'Ascomata scattered and grouped on wood, brown '
+            'when young then darkening to black.'
         )
         assert count_repeated_structural_anatomy(text) == 1
 
     def test_basidiocarps_repeated_fires(self) -> None:
         """taxon_09507677 shape: 3 species with Basidiocarp
-        clauses at paragraph starts."""
+        clauses at English paragraph starts."""
         text = (
-            'Basidiocarps to 0.6-1.5 cm.\n\n'
-            'Basidiocarps small.\n\n'
-            'Basidiocarps large, colored.'
+            'Basidiocarps growing to 0.6 to 1.5 cm across '
+            'when fully mature.\n\n'
+            'Basidiocarps small and clustered on the wood '
+            'substrate surface throughout.\n\n'
+            'Basidiocarps large and brightly colored when '
+            'fresh and young from the woodland.'
         )
         assert count_repeated_structural_anatomy(text) == 1
 
@@ -528,40 +533,56 @@ class TestCountRepeatedStructuralAnatomy:
     ) -> None:
         """Ascomata AND Perithecia both repeated → 2."""
         text = (
-            'Ascomata black.\n\n'
-            'Perithecia dispersed.\n\n'
-            'Ascomata brown.\n\n'
-            'Perithecia clustered.'
+            'Ascomata black and shining across all the '
+            'available surfaces of the wood.\n\n'
+            'Perithecia dispersed across the surface and '
+            'crowded near the edges of the log.\n\n'
+            'Ascomata brown when young and turning darker '
+            'with age across all edges of the substrate.\n\n'
+            'Perithecia clustered together and grouped in '
+            'clusters near the wood substrate edges.'
         )
         assert count_repeated_structural_anatomy(text) == 2
 
     def test_perithecia_repeated_fires(self) -> None:
         text = (
-            'Perithecia dispersed.\n\nSome text.\n\n'
-            'Perithecia clustered.'
+            'Perithecia dispersed across the substrate '
+            'surface and grouped along the wood edges.\n\n'
+            'Some intervening prose here to describe the '
+            'setting and habitat where they grow.\n\n'
+            'Perithecia clustered in groups near the '
+            'wood edges throughout the growing season.'
         )
         assert count_repeated_structural_anatomy(text) == 1
 
     def test_apothecia_repeated_fires(self) -> None:
         text = (
-            'Apothecia sessile.\n\n'
-            'Apothecia stipitate.'
+            'Apothecia sessile and scattered on the wood '
+            'substrate when they emerge from the bark.\n\n'
+            'Additional descriptive prose continues here '
+            'to talk about the habitat and location.\n\n'
+            'Apothecia stipitate and grouped together '
+            'when they are mature and fully developed.'
         )
         assert count_repeated_structural_anatomy(text) == 1
 
     def test_sporocarp_repeated_fires(self) -> None:
         """Slime mold shape."""
         text = (
-            'Sporocarp small.\n\n'
-            'Sporocarp large.'
+            'Sporocarp small and grouped along the wood '
+            'log surface when they mature and dry.\n\n'
+            'Sporocarp large and yellow when they are '
+            'fresh and young in the growing season.'
         )
         assert count_repeated_structural_anatomy(text) == 1
 
     def test_thallus_repeated_fires(self) -> None:
         """Lichen shape."""
         text = (
-            'Thallus foliose.\n\n'
-            'Thallus crustose.'
+            'Thallus foliose and spreading across the '
+            'rock surface when growing in the shade.\n\n'
+            'Thallus crustose and closely appressed to '
+            'the substrate in exposed sun locations.'
         )
         assert count_repeated_structural_anatomy(text) == 1
 
@@ -622,6 +643,59 @@ class TestCountRepeatedStructuralAnatomy:
 
     def test_empty_zero(self) -> None:
         assert count_repeated_structural_anatomy('') == 0
+
+    def test_latin_paragraph_excluded(self) -> None:
+        """taxon_d2a4c584 case (2026-07-07 refinement):
+        Basidiomata at start of a Latin paragraph +
+        Basidiomata at start of an English paragraph is
+        the standard Latin+English-pair single-species
+        convention, NOT a species boundary."""
+        text = (
+            'Basidiomata solitaria. Pileus 1.5-3 mm latus, '
+            'usque ad 2 mm altus, campanulatus, siccus, '
+            'levis, brunneo-pruinosus, margine albus.\n\n'
+            'Basidiomata solitary. Pileus 1.5-3 mm broad, '
+            'up to 2 mm tall, campanulate, dry, smooth, '
+            'brown-pruinose, margin white.'
+        )
+        assert count_repeated_structural_anatomy(text) == 0
+
+    def test_english_only_repetition_still_fires(self) -> None:
+        """taxon_572d470e-like: two English paragraphs each
+        starting with Apothecia → fires (species boundary
+        within one language)."""
+        text = (
+            'Apothecia small, black. Discs plane.\n\n'
+            'Additional prose here.\n\n'
+            'Apothecia larger, brown. Discs concave.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_latin_only_repetition_fires(self) -> None:
+        """Two Latin paragraphs each starting with Ascomata
+        → 1 (both Latin, same language = merge signal).
+        Language-aware counting: repetition within either
+        language is a merge signal; cross-language pair
+        (one Latin + one English) is NOT."""
+        text = (
+            'Ascomata perpetua, sessilia, apothecia '
+            'globosa, ascosporae hyalinae.\n\n'
+            'Ascomata dispersa, asci clavati, ascosporae '
+            'ovoidea, paraphyses hyalinae.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
+
+    def test_three_paragraphs_mixed_language(self) -> None:
+        """E → L → E with Basidiomata at each: only the two
+        English mentions count → 1."""
+        text = (
+            'Basidiomata small, brown. English paragraph.\n\n'
+            'Basidiomata parva, brunnea, apothecia globosa, '
+            'ascosporae hyalinae ovoidea.\n\n'
+            'Basidiomata larger, black. Another English '
+            'paragraph continues.'
+        )
+        assert count_repeated_structural_anatomy(text) == 1
 
 
 class TestLatinBlockCount:

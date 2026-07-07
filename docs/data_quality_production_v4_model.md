@@ -1171,6 +1171,50 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_d2a4c584...`** — noted 2026-07-07 from
+  batch-2.  **Latin diagnosis + matching English
+  description** — a legitimate single-species convention
+  (`Basidiomata solitaria. Pileus 1.5-3 mm latus,
+  campanulatus…` in Latin, followed by matching
+  `Basidiomata solitary. Pileus 1.5-3 mm broad,
+  campanulate…` in English).  2667-char description, 32
+  Claude annotations, status = success, merge_metric = 2.
+  **Detector-refinement moment**: this treatment exposed
+  a false-positive class in `count_repeated_structural_
+  anatomy` (M2 Group B).  Before 2026-07-07: `Basidiomata`
+  at para 0 (Latin) + para 2 (English) fired
+  §6:multi_structural_anatomy — the detector counted
+  cross-language repetition as a species boundary.
+  **Refined 2026-07-07 to be LANGUAGE-AWARE** (per
+  operator note): score each paragraph as Latin or
+  English via `_latin_ratio` and count repetitions
+  independently within each language.  Fires when either
+  Latin or English has ≥ 2 paragraph-start mentions.
+  Cross-language pair (1 Latin + 1 English) doesn't fire.
+  **Not English-only**: two separate Latin descriptions
+  IS a merge signal and would have been silently dropped
+  by an English-only filter — this hasn't been observed
+  yet but is plausible.  taxon_572d470e (documented true
+  positive) unaffected: its `Apothecia` repetitions are
+  both English.  Fixture-tracked as a poster-child; new
+  regression bar against structural-anatomy detectors
+  over-flagging Latin+English paired treatments.
+* **`taxon_e78904cb...`** — noted 2026-07-07 from the
+  first M2-detector-suite batch (batch-2, 10 new
+  treatments selected via
+  `bin/select_for_annotation --n 10 --exclude-annotated`).
+  Agaric (gilled mushroom, not a bolete —
+  distinguishes from taxon_0cfe582f which is a
+  boletoid).  1420-char clean single-species
+  description opening `Pileus 4-8 cm broad,
+  hemispherical to convex, then planoconvex,
+  fibrillose, white to ochraceous white when
+  young…`.  Real Nomenclature; no diagnosis field.
+  merge_metric = 3; all triage detectors correctly
+  silent.  13 Claude annotations, status = success.
+  Operator: "another poster child."  Adds an agaric-
+  clade shape to the §0.5 reference set, complementing
+  the boletoid taxon_0cfe582f.
 * **`taxon_62a712ab...`** — round-2 reviewed by
   piggy@puchpuchobs, noted 2026-07-03 as the last
   treatment inspected in the triage-CSV review pass.

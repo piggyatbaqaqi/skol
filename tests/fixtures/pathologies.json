@@ -106,6 +106,36 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Saprobic on dead stems; \"Sexual morph: Apothecia\" opener"
+    },
+    {
+      "id": "taxon_e78904cb07e86727c70f8410560dbdc7713d0ff2982e78fd7f26adb67e8a514f",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-b3857606867f7684cd4a688cfdbd8970",
+      "class": "agaric",
+      "description": "Pileus 4–8 cm broad, hemispherical to convex, then planoconvex, fibrillose, white to ochraceous white when young, with\nage becoming pale brownish. Lamellae emarginate, almost\ndistant, first white to very pale brownish grey, later pale brown.\nStipe 5–10 cm long, 1–2 cm thick at apex, 1.5–3.5 cm wide\nat base, clavate to almost bulbose, sometimes slightly rooting,\nwhitish, with handling and with age becomes brownish. Universal veil white, forming distinct girdles on stipe, sometimes\nfloccose. Context white. Odour not recorded. Exsiccata pale\ngreyish brown.\nSpores 12.9–13.7–15.0 × 7.3–8.1–8.8 µm, Q = 1.60–1.70–\n1.78 (1 specimen, 20 spores), amygdaloid, with a narrow apex,\nfairly strongly verrucose, warts anastomosing, not high, some\nwith dark intracellular granules, moderately dextrinoid. Basidia\n42–53 × 10–12 µm (20 basidia), 4-spored, clavate, otherwise\ncolourless but with a few dark granular bodies. Lamellar trama\nhyphae sand brown, full of small dark granules or particles.\nStipe apex hyphae yellow brown to red brown, entangled,\notherwise colourless, but with small to large to long bodies of\nred brown to red blackish to black granules, uppermost hyphae\n5–10 µm wide. Pileipellis: epicutis fairly weakly gelatinous,\nhyphae 5–15 µm wide, ochraceous brownish, finely, densely\nincrusted, with scanty red brown granules. Hypoderm present.\nIn the overall view red brown and unstructured when seen\nfrom above.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Gilled mushroom (agaric, not bolete — distinguishes from taxon_0cfe582f).  1420-char clean single-species description opening \"Pileus 4-8 cm broad, hemispherical to convex...\" followed by Lamellae and Stipe blocks.  13 Claude annotations, status=success.  merge_metric=3.  From batch-2 selection (2026-07-07).  Operator: \"another poster child.\""
+    },
+    {
+      "id": "taxon_d2a4c584ce743da9362fcf05e003c1c929aa8ed636ad28d1380d2a002490b814",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-77909a22f88d71a4c0c739457dccb841",
+      "class": "agaric-latin-english-pair",
+      "description": "Basidiomata solitaria. Pileus 1.5-3 mm latus, usque ad 2 mm altus, campanulatus, siccus, levis, estri-\natus, brunneo-pruinosus, obscure griseobrunneus, margine albus. Caro tenuis, odore nullo. Lamellae\nc. IO stipitem attingentes, molles, adscendentes, ventricosae, c. 0.5 mm latae, subliberae, albae, margine\nconvexae, concolores. Stipes 10-27 x 0.2-0.4 mm, cavus, fragilis, aequalis, cylindraceus, siccus, levis,\ntotus puberulus, albus, disco basali destitutus.\n\nBasidia haud visa. Sporae 8.7-10.3 x 4.7-5.4 µm, inaequilateraliter ellipsoideae, leves, amyloideac.\nCheilocystidia 13.518 x 7-10 µm, clavata vel sphaeropedunculata, efibulata, surculis cylindraceis 0.9-\n0.5 µm instructa. Pleurocystidia nulla. Trama lamellarum iodi ope brunneovinescens. Hyphae pileipellis\n2.74.5 µm latae, efibulatae, leves. Acanthocystides 14.5-20.5 x 13.5-20 µm. globosae vel ellipsoideae,\nsucum brunneum continentes, minute denseque spinulosae. Cherocytes haud visae. Hyphae stipitis corti-\ncales 1.8-3.5 µm latae, efibulatae, leves. Caulocystidia 10-60 x 5.5—11.5 µm, clavata vel subfusiformia,\nraro cylindracea, dense spinulosa.\n\nBasidiomata solitary. Pileus 1.5—3 mm across, up to 2 mm high, campanulate, dry, smooth,\nnot translucent-striate, brown-pruinose (acanthocysts), dark grey-brown under the pruina,\nwhite at the margin. Context very thin. Odour absent. Lamellae c. 10 reaching the stipe,\n\ntender, ascending, ventricose, c. 0.5 mm broad, almost free, white, with convex, concolorous\nedge. Stipe 10-27 x 0.2-0.4 mm, hollow, fragile, equal, terete, dry, smooth, puberulous\nthroughout, white, not springing from a basal disc, directly attached to the substratum.\n\nBasidia not observed. Spores (possibly not quite mature) 8.7—10.3 x 4.7-5.4 tum (Q =\n2.0), pip-shaped, smooth, weakly amyloid. Cheilocystidia (few seen) 13.5-18 x 7-10 µm,\nclavate to spheropedunculate, clampless, thin-walled, almost entirely but not very densely\ncovered with evenly spaced, cylindrical, simple, straight excrescences 0.9 x 0.5 µm. Pleuro-\ncystidia absent. Lamellar trama brownish vinescent in Melzer's reagent. Pileipellis a cutis\nof repent, radiately aligned hyphae which are 2.7—4.5 µm wide, clampless, smooth. Acantho-\ncysts 14.5-20.5 x 13.5-20 µm. globose or broadly ellipsoid, thin-walled, with brownish\nhomogeneous contents, minutely and densely spinulose, excrescences 0.9 x 0.5 µm. Chero-\ncytes absent. Hypoderm made up of inflated hyphae. Hyphae of the cortical layer of the\nstipe 1.8-3.5 µm wide, smooth. Caulocystidia 10-60 x 5.5-11.5 µm, clavate to subfusiform,\nrarely cylindrical, thin-walled, with broadly rounded apex, minutely and densely spinulose,\nexcrescences 0.9 x 0.5 µm.\n",
+      "diagnosis": "The differences between M. fuliginea and M. fuscinea indicated in the key are corrobo-\nrated by the lamellae reaching the stipe numbering only c. 10 in M. fuliginea as against c.\n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Latin diagnosis + matching English description — a common legitimate single-species convention.  2667-char description; opens Latin (\"Basidiomata solitaria. Pileus 1.5-3 mm latus, campanulatus, siccus...\"), transitions to English (\"Basidiomata solitary. Pileus 1.5-3 mm broad, campanulate...\"), 32 Claude annotations status=success.  merge_metric=2.  Motivated the 2026-07-07 count_repeated_structural_anatomy refinement to skip Latin paragraphs — before the fix, Basidiomata at para 0 (Latin) + para 2 (English) fired §6:multi_structural_anatomy.  Post-fix: all triage detectors silent as expected for a poster-child."
     }
   ],
   "pathologies": [
