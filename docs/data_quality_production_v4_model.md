@@ -2119,9 +2119,47 @@ their own right.
   (one from the genus diagnosis, one from the species
   description).
 
-**Affected treatments**: `taxon_01a01c54...`; likely
-representative of a broader pattern in taxonomic papers that
-propose a new genus alongside its type species.
+* **`taxon_9b787247...`** — noted 2026-07-07 from
+  batch-2.  **New genus (`Rhizogene Syd. nov. gen.`) in a
+  German-language paper.**  Operator supplied the complete
+  intended extraction; comparison exposes multiple
+  compound failures:
+    - **Nomenclature missing**: `Rhizogene Syd. nov. gen.`
+      is absent from the extracted `nomenclature` field
+      (empty) despite `synthetic_nomenclature = False`.
+      Data inconsistency — synth flag should be True
+      when nomenclature is empty, or the extractor
+      should have captured the nomenclature line.
+    - **Mid-Latin truncation** at `omnino immersi;` —
+      operator-corrected 2026-07-07: this is NOT at a
+      language boundary.  The following `asci sporaeque
+      adhuc tantum immaturi visi.` is still Latin and
+      should have been captured.  The extractor stopped
+      at a semicolon mid-clause.  Cause unclear — possible
+      PDF pagination, section CRF confidence dropoff,
+      semicolon-as-terminator heuristic, or another
+      mid-block issue.  Worth investigation as a
+      distinct §10 sub-shape (mid-Latin truncation
+      distinct from head-clip or tail-clip patterns).
+    - **German type-species note dropped**: the trailing
+      `— Einzige Art: R. Symphoricarpi Syd. (= Zaszobotrys
+      Symphoricarpi Syd.)` note that identifies the type
+      species isn't captured.  Separate from the Latin
+      truncation — the German content is missing
+      regardless.  LOTL/LOTE detector territory (Trello
+      #395).
+    - **Operator observation**: description ends with
+      `;` — confirms the existing `tail_clipped`
+      detector correctly fires on non-sentence-final
+      punctuation.  `§10:tail_clip` is the current
+      captured flag.
+  Fixture-tracked as
+  §11-gen-nov-latin-german-truncated.
+
+**Affected treatments**: `taxon_01a01c54...`,
+`taxon_9b787247...`; likely representative of a broader
+pattern in taxonomic papers that propose a new genus
+alongside its type species.
 
 **Likely stage**: layout CRF + treatment-grouper.  The CRF
 labels the paragraph containing both `gen. nov.` and the

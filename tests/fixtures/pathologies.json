@@ -526,6 +526,23 @@
       ],
       "known_missed_flags": [],
       "notes": "Empty Description, head-clipped 336-char Diagnosis, synth_nomen; whole-content loss with only Diagnosis tail surviving."
+    },
+    {
+      "id": "taxon_9b7872472e7ac98bb7e20a5aecb896636ea333f5c40e38c758b1708146a31915",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-f23beea50913350ccde5d5099f0d59b2",
+      "class": "§11-gen-nov-latin-german-truncated",
+      "description": "Stromata orbiculariter dense aggregata, superficialia, atra, hypostromate\ncommuni subeuticulari, hyphis liberis parallelis verticalibus suffulta; loculi\nad marginem stromatis evoluti, omnino immersi; \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [],
+      "notes": "Rhizogene Syd. gen. nov. — new genus in a German-language paper.  Operator supplied the complete intended extraction; comparison exposes multiple compound failures.  (1) Nomenclature \"Rhizogene Syd. nov. gen.\" is absent from the extracted nomenclature field (empty) yet synthetic_nomenclature=False (inconsistent — synth flag should be True when nomenclature is empty, or the extractor should have captured the nomenclature line).  (2) Latin diagnosis MID-LATIN truncation at \"omnino immersi;\" — misses \"asci sporaeque adhuc tantum immaturi visi.\" which is still Latin.  Extractor stopped at a semicolon, not at a language boundary; unclear why (possibly PDF pagination, CRF confidence dropoff, or semicolon-as-terminator heuristic).  (3) German type-species note \"— Einzige Art: R. Symphoricarpi Syd. (= Zaszobotrys Symphoricarpi Syd.)\" dropped entirely.  LOTE-content-not-supported territory (Trello #395).  Detected: §10:tail_clip fires correctly (description ends with \";\", not sentence-final).  Not detected: mid-Latin truncation, nomenclature-missing, LOTE content dropped."
     }
   ]
 }
