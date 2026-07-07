@@ -596,6 +596,21 @@
       ],
       "known_missed_flags": [],
       "notes": "Smut-fungus (Farysia-relative) treatment with compound failures.  Description (208 chars, lines 8004-8006, 3 source lines) is both-ends clipped: opens lowercase \"has spores very regular in size and shape...\" and ends trailing \"dark reddish brown, smooth \" (both §10 detectors fire correctly).  Diagnosis (296 chars, lines 8087-8091) contains a legitimate Differential Diagnosis comparing to \"Farysia olivacea (DC.) Syd.\", BUT the tail leaks the Nomenclature of the NEXT species: \"Sorosporium chamaeraphis Syd. apud Syd. & Petr., Ann. \" (trailing space, truncated).  Cross-field source-gap: 81 lines (8007-8086) between the description and diagnosis are not represented in this treatment.  Operator note: diagnosis probably belongs to this treatment (referencing Farysia olivacea for comparison), only the leaked Nomenclature at tail belongs to the next species.  THIRD occurrence in batch-2 of the nomenclature-vs-synth inconsistency (nomenclature field empty but synthetic_nomenclature=False) — after taxon_9b787247 and taxon_c9181340.  Pattern now established across 3/6 batch-2 treatments reviewed so far."
+    },
+    {
+      "id": "taxon_3e98d44d16dc0442fddab04fa151fd8e31baec646ef19b8d9ce72f9c126e6bc3",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "6-2b93f4a52fe65973c150d414a19ff7d0",
+      "class": "§11-gen-nov-content-underextracted-silent-failure",
+      "description": "Sexual reproduction not known. Colonies white, butyrous,\nsmooth. Multilateral budding cells and blastoconidia are present. Pseudohyphae and hyphae are present. Spherical to\nellipsoidal asexual endospores are formed in hyphal strands.\nThe major ubiquinone is coenzyme Q-8.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Gaillardinia Q.M. Wang, Yurkov, Boekhout & F.Y. Bai, gen. nov. (yeast genus).  The DESCRIPTION is a clean 272-char anatomical paragraph (\"Sexual reproduction not known. Colonies white, butyrous, smooth. Multilateral budding cells... coenzyme Q-8.\"), starts and ends cleanly, no triage detectors fire.  BUT the treatment as a whole is heavily underextracted vs. operator-supplied complete treatment: (1) Nomenclature \"Gaillardinia Q.M. Wang, Yurkov, Boekhout & F.Y. Bai, gen. nov. — MycoBank MB 852166\" absent (nomenclature=\"\", 4th case of synth-inconsistency in batch-2).  (2) Etymology paragraph (honoring Claude Gaillardin) missing — etymology=\"\".  (3) Type species declaration \"Gaillardinia entomophila (D.B. Scott et al.)...\" missing — type_designation=\"\".  (4) Long phylogenomic discussion paragraph (C. entomophila clade, family Metschnikowiaceae, protein families OG0010431 etc.) missing.  (5) Notes paragraph about differences from Danielozyma and Metahyphopichia missing — notes=\"\".  Silent-failure pattern: no current detector catches this class because each individual field looks \"empty\" and there's no signal comparing extracted-content vs source-content volume.  Detection idea: n_populated_fields threshold or field-vs-source-length ratio, would require plumbing source paragraph counts through.  Also: description=\"Sexual reproduction not known...\" starts with a section-header-like word (\"Sexual\" begins a subsection in the source), suggesting the description extractor picked up ONLY the anatomical-subsection paragraph and dropped everything before + after."
     }
   ]
 }

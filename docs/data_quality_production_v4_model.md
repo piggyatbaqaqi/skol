@@ -194,7 +194,7 @@ Treatment doc.
   in the source plaintext.
 
 **Nomenclature-vs-synth-nomen inconsistency subclass**
-(2026-07-07): three treatments in batch-2 exhibit a
+(2026-07-07): four treatments in batch-2 exhibit a
 distinct data-quality bug — the `nomenclature` field is
 EMPTY but `synthetic_nomenclature = False`.  Expected
 behavior: synth flag should be True when the extractor
@@ -211,18 +211,22 @@ couldn't identify a nomenclature.  Observed cases:
     both-ends-clipped Description and Differential
     Diagnosis in Diagnosis field.  Nomenclature not
     extracted.
+  * `taxon_3e98d44d...` — Gaillardinia gen. nov. (yeast
+    genus).  Description is a clean anatomical
+    paragraph, but Nomenclature "Gaillardinia Q.M. Wang,
+    Yurkov, Boekhout & F.Y. Bai, gen. nov."  absent.
 
-**Three occurrences in the first 6 batch-2 treatments
-reviewed** (50% incidence) suggests a systematic bug
-in the nomenclature-extraction / synth-flag interaction
-worth tracing.  Distinct from the §2 primary cases
+**Four occurrences in the first 7 batch-2 treatments
+reviewed** (57% incidence) confirms this is systematic,
+not isolated.  Warrants its own Trello card for the
+extractor-side fix.  Distinct from the §2 primary cases
 where synth flag CORRECTLY fires (T4,
 taxon_acd88732).
 
 **Affected treatments**: T1 (vacuously), T2, T3, T4,
 `taxon_acd88732...`.  Nomenclature-vs-synth inconsistency
 subclass: `taxon_9b787247...`, `taxon_c9181340...`,
-`taxon_fd4323fb...`.
+`taxon_fd4323fb...`, `taxon_3e98d44d...`.
 
 **Likely stage**: layout CRF likely labels formal-citation paragraphs
 as `Figure-caption` (T2) or misses them entirely (T4).  Where the
@@ -2147,6 +2151,37 @@ their own right.
   (one from the genus diagnosis, one from the species
   description).
 
+* **`taxon_3e98d44d...`** — noted 2026-07-07 from batch-2.
+  **New genus (`Gaillardinia` — yeast) with a clean
+  descriptive paragraph but 5 empty fields.**  Silent-
+  failure pattern: the DESCRIPTION field is a clean 272-
+  char anatomical paragraph (`Sexual reproduction not
+  known. Colonies white, butyrous, smooth. Multilateral
+  budding cells and blastoconidia are present… coenzyme
+  Q-8.`) starting and ending cleanly.  All triage
+  detectors correctly silent.  But comparing to the
+  operator-supplied complete treatment reveals five
+  empty fields with content that should have been
+  captured:
+    - Nomenclature: `Gaillardinia Q.M. Wang, Yurkov,
+      Boekhout & F.Y. Bai, gen. nov. — MycoBank MB
+      852166` (missing; 4th nomenclature/synth
+      inconsistency in batch-2)
+    - Etymology paragraph (missing)
+    - Type species declaration `Gaillardinia entomophila
+      (D.B. Scott et al.)…` (missing)
+    - Long phylogenomic discussion paragraph about the
+      C. entomophila clade (missing)
+    - Notes paragraph about differences from Danielozyma
+      and Metahyphopichia (missing)
+  Silent-failure — no current detector catches "clean
+  description, everything else empty" because signals
+  operate on the extracted content, not on
+  extracted-vs-source coverage.  Detection idea:
+  `n_populated_fields` threshold, or field-length ratios
+  against expected-per-taxon-class distribution.
+  Requires modeling what fields SHOULD be populated for
+  a given treatment class.
 * **`taxon_9b787247...`** — noted 2026-07-07 from
   batch-2.  **New genus (`Rhizogene Syd. nov. gen.`) in a
   German-language paper.**  Operator supplied the complete
