@@ -578,6 +578,24 @@
       ],
       "known_missed_flags": [],
       "notes": "Complete conidial fungus description (Conidiomata, Ostiole, Conidiophores, Conidiogenous cells, Conidia + Culture characteristics on MEA/PDA/OA) followed by an almost-complete Materials_examined citation leaked into Description: \"Specimen examined: USA, Florida, on seed of Podocarpus maki (intercepted in New Zealand), Sep. 1979, G. Laundon (holotype CBS H-13109; ex-type culture \" (tail-truncated).  The materials_examined field itself is EMPTY.  Same class as taxon_f00f8353 Materials_examined leak.  Cultural characteristics correctly stays in Description (per 2026-07-02 clarification).  §10:tail_clip fires on the trailing space at \"ex-type culture \".  Nomenclature-vs-synth inconsistency: nomenclature field empty but synthetic_nomenclature=False (SECOND occurrence in batch-2 after taxon_9b787247 — worth tracking as a pattern)."
+    },
+    {
+      "id": "taxon_fd4323fbbf8694fbbdf83cc8ef6086796548485f55c14810b3c4bd8b4eef6eac",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-07-07",
+      "captured_rev": "3-b8f46263f9b5138055f82d3de3e86d3e",
+      "class": "§10-both-ends-clip-plus-diagnosis-nomenclature-leak",
+      "description": "has spores very regular in size and shape, measuring 16—20 u in length\nand appearing subglobose to broadly oval, but usually strongly com-\npressed at both sides. The epispores are dark reddish brown, smooth \n",
+      "diagnosis": "This species is characterized by the large size of the sori, profuse\ndevelopment of the hyphal fascicles and wide variation in spore size.\nThe color of the mass of spores and fascicles is much deeper than that\nof Farysia olivacea (DC.) Syd.\nSorosporium chamaeraphis Syd. apud Syd. & Petr., Ann. \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:mid_sentence",
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [],
+      "notes": "Smut-fungus (Farysia-relative) treatment with compound failures.  Description (208 chars, lines 8004-8006, 3 source lines) is both-ends clipped: opens lowercase \"has spores very regular in size and shape...\" and ends trailing \"dark reddish brown, smooth \" (both §10 detectors fire correctly).  Diagnosis (296 chars, lines 8087-8091) contains a legitimate Differential Diagnosis comparing to \"Farysia olivacea (DC.) Syd.\", BUT the tail leaks the Nomenclature of the NEXT species: \"Sorosporium chamaeraphis Syd. apud Syd. & Petr., Ann. \" (trailing space, truncated).  Cross-field source-gap: 81 lines (8007-8086) between the description and diagnosis are not represented in this treatment.  Operator note: diagnosis probably belongs to this treatment (referencing Farysia olivacea for comparison), only the leaked Nomenclature at tail belongs to the next species.  THIRD occurrence in batch-2 of the nomenclature-vs-synth inconsistency (nomenclature field empty but synthetic_nomenclature=False) — after taxon_9b787247 and taxon_c9181340.  Pattern now established across 3/6 batch-2 treatments reviewed so far."
     }
   ]
 }
