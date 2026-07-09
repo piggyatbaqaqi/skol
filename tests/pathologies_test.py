@@ -166,11 +166,6 @@ def test_pathology_expected_flags(entry: Dict[str, Any]) -> None:
     """Each pathology fires exactly ``expected_flags``.  Extra
     flags → potential regression / new signal.  Missing flags →
     detector broke.  Both fail the test to force review."""
-    if entry['id'].startswith('taxon_adcb2fcc'):
-        pytest.xfail(
-            reason="§12:desc_span_gap detector implementation "
-            "lands in follow-up commit",
-        )
     actual = _actual_flag_prefixes(entry)
     expected = set(entry.get('expected_flags', []))
     missing = expected - actual

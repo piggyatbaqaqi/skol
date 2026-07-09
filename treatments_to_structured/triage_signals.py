@@ -542,6 +542,98 @@ def latin_between_english(
 
 
 # ---------------------------------------------------------------------------
+# Non-contiguous fragment detector (§12) and silent-failure signal (§11)
+# ---------------------------------------------------------------------------
+
+
+# Section fields counted by ``count_populated_fields``.  Nomenclature
+# ("treatment") is intentionally excluded — a nomen-only Treatment
+# reports 0 populated section fields, matching the memo's §11 silent-
+# failure framing.  Keep in sync with ``Treatment.as_row``'s
+# ``section_fields`` insertion order in ``treatment.py``.
+_POPULATED_SECTION_FIELDS: tuple = (
+    'description', 'diagnosis', 'etymology', 'distribution',
+    'materials_examined', 'type_designation', 'biology',
+    'notes', 'key', 'figure_captions',
+)
+
+
+def _coerce_int(value: Any) -> 'int | None':
+    """Best-effort int coercion for MapType-string span values.
+
+    CouchDB span dicts write ints as strings when they land in a
+    MapType schema.  Returns ``None`` when coercion fails so the
+    caller can skip the span entry.
+    """
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def count_description_span_gaps(
+    spans: List[Dict[str, Any]],
+    min_gap: int = 10,
+) -> int:
+    """Count pairs of consecutive description spans separated by a
+    line-number gap ``>= min_gap``.
+
+    Motivating case: taxon_adcb2fcc (§12 non-contiguous fragments)
+    has description assembled from two source regions at lines
+    11262-11266 and 11282-11283 — a 15-line gap that the
+    description text alone doesn't reveal.
+
+    Spans without valid ``start_line``/``end_line`` (or their
+    string forms) are skipped defensively.  Spans are sorted by
+    ``start_line`` before pair-wise comparison so the detector
+    tolerates the DB's occasional out-of-order storage.
+    """
+    valid: List[tuple] = []
+    for span in spans:
+        start = _coerce_int(span.get('start_line'))
+        end = _coerce_int(span.get('end_line'))
+        if start is None or end is None:
+            continue
+        valid.append((start, end))
+    if len(valid) < 2:
+        return 0
+    valid.sort()
+    return sum(
+        1
+        for prev_end, next_start in (
+            (valid[i][1], valid[i + 1][0])
+            for i in range(len(valid) - 1)
+        )
+        if next_start - prev_end >= min_gap
+    )
+
+
+def count_populated_fields(treatment: Dict[str, Any]) -> int:
+    """Count non-empty section fields among the 10 tracked sections.
+
+    Empty string, ``None``, and missing keys all count as
+    unpopulated.  Nomenclature ("treatment") is intentionally
+    excluded — a genuine gen. nov. with a populated nomenclature
+    and nothing else reports 0 here.
+
+    Motivating case: taxon_3e98d44d (Gaillardinia gen. nov.
+    silent-failure) has description populated and all nine other
+    section fields empty → returns 1.  Exposed as a CSV signal;
+    the flag layer intentionally does not auto-fire on this
+    value (see the session decision to backfill fixtures first).
+    """
+    return sum(
+        1
+        for field in _POPULATED_SECTION_FIELDS
+        if treatment.get(field)
+    )
+
+
+# ---------------------------------------------------------------------------
 # Composed helpers over a full Treatment doc
 # ---------------------------------------------------------------------------
 
@@ -568,9 +660,14 @@ def treatment_signals(
     """
     desc = treatment.get('description') or ''
     diag = treatment.get('diagnosis') or ''
+    desc_spans = treatment.get('description_spans') or []
     return {
         'desc_length': len(desc),
         'diag_length': len(diag),
+        'n_description_span_gaps':
+            count_description_span_gaps(desc_spans),
+        'n_populated_fields':
+            count_populated_fields(treatment),
         'n_diagnosis_headers': count_diagnosis_headers(desc),
         'n_description_headers': count_description_headers(desc),
         'n_repeated_section_headers':
@@ -650,6 +747,8 @@ def predicted_issues(
         flags.append('§6:latin_ele')
     if signals.get('authored_binomial_in_desc'):
         flags.append('§6:authored_binomial')
+    if signals.get('n_description_span_gaps', 0) >= 1:
+        flags.append('§12:desc_span_gap')
     if merge_metric >= merge_threshold:
         flags.append(f'§6:merge_metric={merge_metric}')
     return '|'.join(flags)
@@ -662,6 +761,8 @@ __all__ = (
     'count_repeated_structural_anatomy',
     'count_sp_nov',
     'count_key_couplets',
+    'count_description_span_gaps',
+    'count_populated_fields',
     'desc_starts_mid_sentence',
     'latin_between_english',
     'latin_block_count',

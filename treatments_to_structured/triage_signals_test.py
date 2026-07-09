@@ -846,13 +846,6 @@ class TestLatinBetweenEnglish:
         assert latin_between_english(text)
 
 
-_NEW_DETECTOR_XFAIL = pytest.mark.xfail(
-    reason="detector implementation lands in follow-up commit",
-    strict=True,
-)
-
-
-@_NEW_DETECTOR_XFAIL
 class TestCountDescriptionSpanGaps:
     """Fires on non-contiguous description spans.
 
@@ -973,7 +966,6 @@ class TestCountDescriptionSpanGaps:
         assert count_description_span_gaps(spans) == 1
 
 
-@_NEW_DETECTOR_XFAIL
 class TestCountPopulatedFields:
     """Counts non-empty section fields (excluding nomenclature).
 
@@ -1056,7 +1048,6 @@ class TestCountPopulatedFields:
 
 
 class TestTreatmentSignals:
-    @_NEW_DETECTOR_XFAIL
     def test_full_shape(self) -> None:
         """The composed helper returns all the individual signals
         so the caller can write them as CSV columns."""
@@ -1084,7 +1075,6 @@ class TestTreatmentSignals:
         }
         assert set(s.keys()) == expected_keys
 
-    @_NEW_DETECTOR_XFAIL
     def test_description_span_gaps_reads_from_treatment(self) -> None:
         """The composed helper picks up ``description_spans`` from
         the treatment dict and forwards to
@@ -1100,7 +1090,6 @@ class TestTreatmentSignals:
         s = treatment_signals(t)
         assert s['n_description_span_gaps'] == 1
 
-    @_NEW_DETECTOR_XFAIL
     def test_description_span_gaps_absent_zero(self) -> None:
         """No ``description_spans`` key → 0.  Treatments in the
         older schema (pre-span-tracking) do not carry spans."""
@@ -1108,7 +1097,6 @@ class TestTreatmentSignals:
         s = treatment_signals(t)
         assert s['n_description_span_gaps'] == 0
 
-    @_NEW_DETECTOR_XFAIL
     def test_populated_fields_counts_all_sections(self) -> None:
         """taxon_3e98d44d silent-failure signature: only
         description populated → n_populated_fields = 1."""
@@ -1323,7 +1311,6 @@ class TestPredictedIssues:
         result = predicted_issues(signals, merge_metric=0)
         assert '§10:diag_head_clip' in result
 
-    @_NEW_DETECTOR_XFAIL
     def test_desc_span_gap_flag(self) -> None:
         """taxon_adcb2fcc shape: at least one span-gap fires
         §12:desc_span_gap."""

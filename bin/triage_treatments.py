@@ -81,6 +81,8 @@ CSV_COLUMNS: List[str] = [
     'diag_starts_mid_sentence',
     'authored_binomial_in_desc',
     'synthetic_nomenclature',
+    'n_description_span_gaps',
+    'n_populated_fields',
     'predicted_issues',
     'first_line',
 ]
@@ -213,6 +215,8 @@ def build_row(
             'diag_starts_mid_sentence': False,
             'authored_binomial_in_desc': False,
             'synthetic_nomenclature': False,
+            'n_description_span_gaps': 0,
+            'n_populated_fields': 0,
         }
         merge_metric = 0
         first_line = ''
@@ -275,6 +279,10 @@ def build_row(
             signals['authored_binomial_in_desc'],
         'synthetic_nomenclature':
             signals['synthetic_nomenclature'],
+        'n_description_span_gaps':
+            signals['n_description_span_gaps'],
+        'n_populated_fields':
+            signals['n_populated_fields'],
         'predicted_issues': issues,
         'first_line': first_line,
     }
