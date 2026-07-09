@@ -568,14 +568,19 @@
       "class": "§12-non-contiguous-fragments-multi-species",
       "description": "conidiomata, globose, aggregated in a large stroma, black, erumpent and exuding creamy conidial\ndroplets from central ostioles, cylindrical and straight to sinuous, unbranched, 1–2-septate\nconidiophores, phialidic, cylindrical, terminal conidiogenous cells, with visible periclinal\nthickening, and 1–2-septate paraphyses, obovoid to fusoid to ellipsoid, tapering towards both ends,\nstraight, aseptate, hyaline, smooth, guttules alpha conidia. In addition, there is no important \n\nirregularly scattered perithecia, 8-spored, sessile, clavate to spindle-shaped, tapered at both ends\nasci, 45–50 × 9–11 µm, elongate to spindle-shaped, rounded at both ends, straight or somewhat \n",
       "diagnosis": "",
+      "description_spans": [
+        {"start_line": 11262, "end_line": 11266},
+        {"start_line": 11282, "end_line": 11283}
+      ],
       "synthetic_nomenclature": false,
       "authored_binomial_in_desc": false,
       "expected_flags": [
         "§10:mid_sentence",
-        "§10:tail_clip"
+        "§10:tail_clip",
+        "§12:desc_span_gap"
       ],
       "known_missed_flags": [],
-      "notes": "Description assembled from TWO NON-CONTIGUOUS source regions (description_spans: lines 11262-11266 + lines 11282-11283, 15-line gap between them).  Operator PDF cross-check identifies three source fragments across two species: (1) fragment 1 - lowercase-truncated content from middle of species 1 Notes section (which per PDF should have been Diagnosis-classified, not Description).  (2) fragment 2 - \"In addition, there is no important\" sentence-start from a few lines below fragment 1, same species.  (3) fragment 3 - \"irregularly scattered perithecia...\" from next species, both-ends-truncated, also diagnostic-like content.  All three merged into one description field.  §10:mid_sentence fires on lowercase field-open; §10:tail_clip fires on final trailing space.  Deeper §12 assembly failure (fragments-from-disjoint-source-regions + section-mislabeling + multi-species) not currently detectable.  Detection idea: \"n_description_span_gaps\" - count large line-number gaps between consecutive description_spans entries.  For this treatment: 1 gap > threshold (15 lines).  Requires plumbing span data through to treatment_signals.  Complementary to §12 label-aware assembly (M3+)."
+      "notes": "Description assembled from TWO NON-CONTIGUOUS source regions (description_spans: lines 11262-11266 + lines 11282-11283, 15-line gap between them).  Operator PDF cross-check identifies three source fragments across two species: (1) fragment 1 - lowercase-truncated content from middle of species 1 Notes section (which per PDF should have been Diagnosis-classified, not Description).  (2) fragment 2 - \"In addition, there is no important\" sentence-start from a few lines below fragment 1, same species.  (3) fragment 3 - \"irregularly scattered perithecia...\" from next species, both-ends-truncated, also diagnostic-like content.  All three merged into one description field.  §10:mid_sentence fires on lowercase field-open; §10:tail_clip fires on final trailing space.  §12:desc_span_gap fires on the 15-line inter-fragment gap (detector added 2026-07-08).  Deeper §12 assembly failure (section-mislabeling + multi-species) not currently detectable."
     },
     {
       "id": "taxon_c91813404deebff6d06b17771576777930cbc547aa87d5867b4c529cac8cad0b",

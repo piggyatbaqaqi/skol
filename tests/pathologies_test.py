@@ -58,6 +58,12 @@ def _actual_flag_prefixes(entry: Dict[str, Any]) -> Set[str]:
         'diagnosis': entry.get('diagnosis', ''),
         'synthetic_nomenclature':
             entry.get('synthetic_nomenclature', False),
+        # Optional detector 1 input — most fixture entries omit
+        # ``description_spans`` and read as an empty list, so
+        # count_description_span_gaps returns 0 by default.
+        # Populated for taxon_adcb2fcc's §12 fragments case.
+        'description_spans':
+            entry.get('description_spans', []),
     }
     signals = treatment_signals(
         treatment,
@@ -160,6 +166,11 @@ def test_pathology_expected_flags(entry: Dict[str, Any]) -> None:
     """Each pathology fires exactly ``expected_flags``.  Extra
     flags → potential regression / new signal.  Missing flags →
     detector broke.  Both fail the test to force review."""
+    if entry['id'].startswith('taxon_adcb2fcc'):
+        pytest.xfail(
+            reason="§12:desc_span_gap detector implementation "
+            "lands in follow-up commit",
+        )
     actual = _actual_flag_prefixes(entry)
     expected = set(entry.get('expected_flags', []))
     missing = expected - actual

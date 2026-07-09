@@ -1,5 +1,7 @@
 """Tests for treatments_to_structured.triage_signals."""
 
+import pytest
+
 from treatments_to_structured.triage_signals import (
     count_description_headers,
     count_diagnosis_headers,
@@ -844,7 +846,217 @@ class TestLatinBetweenEnglish:
         assert latin_between_english(text)
 
 
+_NEW_DETECTOR_XFAIL = pytest.mark.xfail(
+    reason="detector implementation lands in follow-up commit",
+    strict=True,
+)
+
+
+@_NEW_DETECTOR_XFAIL
+class TestCountDescriptionSpanGaps:
+    """Fires on non-contiguous description spans.
+
+    Motivating case: taxon_adcb2fcc (batch-2 §12) has two source
+    fragments at lines 11262-11266 and 11282-11283 — a 15-line
+    gap between them.  The description text reads as one paragraph
+    but was assembled from disjoint regions; downstream review
+    depends on the operator catching the gap.
+    """
+
+    def test_empty_spans_zero(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        assert count_description_span_gaps([]) == 0
+
+    def test_single_span_zero(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [{'start_line': 10, 'end_line': 25}]
+        assert count_description_span_gaps(spans) == 0
+
+    def test_contiguous_pair_zero(self) -> None:
+        """Spans separated by a small gap (< default threshold)
+        do not fire.  Two-paragraph descriptions with a blank
+        line between them typically have gap=2."""
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 10, 'end_line': 25},
+            {'start_line': 27, 'end_line': 40},
+        ]
+        assert count_description_span_gaps(spans) == 0
+
+    def test_large_gap_pair_one(self) -> None:
+        """taxon_adcb2fcc shape: 15-line gap between fragments."""
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 11262, 'end_line': 11266},
+            {'start_line': 11282, 'end_line': 11283},
+        ]
+        assert count_description_span_gaps(spans) == 1
+
+    def test_three_spans_one_big_gap(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 10, 'end_line': 25},
+            {'start_line': 27, 'end_line': 40},
+            {'start_line': 200, 'end_line': 220},
+        ]
+        assert count_description_span_gaps(spans) == 1
+
+    def test_three_spans_two_big_gaps(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 10, 'end_line': 25},
+            {'start_line': 100, 'end_line': 115},
+            {'start_line': 300, 'end_line': 320},
+        ]
+        assert count_description_span_gaps(spans) == 2
+
+    def test_custom_threshold(self) -> None:
+        """min_gap kwarg tunes sensitivity."""
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 10, 'end_line': 25},
+            {'start_line': 30, 'end_line': 40},
+        ]
+        # gap = 30 - 25 = 5
+        assert count_description_span_gaps(spans, min_gap=4) == 1
+        assert count_description_span_gaps(spans, min_gap=6) == 0
+
+    def test_unsorted_spans_sorted_internally(self) -> None:
+        """Real span lists in some CouchDB docs are not ordered;
+        detector must sort before pair-wise comparison."""
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 200, 'end_line': 220},
+            {'start_line': 10, 'end_line': 25},
+        ]
+        assert count_description_span_gaps(spans) == 1
+
+    def test_string_valued_spans_coerced(self) -> None:
+        """Some spans in the DB are stored as MapType — start_line
+        arrives as a string.  Detector coerces to int."""
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': '10', 'end_line': '25'},
+            {'start_line': '200', 'end_line': '220'},
+        ]
+        assert count_description_span_gaps(spans) == 1
+
+    def test_missing_line_keys_skipped(self) -> None:
+        """Spans without line-number keys are ignored — a
+        defensive fallback, not a normal path."""
+        from treatments_to_structured.triage_signals import (
+            count_description_span_gaps,
+        )
+        spans = [
+            {'start_line': 10, 'end_line': 25},
+            {'paragraph_number': 33},
+            {'start_line': 200, 'end_line': 220},
+        ]
+        assert count_description_span_gaps(spans) == 1
+
+
+@_NEW_DETECTOR_XFAIL
+class TestCountPopulatedFields:
+    """Counts non-empty section fields (excluding nomenclature).
+
+    Motivating case: taxon_3e98d44d (batch-2 §11) — a gen. nov.
+    treatment whose extracted description is a single clean
+    272-char paragraph but etymology / type_designation / notes /
+    biology / etc. all read as empty.  n_populated_fields = 1
+    on this treatment despite the source PDF having six populated
+    sections.  Combined with desc_length in the CSV, operators
+    can filter for silent-failure candidates.
+
+    No auto-flag fires yet — see the session decision to defer
+    the flag until fixtures carry full section content.
+    """
+
+    _FIELDS = (
+        'description', 'diagnosis', 'etymology', 'distribution',
+        'materials_examined', 'type_designation', 'biology',
+        'notes', 'key', 'figure_captions',
+    )
+
+    def test_empty_treatment_zero(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        assert count_populated_fields({}) == 0
+
+    def test_all_none_zero(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        t = {f: None for f in self._FIELDS}
+        assert count_populated_fields(t) == 0
+
+    def test_all_empty_string_zero(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        t = {f: '' for f in self._FIELDS}
+        assert count_populated_fields(t) == 0
+
+    def test_only_description_one(self) -> None:
+        """taxon_3e98d44d silent-failure shape."""
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        t = {
+            'description': 'Colonies white, butyrous, smooth.',
+            'diagnosis': '',
+            'etymology': None,
+        }
+        assert count_populated_fields(t) == 1
+
+    def test_description_plus_diagnosis_two(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        t = {
+            'description': 'Colonies white.',
+            'diagnosis': 'Similar to X.',
+        }
+        assert count_populated_fields(t) == 2
+
+    def test_all_ten_populated(self) -> None:
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        t = {f: 'x' for f in self._FIELDS}
+        assert count_populated_fields(t) == 10
+
+    def test_nomenclature_not_counted(self) -> None:
+        """The `treatment` (nomenclature) field is NOT one of the
+        10 section fields — a treatment with only nomenclature
+        populated still reports 0."""
+        from treatments_to_structured.triage_signals import (
+            count_populated_fields,
+        )
+        t = {'treatment': 'Foo bar sp. nov.'}
+        assert count_populated_fields(t) == 0
+
+
 class TestTreatmentSignals:
+    @_NEW_DETECTOR_XFAIL
     def test_full_shape(self) -> None:
         """The composed helper returns all the individual signals
         so the caller can write them as CSV columns."""
@@ -867,8 +1079,47 @@ class TestTreatmentSignals:
             'diag_starts_mid_sentence',
             'authored_binomial_in_desc',
             'synthetic_nomenclature',
+            'n_description_span_gaps',
+            'n_populated_fields',
         }
         assert set(s.keys()) == expected_keys
+
+    @_NEW_DETECTOR_XFAIL
+    def test_description_span_gaps_reads_from_treatment(self) -> None:
+        """The composed helper picks up ``description_spans`` from
+        the treatment dict and forwards to
+        count_description_span_gaps."""
+        t = {
+            'description': 'Pileus brown 3 cm.',
+            'diagnosis': '',
+            'description_spans': [
+                {'start_line': 10, 'end_line': 25},
+                {'start_line': 200, 'end_line': 220},
+            ],
+        }
+        s = treatment_signals(t)
+        assert s['n_description_span_gaps'] == 1
+
+    @_NEW_DETECTOR_XFAIL
+    def test_description_span_gaps_absent_zero(self) -> None:
+        """No ``description_spans`` key → 0.  Treatments in the
+        older schema (pre-span-tracking) do not carry spans."""
+        t = {'description': 'Pileus brown 3 cm.', 'diagnosis': ''}
+        s = treatment_signals(t)
+        assert s['n_description_span_gaps'] == 0
+
+    @_NEW_DETECTOR_XFAIL
+    def test_populated_fields_counts_all_sections(self) -> None:
+        """taxon_3e98d44d silent-failure signature: only
+        description populated → n_populated_fields = 1."""
+        t = {
+            'description': 'Colonies white, butyrous, smooth.',
+            'diagnosis': '',
+            'etymology': None,
+            'materials_examined': '',
+        }
+        s = treatment_signals(t)
+        assert s['n_populated_fields'] == 1
 
     def test_missing_fields_handled(self) -> None:
         """Description or diagnosis may be None or absent."""
@@ -1071,6 +1322,44 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§10:diag_head_clip' in result
+
+    @_NEW_DETECTOR_XFAIL
+    def test_desc_span_gap_flag(self) -> None:
+        """taxon_adcb2fcc shape: at least one span-gap fires
+        §12:desc_span_gap."""
+        signals = {
+            'desc_length': 676,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'n_description_span_gaps': 1,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§12:desc_span_gap' in result
+
+    def test_populated_fields_signal_no_flag(self) -> None:
+        """n_populated_fields is exposed as a signal for CSV
+        filtering but does NOT emit an auto-flag.  Session
+        decision: defer the flag until fixtures carry full
+        section content across all entries."""
+        signals = {
+            'desc_length': 272,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 0,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'n_populated_fields': 1,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert 'sparse_treatment' not in result
+        assert '§11' not in result
 
     def test_latin_ele_flag(self) -> None:
         """The taxon_9ecad903 shape: latin_between_english
