@@ -16,7 +16,7 @@ both forms are handled.
 
 import re
 import xml.etree.ElementTree as ET
-from typing import FrozenSet, List, Optional, Set, Union
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Union
 
 from ingestors.yedda_tags import (
     Tag,
@@ -537,6 +537,16 @@ def jats_xml_to_tagged_blocks(xml_string: str) -> List[TaggedBlock]:
             blocks.append(TaggedBlock(text=text, tag=Tag.MISC_EXPOSITION))
 
     return blocks
+
+
+def extract_taxpub_anchor_bundles(
+    xml_string: str,
+) -> List[Dict[str, Any]]:
+    """Skeleton — full implementation lands in Trello #401 Phase 1
+    Commit B follow-up.  See ``TestExtractTaxpubAnchorBundles`` for
+    the contract.
+    """
+    return []
 
 
 def jats_xml_to_yedda(xml_string: str) -> str:

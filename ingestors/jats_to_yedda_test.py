@@ -8,6 +8,7 @@ from .jats_to_yedda import (
     JATS_EMIT_TAGS,
     _has_treatments,
     extract_fig_blocks,
+    extract_taxpub_anchor_bundles,
     extract_text,
     jats_xml_to_tagged_blocks,
     jats_xml_to_yedda,
@@ -16,6 +17,8 @@ from .jats_to_yedda import (
     process_treatment,
     sec_type_to_tag,
 )
+
+import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -1356,3 +1359,199 @@ class TestJatsEmitTags(unittest.TestCase):
             f"sec_type_to_tag returned tags not in JATS_EMIT_TAGS: "
             f"{observed - JATS_EMIT_TAGS}",
         )
+
+
+# ---------------------------------------------------------------------------
+# Tests: extract_taxpub_anchor_bundles (Trello #401 Phase 1 Commit B)
+# ---------------------------------------------------------------------------
+
+
+def _make_treatment_with_ids(
+    arpha_uuid=None,
+    mycobank_id=None,
+    section_ids=None,
+):
+    """Build a tp:taxon-treatment fragment with optional per-treatment
+    anchor payloads.  ``section_ids`` is a list of tp:treatment-sec
+    ids in document order; each becomes an ``id`` attribute on a
+    minimal treatment-sec element."""
+    section_ids = section_ids or []
+    obj_ids = ""
+    if arpha_uuid is not None:
+        obj_ids += (
+            f'<object-id content-type="arpha">{arpha_uuid}'
+            "</object-id>"
+        )
+    if mycobank_id is not None:
+        obj_ids += (
+            f'<object-id content-type="mycobank">{mycobank_id}'
+            "</object-id>"
+        )
+    secs = ""
+    for sid in section_ids:
+        secs += (
+            f'<tp:treatment-sec sec-type="description" id="{sid}">'
+            "<p>x</p></tp:treatment-sec>"
+        )
+    return (
+        "<tp:taxon-treatment>"
+        "<tp:nomenclature>"
+        f"<tp:taxon-name>{obj_ids}"
+        "<tp:taxon-name-part>Foo bar</tp:taxon-name-part>"
+        "</tp:taxon-name>"
+        "</tp:nomenclature>"
+        f"{secs}"
+        "</tp:taxon-treatment>"
+    )
+
+
+def _make_article_with_doi(doi, body_xml):
+    """JATS article with a DOI in article-meta."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f'<article xmlns:tp="{TP_NS}">'
+        "<front><article-meta>"
+        f'<article-id pub-id-type="doi">{doi}</article-id>'
+        "</article-meta></front>"
+        f"<body>{body_xml}</body>"
+        "</article>"
+    )
+
+
+_XFAIL_TAXPUB_ANCHORS = pytest.mark.xfail(
+    reason=(
+        "Trello #401 Phase 1 Commit B: extract_taxpub_anchor_bundles "
+        "implementation lands in follow-up commit."
+    ),
+    strict=True,
+)
+
+
+class TestExtractTaxpubAnchorBundles(unittest.TestCase):
+    """Extract per-<tp:taxon-treatment> anchor bundles from JATS XML.
+
+    Trello #401 Phase 1 Commit B.  One bundle per treatment element
+    in document order.  Each bundle carries the raw anchor payloads
+    for the arpha / jats_section / mycobank source-anchor kinds.
+    """
+
+    def test_no_treatments_empty_list(self):
+        """Article with no <tp:taxon-treatment> → empty list.
+        Not xfailed: the skeleton returns [] unconditionally and the
+        real impl also returns []; both are correct here."""
+        xml = _make_article_with_doi("10.9999/none", "<sec><p>x</p></sec>")
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertEqual(bundles, [])
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_full_bundle_all_kinds(self):
+        """All three kinds + DOI present → all populated in bundle."""
+        body = _make_treatment_with_ids(
+            arpha_uuid="BA154B2C-A975-5BFF-BEEA-42184807F9D3",
+            mycobank_id="853632",
+            section_ids=["SECID0EGZGK"],
+        )
+        xml = _make_article_with_doi(
+            "10.3897/mycokeys.108.130565", body,
+        )
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertEqual(len(bundles), 1)
+        self.assertEqual(bundles[0], {
+            "arpha_uuid": "BA154B2C-A975-5BFF-BEEA-42184807F9D3",
+            "mycobank_id": "853632",
+            "first_section_id": "SECID0EGZGK",
+            "doi": "10.3897/mycokeys.108.130565",
+        })
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_first_section_id_from_document_order(self):
+        """When multiple treatment-sec elements have ids, the FIRST
+        in document order is picked — typically etymology, which
+        puts the nomenclature just above the viewport."""
+        body = _make_treatment_with_ids(
+            section_ids=["SECID_FIRST", "SECID_SECOND", "SECID_THIRD"],
+        )
+        xml = _make_article_with_doi("10.0/x", body)
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertEqual(bundles[0]["first_section_id"], "SECID_FIRST")
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_missing_arpha_yields_none(self):
+        """No <object-id content-type='arpha'> → arpha_uuid is None."""
+        body = _make_treatment_with_ids(
+            mycobank_id="12345",
+            section_ids=["SECID0AAA"],
+        )
+        xml = _make_article_with_doi("10.0/x", body)
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertIsNone(bundles[0]["arpha_uuid"])
+        self.assertEqual(bundles[0]["mycobank_id"], "12345")
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_missing_mycobank_yields_none(self):
+        """No <object-id content-type='mycobank'> → mycobank_id is
+        None."""
+        body = _make_treatment_with_ids(
+            arpha_uuid="AAAAAAAA-1234-5678-9ABC-DEF012345678",
+            section_ids=["SECID0AAA"],
+        )
+        xml = _make_article_with_doi("10.0/x", body)
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertIsNone(bundles[0]["mycobank_id"])
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_missing_sections_yields_none(self):
+        """Treatment with no treatment-sec elements → first_section_id
+        is None.  Rare — real TaxPub always has at least one."""
+        body = _make_treatment_with_ids(
+            arpha_uuid="AAAAAAAA-1234-5678-9ABC-DEF012345678",
+        )
+        xml = _make_article_with_doi("10.0/x", body)
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertIsNone(bundles[0]["first_section_id"])
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_missing_doi_yields_none(self):
+        """No <article-id pub-id-type='doi'> → doi is None on every
+        bundle in the article."""
+        body = _make_treatment_with_ids(
+            arpha_uuid="AAAAAAAA-1234-5678-9ABC-DEF012345678",
+            section_ids=["SECID0AAA"],
+        )
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            f'<article xmlns:tp="{TP_NS}">'
+            "<front><article-meta></article-meta></front>"
+            f"<body>{body}</body>"
+            "</article>"
+        )
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertIsNone(bundles[0]["doi"])
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_multiple_treatments_one_bundle_each(self):
+        """Two treatments → two bundles in document order.  Each
+        gets its own arpha_uuid; both share the article's DOI."""
+        body = (
+            _make_treatment_with_ids(
+                arpha_uuid="AAAAAAAA-1111-1111-1111-111111111111",
+                section_ids=["SECID0AAA"],
+            )
+            + _make_treatment_with_ids(
+                arpha_uuid="BBBBBBBB-2222-2222-2222-222222222222",
+                section_ids=["SECID0BBB"],
+            )
+        )
+        xml = _make_article_with_doi("10.0/multi", body)
+        bundles = extract_taxpub_anchor_bundles(xml)
+        self.assertEqual(len(bundles), 2)
+        self.assertEqual(
+            bundles[0]["arpha_uuid"],
+            "AAAAAAAA-1111-1111-1111-111111111111",
+        )
+        self.assertEqual(
+            bundles[1]["arpha_uuid"],
+            "BBBBBBBB-2222-2222-2222-222222222222",
+        )
+        self.assertEqual(bundles[0]["doi"], "10.0/multi")
+        self.assertEqual(bundles[1]["doi"], "10.0/multi")

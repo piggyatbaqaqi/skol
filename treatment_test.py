@@ -1046,5 +1046,160 @@ class TestSourceAnchorsEmission(unittest.TestCase):
         self.assertEqual(plazi_anchors, [])
 
 
+_XFAIL_TAXPUB_ANCHORS = pytest.mark.xfail(
+    reason=(
+        "Trello #401 Phase 1 Commit B: taxpub anchor emission "
+        "implementation lands in follow-up commit."
+    ),
+    strict=True,
+)
+
+
+class TestTaxpubAnchorEmission(unittest.TestCase):
+    """Trello #401 Phase 1 (Commit B): ``Treatment.as_row()`` emits
+    arpha / jats_section / mycobank anchors when a per-treatment
+    taxpub bundle has been attached via ``set_taxpub_anchors``.
+
+    The assembler is responsible for calling ``set_taxpub_anchors``
+    with the bundle extracted from the JATS XML by
+    ``extract_taxpub_anchor_bundles``.  The assembler-level
+    integration is tested separately; this class asserts the
+    Treatment-level emission contract in isolation.
+    """
+
+    def _build_treatment(self, bundle=None):
+        """Minimal Treatment with a Nomenclature line, optionally
+        pre-attached to a taxpub anchor bundle."""
+        fileobj = MockFileObject(
+            doc_id='doc123', ingest={'_id': 'doc123'},
+        )
+        line = Line('[@Foo bar sp. nov.#Nomenclature*]', fileobj)
+        para = Paragraph(
+            labels=[Label('Nomenclature')],
+            lines=[line],
+            paragraph_number=1,
+        )
+        treatment = Treatment()
+        treatment.add_nomenclature(para)
+        if bundle is not None:
+            treatment.set_taxpub_anchors(bundle)
+        return treatment
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_full_bundle_emits_three_kinds(self):
+        """All three fields populated → three anchors emitted."""
+        bundle = {
+            'arpha_uuid': 'BA154B2C-A975-5BFF-BEEA-42184807F9D3',
+            'mycobank_id': '853632',
+            'first_section_id': 'SECID0EGZGK',
+            'doi': '10.3897/mycokeys.108.130565',
+        }
+        anchors = self._build_treatment(bundle).as_row()['source_anchors']
+        self.assertIn(
+            {'kind': 'arpha',
+             'uuid': 'BA154B2C-A975-5BFF-BEEA-42184807F9D3'},
+            anchors,
+        )
+        self.assertIn(
+            {'kind': 'jats_section',
+             'doi': '10.3897/mycokeys.108.130565',
+             'section_id': 'SECID0EGZGK'},
+            anchors,
+        )
+        self.assertIn(
+            {'kind': 'mycobank', 'id': '853632'},
+            anchors,
+        )
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_arpha_only_bundle(self):
+        """Only arpha_uuid populated → only arpha anchor emitted."""
+        bundle = {
+            'arpha_uuid': 'AAAAAAAA-1234-5678-9ABC-DEF012345678',
+            'mycobank_id': None,
+            'first_section_id': None,
+            'doi': None,
+        }
+        anchors = self._build_treatment(bundle).as_row()['source_anchors']
+        arpha = [a for a in anchors if a['kind'] == 'arpha']
+        self.assertEqual(len(arpha), 1)
+        # No other JATS kinds emitted.
+        for kind in ('jats_section', 'mycobank'):
+            self.assertFalse(
+                any(a['kind'] == kind for a in anchors),
+                f"{kind} anchor emitted with null source field",
+            )
+
+    def test_jats_section_needs_both_doi_and_section_id(self):
+        """jats_section is skipped when either doi or section_id is
+        None — the URL construction contract requires both."""
+        for bundle in (
+            {'arpha_uuid': None, 'mycobank_id': None,
+             'first_section_id': 'SECID0AAA', 'doi': None},
+            {'arpha_uuid': None, 'mycobank_id': None,
+             'first_section_id': None,
+             'doi': '10.0/x'},
+        ):
+            anchors = self._build_treatment(bundle).as_row()[
+                'source_anchors'
+            ]
+            self.assertFalse(
+                any(a['kind'] == 'jats_section' for a in anchors),
+                f"jats_section emitted with incomplete bundle {bundle}",
+            )
+
+    def test_bundle_with_all_none_emits_nothing(self):
+        """Bundle where every field is None → no taxpub anchors.
+        Downstream still gets an empty list (or PDF/Plazi from
+        other paths)."""
+        bundle = {
+            'arpha_uuid': None,
+            'mycobank_id': None,
+            'first_section_id': None,
+            'doi': None,
+        }
+        anchors = self._build_treatment(bundle).as_row()['source_anchors']
+        for kind in ('arpha', 'jats_section', 'mycobank'):
+            self.assertFalse(
+                any(a['kind'] == kind for a in anchors),
+            )
+
+    @_XFAIL_TAXPUB_ANCHORS
+    def test_taxpub_combines_with_pdf_and_plazi(self):
+        """Taxpub bundle + PDF page + Plazi UUIDs → all anchors
+        emitted together.  Storage order is not part of the
+        contract (Django serializer imposes policy)."""
+        # Build with all three signal sources.
+        ingest = {
+            '_id': 'doc123',
+            'plazi': {'uuids': ['54496DA047999E86D24CD1B3B71B163D']},
+        }
+        fileobj = MockFileObject(doc_id='doc123', ingest=ingest)
+        fileobj.pdf_page = 3
+        fileobj.pdf_label = '3'
+        line = Line('[@Foo bar sp. nov.#Nomenclature*]', fileobj)
+        para = Paragraph(
+            labels=[Label('Nomenclature')],
+            lines=[line],
+            paragraph_number=1,
+        )
+        treatment = Treatment()
+        treatment.add_nomenclature(para)
+        treatment.set_taxpub_anchors({
+            'arpha_uuid': 'BA154B2C-A975-5BFF-BEEA-42184807F9D3',
+            'mycobank_id': '853632',
+            'first_section_id': 'SECID0EGZGK',
+            'doi': '10.3897/mycokeys.108.130565',
+        })
+
+        anchors = treatment.as_row()['source_anchors']
+        kinds = {a['kind'] for a in anchors}
+        self.assertEqual(
+            kinds,
+            {'pdf', 'plazi', 'arpha', 'jats_section', 'mycobank'},
+        )
+        self.assertEqual(len(anchors), 5)
+
+
 if __name__ == "__main__":
     unittest.main()

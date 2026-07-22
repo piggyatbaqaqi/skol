@@ -199,9 +199,19 @@ class Treatment(object):
         self._nomenclatures = []
         self._section_paragraphs = []
         self._sections = {}
+        self._taxpub_anchor_bundle = None
 
     def add_nomenclature(self, pp: Paragraph) -> None:
         self._nomenclatures.append(pp)
+
+    def set_taxpub_anchors(
+        self, bundle: Optional[Dict[str, Any]],
+    ) -> None:
+        """Skeleton — full emission wiring lands in Trello #401
+        Phase 1 Commit B follow-up.  See ``TestTaxpubAnchorEmission``
+        for the contract.  Stores the bundle for later consumption
+        by ``_build_source_anchors``."""
+        self._taxpub_anchor_bundle = bundle
 
     def add_section(self, label: str, pp: Paragraph) -> None:
         """Add a treatment-section paragraph under the given label string."""
