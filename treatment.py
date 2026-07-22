@@ -111,6 +111,48 @@ def _slim_ingest(
     return {key: ingest.get(key) for key in _ESSENTIAL_INGEST_KEYS}
 
 
+def _build_source_anchors(
+    pp: 'Paragraph',
+    ingest: Optional[Dict[str, Any]],
+) -> List[Dict[str, str]]:
+    """Emit the polymorphic ``source_anchors`` list for one Treatment.
+
+    Trello #401 Phase 1 Commit A covers two anchor kinds:
+
+    - ``pdf``:  emitted when ``pp.pdf_page > 0``.  Payload
+      ``{"kind": "pdf", "page": str(page), "label": pdf_label or
+      str(page)}``.  Page value 0 is the "not tracked" sentinel;
+      no anchor is emitted for it.
+    - ``plazi``:  one entry per UUID in ``ingest.plazi.uuids``.
+      Article-level — every Treatment from the same ingest doc
+      inherits the same UUID list; ``treatment.plazi.org``'s
+      resolver handles per-treatment picking.
+
+    JATS kinds (arpha, jats_section, mycobank) land in Commit B
+    via the taxpub_treatment_extractor.
+
+    Values are stringified for the
+    ``ArrayType(MapType(StringType(), StringType()))`` Spark schema
+    — same convention as span fields.  Storage order is not part
+    of the contract (see docs/source-anchors.md); Django's
+    serializer imposes the priority policy.
+    """
+    anchors: List[Dict[str, str]] = []
+    if pp.pdf_page:
+        page_str = str(pp.pdf_page)
+        anchors.append({
+            "kind": "pdf",
+            "page": page_str,
+            "label": pp.pdf_label if pp.pdf_label else page_str,
+        })
+    plazi_uuids = (
+        (ingest or {}).get("plazi", {}) or {}
+    ).get("uuids") or []
+    for uuid in plazi_uuids:
+        anchors.append({"kind": "plazi", "uuid": str(uuid)})
+    return anchors
+
+
 # Text marker for synthetic ("orphan section") Nomenclature stubs
 # synthesised by ``group_paragraphs`` below when it encounters a
 # treatment-section paragraph (Description, Diagnosis, etc.) without
@@ -289,6 +331,7 @@ class Treatment(object):
             ),
             "attachment_name": attachment_name,
             "synthetic_nomenclature": self.is_synthetic_nomenclature(),
+            "source_anchors": _build_source_anchors(pp, ingest),
         }
         retval.update(section_fields)
         retval.update(span_fields)

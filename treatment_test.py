@@ -931,10 +931,6 @@ class TestAsRowExposesDoi(unittest.TestCase):
         self.assertEqual(row['ingest']['doi'], '10.5678/test.042')
 
 
-@pytest.mark.xfail(
-    reason="source_anchors emission implementation lands in follow-up commit",
-    strict=True,
-)
 class TestSourceAnchorsEmission(unittest.TestCase):
     """Trello #401 Phase 1 (Commit A): ``Treatment.as_row()`` emits a
     polymorphic ``source_anchors`` list.  This commit covers PDF and

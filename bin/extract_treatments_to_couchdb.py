@@ -89,6 +89,10 @@ EXTRACT_SCHEMA = StructType([
     StructField("biology_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("notes_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("figure_caption_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    # Trello #401 Phase 1 Commit A: polymorphic source-anchor list.
+    # Each dict has a "kind" discriminator; payload keys vary per kind.
+    # Values are stringified for MapType(String, String) compatibility.
+    StructField("source_anchors", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("attachment_name", StringType(), True),
     # Phase G.2: True for stub-Nomenclature treatments (orphan
     # Description/Diagnosis blocks).  Recognised by the Django UI to

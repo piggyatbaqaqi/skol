@@ -83,6 +83,7 @@ CSV_COLUMNS: List[str] = [
     'synthetic_nomenclature',
     'n_description_span_gaps',
     'n_populated_fields',
+    'n_source_anchors',
     'predicted_issues',
     'first_line',
 ]
@@ -217,6 +218,7 @@ def build_row(
             'synthetic_nomenclature': False,
             'n_description_span_gaps': 0,
             'n_populated_fields': 0,
+            'n_source_anchors': 0,
         }
         merge_metric = 0
         first_line = ''
@@ -283,6 +285,8 @@ def build_row(
             signals['n_description_span_gaps'],
         'n_populated_fields':
             signals['n_populated_fields'],
+        'n_source_anchors':
+            signals['n_source_anchors'],
         'predicted_issues': issues,
         'first_line': first_line,
     }

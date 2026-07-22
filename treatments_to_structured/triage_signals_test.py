@@ -1048,10 +1048,6 @@ class TestCountPopulatedFields:
 
 
 class TestTreatmentSignals:
-    @pytest.mark.xfail(
-        reason="n_source_anchors key added by follow-up implementation commit",
-        strict=True,
-    )
     def test_full_shape(self) -> None:
         """The composed helper returns all the individual signals
         so the caller can write them as CSV columns."""
@@ -1114,10 +1110,6 @@ class TestTreatmentSignals:
         s = treatment_signals(t)
         assert s['n_populated_fields'] == 1
 
-    @pytest.mark.xfail(
-        reason="n_source_anchors implementation lands in follow-up commit",
-        strict=True,
-    )
     def test_source_anchors_reads_from_treatment(self) -> None:
         """Trello #401 Phase 1: the composed helper reads
         ``source_anchors`` from the treatment dict and reports its
@@ -1133,10 +1125,6 @@ class TestTreatmentSignals:
         s = treatment_signals(t)
         assert s['n_source_anchors'] == 2
 
-    @pytest.mark.xfail(
-        reason="n_source_anchors implementation lands in follow-up commit",
-        strict=True,
-    )
     def test_source_anchors_absent_zero(self) -> None:
         """No ``source_anchors`` key → 0.  Legacy treatments
         (pre-Phase-1) do not carry the field."""

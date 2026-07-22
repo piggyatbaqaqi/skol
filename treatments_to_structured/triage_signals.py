@@ -661,6 +661,7 @@ def treatment_signals(
     desc = treatment.get('description') or ''
     diag = treatment.get('diagnosis') or ''
     desc_spans = treatment.get('description_spans') or []
+    source_anchors = treatment.get('source_anchors') or []
     return {
         'desc_length': len(desc),
         'diag_length': len(diag),
@@ -668,6 +669,7 @@ def treatment_signals(
             count_description_span_gaps(desc_spans),
         'n_populated_fields':
             count_populated_fields(treatment),
+        'n_source_anchors': len(source_anchors),
         'n_diagnosis_headers': count_diagnosis_headers(desc),
         'n_description_headers': count_description_headers(desc),
         'n_repeated_section_headers':
