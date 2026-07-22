@@ -246,6 +246,75 @@ class TestTreatmentAssembler(TestCase):
         self.assertNotIn("LOSER NAME", treatment_text)
 
 
+class TestTaxpubAnchorsEndToEnd(TestCase):
+    """Trello #401 Phase 1 Commit B integration: JATS/TaxPub anchors
+    extracted at the ``taxpub_treatment_extractor`` layer flow all
+    the way through to ``Treatment.as_row()['source_anchors']``.
+
+    Two components run in sequence — the extractor pushes anchor
+    bundles onto ``state.taxpub_treatment_anchors``, and the
+    assembler matches them by document-order index to the produced
+    Treatments before returning.
+    """
+
+    _XML_WITH_ANCHORS = """<?xml version="1.0"?>
+<article xmlns:tp="http://www.plazi.org/taxpub">
+  <front>
+    <article-meta>
+      <article-id pub-id-type="doi">10.3897/mycokeys.108.130565</article-id>
+    </article-meta>
+  </front>
+  <body>
+    <tp:taxon-treatment>
+      <tp:nomenclature>
+        <tp:taxon-name>
+          <object-id content-type="arpha">BA154B2C-A975-5BFF-BEEA-42184807F9D3</object-id>
+          <object-id content-type="mycobank">853632</object-id>
+          <tp:taxon-name-part>Xylaria jichuanii</tp:taxon-name-part>
+        </tp:taxon-name>
+      </tp:nomenclature>
+      <tp:treatment-sec sec-type="etymology" id="SECID0ELWGK">
+        <p>From Prof. Jichuan Kang.</p>
+      </tp:treatment-sec>
+      <tp:treatment-sec sec-type="description" id="SECID0EGZGK">
+        <p>Stromata cylindrical.</p>
+      </tp:treatment-sec>
+    </tp:taxon-treatment>
+  </body>
+</article>
+"""
+
+    def test_end_to_end_jats_anchors_reach_treatment_row(self) -> None:
+        """The extractor pushes an anchor bundle onto state, the
+        assembler consumes it, and the resulting Treatment's
+        source_anchors list contains arpha / jats_section /
+        mycobank entries."""
+        state = PipelineState(
+            doc={
+                "_id": "doc-x",
+                "_attachments": {"article.xml": self._XML_WITH_ANCHORS},
+            },
+        )
+        # Run the two components in the natural order.
+        TaxpubTreatmentExtractor().create_instance().run(state)
+        TreatmentAssembler().create_instance().run(state)
+
+        self.assertEqual(len(state.treatments), 1)
+        anchors = state.treatments[0].as_row()["source_anchors"]
+        kinds = {a["kind"] for a in anchors}
+        self.assertEqual(kinds, {"arpha", "jats_section", "mycobank"})
+        # jats_section picks the FIRST section id in document order
+        # (etymology, above description) so nomenclature stays just
+        # above the viewport.
+        jats_section = next(
+            a for a in anchors if a["kind"] == "jats_section"
+        )
+        self.assertEqual(jats_section["section_id"], "SECID0ELWGK")
+        self.assertEqual(
+            jats_section["doi"], "10.3897/mycokeys.108.130565",
+        )
+
+
 class TestComponentAutoload(TestCase):
     """``MemoryCatalog.load`` picks up all three components in this
     directory under their declared category tags."""

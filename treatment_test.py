@@ -1085,7 +1085,6 @@ class TestTaxpubAnchorEmission(unittest.TestCase):
             treatment.set_taxpub_anchors(bundle)
         return treatment
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_full_bundle_emits_three_kinds(self):
         """All three fields populated → three anchors emitted."""
         bundle = {
@@ -1111,7 +1110,6 @@ class TestTaxpubAnchorEmission(unittest.TestCase):
             anchors,
         )
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_arpha_only_bundle(self):
         """Only arpha_uuid populated → only arpha anchor emitted."""
         bundle = {
@@ -1164,7 +1162,6 @@ class TestTaxpubAnchorEmission(unittest.TestCase):
                 any(a['kind'] == kind for a in anchors),
             )
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_taxpub_combines_with_pdf_and_plazi(self):
         """Taxpub bundle + PDF page + Plazi UUIDs → all anchors
         emitted together.  Storage order is not part of the

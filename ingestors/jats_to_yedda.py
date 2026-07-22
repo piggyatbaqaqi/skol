@@ -542,11 +542,81 @@ def jats_xml_to_tagged_blocks(xml_string: str) -> List[TaggedBlock]:
 def extract_taxpub_anchor_bundles(
     xml_string: str,
 ) -> List[Dict[str, Any]]:
-    """Skeleton — full implementation lands in Trello #401 Phase 1
-    Commit B follow-up.  See ``TestExtractTaxpubAnchorBundles`` for
-    the contract.
+    """Walk the JATS XML and return per-treatment anchor bundles.
+
+    One bundle per ``<tp:taxon-treatment>`` element in document order.
+    Each bundle carries the raw anchor payloads used downstream by
+    :meth:`Treatment.set_taxpub_anchors` (see docs/source-anchors.md
+    Phase 1 Commit B).  Trello #401.
+
+    Bundle shape::
+
+        {
+            "arpha_uuid":       Optional[str],
+            "mycobank_id":      Optional[str],
+            "first_section_id": Optional[str],
+            "doi":              Optional[str],
+        }
+
+    - ``arpha_uuid`` — from ``<object-id content-type="arpha">``
+      inside ``<tp:taxon-name>``.
+    - ``mycobank_id`` — from ``<object-id content-type="mycobank">``.
+    - ``first_section_id`` — the ``id`` attribute of the first
+      ``<tp:treatment-sec>`` element in document order.  Typically
+      the etymology section, which puts the nomenclature just above
+      the viewport for scroll-up UX.
+    - ``doi`` — article-level, from
+      ``<article-id pub-id-type="doi">``.  Same value on every
+      bundle from the same article.
+
+    Missing fields yield ``None`` per key.  Returns an empty list
+    when the article contains no ``<tp:taxon-treatment>`` elements.
     """
-    return []
+    root = strip_ns(ET.fromstring(xml_string))
+
+    doi: Optional[str] = None
+    for article_id in root.iter("article-id"):
+        if article_id.get("pub-id-type") == "doi":
+            doi = (article_id.text or "").strip() or None
+            break
+
+    bundles: List[Dict[str, Any]] = []
+    for treatment_elem in root.iter("taxon-treatment"):
+        arpha_uuid: Optional[str] = None
+        mycobank_id: Optional[str] = None
+        first_section_id: Optional[str] = None
+
+        # ARPHA and MycoBank IDs live inside <tp:nomenclature>/
+        # <tp:taxon-name>/<object-id>.  Scoping the search to the
+        # nomenclature element avoids picking up figure or reference
+        # object-ids further down the treatment.
+        for nom in treatment_elem.iter("nomenclature"):
+            for obj_id in nom.iter("object-id"):
+                content_type = obj_id.get("content-type", "")
+                text = (obj_id.text or "").strip() or None
+                if content_type == "arpha" and arpha_uuid is None:
+                    arpha_uuid = text
+                elif content_type == "mycobank" and mycobank_id is None:
+                    mycobank_id = text
+            # Only inspect the first nomenclature element per
+            # treatment; per TaxPub schema there is exactly one.
+            break
+
+        # First treatment-sec with an id attribute in document order.
+        for sec in treatment_elem.iter("treatment-sec"):
+            sec_id = sec.get("id")
+            if sec_id:
+                first_section_id = sec_id
+                break
+
+        bundles.append({
+            "arpha_uuid": arpha_uuid,
+            "mycobank_id": mycobank_id,
+            "first_section_id": first_section_id,
+            "doi": doi,
+        })
+
+    return bundles
 
 
 def jats_xml_to_yedda(xml_string: str) -> str:

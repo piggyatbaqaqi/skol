@@ -1443,7 +1443,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
         bundles = extract_taxpub_anchor_bundles(xml)
         self.assertEqual(bundles, [])
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_full_bundle_all_kinds(self):
         """All three kinds + DOI present → all populated in bundle."""
         body = _make_treatment_with_ids(
@@ -1463,7 +1462,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
             "doi": "10.3897/mycokeys.108.130565",
         })
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_first_section_id_from_document_order(self):
         """When multiple treatment-sec elements have ids, the FIRST
         in document order is picked — typically etymology, which
@@ -1475,7 +1473,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
         bundles = extract_taxpub_anchor_bundles(xml)
         self.assertEqual(bundles[0]["first_section_id"], "SECID_FIRST")
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_missing_arpha_yields_none(self):
         """No <object-id content-type='arpha'> → arpha_uuid is None."""
         body = _make_treatment_with_ids(
@@ -1487,7 +1484,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
         self.assertIsNone(bundles[0]["arpha_uuid"])
         self.assertEqual(bundles[0]["mycobank_id"], "12345")
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_missing_mycobank_yields_none(self):
         """No <object-id content-type='mycobank'> → mycobank_id is
         None."""
@@ -1499,7 +1495,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
         bundles = extract_taxpub_anchor_bundles(xml)
         self.assertIsNone(bundles[0]["mycobank_id"])
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_missing_sections_yields_none(self):
         """Treatment with no treatment-sec elements → first_section_id
         is None.  Rare — real TaxPub always has at least one."""
@@ -1510,7 +1505,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
         bundles = extract_taxpub_anchor_bundles(xml)
         self.assertIsNone(bundles[0]["first_section_id"])
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_missing_doi_yields_none(self):
         """No <article-id pub-id-type='doi'> → doi is None on every
         bundle in the article."""
@@ -1528,7 +1522,6 @@ class TestExtractTaxpubAnchorBundles(unittest.TestCase):
         bundles = extract_taxpub_anchor_bundles(xml)
         self.assertIsNone(bundles[0]["doi"])
 
-    @_XFAIL_TAXPUB_ANCHORS
     def test_multiple_treatments_one_bundle_each(self):
         """Two treatments → two bundles in document order.  Each
         gets its own arpha_uuid; both share the article's DOI."""

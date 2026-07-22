@@ -84,6 +84,18 @@ class TreatmentAssemblerInstance(ComponentInstance):
             t for t in group_paragraphs(iter(list(filtered)))
             if t.has_nomenclature()
         ]
+        # Trello #401 Phase 1 Commit B: attach per-treatment JATS/
+        # TaxPub anchor bundles by document-order index.  Taxpub
+        # treatments always have nomenclature, so N XML treatments
+        # → N produced Treatments and index matching is safe.  When
+        # the winning contribution is not taxpub (e.g. the
+        # classifier_logistic_v3 path), taxpub_treatment_anchors is
+        # empty and this loop is a no-op.
+        for i, treatment in enumerate(treatments):
+            if i < len(state.taxpub_treatment_anchors):
+                treatment.set_taxpub_anchors(
+                    state.taxpub_treatment_anchors[i],
+                )
         state.treatments = treatments
 
 

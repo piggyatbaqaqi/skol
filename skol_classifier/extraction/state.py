@@ -134,6 +134,18 @@ class PipelineState:
     # of the dispatcher's run.  Empty until the assembler executes.
     treatments: List[Any] = field(default_factory=list)
 
+    # Per-treatment source-anchor bundles extracted from JATS/TaxPub
+    # XML by ``taxpub_treatment_extractor`` via
+    # ``ingestors.jats_to_yedda.extract_taxpub_anchor_bundles``.
+    # Element i corresponds to the i-th ``<tp:taxon-treatment>`` in
+    # document order; the assembler matches by index to the i-th
+    # produced Treatment (safe because taxpub treatments always have
+    # nomenclature → 1:1 correspondence after group_paragraphs).
+    # Trello #401 Phase 1 Commit B.
+    taxpub_treatment_anchors: List[Dict[str, Any]] = field(
+        default_factory=list,
+    )
+
     # ---- Attachments --------------------------------------------------------
 
     def get_attachment(self, name: str) -> bytes:
@@ -197,6 +209,21 @@ class PipelineState:
                 source=source, blocks=blocks, priority=priority,
             )
         )
+
+    def add_taxpub_anchors(
+        self,
+        bundles: List[Dict[str, Any]],
+    ) -> None:
+        """Record per-treatment JATS/TaxPub anchor bundles.
+
+        One entry per ``<tp:taxon-treatment>`` in document order.
+        Consumed by ``treatment_assembler`` after
+        ``group_paragraphs`` — see
+        :meth:`Treatment.set_taxpub_anchors` for the bundle shape.
+
+        Trello #401 Phase 1 Commit B.
+        """
+        self.taxpub_treatment_anchors = list(bundles)
 
     def add_ann_text(
         self,

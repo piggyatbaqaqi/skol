@@ -114,22 +114,32 @@ def _slim_ingest(
 def _build_source_anchors(
     pp: 'Paragraph',
     ingest: Optional[Dict[str, Any]],
+    taxpub_bundle: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, str]]:
     """Emit the polymorphic ``source_anchors`` list for one Treatment.
 
-    Trello #401 Phase 1 Commit A covers two anchor kinds:
+    Trello #401 Phase 1 covers five anchor kinds:
 
-    - ``pdf``:  emitted when ``pp.pdf_page > 0``.  Payload
+    - ``pdf`` (Commit A):  emitted when ``pp.pdf_page > 0``.  Payload
       ``{"kind": "pdf", "page": str(page), "label": pdf_label or
       str(page)}``.  Page value 0 is the "not tracked" sentinel;
       no anchor is emitted for it.
-    - ``plazi``:  one entry per UUID in ``ingest.plazi.uuids``.
+    - ``plazi`` (Commit A):  one entry per UUID in ``ingest.plazi.uuids``.
       Article-level — every Treatment from the same ingest doc
       inherits the same UUID list; ``treatment.plazi.org``'s
       resolver handles per-treatment picking.
-
-    JATS kinds (arpha, jats_section, mycobank) land in Commit B
-    via the taxpub_treatment_extractor.
+    - ``arpha`` (Commit B):  emitted when ``taxpub_bundle['arpha_uuid']``
+      is populated.  Payload ``{"kind": "arpha", "uuid": ...}``.
+      Stored but not yet renderable (needs an ARPHA app key — see
+      docs/source-anchors.md Tier 2).
+    - ``jats_section`` (Commit B):  emitted when BOTH
+      ``taxpub_bundle['first_section_id']`` and ``['doi']`` are
+      populated (URL construction contract needs both).  Payload
+      ``{"kind": "jats_section", "doi": ..., "section_id": ...}``.
+    - ``mycobank`` (Commit B):  emitted when
+      ``taxpub_bundle['mycobank_id']`` is populated.  Payload
+      ``{"kind": "mycobank", "id": ...}``.  Stored but not currently
+      renderable (MycoBank page content is thin — Tier 2).
 
     Values are stringified for the
     ``ArrayType(MapType(StringType(), StringType()))`` Spark schema
@@ -150,6 +160,21 @@ def _build_source_anchors(
     ).get("uuids") or []
     for uuid in plazi_uuids:
         anchors.append({"kind": "plazi", "uuid": str(uuid)})
+    if taxpub_bundle:
+        arpha_uuid = taxpub_bundle.get("arpha_uuid")
+        if arpha_uuid:
+            anchors.append({"kind": "arpha", "uuid": str(arpha_uuid)})
+        section_id = taxpub_bundle.get("first_section_id")
+        doi = taxpub_bundle.get("doi")
+        if section_id and doi:
+            anchors.append({
+                "kind": "jats_section",
+                "doi": str(doi),
+                "section_id": str(section_id),
+            })
+        mycobank_id = taxpub_bundle.get("mycobank_id")
+        if mycobank_id:
+            anchors.append({"kind": "mycobank", "id": str(mycobank_id)})
     return anchors
 
 
@@ -341,7 +366,9 @@ class Treatment(object):
             ),
             "attachment_name": attachment_name,
             "synthetic_nomenclature": self.is_synthetic_nomenclature(),
-            "source_anchors": _build_source_anchors(pp, ingest),
+            "source_anchors": _build_source_anchors(
+                pp, ingest, self._taxpub_anchor_bundle,
+            ),
         }
         retval.update(section_fields)
         retval.update(span_fields)

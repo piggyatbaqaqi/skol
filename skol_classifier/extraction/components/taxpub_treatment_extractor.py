@@ -19,7 +19,10 @@ asks for one.  The actual XML parsing happens inside
 
 from typing import Any, Dict, FrozenSet, Type
 
-from ingestors.jats_to_yedda import jats_xml_to_tagged_blocks
+from ingestors.jats_to_yedda import (
+    extract_taxpub_anchor_bundles,
+    jats_xml_to_tagged_blocks,
+)
 
 from skol_classifier.extraction.catalog import (
     CatalogElementMixin,
@@ -49,6 +52,13 @@ class TaxpubTreatmentExtractorInstance(ComponentInstance):
             blocks=blocks,
             priority=_PRIORITY,
         )
+        # Trello #401 Phase 1 Commit B: also extract per-treatment
+        # anchor bundles (arpha UUID, MycoBank ID, first section
+        # id, article DOI) and push them on the parallel state
+        # channel.  The assembler picks them up and index-matches
+        # to produced Treatments.
+        anchor_bundles = extract_taxpub_anchor_bundles(xml)
+        state.add_taxpub_anchors(anchor_bundles)
 
 
 class TaxpubTreatmentExtractor(CatalogElementMixin, SectionLabeler):
