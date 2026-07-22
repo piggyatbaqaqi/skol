@@ -1048,6 +1048,10 @@ class TestCountPopulatedFields:
 
 
 class TestTreatmentSignals:
+    @pytest.mark.xfail(
+        reason="n_source_anchors key added by follow-up implementation commit",
+        strict=True,
+    )
     def test_full_shape(self) -> None:
         """The composed helper returns all the individual signals
         so the caller can write them as CSV columns."""
@@ -1072,6 +1076,7 @@ class TestTreatmentSignals:
             'synthetic_nomenclature',
             'n_description_span_gaps',
             'n_populated_fields',
+            'n_source_anchors',
         }
         assert set(s.keys()) == expected_keys
 
@@ -1108,6 +1113,36 @@ class TestTreatmentSignals:
         }
         s = treatment_signals(t)
         assert s['n_populated_fields'] == 1
+
+    @pytest.mark.xfail(
+        reason="n_source_anchors implementation lands in follow-up commit",
+        strict=True,
+    )
+    def test_source_anchors_reads_from_treatment(self) -> None:
+        """Trello #401 Phase 1: the composed helper reads
+        ``source_anchors`` from the treatment dict and reports its
+        length as ``n_source_anchors``."""
+        t = {
+            'description': 'Pileus brown 3 cm.',
+            'diagnosis': '',
+            'source_anchors': [
+                {'kind': 'pdf', 'page': '3', 'label': '3'},
+                {'kind': 'plazi', 'uuid': '0A4F6E6CD877...'},
+            ],
+        }
+        s = treatment_signals(t)
+        assert s['n_source_anchors'] == 2
+
+    @pytest.mark.xfail(
+        reason="n_source_anchors implementation lands in follow-up commit",
+        strict=True,
+    )
+    def test_source_anchors_absent_zero(self) -> None:
+        """No ``source_anchors`` key → 0.  Legacy treatments
+        (pre-Phase-1) do not carry the field."""
+        t = {'description': 'Pileus brown 3 cm.', 'diagnosis': ''}
+        s = treatment_signals(t)
+        assert s['n_source_anchors'] == 0
 
     def test_missing_fields_handled(self) -> None:
         """Description or diagnosis may be None or absent."""

@@ -77,9 +77,14 @@ Conventions:
 
 - Kind strings are lowercase snake_case; the set is closed
   (add-only in a follow-up commit — no free-form kinds).
-- Order in the list reflects the extractor's confidence in the
-  anchor — Tier-1 kinds ahead of Tier-2 by convention, so consumers
-  that render only the first-linkable can rely on the ordering.
+- **Storage order is NOT part of the contract.**  The extractor
+  emits whatever the code path produces (roughly insertion order,
+  which is implementation detail).  Priority policy — which anchor
+  should be shown first, used as default, or rendered at all —
+  lives in the Django serializer, not the extractor.  Session
+  decision 2026-07-22: single-authority priority table in Django
+  avoids clients (React, cron scripts, third-party API users) each
+  reimplementing the ordering.
 - Missing/unavailable anchors are omitted, not stored as
   `{"kind": "…", "value": null}`.  An empty list is legal but
   triggers a triage flag (see below).
@@ -87,6 +92,50 @@ Conventions:
   view/renderer knows per-kind URL patterns; the record stores raw
   identifiers.  When `treatment.plazi.org` migrates, we change one
   function, not re-extract 81 k treatments.
+
+### Django serializer contract
+
+The API layer sorts and resolves anchors before serving:
+
+```python
+# django/search/serializers.py (Phase 1c)
+_KIND_PRIORITY = {
+    'pdf': 10, 'plazi': 20, 'jats_section': 30,
+    'mycobank': 90, 'arpha': 100,
+}
+_LINKABLE_KINDS = {'pdf', 'plazi', 'jats_section'}
+
+def resolve_anchors(source_anchors, ingest):
+    ordered = sorted(
+        source_anchors,
+        key=lambda a: _KIND_PRIORITY.get(a['kind'], 999),
+    )
+    return [
+        {'kind': a['kind'],
+         'href':  _href(a, ingest),
+         'label': _label(a)}
+        for a in ordered
+        if a['kind'] in _LINKABLE_KINDS
+    ]
+```
+
+The Treatment JSON delivered to React carries:
+
+```json
+"deep_links": [
+    {"kind": "pdf",   "href": "https://…/article.pdf#page=3",         "label": "Page 3 of PDF"},
+    {"kind": "plazi", "href": "https://treatment.plazi.org/id/0A4F…", "label": "Open at Plazi"}
+]
+```
+
+React iterates and renders `<a href={href}>{label}</a>` per entry.
+It never inspects `kind` for URL construction and never
+reimplements the priority table — flipping the ordering (or
+promoting a Tier-2 kind to linkable) is a single Django commit.
+
+UX shape (ordered list vs primary + secondaries) is a serializer
+concern the API can vary later without extractor changes; Phase 1c
+lands the ordered-list form.
 
 Keep `pdf_page`, `pdf_label`, `empirical_page_number` on the
 Treatment record unchanged for at least one release — the Django

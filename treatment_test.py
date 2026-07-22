@@ -4,6 +4,8 @@ import textwrap
 from typing import List
 import unittest
 
+import pytest
+
 from label import Label
 from line import Line
 from paragraph import Paragraph
@@ -927,6 +929,125 @@ class TestAsRowExposesDoi(unittest.TestCase):
 
         row = treatment.as_row()
         self.assertEqual(row['ingest']['doi'], '10.5678/test.042')
+
+
+@pytest.mark.xfail(
+    reason="source_anchors emission implementation lands in follow-up commit",
+    strict=True,
+)
+class TestSourceAnchorsEmission(unittest.TestCase):
+    """Trello #401 Phase 1 (Commit A): ``Treatment.as_row()`` emits a
+    polymorphic ``source_anchors`` list.  This commit covers PDF and
+    Plazi kinds only; JATS (arpha, jats_section, mycobank) lands in
+    Commit B.  Values are stringified for the ArrayType(MapType(String,
+    String)) Spark schema — same convention as span fields.
+    """
+
+    def _build_treatment(
+        self,
+        pdf_page: int = 0,
+        pdf_label=None,
+        plazi_uuids=None,
+    ):
+        """Minimal Treatment with a single Nomenclature paragraph on a
+        Line whose fileobj carries the requested pdf_page / pdf_label
+        and ingest.plazi.uuids values."""
+        ingest = {'_id': 'doc123'}
+        if plazi_uuids is not None:
+            ingest['plazi'] = {'uuids': plazi_uuids}
+        fileobj = MockFileObject(doc_id='doc123', ingest=ingest)
+        fileobj.pdf_page = pdf_page
+        fileobj.pdf_label = pdf_label
+        line = Line('[@Foo bar sp. nov.#Nomenclature*]', fileobj)
+        para = Paragraph(
+            labels=[Label('Nomenclature')],
+            lines=[line],
+            paragraph_number=1,
+        )
+        treatment = Treatment()
+        treatment.add_nomenclature(para)
+        return treatment
+
+    def test_no_anchors_empty_list(self):
+        """No PDF page marker, no Plazi UUIDs → empty list."""
+        treatment = self._build_treatment()
+        row = treatment.as_row()
+        self.assertEqual(row['source_anchors'], [])
+
+    def test_pdf_anchor_with_page_and_label(self):
+        """pdf_page > 0 with explicit label → one pdf anchor."""
+        treatment = self._build_treatment(pdf_page=3, pdf_label='iii')
+        row = treatment.as_row()
+        self.assertEqual(row['source_anchors'], [
+            {'kind': 'pdf', 'page': '3', 'label': 'iii'},
+        ])
+
+    def test_pdf_anchor_without_label_falls_back_to_page_string(self):
+        """pdf_page > 0 with no pdf_label → label defaults to the
+        stringified page number.  Matches how pdf_page_pattern's group
+        2 was optional in the raw JATS-wrapped marker case (#399)."""
+        treatment = self._build_treatment(pdf_page=77)
+        row = treatment.as_row()
+        self.assertEqual(row['source_anchors'], [
+            {'kind': 'pdf', 'page': '77', 'label': '77'},
+        ])
+
+    def test_no_pdf_anchor_when_page_zero(self):
+        """pdf_page == 0 is the "not tracked" sentinel — the Pensoft
+        pre-#401 shape.  Emit no PDF anchor; the absence is caught
+        downstream by n_source_anchors."""
+        treatment = self._build_treatment(pdf_page=0, pdf_label=None)
+        row = treatment.as_row()
+        self.assertFalse(
+            any(a['kind'] == 'pdf' for a in row['source_anchors']),
+            f"expected no pdf anchor, got {row['source_anchors']}",
+        )
+
+    def test_plazi_anchors_from_ingest_uuids(self):
+        """doc.plazi.uuids[] → one plazi anchor per UUID, in list
+        order.  Article-level anchors — Plazi's resolver handles
+        per-treatment picking (see docs/source-anchors.md)."""
+        uuids = [
+            '0A4F6E6CD877BD32697F3B6BB9EF2AB5',
+            '0E8816DBE87F389A52ABD068AF80F54C',
+        ]
+        treatment = self._build_treatment(plazi_uuids=uuids)
+        row = treatment.as_row()
+        plazi_anchors = [
+            a for a in row['source_anchors'] if a['kind'] == 'plazi'
+        ]
+        self.assertEqual(plazi_anchors, [
+            {'kind': 'plazi', 'uuid': uuids[0]},
+            {'kind': 'plazi', 'uuid': uuids[1]},
+        ])
+
+    def test_pdf_and_plazi_together_both_emitted(self):
+        """Both signals present → both anchors emitted.  Storage
+        order is NOT part of the contract — Django's serializer
+        imposes its own priority policy (see
+        docs/source-anchors.md).  This test asserts membership,
+        not order."""
+        uuid = '54496DA047999E86D24CD1B3B71B163D'
+        treatment = self._build_treatment(
+            pdf_page=1, pdf_label='1', plazi_uuids=[uuid],
+        )
+        anchors = treatment.as_row()['source_anchors']
+        self.assertEqual(len(anchors), 2)
+        self.assertIn(
+            {'kind': 'pdf', 'page': '1', 'label': '1'}, anchors,
+        )
+        self.assertIn({'kind': 'plazi', 'uuid': uuid}, anchors)
+
+    def test_plazi_empty_uuids_no_anchors(self):
+        """doc.plazi present but uuids array empty → no plazi
+        anchors.  Matches the 000ab462 shape in skol_dev where
+        Plazi lookup ran but found no coverage for the article."""
+        treatment = self._build_treatment(plazi_uuids=[])
+        row = treatment.as_row()
+        plazi_anchors = [
+            a for a in row['source_anchors'] if a['kind'] == 'plazi'
+        ]
+        self.assertEqual(plazi_anchors, [])
 
 
 if __name__ == "__main__":
