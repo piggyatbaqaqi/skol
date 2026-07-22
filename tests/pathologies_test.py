@@ -64,12 +64,19 @@ def _actual_flag_prefixes(entry: Dict[str, Any]) -> Set[str]:
         # Populated for taxon_adcb2fcc's §12 fragments case.
         'description_spans':
             entry.get('description_spans', []),
-        # Trello #401 Phase 1: polymorphic source_anchors list.
-        # Legacy entries default to [] (n_source_anchors=0); no
-        # auto-flag fires yet — the §13 gate lands in Commit C once
-        # every kind of emitter is in place.
+        # Trello #401 Phase 1 Commit C: polymorphic source_anchors
+        # list.  Legacy fixture entries predate the §13 gate and
+        # don't carry captured anchor data; defaulting to [] would
+        # false-fire §13 on every one of them.  A non-empty
+        # placeholder (single pdf-kind entry) suppresses the flag
+        # for entries that omit the field.  Real anchor-state
+        # entries can opt in to §13 by setting
+        # ``source_anchors: []`` explicitly.
         'source_anchors':
-            entry.get('source_anchors', []),
+            entry.get(
+                'source_anchors',
+                [{'kind': 'pdf', 'page': '1', 'label': '1'}],
+            ),
     }
     signals = treatment_signals(
         treatment,

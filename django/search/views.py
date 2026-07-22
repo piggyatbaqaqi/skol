@@ -17,6 +17,7 @@ import redis
 import requests
 from requests.auth import HTTPBasicAuth
 
+from .deep_links import resolve_anchors
 from .utils import get_redis_client
 
 logger = logging.getLogger(__name__)
@@ -1209,6 +1210,17 @@ class TreatmentsInfoView(APIView):
                     'PDFDocId': pdf_doc_id,
                     'PDFPage': clean_value(taxa_doc.get('pdf_page')),
                     'PDFLabel': clean_value(taxa_doc.get('pdf_label')),
+                    # Trello #401 Phase 1 Commit C: resolved
+                    # polymorphic deep links (pdf / plazi /
+                    # jats_section), sorted by policy in
+                    # deep_links._KIND_PRIORITY.  Each entry is
+                    # {kind, href, label} — the React side just
+                    # renders <a href>{label}</a> and never
+                    # inspects kind.
+                    'DeepLinks': resolve_anchors(
+                        taxa_doc.get('source_anchors') or [],
+                        taxa_doc.get('ingest'),
+                    ),
                     # Position metadata
                     'LineNumber': clean_value(taxa_doc.get('line_number')),
                     'ParagraphNumber': clean_value(taxa_doc.get('paragraph_number')),

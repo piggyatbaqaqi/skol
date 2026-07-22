@@ -751,6 +751,12 @@ def predicted_issues(
         flags.append('§6:authored_binomial')
     if signals.get('n_description_span_gaps', 0) >= 1:
         flags.append('§12:desc_span_gap')
+    # §13 (Trello #401 Phase 1 Commit C): treatment with zero
+    # source-anchor entries is unlinkable — no PDF page, no Plazi
+    # UUID, no JATS section id, no ARPHA/MycoBank identifier.
+    # Fires as a data-quality signal for review.
+    if signals.get('n_source_anchors', 0) == 0:
+        flags.append('§13:no_source_anchor')
     if merge_metric >= merge_threshold:
         flags.append(f'§6:merge_metric={merge_metric}')
     return '|'.join(flags)

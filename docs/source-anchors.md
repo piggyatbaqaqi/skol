@@ -164,25 +164,30 @@ and `diagnosis` — omission defaults to `[]` and would fire the flag
 
 ## Phased rollout
 
-### Phase 1 — schema + Tier-1 rendering (this session's scope-decision boundary)
+### Phase 1 — schema + Tier-1 rendering (LANDED 2026-07-22)
 
-- Add `source_anchors: List[Dict]` to the Treatment record.
-- Extractor changes:
-  - PDF path (`ingestors/extract_plaintext.py` + `pdf_section_extractor`):
-    emit `{"kind": "pdf", ...}` when the section extractor sees a
-    page marker.
-  - JATS path (`skol_classifier/extraction/components/taxpub_treatment_extractor.py`):
-    emit `{"kind": "arpha", ...}`, `{"kind": "jats_section", ...}`,
-    `{"kind": "mycobank", ...}` from the parsed XML.
-  - Doc-level Plazi UUID promotion: after per-treatment extraction,
-    if `doc.plazi.uuids` is populated, append one `{"kind": "plazi",
-    ...}` per UUID to every treatment from the doc.  (Article-level;
-    the resolver handles per-treatment picking.)
-- Renderer knows `{"pdf", "plazi", "jats_section"}` as linkable; drops
-  `arpha` and `mycobank` for now.
-- Triage signal `n_source_anchors` + flag `§13:no_source_anchor`.
-- Backfill: re-run the `extract_treatments` pipeline step once (same
-  shape as the Trello #399 backfill — ~5 min for 81k treatments).
+- Commit A (`922b236`): ``source_anchors`` schema field in
+  ``EXTRACT_SCHEMA``, PDF + Plazi emitters in
+  ``Treatment.as_row()``, ``n_source_anchors`` triage signal (no
+  flag yet), CSV column in ``bin/triage_treatments.py``.
+- Commit B (`70706d4`): ``extract_taxpub_anchor_bundles`` in
+  ``ingestors/jats_to_yedda.py``, parallel channel via
+  ``PipelineState.taxpub_treatment_anchors``,
+  ``Treatment.set_taxpub_anchors`` called by
+  ``treatment_assembler`` on the assembled treatments, ARPHA /
+  jats_section / MycoBank emission wired into
+  ``_build_source_anchors``.  End-to-end integration test in
+  ``components_test.py``.
+- Commit C: ``§13:no_source_anchor`` triage flag activation +
+  ``django/search/deep_links.py`` resolver (single
+  ``_KIND_PRIORITY`` policy table, per-kind URL construction,
+  Tier-2 kinds filtered out).  Wired into ``TreatmentsInfoView``
+  as the new ``DeepLinks`` response field alongside legacy
+  ``PDFPage``/``PDFLabel``.
+- Backfill: operator runs
+  ``bin/manage_experiment runstep production_v4 extract_treatments --force``
+  to repopulate ``source_anchors`` on the existing 81 k treatments
+  (~5 min, same shape as the Trello #399 backfill).
 
 ### Phase 2 — Tier-2 activation (when credentials or content warrant)
 

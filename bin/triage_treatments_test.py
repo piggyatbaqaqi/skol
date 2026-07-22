@@ -185,6 +185,13 @@ def _clean_treatment() -> Dict[str, Any]:
         ),
         'diagnosis': 'Distinguished from X by brown lamellae.',
         'synthetic_nomenclature': False,
+        # A clean treatment carries at least one deep-link anchor
+        # (Trello #401 Phase 1 Commit C).  Omitting this would
+        # fire §13:no_source_anchor and break the "clean → no
+        # flags" contract of this test fixture.
+        'source_anchors': [
+            {'kind': 'pdf', 'page': '1', 'label': '1'},
+        ],
     }
 
 

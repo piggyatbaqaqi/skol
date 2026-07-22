@@ -1225,6 +1225,10 @@ class TestPredictedIssues:
             'desc_starts_mid_sentence': False,
             'latin_block_count': 1,
             'synthetic_nomenclature': False,
+            # A clean treatment has at least one source anchor
+            # (PDF/Plazi/JATS section/ARPHA/MycoBank); §13 gates
+            # on zero (Trello #401 Phase 1 Commit C).
+            'n_source_anchors': 1,
         }
         assert predicted_issues(signals, merge_metric=3) == ''
 
@@ -1350,6 +1354,43 @@ class TestPredictedIssues:
         }
         result = predicted_issues(signals, merge_metric=0)
         assert '§12:desc_span_gap' in result
+
+    def test_no_source_anchor_flag(self) -> None:
+        """Trello #401 Phase 1 Commit C: n_source_anchors == 0 fires
+        §13:no_source_anchor.  The empty list means the extractor
+        found no way to deep-link this treatment back to its
+        original — a data-quality signal worth reviewing."""
+        signals = {
+            'desc_length': 1500,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 1,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'n_source_anchors': 0,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§13:no_source_anchor' in result
+
+    def test_no_source_anchor_not_fired_when_present(self) -> None:
+        """n_source_anchors >= 1 → flag suppressed.  A treatment
+        with at least one anchor (PDF, Plazi, JATS section, ARPHA,
+        MycoBank) is linkable."""
+        signals = {
+            'desc_length': 1500,
+            'n_diagnosis_headers': 0,
+            'n_description_headers': 0,
+            'n_sp_nov': 1,
+            'n_key_couplets': 0,
+            'desc_starts_mid_sentence': False,
+            'latin_block_count': 0,
+            'synthetic_nomenclature': False,
+            'n_source_anchors': 1,
+        }
+        result = predicted_issues(signals, merge_metric=0)
+        assert '§13:no_source_anchor' not in result
 
     def test_populated_fields_signal_no_flag(self) -> None:
         """n_populated_fields is exposed as a signal for CSV
