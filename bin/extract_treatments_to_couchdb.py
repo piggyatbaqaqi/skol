@@ -826,14 +826,29 @@ class TreatmentExtractor:
         Returns:
             DataFrame with save results (doc_id, success, error_message)
         """
-        from pyspark.sql.functions import col, row_number
+        from pyspark.sql.functions import col, row_number, size
         from pyspark.sql.window import Window
 
-        # Deduplicate by _id to prevent conflicts from duplicate taxa
+        # Deduplicate by _id to prevent conflicts from duplicate taxa.
+        # For is_taxpub docs BOTH extraction paths produce a
+        # Treatment (the Spark partition path via annotate_v4's .ann
+        # AND the G.1 non-Spark sweep via article.xml).  The _id is a
+        # content hash, so both paths produce the same _id.  The
+        # G.1-path row carries the JATS anchor bundle (arpha /
+        # jats_section / mycobank) via _build_source_anchors; the
+        # Spark row has an empty source_anchors list because the
+        # Spark row's dispatcher run never saw article.xml.  Order by
+        # source_anchors size DESC first so the richer G.1 row wins
+        # the dedup on is_taxpub docs; break remaining ties by
+        # smallest line_number (preserving prior behaviour for docs
+        # where only one path ran).  Trello #401 Phase 1 Commit C
+        # backfill discovered the collision on 2026-07-23.
         if deduplicate and "_id" in taxa_df.columns:
             original_count = taxa_df.count()
-            # Keep only the first occurrence of each _id
-            window = Window.partitionBy("_id").orderBy(col("line_number"))
+            window = Window.partitionBy("_id").orderBy(
+                size("source_anchors").desc(),
+                col("line_number"),
+            )
             taxa_df = taxa_df.withColumn("_row_num", row_number().over(window)) \
                             .filter(col("_row_num") == 1) \
                             .drop("_row_num")
