@@ -117,7 +117,10 @@ SKIP_EXISTING=1
 # Reverse-proxy routing probe, just after the daily unattended-upgrade
 # window (Apache restarts ~06:14 — on 2026-06-09 that silently rerouted
 # /skol to CouchDB).  --quiet emits only on failure, so MAILTO is paged
-# when the /skol admin, its static files, or the favicon stop routing.
+# when a route escapes the <Location /> CouchDB catch-all: the landing
+# page at bare '/', the /skol admin, its static files, the favicon, or
+# /brat.  The '/' probe was missing until 2026-08-08, which is how a
+# regression dating from 2026-06-10 survived two months of green runs.
 30 6 * * * skol /opt/skol/bin/prod_smoke_check --quiet
 # Update fungaria registry from Index Herbariorum monthly (1st of each month at 3am)
 0 3 1 * * skol time /opt/skol/bin/manage_fungaria download --expire=0 > ${LOGDIR}/manage-fungaria.log 2>&1
