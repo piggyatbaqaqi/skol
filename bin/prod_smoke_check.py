@@ -42,6 +42,10 @@ class Check:
     path: str
     expect_status: Tuple[int, ...]
     expect_content_type: Optional[str] = None
+    # Marker string the body must contain, matched case-insensitively.
+    # Needed where status and content-type are both too weak to tell a
+    # healthy route from a broken one -- see the landing-page check.
+    expect_body_substring: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -51,12 +55,21 @@ class CheckResult:
     detail: str
 
 
-# The three routes whose proxy precedence the apache upgrade broke, each
-# tied to a specific <Location> escape from the CouchDB catch-all:
+# Each route below is tied to a specific escape from the <Location />
+# CouchDB catch-all, and breaks differently when that escape fails:
+#   /                  -> DocumentRoot (else CouchDB's welcome banner)
 #   /skol/...          -> Django   (else CouchDB "Database does not exist")
 #   /skol/static/...   -> Alias    (else proxied to Django, which 404s)
 #   /favicon.ico       -> Alias    (else CouchDB 404)
 DEFAULT_CHECKS: List[Check] = [
+    # Bare '/' must serve /var/www/skol/index.html from the vhost
+    # DocumentRoot.  Neither field alone can detect the regression:
+    # CouchDB's welcome banner also answers 200, and an Apache error
+    # page is also text/html -- hence the body marker as well.  Matched
+    # case-insensitively, so retitling the page does not raise a false
+    # alarm.  (Regression introduced 2026-06-10, found 2026-08-08.)
+    Check('landing-page', '/', (200,), 'text/html',
+          expect_body_substring='Synoptic Key'),
     # 200 distinguishes Django from CouchDB's 404 "Database does not
     # exist"; no content-type needed here.
     Check('django-admin', '/skol/admin/login/', (200,)),
@@ -78,6 +91,7 @@ def evaluate(
     status: Optional[int],
     content_type: Optional[str],
     error: Optional[str] = None,
+    body: Optional[str] = None,
 ) -> CheckResult:
     """Decide pass/fail for one check from the observed response (pure)."""
     if error is not None:
@@ -92,6 +106,12 @@ def evaluate(
             check, False,
             f'content-type {content_type!r} lacks '
             f'{check.expect_content_type!r}')
+    if (check.expect_body_substring
+            and check.expect_body_substring.lower()
+            not in (body or '').lower()):
+        return CheckResult(
+            check, False,
+            f'body lacks {check.expect_body_substring!r}')
     detail = f'status {status}'
     if content_type:
         detail += f' ({content_type})'
@@ -117,7 +137,10 @@ def run_checks(
             continue
         headers = getattr(resp, 'headers', {}) or {}
         content_type = headers.get('Content-Type', '')
-        results.append(evaluate(check, resp.status_code, content_type))
+        body = getattr(resp, 'text', '') if check.expect_body_substring \
+            else None
+        results.append(
+            evaluate(check, resp.status_code, content_type, body=body))
     return results
 
 

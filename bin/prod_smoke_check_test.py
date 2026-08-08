@@ -6,8 +6,6 @@ import unittest
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -79,21 +77,11 @@ class TestEvaluate(unittest.TestCase):
             evaluate(c, status=302, content_type='text/html').ok)
 
 
-_XFAIL_BODY_SUBSTRING = pytest.mark.xfail(
-    reason=(
-        "2026-08-08: Check.expect_body_substring / evaluate(body=...) "
-        "not yet implemented; lands in the follow-up commit."
-    ),
-    strict=True,
-)
-
-
 class TestEvaluateBodySubstring(unittest.TestCase):
     """A content-type alone cannot tell the landing page from an Apache
     error page or a blank index.html — both are text/html.  So a check
     may also demand a marker string in the body."""
 
-    @_XFAIL_BODY_SUBSTRING
     def test_body_substring_present_passes(self):
         c = Check('root', '/', (200,), 'text/html',
                   expect_body_substring='Synoptic Key')
@@ -101,7 +89,6 @@ class TestEvaluateBodySubstring(unittest.TestCase):
                      body='<title>Coming soon: Synoptic Key Of Life!</title>')
         self.assertTrue(r.ok)
 
-    @_XFAIL_BODY_SUBSTRING
     def test_body_substring_absent_fails(self):
         c = Check('root', '/', (200,), 'text/html',
                   expect_body_substring='Synoptic Key')
@@ -110,7 +97,6 @@ class TestEvaluateBodySubstring(unittest.TestCase):
         self.assertFalse(r.ok)
         self.assertIn('Synoptic Key', r.detail)
 
-    @_XFAIL_BODY_SUBSTRING
     def test_body_substring_is_case_insensitive(self):
         """index.html capitalises it 'Synoptic Key Of Life'; a copy-edit
         to 'of' must not turn the smoke check red."""
@@ -120,14 +106,12 @@ class TestEvaluateBodySubstring(unittest.TestCase):
                      body='SYNOPTIC KEY OF LIFE')
         self.assertTrue(r.ok)
 
-    @_XFAIL_BODY_SUBSTRING
     def test_missing_body_fails_when_substring_demanded(self):
         c = Check('root', '/', (200,), 'text/html',
                   expect_body_substring='Synoptic Key')
         r = evaluate(c, status=200, content_type='text/html', body=None)
         self.assertFalse(r.ok)
 
-    @_XFAIL_BODY_SUBSTRING
     def test_body_ignored_when_not_demanded(self):
         """Checks that do not set expect_body_substring keep passing
         regardless of body — no retrofitting of the other routes."""
@@ -170,19 +154,10 @@ class TestRunChecks(unittest.TestCase):
         self.assertIn('boom', results[0].detail)
 
 
-_XFAIL_BARE_ROOT = pytest.mark.xfail(
-    reason=(
-        "2026-08-08: bare '/' landing-page check not yet in "
-        "DEFAULT_CHECKS; implementation lands in the follow-up commit."
-    ),
-    strict=True,
-)
-
-
 class TestDefaults(unittest.TestCase):
-    """The defaults must cover the three regressions we actually hit:
-    Django reachable under /skol, admin static served by the Alias, and a
-    favicon at the root."""
+    """The defaults must cover the regressions we actually hit: Django
+    reachable under /skol, admin static served by the Alias, a favicon at
+    the root, and the landing page at bare '/'."""
 
     def test_covers_the_three_regressions(self):
         paths = {c.path for c in DEFAULT_CHECKS}
@@ -201,7 +176,6 @@ class TestDefaults(unittest.TestCase):
         self.assertIn(503, brat.expect_status)
         self.assertNotIn(404, brat.expect_status)
 
-    @_XFAIL_BARE_ROOT
     def test_covers_bare_root(self):
         """Bare '/' must serve the DocumentRoot landing page
         (/var/www/skol/index.html), not the CouchDB catch-all.  The
@@ -210,7 +184,6 @@ class TestDefaults(unittest.TestCase):
         script's blind spot let it hide for two months."""
         self.assertIn('/', {c.path for c in DEFAULT_CHECKS})
 
-    @_XFAIL_BARE_ROOT
     def test_bare_root_demands_html_because_status_cannot_tell(self):
         """CouchDB's welcome banner answers '/' with 200 too, so status
         alone cannot detect the regression.  Content-type is the only
@@ -239,7 +212,6 @@ class TestBareRootDiscrimination(unittest.TestCase):
     """The bare-root check must actually distinguish the landing page
     from the CouchDB welcome blob that replaced it."""
 
-    @_XFAIL_BARE_ROOT
     def test_couchdb_welcome_fails_the_root_check(self):
         root = next(c for c in DEFAULT_CHECKS if c.path == '/')
         # What prod really returned on 2026-08-08: 200 + CouchDB JSON.
@@ -247,7 +219,6 @@ class TestBareRootDiscrimination(unittest.TestCase):
                           body=_COUCHDB_WELCOME_BODY)
         self.assertFalse(result.ok)
 
-    @_XFAIL_BARE_ROOT
     def test_landing_page_passes_the_root_check(self):
         root = next(c for c in DEFAULT_CHECKS if c.path == '/')
         result = evaluate(root, status=200,
@@ -255,7 +226,6 @@ class TestBareRootDiscrimination(unittest.TestCase):
                           body=_LANDING_BODY)
         self.assertTrue(result.ok)
 
-    @_XFAIL_BARE_ROOT
     def test_html_error_page_fails_the_root_check(self):
         """The reason we match the body too: a stray Apache error page
         is text/html and would sail past a content-type-only check."""
@@ -264,7 +234,6 @@ class TestBareRootDiscrimination(unittest.TestCase):
                           body='<h1>Apache2 Ubuntu Default Page</h1>')
         self.assertFalse(result.ok)
 
-    @_XFAIL_BARE_ROOT
     def test_run_checks_threads_the_body_through(self):
         """evaluate() only sees a body if run_checks passes resp.text."""
         root = next(c for c in DEFAULT_CHECKS if c.path == '/')
@@ -303,7 +272,7 @@ def _satisfying_session(base_url: str = 'https://h') -> FakeSession:
         f'{base_url}{c.path}': FakeResponse(
             c.expect_status[0],
             c.expect_content_type or 'text/html',
-            getattr(c, 'expect_body_substring', None) or 'ok')
+            c.expect_body_substring or 'ok')
         for c in DEFAULT_CHECKS
     })
 
