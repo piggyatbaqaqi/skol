@@ -272,24 +272,6 @@ class TestWatchAndInstall:
         assert mock_install.call_args[0][0] == [new]
 
 
-_XFAIL_VERSION_SORT = pytest.mark.xfail(
-    reason=(
-        "2026-08-12: get_latest_file sorts lexicographically, so build "
-        "99 beats build 100; version-aware ordering lands in the "
-        "follow-up commit."
-    ),
-    strict=True,
-)
-
-_XFAIL_HEARTBEAT = pytest.mark.xfail(
-    reason=(
-        "2026-08-12: heartbeat_due / format_heartbeat not yet "
-        "implemented; lands in the follow-up commit."
-    ),
-    strict=True,
-)
-
-
 class TestVersionOrdering:
     """Build numbers are decimal, not lexicographic.
 
@@ -299,19 +281,16 @@ class TestVersionOrdering:
     builds 130-136 all have three digits; it returns at 999->1000.
     """
 
-    @_XFAIL_VERSION_SORT
     def test_build_100_beats_build_99(self, tmp_path: Path) -> None:
         old = _deb(tmp_path, "skol_0.9.0-99_all.deb")
         new = _deb(tmp_path, "skol_0.9.0-100_all.deb")
         assert watch_incremental.get_latest_file({old, new}) == new
 
-    @_XFAIL_VERSION_SORT
     def test_build_1000_beats_build_999(self, tmp_path: Path) -> None:
         old = _deb(tmp_path, "skol_0.9.0-999_all.deb")
         new = _deb(tmp_path, "skol_0.9.0-1000_all.deb")
         assert watch_incremental.get_latest_file({old, new}) == new
 
-    @_XFAIL_VERSION_SORT
     def test_upstream_version_ordering(self, tmp_path: Path) -> None:
         old = _deb(tmp_path, "skol_0.9.0-9_all.deb")
         new = _deb(tmp_path, "skol_0.10.0-1_all.deb")
@@ -325,22 +304,18 @@ class TestHeartbeat:
     ambiguity that made a working watcher look broken.
     """
 
-    @_XFAIL_HEARTBEAT
     def test_not_due_before_the_interval(self) -> None:
         assert watch_incremental.heartbeat_due(
             now=100.0, last_emit=80.0, interval=60.0) is False
 
-    @_XFAIL_HEARTBEAT
     def test_due_once_the_interval_has_passed(self) -> None:
         assert watch_incremental.heartbeat_due(
             now=141.0, last_emit=80.0, interval=60.0) is True
 
-    @_XFAIL_HEARTBEAT
     def test_zero_interval_disables_heartbeat(self) -> None:
         assert watch_incremental.heartbeat_due(
             now=1e9, last_emit=0.0, interval=0.0) is False
 
-    @_XFAIL_HEARTBEAT
     def test_message_reports_wait_and_current_newest(
         self, tmp_path: Path
     ) -> None:
@@ -353,7 +328,6 @@ class TestHeartbeat:
         assert "skol_0.9.0-136_all.deb" in msg
         assert "2m" in msg or "125" in msg
 
-    @_XFAIL_HEARTBEAT
     def test_message_names_patterns_still_waiting(
         self, tmp_path: Path
     ) -> None:
@@ -378,7 +352,6 @@ class TestIntegration:
         assert '--postinstall' in result.stdout
         assert '--interval' in result.stdout
 
-    @_XFAIL_HEARTBEAT
     def test_heartbeat_flag_is_documented(self) -> None:
         result = subprocess.run(
             [sys.executable,

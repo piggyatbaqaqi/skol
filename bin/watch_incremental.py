@@ -21,12 +21,12 @@ appear, the latest version (by filename sort) is installed.
 """
 import argparse
 import glob
-import os
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 
 def get_matching_files(pattern: str) -> Set[Path]:
@@ -34,15 +34,74 @@ def get_matching_files(pattern: str) -> Set[Path]:
     return {Path(f) for f in glob.glob(pattern)}
 
 
-def get_latest_file(files: Set[Path]) -> Optional[Path]:
-    """Get the latest file from a set (by name, which works for versioned debs).
+def version_key(name: str) -> List[Any]:
+    """Sort key that orders embedded numbers numerically.
 
-    Debian package names like 'skol_0.1.0-5_all.deb' sort correctly by filename
-    because version numbers are structured for lexicographic sorting.
+    Deb filenames do NOT sort correctly as plain strings: '99' > '100'
+    lexicographically, so a naive max() installs build 99 over build
+    100.  Splitting into digit and non-digit runs and comparing the
+    digit runs as ints fixes that, and handles the upstream version
+    too ('0.10.0' > '0.9.0').
+
+    Non-digit runs compare as strings, digit runs as (1, int) so a
+    number always outranks a letter at the same position without
+    comparing str to int.
+    """
+    parts: List[Any] = []
+    for run in re.findall(r'\d+|\D+', name):
+        if run.isdigit():
+            parts.append((1, int(run)))
+        else:
+            parts.append((0, run))
+    return parts
+
+
+def get_latest_file(files: Set[Path]) -> Optional[Path]:
+    """Get the newest-versioned file from a set.
+
+    "Newest" is by version-aware filename ordering (see version_key),
+    not mtime: the build number is the authority on which package is
+    later, and copying an old deb back in should not outrank it.
     """
     if not files:
         return None
-    return max(files, key=lambda f: f.name)
+    return max(files, key=lambda f: version_key(f.name))
+
+
+def heartbeat_due(now: float, last_emit: float, interval: float) -> bool:
+    """Whether a heartbeat line is owed.  interval <= 0 disables it."""
+    if interval <= 0:
+        return False
+    return (now - last_emit) >= interval
+
+
+def _format_duration(seconds: float) -> str:
+    """Compact human duration: 45s, 2m5s, 1h3m."""
+    total = int(seconds)
+    if total < 60:
+        return f"{total}s"
+    if total < 3600:
+        return f"{total // 60}m{total % 60}s"
+    return f"{total // 3600}h{(total % 3600) // 60}m"
+
+
+def format_heartbeat(
+    patterns: List[str],
+    seen_files: Dict[str, Set[Path]],
+    waited: float,
+) -> str:
+    """One line saying the watcher is alive and what it is holding.
+
+    Printed while nothing is happening, so that a quiet terminal reads
+    as "waiting" rather than "wedged".
+    """
+    parts = []
+    for pattern in patterns:
+        latest = get_latest_file(seen_files.get(pattern, set()))
+        parts.append(f"{Path(pattern).name}="
+                     f"{latest.name if latest else 'none yet'}")
+    return (f"[watch_incremental] waiting {_format_duration(waited)} -- "
+            + ", ".join(parts))
 
 
 def install_packages(
@@ -107,6 +166,7 @@ def watch_and_install(
     postinstall: Optional[str],
     interval: float,
     verbosity: int = 1,
+    heartbeat: float = 60.0,
 ) -> None:
     """Watch glob patterns and install new packages as they appear.
 
@@ -136,6 +196,9 @@ def watch_and_install(
     print(f"[watch_incremental] Watching {len(patterns)} pattern(s), "
           f"checking every {interval}s. Press Ctrl+C to stop.")
     print(f"[watch_incremental] Files present at startup will NOT be installed.")
+
+    started = time.monotonic()
+    last_beat = started
 
     try:
         while True:
@@ -170,6 +233,15 @@ def watch_and_install(
                     postinstall,
                     verbosity,
                 )
+                # An install is its own proof of life; restart the clock
+                # so the next heartbeat measures the new quiet period.
+                last_beat = time.monotonic()
+                continue
+
+            now = time.monotonic()
+            if verbosity >= 1 and heartbeat_due(now, last_beat, heartbeat):
+                print(format_heartbeat(patterns, seen_files, now - started))
+                last_beat = now
 
     except KeyboardInterrupt:
         print("\n[watch_incremental] Stopped.")
@@ -219,6 +291,16 @@ def main() -> int:
         help='Installation command (default: "dpkg -i")',
     )
     parser.add_argument(
+        '--heartbeat',
+        type=float,
+        default=60.0,
+        help=(
+            'Print a "still waiting" line every N seconds while nothing '
+            'is happening, so a quiet watcher is distinguishable from a '
+            'wedged one (default: 60; 0 disables)'
+        ),
+    )
+    parser.add_argument(
         '-v', '--verbosity',
         action='count',
         default=1,
@@ -241,6 +323,7 @@ def main() -> int:
         postinstall=parsed.postinstall,
         interval=parsed.interval,
         verbosity=verbosity,
+        heartbeat=parsed.heartbeat,
     )
 
     return 0
