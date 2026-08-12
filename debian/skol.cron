@@ -121,7 +121,14 @@ SKIP_EXISTING=1
 # REDISCLI_AUTH is used instead of `-a` so the password does not appear
 # in the process list, where any local user could read it off `ps`.
 # The sourced values also override the REDIS_PORT default set above.
-*/5 * * * * skol . /home/skol/.skol_env && REDISCLI_AUTH="${REDIS_PASSWORD}" && REDIS_CACERT="${SKOL_REDIS_CACERT}" /usr/bin/redis-cli --tls -h "${REDIS_HOST}" -p "${REDIS_PORT}" --cacert "${REDIS_CACERT}" --user "${REDIS_USERNAME}" --no-auth-warning save
+#
+# DO NOT put `&&` between REDISCLI_AUTH=... and redis-cli.  Written as
+# `REDISCLI_AUTH=x redis-cli ...` it is a prefix assignment and lands in
+# redis-cli's environment.  Written as `REDISCLI_AUTH=x && redis-cli ...`
+# it becomes a standalone assignment that sets an unexported shell
+# variable and succeeds, so redis-cli then runs with NO credential and
+# the server answers "NOAUTH Authentication required."
+*/5 * * * * skol . /home/skol/.skol_env && REDISCLI_AUTH="${REDIS_PASSWORD}" /usr/bin/redis-cli --tls -h "${REDIS_HOST}" -p "${REDIS_PORT}" --cacert "${REDIS_CACERT}" --user "${REDIS_USERNAME}" --no-auth-warning save
 # Daily admin report at 6am — stdout goes to MAILTO, emails to opted-in users
 0 6 * * * skol /opt/skol/bin/daily_report --send 2>> ${LOGDIR}/daily-report.log
 # Reverse-proxy routing probe, just after the daily unattended-upgrade
