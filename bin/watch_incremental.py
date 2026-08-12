@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Watch for new deb packages and install them incrementally.
 
-Unlike watch_install which watches specific files for changes, this script
-watches glob patterns and installs NEW files that appear. Files present at
-startup are not installed automatically.
+Watches glob patterns and installs NEW files that appear.  Files present
+at startup are recorded as a baseline and are not installed.
+
+Quote the patterns so your shell does not expand them once at launch:
+build-deb.sh increments .build-number on every build, so the package you
+are waiting for has a filename that shell expansion could not know.
 
 Usage:
     watch_incremental [--postinstall=CMD] [--interval=SECS] [--install-cmd=CMD] \

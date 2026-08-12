@@ -261,7 +261,6 @@ for cmd in \
     train_crf_treatment \
     treatments_to_json \
     watch_incremental \
-    watch_install \
 ; do
     ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}
 done
@@ -347,7 +346,7 @@ echo "  Treatments: extract_treatments_to_couchdb, embed_treatments,"
 echo "             treatments_to_json"
 echo "  Pipeline:  manage_experiment, build_vocab_tree, build_sources_stats,"
 echo "             rebuild_redis, manage_fungaria"
-echo "  Ops:       watch_install, watch_incremental, daily_report,"
+echo "  Ops:       watch_incremental, daily_report,"
 echo "             replicate_dbs, replicate_experiment, backfill_plazi_uuids"
 echo "Or use: ${BIN_SYMLINK}/with_skol <command>"
 echo ""
