@@ -246,15 +246,6 @@ class TestWatchLoop:
         assert watch_install.get_mtime(test_file) is None
 
 
-_XFAIL_GLOB = pytest.mark.xfail(
-    reason=(
-        "2026-08-12: pattern globbing (newest_match / scan_once) not yet "
-        "implemented; lands in the follow-up commit."
-    ),
-    strict=True,
-)
-
-
 def _touch(path: Path, mtime: float) -> Path:
     """Create `path` with a controlled mtime, so ordering is exact
     rather than dependent on filesystem timestamp resolution."""
@@ -272,7 +263,6 @@ class TestNewestMatch:
     have known about.
     """
 
-    @_XFAIL_GLOB
     def test_picks_newest_of_several(self, tmp_path: Path) -> None:
         _touch(tmp_path / "skol_0.9.0-133_all.deb", 1000)
         newest = _touch(tmp_path / "skol_0.9.0-134_all.deb", 2000)
@@ -281,19 +271,16 @@ class TestNewestMatch:
         assert watch_install.newest_match(
             str(tmp_path / "skol_*_all.deb")) == newest
 
-    @_XFAIL_GLOB
     def test_no_match_returns_none(self, tmp_path: Path) -> None:
         assert watch_install.newest_match(
             str(tmp_path / "skol_*_all.deb")) is None
 
-    @_XFAIL_GLOB
     def test_literal_path_still_works(self, tmp_path: Path) -> None:
         """A non-glob filename must keep behaving as before -- it is
         just a pattern that matches exactly one file."""
         f = _touch(tmp_path / "skol_0.9.0-134_all.deb", 1000)
         assert watch_install.newest_match(str(f)) == f
 
-    @_XFAIL_GLOB
     def test_ignores_non_matching_packages(self, tmp_path: Path) -> None:
         """skol_*_all.deb must not pick up skol-django_*_all.deb."""
         skol = _touch(tmp_path / "skol_0.9.0-134_all.deb", 1000)
@@ -306,7 +293,6 @@ class TestScanOnce:
     """`scan_once` is one poll of the watch loop: given the patterns and
     the previously-seen state, report what needs installing."""
 
-    @_XFAIL_GLOB
     def test_startup_baseline_installs_nothing(self, tmp_path: Path) -> None:
         """Pre-existing debs must NOT be reinstalled just because the
         watcher started -- that was the original contract."""
@@ -318,7 +304,6 @@ class TestScanOnce:
         assert changed == []
         assert state[pattern] is not None
 
-    @_XFAIL_GLOB
     def test_new_version_appearing_is_installed(self, tmp_path: Path) -> None:
         """THE regression this whole change exists for: a brand-new
         filename lands after the watcher started."""
@@ -331,7 +316,6 @@ class TestScanOnce:
 
         assert changed == [newest]
 
-    @_XFAIL_GLOB
     def test_rebuild_in_place_is_installed(self, tmp_path: Path) -> None:
         """Same filename, newer mtime -- the pre-existing behaviour."""
         f = _touch(tmp_path / "skol_0.9.0-134_all.deb", 1000)
@@ -343,7 +327,6 @@ class TestScanOnce:
 
         assert changed == [f]
 
-    @_XFAIL_GLOB
     def test_unchanged_installs_nothing(self, tmp_path: Path) -> None:
         _touch(tmp_path / "skol_0.9.0-134_all.deb", 1000)
         pattern = str(tmp_path / "skol_*_all.deb")
@@ -353,7 +336,6 @@ class TestScanOnce:
 
         assert changed == []
 
-    @_XFAIL_GLOB
     def test_pattern_matching_nothing_yet_is_tolerated(
         self, tmp_path: Path
     ) -> None:
@@ -370,7 +352,6 @@ class TestScanOnce:
         changed, _ = watch_install.scan_once([pattern], state)
         assert changed == [appeared]
 
-    @_XFAIL_GLOB
     def test_multiple_patterns_batch_into_one_install(
         self, tmp_path: Path
     ) -> None:
@@ -386,7 +367,6 @@ class TestScanOnce:
 
         assert set(changed) == {a, b}
 
-    @_XFAIL_GLOB
     def test_disappearance_resets_without_installing(
         self, tmp_path: Path
     ) -> None:
@@ -405,7 +385,6 @@ class TestQuotedGlobInvocation:
     """The exact command line that failed: quoted globs reaching Python
     unexpanded must now work rather than watching a literal '*' name."""
 
-    @_XFAIL_GLOB
     def test_quoted_glob_is_expanded_by_the_script(
         self, tmp_path: Path
     ) -> None:
