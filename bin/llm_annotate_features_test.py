@@ -20,6 +20,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import llm_annotate_features  # type: ignore[import]  # noqa: E402
 from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     annotate_one_treatment,
     estimate_tokens,
@@ -344,6 +345,16 @@ def _make_mock_count_tokens_client(tokens_per_prompt: int) -> Any:
     return client
 
 
+_XFAIL_PRICING = pytest.mark.xfail(
+    reason=(
+        "2026-08-14: _PRICING carries retired list prices (Opus at "
+        "$15/$75) and the unknown-model fallback is silent; corrected "
+        "table lands in the follow-up commit."
+    ),
+    strict=True,
+)
+
+
 class TestEstimateTokens:
     """Sum input tokens via count_tokens; estimate output + cost."""
 
@@ -368,26 +379,88 @@ class TestEstimateTokens:
         assert stats['total_input_tokens'] == 1500
         assert stats['est_output_tokens'] == 750
 
+    @_XFAIL_PRICING
     def test_cost_calculated_from_pricing_table(self) -> None:
         client = _make_mock_count_tokens_client(1_000_000)
         stats = estimate_tokens(
             client, [('a', 'p')], 'claude-opus-4-7',
         )
-        # 1M input tokens × $15.00/1M = $15.00 input cost
-        # 500k output tokens × $75.00/1M = $37.50 output cost
-        assert stats['est_input_cost_usd'] == 15.00
-        assert stats['est_output_cost_usd'] == 37.50
-        assert stats['est_total_cost_usd'] == 52.50
+        # Opus-tier is $5.00 / $25.00 per MTok, not $15 / $75.
+        # 1M input tokens × $5.00/1M = $5.00 input cost
+        # 500k output tokens × $25.00/1M = $12.50 output cost
+        assert stats['est_input_cost_usd'] == 5.00
+        assert stats['est_output_cost_usd'] == 12.50
+        assert stats['est_total_cost_usd'] == 17.50
 
     def test_unknown_model_uses_sonnet_pricing(self) -> None:
         """Defensive fallback so a typo in --llm-model doesn't crash
-        the estimate; falls back to opus-grade pricing as a
-        conservative upper bound (better to over-estimate)."""
+        the estimate."""
         client = _make_mock_count_tokens_client(1_000_000)
         stats = estimate_tokens(
             client, [('a', 'p')], 'claude-future-99-99',
         )
         assert stats['est_total_cost_usd'] > 0
+
+
+class TestPricingTable:
+    """The table drives the only number an operator reads before
+    committing budget, so a stale row is a silent 3x misquote."""
+
+    @_XFAIL_PRICING
+    def test_opus_tier_is_five_and_twentyfive(self) -> None:
+        for model in ('claude-opus-4-6', 'claude-opus-4-7',
+                      'claude-opus-4-8'):
+            assert llm_annotate_features._PRICING[model] == {
+                'input': 5.00, 'output': 25.00,
+            }, model
+
+    @_XFAIL_PRICING
+    def test_haiku_is_one_and_five(self) -> None:
+        entry = llm_annotate_features._PRICING[
+            'claude-haiku-4-5-20251001']
+        assert entry == {'input': 1.00, 'output': 5.00}
+
+    @_XFAIL_PRICING
+    def test_haiku_alias_resolves(self) -> None:
+        """The catalog lists both the alias and the dated ID; a caller
+        passing --llm-model claude-haiku-4-5 must not silently fall
+        through to the unknown-model default."""
+        assert 'claude-haiku-4-5' in llm_annotate_features._PRICING
+
+    def test_sonnet_is_three_and_fifteen(self) -> None:
+        """Already correct — pinned so a bulk edit can't regress it."""
+        entry = llm_annotate_features._PRICING['claude-sonnet-4-6']
+        assert entry == {'input': 3.00, 'output': 15.00}
+
+    @_XFAIL_PRICING
+    def test_current_generation_models_present(self) -> None:
+        """A caller can name a current model; absent rows silently take
+        the fallback rather than erroring."""
+        for model in ('claude-opus-5', 'claude-sonnet-5'):
+            assert model in llm_annotate_features._PRICING, model
+
+
+class TestUnknownModelPricing:
+    """An unrecognised --llm-model must not quote a confident number."""
+
+    @_XFAIL_PRICING
+    def test_warns_on_stderr(self, capsys: Any) -> None:
+        llm_annotate_features._pricing_for('claude-future-99-99')
+        assert 'claude-future-99-99' in capsys.readouterr().err
+
+    @_XFAIL_PRICING
+    def test_known_model_does_not_warn(self, capsys: Any) -> None:
+        llm_annotate_features._pricing_for('claude-opus-4-7')
+        assert capsys.readouterr().err == ''
+
+    @_XFAIL_PRICING
+    def test_fallback_is_the_most_expensive_row(self) -> None:
+        """Better to over-quote than under-quote: an unknown model
+        should cost at least as much as anything in the table."""
+        fallback = llm_annotate_features._pricing_for('claude-nope')
+        for entry in llm_annotate_features._PRICING.values():
+            assert fallback['input'] >= entry['input']
+            assert fallback['output'] >= entry['output']
 
 
 # ---------------------------------------------------------------------------
