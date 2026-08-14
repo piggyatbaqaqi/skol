@@ -64,6 +64,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_config import common_parser, get_env_config  # noqa: E402
+from llm_pricing import PRICING  # noqa: E402
 
 from treatments_to_structured.brat_render import render  # noqa: E402
 from treatments_to_structured.complexity import (  # noqa: E402
@@ -103,55 +104,6 @@ _SEEDS_DIR = (
     / 'treatments_to_structured'
     / 'seeds'
 )
-
-# Pricing per 1M tokens (USD).  Verified against the model catalog
-# 2026-08-14.  Mirrors bin/llm_relabel.py's _PRICING table -- update
-# both together, or re-check both when one looks wrong.
-#
-# These are list prices and they move.  The 2026-08-14 correction was
-# a 3x overquote: every Opus row still carried $15/$75 from an earlier
-# generation long after Opus-tier settled at $5/$25.  Treat a row
-# older than a model release as suspect.
-#
-# Sonnet 5 is listed at its standard $3/$15, not the introductory
-# $2/$10 that runs through 2026-08-31 -- an estimate that expires is
-# worse than one that over-quotes slightly.
-_PRICING: Dict[str, Dict[str, float]] = {
-    'claude-haiku-4-5': {'input': 1.00, 'output': 5.00},
-    'claude-haiku-4-5-20251001': {'input': 1.00, 'output': 5.00},
-    'claude-sonnet-4-6': {'input': 3.00, 'output': 15.00},
-    'claude-sonnet-5': {'input': 3.00, 'output': 15.00},
-    'claude-opus-4-6': {'input': 5.00, 'output': 25.00},
-    'claude-opus-4-7': {'input': 5.00, 'output': 25.00},
-    'claude-opus-4-8': {'input': 5.00, 'output': 25.00},
-    'claude-opus-5': {'input': 5.00, 'output': 25.00},
-    'claude-fable-5': {'input': 10.00, 'output': 50.00},
-}
-
-
-def _pricing_for(model: str) -> Dict[str, float]:
-    """Per-MTok pricing for ``model``.  Raises if it is unpriced.
-
-    There is deliberately no fallback.  An estimate is the number an
-    operator commits budget on, so an approximation is worse than a
-    stopped run: the previous behaviour applied a hardcoded Opus rate
-    to anything it didn't recognise, which is how a 3x-stale figure
-    survived unnoticed -- the wrong number looked exactly like a right
-    one.  Add the model to _PRICING instead.
-
-    Only reached in --estimate mode, so this can never interrupt a
-    live annotation run.
-    """
-    try:
-        return _PRICING[model]
-    except KeyError:
-        raise ValueError(
-            f"no pricing entry for model {model!r}; refusing to "
-            f"estimate a cost that would be a guess. Known models: "
-            f"{', '.join(sorted(_PRICING))}. Add the model to "
-            f"_PRICING in {__file__} (and the mirrored table in "
-            f"llm_relabel.py) with its list price."
-        ) from None
 
 
 # ---------------------------------------------------------------------------
@@ -373,9 +325,9 @@ def estimate_tokens(
         )
         total_input += result.input_tokens
     est_output = total_input // 2
-    pricing = _pricing_for(model)
-    input_cost = total_input * pricing['input'] / 1_000_000
-    output_cost = est_output * pricing['output'] / 1_000_000
+    pricing = PRICING.for_model(model)
+    input_cost = total_input * pricing.input / 1_000_000
+    output_cost = est_output * pricing.output / 1_000_000
     return {
         'doc_count': len(prompts),
         'total_input_tokens': total_input,
@@ -552,7 +504,7 @@ def annotate_one_treatment(
 
 def _print_estimate(stats: Dict[str, Any], model: str) -> None:
     """Pretty-print an estimate-mode summary to stdout."""
-    pricing = _pricing_for(model)
+    pricing = PRICING.for_model(model)
     print(f"\nToken estimate for {stats['doc_count']} treatment(s):")
     print(
         f"  Input tokens:             "
@@ -567,8 +519,8 @@ def _print_estimate(stats: Dict[str, Any], model: str) -> None:
         f"{stats['est_total_tokens']:>12,}"
     )
     print(
-        f"  Pricing: ${pricing['input']:.2f}/1M input, "
-        f"${pricing['output']:.2f}/1M output"
+        f"  Pricing: ${pricing.input:.2f}/1M input, "
+        f"${pricing.output:.2f}/1M output"
     )
     print(
         f"  Estimated cost (USD):     "

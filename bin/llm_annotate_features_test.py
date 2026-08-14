@@ -20,7 +20,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import llm_annotate_features  # type: ignore[import]  # noqa: E402
 from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     annotate_one_treatment,
     estimate_tokens,
@@ -391,73 +390,6 @@ class TestEstimateTokens:
             estimate_tokens(
                 client, [('a', 'p')], 'claude-future-99-99',
             )
-
-
-class TestPricingTable:
-    """The table drives the only number an operator reads before
-    committing budget, so a stale row is a silent 3x misquote."""
-
-    def test_opus_tier_is_five_and_twentyfive(self) -> None:
-        for model in ('claude-opus-4-6', 'claude-opus-4-7',
-                      'claude-opus-4-8'):
-            assert llm_annotate_features._PRICING[model] == {
-                'input': 5.00, 'output': 25.00,
-            }, model
-
-    def test_haiku_is_one_and_five(self) -> None:
-        entry = llm_annotate_features._PRICING[
-            'claude-haiku-4-5-20251001']
-        assert entry == {'input': 1.00, 'output': 5.00}
-
-    def test_haiku_alias_resolves(self) -> None:
-        """The catalog lists both the alias and the dated ID; a caller
-        passing --llm-model claude-haiku-4-5 must not silently fall
-        through to the unknown-model default."""
-        assert 'claude-haiku-4-5' in llm_annotate_features._PRICING
-
-    def test_sonnet_is_three_and_fifteen(self) -> None:
-        """Already correct — pinned so a bulk edit can't regress it."""
-        entry = llm_annotate_features._PRICING['claude-sonnet-4-6']
-        assert entry == {'input': 3.00, 'output': 15.00}
-
-    def test_current_generation_models_present(self) -> None:
-        """A caller can name a current model; absent rows silently take
-        the fallback rather than erroring."""
-        for model in ('claude-opus-5', 'claude-sonnet-5'):
-            assert model in llm_annotate_features._PRICING, model
-
-
-class TestUnknownModelPricing:
-    """An unrecognised model must fail outright, not be approximated.
-
-    There is no safe default: quoting a neighbouring model's rate is
-    how a 3x-stale figure went unnoticed for months.  Refusing to
-    price is the only outcome that cannot be silently wrong."""
-
-    def test_raises_on_unknown_model(self) -> None:
-        with pytest.raises(ValueError):
-            llm_annotate_features._pricing_for('claude-future-99-99')
-
-    def test_error_names_the_offending_model(self) -> None:
-        with pytest.raises(ValueError, match='claude-future-99-99'):
-            llm_annotate_features._pricing_for('claude-future-99-99')
-
-    def test_error_lists_known_models(self) -> None:
-        """A typo'd --llm-model is the common case; the message should
-        show what it could have meant."""
-        with pytest.raises(ValueError, match='claude-opus-4-7'):
-            llm_annotate_features._pricing_for('claude-opus-4-7-typo')
-
-    def test_known_model_returns_its_row(self) -> None:
-        assert llm_annotate_features._pricing_for('claude-opus-4-7') == {
-            'input': 5.00, 'output': 25.00,
-        }
-
-    def test_no_fallback_entry_exists(self) -> None:
-        """Guard against a future 'default'/'*' row quietly restoring
-        approximate pricing."""
-        for key in ('default', '*', 'unknown'):
-            assert key not in llm_annotate_features._PRICING
 
 
 # ---------------------------------------------------------------------------

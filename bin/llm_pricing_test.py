@@ -153,19 +153,9 @@ class TestShippedTable:
             assert (price.input, price.output) != (15.00, 75.00), model
 
 
-_XFAIL_MIGRATION = pytest.mark.xfail(
-    reason=(
-        "2026-08-14: llm_annotate_features and llm_relabel still carry "
-        "their own _PRICING; the migration lands in the next commit."
-    ),
-    strict=True,
-)
-
-
 class TestSingleSourceOfTruth:
     """The point of the refactor: exactly one table."""
 
-    @_XFAIL_MIGRATION
     def test_consumers_import_rather_than_redefine(self) -> None:
         import llm_annotate_features
         import llm_relabel
