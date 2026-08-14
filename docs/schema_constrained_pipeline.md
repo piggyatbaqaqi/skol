@@ -469,6 +469,49 @@ this work.
    Example: `bin/select_for_annotation --experiment production_v4
    --n 100 --bands low:25,mid:50,high:25` → 100 IDs printed.
 
+   **How banding actually works, and why not to omit it.**
+   `treatments_to_structured.select.select_treatments` sorts the
+   scored population ascending and cuts it into **equal-size slices,
+   one per band entry** — quantiles, not score thresholds.  The band
+   *names* are arbitrary labels; the **order** is what binds each
+   quota to a slice, so the first entry always draws from the
+   lowest-scoring slice.
+
+   Omitting `--bands` is not "no preference" — `_resolve_band_specs`
+   returns a single `('all', n)` band, i.e. one flat random draw
+   across the whole scored population.  **Don't do that**: a uniform
+   draw spends most of the reviewer's time on treatments with little
+   prose to annotate, which is the opposite of what the round is for.
+   Weight toward the top instead; the 25/50/25 above is an
+   illustrative example, not a calibrated recommendation.
+
+   Two protections are automatic and don't need a flag:
+   treatments scoring 0 are filtered out entirely (they lack the
+   prose we'd annotate — this is the ~44%-of-corpus cohort §5 of
+   `data_quality_production_v4_model.md` attributes to
+   `synthetic_nomenclature` false positives), and
+   `--exclude-suspected-merges` defaults **on** at
+   `--merge-threshold 10`, calibrated 2026-07-01.
+
+   For any round after the first, pass `--exclude-annotated` (needs
+   `--experiment`) so the N are N *new* treatments rather than
+   repeats, and `--seed` so the selection is reproducible.  Round 4
+   (2026-08-14) used:
+
+   ```
+   bin/select_for_annotation --experiment production_v4 --n 50 \
+       --bands low:5,mid:15,high:30 --exclude-annotated --seed 4
+   ```
+
+   81,527 scored → 46,045 non-zero → 62 already-annotated dropped →
+   7,632 suspected merges dropped → 38,351 sampled from.  Verified
+   median complexity by band: 61 / 203 / 400.
+
+   Caveat: `--dry-run` is inherited from `common_parser()` and shows
+   up in `--help`, but `select_for_annotation.py` never reads it —
+   the merge filter's `features_status` skip-doc writes happen
+   regardless.  There is no preview mode.
+
 3. **Tiny hand-written schema** — `treatments_to_structured/schemas/pileus.json`.
    One feature, JSON Schema, used as a structural prompt
    ingredient.  Pass A induction is later; for Phase 1 the schema
