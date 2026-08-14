@@ -68,13 +68,41 @@ _DEFAULT_CHUNK_SIZE = 150
 # rather than accepting the partial result via LCS alignment.
 _DEFAULT_MAX_DROP_FRACTION = 0.25
 
-# Pricing per million tokens (as of 2026-03).
-# Only used for --estimate output; not authoritative.
+# Pricing per 1M tokens (USD).  Verified against the model catalog
+# 2026-08-14.  Mirrors bin/llm_annotate_features.py's _PRICING table --
+# update both together.  See that file for why a stale row here is a
+# silent misquote rather than a visible failure.
 _PRICING: Dict[str, Dict[str, float]] = {
-    "claude-haiku-4-5-20251001": {"input": 0.80, "output": 4.00},
+    "claude-haiku-4-5": {"input": 1.00, "output": 5.00},
+    "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},
     "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
-    "claude-opus-4-6": {"input": 15.00, "output": 75.00},
+    "claude-sonnet-5": {"input": 3.00, "output": 15.00},
+    "claude-opus-4-6": {"input": 5.00, "output": 25.00},
+    "claude-opus-4-7": {"input": 5.00, "output": 25.00},
+    "claude-opus-4-8": {"input": 5.00, "output": 25.00},
+    "claude-opus-5": {"input": 5.00, "output": 25.00},
+    "claude-fable-5": {"input": 10.00, "output": 50.00},
 }
+
+
+def _pricing_for(model: str) -> Dict[str, float]:
+    """Per-MTok pricing for ``model``.  Raises if it is unpriced.
+
+    No fallback by design -- see the same helper in
+    llm_annotate_features.py.  Both call sites are inside
+    ``if args.estimate:``, so this cannot interrupt a live run.
+    """
+    try:
+        return _PRICING[model]
+    except KeyError:
+        raise ValueError(
+            f"no pricing entry for model {model!r}; refusing to "
+            f"estimate a cost that would be a guess. Known models: "
+            f"{', '.join(sorted(_PRICING))}. Add the model to "
+            f"_PRICING in {__file__} (and the mirrored table in "
+            f"llm_annotate_features.py) with its list price."
+        ) from None
+
 
 _TAG_DEFINITIONS: List[Tuple[Tag, str]] = [
     (Tag.NOMENCLATURE,
@@ -515,7 +543,7 @@ def estimate_tokens(
     # Output: relabeling returns text of similar length to input
     est_output = total_input
 
-    pricing = _PRICING.get(model, {"input": 3.00, "output": 15.00})
+    pricing = _pricing_for(model)
     input_cost = total_input * pricing["input"] / 1_000_000
     output_cost = est_output * pricing["output"] / 1_000_000
 
@@ -974,7 +1002,7 @@ def main() -> None:
         print(f"  Total tokens (estimate):  {stats['est_total_tokens']:>10,}")
         print()
         print(f"  Model: {args.model}")
-        pricing = _PRICING.get(args.model, {"input": 3.00, "output": 15.00})
+        pricing = _pricing_for(args.model)
         print(
             f"  Pricing: ${pricing['input']:.2f}/1M input, "
             f"${pricing['output']:.2f}/1M output"
