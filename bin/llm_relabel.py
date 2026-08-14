@@ -47,9 +47,9 @@ import couchdb
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from env_config import get_env_config
-from llm_pricing import PRICING
-from ingestors.yedda_tags import Tag
+from env_config import get_env_config  # noqa: E402
+from llm_pricing import PRICING  # noqa: E402
+from ingestors.yedda_tags import Tag  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Constants
