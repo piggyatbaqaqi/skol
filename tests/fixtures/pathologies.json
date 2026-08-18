@@ -631,6 +631,114 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Gaillardinia Q.M. Wang, Yurkov, Boekhout & F.Y. Bai, gen. nov. (yeast genus).  The DESCRIPTION is a clean 272-char anatomical paragraph (\"Sexual reproduction not known. Colonies white, butyrous, smooth. Multilateral budding cells... coenzyme Q-8.\"), starts and ends cleanly, no triage detectors fire.  BUT the treatment as a whole is heavily underextracted vs. operator-supplied complete treatment: (1) Nomenclature \"Gaillardinia Q.M. Wang, Yurkov, Boekhout & F.Y. Bai, gen. nov. — MycoBank MB 852166\" absent (nomenclature=\"\", 4th case of synth-inconsistency in batch-2).  (2) Etymology paragraph (honoring Claude Gaillardin) missing — etymology=\"\".  (3) Type species declaration \"Gaillardinia entomophila (D.B. Scott et al.)...\" missing — type_designation=\"\".  (4) Long phylogenomic discussion paragraph (C. entomophila clade, family Metschnikowiaceae, protein families OG0010431 etc.) missing.  (5) Notes paragraph about differences from Danielozyma and Metahyphopichia missing — notes=\"\".  Silent-failure pattern: no current detector catches this class because each individual field looks \"empty\" and there's no signal comparing extracted-content vs source-content volume.  Detection idea: n_populated_fields threshold or field-vs-source-length ratio, would require plumbing source paragraph counts through.  Also: description=\"Sexual reproduction not known...\" starts with a section-header-like word (\"Sexual\" begins a subsection in the source), suggesting the description extractor picked up ONLY the anatomical-subsection paragraph and dropped everything before + after."
+    },
+    {
+      "id": "taxon_2b793602153da2c98370528e7950159efd9fec7a49d8a4fb79b35f678c3cf6a9",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-15",
+      "captured_rev": "20-f5e9a6ea1d260b778f65161e3862df7d",
+      "class": "§8-flora-chapter-slice-unnumbered-key",
+      "description": "Pileus very thin, submembranous, convex or nearly plane, gregarious, 12-20 mm. broad;\nsurface glabrous, hygrophanous, buff-red and striatulate when moist, grayish or pale-buff when\ndry; lamellae broad, distant, adnate, pale-flesh-colored; spores globose or subglobose, verru-\nculose, 11-13 ja; stipe slender, equal, fibrous, hollow, concolorous, 1.5-3 cm. long, 1-2 mm.\nthick. \n\nPileus fleshy, rather thin, convex or nearly plane, sometimes umbilicate or centrally de-\npressed, solitary, gregarious or cespitóse, 1.2-5 cm. broad; surface hygrophanous, glabrous,\nfurfuraceous or minutely squamulose, pale-red, buff-red or flesh-red when moist, pale-ochra-\nceous, grayish or buff when dry, margin smooth; lamellae rather broad, thick, subdistant,\nadnate or decurrent, flesh-colored or pale flesh-colored; spores globose, verruculose, 8-10 ¡i\\\nstipe long or short, nearly or quite equal, fibrous, firm, straight or flexuous, stuffed, concolorous,\n2.5-7.5 cm. long, 2-6 mm. thick. \n\nPileus fleshy, firm, subhemispheric or convex becoming plane or slightly centrally de-\npressed, often very irregular and very variable in size and shape, solitary or rarely gregarious,\n5-10 cm. broad; surface hygrophanous, purplish-brown when moist, grayish or pale-alutaceous\nwhen dry, unpolished, margin decurved; context edible; lamellae thick, distant, broad, adnate\nor decurrent, purplish; spores globose, verruculose, 8-10 p; stipe variable, short or long, equal\nor sometimes thicker in the middle, sometimes at each end, fibrous, solid, concolorous or paler,\nfirm, 3-8 cm. long, 4-12 mm. thick. \n\nAgaricus (Clitocybe) glaucipes Berk. & Curt. Ann. Mag. Nat. Hist. III. 4: 2.    1859.\nDescribed from Connecticut.    The lamellae are described as white, but were probably dusted\nwith spores.\nA garicus ohiensis Mont. Syll. Crypt. 100. 1856. Collected by Sullivant near Columbus,\nOhio. The lamellae are described as long-decurrent, but this may possibly refer to their \n\nFleshy, putrescent, solitary or gregarious, rarely cespitóse; surface dry or viscid, glabrous\nor inconspicuously decorated with fibrils or scales; context usually thick; lamellae sinuate or\nadnexed, rarely varying to adnate; spores hyaline, usually ellipsoid and smooth; stipe central,\nfleshy, usually stout; veil none or inconspicuous.\nType species, Tricholoma melaleucum (Pers.) Quel. \n\nSurface dry or only slightly viscid, glabrous or indistinctly decorated with\nfibrils or scales.\nSurface of pileus mostly white or pallid.\nSporophore with long, slender stipe and thin pileus, resembling\nCollybia; occurring mostly among grass in the open.\nPileus white, sometimes tinged with yellowish, 5-7.5 cm. broad.\nPileus white, at times brownish on the umbo, 8-14 cm. broad.\nPileus pale-cinereous or grayish-brown, 4-6.5 cm. broad.\nPileus fawn-colored to fuliginous, 3-6 cm. broad.\nSporophore not as above; stipe and pileus more normal for the\ngenus.\nLamellae white, unchanging.\nPileus acutely umbonate.\nPileus obtuse or obtusely umbonate.\nSurface of pileus uniformly white or nearly so.\nSporophores solitary to cespitóse, but not united as\nbelow.\nTaste acrid or bitter.\nPileus whitish or pale-gray, innately fibrillose;\nstipe 2.5-5 cm. long.\nPileus white,  glabrous,  sometimes yellowish\nand  slightly  pruinose  on  the  disk;  stipe\n5-10 cm. long.\nTaste neither acrid nor bitter.\nPileus white tinged with yellow, changing to\nsulfur-yellow when bruised ; stipe with sordid-\nyellow scales.\nPileus not changing as above when bruised.\nSpores large 11-12.5 X7.5 n.\nSpores not more than half as large.\nContext having a pleasant odor.\nTaste mild ; lamellae rather distant.\nTaste farinaceous; lamellae rather\ncrowded.\nContext having the odor of sour dough;\nspecies known only from Alabama.\nSporophores united at the base in a large, fleshy mass;\npilei 2.5-5 cm. broad.\nSurface of pileus white, but distinctly darker or differ-\nently colored at the center.\nLamellae very much crowded.\nPileus small, 2-5 cm. broad ; taste mild.\nPileus larger, 5-12 cm. broad; taste bitter or acrid.\nTaste at first mild, becoming acrid. \n\nTaste bitter, odor farinaceous.\nLamellae of medium distance or moderately close.\nPileus large, 6-14 cm. broad, becoming yellow or\nsaffron-colored when bruised.\nPileus smaller, never over 8 cm. broad, not chang-\ning as above when bruised.\nStipe much enlarged at the base; pileus white\nor yellowish, becoming isabelline to fulvous\non drying.\nStipe distinctly radicate, 4-10 cm. long.\nStipe not as above.\nLamellae transversely striate or venose.\nLamellae not as above.\nSpores 6.5 X5 p.\nSpores 4.5 X3.5 p.\nLamellae subdistant to distant.\nPileus brownish or grayish-brown at the center;\nodor and taste strong and unpleasant.\nPileus reddish-gray at the center; odor and taste\nnot unpleasant.\nLamellae white, changing color with age or on drying.\nSporophore very large; 12-20 cm. broad.\nLamellae becoming pale-salmon or cream-colored; stipe\nattenuate below.\nLamellae becoming dirty-yellowish or brownish; stipe\ndecidedly bulbous.\nSporophore smaller, 10 cm. or less broad; lamellae becoming\ngray, brown, or blackish.\nPileus dingy-white, hygrophanous, usually brownish on\nthe disk, 2.5-5 cm. broad.\nPileus uniformly white or pallid.\nPileus small, 2-3 cm. broad ; lamellae becoming smoky-\nblue or blackish.\nPileus  large,   5•10  cm.  broad;  lamellae becoming\ndingy or tinged with reddish-brown.\nLamellae pallid or yellowish, becoming fulvous or bay with age;\ncontext changing quickly to bright-yellow when bruised.\nLamellae yellow; pileus white, becoming dark with age.\nSurface of pileus mostly some shade of yellow.\nLamellae white, unchanging.\nStipe white, solid.\nStipe white, hollow.\nStipe yellow except at the base, solid.\nLamellae white, becoming tinged with salmon.\nPileus bright-yellow, becoming reddish or variously tinted.\nPileus isabelline, fulvous at the center.\nLamellae white or tinged with pink; odor strong, jessamine-like.\nLamellae white or pale-yellowish, often darker yellow with age.\nGrowing on wood; without characteristic odor. \n\n• Surface of pileus mostly some shade of yellowish-brown or brown.\nLamellae white, unchanging.\nPileus thin, hygrophanous, often splitting at the margin.\nPileus not as above.\nLamellae becoming orange when bruised; pileus 2.5-5 cm.\nbroad.\nLamellae not becoming orange when bruised; pileus 4-12\ncm. broad.\nPileus subcespitose; spores ellipsoid, 5-6 X2-3 p.\nPileus usually cespitóse ; spores globose, 6 p.\nPileus not cespitóse; spores oblong, 7-8 X3 p.\nLamellae  whitish,  at  length  ochraceous;  pileus  grayish-tawny,\n12-20 cm. broad.\nLamellae cinereous, becoming dark-brown or blackish with age or\non drying.\nSpores  oblong-ellipsoid,   7.5X4/*;  species  known  only  from\nNew York.\nSpores subglobose, 6-7.5 p; species known only from Alabama.\nLamellae yellow; pileus only 12 mm. broad.\nSurface of pileus mostly some shade of gray or black.\nLamellae white, unchanging.\nStipe slender, less than 1 cm. thick.\nStipe at least twice as thick.\nTaste disagreeable; spores 5-7 X2•3 p.\nTaste pleasant; spores 7-9X5-6 p.\nLamellae whitish or yellowish, slightly changing at times ; stipe short.\nPileus avellaneous at the center, fading out to nearly white at\nthe margin.\nPileus grayish-brown to blackish-brown, margin concolorous;\ntaste acrid.\nLamellae whitish tinged with blue; pileus small, blackish-brown.\nLamellae avellaneous to umbrinous.\nLamellae avellaneous with a murinous tint; stipe about 5 mm.\nthick.\nLamellae pale-avellaneous,  becoming  smoky-umbrinous; stipe\nabout 10 mm. thick.\nSurface variegated with grayish-tan, brownish, and pinkish-lilac areas;\nstipe white tinged with lilac; lamellae white to discolored.\nSurface of pileus distinctly viscid and often conspicuously decorated.\nSurface glabrous.\nPileus white, at times slightly yellowish at the center.\nLamellae white, scarcely changing on drying.\nLamellae  pallid,   becoming  avellaneous  or  subfuliginous  on \n",
+      "diagnosis": "",
+      "description_spans": [
+        {
+          "paragraph_number": 49,
+          "start_line": 146,
+          "end_line": 150,
+          "start_char": 7137,
+          "end_char": 7534,
+          "pdf_page": 4,
+          "pdf_label": "4",
+          "empirical_page": null
+        },
+        {
+          "paragraph_number": 55,
+          "start_line": 162,
+          "end_line": 168,
+          "start_char": 7974,
+          "end_char": 8594,
+          "pdf_page": 4,
+          "pdf_label": "4",
+          "empirical_page": "2"
+        },
+        {
+          "paragraph_number": 61,
+          "start_line": 182,
+          "end_line": 188,
+          "start_char": 9164,
+          "end_char": 9788,
+          "pdf_page": 4,
+          "pdf_label": "4",
+          "empirical_page": null
+        },
+        {
+          "paragraph_number": 69,
+          "start_line": 201,
+          "end_line": 205,
+          "start_char": 10142,
+          "end_char": 10530,
+          "pdf_page": 5,
+          "pdf_label": "5",
+          "empirical_page": null
+        },
+        {
+          "paragraph_number": 75,
+          "start_line": 216,
+          "end_line": 220,
+          "start_char": 11048,
+          "end_char": 11455,
+          "pdf_page": 5,
+          "pdf_label": "5",
+          "empirical_page": null
+        },
+        {
+          "paragraph_number": 79,
+          "start_line": 228,
+          "end_line": 271,
+          "start_char": 11763,
+          "end_char": 13538,
+          "pdf_page": 5,
+          "pdf_label": "5",
+          "empirical_page": null
+        },
+        {
+          "paragraph_number": 87,
+          "start_line": 294,
+          "end_line": 342,
+          "start_char": 13937,
+          "end_char": 15941,
+          "pdf_page": 6,
+          "pdf_label": "6",
+          "empirical_page": null
+        },
+        {
+          "paragraph_number": 99,
+          "start_line": 420,
+          "end_line": 462,
+          "start_char": 17980,
+          "end_char": 19910,
+          "pdf_page": 7,
+          "pdf_label": "7",
+          "empirical_page": null
+        }
+      ],
+      "source_anchors": [
+        {"kind": "pdf", "label": "4", "page": "4"}
+      ],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§12:desc_span_gap",
+        "§6:authored_binomial",
+        "§6:merge_metric"
+      ],
+      "known_missed_flags": [
+        "§6:multi_structural_anatomy",
+        "§8:key_content_short"
+      ],
+      "notes": "§8 + §6 compound, and the evidence for the hypothesis §8 already states: a slice of a flora chapter carrying three species descriptions (paragraphs 0-2, each opening \"Pileus ...\"), a leaked authored citation (Agaricus (Clitocybe) glaucipes Berk. & Curt.), a partial genus description, and the genus key -- all in one description field of 7875 chars. merge_metric is 39 against a threshold of 10. Two detectors miss it, both deliberately: the key leads carry NO couplet numbering, so n_key_couplets = 0 and §8's own proposed 'numbered-couplet prefix at line start' detector would not catch it either; and §6:multi_structural_anatomy cannot fire because Pileus/Stipe are excluded from _STRUCTURAL_ANATOMY_WATCHLIST for false-positive risk -- three paragraph-start Pileus openers in one description is a counter-example worth weighing against that exclusion. The treatment also has a separately populated 5790-char `key` field, so the key content was extracted AND leaked."
     }
   ]
 }

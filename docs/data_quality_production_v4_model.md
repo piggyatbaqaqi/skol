@@ -826,7 +826,9 @@ two or more distinct species.
       complete authored citation.  Caught by the merge-
       metric filter (metric = 41).
 
-**Affected treatments**: T3, T5, `taxon_592128a8...`.
+**Affected treatments**: T3, T5, `taxon_592128a8...`, `taxon_2b793602...`
+(three species + a partial genus description + the genus key in one
+`description`; written up in §8 because the key half is the novel part).
 
 **Likely stage**: treatment-grouper's species-boundary detection.
 In T3 the boundary lines are `I.` / `3.` numbered headings which
@@ -1091,8 +1093,50 @@ genus; here, key text lands in the wrong field entirely.
   CRF sees numbered-couplet text pointing at a species
   name, route it to `key`, NOT `description` — even when
   the target species matches the treatment's Nomenclature.
+* **`taxon_2b793602...`** — discovered 2026-08-15.  The
+  **Likely stage** hypothesis below, confirmed by example: this
+  is a slice of a flora chapter carrying, in ONE 7875-char
+  `description` field, three species descriptions (paragraphs
+  0–2, each opening `Pileus ...`), a leaked authored citation
+  (`Agaricus (Clitocybe) glaucipes Berk. & Curt.`), a partial
+  genus description, and the genus key.  `merge_metric` is 39
+  against a threshold of 10, so §6 fires — but the key content
+  is invisible to §8 twice over:
 
-**Affected treatments**: `taxon_5b0a8ce7...`; almost certainly
+    * **The key leads carry no couplet numbering.**  They read
+      `Lamellae yellow, unchanging.` / `Pileus
+      pale-honey-yellow; spores 8-9X5.5-6.5 p.` — feature/value
+      pairs with no `15.` / `16.` prefix.  `n_key_couplets` is
+      0, and **detection idea 1 below (numbered-couplet prefix
+      at line start) would not catch this treatment either.**
+      Unnumbered keys need a different signature — telegraphic
+      fragment density, or absence of a finite verb, rather
+      than a line-start numeral.
+    * **`§8:key_content_short` requires `desc_length < 500`.**
+      This description is 7875 chars, so even a working couplet
+      count would not raise the flag.  That heuristic catches
+      key text which has *displaced* the real description, not
+      key text *appended* to it.
+
+  Also worth recording: the three `Pileus`-opening paragraphs
+  do NOT fire `§6:multi_structural_anatomy`, because
+  `_STRUCTURAL_ANATOMY_WATCHLIST` deliberately excludes
+  `Pileus` / `Stipe` for false-positive risk (see
+  `treatments_to_structured/triage_signals.py`).  That
+  exclusion is defensible for one description mentioning a
+  pileus once — but three *paragraph-start* `Pileus` openers in
+  a single field is the exact merge signature the watchlist
+  exists to catch.  Worth weighing as a counter-example when
+  the watchlist migrates to the corpus-derived form in
+  `docs/plans/clade-agnostic-detectors.md`.
+
+  The treatment also has a separately populated 5790-char `key`
+  field, so the key content was extracted to the right place
+  **and** left in the description — duplication, not
+  misrouting.  Fixture class:
+  `§8-flora-chapter-slice-unnumbered-key`.
+
+**Affected treatments**: `taxon_5b0a8ce7...`, `taxon_2b793602...`; almost certainly
 others — the fact that a treatment with `Amanita chlorinosma`
 as its nomenclature ends up with ZERO real description content
 suggests the pattern isn't rare.
