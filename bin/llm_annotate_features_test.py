@@ -67,15 +67,6 @@ class TestLoadSeed:
             load_seed('this_kingdom_does_not_exist_anywhere')
 
 
-_XFAIL_SPOROPHORE = pytest.mark.xfail(
-    reason=(
-        "2026-08-17: seed has no Sporophore entry and still says "
-        "'Sporocarp' in prose; lands in the follow-up commit."
-    ),
-    strict=True,
-)
-
-
 def _canonicalization() -> Dict[str, str]:
     """The hand-maintained drift map, read straight from docs/."""
     path = (
@@ -105,12 +96,10 @@ class TestSeedCanonicalVocabulary:
         overlap = names & set(canon)
         assert not overlap, sorted(overlap)
 
-    @_XFAIL_SPOROPHORE
     def test_seed_has_a_sporophore_entry(self) -> None:
         names = {e['name'] for e in load_seed('fungi')['examples']}
         assert 'Sporophore' in names
 
-    @_XFAIL_SPOROPHORE
     def test_sporophore_entry_names_the_clade_specific_forms(self) -> None:
         """Per the 2026-08-17 decision: use the generic only when the
         treatment is generic; preserve whichever clade-specific term
@@ -123,7 +112,6 @@ class TestSeedCanonicalVocabulary:
         for term in ('Basidiomata', 'Ascomata', 'Conidiomata'):
             assert term in entry['description'], term
 
-    @_XFAIL_SPOROPHORE
     def test_seed_prose_uses_the_canonical_generic(self) -> None:
         seed = load_seed('fungi')
         prose = seed['description'] + ' '.join(

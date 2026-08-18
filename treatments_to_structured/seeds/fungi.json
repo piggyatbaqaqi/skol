@@ -1,10 +1,14 @@
 {
   "name": "fungi",
-  "description": "Seed examples of anatomical features used in mycological treatments. INTENTIONALLY NOT EXHAUSTIVE — the LLM annotator should use these labels when the corresponding feature is described AND should invent similar canonical anatomical names for features not in this list. The labels here cover obvious macro features that recur across Basidiomycota and Ascomycota sporocarp groups. Future taxon-specific seeds (e.g., seeds/plants.json for botanical treatments, seeds/lichens.json for lichenology) drop in next to this file with the same shape; the annotator picks the seed via --feature-set <name>.\n\nOmitted on purpose so we can verify the open-ended part of the prompt works: Hymenophore (boletes / polypores), Odour, Pileipellis / Stipitipellis, Pleurocystidia / Cheilocystidia, Trama variants, Clamp connections.  After the first live run validates Claude invents these, follow-ups may canonicalize a subset by adding them here.",
+  "description": "Seed examples of anatomical features used in mycological treatments. INTENTIONALLY NOT EXHAUSTIVE — the LLM annotator should use these labels when the corresponding feature is described AND should invent similar canonical anatomical names for features not in this list. The labels here cover obvious macro features that recur across Basidiomycota and Ascomycota sporophore groups. Future taxon-specific seeds (e.g., seeds/plants.json for botanical treatments, seeds/lichens.json for lichenology) drop in next to this file with the same shape; the annotator picks the seed via --feature-set <name>.\n\nOmitted on purpose so we can verify the open-ended part of the prompt works: Hymenophore (boletes / polypores), Odour, Pileipellis / Stipitipellis, Pleurocystidia / Cheilocystidia, Trama variants, Clamp connections.  After the first live run validates Claude invents these, follow-ups may canonicalize a subset by adding them here.",
   "examples": [
     {
+      "name": "Sporophore",
+      "description": "The fruiting body as a whole \u2014 use this ONLY when the treatment describes the sporophore generically, or when its clade is not stated.  When the treatment names the clade-specific structure, PRESERVE that term as the label instead: Basidiomata for basidiomycetes, Ascomata for ascomycetes, Conidiomata for asexual conidial structures (and the more specific Pycnidia when the treatment says pycnidium).  Do NOT generalise a clade-specific term to Sporophore, and do NOT guess a clade the treatment does not state.  Habit, overall dimensions, consistency and gross form go here; the individual parts (Pileus, Stipe, Lamellae) get their own labels."
+    },
+    {
       "name": "Pileus",
-      "description": "Sporocarp cap — top surface and underlying flesh (context).  Features like color, shape progression (e.g., 'convex to applanate'), surface texture (tomentose, viscid), and size go here.  NOT pileipellis (cellular cuticle), NOT hymenophore (spore-bearing underside)."
+      "description": "Sporophore cap — top surface and underlying flesh (context).  Features like color, shape progression (e.g., 'convex to applanate'), surface texture (tomentose, viscid), and size go here.  NOT pileipellis (cellular cuticle), NOT hymenophore (spore-bearing underside)."
     },
     {
       "name": "Lamellae",
