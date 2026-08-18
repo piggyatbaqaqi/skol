@@ -67,6 +67,71 @@ class TestLoadSeed:
             load_seed('this_kingdom_does_not_exist_anywhere')
 
 
+_XFAIL_SPOROPHORE = pytest.mark.xfail(
+    reason=(
+        "2026-08-17: seed has no Sporophore entry and still says "
+        "'Sporocarp' in prose; lands in the follow-up commit."
+    ),
+    strict=True,
+)
+
+
+def _canonicalization() -> Dict[str, str]:
+    """The hand-maintained drift map, read straight from docs/."""
+    path = (
+        Path(__file__).resolve().parent.parent
+        / 'docs' / 'feature_label_canonicalization.json'
+    )
+    with path.open() as f:
+        return {
+            k: v for k, v in json.load(f).items()
+            if not k.startswith('_')
+        }
+
+
+class TestSeedCanonicalVocabulary:
+    """The seed is what teaches Claude which label to reach for, so a
+    seed label the canonicalization map immediately rewrites would be
+    self-defeating — and seed *prose* teaches vocabulary just as the
+    labels do.  'Sporocarp cap' in the Pileus description, with no
+    Sporocarp entry to anchor it, is why the corpus ended up split
+    10/8 between Sporophore and Sporocarp."""
+
+    def test_no_seed_label_is_rewritten_by_canonicalization(self) -> None:
+        """Holds today; pinned so a future seed addition can't quietly
+        teach a label we then rewrite."""
+        canon = _canonicalization()
+        names = {e['name'] for e in load_seed('fungi')['examples']}
+        overlap = names & set(canon)
+        assert not overlap, sorted(overlap)
+
+    @_XFAIL_SPOROPHORE
+    def test_seed_has_a_sporophore_entry(self) -> None:
+        names = {e['name'] for e in load_seed('fungi')['examples']}
+        assert 'Sporophore' in names
+
+    @_XFAIL_SPOROPHORE
+    def test_sporophore_entry_names_the_clade_specific_forms(self) -> None:
+        """Per the 2026-08-17 decision: use the generic only when the
+        treatment is generic; preserve whichever clade-specific term
+        the treatment itself uses.  The entry has to say so, or the
+        annotator will generalise."""
+        entry = next(
+            e for e in load_seed('fungi')['examples']
+            if e['name'] == 'Sporophore'
+        )
+        for term in ('Basidiomata', 'Ascomata', 'Conidiomata'):
+            assert term in entry['description'], term
+
+    @_XFAIL_SPOROPHORE
+    def test_seed_prose_uses_the_canonical_generic(self) -> None:
+        seed = load_seed('fungi')
+        prose = seed['description'] + ' '.join(
+            e['description'] for e in seed['examples']
+        )
+        assert 'porocarp' not in prose, 'seed prose still says Sporocarp'
+
+
 # ---------------------------------------------------------------------------
 # resolve_candidate_db_name
 # ---------------------------------------------------------------------------
