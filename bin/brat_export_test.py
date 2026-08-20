@@ -406,15 +406,6 @@ class TestFetchReviewerTouchedIds:
         assert fetch_reviewer_touched_ids(db) == {'taxon_a'}
 
 
-_XFAIL_SKIP_UNANNOTATED = pytest.mark.xfail(
-    reason=(
-        "2026-08-20: --skip-unannotated not implemented; lands in the "
-        "follow-up commit."
-    ),
-    strict=True,
-)
-
-
 class _FakeTreatmentsDb:
     """Stand-in for treatments_prose: membership is all we need to
     tell a typo'd ID from a treatment that simply produced no
@@ -436,7 +427,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
     treatment but has no annotations is dropped with a warning; an ID
     that is not a treatment at all still raises."""
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_default_still_raises_on_empty_treatment(self) -> None:
         """Unchanged behaviour without the flag."""
         db = _FakeAnnDb([{'_id': 'taxon_a:Pileus:0'}])
@@ -447,7 +437,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
                 treatments_db=treatments,
             )
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_skips_empty_treatment(self) -> None:
         db = _FakeAnnDb([{'_id': 'taxon_a:Pileus:0'}])
         treatments = _FakeTreatmentsDb(['taxon_a', 'taxon_empty'])
@@ -460,7 +449,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
         assert result == ['taxon_a']
         assert 'taxon_empty' in warn.getvalue()
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_still_raises_on_a_real_typo(self) -> None:
         """The guard's actual purpose survives the flag: an ID that
         is not a treatment at all is a typo, not an empty result."""
@@ -474,7 +462,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
             )
         assert 'taxon_typo' in str(exc.value)
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_typo_reported_even_alongside_an_empty(self) -> None:
         """A typo must not be masked by a legitimately empty ID in
         the same batch, and the message must name only the typo."""
@@ -490,7 +477,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
         assert 'taxon_typo' in msg
         assert 'taxon_empty' not in msg
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_preserves_order_of_survivors(self) -> None:
         db = _FakeAnnDb([
             {'_id': 'taxon_a:Pileus:0'},
@@ -504,7 +490,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
         )
         assert result == ['taxon_c', 'taxon_a']
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_all_empty_raises_rather_than_exporting_nothing(
         self,
     ) -> None:
@@ -519,7 +504,6 @@ class TestSelectTreatmentIdsSkipUnannotated:
             )
         assert 'no annotations' in str(exc.value)
 
-    @_XFAIL_SKIP_UNANNOTATED
     def test_without_treatments_db_cannot_distinguish(self) -> None:
         """Refuse to guess: skipping blindly would silently swallow
         the typos the guard exists to catch."""

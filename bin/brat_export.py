@@ -38,6 +38,13 @@ Usage::
         --output-dir /tmp/review/ \\
         --doc-id taxon_841d5cbed,taxon_2114314b
 
+    # Export exactly one annotation round, tolerating the treatments
+    # the annotator returned no spans for:
+    bin/brat_export --experiment production_v4 \\
+        --output-dir /path/to/brat/data/skol_segments/round4/ \\
+        --skip-unannotated \\
+        --doc-id "$(paste -sd, data/annotation_rounds/round4.txt)"
+
     # Re-export the hand-reviewed state (after one round of review):
     bin/brat_export --experiment production_v4 \\
         --output-dir /tmp/review_round_2/ --source hand
@@ -47,7 +54,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, TextIO
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -203,6 +210,10 @@ def render_annotation_conf(entity_types: List[str]) -> str:
 def select_treatment_ids(
     annotations_db: Any,
     doc_id_filter: Optional[List[str]],
+    *,
+    skip_unannotated: bool = False,
+    treatments_db: Any = None,
+    warn_stream: TextIO = sys.stderr,
 ) -> List[str]:
     """Decide which treatment IDs to export.
 
@@ -210,6 +221,25 @@ def select_treatment_ids(
     in the source DB.  With ``--doc-id``: just those IDs (raises
     if any of them have no annotations, so the operator catches
     typos immediately).
+
+    ``skip_unannotated`` relaxes that last rule for the one case it
+    gets wrong.  An ID with no annotations is usually a typo — but
+    it is also what a treatment looks like when the annotator ran
+    successfully and Claude returned no spans (``annotation_count:
+    0``).  The strict check cannot tell them apart, so a single
+    empty treatment fails a whole round's export.
+
+    With the flag, ``treatments_db`` decides: an ID that IS a
+    treatment but has no annotations is dropped with a warning; an
+    ID that is not a treatment at all is still a typo and still
+    raises.  The guard keeps doing its real job.
+
+    Raises:
+        ValueError: on a typo, on an empty source DB, if every
+            requested ID turned out to be unannotated (an empty
+            export directory reads as success), or if
+            ``skip_unannotated`` is set without a
+            ``treatments_db`` to distinguish the two cases.
     """
     all_ids = list_annotated_treatment_ids(annotations_db)
     if doc_id_filter is None:
@@ -220,12 +250,39 @@ def select_treatment_ids(
         return all_ids
     all_set = set(all_ids)
     missing = [t for t in doc_id_filter if t not in all_set]
-    if missing:
+    if not missing:
+        return [t for t in doc_id_filter]
+
+    if not skip_unannotated:
         raise ValueError(
             f"--doc-id {missing!r} have no annotations in the "
             f"source DB"
         )
-    return [t for t in doc_id_filter]
+    if treatments_db is None:
+        raise ValueError(
+            "--skip-unannotated needs the treatments_prose DB to "
+            "tell a typo'd ID from a treatment that produced no "
+            "annotations; refusing to skip blindly"
+        )
+    # An ID present in treatments_prose is a real treatment that
+    # simply yielded nothing; anything else is a typo.
+    unknown = [t for t in missing if t not in treatments_db]
+    if unknown:
+        raise ValueError(
+            f"--doc-id {unknown!r} are not treatments in the "
+            f"treatments_prose DB (typo?)"
+        )
+    print(
+        f"  --skip-unannotated: dropped {len(missing)} treatment(s) "
+        f"with no annotations: {', '.join(missing)}",
+        file=warn_stream,
+    )
+    surviving = [t for t in doc_id_filter if t in all_set]
+    if not surviving:
+        raise ValueError(
+            "every --doc-id had no annotations; nothing to export"
+        )
+    return surviving
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +326,19 @@ def main() -> int:
             'in brat gives a clean queue with no already-done '
             'work to skip past.  No-op when --source hand '
             '(everything would be excluded).'
+        ),
+    )
+    parser.add_argument(
+        '--skip-unannotated', action='store_true',
+        help=(
+            'With --doc-id: drop requested treatments that have '
+            'no annotations, instead of failing.  Without this, '
+            'any ID lacking annotations is an error, so that a '
+            'typo is caught immediately — but a treatment the '
+            'annotator legitimately produced no spans for looks '
+            'identical, and one of those fails a whole round. '
+            'Typos are still caught: an ID that is not in '
+            'treatments_prose at all still errors out.'
         ),
     )
     args = parser.parse_args()
@@ -348,6 +418,8 @@ def main() -> int:
     try:
         treatment_ids = select_treatment_ids(
             source_db, doc_id_filter,
+            skip_unannotated=args.skip_unannotated,
+            treatments_db=treatments_db,
         )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
