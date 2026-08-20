@@ -98,6 +98,7 @@ done
 echo "Copying cron configuration..."
 mkdir -p staging/etc/cron.d
 cp debian/skol.cron staging/etc/cron.d/skol
+chmod u=rwx,g=rx,o=r staging/etc/cron.d/skol
 
 # Copy ontology files
 echo "Copying ontology files..."
