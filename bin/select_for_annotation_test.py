@@ -442,15 +442,6 @@ class TestApplyMergeFilter:
         assert surviving == [('taxon_c', 0.9), ('taxon_b', 0.7)]
 
 
-_XFAIL_OUTPUT = pytest.mark.xfail(
-    reason=(
-        "2026-08-20: default_output_path / --output not implemented; "
-        "lands in the follow-up commit."
-    ),
-    strict=True,
-)
-
-
 class TestDefaultOutputPath:
     """A selection is the only record of which treatments a round
     covered, and `--exclude-annotated` reads the candidate DB live —
@@ -458,13 +449,11 @@ class TestDefaultOutputPath:
     same 50.  The selection must therefore persist somewhere durable
     by default, not rely on the operator redirecting stdout."""
 
-    @_XFAIL_OUTPUT
     def test_first_round_is_round1(self, tmp_path: Path) -> None:
         p = select_for_annotation.default_output_path(
             'production_v4', tmp_path)
         assert p == tmp_path / 'production_v4_round1.txt'
 
-    @_XFAIL_OUTPUT
     def test_next_free_round_number(self, tmp_path: Path) -> None:
         for n in (1, 2, 3):
             (tmp_path / f'production_v4_round{n}.txt').write_text('x')
@@ -472,7 +461,6 @@ class TestDefaultOutputPath:
             'production_v4', tmp_path)
         assert p == tmp_path / 'production_v4_round4.txt'
 
-    @_XFAIL_OUTPUT
     def test_never_clobbers_an_existing_selection(
         self, tmp_path: Path
     ) -> None:
@@ -484,7 +472,6 @@ class TestDefaultOutputPath:
             'production_v4', tmp_path)
         assert not p.exists()
 
-    @_XFAIL_OUTPUT
     def test_experiments_are_numbered_independently(
         self, tmp_path: Path
     ) -> None:
@@ -493,28 +480,32 @@ class TestDefaultOutputPath:
             'production_v3_hand', tmp_path)
         assert p == tmp_path / 'production_v3_hand_round1.txt'
 
-    @_XFAIL_OUTPUT
-    def test_gap_in_numbering_is_filled(self, tmp_path: Path) -> None:
-        """Deleting round2 shouldn't push the next selection to
-        round4 and leave a permanent hole."""
+    def test_numbering_continues_past_a_gap(self, tmp_path: Path) -> None:
+        """Round numbers are sequential history, not free slots.
+
+        An earlier draft filled the lowest gap, which broke on the
+        real directory: rounds 1-3 happened but were never captured
+        as files, so the first run after round4 landed would have
+        been numbered round1.  Continue past the highest instead —
+        a missing file means that round's selection wasn't kept, not
+        that the number is available.
+        """
         for n in (1, 3):
             (tmp_path / f'production_v4_round{n}.txt').write_text('x')
         p = select_for_annotation.default_output_path(
             'production_v4', tmp_path)
-        assert p == tmp_path / 'production_v4_round2.txt'
+        assert p == tmp_path / 'production_v4_round4.txt'
 
 
 class TestWriteSelection:
     """Writing must not break the documented stdout pipe into
     bin/llm_annotate_features."""
 
-    @_XFAIL_OUTPUT
     def test_writes_one_id_per_line(self, tmp_path: Path) -> None:
         out = tmp_path / 'sel.txt'
         select_for_annotation.write_selection(['a', 'b', 'c'], out)
         assert out.read_text() == 'a\nb\nc\n'
 
-    @_XFAIL_OUTPUT
     def test_creates_parent_directory(self, tmp_path: Path) -> None:
         out = tmp_path / 'nested' / 'deeper' / 'sel.txt'
         select_for_annotation.write_selection(['a'], out)

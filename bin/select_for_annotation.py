@@ -24,10 +24,19 @@ into the bootstrap annotator (Phase 1 deliverable 5):
 
     bin/select_for_annotation --experiment production_v4 --n 100 \\
         | bin/llm_annotate_features --experiment production_v4
+
+The same IDs are ALSO written to
+``data/annotation_rounds/<experiment>_round<N>.txt`` (override with
+``--output``).  That file is the durable record of what a round
+covered — necessary because a selection stops being reproducible
+from ``--seed`` as soon as the annotator runs: ``--exclude-annotated``
+reads the candidate DB live, so the same command afterwards returns a
+different set.
 """
 
 import argparse
 import random
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
@@ -208,6 +217,49 @@ def apply_merge_filter(
     return surviving, newly_flagged
 
 
+_SELECTIONS_DIR = (
+    Path(__file__).resolve().parent.parent / 'data' / 'annotation_rounds'
+)
+
+
+def default_output_path(experiment: str, base_dir: Path) -> Path:
+    """Next unused ``{experiment}_round{N}.txt`` under ``base_dir``.
+
+    A selection is the only durable record of which treatments a
+    round covered, and it stops being reproducible from ``--seed``
+    the moment the annotator runs: ``--exclude-annotated`` reads the
+    candidate DB live, so re-running the same command afterwards
+    yields a different set.  Hence a default path rather than
+    relying on the operator to redirect stdout.
+
+    Numbering is per-experiment and continues past the highest file
+    present, rather than filling the lowest gap.  Round numbers are
+    sequential history, not free slots: rounds 1-3 of production_v4
+    happened before selections were kept as files, so gap-filling
+    would have numbered the run after round4 as round1.  A missing
+    file means that round's selection wasn't captured, not that the
+    number is available.
+
+    Never returns a path that already exists, so a past round cannot
+    be clobbered.
+    """
+    existing = [
+        int(m.group(1))
+        for p in base_dir.glob(f'{experiment}_round*.txt')
+        if (m := re.fullmatch(
+            rf'{re.escape(experiment)}_round(\d+)\.txt', p.name))
+    ]
+    return base_dir / f'{experiment}_round{max(existing, default=0) + 1}.txt'
+
+
+def write_selection(treatment_ids: List[str], path: Path) -> None:
+    """Write one treatment ID per line, creating parent dirs."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('w') as f:
+        for treatment_id in treatment_ids:
+            f.write(f'{treatment_id}\n')
+
+
 def _resolve_band_specs(
     bands_flag: str,
     n: int,
@@ -255,6 +307,19 @@ def main() -> int:
         help=(
             "Random seed for reproducibility.  Omit for "
             "nondeterministic sampling."
+        ),
+    )
+    parser.add_argument(
+        '--output', default=None, metavar='PATH',
+        help=(
+            'Write the selection here, one treatment ID per line.  '
+            'Default: data/annotation_rounds/'
+            '<experiment>_round<N>.txt with the next free N.  IDs '
+            'are still written to stdout as well, so the pipe into '
+            'bin/llm_annotate_features keeps working.  The file is '
+            'the durable record of what a round covered: once the '
+            'annotator has run, --exclude-annotated makes the same '
+            '--seed produce a different selection.'
         ),
     )
     parser.add_argument(
@@ -500,6 +565,20 @@ def main() -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    if args.output:
+        out_path = Path(args.output)
+    else:
+        out_path = default_output_path(
+            config.get('experiment_name') or 'selection',
+            _SELECTIONS_DIR,
+        )
+    write_selection(selected, out_path)
+    if verbosity >= 1:
+        print(
+            f"  Selection written to {out_path}",
+            file=sys.stderr,
+        )
 
     for treatment_id in selected:
         print(treatment_id)
