@@ -69,13 +69,30 @@ is also the flora-chapter-slice pathology recorded in
 happen to be per-round, which is what made the reconstruction
 possible.
 
-**`production_v4_round4/` is cumulative** — 109 treatments, being all
-62 from rounds 1–3 plus the 47 of round 4 that produced annotations.
 `bin/brat_export` exports every treatment the annotator has annotated
 unless restricted with `--doc-id`, so a directory name matching a
-round does not imply its contents are that round. Pass
-`--doc-id "$(paste -sd, production_v4_roundN.txt)"` to scope an export
-to one round.
+round does not imply its contents are that round. The first round-4
+export was made without `--doc-id` and came out cumulative — 109
+treatments, all 62 from rounds 1–3 plus the 47 of round 4 that
+produced annotations. It is preserved as
+`erroneous_production_v4_round4/`.
+
+To scope an export to exactly one round:
+
+```sh
+bin/brat_export --experiment production_v4 \
+    --output-dir .../skol_segments/production_v4_roundN/ \
+    --skip-unannotated \
+    --doc-id "$(paste -sd, data/annotation_rounds/production_v4_roundN.txt)"
+```
+
+`--skip-unannotated` is needed because `--doc-id` otherwise fails if
+*any* requested ID has no annotations. That check exists to catch
+typos, and it cannot tell a typo from a treatment the annotator
+legitimately returned no spans for — round 4 has 3 of the latter, and
+they were failing the whole batch. With the flag, an ID that is a real
+treatment but unannotated is dropped with a warning; an ID that is not
+a treatment at all still errors out, so typos are still caught.
 
 ## Adding a round
 
