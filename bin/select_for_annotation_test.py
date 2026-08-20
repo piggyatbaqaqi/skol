@@ -16,6 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import select_for_annotation  # type: ignore[import]  # noqa: E402
 from select_for_annotation import (  # type: ignore[import]  # noqa: E402
     _resolve_band_specs,
     apply_merge_filter,
@@ -439,3 +440,82 @@ class TestApplyMergeFilter:
             scored, metrics, threshold=10, already_flagged=set(),
         )
         assert surviving == [('taxon_c', 0.9), ('taxon_b', 0.7)]
+
+
+_XFAIL_OUTPUT = pytest.mark.xfail(
+    reason=(
+        "2026-08-20: default_output_path / --output not implemented; "
+        "lands in the follow-up commit."
+    ),
+    strict=True,
+)
+
+
+class TestDefaultOutputPath:
+    """A selection is the only record of which treatments a round
+    covered, and `--exclude-annotated` reads the candidate DB live —
+    so once the annotator runs, the same seed no longer reproduces the
+    same 50.  The selection must therefore persist somewhere durable
+    by default, not rely on the operator redirecting stdout."""
+
+    @_XFAIL_OUTPUT
+    def test_first_round_is_round1(self, tmp_path: Path) -> None:
+        p = select_for_annotation.default_output_path(
+            'production_v4', tmp_path)
+        assert p == tmp_path / 'production_v4_round1.txt'
+
+    @_XFAIL_OUTPUT
+    def test_next_free_round_number(self, tmp_path: Path) -> None:
+        for n in (1, 2, 3):
+            (tmp_path / f'production_v4_round{n}.txt').write_text('x')
+        p = select_for_annotation.default_output_path(
+            'production_v4', tmp_path)
+        assert p == tmp_path / 'production_v4_round4.txt'
+
+    @_XFAIL_OUTPUT
+    def test_never_clobbers_an_existing_selection(
+        self, tmp_path: Path
+    ) -> None:
+        """Overwriting a past round would destroy the only record of
+        what it covered."""
+        for n in range(1, 6):
+            (tmp_path / f'production_v4_round{n}.txt').write_text('x')
+        p = select_for_annotation.default_output_path(
+            'production_v4', tmp_path)
+        assert not p.exists()
+
+    @_XFAIL_OUTPUT
+    def test_experiments_are_numbered_independently(
+        self, tmp_path: Path
+    ) -> None:
+        (tmp_path / 'production_v4_round1.txt').write_text('x')
+        p = select_for_annotation.default_output_path(
+            'production_v3_hand', tmp_path)
+        assert p == tmp_path / 'production_v3_hand_round1.txt'
+
+    @_XFAIL_OUTPUT
+    def test_gap_in_numbering_is_filled(self, tmp_path: Path) -> None:
+        """Deleting round2 shouldn't push the next selection to
+        round4 and leave a permanent hole."""
+        for n in (1, 3):
+            (tmp_path / f'production_v4_round{n}.txt').write_text('x')
+        p = select_for_annotation.default_output_path(
+            'production_v4', tmp_path)
+        assert p == tmp_path / 'production_v4_round2.txt'
+
+
+class TestWriteSelection:
+    """Writing must not break the documented stdout pipe into
+    bin/llm_annotate_features."""
+
+    @_XFAIL_OUTPUT
+    def test_writes_one_id_per_line(self, tmp_path: Path) -> None:
+        out = tmp_path / 'sel.txt'
+        select_for_annotation.write_selection(['a', 'b', 'c'], out)
+        assert out.read_text() == 'a\nb\nc\n'
+
+    @_XFAIL_OUTPUT
+    def test_creates_parent_directory(self, tmp_path: Path) -> None:
+        out = tmp_path / 'nested' / 'deeper' / 'sel.txt'
+        select_for_annotation.write_selection(['a'], out)
+        assert out.read_text() == 'a\n'
