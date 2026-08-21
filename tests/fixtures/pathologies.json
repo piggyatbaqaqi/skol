@@ -166,6 +166,28 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Xylariales-type stromatic ascomycete (Stromata + perithecia anatomy, distinct from taxon_38b5b1c6's Ascomata-opener plant-pathogen shape).  1405-char description opening \"Description. Saprobic on fallen leaves of an unknown plant. Sexual morph: Stromata 1-4.2 cm total length, solitary, upright or prostrate, cylindrical...\" with period-form Description. header (same shape as taxon_d65547ed, taxon_62a712ab, taxon_d7ffc349).  Real Nomenclature; 7 Claude annotations, status=success.  merge_metric=0.  All triage detectors correctly silent.  From batch-2 selection (2026-07-07).  Operator: \"another description poster child.\"  Adds a distinct stromatic-Xylariales clade shape to the reference set."
+    },
+    {
+      "id": "taxon_06594607b9533dd9dfe9a02a7870454d851932f5da078565e1036cba47c395cc",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-21",
+      "captured_rev": "20-33fcb45d98c99f16ca031e1cca52105d",
+      "class": "asexual-synnematous-conidiomata",
+      "description": "Conidiomata synnematous, solitary, 125–200 μm high, 20–45\nμm wide at the base, 80–130 μm at the apex, pyriform, unbranched, broadening towards the apex, consisting of bundles\nof parallel, longitudinal, closely compacted hyphae, terminating\nin whorls of 2–4 conidiogenous cells, covered by an olivaceous\ngreen to black slimy mass of conidia without marginal hyphae\nterminating in hyaline bulbous, verrucose cells. Stroma poorly\ndeveloped, hyaline, of a textura angularis. Conidiogenous cells\nphialidic, subcylindrical, hyaline, smooth, 7–14 × 2–3 μm, with\nconspicuous collarettes and periclinal thickenings becoming\npigmented at the apex. Conidia aseptate, smooth, hyaline\nbecoming pigmented with age, fusiform, 4–5 × 2–3 µm (av. 5\n× 2 µm), with an apical hilum, borne in chains.\n\nCulture characteristics — Colonies on PDA, OA and CMA\nwith white to buff aerial mycelium with synnemata forming on\nthe aerial mycelium and surface of the medium covered by\nslimy olivaceous green conidial masses, reverse on PDA buff\nto pale luteous.\n",
+      "diagnosis": "",
+      "description_spans": [
+        {"start_line": 7457, "end_line": 7468},
+        {"start_line": 7470, "end_line": 7474}
+      ],
+      "source_anchors": [
+        {"kind": "pdf", "label": "48", "page": "48"}
+      ],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Synnematous asexual morph (Myxospora aptrootii sp. nov.).  1029-char description in two registers: in-situ anatomy (Conidiomata / Stroma / Conidiogenous cells / Conidia) followed by a \"Culture characteristics\" sub-header paragraph.  Contrast with taxon_d65547ed, the other asexual poster-child, which is culture-ONLY with conidiophores arising directly from the mycelium and no conidiomata; this one has fruiting structures in situ AND culture data, so the two together bracket the asexual-morph shape.  5 Claude annotations, exactly one per anatomical sentence group, contiguous with no uncovered prose; merge_metric = 0, all triage detectors silent.  Operator: \"looks like a textbook description of a conidial form.\"  Two structural points worth keeping as regression value: (1) the description is split across TWO description_spans (lines 7457-7468 and 7470-7474) by the sub-header paragraph break, and the §12 desc_span_gap detector correctly stays silent on the 2-line gap -- this is the true-negative control for taxon_adcb2fcc's 15-line fragment gap.  (2) the sub-header is \"Culture characteristics\\u202f\\u2014\\u202f\" -- em-dash delimited with NARROW NO-BREAK SPACE (U+202F) on both sides, the Persoonia house form.  No Description/Diagnosis header appears anywhere, so the header regexes are not exercised here; they would cope if one did, since _DESC_HEADER_RE spells the gap as \\s* and Python's \\s matches U+202F.  Recorded as a don't-regress note for the period-terminated-header fix proposed at taxon_d65547ed."
     }
   ],
   "pathologies": [

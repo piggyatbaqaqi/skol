@@ -1247,6 +1247,48 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_06594607...`** — noted 2026-08-21 from round-4.
+  Synnematous asexual morph (*Myxospora aptrootii* sp. nov.,
+  Persoonia).  1029-char description in two registers:
+  in-situ anatomy (`Conidiomata synnematous, solitary,
+  125–200 μm high, …`, then Stroma, Conidiogenous cells,
+  Conidia) followed by a `Culture characteristics — Colonies
+  on PDA, OA and CMA …` paragraph.  Real Nomenclature, no
+  diagnosis field, merge_metric = 0, all triage detectors
+  silent.  5 Claude annotations — exactly one per anatomical
+  sentence group, contiguous, no uncovered prose.  Operator:
+  "looks like a textbook description of a conidial form."
+
+  **Pairs with taxon_d65547ed** to bracket the asexual-morph
+  shape: that one is culture-ONLY, with conidiophores arising
+  directly from the mycelium and no conidiomata at all; this
+  one has fruiting structures described in situ *and* culture
+  data.  A detector that treats "describes a colony on agar"
+  as evidence of the culture-only shape must not fire here.
+
+  **True-negative control for `§12:desc_span_gap`.**  The
+  description is assembled from two `description_spans`
+  (lines 7457–7468 and 7470–7474), split by the sub-header
+  paragraph break — a legitimate 2-line gap.  The detector
+  correctly stays silent.  Contrast taxon_adcb2fcc, whose
+  15-line gap between fragments is the real §12 failure.
+  This is the entry that keeps a gap-threshold tightening
+  honest.
+
+  **Typographic note**: the sub-header is `Culture
+  characteristics — ` — em-dash delimited with
+  NARROW NO-BREAK SPACE (U+202F) on both sides, the Persoonia
+  house form, which also shows up in this treatment's `Notes`
+  and in the nomenclature line.  No `Description`/`Diagnosis`
+  header appears anywhere in this treatment, so the header
+  regexes noted at taxon_d65547ed aren't exercised here.
+  They would cope if one did: `_DESC_HEADER_RE` /
+  `_DIAG_HEADER_RE` spell the gap as `\s*`, and Python's
+  `\s` matches U+202F (verified).  Recorded as a
+  don't-regress note — the period-terminated-header fix
+  proposed at taxon_d65547ed must keep `\s*` rather than
+  hard-coding an ASCII space, or it would miss the entire
+  Persoonia corpus.
 * **`taxon_d7ffc349...`** — noted 2026-07-07 from batch-2.
   **First lichen poster-child** (endolithic lichen — grows
   inside sandstone).  1780-char description + 440-char
