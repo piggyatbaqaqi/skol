@@ -420,7 +420,10 @@ no actual taxonomic treatments.
   and nothing looks for it.  **Proposed detector**: flag a
   description whose first sentence has a plural or
   anaphoric subject and contains no binomial, weighted
-  higher when `synthetic_nomenclature` is True.
+  higher when `synthetic_nomenclature` is True.  Tracked as
+  **D1** in the Detector backlog, where the reference set
+  rules out the plural-subject and no-binomial formulations
+  and leaves anaphora as the usable signal.
 
 **Affected treatments**: T1, `taxon_fb7bd18d...`,
 `taxon_0a8c1077...`.
@@ -1576,12 +1579,21 @@ tightening MUST NOT surface these as false positives.
   `.` when followed by whitespace-then-capital-letter
   (period-terminated header form) — a straightforward
   addition to `treatments_to_structured/triage_signals.py`.
+  Tracked as **D2** in the Detector backlog; blocked on a
+  fixture for the mid-body case.
 
 ## Notes for fix sequencing
 
 These issues are deferred — not blocking Phase 1 bootstrap-annotation
 work in `treatments_to_structured/`.  Suggested triage order when
 the work is picked up:
+
+> **Detector work has moved.**  This list is the original
+> memo pass and covers pipeline/extractor fixes.  Every
+> *detector* proposal in this memo is now consolidated in
+> **Detector backlog** below, with its gating fixture
+> entries.  Item 2 below has since been shown insufficient —
+> see the correction in that section.
 
 1. **`pdf_url` etc. (§4)** — likely a one-line fix in the
    `extract_treatments_to_couchdb.py` ingest projection.  Quick
@@ -1604,6 +1616,220 @@ the work is picked up:
    (§3)** — downstream symptoms of treatment-grouper boundary
    failures.  Likely resolve naturally once §2 and §6 are fixed
    (better Nomenclature recall → better boundary signals).
+
+## Detector backlog (consolidated)
+
+Written 2026-08-21.  Until now the detector proposals in this
+memo lived as prose scattered across §0.5, §5, §10, §12 and
+§13, and the fix-sequencing list above — written in the
+memo's first pass — referenced none of them.  This section
+is the single list.  **Nothing here is implemented.**  Each
+item names the fixture entries that gate it, so the work can
+start from a red test rather than from prose.
+
+Implementation is deferred until round-4 annotation is
+finished.  The doc pass is deliberately ahead of the code so
+that the gating cases are settled before anyone writes a
+regex.
+
+### What already fires
+
+`treatments_to_structured/triage_signals.py` emits 18 flags
+today: `§2:synth_nomen`; `§6:` `multi_diagnosis`,
+`multi_description`, `multi_section_header`,
+`multi_structural_anatomy`, `mid_body_desc`, `multi_sp_nov`,
+`latin_alt`, `latin_ele`, `authored_binomial`,
+`merge_metric=<N>`; `§8:` `key_content_short`,
+`key_couplets`; `§10:` `mid_sentence`, `tail_clip`,
+`diag_head_clip`; `§12:desc_span_gap`;
+`§13:no_source_anchor`.
+
+The regression bar is `tests/fixtures/pathologies.json` (13
+poster children that must fire nothing, 28 pathologies that
+must fire exactly their labelled set) driven by
+`tests/pathologies_test.py`.
+
+### D1 — Anaphoric-subject description (§5)
+
+**Catches**: prose *about* taxa mis-extracted as prose
+*describing* a taxon.  Introduction summaries, discussion
+paragraphs, comparative recaps.
+
+**Gating fixtures**: must fire on
+`taxon_0a8c1077` (`§5-front-matter-summary-in-taxonomic-paper`).
+Must stay silent on all 13 poster children.
+
+**The obvious formulations are all disqualified by the
+reference set** — this is the reason to write the item down
+rather than just implement it:
+
+* *Plural subject* fails.  6 of 13 poster children open
+  their first sentence with a plural anatomical noun:
+  `Basidiomata medium large sized…` (taxon_0cfe582f),
+  `Basidiomata small to medium-sized` (taxon_0029f141),
+  `Basidiomata solitaria` (taxon_d2a4c584), `Ascomata
+  separate, immersed…` (taxon_38b5b1c6), `Conidiomata
+  synnematous…` (taxon_06594607), `Colonies on PDA…`
+  (taxon_d65547ed).  Grammatical number carries no signal
+  here.
+* *No binomial in the description* fails.
+  `authored_binomial_in_desc` is False for **13 of 13**
+  poster children.  It is not a discriminator at all.
+* *`synthetic_nomenclature = True`* is clean against the
+  reference set (**0 of 13**) but is just §2 re-fired, and
+  §2 is true of 1 884+ corpus treatments on its own — it
+  can weight the signal, not be it.
+
+**What is left is anaphora**: back-reference to material
+outside the treatment.  `All seven species **mentioned
+above**`, `**None of these** species`, `most of **them**`.
+That, not plurality, is what separates taxon_0a8c1077 from
+every poster child.  Formulate as: first sentence contains a
+demonstrative or anaphoric reference to an antecedent that
+is not in this treatment.
+
+**Depends on**: nothing.  Cheapest item here and the only
+one with a live case that reached a reviewer's queue.
+
+### D2 — Period-terminated section headers (§0.5)
+
+**Catches**: `Description.` and `Diagnosis.` used as headers
+with a period terminator.  `_DESC_HEADER_RE` /
+`_DIAG_HEADER_RE` currently match only `[-–—:]`.
+
+**Gating fixtures**: must stay silent on `taxon_d65547ed`
+(`asexual-mould-culture-only`) and `taxon_62a712ab`
+(`ascomycete-review-confirmed`) — both open with a
+legitimate offset-0 `Description.` that must not fire
+`§6:multi_description`.
+
+**Blocked on a missing fixture.**  The case the widening
+exists to catch — a **mid-body** `Description.` at offset
+> 0, which should fire `§6:mid_body_desc` — has no entry.
+Capture one before implementing, or the change ships with
+only negative tests.
+
+**Don't regress the delimiter class.**  Both regexes spell
+the gap as `\s*`, and Python's `\s` matches U+202F NARROW
+NO-BREAK SPACE, which is the Persoonia house form
+(taxon_06594607, taxon_09b97d5f).  A rewrite that
+hard-codes an ASCII space would silently drop the entire
+Persoonia corpus.
+
+**Depends on**: one new fixture capture.
+
+### D3 — Comparative language in the description tail (§12)
+
+**Catches**: a Diagnosis block leaked into the end of
+`description`.  Apply the gnfinder / comparative-language
+signals from §6 idea #2 (`differs from …`, `similar to …`,
+authored binomials) to the **last N characters** of
+`description` only.
+
+**Gating fixtures**: must fire on `taxon_d2d26d25` — which
+**has no fixture entry yet** (see §12; currently no detector
+fires on it at all: merge_metric = 3, diagnosis field empty,
+description does not start mid-sentence).  Capture it first.
+
+Must stay silent on `taxon_b9a623297`
+(`§6-false-positive-detailed-single`) and must not add flags
+to `taxon_9e048013`
+(`§6-false-positive-comparative-diagnosis`), which is
+already over-flagged.  `taxon_09b97d5f`
+(`bolete-Pileus-opener`) is the poster-child control: its
+*diagnosis* is dense with authored binomials and BLAST
+comparisons while its *description* is clean, so a detector
+that reads the wrong field will show up there.
+
+**Note**: the target fragment is a **Differential
+Diagnosis** in English, not Latin.  The Latin-morphology
+heuristics (`§6:latin_alt`, `§6:latin_ele`) do not apply.
+
+**Depends on**: one new fixture capture.
+
+### D4 — Mid-body species boundaries (§6/§10)
+
+**Catches**: a second species starting inside `description`
+with no section header.
+
+**Status: a regex attempt was written and reverted.**  It
+fired 3× on `taxon_b9a623297` — on `phragrnosporous`, `a
+diameter of…`, `submembranaccous`, all legitimate
+continuation prose within one species.  taxon_b9a623297 is
+the standing disqualifier: **any detector that fires on it
+is rejected.**  The reverted attempt also would not have
+caught `taxon_9ecad903`, its motivating case, because that
+species boundary is a trailing hyphen rather than a period.
+
+**Conclusion already reached in §10**: this needs
+paragraph-level section classification (the M3 segment
+classifier), not a regex.  Do not re-attempt at the regex
+layer.
+
+**Depends on**: M3 segment classifier.  `taxon_9ecad903`
+also needs a fixture entry.
+
+### D5 — Label-aware assembly (§12)
+
+Not a detector.  Pass segment-level `(section_label, text)`
+tuples through to assembly instead of flat field dicts.
+Subsumes several detectors by construction: Diagnosis blocks
+stop leaking into `description`, header multiplicities
+become species-count signal without a separate detector, and
+`Key` segments route out of `description`.
+
+**Depends on**: a schema change through `treatments_prose`
+(currently flat).  The v4 layout CRF already emits per-line
+section labels; the plumbing exists and is discarded at
+assembly.  Phase 3+.
+
+**Sequencing consequence**: D4 and D5 reduce to the same
+underlying capability.  Attempting D4 standalone is what
+produced the reverted regex.  Sequence them as one piece of
+work.
+
+### Correction to the fix-sequencing list above
+
+Item 2 of that list ranks §5 gating as "likely highest
+corpus-wide payoff per unit work" and proposes gating stub
+creation on the source paper having a real Nomenclature
+heading, or on `skol_dev.taxonomy`.  **`taxon_0a8c1077`
+passes both gates.**  Its source paper formally describes
+three new species and a new combination.  The gate is
+paper-level; the defect is paragraph-level.
+
+The related claim in §5 that these false positives
+self-quarantine — Claude returns 0 annotations, so they
+never reach the review directory — is also conditional.
+taxon_0a8c1077 drew 5 annotations, because a summary of
+seven species' colony morphology is written in genuine
+morphological language.  `annotation_count = 0` is a marker
+for *non-morphological* orphan paragraphs only.
+
+Neither correction changes the §5 diagnosis; both change its
+proposed fix, which is why D1 exists.
+
+### Fixture coverage gap
+
+The convention in `tests/fixtures/README.md` is that every
+taxon mentioned in this memo has a fixture entry.  As of
+2026-08-21, **22 of the 61 referenced taxa do not**:
+
+`taxon_09507677`, `taxon_2114314b`, `taxon_22346900`,
+`taxon_3c218a38`, `taxon_418bf6b7`, `taxon_592128a8`,
+`taxon_7af2e7c8`, `taxon_841d5cbe`, `taxon_876c18ec`,
+`taxon_9e68c26b`, `taxon_9ecad903`, `taxon_a21a83f4`,
+`taxon_ba964a8b`, `taxon_d2d26d25`, `taxon_d41b87e4`,
+`taxon_d5525987`, `taxon_e0d2e4bb`, `taxon_e44e35bc`,
+`taxon_e6402cd3`, `taxon_e74d89b1`, `taxon_ed2a6f1c`,
+`taxon_f00f8353`.
+
+Three of those directly gate backlog items — `taxon_d2d26d25`
+(D3), `taxon_9ecad903` (D4), and `taxon_418bf6b7` (the
+anatomical-noun-clip pattern, whose controls taxon_38b5b1c6
+and taxon_09b97d5f are both present).  Capture at least
+those three before starting the corresponding item.
+
 
 ## Sample-size caveat
 
@@ -2214,7 +2440,9 @@ opening.
        trailing hyphen, not a period.  Reverted.  A
        robust mid-body boundary detector needs
        paragraph-level section classification (M3
-       segment classifier), not a regex.
+       segment classifier), not a regex.  Tracked as
+       **D4** in the Detector backlog; sequence it with
+       **D5**, which supplies the same capability.
     4. **Species 2 body** — appears complete, but has a
        **figure caption appended** at the end (§12 leak,
        same shape as taxon_ea7b0ed7).
@@ -2810,6 +3038,8 @@ assembly**:
     Latin-morphology heuristics do NOT apply.  Currently
     no detector fires (merge_metric = 3; diagnosis field
     empty; description doesn't start mid-sentence).
+    Tracked as **D3** in the Detector backlog; this taxon
+    is its gating case and still needs a fixture entry.
 
 **Proposal (not a plan yet)**: pass segment-level
 `(section_label, text)` tuples through to the assembly stage
@@ -2838,7 +3068,8 @@ label-aware assembler alongside the existing extractor and
 diffing.  Every §6/§10/§11 case above is a golden regression
 target with a known expected split.
 
-**Timing**: overlaps with the pipeline restructure in
+**Timing**: tracked as **D5** in the Detector backlog.
+Overlaps with the pipeline restructure in
 `~/.claude/plans/cozy-forging-locket.md` (per-family Python
 modules).  Likely a Phase 3+ candidate after v4 lands —
 useful to record now so §6 fix work explicitly weighs

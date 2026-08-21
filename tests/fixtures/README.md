@@ -7,6 +7,13 @@ and [`treatments_to_structured/gn_client.py`](../../treatments_to_structured/gn_
 
 The prose narrative for each entry lives in
 [`docs/data_quality_production_v4_model.md`](../../docs/data_quality_production_v4_model.md).
+
+That memo's **Detector backlog** section runs the other way:
+each proposed-but-unimplemented detector names the fixture
+entries that must fire it and the ones that must stay silent.
+Adding an entry that gates a backlog item — or noticing that
+an existing entry disqualifies a proposed formulation — is
+worth a line there too.
 This file is the machine-readable pair: the actual treatment
 content plus the labelled expected detector outputs.
 
