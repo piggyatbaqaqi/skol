@@ -2173,11 +2173,40 @@ they are not retried:
   reaches 46.7 % because Latin is not in an English
   dictionary.  Unusable without a Latin-aware vocabulary.
 
-**Depends on**: a word list.  `/usr/share/dict/american-english`
-exists on the dev box but is **not a declared dependency** —
-per CLAUDE.md a missing package on production is a packaging
-error, so either vendor a word list or add `wamerican` to the
-deb dependencies before this ships.
+**Depends on**: a word list — and it must be **both**
+`wamerican` *and* `wbritish` (operator, 2026-08-21: "not all
+authors in English use American English").  Neither is a
+declared dependency today; `wamerican` happens to be
+installed on the dev box and `wbritish` is not.  Per CLAUDE.md
+a missing package on production is a packaging error, so add
+both to the deb dependencies, or vendor a merged list, before
+this ships.
+
+**Why both, measured.**  The reason is *recall*, not
+precision.  `colour`, `odour`, `centre`, `localised`,
+`characterised`, `utilisation` and `colourless` are all
+absent from `american-english`, and the fixture descriptions
+already contain `centre`, `colour`, `localised` and `odour`.
+An OCR split of a British spelling therefore fails to rejoin
+— `col our` → *colour*, `odo ur` → *odour*, `charac terised`
+→ *characterised* are all unrecoverable against the American
+list alone — so American-only would silently under-report
+corruption in British-spelled treatments, which is the
+opposite of what the detector is for.
+
+Precision does **not** degrade.  Re-running the measurement
+with the American list plus ~7 100 generated British-form
+variants: taxon_43a7b19e stays at **19.13 %** and **every
+poster child stays at 0.00 %**.  The proxy list deliberately
+included junk (it generated non-words like `vere` and `pre`),
+and the separation still held — so a real curated `wbritish`
+is safe *a fortiori*.
+
+One caution the proxy surfaced: `vere` is not a British word,
+it is the OCR corruption of *were* sitting in taxon_43a7b19e
+itself.  A word list containing junk tokens can mask exactly
+the corruption being hunted.  Use the packaged lists, never a
+generated or rule-derived one.
 
 **Note on scope**: firing this should mean *reject the
 treatment*, not *flag for review*.  taxon_43a7b19e already
