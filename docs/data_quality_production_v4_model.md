@@ -2253,15 +2253,59 @@ because its Latin is 19th-century rather than classical:
 text — altering the text would corrupt the very offsets the
 spans depend on.
 
-**Availability caveat**: `hunspell-la` is **not in this
-box's package index** — `apt-cache search hunspell` returns
-113 packages and none of them is `-la`.  Neither is
-`hunspell-tools` installed.  Confirm the package name and
-component before planning on it; if it is unavailable,
-calling `libhunspell` directly (already installed as
-`libhunspell-1.7-0`) via a binding sidesteps the expansion
-problem entirely, at the cost of a new Python dependency —
-no hunspell binding is installed today either.
+**Availability**: `hunspell-la` is **not in this box's
+package index** — `apt-cache search hunspell` returns 113
+packages and none is `-la`, and `hunspell-tools` is not
+installed either.  **`dict-freedict-lat-eng` *is* available**
+(2022.04.21-1ubuntu1, 149 kB installed), which makes it the
+better starting point.
+
+**And lemma-only coverage is very likely sufficient** —
+this is the measurement that de-risks the whole item.  D8 is
+a *ratio* with a wide threshold band, so Latin vocabulary
+does not have to be complete; it only has to lift a
+corrupted Latin passage over the 2 % floor.  Sweeping
+partial coverage against the same corrupted Latin half:
+
+| Latin vocabulary coverage | rejoin rate | over the 2 % floor? |
+|---:|---:|---|
+| 0 % | 1.33 % | no |
+| **20 %** | **6.67 %** | **yes** |
+| 40 % | 16.00 % | yes |
+| 80 % | 29.33 % | yes |
+| 100 % | 36.00 % | yes |
+
+**About 20 % coverage is enough**, and 40 % already matches
+the English half's 18.18 %.  A FreeDict headword list is
+lemmas rather than inflected forms — the corpus needs
+`albae`, `adscendentes`, `acanthocystides`, not just `albus`
+— but it does not need to match them all.  Affix expansion
+via `unmunch`, and the `libhunspell` fallback, both drop to
+optional refinements rather than prerequisites.
+
+**Two corrections to the extraction pipeline**, though.  The
+obvious one-liner reads the wrong file:
+
+```sh
+# reads the .dict BODY — pulls in English gloss text and
+# part-of-speech markers along with the headwords
+zcat /usr/share/dictd/freedict-lat-eng.dict.dz \
+  | grep -E '^([a-zA-Z]+)' | awk '{print $1}' | sort -u
+```
+
+* Headwords live in the **`.index`** file; the `.dict` body
+  is headwords *plus* their English definitions.  Scraping
+  the body mixes glosses and markers into the word list.
+  English glosses are mostly harmless (those words are
+  already in `wamerican`), but abbreviations, single letters
+  and part-of-speech markers are not — and per the `vere`
+  caution above, junk tokens in the word list mask the
+  corruption being hunted.  Take headwords from `.index`, or
+  use `dictunformat`.
+* FreeDict Latin headwords carry **macrons** (`abscīdō`).
+  Fold those to plain ASCII in the word list — and, as with
+  the `æ` and `j`/`i` folding, fold in the *word list*, never
+  in the treatment text.
 
 **Note on scope**: firing this should mean *reject the
 treatment*, not *flag for review*.  taxon_43a7b19e already
