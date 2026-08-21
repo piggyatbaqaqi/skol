@@ -1623,7 +1623,8 @@ Written 2026-08-21.  Until now the detector proposals in this
 memo lived as prose scattered across §0.5, §5, §10, §12 and
 §13, and the fix-sequencing list above — written in the
 memo's first pass — referenced none of them.  This section
-is the single list.  **Nothing here is implemented.**  Each
+is the single list; §15 (added the same day) is written
+against it from the start.  **Nothing here is implemented.**  Each
 item names the fixture entries that gate it, so the work can
 start from a red test rather than from prose.
 
@@ -1787,6 +1788,47 @@ assembly.  Phase 3+.
 underlying capability.  Attempting D4 standalone is what
 produced the reverted regex.  Sequence them as one piece of
 work.
+
+### D6 — Element-join artifact (§15)
+
+**Catches**: words run together at JATS element boundaries —
+`Descriptionof`, `Typeof`, `Notes.The`,
+`Asteromellapistaciarum`.  Marker: `[a-z]\.[A-Z]`, plus a
+gnparser round-trip on candidate binomials.
+
+**Gating fixtures**: must fire on `taxon_30d8d8d4`
+(`§15-jats-element-join-no-space`).  Must stay silent on all
+13 poster children and on the `pdf`-sourced pathologies,
+whose run-together text is §9 OCR corruption with a different
+cause and a different fix.
+
+**Two jobs, and the detector is the smaller one.**  The
+detector is nearly trivial and worth having as a corpus
+health gauge.  The actual repair is upstream, in
+`extract_text()` — scope a separator to block-level
+boundaries (`<sec>`/`<title>`/`<p>`), then handle inline
+`content-type="taxon-name"` children with their own rule.
+Never blanket-insert: `H<sub>2</sub>O` must stay `H2O`.
+
+**Why this outranks its apparent severity.**  It fires
+nothing today and it blinds gnfinder — `Asteromellapistaciarum`
+returns `[]` where `Asteromella pistaciarum` returns the name
+at oddsLog10 13.2.  On the 2 629 affected treatments (96.1 % of
+the plazi-only path), `§6:authored_binomial` and every
+name-based §1/§2 signal is not wrong but *absent*.  Any
+measurement of name-detection recall taken over the whole
+corpus is currently reading those treatments as
+"no names present."
+
+**Ordering note**: this is a data-quality precondition for
+§1/§2 name-recall work, not a peer of it.  Fixing the CRF's
+Nomenclature recall while 6 % of the corpus has unparseable
+names in it will produce a misleading evaluation.
+
+**Depends on**: a re-extraction.  Unlike every other item
+here, the fix changes `article.txt` and therefore every
+downstream field and every stored `*_spans` offset.  Sequence
+with a planned re-extraction, not as a hot patch.
 
 ### Correction to the fix-sequencing list above
 
@@ -3308,3 +3350,131 @@ effort at current-rarity estimates.
 **Detection**: `desc_length == 0 and diag_length > 0`.
 Trivial; can be added to `triage_signals` as an
 "orphan_diagnosis" flag.
+
+### 15. JATS element boundaries joined without a separator
+
+**Symptom**: words run together in `description` and every other
+extracted field — `Descriptionof the asteromella-like spermatial
+morph.Infection localised`, `Typeof Asteromellapistaciarum`,
+`Notes.The classification`, `Liberomycespistaciae`.
+
+**Root cause, reproduced in isolation**: `extract_text()` in
+[`ingestors/jats_to_yedda.py`](../ingestors/jats_to_yedda.py)
+concatenates with `"".join(parts)`.  That is correct XML
+semantics — `H<sub>2</sub>O` must render as `H2O` — but it drops
+the separator at boundaries where the rendered article has a
+space.  Two distinct variants:
+
+* **Block-level** (unambiguous bug).  A section title and its
+  paragraph are sibling elements:
+
+  ```xml
+  <sec sec-type="treatment-description">
+    <title>Description</title>
+    <p><bold>of the asteromella-like spermatial morph.</bold>
+       Infection localised …</p>
+  </sec>
+  ```
+
+  → `Descriptionof the asteromella-like spermatial
+  morph.Infection localised …`.  Same shape produces `Typeof`
+  from `<title>Type</title><p><bold>of …` and `Notes.The` from
+  `<title>Notes.</title><p>The …`.  `<title>`, `<p>` and `<sec>`
+  are block-level; there is no counterexample where they should
+  be joined tight.
+
+* **Inline taxon names** (needs a scoped rule).  ARPHA/Pensoft
+  marks names as split `named-content` elements:
+
+  ```xml
+  <named-content content-type="taxon-name">
+    <named-content content-type="genus">Asteromella</named-content>
+    <named-content content-type="species">pistaciarum</named-content>
+  </named-content>
+  ```
+
+  → `Asteromellapistaciarum`.  **The source XML is inconsistent
+  within a single document** — in PMC6160797, 93 genus|species
+  boundaries carry no whitespace and 149 do.  So this is sloppy
+  source markup rather than a convention that can simply be
+  read off.
+
+**Scale** (whole `treatments_prose`, 42 096 treatments with a
+description, marker = `[a-z]\.[A-Z]`):
+
+| `source_anchors` kinds | treatments | with marker | rate |
+|---|---:|---:|---:|
+| `plazi` only | 2 735 | 2 629 | **96.1 %** |
+| `arpha`+`jats_section`(+`mycobank`)+`plazi` | 2 593 | 10 | 0.4 % |
+| `pdf` | 26 496 | 798 | 3.0 % |
+| none | 9 988 | 976 | 9.8 % |
+| **overall** | **42 096** | **4 414** | **10.5 %** |
+
+The `pdf` and no-anchor rates are a different population
+(genuine OCR and typography noise, §9).  The signal is the
+96.1 % vs 0.4 % split: treatments reaching us through the
+plazi-only path are almost universally affected, and those
+carrying `jats_section` anchors are almost universally clean.
+
+**Severity: high, and quiet.**  It fires no flag.  Worse, it
+**blinds gnfinder**.  Against the live service:
+
+```
+"Asteromellapistaciarum is here added"   -> []
+"Asteromella pistaciarum is here added"  -> Asteromella pistaciarum, oddsLog10 13.2
+"Liberomycespistaciae sp. nov."          -> []
+"Liberomyces pistaciae sp. nov."         -> Liberomyces pistaciae, SP_NOV
+```
+
+So `§6:authored_binomial`, the `authored_binomial_in_desc`
+fixture label, and any future name-based work in §1/§2 are
+silently unavailable on ~2 629 treatments.  Not "wrong" —
+*absent*, which is harder to notice.  This is the same failure
+shape as taxon_2f276bfa's mid-word OCR defeating gnfinder
+(Trello #395) but a completely different cause: markup joining,
+not character corruption, and fixable upstream rather than
+needing fuzzy matching.
+
+**Exemplar**: `taxon_30d8d8d4...` — noted 2026-08-21 from
+round-4.  Operator: "a fairly complete description of an
+unnamed morph, possibly missing the rest of the description of
+the base species."
+
+**Nothing is missing.**  The article gives no base-species
+description.  Its *Septoria pistaciarum* treatment is exactly
+nomenclature + Type + "Description of the asteromella-like
+spermatial morph" + Notes + Figure 7, because the treatment's
+purpose is to designate a lectotype for *Asteromella
+pistaciarum* and synonymise it under *Septoria pistaciarum* as
+its spermatial morph.  Both of the article's treatments are in
+the corpus — this one and `taxon_1cf6a119` (*Liberomyces
+pistaciae*) — and every field maps correctly: nomenclature =
+the accepted name, `materials_examined` = the synonym's
+lectotype, `description` = the morph, `notes` = the synonymy
+rationale.  6 Claude annotations, contiguous, merge_metric = 0,
+zero flags.
+
+**This is therefore a legitimate treatment shape**: a
+morph-scoped description under an accepted name, where the type
+material belongs to the synonym.  A detector that expects a
+description to cover the whole organism would false-fire on it.
+It is filed as a pathology only for the text-layer defect; the
+structure is a poster-child-grade extraction.
+
+**Fix angle**: scope the separator to block-level boundaries
+first — insert `\n` (or a space) between a `<sec>`'s `<title>`
+and its following children, and between sibling block elements.
+That alone removes `Descriptionof`, `Typeof` and `Notes.The`.
+Handle the inline taxon-name case separately with a rule keyed
+on `content-type="taxon-name"` children (and the TaxPub
+`<tp:taxon-name-part>` equivalent), inserting a space between
+adjacent parts.  **Do not** insert separators at every element
+boundary: `H<sub>2</sub>O` and similar must stay joined.
+
+Tracked as **D6** in the Detector backlog.
+
+**Re-extraction required.**  Unlike a detector change, fixing
+this changes `article.txt` and therefore every downstream field
+and every stored `*_spans` offset.  Sequence it with a planned
+re-extraction, not as a hot patch.
+
