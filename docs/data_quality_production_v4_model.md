@@ -1328,6 +1328,61 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_343eec40...`** — noted 2026-08-21 from round-4.
+  Veiled bolete (*Pulveroboletus sokponianus* sp. nov.,
+  *MycoKeys* 43, doi 10.3897/mycokeys.43.30776).  2636-char
+  description, 17 Claude annotations, merge_metric = 5, all
+  triage detectors silent.  Operator: "another poster child
+  bolete."  Three things make it non-redundant against the
+  other three boletes.
+
+  **First veiled bolete in the reference set.**  Opens
+  `Basidiomata medium-sized, wrapped in a greenish-yellow
+  (1A2–3) general veil when young.` and carries `Annulus`,
+  `Partial_veil`, `Basal_mycelium` and `Spore_print` spans.
+  None of taxon_0cfe582f, taxon_0029f141 or taxon_09b97d5f
+  contains the words *veil*, *annulus* or *ring* at all;
+  among poster children only the agaric taxon_e78904cb
+  does.  Anything treating veil structures as an
+  agaric-only signal misclassifies this.
+
+  **§15 clean control.**  Richest `source_anchors` set in
+  the fixture — 2 × `plazi` + `arpha` + `jats_section` +
+  `mycobank` — and the description carries **zero**
+  `[a-z]\.[A-Z]` element-join markers.  Direct contrast
+  with taxon_30d8d8d4, which is `plazi`-only and in the
+  96 %-affected population.  Same journal family, same Plazi
+  involvement, clean text — evidence that the
+  `jats_section`-carrying path is the healthy one and §15
+  is specific to plazi-only ingest.  Also the best
+  available exemplar for the Trello #401 polymorphic-anchor
+  work.
+
+  **Legitimate in-description citation.**  `Odour fungoid,
+  when fresh like Lepista nuda (in collection De Kesel
+  1979).`  A bibliographic citation sitting inside
+  description prose that is *not* the §1 pathology — it is
+  an odour comparison, not a taxonomic-authority citation.
+  Control case for any §1 tightening.  Note also the
+  negative-data span: `Spore print and macrochemical
+  reactions not obtained.` is annotated `Spore_print`, an
+  explicit statement of *absent* data labelled as a
+  feature.
+
+  **Annotation miss — recorded so the entry doesn't read as
+  flawless.**  The `Spores` sentence at offsets 1701–1901
+  is the only uncovered prose in the description, and it is
+  unannotated.  Probable cause: the preceding `Spore_print`
+  span ends at 1701 and the annotator appears to have
+  treated the spore material as already covered.  Surveyed
+  across all 50 round-4 treatments, 15 have uncovered
+  in-description runs of 60+ chars — but the other 14 are
+  OCR garbage, `TYPE LOCALITY` / `MATERIAL STUDIED` /
+  habitat lines, chemistry, or discussion prose, all
+  legitimately skipped.  **This is the only clean
+  anatomical-character sentence Claude missed in the entire
+  round.**  Extraction is unaffected, which is why the
+  entry stays in `poster_children`.
 * **`taxon_09b97d5f...`** — noted 2026-08-21 from round-4.
   Bolete (*Butyriboletus parachinarensis* sp. nov.,
   Persoonia).  1166-char description, 9 Claude annotations
