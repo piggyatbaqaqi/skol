@@ -9,8 +9,6 @@ word, the exemplar is in the test.
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -22,13 +20,6 @@ from latinize_greek import (  # noqa: E402
 )
 
 
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: latinize_greek not implemented yet",
-    strict=True,
-)
-
-
-@_XFAIL
 class TestStripDiacritics:
     """Polytonic Greek is precomposed, which is what defeats a
     bare-letter rule table: ὁ, ή, ὐ, ῦ never match ο, η, υ."""
@@ -52,11 +43,12 @@ class TestStripDiacritics:
         bare, rough = strip_diacritics('ἀ')
         assert bare == 'α' and rough is False
 
-    def test_final_sigma_normalised(self) -> None:
+    def test_final_sigma_left_alone(self) -> None:
+        """Sigma form is orthography, not a diacritic; both map
+        to 's' at the letter stage."""
         assert strip_diacritics('λόγος')[0].endswith('ος')
 
 
-@_XFAIL
 class TestTransliterate:
     """Letter and cluster rules, before any Latin terminations."""
 
@@ -117,7 +109,6 @@ class TestTransliterate:
         assert transliterate('ἀπο') == 'apo'
 
 
-@_XFAIL
 class TestLatinTerminations:
     """ICN Rec. 60A-style ending conversion."""
 
@@ -134,7 +125,6 @@ class TestLatinTerminations:
         assert latin_terminations('hyphа'.replace('а', 'a')) == 'hypha'
 
 
-@_XFAIL
 class TestLatinize:
     """End to end, on words this corpus actually needs."""
 
