@@ -2253,59 +2253,79 @@ because its Latin is 19th-century rather than classical:
 text — altering the text would corrupt the very offsets the
 spans depend on.
 
-**Availability**: `hunspell-la` is **not in this box's
-package index** — `apt-cache search hunspell` returns 113
-packages and none is `-la`, and `hunspell-tools` is not
-installed either.  **`dict-freedict-lat-eng` *is* available**
-(2022.04.21-1ubuntu1, 149 kB installed), which makes it the
-better starting point.
+**Vocabulary source — measured on puchpuchobs
+2026-08-21, after installing `dict-freedict-lat-eng`.**
 
-**And lemma-only coverage is very likely sufficient** —
-this is the measurement that de-risks the whole item.  D8 is
-a *ratio* with a wide threshold band, so Latin vocabulary
-does not have to be complete; it only has to lift a
-corrupted Latin passage over the 2 % floor.  Sweeping
-partial coverage against the same corrupted Latin half:
+**FreeDict Latin does not work.**  The package is a
+**2 305-headword general *classical* Latin dictionary**, and
+this corpus needs descriptive botanical Latin.  Measured
+against the 82 Latin word forms in taxon_d2a4c584's Latin
+half, it covers **5** — `altus`, `caro`, `cavus`, `latus`,
+`raro` — i.e. **6.1 %**, against the ~20 % the coverage sweep
+says is needed.  The corrupted-Latin rejoin rate stays at
+**1.33 %**, exactly where it was with no Latin vocabulary at
+all.  `basidiomata`, `acanthocystides`, `adscendentes`,
+`brunneovinescens`, `amyloideus`, even `albus` are all
+absent.  Do not plan on it.  (`hunspell-la` is not in this
+box's index either, and `hunspell-tools` is not installed.)
 
-| Latin vocabulary coverage | rejoin rate | over the 2 % floor? |
-|---:|---:|---|
-| 0 % | 1.33 % | no |
-| **20 %** | **6.67 %** | **yes** |
-| 40 % | 16.00 % | yes |
-| 80 % | 29.33 % | yes |
-| 100 % | 36.00 % | yes |
+Two notes on the extraction one-liner, now that both files
+can be compared directly: scraping the `.dict` body yields
+**3 670** tokens against the `.index` file's **2 296**
+headwords, and the extras are English gloss words — `abbess`,
+`abbey`, `abbot`, `abdication`, several with trailing commas
+(`abbreviate,`, `abhor,`).  In practice this is **inert** for
+D8: the English words are already in `wamerican`, and the
+comma-suffixed tokens can never be looked up because the
+tokenizer is `[A-Za-z]+`.  The `.index` file is still the
+cleaner source.  Headwords also carry macrons (`abscīdō`),
+so fold to ASCII — in the *word list*, never in the treatment
+text, or the span offsets break.
 
-**About 20 % coverage is enough**, and 40 % already matches
-the English half's 18.18 %.  A FreeDict headword list is
-lemmas rather than inflected forms — the corpus needs
-`albae`, `adscendentes`, `acanthocystides`, not just `albus`
-— but it does not need to match them all.  Affix expansion
-via `unmunch`, and the `libhunspell` fallback, both drop to
-optional refinements rather than prerequisites.
+**A corpus-derived vocabulary does work, and is better on
+every axis.**  Collect out-of-vocabulary forms of 4+
+characters from `description` + `diagnosis` across the whole
+`treatments_prose` DB, keep those with a document frequency
+above a threshold, and union with `wamerican`.  Scanning
+46 046 treatments (holding out taxon_d2a4c584) gives 308 110
+distinct OOV forms.  Sweeping the threshold, measuring Latin
+coverage, the corrupted-Latin case, taxon_43a7b19e, and the
+worst false positive across all 15 poster children:
 
-**Two corrections to the extraction pipeline**, though.  The
-obvious one-liner reads the wrong file:
+| df ≥ | forms | Latin cov. | corrupt-Latin | taxon_43a7b19e | worst poster child |
+|---:|---:|---:|---:|---:|---:|
+| 2 | 99 806 | 97.6 % | 16.00 % | 13.62 % | 6.59 % |
+| 3 | 62 209 | 96.3 % | 18.67 % | 15.61 % | 6.59 % |
+| 5 | 37 332 | 96.3 % | 21.33 % | 16.45 % | 1.23 % |
+| 10 | 19 478 | 90.2 % | 24.00 % | 18.82 % | 1.23 % |
+| 25 | 8 280 | 76.8 % | 26.67 % | 20.43 % | 1.23 % |
+| **50** | **4 269** | **62.2 %** | **22.67 %** | **22.19 %** | **0.00 %** |
 
-```sh
-# reads the .dict BODY — pulls in English gloss text and
-# part-of-speech markers along with the headwords
-zcat /usr/share/dictd/freedict-lat-eng.dict.dz \
-  | grep -E '^([a-zA-Z]+)' | awk '{print $1}' | sort -u
-```
+**Use df ≥ 50.**  Both corruption cases clear 22 % while
+every poster child sits at 0.00 % — a wider margin than the
+English-only measurement had.  Low thresholds are actively
+worse: at df ≥ 2 the vocabulary is large enough to create
+spurious rejoins and the worst poster child reaches 6.59 %,
+uncomfortably close to the signal.
 
-* Headwords live in the **`.index`** file; the `.dict` body
-  is headwords *plus* their English definitions.  Scraping
-  the body mixes glosses and markers into the word list.
-  English glosses are mostly harmless (those words are
-  already in `wamerican`), but abbreviations, single letters
-  and part-of-speech markers are not — and per the `vere`
-  caution above, junk tokens in the word list mask the
-  corruption being hunted.  Take headwords from `.index`, or
-  use `dictunformat`.
-* FreeDict Latin headwords carry **macrons** (`abscīdō`).
-  Fold those to plain ASCII in the word list — and, as with
-  the `æ` and `j`/`i` folding, fold in the *word list*, never
-  in the treatment text.
+Three consequences:
+
+* **The Latin packaging problem disappears.**  No
+  `hunspell-la`, no `dict-freedict-lat-eng`, no `unmunch`, no
+  `libhunspell` binding.  At df ≥ 50 the artifact is **4 269
+  forms** — small enough to vendor in the repo, which also
+  makes it reproducible and reviewable.
+* `wamerican` + `wbritish` are still the base list and still
+  need declaring; the corpus vocabulary is the technical and
+  Latin layer on top.
+* **Circularity caution.**  The vocabulary is derived from a
+  corpus that contains OCR-corrupted treatments, so a
+  systematic corruption could enter it.  df ≥ 50 is the
+  guard — a corrupt form must recur across 50+ distinct
+  treatments to survive — and it is the same `vere` hazard
+  recorded above, so the generated list needs spot-checking
+  before it is trusted.  Regenerate it from a
+  §9-mode-B-filtered corpus once D8 itself exists.
 
 **Note on scope**: firing this should mean *reject the
 treatment*, not *flag for review*.  taxon_43a7b19e already
