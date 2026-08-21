@@ -2208,6 +2208,61 @@ itself.  A word list containing junk tokens can mask exactly
 the corruption being hunted.  Use the packaged lists, never a
 generated or rule-derived one.
 
+**Latin is a third requirement, and it is not optional.**
+Operator, 2026-08-21: the `hunspell-la` package carries a
+Latin word list, "but we might need to transform it to make
+it work with wamerican and wbritish."  Both halves of that
+are right, and the need is now measured.
+
+Latin is effectively invisible to an English dictionary: the
+Latin half of taxon_d2a4c584's description is **79.5 %**
+out-of-vocabulary against `american-english`, versus 23.0 %
+for its English half.  So D8 cannot see corruption in Latin
+at all.  Injecting identical simulated space-displacement
+into both halves of that one treatment — splitting 40 % of
+words of 6+ characters — gives:
+
+| half | rejoin rate after identical corruption |
+|---|---:|
+| English | **18.18 %** — detected |
+| Latin | **1.33 %** — **missed**, below the 2 % floor |
+
+A Latin diagnosis could be as badly damaged as
+taxon_43a7b19e and score clean.  Given how many protologues
+in this corpus carry Latin diagnoses, D8 without Latin
+vocabulary is a detector with a systematic hole in exactly
+the oldest, most OCR-damaged material.
+
+**The transform.**  A hunspell dictionary is not a word
+list.  `/usr/share/hunspell/en_US.dic` shows the shape:
+line 1 is an entry count (`79013`), and every entry is
+`word/FLAGS` (`A/SM`, `0th/pt`) where the flags index affix
+rules in the companion `.aff`.  For set-membership use it
+needs the count line dropped, `/FLAGS` stripped, and —
+the part that matters — **the affixes expanded**.  Latin is
+heavily inflected; bare stems will not match `ascis`,
+`ascorum`, `basidiis`.  `unmunch` from `hunspell-tools` is
+the standard expander, though it is known to struggle with
+complex affix files, so the expansion needs spot-checking
+against real diagnoses rather than trusting the output size.
+
+Two further normalisations this corpus specifically needs,
+because its Latin is 19th-century rather than classical:
+`æ`/`ae` ligature folding, and `j`/`i` plus `v`/`u` variants
+(`ejus`/`eius`).  Fold in the word list, not in the treatment
+text — altering the text would corrupt the very offsets the
+spans depend on.
+
+**Availability caveat**: `hunspell-la` is **not in this
+box's package index** — `apt-cache search hunspell` returns
+113 packages and none of them is `-la`.  Neither is
+`hunspell-tools` installed.  Confirm the package name and
+component before planning on it; if it is unavailable,
+calling `libhunspell` directly (already installed as
+`libhunspell-1.7-0`) via a binding sidesteps the expansion
+problem entirely, at the cost of a new Python dependency —
+no hunspell binding is installed today either.
+
 **Note on scope**: firing this should mean *reject the
 treatment*, not *flag for review*.  taxon_43a7b19e already
 fires six flags and still reached a reviewer's queue.  A
