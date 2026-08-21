@@ -7,10 +7,6 @@ tested directly.
 
 import sys
 from pathlib import Path
-from typing import List
-
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -22,12 +18,6 @@ from extract_latin_wordlist import (  # noqa: E402
 )
 
 
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: extractor not implemented yet",
-    strict=True,
-)
-
-
 def _li(word: str, pos: str = 'n') -> str:
     return (
         f'<li id="word-0" class="word">'
@@ -36,7 +26,6 @@ def _li(word: str, pos: str = 'n') -> str:
     )
 
 
-@_XFAIL
 class TestParseEntries:
     """Each <li class="word"> yields one entry; the anchor text is
     a comma-separated list of principal parts."""
@@ -61,7 +50,6 @@ class TestParseEntries:
         assert parse_entries('') == []
 
 
-@_XFAIL
 class TestExpandVariants:
     """Latdict compresses orthographic alternatives two ways."""
 
@@ -86,7 +74,6 @@ class TestExpandVariants:
             assert expand_variants(junk) == [], junk
 
 
-@_XFAIL
 class TestFoldForm:
     """Folding happens in the WORD LIST, never in treatment text."""
 
@@ -104,7 +91,6 @@ class TestFoldForm:
         assert fold_form('') is None
 
 
-@_XFAIL
 class TestWordlistFromHtml:
     """End-to-end over a page fragment."""
 
