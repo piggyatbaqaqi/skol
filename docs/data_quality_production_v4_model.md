@@ -1328,6 +1328,63 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_38992c86...`** — noted 2026-08-21 from round-4.
+  Asexual morph of a dematiaceous hyphomycete, described
+  *in situ* on the natural substrate plus culture
+  (*Sporidesmium aquaticivaginatum* J. Yang & K.D. Hyde,
+  *Fungal Divers.* 80: 217, 2016).  1383-char description,
+  8 annotations, merge_metric = 1, all detectors silent,
+  text clean of §15 markers.
+
+  **Overlap declared.**  This is close in shape to
+  taxon_e534e6a9 (`ascomycete-both-morphs`): both open
+  `Saprobic on … decaying wood`, both use the explicit
+  morph pair with one morph Undetermined, and both run
+  Mycelium → Conidiophores → Conidiogenous cells → Conidia
+  off macronematous mononematous conidiophores.  It is kept
+  for the deltas, which are the kind of thing detectors
+  trip on — not because the clade differs.
+
+  1. **Morph markers take the colon form** — `Asexual
+     morph:`, `Sexual morph: Undetermined.` — where
+     taxon_e534e6a9 has them bare (`Sexual morph
+     Undetermined. Asexual morph Colonies…`), **and the
+     order is inverted**: asexual first, sexual last.  Any
+     morph-marker regex needs both forms and both orders.
+  2. **`Sexual morph: Undetermined.` is annotated** as a
+     `Sexual_morph` span — explicitly-*absent* data labelled
+     as a feature.  Same pattern as the `Spore print and
+     macrochemical reactions not obtained.` span in
+     taxon_343eec40.  Worth knowing before anyone treats
+     feature spans as presence assertions.
+  3. **`Culture_characteristics` carries germination
+     behaviour** (`Conidia germinating on PDA within 24 h,
+     and germ tubes produced at the apex`) rather than only
+     colony morphology, which is what taxon_d65547ed and
+     taxon_06594607 carry.
+  4. **Not a protologue.**  An existing species redescribed
+     as a new geographic record, so the diagnosis field
+     holds a *phylogenetic* identification block (`our
+     isolate clustered with the holotype … with 100 %
+     ML/1.00 PP support (Fig. 59) … first time to report
+     this species from China`) rather than a differential
+     diagnosis.  Distinct from taxon_09b97d5f, whose
+     diagnosis is comparative *morphology*.  Note this is a
+     `Notes` block routed into `diagnosis` again — the
+     field mapping recorded at taxon_09b97d5f.
+  5. Conidiogenesis differs in detail: monoblastic,
+     integrated, terminal, determinate, with distoseptate
+     conidia carrying a mucilaginous apical sheath, against
+     taxon_e534e6a9's polytretic proliferating cells and
+     catenate conidia.
+
+  **Annotation detail**: the only uncovered text in the
+  description is the 16-character marker `Asexual morph: `
+  itself, while `Sexual morph: Undetermined.` *is*
+  annotated.  Harmless — the asexual content is fully
+  covered by the individual feature spans — but a coverage
+  metric that counts marker text will read this treatment
+  as 99 % rather than 100 %.
 * **`taxon_343eec40...`** — noted 2026-08-21 from round-4.
   Veiled bolete (*Pulveroboletus sokponianus* sp. nov.,
   *MycoKeys* 43, doi 10.3897/mycokeys.43.30776).  2636-char
