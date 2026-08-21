@@ -7,8 +7,6 @@ DICTLINE.GEN and INFLECTS.LAT use.
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -30,11 +28,6 @@ def _dl(stems, pos, codes, age='X', defn='white;'):
             + f'{age} X X A O ' + defn)
 
 
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: whitakers_wordlist not implemented yet",
-    strict=True,
-)
-
 _ADJ_INFLECTS = """
 ADJ   1 1 NOM S M POS   1 2 us    X A
 ADJ   1 0 NOM S F POS   1 1 a     X A
@@ -47,7 +40,6 @@ V     1 1 PRES ACTIVE IND 1 S 1 1 o   X A
 """
 
 
-@_XFAIL
 class TestParseInflections:
     def test_keys_by_pos_decl_variant(self) -> None:
         infl = parse_inflections(_ADJ_INFLECTS)
@@ -64,7 +56,6 @@ class TestParseInflections:
         assert all(k[0] in ('ADJ', 'N', 'V') for k in infl)
 
 
-@_XFAIL
 class TestEndingsFor:
     """A 0 in the INFLECTS declension or variant column is a
     wildcard: ADJ 1 0 applies to every variant of declension 1,
@@ -89,7 +80,6 @@ class TestEndingsFor:
                            'ADV', '9', '9') == []
 
 
-@_XFAIL
 class TestParseDictline:
     def test_extracts_stems_pos_codes_age(self) -> None:
         line = _dl(['alb', 'alb', 'albi', 'albissi'], 'ADJ', ' 1 1 X')
@@ -109,7 +99,6 @@ class TestParseDictline:
         assert parse_dictline('   ') is None
 
 
-@_XFAIL
 class TestFormsForEntry:
     def test_generates_inflected_forms(self) -> None:
         infl = parse_inflections(_ADJ_INFLECTS)
@@ -124,13 +113,23 @@ class TestFormsForEntry:
         entry = parse_dictline(_dl(['ros'], 'N', ' 1 1 F T'))
         assert all(f.startswith('ros') for f in forms_for_entry(entry, infl))
 
-    def test_unknown_inflection_yields_nothing(self) -> None:
+    def test_non_inflecting_pos_contributes_stems_verbatim(self) -> None:
+        """An adverb's DICTLINE stems ARE full words -- WORDS
+        stores `bene / melius / optime` as the three stems of one
+        ADV entry, so all three belong in the list."""
         infl = parse_inflections(_ADJ_INFLECTS)
-        entry = parse_dictline(_dl(['xyz'], 'ADV', ' 1 1 X'))
+        entry = parse_dictline(
+            _dl(['bene', 'melius', 'optime'], 'ADV', ' X'))
+        assert forms_for_entry(entry, infl) == {
+            'bene', 'melius', 'optime',
+        }
+
+    def test_inflecting_pos_without_codes_yields_nothing(self) -> None:
+        infl = parse_inflections(_ADJ_INFLECTS)
+        entry = parse_dictline(_dl(['xyz'], 'ADJ', ''))
         assert forms_for_entry(entry, infl) == set()
 
 
-@_XFAIL
 class TestFoldForm:
     """Folding applies to the WORD LIST only — never to treatment
     text, where it would invalidate stored span offsets."""
@@ -148,7 +147,6 @@ class TestFoldForm:
         assert fold_form('') is None
 
 
-@_XFAIL
 class TestBuildWordlist:
     def test_end_to_end(self) -> None:
         dictline = '\n'.join([
