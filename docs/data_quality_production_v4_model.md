@@ -461,6 +461,72 @@ two or more distinct species.
 
 **Evidence**:
 
+* **`taxon_3d0a3c69...`** — noted 2026-08-21 from round-4.
+  **Extreme fragment scatter across multiple genera, with
+  vascular-plant nomenclature.**  Source: "Contributions to
+  the Botany of the State of New York", *Bulletin of the New
+  York State Museum* — a 19th-century bulletin covering
+  vascular plants **and** fungi in one document.  Operator:
+  "a sequence of description fragments probably from more
+  than one species as we have two disjoint Lamellae sections
+  and three disjoint Pileus sections.  Many of the fragments
+  have no capital letter at the start of a sentence."  The
+  counts are higher than that — the annotation set has
+  **five** `Pileus` spans and **five** `Lamellae` spans.
+
+  **Scale**: 10 `description_spans` with 9 gaps, char 53 601
+  → 69 434 — **15 833 characters of source**, paragraphs 463
+  → 577, 114 paragraphs apart — yielding a 1684-char
+  description.  Content mixes at least three genera:
+  *Cantharellus* (`In Cantharellus (proper) the pileus is
+  fleshy, glabrous`), *Leptocantharellus* (OCR'd
+  `Leptocanthakellus`), and *Paxillus*.  Description span #1
+  (53 601–53 825) **crosses a species boundary** — the
+  heading `Paxillus involutus Fr. / Involute Paxillus.`
+  falls inside its char range.  The `key` field separately
+  holds a real *Paxillus* key.
+
+  **Wrong-kingdom nomenclature.**  The `treatment` field
+  holds `Potamogeton pauciflorus Pursh.` and `Juncus
+  Canadensis var. coarctatus Engelm.` — a pondweed and a
+  rush, both **vascular plants** — plus a bibliographic
+  fragment, across 3 `nomenclature_spans`.  The
+  treatment-grouper picked up plant headings from a
+  mixed-kingdom source.  No detector looks at kingdom.
+
+  **What fires**: `§10:mid_sentence` (opens `behind,
+  distinct from the hymenophorum`), `§10:diag_head_clip`,
+  `§12:desc_span_gap`.
+
+  **What doesn't fire is the point.**  merge_metric reads
+  **1** on maximally-merged content and
+  `n_repeated_structural_anatomy` reads **0**, for two
+  independent reasons:
+
+  1. `Pileus` and `Stipe` are *deliberately excluded* from
+     `_STRUCTURAL_ANATOMY_WATCHLIST` over false-positive
+     risk, and `Lamellae` was never on it — so the two
+     most-repeated nouns here can never fire it.
+  2. Even if they were listed, the detector anchors on
+     paragraph start (text start, or after a blank line),
+     and these fragments are joined by **single** newlines
+     from OCR line-wrapping.  Only 1 paragraph-start
+     `Pileus` and 1 paragraph-start `Lamellae` are visible,
+     against a threshold of 2.
+
+  That second point is the operator's "no capital letter at
+  the start of a sentence" observation cashed out: the worse
+  the fragmentation, the less paragraph structure survives,
+  and the less likely the §6 anatomy detector is to fire.
+  **Detectability is anti-correlated with severity.**
+
+  Meanwhile Claude's annotations found the merge immediately
+  — 5 `Pileus` + 5 `Lamellae`.  The signal is already in
+  data we store, which is what **D7** in the Detector
+  backlog proposes to use.  Between taxon_adcb2fcc (2 spans,
+  15-line gap) and taxon_2b793602 (the §8 flora slice,
+  `Pileus` 46 / `Lamellae` 40) in severity, and the clearest
+  case of the gap.
 * **T3** — `description` contains both `I. Gymnopilus laeticolor
   sp. nov.` and `3. Gymnopilus ornatulus sp. nov.` blocks; the
   treatment-grouper failed to split between them.  `materials_examined`
@@ -1941,6 +2007,57 @@ names in it will produce a misleading evaluation.
 here, the fix changes `article.txt` and therefore every
 downstream field and every stored `*_spans` offset.  Sequence
 with a planned re-extraction, not as a hot patch.
+
+### D7 — Repeated feature labels in the annotation set (§12/§6)
+
+**Catches**: multi-species merge, using Claude's own
+annotations instead of text heuristics.  A single-species
+treatment names each top-level feature about once; a merged
+one repeats them.
+
+**Gating fixtures**: must fire on `taxon_3d0a3c69`
+(`§12-multi-genus-fragment-scatter`, 5 × `Pileus` +
+5 × `Lamellae`) and on `taxon_2b793602`
+(`§8-flora-chapter-slice-unnumbered-key`, 46 × `Pileus`,
+40 × `Lamellae`, 16 × `Stipe`, 12 × `Spores`).
+
+**Why it is worth having**: on taxon_3d0a3c69 the text-based
+§6 detectors read merge_metric = 1 and
+`n_repeated_structural_anatomy` = 0 while Claude's
+annotations show the merge outright.  The signal is already
+in data we store; nothing new needs extracting.
+
+**The confounders are real and all four are in the
+fixture** — which is why this is a backlog item and not a
+two-line patch:
+
+* **Latin/English pairs.**  `taxon_d2a4c584`
+  (`agaric-latin-english-pair`) has **15 labels at exactly
+  2 ×**, by construction — Latin then English.  A naive
+  threshold of 2 fires on a poster child.
+* **Macro/micro splits.**  `taxon_0029f141`
+  (`bolete-review-confirmed`) has `Basidiomata`,
+  `Hymenophore`, `Pileipellis` and `Pileus` each at 2 ×.
+  Also a poster child.
+* **OCR span-splitting.**  `taxon_95dbdfb9`
+  (`§9-interstitial-OCR-noise`) shows 3 × for six different
+  labels purely because noise fragments each span.  Real
+  repetition, wrong cause.
+* **Existing §6 false positives.**  `taxon_9e048013` shows
+  `Stipe` 8 ×, `Spores` 6 ×.  A signal that fires there
+  makes a known false positive worse.
+
+So the usable form is not a raw count.  Candidates: repeats
+per 1000 characters; ratio of max label count to distinct
+label count; or a count that collapses the Latin/English
+pair the way `count_repeated_structural_anatomy` already
+does via `_latin_ratio`.  Settle it against those four
+before implementing.
+
+**Depends on**: nothing — annotation counts are already
+stored.  But it is evaluated on the annotation set, so it is
+a post-annotation triage signal rather than part of
+`treatment_signals` as currently shaped.
 
 ### Correction to the fix-sequencing list above
 
