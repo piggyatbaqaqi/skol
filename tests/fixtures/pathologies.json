@@ -782,6 +782,31 @@
         "§8:key_content_short"
       ],
       "notes": "§8 + §6 compound, and the evidence for the hypothesis §8 already states: a slice of a flora chapter carrying three species descriptions (paragraphs 0-2, each opening \"Pileus ...\"), a leaked authored citation (Agaricus (Clitocybe) glaucipes Berk. & Curt.), a partial genus description, and the genus key -- all in one description field of 7875 chars. merge_metric is 39 against a threshold of 10. Two detectors miss it, both deliberately: the key leads carry NO couplet numbering, so n_key_couplets = 0 and §8's own proposed 'numbered-couplet prefix at line start' detector would not catch it either; and §6:multi_structural_anatomy cannot fire because Pileus/Stipe are excluded from _STRUCTURAL_ANATOMY_WATCHLIST for false-positive risk -- three paragraph-start Pileus openers in one description is a counter-example worth weighing against that exclusion. The treatment also has a separately populated 5790-char `key` field, so the key content was extracted AND leaked."
+    },
+    {
+      "id": "taxon_0a8c1077ccc697646aab01658f5d373045fea41b19017bead436242341d72db5",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-21",
+      "captured_rev": "20-4178927b5a2e5fac3d14eecced24348a",
+      "class": "§5-front-matter-summary-in-taxonomic-paper",
+      "description": "All seven species mentioned above form smooth, butyrous,\nsomewhat shiny colonies on agar medium. The colonies produce\nentire margins and colony color varies from pink to brick-red.\nNone of these species have been observed to form hyphae\nor pseudohyphae, but most of them do form ballistoconidia\n(Hamamoto et al. 2011, Sampaio 2011). These characters are \n",
+      "diagnosis": "",
+      "description_spans": [
+        {"start_line": 63, "end_line": 68}
+      ],
+      "source_anchors": [],
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§13:no_source_anchor",
+        "§2:synth_nomen"
+      ],
+      "known_missed_flags": [
+        "§6:merge_metric"
+      ],
+      "notes": "Not a treatment at all: the description is the Introduction's summary paragraph about seven PREVIOUSLY-described species, opening \"All seven species mentioned above form smooth, butyrous, somewhat shiny colonies on agar medium.\"  Source: Haelewaters et al. 2020, \"Red yeasts from leaf surfaces and other habitats: three new species and a new combination of Symmetrospora\", Fungal Syst. Evol. 5: 187-196, doi 10.3114/fuse.2020.05.12.  Operator: \"a truncated summary Notes section ... that discusses 7 related species.  This should not have been extracted as a description.\"  Located in the FRONT matter, not the end: article.txt lines 60-65 of 1348, char 3154 of 55036 (~6 % in).  Same §5 mechanism as taxon_fb7bd18d -- the synthetic_nomenclature \"Nomen ignotum\" stub over an orphan section paragraph -- but it breaks BOTH of §5's current assumptions.  (1) The source is a legitimate taxonomic paper: it formally describes three new species and a new combination, so it has real Nomenclature headings throughout.  §5's proposed fix (\"gate stub creation on the source paper having at least one real Nomenclature heading anywhere\") would NOT catch this.  (2) It did NOT self-quarantine.  taxon_fb7bd18d drew 0 annotations and so never reached the review directory; this one drew 5 (Colony, Colony_color, Colony_margin, Hyphae, Ballistoconidia) because the summary is written in genuine morphological language about real colonies.  annotation_count is therefore NOT a reliable post-hoc §5 marker -- it works only when the orphan paragraph is non-morphological.  Tail-clip mechanism is identified: \"These characters are \" is cut at the bottom of page 1's column, and the very next line of article.txt is the article's own masthead (title / authors / affiliations / abstract, lines 66-89), which the linearizer emitted AFTER the body column.  article.page-headers.json does not cover lines 66-73 -- its nearest regions are 97-98 and 106-110 -- so the header-stripping pass missed the masthead block entirely.  The continuation of the sentence appears nowhere in the extracted text (\"These characters are\" occurs exactly once), so this is real content loss at a page boundary, not just reordering.  source_anchors is [] and nomenclature_spans holds a degenerate all-zero span, hence §13.  The defect the operator actually named -- multi-species summary prose masquerading as a description -- has NO detector: the plural subject (\"All seven species\", \"None of these species\", \"most of them\") is the strongest available signal and nothing looks for it.  Proposed: flag a description whose first sentence has a plural or anaphoric subject and no binomial, especially when synthetic_nomenclature is True."
     }
   ]
 }

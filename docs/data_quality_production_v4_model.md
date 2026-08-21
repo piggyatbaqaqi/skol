@@ -351,8 +351,79 @@ no actual taxonomic treatments.
   post-hoc signal for §5 candidates; combined with
   `synthetic_nomenclature = True` (§2 flag) it's a strong
   post-bootstrap marker for corpus-cleanup work.
+  **Conditional, not general** — see taxon_0a8c1077 below,
+  where the orphan paragraph *is* morphological, draws 5
+  annotations, and reaches the reviewer queue.
 
-**Affected treatments**: T1, `taxon_fb7bd18d...`.
+* **`taxon_0a8c1077...`** — noted 2026-08-21 from round-4.
+  **Breaks both assumptions above.**  Source: Haelewaters
+  *et al.* 2020, "Red yeasts from leaf surfaces and other
+  habitats: three new species and a new combination of
+  *Symmetrospora*", *Fungal Syst. Evol.* 5: 187–196
+  (doi 10.3114/fuse.2020.05.12).  The extracted
+  `description` is the Introduction's summary paragraph
+  about seven **previously-described** species: `All seven
+  species mentioned above form smooth, butyrous, somewhat
+  shiny colonies on agar medium. The colonies produce
+  entire margins and colony color varies from pink to
+  brick-red. None of these species have been observed to
+  form hyphae or pseudohyphae, but most of them do form
+  ballistoconidia (Hamamoto et al. 2011, Sampaio 2011).
+  These characters are ` — front matter, at article.txt
+  lines 60–65 of 1348, char 3154 of 55 036 (~6 % in).
+  Operator: "a truncated summary Notes section … that
+  discusses 7 related species.  This should not have been
+  extracted as a description."
+
+  1. **The paper is a legitimate taxonomic paper.**  It
+     formally describes three new species and a new
+     combination, so it has real Nomenclature headings
+     throughout.  The fix angle proposed below — gate stub
+     creation on the source paper having at least one real
+     Nomenclature heading anywhere — **would not catch
+     this**.  Nor would the `skol_dev.taxonomy` flag.  The
+     orphan paragraph is in a taxonomic paper; it just
+     isn't a treatment.
+  2. **It did not self-quarantine.**  taxon_fb7bd18d drew
+     0 annotations and so never reached the review
+     directory.  This one drew **5** — `Colony`,
+     `Colony_color`, `Colony_margin`, `Hyphae`,
+     `Ballistoconidia` — because a summary of seven
+     species' colony morphology is written in perfectly
+     genuine morphological language.  So
+     `annotation_count = 0` is **not** a general post-hoc
+     §5 marker; it works only where the orphan paragraph
+     is non-morphological.  This one landed in a reviewer's
+     queue and had to be caught by eye.
+
+  **Tail-clip mechanism identified.**  `These characters
+  are ` is cut at the bottom of page 1's column, and the
+  next line of `article.txt` is the article's own masthead
+  (title / authors / affiliations / abstract, lines 66–89),
+  which the linearizer emitted *after* the body column.
+  `article.page-headers.json` does not cover lines 66–73 —
+  its nearest regions are 97–98 and 106–110 — so the
+  header-stripping pass missed the masthead entirely.  The
+  sentence's continuation appears nowhere in the extracted
+  text (`These characters are` occurs exactly once), so
+  this is real content loss at a page boundary, not merely
+  reordering.
+
+  **Flags**: `§2:synth_nomen` (treatment is `Nomen
+  ignotum`), `§10:tail_clip`, `§13:no_source_anchor`
+  (`source_anchors` is `[]`; `nomenclature_spans` holds a
+  degenerate all-zero span).  **None of the three names the
+  actual defect.**  Multi-species summary prose posing as a
+  description has no detector.  The plural, anaphoric
+  subject is the strongest available signal — "All seven
+  species", "None of these species", "most of them" —
+  and nothing looks for it.  **Proposed detector**: flag a
+  description whose first sentence has a plural or
+  anaphoric subject and contains no binomial, weighted
+  higher when `synthetic_nomenclature` is True.
+
+**Affected treatments**: T1, `taxon_fb7bd18d...`,
+`taxon_0a8c1077...`.
 
 **Likely stage**: the treatment-grouper's
 `synthetic_nomenclature` fallback (`treatment.py:360-366`) creates
@@ -372,6 +443,13 @@ creation on a stronger signal (e.g., the source paper has at least
 one *real* Nomenclature heading anywhere; OR the article-level
 `skol_dev.taxonomy: true` field is set — though that flag is
 itself set by an upstream heuristic).
+
+**Insufficient on its own**: taxon_0a8c1077's source paper
+describes three new species and carries real Nomenclature
+headings throughout, so both proposed gates pass and the stub
+is still created.  Catching that case needs a signal about the
+*paragraph*, not the *paper* — see the proposed plural-subject
+detector in its entry above.
 
 ### 6. Multiple species merged into one treatment
 
