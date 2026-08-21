@@ -2133,6 +2133,57 @@ the existing header counter over `etymology`, `notes` and
 `materials_examined` costs nothing and would have caught it.
 Worth doing before D7.
 
+### D8 — OCR space-displacement rejoin rate (§9)
+
+**Catches**: scanned-typescript OCR where spaces land inside
+words.  Invisible to the existing §9 detector, which keys on
+U+FFFD; taxon_43a7b19e contains **zero** U+FFFD.
+
+**Metric**: fraction of tokens inside a run of 2–4 tokens
+that is out-of-vocabulary piecewise but forms a dictionary
+word when concatenated.  `f ung i` → *fungi*, `wi t h` →
+*with*, `hyal ine` → *hyaline*.
+
+**Gating fixtures**: must fire on `taxon_43a7b19e`
+(`§9-ocr-space-displacement`).  Must stay silent on all 15
+poster children.
+
+**Already measured across the fixture set** — this is the
+one backlog item that arrives with its threshold evidence:
+
+* taxon_43a7b19e: **19.13 %**
+* next-highest of any kind: **1.50 %**
+  (`§1-head-of-Description-citation`)
+* all 15 poster children: **0.00 %**
+* non-zero at all: 5 of 47 entries
+
+Any threshold in 2–19 % separates.  Pick nearer the bottom
+of that range only after checking more OCR-era treatments;
+the fixture has few scanned typescripts.
+
+**Rejected alternatives, also measured** — record these so
+they are not retried:
+
+* *Orphan single-letter rate* — 12.8 % here, but 15.7 % on
+  `§10-head-clip-only` and 13.1 % on the `discomycete`
+  poster child.  Measurement notation (`n = 20`, `L/W`,
+  `3–5 µm`) produces orphan letters in perfectly clean text.
+* *Out-of-vocabulary rate* — 25.0 % here, against a 16–47 %
+  range across poster children.  `agaric-latin-english-pair`
+  reaches 46.7 % because Latin is not in an English
+  dictionary.  Unusable without a Latin-aware vocabulary.
+
+**Depends on**: a word list.  `/usr/share/dict/american-english`
+exists on the dev box but is **not a declared dependency** —
+per CLAUDE.md a missing package on production is a packaging
+error, so either vendor a word list or add `wamerican` to the
+deb dependencies before this ships.
+
+**Note on scope**: firing this should mean *reject the
+treatment*, not *flag for review*.  taxon_43a7b19e already
+fires six flags and still reached a reviewer's queue.  A
+seventh flag changes nothing unless it gates admission.
+
 ### Correction to the fix-sequencing list above
 
 Item 2 of that list ranks §5 gating as "likely highest
@@ -2194,7 +2245,9 @@ What this captures is "issues that exist", not "issues that
 dominate."  The next round of sample-then-review (Phase 1
 deliverable 6+) will expand the visible surface; revisit the
 severity ordering and corpus-rate guesses then.
-### 9. Corrupt OCR text (U+FFFD runs in `diagnosis` / `description`)
+### 9. Corrupt OCR text (two modes)
+
+**Mode A — U+FFFD runs** (the original observation).
 
 **Symptom**: a Treatment field contains long runs of
 `�` (U+FFFD REPLACEMENT CHARACTER), the Python decoder's
@@ -2203,6 +2256,70 @@ Fauxton as long strings of replacement-glyph boxes.
 
 **Evidence**:
 
+* **`taxon_43a7b19e...`** — noted 2026-08-21 from round-4.
+  **Mode B — space displacement, with zero U+FFFD.**  The
+  Mode-A detector cannot see this one at all.  Operator: "a
+  mess … OCR errors that seriously altered the placement of
+  spaces … I think we should have rejected this treatment due
+  to the large number of invalid words."  Agreed on both
+  counts.  A scanned typescript, corrupted two ways at once:
+
+  * **spaces inserted inside words** — `demati aceous f ung i
+    wi t h fissi on a rthroconidia`, `Howeve r`, `hyal ine`,
+    `s t rai ght`;
+  * **character substitution** — `artbroconiuia` for
+    *arthroconidia*, `vide`/`vith`/`saooth`/`sore`/`celts`
+    for *wide*/*with*/*smooth*/*more*/*cells*, `Pigs.` for
+    *Figs.*, `Colon~es`, `septu~`, `piqgented`, plus wreckage
+    like `Arthi2S£~ph`, `Aq;;uaden9_£Q!l`, `Geotri£hY!`.
+
+  **The content isn't a treatment either**: introductory
+  remarks on form-genera, then a materials-and-methods block
+  (PYE agar from Baltimore Biological Laboratories, Pablum
+  baby food, cellophane-plate preparation), then several
+  strain groups (`a) Group 1 (Strains 1148, 507, 511, …)`),
+  then a literature discussion of Cole & Kendrick 1969.
+
+  **Worst scatter in the fixture**: 20 `description_spans`
+  running char 57 101 → 174 783 — **117 682 characters of
+  source across paragraphs 293 → 781**, 488 paragraphs apart
+  — harvested into a 7384-char description.  taxon_3d0a3c69,
+  the previous worst, spans 15 833.
+
+  `synthetic_nomenclature` is True and the treatment is
+  `Nomen ignotum`, so it is a §5 orphan stub too — and like
+  taxon_0a8c1077 it did **not** self-quarantine.  Claude
+  produced 19 annotations and it reached the reviewer.
+  Claude's robustness is itself worth recording: it labelled
+  `Arthroconidia` on a block reading `The artbroconiuia
+  (rigs. SH, SI) a re di fficult to distinguish`, recovering
+  the term through both corruption modes at once.
+
+  **Six flags fire** — `§2:synth_nomen`,
+  `§6:authored_binomial`, `§10:tail_clip`,
+  `§10:diag_head_clip`, `§12:desc_span_gap`,
+  `§13:no_source_anchor`, more than any other fixture entry —
+  **and none of them names the OCR damage**, which is the
+  actual reason to reject it.
+
+  **Detector evidence, tested against the whole fixture
+  set.**  The naive word-validity metrics do *not* separate
+  it:
+
+  | metric | this | conflicting entry |
+  |---|---:|---|
+  | orphan 1-char rate | 12.8 % | 15.7 % (§10-head-clip-only), 13.1 % (discomycete **poster child**) |
+  | out-of-vocabulary rate | 25.0 % | poster children span 16–47 %; the Latin/English pair hits 46.7 % |
+
+  What *does* separate it is a **rejoin rate**: the fraction
+  of tokens inside a run of 2–4 tokens that is
+  out-of-vocabulary piecewise but forms a dictionary word
+  when concatenated — `f ung i` → *fungi*, `wi t h` → *with*,
+  `hyal ine` → *hyaline*.  This treatment scores **19.13 %**.
+  **All 15 poster children score 0.00 %**, the next-highest
+  entry of any kind is 1.50 %, and only 5 of 47 fixture
+  entries are non-zero at all.  Any threshold between 2 % and
+  19 % separates cleanly.  Tracked as **D8**.
 * **`taxon_cda95f9f...`** (Colletotrichum, discovered during the
   2026-06-29 50-treatment intermediate run).  The `diagnosis`
   field has hundreds of U+FFFD characters interleaved with
