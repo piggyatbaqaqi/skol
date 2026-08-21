@@ -1247,6 +1247,49 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_09b97d5f...`** — noted 2026-08-21 from round-4.
+  Bolete (*Butyriboletus parachinarensis* sp. nov.,
+  Persoonia).  1166-char description, 9 Claude annotations
+  covering it contiguously with no uncovered prose,
+  merge_metric = 2, all triage detectors silent.  Operator:
+  "another basidiomycete poster child."
+
+  **Boletoid control for the anatomical-noun-clip pattern.**
+  It opens directly at `Pileus 9.7–10.5 cm broad, convex to
+  plano-convex, …` with **no `Basidiomata` umbrella
+  sentence** — where taxon_0cfe582f opens `Basidiomata
+  medium large sized, boletoid.` and taxon_0029f141 opens
+  `Description: Basidiomata small to medium-sized.`  A §10
+  head-clip detector keying on "bolete descriptions start at
+  Basidiomata" would false-fire here.  This is the boletoid
+  counterpart to what taxon_38b5b1c6 does for ascomycetes
+  (see taxon_7fbc71a8).  Its micro suite (Basidiospores,
+  Basidia, Cheilocystidia, Pileipellis, `Clamp connections
+  absent`) duplicates taxon_0cfe582f's and is *not* the
+  reason for the entry.
+
+  **True-negative control for taxon_9e048013.**  The
+  diagnosis field holds a 916-char comparative Notes block
+  dense with authored binomials — `Butyriboletus sanicibus`,
+  `B. yicibus`, `B. parachinarensis`, with BLAST identities
+  and Q-value comparisons.  `authored_binomial_in_text` on
+  the *diagnosis* returns True; on the *description* it
+  returns False, and merge_metric stays at 2.  taxon_9e048013
+  is the §6 false positive where exactly this content shape
+  inflated merge_metric to 10.  Keeping both means a §6
+  precision fix has a matched pair to work against.
+
+  **Field-mapping observation** (not a defect of this
+  treatment): the source's `Notes — ` paragraph landed in the
+  `diagnosis` field, with `notes` left empty.  This is
+  systematic rather than one-off — **1 884** production_v4
+  treatments move Notes into an otherwise-empty diagnosis,
+  and a further **932** populate both fields (of 18 787 with
+  any diagnosis).  Defensible for `sp. nov.` treatments that
+  carry no formal diagnosis, since the Notes paragraph is
+  doing the differential work.  Recorded because any future
+  consumer that treats `diagnosis` as protologue-diagnosis
+  will be wrong about roughly 15 % of the populated ones.
 * **`taxon_06594607...`** — noted 2026-08-21 from round-4.
   Synnematous asexual morph (*Myxospora aptrootii* sp. nov.,
   Persoonia).  1029-char description in two registers:
