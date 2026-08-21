@@ -527,6 +527,67 @@ two or more distinct species.
   15-line gap) and taxon_2b793602 (the §8 flora slice,
   `Pileus` 46 / `Lamellae` 40) in severity, and the clearest
   case of the gap.
+* **`taxon_3d9f50f8...`** — noted 2026-08-21 from round-4.
+  **Two species, and every strong signal is in a field no
+  detector reads.**  Nomenclature names only *Vexillomyces
+  fraxinicola* S. Bien, S. Peters & G. Langer, sp. nov.  The
+  description holds two unrelated descriptions: (A) an
+  in-culture asexual morph (`Sexual morph not observed.
+  Asexual morph on synthetic nutrient-poor agar (SNA).` →
+  Vegetative hyphae, phialidic/adelophialidic conidiogenous
+  cells with collarettes, conidia aseptate allantoid
+  (2.5–)3–5(–7) × 1–1.5(–2) μm, `Conidiomata not
+  observed.`); and (B) an in-situ cercosporoid leaf-spot
+  description (Leaf spots amphigenous, Caespituli,
+  `Conidiomata sporodochial, intraepidermal, erumpent`,
+  holoblastic sympodial cells, conidia **55–90 × 3–6 μm,
+  (0–)3–7-septate**).  The conidia differ by more than an
+  order of magnitude and disagree on septation and
+  conidiogenesis.
+
+  Evidence, strongest first:
+
+  1. **Two `Etymology.` blocks** — `Named after its host
+     genus, Fraxinus` and `Named after Ivy May Hassard (née
+     Pearce) (1914–1998)`.  Two species' etymologies; the
+     second species' name appears nowhere in the doc.
+  2. **`description_spans` is 4 spans in two clusters** —
+     paragraphs 1175+1177 (chars 225 035–226 803) and
+     1205+1207 (chars 231 450–232 482) — separated by
+     **4 647 characters and 28 paragraphs**.  The source in
+     that gap holds the Typus and Notes for a *third*
+     species, *Valsonectria robiniae*: this is a
+     Fungal-Planet-style sheet run sliced across
+     consecutive species.
+  3. **Two `Culture characteristics` blocks with different
+     protocols** — OA and SNA read at 4 wk, versus PDA at
+     25 °C, 14 d, in darkness.
+
+  **Only `§12:desc_span_gap` fires**, and each miss has an
+  identified cause:
+
+  * `Culture characteristics` is **deliberately excluded**
+    from `_SECTION_HEADER_WATCHLIST` as a substrate-specific
+    subtype, for taxon_b9a6232 false-positive prevention.
+    That guard is exactly what blinds it here, where the two
+    blocks belong to different species.  Same shape as
+    taxon_3d0a3c69's deliberate `Pileus`/`Stipe` exclusion —
+    **a false-positive guard becoming a blind spot on a real
+    merge.**  Two independent instances now; worth treating
+    as a pattern rather than two accidents.
+  * The two `Etymology.` blocks **would** fire
+    `§6:multi_section_header` —
+    `count_repeated_section_headers` returns 1 when run on
+    this doc's `etymology` field — but the detector only
+    ever sees `description` and `diagnosis`.  The strongest
+    single signal in the treatment sits in a field nothing
+    reads.
+  * merge_metric reads **4**, below threshold.
+  * **D7 would fire cleanly**: the annotation set repeats
+    `Conidia` ×2, `Conidiogenous_cells` ×2, `Conidiophores`
+    ×2, `Conidiomata` ×2 and `Culture_characteristics` ×2.
+    Second case after taxon_3d0a3c69 where the annotations
+    catch a merge the text detectors miss.
 * **T3** — `description` contains both `I. Gymnopilus laeticolor
   sp. nov.` and `3. Gymnopilus ornatulus sp. nov.` blocks; the
   treatment-grouper failed to split between them.  `materials_examined`
@@ -2017,7 +2078,11 @@ one repeats them.
 
 **Gating fixtures**: must fire on `taxon_3d0a3c69`
 (`§12-multi-genus-fragment-scatter`, 5 × `Pileus` +
-5 × `Lamellae`) and on `taxon_2b793602`
+5 × `Lamellae`), on `taxon_3d9f50f8`
+(`§6-two-species-two-culture-blocks`, `Conidia`,
+`Conidiogenous_cells`, `Conidiophores`, `Conidiomata` and
+`Culture_characteristics` all ×2 — the low-multiplicity end,
+and the harder test) and on `taxon_2b793602`
 (`§8-flora-chapter-slice-unnumbered-key`, 46 × `Pileus`,
 40 × `Lamellae`, 16 × `Stipe`, 12 × `Spores`).
 
@@ -2058,6 +2123,15 @@ before implementing.
 stored.  But it is evaluated on the annotation set, so it is
 a post-annotation triage signal rather than part of
 `treatment_signals` as currently shaped.
+
+**Related, and cheaper**: `treatment_signals` reads only
+`description` and `diagnosis`.  taxon_3d9f50f8 shows
+`count_repeated_section_headers` returning 1 on that doc's
+`etymology` field while the treatment scores clean — two
+`Etymology.` blocks naming two different honorees.  Running
+the existing header counter over `etymology`, `notes` and
+`materials_examined` costs nothing and would have caught it.
+Worth doing before D7.
 
 ### Correction to the fix-sequencing list above
 
