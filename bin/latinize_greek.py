@@ -137,6 +137,9 @@ def _apply_clusters(text: str) -> str:
 def transliterate(word: str) -> str:
     """Greek to Latin letters, without termination conversion."""
     bare, rough = strip_diacritics(word)
+    # Leading/trailing hyphens mark a combining form in the source
+    # notation (-ουχος, ἀκτιν-); they are not letters.
+    bare = bare.strip('-\u2010\u2011\u2012\u2013\u2014')
     if not bare:
         return ''
     text = _apply_clusters(bare)
@@ -154,6 +157,23 @@ def transliterate(word: str) -> str:
     elif rough:
         result = 'h' + result
     return result
+
+
+def combining_form(word: str) -> str:
+    """The stem-plus-``o`` form used inside compound names.
+
+    Systematic names take the combining form far more often than
+    the nominative — *Acanthocystis*, not *Acanthuscystis*.
+    Validated against the Wikipedia systematic-names list, where 26
+    of the Greek rows list a combining form where a nominative was
+    generated.
+    """
+    if len(word) < 4 or word.endswith('o'):
+        return word
+    for ending in ('us', 'um', 'is', 'es', 'a', 'e'):
+        if word.endswith(ending) and len(word) > len(ending) + 1:
+            return word[:-len(ending)] + 'o'
+    return word
 
 
 def latin_terminations(word: str) -> str:

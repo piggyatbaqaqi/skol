@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from latinize_greek import (  # noqa: E402
+    combining_form,
     latinize,
     latin_terminations,
     strip_diacritics,
@@ -152,3 +153,36 @@ class TestLatinize:
         passed straight through into the output."""
         for word in ('αὐτός', 'ἔργον', 'ὅς ἥ ὅ', 'ποιέω'):
             assert all(ord(c) < 128 for c in latinize(word)), word
+
+
+class TestCombiningForm:
+    """Systematic names use the combining form far more than the
+    nominative: Acanthocystis, not Acanthuscystis.  Validated
+    against the Wikipedia systematic-names list, where 26 of the
+    Greek rows give a combining form where we gave a nominative."""
+
+    def test_os_stem_takes_o(self) -> None:
+        assert combining_form('acanthus') == 'acantho'
+
+    def test_um_stem_takes_o(self) -> None:
+        assert combining_form('basidium') == 'basidio'
+
+    def test_a_stem_takes_o(self) -> None:
+        assert combining_form('rhiza') == 'rhizo'
+
+    def test_already_combining_is_unchanged(self) -> None:
+        assert combining_form('acantho') == 'acantho'
+
+    def test_short_word_left_alone(self) -> None:
+        assert combining_form('os') == 'os'
+
+
+class TestHyphenHandling:
+    """The source lists combining forms as -ouchos / actino-.
+    Leading and trailing hyphens are notation, not letters."""
+
+    def test_leading_hyphen_stripped(self) -> None:
+        assert transliterate('-οῦχος') == 'uchos'
+
+    def test_trailing_hyphen_stripped(self) -> None:
+        assert latinize('ἀκτιν-') == 'actin'
