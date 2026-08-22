@@ -3,8 +3,6 @@
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -15,11 +13,6 @@ from botanical_latin_wordlist import (  # noqa: E402
     parse_headwords,
 )
 
-
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: botanical_latin_wordlist not implemented yet",
-    strict=True,
-)
 
 _PAGE = '''
 <b><i>bacca, -ae</i></b> - noun, 1st declension, feminine: berry<br>
@@ -32,7 +25,6 @@ _PAGE = '''
 '''
 
 
-@_XFAIL
 class TestParseHeadwords:
     def test_finds_bold_italic_headwords(self) -> None:
         assert parse_headwords(_PAGE) == [
@@ -46,7 +38,6 @@ class TestParseHeadwords:
         assert 'Lonicera nigra' not in ' '.join(parse_headwords(_PAGE))
 
 
-@_XFAIL
 class TestExpandHeadword:
     """A -SUF part replaces the lemma's nominative ending."""
 
@@ -72,7 +63,6 @@ class TestExpandHeadword:
         }
 
 
-@_XFAIL
 class TestAttestedForms:
     """The indented lines are real inflected forms from Linnaeus —
     the part no lemma list can supply."""
@@ -85,7 +75,6 @@ class TestAttestedForms:
         assert 'bacca' not in got and 'Lonicera' not in got
 
 
-@_XFAIL
 class TestBuildWordlist:
     def test_union_sorted_and_folded(self) -> None:
         words = build_wordlist(_PAGE)

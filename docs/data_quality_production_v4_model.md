@@ -2332,6 +2332,29 @@ treatment*, not *flag for review*.  taxon_43a7b19e already
 fires six flags and still reached a reviewer's queue.  A
 seventh flag changes nothing unless it gates admission.
 
+**Vocabulary recommendation superseded 2026-08-21.**  The
+V. F. Thomas Co. *Botanical Latin Words* site supplies 3 187
+**attested inflected forms** read out of Linnaeus's *Species
+Plantarum* — the one thing every earlier source lacked.  At
+5 679 forms it reaches 13.33 % on the corrupted-Latin case
+against WORDS' 14.67 % from 899 973 forms, **158× smaller
+for 91 % of the effect**, and unlike WORDS it does not
+absorb real corruption (`taxon_43a7b19e` holds at 19.13 %
+rather than dropping to 16.22 %).  It overlaps the
+corpus-derived vocabulary by only **11.2 %**, so the two
+combine well: **corpus df ≥ 50 + botanical Latin, 9 471
+forms and about 90 KB, measures best overall** — 65.9 %
+Latin coverage, 24.00 % corrupted-Latin, 22.19 % on
+taxon_43a7b19e, no false positives.  That makes the 11 MB
+WORDS list droppable.  It is also *cleaner* than the corpus
+list, which carries English technical terms, French and
+truncation debris — relevant to the circularity caution
+above.  **Blocked on licence**: the site carries no
+copyright notice, the author has been contacted, and the
+derived list is deliberately not committed.  Details and
+the full table in
+`data/botanical_latin_wordlist.CITATION.md`.
+
 ### D9 — Head-clip on an opening parenthesis (§10)
 
 **Catches**: a description or diagnosis whose first character is

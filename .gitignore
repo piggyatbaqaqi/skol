@@ -42,3 +42,6 @@ dist/
 
 # Soffice locks
 .~lock.*
+
+# Licence unresolved — see data/botanical_latin_wordlist.CITATION.md
+data/botanical_latin_wordlist.txt
