@@ -1868,7 +1868,8 @@ item names the fixture entries that gate it, so the work can
 start from a red test rather than from prose.
 
 Implementation is deferred until round-4 annotation is
-finished.  The doc pass is deliberately ahead of the code so
+finished.  **§16 is not on this list and should outrank it**
+— that is a data defect, not a detector precision question.  The doc pass is deliberately ahead of the code so
 that the gating cases are settled before anyone writes a
 regex.
 
@@ -2370,6 +2371,41 @@ path.
 a public git remote — is unaffected, but the repo-split and packaging
 plan must carry the condition forward rather than assume a permissive
 project licence covers it.
+
+### D10 — Genus mismatch between nomenclature and description (§2)
+
+**Catches**: a treatment whose `description` names a
+different genus from the one in its nomenclature — the
+treatment-grouper missed a genus heading and attached the
+description to the previous taxon.
+
+**Gating fixture**: must fire on `taxon_4b89d160`
+(`§2-wrong-genus-nomenclature`), whose nomenclature reads
+*Pseudonectria* while the description opens `Type species:
+Stylonectria applanata Höhn. 1915.` and describes
+*Stylonectria*.
+
+**The signal already exists, unused.**  `§6:authored_binomial`
+fires on that treatment precisely because the description
+contains an authored binomial — but it is read as a *merge*
+signal.  Compare the genus of the binomials found in the
+description against the genus in the nomenclature field, and
+a disagreement is a mis-attribution.  gnfinder already
+returns the parsed name, so the genus is in hand.
+
+**Must stay silent on** the poster children, and in
+particular on `taxon_09b97d5f` and `taxon_4a5306ac`, whose
+*diagnoses* are full of comparative binomials from other
+genera — the comparison must read the **description** only,
+and must tolerate a description that legitimately names
+congeners.
+
+**Blocked on §15 for part of the corpus.**  Name detection
+is unavailable on the 2 629 plazi-only treatments where the
+element-join artifact makes binomials unparseable, so this
+detector is blind exactly there.  Sequence after D6.
+
+**Depends on**: nothing new — gnfinder is already wired in.
 
 ### D9 — Head-clip on an opening parenthesis (§10)
 
@@ -4109,4 +4145,92 @@ Tracked as **D6** in the Detector backlog.
 this changes `article.txt` and therefore every downstream field
 and every stored `*_spans` offset.  Sequence it with a planned
 re-extraction, not as a hot patch.
+
+
+### 16. Stored `*_spans` offsets do not locate their own text
+
+**Symptom**: a treatment's `description_spans` (and
+`nomenclature_spans`) give `start_char` / `end_char` /
+`start_line` / `end_line` that, read against the source
+`article.txt`, point somewhere other than the field's text.
+
+**Discovered 2026-08-21** while checking taxon_4b89d160, whose
+stored `description_spans` are lines **4390–4414** — the
+article's **bibliography**:
+
+```
+4390| Beyma van FH (1938). Beschreibung einiger neuer Pilzarten aus dem
+4394| Bezerra JL (1963). Studies on Pseudonectria rousseliana. Acta Botanica
+4396| Bills GF, Platas G, Overy DP, Collado J, Fillola A, Jiménez MR, …
+```
+
+The actual description (`Stroma thin, whitish or yellow …`
+through `Habitat: Restricted to stromata …`) is at lines
+**4069–4099**, about 320 lines earlier.
+
+**Scale — measured, not assumed.**  Sampled 600 treatments,
+resolved 47 of them against their `skol_dev` `article.txt`
+(one article fetch per source document, capped at 45
+articles).  For each, a 60-character whitespace-normalised
+probe was taken from the *middle* of the description — the
+middle, not the head, so a common opening like `Ascomata
+immersed` cannot match the wrong paragraph — and cases where
+the probe occurred more than once were discarded as
+ambiguous:
+
+| outcome | n |
+|---|---:|
+| stored span **does not contain** its text | **36** |
+| stored span contains its text | 6 |
+| probe ambiguous (discarded) | 5 |
+| probe absent from `article.txt` | 4 |
+
+**36 of 42 conclusive cases — 86 %.**  Deltas are mostly
+positive and grow with position in the document (+573,
++1 800, +2 283, +6 347, +28 352, +37 266 characters), which
+looks like an offset accumulating through the file rather
+than a constant shift.
+
+**Mechanism not established.**  The obvious candidate —
+`--- PDF Page N Label M ---` marker lines injected into
+`article.txt`, which would make offsets computed on a
+marker-free stream drift cumulatively — **does not explain
+it**: for taxon_4b89d160 the 29 markers before the true
+position total 840 characters against a 6 347-character
+delta, 13 %.  Something else is responsible.  Do not fix
+this by guessing; find the writer.
+
+**Consequences.**
+
+* **`§12:desc_span_gap` is computing over unreliable
+  coordinates.**  Every gap figure in this memo derived from
+  span arithmetic — taxon_3d0a3c69's "15 833 characters
+  across 114 paragraphs", taxon_43a7b19e's "117 682
+  characters across 488 paragraphs", taxon_3d9f50f8's
+  "4 647 characters and 28 paragraphs" — is a *stored-span*
+  figure, not a verified position.  The pathologies those
+  entries describe were confirmed by reading the content, so
+  the classifications stand; the magnitudes should not be
+  quoted as distances in the source until this is fixed.
+* **Trello #401 deep-linking resolves to the wrong place.**
+  A reader following a `source_anchors` link would land in
+  the references, not the treatment.  This gates the wider
+  view wire-up.
+* Page-level metadata looks *unaffected*: taxon_4b89d160's
+  spans carry `pdf_page` 29/30 and labels 107/108, and the
+  description genuinely is on those pages.  Only the
+  character and line offsets are wrong, which suggests page
+  metadata and offsets come from different places.
+
+**Severity: high.**  It is silent, it affects most
+treatments, and it undermines a detector and a shipped
+feature at once.  Unlike the detector backlog, this is not a
+precision question — the data is wrong.
+
+**Next step**: find which writer produces `*_spans` and
+against what text, then decide between recomputing the
+offsets and teaching the resolver the correct coordinate
+space.  A verification pass belongs in the eventual fix:
+re-run the probe measurement above and require it to reach
+100 %.
 
