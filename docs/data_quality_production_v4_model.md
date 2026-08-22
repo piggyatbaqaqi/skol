@@ -2332,6 +2332,31 @@ treatment*, not *flag for review*.  taxon_43a7b19e already
 fires six flags and still reached a reviewer's queue.  A
 seventh flag changes nothing unless it gates admission.
 
+### D9 — Head-clip on an opening parenthesis (§10)
+
+**Catches**: a description or diagnosis whose first character is
+`(` or `[` — the tail of a sentence that began earlier.
+
+**Gating fixture**: must fire on `taxon_4a5306ac`
+(`§10-diag-head-clip-open-paren`), whose diagnosis opens
+`(more than 100 basidiomata are present in the type
+collection), allowing a detailed study …`.
+
+**The fix is one character.**  `desc_starts_mid_sentence`
+fires on a leading character in `;,.:` or a lowercase
+letter.  `(` is neither, so `§10:diag_head_clip` stays
+silent on a plainly clipped field.  Add `(` and `[` to the
+set.
+
+**Safe against the whole regression bar, checked.**
+Surveying the opening character of every `description` and
+`diagnosis` in the fixture: none opens with a parenthesis,
+so nothing currently passing starts firing.  The smallest
+item on this list, and the only one that is a one-line
+change with its gating case already captured.
+
+**Depends on**: nothing.
+
 ### Correction to the fix-sequencing list above
 
 Item 2 of that list ranks §5 gating as "likely highest
