@@ -4144,7 +4144,12 @@ Tracked as **D6** in the Detector backlog.
 **Re-extraction required.**  Unlike a detector change, fixing
 this changes `article.txt` and therefore every downstream field
 and every stored `*_spans` offset.  Sequence it with a planned
-re-extraction, not as a hot patch.
+re-extraction, not as a hot patch — **and with §16**, whose fix
+is the same re-extraction.  The offsets have to be rewritten
+either way: §15 invalidates them, and §16 shows they already
+point at `article.txt.ann`, a file no source document still
+carries.  Doing the two separately pays for a full
+re-extraction twice.
 
 
 ### 16. Stored `*_spans` offsets do not locate their own text
@@ -4191,14 +4196,50 @@ positive and grow with position in the document (+573,
 looks like an offset accumulating through the file rather
 than a constant shift.
 
-**Mechanism not established.**  The obvious candidate —
-`--- PDF Page N Label M ---` marker lines injected into
-`article.txt`, which would make offsets computed on a
-marker-free stream drift cumulatively — **does not explain
-it**: for taxon_4b89d160 the 29 markers before the true
-position total 840 characters against a 6 347-character
-delta, 13 %.  Something else is responsible.  Do not fix
-this by guessing; find the writer.
+**Mechanism identified 2026-08-21** (operator asked whether
+running headers, footers, figures and tables were accounted
+for, which prompted reading the writer instead of inferring
+from the data):
+
+**The offsets are correct — for a file that no longer
+exists.**  Every treatment carries
+`attachment_name: "article.txt.ann"`, and
+`fileobj.read_line()` accumulates `_char_offset` over exactly
+the content it is handed.  So the spans index
+**`article.txt.ann`**, the YEDDA-annotated file — `article.txt`
+with `[@text#Tag*]` markup inserted throughout — not
+`article.txt`.
+
+Evidence:
+
+* `attachment_name` is `article.txt.ann` for **4 000 of
+  4 000** treatments sampled.  It is universal, not sporadic.
+* **No `skol_dev` document retains that attachment**: of 616
+  source documents checked, **0** still have
+  `article.txt.ann`; they carry `article.txt`,
+  `article.page-headers.json`, `article.spans.v4.json` and
+  `article.pdf`.
+* The delta signature matches inserted markup.  Across 35
+  measurable treatments the delta is **positive in 31**, and
+  scales with position: **median delta ÷ true position =
+  0.0381**, i.e. the `.ann` file runs about **3.8 % longer**
+  and the excess accumulates.  taxon_4b89d160 sits at 3.75 %
+  (6 347 ÷ 169 225) — the same ratio.
+
+**Running headers, footers, figures and tables are *not* the
+cause.**  They appear in both files, so they cancel.  An
+earlier pass here reported that page-header regions plus
+`--- PDF Page N Label M ---` markers "explained" 3 839 of
+taxon_4b89d160's 6 347 characters; that was coincidental
+accumulation measured *within* `article.txt`, not a
+difference *between* coordinate spaces, and it is withdrawn.
+
+**This is worse than wrong offsets: the coordinate space is
+currently unrecoverable.**  The file that defines it is gone
+from every source document, so no resolver can be corrected
+after the fact — the mapping has to be rebuilt, either by
+regenerating `article.txt.ann` deterministically or by
+recomputing every `*_spans` against `article.txt`.
 
 **Consequences.**
 
@@ -4227,10 +4268,25 @@ treatments, and it undermines a detector and a shipped
 feature at once.  Unlike the detector backlog, this is not a
 precision question — the data is wrong.
 
-**Next step**: find which writer produces `*_spans` and
-against what text, then decide between recomputing the
-offsets and teaching the resolver the correct coordinate
-space.  A verification pass belongs in the eventual fix:
-re-run the probe measurement above and require it to reach
-100 %.
+**Fix, and it is the same work as §15.**  Both defects are
+repaired by a re-extraction that writes offsets against
+`article.txt`: §15 needs one because fixing `extract_text()`
+changes `article.txt` and therefore every offset anyway, and
+§16 needs one because the current offsets point at a file
+that no longer exists.  Doing them separately means paying
+for a full re-extraction twice.
+
+Sequence: fix `extract_text()` (§15, D6) → re-extract →
+write `*_spans` against `article.txt` → verify.  **The
+verification is the probe measurement above**: sample
+treatments, take a 60-character whitespace-normalised slice
+from the middle of each description, and require the stored
+span to contain it in 100 % of unambiguous cases.  It sits at
+6 of 42 today.
+
+Until then, treat `*_spans` char and line offsets as
+unusable, and note that `pdf_page` / `pdf_label` are
+**unaffected** — they were correct on taxon_4b89d160 even
+where the offsets were not, so page-level deep links can
+ship ahead of character-level ones.
 
