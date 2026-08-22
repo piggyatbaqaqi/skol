@@ -1868,8 +1868,7 @@ item names the fixture entries that gate it, so the work can
 start from a red test rather than from prose.
 
 Implementation is deferred until round-4 annotation is
-finished.  **§16 is not on this list and should outrank it**
-— that is a data defect, not a detector precision question.  The doc pass is deliberately ahead of the code so
+finished.  The doc pass is deliberately ahead of the code so
 that the gating cases are settled before anyone writes a
 regex.
 
@@ -4144,149 +4143,76 @@ Tracked as **D6** in the Detector backlog.
 **Re-extraction required.**  Unlike a detector change, fixing
 this changes `article.txt` and therefore every downstream field
 and every stored `*_spans` offset.  Sequence it with a planned
-re-extraction, not as a hot patch — **and with §16**, whose fix
-is the same re-extraction.  The offsets have to be rewritten
-either way: §15 invalidates them, and §16 shows they already
-point at `article.txt.ann`, a file no source document still
-carries.  Doing the two separately pays for a full
-re-extraction twice.
+re-extraction, not as a hot patch.  Note that the
+re-extraction must also rewrite every `*_spans` offset, since
+those are indexed to `article.txt.ann` (§16) and changing
+`article.txt` changes what the annotator emits.
 
 
-### 16. Stored `*_spans` offsets do not locate their own text
+### 16. `*_spans` are indexed to `article.txt.ann` (not a defect)
 
-**Symptom**: a treatment's `description_spans` (and
-`nomenclature_spans`) give `start_char` / `end_char` /
-`start_line` / `end_line` that, read against the source
-`article.txt`, point somewhere other than the field's text.
+**This section previously reported a high-severity data
+defect — that stored `*_spans` offsets did not locate their
+own text in 86 % of treatments.  That was wrong, and it was
+a lookup error on my part.  Withdrawn 2026-08-21.**
 
-**Discovered 2026-08-21** while checking taxon_4b89d160, whose
-stored `description_spans` are lines **4390–4414** — the
-article's **bibliography**:
+**What is actually true.**  `*_spans` character and line
+offsets are indexed to **`article.txt.ann`**, the
+YEDDA-annotated file, as every treatment's
+`attachment_name` says.  They are correct there.  Verified on
+taxon_4b89d160: its stored span `[175572:175765]` lands
+exactly on
 
 ```
-4390| Beyma van FH (1938). Beschreibung einiger neuer Pilzarten aus dem
-4394| Bezerra JL (1963). Studies on Pseudonectria rousseliana. Acta Botanica
-4396| Bills GF, Platas G, Overy DP, Collado J, Fillola A, Jiménez MR, …
+[@Type species: Stylonectria applanata Höhn. 1915.
+Stroma thin, whitish or yellow, hyphal or subiculum-like. …
 ```
 
-The actual description (`Stroma thin, whitish or yellow …`
-through `Habitat: Restricted to stromata …`) is at lines
-**4069–4099**, about 320 lines earlier.
+and stored `start_line` 4381 is exactly
+`Stroma thin, whitish or yellow …`.  `article.txt.ann` runs
+**3.65 %** longer than `article.txt` for that document, which
+matches the 3.81 % median inflation measured across the
+corpus — the `[@…#Tag*]` markup, accumulating.
 
-**Scale — measured, not assumed.**  Sampled 600 treatments,
-resolved 47 of them against their `skol_dev` `article.txt`
-(one article fetch per source document, capped at 45
-articles).  For each, a 60-character whitespace-normalised
-probe was taken from the *middle* of the description — the
-middle, not the head, so a common opening like `Ascomata
-immersed` cannot match the wrong paragraph — and cases where
-the probe occurred more than once were discarded as
-ambiguous:
+**Where the file lives, which is the trap.**  The treatment's
+`ingest.db_name` says **`skol_dev`**, and `skol_dev` holds
+`article.txt`, `article.pdf`, `article.page-headers.json` and
+`article.spans.v4.json` — but **not** `article.txt.ann`.  The
+annotated file is written by the v4 predictor to the
+experiment's *annotations* database, which for production_v4
+is **`skol_exp_production_v4_01_00_ann_combined`** (20 928
+docs).  Note also that the unversioned sibling
+`skol_exp_production_v4_ann_combined` holds only 1 826 docs
+and does *not* have most documents — checking that one and
+concluding the attachment is missing is the same trap twice.
 
-| outcome | n |
-|---|---:|
-| stored span **does not contain** its text | **36** |
-| stored span contains its text | 6 |
-| probe ambiguous (discarded) | 5 |
-| probe absent from `article.txt` | 4 |
+Resolving a span means: annotations DB + `attachment_name`,
+never `ingest.db_name` + `article.txt`.
+`django/search/views.py` already does this correctly —
+`_collect_ann_db_candidates()` tries the doc's explicit
+`annotations_db`, then the ingest DB, then the experiment's
+`databases.annotations`, and prefers the stored
+`attachment_name` before falling back to `article.pdf.ann` /
+`article.txt.ann`.
 
-**36 of 42 conclusive cases — 86 %.**  Deltas are mostly
-positive and grow with position in the document (+573,
-+1 800, +2 283, +6 347, +28 352, +37 266 characters), which
-looks like an offset accumulating through the file rather
-than a constant shift.
+**Consequences of the withdrawal.**
 
-**Mechanism identified 2026-08-21** (operator asked whether
-running headers, footers, figures and tables were accounted
-for, which prompted reading the writer instead of inferring
-from the data):
+* **`§12:desc_span_gap` is fine.**  It measures line deltas
+  *between* spans within one coordinate space, so the
+  inflation cancels.
+* **The span-derived magnitudes elsewhere in this memo are
+  valid** — taxon_3d0a3c69's 15 833 characters,
+  taxon_43a7b19e's 117 682 across 488 paragraphs,
+  taxon_3d9f50f8's 4 647 across 28.  The caveats added
+  against them are withdrawn.  They are `article.txt.ann`
+  distances, about 3.7 % larger than the corresponding
+  `article.txt` distances, which does not affect any
+  conclusion drawn from them.
+* **Trello #401 deep-linking is not broken by this.**
+* Nothing here outranks the detector backlog.
 
-**The offsets are correct — for a file that no longer
-exists.**  Every treatment carries
-`attachment_name: "article.txt.ann"`, and
-`fileobj.read_line()` accumulates `_char_offset` over exactly
-the content it is handed.  So the spans index
-**`article.txt.ann`**, the YEDDA-annotated file — `article.txt`
-with `[@text#Tag*]` markup inserted throughout — not
-`article.txt`.
-
-Evidence:
-
-* `attachment_name` is `article.txt.ann` for **4 000 of
-  4 000** treatments sampled.  It is universal, not sporadic.
-* **No `skol_dev` document retains that attachment**: of 616
-  source documents checked, **0** still have
-  `article.txt.ann`; they carry `article.txt`,
-  `article.page-headers.json`, `article.spans.v4.json` and
-  `article.pdf`.
-* The delta signature matches inserted markup.  Across 35
-  measurable treatments the delta is **positive in 31**, and
-  scales with position: **median delta ÷ true position =
-  0.0381**, i.e. the `.ann` file runs about **3.8 % longer**
-  and the excess accumulates.  taxon_4b89d160 sits at 3.75 %
-  (6 347 ÷ 169 225) — the same ratio.
-
-**Running headers, footers, figures and tables are *not* the
-cause.**  They appear in both files, so they cancel.  An
-earlier pass here reported that page-header regions plus
-`--- PDF Page N Label M ---` markers "explained" 3 839 of
-taxon_4b89d160's 6 347 characters; that was coincidental
-accumulation measured *within* `article.txt`, not a
-difference *between* coordinate spaces, and it is withdrawn.
-
-**This is worse than wrong offsets: the coordinate space is
-currently unrecoverable.**  The file that defines it is gone
-from every source document, so no resolver can be corrected
-after the fact — the mapping has to be rebuilt, either by
-regenerating `article.txt.ann` deterministically or by
-recomputing every `*_spans` against `article.txt`.
-
-**Consequences.**
-
-* **`§12:desc_span_gap` is computing over unreliable
-  coordinates.**  Every gap figure in this memo derived from
-  span arithmetic — taxon_3d0a3c69's "15 833 characters
-  across 114 paragraphs", taxon_43a7b19e's "117 682
-  characters across 488 paragraphs", taxon_3d9f50f8's
-  "4 647 characters and 28 paragraphs" — is a *stored-span*
-  figure, not a verified position.  The pathologies those
-  entries describe were confirmed by reading the content, so
-  the classifications stand; the magnitudes should not be
-  quoted as distances in the source until this is fixed.
-* **Trello #401 deep-linking resolves to the wrong place.**
-  A reader following a `source_anchors` link would land in
-  the references, not the treatment.  This gates the wider
-  view wire-up.
-* Page-level metadata looks *unaffected*: taxon_4b89d160's
-  spans carry `pdf_page` 29/30 and labels 107/108, and the
-  description genuinely is on those pages.  Only the
-  character and line offsets are wrong, which suggests page
-  metadata and offsets come from different places.
-
-**Severity: high.**  It is silent, it affects most
-treatments, and it undermines a detector and a shipped
-feature at once.  Unlike the detector backlog, this is not a
-precision question — the data is wrong.
-
-**Fix, and it is the same work as §15.**  Both defects are
-repaired by a re-extraction that writes offsets against
-`article.txt`: §15 needs one because fixing `extract_text()`
-changes `article.txt` and therefore every offset anyway, and
-§16 needs one because the current offsets point at a file
-that no longer exists.  Doing them separately means paying
-for a full re-extraction twice.
-
-Sequence: fix `extract_text()` (§15, D6) → re-extract →
-write `*_spans` against `article.txt` → verify.  **The
-verification is the probe measurement above**: sample
-treatments, take a 60-character whitespace-normalised slice
-from the middle of each description, and require the stored
-span to contain it in 100 % of unambiguous cases.  It sits at
-6 of 42 today.
-
-Until then, treat `*_spans` char and line offsets as
-unusable, and note that `pdf_page` / `pdf_label` are
-**unaffected** — they were correct on taxon_4b89d160 even
-where the offsets were not, so page-level deep links can
-ship ahead of character-level ones.
+**What is worth keeping.**  Only the lookup rule above.  If a
+future check wants to confirm span integrity, resolve against
+`article.txt.ann` in the annotations DB — sampling against
+`article.txt` will report ~86 % failure and mean nothing.
 
