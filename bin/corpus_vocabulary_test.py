@@ -8,8 +8,6 @@ import io
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -20,11 +18,6 @@ from corpus_vocabulary import (  # noqa: E402
     write_vocabulary,
 )
 
-
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: corpus_vocabulary not implemented yet",
-    strict=True,
-)
 
 _ENGLISH = {'the', 'and', 'colonies', 'white', 'smooth'}
 
@@ -45,7 +38,6 @@ class _FakeDb:
         return [_FakeRow(i, d) for i, d in self._docs]
 
 
-@_XFAIL
 class TestFieldTokens:
     """Only description + diagnosis are read, lowercased, and
     filtered to out-of-vocabulary alphabetic forms of 4+ chars."""
@@ -70,7 +62,6 @@ class TestFieldTokens:
         assert field_tokens({}, _ENGLISH) == set()
 
 
-@_XFAIL
 class TestDocumentFrequencies:
     def test_counts_documents_not_occurrences(self) -> None:
         db = _FakeDb([
@@ -93,7 +84,6 @@ class TestDocumentFrequencies:
         assert freqs['glabra'] == 1 and scanned == 1
 
 
-@_XFAIL
 class TestSelectVocabulary:
     """The threshold is the guard against OCR corruption entering
     the vocabulary: a corrupt form must recur across that many
@@ -111,7 +101,6 @@ class TestSelectVocabulary:
         assert select_vocabulary(freqs, 1) == ['alpha', 'mu', 'zeta']
 
 
-@_XFAIL
 class TestWriteVocabulary:
     def test_one_form_per_line(self) -> None:
         out = io.StringIO()

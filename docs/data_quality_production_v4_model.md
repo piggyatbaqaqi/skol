@@ -2332,28 +2332,44 @@ treatment*, not *flag for review*.  taxon_43a7b19e already
 fires six flags and still reached a reviewer's queue.  A
 seventh flag changes nothing unless it gates admission.
 
-**Vocabulary recommendation superseded 2026-08-21.**  The
-V. F. Thomas Co. *Botanical Latin Words* site supplies 3 187
-**attested inflected forms** read out of Linnaeus's *Species
-Plantarum* — the one thing every earlier source lacked.  At
-5 679 forms it reaches 13.33 % on the corrupted-Latin case
-against WORDS' 14.67 % from 899 973 forms, **158× smaller
-for 91 % of the effect**, and unlike WORDS it does not
-absorb real corruption (`taxon_43a7b19e` holds at 19.13 %
-rather than dropping to 16.22 %).  It overlaps the
-corpus-derived vocabulary by only **11.2 %**, so the two
-combine well: **corpus df ≥ 50 + botanical Latin, 9 471
-forms and about 90 KB, measures best overall** — 65.9 %
-Latin coverage, 24.00 % corrupted-Latin, 22.19 % on
-taxon_43a7b19e, no false positives.  That makes the 11 MB
-WORDS list droppable.  It is also *cleaner* than the corpus
-list, which carries English technical terms, French and
-truncation debris — relevant to the circularity caution
-above.  **Blocked on licence**: the site carries no
-copyright notice, the author has been contacted, and the
-derived list is deliberately not committed.  Details and
-the full table in
-`data/botanical_latin_wordlist.CITATION.md`.
+**PRODUCTION VOCABULARY, settled 2026-08-21** —
+`data/corpus_vocabulary.txt` + `data/botanical_latin_wordlist.txt`,
+**9 472 forms, about 100 KB**, both checked in with citations.
+
+| vocabulary | size | Latin cov. | corrupt-Latin | taxon_43a7b19e | worst poster child |
+|---|---:|---:|---:|---:|---:|
+| English only | — | 0.0 % | 1.33 % ✗ | 19.13 % | 0.00 % |
+| corpus df ≥ 50 | 4 270 | 63.4 % | 22.67 % | 22.19 % | 0.00 % |
+| botanical Latin | 5 679 | 26.8 % | 13.33 % | 19.13 % | 0.61 % |
+| **both — production** | **9 472** | **67.1 %** | **24.00 %** | **22.19 %** | **0.00 %** |
+| + systematic-names | 10 171 | 68.3 % | 24.00 % | 22.34 % | 0.00 % |
+
+**Whitaker's *WORDS* is dropped from the analysis.**  899 973 forms
+and 11 MB to reach 14.67 % on corrupted Latin, while *lowering*
+`taxon_43a7b19e` from 19.13 % to 16.22 % by absorbing real
+corruption.  `bin/whitakers_wordlist.py` and its 20 tests are
+**kept** — the generator still reproduces the list, and its AGE-filter
+result (that `G`/`H` is Latin for telephones and fax machines, not
+botanical Latin) is worth keeping — but the output is gitignored.
+
+The two production sources have **independent failure modes**, which
+is the point of pairing them.  They overlap by only 477 forms, 11.2 %
+of the corpus list.  The corpus list can absorb OCR corruption
+recurring across 50+ documents and carries English, French and
+truncation debris; the botanical list is verified against the Ray
+Society facsimile of Linnaeus but is only 5 679 forms and, used
+alone, is the one vocabulary that puts a poster child above zero
+(0.61 %).  Together: 0.00 %.
+
+The systematic-names list is **optional** — 1.2 points of Latin
+coverage for a CC BY-SA obligation, so it is left off the critical
+path.
+
+**Licence note**: the botanical list is free-use with a standing
+**no-charge** condition (see its citation).  Free distribution — PyPI,
+a public git remote — is unaffected, but the repo-split and packaging
+plan must carry the condition forward rather than assume a permissive
+project licence covers it.
 
 ### D9 — Head-clip on an opening parenthesis (§10)
 
