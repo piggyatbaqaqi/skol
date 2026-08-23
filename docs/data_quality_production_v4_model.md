@@ -2254,6 +2254,95 @@ Sequenced here rather than done immediately because a large
 reordering diff during round-4 review would obscure the
 content changes that reviewers are actually reading.
 
+**U3 — No deduplication of volumes, articles or treatments
+(Trello #405).**  Raised by the operator 2026-08-23.  It is
+not a latent risk; it is already the corpus's largest
+structural defect by volume, and it **gates #404**.
+
+*Measured 2026-08-23 against `production_v4` / `skol_dev`:*
+
+| | count | share |
+|---|---:|---:|
+| ingest documents | 31 084 | — |
+| …carrying a DOI | 19 918 | 64.1 % |
+| …sharing a DOI with another document | **11 401** | **36.7 %** |
+| distinct DOIs appearing more than once | 5 647 | — |
+| treatments from a multiply-ingested article | **33 551** | **41.2 %** |
+
+**The duplication is systematic, not incidental.**  5 552 of
+the 5 647 duplicate-DOI groups — **98.3 %** — are exactly a
+`crossref` copy and a `pmc` copy of the same article: the
+publisher PDF and the PMC JATS XML, ingested independently.
+The attachment sets confirm it, `article.pdf` against
+`article.xml`.  So for thousands of articles we hold a
+PDF-defective extraction *and* a JATS-defective extraction
+of the same text — the §15 element-join defect on one side,
+page headers and OCR on the other.
+
+**The content hash is not a dedup mechanism, and it fails in
+the worst direction.**  `taxon_id` is
+`sha256` over the prose fields only
+(`bin/extract_treatments_to_couchdb.py`), with **no source
+identity in the hash**.  Consequences:
+
+* *Byte-identical* treatments from two ingests collapse to
+  one document — dedup we did not need, and it **silently
+  overwrites provenance**: whichever ingest writes last owns
+  the `ingest` pointer, so the treatment claims one source
+  when two produced it.
+* *Near-identical* treatments do not collapse at all.  A
+  better scan, a different extractor, one changed character
+  — different hash, genuine duplicate.
+
+That is precisely backwards for both #404 and #405.
+
+**How much is provably redundant.**  3 688 duplicated DOIs
+have treatments from **both** copies, giving a lower bound of
+**7 389 redundant treatments (9.1 %)**.  Normalising
+descriptions (lowercase, strip non-alphanumerics) and hashing
+finds only **2 792 (3.4 %)** — so **normalisation-based
+dedup catches under 40 % of even the provable cases**, and
+under 10 % of the at-risk population.  The two extractions
+differ by more than punctuation.
+
+**Dedup must choose, not merely drop.**  No source dominates:
+
+| copy carrying more description text | articles | share |
+|---|---:|---:|
+| `?` (neither field set) | 1 647 | 44.7 % |
+| `crossref` | 1 287 | 34.9 % |
+| `pmc` | 754 | 20.4 % |
+
+A static "prefer PMC" rule would discard the better
+extraction on **79.6 %** of duplicated articles.  The
+selection needs a per-article quality signal, not a source
+ranking.
+
+*(Context, so the empty-description figures below are not
+misread: **48.4 % of all treatments corpus-wide have an
+empty `description`**, median length 141.  Within duplicated
+articles the rate is 70.2 % for `crossref` and 56.2 % for
+`pmc` — elevated — but 36.3 % for `?`, which is **better**
+than baseline.  Empty descriptions are a pre-existing
+corpus-wide condition, not something duplication created.)*
+
+**The gating interaction with #404.**  DOI is the obvious
+dedup key, and it is **blind to exactly the population #404
+targets**: the whole-volume *Persoonia* documents are
+defined by having *no title and no DOI*.  So
+
+* a DOI-keyed dedup cannot see them — and the existing
+  DOI-keyed dedup on the Plazi backfill path already cannot;
+* ingesting *Persoonia* from Naturalis without either
+  landing #405 first or explicitly retiring the old
+  documents adds a **third** copy of volumes 1–19 rather
+  than replacing them.
+
+#405 therefore needs at least two keys — DOI where present,
+and a content/title/volume key where it is not — or #404
+must carry its own explicit retirement step.  Sequence the
+two deliberately; they do not compose by themselves.
+
 ### What already fires
 
 `treatments_to_structured/triage_signals.py` emits 18 flags
