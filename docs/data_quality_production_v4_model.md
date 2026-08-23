@@ -1455,6 +1455,45 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_66b43429...`** — noted 2026-08-22 from round-4.
+  Gasteroid stalked puffball (*Tulostoma dunense* Finy,
+  Jeppson, L. Albert, Ölvedi, Dima & V. Papp, sp. nov.,
+  *MycoKeys* 100).  Operator: "looks like a complete
+  description of a stalked puffball.  poster child?"  Yes —
+  and it is the largest single coverage gain the set has
+  had.  1006-char description in a **single span**, 9
+  annotations covering it contiguously with no interior or
+  tail gaps, merge_metric = 0, every detector silent.
+
+  **An entirely new body plan.**  Every anatomical term it
+  uses is absent from every other poster child:
+  `Spore-sac`, `Exoperidium`, `Endoperidium`, `Peristome`,
+  `Socket`, `Gleba`, `Capillitium`, `pseudorhiza`.  The set
+  held agarics, boletes, ascomycetes, asexual morphs, a
+  bird's-nest fungus and a lichen — nothing gasteroid.  A
+  clade-agnostic detector built from the earlier entries has
+  no priors for a spore-sac on a stalk, and no reason to
+  expect a description that never mentions a pileus,
+  lamellae, hymenium or basidia.
+
+  **Third data point for the §15 split.**  Its
+  `source_anchors` carry 4 × `plazi` + `arpha` +
+  **`jats_section`** + `mycobank`, and the description has
+  **zero** element-join markers.  Set beside taxon_343eec40
+  (also `jats_section`, also clean) and taxon_5fe9223f (six
+  `plazi`-only anchors, riddled with joins), the pattern
+  §15 measured at 96.1 % vs 0.4 % now has three individually
+  inspected cases behind it.
+
+  **Annotation note** for the deferred vocabulary pass: two
+  spans use the technical term where the text uses the
+  vernacular — `Peristome` for "Mouth", `Stipe` for "Stem".
+  That is the *opposite* direction from the
+  `Basidiospores`-labelled-`Spores` generalisation noted at
+  taxon_09b97d5f, which erased clade information.
+  Normalising *Mouth* to *Peristome* adds precision rather
+  than removing it — worth settling as one rule rather than
+  two.
 * **`taxon_38992c86...`** — noted 2026-08-21 from round-4.
   Asexual morph of a dematiaceous hyphomycete, described
   *in situ* on the natural substrate plus culture
