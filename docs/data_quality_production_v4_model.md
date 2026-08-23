@@ -2448,35 +2448,12 @@ two-line patch:
   start rather than bolting on after the first false-positive
   report.
 
-  **Inline citations are cheaply and reliably detectable**
-  (measured 2026-08-23, prompted by the operator asking
-  whether they warrant their own annotation label).  Nothing
-  in the codebase detects them today: `gn_client` handles
-  *nomenclatural* citations (`Genus species Author`), and the
-  layout pass's `Bibliography` label covers full reference
-  entries, but inline `Author (year)` has no detector.  A
-  regex over two forms — `(Author et al. year…)` and
-  `Author & Author (year)` — matches in **13.6 %** of the
-  15 540 descriptions sampled, with clean hits (`(Rayner,
-  1970)`, `Ju and Rogers (1996)`, `Quaedvlieg et al.
-  (2013)`) and **zero false positives** across ten
-  adversarial anatomical probes:
-
-  ```
-  (3–)3.5–5.5(–6) × (2–)2.5–4 µm   (Fig. 117)   (n = 60/2)
-  (av. 4.4 × 4.9 µm)   (holotype CBS H-8155)   (sub-)globose
-  ```
-
-  **Presence alone is not a defect signal**, though.
-  `(Kornerup & Wanscher 1978)` is the colour chart and
-  appears in clean bolete descriptions; taxon_343eec40's
-  `(in collection De Kesel 1979)` is an odour comparison in a
-  poster child.  What carries signal is *position* — a
-  citation terminating a repeated-label group — not the
-  citation itself.  So this belongs in `triage_signals` as a
-  computed signal feeding D7 and §1, not as an annotation
-  label: it is exactly the kind of thing a regex does better
-  than a reviewer.
+  Inline citations are cheaply and reliably detectable —
+  13.6 % of descriptions, zero false positives on
+  adversarial anatomical probes.  **D13** carries the
+  measurement, the detector and the reasoning for not
+  making it an annotation label; this discriminator
+  depends on it.
 
 So the usable form is not a raw count.  Candidates: repeats
 per 1000 characters; ratio of max label count to distinct
@@ -2851,6 +2828,57 @@ treatment in the collection.  Whatever is done about §6, it
 should not be a threshold on that metric.
 
 **Depends on**: nothing new; the labels are already stored.
+
+### D13 — Inline bibliographic citations (§1/§6)
+
+**Catches**: inline literature citations — `Ju and Rogers
+(1996)`, `(Kornerup & Wanscher 1978)`, `(de Hoog et al.
+2000a, Najafzadeh et al. 2010a, b)`.  **Nothing detects
+these today.**  `gn_client.authored_binomial_in_text()`
+handles *nomenclatural* citations (`Genus species Author`),
+and the layout pass's `Bibliography` label covers full
+reference-list entries, but inline `Author (year)` has no
+detector at all.
+
+**Measured 2026-08-23** over 15 540 descriptions, with a
+regex over two forms — `(Author et al. year…)` and
+`Author & Author (year)`:
+
+* present in **13.6 %** of descriptions;
+* clean matches: `(Rayner, 1970)`, `Ju and Rogers (1996)`,
+  `Quaedvlieg et al. (2013)`, `(Kornerup & Wanscher 1978)`;
+* **zero false positives** on ten adversarial anatomical
+  probes: `(3–)3.5–5.5(–6) × (2–)2.5–4 µm`,
+  `(av. 4.4 × 4.9 µm)`, `(n = 60/2)`, `(Fig. 117)`,
+  `(holotype CBS H-8155)`, `(sub-)globose`, `(up to 6)`,
+  `(Lat.)`, `(OA)`, `(25 °C)`.
+
+**Presence is not a defect signal — position is.**  A
+citation inside a description is frequently legitimate:
+`(Kornerup & Wanscher 1978)` is the colour chart, and
+`taxon_343eec40`'s `(in collection De Kesel 1979)` is an
+odour comparison in a **poster child**.  So this is a
+*signal*, not a flag.  It feeds:
+
+* **D7**, where a citation terminating a repeated-label
+  group separates a compilatory entry (`taxon_6c2dcb7c`)
+  from a genuine merge;
+* **§1**, where position within the description
+  distinguishes a leak from a legitimate reference.
+
+**Gating fixtures**: must find the citations in
+`taxon_6c2dcb7c` (`(Carmichael 1966)`, `(de Hoog et al.
+2000a …)`) and in `taxon_343eec40` (`(in collection De
+Kesel 1979)`) — and must flag **neither** treatment on
+presence alone.
+
+**Not an annotation label.**  Considered for the round-4
+label set and declined; the reasoning is recorded in
+[`docs/feature_label_non_synonyms.md`](feature_label_non_synonyms.md)
+under "What does NOT get a label at all", which is where
+someone asking "should I label this?" will look.
+
+**Depends on**: nothing.
 
 ### D11 — Mid-description truncation (§10)
 

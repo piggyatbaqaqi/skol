@@ -123,6 +123,54 @@ observation.  Never collapse this family.
   certainly the same thing, held back only because a single occurrence
   is thin evidence.
 
+## What does NOT get a label at all
+
+The rule above decides which labels collapse.  This section
+records candidate labels that were **considered and declined**, so
+the question is not reopened every round.
+
+### Bibliographic citations — declined 2026-08-23
+
+Inline literature citations (`Ju and Rogers (1996)`, `(Kornerup &
+Wanscher 1978)`, `(de Hoog et al. 2000a, Najafzadeh et al. 2010a,
+b)`) appear in **13.6 %** of descriptions and proved diagnostically
+useful during round-4 review — they are the discriminator that
+separates a compilatory genus entry from a genuine two-species
+merge.  The operator asked whether they should get their own
+annotation label.
+
+**They should not.**  Four reasons, in order of weight:
+
+1. **A regex finds them at least as well as a reviewer.**  Measured
+   over 15 540 descriptions: clean matches, and **zero false
+   positives** on ten adversarial anatomical probes —
+   `(3–)3.5–5.5(–6) × (2–)2.5–4 µm`, `(av. 4.4 × 4.9 µm)`,
+   `(n = 60/2)`, `(Fig. 117)`, `(holotype CBS H-8155)`,
+   `(sub-)globose`.  Annotation time should go to what only human
+   or LLM judgement can supply.
+2. **Presence is not the signal; position is.**  A citation in a
+   description is often perfectly legitimate — `(Kornerup &
+   Wanscher 1978)` is the colour chart, and taxon_343eec40's
+   `(in collection De Kesel 1979)` is an odour comparison in a
+   *poster child*.  What discriminates is a citation *terminating a
+   repeated-label group*.  A label would capture presence, which is
+   the half that carries no information.
+3. **It is not an anatomical feature.**  The features DB describes
+   the organism; a citation describes the literature.
+4. **Mid-round label changes are expensive.**  Rounds 1–3 (62
+   treatments) and round 4 (47) are annotated against the current
+   set.  Adding a label now splits the vocabulary across rounds and
+   perturbs both the canonicalization map and the Heaps'-law
+   analysis while three synonym pairs are still undecided.
+
+The detection work belongs in `treatments_to_structured/triage_signals.py`
+instead — see **D13** in
+[`docs/data_quality_production_v4_model.md`](data_quality_production_v4_model.md).
+
+**This would flip** if the goal were ever to *train* a model to
+recognise citations rather than to detect them.  It is not; the
+regex suffices.
+
 ## Maintenance
 
 Rerun the similarity sweep after each bootstrap round.  Candidates
