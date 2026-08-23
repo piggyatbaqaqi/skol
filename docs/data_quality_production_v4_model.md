@@ -1666,6 +1666,56 @@ species treatment looks like.  Useful when explaining
 regression targets: any future detector or assembler
 tightening MUST NOT surface these as false positives.
 
+* **`taxon_7dfd35bd...`** — noted 2026-08-23 from round-4.
+  Lepiotoid agaric (*Lepiota ochraceosquamea* J.F. Liang &
+  Zhu L. Yang, sp. nov., *MycoKeys* 123).  1585-char
+  description in a single span, 14 annotations covering it
+  contiguously, merge_metric = 2, every detector silent, no
+  §15 markers.
+
+  **Overlap declared**: the third agaric, after
+  taxon_e78904cb (*Cortinarius*) and taxon_d2a4c584
+  (*Mycena*).  `Pileus`, `Lamellae`, `Cheilocystidia`,
+  `Pleurocystidia`, trichoderm and dextrinoid are all
+  already covered.  Four things are not:
+
+  1. **An annulus on an agaric.**  Neither existing agaric
+     has one — *Cortinarius* has a cortina, the *Mycena* is
+     a 1.5–3 mm bare-stemmed species.  The set's only other
+     annulus is on taxon_343eec40's veiled **bolete**, so
+     anything keying annulus to boletes misreads this.
+  2. **Lamellula-tier notation** — `Lamellae L = 40–60,
+     l = 1–2`.  Capital *L* counts lamellae, lowercase *l*
+     counts tiers of lamellulae.  Nowhere else in the
+     fixture, and precisely the string a measurement parser
+     mishandles: `L = 40–60` looks like a dimension and is
+     not.
+  3. **Chemical spore-reaction suite** — `congophilous`,
+     `not metachromatic in cresyl blue`.  Dextrinoid alone
+     appears elsewhere; this register does not.
+  4. **Spore-sample notation** `[67/3/3]` — 67 spores, 3
+     basidiomata, 3 collections.
+
+  **Fourth `jats_section` clean-text case** (after
+  taxon_343eec40, taxon_66b43429, against taxon_5fe9223f).
+
+  **Negative-data spans are now a named pattern.**  This
+  treatment alone has three — `Pleurocystidia absent.`,
+  `Smell not distinct`, `taste not recorded` — joining
+  `Spore print … not obtained` (taxon_343eec40) and `Sexual
+  morph: Undetermined.` (taxon_38992c86).  **Anything
+  treating a feature span as an assertion of presence is
+  wrong on all five.**  Note too that `Odour` and `Taste`
+  are split from one sentence at its semicolon, finer than a
+  sentence-level splitter would give.
+
+  **Both labelling directions in one treatment**, for the
+  deferred vocabulary pass: `Spores` labels text reading
+  *Basidiospores* (generalising away the clade, as on
+  taxon_09b97d5f) while `Pileipellis` labels text reading
+  *Pileus covering* (normalising vernacular to technical, as
+  *Peristome*/*Mouth* on taxon_66b43429).  Third data point
+  that the two want settling as one rule.
 * **`taxon_66b43429...`** — noted 2026-08-22 from round-4.
   Gasteroid stalked puffball (*Tulostoma dunense* Finy,
   Jeppson, L. Albert, Ölvedi, Dima & V. Papp, sp. nov.,
