@@ -20,11 +20,6 @@ from span_resolver import (  # noqa: E402
     verify_head,
 )
 
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: span_resolver not implemented yet",
-    strict=True,
-)
-
 _ANN = (
     'line one\n'
     '[@Stroma thin, whitish or yellow, hyphal or subiculum-like.#Description*]\n'
@@ -84,7 +79,6 @@ def _server():
     })
 
 
-@_XFAIL
 class TestCoordinateSpace:
     """Which (db, doc, attachment) a treatment's offsets belong to."""
 
@@ -112,7 +106,6 @@ class TestCoordinateSpace:
             'ingest.db_name', '')
 
 
-@_XFAIL
 class TestSpanHead:
     """The fingerprint stored with a span."""
 
@@ -130,7 +123,6 @@ class TestSpanHead:
         assert span_head('') == ''
 
 
-@_XFAIL
 class TestVerifyHead:
     def test_match_passes(self) -> None:
         assert verify_head('Stroma thin, whitish', 'Stroma thin, whitish') is None
@@ -147,7 +139,6 @@ class TestVerifyHead:
         assert 'Stroma thin' in msg and 'Beyma van FH' in msg
 
 
-@_XFAIL
 class TestResolveSpan:
     def test_returns_the_text_at_the_offsets(self) -> None:
         span = {'start_char': _START, 'end_char': _END}

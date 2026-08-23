@@ -5,7 +5,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import pytest  # noqa: E402
 from span import Span  # noqa: E402
 
 
@@ -89,9 +88,6 @@ class TestRepr:
         assert '10-12' in text and '100-200' in text
 
 
-@pytest.mark.xfail(
-    reason="2026-08-21: Span.head not implemented yet", strict=True,
-)
 class TestSpanHead:
     """``head`` is the fingerprint that makes a wrong resolution loud.
 

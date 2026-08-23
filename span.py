@@ -20,6 +20,7 @@ class Span:
         pdf_page: int,
         pdf_label: Optional[str],
         empirical_page: Optional[str],
+        head: Optional[str] = None,
     ):
         """
         Initialize a Span with position information.
@@ -33,6 +34,13 @@ class Span:
             pdf_page: PDF page number (from PDF page markers)
             pdf_label: PDF page label (may differ from page number)
             empirical_page: Journal page number for bibliographic references
+            head: Short whitespace-collapsed prefix of the text this
+                span covers.  A fingerprint, not a position: it lets a
+                consumer verify that it resolved the span against the
+                right attachment.  Reading offsets against the wrong
+                file returns plausible prose rather than an error (see
+                §16 in docs/data_quality_production_v4_model.md), and
+                this is what makes that loud.
         """
         self.paragraph_number = paragraph_number
         self.start_line = start_line
@@ -42,6 +50,7 @@ class Span:
         self.pdf_page = pdf_page
         self.pdf_label = pdf_label
         self.empirical_page = empirical_page
+        self.head = head
 
     def has_gap_before(self, other: 'Span') -> bool:
         """
@@ -79,7 +88,7 @@ class Span:
         Returns:
             Dictionary with all span attributes
         """
-        return {
+        d: Dict[str, Any] = {
             'paragraph_number': self.paragraph_number,
             'start_line': self.start_line,
             'end_line': self.end_line,
@@ -89,6 +98,11 @@ class Span:
             'pdf_label': self.pdf_label,
             'empirical_page': self.empirical_page,
         }
+        # Omitted when absent so spans written before fingerprints
+        # existed serialise byte-identically and do not churn.
+        if self.head is not None:
+            d['head'] = self.head
+        return d
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'Span':
@@ -110,6 +124,7 @@ class Span:
             pdf_page=d['pdf_page'],
             pdf_label=d.get('pdf_label'),
             empirical_page=d.get('empirical_page'),
+            head=d.get('head'),
         )
 
     def __repr__(self) -> str:
@@ -133,3 +148,5 @@ class Span:
             and self.pdf_label == other.pdf_label
             and self.empirical_page == other.empirical_page
         )
+        # `head` is deliberately excluded: it is derived from the
+        # text, not part of the position.

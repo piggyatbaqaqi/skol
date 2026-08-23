@@ -1,28 +1,192 @@
-"""Skeleton — implementation lands in the next commit (TDD)."""
+"""The single supported way to turn a span's offsets into text.
 
-from typing import Any, Dict, Optional
+Span character and line offsets are indexed to the treatment's
+``attachment_name`` — normally ``article.txt.ann``, the
+YEDDA-annotated file — inside the treatment's ``annotations_db``.
+They are **not** offsets into ``article.txt``, and they are not in
+the database ``ingest.db_name`` names.
+
+That distinction is easy to get wrong and, worse, fails quietly:
+reading the offsets against ``article.txt`` returns plausible prose
+from elsewhere in the document rather than an error.  A whole
+false "86 % of spans are mislocated" finding was built on exactly
+that mistake — see §16 in
+``docs/data_quality_production_v4_model.md``.
+
+Two defences live here:
+
+* :func:`coordinate_space` reads ``annotations_db`` and refuses to
+  guess.  It never falls back to ``ingest.db_name``, which points at
+  the raw-input database that holds ``article.txt`` and
+  ``article.pdf`` but not the annotated file.
+* :func:`span_head` / :func:`verify_head` implement a fingerprint
+  stored on the span (``Span.head``).  Resolving compares it, so a
+  wrong attachment, a stale offset or a re-extraction that moved the
+  text all raise instead of returning something believable.
+
+Everything that needs span text should call :func:`resolve_span`
+rather than assembling its own attachment URL.
+"""
+
+import dataclasses
+from typing import Any, Dict, List, Optional
+
+# Long enough to be distinctive, short enough that storing one per
+# span is cheap.
+HEAD_LENGTH = 40
 
 
 class SpanResolutionError(RuntimeError):
-    pass
+    """A span could not be resolved, or resolved to the wrong text."""
 
 
+@dataclasses.dataclass(frozen=True)
 class CoordinateSpace:
-    pass
+    """The (database, document, attachment) a span's offsets index."""
+
+    db: str
+    doc_id: str
+    attachment: str
+
+    def __str__(self) -> str:
+        return f'{self.db}/{self.doc_id}/{self.attachment}'
 
 
 def coordinate_space(treatment: Dict[str, Any]) -> CoordinateSpace:
-    raise NotImplementedError
+    """Where this treatment's span offsets are measured.
+
+    Raises:
+        SpanResolutionError: if ``annotations_db``,
+            ``attachment_name`` or the ingest document id is missing.
+            Deliberately does not fall back to ``ingest.db_name``:
+            that database holds ``article.txt``, not the annotated
+            file, so falling back would silently resolve against the
+            wrong coordinate space.
+    """
+    db = treatment.get('annotations_db')
+    if not db:
+        raise SpanResolutionError(
+            f"treatment {treatment.get('_id')!r} has no 'annotations_db'; "
+            f"refusing to guess the coordinate space "
+            f"(ingest.db_name is the raw-input database and does not "
+            f"hold the annotated attachment)"
+        )
+    attachment = treatment.get('attachment_name')
+    if not attachment:
+        raise SpanResolutionError(
+            f"treatment {treatment.get('_id')!r} has no 'attachment_name'"
+        )
+    doc_id = (treatment.get('ingest') or {}).get('_id')
+    if not doc_id:
+        raise SpanResolutionError(
+            f"treatment {treatment.get('_id')!r} has no ingest._id"
+        )
+    return CoordinateSpace(db=db, doc_id=doc_id, attachment=attachment)
 
 
 def span_head(text: str) -> str:
-    raise NotImplementedError
+    """A short whitespace-collapsed fingerprint of ``text``.
+
+    Whitespace is collapsed so the fingerprint survives line
+    rewrapping, which changes where newlines fall without changing
+    the words.
+    """
+    return ' '.join(text.split())[:HEAD_LENGTH]
 
 
 def verify_head(stored: Optional[str], actual: str) -> None:
-    raise NotImplementedError
+    """Check a stored fingerprint against freshly resolved text.
+
+    ``stored`` of ``None`` is tolerated — spans written before
+    fingerprints existed must keep resolving.
+
+    Raises:
+        SpanResolutionError: on mismatch, quoting both values so the
+            caller can see *what* it resolved to.
+    """
+    if stored is None:
+        return
+    if span_head(actual).startswith(stored[:HEAD_LENGTH]):
+        return
+    raise SpanResolutionError(
+        f"span head mismatch: expected {stored!r}, "
+        f"resolved to {span_head(actual)!r} — the offsets were almost "
+        f"certainly read against the wrong attachment or are stale"
+    )
 
 
-def resolve_span(treatment: Dict[str, Any], span: Dict[str, Any],
-                 server: Any) -> str:
-    raise NotImplementedError
+def _attachment_text(space: CoordinateSpace, server: Any) -> str:
+    if space.db not in server:
+        raise SpanResolutionError(f"database {space.db!r} not found")
+    try:
+        blob = server[space.db].get_attachment(
+            space.doc_id, space.attachment
+        )
+    except Exception as exc:                       # noqa: BLE001
+        raise SpanResolutionError(
+            f"cannot read {space}: {exc}"
+        ) from exc
+    if blob is None:
+        raise SpanResolutionError(f"attachment {space} not found")
+    decoded: str = blob.read().decode('utf-8', errors='replace')
+    return decoded
+
+
+def resolve_span(
+    treatment: Dict[str, Any],
+    span: Dict[str, Any],
+    server: Any,
+) -> str:
+    """Return the source text a span covers.
+
+    Args:
+        treatment: The treatments_prose document the span came from.
+        span: One entry of a ``*_spans`` list.
+        server: An open ``couchdb.Server``.
+
+    Raises:
+        SpanResolutionError: if the coordinate space is unknown, the
+            attachment is missing, the offsets fall outside the file,
+            or a stored ``head`` disagrees with the resolved text.
+    """
+    space = coordinate_space(treatment)
+    text = _attachment_text(space, server)
+    start, end = span.get('start_char'), span.get('end_char')
+    if start is None or end is None:
+        raise SpanResolutionError(f"span has no character offsets: {span!r}")
+    if start < 0 or end > len(text) or start > end:
+        raise SpanResolutionError(
+            f"span [{start}:{end}] falls outside {space} "
+            f"({len(text)} chars)"
+        )
+    resolved = text[start:end]
+    verify_head(span.get('head'), resolved)
+    return resolved
+
+
+def resolve_spans(
+    treatment: Dict[str, Any],
+    spans: List[Dict[str, Any]],
+    server: Any,
+) -> List[str]:
+    """Resolve several spans, reading the attachment once."""
+    if not spans:
+        return []
+    space = coordinate_space(treatment)
+    text = _attachment_text(space, server)
+    out: List[str] = []
+    for span in spans:
+        start, end = span.get('start_char'), span.get('end_char')
+        if start is None or end is None:
+            raise SpanResolutionError(
+                f"span has no character offsets: {span!r}"
+            )
+        if start < 0 or end > len(text) or start > end:
+            raise SpanResolutionError(
+                f"span [{start}:{end}] falls outside {space} "
+                f"({len(text)} chars)"
+            )
+        resolved = text[start:end]
+        verify_head(span.get('head'), resolved)
+        out.append(resolved)
+    return out
