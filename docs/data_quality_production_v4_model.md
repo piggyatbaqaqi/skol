@@ -2958,6 +2958,32 @@ single clean span, no §15 markers, no repeated labels.  It is
 the tidiest wrong treatment in the fixture, and only a rank
 comparison would catch it.
 
+**Correctly-attached emendations exist, and show what the
+comparison should accept.**  Searching 40 000 treatments for
+a supra-generic nomenclature carrying an emendation returns
+5, of which two are well formed:
+
+* `taxon_233e247f` — `Delonicicolaceae R.H. Perera et al.,
+  emend. Voglmayr & Jaklitsch`, whose description opens
+  `Type genus. Delonicicola R.H. Perera et al., …`.  Family
+  name, family rank marker: **matched**, and merge_metric 0.
+* `taxon_46ff7dde` — `Endogonales Jacz. & P.A.Jacz., emend.
+  Tedersoo`, notes `Type family. Endogonaceae Paol.`  Order
+  name, order rank marker: **matched**, zero flags.
+
+D14 must accept both.  Note the rank marker climbs with the
+rank — `Type species` for a genus, `Type genus` for a
+family, `Type family` for an order — so the comparison is a
+ladder, not a pair.
+
+**A §6 false positive falls out of this.**
+`taxon_233e247f` fires `§6:authored_binomial` **because a
+family description legitimately names its type genus with
+its author** — `Delonicicola R.H. Perera et al.` is exactly
+what a familial emendation is required to state.  Any §6
+tightening must exempt an authored name that follows a
+`Type genus.` / `Type species.` / `Type family.` marker.
+
 **Depends on**: nothing.
 
 ### D11 — Mid-description truncation (§10)
