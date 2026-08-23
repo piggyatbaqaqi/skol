@@ -2609,6 +2609,67 @@ they are not retried:
   reaches 46.7 % because Latin is not in an English
   dictionary.  Unusable without a Latin-aware vocabulary.
 
+#### Counter-example: `taxon_8d815304` — D8 does not fire, and should not
+
+Added 2026-08-23.  The operator flagged it for "serious OCR
+problems", and the OCR *is* severe — `Coremiellu`,
+`Oidiode11dron`, `RaiUo`, `KJocker`, `flal'IIS`,
+`a•errocosa`, `srriato`, `comb. 11011.`, `fJfiiiiiOrum`,
+`Pe11icillium stria·111m`, `Molbronclrea`.  **The rejoin
+metric reads essentially baseline anyway:**
+
+| | `taxon_8d815304` | `taxon_43a7b19e` | corpus median | corpus p90 |
+|---|---:|---:|---:|---:|
+| pairwise rejoin | **2.4 %** | 8.7 % | 0.0 % | 2.1 % |
+| windowed rejoin | **2.2 %** | 23.5 % | 0.0 % | 5.3 % |
+
+The damage here is **character substitution**, not space
+displacement — a different mode of §9, and D8 is scoped to
+the latter.  **Do not add this treatment to D8's gating
+fixtures**; it belongs to a character-substitution detector
+that does not exist yet.  Its value to D8 is as the proof
+that firing on "severe OCR" in general is out of scope: a
+treatment can be badly corrupted and correctly invisible to
+this metric.
+
+**Pairwise windows are too narrow regardless.**  This
+treatment breaks one word five different ways — `Anamorph`,
+`Ana mo rph`, `A n am o r ph`, `Ana morph`, `Anamorphs` —
+and pairwise rejoin cannot see any of the splits, because no
+adjacent *pair* of those fragments is a word.  `Ana mo rph`
+needs a 3-token window and `A n am o r ph` a 6-token window.
+Widening to a 5-token window recovers `Ana mo rph` →
+*anamorph* and lifts `taxon_43a7b19e` from 8.7 % to 23.5 %
+against a corpus p99 of 16.7 %, so **the windowed form
+separates better and should be the one implemented.**
+
+**Two more alternatives measured and rejected** — recorded
+alongside the two above so they are not retried:
+
+* *Out-of-vocabulary rate against the production vocabulary*
+  (corpus df ≥ 50 + botanical Latin + `wamerican` +
+  `wbritish`, 111 833 forms) — 31.6 % here against a corpus
+  median of 11.0 % and p90 of 27.0 %, which looks usable
+  until you read the list.  It is dominated by **legitimate
+  proper nouns**: genus names (*Cephalotheca*,
+  *Pseudogymnoascus*, *Monascus*, *Monascella*,
+  *Eremascus*, *Renispora*, *Hamigera*, *Sagenoma*), author
+  names (Stolk, Eidam, Cohn, Arx, Chesters, Rajendran) and
+  journal abbreviations (Bakt, Naturk, Soc, Beitr,
+  ParasitKde).  Nomenclature-dense text scores high
+  *correctly*.  Unusable without proper-noun suppression —
+  the same contamination trap as the `Genus Epithetii`
+  regex in §2.5.
+* *Intra-word corruption rate* — a digit inside a letter
+  run, an interior capital after a lowercase, an interior
+  middle-dot or tilde.  Reads 5.5 % here and 3.6 % on
+  `taxon_43a7b19e`, against corpus median 0.6 % and p90
+  4.8 %.  Directionally right and the closest thing to a
+  character-substitution signal so far, but it false-fires
+  on **figure references** (`Fig. 2C`, `6A`) and on
+  **micrometre measurements** written `3um` / `4-7um`.  Both
+  are cheap to exclude; do that before trusting the number.
+
 **Depends on**: a word list — and it must be **both**
 `wamerican` *and* `wbritish` (operator, 2026-08-21: "not all
 authors in English use American English").  Neither is a
@@ -2869,6 +2930,7 @@ decides which symptom you see:
 | `taxon_4b89d160` | missed outright | *Pseudonectria* nomenclature on a *Stylonectria* description |
 | `taxon_5581a442` | **`Table`** (synonyms `Bibliography`) | *Acremonium* genus description merged into a *Proliferophialis* species |
 | `taxon_60758ef3` | **`ToC-entry`** | Murrill's species 73 and 74 merged |
+| `taxon_8d815304` | **`Misc-exposition`**, `Diagnosis`, `Notes` — 21 of 27 headings in the document | **nine genera in one treatment** |
 
 *Swallowed **description continuations** → content loss → truncations:*
 
@@ -2882,6 +2944,82 @@ decides which symptom you see:
 five cases, and the only label to swallow content in more
 than one treatment.  It reads as the layout pass's
 catch-all, which makes it the first place to look.
+
+#### Why the headings are unrecognisable: they are fused, not merely mislabelled
+
+`taxon_8d815304` (added 2026-08-23) is the extreme case and
+the one that shows the mechanism.  Its nomenclature is
+*Cephalotheca* Fuckel 1871; its prose fields carry **seven
+further genus headings**, each with author, journal, page and
+year and most with a `Type species` line — *Hamigera*
+(`notes`), *Talaromyces* (`diagnosis[0]`),
+*Pseudogymnoascus* (`description`), *Monascus*,
+*Monascella*, *Eremascus*, *Renispora* (all
+`diagnosis[1]`) — plus a species list belonging to an eighth
+genus, *Byssochlamys*, whose own heading fell just outside
+the slice.  **Nine genera in one treatment.**  The operator
+read it as "at least two partial descriptions … conflated"
+from the doubled `Anamorph` label; the label count
+understates it by a factor of four.
+
+In that one document **21 of 27 genus headings sit inside a
+prose label and only 3 in `Nomenclature`.**  The reason is
+**positional**: each buried heading is fused to the tail of
+the paragraph before it, so it never starts a block and the
+layout pass never sees a heading at all.
+
+| preceding tail | fused heading |
+|---|---|
+| `…composed of filaments.` | *Chaetosartorya* |
+| `…name Myxotrichum uncinatum (Eidam) J. Schröt.` | *Ctenomyces* |
+| `…synonymized Nannizzia with Arthroderma.` | *Narasimhella* |
+| `…arthroconidia with disjunctors in culture.` | *Ascocalvatia* |
+| `…(see also Chesters, 1934, Booth, 1961).` | *Hamigera* |
+| `…(Talaromyces striatus. Penicillium striatum).` | *Talaromyces* |
+
+Every one of those tails ends in a full stop, so the
+boundary was there in the source and was lost in extraction.
+This is the **same block-separator loss family as §15** —
+different producer, same failure — which matters for
+sequencing: fixing separator preservation upstream may
+retire a large part of D12 rather than needing a detector at
+all.
+
+**Running headers are not eliminated, and fusing one to a
+heading is one way a heading gets lost.**  This answers the
+operator's 2026-08-22 question directly.  At offset 119 686
+the block reads:
+
+> `VO ARX : Re-evoluorfon of Eurorfoles 283 MyxotriciJUm Kunze in Myk…`
+
+— the journal's own running head welded to the front of the
+*Myxotrichum* heading, the whole thing inside
+`Misc-exposition`.  The **injected** marker
+`--- PDF Page 54 Label 54 ---` 46 characters earlier is
+handled correctly, with its own `Page-header` label.  So the
+distinction to hold onto is: *our* page markers are stripped;
+the *publisher's* running heads are not, and they land in
+running text where they corrupt the next heading.
+
+**The source is an entire bound volume.**  The ingest
+document has `journal: 'Persoonia'`, `volume: '13'`, **no
+title and no DOI**, and is carved into 18 treatments
+spanning `pdf_label` 7 → 153 and 1 549 paragraphs — Coprinus,
+Sordaria, the Eurotiales, Psathyrella, Rhodocybe,
+Camarophyllopsis, Hygrocybe.  `taxon_8d815304` is the
+pdf-page-53 slice of von Arx's Eurotiales re-evaluation.
+Whole-volume ingests give a heading detector far more
+chances to fail in one document, and a missing
+title/DOI pair is a cheap way to spot them up front.
+
+**Corpus frequency is unmeasured, not zero.**  A sweep of 60
+annotated documents with the heading regex used here
+returned no matches outside this volume, because the regex
+keys on the pre-1990 monograph citation style
+(`Genus Author in Journal vol: page. year.`).  Modern papers
+punctuate differently.  Treat the 21-of-27 figure as
+document-level evidence only until a style-agnostic heading
+matcher exists.
 
 **The tell to search for is a severed term.**
 `taxon_66c1e6e3` split the hyphenated word *spe-cies*,
