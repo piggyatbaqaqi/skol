@@ -260,6 +260,7 @@ for cmd in \
     train_crf_layout \
     train_crf_treatment \
     treatments_to_json \
+    verify_spans \
     watch_incremental \
 ; do
     ln -sf with_skol ${INSTALL_DIR}/bin/${cmd}

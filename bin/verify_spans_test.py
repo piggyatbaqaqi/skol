@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from verify_spans import (  # noqa: E402
     SpanCheck,
     check_treatment,
+    meets_threshold,
     summarise,
 )
 
@@ -107,3 +108,29 @@ class TestSummarise:
 
     def test_empty_is_not_a_division_error(self) -> None:
         assert summarise([]) == (0, 0, 0.0)
+
+
+class TestPassRateGate:
+    """v3_hand has a real, known gap: some source documents carry no
+    annotated attachment at all, so ~5.6 % of its spans cannot
+    resolve.  A nightly job that always fails is one people learn to
+    ignore, so the gate is a floor that still catches regressions.
+    """
+
+    def test_meets_threshold(self) -> None:
+        checks = [SpanCheck('t', 'f', 0, True, ''),
+                  SpanCheck('t', 'f', 1, False, 'x')]
+        assert meets_threshold(checks, 50.0)
+
+    def test_below_threshold(self) -> None:
+        checks = [SpanCheck('t', 'f', 0, True, ''),
+                  SpanCheck('t', 'f', 1, False, 'x')]
+        assert not meets_threshold(checks, 50.1)
+
+    def test_default_demands_everything(self) -> None:
+        checks = [SpanCheck('t', 'f', 0, False, 'x')]
+        assert not meets_threshold(checks, 100.0)
+
+    def test_no_spans_is_not_a_pass(self) -> None:
+        """An empty sample must not read as success."""
+        assert not meets_threshold([], 100.0)

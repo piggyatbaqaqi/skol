@@ -90,6 +90,19 @@ def summarise(checks: List[SpanCheck]) -> Tuple[int, int, float]:
     return total, ok, (100.0 * ok / total) if total else 0.0
 
 
+def meets_threshold(checks: List[SpanCheck], minimum: float) -> bool:
+    """Whether the resolved percentage reaches ``minimum``.
+
+    An empty sample is never a pass: no spans checked is not the same
+    as all spans healthy, and treating it as success is how a guard
+    becomes decorative.
+    """
+    total, _ok, rate = summarise(checks)
+    if not total:
+        return False
+    return rate >= minimum
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
@@ -109,6 +122,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         '--show', type=int, default=10, metavar='N',
         help='Failures to print in full (default 10).',
+    )
+    parser.add_argument(
+        '--min-pass-rate', type=float, default=100.0, metavar='PCT',
+        help='Exit 0 only if at least this percentage of spans '
+             'resolve (default 100).  Lower it only for an experiment '
+             'with a known, documented gap -- and record what the gap '
+             'is, so the number is a floor to raise rather than a '
+             'tolerance to forget.',
     )
     args = parser.parse_args()
     config = get_env_config(cli_args=args)
@@ -151,7 +172,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not total:
         print("error: no spans found to check", file=sys.stderr)
         return 2
-    return 1 if failures else 0
+    if meets_threshold(checks, args.min_pass_rate):
+        return 0
+    print(f"FAIL: {rate:.1f} % resolved, below --min-pass-rate "
+          f"{args.min_pass_rate:.1f} %", file=sys.stderr)
+    return 1
 
 
 if __name__ == '__main__':

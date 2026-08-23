@@ -132,5 +132,31 @@ SKIP_EXISTING=1
 # /brat.  The '/' probe was missing until 2026-08-08, which is how a
 # regression dating from 2026-06-10 survived two months of green runs.
 30 6 * * * skol /opt/skol/bin/prod_smoke_check --quiet
+# Span-integrity check for the two endorsed experiments.  Span offsets
+# are indexed to the treatment's attachment_name inside its
+# annotations_db, NOT to article.txt in ingest.db_name; resolving
+# against the wrong attachment returns plausible prose rather than an
+# error, so the failure is silent (see docs/couchdbs.md "Where span
+# offsets point" and §16 of the data-quality memo).  This resolves a
+# sample and verifies each span's `head` fingerprint.
+#
+# --quiet-equivalent behaviour comes from the exit status: the script
+# exits 1 on any failure, and cron mails only when there is output, so
+# routine green runs stay silent while a regression pages MAILTO.
+#
+# Runs after the v4/v3_hand daily chains have settled and before the
+# 21:00 PMC ingest band.  Two separate lines because each experiment
+# has its own treatments DB and a failure should name which one.
+#
+# production_v4 holds the default --min-pass-rate of 100: a single
+# unresolvable span there is a regression.  production_v3_hand is
+# floored at 90 because it has a REAL, known gap -- some of its source
+# documents carry no annotated attachment at all, so ~5.6 % of its
+# spans cannot resolve (measured 2026-08-21: 338/358 on a 60-treatment
+# sample).  That floor is a number to RAISE once the missing
+# annotations are regenerated, not a tolerance to forget; a nightly job
+# that always fails is one people stop reading.
+0 20 * * * skol /opt/skol/bin/verify_spans --experiment production_v4 --sample 300 > ${LOGDIR}/verify-spans-v4.log 2>&1 || cat ${LOGDIR}/verify-spans-v4.log
+15 20 * * * skol /opt/skol/bin/verify_spans --experiment production_v3_hand --sample 300 --min-pass-rate 90 > ${LOGDIR}/verify-spans-v3_hand.log 2>&1 || cat ${LOGDIR}/verify-spans-v3_hand.log
 # Update fungaria registry from Index Herbariorum monthly (1st of each month at 3am)
 0 3 1 * * skol time /opt/skol/bin/manage_fungaria download --expire=0 > ${LOGDIR}/manage-fungaria.log 2>&1

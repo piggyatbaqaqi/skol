@@ -11,14 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from backfill_span_heads import (  # noqa: E402
     AttachmentCache,
     backfill_treatment,
+    group_by_source,
 )
 from span_resolver import SpanResolutionError  # noqa: E402
 
-
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: backfill_span_heads not implemented yet",
-    strict=True,
-)
 
 _ANN = 'aaaa[@Stroma thin, whitish or yellow#Description*]bbbbcccc'
 
@@ -68,7 +64,6 @@ def _fixture():
     return server, treatment, reads
 
 
-@_XFAIL
 class TestBackfillTreatment:
     def test_sets_head_on_every_span(self) -> None:
         server, treatment, _ = _fixture()
@@ -108,7 +103,6 @@ class TestBackfillTreatment:
             backfill_treatment(treatment, AttachmentCache(server))
 
 
-@_XFAIL
 class TestAttachmentCache:
     def test_reads_each_attachment_once(self) -> None:
         """81k treatments share far fewer source documents; re-reading
@@ -127,3 +121,27 @@ class TestAttachmentCache:
             cache.text('ann_db', 'src1', 'article.txt.ann')
             cache.clear()
         assert len(reads) == 2
+
+
+class TestGroupBySource:
+    """_all_docs orders by taxon hash, so consecutive treatments
+    rarely share a source document and the attachment cache thrashes:
+    a 400-treatment dry run made 398 reads.  Grouping by ingest id
+    first turns ~81k reads into one per source document.
+    """
+
+    def test_groups_treatments_sharing_a_source(self) -> None:
+        pairs = [('t1', 'srcA'), ('t2', 'srcB'), ('t3', 'srcA')]
+        ordered = group_by_source(pairs)
+        assert ordered.index('t1') + 1 == ordered.index('t3')
+
+    def test_keeps_every_treatment(self) -> None:
+        pairs = [('t1', 'srcA'), ('t2', 'srcB'), ('t3', 'srcA')]
+        assert sorted(group_by_source(pairs)) == ['t1', 't2', 't3']
+
+    def test_treatments_without_a_source_are_kept_last(self) -> None:
+        pairs = [('t1', None), ('t2', 'srcB')]
+        assert group_by_source(pairs)[-1] == 't1'
+
+    def test_empty_input(self) -> None:
+        assert group_by_source([]) == []

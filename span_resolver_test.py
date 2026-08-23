@@ -155,11 +155,14 @@ class TestResolveSpan:
         with pytest.raises(SpanResolutionError):
             resolve_span(_TREATMENT, span, _server())
 
-    def test_missing_attachment_raises(self) -> None:
+    def test_unknown_attachment_name_falls_back(self) -> None:
+        """A stale or wrong attachment_name is recoverable, because
+        the alternatives are a small closed set and the fingerprint
+        would catch a wrong choice.  Contrast the database, which is
+        never guessed."""
         doc = dict(_TREATMENT, attachment_name='article.nope.ann')
-        with pytest.raises(SpanResolutionError) as exc:
-            resolve_span(doc, {'start_char': 0, 'end_char': 4}, _server())
-        assert 'article.nope.ann' in str(exc.value)
+        span = {'start_char': _START, 'end_char': _END}
+        assert resolve_span(doc, span, _server()) == _ANN[_START:_END]
 
     def test_missing_database_raises(self) -> None:
         doc = dict(_TREATMENT, annotations_db='skol_gone')
@@ -190,3 +193,61 @@ class TestStringOffsets:
         with pytest.raises(SpanResolutionError) as exc:
             resolve_span(_TREATMENT, span, _server())
         assert 'nope' in str(exc.value)
+
+
+_PDF_ANN = 'zzzz[@Ascomata immersed, becoming erumpent#Description*]qqqq'
+
+
+def _server_pdf_only():
+    """v3_hand stores article.pdf.ann while attachment_name on the
+    treatment says article.txt.ann — the v3 classifier worked from
+    PDF text.  Found by running bin/verify_spans before shipping its
+    cron job: only 3.6 % of v3_hand spans resolved."""
+    return _FakeServer({
+        'skol_exp_x_ann_combined': {'src1': {'article.pdf.ann': _PDF_ANN}},
+        'skol_dev': {'src1': {'article.txt': 'x' * 400}},
+    })
+
+
+class TestAttachmentFallback:
+    """Guessing the DATABASE is the bug this module exists to prevent.
+    Guessing the ATTACHMENT is different: the set is small, closed and
+    — with a head fingerprint — verifiable.
+    """
+
+    def test_falls_back_to_pdf_ann(self) -> None:
+        span = {'start_char': 4, 'end_char': 24}
+        assert resolve_span(_TREATMENT, span, _server_pdf_only()) == \
+            _PDF_ANN[4:24]
+
+    def test_stored_name_is_tried_first(self) -> None:
+        server = _FakeServer({
+            'skol_exp_x_ann_combined': {'src1': {
+                'article.txt.ann': _ANN,
+                'article.pdf.ann': _PDF_ANN,
+            }},
+        })
+        span = {'start_char': _START, 'end_char': _END}
+        assert resolve_span(_TREATMENT, span, server) == _ANN[_START:_END]
+
+    def test_fallback_still_verifies_the_head(self) -> None:
+        """A fallback that resolves to the wrong text must still fail."""
+        span = {'start_char': 4, 'end_char': 24,
+                'head': 'Stroma thin, whitish'}
+        with pytest.raises(SpanResolutionError):
+            resolve_span(_TREATMENT, span, _server_pdf_only())
+
+    def test_database_is_never_guessed(self) -> None:
+        """The attachment may be guessed; the database may not."""
+        doc = dict(_TREATMENT, annotations_db='skol_absent')
+        with pytest.raises(SpanResolutionError) as exc:
+            resolve_span(doc, {'start_char': 0, 'end_char': 4},
+                         _server_pdf_only())
+        assert 'skol_absent' in str(exc.value)
+
+    def test_error_names_every_attachment_tried(self) -> None:
+        server = _FakeServer({'skol_exp_x_ann_combined': {'src1': {}}})
+        with pytest.raises(SpanResolutionError) as exc:
+            resolve_span(_TREATMENT, {'start_char': 0, 'end_char': 4}, server)
+        msg = str(exc.value)
+        assert 'article.txt.ann' in msg and 'article.pdf.ann' in msg

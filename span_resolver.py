@@ -18,7 +18,11 @@ Two defences live here:
 * :func:`coordinate_space` reads ``annotations_db`` and refuses to
   guess.  It never falls back to ``ingest.db_name``, which points at
   the raw-input database that holds ``article.txt`` and
-  ``article.pdf`` but not the annotated file.
+  ``article.pdf`` but not the annotated file.  The *attachment name*
+  is a different matter: that set is small and closed, so the stored
+  name is tried first and ``FALLBACK_ATTACHMENTS`` after it — v3_hand
+  treatments say ``article.txt.ann`` while the v3 classifier wrote
+  ``article.pdf.ann``.  A wrong guess is caught by the fingerprint.
 * :func:`span_head` / :func:`verify_head` implement a fingerprint
   stored on the span (``Span.head``).  Resolving compares it, so a
   wrong attachment, a stale offset or a re-extraction that moved the
@@ -40,6 +44,15 @@ from typing import Any, Dict, List, Optional, Tuple
 # Long enough to be distinctive, short enough that storing one per
 # span is cheap.
 HEAD_LENGTH = 40
+
+# Tried in order after the treatment's own ``attachment_name``.  The
+# DATABASE is never guessed — that is the mistake this module exists
+# to prevent — but the attachment name is a small closed set, and
+# with a `head` fingerprint a wrong choice is caught rather than
+# silently accepted.  v3_hand needs this: its treatments say
+# ``article.txt.ann`` while the v3 classifier actually wrote
+# ``article.pdf.ann``.
+FALLBACK_ATTACHMENTS = ('article.pdf.ann', 'article.txt.ann')
 
 
 class SpanResolutionError(RuntimeError):
@@ -121,21 +134,32 @@ def verify_head(stored: Optional[str], actual: str) -> None:
     )
 
 
+def _candidate_attachments(space: CoordinateSpace) -> List[str]:
+    """The stored attachment name first, then the known alternatives."""
+    names = [space.attachment]
+    names.extend(n for n in FALLBACK_ATTACHMENTS if n not in names)
+    return names
+
+
 def _attachment_text(space: CoordinateSpace, server: Any) -> str:
     if space.db not in server:
         raise SpanResolutionError(f"database {space.db!r} not found")
-    try:
-        blob = server[space.db].get_attachment(
-            space.doc_id, space.attachment
-        )
-    except Exception as exc:                       # noqa: BLE001
-        raise SpanResolutionError(
-            f"cannot read {space}: {exc}"
-        ) from exc
-    if blob is None:
-        raise SpanResolutionError(f"attachment {space} not found")
-    decoded: str = blob.read().decode('utf-8', errors='replace')
-    return decoded
+    db = server[space.db]
+    tried = _candidate_attachments(space)
+    for name in tried:
+        try:
+            blob = db.get_attachment(space.doc_id, name)
+        except Exception as exc:                   # noqa: BLE001
+            raise SpanResolutionError(
+                f"cannot read {space.db}/{space.doc_id}/{name}: {exc}"
+            ) from exc
+        if blob is not None:
+            decoded: str = blob.read().decode('utf-8', errors='replace')
+            return decoded
+    raise SpanResolutionError(
+        f"no annotated attachment on {space.db}/{space.doc_id}; "
+        f"tried {', '.join(tried)}"
+    )
 
 
 def _offsets(span: Dict[str, Any], space: 'CoordinateSpace',
