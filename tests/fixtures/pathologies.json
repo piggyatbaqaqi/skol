@@ -1626,6 +1626,51 @@
         "scope": "80 whole-volume Persoonia ingest documents, volumes 1-19 only, four per volume; 771 treatments, 0.9 % of the corpus. Volume 20 onward is already per-article with titles and DOIs.  Persoonia overall is 8228 treatments, 10.1 %.",
         "does_not_retire": "D12.  Fused headings are a block-separator problem, not a Persoonia problem; other scanned sources keep producing them.  #404 removes 0.9 % of the corpus from the population, not the mechanism."
       }
+    },
+    {
+      "id": "taxon_8ebf437c746018218a9ea6fa8aa6988f6337e848f07c2c631aac3a79191de307",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-23",
+      "captured_rev": "20-f7129112cc5f25aabd25bb82895c1062",
+      "class": "§6-morph-pair-plus-appended-congener",
+      "treatment": "Basionym: Pleospora vagans Niessl, Verh. Naturf. Ver. Briinn 14: 174. 1876\n≡  Phaeosphaeria vagans (Niessl) O.E. Erikss., Ark. Bot. 6: 430 (1967) \n",
+      "description": "Saprobic on Dactylis sp. Sexual morph: Ascomata 121–156 μm high, 177–208 μm diam.,\nscattered or sometimes clustered, immersed, visible as raised, black dots on the host surface, uni- to\nbi-loculate, subglobose, brown to dark brown, ostiole central, with a minute papilla. Peridium 21–\n27 μm wide, thin-walled, of equal thickness, composed of 2–5 layers of brown to dark brown,\npseudoparenchymatous cells, arranged in  textura angularis to inner layer composed of brown cells\nof textura prismatica. Hamathecium composed of numerous, 1.7–2.3 μm wide, filiform, broad,\ncellular pseudoparaphyses, with distinct septa, slightly constricted at the septa, embedded in a\n\ngelatinous matrix. Asci 54–57 × 9–10.6 μm (x = 57 × 9.6 μm, n = 20), 8-spored, bitunicate,\nfissitunicate, broadly cylindrical or cylindric-clavate, sessile to subsessile, apically rounded with an\nocular chamber. Ascospores 21–32 × 3.7–5.7 μm (x = 30 × 4.6 μm, n = 30), overlapping 1–3seriate, phragmosporous, narrowly fusiform, with obtuse ends, with guttules, hyaline to yellowishbrown, 9-septate, slightly curved, constricted at the septa, smooth-walled, lacking a sheath or\nappendages. Asexual morph:  Colonies on MEA effuse, white to pale yellow. Mycelium 2–3 μm\nwide, prostrate, composed of septate, branched, smooth, hyaline, hyphae. Conidiophores micro- to\nmacronematous, erect, flexuous, smooth, composed of beaded, variedly-sized cells. Conidiogenous\ncells 5–9 × 3–6 μm holoblastic, globose to subglobose, smooth, subhyaline. Conidia 9–12 × 10–13\nμm (x = 10 × 11 μm, n = 20), globose, solitary, thick-walled, chlamydospore-like, with dense\ncytoplasm (Fig 3). \n\nCulture characters – Ascospores germinating on MEA within 36 h. Colonies growing on\nMEA, reaching 2 cm diam. in 1 week at 16°C. Mycelium superficial, felty, gummy, edge undulate,\nfrom above white, reverse yellow colour.\nNotes – Vagicola chlamydospora resembles to Vagicola vagans in having similar ascomata,\nas black coloured dots of ostiole visible with immersed ascomata when viewed on the host surface,\ntextura angularis to textura prismatica brown colour cells peridium. and broad cellular \n\ndiam. (x  = 153.9 × 141.3  m, n = 10 , solitary, scattered, superficial, globose to subglobose, dark\nbrown to black, coriaceous, ostiolate. Ostiole 50–60  m high, 20–30  m diam. (x  = 55.5 × 27.5\nµm, n = 5), papillate, black, smooth, filled with dark brown cells. Peridium 9–12 µm wide at the\nbase, 12–16 µm wide in sides, comprising 3–4 layers, comprising blackish to dark brown, thickwalled cells of textura angularis. Hamathecium comprising numerous, 2–2.5 µm (n = 30) wide,\nfilamentous, branched, septate, pseudoparaphyses. Asci 70–120 × 15–21  m (x  = 84.4 × 18.7  m, n\n= 40), 8-spored, bitunicate, fissitunicate, broadly-clavate, with a short, orbicular pedicel, rounded at\napex, with minute ocular chamber. Ascospores 19–23 × 6–9  m (x  = 20.7 × 7.4  m, n = 50 ,\nobliquely bi-seriate, initially hyaline, becoming yellowish brown at maturity, broadly fusiform, 5trans-septate, with a longitudinal septa in between second and third trans-septate, constricted at the\ncentral septa, weakly constricted at the other septa, with conical and narrowly rounded ends,\nlacking a mucilaginous sheath. Asexual morph: Undetermined.\nMaterial examined – ITALY, Province of Arezzo, Bagno di Cetica, dead stem of Dactylis\nsp. (Poaceae), 8 October 2012, Erio Camporesi. IT 799 (MFLU 15-2720, holotype), (isotype in \n",
+      "diagnosis": "",
+      "notes": "Notes – Vagicola dactylidis is more similar to the type species, V. vagans, than V.\nchlamydospora, in having ascospores with vertical septa. Dactylis is the host plant of both Vagicola\nchlamydospora and dactylidis. Two other species associated with Dactylis in Phaeosphaeriaceae\nare Phaeosphaeria huronensis (Shoemaker & Babcock 1989) and Ophiosphaerella herpotricha\n(Phookamsak et al. 2014), however, they share no morphological characters. \n",
+      "etymology": "Etymology – With reference to chlamydospores-like asexual morph formed in culture  \n\nEtymology – With reference to the host occurrence \n",
+      "materials_examined": "CBS Centraalbureau voor Schimmelcultures, Utrecht, The Netherlands; CPC Working collection of\nPedro Crous housed at CBS; DAOM Plant Research Institute, Department of Agriculture\n(Mycology), Ottawa, Canada; ICMP International Collection of Microorganisms from Plants, New\nZealand; JK: J. Kohlmeyer; MFLUCC Mae Fah Luang University Culture Collection, Chiang Rai, \n\nMaterial examined – ITALY, Province of Forlì-Cesena, near Poderone - Corniolo, dead\nstem of Dactylis sp. (Poaceae), 21 October 2014, Erio Camporesi IT 2188 (MFLU 15-1399,\nholotype), (isotype in KUN), ex-type culture, MFLUCC 15-0177, Genbank accession numbers:\nLSU- KU163654, ITS-KU163658, SSU-KU163655. \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:authored_binomial",
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§6-repeated-morph-term",
+        "§6-three-species-cross-assigned-fields",
+        "§12-abbreviation-list-in-materials_examined"
+      ],
+      "notes_narrative": "Operator, 2026-08-23: \"a reasonably complete description of a Teleomorph/Anamorph pair, with part of another description appended. I believe this because we have a second 'Asexual morph' clause. The Material examined clause really should have been in a different component of the treatment.\"  Both readings confirmed, and the mis-assignment reaches further than the description field.\n\nTHREE SPECIES, not two, with fields cross-assigned between them:\n  * Vagicola chlamydospora -- description block 1 (chars 21-1653: Saprobic on Dactylis, Sexual morph with Ascomata/Peridium/Hamathecium/Asci/Ascospores, then a complete Asexual morph with Colonies/Mycelium/Conidiophores/Conidiogenous cells/Conidia) plus Culture characters.  This is the complete morph pair the operator identified, and it is the only well-formed part of the treatment.\n  * Vagicola vagans -- the NOMENCLATURE ('Basionym: Pleospora vagans Niessl 1876 = Phaeosphaeria vagans (Niessl) O.E. Erikss.') AND description block 2 (chars ~2151-3275), ending in the second morph clause, 'Asexual morph: Undetermined.'\n  * Vagicola dactylidis -- the second etymology ('with reference to the host occurrence') and the whole of the notes field.\n\nTHE TREATMENT IS KEYED TO THE APPENDAGE.  The nomenclature is V. vagans, i.e. it belongs to the appended fragment, not to the well-formed morph pair that makes up the body.  Anything that resolves this treatment by trusting its nomenclature gets the wrong species for 60 % of the description.\n\nTWO OF EVERYTHING: two etymologies in one field, for different species; two Material examined blocks naming DIFFERENT holotypes -- IT 799 / MFLU 15-2720 / Arezzo / 8 Oct 2012 sits in the description tail, IT 2188 / MFLU 15-1399 / MFLUCC 15-0177 / Forli-Cesena / 21 Oct 2014 sits in materials_examined; two complete sexual morphs with duplicate Ascomata, Peridium, Hamathecium, Asci and Ascospores.\n\nMATERIALS_EXAMINED HOLDS FRONT-MATTER.  Its first span is a herbarium and culture-collection ABBREVIATION LIST -- 'CBS Centraalbureau voor Schimmelcultures, Utrecht ... CPC ... DAOM ... ICMP ... JK: J. Kohlmeyer; MFLUCC Mae Fah Luang University Culture Collection, Chiang Rai,' -- journal front matter, not a specimen record, and truncated mid-entry.  figure_caption_spans likewise holds comparative prose ('pseudoparaphyses but differs in proces...'), not a caption.\n\nThe appended description is HEAD-CLIPPED: block 2 opens mid-clause at 'diam. (x = 153.9 x 141.3 m, n = 10 , solitary, scattered, superficial...', having lost its 'Ascomata ... high, ... ' lead-in.  The annotator still labelled it Ascomata, correctly.\n\nANNOTATION NOTE: T19 labels the Notes block ('Notes - Vagicola chlamydospora resembles to Vagicola vagans in having similar ascomata...') as Ascomata.  That is comparative text given a feature label -- the D3 shape, and the Notes analogue of the open question about annotating Diagnosis sections (section 13).\n\nWHY THE CURRENT DETECTORS UNDER-READ IT: flags are 'section10:tail_clip|section6:authored_binomial|section12:desc_span_gap' at merge_metric 7.  None of the multi_* signals fire despite two complete sexual morphs, because they key on repeated section headers and this document uses 'Sexual morph:' / 'Asexual morph:' instead.  The operator's own diagnostic -- a repeated morph term -- is not implemented; see D15.",
+      "description_spans": [
+        {
+          "start_line": 582,
+          "end_line": 588
+        },
+        {
+          "start_line": 598,
+          "end_line": 606
+        },
+        {
+          "start_line": 625,
+          "end_line": 630
+        },
+        {
+          "start_line": 648,
+          "end_line": 659
+        }
+      ]
     }
   ]
 }

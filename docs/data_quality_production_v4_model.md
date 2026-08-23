@@ -3323,6 +3323,79 @@ tightening must exempt an authored name that follows a
 
 **Depends on**: nothing.
 
+### D15 — Repeated morph term (§6)
+
+**Catches**: a description containing the *same* morph term
+twice — two `Asexual morph:` / `Anamorph`, or two
+`Sexual morph:` / `Teleomorph`.  A treatment may legitimately
+carry **one of each** (that is what a teleomorph/anamorph pair
+*is*); what it cannot legitimately carry is two of the same.
+
+**This is the operator's own diagnostic**, from
+`taxon_8ebf437c` on 2026-08-23: *"I believe this because we
+have a second 'Asexual morph' clause."*  It was not
+implemented.  None of the `multi_*` signals fire on that
+treatment despite two complete sexual morphs, because they
+key on repeated **section headers** and this document
+delimits its parts with `Sexual morph:` / `Asexual morph:`
+instead.
+
+**Measured 2026-08-23** across descriptions ≥ 200 chars.
+8 656 mention a morph term; **1 821 repeat one** — 21.0 % of
+those, 4.6 % of the corpus.  Against a random control:
+
+| | repeated morph | control |
+|---|---:|---:|
+| more than one `description_span` | **92.6 %** | 60.7 % |
+| `§6:` flag | **49.6 %** | 21.4 % |
+| `§12:desc_span_gap` | **87.0 %** | 43.2 % |
+| mean `merge_metric` | **16.62** | 7.12 |
+
+Every indicator roughly doubles, and 92.6 % multi-span is
+the strongest single association any proposed signal has
+shown.
+
+**Gating fixtures**: **0 of 17 poster children fire** — it is
+silent on every clean treatment in the reference set.  It
+independently catches four existing pathologies without
+having been designed for any of them:
+
+| taxon | class | asex / sex |
+|---|---|---|
+| `taxon_173204126fbc7e27` | `§6-compact-congenerics` | 1 / 3 |
+| `taxon_5581a442fd1a7fc8` | `§6-genus-description-merged-heading-as-Table` | 0 / 2 |
+| `taxon_6c2dcb7cce39089d` | `§6-compilatory-double-description` | 2 / 2 |
+| `taxon_8d815304f6fb9dd0` | `§12-nomenclature-headings-fused-into-Misc-exposition` | 2 / 0 |
+
+Plus `taxon_8ebf437c` itself
+(`§6-morph-pair-plus-appended-congener`, 2 / 2).
+
+**Watch for the legitimate repeat.**  Comparative prose can
+say *"…similar to the asexual morph of X"* inside a
+single-species treatment.  Count occurrences of the term as a
+**block opener** — start of line, or followed by a colon —
+rather than anywhere in running text, and re-measure before
+setting a threshold.
+
+**Depends on**: nothing.  Pure text, no vocabulary, no
+external service — the cheapest item in the backlog.
+
+**Rejected alternative, measured — do not retry.**
+`taxon_8ebf437c` switches micrometre encoding exactly at its
+merge seam: **12 of 12** U+03BC GREEK SMALL LETTER MU in the
+first description block, then **zero** in the second, which
+uses U+00B5 MICRO SIGN or drops the glyph entirely (` m`).
+It looks like a perfect mechanical boundary marker.  **It does
+not generalise.**  Across 39 887 descriptions, 8.9 % mix the
+two encodings, and mixing carries essentially no signal —
+66.8 % multi-span against 62.2 % for single-encoding
+descriptions, `§6` 23.2 % against 22.2 %.  Narrowing the
+hypothesis to *segregated* encoding (exactly one switch, as
+here) makes it **worse, not better**: 64.6 % multi-span and
+`§6` 23.1 %, against 71.0 % and 31.9 % for single-encoding
+controls — mildly *anti*-correlated.  The clean boundary in
+this one treatment is a coincidence of its source document.
+
 ### D11 — Mid-description truncation (§10)
 
 **Catches**: a field that is cut off *inside* the
