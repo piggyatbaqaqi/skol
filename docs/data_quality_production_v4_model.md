@@ -2161,6 +2161,36 @@ against both endorsed experiments before and after, and
 require the rates not to drop — 100 % for production_v4,
 ≥ 90 % for production_v3_hand with its documented gap.
 
+**U2 — Put the D-items back in numeric order.**  They are
+not, and it is now a live editing hazard rather than an
+aesthetic complaint.  The file order is currently:
+
+```
+D1 D2 D3 D4 D5 D6 D7 D8 D10 D12 D13 D11 D9
+```
+
+Items were appended by inserting before whichever heading
+was convenient at the time, so later additions landed ahead
+of earlier ones.  On 2026-08-23 an edit that spliced on a
+`### D6` end anchor computed an end index *before* its start
+index and silently duplicated the entire D7 section; it was
+caught only by `grep -c` on the heading afterwards.
+
+Two mitigations, both cheap:
+
+* **Reorder D1–D13 numerically.**  Pure text movement, no
+  content change, so it can be verified with a
+  `grep -c '^### D'` count and a word-count diff.
+* **Check heading uniqueness after any scripted edit to this
+  memo** — `grep -c '^### D<n> '` should be 1 for every
+  item.  Worth doing routinely regardless of the reorder,
+  since the file is past 3 000 lines and anchor-based edits
+  will keep being the way it is maintained.
+
+Sequenced here rather than done immediately because a large
+reordering diff during round-4 review would obscure the
+content changes that reviewers are actually reading.
+
 ### What already fires
 
 `treatments_to_structured/triage_signals.py` emits 18 flags
