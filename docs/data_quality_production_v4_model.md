@@ -2910,6 +2910,56 @@ someone asking "should I label this?" will look.
 
 **Depends on**: nothing.
 
+### D14 — Rank mismatch between description and nomenclature (§2)
+
+**Catches**: a description written at one taxonomic rank
+attached to a nomenclature at another — a family emendation
+under a species combination, a genus entry under a species
+name.
+
+**Gating fixtures**: must fire on `taxon_7cb84fba`
+(`§2-family-description-on-species-nomenclature`), whose
+notes declare `Type genus: Diversispora` — family rank —
+while the nomenclature is `Albahypha drummondii … comb.
+nov.`; and on `taxon_6c2dcb7c`
+(`§6-compilatory-double-description`), an *Exophiala* genus
+entry under a *Cladophialophora* species name.
+
+**The rank markers are explicit and cheap.**  A treatment
+declares its own rank in prose that is already extracted:
+
+| marker in `notes` / description | rank asserted |
+|---|---|
+| `Type genus:` | family or above |
+| `Type species:` | genus |
+| `Emended description:` | a revision, so the rank is whatever the marker above says |
+
+and the nomenclature's own shape gives the other half —
+`Genus species` is a species, a bare capitalised word is a
+genus, an `-aceae` / `-ales` ending is supra-generic.
+
+**Scale, with a caveat.**  Of 30 000 treatments sampled, 115
+declare a `Type genus` and **50 of those carry a binomial
+nomenclature**.  That 43 % is an **upper bound on the defect
+rate**, not the defect rate: a species treatment may
+legitimately mention its family's type genus in discussion.
+The signal needs the *description's* rank, not merely the
+presence of the phrase — which is why `Emended description:`
+plus an absence of species-level characters matters in
+taxon_7cb84fba.
+
+**Zero poster children mention `Type genus`** in their
+descriptions, so the marker is clean against the reference
+set.
+
+**Why it matters more than its size suggests**:
+taxon_7cb84fba fires **nothing at all** — merge_metric 1,
+single clean span, no §15 markers, no repeated labels.  It is
+the tidiest wrong treatment in the fixture, and only a rank
+comparison would catch it.
+
+**Depends on**: nothing.
+
 ### D11 — Mid-description truncation (§10)
 
 **Catches**: a field that is cut off *inside* the
