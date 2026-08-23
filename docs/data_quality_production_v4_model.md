@@ -1709,13 +1709,26 @@ tightening MUST NOT surface these as false positives.
   are split from one sentence at its semicolon, finer than a
   sentence-level splitter would give.
 
-  **Both labelling directions in one treatment**, for the
-  deferred vocabulary pass: `Spores` labels text reading
-  *Basidiospores* (generalising away the clade, as on
-  taxon_09b97d5f) while `Pileipellis` labels text reading
-  *Pileus covering* (normalising vernacular to technical, as
-  *Peristome*/*Mouth* on taxon_66b43429).  Third data point
-  that the two want settling as one rule.
+  **Both labelling directions appeared in one treatment, and
+  the operator settled one of them** on 2026-08-23: the
+  spore span, labelled `Spores` over text reading
+  *Basidiospores*, was **corrected to `Basidiospores`**.
+  Clade-specific terms are not generalised — the same rule
+  already applied to fruiting bodies, where `Basidiocarp`
+  and `Basidiome` collapse to `Basidiomata` but
+  `Basidiomata` and `Ascomata` stay apart.  Recorded in
+  [`docs/feature_label_non_synonyms.md`](feature_label_non_synonyms.md).
+
+  The other direction stands: `Pileipellis` labels text
+  reading *Pileus covering*, normalising vernacular to
+  technical as *Peristome*/*Mouth* does on taxon_66b43429 —
+  that adds precision rather than removing it, so the two
+  are not the same question after all.
+
+  **Five round-4 treatments still carry the uncorrected
+  form**: `taxon_fd50457a` and `taxon_4b89d160`
+  (*Ascospores*), `taxon_d2d620ae`, `taxon_b673586a` and
+  `taxon_5fe9223f` (*Basidiospores*).
 * **`taxon_66b43429...`** — noted 2026-08-22 from round-4.
   Gasteroid stalked puffball (*Tulostoma dunense* Finy,
   Jeppson, L. Albert, Ölvedi, Dima & V. Papp, sp. nov.,

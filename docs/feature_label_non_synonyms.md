@@ -54,6 +54,37 @@ group; see below.
 | `Generative hyphae` (2) | `Vegetative hyphae` (4) | Distinct hyphal roles in a hyphal system. |
 | `Primary branches` (2) | `Tertiary branches` (2) | Branching order. |
 
+### Clade-specific spore terms
+
+Settled 2026-08-23 by an operator correction in round 4:
+`taxon_7dfd35bd`'s spore span was labelled `Spores` over text
+reading *Basidiospores*, and was corrected to `Basidiospores`.
+
+| a | b | why they differ |
+|---|---|---|
+| `Spores` (192) | `Basidiospores`, `Ascospores` | The clade-specific term states how the spore is borne — on a basidium, inside an ascus.  Labelling either as `Spores` discards that, and it cannot be recovered from the label later. |
+
+**The rule is the same one already applied to fruiting bodies**:
+follow the term the treatment uses.  `Basidiocarp`/`Basidiome`
+collapse to `Basidiomata` and `Ascocarp` to `Ascomata` — within a
+clade — but `Basidiomata` and `Ascomata` were deliberately kept
+apart.  Spores follow: normalise spelling variants within a term,
+never across clades.
+
+`Spores` remains correct where the treatment itself says *spores*,
+which is common in older literature and in groups where the spore
+type is not in question.  It is the most frequent label in the
+corpus at 192, so this is not a rare correction — **five further
+round-4 treatments still carry it over clade-specific text**:
+`taxon_fd50457a` and `taxon_4b89d160` (*Ascospores*),
+`taxon_d2d620ae`, `taxon_b673586a` and `taxon_5fe9223f`
+(*Basidiospores*).
+
+No canonicalization entry is involved: the map has no
+`Basidiospores` key and `Spores` is not a target, so this was the
+annotator choosing the general term directly.  The fix is in the
+annotation, not the map.
+
 ### Whole vs part, or layer vs layer
 
 | a | b | why they differ |
