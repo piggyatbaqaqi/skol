@@ -4536,6 +4536,43 @@ data signal per dollar than the equivalent Description spend.
     prioritize Description-derived ones.  Doesn't save
     API spend but improves reviewer-throughput.
 
+**Still a proposal, 2026-08-23.**  The operator asked
+whether an intent to skip Diagnosis had been recorded.  It
+has not: this section is an observation plus a proposal, and
+the data below has never been gathered.  What *has* happened
+is that reviewers have been skipping Diagnosis blocks in
+practice since round 1 — a de facto convention with no
+written decision behind it, which is worth naming so it
+either becomes one or gets revisited deliberately.
+
+**A counter-example, and why it does not overturn the
+proposal.**  `taxon_7e3011a6`
+(`§12-caption-prefixed-description-block-dropped`) has a
+diagnosis that appears to add two features its description
+lacks — `lyocystidia with a narrow capillary lumen that
+extends up to the apex`, and `larger basidiospores`.  Both
+are in a `Description`-labelled block that the grouper
+dropped: the missing text reads `… narrow capillary lumen
+extending up to the apex … Basidiospores 7.8–11 × 2.5–3.5
+µm …`.  **The diagnosis is not supplying unique information;
+it is the only surviving witness to information the
+extractor lost.**
+
+That distinction is the one this decision turns on.
+Diagnosis content divides in two:
+
+* **Recoverable** — anatomy that is also in the description,
+  or would be if the description were intact.  Annotating it
+  duplicates work that §12 fixes should make unnecessary.
+* **Inherently diagnostic** — the *comparative* claim
+  (`larger than T. hirtellus and T. effugiens`), which no
+  complete description contains.
+
+`taxon_7e3011a6` cannot settle which predominates, because
+its description is truncated.  **Decide §13 on treatments
+whose descriptions are complete** — otherwise content loss
+will keep making Diagnosis look indispensable.
+
 **Data needed before deciding**: the kept-vs-rejected rate
 by source field (`description` vs `diagnosis`) across the
 round-1 + round-2 hand review.  `bin/triage_treatments`
