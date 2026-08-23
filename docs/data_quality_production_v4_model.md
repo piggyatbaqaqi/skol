@@ -2754,13 +2754,23 @@ decides which symptom you see:
 |---|---|---|
 | `taxon_5581a442` | `reverse concolourous.` as **`Misc-exposition`** | Culture-characteristics block ends `…margin entire, ` |
 | `taxon_66c1e6e3` | four separate runs as **`Misc-exposition`** | `crumpled, firmly` → `the base whitish`; `frondose spe-` → `erumpent` |
+| `taxon_6f788487` | `reverse light-brown.` **and** the whole Chemistry lead-in, both **`Misc-exposition`** | `poor sporulation, flat;` breaks its siblings' template; `Di-n-octyl` → `phthalate` |
 
-`taxon_66c1e6e3` is the clearest specimen of the second
-shape: the hyphenated word *spe-cies* was split across a
-dropped run, leaving `spe-` and `erumpent` adjacent in the
-description — a non-word that survived into the annotation
-set.  **That is the tell to search for**: a hyphen-final
-fragment abutting text that does not continue it.
+**`Misc-exposition` is the repeat offender** — three of the
+five cases, and the only label to swallow content in more
+than one treatment.  It reads as the layout pass's
+catch-all, which makes it the first place to look.
+
+**The tell to search for is a severed term.**
+`taxon_66c1e6e3` split the hyphenated word *spe-cies*,
+leaving `spe-` abutting `erumpent`; `taxon_6f788487` split
+the compound name *Di-n-octyl phthalate*, leaving the
+description to open at `phthalate representing 53.98 %`.
+Both are terms cut at the boundary of a dropped run, and
+both survived into the annotation set.  A hyphen-final
+fragment is the easiest instance to grep for, but the
+general form is wider: a span opening on a word that cannot
+begin a sentence.
 
 **Gating fixtures**: must fire on all five.  Must stay
 silent on the poster children, and in particular on
@@ -2812,14 +2822,32 @@ paragraph joins.
 
 **The signal is not "no terminal period".**  Descriptions
 are assembled from several source paragraphs, so an interior
-join legitimately ends mid-clause.  What distinguishes these
-two is that the interior text ends where a *span boundary*
-falls — `taxon_5581a442`'s truncation is exactly at the end
-of description span 1, and the missing clause (`reverse
-concolourous.`) sits in the following paragraph under a
-different label.  So the usable form is: a span that ends
-without sentence-final punctuation **and** whose following
-span starts a new topic, rather than punctuation alone.
+join legitimately ends mid-clause.  Two better forms, one
+structural and one textual:
+
+*Span boundary.*  The interior text ends exactly where a
+span boundary falls, and the missing clause sits in the
+following paragraph under a different label —
+`taxon_5581a442`'s `reverse concolourous.`,
+`taxon_6f788487`'s `reverse light-brown.`
+
+*Parallel structure* — contributed by the operator on
+`taxon_6f788487`, and the sharper of the two.  That
+treatment has three sibling `Culture_on_*` clauses:
+
+```
+Culture_on_OA  … flat, slimy growth; reverse olive brown.
+Culture_on_PDA … flat, slimy growth; reverse olive brown.
+Culture_on_CMA … poor sporulation, flat;
+```
+
+The operator identified the truncation from the semicolon
+*because its siblings end differently*, and the dropped run
+turned out to be exactly `reverse light-brown.`  **A clause
+that breaks the template its siblings share is truncated; a
+clause that merely lacks a period may not be.**  Sibling
+clauses are cheap to find — same label family, same
+treatment — and the comparison needs no source lookup.
 
 **Depends on**: nothing, but it needs the span offsets,
 which makes it a natural companion to `bin/verify_spans`
