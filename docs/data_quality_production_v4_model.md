@@ -3012,6 +3012,53 @@ Whole-volume ingests give a heading detector far more
 chances to fail in one document, and a missing
 title/DOI pair is a cheap way to spot them up front.
 
+**Scope of the whole-volume problem, measured 2026-08-23.**
+The missing-title-and-DOI signature isolates it exactly:
+
+| | count | share of corpus |
+|---|---:|---:|
+| treatments, all sources | 81 527 | — |
+| from *Persoonia* | 8 228 | 10.1 % |
+| from **whole-volume** *Persoonia* ingests | **771** | **0.9 %** |
+
+Those 771 come from **80 ingest documents covering
+volumes 1–19 only**, four per volume — the scanned back-run.
+Volume 20 onward is already per-article (8–34 documents per
+volume) and carries titles and DOIs.  The cut is that clean.
+
+The under-segmentation is the thing to notice: a whole-volume
+document yields a median of **9** treatments where the
+per-article volumes yield dozens.  Nine genera landing in
+one treatment is what that ratio looks like from the inside.
+
+*(Minor data note: `volume` is a string, and volume 19 is
+stored both as `'19'` and zero-padded as `'019'`, which sort
+and group as different volumes.)*
+
+**Medium-term remediation: replace the source, do not detect
+around it.**  Operator, 2026-08-23 — Naturalis publishes
+*Persoonia* as separate per-article files with much better
+OCR, at <https://repository.naturalis.nl/col/1>.  An
+ingestor for it is **Trello #404**.  That retires this
+document class at the root: per-article files restore the
+title/DOI pair, remove the 1 549-paragraph haystack, and cut
+the character-substitution OCR that D8 cannot see anyway.
+
+Two consequences worth holding onto:
+
+* **It does not retire D12.**  Fused headings are a
+  block-separator problem, not a *Persoonia* problem, and
+  the other scanned sources will keep producing them.  #404
+  removes 0.9 % of the corpus from the population, not the
+  mechanism.
+* **It will orphan this fixture entry.**  Treatment ids are
+  content hashes, so re-ingesting *Persoonia* from Naturalis
+  gives `taxon_8d815304` a different id and the
+  `pathologies.json` entry will dangle.  Re-capture the
+  fused-heading case from a source that is *not* scheduled
+  for replacement before #404 lands, or the evidence for
+  this mechanism goes with it.
+
 **Corpus frequency is unmeasured, not zero.**  A sweep of 60
 annotated documents with the heading regex used here
 returned no matches outside this volume, because the regex
