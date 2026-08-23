@@ -1872,6 +1872,45 @@ finished.  The doc pass is deliberately ahead of the code so
 that the gating cases are settled before anyone writes a
 regex.
 
+### Non-detector items deferred to the same point
+
+Not detectors, but blocked on the same round-4 boundary and
+worth carrying in one list rather than three.
+
+**U1 — Merge Django's `.ann` fallback into `span_resolver`.**
+`django/search/views.py` resolves span attachments through its
+own `_collect_ann_db_candidates()` probe order, while
+`span_resolver` is the single path everything else uses.  Two
+implementations of one rule is exactly the
+synchronised-by-comment arrangement both sides currently
+carry a note about.
+
+The gap that justified keeping them separate has since
+closed: `span_resolver` gained the attachment-name fallback
+(`FALLBACK_ATTACHMENTS`) that v3_hand needs, so it now
+handles the case Django's chain existed for.  What remains
+different is the **database** probe — Django also tries the
+ingest DB and the experiment's `databases.annotations` for
+older taxa docs, where `span_resolver` deliberately refuses.
+
+Before merging, settle that difference on evidence rather
+than taste:
+
+* Both endorsed experiments carry `annotations_db` on
+  **every** document — production_v4 0 of 81 527 missing,
+  production_v3_hand 0 of 73 139 — so the strict rule costs
+  nothing on supported data.  (Measured 2026-08-21; the
+  archived `production` experiment was the only endorsed
+  exception, at 25 420 of 31 319 missing.)
+* So the question is only which *unendorsed* experiments the
+  Django views must keep serving.  If none, the probe order
+  can go entirely.
+
+**Verification is already built**: run `bin/verify_spans`
+against both endorsed experiments before and after, and
+require the rates not to drop — 100 % for production_v4,
+≥ 90 % for production_v3_hand with its documented gap.
+
 ### What already fires
 
 `treatments_to_structured/triage_signals.py` emits 18 flags
