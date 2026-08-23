@@ -280,6 +280,45 @@ order-of-magnitude signal only.  Verified real cases include
 `Linospora Tremulae`, `Orbilia Cunninghamii`, `Linobolus
 Ramosii`, `Mycosphaerella Oxyacanthae`.
 
+**The `-ii` ending is diagnostic; `-i` is not** (operator,
+2026-08-23: "'Ellisii' can be recognized as a probable
+species epithet due to the grammatical ending.
+Unfortunately, this does not work for Harperi — one needs to
+know that Harper is an English surname and Harperi is not an
+Italian surname.").  Measured over 25 000 treatments, taking
+capitalized candidates and classifying each by lowercasing
+and re-querying gnfinder:
+
+| ending | distinct candidates | resolve as a binomial |
+|---|---:|---:|
+| **`-ii`** | 297 | **94 %** (66/70 sampled) |
+| `-i` | 978 | 44 % (31/70 sampled) |
+
+The round-trip test is leaky, so the absolute figures are
+soft — but both buckets were measured the same leaky way, so
+the **contrast** is trustworthy.  `-ii` is the Latin genitive
+of a consonant-final name (*Ellis* → *Ellisii*), an ending
+that is rare in ordinary Latin and rarer still in surnames.
+`-i` collides with Italian and Japanese surnames, and the
+misses in that bucket are exactly that: `Y. Otani`,
+`Jphialoplwm Borelli`.
+
+The sharpest case is *Petri*, which is simultaneously an
+Italian surname and the Latin genitive of *Petrus*:
+
+```
+L. Petri        -> []          Lionello Petri -> []
+Boletus Petri   -> []          Boletus petri  -> Boletus petri
+```
+
+**Practical rule for D10 and D12**: treat a capitalized
+`-ii` epithet as a probable binomial half; treat `-i` as
+unresolved and fall back to context — most usefully, whether
+the abbreviated genus is spelled out in full elsewhere in
+the same treatment.  The reliable bucket is also the smaller
+one, so this recovers the minority of cases cheaply rather
+than most of them.
+
 **Consequences.**
 
 * **D10 is blinder than its entry claims.**  It compares
