@@ -26,10 +26,16 @@ Two defences live here:
 
 Everything that needs span text should call :func:`resolve_span`
 rather than assembling its own attachment URL.
+
+One deliberate exception: ``django/search/views.py`` keeps its own
+``_collect_ann_db_candidates()`` probe order, because it must serve
+older taxa documents that predate ``annotations_db`` — which this
+module rejects by design rather than guessing around.  New code
+should use this module.
 """
 
 import dataclasses
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Long enough to be distinctive, short enough that storing one per
 # span is cheap.
@@ -132,6 +138,31 @@ def _attachment_text(space: CoordinateSpace, server: Any) -> str:
     return decoded
 
 
+def _offsets(span: Dict[str, Any], space: 'CoordinateSpace',
+             length: int) -> Tuple[int, int]:
+    """Read and bounds-check a span's character offsets.
+
+    Some stored spans carry offsets as strings rather than ints —
+    taxon_09b97d5f's ``diagnosis_spans`` are one example — so they
+    are coerced rather than trusted.
+    """
+    raw_start, raw_end = span.get('start_char'), span.get('end_char')
+    if raw_start is None or raw_end is None:
+        raise SpanResolutionError(f"span has no character offsets: {span!r}")
+    try:
+        start, end = int(raw_start), int(raw_end)
+    except (TypeError, ValueError) as exc:
+        raise SpanResolutionError(
+            f"span has non-numeric character offsets: "
+            f"start_char={raw_start!r} end_char={raw_end!r}"
+        ) from exc
+    if start < 0 or end > length or start > end:
+        raise SpanResolutionError(
+            f"span [{start}:{end}] falls outside {space} ({length} chars)"
+        )
+    return start, end
+
+
 def resolve_span(
     treatment: Dict[str, Any],
     span: Dict[str, Any],
@@ -151,14 +182,7 @@ def resolve_span(
     """
     space = coordinate_space(treatment)
     text = _attachment_text(space, server)
-    start, end = span.get('start_char'), span.get('end_char')
-    if start is None or end is None:
-        raise SpanResolutionError(f"span has no character offsets: {span!r}")
-    if start < 0 or end > len(text) or start > end:
-        raise SpanResolutionError(
-            f"span [{start}:{end}] falls outside {space} "
-            f"({len(text)} chars)"
-        )
+    start, end = _offsets(span, space, len(text))
     resolved = text[start:end]
     verify_head(span.get('head'), resolved)
     return resolved
@@ -176,16 +200,7 @@ def resolve_spans(
     text = _attachment_text(space, server)
     out: List[str] = []
     for span in spans:
-        start, end = span.get('start_char'), span.get('end_char')
-        if start is None or end is None:
-            raise SpanResolutionError(
-                f"span has no character offsets: {span!r}"
-            )
-        if start < 0 or end > len(text) or start > end:
-            raise SpanResolutionError(
-                f"span [{start}:{end}] falls outside {space} "
-                f"({len(text)} chars)"
-            )
+        start, end = _offsets(span, space, len(text))
         resolved = text[start:end]
         verify_head(span.get('head'), resolved)
         out.append(resolved)

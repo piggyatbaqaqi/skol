@@ -171,3 +171,22 @@ class TestResolveSpan:
         span = {'start_char': 10 ** 6, 'end_char': 10 ** 6 + 10}
         with pytest.raises(SpanResolutionError):
             resolve_span(_TREATMENT, span, _server())
+
+
+class TestStringOffsets:
+    """Some stored spans carry offsets as strings, not ints — e.g.
+    taxon_09b97d5f's diagnosis_spans are
+    {'start_char': '336451', 'end_char': '337394', ...}.  Found by
+    running bin/verify_spans against the live corpus, which the
+    fakes above had not reproduced.
+    """
+
+    def test_string_offsets_resolve(self) -> None:
+        span = {'start_char': str(_START), 'end_char': str(_END)}
+        assert resolve_span(_TREATMENT, span, _server()) == _ANN[_START:_END]
+
+    def test_non_numeric_offsets_raise_cleanly(self) -> None:
+        span = {'start_char': 'nope', 'end_char': '4'}
+        with pytest.raises(SpanResolutionError) as exc:
+            resolve_span(_TREATMENT, span, _server())
+        assert 'nope' in str(exc.value)

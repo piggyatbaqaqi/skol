@@ -90,6 +90,45 @@ pass once every consumer is verified on the new names.
 | **Configuration** | | | |
 | `skol_experiments` | 11 | 0.4 MB | Experiment configuration documents — wires together ingest/training/treatments/annotations DBs and Redis keys per experiment. See "Experiments" below. |
 
+## Where span offsets point (read this before resolving a span)
+
+Every `*_spans` entry on a `treatments_prose` document
+(`description_spans`, `nomenclature_spans`, …) carries `start_char` /
+`end_char` / `start_line` / `end_line`.  **Those offsets are measured
+against the treatment's `attachment_name` — normally
+`article.txt.ann`, the YEDDA-annotated file — inside the treatment's
+`annotations_db`.**
+
+| field on the treatment | value for production_v4 | holds |
+|---|---|---|
+| `annotations_db` | `skol_exp_production_v4_01_00_ann_combined` | **`article.txt.ann` — the file the offsets index** |
+| `attachment_name` | `article.txt.ann` | |
+| `ingest.db_name` | `skol_dev` | `article.txt`, `article.pdf`, `article.page-headers.json`, `article.spans.v4.json` — **not** the annotated file |
+
+Two traps, both hit in practice:
+
+* **`ingest.db_name` reads as authoritative and is not.**  It names
+  the raw-input database.  Resolving offsets against its
+  `article.txt` succeeds and returns *plausible prose from elsewhere
+  in the document* — `article.txt.ann` runs about 3.7 % longer
+  because of the `[@…#Tag*]` markup, and the excess accumulates — so
+  the mistake is silent.  A false "86 % of spans are mislocated"
+  finding was built on exactly this; see §16 of
+  `docs/data_quality_production_v4_model.md`.
+* **The unversioned sibling is nearly empty.**
+  `skol_exp_production_v4_ann_combined` has 1,826 docs;
+  `skol_exp_production_v4_01_00_ann_combined` has 20,928.  Checking
+  the former and concluding the attachment is missing repeats the
+  first trap.
+
+**Do not assemble attachment URLs by hand.**  Use
+[`span_resolver.resolve_span()`](../span_resolver.py), which reads
+`annotations_db` + `attachment_name`, refuses to fall back to
+`ingest.db_name`, and verifies the span's `head` fingerprint so a
+wrong resolution raises instead of returning something believable.
+`bin/verify_spans` samples the corpus and checks the same thing;
+run it after any re-extraction.
+
 ## Experiments
 
 `skol_experiments` is the canonical wiring diagram. Each experiment document

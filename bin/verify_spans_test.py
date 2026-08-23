@@ -3,8 +3,6 @@
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -12,10 +10,6 @@ from verify_spans import (  # noqa: E402
     SpanCheck,
     check_treatment,
     summarise,
-)
-
-_XFAIL = pytest.mark.xfail(
-    reason="2026-08-21: verify_spans not implemented yet", strict=True,
 )
 
 _ANN = 'aaaa[@Stroma thin, whitish or yellow#Description*]bbbb'
@@ -62,7 +56,6 @@ def _server():
     return _Server({'ann_db': {'src1': {'article.txt.ann': _ANN}}})
 
 
-@_XFAIL
 class TestCheckTreatment:
     def test_resolvable_span_passes(self) -> None:
         results = check_treatment(_TREATMENT, _server())
@@ -103,7 +96,6 @@ class TestCheckTreatment:
         assert fields == {'description_spans', 'diagnosis_spans'}
 
 
-@_XFAIL
 class TestSummarise:
     def test_counts_and_rate(self) -> None:
         checks = [

@@ -2724,6 +2724,14 @@ class SourceContextView(APIView):
             # _collect_ann_db_candidates() returns the probe order:
             # explicit annotations_db on the doc → ingest_db (legacy) →
             # the experiment's databases.annotations.
+            #
+            # New code should prefer span_resolver.resolve_span(), which
+            # is stricter: it requires annotations_db and refuses to fall
+            # back to ingest.db_name, and it verifies the span's `head`
+            # fingerprint.  This view keeps the probe order because it
+            # must serve older taxa docs that predate annotations_db,
+            # which the stricter resolver rejects by design.  See
+            # docs/couchdbs.md, "Where span offsets point".
             ann_db_candidates = _collect_ann_db_candidates(
                 taxa_doc=taxa_doc,
                 ingest_db=ingest_db,
