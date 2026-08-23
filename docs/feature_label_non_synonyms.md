@@ -118,8 +118,68 @@ observation.  Never collapse this family.
 | `Outer excipulum` (1) | `Proper excipulum` (2) | Two excipulum regions. |
 | `Perithecial wall` (1) | `Pseudothecial wall` (2) | Walls of two different ascoma types. |
 
+## Morph terms: technical collapses to plain
+
+Settled 2026-08-23.  `Anamorph` → `Asexual morph` and
+`Teleomorph` → `Sexual morph` are now in the canonicalization map.
+
+**They are genuine synonyms**, with one nuance that does not block
+the merge: `anamorph`/`teleomorph` also carry a *nomenclatural*
+sense from pre-2011 dual nomenclature, where the asexual state
+could be a separately named form-taxon (*Fusarium* as anamorph of
+*Gibberella*).  `Asexual morph` is purely a morphological state.
+For a **feature label** the distinction is immaterial — the label
+marks "this span describes the asexual state", and the
+nomenclatural claim lives in the span text.  Our one
+`Anamorph`-labelled treatment reads `Anamorph: unnamed, Coremiella
+or Oidiodendron like`; "unnamed" is nomenclatural, the label is
+not.
+
+**Direction settled by counting, both spaces agreeing:**
+
+| | label space (candidate + hand) | text (20 474 treatments) |
+|---|---:|---:|
+| `Sexual morph` | 22 | 2 699 treatments |
+| `Asexual morph` | 17 | 2 744 treatments |
+| `Anamorph` | 6 | 940 treatments |
+| `Teleomorph` | **0** | 645 treatments |
+
+The plain forms lead ~3–4× in the literature and `Teleomorph` has
+never once been emitted as a label here.
+
+Two things to be honest about in that evidence:
+
+* **The hand DB's zero for `Anamorph` is not a rejection.**  All
+  six come from one treatment, `taxon_8d815304`, whose
+  `reviewer_action` is `None` — never reviewed either way.
+* **`Teleomorph` is a defensive key with zero occurrences.**  It
+  violates the map's usual "keys are labels Claude has emitted"
+  contract, added deliberately because the term is frequent in the
+  source text (1 254 occurrences) and will eventually surface as a
+  label.
+
+**The operator's stated preference was for the technical forms**
+and counting overrode it, as the rule requires.  Recorded so the
+decision is not silently re-litigated.
+
+**Spelling variants were *not* added.**  The source text carries
+`teleomorphs`, `teleomorphic`, `teleomorphosis`, even a
+`telemorphosis` typo — but none of these has ever appeared as a
+label, and speculative keys are what the map's contract excludes.
+Add them if and when the annotator emits them.
+
 ## Deliberate asymmetries
 
+* **`Synanamorph` and `Holomorph` stay technical.**  They have
+  **no plain-language equivalent**.  A synanamorph is a *second*
+  asexual state of the same fungus — collapsing it to `Asexual
+  morph` would erase the distinction that names it.  A holomorph is
+  the whole fungus, both states together.  Neither has ever been
+  emitted as a label, but both are common in the text
+  (`synanamorph` in 121 treatments, `holomorph` in 64), so the
+  question will arise.  Collapsing `Anamorph`/`Teleomorph` to the
+  plain forms therefore does **not** retire the technical
+  vocabulary wholesale.
 * **`Conidiomata` (50) is left unmapped** while `Basidiocarp`/
   `Basidiome` collapse to `Basidiomata` and `Ascocarp` to `Ascomata`.
   There is no standard *conidiocarp* to collapse toward, and
