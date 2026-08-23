@@ -237,6 +237,63 @@ Nomenclature-recognition rule may be too narrow (T3, T4).
 identification, name-resolution lookups, and per-species aggregation
 all fail or fall back to `synthetic_nomenclature`-flagged stubs.
 
+### 2.5. Old-orthography citations are invisible to gnfinder
+
+**Observation** (operator, 2026-08-23, on taxon_66c1e6e3):
+its citations use an abbreviated genus and the pre-1960s
+convention of **capitalizing species epithets derived from
+personal names** — `D. Ellisii`, `D. Harperi`.
+
+Tested against the live gnfinder, the capitalized epithet is
+the part that breaks detection, and the abbreviation
+compounds it:
+
+| form | gnfinder returns |
+|---|---|
+| `D. subochraceus` | `D. subochraceus` ✅ |
+| `Dacryomyces ellisii` | `Dacryomyces ellisii` ✅ |
+| `Dacryomyces Ellisii` | `Dacryomyces` — **genus only** |
+| `D. Ellisii` | **nothing** |
+
+So an abbreviated genus alone is fine.  A capitalized
+epithet costs the species half.  Both together are
+completely invisible.
+
+**This is not a gnfinder defect.**  `D. Ellisii` is
+orthographically identical to an author's initial plus
+surname — the corpus is full of `P. Chaverri`, `Y. Chai`,
+`N. Maryani` — so the form is genuinely ambiguous and
+rejecting it is defensible.  Any detector that wants these
+names has to disambiguate with context gnfinder does not
+have, the obvious one being *the same genus spelled out
+elsewhere in the same treatment*.
+
+**Scale is uncertain and should not be quoted precisely.**
+A regex for `Genus Epithetii` over 25 000 treatments yields
+1 826 distinct candidate strings, but roughly half are
+author names and journal titles (`Index Fungorum`, `Sylloge
+Fungorum`, `Annales Mycologici`).  Classifying a 120-string
+sample by lowercasing and re-querying gnfinder splits about
+48 / 52 epithet vs other — but that test is itself leaky
+(`Cuban Kungi` lowercases into a "name"), so treat it as an
+order-of-magnitude signal only.  Verified real cases include
+`Linospora Tremulae`, `Orbilia Cunninghamii`, `Linobolus
+Ramosii`, `Mycosphaerella Oxyacanthae`.
+
+**Consequences.**
+
+* **D10 is blinder than its entry claims.**  It compares
+  genera named in the description against the nomenclature,
+  and several fixture cases were dismissed as "names no
+  binomial".  In old literature the description may name
+  binomials that gnfinder cannot see, so D10 will
+  under-report on exactly the pre-1960s material where §6
+  merges are most common.
+* **D12 must not lean on gnfinder alone** to recognise a
+  nomenclature-shaped span, for the same reason.
+* This compounds §15 and the §9 OCR modes: the older the
+  source, the more ways its names are unreadable.
+
 ### 3. Biology and Materials-examined confusion
 
 **Symptom**: content that should be `materials_examined` (specimen
@@ -2531,8 +2588,11 @@ signal is available where the detectors do not currently
 look: the `article.txt.ann` labels themselves.  A
 `Table`/`ToC-entry`/`Bibliography` span whose text matches a
 nomenclature shape — `Genus species Author, Journal vol:
-page. year.` — is a misclassification, and gnfinder already
-recognises that shape.  Reading the labels means resolving
+page. year.` — is a misclassification.  gnfinder recognises
+that shape for *modern* citations, **but not for the older
+orthography** — see the note on abbreviated genera and
+capitalized epithets below, which is why the match must not
+lean on gnfinder alone.  Reading the labels means resolving
 the annotated attachment, which `span_resolver` now makes a
 one-liner.
 
