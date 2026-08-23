@@ -3020,6 +3020,7 @@ decides which symptom you see:
 | `taxon_5581a442` | **`Table`** (synonyms `Bibliography`) | *Acremonium* genus description merged into a *Proliferophialis* species |
 | `taxon_60758ef3` | **`ToC-entry`** | Murrill's species 73 and 74 merged |
 | `taxon_8d815304` | **`Misc-exposition`**, `Diagnosis`, `Notes` — 21 of 27 headings in the document | **nine genera in one treatment** |
+| `taxon_8ebf437c` | **`Table`** (holotype line also `Table`) | *V. dactylidis* description appended to *V. chlamydospora* |
 
 *Swallowed **description continuations** → content loss → truncations:*
 
@@ -3028,11 +3029,76 @@ decides which symptom you see:
 | `taxon_5581a442` | `reverse concolourous.` as **`Misc-exposition`** | Culture-characteristics block ends `…margin entire, ` |
 | `taxon_66c1e6e3` | four separate runs as **`Misc-exposition`** | `crumpled, firmly` → `the base whitish`; `frondose spe-` → `erumpent` |
 | `taxon_6f788487` | `reverse light-brown.` **and** the whole Chemistry lead-in, both **`Misc-exposition`** | `poor sporulation, flat;` breaks its siblings' template; `Di-n-octyl` → `phthalate` |
+| `taxon_8ebf437c` | the description **head** as **`Misc-exposition`**, and a Notes continuation as **`Figure-caption`** | block opens mid-measurement at `diam.`; `and broad cellular` → `pseudoparaphyses` |
 
 **`Misc-exposition` is the repeat offender** — three of the
 five cases, and the only label to swallow content in more
 than one treatment.  It reads as the layout pass's
 catch-all, which makes it the first place to look.
+
+**`Figure-caption` swallows content too** (added 2026-08-23,
+`taxon_8ebf437c`).  It was not previously on the list.  The
+swallowed run is the second half of a comparative *Notes*
+paragraph, and it ends `…chlamydospore-like asexual morph in
+culture (Fig. 3).` — a trailing figure reference inside
+otherwise ordinary prose, which is the plausible cause of
+the misclassification.  So the rule to be careful with is
+"contains a `(Fig. n)` reference", which is true of a great
+deal of running descriptive text.
+
+#### One document, three swallowing labels, one false seam
+
+`taxon_8ebf437c` is worth reading whole, because it shows
+what the symptom looks like *after* the drops compose.  In
+source order:
+
+| char | label | content |
+|---|---|---|
+| 21512 | `Description` | Culture characters, then `Notes – V. chlamydospora resembles…and broad cellular` |
+| 22029 | **`Figure-caption`** | `pseudoparaphyses but differs in…(Fig. 3).` |
+| 22354 | **`Table`** | ***Vagicola dactylidis*** … **sp. nov.** — IF551684 |
+| 22513 | **`Table`** | `Holotype – MFLU 15-2720` |
+| 22549 | `Etymology` | `With reference to the host occurrence` |
+| 22615 | **`Misc-exposition`** | `Saprobic on dead stem of Dactylis sp. Sexual morph: Ascomata 120–180 m high, 110–160 m` |
+| 22726 | `Description` | `diam. (x = 153.9 × 141.3 m, …` |
+
+Only the two `Description` blocks reach the description
+field.  Everything between them is dropped or routed
+elsewhere — including a **`sp. nov.` nomenclature heading**
+and the **head of the very description that follows**.
+
+The result is a **false seam that reads as continuous
+prose**.  Assembled, the field runs `…and broad cellular` →
+`diam. (x = 153.9 × 141.3 m, n = 10 , solitary, scattered,
+superficial, globose to subglobose, dark brown to black,
+coriaceous, ostiolate. Ostiole 50–60 m high…` — ascomata
+described as ostiolate, then the ostiole described.  It
+scans.  The operator read it as a natural transition, and it
+is not one: it is a species boundary with four blocks
+excised.  The genuine continuation of `and broad cellular` is
+`pseudoparaphyses`, two blocks away.
+
+**This is the case against trusting readability as
+evidence of integrity.**  A merge is easiest to spot when
+the seam is ugly; this one is invisible precisely because
+the dropped material included the heading that would have
+announced the boundary.
+
+**And it is why the `nomenclature` field cannot be trusted
+to name what the description describes.**  This treatment's
+nomenclature is *Vagicola vagans* — harvested from
+paragraph 81, about 6 000 characters upstream, where it is
+the genus's type species named in passing.  The species
+actually described in the appended block is *V.
+dactylidis*, whose own heading was the `Table` at 22354.
+Three checks agree on *dactylidis*: the holotype
+`MFLU 15-2720` matches the appended block's Material
+examined (`IT 799 (MFLU 15-2720, holotype)`), the etymology
+`with reference to the host occurrence` fits *dactylidis*
+from the host *Dactylis*, and the closing Notes discuss *V.
+dactylidis*.  D10 compares genus between nomenclature and
+description and would pass this — all three are *Vagicola*.
+**The mismatch is at species rank, and nothing checks it.**
 
 #### Why the headings are unrecognisable: they are fused, not merely mislabelled
 
