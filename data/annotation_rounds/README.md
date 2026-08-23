@@ -29,12 +29,68 @@ what a round actually covered.
 
 ## Provenance
 
-| round | IDs | source | reviewed |
-|---|---:|---|---|
-| 1 | 6 | reconstructed 2026-08-20 | 5 on 2026-07-01, 1 on 2026-07-03 |
-| 2 | 48 | reconstructed 2026-08-20 | 48 on 2026-07-03 |
-| 3 | 9 | reconstructed 2026-08-20 | 9 on 2026-07-07 |
-| 4 | 50 | captured from the selector, 2026-08-14 | not yet reviewed |
+| round | IDs | selection | source | reviewed |
+|---|---:|---|---|---|
+| 1 | 6 | **biased** | reconstructed 2026-08-20 | 5 on 2026-07-01, 1 on 2026-07-03 |
+| 2 | 48 | **biased** | reconstructed 2026-08-20 | 48 on 2026-07-03 |
+| 3 | 9 | **random** | reconstructed 2026-08-20 | 9 on 2026-07-07 |
+| 4 | 50 | **biased** | captured from the selector, 2026-08-14 | 24 of 50 on 2026-08-23 |
+
+## Only round 3 is a random sample
+
+**This is the single most important fact about these files.**
+Rounds 1, 2 and 4 were selected with a bias toward suspected
+problems; **round 3 was a random sample** (operator,
+2026-08-23).  Any statistic pooled across rounds therefore
+describes *the selection*, not the corpus, and pooling the
+biased rounds with round 3 produces a number that means
+nothing in particular.
+
+Measured 2026-08-23, after `bin/brat_ingest` landed the first
+24 treatments of round 4.  *Precision* = candidate
+annotations the reviewer kept; *recall* = kept ÷ (kept +
+hand-added).  Rejections appear as **absence** from the hand
+DB — `brat_ingest` writes only `kept` and `added` — so
+rejections are counted by set difference against
+`features_candidate`.
+
+| round | selection | n | cand | rej | added | precision | recall |
+|---|---|---:|---:|---:|---:|---|---|
+| 1 | biased | 5 | 81 | 0 | 142 | 100 % | **36.3 %** |
+| 2 | biased | 48 | 900 | 13 | 240 | 98.6 % | 78.7 % |
+| **3** | **random** | 9 | 96 | **0** | **1** | **100 %** [96.2, 100] | **99.0 %** [94.4, 99.8] |
+| 4 | biased | 24 | 258 | 7 | 16 | 97.3 % | 94.0 % |
+| — | pooled | 85 | 1316 | 20 | 263 | 98.5 % | 83.1 % |
+
+Wilson 95 % intervals.  **Use the round-3 row for any claim
+about corpus-level label quality; use the pooled row for
+nothing.**
+
+The gradient tracks selection bias exactly, and the
+mechanism is concentrated rather than diffuse: **`taxon_2b793602`
+alone contributes 136 of all 263 additions (52 %)**, and the
+top five treatments contribute 69.6 %.  That treatment is the
+flora-chapter-slice key recorded as
+`§8-flora-chapter-slice-unnumbered-key` — a key body whose
+dozens of short clauses each want an annotation.  Round 1's
+36.3 % recall is very nearly that one document.
+
+**What this means operationally.**  On random corpus material
+the Claude API labelling is *already at ceiling* — 96 of 96
+kept, one miss.  Continuing a biased round does not sharpen
+that estimate, because it does not sample the same
+population.  The two questions have come apart and should be
+run as separate activities:
+
+* **Label validation** — needs a fresh **random** sample.  It
+  is also cheap: round 3 took 96 annotations and one
+  addition, where round 1 took 81 candidates and 142
+  additions.  Random treatments are far faster to review than
+  selected-pathological ones.
+* **Detector / pathology evidence** — what the biased rounds
+  are actually good for, and what rounds 2 and 4 have in fact
+  produced.  Keep doing it, but bill it as pathology hunting,
+  not as label confirmation.
 
 **Rounds 1–3 are reconstructed**, not original. They predate the
 selector writing files at all, and were rebuilt from the `.ann`
@@ -54,6 +110,23 @@ consequences:
 Their union is exactly **62**, matching the 62 treatments with a
 `reviewer_action` in the features_status DB — so no round is missing
 and none is double-counted.
+
+**Review does not reach `features_hand` until `brat_ingest`
+runs.** Editing the `.ann` files in
+`brat/data/skol_segments/production_v4_roundN/` leaves the
+work invisible to every measurement, because precision and
+recall are computed from `features_candidate` against
+`features_hand`. On 2026-08-23 round 4 showed 9 of 50 in the
+hand DB while 24 had in fact been reviewed; the gap closed
+only when the ingest was run:
+
+```sh
+bin/brat_ingest --experiment production_v4 \
+    --ann-dir brat/data/skol_segments/production_v4_round4/
+```
+
+Run it at the end of every review session, not at the end of
+the round.
 
 **`taxon_2b793602…` appears in both round 1 and round 2.** It was
 exported with round 1 but not reviewed until the 07-03 session, so it
