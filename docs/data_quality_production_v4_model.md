@@ -2625,6 +2625,30 @@ Fauxton as long strings of replacement-glyph boxes.
   **and none of them names the OCR damage**, which is the
   actual reason to reject it.
 
+  **Second observed instance, 2026-08-22**:
+  `taxon_5fe9223f...` (*Vararia lincangensis*), six
+  `plazi`-only source anchors, carrying the same joins —
+  `Description.Basidiomata`, `wide.Hyphal`,
+  `smaller.Basidiospores`, and in other fields
+  `Etymology.Lincangensis` and `examined(paratype)`.  Not
+  given its own fixture entry: it is the same root cause and
+  the same join shape as taxon_30d8d8d4, and this section
+  keeps one canonical exemplar per class.
+
+  It is recorded here because it is otherwise
+  **poster-child grade** — 10 annotations covering the
+  description with zero interior or tail gaps, only the
+  `Description.` header left uncovered, merge_metric = 2,
+  every detector silent — and because its corticioid
+  vocabulary (`Dichohyphae`, `Gloeocystidia`,
+  `Generative_hyphae`, `Skeletal_hyphae`, `Basidioles`,
+  `Sterile_margin`, `Hymenial_surface`) appears nowhere else
+  in the fixture.  **It cannot be filed in
+  `poster_children` while §15 stands**: poster children must
+  fire nothing, and **D6 must fire on this treatment**.
+  Revisit it as a corticioid poster child after the §15
+  re-extraction, when the artifact is gone.
+
   **Detector evidence, tested against the whole fixture
   set.**  The naive word-validity metrics do *not* separate
   it:
