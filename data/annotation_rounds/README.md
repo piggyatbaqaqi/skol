@@ -94,6 +94,60 @@ they were failing the whole batch. With the flag, an ID that is a real
 treatment but unannotated is dropped with a warning; an ID that is not
 a treatment at all still errors out, so typos are still caught.
 
+## Manual additions
+
+`production_v4_roundN_manual.txt` holds treatments that must be
+**included in round N regardless of what the selector picks** —
+usually because review of an earlier round identified a specific
+gap worth covering.
+
+The name deliberately does *not* match
+`production_v4_round<digits>.txt`, so
+`select_for_annotation`'s next-round numbering ignores it and
+still produces `production_v4_roundN.txt` normally.
+
+**The selector does not read these files.**  Merge them by hand
+when exporting the round:
+
+```sh
+sort -u data/annotation_rounds/production_v4_round5.txt \
+        data/annotation_rounds/production_v4_round5_manual.txt \
+  > /tmp/round5_all.txt
+
+bin/brat_export --experiment production_v4 \
+    --output-dir .../skol_segments/production_v4_round5/ \
+    --skip-unannotated \
+    --doc-id "$(paste -sd, /tmp/round5_all.txt)"
+```
+
+A manual addition will usually need annotating first — the
+selector's candidates already have LLM annotations, a
+hand-picked treatment may not.  Check with
+`bin/llm_annotate_features` before exporting, or
+`--skip-unannotated` will silently drop it.
+
+### Pending: `production_v4_round5_manual.txt`
+
+* **`taxon_46ff7dde…`** — *Endogonales* Jacz. & P.A.Jacz.,
+  emend. Tedersoo.  Added 2026-08-23.  A correctly-attached
+  **supra-generic emendation**: order-rank nomenclature with a
+  matching `Type family. Endogonaceae Paol.` marker, single
+  description span, merge_metric 0, **zero flags**.  Wanted as
+  the poster child for a shape the reference set has no example
+  of — every current poster child is a genus or species.
+  `taxon_7cb84fba` would have served but is mis-attached (a
+  family description under a species name, `§2-family-
+  description-on-species-nomenclature`), so D14 must fire on it
+  and it cannot be a poster child.
+
+  **It has zero annotations**, which is the point of putting it
+  through a round rather than adding it to the fixture directly.
+  One thing to look at during review: the description ends with
+  a run of GenBank/UNITE accession numbers (`EUK1100757,
+  LC002628, LC431107, EUK1104693 and UDB025468`), which is
+  molecular data sitting in a morphological description and may
+  itself be a §12 leak.
+
 ## Adding a round
 
 Nothing to do by hand — `select_for_annotation` writes the file. The
