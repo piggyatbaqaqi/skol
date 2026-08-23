@@ -2448,6 +2448,36 @@ two-line patch:
   start rather than bolting on after the first false-positive
   report.
 
+  **Inline citations are cheaply and reliably detectable**
+  (measured 2026-08-23, prompted by the operator asking
+  whether they warrant their own annotation label).  Nothing
+  in the codebase detects them today: `gn_client` handles
+  *nomenclatural* citations (`Genus species Author`), and the
+  layout pass's `Bibliography` label covers full reference
+  entries, but inline `Author (year)` has no detector.  A
+  regex over two forms — `(Author et al. year…)` and
+  `Author & Author (year)` — matches in **13.6 %** of the
+  15 540 descriptions sampled, with clean hits (`(Rayner,
+  1970)`, `Ju and Rogers (1996)`, `Quaedvlieg et al.
+  (2013)`) and **zero false positives** across ten
+  adversarial anatomical probes:
+
+  ```
+  (3–)3.5–5.5(–6) × (2–)2.5–4 µm   (Fig. 117)   (n = 60/2)
+  (av. 4.4 × 4.9 µm)   (holotype CBS H-8155)   (sub-)globose
+  ```
+
+  **Presence alone is not a defect signal**, though.
+  `(Kornerup & Wanscher 1978)` is the colour chart and
+  appears in clean bolete descriptions; taxon_343eec40's
+  `(in collection De Kesel 1979)` is an odour comparison in a
+  poster child.  What carries signal is *position* — a
+  citation terminating a repeated-label group — not the
+  citation itself.  So this belongs in `triage_signals` as a
+  computed signal feeding D7 and §1, not as an annotation
+  label: it is exactly the kind of thing a regex does better
+  than a reviewer.
+
 So the usable form is not a raw count.  Candidates: repeats
 per 1000 characters; ratio of max label count to distinct
 label count; or a count that collapses the Latin/English
