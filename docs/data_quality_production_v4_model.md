@@ -2123,7 +2123,10 @@ one repeats them.
 `Culture_characteristics` all ×2 — the low-multiplicity end,
 and the harder test), on `taxon_5581a442`
 (`§6-genus-description-merged-heading-as-Table`, `Mycelium`,
-`Conidiophores`, `Conidia`, `Chlamydospores` ×2) and on `taxon_2b793602`
+`Conidiophores`, `Conidia`, `Chlamydospores` ×2), on
+`taxon_60758ef3`
+(`§6-numbered-species-heading-as-ToC-entry`, `Pileus`,
+`Lamellae`, `Spores`, `Stipe` ×2) and on `taxon_2b793602`
 (`§8-flora-chapter-slice-unnumbered-key`, 46 × `Pileus`,
 40 × `Lamellae`, 16 × `Stipe`, 12 × `Spores`).
 
@@ -2446,6 +2449,44 @@ element-join artifact makes binomials unparseable, so this
 detector is blind exactly there.  Sequence after D6.
 
 **Depends on**: nothing new — gnfinder is already wired in.
+
+### D12 — Nomenclature headings swallowed by non-content labels (§2/§6)
+
+**Catches**: a species or genus heading that the layout pass
+classified as `Table`, `ToC-entry`, `Bibliography` or another
+"not body text" label, so the treatment-grouper never saw a
+boundary and merged two taxa.
+
+**Three fixture cases, one family:**
+
+| taxon | what happened to the heading | result |
+|---|---|---|
+| `taxon_4b89d160` | missed outright | *Pseudonectria* nomenclature on a *Stylonectria* description |
+| `taxon_5581a442` | labelled **`Table`** (synonyms as `Bibliography`) | *Acremonium* genus description merged into a *Proliferophialis* species |
+| `taxon_60758ef3` | labelled **`ToC-entry`** | Murrill's species 73 and 74 merged |
+
+**Gating fixtures**: must fire on all three.  Must stay
+silent on the poster children, and in particular on
+`taxon_01a01c54` (`§11-gen-nov-plus-type-species`), where a
+genus and its type species legitimately share one treatment.
+
+**This is a layout-label problem, not a text problem.**  The
+signal is available where the detectors do not currently
+look: the `article.txt.ann` labels themselves.  A
+`Table`/`ToC-entry`/`Bibliography` span whose text matches a
+nomenclature shape — `Genus species Author, Journal vol:
+page. year.` — is a misclassification, and gnfinder already
+recognises that shape.  Reading the labels means resolving
+the annotated attachment, which `span_resolver` now makes a
+one-liner.
+
+**Note it outranks the merge metric on these cases.**
+merge_metric reads 7, and 1, on the two merges above — the
+lowest in the fixture — because the merged halves are
+*similar* prose rather than obviously seamed.  Whatever is
+done about §6, it should not be a threshold on that metric.
+
+**Depends on**: nothing new; the labels are already stored.
 
 ### D11 — Mid-description truncation (§10)
 

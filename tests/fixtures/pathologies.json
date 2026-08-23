@@ -1064,6 +1064,33 @@
         "§6:merge_metric"
       ],
       "notes": "Two organisms, and the layout labels explain both halves.  Nomenclature is Proliferophialis apiculata L.W. Hou, L. Cai & Crous, sp. nov. (Hou et al., Studies in Mycology, acremonium-like fungi in Hypocreales).  Operator: \"the end part of a cultural characteristics block (missing the actual 'Culture_characteristics' block), followed by a complete description from a different organism.\"  The second half of that is exactly right and the first needs one correction.  BLOCK 1 (span 1, para 1935) is the Proliferophialis apiculata species description -- concrete measurements throughout, conidia 3.2-6.6(-7.3) x 1.9-2.7 um -- and it DOES carry its own \"Culture characteristics after 14 d at 25 C:\" header, annotated.  What is missing is that block's TAIL: it stops at \"On SNA reaching 22-23 mm diam, flat, membranous without aerial mycelium, white, margin entire, \" and the closing clause \"reverse concolourous.\" sits in the very next paragraph labelled Misc-exposition, so it was dropped.  Header present, tail lost.  BLOCKS 2 AND 3 (paras 1953, 1961) are the GENUS description of ACREMONIUM Link 1809 -- generic throughout, \"in some species\" eight times, no measurements.  Verified in the source: the 900 characters immediately before span 2 contain \"Clade O31 / Acremonium Link, Mag. Gesell. Naturf. Freunde, Berlin 3(1-2): 15. 1809.\" labelled **Table**, followed by its synonym list labelled **Bibliography**.  The genus nomenclature heading was mislabelled by the layout pass, so the treatment-grouper never saw a boundary and attached Acremonium's genus description to a Proliferophialis species.  Same wrong-attribution outcome as taxon_4b89d160 but with an identified cause: there the heading was missed, here it was classified as a table.  DETECTORS: only §12:desc_span_gap fires; merge_metric = 7.  Two named gaps.  (1) §10:tail_clip does NOT fire, because the description as a whole ends cleanly on \"Sexual morph not observed.\" -- the truncation is mid-description.  This is the SECOND fixture case of a mid-description truncation invisible to tail_clip, after taxon_4b89d160's Culture paragraph; the detector only ever inspects the end of the field.  (2) D10 would NOT catch this one: it compares genera named in the description against the nomenclature, and the Acremonium block names no binomial at all (authored_binomial_in_desc is False).  D7 WOULD catch it -- the annotation set repeats Mycelium, Conidiophores, Conidia and Chlamydospores, all x2, the same low-multiplicity shape as taxon_3d9f50f8.  That makes three fixture cases where the annotations see a merge the text detectors miss."
+    },
+    {
+      "id": "taxon_60758ef30bc92cbaaf51377f17a0c59396be83f10f9d4af0682692771cce7875",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-22",
+      "captured_rev": "21-6fc1971cd4dd503ff43b8e3b80e1cec4",
+      "class": "§6-numbered-species-heading-as-ToC-entry",
+      "description": "Pileus fleshy, umbilicate or somewhat infundibuliform, becoming explánate, 2.5 cm. broad;\nsurface dry, smooth, hispid with erect, acute squamules, ochraceous-fulvous; lamellae adnate, \n\nsubdecurrent, crowded, broad, golden to fulvous-ferruginous, the edges paler and crenulate;\nspores ellipsoid, apiculate at the base, ferruginous, 7 X 5 n; stipe fibrillose, pallid, hollow,\nattenuate above, 2-2.5 cm. long. \n\nPileus convex to expanded, at length depressed, cespitóse, 2-5 cm. broad; surface dry,\nfloccose-squamose, pale-ferruginous to ochraceous, margin even, not striate; lamellae adnate,\nsubcrowded, broad, at length ventricose, ferruginous at maturity; spores ellipsoid, ferruginous,\nechinulate-punctate, 10 X 6 ¡x; stipe cylindric, slightly fibrillose, subconcolorous but paler,\nsolid, fleshy, yellowish within, 3-5 cm. long, 3-5 mm. thick; veil strongly developed, pale-\nyellowish, subannulate.\nTYPE LOCALITY: Cooper's ranch at the base of El Yunque, near Baracoa, Cuba. \n",
+      "diagnosis": "",
+      "description_spans": [
+        {"start_line": 4899, "end_line": 4900},
+        {"start_line": 4905, "end_line": 4907},
+        {"start_line": 4917, "end_line": 4923}
+      ],
+      "source_anchors": [
+        {"kind": "pdf", "label": "69", "page": "69"}
+      ],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§6:merge_metric"
+      ],
+      "notes": "Two species merged, from Murrill's numbered flora.  Nomenclature is \"73. Gymnopilus hispidus (Massee) Murrill, Mycologia 5: 24. 1913.\"  Operator: \"looks pretty good, but it includes a type locality, which is a different piece of a treatment\" -- and the type locality is the thread that unravels it, because there are TWO and they disagree.  The biology field carries \"TYPE LOCALITY: Chateau Belair, St. Vincent, West Indies\", which is correct for G. hispidus.  The DESCRIPTION ends with \"TYPE LOCALITY: Cooper's ranch at the base of El Yunque, near Baracoa, Cuba\", which belongs to a different species.  The morphology agrees: block 1 has pileus 2.5 cm, spores 7 x 5 um smooth, stipe 2-2.5 cm, no veil; block 2 has pileus 2-5 cm, cespitose, spores 10 x 6 um ECHINULATE-PUNCTATE, stipe 3-5 cm, and \"veil strongly developed\".  Different sizes, different spore ornamentation, a veil present in one and absent in the other.  BOUNDARY IDENTIFIED: the 334 characters between description spans 2 and 3 contain \"ILLUSTRATIONS: ... / 74. Gymnopilus palmicola Murrill, Mycologia 5: 23. 1913. / Flammula palmicola Murrill...\" labelled **ToC-entry**.  Species 74's nomenclature heading was classified as a table-of-contents line, so the grouper never saw a species boundary and merged 73 with 74; the Cuban type locality is palmicola's.  THIRD CASE OF THE SAME FAMILY: a nomenclature heading swallowed by a non-content layout label.  taxon_4b89d160 had the heading missed outright, taxon_5581a442 had it labelled Table (with the synonym list as Bibliography), and this one has it as ToC-entry.  Table, ToC-entry and Bibliography are all labels that mean \"not body text\", and all three swallowed a species or genus boundary.  DETECTORS: merge_metric reads 1 -- the lowest of any merge in the fixture -- and only §12:desc_span_gap fires.  D7 would catch it cleanly: Pileus, Lamellae, Spores and Stipe all x2, the operator's own first observation.  D10 would not: neither block names a binomial, so authored_binomial_in_desc is False."
     }
   ]
 }
