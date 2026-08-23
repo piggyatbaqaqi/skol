@@ -63,8 +63,43 @@ rejections are counted by set difference against
 | — | pooled | 85 | 1316 | 20 | 263 | 98.5 % | 83.1 % |
 
 Wilson 95 % intervals.  **Use the round-3 row for any claim
-about corpus-level label quality; use the pooled row for
-nothing.**
+about label quality on the annotatable population; use the
+pooled row for nothing.**
+
+### "Random" means random over 47 % of the corpus
+
+`select_for_annotation` applies two exclusions **before** any
+sampling, so even an unbanded run is not random over the
+corpus (measured 2026-08-23):
+
+| | treatments | share |
+|---|---:|---:|
+| corpus | 81 527 | — |
+| complexity score 0 — no description/diagnosis prose | −35 482 | 43.5 % |
+| `skipped_merge_suspect` in features_status | −7 632 | 9.4 % |
+| **sampling population** | **38 413** | **47.1 %** |
+
+`--exclude-suspected-merges` is **on by default**
+(`--no-exclude-suspected-merges` to bypass).  So round 3's
+100 % / 99 % describes *annotatable, non-merge-suspect*
+treatments.
+
+That is the right population for the operational question —
+it is exactly what production would annotate — but it is not
+the corpus, and two consequences follow:
+
+* **The label figures do not cover merge suspects.**  Nothing
+  says what labelling looks like on the 7 632, and the
+  §6/§12 cases reviewed this session suggest it is worse.
+* **Annotation rounds cannot discover merge pathologies by
+  default**, because merge suspects are excluded before
+  sampling.  Pathology work has to bypass the filter
+  deliberately, which is part of why the biased rounds exist.
+
+Treat these as two populations with different purposes:
+**P1**, the 38 413 annotatable treatments, for label
+validation and vocabulary estimation; **P2**, the remaining
+43 114, for pathology work.
 
 The gradient tracks selection bias exactly, and the
 mechanism is concentrated rather than diffuse: **`taxon_2b793602`
