@@ -364,6 +364,76 @@ capitalized candidates, so this recovers roughly a quarter
 of them cheaply; the `-i` bucket is the bulk and needs the
 genus-context check regardless.
 
+### Recovering these names: lowercase round-trip + genus expansion
+
+Operator, 2026-08-23: "If we see capitalized words with any
+of these endings can we make them lowercase and throw
+gnfinder at them?"  Yes — measured, it works, **but not on
+its own**.
+
+**Step 1, the round-trip, recovers the names.**
+
+```
+D. Ellisii          -> []            lowered: D. ellisii          ✅
+D. Harperi          -> []            lowered: D. harperi          ✅
+Dacryomyces Ellisii -> Dacryomyces   lowered: Dacryomyces ellisii ✅
+```
+
+Both of taxon_66c1e6e3's citations come back, `-i` included
+— so this recovers more than the suffix rule alone predicts.
+
+**Step 2 is mandatory, because step 1 alone manufactures
+false binomials from author names.**  gnfinder cannot
+validate a single-letter genus, so almost any `Initial.
+word` is accepted once lowercased:
+
+```
+Y. Otani  -> Y. otani     L. Petri   -> L. petri
+A. Borelli-> A. borelli   M. Rossii  -> M. rossii
+```
+
+Only `P. Chaverri` refused.  Note **`M. Rossii` ends in
+`-ii` and still false-positives** — so the suffix filter,
+which is 94 % precise on full genera, does *not* protect the
+abbreviated case.  A raw round-trip would hand D10 a
+hallucinated binomial to compare against, which is worse
+than the blindness it fixes.
+
+**The discriminator is genus expansion**: require the
+initial to expand to a full genus named somewhere in the
+same treatment.  Verified on taxon_66c1e6e3, where gnfinder
+finds *Coryne, Dacryomitra, Dacryomyces, Dacryopsis,
+Ditiola, Exidia, Tremella* elsewhere in the document:
+
+| candidate | lowered resolves | `X.` expands to | verdict |
+|---|---|---|---|
+| `D. Ellisii` | ✅ | Dacryomitra, Dacryomyces, Dacryopsis, Ditiola | **accept** |
+| `D. Harperi` | ✅ | (same) | **accept** |
+| `Y. State` | ✗ | nothing | reject |
+
+**Two honest limits.**
+
+* The expansion is often **ambiguous** — `D.` matches four
+  genera here.  So the output is "a binomial in one of
+  these", not a resolved name.  That is still enough for
+  D10, which only needs to know whether the description's
+  genus *can* be the nomenclature's.
+* It is **not airtight**: in a treatment about *Mycena*, an
+  author cited as `M. Rossii` would find `M.` → *Mycena* and
+  be wrongly accepted.  Combining both filters — an `-ii`,
+  `-iae` or `-ian*` ending **and** a genus expansion —
+  narrows that, but a paper about *Mycena* citing
+  M. Someoneii remains a false positive.  Expect precision,
+  not certainty.
+
+**This belongs outside the mycology code.**  Nothing in it
+is fungal: it is nomenclatural orthography plus gnfinder, so
+it fits `treatments_to_structured/gn_client.py` or the
+`gnservices` component earmarked for extraction in
+`docs/skol-repo-split-and-packaging.md`, and would be useful
+to anyone parsing pre-1960s botanical or zoological
+literature.
+
 **Consequences.**
 
 * **D10 is blinder than its entry claims.**  It compares
