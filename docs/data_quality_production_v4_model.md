@@ -2489,22 +2489,39 @@ detector is blind exactly there.  Sequence after D6.
 
 **Depends on**: nothing new — gnfinder is already wired in.
 
-### D12 — Nomenclature headings swallowed by non-content labels (§2/§6)
+### D12 — Content swallowed by non-content layout labels (§2/§6/§12)
 
-**Catches**: a species or genus heading that the layout pass
-classified as `Table`, `ToC-entry`, `Bibliography` or another
-"not body text" label, so the treatment-grouper never saw a
-boundary and merged two taxa.
+**Catches**: body text that the layout pass assigned to a
+"not body text" label — `Table`, `ToC-entry`,
+`Bibliography`, `Misc-exposition` — and that the extractor
+therefore dropped.
 
-**Three fixture cases, one family:**
+**Two shapes, one root cause.**  Which label eats the text
+decides which symptom you see:
 
-| taxon | what happened to the heading | result |
+*Swallowed **nomenclature headings** → boundary loss → merges:*
+
+| taxon | heading became | result |
 |---|---|---|
 | `taxon_4b89d160` | missed outright | *Pseudonectria* nomenclature on a *Stylonectria* description |
-| `taxon_5581a442` | labelled **`Table`** (synonyms as `Bibliography`) | *Acremonium* genus description merged into a *Proliferophialis* species |
-| `taxon_60758ef3` | labelled **`ToC-entry`** | Murrill's species 73 and 74 merged |
+| `taxon_5581a442` | **`Table`** (synonyms `Bibliography`) | *Acremonium* genus description merged into a *Proliferophialis* species |
+| `taxon_60758ef3` | **`ToC-entry`** | Murrill's species 73 and 74 merged |
 
-**Gating fixtures**: must fire on all three.  Must stay
+*Swallowed **description continuations** → content loss → truncations:*
+
+| taxon | what was dropped | symptom |
+|---|---|---|
+| `taxon_5581a442` | `reverse concolourous.` as **`Misc-exposition`** | Culture-characteristics block ends `…margin entire, ` |
+| `taxon_66c1e6e3` | four separate runs as **`Misc-exposition`** | `crumpled, firmly` → `the base whitish`; `frondose spe-` → `erumpent` |
+
+`taxon_66c1e6e3` is the clearest specimen of the second
+shape: the hyphenated word *spe-cies* was split across a
+dropped run, leaving `spe-` and `erumpent` adjacent in the
+description — a non-word that survived into the annotation
+set.  **That is the tell to search for**: a hyphen-final
+fragment abutting text that does not continue it.
+
+**Gating fixtures**: must fire on all five.  Must stay
 silent on the poster children, and in particular on
 `taxon_01a01c54` (`§11-gen-nov-plus-type-species`), where a
 genus and its type species legitimately share one treatment.
@@ -2520,10 +2537,12 @@ the annotated attachment, which `span_resolver` now makes a
 one-liner.
 
 **Note it outranks the merge metric on these cases.**
-merge_metric reads 7, and 1, on the two merges above — the
-lowest in the fixture — because the merged halves are
-*similar* prose rather than obviously seamed.  Whatever is
-done about §6, it should not be a threshold on that metric.
+merge_metric reads 7, 1 and 1 on the three merges above —
+the lowest in the fixture — because the merged halves are
+*similar* prose rather than obviously seamed.
+`taxon_66c1e6e3` scores 1 while being the most fragmented
+treatment in the collection.  Whatever is done about §6, it
+should not be a threshold on that metric.
 
 **Depends on**: nothing new; the labels are already stored.
 
