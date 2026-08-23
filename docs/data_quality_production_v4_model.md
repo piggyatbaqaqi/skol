@@ -311,13 +311,58 @@ L. Petri        -> []          Lionello Petri -> []
 Boletus Petri   -> []          Boletus petri  -> Boletus petri
 ```
 
+**Is a full Latin suffix list worth compiling?  No — three
+suffixes cover it** (operator, 2026-08-23).  Measured the
+same way over 25 000 treatments:
+
+| suffix | distinct capitalized | resolve as binomial | verdict |
+|---|---:|---:|---|
+| **`-ii`** | 277 | **94 %** | use |
+| **`-ian*`** (`-ianus/-iana/-ianum`) | 74 | **88 %** | use |
+| **`-iae`** | 99 | **85 %** | use |
+| `-ae` | 248 | 60 % | reject |
+| `-i` | 1 048 | 44 % | needs context |
+| `-orum` | 33 | 27 % | reject |
+
+All three keepers are **personal-name forms** — `-ii`
+masculine genitive, `-iae` feminine genitive (the feminine
+counterpart recalled by the operator), `-ian*` adjectival.
+That is not a coincidence: the old convention capitalized
+epithets derived from *persons* and *former generic names*,
+not from anything else.
+
+**And that is why the locality suffix does not need
+detecting.**  `-ensis` is indeed almost never a surname, but
+it is moot here: only **1.2 %** of `-ensis` epithets in the
+corpus are capitalized at all (26 against 2 169 lowercase),
+and `-ense` only 0.6 %.  Geographic epithets were not
+capitalized under the convention, so they never enter this
+problem.
+
+The rejected suffixes fail for instructive reasons, each a
+different collision:
+
+* `-ae` is the ordinary first-declension plural, so it
+  matches anatomy on every page — `Sporae`, `Lamellae`,
+  `Hyphae` — as well as `Academiae`.
+* `-ian*` misses are **toponyms**: `Louisiana`, `British
+  Guiana`, `Reggiana`.  Still 88 %, but the failure mode is
+  geography rather than surnames.
+* `-iae` misses are Latin genitives of non-persons:
+  `Lithuaniae`, `Academiae`, and subsection names like
+  `Villadiniae`.
+* `-orum` is dominated by book titles — `Index Herbariorum`,
+  `Prosyllabus Tracheophytorum`.
+
 **Practical rule for D10 and D12**: treat a capitalized
-`-ii` epithet as a probable binomial half; treat `-i` as
-unresolved and fall back to context — most usefully, whether
-the abbreviated genus is spelled out in full elsewhere in
-the same treatment.  The reliable bucket is also the smaller
-one, so this recovers the minority of cases cheaply rather
-than most of them.
+`-ii`, `-iae` or `-ian*` epithet as a probable binomial
+half; treat `-i` as unresolved and fall back to context —
+most usefully, whether the abbreviated genus is spelled out
+in full elsewhere in the same treatment.  The three reliable
+endings together cover about **450 of the ~1 826**
+capitalized candidates, so this recovers roughly a quarter
+of them cheaply; the `-i` bucket is the bulk and needs the
+genus-context check regardless.
 
 **Consequences.**
 
