@@ -2405,6 +2405,26 @@ two-line patch:
 * **Existing §6 false positives.**  `taxon_9e048013` shows
   `Stipe` 8 ×, `Spores` 6 ×.  A signal that fires there
   makes a known false positive worse.
+* **Compilatory entries — the confounder that would sink
+  it.**  `taxon_6c2dcb7c`
+  (`§6-compilatory-double-description`) repeats **seven**
+  labels exactly ×2 — `Vegetative_hyphae`, `Sexual_morph`,
+  `Asexual_morph`, `Conidiophores`, `Conidiogenous_cells`,
+  `Conidia`, `Chlamydospores` — the same signature as the
+  genuine merges above.  But it is **one genus described
+  twice from two literature sources**, `(Carmichael 1966)`
+  and `(de Hoog et al. 2000a, Najafzadeh et al. 2010a, b)`,
+  not two taxa.  D7 as drafted fires and is wrong.  The
+  outline-paper genre this comes from is large and growing,
+  so this is not a rare edge case.
+
+  **The discriminator is in the text, not the counts**: a
+  compilatory block ends with a parenthetical source
+  citation.  Requiring that *no* repeated-label group is
+  terminated by a `(Author year)` citation would separate
+  these cleanly — and is worth building into D7 from the
+  start rather than bolting on after the first false-positive
+  report.
 
 So the usable form is not a raw count.  Candidates: repeats
 per 1000 characters; ratio of max label count to distinct
@@ -2677,6 +2697,16 @@ description to the previous taxon.
 *Pseudonectria* while the description opens `Type species:
 Stylonectria applanata Höhn. 1915.` and describes
 *Stylonectria*.
+
+**It has a positive case.**  `taxon_6c2dcb7c`
+(`§6-compilatory-double-description`) is the first fixture
+entry where this comparison actually fires: gnfinder finds
+only *Exophiala* in the description and only
+*Cladophialophora* in the nomenclature.  The three earlier
+wrong-attribution cases — taxon_4b89d160, taxon_5581a442,
+taxon_60758ef3 — all name no resolvable binomial in the
+description, so D10 is silent on them.  Its yield is
+therefore narrower than the §2/§6 problem it addresses.
 
 **The signal already exists, unused.**  `§6:authored_binomial`
 fires on that treatment precisely because the description
