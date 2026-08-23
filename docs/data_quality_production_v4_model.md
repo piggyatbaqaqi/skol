@@ -2184,9 +2184,11 @@ must fire exactly their labelled set) driven by
 *describing* a taxon.  Introduction summaries, discussion
 paragraphs, comparative recaps.
 
-**Gating fixtures**: must fire on
-`taxon_0a8c1077` (`§5-front-matter-summary-in-taxonomic-paper`).
-Must stay silent on all 13 poster children.
+**Gating fixtures**: must fire on `taxon_0a8c1077`
+(`§5-front-matter-summary-in-taxonomic-paper`, anaphora) and
+on `taxon_76679aa3`
+(`§2-nomenclature-is-host-plant-fragment`, authorial voice).
+Must stay silent on all 16 poster children.
 
 **The obvious formulations are all disqualified by the
 reference set** — this is the reason to write the item down
@@ -2209,13 +2211,33 @@ rather than just implement it:
   §2 is true of 1 884+ corpus treatments on its own — it
   can weight the signal, not be it.
 
-**What is left is anaphora**: back-reference to material
-outside the treatment.  `All seven species **mentioned
-above**`, `**None of these** species`, `most of **them**`.
-That, not plurality, is what separates taxon_0a8c1077 from
-every poster child.  Formulate as: first sentence contains a
-demonstrative or anaphoric reference to an antecedent that
-is not in this treatment.
+**What is left is register** — two markers, both measured
+clean against the reference set.
+
+*Anaphora*: back-reference to material outside the
+treatment.  `All seven species **mentioned above**`,
+`**None of these** species`, `most of **them**`.  That, not
+plurality, is what separates taxon_0a8c1077 from every
+poster child.
+
+*Authorial voice and attribution*, added 2026-08-23 from
+`taxon_76679aa3`: a handbook commentary opening `In
+Melampsora, all morphological basic types of spores and sori
+are formed **that we also know** from other rust fungi.
+**After Cummins & Hiratsuka (2003)**, spermogonia are
+subcuticular …`.  It carries real anatomy — nine
+annotations — but describes the genus in narrative rather
+than diagnostic register.  Anaphora would not catch it; the
+first person and the attributive citation do.
+
+Measured across the fixture, first-person and attributive
+markers (`we`/`our`/`us`, `After <Author>`, `viz.`) appear
+in **0 of 16 poster children** and **5 of 39 pathologies**.
+A clean description never uses them.
+
+Formulate as: the first sentence refers to an antecedent
+outside the treatment, **or** the passage speaks in the
+authors' voice rather than describing a specimen.
 
 **Depends on**: nothing.  Cheapest item here and the only
 one with a live case that reached a reviewer's queue.
