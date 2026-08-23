@@ -145,3 +145,41 @@ class TestGroupBySource:
 
     def test_empty_input(self) -> None:
         assert group_by_source([]) == []
+
+
+_PDF_ANN = 'zzzz[@Ascomata immersed, becoming erumpent#Description*]qqqq'
+
+
+class TestAttachmentFallbackInCache:
+    """AttachmentCache reimplemented the attachment read and so
+    bypassed span_resolver's FALLBACK_ATTACHMENTS.  On the real
+    production_v3_hand run that skipped 65 747 of 73 139 treatments,
+    because its documents store article.pdf.ann while attachment_name
+    says article.txt.ann.
+    """
+
+    def _server_pdf_only(self, reads):
+        return _Server(
+            {'ann_db': {'src1': {'article.pdf.ann': _PDF_ANN}}}, reads,
+        )
+
+    def test_falls_back_to_the_stored_attachment(self) -> None:
+        reads = []
+        treatment = {
+            '_id': 'taxon_abc',
+            'annotations_db': 'ann_db',
+            'attachment_name': 'article.txt.ann',
+            'ingest': {'_id': 'src1', 'db_name': 'skol_dev'},
+            'description_spans': [{'start_char': 4, 'end_char': 24}],
+        }
+        cache = AttachmentCache(self._server_pdf_only(reads))
+        assert backfill_treatment(treatment, cache) == 1
+        assert treatment['description_spans'][0]['head'] == _PDF_ANN[4:24]
+
+    def test_error_names_every_attachment_tried(self) -> None:
+        reads = []
+        cache = AttachmentCache(_Server({'ann_db': {'src1': {}}}, reads))
+        with pytest.raises(SpanResolutionError) as exc:
+            cache.text('ann_db', 'src1', 'article.txt.ann')
+        msg = str(exc.value)
+        assert 'article.txt.ann' in msg and 'article.pdf.ann' in msg

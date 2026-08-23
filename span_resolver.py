@@ -134,9 +134,15 @@ def verify_head(stored: Optional[str], actual: str) -> None:
     )
 
 
-def _candidate_attachments(space: CoordinateSpace) -> List[str]:
-    """The stored attachment name first, then the known alternatives."""
-    names = [space.attachment]
+def candidate_attachments(attachment: str) -> List[str]:
+    """The stored attachment name first, then the known alternatives.
+
+    Public because anything that reads an annotated attachment must
+    use the same ordering.  ``fixes/backfill_span_heads`` once kept
+    its own copy of the read and so missed the fallback entirely,
+    skipping 65 747 of production_v3_hand's 73 139 treatments.
+    """
+    names = [attachment]
     names.extend(n for n in FALLBACK_ATTACHMENTS if n not in names)
     return names
 
@@ -145,7 +151,7 @@ def _attachment_text(space: CoordinateSpace, server: Any) -> str:
     if space.db not in server:
         raise SpanResolutionError(f"database {space.db!r} not found")
     db = server[space.db]
-    tried = _candidate_attachments(space)
+    tried = candidate_attachments(space.attachment)
     for name in tried:
         try:
             blob = db.get_attachment(space.doc_id, name)

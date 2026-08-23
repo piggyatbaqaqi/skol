@@ -41,6 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from span_resolver import (  # noqa: E402
     SpanResolutionError,
+    candidate_attachments,
     coordinate_space,
     span_head,
 )
@@ -76,13 +77,22 @@ class AttachmentCache:
             return self._cache[key]
         if db not in self._server:
             raise SpanResolutionError(f"database {db!r} not found")
-        blob = self._server[db].get_attachment(doc_id, attachment)
-        if blob is None:
+        # Same candidate ordering span_resolver uses.  Keeping a
+        # private copy of this read is what made the first
+        # production_v3_hand run skip 65 747 of 73 139 treatments.
+        tried = candidate_attachments(attachment)
+        decoded: Optional[str] = None
+        for name in tried:
+            blob = self._server[db].get_attachment(doc_id, name)
+            if blob is not None:
+                self.reads += 1
+                decoded = blob.read().decode('utf-8', errors='replace')
+                break
+        if decoded is None:
             raise SpanResolutionError(
-                f"attachment {db}/{doc_id}/{attachment} not found"
+                f"no annotated attachment on {db}/{doc_id}; "
+                f"tried {', '.join(tried)}"
             )
-        self.reads += 1
-        decoded: str = blob.read().decode('utf-8', errors='replace')
         self._cache[key] = decoded
         while len(self._cache) > self._max_entries:
             self._cache.popitem(last=False)
