@@ -2121,7 +2121,9 @@ one repeats them.
 (`§6-two-species-two-culture-blocks`, `Conidia`,
 `Conidiogenous_cells`, `Conidiophores`, `Conidiomata` and
 `Culture_characteristics` all ×2 — the low-multiplicity end,
-and the harder test) and on `taxon_2b793602`
+and the harder test), on `taxon_5581a442`
+(`§6-genus-description-merged-heading-as-Table`, `Mycelium`,
+`Conidiophores`, `Conidia`, `Chlamydospores` ×2) and on `taxon_2b793602`
 (`§8-flora-chapter-slice-unnumbered-key`, 46 × `Pileus`,
 40 × `Lamellae`, 16 × `Stipe`, 12 × `Spores`).
 
@@ -2444,6 +2446,41 @@ element-join artifact makes binomials unparseable, so this
 detector is blind exactly there.  Sequence after D6.
 
 **Depends on**: nothing new — gnfinder is already wired in.
+
+### D11 — Mid-description truncation (§10)
+
+**Catches**: a field that is cut off *inside* the
+description rather than at its end.  `§10:tail_clip`
+inspects only the final characters of the field, so a
+description that ends on a clean sentence looks healthy
+however mangled its middle is.
+
+**Gating fixtures**: must fire on `taxon_5581a442`
+(`§6-genus-description-merged-heading-as-Table`), whose
+Culture-characteristics block stops at `…margin entire, `
+mid-way through, and on `taxon_4b89d160`
+(`§2-wrong-genus-nomenclature`), whose Culture paragraph
+lacks its closing period.  Both were spotted by the operator
+by eye and neither fires anything.
+
+**Must stay silent on** the 15 poster children, several of
+which contain legitimate mid-field commas and semicolons at
+paragraph joins.
+
+**The signal is not "no terminal period".**  Descriptions
+are assembled from several source paragraphs, so an interior
+join legitimately ends mid-clause.  What distinguishes these
+two is that the interior text ends where a *span boundary*
+falls — `taxon_5581a442`'s truncation is exactly at the end
+of description span 1, and the missing clause (`reverse
+concolourous.`) sits in the following paragraph under a
+different label.  So the usable form is: a span that ends
+without sentence-final punctuation **and** whose following
+span starts a new topic, rather than punctuation alone.
+
+**Depends on**: nothing, but it needs the span offsets,
+which makes it a natural companion to `bin/verify_spans`
+rather than a pure text heuristic.
 
 ### D9 — Head-clip on an opening parenthesis (§10)
 
