@@ -48,10 +48,10 @@ sys.path.insert(0, str(_ROOT / "bin"))
 from env_config import get_env_config  # type: ignore[import]  # noqa: E402
 
 # Re-use shared helpers from llm_relabel rather than duplicating them.
+from llm_pricing import PRICING  # type: ignore[import]  # noqa: E402
 from llm_relabel import (  # type: ignore[import]  # noqa: E402
     _BACKOFF_BASE,
     _MAX_RETRIES,
-    _PRICING,
     _TAG_DEFINITIONS,
     _YEDDA_BLOCK_RE,
     _lcs_align_blocks,
@@ -131,7 +131,8 @@ def build_merge_prompt(reviewed_ann: str, new_text: str) -> str:
         "TAG DEFINITIONS:\n"
         f"{tag_lines}\n\n"
         "RULES:\n"
-        "1. Every line of NEW OCR TEXT must appear in exactly one output block "
+        "1. Every line of NEW OCR TEXT must appear in exactly "
+        "one output block "
         "— do not omit any text.\n"
         "2. Use the text from NEW OCR TEXT verbatim as block content — "
         "do not use the reviewed annotation text.\n"
@@ -203,7 +204,7 @@ def parse_llm_response(response: str, reviewed_ann: str) -> str:
             "original tags preserved",
             n_unmatched, len(old_blocks),
         )
-    return _reconstruct_ann(aligned)
+    return str(_reconstruct_ann(aligned))
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +356,8 @@ def _split_new_text(new_text: str, n_chunks: int) -> List[str]:
             continue
         # Merge the last batch into the previous one if we already have
         # enough chunks (avoids a tiny trailing chunk).
-        if len(parts) >= actual_chunks - 1 and i + chunk_size < len(paragraphs):
+        if (len(parts) >= actual_chunks - 1
+                and i + chunk_size < len(paragraphs)):
             batch = paragraphs[i:]
             parts.append("\n\n".join(batch) + "\n")
             break
@@ -424,7 +426,8 @@ def merge_via_llm_chunked(
     is divided proportionally by paragraph count.  Each chunk pair is sent
     as a separate API call and the results are concatenated.
 
-    Successful chunk results are written to ``cache_dir/{doc_id}/chunk_NNN.ann``
+    Successful chunk results are written to
+    ``cache_dir/{doc_id}/chunk_NNN.ann``
     so that a crash mid-document leaves completed chunks on disk; a re-run
     skips cached chunks and only retries the missing ones.  When inputs change
     (different reviewed_ann, new_text, or chunk_size) the manifest signature
@@ -503,7 +506,7 @@ def _fetch_attachment(db: Any, doc_id: str, filename: str) -> Optional[str]:
     att = db.get_attachment(doc_id, filename)
     if att is None:
         return None
-    return att.read().decode("utf-8")
+    return str(att.read().decode("utf-8"))
 
 
 def _write_ann(db: Any, doc_id: str, ann_text: str) -> None:
@@ -550,7 +553,8 @@ def process_documents(
         chunk_size: Maximum reviewed_ann blocks per API call.
         cache_dir: Per-document chunk cache directory; None disables caching
             cleanup (the per-doc cache is always written by
-            merge_via_llm_chunked, but only cleared on success when this is set).
+            merge_via_llm_chunked, but only cleared on success
+            when this is set).
 
     Returns:
         Summary count dict.
@@ -610,12 +614,12 @@ def process_documents(
             if verbosity >= 1:
                 print(f"  {doc_id}: ~{result.input_tokens} input tokens")
 
-        pricing = _PRICING.get(model, {"input": 3.00, "output": 15.00})
+        # No silent fallback rate here: PRICING.for_model raises
+        # UnknownModelError rather than guess, because an estimate
+        # quoted at the wrong model's price is worse than no estimate.
+        pricing = PRICING.for_model(model)
         est_output = total_tokens  # output ≈ input for re-annotation
-        cost = (
-            total_tokens * pricing["input"]
-            + est_output * pricing["output"]
-        ) / 1_000_000
+        cost = pricing.cost_usd(total_tokens, est_output)
         print(
             f"\n{len(hard_docs)} document(s) — "
             f"~{total_tokens + est_output:,} total tokens — "

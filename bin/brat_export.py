@@ -403,7 +403,7 @@ def main() -> int:
         # Resolve via the same helper bin/llm_annotate_features
         # uses, so the fallback naming convention stays in one
         # place.
-        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+        from llm_annotate_features import (  # noqa: E402
             resolve_candidate_db_name,
         )
         source_db_name = resolve_candidate_db_name(
@@ -451,7 +451,7 @@ def main() -> int:
         from brat_ingest import (  # type: ignore[import]  # noqa: E402
             resolve_hand_db_name,
         )
-        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+        from llm_annotate_features import (  # noqa: E402
             resolve_status_db_name,
         )
         hand_db_name = resolve_hand_db_name(

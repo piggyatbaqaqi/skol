@@ -111,7 +111,7 @@ def resolve_hand_db_name(
     dbs = experiment_doc.get('databases') or {}
     explicit = dbs.get('features_hand')
     if explicit:
-        return explicit
+        return str(explicit)
     fallback = (
         f'skol_exp_{experiment_name}_02_55_features_hand'
     )

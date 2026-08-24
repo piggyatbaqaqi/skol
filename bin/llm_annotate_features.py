@@ -125,7 +125,13 @@ def load_seed(name: str) -> Dict[str, Any]:
     """
     path = _SEEDS_DIR / f'{name}.json'
     with path.open('r') as f:
-        return json.load(f)
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"seed file {path} must contain a JSON object, "
+            f"got {type(data).__name__}"
+        )
+    return data
 
 
 def resolve_candidate_db_name(
@@ -146,7 +152,7 @@ def resolve_candidate_db_name(
     dbs = experiment_doc.get('databases') or {}
     explicit = dbs.get('features_candidate')
     if explicit:
-        return explicit
+        return str(explicit)
     # 02_50 slots between the 02_00 treatments_prose extraction and
     # the 03_00 treatments_structured SLM output, per the
     # sort-in-pipeline-order convention from
@@ -293,7 +299,7 @@ def resolve_status_db_name(
     dbs = experiment_doc.get('databases') or {}
     explicit = dbs.get('features_status')
     if explicit:
-        return explicit
+        return str(explicit)
     fallback = (
         f'skol_exp_{experiment_name}_02_50_features_status'
     )

@@ -288,7 +288,9 @@ class _FakeStatusDb:
     """Stand-in for the status DB.  Keyed by treatment_id; each
     value is a dict with at least a 'status' key."""
 
-    def __init__(self, docs: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+    def __init__(
+        self, docs: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> None:
         self.docs = docs or {}
 
     def __getitem__(self, doc_id: str) -> Dict[str, Any]:
