@@ -2018,6 +2018,37 @@
         "§12-morphology-section-in-wrong-field"
       ],
       "notes": "§12/D16: Lyomyces albofarinaceus sp. nov.  The operator read it as short but complete -- it has measurements, so not a genus description -- and it IS a species description, but its `description` is missing a section.  Paragraph 53, 'Hymenium. Cystidia of two types... Basidia clavate...', sits in `notes` between description paragraphs 51 and 55.  For a corticioid fungus cystidia and basidia are diagnostic, so this is core morphology, not commentary.  SYSTEMATIC: all five treatments from this MycoKeys paper show the identical shape -- description at n, n+2, n+6, notes at n+4, always opening 'Hymenium.' -- so it is a repeatable classifier error keyed on one heading.  Fires ZERO flags: desc_span_gap does not reach a 4-line gap, and nothing tests field interleaving.  Gating case for D16, whose measurement path (55 % -> 40 % -> 0.8 % -> 0.12 %) is in the memo."
+    },
+    {
+      "id": "taxon_c4aa11851711debba917bf3b56d61641d97e3cdf24b691fe4c66997d1a69a119",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-7cf3d981cf0583cbeb7931db58c7b39a",
+      "class": "§6-description-duplicated-by-two-renderings",
+      "treatment": "Exophiala clavispora W. Sun, M.C. Xiang and X.Z. Liu, sp. nov.\nMycoBank MB 824207 (Figure 20) \n",
+      "description": "Description: Hyphae composed by cylindrical to elongate cells, hyaline, guttulate, septate, 1.1–\n3.2-μm-wide, spirally twisted hyphae frequently observed (Figure 20C). Yeast cells absent.\nConidiogenous cells ovoidal to elongate, olivaceous grey, 6.2–10.1-μm-long (Figure 20E). Conidia\narising alongside the hyphae or at the apex, cylindrical to clavate, truncate at the base, 5.9–11.9 × 1.8–\n3.7 μm (⎯x = 8.1 × 2.3 μm, n = 20) (Figure 20D,E).\nCulture characters: Colony on MEA growing slowly, attaining 12-mm-diam. after four weeks at\n25 °C. Colony surface cerebriform, arise centrally, velvety with grayish short aerial hyphae and lobate\nmargin; reverse deep olivaceous gray (Figure 20A,B). Mycelium submerged into the agar. No\ndiffusible pigment produced. Minimum 4 °C, optimum at 20–25 °C, and maximum 28 °C. \n\nDescription: Hyphae composed by cylindrical to elongate cells, hyaline, guttulate, septate,\n1.1–3.2-µm-wide, spirally twisted hyphae frequently observed (Figure 20C). Yeast cells absent.\nConidiogenous cells ovoidal to elongate, olivaceous grey, 6.2–10.1-µm-long (Figure 20E). Conidia arising\nalongside the hyphae or at the apex, cylindrical to clavate, truncate at the base, 5.9–11.9 × 1.8–3.7 µm\n(x = 8.1 × 2.3 µm, n = 20) (Figure 20D,E).\nCulture characters: Colony on MEA growing slowly, attaining 12-mm-diam. after four weeks at\n25 ◦C. Colony surface cerebriform, arise centrally, velvety with grayish short aerial hyphae and lobate\nmargin; reverse deep olivaceous gray (Figure 20A,B). Mycelium submerged into the agar. No diffusible\npigment produced. Minimum 4 ◦C, optimum at 20–25 ◦C, and maximum 28 ◦C.\n",
+      "diagnosis": "Diagnosis: E. clavispora morphologically resembles E. bonariae Isola and Zucconi [20], but E. bonariae\nhas shorter conidia (5.5–6.5 × 2.2–2.8 µm).\n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 1533,
+          "end_line": 1541
+        },
+        {
+          "start_line": 1564,
+          "end_line": 1572
+        }
+      ],
+      "expected_flags": [
+        "§6:multi_description",
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§6-duplicated-description-block"
+      ],
+      "notes": "§6/D17: Exophiala clavispora, Journal of Fungi 6.  The operator asked whether the two identical 'Description:' sections were the same spans twice.  They are NOT -- paragraphs 637 and 651, chars 91707-92541 and 93601-94425, about 1900 chars apart.  They differ ONLY in character encoding at 94.9 % similarity: mu U+03BC vs U+00B5, degree U+00B0 vs white-bullet U+25E6, and U+23AF vs plain x.  Not one word or measurement differs, so the SOURCE contains the treatment twice in two renderings.  The whole treatment is doubled, not just the description -- materials_examined_spans come in mirrored pairs (633, 639) and (647, 653) around each copy.  Corpus rate: 381 of 22955 multi-block descriptions (1.66 %) contain a near-duplicate pair, 22 of them encoding-only.  This is Trello #405 one level down: #405 is the same article as two DOCUMENTS, this is the same article twice inside ONE document, which no DOI-keyed dedup can see.  Gating case for D17; narrative in the memo under D17."
     }
   ]
 }

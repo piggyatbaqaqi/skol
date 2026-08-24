@@ -3345,6 +3345,64 @@ description is complete.
 morphology term list can start from the `feature_label` vocabulary
 already in `features_candidate`.
 
+### D17 — Duplicated description block (§6/#405)
+
+**Catches**: a treatment whose `description` contains the same block
+twice — the source document holds the article's text more than once,
+and the extractor harvested both copies.
+
+Found 2026-08-24 on `taxon_c4aa1185` (*Exophiala clavispora*, Journal
+of Fungi 6), where the operator asked whether the two identical
+`Description:` sections were the same spans repeated. **They are not**:
+paragraphs 637 and 651, chars 91 707–92 541 and 93 601–94 425 —
+distinct spans about 1 900 characters apart.
+
+**They differ only in character encoding**, at 94.9 % similarity:
+
+| block 0 | block 1 |
+|---|---|
+| `μ` U+03BC greek small mu | `µ` U+00B5 micro sign |
+| `°C` U+00B0 degree sign | `◦C` U+25E6 white bullet |
+| `⎯x` U+23AF | `x` |
+
+Not one word or measurement differs. **The source document contains the
+treatment twice, in two different renderings** — and the whole treatment
+is doubled, not just the description: `materials_examined_spans` come in
+two mirrored pairs (633, 639) and (647, 653) around each copy.
+
+**Measured across the corpus.** Of the 22 955 treatments with ≥ 2
+substantial description blocks, **381 (1.66 %)** contain a near-duplicate
+pair above 0.90 similarity. **22** of those differ *only* by character
+encoding after folding the mu/degree variants — this case's exact
+signature.
+
+So the detector is worth building at two sensitivities: exact-or-near
+duplication catches 381, and the encoding-fold catches the 22 where the
+duplication is provably a rendering artefact rather than an author
+repeating themselves.
+
+**This is #405 one level down.** Trello #405 concerns the *same article
+ingested as two documents* — 36.7 % of ingest docs share a DOI, usually
+a `crossref` PDF beside a `pmc` JATS copy. This is the *same article
+appearing twice inside one document*, which no DOI-keyed dedup can
+see. Both need fixing; only one is currently ticketed.
+
+**Note this revisits a signal already rejected once.** The µ-encoding
+profile was tested on 2026-08-23 as a *merge-seam* detector and failed —
+8.9 % of descriptions mix the two encodings with no association to
+merges, and segregation was mildly *anti*-correlated. It works here
+because the question is different: not "did the encoding change at a
+boundary" but "are two near-identical blocks distinguished only by
+encoding". Same observable, different inference.
+
+**Gating fixtures**: must fire on `taxon_c4aa1185`. Must stay silent on
+all 19 poster children — in particular on
+`agaric-latin-english-pair`, where a Latin diagnosis and its English
+translation legitimately restate the same content and would score high
+on a naive similarity test.
+
+**Depends on**: nothing — block splitting and a similarity ratio.
+
 ### D11 — Mid-description truncation (§10)
 
 **Catches**: a field that is cut off *inside* the
