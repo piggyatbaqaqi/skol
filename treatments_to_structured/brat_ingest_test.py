@@ -1,6 +1,6 @@
 """Tests for treatments_to_structured.brat_ingest."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pytest
 
@@ -354,3 +354,58 @@ class TestTreatmentIdFromAnnFilename:
         with pytest.raises(ValueError) as exc:
             treatment_id_from_ann_filename('taxon_abc.txt')
         assert '.ann' in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# Nested spans — characterisation test, see the memo §0
+# ---------------------------------------------------------------------------
+
+
+class TestNestedSpansSurviveTheDiff:
+    """One annotation wholly inside another must round-trip.
+
+    brat permits nesting, Claude produces it, and it is genuinely
+    correct morphology: in ``taxon_cdcba8db`` a `Subiculum` span
+    [153:273] sits inside an `Ascomata` span [21:274], because the
+    subiculum is described within the ascomata sentence.
+
+    It works today only because :func:`annotation_key` is
+    ``(label, field, start, end)`` — nesting never collides.  Nothing
+    asserted that, and it was the ONLY nested pair in the corpus when
+    this test was written (1 of 1 588 candidate annotations), so the
+    path had never been exercised.  These tests pin the behaviour
+    before some later overlap-resolution step quietly drops the inner
+    span.
+    """
+
+    def _pair(self) -> List[Dict[str, Any]]:
+        return [_ann('Ascomata', 21, 274), _ann('Subiculum', 153, 273)]
+
+    def test_nested_spans_have_distinct_keys(self) -> None:
+        outer, inner = self._pair()
+        assert annotation_key(outer) != annotation_key(inner)
+
+    def test_both_are_kept_when_both_were_candidates(self) -> None:
+        pair = self._pair()
+        result = diff_annotations(pair, pair)
+        assert len(result.kept) == 2
+        assert result.added == [] and result.deleted == []
+
+    def test_the_inner_span_can_be_added_alone(self) -> None:
+        """The reviewer adding a nested span must not disturb the outer."""
+        outer, inner = self._pair()
+        result = diff_annotations([outer, inner], [outer])
+        assert [a['feature_label'] for a in result.added] == ['Subiculum']
+        assert [a['feature_label'] for a in result.kept] == ['Ascomata']
+
+    def test_the_inner_span_can_be_deleted_alone(self) -> None:
+        outer, inner = self._pair()
+        result = diff_annotations([outer], [outer, inner])
+        assert [a['feature_label'] for a in result.deleted] == ['Subiculum']
+        assert [a['feature_label'] for a in result.kept] == ['Ascomata']
+
+    def test_identical_ranges_with_different_labels_both_survive(self) -> None:
+        """The limiting case: co-extensive spans, not merely nested."""
+        a, b = _ann('Ascomata', 21, 274), _ann('Subiculum', 21, 274)
+        result = diff_annotations([a, b], [a, b])
+        assert len(result.kept) == 2

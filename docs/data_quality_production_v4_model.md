@@ -1794,6 +1794,43 @@ candidate annotations.  They consolidate the per-issue
    (`#N\tAnnotatorNotes T<n>\tnote text`) — the ingest path
    doesn't strip these, so future canonicalization can use them.
 
+### §0.1 Nested annotations are permitted, and they round-trip
+
+Asked by the operator 2026-08-24 on `taxon_cdcba8db`, seeing a
+`Subiculum` span inside an `Ascomata` span: *"correct, but I didn't
+know we could do that."*
+
+**We can, and it works** — but it had never been exercised.
+
+* **Claude produced it, not the reviewer.** The nesting is already in
+  `features_candidate`: `Subiculum` [153:273] inside `Ascomata`
+  [21:274]. And it is correct — the subiculum is described *within*
+  the ascomata sentence (`groups of ascomata often surrounded by
+  woolly, white subiculum`).
+* **It is the only one in the corpus.** One nested pair in **1 588**
+  candidate annotations across 110 treatments; `features_hand` had
+  **zero**, because this treatment had not yet been ingested.
+* **It survives ingest.** A dry run reports `kept=13 added=0
+  deleted=0` against a 13-annotation `.ann` — every span preserved,
+  nesting included.
+
+**Why it works, and why that was fragile.** `annotation_key` is
+`(feature_label, field, start, end)` and `annotation_doc_id` is
+`<treatment_id>:<label>:<start>`, so a nested pair never collides.
+Nesting is therefore supported *by consequence*, not by design —
+nothing asserted it, and a later overlap-resolution or
+span-normalisation step could have dropped the inner span silently.
+
+Pinned by `TestNestedSpansSurviveTheDiff` in
+`treatments_to_structured/brat_ingest_test.py`, covering kept, added
+alone, deleted alone, and the limiting case of two co-extensive spans
+with different labels.
+
+**Practical guidance for review:** nest when the anatomy genuinely
+nests. A structure described inside another structure's sentence
+should carry its own label rather than being left out because the
+outer span already covers the text.
+
 ## §0.5. Poster-child treatments (reference)
 
 The rest of this memo catalogs what goes wrong.  For
