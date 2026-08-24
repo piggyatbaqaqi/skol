@@ -10,6 +10,8 @@ from typing import List, Tuple
 import pytest
 
 from treatments_to_structured.select import (
+    band_report,
+    band_slices,
     parse_band_spec,
     select_treatments,
 )
@@ -193,3 +195,64 @@ class TestSelectTreatments:
         )
         assert len(result) == 4
         assert len(set(result)) == 4  # no duplicates
+
+
+# ---------------------------------------------------------------------------
+# band_slices / band_report — the realized bands, for round provenance
+# ---------------------------------------------------------------------------
+
+
+class TestBandSlices:
+    """The slicing select_treatments uses, exposed for reporting.
+
+    Recording the raw ``--bands`` string is not enough to make a round
+    reproducible: band names are arbitrary labels and the cut points
+    are recomputed per run from whatever survived the filters, so the
+    same string denotes different score ranges on different runs.
+    """
+
+    def test_single_band_is_the_whole_population(self) -> None:
+        scored = _scored(10)
+        assert [len(s) for s in band_slices(scored, 1)] == [10]
+
+    def test_equal_split_when_divisible(self) -> None:
+        assert [len(s) for s in band_slices(_scored(9), 3)] == [3, 3, 3]
+
+    def test_last_slice_absorbs_the_remainder(self) -> None:
+        assert [len(s) for s in band_slices(_scored(10), 3)] == [3, 3, 4]
+
+    def test_slices_are_score_sorted_and_contiguous(self) -> None:
+        scored = [('t%d' % i, float(10 - i)) for i in range(10)]
+        slices = band_slices(scored, 2)
+        lo = [s for _, s in slices[0]]
+        hi = [s for _, s in slices[1]]
+        assert max(lo) <= min(hi)
+        assert sorted(lo + hi) == sorted(s for _, s in scored)
+
+    def test_matches_what_select_treatments_samples_from(self) -> None:
+        """The guard against the two implementations drifting apart."""
+        scored = _scored(30)
+        specs = [('low', 2), ('mid', 2), ('high', 2)]
+        slices = band_slices(scored, len(specs))
+        picked = set(select_treatments(scored, specs, random.Random(1)))
+        for (name, quota), sl in zip(specs, slices):
+            ids = {tid for tid, _ in sl}
+            assert len(picked & ids) == quota, name
+
+
+class TestBandReport:
+    """Realized bands, with the score ranges that make them portable."""
+
+    def test_reports_quota_size_and_score_range_per_band(self) -> None:
+        scored = [('t%d' % i, float(i)) for i in range(10)]
+        rows = band_report(scored, [('low', 2), ('high', 3)])
+        assert [r['name'] for r in rows] == ['low', 'high']
+        assert [r['quota'] for r in rows] == [2, 3]
+        assert [r['slice_n'] for r in rows] == [5, 5]
+        assert rows[0]['score_min'] == 0.0
+        assert rows[0]['score_max'] == 4.0
+        assert rows[1]['score_min'] == 5.0
+        assert rows[1]['score_max'] == 9.0
+
+    def test_empty_population_gives_no_rows(self) -> None:
+        assert band_report([], [('all', 1)]) == []

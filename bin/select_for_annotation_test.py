@@ -7,6 +7,7 @@ fan-in) and ``score_treatments_in_db`` (CouchDB iteration via a
 fake DB stand-in).
 """
 
+import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterator
@@ -18,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import select_for_annotation  # type: ignore[import]  # noqa: E402
 from select_for_annotation import (  # type: ignore[import]  # noqa: E402
+    build_round_metadata,
+    resolve_seed,
     _resolve_band_specs,
     apply_merge_filter,
     fetch_annotated_treatment_ids,
@@ -510,3 +513,93 @@ class TestWriteSelection:
         out = tmp_path / 'nested' / 'deeper' / 'sel.txt'
         select_for_annotation.write_selection(['a'], out)
         assert out.read_text() == 'a\n'
+
+
+# ---------------------------------------------------------------------------
+# resolve_seed / build_round_metadata — machine-written round provenance
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.xfail(strict=True, reason="T0e: implementation pending")
+class TestResolveSeed:
+    """Every round gets a concrete seed, recorded."""
+
+    def test_explicit_seed_is_returned_unchanged(self) -> None:
+        assert resolve_seed(20260823) == (20260823, False)
+
+    def test_zero_is_a_seed_not_an_absence(self) -> None:
+        """`if seed:` would silently regenerate on --seed 0."""
+        assert resolve_seed(0) == (0, False)
+
+    def test_absent_seed_is_generated_and_flagged(self) -> None:
+        """An unrecorded seed makes a draw unreproducible in principle.
+
+        The old behaviour used a bare random.Random(), so the seed was
+        unrecoverable; a sidecar saying `"seed": null` would document
+        an irretrievable gap rather than prevent one.
+        """
+        seed, generated = resolve_seed(None)
+        assert generated is True
+        assert isinstance(seed, int) and seed >= 0
+
+    def test_generated_seeds_differ_between_calls(self) -> None:
+        seeds = {resolve_seed(None)[0] for _ in range(8)}
+        assert len(seeds) > 1
+
+
+@pytest.mark.xfail(strict=True, reason="T0e: implementation pending")
+class TestBuildRoundMetadata:
+    """The sidecar: a funnel, not a boolean."""
+
+    def _meta(self, **over: Any) -> Dict[str, Any]:
+        kw: Dict[str, Any] = dict(
+            experiment='production_v4',
+            seed=20260823,
+            seed_generated=False,
+            n_requested=1000,
+            n_selected=1000,
+            band_specs=[('all', 1000)],
+            band_rows=[],
+            funnel=[{'stage': 'all_treatments', 'n': 81527},
+                    {'stage': 'complexity_gt_0', 'n': 46045},
+                    {'stage': 'not_merge_suspect', 'n': 38413}],
+            merge_threshold=10,
+            force_recompute=False,
+            selector_argv=['--n', '1000'],
+            drawn_at='2026-08-24T00:00:00+00:00',
+        )
+        kw.update(over)
+        return build_round_metadata(**kw)
+
+    def test_single_band_is_recorded_as_uniform(self) -> None:
+        meta = self._meta()
+        assert meta['selection'] == 'uniform'
+        assert meta['output_order'] == 'uniform'
+        assert meta['bands'] is None
+
+    def test_multiple_bands_are_stratified_and_band_ordered(self) -> None:
+        """output_order is load-bearing: on a banded round the first
+        N lines come from the first band, so `head -50` is not a
+        random subset."""
+        meta = self._meta(
+            band_specs=[('low', 25), ('mid', 50), ('high', 25)],
+            band_rows=[{'name': 'low', 'quota': 25, 'slice_n': 12768,
+                        'score_min': 0.1, 'score_max': 2.4}],
+        )
+        assert meta['selection'] == 'stratified'
+        assert meta['output_order'] == 'band-by-band'
+        assert meta['bands'] == [['low', 25], ['mid', 50], ['high', 25]]
+        assert meta['band_slices'][0]['score_max'] == 2.4
+
+    def test_funnel_and_seed_provenance_are_carried(self) -> None:
+        meta = self._meta(seed_generated=True)
+        assert meta['seed'] == 20260823
+        assert meta['seed_generated'] is True
+        assert meta['population_funnel'][-1]['n'] == 38413
+        assert meta['merge_threshold'] == 10
+
+    def test_is_json_serialisable(self) -> None:
+        """It is written to disk; a tuple would blow up at dump time."""
+        json.dumps(self._meta(
+            band_specs=[('low', 5), ('high', 5)], band_rows=[],
+        ))

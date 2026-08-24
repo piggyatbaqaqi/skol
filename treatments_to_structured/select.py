@@ -8,7 +8,7 @@ See docs/schema_constrained_pipeline.md §10.4 deliverable 2.
 """
 
 import random
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 def parse_band_spec(spec: str) -> List[Tuple[str, int]]:
@@ -95,14 +95,7 @@ def select_treatments(
             f"{len(scored)}"
         )
 
-    n_bands = len(band_specs)
-    sorted_scored = sorted(scored, key=lambda pair: pair[1])
-    population = len(sorted_scored)
-    slices: List[List[Tuple[str, float]]] = []
-    for i in range(n_bands):
-        start = (i * population) // n_bands
-        end = ((i + 1) * population) // n_bands
-        slices.append(sorted_scored[start:end])
+    slices = band_slices(scored, len(band_specs))
 
     selected: List[str] = []
     for (band_name, quota), slice_pop in zip(band_specs, slices):
@@ -115,3 +108,60 @@ def select_treatments(
         sampled = rng.sample(ids, quota)
         selected.extend(sampled)
     return selected
+
+
+def band_slices(
+    scored: List[Tuple[str, float]],
+    n_bands: int,
+) -> List[List[Tuple[str, float]]]:
+    """Partition ``scored`` into ``n_bands`` score-ordered slices.
+
+    The partition :func:`select_treatments` samples from, factored out
+    so round provenance can report the *realized* bands rather than
+    the ``--bands`` string.  That distinction matters: band names are
+    arbitrary labels, and the cut points are recomputed from whatever
+    survived the filters, so the same flag denotes different score
+    ranges on different runs.
+
+    Slices are equal-size by position, with the last absorbing any
+    remainder.  Ties keep insertion order (``sorted`` is stable), so
+    equal-scoring treatments land in a band by whatever order the
+    caller supplied — for a CouchDB scan that is taxon-hash order.
+    """
+    ordered = sorted(scored, key=lambda pair: pair[1])
+    population = len(ordered)
+    return [
+        ordered[(i * population) // n_bands:
+                ((i + 1) * population) // n_bands]
+        for i in range(n_bands)
+    ]
+
+
+def band_report(
+    scored: List[Tuple[str, float]],
+    band_specs: List[Tuple[str, int]],
+) -> List[Dict[str, Any]]:
+    """Describe the realized bands: quota, size and score range.
+
+    Returns one dict per band with ``name``, ``quota``, ``slice_n``,
+    ``score_min`` and ``score_max`` — enough for a later run to
+    reproduce the same cut points explicitly, or for a reader to tell
+    whether two rounds' "high band" meant the same thing.
+
+    An empty population yields no rows rather than raising: reporting
+    is not the place to enforce sampling preconditions.
+    """
+    rows: List[Dict[str, Any]] = []
+    slices = band_slices(scored, len(band_specs))
+    for (name, quota), slice_pop in zip(band_specs, slices):
+        if not slice_pop:
+            continue
+        scores = [score for _tid, score in slice_pop]
+        rows.append({
+            'name': name,
+            'quota': quota,
+            'slice_n': len(slice_pop),
+            'score_min': min(scores),
+            'score_max': max(scores),
+        })
+    return rows

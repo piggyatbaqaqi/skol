@@ -39,7 +39,7 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -258,6 +258,63 @@ def write_selection(treatment_ids: List[str], path: Path) -> None:
     with path.open('w') as f:
         for treatment_id in treatment_ids:
             f.write(f'{treatment_id}\n')
+
+
+def resolve_seed(seed: Optional[int]) -> Tuple[int, bool]:
+    """Return ``(seed, was_generated)``, never a missing seed.
+
+    ``--seed`` defaults to ``None``, and the old behaviour was a bare
+    ``random.Random()`` seeded from OS entropy — leaving the draw
+    unreproducible *in principle*, with nothing to record.  A sidecar
+    saying ``"seed": null`` documents an irretrievable gap rather than
+    preventing one, so a seed is generated when none is given.
+
+    ``--seed`` therefore means "pin this value", not "switch on
+    reproducibility".
+
+    Note a recorded seed alone does **not** reproduce a draw:
+    ``--exclude-annotated`` reads the candidate DB live, so the
+    surviving population moves as soon as the annotator runs.  Seed
+    *and* funnel are both needed, which is why the sidecar carries
+    both, and why the round file stays the only durable record of
+    actual membership.
+    """
+    raise NotImplementedError
+
+
+def build_round_metadata(
+    *,
+    experiment: str,
+    seed: int,
+    seed_generated: bool,
+    n_requested: int,
+    n_selected: int,
+    band_specs: List[Tuple[str, int]],
+    band_rows: List[Dict[str, Any]],
+    funnel: List[Dict[str, Any]],
+    merge_threshold: int,
+    force_recompute: bool,
+    selector_argv: List[str],
+    drawn_at: str,
+) -> Dict[str, Any]:
+    """Build the round sidecar: how this selection was actually made.
+
+    Bias is **not a boolean and not a hand-typed label**.  Every stage
+    of the funnel biases the draw — the always-on complexity filter,
+    ``--exclude-suspected-merges`` (default on), ``--exclude-annotated``,
+    and ``--bands`` — so "random" only ever means *uniform over the
+    survivors*.  The honest record is the funnel itself, and
+    ``selection`` is derived from ``band_specs`` rather than asserted.
+
+    ``output_order`` is load-bearing, not decoration:
+    ``select_treatments`` emits band-by-band, so on a stratified round
+    the first N lines come entirely from the first band — a maximally
+    biased subset that looks like an innocent ``head -N``.
+
+    Everything returned must be JSON-serialisable; band specs are
+    tuples in memory and lists on disk.
+    """
+    raise NotImplementedError
 
 
 def _resolve_band_specs(
