@@ -85,6 +85,39 @@ No canonicalization entry is involved: the map has no
 annotator choosing the general term directly.  The fix is in the
 annotation, not the map.
 
+#### Tie-break: when the heading and the content disagree, follow the content
+
+Added 2026-08-24.  The five cases are **not** alike, and checking them
+showed why.  Four carry no section heading at all — the text simply
+reads `Basidiospores allantoid…` or `Ascospores…`, so labelling them
+`Spores` generalises with no warrant from the source.
+
+**`taxon_d2d620ae` is different.**  Its source carries a literal
+section heading:
+
+> `…smaller than basidia.Spores. Basidiospores allantoid, hyaline,
+> thin-walled, smooth…`
+
+So the annotator was **following the treatment's own heading**, which is
+what the rule above asks for. The treatment uses *both* terms.
+
+**The content term wins.**  Three reasons:
+
+* a heading is a structural marker, not a statement about the spore;
+* the content term is what the author reached for when actually
+  describing the object;
+* the rule exists to preserve clade information that *cannot be
+  recovered from the label later* — and `Basidiospores` is right there
+  in the text.
+
+So `taxon_d2d620ae` still corrects to `Basidiospores`, but for a
+different reason from the other four, and anyone re-deriving the rule
+from that treatment alone would reasonably conclude the opposite.
+
+*(Note the heading is only visible on inspection: the §15 element join
+renders it `basidia.Spores.` with no space, so in brat it reads as
+part of the preceding sentence.)*
+
 ### Clade-specific hyphal terms
 
 Raised 2026-08-24 from `taxon_a3308621`, where `Fertile hyphae` was
