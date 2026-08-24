@@ -1910,6 +1910,46 @@
         "§10:diag_tail_clip"
       ],
       "notes": "§10/D9.1: fires ZERO flags while its diagnosis ends mid-sentence at 'compared to'.  tail_clipped() is applied only to the description, although desc_starts_mid_sentence() WAS extended to the diagnosis as diag_head_clip -- so the head is checked on both fields and the tail on only one.  Calling tail_clipped() on this diagnosis returns True, so a one-line change closes it.  The false negative is the expensive kind: Fusarium aconidiale is otherwise excellent -- real nomenclature, six correctly-separated fields, zero OCR damage on every mode, merge_metric 4 -- so it would pass into the golden set unremarked.  Doubles as a clean example of a culture-only asexual-morph description (Fungal Planet sheet, Persoonia 46, per-article so not #404 population).  Narrative in the memo at D9.1."
+    },
+    {
+      "id": "taxon_b0d687da037ec4fe980349690b852eca8736ec171c8061cbd2876ace4ff65b61",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "23-e32ac47127d892450ef5600e9986ba3f",
+      "class": "§12-label-change-across-a-page-boundary",
+      "treatment": "Nomen ignotum\n",
+      "description": "Asexual fungus. Colonies on the natural substrate effuse, pale pinkish.\nMycelium mostly immersed. Conidiomata sporodochial, apothecium-like,\ndry, scattered, pinkish to white, consisting of numerous conidiophores arising\nfrom a stroma of globose, thick-walled, pale brown cells with an umbilicate\ncentre. Conidiophores macronematous, erect, branched, septate, pale brown,\narising from a thick-walled, pale brown, pseudoparenchymatous stromata with\nglobose texture. Conidiogenous cells monoblastic, integrated, determinate,\nterminal, pale brown to hyaline. Conidial secession schizolytic. Conidia\nsolitary, coiled, planate, pluri-septate, hyaline. \n\nColonies on the natural substrate, effuse, pale pinkish. Mycelium\nmostly immersed. Hyphae septate, 2–4 µm diam, branched, forming a\npseudoparenchymatous stroma with thick-walled, smooth, pale brown, 5–10\nµm diam cells in a textura globosa. Conidiomata sporodochial, apotheciumlike, incurved at the centre, superficial, scattered or in groups, pale pink or\nwhite, glistening, dry, 63–100 µm long and 128–150 µm wide. Conidiophores\nmacronematous, erect, more or less dichotomous branched below, arising \n\nfrom subglobose stromatic cells, 6–10 × 5–7 µm; 1–4-septate, 13–20 × 3–5 µm,\nsmooth, pale brown at the base, hyaline towards the apex. Conidiogenous\ncells monoblastic, cylindrical. integrated, determinate, terminal, rounded\nto sub-truncated at the apex, 6–10 × 3–4 µm, pale brown. Conidial secession\nschizolytic. Conidia acrogenous, solitary, 20–33-septate, helicoid, 1½–2 times\ncoiled, 70–82.5 µm diam, planate, slightly attenuate and subtruncate at the\nbase, 112.5–145 × 4–6 µm, 3–4 µm wide at the base; rounded at the apex, 3–4\nµm wide, smooth, hyaline forming a compact, incurved cluster towards the \n",
+      "diagnosis": "Note: Seifert et al. (2011) described seven helicosporous genera with\nsporodochial conidiomata. Among these hyphomycetous fungi, only Everhartia\nSacc. & Ellis (Yanna et al. 2000) and Vanbeverwijkia Agnihothr. (Agnihothrudu\n1961) share morphologically comparable sporodochia, conidiogenous cells, and\nconidia with Helicodochium. However Everhartia has gelatinous sporodochia\nwith micronematous, unbranched (or poorly branched) conidiophores, lacking \n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 65,
+          "end_line": 73
+        },
+        {
+          "start_line": 89,
+          "end_line": 94
+        },
+        {
+          "start_line": 104,
+          "end_line": 111
+        }
+      ],
+      "source_anchors": [],
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§10:tail_clip",
+        "§12:desc_span_gap",
+        "§13:no_source_anchor"
+      ],
+      "known_missed_flags": [
+        "§12-nomenclature-swallowed-by-Misc-exposition",
+        "§12-section-split-across-a-page-boundary",
+        "§5-zero-length-nomenclature-span"
+      ],
+      "notes": "§12: the repeated Colonies/Conidiomata/Conidiophores labels are NOT a merge -- this is Helicodochium amazonicum gen. & sp. nov., so the qualitative genus diagnosis and the quantitative species description legitimately share a treatment (§11, cf. taxon_01a01c54).  Two etymologies, one for the genus and one for the epithet, confirm it.  The real defects are elsewhere.  (a) The nomenclature 'Helicodochium amazonicum J.S. Monteiro, R.F. Castañeda...' sits at char 3941 labelled Misc-exposition, so the treatment is Nomen ignotum with a zero-length nomenclature span -- third instance of that tell.  (b) One 'Note:' section is split across a page break and its halves get DIFFERENT labels, Diagnosis then Notes, landing one sentence in two fields: '...conidiophores, lacking' / 'pseudoparenchymatous stromata'.  Every block is labelled correctly; the failure is the label CHANGING across the boundary.  The same document shows the benign case -- two Description blocks separated by identical page furniture both reach the description field.  Narrative in the memo under D12."
     }
   ]
 }

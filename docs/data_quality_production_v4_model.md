@@ -3375,6 +3375,7 @@ decides which symptom you see:
 | `taxon_6f788487` | `reverse light-brown.` **and** the whole Chemistry lead-in, both **`Misc-exposition`** | `poor sporulation, flat;` breaks its siblings' template; `Di-n-octyl` → `phthalate` |
 | `taxon_8ebf437c` | the description **head** as **`Misc-exposition`**, and a Notes continuation as **`Figure-caption`** | block opens mid-measurement at `diam.`; `and broad cellular` → `pseudoparaphyses` |
 | `taxon_a3308621` | **two consecutive** runs as **`Misc-exposition`** | `…under near-UV at ` → `24oC did not yield any ascomat.a.`; then a second break mid-word at `rotia:` |
+| `taxon_b0d687da` | the **nomenclature** as `Misc-exposition`; a `Note:` section split across a page break into `Diagnosis` + `Notes` | `Nomen ignotum` despite `Helicodochium amazonicum J.S. Monteiro…` sitting at 3 941; `…lacking` → `pseudoparenchymatous stromata` |
 
 **`Misc-exposition` is the repeat offender** — three of the
 five cases, and the only label to swallow content in more
@@ -3441,6 +3442,48 @@ otherwise ordinary prose, which is the plausible cause of
 the misclassification.  So the rule to be careful with is
 "contains a `(Fig. n)` reference", which is true of a great
 deal of running descriptive text.
+
+#### Label instability across a page boundary
+
+`taxon_b0d687da` (added 2026-08-24) shows a variant where **nothing is
+mislabelled** and content is lost anyway.
+
+Its single `Note:` section is split across a page break, and the two
+halves receive **different labels**:
+
+| offset | label | text |
+|---|---|---|
+| 6 193 | `Diagnosis` | `Note: Seifert et al. (2011) described seven helicosporous genera… conidiophores, lacking ` |
+| 6 663 | `Page-header` | `--- PDF Page 4 Label 4 ---` |
+| 6 707 | `Misc-exposition` | `8 … Monteiro, Gusmão, & Castañeda-Ruiz` (running head) |
+| 6 769 | `Notes` | `pseudoparenchymatous stromata and conidia composed of…` |
+
+One sentence — `…lacking` / `pseudoparenchymatous stromata…` — landing
+in two *different fields*, `diagnosis` and `notes`.
+
+**Every block here is labelled correctly.** The page marker really is a
+page marker; the running head really is furniture. What failed is that
+the classifier's label *changed across the page boundary*, and the
+assembler then routed the two halves to different fields without
+noticing the severed sentence.
+
+**The same document shows the benign case**, which is what makes the
+diagnosis clean: description blocks at 4 630 and 5 516 are separated by
+an identical `Page-header` + running-head pair, and both carry
+`Description`, so both reach the `description` field and the text
+survives. The page break is not the problem; **the label change across
+it is.**
+
+That points at a different fix from the rest of D12. The other cases
+want a better classifier. This one wants a **rejoin step in assembly**:
+where consecutive prose blocks are separated only by page furniture and
+the earlier block does not end a sentence, they belong together — and
+the label of the *later* block should not be trusted over the
+continuity of the text.
+
+Cheap to detect, since both conditions are already in hand: the
+intervening blocks are `Page-header`/running-head, and the first block
+fails `tail_clipped`.
 
 #### One document, three swallowing labels, one false seam
 
