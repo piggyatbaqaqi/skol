@@ -2050,6 +2050,60 @@
       ],
       "notes": "§6/D17: Exophiala clavispora, Journal of Fungi 6.  The operator asked whether the two identical 'Description:' sections were the same spans twice.  They are NOT -- paragraphs 637 and 651, chars 91707-92541 and 93601-94425, about 1900 chars apart.  They differ ONLY in character encoding at 94.9 % similarity: mu U+03BC vs U+00B5, degree U+00B0 vs white-bullet U+25E6, and U+23AF vs plain x.  Not one word or measurement differs, so the SOURCE contains the treatment twice in two renderings.  The whole treatment is doubled, not just the description -- materials_examined_spans come in mirrored pairs (633, 639) and (647, 653) around each copy.  Corpus rate: 381 of 22955 multi-block descriptions (1.66 %) contain a near-duplicate pair, 22 of them encoding-only.  This is Trello #405 one level down: #405 is the same article as two DOCUMENTS, this is the same article twice inside ONE document, which no DOI-keyed dedup can see.  TRACED TO THE SOURCE: ingest doc 731b55a2-3645-591c-9f7f-1f4ee9923291 in skol_dev, doi 10.3390/jof6040187 (MDPI).  Both copies are on PDF page 28, and pdftotext -layout shows the Figure 20 caption drawn TWICE and overlapping -- 3.17517 occurs 4 times on the page, clavispora 7 times, and the two caption copies end 10 mu-m in the two different encodings.  So it is a PUBLISHER PRODUCTION ERROR: the PDF carries duplicated text objects.  Our extractor separates the layers into two clean blocks where pdftotext interleaves them into obvious garbage, which makes the artefact harder to spot by eye, not easier.  Gating case for D17; narrative in the memo under D17.",
       "source_ingest_id": "731b55a2-3645-591c-9f7f-1f4ee9923291"
+    },
+    {
+      "id": "taxon_d08bca1fd8274c36dd91c4d80eb6831f575904f810889e9459aa94e67188b389",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-d3a5926309901affbd741cc7c6a82cba",
+      "class": "§12-plausible-join-across-a-page-break",
+      "treatment": "gezeichnete Art wurde in Sydowia VII. p. 68 (1953) die Untergattung\nAmerosporina aufgestellt., Für die ziemlich zahlreichen, durch völlig \n",
+      "description": "Macroseptoria graeca Petr. n. spec.\nPycnidia irregulariter et late dispersa, solitaria vel bina complu-\nrave seriatim disposita et tunc plus minusve aggregata, subepider-\nmalia vel profunde innata, quoad magnitudinem variabilia, nunc\nminora, 200—300 u diam., nunc majora, usque ad 450 u diam., depres-\nso-globosa, longitudinaliter saepe plus minusve protracta, tunc late\nellipsoidea, ostiolo pro ratione minuto, papilliformi, poro rotundato\nvel late elliptico ca. 20 » lato perforato punctiformiter erumpentia ; \n\nPycnidia irregulariter et laxe dispersa, plerumque solitaria, raro\nbina complurave subaggregata, subepidermalia, depresso-globosa vel\nlate ellipsoidea, ca. 180—250 u diam., raro etiam paulo majora, ostiolo\nplano, papilliformi, poro rotundato, ca. 20 yp lato perforato puncti-\nformiter erumpentia; pariete membranaceo, ca. 10 u crasso, contextu\npseudoparenchymatico, e cellulis irregulariter angulosis, ad basin et\nad latera pellucide flavo- brunneolis vel olivascentibus, in vertice\nobscure atro-olivaceis, plus minusve compressis, tenuiter tunicatis,\n5—8 w raro-usque ad 10 u diam. metientibus composito; conidia\nnumerosissima, oblonga vel breviter cylindracea, utrinque obtusa, vix\nvel lenissime attenuata, recta, raro inaequilatera vel curvula, hyalina,\n_\ncontinua, plerumque guttulis oleosis 2—3 minutis praedita, 9—44 <\n3.5—5 u; conidiophora totam parietis superficiem interiorem obtegen-\ntia, bacillari-conica, simplicia, 5—7 y longa, ad basin 2.5—3.5 p crassa. \n\nminuto, plano, papilliformi, poro irregulariter vel rotundato-anguloso,\npunctiformiter erumpentia; pariete membranaceo, in statu humido\nparum, sed distincte intumescente, contextu pseudoparenchymatico,\ninferne et ad latera e cellulis subhyalinis vel pallide olivaceis, in\nvertice obscure olivaceis vel atro-brunneis, crasse tunicatis composito; \n\nminusve acuminata, postice saepe ad stipitis vel caudae fere instar\nprotracta, recta vel subarcuata, circa, non raro paulo supra vel infra\nmedium septata, hyalina, 25 = 4 u; conidiophora totam parietis super-\nficiem interiorem obtegentia, dense stipata, filiformi-bacillaria, sero \n\nadnata, globosa vel late ovoidea, sed plerumque plus minusve irre-\ngularia, 150—250 u diam., interdum inter perithecia iuvenilia fungi\nascophori solitaria, superne cum epidermide fere clypeiformiter con-\nnata, ostiolo plano, papilliformi, minuto, poro irregulariter vel rotun-\ndato-anguloso, ca. 10—145 u lato perforato punctiformiter erumpentia, \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "description_spans": [
+        {
+          "start_line": 22503,
+          "end_line": 22510
+        },
+        {
+          "start_line": 22551,
+          "end_line": 22565
+        },
+        {
+          "start_line": 22702,
+          "end_line": 22706
+        },
+        {
+          "start_line": 22716,
+          "end_line": 22719
+        },
+        {
+          "start_line": 22761,
+          "end_line": 22765
+        }
+      ],
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:latin_alt",
+        "§6:latin_ele",
+        "§6:authored_binomial",
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§12-plausible-join",
+        "§6-four-taxa-in-one-treatment",
+        "§2-genus-heading-labelled-Table",
+        "§2-nomenclature-is-german-prose"
+      ],
+      "source_scheduled_for_replacement": {
+        "work": "Sydowia vol 10 (1956)",
+        "reason": "Sydowia is already on data/ocr_rescan_targets.md (vols 28, 29 measured at 8-10 % rejoin).  This is the same journal, and the paper is bilingual Latin/German, which compounds the OCR difficulty.",
+        "consequence": "Treatment ids are content hashes, so this entry will dangle after re-sourcing."
+      },
+      "notes": "§12: the PLAUSIBLE-JOIN case.  Its description ends one block at '...filiformi-bacillaria, sero' and opens the next at 'adnata, globosa vel late ovoidea', and concatenated 'sero adnata' reads as grammatical Latin -- so a severed-term detector keyed on IMPLAUSIBILITY passes it, unlike 'rotia:' or 'pseudoparaphyses'.  The fragments are 1865 chars apart across a page break; the true continuation of 'adnata' is a DROPPED Misc-exposition block at 882583, '...in uno latere plerumque fasciculo sclerenchymatico', giving 'adnate to a sclerenchymatous bundle'.  'sero' is separately the truncated tail of the conidiophore clause -- the intact one earlier ends with dimensions.  Only SEMANTICS betray the join: conidiophores are not globose and not 150-250 um.  The operator's mycology caught it, not their Latin, and they noted 'my Latin isn't very good' -- the risk compounds outside English.  Also: FOUR-plus taxa, with Phyllostictina moravica and Creodiplodina Petr. N. GEN. both labelled Table; the nomenclature field is German prose while the real name 'Macroseptoria graeca Petr. n. spec.' sits inside the description; and the paper is bilingual, the German landing in Bibliography and Misc-exposition.  Boundary note for reviewers: 'ostiolo ... perforato' is an ablative absolute, but 'punctiformiter erumpentia' is nominative plural agreeing with Pycnidia, so an Ostiole label should end at 'perforato' -- T5 currently over-extends.  Narrative in the memo under D12."
     }
   ]
 }

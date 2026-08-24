@@ -57,6 +57,14 @@ Works whose median rejoin ≥ 8 %.  **None has a DOI**; all are scans.
 | Ann. Rep. NY State Mus. | 26 | 10 | 12.5 % |
 | Sydowia | 28 | 20 | 8.0 % |
 
+**Sydowia vol 10 (1956) belongs here too**, on review rather than
+measurement: `taxon_d08bca1f` merges four-plus Petrak taxa, hides a
+`n. gen.` heading in a `Table` label, and produces a phantom Latin
+phrase across a page break (memo D12). The paper is **bilingual —
+Latin diagnosis plus German description** — which compounds the OCR
+difficulty and means damage in either language corrupts a different
+field.
+
 **1 263 treatments**, of which **Mycotaxon vols 3–31 is 91 %.**  Early
 Mycotaxon is the single largest OCR liability in the corpus — worse,
 and larger, than the Persoonia back-run that prompted Trello #404.

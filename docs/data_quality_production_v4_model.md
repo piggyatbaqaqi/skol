@@ -3853,6 +3853,61 @@ punctuate differently.  Treat the 21-of-27 figure as
 document-level evidence only until a style-agnostic heading
 matcher exists.
 
+#### When the join is *plausible* — the inverted tell
+
+Every severed-term case above is detectable because the join reads as
+**wrong**: `rotia:` cannot begin a word, `pseudoparaphyses` cannot begin
+a sentence. `taxon_d08bca1f` (Sydowia 10, 1956, Petrak) shows the
+dangerous variant — **a join that produces grammatical text.**
+
+Its description ends one block at `…filiformi-bacillaria, sero` and
+opens the next at `adnata, globosa vel late ovoidea…`. Concatenated,
+`sero adnata` reads as plausible Latin — *"lately adnate"* — and the
+operator's instinct was that the annotation had split a phrase.
+
+**It had not. The fragments are 1 865 characters apart**, on opposite
+sides of a page break:
+
+| offset | label | text |
+|---|---|---|
+| 880 808 | `Description` | `…filiformi-bacillaria, sero` |
+| 881 110 | `Misc-exposition` | German translation |
+| 882 110 | `Bibliography` | more German |
+| 882 535 | `Page-header` | `--- PDF Page 335 ---` |
+| 882 583 | **`Misc-exposition`** | `…in uno latere plerumque fasciculo sclerenchymatico` |
+| 882 673 | `Description` | `adnata, globosa vel late ovoidea…` |
+
+The true reading joins `adnata` to the **dropped** block at 882 583:
+
+> `…subepidermalia, in uno latere plerumque fasciculo sclerenchymatico
+> **adnata**, globosa vel late ovoidea…`
+> — *subepidermal, on one side usually adnate to a sclerenchymatous
+> bundle, globose or broadly ovoid…*
+
+`sero` is separately the truncated tail of the conidiophore clause;
+compare the intact one earlier in the same treatment, which ends with
+dimensions: `bacillari-conica, simplicia, 5—7 µ longa, ad basin
+2.5—3.5 µ crassa.`
+
+**So a severed-term detector keyed on implausibility would pass this.**
+The join is syntactically fine; only the *semantics* betray it —
+conidiophores are not globose and are not 150–250 µm in diameter. That
+requires domain knowledge the detector does not have, and it was the
+operator's mycology, not their Latin, that caught it.
+
+**And the risk compounds outside English.** The reviewer's own
+assessment was *"my Latin isn't very good"* — a phantom phrase in a
+second language is far harder to reject than one in English. Expanding
+to non-English and non-Latin material (an acknowledged lower-priority
+todo, 2026-08-24) will widen this gap, so the plausible-join case is
+worth treating as a *structural* problem — measurable from span
+adjacency and dropped blocks — rather than a linguistic one.
+
+The structural signal is available and needs no language at all:
+**two `Description` spans separated by ~1 900 characters, a page break,
+and three non-content blocks are not adjacent prose**, whatever their
+concatenation reads like.
+
 **The tell to search for is a severed term.**
 `taxon_66c1e6e3` split the hyphenated word *spe-cies*,
 leaving `spe-` abutting `erumpent`; `taxon_6f788487` split
