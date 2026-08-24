@@ -55,7 +55,20 @@ def parse_metrics(raw: Any) -> Dict[str, Any]:
     rather than raising: a malformed doc must not abort a scan whose
     whole purpose is to preserve data.
     """
-    raise NotImplementedError
+    if isinstance(raw, dict):
+        return raw
+    if not isinstance(raw, str):
+        return {}
+    # JSON first (cheaper, stricter); fall back to the Python repr
+    # form, which is what the live docs actually contain.
+    for loads in (json.loads, ast.literal_eval):
+        try:
+            value = loads(raw)
+        except (ValueError, SyntaxError):
+            continue
+        if isinstance(value, dict):
+            return value
+    return {}
 
 
 def iter_merge_scores(
@@ -67,7 +80,16 @@ def iter_merge_scores(
     rather than being skipped — dropping it would understate the
     population and make the snapshot an incomplete restore.
     """
-    raise NotImplementedError
+    for row in status_db.view('_all_docs', include_docs=True):
+        doc = getattr(row, 'doc', None)
+        if not doc or doc.get('status') != STATUS_MERGE_SUSPECT:
+            continue
+        raw = parse_metrics(doc.get('metrics')).get('n_terms_above_5')
+        try:
+            score: Optional[int] = int(raw)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            score = None
+        yield row.id, score
 
 
 def format_tsv(rows: Sequence[Tuple[str, Optional[int]]]) -> str:
@@ -76,7 +98,17 @@ def format_tsv(rows: Sequence[Tuple[str, Optional[int]]]) -> str:
     Descending order makes the file a ready-made severity queue.
     Rows with no score sort last and render as an empty field.
     """
-    raise NotImplementedError
+    # -1 sorts unscored rows after every real score, which start at
+    # the merge threshold and are therefore always positive.
+    ordered = sorted(
+        rows, key=lambda r: (-(r[1] if r[1] is not None else -1), r[0]),
+    )
+    lines = [_TSV_HEADER]
+    lines.extend(
+        f'{tid}\t{"" if score is None else score}'
+        for tid, score in ordered
+    )
+    return '\n'.join(lines) + '\n'
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -104,8 +136,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     server.resource.credentials = (
         config['couchdb_username'], config['couchdb_password'],
     )
+    # Reuse the status-DB resolver from bin/llm_annotate_features so
+    # the naming-convention fallback stays in one place.
     from llm_annotate_features import resolve_status_db_name
-    db_name = resolve_status_db_name(server, config['experiment_name'])
+    experiment = config['experiment_name']
+    experiments_db = server['skol_experiments']
+    if experiment not in experiments_db:
+        print(f"error: experiment {experiment!r} not found in "
+              f"skol_experiments", file=sys.stderr)
+        return 2
+    db_name = resolve_status_db_name(
+        experiment, experiments_db[experiment],
+        verbosity=int(config.get('verbosity', 1) or 0),
+    )
     if db_name not in server:
         print(f"error: {db_name} not found", file=sys.stderr)
         return 2

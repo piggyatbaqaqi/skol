@@ -46,7 +46,6 @@ class _FakeDb:
         return [_FakeRow(k, v) for k, v in self._docs.items()]
 
 
-@pytest.mark.xfail(strict=True, reason="skeleton: implementation pending")
 class TestParseMetrics:
     """``metrics`` is sometimes a dict and sometimes its repr."""
 
@@ -69,7 +68,6 @@ class TestParseMetrics:
         assert parse_metrics('[1, 2, 3]') == {}
 
 
-@pytest.mark.xfail(strict=True, reason="skeleton: implementation pending")
 class TestIterMergeScores:
     """Only merge suspects, and never silently lose one."""
 
@@ -102,7 +100,6 @@ class TestIterMergeScores:
         assert list(iter_merge_scores(db)) == [('taxon_x', None)]
 
 
-@pytest.mark.xfail(strict=True, reason="skeleton: implementation pending")
 class TestFormatTsv:
     """Stable, sorted, greppable output."""
 
