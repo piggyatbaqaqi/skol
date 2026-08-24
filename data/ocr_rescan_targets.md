@@ -91,15 +91,131 @@ Persoonia 1–19 alone are **2 015** — 64 % of the total.
 
 ## Suggested order
 
-1. **Mycotaxon vols 3–31** — largest, worst-measured, and Mycotaxon is
-   a current journal, so a better scan may already exist.
+1. **Mycotaxon vols 3–31** — largest and worst-measured, and the
+   cheapest to act on.  Its page images are already **300 ppi RGB**, so
+   this looks like a re-OCR of PDFs we hold rather than a re-sourcing
+   job — and **BHL publishes hOCR with per-word `x_wconf` confidence
+   for it**, so the diagnosis costs a download rather than an engine
+   run.  Start here.
 2. **Persoonia vols 1–19** — already scoped as Trello #404, with
    per-article files at <https://repository.naturalis.nl/col/1>.  Note
    #405 (deduplication) gates it: without dedup the new files add a
-   *third* copy rather than replacing anything.
+   *third* copy rather than replacing anything.  Genuinely needs
+   re-sourcing rather than re-OCR — its page images are **150 ppi
+   greyscale**, below the usual threshold.
 3. **Lloyd + Kauffman + Buller + McIlvaine** — old books, likely on
    BHL/archive.org, plausibly with better scans than we hold.
 4. Everything else, opportunistically.
+
+## Proposed: OCR-engine confidence as a direct signal (not yet done)
+
+Operator suggestion, 2026-08-24: run an OCR engine such as Tesseract
+over the page images and use its **per-word confidence** as the quality
+measure, instead of inferring damage from the text after the fact.
+
+**It answers both gaps in `ocr_damage` directly.**  Confidence is
+computed on the *image*, so it measures the source rather than what
+survived extraction — and it needs no vocabulary, so it neither misses
+garbling-beyond-recognition nor inherits the proper-noun contamination
+that keeps `oov_rate` from being a mode.
+
+### What we already hold
+
+Every ingest document keeps `article.pdf`, and those PDFs contain both
+page images and a text layer.  **The text layer is itself OCR output**:
+its fonts are non-embedded standard Type 1 faces (`Helvetica`,
+`Times-Roman`, `emb no`) across every work checked — the signature of a
+layer painted over a scan, not of a born-digital document.
+
+So the stored `article.txt` is somebody *else's* OCR pass, and its
+quality is not a property of the images we hold.
+
+### The measurement that matters, and it reorders the list
+
+Sampling page images from the two largest targets:
+
+| work | page images | text layer |
+|---|---|---|
+| **Mycotaxon vols 6, 12** | **987 × 1470 RGB, 300 ppi** | non-embedded → OCR |
+| **Persoonia vol 13** | **781 × 1200 grey, 150 ppi** | non-embedded → OCR |
+
+**Mycotaxon — the worst-measured work in the corpus — has good source
+images.**  300 ppi RGB is a perfectly adequate scan; its 13.3 % rejoin
+rate is a *bad OCR pass over good images*, not a bad scan.  That is a
+hypothesis rather than a result, but if it holds, **re-OCRing PDFs we
+already have would fix 1 144 treatments** with no external sourcing, no
+new ingest, and no dependency on #405.
+
+**Persoonia 13 at 150 ppi greyscale is below the usual 300 ppi
+threshold for reliable OCR.**  Re-OCRing the same images has a low
+ceiling; that one needs a genuinely better source, which is what #404
+provides.
+
+### The triage this enables
+
+Comparing engine confidence against our stored text is more informative
+than either alone:
+
+| engine confidence | stored text | reading | action |
+|---|---|---|---|
+| high | bad | good images, bad OCR pass | **re-OCR locally** — cheap |
+| low | bad | the image itself is poor | **re-source** — expensive |
+| high | good | fine | leave alone |
+| low | good | OCR beat expectations | spot-check |
+
+### BHL already publishes the confidence data
+
+Operator, 2026-08-24: **hOCR HTML is available from the Biodiversity
+Heritage Library for at least Mycotaxon**, and hOCR carries
+`x_wconf` — a 0–100 OCR confidence **per word**:
+
+```html
+<span class='ocrx_word' title='bbox 412 1583 508 1610; x_wconf 92'>Pileus</span>
+<span class='ocrx_word' title='bbox 515 1583 604 1616; x_wconf 34'>rugu1ose</span>
+```
+
+**This removes the engine run entirely for those works.** No Tesseract,
+no page rasterisation, no CPU budget — fetch the hOCR and parse an
+attribute. A regex over `x_wconf (\d+)` is enough to get the
+distribution; a proper parse gets you the word and its bounding box
+alongside, so low-confidence regions can be located on the page.
+
+Three things this makes cheap that were not:
+
+* **Per-page and per-region confidence**, not just per-work. The
+  bounding boxes mean a low-confidence *block* can be identified —
+  which is what matters for the shredded works, where damage is
+  concentrated rather than uniform.
+* **Word-level ground truth for the `ocr_damage` thresholds.** Its
+  cut-offs are corpus quantiles chosen for lack of anything better.
+  `x_wconf` gives an independent measure to calibrate against, and in
+  particular to test whether the substitution threshold of 4 % is
+  anywhere near right.
+* **A second OCR pass to diff against.** BHL's text may or may not be
+  the same pass that produced our `article.txt`. If it differs and
+  scores better, BHL is not just a measuring instrument but a
+  **replacement source** — and a far cheaper one than re-scanning.
+
+**Check first whether BHL's OCR is the same pass we already hold.** If
+the text matches ours, `x_wconf` is still a perfectly good quality
+signal but tells us nothing new about alternatives.
+
+### Practical notes
+
+* **Tesseract is not installed** on puchpuchobs — `pytesseract` 0.3.13
+  is present but the binary is not.  A missing package on production is
+  a packaging error (CLAUDE.md), so `tesseract-ocr` plus the language
+  data belongs in the deb dependencies **if** an engine run is needed
+  at all — which, given BHL's hOCR, it may not be for the works that
+  matter most.
+* `pdftoppm`, `pdfimages` and `pdffonts` **are** installed, so page
+  extraction and the font/resolution triage above need nothing new.
+* **Sample, don't sweep.**  Ten pages per work over ~50 works is a few
+  hundred pages — minutes, and enough to rank.  Full re-OCR is a
+  separate, larger decision that this measurement should inform.
+* Report the **median** and **10th-percentile** word confidence, not
+  the mean: a page of clean running text with one ruined block is the
+  case that matters, and a mean hides it.
 
 ## Caveats worth carrying
 
