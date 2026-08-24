@@ -19,3 +19,4 @@
 * Keep wheel versions and their corresponding deb versions in sync.
 * Prompt me about writing a skill if you see the same basic procedure happening at least 3 times.
 * Detector work: pathology + poster-child cases live in `tests/fixtures/pathologies.json` with prose narrative in `docs/data_quality_production_v4_model.md`. Every taxon referenced in the memo needs a fixture entry. Conventions and walkthrough in `tests/fixtures/README.md`.
+* When responding to any comment, indicate if a record is made of the result. If a record would have made sense but you don't make one, explicitly comment on that fact along with the rationale.
