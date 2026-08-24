@@ -5680,6 +5680,60 @@ those are indexed to `article.txt.ann` (§16) and changing
 `article.txt` changes what the annotator emits.
 
 
+#### 15.1 §15 relocates whole fields, and that blinds the detectors
+
+`taxon_b673586a` (added 2026-08-24), *Cyanosporus miscanthi* from
+MycoKeys 107 — Pensoft, so JATS, and the ingest doc carries
+`article.xml`.
+
+The operator read it as *"a Diagnosis only… only characters that
+differentiate this species"*, and asked whether that was correct.
+**It is not.** Only the first ~260 characters are a diagnosis:
+
+> `Diagnosis. Cyanosporus miscanthi is characterized by
+> effused-reflexed to pileate tiny basidiomata … basidiospores,
+> 4–5 × 1.5–2 µm.`
+
+The remaining **~1 440 characters are a complete description** —
+Basidiomata → Pileal surface → Hymenophore → Context → Tubes → Hyphal
+system → Cystidia → Basidia → Basidiospores, with full measurements and
+`L = 4.2 µm, W = 1.9 µm, Q = 2.2–2.4 (n = 120/4)`.
+
+**`description` is empty. All of it is in `diagnosis`.**
+
+The cause is §15, and the signature is unmistakable — **nine** section
+boundaries with the separator gone:
+
+`µm.Basidiomata` · `KOH.Hyphal` · `diam.Cystidia` · `µm.Basidia` ·
+`connection.Basidiospores` · `rot.Brown` · `Holotype.China`
+
+Even the binomial lost its internal space (`Cyanosporusmiscanthi`), as
+did ten accession numbers (`ITSPP479786` for `ITS PP479786`).
+
+**So §15 is not only a text-corruption problem — it relocates entire
+fields.** With the boundaries gone the classifier sees one block and
+labels it once, and everything downstream of that heading lands in the
+wrong field.
+
+##### The second-order harm: an empty `description` disables the suite
+
+This treatment fires **zero flags**. Not because it is clean — it has a
+complete description in the wrong field, and its spore span is
+mislabelled — but because **almost every signal reads `description`**.
+`tail_clipped`, `desc_starts_mid_sentence`, `mid_body_description_header`,
+the merge metric and `authored_binomial` all take `desc`, and all
+short-circuit on empty text.
+
+So §15's field-collapse is doubly harmful: it loses the field *and*
+blinds the detectors that would have noticed. **An empty `description`
+beside a long `diagnosis` is itself a cheap, high-signal flag**, and
+nothing currently emits it.
+
+That pairs naturally with D6 (element-join artifact): D6 finds the
+corruption, this finds its consequence, and the second is easier to
+detect than the first — a field-population imbalance needs no text
+analysis at all.
+
 ### 16. `*_spans` are indexed to `article.txt.ann` (not a defect)
 
 **This section previously reported a high-severity data

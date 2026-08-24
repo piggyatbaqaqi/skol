@@ -1950,6 +1950,26 @@
         "§5-zero-length-nomenclature-span"
       ],
       "notes": "§12: the repeated Colonies/Conidiomata/Conidiophores labels are NOT a merge -- this is Helicodochium amazonicum gen. & sp. nov., so the qualitative genus diagnosis and the quantitative species description legitimately share a treatment (§11, cf. taxon_01a01c54).  Two etymologies, one for the genus and one for the epithet, confirm it.  The real defects are elsewhere.  (a) The nomenclature 'Helicodochium amazonicum J.S. Monteiro, R.F. Castañeda...' sits at char 3941 labelled Misc-exposition, so the treatment is Nomen ignotum with a zero-length nomenclature span -- third instance of that tell.  (b) One 'Note:' section is split across a page break and its halves get DIFFERENT labels, Diagnosis then Notes, landing one sentence in two fields: '...conidiophores, lacking' / 'pseudoparenchymatous stromata'.  Every block is labelled correctly; the failure is the label CHANGING across the boundary.  The same document shows the benign case -- two Description blocks separated by identical page furniture both reach the description field.  Narrative in the memo under D12."
+    },
+    {
+      "id": "taxon_b673586a1c4a3a5d01be04e0cde9ad9511e35d1a6ff93d984ecc2a902a0b7bca",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-f430bbcb0a24f1142e6e50bfe9dbdb07",
+      "class": "§15-description-collapsed-into-diagnosis",
+      "treatment": "Cyanosporus miscanthi\n",
+      "description": "",
+      "diagnosis": "Diagnosis.Cyanosporusmiscanthi is characterized by effused-reflexed to pileate tiny basidiomata, slightly concentrically zonate pileal surface, white to pale bluish gray pore surface when fresh, angular pores, 7–9 per mm, fusoid cystidioles and cylindrical to allantoid basidiospores, 4–5 × 1.5–2 µm.Basidiomata annual, effused-reflexed to pileate, soft and without odor or taste when fresh, becoming fragile to soft corky upon drying, up to 1 cm long and 0.8 cm wide when resupinate; pileus semicircular, projecting up to 0.8 cm, 1.2 cm wide and 1.2 mm thick at the base. Pileal surface white, pale bluish gray to bluish green when fresh and dry, velutinate, slightly concentrically zonate when dry; margin sharp, slightly curved when dry. Hymenophore poroid, white to pale bluish gray when fresh, becoming bluish gray to ash gray when dry; sterile margin almost absent; pores angular, 7–9 per mm; dissepiments thin, entire to slightly lacerate. Context white, soft corky, up to 0.3 mm thick. Tubes concolorous with pore surface, fragile to soft corky when dry, up to 0.9 mm long. Context and tubes turn dark olive green in KOH.Hyphal system monomitic; hyphae clamped, hyaline, slightly thick-walled, smooth, with a wide lumen, frequently branched, more or less flexuous, in the context loosely interwoven, 3–4.5 µm in diam in the tubes subparallel along the tubes, agglutinated, 2.5–3 µm in diam.Cystidia absent, but cystidioles fusoid present, thin-walled, 11–15 × 4 µm.Basidia clavate, 9–13 × 4–5 µm, with four sterigmata and a basal clamp connection.Basidiospores cylindrical to allantoid, 4–5(–5.5) × 1.5–2 µm, L = 4.2 µm, W = 1.9 µm, Q = 2.2–2.4 (n = 120/4), hyaline, thin-walled, IKI−, CB−.\n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§15-element-join-no-separator",
+        "§15-empty-description-beside-long-diagnosis",
+        "§10-spore-label-clade-general"
+      ],
+      "notes": "§15.1: Cyanosporus miscanthi, MycoKeys 107 (Pensoft, JATS -- the ingest doc carries article.xml).  The operator asked whether 'Diagnosis only' was correct; it is not.  Only the first ~260 chars are a diagnosis, the remaining ~1440 are a COMPLETE description (Basidiomata through Basidiospores with full measurements), and `description` is EMPTY.  Cause is the §15 element join: nine section boundaries lost their separator (µm.Basidiomata, KOH.Hyphal, diam.Cystidia, connection.Basidiospores), as did the binomial itself (Cyanosporusmiscanthi) and ten accession numbers (ITSPP479786).  So §15 relocates whole FIELDS, not just corrupts text.  The second-order harm is the point: this fires ZERO flags, because tail_clipped, desc_starts_mid_sentence, mid_body_description_header, the merge metric and authored_binomial all read `description` and short-circuit on empty text.  An empty description beside a long diagnosis is itself a cheap high-signal flag and nothing emits it.  Also carries a deferred T6 case: the spore span at 1574 is labelled Spores while the diagnosis mention at 264 is labelled Basidiospores -- both labels in one treatment.  Narrative in the memo at §15.1."
     }
   ]
 }
