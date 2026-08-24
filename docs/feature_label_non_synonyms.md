@@ -85,6 +85,44 @@ No canonicalization entry is involved: the map has no
 annotator choosing the general term directly.  The fix is in the
 annotation, not the map.
 
+### Clade-specific hyphal terms
+
+Raised 2026-08-24 from `taxon_a3308621`, where `Fertile hyphae` was
+relabelled `Generative hyphae` on the reasonable grounds that the
+former is unfamiliar.  **Declined — they are not synonyms**, and the
+corpus shows why.
+
+| a | b | why they differ |
+|---|---|---|
+| `Fertile hyphae` (2) | `Generative hyphae` (2) | *Generative* is one member of the **monomitic/dimitic/trimitic hyphal-system scheme**, defined by contrast with *skeletal* and *binding* hyphae.  *Fertile* means "bearing conidiogenous cells" and belongs to anamorph morphology.  Different concepts from different clades' vocabularies. |
+
+**Every corpus use bears this out.**  `Generative hyphae` and
+`Generative Hyphae` occur only in basidiomycetes, always inside the
+hyphal-system classification — *Tubulicrinis indicus* ("Generative
+hyphae ≤4 µm wide, branched, septate, clamped" beside "Hyphal system
+monomitic"), *Vararia lincangensis* ("Hyphal system dimitic,
+generative hyphae…" beside a `Skeletal hyphae` label), and the same
+pairing in *Podoscypha*, *Cyanosporus*, *Lyomyces*, *Nigroporus* and
+*Mycorrhaphium*.  `Fertile hyphae` occurs only in anamorphic
+ascomycetes, and in `taxon_a3308621` the fertile hyphae are the ones
+"provided with a single, rarely two, lateral conidiogenous openings"
+— i.e. they bear the phialides.
+
+**This is the same shape as the spore correction above**, run the
+other way: there the general term discarded clade information; here a
+clade-specific term from the *wrong* clade would import information
+that is not in the source.  Collapsing them would assert that an
+anamorphic ascomycete has a hyphal system in the basidiomycete sense.
+
+**If `Fertile hyphae` needs a canonical target, it is
+`Conidiophores`** (27 treatments), which is what the structure does
+here.  But there is a real argument for leaving it alone: the text
+describes *sinuous, undifferentiated* hyphae with lateral openings,
+and some authors use *fertile hyphae* precisely to avoid implying a
+differentiated conidiophore.  The treatment already carries a separate
+`Phialides` label, so the distinction is being made.  **Left undecided
+— see "Terms still undecided".**
+
 ### Whole vs part, or layer vs layer
 
 | a | b | why they differ |
@@ -107,6 +145,28 @@ annotation, not the map.
 These score 0.83–0.93 against each other because only the medium
 abbreviation differs — and the medium is the entire point of the
 observation.  Never collapse this family.
+
+**Nor should the family be grown.**  Asked 2026-08-24 whether
+`taxon_a3308621`'s `Colony` should become
+`Cultural_characteristics_on_MEA`: **no**, for three reasons.
+
+* **The medium is already captured.**  That span's text reads
+  *"Colonies spreading rapidly, reaching 60–80 mm diam in 3 days at
+  25 °C **on 2 % MEA**"*.  `source_text` holds it; putting it in the
+  label duplicates data already stored, in the one place that cannot
+  be queried structurally.
+* **`Colony` is the canonical form** — the map already carries
+  `Colonies` → `Colony`.  A medium-specific variant moves *off*
+  canonical, into the family this section says never to collapse,
+  which means it can never be normalised later either.
+* **It is the base+context conflation that the label-schema work
+  exists to fix.**  Six `Colony on …` and six `Culture on …` variants
+  already exist because the label string carries both the feature and
+  the observation condition.  The fix is a separate `context` field,
+  not a longer label.
+
+Keep the base term; let the medium live in the span text until the
+schema has somewhere structured to put it.
 
 ### Merely similar
 
@@ -205,6 +265,11 @@ Add them if and when the annotator emits them.
   question, not a synonymy one.
 
 ## Terms still undecided
+
+* **`Fertile hyphae` → `Conidiophores`?**  Raised 2026-08-24.  Same
+  structure functionally, but *fertile hyphae* may be a deliberate
+  choice for undifferentiated fertile mycelium.  2 occurrences, both
+  anamorphic ascomycetes.  **Not** `Generative hyphae` — see above.
 
 * `Hypoderm` (4) vs `Hypodermium` (12) — plausibly the same layer, not
   yet confirmed against the source treatments.
