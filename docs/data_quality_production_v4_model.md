@@ -2644,6 +2644,55 @@ layer.
 **Depends on**: M3 segment classifier.  `taxon_9ecad903`
 also needs a fixture entry.
 
+#### The plate-reference heuristic: right reasoning, measured, does not generalise
+
+Raised by the operator 2026-08-24 on `taxon_a686d7ab`: *"the '(Pl. II)'
+below seems to indicate that there are only 2 descriptions here that
+have been mangled."*
+
+**The reasoning is correct and it settled the case.** In older
+monographs each species treatment carries its own plate reference, so
+counting distinct plate numbers bounds the number of species in a
+merged block. Here exactly two occur — `(Pl. I)` on *Collybia
+olympiana* sp. nov. and `(Pl. II)` on *C. badiialba* Murr. — so the
+several description-like passages between them are one species'
+scattered text plus comparative discussion, not further species.
+
+**As a corpus detector it is not worth building.** Measured over
+39 887 descriptions ≥ 200 chars:
+
+| | count | share |
+|---|---:|---:|
+| containing ≥ 1 plate reference | 28 | **0.1 %** |
+| containing ≥ 2 distinct plates | **3** | 0.0 % |
+
+and all three multi-plate treatments **already carry** a `§6` or
+`§12:desc_span_gap` flag, so it would add nothing to detection either.
+
+Recorded so nobody builds it. It stays valuable as a **review
+heuristic** — a fast way for a human to bound a merge — which is
+exactly how it was used.
+
+**One trap if it is ever revisited: OCR renders `Pl.` as `PI.`**
+(capital i, not lowercase L). A first pass with `\(Pl\.` returned zero
+matches on a treatment that plainly contains two. Any plate or figure
+regex needs both forms.
+
+**The wider point about this treatment.** Its two species are not
+merged by a missed heading — they are **shredded**. The English
+descriptions of *both* run through `Table`, `Key`, `Figure-caption` and
+`Misc-exposition` blocks, and only 8 fragments out of roughly 40 blocks
+reached the `Description` field. The cause is upstream of the layout
+classifier: the OCR is bad enough that the text does not read as prose
+— `Pilous` for *Pileus*, `i m< ta l< trongly farin ( om lamellae
+adnate`. Same shredding, same old-scanned-book origin, as
+`taxon_a5efbd0b` (§5.2).
+
+That is worth separating from ordinary §12: a swallowed block is a
+classifier error on legible text, whereas this is the classifier
+behaving reasonably on input no classifier could parse. The fix is
+better OCR or source replacement, not a better label model.
+
 ### D5 — Label-aware assembly (§12)
 
 Not a detector.  Pass segment-level `(section_label, text)`

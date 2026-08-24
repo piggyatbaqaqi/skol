@@ -1822,6 +1822,66 @@
         "§12-prose-shredded-into-alternating-labels"
       ],
       "notes": "§5: a 35-character description ('is strongly rugulose or papillate.') and a 103-char diagnosis, from C.G. Lloyd's 'Mycological writings Vol. III 1909-1912' -- a BOOK, title and year only, no journal, volume or DOI, yielding 120 treatments of which 90 % are synthetic and 61 % have empty descriptions.  The prose is shredded into alternating Description / Misc-exposition / Table blocks, so nothing survives intact.  Carries the same zero-length nomenclature span at offset 0 as taxon_9446b102 -- now two instances, so it is a reliable structural tell.  The taxon is Jansia (a phalloid, not a puffball) and is identifiable ONLY from the dropped blocks, which is the point: the extraction discarded exactly the context needed to name it.  Narrative and the source-class measurement in the memo at §5.2."
+    },
+    {
+      "id": "taxon_a686d7ab70daf0c726b39697b30d79fd388cb476d7984d6abeae3c2b7ea5f879",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-9f70f25111c21c81cd62bb7866c7bb09",
+      "class": "§6-two-species-shredded-by-OCR-driven-mislabelling",
+      "treatment": "Nomen ignotum\n",
+      "description": "Collybia olympiana sp. nov. (PI. I).—Pilous 1-2.5 cm. latus, convoxus vol obtuse umbonatus, demum planus, siccus, argente fibril-\nlosus demum\nglaber, sordide fuscus demum cinnamomeus; odor\nvalde farinaceus; sapor farinaceus; lamellae adnatae, confortae,\nventricosae, pallidae, demum sordide fulvae; stipes 4-6 cm. lon-\n\n2.5 mm. crassus, aequalis, argon to fibrillosus demum glaber\net sordide fulvus; sporae\n(J 7X4-5/1, minute eehinulatae.\n\nall, then gradually changing to brown\nand finally becoming \"ochraceous-tawny\" over the marginal area:\nand \"cinnamon-brown\"\n(bright reddish brown or rusty brown)\nover the disk, translucent\nstriate in age and then appearing hygrophanous, fading very slowly; flesh thin, soft, concolorous with\n\nis very similar to that, of Collyiiia ran\nniosa, but well-developed specimens, as shown\n\ncharacteristic of the manner in which hygrophanous .species fade.\nThe taste and odor are both strongly farinaceous, and the gills a re\napparently much closer than they are in C. lylirolor. 1 regard the\nthin coating of gray fibrils over the pileus and\n\number\" or near \"buffy brown\" or \"drab\" and becoming pale isa-\nbelline (paler than Saccardo's umber), fading as if hygrophanous\nto \"avollaneous\" or pallid, margin either opaque or faintly striatu-\nlate when moist\n;\nflesh\npale gray, watery, pliant, thick under the\ndisk, but tapered abruptly and thin over the marginal area, odor\nand taste not\ndistinctive; lamellae sinuate, close (55-65 reach the\nstipe), 3\ntiers of short\nindividuals, moderately broad (3-4.5 mm.\n±), white, edges oven or cronulate to slightly eroded in age; stipe\n\nbutyracea. According to my experience all three are about equally distinctive one from the other and\ncan be readily recognized when found\nin quantity. Single specimens are usually difficult to place.\nCollybia badiialba Murr.\n(PI. II).—Pileus (2) 3-7 cm. broad,\nobtuse to conic or plane with a conic umbo, the margin inrolled,\nbecoming expanded and either plane or with an abrupt obtusely\n\nfaintly downy-fibrillosc at first, smooth or very finely rivulose, not\ntranslucent striate, moist to lubricous, subviscid when wet, pellicle\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": true,
+      "description_spans": [
+        {
+          "start_line": 1017,
+          "end_line": 1021
+        },
+        {
+          "start_line": 1025,
+          "end_line": 1027
+        },
+        {
+          "start_line": 1082,
+          "end_line": 1087
+        },
+        {
+          "start_line": 1213,
+          "end_line": 1214
+        },
+        {
+          "start_line": 1274,
+          "end_line": 1277
+        },
+        {
+          "start_line": 1343,
+          "end_line": 1356
+        },
+        {
+          "start_line": 1544,
+          "end_line": 1550
+        },
+        {
+          "start_line": 1558,
+          "end_line": 1559
+        }
+      ],
+      "source_anchors": [],
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§10:tail_clip",
+        "§6:authored_binomial",
+        "§12:desc_span_gap",
+        "§13:no_source_anchor"
+      ],
+      "known_missed_flags": [
+        "§6-two-species-in-one-description",
+        "§12-description-shredded-across-Table-Key-Figure-caption"
+      ],
+      "notes": "§6: exactly TWO species -- Collybia olympiana sp. nov. (Pl. I) and C. badiialba Murr. (Pl. II) -- with comparative discussion between them, from A.H. Smith's 'Studies of North American Agarics-I'.  The operator bounded the count from the plate references, which is correct: only two occur.  The English descriptions of BOTH species are shredded across Table, Key, Figure-caption and Misc-exposition labels, so only 8 fragments reached the Description field out of ~40 blocks.  Cause is catastrophic OCR ('Pilous' for Pileus, 'i m< ta l< trongly farin ( om lamellae adnate') leaving the layout classifier unable to recognise prose.  Same shredding as taxon_a5efbd0b, same old-scanned-book origin.  The plate-reference heuristic is recorded in the memo at D4 as a REVIEW heuristic, not a detector -- measured at 0.1 % corpus coverage.  Narrative in the memo under D4."
     }
   ]
 }
