@@ -286,6 +286,26 @@ attribute extraction remains.
 **Prerequisite**: v5 stable per M4/M5.  Not started
 before v5 is validated.
 
+**Schema settled 2026-08-24** — see
+[structured-form-schema.md](../structured-form-schema.md).  The
+two-phase split is kept, for a reason beyond the original one:
+phase 1 has an evaluation harness and phase 2 has none, so
+collapsing them would discard the only measurement in the
+pipeline.  Four decisions recorded there, each with its
+evidence: values are verbatim source phrases rather than
+parsed; output is a **list of blocks**, not an object keyed by
+feature name (39 % of repeated-label groups carry conflicting
+measurements, so merging at extraction corrupts ~9.6 % of
+blocks — merge downstream, where it can refuse); keys are flat
+and lowercase; and **the model recognises measurements while a
+regex parses them**, because a language model asked to do
+arithmetic fails quietly.
+
+Two premises still to test before any fine-tuning: the slot
+vocabulary does not exist yet (322 labels, 54 % singletons), and
+"Mistral did poorly" was measured on *entire descriptions* —
+the problem phase 1 removes.  Re-run it on labelled spans first.
+
 **Deliverable**: faster / cheaper structured-form
 generation, ready for search-product integration.
 
@@ -401,6 +421,8 @@ Reasons to revise this plan:
 
 ## Cross-references
 
+* [../structured-form-schema.md](../structured-form-schema.md)
+  — the phase-2 JSON schema and the reasoning behind it.
 * [annotation-activity-split.md](annotation-activity-split.md)
   — the companion execution plan that corrects Track A's
   premise, establishes the Heaps baseline, and splits label
