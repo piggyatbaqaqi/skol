@@ -3381,6 +3381,50 @@ duplication catches 381, and the encoding-fold catches the 22 where the
 duplication is provably a rendering artefact rather than an author
 repeating themselves.
 
+#### It is a publisher production error, not an extraction artefact
+
+Traced 2026-08-24 to the source PDF. Ingest doc
+**`731b55a2-3645-591c-9f7f-1f4ee9923291`** in `skol_dev`,
+doi `10.3390/jof6040187` (MDPI). Both copies sit on **PDF page 28** —
+the page-28 marker is at char 90 444 and page 29 at 94 979, with the
+copies at 91 707 and 93 601.
+
+`pdftotext -layout` on that page shows the figure caption **drawn
+twice, overlapping**:
+
+```
+ Figure
+Figure  20.20.Exophiala  clavispora (CGMCC
+               Exophiala clavispora  (CGMCC3.17517).   (A,B)
+                                               3.17517).     Forward
+                                                          (A,B)      and and
+                                                                Forward   reverse  of colony
+```
+
+`3.17517` occurs **4 times** on the page and `clavispora` **7 times**.
+And the two overlapping caption copies end `10 μm` and `10 µm` — **the
+same encoding split as the two description blocks**, so it is the same
+pair of text layers throughout.
+
+So the PDF carries **duplicated text objects**: the same content drawn
+twice in two font/encoding runs at nearly the same position. On screen
+the page looks normal — two identical texts overlaid are visually
+indistinguishable from one — but every text extractor reads both.
+
+**Our extractor behaves better than `pdftotext`, and that is the
+problem.** `pdftotext` interleaves the layers into obvious garbage
+(`20.20.Exophiala clavispora (CGMCC (CGMCC3.17517)`), whereas
+`article.txt` separates them into two clean, readable blocks. Good for
+legibility, bad for detection: the output looks like a legitimate
+repeated section rather than an artefact, which is precisely why this
+needed a detector rather than being caught by eye.
+
+**That raises D17's value above what the corpus rate suggests.** At
+1.66 % it looks marginal, but it is catching **publisher production
+errors** — defects that no dedup keyed on DOIs, documents or ingest
+records can see, because there is only one article, one document and
+one DOI. The duplication is *inside the page*.
+
 **This is #405 one level down.** Trello #405 concerns the *same article
 ingested as two documents* — 36.7 % of ingest docs share a DOI, usually
 a `crossref` PDF beside a `pmc` JATS copy. This is the *same article
