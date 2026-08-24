@@ -3263,6 +3263,36 @@ detector is blind exactly there.  Sequence after D6.
 
 **Depends on**: nothing new — gnfinder is already wired in.
 
+#### D9.1 — `§10:diag_tail_clip` is missing, and it is a one-liner
+
+Found 2026-08-24 on `taxon_a8e45990`, which fires **zero flags** while
+its `diagnosis` ends mid-sentence at `…compared to`.
+
+The asymmetry is visible in `triage_signals.build_signals`:
+
+```python
+'tail_clipped': tail_clipped(desc),
+# Reuse the same head-clip predicate on the diagnosis field.
+'diag_starts_mid_sentence': desc_starts_mid_sentence(diag),
+```
+
+The **head**-clip predicate was deliberately extended to the diagnosis —
+that is what `§10:diag_head_clip` is — but the **tail**-clip predicate
+was not. Nothing about `tail_clipped` is description-specific;
+confirmed by calling it directly on this treatment's diagnosis, where it
+returns `True`.
+
+So one line and a flag name closes it, symmetric with the existing pair.
+Worth doing before D9/D11, both of which are larger.
+
+**Why it matters more than a missing flag usually would.**
+`taxon_a8e45990` is otherwise an excellent treatment — real
+nomenclature, six correctly-separated fields, zero OCR damage on every
+mode, `merge_metric` 4. It reads as clean to every current signal, so
+the truncation would pass into the golden set unremarked. **False
+negatives on otherwise-clean treatments are the expensive kind**: a
+flagged mess gets reviewed anyway, whereas this one looks finished.
+
 ### D11 — Mid-description truncation (§10)
 
 **Catches**: a field that is cut off *inside* the

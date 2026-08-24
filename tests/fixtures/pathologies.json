@@ -1892,6 +1892,24 @@
         "reason": "Tier 2 of data/ocr_rescan_targets.md.  Shredded across Table/Key/Figure-caption labels, so the measured rejoin rate understates it -- 0.0 % on the surviving 384 tokens against 2.4 % on the 2222-token source region.",
         "consequence": "Treatment ids are content hashes, so this entry will dangle after re-sourcing.  Re-capture the case from a work not on the rescan list."
       }
+    },
+    {
+      "id": "taxon_a8e45990d5e42a5ae9301cb08f1c20ed759916084ff598e13a27a55833f5baa9",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "23-a5953c710ac93be370797f42ed245704",
+      "class": "§10-diagnosis-tail-clip-with-no-flag",
+      "treatment": "Fusarium aconidiale L. Lombard & Crous, sp. nov.\n",
+      "description": "Classification — Nectriaceae, Hypocreales, Sordariomycetes.\nConidiophores on aerial mycelium 30–115 μm tall, unbranched\nor rarely irregularly or sympodially branched and proliferating,\nbearing terminal single phialides or whorls of 2–3 phialides,\ncommonly reduced to solitary conidiogenous cells borne laterally on hyphae; aerial conidiogenous cells monophialides,\nsubulate to subcylindrical, smooth- and thin-walled, 14–28 ×\n3–5 μm, proliferating percurrently, periclinal thickening and\ncollarettes often inconspicuous or absent. Aerial microconidia\nnot observed. Sporodochial conidiophores 23–38 μm tall, irregularly branched, bearing terminal solitary or whorls of 2–3\nphialides. Sporodochial conidiogenous cells monophialidic,\ndoliiform, subulate to subcylindrical, smooth- and thin-walled,\n(11–)13–17(–21) × 3–5 μm. Sporodochial conidia straight to\nmoderately curved, tapering towards the basal part, apical cell\nmore or less equally sized than the adjacent cell, curved to\nhooked; basal cell well-developed, foot-shaped, rarely papillate, 3(–5)-septate, hyaline, thin- and smooth-walled: 3-septate\nconidia: (36–)41–49(–53) × 4–5 μm (av. 45 × 4 μm); 4-septate\nconidia: 46–52(–56) × 4–5 μm (av. 49 × 5 μm); 5-septate\nconidia: 52–60(–61) × 5–6 μm (av. 56 × 5 μm), overall:\n(36–)42–53(–61) × (4–)4.5–5.5(–6) μm (av. 47 × 5 μm).\nChlamydospores not observed.\n\nCulture characteristics — Colonies on potato dextrose agar\nreaching 15–40 mm diam at 25 °C after 7 d. Surface white to\nrosy buff, flat, woolly to cottony with radial patches of white aerial\nmycelium, margin regular and filiform. Reverse white to pale\nrosy buff. On oatmeal agar pale rosy buff, flat, membranous,\nmargin effuse. Reverse colourless.\n",
+      "diagnosis": "Notes — Fusarium aconidiale is phylogenetically closely\nrelated to F. celtidicola and F. juglandicola in the F. citricola\nspecies complex (FCCSC; Sandoval-Denis et al. 2018, Shang\net al. 2018). Similar to F. juglandicola, this species does not\nproduce red pigment under continuous white light nor any\nchlamydospores or aerial microconidia, distinguishing it from\nother members of the FSSCS. However, F. aconidiale produces\npredominantly 3-septate sporodochial conidia and much less\nfrequently 4- and 5-septate sporodochial conidia compared to \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§10:diag_tail_clip"
+      ],
+      "notes": "§10/D9.1: fires ZERO flags while its diagnosis ends mid-sentence at 'compared to'.  tail_clipped() is applied only to the description, although desc_starts_mid_sentence() WAS extended to the diagnosis as diag_head_clip -- so the head is checked on both fields and the tail on only one.  Calling tail_clipped() on this diagnosis returns True, so a one-line change closes it.  The false negative is the expensive kind: Fusarium aconidiale is otherwise excellent -- real nomenclature, six correctly-separated fields, zero OCR damage on every mode, merge_metric 4 -- so it would pass into the golden set unremarked.  Doubles as a clean example of a culture-only asexual-morph description (Fungal Planet sheet, Persoonia 46, per-article so not #404 population).  Narrative in the memo at D9.1."
     }
   ]
 }
