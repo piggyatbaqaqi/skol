@@ -3060,6 +3060,51 @@ description to the previous taxon.
 Stylonectria applanata Höhn. 1915.` and describes
 *Stylonectria*.
 
+#### The OCR case: the rank marker survives, the genus name does not
+
+`taxon_9499dcb0` (added 2026-08-24) is the hardest gating case and the
+one that should shape the implementation. Its nomenclature is
+*Peniophorella* P. Karst.; its description is of **Dentipellis** Donk —
+unrelated genera in different families — and the description is a
+three-way pile-up:
+
+| chars | content |
+|---|---|
+| 0–1180 | **herbarium specimen commentary about a different fungus** — a curator's note on a contaminated packet of *Hyphoderma pubera*, describing the contaminant's spores |
+| ~1182–1560 | the **Latin diagnosis, head-clipped** — opens mid-adjective-list at `indetcrminatum, raritcr ciTusoreflexum…`, its subject gone |
+| ~1560–end | the **English description, complete** — Fruit-body → Spores, `On rotten wood.`, then the type species and examples |
+
+**The evidence is buried under OCR damage.** The genus reads
+`Denttpellis`, the type species reads `H)'drrum fra~ile`, the Latin
+reads `Sporac globosac… parictibus lcvilms, amyloidcis`. A D10 built on
+exact genus matching, or on gnfinder alone, misses it —
+and worse, `§6:authored_binomial` **does** fire here, but on the clean
+`Hyphoderma pubera (Fr.) Wallr.` sitting in the *alien* block. Right
+flag, wrong reason.
+
+**So key the detector on the rank marker, not the name.** A
+`TYPE SPECIES` / `Typus:` declaration inside a description is a
+**genus-rank marker**, and that phrase survives OCR far better than the
+name it introduces: `TYPE SJ'ECLES` and `Typus:` are both still
+recognisable here while `Dentipellis` is not. A Type-species
+declaration in the description, plus a nomenclature naming some *other*
+genus, is the detectable shape — and it needs no name resolution at
+all.
+
+That generalises to **D14** (rank mismatch): a Type-species declaration
+means the description is of a genus, whatever rank the nomenclature
+claims. The two detectors want the same cheap primitive.
+
+**`merge_metric` reads 0** on this treatment despite three unrelated
+blocks, because they are not *repetitive*. A reminder that the metric
+measures repetition, not heterogeneity — see D15, which fires on
+repeated morph terms for the same reason.
+
+**It is also #404 population.** Persoonia volume 2, no title, no DOI,
+19 treatments from the one ingest document. The fixture entry will
+dangle after re-ingest, so re-capture this case from a source that is
+not scheduled for replacement.
+
 **It has a positive case.**  `taxon_6c2dcb7c`
 (`§6-compilatory-double-description`) is the first fixture
 entry where this comparison actually fires: gnfinder finds
