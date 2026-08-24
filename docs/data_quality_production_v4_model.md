@@ -727,6 +727,83 @@ worth annotating, and it reached a reviewer regardless. That is a
 cheaper gate than any new text detector, and it belongs upstream of the
 annotator rather than in triage.
 
+#### 5.2 Monographic books, and a correction to the source-class story
+
+`taxon_a5efbd0b`, round 4 (operator: *"truncated almost to nothing …
+the labels are fine, but the extraction is useless"*).  The whole
+treatment is a **35-character description** — `is strongly rugulose or
+papillate.` — plus a 103-char diagnosis.
+
+The prose is not merely clipped, it is **shredded into alternating
+labels**:
+
+| offset | label | text |
+|---|---|---|
+| 424 499 | `Description` | `is strongly rugulose or papillate.` |
+| 424 551 | `Misc-exposition` | `Two species occur in Java and have been well illustrated…` |
+| 424 749 | `Table` | `Fig. 33 JANSIA ELEGANS…` |
+| 424 908 | `Misc-exposition` | `phalloid, which is common in Java.` |
+| 424 964 | `Diagnosis` | `The short gleba-bearing portion…` |
+| 425 082 | `Misc-exposition` | `…the only species of Jansia that is com…` |
+
+**The taxon is recoverable only from the dropped blocks.** *Jansia* is
+a **phalloid**, not a puffball — `gleba` plus a distinct stipe reads
+gasteroid, but the surrounding `Misc-exposition` says *"phalloid, which
+is common in Java"* and the `Table` names *Jansia elegans*. The
+extraction discarded precisely the context needed to identify what it
+had. It also carries the **zero-length nomenclature span at offset 0**
+seen on `taxon_9446b102` — two instances now, so it is a reliable tell.
+
+The source is **C.G. Lloyd's *Mycological writings* Vol. III
+1909–1912** — a book: title and year only, no journal, volume or DOI.
+It yields **120 treatments, 90 % synthetic, 61 % with empty
+descriptions**.
+
+##### The correction
+
+Measured 2026-08-24, ingest documents classify cleanly by metadata, and
+the result does **not** support "whole-volume ingests are the problem
+class":
+
+| class | docs | treatments | synthetic | empty desc |
+|---|---:|---:|---:|---:|
+| per-article (journal + title/doi) | 30 484 | 62 427 | **39.6 %** | **49.2 %** |
+| book-like (title, no journal) | 365 | 10 656 | 31.6 % | 51.1 % |
+| whole-volume (journal, no title/doi) | 235 | 6 709 | 34.8 % | **33.2 %** |
+
+Whole-volume is the **best** of the three on empty descriptions and
+below per-article on synthetic rate. The earlier §5 framing implied
+that class was the culprit; on these numbers it is not, and #404's case
+rests on OCR quality and per-article structure rather than on synthetic
+rates.
+
+**The real signal is per-document, not per-class.** Across 242
+book-like documents yielding ≥ 10 treatments the synthetic rate has
+median 27.3 % and p90 56.2 % — but a small cluster is catastrophic:
+
+| synthetic | n | document |
+|---:|---:|---|
+| 97.7 % | 44 | *Our Edible Toadstools and Mushrooms* |
+| 96.9 % | 259 | *The Agaricaceae of Michigan* |
+| 96.7 % | 60 | *Researches on Fungi, Volume 1* |
+| 90.5 % | 63 | *One Thousand American Fungi* |
+| **90.0 %** | **120** | ***Mycological writings Vol. III*** |
+| 88.3 % | 128 | *Mycological writings Vol. II* |
+| 84.8 % | 138 | *Mycological writings Vol. IV* |
+
+Three Lloyd volumes at 84–90 %, 386 treatments between them, plus
+Kauffman, Buller and McIlvaine. These are **early-20th-century
+monographic and popular books** whose prose does not follow modern
+treatment structure — and one modern review (*"The emerging role of
+Fungi in sustainable farming"*, 88.9 %) sits in the same band, so the
+common factor is **non-treatment-structured prose**, not age.
+
+**Consequence for sequencing.** A per-document gate is cheaper and
+better targeted than a per-class one: the top eight documents alone
+account for ~715 treatments at ~90 % synthetic. Excluding a named
+handful of books would remove more noise than any metadata-class rule,
+and it is a filter, not a model.
+
 ### 6. Multiple species merged into one treatment
 
 **Symptom**: one Treatment doc contains descriptive content for

@@ -1792,6 +1792,36 @@
         "§2-nomenclature-is-synonymy-list-fragment"
       ],
       "notes": "§12: a culture-only description whose tail is severed TWICE by Misc-exposition.  It ends 'incubation under near-UV at ' and the block two characters later reads '24oC did not yield any ascomat.a.'; a second break 380 chars on opens MID-WORD at 'rotia:', the tail of microsclerotia.  Mid-word is the strongest severed-term tell, and the two breaks are independent.  Also §2: the nomenclature is a synonymy-list fragment ('anamorph include: A. tetraspora Krug et al. (1983)...'), not a name.  Label rulings from this treatment -- Fertile hyphae is NOT Generative hyphae, and Colony stays the base term -- are in docs/feature_label_non_synonyms.md.  Narrative in the memo under D12."
+    },
+    {
+      "id": "taxon_a5efbd0b056a73b3dcd49aa7ef6f5b41d9dc82887f698a857f80b93927b43069",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-4d6e8970f41999578dbb82cf8b58a33f",
+      "class": "§5-shredded-treatment-from-a-monographic-book",
+      "treatment": "Nomen ignotum\n",
+      "description": "is strongly rugulose or papillate.\n",
+      "diagnosis": "The short gleba-bearing portion\nis strongly distinct from the stipe and\nis strongly rugulose, as shown\n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 27830,
+          "end_line": 27830
+        }
+      ],
+      "source_anchors": [],
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§10:mid_sentence",
+        "§13:no_source_anchor"
+      ],
+      "known_missed_flags": [
+        "§5-zero-length-nomenclature-span",
+        "§12-prose-shredded-into-alternating-labels"
+      ],
+      "notes": "§5: a 35-character description ('is strongly rugulose or papillate.') and a 103-char diagnosis, from C.G. Lloyd's 'Mycological writings Vol. III 1909-1912' -- a BOOK, title and year only, no journal, volume or DOI, yielding 120 treatments of which 90 % are synthetic and 61 % have empty descriptions.  The prose is shredded into alternating Description / Misc-exposition / Table blocks, so nothing survives intact.  Carries the same zero-length nomenclature span at offset 0 as taxon_9446b102 -- now two instances, so it is a reliable structural tell.  The taxon is Jansia (a phalloid, not a puffball) and is identifiable ONLY from the dropped blocks, which is the point: the extraction discarded exactly the context needed to name it.  Narrative and the source-class measurement in the memo at §5.2."
     }
   ]
 }
