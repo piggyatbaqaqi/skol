@@ -46,7 +46,9 @@ import socket
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TextIO, Tuple
+from typing import (
+    Any, Dict, Iterator, List, Optional, TextIO, Tuple,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -164,6 +166,44 @@ def discover_ann_files(
             f"no .ann files found in {ann_dir!r}"
         )
     return pairs
+
+
+def stream_ann_pairs(
+    ann_dir: str,
+    id_stream: Any,
+    *,
+    warn_stream: TextIO = sys.stderr,
+    session_start: Optional[float] = None,
+) -> Iterator[Tuple[str, str]]:
+    """Yield ``(treatment_id, ann_path)`` as ids arrive on a stream.
+
+    The streaming counterpart to :func:`discover_ann_files`, for the
+    ``--doc-id -`` review loop: one window left open for a whole
+    session, ingesting each treatment the moment its id is pasted.
+
+    Three differences from ``discover_ann_files``, all deliberate:
+
+    * **Lazy.** One ``readline`` per id, so a pasted id is processed
+      immediately rather than at EOF.
+    * **Never fatal on one id.** A missing ``.ann`` or a typo is
+      reported to ``warn_stream`` and iteration continues — a
+      session-long window must not die on a slip.
+    * **An empty stream is not an error.** Opening the window and
+      closing it having reviewed nothing is a legitimate outcome.
+
+    Args:
+        ann_dir: Directory holding ``<treatment_id>.ann`` files.
+        id_stream: Line source; only ``readline`` is used.
+        warn_stream: Where per-id problems are reported.
+        session_start: Epoch seconds; a ``.ann`` last modified before
+            this warns that it may not have been saved.  Defaults to
+            now, i.e. every file is considered stale unless re-saved
+            during the session.
+
+    Raises:
+        ValueError: if ``ann_dir`` is not a directory.
+    """
+    raise NotImplementedError
 
 
 def fetch_candidate_anns_for_treatment(

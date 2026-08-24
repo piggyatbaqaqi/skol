@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from brat_ingest import (  # type: ignore[import]  # noqa: E402
     discover_ann_files,
+    stream_ann_pairs,
     fetch_candidate_anns_for_treatment,
     resolve_hand_db_name,
     reviewer_label_from_env,
@@ -239,3 +240,104 @@ class TestReviewerLabelFromEnv:
         # depend on the test runner's environment.
         assert '@' in label
         assert len(label) > 1
+
+
+# ---------------------------------------------------------------------------
+# stream_ann_pairs — the `--doc-id -` review loop
+# ---------------------------------------------------------------------------
+
+
+class _RecordingStream:
+    """Permits only ``readline``; counts calls.  See
+    ``llm_annotate_features_test._RecordingStream`` for why."""
+
+    def __init__(self, lines: List[str]) -> None:
+        self._lines = list(lines)
+        self.readline_calls = 0
+
+    def readline(self) -> str:
+        self.readline_calls += 1
+        return self._lines.pop(0) if self._lines else ''
+
+    def read(self, *_a: Any, **_kw: Any) -> str:
+        raise AssertionError('read() would block on a pipe')
+
+    def __iter__(self) -> Any:
+        raise AssertionError('iteration block-buffers')
+
+
+@pytest.mark.xfail(strict=True, reason="T0d: implementation pending")
+class TestStreamAnnPairs:
+    """A window left open all session: lazy, and never fatal."""
+
+    def test_first_pair_available_before_the_stream_closes(
+        self, tmp_path: Path,
+    ) -> None:
+        """The point of streaming: no waiting for EOF.
+
+        If this regresses to a batch read, the operator's pasted id
+        sits unprocessed until they hit ^D — which is exactly the
+        behaviour the mode exists to remove.
+        """
+        (tmp_path / 'taxon_a.ann').write_text('')
+        (tmp_path / 'taxon_b.ann').write_text('')
+        stream = _RecordingStream(['taxon_a\n', 'taxon_b\n'])
+        gen = stream_ann_pairs(str(tmp_path), stream)
+        tid, path = next(gen)
+        assert tid == 'taxon_a'
+        assert os.path.basename(path) == 'taxon_a.ann'
+        assert stream.readline_calls == 1
+
+    def test_missing_ann_is_reported_and_the_next_id_still_runs(
+        self, tmp_path: Path,
+    ) -> None:
+        """One typo must not end a session-long window."""
+        (tmp_path / 'taxon_a.ann').write_text('')
+        (tmp_path / 'taxon_c.ann').write_text('')
+        warn = io.StringIO()
+        pairs = list(stream_ann_pairs(
+            str(tmp_path),
+            _RecordingStream(['taxon_a\n', 'taxon_typo\n', 'taxon_c\n']),
+            warn_stream=warn,
+        ))
+        assert [tid for tid, _ in pairs] == ['taxon_a', 'taxon_c']
+        assert 'taxon_typo' in warn.getvalue()
+
+    def test_blank_lines_are_ignored(self, tmp_path: Path) -> None:
+        (tmp_path / 'taxon_a.ann').write_text('')
+        pairs = list(stream_ann_pairs(
+            str(tmp_path), _RecordingStream(['\n', 'taxon_a\n', '  \n']),
+        ))
+        assert [tid for tid, _ in pairs] == ['taxon_a']
+
+    def test_empty_stream_yields_nothing_without_raising(
+        self, tmp_path: Path,
+    ) -> None:
+        """Unlike discover_ann_files, an empty stream is not an error.
+
+        The operator may open the window and close it having reviewed
+        nothing; that is not a failure.
+        """
+        assert list(stream_ann_pairs(
+            str(tmp_path), _RecordingStream([]),
+        )) == []
+
+    def test_bad_ann_dir_raises(self) -> None:
+        with pytest.raises(ValueError):
+            list(stream_ann_pairs(
+                '/nonexistent/dir/xyz', _RecordingStream(['taxon_a\n']),
+            ))
+
+    def test_stale_ann_mtime_warns(self, tmp_path: Path) -> None:
+        """Catches the commonest mistake: pasting before saving."""
+        p = tmp_path / 'taxon_a.ann'
+        p.write_text('')
+        os.utime(p, (1_000_000, 1_000_000))
+        warn = io.StringIO()
+        pairs = list(stream_ann_pairs(
+            str(tmp_path), _RecordingStream(['taxon_a\n']),
+            warn_stream=warn, session_start=2_000_000.0,
+        ))
+        assert [tid for tid, _ in pairs] == ['taxon_a']
+        assert 'taxon_a' in warn.getvalue()
+        assert 'saved' in warn.getvalue().lower()

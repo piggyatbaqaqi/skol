@@ -25,7 +25,9 @@ from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     estimate_tokens,
     filter_already_annotated,
     load_seed,
+    iter_treatment_ids,
     read_treatment_ids,
+    resolve_id_filter,
     resolve_candidate_db_name,
     resolve_status_db_name,
 )
@@ -828,3 +830,119 @@ class TestAnnotateOneTreatment:
         assert result.metrics['output_tokens'] == 1
         # stop_reason captured in metrics too.
         assert result.metrics.get('stop_reason') == 'end_turn'
+
+
+# ---------------------------------------------------------------------------
+# iter_treatment_ids — the streaming half of read_treatment_ids
+# ---------------------------------------------------------------------------
+
+
+class _RecordingStream:
+    """Stream that permits ONLY ``readline``.
+
+    ``for line in sys.stdin`` block-buffers when stdin is a pipe, so an
+    id pasted into a live session would sit unprocessed until the
+    buffer filled.  This fake makes that mistake fail loudly: ``read``
+    and ``__iter__`` raise, and ``readline`` calls are counted so a
+    test can assert the generator is lazy.
+    """
+
+    def __init__(self, lines: List[str]) -> None:
+        self._lines = list(lines)
+        self.readline_calls = 0
+
+    def readline(self) -> str:
+        self.readline_calls += 1
+        return self._lines.pop(0) if self._lines else ''
+
+    def read(self, *_a: Any, **_kw: Any) -> str:
+        raise AssertionError('read() would block on a pipe; use readline()')
+
+    def __iter__(self) -> Any:
+        raise AssertionError('iteration block-buffers; use readline()')
+
+
+@pytest.mark.xfail(strict=True, reason="T0d: implementation pending")
+class TestIterTreatmentIds:
+    """Lazy, line-at-a-time, and never reads ahead."""
+
+    def test_yields_first_id_after_a_single_readline(self) -> None:
+        """The property the whole streaming mode depends on."""
+        stream = _RecordingStream(['taxon_a\n', 'taxon_b\n'])
+        gen = iter_treatment_ids(stream)
+        assert next(gen) == 'taxon_a'
+        assert stream.readline_calls == 1
+
+    def test_strips_and_skips_blank_lines(self) -> None:
+        stream = _RecordingStream(['  taxon_a  \n', '\n', '   \n',
+                                   'taxon_b\n'])
+        assert list(iter_treatment_ids(stream)) == ['taxon_a', 'taxon_b']
+
+    def test_empty_stream_yields_nothing(self) -> None:
+        assert list(iter_treatment_ids(_RecordingStream([]))) == []
+
+    def test_stops_at_eof_not_on_a_blank_line(self) -> None:
+        """A blank line is skipped; only '' (EOF) terminates."""
+        stream = _RecordingStream(['taxon_a\n', '\n', 'taxon_b\n'])
+        assert list(iter_treatment_ids(stream)) == ['taxon_a', 'taxon_b']
+
+
+class TestReadTreatmentIdsStillBatches:
+    """The batch contract must survive the refactor."""
+
+    def test_reads_every_line_to_eof(self) -> None:
+        stream = io.StringIO('taxon_a\ntaxon_b\ntaxon_c\n')
+        assert read_treatment_ids(
+            None, stream, stdin_isatty=False,
+        ) == ['taxon_a', 'taxon_b', 'taxon_c']
+
+    def test_doc_ids_still_win_over_stdin(self) -> None:
+        stream = io.StringIO('taxon_from_stdin\n')
+        assert read_treatment_ids(
+            ['taxon_from_flag'], stream, stdin_isatty=False,
+        ) == ['taxon_from_flag']
+
+    def test_empty_stdin_still_raises(self) -> None:
+        with pytest.raises(ValueError):
+            read_treatment_ids(None, io.StringIO(''), stdin_isatty=False)
+
+
+@pytest.mark.xfail(strict=True, reason="T0d: implementation pending")
+class TestResolveIdFilter:
+    """Optional filter: '-' means stdin, absent means no filter."""
+
+    def test_no_doc_ids_does_not_read_stdin(self) -> None:
+        """The cron regression, and the important test in this file.
+
+        cron gives a non-TTY /dev/null stdin.  A tool that read stdin
+        whenever it was not a TTY would consume nothing, filter to
+        nothing, and process nothing — silently breaking every
+        scheduled invocation while exiting 0.
+        """
+        stream = _RecordingStream(['taxon_should_not_be_read\n'])
+        assert resolve_id_filter(
+            None, stream, stdin_isatty=False,
+        ) is None
+        assert stream.readline_calls == 0
+
+    def test_empty_list_also_means_no_filter(self) -> None:
+        stream = _RecordingStream(['taxon_x\n'])
+        assert resolve_id_filter([], stream, stdin_isatty=False) is None
+        assert stream.readline_calls == 0
+
+    def test_sentinel_reads_stdin(self) -> None:
+        assert resolve_id_filter(
+            ['-'], io.StringIO('taxon_a\ntaxon_b\n'), stdin_isatty=False,
+        ) == ['taxon_a', 'taxon_b']
+
+    def test_literal_ids_pass_through(self) -> None:
+        stream = _RecordingStream(['taxon_x\n'])
+        assert resolve_id_filter(
+            ['taxon_a', 'taxon_b'], stream, stdin_isatty=False,
+        ) == ['taxon_a', 'taxon_b']
+        assert stream.readline_calls == 0
+
+    def test_sentinel_with_empty_stdin_raises(self) -> None:
+        """Asking for stdin and getting nothing is an operator error."""
+        with pytest.raises(ValueError):
+            resolve_id_filter(['-'], io.StringIO(''), stdin_isatty=False)

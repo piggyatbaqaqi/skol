@@ -58,7 +58,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, TextIO, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -164,6 +164,49 @@ def resolve_candidate_db_name(
             file=warn_stream,
         )
     return fallback
+
+
+STDIN_SENTINEL = '-'
+
+
+def iter_treatment_ids(stream: TextIO) -> Iterator[str]:
+    """Yield treatment ids from ``stream``, one per ``readline``.
+
+    The streaming primitive behind ``--doc-id -``.  Blank lines are
+    skipped; ``''`` (EOF) terminates.
+
+    **Uses ``readline``, deliberately, not iteration.**  ``for line in
+    sys.stdin`` block-buffers when stdin is a pipe, so an id pasted
+    into a live review window would sit unprocessed until the buffer
+    filled — correct-looking against a TTY and useless in practice.
+    """
+    raise NotImplementedError
+
+
+def resolve_id_filter(
+    doc_ids: Optional[List[str]],
+    stdin_stream: TextIO,
+    *,
+    stdin_isatty: bool,
+) -> Optional[List[str]]:
+    """Resolve an *optional* id filter, honouring the ``-`` sentinel.
+
+    For tools where "no filter" is a legitimate default —
+    ``brat_export`` and ``brat_ingest`` both process a whole
+    ``--ann-dir`` when unrestricted — as opposed to
+    :func:`read_treatment_ids`, which requires ids and raises without
+    them.
+
+    * ``None`` / empty  → ``None`` (no filter).  **Stdin is not read.**
+    * ``['-']``         → the ids on stdin, as a batch.
+    * anything else     → returned unchanged.
+
+    The stdin-not-read case is the one that matters: cron supplies a
+    non-TTY ``/dev/null`` stdin, so a tool that read stdin whenever it
+    was not a TTY would consume nothing and process nothing, silently
+    breaking every scheduled invocation.
+    """
+    raise NotImplementedError
 
 
 def read_treatment_ids(
