@@ -162,7 +162,7 @@ The two tools want **different** semantics, and this is deliberate:
 ```sh
 # leave this running in its own window for the whole review session
 bin/brat_ingest --experiment production_v4 --doc-id - \
-    --ann-dir brat/data/skol_segments/production_v4_round6/
+    --ann-dir brat/data/skol_segments/production_v4_round5/
 ```
 
 ### The buffering trap
@@ -218,7 +218,7 @@ TDD per CLAUDE.md, modelled on `brat_ingest_test.py:122`:
   `--ann-dir`** — the cron-regression test, and the important one;
   literal `--doc-id a,b` unchanged.
 
-**e. Make the selector record its own bias.** Round 6 is the baseline
+**e. Make the selector record its own bias.** Round 5 is the baseline
 everything later compares against, so it should be the first round whose
 provenance is machine-written rather than remembered.
 
@@ -237,7 +237,7 @@ every stage is a bias source:
 So "random" always means *uniform over the survivors*, and the honest
 record is **the funnel itself**, not a label. `select_for_annotation`
 already knows every number — it computes them — so have it emit
-`production_v4_round6.meta.json` beside the round file:
+`production_v4_round5.meta.json` beside the round file:
 
 ```json
 {"round": 6, "experiment": "production_v4",
@@ -289,7 +289,7 @@ So record the realized slices, with their score ranges:
 "output_order": "band-by-band"
 ```
 
-For round 6, `bands_raw` is `null`, there is a single implicit `('all',
+For round 5, `bands_raw` is `null`, there is a single implicit `('all',
 n)` band, and `output_order` is `"uniform"`.
 
 ### `output_order` is load-bearing, not decoration
@@ -297,7 +297,7 @@ n)` band, and `output_order` is `"uniform"`.
 `select_treatments` emits **band-by-band in declaration order**, and only
 *within* a band is the order `rng.sample`'s. Two consequences:
 
-* **T5's "first 50 lines" rule is valid only because round 6 is
+* **T5's "first 50 lines" rule is valid only because round 5 is
   unbanded.** On a banded round the first 50 lines would come entirely
   from the first band — a maximally biased subset that looks like an
   innocent `head -50`. The sidecar's `output_order` is what lets the
@@ -365,7 +365,7 @@ is explicit rather than implied.
 
 *Zero-code fallback if this slips:* the selector already prints its
 selection to stdout — `tee` it to
-`data/annotation_rounds/production_v4_round6.log` at T2. Strictly worse
+`data/annotation_rounds/production_v4_round5.log` at T2. Strictly worse
 (unstructured, not joinable) but better than nothing.
 
 **f. Fix `--dry-run` in `select_for_annotation` — it is a bug, not a
@@ -424,7 +424,7 @@ But do **not** build it speculatively, for two reasons:
 Neither scheme is universally right: percentile bands adapt to a shifting
 corpus, absolute bands stay comparable over time. The sidecar records the
 realized cut points either way, so **nothing is lost by deferring** —
-round 6 is unbanded and does not need this at all.
+round 5 is unbanded and does not need this at all.
 
 ---
 
@@ -454,7 +454,7 @@ bin/llm_annotate_features --experiment production_v4 \
 ```sh
 bin/select_for_annotation --experiment production_v4 --n 1000 \
     --exclude-annotated --seed 20260823 \
-    --output data/annotation_rounds/production_v4_round6.txt
+    --output data/annotation_rounds/production_v4_round5.txt
 ```
 
 `--bands` omitted → single unbanded uniform draw over p1. Banding would
@@ -476,7 +476,7 @@ docs and writes the round file. Run T0a before either form.
 ```sh
 bin/llm_annotate_features --experiment production_v4 --estimate \
     --llm-model claude-opus-4-7 \
-    < data/annotation_rounds/production_v4_round6.txt
+    < data/annotation_rounds/production_v4_round5.txt
 ```
 
 **GO/NO-GO on the printed cost.** Rough expectation $22–56 at
@@ -620,7 +620,7 @@ separate throwaway code.
 * `brat_export` renders the synthetic doc through `render(treatment)` and
   `brat_ingest` **re-renders it** to translate offsets back. Changing the
   format shifts every offset and **invalidates existing `.ann` files** —
-  including round 4's and round 6's, mid-flight.
+  including round 4's and round 5's, mid-flight.
 * Context text inside the annotation surface is annotatable text.
   Reviewers would end up labelling material that is not part of the
   treatment.
@@ -686,7 +686,7 @@ machine where it costs nothing.
 In `jupyter/heaps_law_analysis.ipynb`:
 
 1. **Round filter (F2)** — `TREATMENT_ID_FILTER` loaded from
-   `production_v4_round6.txt`, applied in `load_candidate_annotations`.
+   `production_v4_round5.txt`, applied in `load_candidate_annotations`.
 2. **Ordering (F1)** — primary curve in *round-file order* (that is the
    draw order from `select_treatments`), plus a **permutation-averaged
    curve over ~200 permutations with a band**. Permutation averaging is
@@ -711,18 +711,28 @@ Export → review → ingest the **first 50 lines** of the round file, using
 the T0d stdin mode:
 
 ```sh
-head -50 data/annotation_rounds/production_v4_round6.txt > /tmp/r6_review.txt
+head -50 data/annotation_rounds/production_v4_round5.txt > /tmp/r5_review.txt
 bin/brat_export --experiment production_v4 --doc-id - --skip-unannotated \
-    --output-dir brat/data/skol_segments/production_v4_round6/ < /tmp/r6_review.txt
+    --output-dir brat/data/skol_segments/production_v4_round5/ < /tmp/r5_review.txt
 # review in brat, running brat_ingest at the END OF EACH SITTING
 bin/brat_ingest --experiment production_v4 --doc-id - \
-    --ann-dir brat/data/skol_segments/production_v4_round6/ < /tmp/r6_review.txt
+    --ann-dir brat/data/skol_segments/production_v4_round5/ < /tmp/r5_review.txt
 ```
 
 **Commit to "the first 50 lines" *before* the run finishes.** The
 tempting move once candidates land — pick the treatments that introduced
 new labels — is exactly the selection mechanism that produced round 1's
 36.3 % recall.
+
+**`taxon_46ff7dde` is exported alongside but stays out of the
+statistics** (operator, 2026-08-24). It is a hand-picked poster child
+queued in `production_v4_round5_manual.txt`, so merging it into the draw
+would make the round file no longer a uniform sample. Merging happens at
+export and the review subset is the first 50 lines of the *selector's*
+file, so it would very likely never reach the reviewed set anyway —
+but "very likely" is how sampling frames get quietly broken, which is
+what this plan exists to stop. Export it, review it, exclude it from
+precision/recall.
 
 ### 50 is right for precision and hopeless for recall — measured, not assumed
 
@@ -773,7 +783,7 @@ that is visible directly in the counts without any interval.
 Round 3 is **9 treatments**. Its 100 % precision is suggestive, not
 conclusive — a treatment-level interval on 9 units is wide. The honest
 statement is that round 3 gives no reason to doubt the labels, and
-**round 6's 50 treatments is what actually settles it**. That strengthens
+**round 5's 50 treatments is what actually settles it**. That strengthens
 the case for T5 rather than weakening the plan, but the earlier phrasing
 overstated what 9 treatments can carry.
 
@@ -841,6 +851,13 @@ population-collision concern is real and is handled by the sidecar below.
 
 ## Round-file convention (prevents the next pooled statistic)
 
+**`_manual` files share their round's number, and that is correct.**
+`production_v4_round5_manual.txt` holds treatments to be merged *into*
+round 5; it is not a competing round 5. The `_manual` suffix
+deliberately fails `default_output_path`'s `round(\d+)\.txt` regex so
+the selector still numbers normally — the selector produces
+`production_v4_round5.txt` and the two are merged at export.
+
 Round numbers stay a **pure global sequence** across populations —
 encoding the population in the filename is what breaks
 `default_output_path`'s regex. Provenance lives in the sidecar the
@@ -871,7 +888,7 @@ the human-facing summary. **Never mix populations in one round file.**
   resume pass; `stop_reason == 'max_tokens'` count reported, not ignored.
 - **T3d**: the six-way cross-tab sums to 35 482.
 - **T4**: permutation band computed over ≥ 100 permutations; curve
-  restricted to round 6 only (assert no `created_at` before the run's
+  restricted to round 5 only (assert no `created_at` before the run's
   start).
 - **T5**: `pytest tests/pathologies_test.py` green; precision/recall
   reported with treatment-level bootstrap CI and top-5-dropped variants.
