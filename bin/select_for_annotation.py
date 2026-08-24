@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Sample treatments from a treatments_prose database, banded by complexity score.
+"""Sample treatments from a treatments_prose database, banded by
+complexity score.
 
 Phase 1 deliverable 2 of treatments_to_structured.  See
 docs/schema_constrained_pipeline.md §10.4.
@@ -534,7 +535,7 @@ def main() -> int:
             return 2
         # Reuse the candidate-DB resolver from bin/llm_annotate_features
         # so the fallback naming convention stays in one place.
-        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+        from llm_annotate_features import (  # noqa: E402
             resolve_candidate_db_name,
         )
         candidate_db_name = resolve_candidate_db_name(
@@ -585,7 +586,7 @@ def main() -> int:
             )
             return 2
         # Reuse the status-DB resolver from bin/llm_annotate_features.
-        from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+        from llm_annotate_features import (  # noqa: E402
             resolve_status_db_name,
         )
         status_db_name = resolve_status_db_name(
