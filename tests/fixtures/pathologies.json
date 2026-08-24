@@ -394,6 +394,22 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Helvella pubescens sp. nov. (Skrede et al. 2017, Persoonia 39, doi 10.3767/persoonia.2017.39.09).  ZERO flags, merge_metric 0, and SIX fields correctly separated -- nomenclature, type_designation, etymology, description, materials_examined, notes -- from consecutive paragraphs 1771-1787, at char offset 246k into a large volume.  The richest correctly-fielded example in the fixture, so it is the silence test for anything that reads field structure rather than description text alone.  Unlike the other Persoonia entries this one is per-article (title + DOI present, volume 39 > 19), so it is NOT #404 population and will survive the Naturalis re-ingest."
+    },
+    {
+      "id": "taxon_b970d2c2d2ec9c60f4609d1586e9f83a166ac0cfd26aa2ff9b57db19ac361b41",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "19-6133184772fdeefd39389b4e6294578c",
+      "class": "genus-description-no-measurements",
+      "treatment": "Elbamycella gen. nov. A. Poli, E. Bovio, V. Prigione & G.C. Varese\n",
+      "description": "Description. Ascomata superficial, erumpent or immersed, perithecial, scattered or gregarious, olivaceous-brown to black at maturity, globose, subglobose, ovoid or pyriform, glabrous; ostiolar neck long, pale-coloured; peridium of textura prismatica in the outer layers and textura globulosa in the inner layers. Asci evanescent, hyaline, cylindrical to clavate. Ascopores cylindrical rounded at both ends, thin-walled, hyaline, straight or slightly curved, 3-septate, bearing subpolar, appendages. Asexual morph unknown.\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Elbamycella gen. nov. (Poli et al., MycoKeys).  A GENUS description: 522 chars and ZERO measurements, because a genus diagnosis states only what defines the genus.  That makes it the shortest poster child by 30 % and the only measurement-free one -- every other has at least 3 and most have 20+.  It is therefore the guard against any completeness heuristic keyed on description length or measurement density, both of which would fire on it wrongly.  Complete and CORRECTLY SEPARATED: the species description is its own treatment, taxon_e553853a (Elbamycella rosea sp. nov., paras 21-27, 4868 chars, 90 measurements), adjacent and non-overlapping.  Deliberate contrast with taxon_b0d687da (Helicodochium), where the same gen.+sp. paper structure was MERGED into one treatment because the intervening nomenclature heading was labelled Misc-exposition -- same shape, opposite outcome, and the discriminator is whether that heading was classified correctly."
     }
   ],
   "pathologies": [
