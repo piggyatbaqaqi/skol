@@ -862,7 +862,6 @@ class _RecordingStream:
         raise AssertionError('iteration block-buffers; use readline()')
 
 
-@pytest.mark.xfail(strict=True, reason="T0d: implementation pending")
 class TestIterTreatmentIds:
     """Lazy, line-at-a-time, and never reads ahead."""
 
@@ -907,7 +906,6 @@ class TestReadTreatmentIdsStillBatches:
             read_treatment_ids(None, io.StringIO(''), stdin_isatty=False)
 
 
-@pytest.mark.xfail(strict=True, reason="T0d: implementation pending")
 class TestResolveIdFilter:
     """Optional filter: '-' means stdin, absent means no filter."""
 

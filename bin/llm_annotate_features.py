@@ -180,7 +180,13 @@ def iter_treatment_ids(stream: TextIO) -> Iterator[str]:
     into a live review window would sit unprocessed until the buffer
     filled — correct-looking against a TTY and useless in practice.
     """
-    raise NotImplementedError
+    while True:
+        line = stream.readline()
+        if not line:          # '' is EOF; '\n' is a blank line
+            return
+        text = line.strip()
+        if text:
+            yield text
 
 
 def resolve_id_filter(
@@ -206,7 +212,13 @@ def resolve_id_filter(
     was not a TTY would consume nothing and process nothing, silently
     breaking every scheduled invocation.
     """
-    raise NotImplementedError
+    if not doc_ids:
+        return None
+    if list(doc_ids) == [STDIN_SENTINEL]:
+        return read_treatment_ids(
+            None, stdin_stream, stdin_isatty=stdin_isatty,
+        )
+    return list(doc_ids)
 
 
 def read_treatment_ids(
@@ -245,7 +257,9 @@ def read_treatment_ids(
             )
         return ids
     if not stdin_isatty:
-        ids = [line.strip() for line in stdin_stream if line.strip()]
+        # Drained through the streaming primitive so the two forms
+        # cannot drift on blank-line / EOF handling.
+        ids = list(iter_treatment_ids(stdin_stream))
         if not ids:
             raise ValueError(
                 "stdin was empty; no treatment IDs to process"

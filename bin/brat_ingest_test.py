@@ -266,7 +266,6 @@ class _RecordingStream:
         raise AssertionError('iteration block-buffers')
 
 
-@pytest.mark.xfail(strict=True, reason="T0d: implementation pending")
 class TestStreamAnnPairs:
     """A window left open all session: lazy, and never fatal."""
 

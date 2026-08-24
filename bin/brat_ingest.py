@@ -37,6 +37,20 @@ Usage::
     bin/brat_ingest --experiment production_v4 \\
         --ann-dir /home/operator/brat_review/production_v4/ \\
         --doc-id taxon_841d5cbed,taxon_2114314b
+
+    # STREAMING review loop -- leave this running in its own window
+    # for the whole session and paste each id as you finish it.  Each
+    # is ingested the moment its line arrives; no ^D needed until you
+    # are done.  A missing .ann or a typo is reported and the window
+    # stays up.
+    bin/brat_ingest --experiment production_v4 --doc-id - \\
+        --ann-dir /home/operator/brat_review/production_v4/
+
+Running the ingest as you go, rather than at the end of a round, is
+what keeps ``features_hand`` in step with the review: precision and
+recall are computed from ``features_candidate`` against
+``features_hand``, so an un-ingested ``.ann`` is invisible to every
+measurement.
 """
 
 import argparse
@@ -44,6 +58,7 @@ import getpass
 import os
 import socket
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import (
@@ -54,6 +69,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_config import common_parser, get_env_config  # noqa: E402
+from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
+    STDIN_SENTINEL,
+)
 
 from treatments_to_structured.brat_ingest import (  # noqa: E402
     DiffResult,
@@ -203,7 +221,23 @@ def stream_ann_pairs(
     Raises:
         ValueError: if ``ann_dir`` is not a directory.
     """
-    raise NotImplementedError
+    if not os.path.isdir(ann_dir):
+        raise ValueError(f"--ann-dir not a directory: {ann_dir!r}")
+    if session_start is None:
+        session_start = time.time()
+    from llm_annotate_features import (  # type: ignore[import]
+        iter_treatment_ids,
+    )
+    for tid in iter_treatment_ids(id_stream):
+        path = os.path.join(ann_dir, f'{tid}.ann')
+        if not os.path.isfile(path):
+            print(f"  SKIP  {tid[:22]}…: no {tid}.ann in {ann_dir}",
+                  file=warn_stream, flush=True)
+            continue
+        if os.path.getmtime(path) < session_start:
+            print(f"  NOTE  {tid[:22]}…: .ann predates this session "
+                  f"— saved in brat?", file=warn_stream, flush=True)
+        yield tid, path
 
 
 def fetch_candidate_anns_for_treatment(
@@ -285,23 +319,38 @@ def main() -> int:
         print("error: --experiment is required", file=sys.stderr)
         return 2
 
-    # Resolve source-file selection
-    doc_id_filter = config.get('doc_ids') or None
-    try:
-        ann_pairs = discover_ann_files(
-            args.ann_dir, args.ann_file, doc_id_filter,
-        )
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 2
+    # Resolve source-file selection.  `--doc-id -` switches from
+    # discover-then-loop to a live stream: ids are ingested as they
+    # arrive, so a review window can stay open for a whole session.
+    doc_ids = config.get('doc_ids') or None
+    streaming = list(doc_ids or []) == [STDIN_SENTINEL]
+    ann_pairs: Any
+    if streaming:
+        if not args.ann_dir:
+            print("error: --doc-id - requires --ann-dir",
+                  file=sys.stderr)
+            return 2
+        try:
+            ann_pairs = stream_ann_pairs(args.ann_dir, sys.stdin)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+    else:
+        try:
+            ann_pairs = discover_ann_files(
+                args.ann_dir, args.ann_file, doc_ids,
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
 
     reviewer = args.reviewer or reviewer_label_from_env()
     if verbosity >= 1:
-        print(
-            f"Reviewer: {reviewer}  "
-            f"({len(ann_pairs)} .ann file(s) to ingest)",
-            file=sys.stderr,
+        scope = (
+            'streaming ids from stdin; ^D to finish'
+            if streaming else f'{len(ann_pairs)} .ann file(s) to ingest'
         )
+        print(f"Reviewer: {reviewer}  ({scope})", file=sys.stderr)
 
     # CouchDB
     import couchdb  # type: ignore[import-untyped]
@@ -403,7 +452,9 @@ def main() -> int:
     totals = {'kept': 0, 'added': 0, 'deleted': 0, 'errors': 0}
     reviewed_at = datetime.now(timezone.utc).isoformat()
 
+    n_seen = 0
     for tid, ann_path in ann_pairs:
+        n_seen += 1
         try:
             treatment = dict(treatments_db[tid])
         except Exception:  # noqa: BLE001
@@ -568,9 +619,12 @@ def main() -> int:
                     )
 
         if verbosity >= 1:
+            # Flushed: stderr is block-buffered when redirected, and
+            # the streaming window's whole value is seeing each id
+            # land as it is ingested.
             print(
                 f"  {tid}: {result.summary()}",
-                file=sys.stderr,
+                file=sys.stderr, flush=True,
             )
         if verbosity >= 2:
             for r in result.added:
@@ -590,7 +644,7 @@ def main() -> int:
     print(
         f"\nDone: {totals['kept']} kept, {totals['added']} added, "
         f"{totals['deleted']} deleted across "
-        f"{len(ann_pairs) - totals['errors']}/{len(ann_pairs)} "
+        f"{n_seen - totals['errors']}/{n_seen} "
         f"treatments"
         + (f' ({totals["errors"]} errors)' if totals['errors'] else '')
     )

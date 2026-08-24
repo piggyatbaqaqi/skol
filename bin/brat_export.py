@@ -352,7 +352,20 @@ def main() -> int:
         print("error: --experiment is required", file=sys.stderr)
         return 2
 
-    doc_id_filter = config.get('doc_ids') or None
+    # `--doc-id -` reads the id list from stdin.  Batch, not
+    # streaming: an export produces a directory to review, so it wants
+    # the whole set up front (brat_ingest is the streaming half).
+    from llm_annotate_features import (  # type: ignore[import]
+        resolve_id_filter,
+    )
+    try:
+        doc_id_filter = resolve_id_filter(
+            config.get('doc_ids'), sys.stdin,
+            stdin_isatty=sys.stdin.isatty(),
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     # CouchDB
     import couchdb  # type: ignore[import-untyped]
