@@ -2224,35 +2224,38 @@ against both endorsed experiments before and after, and
 require the rates not to drop — 100 % for production_v4,
 ≥ 90 % for production_v3_hand with its documented gap.
 
-**U2 — Put the D-items back in numeric order.**  They are
-not, and it is now a live editing hazard rather than an
-aesthetic complaint.  The file order is currently:
+**U2 — Put the D-items back in numeric order.**  ✅ **Done
+2026-08-24.**  The file order had drifted to
 
 ```
-D1 D2 D3 D4 D5 D6 D7 D8 D10 D12 D13 D11 D9
+D1 D2 D3 D4 D5 D6 D7 D8 D10 D12 D13 D14 D15 D11 D9
 ```
 
-Items were appended by inserting before whichever heading
-was convenient at the time, so later additions landed ahead
-of earlier ones.  On 2026-08-23 an edit that spliced on a
-`### D6` end anchor computed an end index *before* its start
-index and silently duplicated the entire D7 section; it was
-caught only by `grep -c` on the heading afterwards.
+because items were appended by inserting before whichever
+heading was convenient at the time, so later additions
+landed ahead of earlier ones.  It was a live editing hazard,
+not an aesthetic complaint: on 2026-08-23 an edit that
+spliced on a `### D6` end anchor computed an end index
+*before* its start index and silently duplicated the entire
+D7 section, caught only by `grep -c` afterwards.
 
-Two mitigations, both cheap:
+Reordered as a pure text permutation — verified by asserting
+the block's character count, line count and multiset of lines
+were all unchanged, then confirming the whole file's word
+count held at 34 561.
 
-* **Reorder D1–D13 numerically.**  Pure text movement, no
-  content change, so it can be verified with a
-  `grep -c '^### D'` count and a word-count diff.
-* **Check heading uniqueness after any scripted edit to this
-  memo** — `grep -c '^### D<n> '` should be 1 for every
-  item.  Worth doing routinely regardless of the reorder,
-  since the file is past 3 000 lines and anchor-based edits
-  will keep being the way it is maintained.
+**The standing rule survives the reorder**, because
+anchor-based edits remain how this file is maintained and it
+is now past 3 000 lines:
 
-Sequenced here rather than done immediately because a large
-reordering diff during round-4 review would obscure the
-content changes that reviewers are actually reading.
+> **After any scripted edit to this memo, check heading
+> uniqueness** — `grep -c '^### D<n> '` must be 1 for every
+> item.
+
+The reorder does not prevent the failure; it only removes the
+surprise that made it plausible. A future `sed`/Python splice
+can still compute crossed indices. The `grep -c` check is what
+actually catches it.
 
 **U3 — No deduplication of volumes, articles or treatments
 (Trello #405).**  Raised by the operator 2026-08-23.  It is
@@ -2957,6 +2960,31 @@ a public git remote — is unaffected, but the repo-split and packaging
 plan must carry the condition forward rather than assume a permissive
 project licence covers it.
 
+### D9 — Head-clip on an opening parenthesis (§10)
+
+**Catches**: a description or diagnosis whose first character is
+`(` or `[` — the tail of a sentence that began earlier.
+
+**Gating fixture**: must fire on `taxon_4a5306ac`
+(`§10-diag-head-clip-open-paren`), whose diagnosis opens
+`(more than 100 basidiomata are present in the type
+collection), allowing a detailed study …`.
+
+**The fix is one character.**  `desc_starts_mid_sentence`
+fires on a leading character in `;,.:` or a lowercase
+letter.  `(` is neither, so `§10:diag_head_clip` stays
+silent on a plainly clipped field.  Add `(` and `[` to the
+set.
+
+**Safe against the whole regression bar, checked.**
+Surveying the opening character of every `description` and
+`diagnosis` in the fixture: none opens with a parenthesis,
+so nothing currently passing starts firing.  The smallest
+item on this list, and the only one that is a one-line
+change with its gating case already captured.
+
+**Depends on**: nothing.
+
 ### D10 — Genus mismatch between nomenclature and description (§2)
 
 **Catches**: a treatment whose `description` names a
@@ -3001,6 +3029,59 @@ element-join artifact makes binomials unparseable, so this
 detector is blind exactly there.  Sequence after D6.
 
 **Depends on**: nothing new — gnfinder is already wired in.
+
+### D11 — Mid-description truncation (§10)
+
+**Catches**: a field that is cut off *inside* the
+description rather than at its end.  `§10:tail_clip`
+inspects only the final characters of the field, so a
+description that ends on a clean sentence looks healthy
+however mangled its middle is.
+
+**Gating fixtures**: must fire on `taxon_5581a442`
+(`§6-genus-description-merged-heading-as-Table`), whose
+Culture-characteristics block stops at `…margin entire, `
+mid-way through, and on `taxon_4b89d160`
+(`§2-wrong-genus-nomenclature`), whose Culture paragraph
+lacks its closing period.  Both were spotted by the operator
+by eye and neither fires anything.
+
+**Must stay silent on** the 15 poster children, several of
+which contain legitimate mid-field commas and semicolons at
+paragraph joins.
+
+**The signal is not "no terminal period".**  Descriptions
+are assembled from several source paragraphs, so an interior
+join legitimately ends mid-clause.  Two better forms, one
+structural and one textual:
+
+*Span boundary.*  The interior text ends exactly where a
+span boundary falls, and the missing clause sits in the
+following paragraph under a different label —
+`taxon_5581a442`'s `reverse concolourous.`,
+`taxon_6f788487`'s `reverse light-brown.`
+
+*Parallel structure* — contributed by the operator on
+`taxon_6f788487`, and the sharper of the two.  That
+treatment has three sibling `Culture_on_*` clauses:
+
+```
+Culture_on_OA  … flat, slimy growth; reverse olive brown.
+Culture_on_PDA … flat, slimy growth; reverse olive brown.
+Culture_on_CMA … poor sporulation, flat;
+```
+
+The operator identified the truncation from the semicolon
+*because its siblings end differently*, and the dropped run
+turned out to be exactly `reverse light-brown.`  **A clause
+that breaks the template its siblings share is truncated; a
+clause that merely lacks a period may not be.**  Sibling
+clauses are cheap to find — same label family, same
+treatment — and the comparison needs no source lookup.
+
+**Depends on**: nothing, but it needs the span offsets,
+which makes it a natural companion to `bin/verify_spans`
+rather than a pure text heuristic.
 
 ### D12 — Content swallowed by non-content layout labels (§2/§6/§12)
 
@@ -3461,84 +3542,6 @@ here) makes it **worse, not better**: 64.6 % multi-span and
 `§6` 23.1 %, against 71.0 % and 31.9 % for single-encoding
 controls — mildly *anti*-correlated.  The clean boundary in
 this one treatment is a coincidence of its source document.
-
-### D11 — Mid-description truncation (§10)
-
-**Catches**: a field that is cut off *inside* the
-description rather than at its end.  `§10:tail_clip`
-inspects only the final characters of the field, so a
-description that ends on a clean sentence looks healthy
-however mangled its middle is.
-
-**Gating fixtures**: must fire on `taxon_5581a442`
-(`§6-genus-description-merged-heading-as-Table`), whose
-Culture-characteristics block stops at `…margin entire, `
-mid-way through, and on `taxon_4b89d160`
-(`§2-wrong-genus-nomenclature`), whose Culture paragraph
-lacks its closing period.  Both were spotted by the operator
-by eye and neither fires anything.
-
-**Must stay silent on** the 15 poster children, several of
-which contain legitimate mid-field commas and semicolons at
-paragraph joins.
-
-**The signal is not "no terminal period".**  Descriptions
-are assembled from several source paragraphs, so an interior
-join legitimately ends mid-clause.  Two better forms, one
-structural and one textual:
-
-*Span boundary.*  The interior text ends exactly where a
-span boundary falls, and the missing clause sits in the
-following paragraph under a different label —
-`taxon_5581a442`'s `reverse concolourous.`,
-`taxon_6f788487`'s `reverse light-brown.`
-
-*Parallel structure* — contributed by the operator on
-`taxon_6f788487`, and the sharper of the two.  That
-treatment has three sibling `Culture_on_*` clauses:
-
-```
-Culture_on_OA  … flat, slimy growth; reverse olive brown.
-Culture_on_PDA … flat, slimy growth; reverse olive brown.
-Culture_on_CMA … poor sporulation, flat;
-```
-
-The operator identified the truncation from the semicolon
-*because its siblings end differently*, and the dropped run
-turned out to be exactly `reverse light-brown.`  **A clause
-that breaks the template its siblings share is truncated; a
-clause that merely lacks a period may not be.**  Sibling
-clauses are cheap to find — same label family, same
-treatment — and the comparison needs no source lookup.
-
-**Depends on**: nothing, but it needs the span offsets,
-which makes it a natural companion to `bin/verify_spans`
-rather than a pure text heuristic.
-
-### D9 — Head-clip on an opening parenthesis (§10)
-
-**Catches**: a description or diagnosis whose first character is
-`(` or `[` — the tail of a sentence that began earlier.
-
-**Gating fixture**: must fire on `taxon_4a5306ac`
-(`§10-diag-head-clip-open-paren`), whose diagnosis opens
-`(more than 100 basidiomata are present in the type
-collection), allowing a detailed study …`.
-
-**The fix is one character.**  `desc_starts_mid_sentence`
-fires on a leading character in `;,.:` or a lowercase
-letter.  `(` is neither, so `§10:diag_head_clip` stays
-silent on a plainly clipped field.  Add `(` and `[` to the
-set.
-
-**Safe against the whole regression bar, checked.**
-Surveying the opening character of every `description` and
-`diagnosis` in the fixture: none opens with a parenthesis,
-so nothing currently passing starts firing.  The smallest
-item on this list, and the only one that is a one-line
-change with its gating case already captured.
-
-**Depends on**: nothing.
 
 ### Correction to the fix-sequencing list above
 
@@ -5385,4 +5388,46 @@ never `ingest.db_name` + `article.txt`.
 future check wants to confirm span integrity, resolve against
 `article.txt.ann` in the annotations DB — sampling against
 `article.txt` will report ~86 % failure and mean nothing.
+
+### 16.1 `Span.head` backfill — what actually ran
+
+Recorded 2026-08-24 from `/var/log/skol/`, where the logs
+live under `logrotate` `daily`/`rotate 7` and had **already
+been truncated once**; the numbers below were recovered from
+the `.1.gz` copies with roughly six days to spare.  That is
+the whole reason this section exists.
+
+`Span.head` is the fingerprint that makes a wrong-attachment
+read loud instead of silent, so a span written before the
+field existed verifies *vacuously*.
+`fixes/backfill_span_heads.py` resolves each such span once
+and records what it found.
+
+| experiment | examined | heads set | treatments | attachment reads | skipped |
+|---|---:|---:|---:|---:|---:|
+| production_v4 | 81 527 | 567 516 | **81 527** | 17 645 | **0** |
+| production_v3_hand *(pre-fix — bugged)* | 73 139 | 33 339 | 7 392 | 5 402 | **65 747** |
+| production_v3_hand *(post-fix re-run)* | 73 139 | **527 610** | **58 099** | 9 558 | 7 648 |
+
+**The pre-fix row is the bug, kept deliberately.**
+`AttachmentCache` carried a private copy of the
+attachment-name probe instead of calling
+`span_resolver.candidate_attachments()`, so it never tried
+the fallback name and skipped **65 747 of 73 139**
+treatments — while exiting 0 and printing a confident
+summary. Its skip reasons all read `attachment
+skol_exp_production_v3_hand_ann/<id>`. Fixed in `d349b98` by
+making `candidate_attachments()` public and shared; the
+re-run's skips read `no annotated attachment on …`, which is
+a genuinely missing annotation rather than a probe that gave
+up.
+
+**This does not license raising `--min-pass-rate 90`.**
+`debian/skol.cron` floors production_v3_hand at 90 because
+some source documents carry **no annotated attachment at
+all** — a different failure from a missing *head*, and one
+the backfill cannot touch. The 7 648 remaining skips are
+exactly that population. The floor moves when a
+`bin/verify_spans` run says so, not by inference from these
+counts.
 

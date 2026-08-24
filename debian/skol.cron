@@ -156,6 +156,14 @@ SKIP_EXISTING=1
 # sample).  That floor is a number to RAISE once the missing
 # annotations are regenerated, not a tolerance to forget; a nightly job
 # that always fails is one people stop reading.
+#
+# NOTE (2026-08-24): the span-head backfill re-run does NOT justify
+# raising this floor.  It set 527 610 heads across 58 099 v3_hand
+# treatments, leaving 7 648 skipped -- but those skips are "no
+# annotated attachment", the same missing-attachment population this
+# floor exists for, not missing heads.  Raise the floor when a
+# verify_spans run measures a better rate, not by inference from the
+# backfill counts.  See docs/data_quality_production_v4_model.md 16.1.
 0 20 * * * skol /opt/skol/bin/verify_spans --experiment production_v4 --sample 300 > ${LOGDIR}/verify-spans-v4.log 2>&1 || cat ${LOGDIR}/verify-spans-v4.log
 15 20 * * * skol /opt/skol/bin/verify_spans --experiment production_v3_hand --sample 300 --min-pass-rate 90 > ${LOGDIR}/verify-spans-v3_hand.log 2>&1 || cat ${LOGDIR}/verify-spans-v3_hand.log
 # Update fungaria registry from Index Herbariorum monthly (1st of each month at 3am)
