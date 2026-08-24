@@ -528,6 +528,16 @@ the data.
 
 ### 5. False-positive treatments from non-taxonomic papers
 
+> **Scope note, 2026-08-24.**  The heading understates it: a false
+> positive does **not** require a non-taxonomic paper.
+> `taxon_9446b102` is a synthetic treatment assembled from the front
+> matter of a paper that validly describes three new species — and it
+> sits alongside a *correct* treatment extracted from the same
+> document.  A document-level "is this a taxonomic paper?" gate, the
+> obvious fix for the cases below, would not catch it.  See the
+> sub-section at the end of this section.
+
+
 **Symptom**: a Treatment record is created for a paper that contains
 no actual taxonomic treatments.
 
@@ -664,6 +674,58 @@ headings throughout, so both proposed gates pass and the stub
 is still created.  Catching that case needs a signal about the
 *paragraph*, not the *paper* — see the proposed plural-subject
 detector in its entry above.
+
+#### 5.1 A front-matter treatment beside a correct one
+
+`taxon_9446b102`, from round 4 (operator: *"truncated above and below
+and does not look like an actual description"* — it is not a
+description at all).
+
+Source: **Persoonia 27 (2011)**, *"Stem cankers on sunflower
+(Helianthus annuus) in Australia reveal a complex of pathogenic
+Diaporthe"*, doi `10.3767/003158511X617110` — a real taxonomic paper
+validly describing *D. gulyae*, *D. kochmanii* and *D. kongii* sp.
+nov.
+
+Every field holds a different piece of the paper's apparatus:
+
+| field | paragraph | what it actually is |
+|---|---|---|
+| `description[0]` | 5 | introduction morphology, clipped both ends — ends mid-citation at `(Wehmeyer ` |
+| `description[1]` | 63 | **table footnotes + `Table 1` caption** |
+| `diagnosis` | 21 | the paper's **abstract**, head-clipped at `novel species.` |
+| `biology` | 9, 13 | the paper's **introduction** |
+| `notes` | 227 | more table footnotes + `Table 2` caption |
+
+**The same document also yields a correct treatment.** Three come out
+of it: this one (synthetic, paras 5–227), `taxon_bcebed1d` (synthetic,
+para 261), and **`taxon_bab7c442`** — `synthetic_nomenclature: false`,
+a 6 243-char description, paras 265–285 — the genuine *Diaporthe*
+treatment. So this is the **"mixed source document"** half of the
+empty-description finding: 64.1 % of empty-description treatments come
+from documents that *do* produce descriptions. The paper is not the
+problem; **the grouper opened a treatment before the first
+nomenclature.**
+
+**Four structural tells, none needing any text analysis:**
+
+* `nomenclature_spans` is `[(para 5, char 0, char 0)]` — a
+  **zero-length span at offset 0**. There is no nomenclature; the
+  anchor is degenerate.
+* `line_number` is `0` while the content spans paragraphs 5 → 227.
+* `synthetic_nomenclature` is true and `treatment` is `Nomen ignotum`.
+* it spans **222 paragraphs** — essentially the whole paper — where its
+  well-formed sibling spans 20.
+
+**The detectors are not blind here**, which is the interesting part.
+Five flags fire — `§2:synth_nomen`, `§10:mid_sentence`,
+`§10:diag_head_clip`, `§12:desc_span_gap`, `§13:no_source_anchor` — at
+`merge_metric` 1. What is missing is anything that acts on the
+*combination*: synthetic nomenclature **plus** a zero-length
+nomenclature span **plus** a 222-paragraph spread is not a treatment
+worth annotating, and it reached a reviewer regardless. That is a
+cheaper gate than any new text detector, and it belongs upstream of the
+annotator rather than in triage.
 
 ### 6. Multiple species merged into one treatment
 
@@ -3116,6 +3178,37 @@ decides which symptom you see:
 five cases, and the only label to swallow content in more
 than one treatment.  It reads as the layout pass's
 catch-all, which makes it the first place to look.
+
+#### D12 has a mirror image, and nothing looks for it
+
+Everything above is content **swallowed by** a non-content label.
+`taxon_9446b102` (added 2026-08-24) runs the other way: **non-content
+promoted *into* `Description`.**
+
+Its second description span, at char 13 452, is a block of **table
+footnotes and a table caption** —
+
+> `1 Ex-type cultures are in bold. 2 At 14 d after inoculation where
+> 0 = no discolouration… Table 1  Diaporthe cultures isolated from
+> sunflower investigated in this study.`
+
+— labelled `Description` by the layout pass, sitting between a `Table`
+block at 13 363 and a `Page-header` at 14 153.
+
+**This direction is arguably the worse of the two.** Swallowed content
+goes *missing*, which eventually shows up as a truncation or a gap.
+Promoted non-content *arrives looking like data*: it reaches the
+annotator, gets feature labels attached, and enters the training set as
+though it were morphology. A detector written only in D12's direction —
+"a `Table`/`ToC-entry`/`Bibliography` span whose text matches a
+nomenclature shape" — cannot see it at all.
+
+The cheap tell here is the inverse of D12's: not a nomenclature shape
+inside a non-content label, but **a `Description` block that looks like
+apparatus** — footnote markers (`1 `, `2 ` at line starts), a `Table N`
+/ `Fig. N` caption opener, or a run of accession numbers. Worth pairing
+with D12 rather than building separately, since both are queries over
+the same `.ann` labels.
 
 **`Figure-caption` swallows content too** (added 2026-08-23,
 `taxon_8ebf437c`).  It was not previously on the list.  The

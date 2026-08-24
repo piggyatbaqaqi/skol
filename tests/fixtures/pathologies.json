@@ -1673,6 +1673,45 @@
           "end_line": 659
         }
       ]
+    },
+    {
+      "id": "taxon_9446b1024943cc34d576d06f0545901a6d2707e20deb79ba1e562ccf9b36801e",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-a421b5fef1e23c0fa26aba42f535e58d",
+      "class": "§5-front-matter-treatment-beside-a-correct-one",
+      "treatment": "Nomen ignotum\n",
+      "description": "elongated phialides with cylindrical, well-developed collarettes\nthat form two types of hyaline conidia: 1-celled α-conidia that are\nbiguttulate, fusiform, and easily germinate on artificial media,\nand ß-conidia that are filiform and rarely germinate (Wehmeyer \n\n1\t Ex-type cultures are in bold.\n2\t At 14 d after inoculation where 0 = no discolouration or very slight discolouration or scarring at site of inoculation; 1 = low level discolouration at site of inoculation; 2 = very small lesion or slight\ndiscolouration 1–2 mm diam; 3 = necrotic lesions 2–5 mm, some light stem streaking, leaf wilting and twisting; 4 = lesions 5–10 mm diam, significant necrosis and dark stem streaking, leaf and\nplant wilting, stunting, and some lodging; 5 = very severe necrosis and lesions, dark streaking, leaf necrosis, twisting and wilting, stunting, lodging or plant death.\nTable 1   Diaporthe cultures isolated from sunflower investigated in this study.\n",
+      "diagnosis": "novel species. Diaporthe gulyae sp. nov. is described for isolates that caused a severe stem canker, specifically\npale brown to dark brown, irregularly shaped lesions centred at the stem nodes with pith deterioration and midstem lodging. This pathogenicity of D. gulyae was confirmed by satisfying Koch’s Postulates. These symptoms are\nalmost identical to those of sunflower stem canker caused by D. helianthi that can cause yield reductions of up\nto 40 % in Europe and the USA, although it has not been found in Australia. We show that there has been broad\nmisapplication of the name D. helianthi to many isolates of Diaporthe (Phomopsis) found causing, or associated\nwith, stem cankers on sunflower. In GenBank, a number of isolates had been identified as D. helianthi, which were\naccommodated in several clades by molecular phylogenetic analysis. Two less damaging species, D. kochmanii\nsp. nov. and D. kongii sp. nov., are also described from cankers on sunflower in Australia.\n",
+      "notes": "1\t CBS: Centraalbureau voor Schimmelcultures, Utrecht, The Netherlands; Ph- & Di-: culture collection housed at Centro de Recursos Microbiolo´ gicos, Caparica, Portugal.\n2\t ITS: internal transcribed spacer.\n3\t TEF-1α: translation elongation factor-1alpha.\n4\t Di-C004/5 is also recorded as CBS 123208.\n5\t Ex-type cultures are in bold.\nTable 2   Reference isolates used in the phylogenetic analyses.\n",
+      "biology": "demonstrated that a number of Phomopsis species have wide\nhost ranges (van Niekerk et al. 2005, Santos & Phillips 2009,\nAsh et al. 2010), and more than one species can occur on a\nsingle host (Mostert et al. 2001, Santos & Phillips 2009). \n\nhas become one of the most important diseases of sunflower\n(Helianthus annuus) worldwide since first described from the\nformer Yugoslavia (Muntañola-Cvetkovic´ et al. 1981). Yield\nreductions of up to 40 % have been recorded in Europe (Masirevic & Gulya 1992) including the former Yugoslavia as well as\nFrance where it was considered a major pathogen of sunflower\n(Battilani et al. 2003, Debaeke et al. 2003). Diaporthe helianthi\nis also widespread in the sunflower growing regions of the USA\n(Gulya et al. 1997) but has not been reported from Australia.\nMuntañola-Cvetkovic´ et al. (1985) found that multiple Phomopsis species were associated with cankers on sunflower in the\nformer Yugoslavia, although only P. helianthi was responsible\nfor the serious disease outbreaks. Gulya et al. (1997) suggested\nthat pathogenic Phomopsis species on sunflower might consist\nof more than one species or biotype with apparent biological\ndifferences between the isolates from Europe and the USA.\nMiric et al. (2001) raised the possibility that several pathogenic\nPhomopsis species occurred on sunflower in Australia.\nIn 2009, lodging and premature senescence caused significant\ndamage to sunflower crops in New South Wales (NSW), and to\na lesser extent in Queensland (Qld), Australia, after extended\nperiods of wet weather. The symptoms included pith damage\nbehind elongated, brown to brown-black lesions, which weakened stems and led to mid-stem lodging as the heads filled. \n",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 22,
+          "end_line": 25
+        },
+        {
+          "start_line": 327,
+          "end_line": 331
+        }
+      ],
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§10:mid_sentence",
+        "§10:diag_head_clip",
+        "§12:desc_span_gap",
+        "§13:no_source_anchor"
+      ],
+      "known_missed_flags": [
+        "§12-table-footnotes-labelled-Description",
+        "§5-zero-length-nomenclature-span",
+        "§5-synthetic-treatment-spans-whole-paper"
+      ],
+      "notes_narrative": "Operator, 2026-08-24, reviewing round 4: \"truncated above and below and does not look like an actual description.\"  Correct — it is not a description at all.  It is a scatter of the paper's FRONT MATTER assembled into a treatment.\n\nThe source is a genuine taxonomic paper: 'Stem cankers on sunflower (Helianthus annuus) in Australia reveal a complex of pathogenic Diaporthe', Persoonia 27 (2011), doi 10.3767/003158511X617110, which validly describes D. gulyae, D. kochmanii and D. kongii sp. nov.\n\nWHAT ENDED UP IN EACH FIELD:\n  * description[0] (para 5) — a general Diaporthe morphology fragment from the introduction, head-clipped ('elongated phialides with...') and tail-clipped mid-citation ('(Wehmeyer ').  Exactly the 'truncated above and below' the operator saw.\n  * description[1] (para 63) — TABLE FOOTNOTES and a table caption: '1 Ex-type cultures are in bold. 2 At 14 d after inoculation where 0 = no discolouration... Table 1 Diaporthe cultures isolated from sunflower investigated in this study.'\n  * diagnosis (para 21) — the paper's ABSTRACT, head-clipped at 'novel species.'\n  * biology (paras 9, 13) — the paper's INTRODUCTION.\n  * notes (para 227) — more table footnotes plus 'Table 2 Reference isolates used in the phylogenetic analyses.'\n\nTHE NEW MECHANISM — non-content PROMOTED INTO Description.  D12 as written covers content swallowed BY a non-content label (Table, ToC-entry, Bibliography, Misc-exposition, Figure-caption).  This is the mirror image: the block at char 13452 holding the table footnotes is labelled DESCRIPTION by the layout pass, sitting between a Table block at 13363 and a Page-header at 14153.  A detector built only on D12's direction cannot see this, and it is arguably worse than the D12 direction — swallowed content goes missing, whereas promoted non-content arrives looking like data.\n\nIT COEXISTS WITH A CORRECT TREATMENT.  The same document yields three treatments: this one (synthetic, paras 5-227), taxon_bcebed1d (synthetic, para 261), and taxon_bab7c442 — synthetic_nomenclature FALSE, 6243-char description, paras 265-285 — which is the real Diaporthe species treatment.  So this is the 'mixed source document' half of the empty-description finding: 64.1 % of empty-description treatments come from documents that DO produce descriptions.  A document-level 'is this a taxonomic paper' gate would NOT catch it, because the paper is taxonomic.  The defect is that the grouper opened a treatment before the first nomenclature.\n\nCHEAP STRUCTURAL TELLS, none of which need text analysis:\n  * nomenclature_spans is [(para 5, char 0, char 0)] — a ZERO-LENGTH span at offset 0.  There is no nomenclature; the anchor is degenerate.\n  * line_number is 0 while the content spans paragraphs 5 to 227.\n  * synthetic_nomenclature is True and treatment is 'Nomen ignotum'.\n  * the treatment spans 222 paragraphs — essentially the whole paper — while a sibling from the same document spans 20.\n\nFive flags do fire (section2:synth_nomen, section10:mid_sentence, section10:diag_head_clip, section12:desc_span_gap, section13:no_source_anchor) at merge_metric 1, so the detectors are not blind here.  The gap is that nothing acts on the combination: synth_nomen + a zero-length nomenclature span + a 222-paragraph spread is not a treatment worth annotating, and it reached the reviewer anyway.",
+      "source_anchors": []
     }
   ]
 }
