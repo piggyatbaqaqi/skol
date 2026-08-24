@@ -1986,6 +1986,38 @@
         "§10-spore-label-clade-general"
       ],
       "notes": "§15.1: Cyanosporus miscanthi, MycoKeys 107 (Pensoft, JATS -- the ingest doc carries article.xml).  The operator asked whether 'Diagnosis only' was correct; it is not.  Only the first ~260 chars are a diagnosis, the remaining ~1440 are a COMPLETE description (Basidiomata through Basidiospores with full measurements), and `description` is EMPTY.  Cause is the §15 element join: nine section boundaries lost their separator (µm.Basidiomata, KOH.Hyphal, diam.Cystidia, connection.Basidiospores), as did the binomial itself (Cyanosporusmiscanthi) and ten accession numbers (ITSPP479786).  So §15 relocates whole FIELDS, not just corrupts text.  The second-order harm is the point: this fires ZERO flags, because tail_clipped, desc_starts_mid_sentence, mid_body_description_header, the merge metric and authored_binomial all read `description` and short-circuit on empty text.  An empty description beside a long diagnosis is itself a cheap high-signal flag and nothing emits it.  Also carries a deferred T6 case: the spore span at 1574 is labelled Spores while the diagnosis mention at 264 is labelled Basidiospores -- both labels in one treatment.  Narrative in the memo at §15.1."
+    },
+    {
+      "id": "taxon_c421e8b65a72f0044ad5121801df94ecad6496c48fe0fac6f705b426a3b259e8",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-a5615f5be902a69fb864a5d232bea9b0",
+      "class": "§12-Hymenium-routed-to-notes",
+      "treatment": "Lyomyces albofarinaceus Y.F. Dai & C.L. Zhao sp. nov. Figs 8 , 9\n",
+      "description": "Basidiomata. Annual, resupinate, adnate, without odor or taste when fresh, up to 8 cm long, 3.5 cm wide, and 150 µm thick. Hymenial surface pruinose, smooth, white when fresh, to white to cream upon drying. Sterile margin narrow, white, up to 1 mm wide.\n\nHyphal system. Monomitic, generative hyphae with clamp connections, colorless, thin to slightly thick-walled, frequently branched, interwoven, 2.0–3.0 µm in diameter, IKI–, CB–; tissues unchanged in KOH, subhymenial hyphae densely covered by crystals.\n\nBasidiospores. Broadly ellipsoid, colorless, thin-walled, smooth, with one guttate, IKI–, CB–, (5.5–)6.0–7.0(–7.5) × (4.5–)5.0–6.0(–6.5) µm, L = 6.46 µm, W = 5.62 µm, Q = 1.07–1.15 (n = 60/2).\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 49,
+          "end_line": 49
+        },
+        {
+          "start_line": 51,
+          "end_line": 51
+        },
+        {
+          "start_line": 55,
+          "end_line": 55
+        }
+      ],
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§12-morphology-section-in-wrong-field"
+      ],
+      "notes": "§12/D16: Lyomyces albofarinaceus sp. nov.  The operator read it as short but complete -- it has measurements, so not a genus description -- and it IS a species description, but its `description` is missing a section.  Paragraph 53, 'Hymenium. Cystidia of two types... Basidia clavate...', sits in `notes` between description paragraphs 51 and 55.  For a corticioid fungus cystidia and basidia are diagnostic, so this is core morphology, not commentary.  SYSTEMATIC: all five treatments from this MycoKeys paper show the identical shape -- description at n, n+2, n+6, notes at n+4, always opening 'Hymenium.' -- so it is a repeatable classifier error keyed on one heading.  Fires ZERO flags: desc_span_gap does not reach a 4-line gap, and nothing tests field interleaving.  Gating case for D16, whose measurement path (55 % -> 40 % -> 0.8 % -> 0.12 %) is in the memo."
     }
   ]
 }

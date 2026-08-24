@@ -3293,6 +3293,58 @@ the truncation would pass into the golden set unremarked. **False
 negatives on otherwise-clean treatments are the expensive kind**: a
 flagged mess gets reviewed anyway, whereas this one looks finished.
 
+### D16 — Morphology section routed to the wrong field (§12)
+
+**Catches**: a `notes` or `diagnosis` span whose paragraph number falls
+*inside* the description's paragraph range **and** whose text opens with
+a morphological section heading. That combination means a chunk of
+anatomy was routed out of the description it belongs to.
+
+Found 2026-08-24 on `taxon_c421e8b6` (*Lyomyces albofarinaceus*), whose
+description holds Basidiomata → Hyphal system → Basidiospores at
+paragraphs 49, 51, 55 while paragraph **53** — `Hymenium. Cystidia of
+two types… Basidia clavate…` — sits in `notes`. For a corticioid
+fungus cystidia and basidia are diagnostic, so the description is
+missing core morphology.
+
+**It is systematic within a paper.** All **five** treatments from that
+MycoKeys article show the identical shape — description at *n*, *n*+2,
+*n*+6 and notes at *n*+4, always opening `Hymenium.` So it is a
+repeatable classifier error keyed on one section heading, not a one-off.
+
+#### The measurement path, including two failures
+
+Worth recording in full, because the obvious versions do not work:
+
+| rule | hits | share of eligible | verdict |
+|---|---:|---:|---|
+| any field interleaved in the description range | 13 362 | **55.4 %** | useless — interleaving is *normal* |
+| restricted to `notes`/`diagnosis` | 9 735 | 40.4 % | still the norm |
+| …opening with a morphology **word** | 204 | 0.8 % | noisy — mid-sentence fragments like `spores of C. ulkhagarhiensis are…` |
+| …opening with a morphology **heading** (`Term` + `.`/`:`) | **29** | **0.12 %** | clean — every hit genuine |
+
+Eligible = the 24 111 treatments with ≥ 2 description spans.
+
+**The heading form is what does the work.** Requiring the term to be
+capitalised and terminated by `.` or `:` separates a section heading
+from prose that merely begins with an anatomical noun, and takes the
+rate from 0.8 % to 0.12 % while every surviving hit is real. Nine of
+the first ten are `Hymenium.` in `notes`.
+
+**Do not implement the interleaving test on its own.** At 55 % it would
+flag the majority of multi-span treatments, and `materials_examined`
+interleaved 23 232 times is simply how papers are written — specimen
+data between description paragraphs is normal.
+
+**Gating fixtures**: must fire on `taxon_c421e8b6` and its four
+siblings. Must stay silent on all 19 poster children, and in particular
+on `taxon_b970d2c2` (`genus-description-no-measurements`), whose short
+description is complete.
+
+**Depends on**: nothing — paragraph numbers and a heading regex. The
+morphology term list can start from the `feature_label` vocabulary
+already in `features_candidate`.
+
 ### D11 — Mid-description truncation (§10)
 
 **Catches**: a field that is cut off *inside* the
