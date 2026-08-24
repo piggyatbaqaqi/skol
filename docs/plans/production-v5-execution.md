@@ -59,11 +59,29 @@ top-level concerns motivated the plan:
 
 ### Track A: Hand-review flow
 
+> **Corrected 2026-08-23.**  Track A's target was justified by
+> the Heaps' Law vocabulary curve.  That was wrong:
+> `jupyter/heaps_law_analysis.ipynb` computes its curve from
+> **`features_candidate` alone** (cell 4,
+> `load_candidate_annotations`); `features_hand` appears in one
+> separate comparison cell.  **Vocabulary coverage is bought with
+> API volume, not operator hours.**  200-250 remains a sensible
+> *M5 training-set* target — retraining the segment classifier on
+> verified data does need verified data — but that is a
+> training-set argument, and the two were conflated.  See
+> [annotation-activity-split.md](annotation-activity-split.md).
+
 * **Cadence**: as time permits.  Recent burst rate 45
   treatments/pass; sustainable rate probably 10-20/week
   under paid-work pressure.
-* **Target**: ~200-250 reviewer-verified treatments to
-  satisfy the Heaps' Law vocabulary-coverage threshold.
+* **Target**: ~200-250 reviewer-verified treatments **as M5
+  training data**.  *Not* a prerequisite for the vocabulary
+  curve.
+* **Label validation is a separate, much smaller activity.**
+  Measured 2026-08-23 on the only random sample (round 3):
+  precision 100 %, recall 99 %.  A 50-treatment random review
+  gives precision to ±1.1 pp and retires the question; more
+  hand review buys training data, not label confidence.
 * **Compounding value**: each week's reviews improve
   golden-data quality AND provide fresh training data for
   the segment classifier (Milestone 4).
@@ -209,6 +227,38 @@ improvement or clear evidence the hypothesis was wrong
 measurable reduction in the §6/§10/§12 failure rates on
 the sample vs v4 baseline.
 
+#### Candidate v5 change, independent of the segment classifier
+
+**A document-level "is this a taxonomic article?" gate.**
+Measured 2026-08-23: **49.9 % of source documents produce
+*only* empty-description treatments** — 8 797 documents,
+14 143 treatments.  Sampling 400 of them, just **7.5 %** have
+a taxonomic keyword in the title, against **31.5 %** for
+documents that do yield descriptions; the all-empty set is
+62 % *Journal of Fungi* (broad applied mycology) while the
+all-full set is dominated by MycoKeys and Mycotaxon.  Titles
+are unambiguous — soil fungal community ecology, calcineurin
+inhibitors, laccase production.
+
+These are non-taxonomic papers that happen to contain
+binomials, and the grouper built treatments around them.
+**54.7 %** of empty treatments carry
+`synthetic_nomenclature: true`.
+
+A journal + title-keyword gate would drop ~14 000 spurious
+treatments *before* extraction, at no modelling cost.  Worth
+sequencing ahead of the CRF work, since it shrinks the corpus
+the CRF has to be right about.  Note the scale: *Journal of
+Fungi* is the corpus's largest source at 8 817 ingest
+documents.
+
+The **other** 64.1 % of empty-description treatments come
+from documents that *do* produce descriptions — real
+taxonomic papers emitting empty treatments alongside good
+ones.  That half is a grouper/CRF defect, is the same suspect
+as §6/§12, and is what M4 targets.  The two halves must not
+be pooled.
+
 ### M5: v5 iteration — retrain segment classifier on
 verified data
 
@@ -254,11 +304,31 @@ generation, ready for search-product integration.
 ## Heaps' Law dependency
 
 `jupyter/heaps_law_analysis.ipynb` estimates the
-vocabulary-coverage growth: hand-annotated treatments
-so far (~56) put us early on the curve.  Analysis
-suggests ~200-250 verified treatments are needed for
-"relatively complete coverage," and more for solid
-per-feature support.
+vocabulary-coverage growth.
+
+**Corrected 2026-08-23 — two claims were conflated here.**
+
+* **The vocabulary curve does not gate on hand review.**  It is
+  computed from `features_candidate` alone, so it is bought with
+  **API volume**.  The plan to establish it — a 1 000-treatment
+  random draw, annotated but *not* reviewed — is
+  [annotation-activity-split.md](annotation-activity-split.md).
+* **M5 does gate on verified volume**, because retraining the
+  segment classifier on verified data needs verified data.  That
+  is the surviving half of the original claim.
+
+Two further cautions on reading the curve, both verified
+2026-08-23 and fixed as part of the companion plan:
+
+* The notebook orders treatments by `created_at`, which
+  `bin/llm_annotate_features` stamps **after** the API call
+  returns.  With 5 workers that is completion order ≈ latency ≈
+  output length, so label-poor treatments cluster at the head and
+  **β is overestimated** — the analysis would demand more samples
+  than are actually needed.  Use round-file order plus a
+  permutation-averaged band.
+* The notebook loads the whole candidate DB, so a new draw would
+  be pooled with the biased rounds 1/2/4.  It needs a round filter.
 
 **How this interacts with the milestones**:
 
@@ -271,13 +341,11 @@ per-feature support.
   segment classifier on verified data requires enough
   verified data to matter (>200 treatments).
 * Milestone 6 (productization) depends on M5's quality,
-  which depends on the Heaps'-Law-driven Track A
-  volume.
+  which depends on Track A volume.
 
-So the vocabulary-coverage curve is the pacing
-constraint on the *quality* of v5, not on its
-*existence*.  We ship the noisy v5 first (M3+M4) and
-improve it as verified data flows in (M5).
+So Track A volume is the pacing constraint on the *quality* of
+v5, not on its *existence*.  We ship the noisy v5 first (M3+M4)
+and improve it as verified data flows in (M5).
 
 ## What we're explicitly NOT doing first
 
@@ -289,9 +357,21 @@ improve it as verified data flows in (M5).
 * **Full extractor rewrite**.  Too big for a milestone;
   attacked incrementally via segment-classifier signals
   feeding into the current extractor.
-* **More vocabulary sampling before terminology dict
+* ~~**More vocabulary sampling before terminology dict
   pass**.  Track B first; new samples without it just
-  replay the drift.
+  replay the drift.~~  **Relaxed 2026-08-23.**  The
+  notebook canonicalizes **post-hoc** via
+  `feature_label_canonicalization.json` and plots raw and
+  canonical curves side by side, so sampling first is safe:
+  the map can grow later and the canonical curve be
+  recomputed **without re-annotating**.  The ordering now
+  runs the other way — take the baseline on the current
+  prompt, then fix the label schema and re-measure the same
+  sample.  Drift is real (318 distinct labels over 1 582
+  annotations, **54 % singletons**, plus a systematic
+  base+context family: `Asci` / `Asci protologue` /
+  `Asci in culture MEA`), but it is measured *from* the
+  baseline rather than blocking it.
 * **Detector tightening that risks poster-child
   regressions**.  Any change flagging the six §0.5
   poster-children breaks the "clean single-species"
@@ -321,6 +401,10 @@ Reasons to revise this plan:
 
 ## Cross-references
 
+* [annotation-activity-split.md](annotation-activity-split.md)
+  — the companion execution plan that corrects Track A's
+  premise, establishes the Heaps baseline, and splits label
+  validation from pathology detection.
 * [docs/data_quality_production_v4_model.md](../data_quality_production_v4_model.md)
   — the failure-mode catalogue this plan responds to.
 * [docs/feature_label_canonicalization.json](../feature_label_canonicalization.json)
@@ -333,6 +417,23 @@ Reasons to revise this plan:
 
 ## Change log
 
+* **2026-08-23** — **Track A's premise corrected.**  Its
+  200-250 target was justified by the Heaps' Law vocabulary
+  curve, but that curve is computed from `features_candidate`
+  alone — vocabulary coverage is bought with API volume, not
+  operator hours.  200-250 survives as an M5 *training-set*
+  target.  Consequences: the "Heaps' Law dependency" section
+  now separates the two claims; the "no vocabulary sampling
+  before Track B" prohibition is relaxed, because the notebook
+  canonicalizes post-hoc and sampling first costs nothing; M4
+  gains a candidate change (a document-level taxonomic-article
+  gate) after measuring that 49.9 % of source documents produce
+  only empty-description treatments and are overwhelmingly
+  non-taxonomic papers.  Two notebook defects recorded that
+  would have biased the curve — latency-ordered x-axis and an
+  unfiltered whole-DB load.  Full rationale and the execution
+  sequence in
+  [annotation-activity-split.md](annotation-activity-split.md).
 * **2026-07-03** — initial draft created after the
   triage-CSV review pass wrap-up.  Six top-level
   concerns converted to milestones + two continuous

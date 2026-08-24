@@ -66,6 +66,43 @@ Wilson 95 % intervals.  **Use the round-3 row for any claim
 about label quality on the annotatable population; use the
 pooled row for nothing.**
 
+> ### ⚠️ The recall column does not support the reading it invites
+>
+> Those Wilson intervals are computed **per annotation**, and
+> annotations cluster hard within treatments.  Bootstrapping by
+> *treatment* over the 85 reviewed treatments (2026-08-23) gives
+> the honest widths:
+>
+> | metric | pooled | per-annotation ± | **per-treatment ±** | design effect |
+> |---|---:|---:|---:|---:|
+> | precision | 98.48 % | 0.90 pp | **1.14 pp** | 1.6× |
+> | recall | 83.13 % | 2.42 pp | **15.11 pp** | **38.8×** |
+>
+> So the **precision** column is sound, and the **recall**
+> column is not: at a 38.8× design effect the per-round recall
+> intervals overlap comfortably and **the apparent
+> 36.3 → 78.7 → 99.0 → 94.0 gradient is largely noise**, not the
+> clean bias signal it resembles.
+>
+> The cause is the shape of the data, not the arithmetic:
+> **53 of 85 treatments add nothing**, one adds 136, and the top
+> five treatments contribute 69.6 % of all additions.  A
+> near-zero-inflated heavy-tailed count is not estimable from
+> samples this size.
+>
+> **Report recall as a distribution** — median additions per
+> treatment (0), fraction of treatments needing ≥ 1, top-k
+> concentration — never as a pooled ratio with an interval.
+>
+> The one claim that survives unaided: round 1's low recall is a
+> single document, visible directly in the counts.
+>
+> Round 3 is also only **9 treatments**, so its 100 % precision
+> is suggestive rather than conclusive.  A 50-treatment random
+> review gives ±1.1 pp and is what actually settles the question
+> — see
+> [docs/plans/annotation-activity-split.md](../../docs/plans/annotation-activity-split.md).
+
 ### "Random" means random over 47 % of the corpus
 
 `select_for_annotation` applies two exclusions **before** any
