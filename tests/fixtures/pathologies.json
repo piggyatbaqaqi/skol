@@ -1821,7 +1821,12 @@
         "§5-zero-length-nomenclature-span",
         "§12-prose-shredded-into-alternating-labels"
       ],
-      "notes": "§5: a 35-character description ('is strongly rugulose or papillate.') and a 103-char diagnosis, from C.G. Lloyd's 'Mycological writings Vol. III 1909-1912' -- a BOOK, title and year only, no journal, volume or DOI, yielding 120 treatments of which 90 % are synthetic and 61 % have empty descriptions.  The prose is shredded into alternating Description / Misc-exposition / Table blocks, so nothing survives intact.  Carries the same zero-length nomenclature span at offset 0 as taxon_9446b102 -- now two instances, so it is a reliable structural tell.  The taxon is Jansia (a phalloid, not a puffball) and is identifiable ONLY from the dropped blocks, which is the point: the extraction discarded exactly the context needed to name it.  Narrative and the source-class measurement in the memo at §5.2."
+      "notes": "§5: a 35-character description ('is strongly rugulose or papillate.') and a 103-char diagnosis, from C.G. Lloyd's 'Mycological writings Vol. III 1909-1912' -- a BOOK, title and year only, no journal, volume or DOI, yielding 120 treatments of which 90 % are synthetic and 61 % have empty descriptions.  The prose is shredded into alternating Description / Misc-exposition / Table blocks, so nothing survives intact.  Carries the same zero-length nomenclature span at offset 0 as taxon_9446b102 -- now two instances, so it is a reliable structural tell.  The taxon is Jansia (a phalloid, not a puffball) and is identifiable ONLY from the dropped blocks, which is the point: the extraction discarded exactly the context needed to name it.  Narrative and the source-class measurement in the memo at §5.2.",
+      "source_scheduled_for_replacement": {
+        "work": "C.G. Lloyd, Mycological writings Vol. III 1909-1912",
+        "reason": "Tier 2 of data/ocr_rescan_targets.md.  Three Lloyd volumes, 386 treatments, 84-90 % synthetic nomenclature.  Likely a better scan on BHL or archive.org.",
+        "consequence": "Treatment ids are content hashes, so this entry will dangle after re-sourcing.  Re-capture the case from a work not on the rescan list."
+      }
     },
     {
       "id": "taxon_a686d7ab70daf0c726b39697b30d79fd388cb476d7984d6abeae3c2b7ea5f879",
@@ -1881,7 +1886,12 @@
         "§6-two-species-in-one-description",
         "§12-description-shredded-across-Table-Key-Figure-caption"
       ],
-      "notes": "§6: exactly TWO species -- Collybia olympiana sp. nov. (Pl. I) and C. badiialba Murr. (Pl. II) -- with comparative discussion between them, from A.H. Smith's 'Studies of North American Agarics-I'.  The operator bounded the count from the plate references, which is correct: only two occur.  The English descriptions of BOTH species are shredded across Table, Key, Figure-caption and Misc-exposition labels, so only 8 fragments reached the Description field out of ~40 blocks.  Cause is catastrophic OCR ('Pilous' for Pileus, 'i m< ta l< trongly farin ( om lamellae adnate') leaving the layout classifier unable to recognise prose.  Same shredding as taxon_a5efbd0b, same old-scanned-book origin.  The plate-reference heuristic is recorded in the memo at D4 as a REVIEW heuristic, not a detector -- measured at 0.1 % corpus coverage.  Narrative in the memo under D4."
+      "notes": "§6: exactly TWO species -- Collybia olympiana sp. nov. (Pl. I) and C. badiialba Murr. (Pl. II) -- with comparative discussion between them, from A.H. Smith's 'Studies of North American Agarics-I'.  The operator bounded the count from the plate references, which is correct: only two occur.  The English descriptions of BOTH species are shredded across Table, Key, Figure-caption and Misc-exposition labels, so only 8 fragments reached the Description field out of ~40 blocks.  Cause is catastrophic OCR ('Pilous' for Pileus, 'i m< ta l< trongly farin ( om lamellae adnate') leaving the layout classifier unable to recognise prose.  Same shredding as taxon_a5efbd0b, same old-scanned-book origin.  The plate-reference heuristic is recorded in the memo at D4 as a REVIEW heuristic, not a detector -- measured at 0.1 % corpus coverage.  Narrative in the memo under D4.",
+      "source_scheduled_for_replacement": {
+        "work": "A.H. Smith, Studies of North American Agarics-I",
+        "reason": "Tier 2 of data/ocr_rescan_targets.md.  Shredded across Table/Key/Figure-caption labels, so the measured rejoin rate understates it -- 0.0 % on the surviving 384 tokens against 2.4 % on the 2222-token source region.",
+        "consequence": "Treatment ids are content hashes, so this entry will dangle after re-sourcing.  Re-capture the case from a work not on the rescan list."
+      }
     }
   ]
 }
