@@ -1765,6 +1765,33 @@
         "consequence": "Treatment ids are content hashes, so this entry will dangle after re-ingest.  Re-capture the genus-mismatch case from a source that is not scheduled for replacement."
       },
       "notes": "§2/D10: nomenclature is Peniophorella, description is of Dentipellis, prefixed by herbarium commentary about a third fungus and a head-clipped Latin diagnosis.  The hardest D10 gating case because the genus name is OCR-mangled ('Denttpellis') while the TYPE SPECIES rank marker survives -- key the detector on the marker, not the name.  Narrative in the memo under D10."
+    },
+    {
+      "id": "taxon_a3308621814e85cb82cf223d0a8647c1cf0ee2490929e3013501367330632f2e",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-24",
+      "captured_rev": "20-ffc1d675103133977b3b6c82d575a47e",
+      "class": "§12-two-consecutive-Misc-exposition-severances",
+      "treatment": "anamorph include: A. tetraspora Krug et al. (1983), A. vestita Udagawa &\nHorie ( 1982), A. longicaudata (Furuya & Udagawa) Krug et a/. ( 1983) ( =\nLacunospora longicaudata Furuya & Udagawa apud Furuya 1978), and A. \n",
+      "description": "Colonies spreading rapidly, reaching 60-80 mm diam in 3 days at 25°C on\nZ% MEA; at first colourless, then blackening from the edge towards the\ncentre with the formation of mostly submerged masses of microsclerotia,\nafter 2- 3 days incubation. Microsclerotia numerous, mostly submerged in\nthe agar, separate or confluent, subglobose to irregularly shaped, blackish\nbrown, up to 100-150 J.Lm diam, made up of rounded to subglobose or\npolygonal, dark-walled cells, up to 20 J.Lm diam. Sclerotia! cells initiated by\n8 process of lateral budding from cells of runner hyphae. Microsclerotia\nshowing no sign of tissue differentiation. Reverse greenish- or bluish black.\nMycelium consisting of either greenish black, rather thick-walled, runner\nhyphae, 5- 12(-15) J.Lm wide, or thin-walled, hyaline, 2- 3 J.LID wide lateral\nhyphae. Runner hyphae simple or aggregated into strands, finally forming a\nsheet on the agar surface. Hyphae with moniliform, swollen cells sometimes\npresent.\nFertile hyphae originating as localized clusters of lateral branches from\nhyaline or more or less densely melanized hyphae; repeated more or less\nrectangular branching leading to the production of whitish to pale buff\npustules of interwoven fertile hyphae. Fertile hyphae sinuous, hyaline or\nslightly pigmented, 2- 4 J.Lm wide, made up of 5- 10 J.Lm long cells, each\nprovided with a single, rarely two, lateral conidiogenous openings, the endcell also mostly bearing a lateral subterminal (rarely terminal) opening;\nphialide cells cylindrical, 5.5- 11 X 2-4 J.Lm, lateral necks 2-2.5 X 1- 1.5\nJ.Lm, provided with a distinct flaring collarette, 1.5- 2 J.Lm in width. Conidia\ncontinuous, hyaline, dacryoid, 2.5-3.5 X 1.5-2.5 J.Lm, gathered in slimy\nballs; conidial base truncate, 0. 7- 1.0 J.Lm wide. Conidial masses appearing\npale ochraceous.\nTemperature optimum 27- 36°C, maximum above 40°C.\nMating in all possible combinations and incubation under near-UV at \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 28206,
+          "end_line": 28232
+        }
+      ],
+      "expected_flags": [
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [
+        "§12-description-continuation-swallowed",
+        "§2-nomenclature-is-synonymy-list-fragment"
+      ],
+      "notes": "§12: a culture-only description whose tail is severed TWICE by Misc-exposition.  It ends 'incubation under near-UV at ' and the block two characters later reads '24oC did not yield any ascomat.a.'; a second break 380 chars on opens MID-WORD at 'rotia:', the tail of microsclerotia.  Mid-word is the strongest severed-term tell, and the two breaks are independent.  Also §2: the nomenclature is a synonymy-list fragment ('anamorph include: A. tetraspora Krug et al. (1983)...'), not a name.  Label rulings from this treatment -- Fertile hyphae is NOT Generative hyphae, and Colony stays the base term -- are in docs/feature_label_non_synonyms.md.  Narrative in the memo under D12."
     }
   ]
 }

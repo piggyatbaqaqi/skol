@@ -3218,6 +3218,7 @@ decides which symptom you see:
 | `taxon_66c1e6e3` | four separate runs as **`Misc-exposition`** | `crumpled, firmly` → `the base whitish`; `frondose spe-` → `erumpent` |
 | `taxon_6f788487` | `reverse light-brown.` **and** the whole Chemistry lead-in, both **`Misc-exposition`** | `poor sporulation, flat;` breaks its siblings' template; `Di-n-octyl` → `phthalate` |
 | `taxon_8ebf437c` | the description **head** as **`Misc-exposition`**, and a Notes continuation as **`Figure-caption`** | block opens mid-measurement at `diam.`; `and broad cellular` → `pseudoparaphyses` |
+| `taxon_a3308621` | **two consecutive** runs as **`Misc-exposition`** | `…under near-UV at ` → `24oC did not yield any ascomat.a.`; then a second break mid-word at `rotia:` |
 
 **`Misc-exposition` is the repeat offender** — three of the
 five cases, and the only label to swallow content in more
@@ -3254,6 +3255,26 @@ apparatus** — footnote markers (`1 `, `2 ` at line starts), a `Table N`
 / `Fig. N` caption opener, or a run of accession numbers. Worth pairing
 with D12 rather than building separately, since both are queries over
 the same `.ann` labels.
+
+**Two severances in a row** (added 2026-08-24, `taxon_a3308621`,
+operator: *"the mating studies are truncated"*).  The description ends
+`Mating in all possible combinations and incubation under near-UV at `
+at char 891 956; the block at **891 958 — two characters later** —
+carries `Misc-exposition` and reads `24oC did not yield any
+ascomat.a. CBS 604.75 agrees in every respect…`.  One sentence, cut at
+the boundary.
+
+A second `Misc-exposition` block 380 characters further on opens
+**mid-word**: `rotia: it has almost completely lost this capacity…` —
+the tail of *microsclerotia*, matching this treatment's own
+`Microsclerotia` content.  A mid-word opening is the strongest form of
+the severed-term tell, and it is worth noting the two breaks are
+independent: fixing one would still leave the other.
+
+The content is squarely descriptive — mating trials under near-UV at
+24 °C and whether ascomata formed is culture work, and this treatment
+is *entirely* cultural characteristics.  So this is not a boundary
+judgement call; it is a straightforward loss.
 
 **`Figure-caption` swallows content too** (added 2026-08-23,
 `taxon_8ebf437c`).  It was not previously on the list.  The
