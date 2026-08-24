@@ -35,6 +35,7 @@ different set.
 """
 
 import argparse
+import json
 import random
 import re
 import sys
@@ -52,6 +53,7 @@ from treatments_to_structured.merge_metric import (  # noqa: E402
     treatment_merge_metric,
 )
 from treatments_to_structured.select import (  # noqa: E402
+    band_report,
     parse_band_spec,
     select_treatments,
 )
@@ -279,7 +281,12 @@ def resolve_seed(seed: Optional[int]) -> Tuple[int, bool]:
     both, and why the round file stays the only durable record of
     actual membership.
     """
-    raise NotImplementedError
+    if seed is not None:
+        return seed, False
+    # SystemRandom so a generated seed does not depend on any global
+    # random state a caller may have set.  2**31 keeps it small enough
+    # to retype from a log without transcription errors.
+    return random.SystemRandom().randrange(2 ** 31), True
 
 
 def build_round_metadata(
@@ -314,7 +321,26 @@ def build_round_metadata(
     Everything returned must be JSON-serialisable; band specs are
     tuples in memory and lists on disk.
     """
-    raise NotImplementedError
+    stratified = len(band_specs) > 1
+    return {
+        'experiment': experiment,
+        'selector_argv': list(selector_argv),
+        'seed': seed,
+        'seed_generated': seed_generated,
+        'n_requested': n_requested,
+        'n_selected': n_selected,
+        'selection': 'stratified' if stratified else 'uniform',
+        'output_order': 'band-by-band' if stratified else 'uniform',
+        'bands': (
+            [[name, quota] for name, quota in band_specs]
+            if stratified else None
+        ),
+        'band_slices': list(band_rows),
+        'population_funnel': list(funnel),
+        'merge_threshold': merge_threshold,
+        'force_recompute': force_recompute,
+        'drawn_at': drawn_at,
+    }
 
 
 def _resolve_band_specs(
@@ -465,9 +491,20 @@ def main() -> int:
             file=sys.stderr,
         )
 
+    dry_run = bool(config.get('dry_run', False))
+    if dry_run and verbosity >= 1:
+        print("[dry-run] nothing will be written", file=sys.stderr)
+
+    total_docs = treatments_db.info()['doc_count']
     scored, merge_metrics = score_treatments_in_db(
         treatments_db, verbosity,
     )
+    # Every filter stage is a bias source, so the honest record of how
+    # a round was drawn is the funnel, not a 'random'/'biased' label.
+    funnel: List[Dict[str, Any]] = [
+        {'stage': 'all_treatments', 'n': total_docs},
+        {'stage': 'complexity_gt_0', 'n': len(scored)},
+    ]
     if not scored:
         print(
             "error: no treatments with non-zero complexity score were "
@@ -509,6 +546,9 @@ def main() -> int:
             )
             before = len(scored)
             scored = filter_excluded(scored, excluded_ids)
+            funnel.append(
+                {'stage': 'not_already_annotated', 'n': len(scored)}
+            )
             if verbosity >= 1:
                 print(
                     f"  --exclude-annotated: dropped "
@@ -553,21 +593,33 @@ def main() -> int:
         )
         # Ensure the status DB exists — we may need to write skip
         # docs even on the first run.
-        if status_db_name not in server:
+        if status_db_name in server:
+            status_db = server[status_db_name]
+        elif dry_run:
+            # Filtering still works: score_treatments_in_db already
+            # returned the merge metrics, so only the persistence of
+            # skip decisions is skipped.
+            if verbosity >= 1:
+                print(
+                    f"  [dry-run] would create status DB "
+                    f"{status_db_name!r}; no prior skip decisions "
+                    f"to trust",
+                    file=sys.stderr,
+                )
+            status_db = None
+        else:
             if verbosity >= 1:
                 print(
                     f"  Creating status DB {status_db_name!r}",
                     file=sys.stderr,
                 )
             status_db = server.create(status_db_name)
-        else:
-            status_db = server[status_db_name]
 
         # --force bypasses the "trust cached decisions" path and
         # recomputes the metric fresh.  Without --force, previously
         # flagged treatments are trusted (no re-computation cost).
         force_recompute = bool(config.get('force', False))
-        if force_recompute:
+        if force_recompute or status_db is None:
             already_flagged: Set[str] = set()
         else:
             already_flagged = fetch_prior_merge_skip_ids(status_db)
@@ -577,12 +629,17 @@ def main() -> int:
             scored, merge_metrics, args.merge_threshold,
             already_flagged=already_flagged,
         )
+        funnel.append(
+            {'stage': 'not_merge_suspect', 'n': len(scored)}
+        )
         # Write skip docs for newly-flagged.  Overwrites any prior
         # doc with fresh metric + threshold + timestamp (matters
         # under --force).
         from datetime import datetime, timezone
         decided_at = datetime.now(timezone.utc).isoformat()
-        for tid, metric_value in newly_flagged:
+        for tid, metric_value in (
+            [] if dry_run else newly_flagged
+        ):
             doc = make_skip_status_doc(
                 tid,
                 metric_value=metric_value,
@@ -612,11 +669,14 @@ def main() -> int:
                 file=sys.stderr,
             )
 
-    rng = (
-        random.Random(args.seed)
-        if args.seed is not None
-        else random.Random()
-    )
+    seed, seed_generated = resolve_seed(args.seed)
+    if verbosity >= 1 and seed_generated:
+        print(
+            f"  No --seed given; generated {seed} and recording it "
+            f"(an unrecorded seed makes the draw unreproducible).",
+            file=sys.stderr,
+        )
+    rng = random.Random(seed)
     try:
         selected = select_treatments(scored, band_specs, rng)
     except ValueError as exc:
@@ -630,12 +690,59 @@ def main() -> int:
             config.get('experiment_name') or 'selection',
             _SELECTIONS_DIR,
         )
-    write_selection(selected, out_path)
+    from datetime import datetime as _dt, timezone as _tz
+    meta = build_round_metadata(
+        experiment=config.get('experiment_name') or 'selection',
+        seed=seed,
+        seed_generated=seed_generated,
+        n_requested=args.n,
+        n_selected=len(selected),
+        band_specs=band_specs,
+        band_rows=band_report(scored, band_specs),
+        funnel=funnel,
+        merge_threshold=args.merge_threshold,
+        force_recompute=bool(config.get('force', False)),
+        selector_argv=list(sys.argv[1:]),
+        drawn_at=_dt.now(_tz.utc).isoformat(),
+    )
+    meta_path = out_path.with_suffix('.meta.json')
+
     if verbosity >= 1:
-        print(
-            f"  Selection written to {out_path}",
-            file=sys.stderr,
+        print("  Population funnel:", file=sys.stderr)
+        for stage in funnel:
+            print(f"    {stage['stage']:<24} {stage['n']:>8}",
+                  file=sys.stderr)
+        for row in meta['band_slices']:
+            print(
+                f"    band {row['name']:<12} quota={row['quota']:<6} "
+                f"n={row['slice_n']:<8} "
+                f"score {row['score_min']:g}..{row['score_max']:g}",
+                file=sys.stderr,
+            )
+        print(f"    seed={seed}"
+              f"{' (generated)' if seed_generated else ''}  "
+              f"selection={meta['selection']}  "
+              f"output_order={meta['output_order']}",
+              file=sys.stderr)
+
+    if dry_run:
+        if verbosity >= 1:
+            print(
+                f"  [dry-run] would write {out_path} and {meta_path}",
+                file=sys.stderr,
+            )
+    else:
+        write_selection(selected, out_path)
+        meta_path.write_text(
+            json.dumps(meta, indent=2, sort_keys=False) + '\n',
+            encoding='utf-8',
         )
+        if verbosity >= 1:
+            print(
+                f"  Selection written to {out_path}\n"
+                f"  Provenance written to {meta_path}",
+                file=sys.stderr,
+            )
 
     for treatment_id in selected:
         print(treatment_id)

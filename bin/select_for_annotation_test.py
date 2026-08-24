@@ -520,7 +520,6 @@ class TestWriteSelection:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(strict=True, reason="T0e: implementation pending")
 class TestResolveSeed:
     """Every round gets a concrete seed, recorded."""
 
@@ -547,7 +546,6 @@ class TestResolveSeed:
         assert len(seeds) > 1
 
 
-@pytest.mark.xfail(strict=True, reason="T0e: implementation pending")
 class TestBuildRoundMetadata:
     """The sidecar: a funnel, not a boolean."""
 
