@@ -201,6 +201,21 @@ observation.  Never collapse this family.
 Keep the base term; let the medium live in the span text until the
 schema has somewhere structured to put it.
 
+**Worked example, and it is a clean treatment.**  `taxon_f7c117ed`
+(*Diaporthe isoberliniae*, poster child
+`species-emendation-correctly-attached`) carries **three** colony
+accounts in one description — PDA, MEA and OA — with genuinely
+different content: *grayed yellow (160C) ring* on PDA, *grayed yellow
+(161A) with a white ring* on MEA, *grayed white (156A) with grayed
+yellow margins* on OA.  Collapsing those to one `Colony` node loses
+which medium produced which, and the media are the point of running
+three plates.  The same treatment shows the pattern once more with
+`Alpha` / `Beta` / `Gamma_conidia`.
+
+This is what the family looks like when nothing has gone wrong: the
+repetition is real, informative, and must survive into the structured
+form as **context on one feature**, not as three features.
+
 ### Merely similar
 
 | a | b | why they differ |
