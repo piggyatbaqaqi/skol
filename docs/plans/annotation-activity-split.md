@@ -581,6 +581,63 @@ Between chunks check **two** counts, not one:
   vocabulary-rich treatments biases the curve the *same direction as F1*.
   Raise `--max-tokens` for the affected chunk rather than accepting it.
 
+> ### T3 run executed 2026-08-25 — complete, and cheaper than priced
+>
+> **1 000 of 1 000 processed**, four chunks of 250 at `--workers 5`,
+> 17:21–17:46 UTC. After two resume passes: **964 success, 31 partial,
+> 5 error**.
+>
+> | | |
+> |---|---|
+> | input tokens | 2 220 583 — **exactly** the estimate |
+> | output tokens | 626 460 — estimate said 1 110 291 |
+> | **actual cost** | **$26.76** against $38.86 priced |
+>
+> **The estimator over-predicts output by 1.77×.** `count_tokens` gets
+> input exactly right; the output figure is the `input / 2` heuristic in
+> `estimate_tokens`, and real output ran at **0.28 ×** input. Worth
+> recalibrating before the next round is priced — the current heuristic
+> turns a $27 run into a $39 decision.
+>
+> **`max_tokens` never fired — 998 `end_turn`, 2 `refusal`.** The
+> warning below is now measured as well as argued: truncation was not
+> the risk on a random draw.
+>
+> **T0e worked end to end**: all 1 000 candidate and status docs carry
+> `round: 5, round_provenance: selector`, stamped by `--round-file`.
+> Chunk files had to be *named* `production_v4_round5.txt` in separate
+> directories, since the flag derives the round from the filename —
+> a `part_00` chunk is refused outright, which is the naming rule doing
+> its job.
+>
+> **The 5 permanent failures are 0.5 %**, in two classes: JSON-parse
+> failures (§9.1, invalid `\escape`) and refusals with
+> `output_tokens: 0`. They are *enriched* for OCR damage but not
+> explained by it — two fire `character-substitution` at 5.7 %, about
+> 3 × the p90 of 1.95 % over 200 succeeding treatments, while two others
+> measure clean.
+>
+> ### The vocabulary answer, which is what the round was for
+>
+> | | rounds 1-4 | round 5 | union |
+> |---|---:|---:|---:|
+> | annotations | 1 582 | 7 486 | 9 068 |
+> | distinct labels | 318 | 961 | **1 060** |
+>
+> **742 labels that did not exist before**, and 99 from the biased
+> rounds that round 5 never used. The new terms are real clade
+> vocabulary the biased sampling never reached — `Sporidia` (18),
+> `Oospores` (13), `Synnemata` (13), `Appressoria` (13),
+> `Urediniospores` (9): rusts, oomycetes and mitosporic fungi.
+>
+> **The singleton fraction did not move: 54 % at n=109 → 52 % at
+> n=1 109.** A ten-fold increase in sample left it essentially
+> unchanged, which is the signature of a vocabulary nowhere near
+> saturation. T4's curve fit will put a β on it, but the headline is
+> already legible — and it sharpens §12.1's warning that some of that
+> tail is *slots* misfiled as features, which has to be separated before
+> the number means what it appears to.
+
 ### Pathology, in parallel
 
 **a. p2a — the 7 632 merge suspects, ranked for free.** Measured
