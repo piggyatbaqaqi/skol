@@ -804,6 +804,70 @@ account for ~715 treatments at ~90 % synthetic. Excluding a named
 handful of books would remove more noise than any metadata-class rule,
 and it is a filter, not a model.
 
+### 5.3 Nomenclature quality — an axis nobody had measured
+
+Raised by the operator 2026-08-25: *"we haven't really been
+concentrating on Nomenclature tags."*  Correct, and measuring it
+produced one correction and one finding.
+
+#### Correction: the zero-length nomenclature span is not a signal
+
+Five entries recorded during round-4 review note "the *N*th instance of
+the zero-length nomenclature span at offset 0", as though it were a
+rare diagnostic tell. **It is not.**
+
+| | count | share |
+|---|---:|---:|
+| treatments | 81 527 | — |
+| `synthetic_nomenclature: true` | 30 520 | 37.4 % |
+| zero-length nomenclature span | **30 520** | **37.4 %** |
+
+The two are **exactly coextensive**. A zero-length span at offset 0 is
+simply *how* a synthetic nomenclature is represented — there is no
+source text to point at — so it carries no information beyond
+`§2:synth_nomen`, which already fires. Those five fixture notes should
+be read as "this treatment has synthetic nomenclature", nothing more.
+
+#### Finding: 27 % of real nomenclature fields do not begin with a name
+
+Of the **51 007** treatments whose nomenclature is *not* synthetic,
+**13 965 (27.4 %)** do not start with anything name-shaped, after
+allowing for leading enumeration like `57. `:
+
+| class | count |
+|---|---:|
+| other (largely head-clipped — see below) | 8 154 |
+| **starts lowercase** — head-clipped outright | 4 612 |
+| very long (> 400 chars) | 965 |
+| running head / journal line | 179 |
+| figure caption | 48 |
+| collection date | 7 |
+
+**Head-clipping dominates.** The characteristic shape keeps the
+authorship and the nomenclatural act while losing the name itself:
+
+* `Crous, sp. nov. MycoBank MB500690. Fig. 15A–W. Anamorph: Phaeoacremonium…`
+* `Zamora, comb. nov. MycoBank MB 844755. Figs 2A, 3. Basionym: Dacryopsis…`
+
+Both are unusable as names while looking superficially like citations.
+Other classes are simply the wrong content — `Keywords: Trichophyton
+spp; Microsporum spp;…`, `Exsicc. M. March. 1928,—Krieg. F. Sax. 234.`,
+`Typus. C. cinnamomeus (L.: Fr.) Gray.` — and one field runs to
+**63 590 characters**.
+
+**Why this matters more than the count suggests.** Every downstream
+join is on the name: gnfinder resolution, D10's genus comparison, D14's
+rank check, deduplication, and the search product itself. A
+head-clipped nomenclature is not a cosmetic loss — it removes the key.
+
+**And it is detectable cheaply.** "Does the nomenclature start with a
+capitalised binomial, a uninomial with a rank-bearing suffix, or an
+all-caps genus?" is a regex over a field already extracted, with the
+enumeration prefix stripped first. The measurement above *is* the
+detector; what it needs is calibration against the OCR-damaged true
+positives (`ThueJDeaella hirsuta`, a real name mangled) that currently
+inflate the rate.
+
 ### 6. Multiple species merged into one treatment
 
 **Symptom**: one Treatment doc contains descriptive content for
