@@ -787,6 +787,19 @@ statement is that round 3 gives no reason to doubt the labels, and
 the case for T5 rather than weakening the plan, but the earlier phrasing
 overstated what 9 treatments can carry.
 
+**Corrected 2026-08-25: round 3 selected 10, not 9.** Its round file
+was reconstructed from `.ann` filenames, and `taxon_bc52ee90…`
+produced zero annotations — so it left no `.ann` file and vanished from
+the reconstruction. Three more went the same way from round 2, which
+selected 51 rather than 48; see
+`data/annotation_rounds/README.md`. The precision and recall figures
+are unchanged, since all four are unreviewed and contribute neither
+kept nor added annotations. **The bootstrap denominator is not**: the
+treatment-level resample is over **10** units, one of which
+contributes nothing, which makes an already-wide interval slightly
+wider. Nothing here changes the conclusion that round 5 is what
+settles the question.
+
 ---
 
 ## T6 — Label schema fix (after the baseline)

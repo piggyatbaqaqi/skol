@@ -179,9 +179,17 @@ consequences:
 * Ordering is lost. Round 4 is in selection order (band by band);
   rounds 1–3 are sorted, because filenames carry no order.
 
-Their union is exactly **62**, matching the 62 treatments with a
-`reviewer_action` in the features_status DB — so no round is missing
-and none is double-counted.
+Their union is **66** — 6 + 51 + 10 with `taxon_2b793602…` shared
+between rounds 1 and 2 — of which **62** carry a `reviewer_action` in
+the features_status DB. The four-way difference is the zero-annotation
+set recovered below; those were selected but produced nothing to
+review.
+
+*Before 2026-08-25 this read "exactly 62, matching the 62 with a
+`reviewer_action`". The match was the bug, not the check: the files
+were built from `.ann` filenames, so they could only ever contain
+treatments that produced annotations, and agreeing with the reviewed
+count was guaranteed rather than reassuring.*
 
 ### The zero-annotation gap is not hypothetical — four treatments fell through
 
@@ -225,12 +233,36 @@ ratios are unchanged. What changes is **n**:
   exactly as measured; but any treatment-level bootstrap should resample
   **10** units, one of which contributes nothing, rather than 9.
 
-The round files are **left uncorrected** pending an operator decision,
-because adding ids changes what "round 2" and "round 3" denote in every
-statistic computed from them. The four remain unstamped in
-`features_status` (`round: null`) for the same reason —
-`fixes/backfill_round_stamps.py` will pick them up as soon as they
-appear in a round file, and will otherwise keep leaving them alone.
+**The round files were corrected on 2026-08-25** and
+`fixes/backfill_round_stamps.py` re-run. Every attempted annotation in
+the corpus now carries a round, with none left over:
+
+| round | status docs stamped | provenance |
+|---|---:|---|
+| 1 | 6 | reconstructed |
+| 2 | 50 | reconstructed |
+| 3 | 10 | reconstructed |
+| 4 | 50 | reconstructed |
+| 5 | 1 | manual |
+
+Round 2 stamps **50** against a 51-line file because
+`taxon_2b793602…` is attributed to round 1 — the lowest round wins in
+the backfill, since `filter_already_annotated` skips
+`status='success'` and every attempted status doc reads
+`attempt_count: 1`, so round 2's run never re-annotated it.
+
+**Note what the correction does not do.** The added ids are still
+absent from `brat/data/skol_segments/production_v4_round{2,3}/`,
+because there was never an `.ann` file to export — that is the whole
+reason they were lost. A future reconstruction from filenames would
+lose them again; the round file is now the only place they exist.
+
+**The `n` column in the round-comparison table above is a *reviewed*
+count, not a selected one**, so it is unaffected by this correction —
+but it is stale for a different reason: it records round 4 at 24, and
+round 4 closed at **47 of 50** on 2026-08-25. Recomputing that table
+with treatment-level bootstrap intervals is T1a in
+`docs/plans/annotation-activity-split.md`, not part of this fix.
 
 **Why the spreadsheet could not answer the question it was fetched
 for.** It was retrieved to test whether it preserved round 2's
