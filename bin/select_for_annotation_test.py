@@ -601,3 +601,59 @@ class TestBuildRoundMetadata:
         json.dumps(self._meta(
             band_specs=[('low', 5), ('high', 5)], band_rows=[],
         ))
+
+
+# ---------------------------------------------------------------------------
+# T0e — the sidecar records the round it describes
+#
+# `round_identity` treats the file NAME as authoritative and the
+# sidecar as enrichment, so `round` here is a cross-check rather than
+# the source of truth.  It earns its place by catching a copied
+# sidecar, which is otherwise silent.
+# ---------------------------------------------------------------------------
+
+
+class TestRoundMetadataIdentity:
+    @staticmethod
+    def _meta(**over):
+        kwargs = dict(
+            experiment='production_v4', seed=20260823,
+            seed_generated=False, n_requested=1000, n_selected=1000,
+            band_specs=[('all', 1000)], band_rows=[], funnel=[],
+            merge_threshold=10, force_recompute=False,
+            selector_argv=['--n', '1000'],
+            drawn_at='2026-08-25T00:00:00+00:00',
+        )
+        kwargs.update(over)
+        return build_round_metadata(**kwargs)
+
+    @pytest.mark.xfail(raises=TypeError, strict=True,
+                       reason='T0e: round/provenance kwargs not yet added')
+    def test_round_number_is_recorded(self) -> None:
+        assert self._meta(round=6)['round'] == 6
+
+    @pytest.mark.xfail(raises=TypeError, strict=True,
+                       reason='T0e: round/provenance kwargs not yet added')
+    def test_provenance_defaults_to_selector(self) -> None:
+        """A sidecar the selector wrote is first-hand evidence.
+
+        Only a backfilled one is `reconstructed`, and that distinction
+        has to survive into the file or rounds 1-4's guessed metadata
+        becomes indistinguishable from round 6's recorded metadata.
+        """
+        assert self._meta(round=6)['provenance'] == 'selector'
+
+    @pytest.mark.xfail(raises=TypeError, strict=True,
+                       reason='T0e: round/provenance kwargs not yet added')
+    def test_reconstructed_provenance_can_be_declared(self) -> None:
+        meta = self._meta(round=2, provenance='reconstructed')
+        assert meta['provenance'] == 'reconstructed'
+
+    @pytest.mark.xfail(raises=TypeError, strict=True,
+                       reason='T0e: round/provenance kwargs not yet added')
+    def test_metadata_is_json_serialisable(self) -> None:
+        """The sidecar is written with json.dump; a tuple that slipped
+        through would fail at write time, after the draw has already
+        consumed the RNG.
+        """
+        json.dumps(self._meta(round=6))

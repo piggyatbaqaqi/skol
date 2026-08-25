@@ -77,6 +77,11 @@ from treatments_to_structured.llm_annotate import (  # noqa: E402
     build_user_prompt,
     parse_claude_response,
 )
+from treatments_to_structured.round_provenance import (  # noqa: E402
+    RoundIdentity,
+    read_round_file,
+    stamp_round,
+)
 from treatments_to_structured.status import (  # noqa: E402
     STATUS_ERROR,
     STATUS_PARTIAL,
@@ -275,6 +280,37 @@ def read_treatment_ids(
         "no treatment IDs provided; pass --doc-id ID[,ID,...] or "
         "pipe IDs on stdin (e.g., from bin/select_for_annotation)"
     )
+
+
+def resolve_treatment_input(
+    doc_ids: Optional[List[str]],
+    round_file: Optional[str],
+    stdin_stream: TextIO,
+    *,
+    stdin_isatty: bool,
+) -> Tuple[List[str], Optional['RoundIdentity']]:
+    """Resolve treatment IDs and, when known, the round they came from.
+
+    One resolver for all three input paths so provenance cannot be
+    silently lost on one of them:
+
+      * ``--round-file PATH`` — ids from the file, identity from its
+        name plus any sibling ``.meta.json``.
+      * ``--doc-id`` / stdin — ids only; identity is None, which is
+        the honest answer rather than a guess.
+
+    ``--round-file`` and ``--doc-id`` together are an error: the ids
+    would come from one source and the stamped round from the other,
+    which is a provenance claim nobody checked.
+
+    Raises:
+        ValueError: as ``read_treatment_ids``, plus the mutual-
+            exclusion case.
+        RoundProvenanceError: if the round file cannot be identified.
+
+    Skeleton — implementation follows test confirmation (T0e).
+    """
+    raise NotImplementedError
 
 
 def resolve_status_db_name(

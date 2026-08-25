@@ -28,6 +28,7 @@ from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     iter_treatment_ids,
     read_treatment_ids,
     resolve_id_filter,
+    resolve_treatment_input,
     resolve_candidate_db_name,
     resolve_status_db_name,
 )
@@ -946,3 +947,102 @@ class TestResolveIdFilter:
         """Asking for stdin and getting nothing is an operator error."""
         with pytest.raises(ValueError):
             resolve_id_filter(['-'], io.StringIO(''), stdin_isatty=False)
+
+
+# ---------------------------------------------------------------------------
+# T0e — round-file input and provenance resolution
+#
+# The three input paths must agree on one thing: a doc is stamped with
+# a round only when the round is actually known.  Guessing is what this
+# work exists to stop.
+# ---------------------------------------------------------------------------
+
+
+class TestResolveTreatmentInput:
+    """``--round-file`` is the only input path that carries provenance.
+
+    ``--doc-id`` and stdin are ad-hoc by nature — a shell loop, a
+    re-run of failures, a single canary — so they yield ids and no
+    identity.  That is the honest answer; inventing a round for them
+    would put unverifiable provenance into the database, which is
+    worse than none.
+    """
+
+    @staticmethod
+    def _round_file(tmp_path: Path, name: str) -> Path:
+        p = tmp_path / name
+        p.write_text('taxon_a\ntaxon_b\n', encoding='utf-8')
+        return p
+
+    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                       reason='T0e: implementation follows confirmation')
+    def test_round_file_supplies_ids_and_identity(
+        self, tmp_path: Path,
+    ) -> None:
+        p = self._round_file(tmp_path, 'production_v4_round6.txt')
+        ids, ident = resolve_treatment_input(
+            None, str(p), io.StringIO(), stdin_isatty=True,
+        )
+        assert ids == ['taxon_a', 'taxon_b']
+        assert ident is not None and ident.round == 6
+
+    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                       reason='T0e: implementation follows confirmation')
+    def test_doc_id_yields_no_identity(self) -> None:
+        ids, ident = resolve_treatment_input(
+            ['taxon_a'], None, io.StringIO(), stdin_isatty=True,
+        )
+        assert ids == ['taxon_a']
+        assert ident is None
+
+    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                       reason='T0e: implementation follows confirmation')
+    def test_stdin_yields_no_identity(self) -> None:
+        """The cron regression.
+
+        debian/skol.cron pipes ids with no round file and must keep
+        working unchanged — including producing docs with no round
+        field at all.
+        """
+        ids, ident = resolve_treatment_input(
+            None, None, io.StringIO('taxon_a\n'), stdin_isatty=False,
+        )
+        assert ids == ['taxon_a']
+        assert ident is None
+
+    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                       reason='T0e: implementation follows confirmation')
+    def test_round_file_with_doc_id_is_an_error(
+        self, tmp_path: Path,
+    ) -> None:
+        """Ids from one source, round from another, is a lie.
+
+        The tempting reading — "--doc-id narrows the round file" — is
+        exactly the case that would stamp round 6 onto treatments that
+        were never in round 6's draw.
+        """
+        p = self._round_file(tmp_path, 'production_v4_round6.txt')
+        with pytest.raises(ValueError):
+            resolve_treatment_input(
+                ['taxon_a'], str(p), io.StringIO(),
+                stdin_isatty=True,
+            )
+
+    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                       reason='T0e: implementation follows confirmation')
+    def test_round_file_wins_over_a_non_tty_stdin(
+        self, tmp_path: Path,
+    ) -> None:
+        """Stdin is consulted only when no explicit source is given.
+
+        A non-TTY stdin is the normal state under cron and under
+        ``< /dev/null``; it must not compete with an explicit
+        ``--round-file``.
+        """
+        p = self._round_file(tmp_path, 'production_v4_round6.txt')
+        ids, ident = resolve_treatment_input(
+            None, str(p), io.StringIO('taxon_zzz\n'),
+            stdin_isatty=False,
+        )
+        assert ids == ['taxon_a', 'taxon_b']
+        assert ident is not None and ident.round == 6

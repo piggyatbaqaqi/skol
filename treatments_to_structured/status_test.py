@@ -404,3 +404,86 @@ class TestMakeSkipStatusDoc:
             metric_name='n_terms_above_5', decided_at='ts',
         )
         assert '_rev' not in doc
+
+
+# ---------------------------------------------------------------------------
+# T0e — round stamping
+#
+# Decisions 4 and 5 of the stamping work: where the round lands on a
+# doc, and what a re-run does to it.  See
+# treatments_to_structured/round_provenance_test.py for decisions 1-3.
+# ---------------------------------------------------------------------------
+
+
+class TestStatusDocRoundStamping:
+    """The status doc carries the round it was produced in.
+
+    Without this, a query against the status DB cannot tell round 6's
+    1 000 treatments from rounds 1-4's — which is how a pooled
+    precision/recall statistic came to describe the selection rather
+    than the corpus, invisibly.
+    """
+
+    @staticmethod
+    def _result():
+        return AnnotationResult(
+            treatment_id='taxon_a',
+            status=STATUS_SUCCESS,
+            annotations=[],
+        )
+
+    @pytest.mark.xfail(raises=TypeError, strict=True,
+                       reason='T0e: round_identity kwarg not yet added')
+    def test_round_and_round_file_are_stamped(self) -> None:
+        from treatments_to_structured.round_provenance import (
+            RoundIdentity,
+        )
+        ident = RoundIdentity(
+            round=6, round_file='production_v4_round6',
+            experiment='production_v4', provenance='selector',
+        )
+        doc = make_status_doc(
+            self._result(), 'claude-opus-4-7',
+            '2026-08-25T00:00:00+00:00', round_identity=ident,
+        )
+        assert doc['round'] == 6
+        assert doc['round_file'] == 'production_v4_round6'
+
+    @pytest.mark.xfail(raises=TypeError, strict=True,
+                       reason='T0e: round_identity kwarg not yet added')
+    def test_provenance_travels_onto_the_doc(self) -> None:
+        """A DB-only reader must be able to tell a selector draw from a
+        hand-picked addition without consulting the repository.
+        """
+        from treatments_to_structured.round_provenance import (
+            RoundIdentity,
+        )
+        ident = RoundIdentity(
+            round=5, round_file='production_v4_round5_manual',
+            experiment='production_v4', provenance='manual',
+        )
+        doc = make_status_doc(
+            self._result(), 'claude-opus-4-7',
+            '2026-08-25T00:00:00+00:00', round_identity=ident,
+        )
+        assert doc['round_provenance'] == 'manual'
+        assert doc['round'] == 5
+
+    def test_no_round_identity_leaves_the_doc_unchanged(self) -> None:
+        """The cron regression, and the reason this must stay a kwarg.
+
+        debian/skol.cron invokes the annotator with no round file at
+        all.  Emitting ``round: null`` there would make every
+        cron-produced doc look like it came from an unidentifiable
+        round, rather than from no round.  Absent means absent.
+
+        This test passes today and must keep passing — it is the
+        guard, not the feature.
+        """
+        doc = make_status_doc(
+            self._result(), 'claude-opus-4-7',
+            '2026-08-25T00:00:00+00:00',
+        )
+        assert 'round' not in doc
+        assert 'round_file' not in doc
+        assert 'round_provenance' not in doc
