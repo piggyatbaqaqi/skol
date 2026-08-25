@@ -5,7 +5,25 @@
 Bootstrap annotation rounds were set up to validate Claude API feature
 labels. Measured 2026-08-23, that purpose is essentially complete:
 **round 3 — the only random sample — reads precision 100 %, recall
-99.0 %** (96 of 96 candidates kept, one addition). The pooled
+99.0 %** (96 of 96 candidates kept, one addition).
+
+> **Remeasured 2026-08-25 (T1a).** The claim survives, sharpened.
+> Round 3's **label** precision is exactly 100 % — no interval, because
+> zero errors in 96 candidates collapses every bootstrap resample to
+> 100 %; the honest bound is the rule of three, **≥ 96.9 %**. Its
+> *span-exact* precision is 98.96 %, the difference being a **one-
+> character** boundary nudge on `Asci` in `taxon_adcb2fcc`, not a
+> rejected label. Corpus-wide the two split 98.80 % / 97.72 %.
+>
+> The broader finding: of 36 candidates that did not survive verbatim,
+> **exactly one was a wrong feature**. Eighteen were relabels and 17
+> were offset adjustments — the reviewer had already agreed something
+> was there. Seven of the 18 relabels are entries in
+> `docs/feature_label_canonicalization.json` already, so scoring
+> against canonical forms lifts label precision to about **99.24 %**.
+> That is the measured case for T6, and it is why the `Spores` cases
+> stay queued rather than patched. See
+> `data/annotation_rounds/README.md`. The pooled
 98.5 %/83.1 % describes the *selection*, not the corpus, and its low
 recall is one document — `taxon_2b793602` contributes 136 of all 263
 additions.

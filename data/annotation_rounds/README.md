@@ -46,25 +46,118 @@ describes *the selection*, not the corpus, and pooling the
 biased rounds with round 3 produces a number that means
 nothing in particular.
 
-Measured 2026-08-23, after `bin/brat_ingest` landed the first
-24 treatments of round 4.  *Precision* = candidate
-annotations the reviewer kept; *recall* = kept ÷ (kept +
-hand-added).  Rejections appear as **absence** from the hand
-DB — `brat_ingest` writes only `kept` and `added` — so
-rejections are counted by set difference against
-`features_candidate`.
+Remeasured **2026-08-25**, after round 4 closed at 47 of 50
+and round attribution was stamped onto the status docs
+(T0e), so these figures come from the database rather than
+from filename bookkeeping.  Counts are read from each status
+doc's `reviewer_action`, which `bin/brat_ingest` writes at
+ingest time; `kept_count + deleted_count == annotation_count`
+holds for all 109 reviewed treatments, and `kept_count`
+agrees with the hand DB exactly.
 
-| round | selection | n | cand | rej | added | precision | recall |
-|---|---|---:|---:|---:|---:|---|---|
-| 1 | biased | 5 | 81 | 0 | 142 | 100 % | **36.3 %** |
-| 2 | biased | 48 | 900 | 13 | 240 | 98.6 % | 78.7 % |
-| **3** | **random** | 9 | 96 | **0** | **1** | **100 %** [96.2, 100] | **99.0 %** [94.4, 99.8] |
-| 4 | biased | 24 | 258 | 7 | 16 | 97.3 % | 94.0 % |
-| — | pooled | 85 | 1316 | 20 | 263 | 98.5 % | 83.1 % |
+**There are two precisions and they answer different
+questions.**  A reviewer who nudges a span boundary by one
+character has not rejected the label:
 
-Wilson 95 % intervals.  **Use the round-3 row for any claim
-about label quality on the annotatable population; use the
-pooled row for nothing.**
+* **Label precision** — did the reviewer accept the feature
+  name?  This is what the bootstrap rounds exist to
+  validate.
+* **Span-exact precision** — did they accept the name *and*
+  the exact offsets?  Strictly lower, and a different
+  measurement.
+
+| round | selection | n | cand | label precision | span-exact precision |
+|---|---|---:|---:|---|---|
+| 1 | biased | 6 | 82 | 98.78 % [93.9, 100] | 98.78 % [93.9, 100] |
+| 2 | biased | 47 | 881 | 98.52 % [97.1, 99.4] | 96.94 % [93.4, 99.0] |
+| **3** | **random** | 9 | 96 | **100 %** — see below | 98.96 % [95.8, 100] |
+| 4 | biased | 47 | 523 | 99.04 % [98.1, 99.8] | 98.66 % [97.7, 99.5] |
+| — | pooled | 109 | 1582 | 98.80 % [98.0, 99.4] | 97.72 % [96.0, 98.9] |
+
+**Treatment-level bootstrap intervals**, 20 000 resamples,
+seed 20260825 — *not* the annotation-level Wilson intervals
+the previous version of this table carried.  **Use the
+round-3 row for any claim about label quality on the
+annotatable population; use the pooled row for nothing.**
+
+**Round 3's label precision has no interval, and reporting
+one would be false precision.**  It made zero label errors
+in 96 candidates, so every bootstrap resample returns 100 %
+and the interval collapses to [100, 100] — an artifact of
+resampling zero events, not a finding.  The honest form is
+the **rule of three**: zero errors in 96 gives an upper
+bound of 3/96 on the error rate, i.e. **label precision
+≥ 96.9 %** at 95 % confidence.
+
+### What changed from the 2026-08-23 figures, and why
+
+Three of the differences are corrections, not drift.
+
+* **`taxon_2b793602…` was counted twice.**  It sits in both
+  round 1's and round 2's files (see below), and the old
+  table charged its **136 additions to both rows** — round 1
+  at 142 and round 2 at 240.  It is now attributed once, to
+  round 1, under the lowest-round-wins rule that
+  `fixes/backfill_round_stamps.py` applies.  That alone
+  moves round 2's additions from 240 to 104 and its recall
+  ratio from 78.7 % to 89.1 %.  The old *pooled* row was
+  right; only the per-round rows double-counted.
+* **Round 3's "100 %, 96 of 96 kept" was right about
+  labels** and silent about spans.  One candidate,
+  `Asci` on `taxon_adcb2fcc`, had its end offset moved from
+  602 to **603** — a single character.  `brat_ingest`
+  records that as one deletion plus one addition, which is
+  why span-exact precision reads 98.96 %.  No label was
+  rejected.
+* **Round 4 went from 24 reviewed to 47**, closing the
+  round.  Three of its 50 produced zero annotations and so
+  can never be reviewed.
+
+### The 36 "rejections" are almost all refinements
+
+Classifying every candidate that did not survive verbatim:
+
+| what happened | n |
+|---|---:|
+| relabelled at the same offset | 18 |
+| boundary moved, same label and start | 15 |
+| same label, span moved | 2 |
+| **label genuinely rejected** | **1** |
+
+**Exactly one candidate in 1 582 was a wrong feature**
+(`Conidia` on `taxon_ba964a8b`).  Everything else the
+reviewer corrected was a *name* or an *offset*, having
+already agreed something was there.
+
+The 18 relabels are all naming, not misidentification:
+
+| from | to | n | |
+|---|---|---:|---|
+| `Colonies` | `Colony` | 6 | in the canonicalization map |
+| `Pileus` | `Basidiocarp` | 3 | part-vs-whole |
+| `Spores` | `Basidiospores` | 3 | clade-specific spore term |
+| `Spores` | `Ascospores` | 1 | same class |
+| `Stalk` | `Stipe` | 1 | synonym |
+| `Anamorph` | `Asexual morph` | 1 | in the canonicalization map |
+| `CultureCharacteristics` | `Culture characteristics` | 1 | **map says `Cultural characteristics`** |
+| `Conidial germination` | `Culture characteristics` | 1 | |
+| `General veil` | `Universal veil` | 1 | |
+
+**7 of the 18 are already entries in
+`docs/feature_label_canonicalization.json`.**  Scoring
+against canonical forms rather than literal strings would
+take pooled label precision from 98.80 % to about
+**99.24 %** — which is the measured case for T6's label-schema
+work, and the reason those `Spores` treatments are queued
+rather than patched.
+
+**One conflict to settle in T6**: the reviewer chose
+`Culture characteristics` where the map says
+`Cultural characteristics`.  The map and the reviewer
+disagree, and nothing currently notices.
+
+All 18 relabels fall in rounds 2 and 4 (13 and 5).  **Rounds
+1 and 3 contain none.**
 
 > ### ⚠️ The recall column does not support the reading it invites
 >
@@ -102,6 +195,33 @@ pooled row for nothing.**
 > review gives ±1.1 pp and is what actually settles the question
 > — see
 > [docs/plans/annotation-activity-split.md](../../docs/plans/annotation-activity-split.md).
+
+#### Recall, reported the way it should be (2026-08-25)
+
+Same 20 000-resample treatment-level bootstrap, over the 109
+reviewed treatments with `taxon_2b793602…` attributed once:
+
+| round | median adds | need ≥ 1 | top-1 | top-5 | total adds | ratio, with its real interval |
+|---|---:|---:|---:|---:|---:|---|
+| 1 | 0 | 2/6 (33 %) | 96 % | 100 % | 142 | 36.3 % **[17.3, 100.0]** — 83 pp wide |
+| 2 | 0 | 20/47 (43 %) | 18 % | 53 % | 104 | 89.1 % [82.7, 93.6] |
+| **3** | **0** | **1/9 (11 %)** | 100 % | 100 % | **1** | 99.0 % [95.8, 100] |
+| 4 | 0 | 12/47 (26 %) | 22 % | 70 % | 23 | 95.7 % [92.8, 98.2] |
+| — | pooled | 35/109 (32 %) | 50 % | 68 % | 270 | 85.1 % [71.7, 94.2] |
+
+**The distribution columns are the report; the ratio column
+is shown only to demonstrate that it should not be.**  Round
+1's interval spans 17 % to 100 % — it is not a measurement of
+anything, and its point estimate of 36.3 % has been quoted
+as though it were.
+
+The shape is unchanged by the corrections: **the median
+treatment needs zero additions in every round**, roughly a
+third need any at all, and one treatment still carries half
+the corpus total.  Round 2's ratio moved from 78.7 % to
+89.1 % purely by removing the double-count, which is itself a
+demonstration that the ratio is fragile in a way the
+distribution is not.
 
 ### "Random" means random over 47 % of the corpus
 
