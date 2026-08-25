@@ -36,6 +36,11 @@ Status values:
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from treatments_to_structured.round_provenance import (
+    RoundIdentity,
+    stamp_round,
+)
+
 
 STATUS_SUCCESS = 'success'
 STATUS_PARTIAL = 'partial'
@@ -105,6 +110,7 @@ def make_status_doc(
     model: str,
     created_at: str,
     attempt_count: int = 1,
+    round_identity: Optional[RoundIdentity] = None,
 ) -> Dict[str, Any]:
     """Build the CouchDB status doc for a treatment-run result.
 
@@ -119,6 +125,12 @@ def make_status_doc(
             Mango queries (``selector: {metrics: {$exists: false}}``).
         model: Claude model name (e.g., ``"claude-opus-4-7"``).
         created_at: ISO-8601 timestamp.
+        round_identity: The annotation round these ids came from,
+            or None when the caller had no round file (the cron path).
+            When given, stamps `round`, `round_file` and
+            `round_provenance` so a query against the status DB alone
+            can stratify by round -- which is what the pooled
+            precision/recall statistic needed and did not have.
         attempt_count: Number of times this treatment has been
             attempted, including this run.  Caller is
             responsible for reading the prior doc and
@@ -149,7 +161,11 @@ def make_status_doc(
     # backfilled.
     if result.metrics is not None:
         doc['metrics'] = dict(result.metrics)
-    return doc
+    # Round stamping (T0e).  A None identity leaves the doc alone: the
+    # cron path passes no round file, and `round: null` would
+    # misrepresent that as an unidentifiable round rather than no
+    # round.  See round_provenance.stamp_round.
+    return stamp_round(doc, round_identity)
 
 
 def make_skip_status_doc(

@@ -307,10 +307,27 @@ def resolve_treatment_input(
         ValueError: as ``read_treatment_ids``, plus the mutual-
             exclusion case.
         RoundProvenanceError: if the round file cannot be identified.
-
-    Skeleton — implementation follows test confirmation (T0e).
     """
-    raise NotImplementedError
+    if round_file and doc_ids:
+        raise ValueError(
+            "--round-file and --doc-id are mutually exclusive: the "
+            "ids would come from one source and the stamped round "
+            "from the other.  To annotate part of a round, cut the "
+            "round file down and keep its name."
+        )
+    if round_file:
+        # Stdin is deliberately not consulted here.  A non-TTY stdin
+        # is the normal state under cron and under `< /dev/null`, so
+        # letting it compete with an explicit --round-file would make
+        # the input source depend on how the shell was invoked.
+        return read_round_file(Path(round_file))
+    ids = read_treatment_ids(
+        doc_ids, stdin_stream, stdin_isatty=stdin_isatty,
+    )
+    # No round file means no round.  Returning a guessed identity here
+    # would put unverifiable provenance into the database, which is
+    # worse than none at all.
+    return ids, None
 
 
 def resolve_status_db_name(
@@ -652,6 +669,19 @@ def main() -> int:
     # --doc-id is provided by common_parser() (dest='doc_ids', already
     # parsed to List[str]).  Alternative input: pipe IDs on stdin.
     parser.add_argument(
+        '--round-file', default=None, metavar='PATH',
+        help=(
+            'Annotation round file (data/annotation_rounds/'
+            '<experiment>_round<N>.txt).  Reads the treatment IDs '
+            'from it AND stamps `round`, `round_file` and '
+            '`round_provenance` onto every candidate and status doc '
+            'written, so a query against CouchDB alone can stratify '
+            'by round.  Mutually exclusive with --doc-id.  Without '
+            'it no round is recorded, which is the honest answer for '
+            'an ad-hoc run.'
+        ),
+    )
+    parser.add_argument(
         '--llm-model', dest='model', default=_DEFAULT_MODEL,
         metavar='MODEL',
         help=f'Claude model ID (default: {_DEFAULT_MODEL}).',
@@ -714,13 +744,22 @@ def main() -> int:
     # get_env_config; use config['doc_ids'], NOT args.doc_ids which
     # is still the raw comma-separated string).
     try:
-        treatment_ids = read_treatment_ids(
-            config.get('doc_ids'), sys.stdin,
+        treatment_ids, round_ident = resolve_treatment_input(
+            config.get('doc_ids'), args.round_file, sys.stdin,
             stdin_isatty=sys.stdin.isatty(),
         )
-    except ValueError as exc:
+    except (ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    if round_ident is not None and verbosity >= 1:
+        print(
+            f"Round {round_ident.round} "
+            f"({round_ident.round_file}"
+            + (f", {round_ident.provenance}"
+               if round_ident.provenance else '')
+            + f"): {len(treatment_ids)} treatments",
+            file=sys.stderr,
+        )
 
     # Anthropic client + key check
     api_key = os.environ.get('ANTHROPIC_API_KEY')
@@ -919,6 +958,11 @@ def main() -> int:
                         ann['_id'] = annotation_doc_id(
                             tid, ann['feature_label'], ann['start'],
                         )
+                        # Round fields go on the doc, never into the
+                        # `_id` -- a round in the key would make a
+                        # re-run create a second doc at the same
+                        # offset instead of replacing the first.
+                        stamp_round(ann, round_ident)
                         if ann['_id'] in candidate_db:
                             ann['_rev'] = (
                                 candidate_db[ann['_id']]['_rev']
@@ -954,6 +998,7 @@ def main() -> int:
                     status_doc = make_status_doc(
                         result, args.model, now_iso,
                         attempt_count=prior_attempts + 1,
+                        round_identity=round_ident,
                     )
                     if prior_rev is not None:
                         status_doc['_rev'] = prior_rev

@@ -58,6 +58,10 @@ from treatments_to_structured.select import (  # noqa: E402
     parse_band_spec,
     select_treatments,
 )
+from treatments_to_structured.round_provenance import (  # noqa: E402
+    PROVENANCE_SELECTOR,
+    round_identity,
+)
 from treatments_to_structured.status import (  # noqa: E402
     STATUS_SKIPPED_MERGE_SUSPECT,
     make_skip_status_doc,
@@ -304,6 +308,8 @@ def build_round_metadata(
     force_recompute: bool,
     selector_argv: List[str],
     drawn_at: str,
+    round: int,
+    provenance: str = PROVENANCE_SELECTOR,
 ) -> Dict[str, Any]:
     """Build the round sidecar: how this selection was actually made.
 
@@ -324,6 +330,13 @@ def build_round_metadata(
     """
     stratified = len(band_specs) > 1
     return {
+        'round': round,
+        # `selector` means this sidecar was written by the run that
+        # made the draw.  Only a backfilled one is `reconstructed`, and
+        # that distinction has to survive into the file -- otherwise
+        # rounds 1-4's guessed metadata is indistinguishable from
+        # round 6's recorded metadata.
+        'provenance': provenance,
         'experiment': experiment,
         'selector_argv': list(selector_argv),
         'seed': seed,
@@ -705,6 +718,10 @@ def main() -> int:
         force_recompute=bool(config.get('force', False)),
         selector_argv=list(sys.argv[1:]),
         drawn_at=_dt.now(_tz.utc).isoformat(),
+        # The file name is authoritative for the round number, here as
+        # everywhere else -- so the sidecar's `round` is a cross-check
+        # against a copied sidecar, not the source of truth.
+        round=round_identity(out_path).round,
     )
     meta_path = out_path.with_suffix('.meta.json')
 

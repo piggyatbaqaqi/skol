@@ -6,9 +6,8 @@ recorded as a test rather than a comment because each is a place where
 a plausible alternative would quietly corrupt the provenance record
 this module exists to create.
 
-Every xfail here is ``strict``: the head must fail on
-``NotImplementedError`` until the implementation lands, so a bisect
-never sees a green test for absent code.
+These ran as ``xfail(strict)`` against the skeleton in commit
+7595f7e; the markers came off when the implementation landed.
 """
 
 import json
@@ -28,11 +27,6 @@ from treatments_to_structured.round_provenance import (  # noqa: E402
     read_round_file,
     round_identity,
     stamp_round,
-)
-
-pytestmark = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True,
-    reason='T0e stamping: implementation follows test confirmation',
 )
 
 

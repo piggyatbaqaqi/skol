@@ -565,6 +565,10 @@ class TestBuildRoundMetadata:
             force_recompute=False,
             selector_argv=['--n', '1000'],
             drawn_at='2026-08-24T00:00:00+00:00',
+            # Required as of T0e.  A sidecar that does not name the
+            # round it describes is the useless artifact that work
+            # exists to prevent, so there is deliberately no default.
+            round=6,
         )
         kw.update(over)
         return build_round_metadata(**kw)
@@ -627,13 +631,9 @@ class TestRoundMetadataIdentity:
         kwargs.update(over)
         return build_round_metadata(**kwargs)
 
-    @pytest.mark.xfail(raises=TypeError, strict=True,
-                       reason='T0e: round/provenance kwargs not yet added')
     def test_round_number_is_recorded(self) -> None:
         assert self._meta(round=6)['round'] == 6
 
-    @pytest.mark.xfail(raises=TypeError, strict=True,
-                       reason='T0e: round/provenance kwargs not yet added')
     def test_provenance_defaults_to_selector(self) -> None:
         """A sidecar the selector wrote is first-hand evidence.
 
@@ -643,14 +643,10 @@ class TestRoundMetadataIdentity:
         """
         assert self._meta(round=6)['provenance'] == 'selector'
 
-    @pytest.mark.xfail(raises=TypeError, strict=True,
-                       reason='T0e: round/provenance kwargs not yet added')
     def test_reconstructed_provenance_can_be_declared(self) -> None:
         meta = self._meta(round=2, provenance='reconstructed')
         assert meta['provenance'] == 'reconstructed'
 
-    @pytest.mark.xfail(raises=TypeError, strict=True,
-                       reason='T0e: round/provenance kwargs not yet added')
     def test_metadata_is_json_serialisable(self) -> None:
         """The sidecar is written with json.dump; a tuple that slipped
         through would fail at write time, after the draw has already

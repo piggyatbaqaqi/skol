@@ -432,8 +432,6 @@ class TestStatusDocRoundStamping:
             annotations=[],
         )
 
-    @pytest.mark.xfail(raises=TypeError, strict=True,
-                       reason='T0e: round_identity kwarg not yet added')
     def test_round_and_round_file_are_stamped(self) -> None:
         from treatments_to_structured.round_provenance import (
             RoundIdentity,
@@ -449,8 +447,6 @@ class TestStatusDocRoundStamping:
         assert doc['round'] == 6
         assert doc['round_file'] == 'production_v4_round6'
 
-    @pytest.mark.xfail(raises=TypeError, strict=True,
-                       reason='T0e: round_identity kwarg not yet added')
     def test_provenance_travels_onto_the_doc(self) -> None:
         """A DB-only reader must be able to tell a selector draw from a
         hand-picked addition without consulting the repository.

@@ -974,8 +974,6 @@ class TestResolveTreatmentInput:
         p.write_text('taxon_a\ntaxon_b\n', encoding='utf-8')
         return p
 
-    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                       reason='T0e: implementation follows confirmation')
     def test_round_file_supplies_ids_and_identity(
         self, tmp_path: Path,
     ) -> None:
@@ -986,8 +984,6 @@ class TestResolveTreatmentInput:
         assert ids == ['taxon_a', 'taxon_b']
         assert ident is not None and ident.round == 6
 
-    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                       reason='T0e: implementation follows confirmation')
     def test_doc_id_yields_no_identity(self) -> None:
         ids, ident = resolve_treatment_input(
             ['taxon_a'], None, io.StringIO(), stdin_isatty=True,
@@ -995,8 +991,6 @@ class TestResolveTreatmentInput:
         assert ids == ['taxon_a']
         assert ident is None
 
-    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                       reason='T0e: implementation follows confirmation')
     def test_stdin_yields_no_identity(self) -> None:
         """The cron regression.
 
@@ -1010,8 +1004,6 @@ class TestResolveTreatmentInput:
         assert ids == ['taxon_a']
         assert ident is None
 
-    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                       reason='T0e: implementation follows confirmation')
     def test_round_file_with_doc_id_is_an_error(
         self, tmp_path: Path,
     ) -> None:
@@ -1028,8 +1020,6 @@ class TestResolveTreatmentInput:
                 stdin_isatty=True,
             )
 
-    @pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                       reason='T0e: implementation follows confirmation')
     def test_round_file_wins_over_a_non_tty_stdin(
         self, tmp_path: Path,
     ) -> None:

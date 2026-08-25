@@ -13,14 +13,13 @@ This module is the fix: it turns a round file's path into a
 query against CouchDB alone can stratify by round.
 
 See ``docs/plans/annotation-activity-split.md`` T0e.
-
-Skeleton only — the implementation lands after the tests in
-``round_provenance_test.py`` are confirmed (CLAUDE.md TDD).
 """
 
-from dataclasses import dataclass
+import json
+import re
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # The round-file naming regex.  DELIBERATELY different from
 # ``select_for_annotation.default_output_path``'s: that one must NOT
@@ -79,7 +78,66 @@ def round_identity(path: Path) -> RoundIdentity:
         RoundProvenanceError: if the name carries no round number, or
             a sidecar's ``round`` disagrees with the name's.
     """
-    raise NotImplementedError
+    stem = Path(path).stem
+    match = re.match(_ROUND_FILE_RE, stem)
+    if match is None:
+        raise RoundProvenanceError(
+            f"cannot derive a round number from {stem!r}; expected "
+            f"<experiment>_round<N>[_manual].  Refusing to stamp "
+            f"documents with a guessed round."
+        )
+    identity = RoundIdentity(
+        round=int(match.group('n')),
+        round_file=stem,
+        experiment=match.group('experiment'),
+        # The `_manual` suffix is itself the evidence: those files are
+        # written by hand and will never carry a selector sidecar.
+        provenance=(
+            PROVENANCE_MANUAL if match.group('suffix') else None
+        ),
+    )
+    return _apply_sidecar(identity, Path(path))
+
+
+def _apply_sidecar(
+    identity: RoundIdentity, path: Path,
+) -> RoundIdentity:
+    """Fold a sibling ``.meta.json`` into an identity, if one exists.
+
+    Absent is fine — rounds 1-4 predate the sidecar entirely and must
+    stay stampable.  Unreadable is *not* fine: a truncated sidecar
+    means something went wrong upstream, and continuing would stamp
+    documents with an identity nobody checked.
+    """
+    meta_path = path.with_suffix('.meta.json')
+    if not meta_path.exists():
+        return identity
+    try:
+        meta: Dict[str, Any] = json.loads(
+            meta_path.read_text(encoding='utf-8')
+        )
+    except (OSError, ValueError) as exc:
+        raise RoundProvenanceError(
+            f"sidecar {meta_path.name} is unreadable: {exc}"
+        ) from exc
+    if not isinstance(meta, dict):
+        raise RoundProvenanceError(
+            f"sidecar {meta_path.name} is not a JSON object"
+        )
+    declared = meta.get('round')
+    # Absence is not disagreement: sidecars written before T0e carry
+    # no `round` at all, and those must still enrich.
+    if declared is not None and int(declared) != identity.round:
+        raise RoundProvenanceError(
+            f"sidecar {meta_path.name} declares round {declared} but "
+            f"the file is named for round {identity.round}.  One of "
+            f"them was copied; refusing to choose."
+        )
+    return replace(
+        identity,
+        provenance=meta.get('provenance') or identity.provenance,
+        selection=meta.get('selection') or identity.selection,
+    )
 
 
 def read_round_file(path: Path) -> Tuple[List[str], RoundIdentity]:
@@ -90,10 +148,25 @@ def read_round_file(path: Path) -> Tuple[List[str], RoundIdentity]:
         ids are stripped, matching ``read_treatment_ids``.
 
     Raises:
-        RoundProvenanceError: as ``round_identity``.
+        RoundProvenanceError: as ``round_identity``, and if the file
+            holds no ids.
         FileNotFoundError: if the round file does not exist.
     """
-    raise NotImplementedError
+    path = Path(path)
+    identity = round_identity(path)
+    ids = [
+        line.strip()
+        for line in path.read_text(encoding='utf-8').splitlines()
+        if line.strip()
+    ]
+    if not ids:
+        # Returning [] would let the annotator print "No treatments to
+        # process" and exit 0, which reads as success when in fact the
+        # draw produced nothing.
+        raise RoundProvenanceError(
+            f"round file {path.name} holds no treatment ids"
+        )
+    return ids, identity
 
 
 def stamp_round(
@@ -112,7 +185,17 @@ def stamp_round(
 
     Returns the same dict, for chaining.
     """
-    raise NotImplementedError
+    if identity is None:
+        return doc
+    # Deliberately NOT the `_id`.  annotation_doc_id is
+    # <tid>:<label>:<start>, and a round in the key would make a
+    # re-run create a second doc at the same offset instead of
+    # replacing the first.
+    doc['round'] = identity.round
+    doc['round_file'] = identity.round_file
+    if identity.provenance is not None:
+        doc['round_provenance'] = identity.provenance
+    return doc
 
 
 __all__ = (
