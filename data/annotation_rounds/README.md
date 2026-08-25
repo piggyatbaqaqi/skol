@@ -29,12 +29,27 @@ what a round actually covered.
 
 ## Provenance
 
-| round | IDs | selection | source | reviewed |
-|---|---:|---|---|---|
-| 1 | 6 | **biased** | reconstructed 2026-08-20 | 5 on 2026-07-01, 1 on 2026-07-03 |
-| 2 | 48 | **biased** | reconstructed 2026-08-20 | 48 on 2026-07-03 |
-| 3 | 9 | **random** | reconstructed 2026-08-20 | 9 on 2026-07-07 |
-| 4 | 50 | **biased** | captured from the selector, 2026-08-14 | 24 of 50 on 2026-08-23 |
+| round | IDs | population | selection | purpose | source | reviewed |
+|---|---:|---|---|---|---|---|
+| 1 | 6 | p1 | **biased** | pathology | reconstructed 2026-08-20 | 5 on 2026-07-01, 1 on 2026-07-03 |
+| 2 | 51 | p1 | **biased** | pathology | reconstructed 2026-08-20, +3 on 2026-08-25 | 47 on 2026-07-03 |
+| 3 | 10 | p1 | **random** | label validation | reconstructed 2026-08-20, +1 on 2026-08-25 | 9 on 2026-07-07 |
+| 4 | 50 | p1 | **biased**, 3 bands 5/15/30 | pathology | captured from the selector, 2026-08-14 | 47 of 50 on 2026-08-25 |
+| 5 | 1000 | p1 | **random**, uniform | Heaps baseline + label validation | **selector, 2026-08-25** | pending — first 50 only |
+| 5 | +1 | p1 | manual | canary | hand-picked 2026-08-23 | 1 on 2026-08-24 |
+
+**Round 5 is the first round whose provenance was written by the
+selector rather than reconstructed afterwards.** Its
+`production_v4_round5.meta.json` records the seed (20260823, pinned),
+the full population funnel, the realized band slice and the exact
+argv. Rounds 1–4's sidecars are backfilled and say
+`"provenance": "reconstructed"`; only round 4's carries band
+structure, recovered from its file order (see below).
+
+The `population` column uses the partition in
+[docs/plans/annotation-activity-split.md](../../docs/plans/annotation-activity-split.md):
+`p1` is complexity > 0 and not a merge suspect. **Never mix
+populations in one round file.**
 
 ## Only round 3 is a random sample
 

@@ -457,7 +457,7 @@ round 5 is unbanded and does not need this at all.
 
 **a. Finish round 4's remaining 23.** Already exported; pure operator
 time; closes the round-4 row in `data/annotation_rounds/README.md` and
-reacquaints you with brat before the round-6 sitting. Its numbers stay
+reacquaints you with brat before the round-5 sitting. Its numbers stay
 **out** of the pooled statistic (it is a biased round).
 
 **b. Annotate `taxon_46ff7dde`** — queued in
@@ -508,6 +508,42 @@ bin/llm_annotate_features --experiment production_v4 --estimate \
 `_OPUS = Price(input=5.00, output=25.00)`. Sanity check: if the treatment
 count is well below 1 000, the draw picked up p2 members and the
 exclusion is broken.
+
+> ### T2 executed 2026-08-25 — drawn and priced, awaiting GO/NO-GO
+>
+> **Draw.** 1 000 treatments, uniform over p1, seed 20260823 pinned.
+> The `--dry-run` rehearsal wrote nothing and produced a **byte-identical**
+> id list to the real run, so the seed did what it claims. Funnel:
+> 81 527 → 46 045 (complexity > 0) → 45 935 (not already annotated,
+> −110) → **38 303**. Zero newly-flagged merge suspects, so F3's
+> evidence-destruction risk did not arise.
+>
+> **Round 5, not 6.** `round5_manual.txt` already claims that number and
+> `default_output_path` returns `production_v4_round5.txt`. The one
+> treatment in the manual file is the annotated canary.
+>
+> **Uniformity verified, not assumed.** Decile counts over the
+> population are `[101, 102, 110, 100, 104, 92, 102, 88, 98, 103]`;
+> **χ² = 3.46 on 9 df** against a 16.92 critical value. Quantiles track
+> the population from p05 to p99. Zero overlap with rounds 1–4.
+>
+> **Cost: $38.86** — 2 220 583 input tokens, ~1 110 291 estimated
+> output. Inside the $22–56 expectation, and the treatment count is
+> exactly 1 000, so the p2 exclusion is not broken.
+>
+> **The `max_tokens` warning below is inverted for this draw.** It
+> predicted that a random sample would hit long treatments the biased
+> rounds never reached. The reverse holds: the biased rounds selected
+> *for* suspected merges, so they carry the long ones. Round 5's largest
+> synthetic doc is **7 399 chars** against rounds 1–4's **22 637**, and
+> **no treatment exceeds 30 000 chars**. Truncation is not the live risk
+> here; keep the check between chunks anyway, but do not expect it to
+> fire.
+>
+> **First round whose provenance was machine-written.**
+> `production_v4_round5.meta.json` carries the seed, the funnel, the
+> realized slice and the exact argv, and `--round-file` (T0e) will stamp
+> `round: 5` onto every candidate and status doc the run creates.
 
 **Pin `--llm-model claude-opus-4-7` deliberately**, against the general
 "use the newest model" guidance. Decision 3 is *baseline on the current
@@ -881,7 +917,7 @@ and settles the floor).
   design task wearing a cleanup's clothes. Wait for a third caller.
 - **Trello #404 / #405.** #405 changes the *composition of the corpus*;
   deduplicating 36.7 % of ingest docs alters the sampling frame and
-  retroactively invalidates the round-6 draw. Deferring is not merely
+  retroactively invalidates the round-5 draw. Deferring is not merely
   cheaper — it is required for the baseline to mean anything. The T4
   covariate gets the prioritisation input at zero risk.
 - **The six round-4 `Spores` treatments**, and `Squamules` on
