@@ -48,6 +48,7 @@ _ANNOTATOR_STATUSES = frozenset({'success', 'partial', 'error'})
 
 def assign_rounds(
     round_files: Dict[str, List[str]],
+    rounds_dir: Optional[Path] = None,
 ) -> Dict[str, RoundIdentity]:
     """Map every treatment id to the round that actually annotated it.
 
@@ -72,16 +73,21 @@ def assign_rounds(
     Returns:
         ``{treatment_id: RoundIdentity}``, one entry per distinct id.
     """
+    base = Path(rounds_dir) if rounds_dir is not None else Path('.')
+
+    def _path(stem: str) -> Path:
+        return base / f'{stem}.txt'
+
     out: Dict[str, RoundIdentity] = {}
     # Sort by (round number, stem) so the result never depends on dict
     # iteration order.  The stem tiebreak keeps `round5` ahead of
     # `round5_manual`, which share a number.
     ordered = sorted(
         round_files.items(),
-        key=lambda kv: (round_identity(Path(kv[0] + '.txt')).round, kv[0]),
+        key=lambda kv: (round_identity(_path(kv[0])).round, kv[0]),
     )
     for stem, ids in ordered:
-        identity = round_identity(Path(stem + '.txt'))
+        identity = round_identity(_path(stem))
         for tid in ids:
             # First writer wins: the lowest round is the one that
             # annotated, because later rounds skipped it.
@@ -240,8 +246,12 @@ def stamp_docs(
         if statuses is not None and doc.get('status') not in statuses:
             skipped += 1
             continue
+        # Compare every field stamp_round writes.  Comparing only
+        # round and round_file would call a doc already-correct while
+        # its provenance was still missing.
         if (doc.get('round') == identity.round
-                and doc.get('round_file') == identity.round_file):
+                and doc.get('round_file') == identity.round_file
+                and doc.get('round_provenance') == identity.provenance):
             # Already correct.  Re-saving would burn a revision to
             # change nothing, and would hide a real disagreement
             # behind an overwrite.
@@ -357,7 +367,7 @@ def main() -> int:
             )
 
     # Document stamps
-    assignments = assign_rounds(round_files)
+    assignments = assign_rounds(round_files, rounds_dir=rounds_dir)
     print(f'\n{len(assignments)} treatments assigned to a round',
           file=sys.stderr)
     for name, key, statuses in (
