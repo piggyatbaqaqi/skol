@@ -2373,6 +2373,57 @@ tightening MUST NOT surface these as false positives.
   addition to `treatments_to_structured/triage_signals.py`.
   Tracked as **D2** in the Detector backlog; blocked on a
   fixture for the mid-body case.
+* **`taxon_fa7f4de6...`** — noted 2026-08-25 from round-4.
+  *Acarospora indistincta* K. Knudsen, Hodková & Kocourk.,
+  sp. nov. (*MycoKeys* 112).  A **squamulose** lichen, and
+  the second *Acarospora* in the set.
+
+  **Overlap declared**: taxon_d7ffc349 (`endolithic-lichen`)
+  is the same genus by the same lead author, but the
+  **opposite thallus habit**, and that is the whole point of
+  keeping both.  An endolithic lichen lives *inside* the
+  rock and has no upper cortex to describe; this one is a
+  cushion of squamules sitting on top of basalt, so
+  `Hypothallus`, `Upper surface`, `Lower surface`,
+  `Epicortex`, `Cortex` and `Medulla` all exist here and
+  cannot exist there.  Anything that learns "lichen ⇒
+  endolithic vocabulary" from one exemplar is wrong, and
+  this is the counterexample.
+
+  Two registers not otherwise in the fixture:
+
+  1. **Negative observations as first-class features** —
+     `Pycnidia not observed.` and `Chemistry: not producing
+     secondary metabolites.`  Both are annotated features
+     whose content is an absence.  A slot-filler that
+     expects a measurement or a colour gets a negation, and
+     "not producing secondary metabolites" must not
+     normalise to a chemistry *value*.
+  2. **An internal inconsistency in the published source.**
+     The diagnosis says the cortex is `(50–)90–100` µm; the
+     description four paragraphs later says `(60–)90–100`.
+     Ours is a faithful extraction of both — the
+     disagreement is the paper's.  Worth knowing before
+     someone builds a cross-field consistency check and
+     reports it as an extraction defect.
+
+  **The reason it is here rather than in the pathology
+  half.**  At **21 annotations** it is the densest treatment
+  reviewed that is not a merge, and I predicted before
+  reading it that "the only one likely to be a multi-taxon
+  case at that density."  That prediction was wrong, and
+  the correction is load-bearing for D7 — see the
+  confounder recorded there.  Everything else reads clean:
+  seven prose fields all correctly routed, contiguous odd
+  paragraphs 27–43, a genuine differential diagnosis,
+  `merge_metric` 0, no triage flags, `synthetic_nomenclature`
+  false, and `OcrDamage` silent on all three modes.
+
+  It is also the round's only **new vocabulary**: the
+  reviewer added `Squamules` for *"The majority of squamules
+  are sterile."*, a label absent from both the candidate and
+  hand databases.  See §12.1 — it is arguably a *slot* on
+  `Thallus` rather than a feature of its own.
 
 ## Notes for fix sequencing
 
@@ -2929,12 +2980,45 @@ two-line patch:
   making it an annotation label; this discriminator
   depends on it.
 
+* **Neither annotation count nor distinct-label count is a
+  merge signal — only repetition is.**  Recorded 2026-08-25
+  because I got this wrong in review: seeing 21 annotations
+  on `taxon_fa7f4de6` I predicted a multi-taxon merge, and
+  it is a clean single lichen (§0.5).  Ranking all 106
+  reviewed treatments by distinct-label count puts it
+  **level with a confirmed merge**:
+
+  | treatment | distinct | max repeat | n |
+  |---|---:|---:|---:|
+  | `taxon_572d470e` — merged | 21 | 10 | 105 |
+  | `taxon_fa7f4de6` — clean | **21** | **1** | **21** |
+  | `taxon_592128a8` — merged | 17 | 22 | 169 |
+  | `taxon_2b793602` — merged | 12 | 50 | 155 |
+
+  The two 21s are indistinguishable on distinct count, and
+  the two worst merges in the corpus score **below** the
+  clean lichen on it.  Anatomically deep clades — lichens
+  especially, with their epicortex/cortex/algal-layer/
+  medulla/hymenium stack — simply name more distinct
+  features than an agaric does.  `max repeat` separates all
+  four cleanly; `n` separates three of four.
+
+  So the candidate metrics below must be built on
+  **repetition**, and any form with distinct-label count in
+  the numerator is disqualified before implementation.
+
 So the usable form is not a raw count.  Candidates: repeats
 per 1000 characters; ratio of max label count to distinct
 label count; or a count that collapses the Latin/English
 pair the way `count_repeated_structural_anatomy` already
 does via `_latin_ratio`.  Settle it against those four
 before implementing.
+
+Note that the second candidate — **max ÷ distinct** — is the
+one the table above endorses: it reads 10/21 = 0.48 on the
+merge and 1/21 = 0.05 on the clean lichen, while
+`taxon_2b793602` reads 50/12 = 4.2.  Three orders of
+separation with no threshold tuning.
 
 **Depends on**: nothing — annotation counts are already
 stored.  But it is evaluated on the annotation set, so it is
@@ -5684,6 +5768,62 @@ Overlaps with the pipeline restructure in
 modules).  Likely a Phase 3+ candidate after v4 lands —
 useful to record now so §6 fix work explicitly weighs
 "tighten the merge detector" vs "fix assembly to not need one."
+
+### 12.1 The vocabulary is absorbing *slots* as if they were features
+
+Recorded 2026-08-25, from the one new label round 4 produced.
+
+Reviewing `taxon_fa7f4de6` (§0.5) the operator added
+**`Squamules`** for the sentence
+
+> *The majority of squamules are sterile.*
+
+`Squamules` was absent from **both** `features_candidate`
+(322 labels) and `features_hand` (314) — genuinely new
+vocabulary at treatment 106 of the review, which is itself
+worth knowing for the Heaps' curve.
+
+**But it is not a feature.**  The squamules were already
+described, four sentences earlier, under `Thallus`:
+*"Thallus of convex dispersed squamules, 0.3–1 mm wide…"*.
+The new sentence adds no anatomy; it states a **property**
+— fertility — of a structure already on the record.  Naming
+the label after the sentence's subject noun creates a second
+feature for one organ.
+
+Under `docs/structured-form-schema.md` the sentence wants to
+land as a slot:
+
+```json
+{"feature": "Thallus",
+ "structure": ["convex dispersed squamules"],
+ "fertility": ["the majority of squamules are sterile"]}
+```
+
+**Why this is a class and not a one-off.**  The annotator is
+asked for a `feature_label` and nothing else, so *any*
+observation that is not itself an organ has to be
+expressed by inventing an organ-shaped label.  That is the
+same pressure that produced `Asci in culture MEA` and
+`Chemical Reaction` — a qualifier with nowhere structural
+to go, welded onto the label string.  §12's label-aware
+assembly and the schema doc's open "slot vocabulary"
+question are the same problem seen from two ends.
+
+**Scale, measured.**  The exact fertility construction is
+rare — 13 of 42 096 descriptions (0.03 %) — so `Squamules`
+will stay a near-singleton and *will* be counted among the
+54 % singleton labels the Heaps analysis reports.  A
+meaningful fraction of that singleton tail is likely slots
+in feature clothing rather than genuine long-tail anatomy.
+**That is testable**: partition the 322 labels into those
+that name an organ and those that name a property, before
+concluding anything about vocabulary saturation.  Do it as
+part of the schema induction in T6, not after.
+
+**Do not rename `Squamules` now.**  It is evidence about the
+current prompt and the baseline depends on it, exactly as
+with the six deferred `Spores`→`Ascospores` cases.
 
 ### 13. Diagnosis segments may not be worth Claude annotation (operational note)
 

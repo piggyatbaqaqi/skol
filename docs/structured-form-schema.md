@@ -167,6 +167,27 @@ is common in mycological description — hence `typical_max` and
   and span nesting expresses part-of directly (`Subiculum` inside
   `Ascomata`, memo §0.1). Harvest those for **schema induction** before
   generating any training data.
+
+  **The missing slot vocabulary is actively corrupting the feature
+  vocabulary**, which raises the priority. Measured 2026-08-25 on
+  `taxon_fa7f4de6`: the reviewer added `Squamules` for *"The majority of
+  squamules are sterile."* — a **fertility property** of a structure
+  already described under `Thallus`, not a new organ. The annotator is
+  offered `feature_label` and nothing else, so a property with no
+  structural home has to be expressed as an organ-shaped label. It wants
+  to be `{"feature": "Thallus", "fertility": [...]}`.
+
+  Two consequences:
+
+  * **The singleton rate is not a clean vocabulary measurement.** The
+    construction occurs in 13 of 42 096 descriptions (0.03 %), so
+    `Squamules` lands permanently in the 54 % singleton tail while
+    describing nothing new. Partition the 322 labels into organ-names
+    and property-names **before** reading saturation off the curve.
+  * **It is the same defect as `Asci in culture MEA`.** There the
+    qualifier is a medium, here it is a property; both are welded into
+    the label string because the schema has no slot. Fixing base+context
+    without fixing this fixes half a problem. Memo §12.1.
 * **Whether the SLM needs fine-tuning at all.** The "Mistral did poorly"
   finding was measured on *entire descriptions*, which is the problem
   phase 1 removes. Re-run it on labelled spans before assuming a

@@ -426,6 +426,22 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Diaporthe isoberliniae Crous ... EMEND. L. Schweizer, C. Lamb. & Y. Marin (MycoKeys 99).  Zero flags, merge_metric 7, no OCR damage; description holds both the morphology (Conidiomata through Gamma conidia) and 'Culture characters.' (PDA, MEA, OA) in two spans, with a proper differential Notes and specimens examined.  ADDED FOR THE NOMENCLATURAL ACT: the fixture's only other emendation is taxon_7cb84fba, a PATHOLOGY where a family emendation is attached to a species name.  This is the correctly-attached counterpart at species rank, so the pair distinguishes 'emendation' from 'emendation mis-attached'.  taxon_46ff7dde (queued for round 5) remains worth adding separately -- it is supra-generic, a rank this does not cover.  Also the clearest live example of the base+context label problem: three medium-specific labels (Culture_on_PDA / _MEA / _OA) for one feature, and Alpha/Beta/Gamma_conidia for another -- see docs/feature_label_non_synonyms.md and docs/structured-form-schema.md."
+    },
+    {
+      "id": "taxon_fa7f4de69db3a77c6a52db36532d6b8c8bf86d7028d31ed120f2f9b5a9c3337e",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "19-d851dad8682f0f90e7693bc6398d31b7",
+      "class": "lichen-squamulose-full-anatomy",
+      "treatment": "Acarospora indistincta K. Knudsen, Hodková & Kocourk. sp. nov. Fig. 3\n",
+      "description": "Description. Hypothallus endosubstratal, no algae observed. Thallus of convex dispersed squamules, 0.3–1 mm wide, 0.4–0.7 mm thick, with rounded edges, sometimes irregular in shape, usually not replicating by division, covering areas of several centimeters. Upper surface brown, shiny or dull, rarely pruinose. Lower surface white. Epicortex 10–40 µm thick. Cortex (60–)90–100 µm thick, of mostly round cells 2–5 µm wide, upper layer red brown, 10 µm thick, lower layer hyaline. Algal layer 90–150 µm thick, even, dense, continuous below apothecia, not interrupted by hyphal bundles, algal cells 10–15 µm wide. Medulla 180–250 µm thick, of anticlinal hyphae thin-walled and 2 µm thick, continuous with the stipe. The majority of squamules are sterile. Usually one apothecium per areole, immersed, below thallus level, punctiform, expanding up to 0.4 mm wide, disc dark brown, epruinose, sometimes becoming slightly elevated in thalline margin. Parathecium indistinct or 10 µm wide of narrow hyphae 1 µm wide. Hymenium mostly 90–100 µm tall, epihymenium 10–20 µm tall, red-brown, surface uneven, paraphyses 1.0–1.5 µm wide, hymenial gel IKI+ blue turning red, hemiamyloid. Asci clavate 50–60 × 15–21 µm, ascospores several hundred, thin ellipsoid, 3–4 × 1–1.5 µm (n = 20). Subhymenium 40–50 µm tall, IKI+ blue, euamyloid. Hypothecium 20–30 µm tall, IKI-. Pycnidia not observed. Chemistry: not producing secondary metabolites.\n",
+      "diagnosis": "Diagnosis. Similar to Acarospora veronensis but differing with a thicker cortex (50–)90–100 vs. 10–20(–30) µm and in being squamulose.\n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Acarospora indistincta (MycoKeys 112).  Squamulose lichen, the second Acarospora after taxon_d7ffc349 and the opposite thallus habit -- squamules with epicortex/cortex/lower surface where the endolithic one has none.  Highest distinct-label count of any un-merged reviewed treatment (21 labels, no repeats), which is why it anchors the D7 confounder: distinct-label COUNT is not a merge signal, repetition is.  Seven prose fields, a genuine differential diagnosis, merge_metric 0, no OCR damage.  Memo SS0.5 and D7."
     }
   ],
   "pathologies": [

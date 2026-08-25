@@ -794,10 +794,19 @@ overstated what 9 treatments can carry.
 Target the union of what is now measured: 12 case/plural clusters
 (`ConidiogenousCells`, `Chemical Reaction`/`reaction`/`reactions`), the
 base+context family (`Asci` / `Asci protologue` / `Asci in culture MEA`;
-same for Ascospores, Pseudothecium, Colony, Culture), and the five
+same for Ascospores, Pseudothecium, Colony, Culture), and the six
 round-4 clade-specific-spore cases. **These are one problem** — the label
 string carries a qualifier the schema should carry structurally — which is
-why the five `Spores` docs should *not* be patched now (§ Backlog).
+why the six `Spores` docs should *not* be patched now (§ Backlog).
+
+**And the same problem produces `Squamules`** (`taxon_fa7f4de6`,
+2026-08-25): a *property* — fertility — with no structural slot to
+occupy, so it is expressed as a new organ-shaped label. Memo §12.1
+records the case and the testable consequence: **partition the 322
+labels into organ-names and property-names before reading anything into
+the 54 % singleton rate.** Schema induction has to happen first, since
+a slot masquerading as a feature inflates the vocabulary curve exactly
+where it is being measured.
 
 Two traps:
 
@@ -837,8 +846,9 @@ and settles the floor).
   retroactively invalidates the round-6 draw. Deferring is not merely
   cheaper — it is required for the baseline to mean anything. The T4
   covariate gets the prioritisation input at zero risk.
-- **The five round-4 `Spores` treatments.** They are evidence about the
-  *prompt*; editing them now corrupts the baseline. Queue for T6.
+- **The six round-4 `Spores` treatments**, and `Squamules` on
+  `taxon_fa7f4de6`. They are evidence about the *prompt*; editing them
+  now corrupts the baseline. Queue for T6.
 - **Credentials.** Operator decision: out of scope.
 
 **Not adopted from review:** renaming `production_v4_round5_manual.txt`.
