@@ -2148,6 +2148,73 @@
         "§12-citation-opens-a-Description-block"
       ],
       "notes": "§6/D18: FOUR complete agaric descriptions merged, not two -- four full cycles of Pileus/Lamellae/Stipe/Spores/Basidia/cystidia/tramas/Pileipellis/Clamps with four different spore measurements (4.6-5.5, 5.5-7, 5.3-6, 8-10 um).  Source is Hesler & Smith, North American Species of Crepidotus, which numbers its taxa Ex 1 to Ex 4.  Ex 1 (Pyrrhoglossum hepatizon) WAS captured correctly as Nomenclature at char 366087; Ex 2 (Naucoria tiliophila) is the FIRST SENTENCE of a Description block at 367869, Ex 3 (Melanotus eccentricus) is mid-text, and Ex 4 has no heading at all.  The new mechanism: unlike every other D12 case, the heading is not lost to a non-content label -- it is labelled as CONTENT, and since the grouper's boundary signal is the Nomenclature label, a heading absorbed into Description creates no split.  Gating case for D18, measured at 0.23 % of Description blocks with 100 % precision on a 250-document sample.  Narrative in the memo under D18."
+    },
+    {
+      "id": "taxon_e4eb2c9fe8aac30b7e7796393f08883b215c7a9cfe9cbf83f33fddb4764e8b0b",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "23-854119317d6627c1a8d1ce0e34e70df6",
+      "class": "§6-genus-plus-four-species-fragments-scattered",
+      "treatment": "Nomen ignotum\n",
+      "description": "coming shallow cup-shaped, attenuated below into a short, stem-\nlike base, densely clothed with short, septate, brown hairs giving\n\nfinally becoming septate; paraphyses filiform and\nsurmounted with a fusiform conidium-like body.\nType species, Diplocarpa Curreyana Massee.\n\nApothecia gregarious, or closely congested, appearing sessile\nbut actually short-stipitate, at\nfirst closed, then expanding and\nbecoming shallow cup-shaped, reaching a diameter of\n1-2 mm.\nexternally dark-brown, decidedly rough, tomentose,\n\nmm. long, relatively thick, about half as thick as long; hymenium\nconcave, olive-green, becoming brownish with age; asci clavate,\n\nApothecia gregarious, seated on a spreading, white, or yellow-\nish mycelial web, sessile, at first rounded, then becoming scutel-\nlate, externally golden-yellow to pale-orange, clothed with\nfine\nhairs, reaching a diameter of 2-3 mm.; hymenium yellowish, a\nlittle\npaler than\n\nApothecia\nsessile, on sparse subicle of hyaline mycelium, at\nfirst subglobose, becoming patellate, cream-colored to light-buff\n\nand a diameter of 10-12 n, 8-spored\n; spores irregularly fasciculate,\nmany-guttulate, straight, or curved, 7-septate, 2.5-3 X 65-80\nyu;\n\ndiameter, externally dull-white, and densely clothed,\n\npale, glandular\nhairs, expanded\nwhen fresh, the margin incurved when dry, attached by spreading,\nwhite filaments; asci cylindric or subcylindric, reaching a length\nof 65-70 M and a diameter of 7-8 m, 8-spored; spores mostly\n2-\n",
+      "diagnosis": "",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": true,
+      "description_spans": [
+        {
+          "start_line": 38017,
+          "end_line": 38018
+        },
+        {
+          "start_line": 38040,
+          "end_line": 38042
+        },
+        {
+          "start_line": 38056,
+          "end_line": 38061
+        },
+        {
+          "start_line": 38081,
+          "end_line": 38082
+        },
+        {
+          "start_line": 38538,
+          "end_line": 38544
+        },
+        {
+          "start_line": 38697,
+          "end_line": 38699
+        },
+        {
+          "start_line": 38720,
+          "end_line": 38723
+        },
+        {
+          "start_line": 39100,
+          "end_line": 39100
+        },
+        {
+          "start_line": 39107,
+          "end_line": 39112
+        }
+      ],
+      "source_anchors": [],
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§10:mid_sentence",
+        "§10:tail_clip",
+        "§6:multi_structural_anatomy",
+        "§6:authored_binomial",
+        "§12:desc_span_gap",
+        "§13:no_source_anchor"
+      ],
+      "known_missed_flags": [
+        "§2-genus-description-with-no-nomenclature",
+        "§6-five-taxa-in-one-treatment",
+        "§5-zero-length-nomenclature-span"
+      ],
+      "notes": "§6/D14: FIVE taxa, all PARTIAL -- a genus fragment ending 'Type species, Diplocarpa Curreyana Massee.' plus four species fragments, each opening 'Apothecia ...'.  Five Apothecium labels in the annotation.  Nine description spans over paragraphs 6279-6501, harvested from THREE separated regions of Seaver's North American Cup-fungi Inoperculates (6279-6303, 6389-6421, 6497-6501).  Truncated at 'spores mostly 2-'.  Deliberate contrast with taxon_d9ffc366, where four COMPLETE descriptions were merged: that one is splittable, this one is not -- nothing here is whole.  Carries the fourth instance of the zero-length nomenclature span at offset 0.  Seven flags DO fire, including section6:multi_structural_anatomy, so the detectors are not blind; merge_metric is 1 despite five taxa, because the fragments are short and not repetitive.  Confirms the D14 rank-marker approach on CLEAN text (no OCR damage on any mode), complementing taxon_9499dcb0 where the marker survived OCR that destroyed the genus name.  Corpus-wide, 211 descriptions declare 'Type species' while having synthetic or absent nomenclature.  Narrative in the memo under D14."
     }
   ]
 }

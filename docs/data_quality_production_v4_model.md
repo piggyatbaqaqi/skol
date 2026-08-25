@@ -4077,6 +4077,27 @@ nov.`; and on `taxon_6c2dcb7c`
 (`§6-compilatory-double-description`), an *Exophiala* genus
 entry under a *Cladophialophora* species name.
 
+#### Sized: 211 genus descriptions with no name attached
+
+Measured 2026-08-25. **1 491** descriptions contain the phrase
+`Type species`; **211 of them (14 %)** have a synthetic or absent
+nomenclature. Each is a description that *declares itself* to be of a
+genus, attached to no name at all — the sharpest form of the rank
+mismatch, and detectable without resolving a single taxon name.
+
+`taxon_e4eb2c9f` is the exemplar (Seaver, *North American Cup-fungi
+Inoperculates*): its second block ends
+`…paraphyses filiform and surmounted with a fusiform conidium-like
+body. **Type species, Diplocarpa Curreyana Massee.**` while its
+`treatment` field reads `Nomen ignotum`.
+
+**It also confirms the rank-marker approach on clean text.** The
+proposal was made from `taxon_9499dcb0`, where the genus name was
+OCR-mangled to `Denttpellis` and only `TYPE SPECIES` survived legibly.
+This treatment has **no OCR damage on any mode** and shows the same
+marker doing the same work — so the signal is not merely an
+OCR-robustness trick, it is the primary evidence in clean text too.
+
 **The rank markers are explicit and cheap.**  A treatment
 declares its own rank in prose that is already extracted:
 
