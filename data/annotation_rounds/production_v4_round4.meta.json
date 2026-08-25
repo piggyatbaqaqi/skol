@@ -1,0 +1,35 @@
+{
+  "round": 4,
+  "round_file": "production_v4_round4",
+  "experiment": "production_v4",
+  "provenance": "reconstructed",
+  "n_selected": 50,
+  "band_quotas": [
+    5,
+    15,
+    30
+  ],
+  "band_slices": [
+    {
+      "quota": 5,
+      "observed_min": 27.0,
+      "observed_max": 133.0,
+      "cut_max": 146.0
+    },
+    {
+      "quota": 15,
+      "observed_min": 150.0,
+      "observed_max": 306.0,
+      "cut_min": 146.0,
+      "cut_max": 310.0
+    },
+    {
+      "quota": 30,
+      "observed_min": 316.0,
+      "observed_max": 1475.0,
+      "cut_min": 310.0
+    }
+  ],
+  "output_order": "band-by-band",
+  "bands_derivation": "recovered 2026-08-25 from file order plus the equal-slice rule: assigning members to bands by the population cut points leaves file order band-monotonic at k=3 and at no other k.  Band NAMES are not recoverable -- the count sets the cut points and the names are decoration -- so only quotas are given."
+}

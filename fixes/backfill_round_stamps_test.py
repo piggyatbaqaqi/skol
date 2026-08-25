@@ -26,12 +26,6 @@ from treatments_to_structured.round_provenance import (  # noqa: E402
     PROVENANCE_RECONSTRUCTED,
 )
 
-pytestmark = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True,
-    reason='backfill: implementation follows test confirmation',
-)
-
-
 # ---------------------------------------------------------------------------
 # Decision 6 — in a backfill the LOWEST round wins
 # ---------------------------------------------------------------------------
@@ -302,11 +296,20 @@ class TestRecoverBands:
         pop = list(range(1, 301))
         return [pop[(i * len(pop)) // k] for i in range(1, k)]
 
+    # The round-4 shape: 2 low, 3 mid, 4 high, bands in order but
+    # SHUFFLED WITHIN each band -- which is what select_treatments
+    # produces, since only the band sequence is ordered and membership
+    # within a band comes from rng.sample.
+    #
+    # The shuffle is load-bearing, not decoration.  On a fully sorted
+    # list every k is trivially band-monotonic, so nothing is
+    # recoverable; see test_a_sorted_file_is_ambiguous.  Round 4 is
+    # readable precisely because its within-band order is random.
+    _BANDED = [50, 10, 190, 120, 150, 280, 220, 290, 260]
+
     def test_band_monotonic_file_recovers_k_and_quotas(self) -> None:
-        """The round-4 shape: 2 low, 3 mid, 4 high, in that order."""
         ids = [f'taxon_{i}' for i in range(9)]
-        scores = [10, 50, 120, 150, 190, 220, 260, 280, 290]
-        got = recover_bands(ids, scores, self._cuts)
+        got = recover_bands(ids, self._BANDED, self._cuts)
         assert got is not None
         assert got['k'] == 3
         assert got['band_quotas'] == [2, 3, 4]
@@ -321,14 +324,18 @@ class TestRecoverBands:
         scores = [290, 50, 220, 10, 260, 150, 120, 280, 190]
         assert recover_bands(ids, scores, self._cuts) is None
 
-    def test_ambiguity_recovers_nothing(self) -> None:
+    def test_a_sorted_file_is_ambiguous(self) -> None:
         """If more than one k fits, the answer is unknown, not the
-        smallest k.  Round 4 is usable precisely because k=3 is the
-        ONLY value that fits; k=2, 4 and 5 are all rejected.
+        smallest k.
+
+        A file already sorted by score is the natural ambiguous case:
+        EVERY k is band-monotonic on it, so it carries no information
+        about how the draw was banded.  Round 4 is usable precisely
+        because k=3 is the only value that fits -- k=2, 4 and 5 all
+        break monotonicity on its within-band shuffle.
         """
-        ids = ['taxon_a', 'taxon_b']
-        scores = [10, 290]
-        assert recover_bands(ids, scores, self._cuts) is None
+        ids = [f'taxon_{i}' for i in range(4)]
+        assert recover_bands(ids, [10, 120, 220, 290], self._cuts) is None
 
     def test_a_single_band_is_not_a_recovery(self) -> None:
         """An unbanded round is trivially monotonic in one band.  That
@@ -348,11 +355,10 @@ class TestRecoverBands:
         recovery checkable.
         """
         ids = [f'taxon_{i}' for i in range(9)]
-        scores = [10, 50, 120, 150, 190, 220, 260, 280, 290]
-        got = recover_bands(ids, scores, self._cuts)
+        got = recover_bands(ids, self._BANDED, self._cuts)
         first = got['band_slices'][0]
         assert first['observed_min'] == 10
-        assert first['observed_max'] == 120
+        assert first['observed_max'] == 50
         assert first['cut_max'] == self._cuts(3)[0]
 
 
@@ -396,6 +402,78 @@ class TestDerivedSidecarFields:
         for absent in ('band_quotas', 'band_slices', 'bands_derivation',
                        'output_order'):
             assert absent not in meta
+
+
+# ---------------------------------------------------------------------------
+# Sidecar lookup needs the directory, and provenance is not cosmetic
+# ---------------------------------------------------------------------------
+
+
+class TestAssignRoundsFindsSidecars:
+    """A doc stamped from a reconstructed sidecar must SAY so.
+
+    Found by verifying the live backfill rather than by the tests
+    above: ``assign_rounds`` was resolving ``<stem>.txt`` relative to
+    the working directory, so it never saw the sidecars it had just
+    written and every round-1-to-4 doc landed without a
+    ``round_provenance``.  A reader querying CouchDB alone then cannot
+    tell a reconstructed round from a selector-drawn one -- which is
+    exactly the distinction decisions 7 and 8 exist to keep.
+    """
+
+    def test_sidecar_provenance_reaches_the_assignment(
+        self, tmp_path: Path,
+    ) -> None:
+        (tmp_path / 'production_v4_round2.txt').write_text(
+            'taxon_a\n', encoding='utf-8')
+        (tmp_path / 'production_v4_round2.meta.json').write_text(
+            json.dumps({'round': 2,
+                        'provenance': PROVENANCE_RECONSTRUCTED}),
+            encoding='utf-8')
+        got = assign_rounds(
+            {'production_v4_round2': ['taxon_a']}, rounds_dir=tmp_path,
+        )
+        assert got['taxon_a'].provenance == PROVENANCE_RECONSTRUCTED
+
+    def test_absent_rounds_dir_still_works(self) -> None:
+        """Callers that have no directory (and the tests above) keep
+        the name-only behaviour rather than erroring."""
+        got = assign_rounds({'production_v4_round2': ['taxon_a']})
+        assert got['taxon_a'].round == 2
+        assert got['taxon_a'].provenance is None
+
+
+class TestStampDocsRestampsOnProvenanceChange:
+    def test_a_changed_provenance_is_not_treated_as_idempotent(
+        self,
+    ) -> None:
+        """The idempotence check must compare every field it writes.
+
+        Comparing only round and round_file would leave the docs from
+        the first backfill run permanently missing their provenance,
+        because a corrected re-run would call them already-correct.
+        """
+        db = _FakeDb({
+            'taxon_a:Pileus:13': {
+                'feature_label': 'Pileus', 'round': 2,
+                'round_file': 'production_v4_round2',
+            },
+        })
+        assignments = assign_rounds(
+            {'production_v4_round2': ['taxon_a']},
+        )
+        assignments['taxon_a'] = assignments['taxon_a'].__class__(
+            round=2, round_file='production_v4_round2',
+            experiment='production_v4',
+            provenance=PROVENANCE_RECONSTRUCTED,
+        )
+        stamped, _ = stamp_docs(
+            db, assignments,
+            id_to_treatment=lambda i: i.split(':', 1)[0],
+            dry_run=False,
+        )
+        assert stamped == 1
+        assert db.saved[0]['round_provenance'] == PROVENANCE_RECONSTRUCTED
 
 
 if __name__ == '__main__':
