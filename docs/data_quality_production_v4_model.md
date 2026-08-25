@@ -3484,6 +3484,70 @@ on a naive similarity test.
 
 **Depends on**: nothing — block splitting and a similarity ratio.
 
+### D18 — Nomenclature absorbed into a Description block (§6/§12)
+
+**Catches**: a `Description` block whose *first sentence* is a
+nomenclatural citation. The heading was not lost — it was labelled as
+**content**, so no treatment boundary was created and everything after
+it merged into the previous taxon.
+
+**This is the mirror of every other D12 case.** Those lose a heading to
+a *non-content* label — `Table`, `Misc-exposition`, `Figure-caption`.
+Here the classifier is arguably right that the text is content; the
+failure is that **the grouper's boundary signal is the `Nomenclature`
+label**, so a heading absorbed into `Description` creates no split.
+
+Found on `taxon_d9ffc366` (Hesler & Smith, *North American Species of
+Crepidotus*), which merges **four** complete agaric descriptions. The
+paper numbers its taxa `Ex 1`…`Ex 4`, and the extractor captured only
+the first:
+
+| taxon | citation | outcome |
+|---|---|---|
+| Ex 1 *Pyrrhoglossum hepatizon* | char 366 087, `Nomenclature` | ✅ boundary made |
+| Ex 2 *Naucoria tiliophila* | char 367 869, **first sentence of a `Description` block** | ❌ merged |
+| Ex 3 *Melanotus eccentricus* | mid-text | ❌ merged |
+| Ex 4 | no heading found at all | ❌ merged |
+
+Four full cycles of the agaric template — Pileus → Lamellae → Stipe →
+Spores → Basidia → cystidia → tramas → Pileipellis → Clamps — with
+**four different spore measurements**: 4.6–5.5, 5.5–7, 5.3–6 and
+8–10 µm. The operator read it as two descriptions; it is four.
+
+#### Measured
+
+Over 250 sampled documents holding 2 218 `Description` blocks:
+
+| | count | rate |
+|---|---:|---:|
+| blocks opening with a citation shape | **5** | **0.23 %** |
+| documents with at least one | 4 | 1.6 % |
+
+**Precision on the sample was 100 %** — every hit is a genuine heading
+run together with the description that follows:
+
+* `Gastroboleus dinoffii Nouhra & Castellano sp. nov. Basidiomata usque ad 6 × 4.5…`
+* `Coriolopsis brunneoleuca (Berk.) Ryvarden, Norw. Jl Bot. 19: 230 (1972). Basidio…`
+* `Claudopus vinaceocontusus Baroni, sp. nov. (Figs. 4-6 and 14) Pileus sordidus…`
+
+A low rate with a high cost: each instance is a **missed treatment
+boundary**, so it does not lose a sentence, it merges two taxa.
+
+**Why it is easier than the general heading problem.** The citation sits
+at **offset 0 of the block**, not somewhere in running text — so the
+match is anchored and needs no scan. That anchoring is what buys the
+precision; the same regex applied anywhere in a block would drown in
+comparative citations (see D13).
+
+**Gating fixtures**: must fire on `taxon_d9ffc366`. Must stay silent on
+the poster children, and in particular on `taxon_01a01c54`
+(`§11-gen-nov-plus-type-species`) and `taxon_b970d2c2`
+(`genus-description-no-measurements`), where a genus and its species
+legitimately share a document — the check is *within* a Description
+block, not across blocks, so both should pass.
+
+**Depends on**: nothing — the `.ann` labels and an anchored regex.
+
 ### D11 — Mid-description truncation (§10)
 
 **Catches**: a field that is cut off *inside* the

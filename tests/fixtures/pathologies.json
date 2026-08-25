@@ -2104,6 +2104,50 @@
         "consequence": "Treatment ids are content hashes, so this entry will dangle after re-sourcing."
       },
       "notes": "§12: the PLAUSIBLE-JOIN case.  Its description ends one block at '...filiformi-bacillaria, sero' and opens the next at 'adnata, globosa vel late ovoidea', and concatenated 'sero adnata' reads as grammatical Latin -- so a severed-term detector keyed on IMPLAUSIBILITY passes it, unlike 'rotia:' or 'pseudoparaphyses'.  The fragments are 1865 chars apart across a page break; the true continuation of 'adnata' is a DROPPED Misc-exposition block at 882583, '...in uno latere plerumque fasciculo sclerenchymatico', giving 'adnate to a sclerenchymatous bundle'.  'sero' is separately the truncated tail of the conidiophore clause -- the intact one earlier ends with dimensions.  Only SEMANTICS betray the join: conidiophores are not globose and not 150-250 um.  The operator's mycology caught it, not their Latin, and they noted 'my Latin isn't very good' -- the risk compounds outside English.  Also: FOUR-plus taxa, with Phyllostictina moravica and Creodiplodina Petr. N. GEN. both labelled Table; the nomenclature field is German prose while the real name 'Macroseptoria graeca Petr. n. spec.' sits inside the description; and the paper is bilingual, the German landing in Bibliography and Misc-exposition.  Boundary note for reviewers: 'ostiolo ... perforato' is an ablative absolute, but 'punctiformiter erumpentia' is nominative plural agreeing with Pycnidia, so an Ostiole label should end at 'perforato' -- T5 currently over-extends.  Narrative in the memo under D12."
+    },
+    {
+      "id": "taxon_d9ffc36609fabdc974015313f3bc974f7f28cf543d7cd2c58d8e8e38cbd13fff",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "20-e23463ed71bace9e3510d44f2f3fbfb3",
+      "class": "§6-four-taxa-via-citations-absorbed-into-Description",
+      "treatment": "Ex 1. Pyrrhoglossum hepatizon (Berk.) Singer Sydowia 5: 474. 1951.\nAgaricus (Crepidotus) hepatizon Berk., apud Hooker, London Jour. Bot. 6:\n486. 1847.\nCrepidotus hepatizon (Berk.) Sacc., Syll. Fung. 5: 879. 1887. \n",
+      "description": "Pileus 1.5-2.5 cm broad, usually eccentric, moderately convex to subplano-umbilicate, fuscous, lobed-sinuous.\nLamellae brown (ferruginous), moderately close, narrow.\nStipe conspicuous, 1.5-2.5 cm long, 5 mm broad, cylindric central or\neccentric, not rarely sublateral.\nSpores 4.6-5.5 X 2.8-4 JL, ovoid, or more or less ellipsoid, slightly in-\n\nequilateral in profile, verruculose-asperulate, dark brown, wall thick.\nPleurocystidia and cheilocystidia not observed. Gill trama undulatingparallel, hyphae 3-6 /L broad. Pileus trama interwoven. Cuticle repent,\napparently of several (5-6) hyphallayers. Clamp connections not found. \n\nNaucoria tiliophila (Pk.) Sing., Mycologia 35: 163. 1943.\nPileus 1-2.5 cm broad, convex, hygrophanous, watery-brown and\nstriatulate when moist, dingy-buff when dry, minutely pulverulent. Context moderately thin.\nLamellae adnexed, rounded behind, concolorous, becoming ferruginous-cinnamon, rather broad, subdistant.\nStipe 4-8 mm X 2 mm, pruinose, white-pubescent at the base, often\ncurved, solid.\nSpores 5.5-7 X 4-4.5 /L, ellipsoid to subovoid, smooth, pale fuscous\nunder microscope. Basidia 17-21 X 5-6 /L, 4-spored. Pleurocystidia none;\ncheilocystidia 18-29 X 4-8 /L, clustered, clavate, colorless. Gill trama subparallel. Pileus trama interwoven. Cuticle not sharply differentiated; the\nsurface hyphae give rise to erect, brownish, clavate cystitioid cells, scarcely\nin a palisade or a trichodermium. Clamp connections none.\nHABIT, HABITAT, AND DISTRIBUTION: On dead trunks and branches of\nTilia americana, New York, August.\nMATERIAL STUDIED: NEW YORK: Peck, the type, collected by Peck,\nEast Berne, A~gust.\nOBSERVATIONS: The description of microscopic characters above is\nbased on a study of the type. Singer (1962), in describing the genus Simocybe, says that the hyphae are usually with clamp connections; in S. tiliophila, however, clamps are absent. Smooth spores and the presence ofpilocystidia characterize the genus Simocybe.\nEx 3. Melanotus eccentricus (Murr.) Sing. Lilloa 13: 87. 1947.\nCrepidotus eccentricus Murr., North Amer. Flora 10: 155. 1917.\nPileus 5 mm broad, convex, not umbonate, subcircular, isabelline,\nglabrous, margin entire, incurved. \n\nLamellae adnate, yellowish to isabelline, subcrowded, broad, ventricose, edges entire.\nStipe 2 mm or less long, 0.5 mm thick, eccentric, enlarged above and\nbelow, surface white fibrillose, base surrounded by a white mycelial mat.\nSpores 5.3-6 X 4-5 JL, ellipsoid, smooth, with a germ-pore. Basidia\n17-24 X 5-6 Jl. Pleurocystidia none; cheilocystidia cylindric, few, 30-35\nX 2-4 JL. Gill trama subparallel. Pileus trama interwoven. Cuticle a cutis,\nnot greatly differentiated, with a few, scattered, colorless, more or less\nerect hyphae. Clamp connections on the epicuticular hyphae. \n\nStipe 2-4 mm long, lateral or eccentric, equal, curved, base whitemycelioid.\nSpores 8-10 X 5-6 }L, ellipsoid, smooth, with a germ-pore, brown or\nslightly yellowish-brown. Basidia 13-22 X 4-6 }L, 1-2-4-spored. Pleurocystidia 26-31 X 6-7 /-t (halfway up the gill), more or less fusoid to\nclavate-appendiculate, rare; cheilocystidia 26-48 X 6-7 }L, cylindric or\nsubclavate to clavate-appendiculate, not abundant. Gill trama subparallel.\nPileus trama interwoven. Cuticle of repent, brown hyphae, bearing erect,\nscattered cylindric to subnodulose colorless, rarely slightly fuscous hyphae\n-scarcely a turf. Clamp connections on the epicuticular and pileus trama\nhyphae. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "description_spans": [
+        {
+          "start_line": 5927,
+          "end_line": 5931
+        },
+        {
+          "start_line": 5938,
+          "end_line": 5940
+        },
+        {
+          "start_line": 5954,
+          "end_line": 5974
+        },
+        {
+          "start_line": 5981,
+          "end_line": 5988
+        },
+        {
+          "start_line": 6027,
+          "end_line": 6035
+        }
+      ],
+      "expected_flags": [
+        "§6:authored_binomial",
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§6-four-taxa-in-one-treatment",
+        "§12-citation-opens-a-Description-block"
+      ],
+      "notes": "§6/D18: FOUR complete agaric descriptions merged, not two -- four full cycles of Pileus/Lamellae/Stipe/Spores/Basidia/cystidia/tramas/Pileipellis/Clamps with four different spore measurements (4.6-5.5, 5.5-7, 5.3-6, 8-10 um).  Source is Hesler & Smith, North American Species of Crepidotus, which numbers its taxa Ex 1 to Ex 4.  Ex 1 (Pyrrhoglossum hepatizon) WAS captured correctly as Nomenclature at char 366087; Ex 2 (Naucoria tiliophila) is the FIRST SENTENCE of a Description block at 367869, Ex 3 (Melanotus eccentricus) is mid-text, and Ex 4 has no heading at all.  The new mechanism: unlike every other D12 case, the heading is not lost to a non-content label -- it is labelled as CONTENT, and since the grouper's boundary signal is the Nomenclature label, a heading absorbed into Description creates no split.  Gating case for D18, measured at 0.23 % of Description blocks with 100 % precision on a 250-document sample.  Narrative in the memo under D18."
     }
   ]
 }
