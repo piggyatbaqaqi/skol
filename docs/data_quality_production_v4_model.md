@@ -4392,6 +4392,140 @@ here) makes it **worse, not better**: 64.6 % multi-span and
 controls — mildly *anti*-correlated.  The clean boundary in
 this one treatment is a coincidence of its source document.
 
+### D19 — Next taxon's header absorbed into the trailing `diagnosis` (§6/§12)
+
+**Catches**: a treatment whose last block is the *opening* of the next
+taxon's section — genus header, protologue citation, genus
+introduction — routed into `diagnosis` because it is genus-level
+descriptive prose and the classifier has no better label for it.
+
+**What makes this different from D4, D12 and D18**, all of which also
+concern boundaries: those infer the error from the swallowed text
+alone. Here **the recipient is identifiable and can be checked**, which
+turns an inference into a verification.
+
+Found 2026-08-25 on `taxon_fd50457a` (*Neogaeumannomyces
+kevinifiliformis*, *Mycosphere*):
+
+| paragraph | content | field |
+|---:|---|---|
+| 1219 | `Neogaeumannomyces kevinifiliformis … sp. nov.` | nomenclature |
+| 1223 / 1237 | etymology / holotype | — |
+| 1239, 1245 | the description | description |
+| 1247 | material examined | materials_examined |
+| 1249 | `Notes – N. kevinifiliformis resembles N. bambusicola…` | notes |
+| **1253** | **`Rhodoveronaea Arzanlou, W. Gams & Crous, Studies in Mycology 58: 89 (2007)`** + genus intro | **diagnosis** |
+| 1255 | `Rhodoveronaea hyalina X.M. Chen & Karun.` | *next treatment* |
+
+The treatment ends at its `Notes` (1249). Paragraph 1253 is the
+*Rhodoveronaea* genus entry, and **`taxon_1cfac841` — the treatment
+that owns paragraph 1255 — has an empty `diagnosis`.** Donor has it,
+recipient is missing it, and they are adjacent. That is the whole
+detector.
+
+**The consequence is not cosmetic.** Claude annotated
+`Conidiophores`, `Conidiogenous_cells` and `Conidia` off that
+paragraph, so *Rhodoveronaea*'s asexual morph is now recorded as
+features of a taxon whose own description says `Asexual morph:
+Undetermined.` Three fabricated features on one treatment, and the
+underlying text is not even the same genus.
+
+**Shape of the rule**, all from data already stored:
+
+1. `min(diagnosis_spans.paragraph) > max(notes/materials_examined
+   spans.paragraph)` — the diagnosis trails the treatment.
+2. The next treatment from the same `ingest._id`, by nomenclature
+   paragraph, has an empty `diagnosis`.
+3. The trailing text opens with a name-plus-authority-plus-citation
+   header rather than a `Notes`/`Comments` header.
+
+Test 1 alone is far too broad — see the measurement below. **Test 2 is
+the load-bearing one** and nothing else in the backlog uses it.
+
+#### Measurement: what the trailing-diagnosis position actually contains
+
+Over the 14 804 treatments carrying both a `diagnosis` span and a
+`notes`/`materials_examined` span, **4 358 (29.4 %) have the diagnosis
+trailing**. Classifying the opening of the diagnosis text, against the
+10 446 normally-positioned ones as a control:
+
+| opening form | trailing | normal | enrichment |
+|---|---:|---:|---:|
+| `Notes`/`Comments`/`Remarks`/`Discussion` header | 1 406 (**32.3 %**) | 1 311 (12.6 %) | **2.6×** |
+| head-clipped (opens lowercase or on punctuation) | 1 384 (31.8 %) | 3 028 (29.0 %) | 1.1× |
+| name + authority + citation header | 57 (1.3 %) | 88 (0.8 %) | 1.6× |
+| other | 1 511 (34.7 %) | 6 019 (57.6 %) | 0.6× |
+
+Three things fall out, and only one of them is D19:
+
+* **The dominant tenant of the trailing position is a misrouted
+  `Notes` block**, not a next-taxon header — 2.6× enriched, and
+  unambiguous, since the source names its own section and it is not
+  "Diagnosis". §0.5 already records the field-mapping at a different
+  denominator (1 884 Notes-only + 932 both, of 18 787); this adds that
+  **position predicts it**.
+* **Head-clipping is not positional** — ~30 % either way. So roughly
+  4 400 `diagnosis` fields open mid-sentence regardless of where they
+  sit, which is §10/D11 applied to a field D11 does not currently read.
+  Worth folding into D11 rather than a new item.
+* **D19's own signature is rare** — 57 treatments at most, before
+  applying the recipient test that would raise its precision. Small,
+  but each hit fabricates features on the wrong taxon, so the cost per
+  miss is high.
+
+#### A candidate detector that this case suggested and the data killed
+
+*"`Asexual morph: Undetermined` in the description while conidial
+features are described anyway"* looks like an airtight self-
+contradiction, and `taxon_fd50457a` matches it exactly. It does not
+survive contact with the corpus.
+
+| | n | share |
+|---|---:|---:|
+| `Asexual morph` explicitly undetermined | 1 689 | — |
+| …conidial term later in the description | 265 | 15.7 % |
+| …conidial term in the diagnosis | 86 | 5.1 % |
+
+**A 7-treatment sample of the in-description form is 7/7 false
+positives.** The cause is uniform and obvious in hindsight: the
+`Culture characteristics` block that follows almost every such
+description mentions conidia belonging to the **host** or to the
+culture medium — *"obverse fawn due to conidia of the host"*
+(`taxon_2294eee2`), *"Colonies … due to coloured exudates"*
+(`taxon_25bbd681`). The term is present; the claim is not.
+
+Recorded so nobody rebuilds it. The diagnosis-side variant (86) is
+untested and inherits the same doubt — **do not cite the 5.1 % as a
+rate of anything** until it is sampled.
+
+#### An unrelated true negative worth pinning: the trophic-mode opener
+
+The operator's other observation on this treatment was surprise that
+the description **opens with ecology** — `Saprobic on dead branches of
+bamboo.` before any anatomy.
+
+**That is the house style, not a defect.** The Hyde-school genre
+(*Mycosphere*, *Fungal Diversity*) opens every description with the
+trophic mode and substrate, then `Sexual morph:` / `Asexual morph:`.
+Corpus-wide **1 434 of 42 096 descriptions (3.41 %)** open with a
+trophic-mode word — `Saprobic`, `Parasitic`, `Endophytic`,
+`Pathogenic`, `Associated with`, and the rest.
+
+It matters because it is a **false-positive magnet for §10**: the
+sentence has no anatomical subject and no capitalised feature term, so
+a "description starts mid-sentence" rule keyed on an expected opening
+noun fires on all 1 434. `taxon_fd50457a` is the gating fixture for
+that being legitimate.
+
+**Depends on**: nothing for tests 1 and 3. Test 2 needs sibling
+treatments ordered by nomenclature paragraph within an `ingest._id`,
+which `bin/treatment_dossier` (plan T3e) already proposes to compute.
+
+**Gating fixtures**: must fire on `taxon_fd50457a`
+(`§6-next-genus-header-absorbed-into-diagnosis`) and must **not** fire
+on `taxon_17320412` (`§6-compact-congenerics`), whose `diagnosis` is a
+genuine `Notes –` block correctly attached to its own taxon.
+
 ### Correction to the fix-sequencing list above
 
 Item 2 of that list ranks §5 gating as "likely highest

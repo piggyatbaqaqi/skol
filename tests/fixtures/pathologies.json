@@ -2298,6 +2298,24 @@
         "§5-zero-length-nomenclature-span"
       ],
       "notes": "§12: the operator read a complete cultural description, and what is present IS complete -- Colonies, Hyphae, Conidiophores absent, Phialides, Collarettes, Conidia, Sexual morph unknown.  Three things are missing.  (a) The NOMENCLATURE is in the source at char 43759 labelled FIGURE-CAPTION -- 'Clade A Phialophora verrucosa Medlar, Mycologia 7: 203. 1915 - MycoBank...' -- so the treatment is Nomen ignotum with a zero-length nomenclature span, which is simply how synthetic nomenclature is represented (§5.3: zero-length spans are exactly coextensive with synthetic_nomenclature, 30 520 of each, so they carry no information beyond §2:synth_nomen).  Figure-caption was already recorded swallowing a Notes continuation (taxon_8ebf437c); this is the first time it swallows a nomenclature heading.  (b) A SEMANTIC head-clip: the block at 44733 fuses the running head '11 Y. Li et al.: Phialophora verrucosa and relatives in Chaetothyriales' to the opening 'De' of the description's section header, so the FIRST medium is never named -- the text opens 'Colonies growing slowly, olivaceous brown' and only names a medium at the second, 'On MEA, 30 C:'.  Grammatically it is a clean sentence, so desc_starts_mid_sentence cannot see it.  Second instance of running-head-fused-to-heading after taxon_8d815304.  (c) 'Cardinal temperatures: minimum below 21 C, optimum 30 C, maximum 37 C.' at 45761 is labelled Misc-exposition and dropped -- culture data lost from a culture-only description, the same shape as taxon_a3308621's mating studies.  Narrative in the memo under D12."
+    },
+    {
+      "id": "taxon_fd50457a627f3df8aad286d24bb4b9703d8b426bff3eba8c3569ec293645a13f",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "20-cdbf26ac66d1aace9981f53f4d9375f5",
+      "class": "§6-next-genus-header-absorbed-into-diagnosis",
+      "treatment": "Neogaeumannomyces kevinifiliformis X.D. Yu & Jian K. Liu, sp. nov. \n",
+      "description": "Saprobic on dead branches of bamboo. Sexual morph: Ascomata solitary to gregarious,\nimmersed, visible as black domes on the substrate, in vertical section 250–300 μm high, 350–650\nμm diam., subglobose, coriaceous, uni-loculate. Peridium 20–50 μm wide, composed of several\nlayers of hyaline to brown, thick-walled cells of textura angularis. Hamathecium 7–11 µm wide,\nhyphae-like, septate paraphyses, unbranched, embedded in a gelatinous matrix. Asci 100–130 × 17–\n25 µm (  = 115 × 21 µm, n = 30), 8-spored, unitunicate, cylindrical, straight or slightly curved,\nshort pedicellate, with an apical ring. Ascospores 90–100 × 5–6 µm (  = 95 × 5.5 µm, n = 50), \n\nfiliform, curved to sigmoid, filiform to long fusiform, elongate, narrow and curved at the ends,\nseptate, guttulate, hyaline, smooth-walled. Asexual morph: Undetermined.\nCulture characteristics – Colonies growing well on PDA and reaching about 50–60 mm diam.\nafter 3 months at 25 °C, circular, with dense mycelium on the surface, velvety, white from above,\nbrown from below. \n",
+      "diagnosis": "Rhodoveronaea Arzanlou, W. Gams & Crous, Studies in Mycology 58: 89 (2007)\nRhodoveronaea was introduced by Arzanlou et al. (2007) with R. varioseptata as the type\nspecies. Rhodoveronaea has macronematous, brown conidiophores, polyblastic and sympodial\nconidiogenous cells with denticles bearing ellipsoidal to obovoid, pale brown, 0–multiseptated\nconidia with a protruding base and a marginal basal frill (Arzanlou et al. 2007). Sexual morph of\nRhodoveronaea has not been reported. Six species are accommodated to Rhodoveronaea, of which\ntwo species, i.e., R. aquatica and R. hainanensis, are found from freshwater habitats. \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§6:next_taxon_header_in_diagnosis"
+      ],
+      "notes": "Neogaeumannomyces kevinifiliformis (Mycosphere).  The diagnosis field holds the GENUS header and introduction for Rhodoveronaea -- paragraph 1253, downstream of this treatment's own notes at 1249 -- while the actual recipient taxon_1cfac841 (Rhodoveronaea hyalina, nomenclature at 1255) has an EMPTY diagnosis.  Donor and recipient are both identifiable, which is what makes the boundary error provable rather than inferred; D19 is built on that adjacency test.  Every text-based detector is silent: merge_metric 1, no triage flags, no OCR damage.  Also the gating case for the trophic-mode opener being legitimate (the description opens `Saprobic on dead branches of bamboo.`).   Memo D19 and D16."
     }
   ]
 }
