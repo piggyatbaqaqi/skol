@@ -2235,6 +2235,37 @@
         "§12-key-couplet-in-notes",
         "§12-species-citation-in-diagnosis"
       ]
+    },
+    {
+      "id": "taxon_ecb0124d47588463443e8e2f5a7ade4c1f05906848b46e1c800a2160a3e77247",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "20-570589b422b64eb3568a41417ae49343",
+      "class": "§12-semantic-head-clip-plus-nomenclature-in-Figure-caption",
+      "treatment": "Nomen ignotum\n",
+      "description": "Colonies growing slowly, olivaceous brown, with black olivaceous\nin the centre and slightly pink margin. Reverse olivaceous\nblack. On MEA, 30 °C: Colonies growing slowly, pale grey,\nwoolly with smooth, moist margin; reverse olivaceous brown. No\ndiffusible pigment produced. Hyphae olivaceous brown, irregularly separate, flexuous, 2.5 ± 0.5 (1.5‒3.5) μm wide. Conidiophores absent. Phialides broadly flask-shaped to elongate,\nof variable length, often inserted on a subtending cell; adelophialides without basal septum are common. Collarettes large,\nfunnel-shaped, sometimes small, darker brown than the supporting phialide, producing conidia in heads. Conidia hyaline,\n4.5 ± 0.5 (3.0–5.5) × 2.5 ± 0.5 (2.0–3.5) μm, smooth-walled,\nteardrop-shaped with protruding beak on one end and remain\naggregated around the phialides. Sexual morph unknown. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": true,
+      "authored_binomial_in_desc": false,
+      "description_spans": [
+        {
+          "start_line": 1999,
+          "end_line": 2008
+        }
+      ],
+      "source_anchors": [],
+      "expected_flags": [
+        "§2:synth_nomen",
+        "§13:no_source_anchor"
+      ],
+      "known_missed_flags": [
+        "§12-nomenclature-swallowed-by-Figure-caption",
+        "§10-semantic-head-clip-no-medium-named",
+        "§12-cardinal-temperatures-dropped",
+        "§5-zero-length-nomenclature-span"
+      ],
+      "notes": "§12: the operator read a complete cultural description, and what is present IS complete -- Colonies, Hyphae, Conidiophores absent, Phialides, Collarettes, Conidia, Sexual morph unknown.  Three things are missing.  (a) The NOMENCLATURE is in the source at char 43759 labelled FIGURE-CAPTION -- 'Clade A Phialophora verrucosa Medlar, Mycologia 7: 203. 1915 - MycoBank...' -- so the treatment is Nomen ignotum with a zero-length nomenclature span, the FIFTH instance.  Figure-caption was already recorded swallowing a Notes continuation (taxon_8ebf437c); this is the first time it swallows a nomenclature heading.  (b) A SEMANTIC head-clip: the block at 44733 fuses the running head '11 Y. Li et al.: Phialophora verrucosa and relatives in Chaetothyriales' to the opening 'De' of the description's section header, so the FIRST medium is never named -- the text opens 'Colonies growing slowly, olivaceous brown' and only names a medium at the second, 'On MEA, 30 C:'.  Grammatically it is a clean sentence, so desc_starts_mid_sentence cannot see it.  Second instance of running-head-fused-to-heading after taxon_8d815304.  (c) 'Cardinal temperatures: minimum below 21 C, optimum 30 C, maximum 37 C.' at 45761 is labelled Misc-exposition and dropped -- culture data lost from a culture-only description, the same shape as taxon_a3308621's mating studies.  Narrative in the memo under D12."
     }
   ]
 }

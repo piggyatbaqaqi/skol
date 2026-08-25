@@ -3620,6 +3620,7 @@ decides which symptom you see:
 | `taxon_60758ef3` | **`ToC-entry`** | Murrill's species 73 and 74 merged |
 | `taxon_8d815304` | **`Misc-exposition`**, `Diagnosis`, `Notes` — 21 of 27 headings in the document | **nine genera in one treatment** |
 | `taxon_8ebf437c` | **`Table`** (holotype line also `Table`) | *V. dactylidis* description appended to *V. chlamydospora* |
+| `taxon_ecb0124d` | **`Figure-caption`** | `Clade A Phialophora verrucosa Medlar, Mycologia 7: 203. 1915 — MycoBank…` → treatment is `Nomen ignotum` |
 
 *Swallowed **description continuations** → content loss → truncations:*
 
@@ -3630,6 +3631,7 @@ decides which symptom you see:
 | `taxon_6f788487` | `reverse light-brown.` **and** the whole Chemistry lead-in, both **`Misc-exposition`** | `poor sporulation, flat;` breaks its siblings' template; `Di-n-octyl` → `phthalate` |
 | `taxon_8ebf437c` | the description **head** as **`Misc-exposition`**, and a Notes continuation as **`Figure-caption`** | block opens mid-measurement at `diam.`; `and broad cellular` → `pseudoparaphyses` |
 | `taxon_a3308621` | **two consecutive** runs as **`Misc-exposition`** | `…under near-UV at ` → `24oC did not yield any ascomat.a.`; then a second break mid-word at `rotia:` |
+| `taxon_ecb0124d` | `Cardinal temperatures: minimum below 21 °C, optimum 30 °C, maximum 37 °C.` as **`Misc-exposition`** | culture data dropped from a culture-only description |
 | `taxon_b0d687da` | the **nomenclature** as `Misc-exposition`; a `Note:` section split across a page break into `Diagnosis` + `Notes` | `Nomen ignotum` despite `Helicodochium amazonicum J.S. Monteiro…` sitting at 3 941; `…lacking` → `pseudoparenchymatous stromata` |
 
 **`Misc-exposition` is the repeat offender** — three of the
@@ -3836,7 +3838,17 @@ all.
 
 **Running headers are not eliminated, and fusing one to a
 heading is one way a heading gets lost.**  This answers the
-operator's 2026-08-22 question directly.  At offset 119 686
+operator's 2026-08-22 question directly.  **Second instance,
+2026-08-25**: `taxon_ecb0124d`'s block at 44 733 reads
+`11  Y. Li et al.: Phialophora verrucosa and relatives in
+Chaetothyriales  De` — the running head fused to the opening
+`De…` of the description's own section header, the whole thing
+labelled `Misc-exposition`.  The result is a culture description
+whose **first medium is never named**: it opens `Colonies
+growing slowly, olivaceous brown…` and only names a medium at
+the *second* one, `On MEA, 30 °C:`.  Grammatically the opening
+is a clean sentence, so no head-clip signal fires — this is a
+**semantic** head-clip, invisible to `desc_starts_mid_sentence`.  At offset 119 686
 the block reads:
 
 > `VO ARX : Re-evoluorfon of Eurorfoles 283 MyxotriciJUm Kunze in Myk…`
