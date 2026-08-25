@@ -183,6 +183,64 @@ Their union is exactly **62**, matching the 62 treatments with a
 `reviewer_action` in the features_status DB — so no round is missing
 and none is double-counted.
 
+### The zero-annotation gap is not hypothetical — four treatments fell through
+
+Identified 2026-08-25 from an operator triage spreadsheet
+(`triage_production_v4`, tab "Round 2") that listed **three treatments
+absent from every round file**. Chasing them found a fourth, and all
+four are annotator runs whose round file lost them by exactly the
+mechanism warned about above: **zero annotations produced, therefore no
+`.ann` file, therefore invisible to a filename-based reconstruction.**
+
+Every attempted annotation in the corpus now reconciles:
+
+| run date | attempted | accounted for as |
+|---|---:|---|
+| 2026-06-29 | 56 | round 1 (6) + round 2 (48) − 1 shared + **3 lost** |
+| 2026-07-05 | 10 | round 3 (9) + **1 lost** |
+| 2026-08-14 | 50 | round 4 |
+| 2026-08-24 | 1 | the `taxon_46ff7dde` canary |
+
+The four, placed by `last_attempt_at` against each round's run window:
+
+| treatment | run at | belongs to | status | why it yielded nothing |
+|---|---|---|---|---|
+| `bb43b1ae` | 06-29 22:32:11 | **round 2** | success | `description` empty, 234-char diagnosis |
+| `fb7bd18d` | 06-29 22:32:20 | **round 2** | success | `Nomen ignotum`, 1 225-char description |
+| `cda95f9f` | 06-29 22:32:40 | **round 2** | **error** | 2 921-char diagnosis, no description |
+| `bc52ee90` | 07-05 21:01:04 | **round 3** | success | 595-char description |
+
+Round 2's window is 19:37:47–22:35:47 and round 3's is 21:01:06–21:01:33
+on their respective days, so the assignment is unambiguous — and the
+per-day totals leave no other run that could explain them.
+
+**Consequences, none of which move precision or recall.** All four are
+unreviewed, so they contribute no kept and no added annotations and the
+ratios are unchanged. What changes is **n**:
+
+* **Round 2 selected 51, not 48.**
+* **Round 3 selected 10, not 9** — and round 3 is the only random
+  sample, so this is the one that matters. Its tenth member produced
+  zero candidates, so the "100 % precision, 99 % recall" figures stand
+  exactly as measured; but any treatment-level bootstrap should resample
+  **10** units, one of which contributes nothing, rather than 9.
+
+The round files are **left uncorrected** pending an operator decision,
+because adding ids changes what "round 2" and "round 3" denote in every
+statistic computed from them. The four remain unstamped in
+`features_status` (`round: null`) for the same reason —
+`fixes/backfill_round_stamps.py` will pick them up as soon as they
+appear in a round file, and will otherwise keep leaving them alone.
+
+**Why the spreadsheet could not answer the question it was fetched
+for.** It was retrieved to test whether it preserved round 2's
+*generation* order, which would have made round 2's `--bands` structure
+recoverable the way round 4's was. It does not: it is a triage worklist
+in two blocks, each sorted by `merge_metric` descending, and the
+band-monotonic test finds nothing in it. Round 2's bands stay
+unrecoverable. Its `merge_metric` column is also unchanged from current
+values in all 56 rows, so it carries no historical snapshot either.
+
 **Review does not reach `features_hand` until `brat_ingest`
 runs.** Editing the `.ann` files in
 `brat/data/skol_segments/production_v4_roundN/` leaves the
