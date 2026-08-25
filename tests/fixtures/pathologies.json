@@ -2215,6 +2215,26 @@
         "§5-zero-length-nomenclature-span"
       ],
       "notes": "§6/D14: FIVE taxa, all PARTIAL -- a genus fragment ending 'Type species, Diplocarpa Curreyana Massee.' plus four species fragments, each opening 'Apothecia ...'.  Five Apothecium labels in the annotation.  Nine description spans over paragraphs 6279-6501, harvested from THREE separated regions of Seaver's North American Cup-fungi Inoperculates (6279-6303, 6389-6421, 6497-6501).  Truncated at 'spores mostly 2-'.  Deliberate contrast with taxon_d9ffc366, where four COMPLETE descriptions were merged: that one is splittable, this one is not -- nothing here is whole.  Carries the fourth instance of the zero-length nomenclature span at offset 0.  Seven flags DO fire, including section6:multi_structural_anatomy, so the detectors are not blind; merge_metric is 1 despite five taxa, because the fragments are short and not repetitive.  Confirms the D14 rank-marker approach on CLEAN text (no OCR damage on any mode), complementing taxon_9499dcb0 where the marker survived OCR that destroyed the genus name.  Corpus-wide, 211 descriptions declare 'Type species' while having synthetic or absent nomenclature.  Narrative in the memo under D14."
+    },
+    {
+      "id": "taxon_ec30a04962a71637a97958b064c5d0a7a7f2932a4285ac0ab73104cadcb7f2b4",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "20-a8f0db6df4950c44f834e85c0d48f653",
+      "class": "§6-genus-plus-species-merged-with-key-couplet",
+      "treatment": "MYCORRHAPHIUM Maas-Geesteranus,\n",
+      "description": "",
+      "diagnosis": "Basidiocarps centrally to laterally stipitate, lower side densely hydnoid, hyphal system dimitic with generative and skeletal\nhyphae, gloeocystidia present or absent, basidiospores smooth, thin-walled, hyaline and without reaction in Melzer’s reagent,\nwidespread genus, but not common.\nType species: Steccherinum adustulum Banker.\nRemarks. The genus may be related to Donkia, which however has a monomitic hyphal system and sessile basidiocarps. Mycoleptodonoides Nikolav. is macroscopically similar, but separated by a monomitic hyphal system.\n\nMycorrhaphium adustulum (Banker) Ryvarden,\t\nMem. NY Bot. Garden 49: 345, 1994. - Steccherinum adustulum Banker, Mem. Torrey Bot. Club 12:133, 1906.\nBasidiocarps and microscopical characters are more or less identical to those of M. pusillum, and the only reliable character to\nseparate the latter is the septation of the generative hyphae. See the key above.\n",
+      "notes": "§6/§15.1: MYCORRHAPHIUM (Ryvarden, Hydnoid Genera - A World Synopsis).  `description` is EMPTY and `diagnosis` holds a COMPLETE genus account -- basidiocarps, hymenophore, hyphal system, gloeocystidia, basidiospores, distribution -- plus 'Type species: Steccherinum adustulum Banker.' and a differential Remarks comparing Donkia and Mycoleptodonoides.  Then a SECOND diagnosis span holds the species citation with two names (Mycorrhaphium adustulum (Banker) Ryvarden and its basionym) followed by species remarks, so the genus and its first species are merged; a dichotomous KEY COUPLET ('6. Generative hyphae with simple septa...') sits between them in `notes`.  Zero flags fire, because an empty description short-circuits nearly every signal.  IMPORTANT as the legitimate-case exemplar for the empty-description-beside-long-diagnosis flag: for a GENUS entry the diagnosis IS the description, the prose here is clean with no join damage, and 606 of 3329 such treatments (18 %) are genus-rank.  Any such flag must exempt them, which the Type species marker identifies for free.  Narrative in the memo at §15.1.",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§6-genus-and-species-merged",
+        "§12-key-couplet-in-notes",
+        "§12-species-citation-in-diagnosis"
+      ]
     }
   ]
 }

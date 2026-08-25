@@ -6057,13 +6057,42 @@ short-circuit on empty text.
 
 So §15's field-collapse is doubly harmful: it loses the field *and*
 blinds the detectors that would have noticed. **An empty `description`
-beside a long `diagnosis` is itself a cheap, high-signal flag**, and
-nothing currently emits it.
+beside a long `diagnosis` is itself a cheap flag**, and nothing
+currently emits it.
 
-That pairs naturally with D6 (element-join artifact): D6 finds the
-corruption, this finds its consequence, and the second is easier to
-detect than the first — a field-population imbalance needs no text
-analysis at all.
+##### Correction, 2026-08-25: the flag is real but it is not a §15 flag
+
+The paragraph above originally claimed this pairs with D6 — D6 finding
+the element-join corruption, the imbalance finding its consequence.
+**Measured, that attribution is wrong.** Of the 3 329 treatments with an
+empty `description` and a diagnosis over 300 characters:
+
+| | count | share |
+|---|---:|---:|
+| **genus-rank** (carries a `Type species` marker) | 606 | 18 % |
+| **§15 element-join signature** | **12** | **0 %** |
+| neither | 2 711 | 81 % |
+
+So `taxon_b673586a` is a real §15 case but a **rare** one — twelve in
+the corpus. The imbalance flag catches something much broader, and 81 %
+of it is currently unexplained.
+
+**And 18 % of it is legitimate.** For a **genus** entry the diagnosis
+*is* the description: `taxon_ec30a049` (*Mycorrhaphium*, Ryvarden's
+*Hydnoid Genera*) puts a complete genus account — basidiocarps,
+hymenophore, hyphal system, gloeocystidia, basidiospores, distribution —
+in `diagnosis`, with `description` empty, and there is nothing wrong
+with the text. Its prose is clean, with no join damage.
+
+So any flag on this imbalance **must exempt genus-rank entries**, which
+the `Type species` marker identifies for free (D14). Without that
+exemption it starts at 18 % false positives on a known, nameable class.
+
+**The consumer problem survives the exemption**, and is the reason to
+keep the flag at all: morphology sitting in `diagnosis` is invisible to
+anything reading `description`, whatever the rank convention says. That
+is a routing question for downstream code, not a defect in the
+treatment.
 
 ### 16. `*_spans` are indexed to `article.txt.ann` (not a defect)
 
