@@ -2316,6 +2316,26 @@
         "§6:next_taxon_header_in_diagnosis"
       ],
       "notes": "Neogaeumannomyces kevinifiliformis (Mycosphere).  The diagnosis field holds the GENUS header and introduction for Rhodoveronaea -- paragraph 1253, downstream of this treatment's own notes at 1249 -- while the actual recipient taxon_1cfac841 (Rhodoveronaea hyalina, nomenclature at 1255) has an EMPTY diagnosis.  Donor and recipient are both identifiable, which is what makes the boundary error provable rather than inferred; D19 is built on that adjacency test.  Every text-based detector is silent: merge_metric 1, no triage flags, no OCR damage.  Also the gating case for the trophic-mode opener being legitimate (the description opens `Saprobic on dead branches of bamboo.`).   Memo D19 and D16."
+    },
+    {
+      "id": "taxon_fdbd1b5387dbf752365504c2a1b67101ab6d00a8a1840f33148880862a832468",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-25",
+      "captured_rev": "20-26737cde9aa92d678b647d8fb4a39650",
+      "class": "§12-Table-swallows-heading-and-description-head",
+      "treatment": "Pseudocercospora, closely fitting the description later given by\nChupp (1954).\n32. c/utiico/a Pseudocercospora Crous & U. Braun, Sydowia 46: \n",
+      "description": "Conidiophora numerosa, dense fasciculata, brunnea,\nverruculosa, cylindrica vel ampulliformia, recta vel 1-geniculata,\n1-4-septata, 25-80 x 4-8 f.llll. Cellulae conidiogenae integratat,\nterrninaliae, brunneae, verruculosae, cylindricae, rectae vel\ngeniculatae-sinuosae, ad apicem leniter attenuatae, rotundatae,\npercurrentes, I 0-30 x 5-6 f.IID. Conidia solitaria, pallide brunnea,\nverruculosa, guttulata, 0-5-septata, 17-70 x 5-7 f.IID, obclavata, \n\nrecta vel curvata, ad apicem rotundata, basi in hilum attenuata,\nsubtruncata, non incrassata.\nLeaf spots amphigenous, dark brown, angular, confined by leaf\nveins, 1-4 mm diam. Mycelium internal, composed of smooth,\nbrown hyphae, forming stromata, 20-180 ~m wide, I 0-40 ~m\nhigh.\nConidiomata bypophyllous, dense, effuse, sporodochial,\nbrown, 50-200 ~m wide, 40-80 ~m high.\nConidiophores in\ndense, rich fascicles, arising from stromata, brown, verruculose,\ncylindrical or ampulliform, straight or once geniculate, 1-4septate, 25-80 x 4-8 ~m.\nConidiogenous cells integrated,\ntermina~ brown, verruculose, cylindrical, straight or geniculatesinuous, somewhat tapering to a rounded apex, producing\nconidia by enteroblastic percurrent proliferation leaving up to 4\ntransverse, verruculose, irregular annellations, I 0-30 x 5-6 ~m .\nConidia light brown, solitary, apical, verruculose, guttulate, 0-5septate, 17-70 x 5-7 ~m, obclavate, straight or variously curved,\ntapering from an obconically subtruncate base to a bluntly\nrounded apex, with an unthickened, but slightly refractive hilum. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§12:nomenclature_in_Table",
+        "§12:description_head_in_Table",
+        "§6:wrong_species_heading"
+      ],
+      "notes": "Mycotaxon 57, Crous & U. Braun.  ONE Table-labelled block causes both D12 symptoms at once: it holds the species heading `33. cocculi Stigmina Crous & U. Braun sp. nov.` AND the head of its Latin diagnosis (Maculae / Mycelium / Stromata / Conidiomata).  So the treatment is filed under the PREVIOUS species (#32 Pseudocercospora clutiicola, whose holotype PREM 32896 is also attached) while describing Stigmina cocculi, and its Latin block appears beheaded -- the operator's read, and the missing text is recoverable rather than lost to OCR.  Latin and English give identical measurements (25-80x4-8, 10-30x5-6, 17-70x5-7 um), which is what proves them one taxon.  Every text detector silent: merge_metric 1, no flags.  Gates the D12 detection rule.  Memo D12."
     }
   ]
 }

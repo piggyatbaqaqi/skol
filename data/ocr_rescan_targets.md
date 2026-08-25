@@ -72,6 +72,40 @@ and larger, than the Persoonia back-run that prompted Trello #404.
 Worst individual volumes: Mycotaxon **12** (24.3 %), **6** (23.5 %),
 **20** (20.7 %), **16** (20.0 %).
 
+### The `3–31` cutoff is a median artifact — damage runs later, per article
+
+Measured 2026-08-25 over all 5 922 Mycotaxon treatments with ≥ 40
+description tokens, after round-4 review turned up a badly-damaged
+treatment from **volume 57** (`taxon_fdbd1b53`, rejoin **10.0 %**,
+substitution 5.62 %, *both* modes firing) that this list does not cover:
+
+| volumes | treatments | median rejoin | p90 |
+|---|---:|---:|---:|
+| **3–31** | 1 061 | **10.4 %** | **29.4 %** |
+| 32–60 | 1 019 | 3.0 % | **18.2 %** |
+| 61–90 | 1 084 | 1.8 % | 9.5 % |
+| 91+ | 2 758 | 0.0 % | 5.3 % |
+
+A clean monotonic decay — later volumes were scanned or typeset
+better — which is why grouping by work put the boundary at 31.
+
+**But volume 57's own median is 0.0 %, and this treatment reads
+10.0 %.** The p90 column is the one that matters: **18.2 % for volumes
+32–60**, nearly double the *median* of the tier-1 range. Damage in the
+middle volumes is **concentrated in individual articles**, not spread
+across them, so a per-volume median hides it completely.
+
+This is caution 2 above, generalised: *ranking by a central statistic
+systematically under-ranks concentrated damage.* It applies to the
+selection of works, not only to shredded treatments within one.
+
+**What to change**: keep 3–31 as the re-OCR batch — it is still the
+largest and worst block, and volumes are the unit you can act on. But
+**do not treat volume ≤ 31 as the eligibility test** for an individual
+treatment. Roughly **10 % of volumes 32–60**, ~100 treatments, sit
+above the tier-1 median and belong in the same batch. Select them by
+their own rejoin rate.
+
 ## Tier 2 — identified by review, under-ranked by the metrics
 
 These are shredded or character-substituted, so caution 2 or 3 applies

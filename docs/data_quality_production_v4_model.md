@@ -3769,6 +3769,7 @@ decides which symptom you see:
 | `taxon_8d815304` | **`Misc-exposition`**, `Diagnosis`, `Notes` — 21 of 27 headings in the document | **nine genera in one treatment** |
 | `taxon_8ebf437c` | **`Table`** (holotype line also `Table`) | *V. dactylidis* description appended to *V. chlamydospora* |
 | `taxon_ecb0124d` | **`Figure-caption`** | `Clade A Phialophora verrucosa Medlar, Mycologia 7: 203. 1915 — MycoBank…` → treatment is `Nomen ignotum` |
+| `taxon_fdbd1b53` | **`Table`** | `33. cocculi Stigmina Crous & U. Braun sp. nov.` → treatment inherits species **#32**'s nomenclature *and* its holotype |
 
 *Swallowed **description continuations** → content loss → truncations:*
 
@@ -3781,11 +3782,101 @@ decides which symptom you see:
 | `taxon_a3308621` | **two consecutive** runs as **`Misc-exposition`** | `…under near-UV at ` → `24oC did not yield any ascomat.a.`; then a second break mid-word at `rotia:` |
 | `taxon_ecb0124d` | `Cardinal temperatures: minimum below 21 °C, optimum 30 °C, maximum 37 °C.` as **`Misc-exposition`** | culture data dropped from a culture-only description |
 | `taxon_b0d687da` | the **nomenclature** as `Misc-exposition`; a `Note:` section split across a page break into `Diagnosis` + `Notes` | `Nomen ignotum` despite `Helicodochium amazonicum J.S. Monteiro…` sitting at 3 941; `…lacking` → `pseudoparenchymatous stromata` |
+| `taxon_fdbd1b53` | the **head of the Latin diagnosis** as **`Table`** — `Maculae amphigenae… Mycelium immersum… Stromata… Conidiomata (= sporodochia) hypophylla…` | the Latin block opens at `Conidiophora numerosa`, three features short of its English counterpart |
 
 **`Misc-exposition` is the repeat offender** — three of the
 five cases, and the only label to swallow content in more
 than one treatment.  It reads as the layout pass's
 catch-all, which makes it the first place to look.
+
+#### One block, both symptoms — the case that makes the rule writable
+
+`taxon_fdbd1b53` (*Mycotaxon* 57, Crous & U. Braun) appears in **both
+tables above, for the same `Table` block**, and that is what makes it
+the gating fixture rather than a seventh anecdote.
+
+The operator's reading was that *"the Latin description lacks the
+leading Leaf_spots, Mycelium and Conidiomata, so the Latin is truncated
+above."*  Correct, and **the missing text is recoverable** — it is not
+an OCR loss.  The block immediately preceding the description holds:
+
+> `[@33. cocculi Stigmina Crous & U. Braun sp. nov.  Fig. 1.  Maculae
+> amphigenae, atro-brunneae, angulares, per venas limitatae, 1-4 mm
+> latae.  Mycelium immersum: hyphae laeviae, brunneae.  Stromata
+> 20-180 × 10-40 µm.  Conidiomata (= sporodochia) hypophylla, densa,
+> effusa, brunnea, 50-200 × 40-80 µm.` **`#Table*]`**
+
+One mislabelled block, three losses:
+
+1. **The species heading is gone**, so the treatment picked up the
+   *previous* species' nomenclature — `32. clutiicola Pseudocercospora
+   Crous & U. Braun, Sydowia 46:` — together with the tail of the
+   preceding Notes. **The treatment is filed under the wrong name**:
+   it is *Stigmina cocculi*, described under *P. clutiicola*.
+2. **Species #32's holotype came with it** (`Clutia cf. affinis…
+   PREM 32896`), so `materials_examined` now holds **two holotypes** —
+   #32's and, correctly, #33's `Cocculus hirsutus… PREM 42682`.
+3. **The Latin diagnosis is beheaded** by exactly the three features
+   the operator named, plus `Stromata`.
+
+**What proves Latin and English are one taxon** rather than two merged
+species is the measurements: `25-80 × 4-8`, `10-30 × 5-6`,
+`17-70 × 5-7` µm appear identically in both. A Latin diagnosis
+followed by an English description is the pre-2012 protologue
+convention, already in the fixture as `agaric-latin-english-pair`, and
+is not itself a defect.
+
+**Note what did *not* fire.** `merge_metric` reads 1 and no triage
+flag is raised. D10 (genus mismatch) cannot help either: it compares
+nomenclature against the description, and this description — pure
+morphology in two languages — never names its genus. The mismatch is
+visible only between the **nomenclature** (`Pseudocercospora`) and the
+**notes** (`it is a species of Stigmina`, `P. cocculi`), which nothing
+currently compares. Cheap addition to D10.
+
+#### A detection rule for D12, with the two refinements that failed
+
+D12 has been a catalogue of cases with no rule. This one is writable,
+and the measurement below is over a **200-document random sample** of
+the 20 928 in `ann_combined`.
+
+| rule | blocks | extrapolated corpus-wide | verdict |
+|---|---:|---:|---|
+| nomenclatural act anywhere in a non-content block | 458 | ~48 000 | useless |
+| …restricted to the block's **first line** | 119 | ~12 500 | still useless |
+| …**and** ≥ 3 lines, ≥ 200 chars of following prose, no trailing page number | **13** | **~1 360** | usable |
+
+`Bibliography` is excluded throughout — it carries an act in **9.8 %**
+of blocks by design, since bibliographies cite protologues. The
+remaining non-content labels sit at 1–2.6 %, against **20.4 %** for a
+correctly-labelled `Nomenclature` block.
+
+**The first-line refinement fails for a nameable reason**, worth
+recording because it is the obvious move: the survivors are dominated
+by **table-of-contents entries and running heads**, which are
+*correctly* labelled non-content —
+`Pseudocercospora styracigena sp. nov. (China) ... 231`. Requiring
+continuing prose and rejecting a trailing page number removes them.
+
+Spot-reading the 13 survivors, roughly three-quarters are genuine
+mislabelled headings, and one shape recurs:
+
+> `[Figure-caption] Saccardoella psidiicola W.Y. Zhuang, W.Y. Li &
+> K.D. Hyde, sp. nov.` → `FIGS 4-5  MycoBank MB 512350  Pseudothecia
+> subglobosa vel piriformia, 200-365 µm…`
+
+**A protologue that opens with its figure reference gets read as a
+figure caption**, taking the heading and the Latin with it — three of
+the eight sampled, and the same label that produced `taxon_ecb0124d`
+above. The two false positives were a phylogenetic-group listing in a
+real `Table` and a `RESULTS` heading in a `Key`.
+
+**Depends on**: reading `ann_combined` attachments, which
+`span_resolver` already does.
+
+**Gating fixtures**: must fire on `taxon_fdbd1b53`
+(`§12-Table-swallows-heading-and-description-head`), `taxon_5581a442`,
+`taxon_60758ef3` and `taxon_ecb0124d`.
 
 #### D12 has a mirror image, and nothing looks for it
 
