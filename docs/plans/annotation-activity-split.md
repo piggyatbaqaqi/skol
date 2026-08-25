@@ -5,7 +5,10 @@
 Bootstrap annotation rounds were set up to validate Claude API feature
 labels. Measured 2026-08-23, that purpose is essentially complete:
 **round 3 — the only random sample — reads precision 100 %, recall
-99.0 %** (96 of 96 candidates kept, one addition).
+99.0 %** (96 of 96 candidates kept, one addition). The pooled
+98.5 %/83.1 % describes the *selection*, not the corpus, and its low
+recall is one document — `taxon_2b793602` contributes 136 of all 263
+additions.
 
 > **Remeasured 2026-08-25 (T1a).** The claim survives, sharpened.
 > Round 3's **label** precision is exactly 100 % — no interval, because
@@ -22,11 +25,15 @@ labels. Measured 2026-08-23, that purpose is essentially complete:
 > `docs/feature_label_canonicalization.json` already, so scoring
 > against canonical forms lifts label precision to about **99.24 %**.
 > That is the measured case for T6, and it is why the `Spores` cases
-> stay queued rather than patched. See
-> `data/annotation_rounds/README.md`. The pooled
-98.5 %/83.1 % describes the *selection*, not the corpus, and its low
-recall is one document — `taxon_2b793602` contributes 136 of all 263
-additions.
+> stay queued rather than patched.
+>
+> The one-document caveat is unchanged but its arithmetic moved: with
+> round 4 closed there are **270** additions over 109 treatments, and
+> `taxon_2b793602` still carries **136 of them — exactly half**. It is
+> also now attributed to round 1 alone; the old per-round table charged
+> its additions to rounds 1 *and* 2, which is the whole of round 2's
+> apparent recall jump from 78.7 % to 89.1 %. See
+> `data/annotation_rounds/README.md`.
 
 Meanwhile the rounds have been yielding evidence about two *other*
 components — the treatment grouper (§6) and the layout/block classifier
