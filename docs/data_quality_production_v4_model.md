@@ -4822,6 +4822,65 @@ no anatomical features can be extracted from gibberish.
 Eventually the upstream OCR step should detect and quarantine
 these rather than producing corrupt extracts.
 
+#### §9.1 A literal backslash costs the whole treatment
+
+Found 2026-08-25 during round 5's annotation run.  Two of the
+first 250 treatments failed outright with
+
+> `ClaudeResponseError: response is not valid JSON:
+> Invalid \escape`
+
+— `annotation_count: 0`, the entire treatment lost.  Not a
+truncation, not a rate limit: the model emitted a backslash
+sequence that is not a legal JSON escape, and the envelope
+failed to parse.
+
+**The predisposing cause is OCR damage, and it is a new
+substitution pattern.**  `taxon_b5af6259`'s source reads
+
+> `asci … saccati vel ovato-oblongi, 60—85 \7 25—35 u`
+> `sporae … hyalinae, 18—20 \7 9—12 n`
+
+**`\7` is a misread `×`.**  The multiplication sign in a
+measurement became backslash-seven — so this belongs with mode
+C (character substitution), and it is invisible to both the
+rejoin metric and the U+FFFD scan.
+
+**Measured on the round-5 draw**, which is a uniform random
+sample of p1 and therefore a corpus estimate: **26 of 1 000
+treatments (2.6 %) contain a literal backslash** in their
+rendered synthetic document.  The character following it is
+almost never a legal escape:
+
+| next char | `'` | `1` | `\` | `7` | `"` | `:` | `v` | `-` |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| count | 11 | 5 | 4 | 4 | 4 | 4 | 4 | 3 |
+
+Only `\\` and `\"` are legal; the rest are hazards.
+
+**But the source is not the whole story.**  The other failure,
+`taxon_30b728af`, has **zero** backslashes anywhere in its
+rendered document and still produced an invalid escape at line
+6.  So there are two causes:
+
+1. **Source-borne** — a literal backslash the model must
+   double-escape and sometimes does not.  ~2.6 % of treatments
+   are exposed.
+2. **Model-borne** — an invalid escape emitted spontaneously
+   against clean input.
+
+**Both are retryable**, since the annotator sets no temperature
+and a re-run samples differently; default mode re-runs
+`status='error'`, so re-feeding the round file resumes exactly
+these.  Observed rate in chunk 1: **2 of 250 (0.8 %)**.
+
+**Worth fixing upstream rather than only retrying.**  A
+pre-render pass that escapes or strips lone backslashes would
+remove cause 1 entirely, at no risk to the text — a lone
+backslash in a mycological description is always OCR damage,
+never content.  Cheaper than losing 0.8 % of every future run,
+and it also repairs the *measurement*: `\7` should read `×`.
+
 ### 10. Description starts mid-sentence
 
 **Symptom**: a Treatment's `description` field begins with
