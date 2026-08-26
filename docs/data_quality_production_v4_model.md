@@ -6842,6 +6842,51 @@ the 74.2 % measurement did not match. That figure is therefore a
 **lower bound**; the true identifier-mislabelling rate is higher, and
 the pattern reaches `Key` as well as `Misc-exposition`.
 
+#### Proposed: a deterministic repair pass, not a better classifier
+
+Operator, 2026-08-26 on `taxon_47c3b37d`: *"The index numbers are
+pulled off the end of the taxonomic citation by a Misc-exposition —
+this seems like something we should be doing with plain regex
+patterns — maybe as an extension to gnfinder."*
+
+**Right, and it splits into two mechanisms with different tools.**
+
+**1. Identifier reattachment — pure regex, no name service needed.**
+`Index Fungorum number: IF556440; Facesoffungi number: FoF 05781` is
+rigidly structured. At **74.2 % mislabelled** (~2 600 blocks) this is
+the highest-yield deterministic repair available, and it needs nothing
+but a pattern and the preceding block's identity.
+
+**2. Authorship reattachment — this one genuinely wants gnparser.**
+The same treatment severed a lone `Blume.` into its own
+`Misc-exposition`, taking the plant authority off the etymology's host
+name. A regex cannot safely tell an author abbreviation from a
+sentence-ending word; **gnparser can**, and the local service already
+runs at `localhost:9081`. Tested 2026-08-26:
+
+| input | parsed | canonical | authorship |
+|---|---|---|---|
+| `Rhizophora apiculate` (etymology tail) | ✓ q1 | *Rhizophora apiculate* | **none** |
+| `Rhizophora apiculate Blume.` (rejoined) | ✓ q1 | *Rhizophora apiculate* | **`Blume.`** |
+
+**That difference is the detector.** A block ending in a bare binomial
+followed by a block that parses as an authorship is a severed name.
+Neither parse fails — both are quality 1 — so the signal is the
+*appearance of an authorship on rejoin*, not a validity change.
+
+**Why this is the right shape of fix.** It is the same argument
+`docs/structured-form-schema.md` §4 makes about measurements: *do not
+spend model capability on something a deterministic tool does better.*
+The layout classifier will keep mislabelling four-token identifier
+lines because they carry no prose signal (§12.2); a repair pass
+downstream does not care.
+
+**Scope honestly.** gnfinder proper finds *names in free text* and is
+the wrong tool for identifiers — that half is regex. The frequency of
+the severed-authorship case is **not yet measured**; only the
+mechanism is validated. And a repair pass mutates extraction output,
+so it needs the same fixture-gated treatment as any detector here.
+
 #### And a fourth defect, invisible in brat
 
 `taxon_0ccf38da` also carries a **second `description` span at
