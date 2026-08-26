@@ -948,6 +948,58 @@ to *regions within* taxonomic ones.
 not the fix p2b needs, and work aimed at one should not be expected to
 move the other.
 
+### 5.6 A treatment the annotator declines is usually not a treatment
+
+Round 5's first 50 contained **ten with prose and zero annotations**.
+They were exported anyway, via `brat_export --allow-unannotated`,
+because hiding them would have made recall look better than it is.
+
+**The operator read all ten, and Claude was right about every one.**
+Precision of "returned no spans" is **10/10** on this sample. What it
+declined to annotate:
+
+| treatment | what the "description" actually is |
+|---|---|
+| `22292f50` | **CLSI M02 disk-diffusion protocol** — *"test a maximum of 12 disks on a 150-mm plate"* |
+| `65cf0058` | **a drug packaging insert** — *"BREXAFEMME (ibrexafungerp tablets) are purple, oval, biconvex shaped tablets debossed with 150"* |
+| `fc47df1e` | clinical-trial demographics — *"mean age was 27.2 years (SD 8.8)"* |
+| `f94b9c84` | clinical diagnostics prose |
+| `3011c747` | French enzymology, alcohol dehydrogenase electrophoresis |
+| `4cb3fcb6` | methods — *"Growth rate and conidiation were detected as previously described [25]"* |
+| `e4150d1a`, `62ffeff0` | **bibliographic pointers** — *"Descriptions. Mathiesen-Käärik (1950, p. 298); Hunt (1956…)"* |
+| `3888d38f` | an **Outline of Fungi** entry: a name and an author, no description |
+| `a21ae068` | a **molecular-only diagnosis** — *"Distinguishable … based on a diagnostic nucleotide signature in LSU D3"*, no morphology |
+
+**This inverts how a zero-annotation treatment should be read.** It
+looks like a recall failure and is almost always the opposite: evidence
+that the *treatment generator* produced something that is not a
+treatment. Six of the ten are non-taxonomic text of the §5 kind, two
+are citations of descriptions published elsewhere, one is an outline
+entry, and one is a real diagnosis carrying no morphology to label.
+
+`65cf0058` deserves its own line: the extractor found morphology — of
+a **tablet**. Purple, oval, biconvex, debossed. That is the §5 failure
+in its purest form.
+
+**Scale.** Across round 5's full draw, **124 of 1 000 (12.4 %)** have
+prose and zero annotations, extrapolating to roughly **5 000
+treatments** in p1. Every one was genuinely asked, so this is the
+annotator declining rather than being skipped.
+
+**Consequences.**
+
+* **The recall denominator is contaminated.** A treatment with nothing
+  to annotate cannot contribute a missed label, so including these in
+  a recall statistic understates the annotator by construction. T5's
+  precision figure is unaffected — they contribute no candidates
+  either.
+* **`annotation_count == 0` with `complexity_score > 0` is a cheap,
+  high-precision detector for §5's document gate** — 10/10 here — and
+  it needs no new computation, only a join already available.
+* **It costs money to find.** Each of these was a real API call at full
+  input price. ~5 000 of them is roughly **$25** of the round's
+  spend on text that should never have reached the annotator.
+
 ### 5.5 The annotated-checklist genre (T5)
 
 Found 2026-08-26 during T5 review. The operator's verdict on
