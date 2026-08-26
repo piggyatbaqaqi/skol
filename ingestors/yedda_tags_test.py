@@ -86,12 +86,16 @@ class TestTaggedBlocksToYedda:
         assert "[@Europe, Asia#Distribution*]" in result
 
     def test_materials_examined_renders(self) -> None:
-        blocks: List[TaggedBlock] = [TaggedBlock(text="Holotype: NY 12345", tag=Tag.MATERIALS_EXAMINED)]
+        blocks: List[TaggedBlock] = [
+            TaggedBlock(text="Holotype: NY 12345",
+                        tag=Tag.MATERIALS_EXAMINED)]
         result = tagged_blocks_to_yedda(blocks)
         assert "[@Holotype: NY 12345#Materials-examined*]" in result
 
     def test_type_designation_renders(self) -> None:
-        blocks: List[TaggedBlock] = [TaggedBlock(text="Type: Amanita muscaria", tag=Tag.TYPE_DESIGNATION)]
+        blocks: List[TaggedBlock] = [
+            TaggedBlock(text="Type: Amanita muscaria",
+                        tag=Tag.TYPE_DESIGNATION)]
         result = tagged_blocks_to_yedda(blocks)
         assert "[@Type: Amanita muscaria#Type-designation*]" in result
 
