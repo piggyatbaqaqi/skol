@@ -26,6 +26,8 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from ingestors.yedda_tags import parse_yedda_blocks  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
 
 from env_config import get_env_config  # type: ignore[import]  # noqa: E402
@@ -37,9 +39,6 @@ from env_config import get_env_config  # type: ignore[import]  # noqa: E402
 Block = Tuple[str, str]           # (text, label)
 PosMap = Callable[[int], Tuple[int, bool]]  # orig_pos -> (new_pos, certain)
 
-_YEDDA_BLOCK_RE = re.compile(
-    r"\[@\s*(.*?)\s*#([A-Za-z][A-Za-z0-9_-]{0,49})\*\]", re.DOTALL
-)
 _PAGE_MARKER_RE = re.compile(
     r"^---\s+PDF\s+Page\s+(\d+)\s+Label\s+(\S+)\s+---\s*$"
 )
@@ -56,18 +55,12 @@ _FUZZY_THRESHOLD = 0.90
 
 def strip_yedda(yedda_text: str) -> str:
     """Return plain text from a YEDDA string (blocks joined by ``\\n\\n``)."""
-    blocks = [
-        m.group(1).strip()
-        for m in _YEDDA_BLOCK_RE.finditer(yedda_text)
-    ]
+    blocks = [b.text.strip() for b in parse_yedda_blocks(yedda_text)]
     return "\n\n".join(blocks)
 
 
 def _parse_yedda(text: str) -> List[Block]:
-    return [
-        (m.group(1).strip(), m.group(2))
-        for m in _YEDDA_BLOCK_RE.finditer(text)
-    ]
+    return [(b.text.strip(), b.label) for b in parse_yedda_blocks(text)]
 
 
 def _blocks_to_yedda(blocks: List[Block]) -> str:

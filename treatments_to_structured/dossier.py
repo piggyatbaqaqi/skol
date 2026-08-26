@@ -17,9 +17,6 @@ its own throwaway script.
 
 **Offsets are into `article.txt.ann`, not `article.txt`** — see memo
 §16.  Every function here works in that space.
-
-Skeleton only — the implementation lands after the tests in
-``dossier_test.py`` are confirmed (CLAUDE.md TDD).
 """
 
 import sys
@@ -123,7 +120,32 @@ def treatment_spans(treatment: Dict[str, Any]) -> List[SpanRef]:
     aid, and refusing to render a whole treatment over one bad span
     would defeat it.
     """
-    raise NotImplementedError
+    out: List[SpanRef] = []
+    for key in sorted(treatment):
+        if not key.endswith('_spans'):
+            continue
+        entries = treatment.get(key)
+        if not isinstance(entries, list):
+            continue
+        field_name = key[:-len('_spans')]
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            try:
+                start = int(entry['start_char'])
+                end = int(entry['end_char'])
+            except (KeyError, TypeError, ValueError):
+                continue
+            try:
+                paragraph = int(entry['paragraph_number'])
+            except (KeyError, TypeError, ValueError):
+                paragraph = None
+            out.append(SpanRef(
+                field=field_name, start=start, end=end,
+                paragraph=paragraph, head=entry.get('head'),
+            ))
+    out.sort(key=lambda sp: (sp.start, sp.end, sp.field))
+    return out
 
 
 def labels_for_span(blocks: List[Block], span: SpanRef) -> List[str]:
@@ -133,7 +155,8 @@ def labels_for_span(blocks: List[Block], span: SpanRef) -> List[str]:
     is itself a finding — it means the extractor joined material the
     layout pass had separated.
     """
-    raise NotImplementedError
+    return [b.label for b in blocks
+            if span.start < b.end and span.end > b.start]
 
 
 def gaps(
@@ -163,7 +186,39 @@ def gaps(
 
     Pairs with nothing between them yield no ``Gap`` at all.
     """
-    raise NotImplementedError
+    if len(spans) < 2:
+        return []
+    ordered = sorted(spans, key=lambda sp: (sp.start, sp.end))
+    # Merge overlaps before pairing.  Without this a span contained in
+    # another would pair with its own container and every block inside
+    # the outer span would read as a gap.
+    merged: List[SpanRef] = []
+    for sp in ordered:
+        if merged and sp.start <= merged[-1].end:
+            last = merged[-1]
+            if sp.end > last.end:
+                merged[-1] = SpanRef(last.field, last.start, sp.end,
+                                     last.paragraph, last.head)
+        else:
+            merged.append(sp)
+    out: List[Gap] = []
+    for left, right in zip(merged, merged[1:]):
+        between = [b for b in blocks
+                   if b.start >= left.end and b.end <= right.start]
+        if not between:
+            continue
+        n_furniture = sum(1 for b in between if b.label in exclude)
+        shown = [b for b in between if b.label not in exclude]
+        n_omitted = max(0, len(shown) - max_blocks)
+        if not shown and not n_furniture:
+            continue
+        out.append(Gap(
+            after=left, before=right,
+            blocks=shown[:max_blocks],
+            n_furniture=n_furniture,
+            n_omitted=n_omitted,
+        ))
+    return out
 
 
 def build_dossier(
@@ -171,7 +226,21 @@ def build_dossier(
     ann_text: str,
 ) -> Dossier:
     """Assemble the whole picture for one treatment."""
-    raise NotImplementedError
+    blocks = parse_blocks(ann_text)
+    spans = treatment_spans(treatment)
+    labels: Dict[str, List[str]] = {}
+    for sp in spans:
+        labels.setdefault(sp.field, [])
+        for lab in labels_for_span(blocks, sp):
+            if lab not in labels[sp.field]:
+                labels[sp.field].append(lab)
+    return Dossier(
+        treatment_id=str(treatment.get('_id') or ''),
+        spans=spans,
+        blocks=blocks,
+        gaps=gaps(blocks, spans),
+        labels=labels,
+    )
 
 
 __all__ = (

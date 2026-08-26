@@ -26,15 +26,14 @@ from typing import Any, Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ingestors.yedda_tags import Tag
+from ingestors.yedda_tags import (  # noqa: E402
+    Tag,
+    parse_yedda_blocks,
+)
 
 # ---------------------------------------------------------------------------
 # YEDDA parsing
 # ---------------------------------------------------------------------------
-
-_YEDDA_BLOCK_RE = re.compile(
-    r"\[@\s*(.*?)\s*#([A-Za-z][A-Za-z0-9_-]{0,49})\*\]", re.DOTALL
-)
 
 # ---------------------------------------------------------------------------
 # Header keyword → Tag table
@@ -129,9 +128,10 @@ def migrate_yedda(yedda_text: str) -> Tuple[str, List[Dict[str, Any]]]:
     changes: List[Dict[str, Any]] = []
     result_parts: List[str] = []
 
-    for i, match in enumerate(_YEDDA_BLOCK_RE.finditer(yedda_text)):
-        text = match.group(1).strip()
-        tag = match.group(2).strip()
+    for block in parse_yedda_blocks(yedda_text):
+        i = block.index
+        text = block.text.strip()
+        tag = block.label.strip()
         new_tag = tag
         reason: Optional[str] = None
 

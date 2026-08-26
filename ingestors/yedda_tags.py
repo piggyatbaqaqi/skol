@@ -62,9 +62,20 @@ def parse_yedda_blocks(text: str) -> List["YeddaBlock"]:
     no change; ``start``/``end`` locate the stripped text within
     ``text``.
 
-    Skeleton -- implementation follows test confirmation (CLAUDE.md).
     """
-    raise NotImplementedError
+    blocks: List[YeddaBlock] = []
+    for i, m in enumerate(YEDDA_BLOCK_RE.finditer(text)):
+        # group(1) already excludes the surrounding whitespace the
+        # pattern consumes, so its span IS the stripped text's span --
+        # which is what makes the offsets comparable with *_spans.
+        blocks.append(YeddaBlock(
+            index=i,
+            label=m.group(2),
+            text=m.group(1),
+            start=m.start(1),
+            end=m.end(1),
+        ))
+    return blocks
 
 
 class Tag(str, Enum):

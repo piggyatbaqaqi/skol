@@ -23,11 +23,6 @@ from treatments_to_structured.dossier import (  # noqa: E402
     treatment_spans,
 )
 
-pytestmark = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True,
-    reason='T3e: implementation follows test confirmation',
-)
-
 
 def _ann(*pairs: tuple) -> str:
     """Build an `.ann` from (text, label) pairs, blank-line separated."""
@@ -313,7 +308,8 @@ class TestBuildDossier:
         d = build_dossier(treatment, ann)
         assert d.treatment_id == 'taxon_a'
         assert len(d.spans) == 2
-        assert [b.label for b in d.gaps] == ['Figure-caption']
+        assert [b.label for g in d.gaps for b in g.blocks] == [
+            'Figure-caption']
         assert d.labels['description'] == ['Description']
 
     def test_a_treatment_with_no_spans_still_builds(self) -> None:

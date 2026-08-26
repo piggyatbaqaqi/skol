@@ -2,7 +2,6 @@
 
 from typing import List
 
-import pytest
 
 from ingestors.yedda_tags import (
     ACTIVE_TAGS_19,
@@ -180,8 +179,6 @@ class TestActiveTags19:
         assert isinstance(ACTIVE_TAGS_19, tuple)
 
 
-@pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                   reason="extraction follows test confirmation")
 class TestParseYeddaBlocks:
     """The reader half of the format, pulled out of three callers.
 
