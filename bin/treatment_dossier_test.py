@@ -22,11 +22,6 @@ from treatment_dossier import (  # type: ignore[import]  # noqa: E402
     render_text,
 )
 
-pytestmark = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True,
-    reason='dossier CLI: implementation follows test confirmation',
-)
-
 
 def _ann(*pairs: tuple) -> str:
     return '\n\n'.join(f'[@{t}#{lab}*]' for t, lab in pairs)

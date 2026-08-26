@@ -32,10 +32,10 @@ Usage::
         --format text < ids.txt
 
 Writes nothing to CouchDB.  Ever.
-
-Skeleton only — implementation follows test confirmation (CLAUDE.md).
 """
 
+import argparse
+import html
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -46,6 +46,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatments_to_structured.dossier import (  # noqa: E402
     Dossier,
+    build_dossier,
+)
+from treatments_to_structured.merge_metric import (  # noqa: E402
+    treatment_merge_metric,
+)
+from env_config import common_parser, get_env_config  # noqa: E402
+from llm_annotate_features import read_treatment_ids  # noqa: E402
+from span_resolver import (  # noqa: E402
+    _attachment_text,
+    coordinate_space,
 )
 
 #: Prose fields rendered in full, in the order a treatment reads.
@@ -84,7 +94,18 @@ def build_view(
     resolvable source, or no siblings — p2b's 35 482 are exactly the
     ones worth looking at and exactly the ones missing the most.
     """
-    raise NotImplementedError
+    try:
+        metric: Optional[int] = treatment_merge_metric(treatment)
+    except Exception:              # noqa: BLE001 - a view must render
+        metric = None
+    return DossierView(
+        dossier=build_dossier(treatment, ann_text),
+        treatment=treatment,
+        source=source or {},
+        status=status or {},
+        siblings=list(siblings or []),
+        merge_metric=metric,
+    )
 
 
 def render_text(view: DossierView) -> str:
@@ -94,7 +115,69 @@ def render_text(view: DossierView) -> str:
     *view over this renderer* rather than a separate throwaway script,
     and a markdown table is built from text, not from a web page.
     """
-    raise NotImplementedError
+    d = view.dossier
+    out: List[str] = [f'=== {d.treatment_id} ===']
+    src = view.source
+    if src:
+        bits = [str(src.get(k)) for k in ('journal', 'volume', 'year')
+                if src.get(k)]
+        out.append('source: ' + ' '.join(bits)
+                   + (f"  doi:{src['doi']}" if src.get('doi') else ''))
+    meta = [f'merge_metric={view.merge_metric}']
+    if view.status.get('status'):
+        meta.append(f"bootstrap={view.status['status']}")
+    if view.status.get('round') is not None:
+        meta.append(f"round={view.status['round']}")
+    if view.flags:
+        meta.append(f'flags={view.flags}')
+    out.append('  '.join(meta))
+
+    out.append('')
+    out.append('--- spans (paragraph, offsets, layout label) ---')
+    for sp in d.spans:
+        labels = ','.join(_labels_of(d, sp)) or '?'
+        out.append(f'  {sp.field:<20} para {sp.paragraph}  '
+                   f'[{sp.start}:{sp.end}]  <{labels}>')
+    if not d.spans:
+        out.append('  (none)')
+
+    out.append('')
+    out.append('--- gaps: blocks between consecutive spans ---')
+    for g in d.gaps:
+        extra = []
+        if g.n_furniture:
+            extra.append(f'{g.n_furniture} furniture hidden')
+        if g.n_omitted:
+            extra.append(f'{g.n_omitted} more not shown')
+        tail = f"   [{', '.join(extra)}]" if extra else ''
+        out.append(f'  {g.after.field}@{g.after.paragraph} -> '
+                   f'{g.before.field}@{g.before.paragraph}{tail}')
+        for b in g.blocks:
+            out.append(f'      [{b.label}] {b.head[:96]}')
+    if not d.gaps:
+        out.append('  (none)')
+
+    out.append('')
+    out.append('--- fields ---')
+    for f in PROSE_FIELDS:
+        val = view.treatment.get(f)
+        if val and str(val).strip():
+            out.append(f'  {f} ({len(str(val))}):')
+            out.append('    ' + str(val).strip().replace('\n', '\n    '))
+
+    if view.siblings:
+        out.append('')
+        out.append('--- siblings from the same source document ---')
+        for sib in view.siblings:
+            name = str(sib.get('treatment') or '').strip().replace('\n', ' ')
+            out.append(f"  {str(sib.get('_id'))[:22]}  {name[:64]}")
+    return '\n'.join(out) + '\n'
+
+
+def _labels_of(d: Dossier, span: Any) -> List[str]:
+    """Layout labels covering one span, from the assembled blocks."""
+    return [b.label for b in d.blocks
+            if span.start < b.end and span.end > b.start]
 
 
 def render_html(view: DossierView) -> str:
@@ -103,11 +186,223 @@ def render_html(view: DossierView) -> str:
     It is opened from a ``file://`` URL in the tab beside brat, where
     nothing else will load.
     """
-    raise NotImplementedError
+    e = html.escape
+    d = view.dossier
+    rows: List[str] = []
+    for sp in d.spans:
+        labels = ', '.join(_labels_of(d, sp)) or '?'
+        rows.append(
+            f'<tr><td>{e(sp.field)}</td><td>paragraph {e(str(sp.paragraph))}'
+            f'</td><td>{sp.start}:{sp.end}</td>'
+            f'<td class="lab">{e(labels)}</td></tr>')
+    gap_html: List[str] = []
+    for g in d.gaps:
+        notes = []
+        if g.n_furniture:
+            notes.append(f'{g.n_furniture} furniture block(s) hidden')
+        if g.n_omitted:
+            notes.append(f'{g.n_omitted} further block(s) not shown')
+        note = (f' <span class="muted">({e("; ".join(notes))})</span>'
+                if notes else '')
+        items = ''.join(
+            f'<li><span class="lab">{e(b.label)}</span> {e(b.head[:200])}</li>'
+            for b in g.blocks)
+        gap_html.append(
+            f'<div class="gap"><b>{e(g.after.field)}'
+            f'@{e(str(g.after.paragraph))} &rarr; {e(g.before.field)}'
+            f'@{e(str(g.before.paragraph))}</b>{note}<ul>{items}</ul></div>')
+    fields_html: List[str] = []
+    for f in PROSE_FIELDS:
+        val = view.treatment.get(f)
+        if val and str(val).strip():
+            fields_html.append(
+                f'<h3>{e(f)} <span class="muted">({len(str(val))} '
+                f'chars)</span></h3><pre>{e(str(val).strip())}</pre>')
+    sibs = ''.join(
+        f'<li>{e(str(s.get("_id"))[:22])} '
+        f'{e(str(s.get("treatment") or "").strip()[:80])}</li>'
+        for s in view.siblings)
+    src = view.source
+    src_line = e(' '.join(str(src.get(k)) for k in
+                          ('journal', 'volume', 'year') if src.get(k)))
+    meta = [f'merge_metric = {view.merge_metric}']
+    if view.status.get('status'):
+        meta.append(f'bootstrap = {view.status["status"]}')
+    if view.status.get('round') is not None:
+        meta.append(f'round = {view.status["round"]}')
+    if view.flags:
+        meta.append(f'flags = {view.flags}')
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>{e(d.treatment_id)}</title>
+<style>
+body{{font:14px/1.5 system-ui,sans-serif;margin:2rem;max-width:60rem}}
+h1{{font-size:1.1rem;font-family:monospace}}
+table{{border-collapse:collapse;width:100%}}
+td{{border-bottom:1px solid #ddd;padding:.2rem .5rem;vertical-align:top}}
+.lab{{font-family:monospace;background:#eef;padding:0 .3rem}}
+.gap{{border-left:3px solid #c33;padding:.3rem .8rem;margin:.5rem 0;
+background:#fff8f8}}
+.gap ul{{margin:.3rem 0;padding-left:1.2rem}}
+.muted{{color:#777;font-weight:normal}}
+pre{{white-space:pre-wrap;background:#f7f7f7;padding:.6rem;margin:.2rem 0}}
+</style></head><body>
+<h1>{e(d.treatment_id)}</h1>
+<p class="muted">{src_line}</p>
+<p>{e('   '.join(meta))}</p>
+<h2>Spans</h2><table>{''.join(rows) or '<tr><td>(none)</td></tr>'}</table>
+<h2>Gaps &mdash; blocks between consecutive spans</h2>
+{''.join(gap_html) or '<p class="muted">(none)</p>'}
+<h2>Fields</h2>{''.join(fields_html)}
+{'<h2>Siblings</h2><ul>' + sibs + '</ul>' if sibs else ''}
+</body></html>
+"""
 
 
 def main() -> int:
-    raise NotImplementedError
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        parents=[common_parser()],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        '--format', choices=('html', 'text'), default='html',
+        help='html writes one file per treatment into --output-dir; '
+             'text writes to stdout.  Default: html.',
+    )
+    parser.add_argument(
+        '--output-dir', default=None, metavar='DIR',
+        help='Where html pages are written.  Required for --format html.',
+    )
+    parser.add_argument(
+        '--no-siblings', action='store_true',
+        help='Skip the sibling lookup, which scans the treatments DB '
+             'once per source document.',
+    )
+    args = parser.parse_args()
+    config = get_env_config(cli_args=args)
+    experiment = config.get('experiment_name')
+    if not experiment:
+        print('error: --experiment is required', file=sys.stderr)
+        return 2
+    try:
+        ids = read_treatment_ids(
+            config.get('doc_ids'), sys.stdin,
+            stdin_isatty=sys.stdin.isatty(),
+        )
+    except ValueError as exc:
+        print(f'error: {exc}', file=sys.stderr)
+        return 2
+    out_dir: Optional[Path] = None
+    if args.format == 'html':
+        if not args.output_dir:
+            print('error: --output-dir is required with --format html',
+                  file=sys.stderr)
+            return 2
+        out_dir = Path(args.output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    import couchdb  # type: ignore[import-untyped]
+    server = couchdb.Server(config['couchdb_url'])
+    server.resource.credentials = (
+        config['couchdb_username'], config['couchdb_password'],
+    )
+    exp = server['skol_experiments'][experiment]
+    dbs = exp.get('databases') or {}
+    treatments = server[dbs['treatments_prose']]
+    ingest = server[dbs.get('ingest') or config['ingest_db_name']]
+    status_name = dbs.get('features_status')
+    status_db = (server[status_name]
+                 if status_name and status_name in server else None)
+
+    # Fetch every requested treatment first, so the sibling index costs
+    # ONE scan for the whole run rather than one per treatment.  At
+    # ~11 s a scan that is the difference between 11 s and 5.5 min for
+    # T3a's 30-treatment table.
+    docs: List[Dict[str, Any]] = []
+    for tid in ids:
+        try:
+            docs.append(dict(treatments[tid]))
+        except Exception as exc:                     # noqa: BLE001
+            print(f'  skipping {tid}: {exc}', file=sys.stderr)
+    sib_index: Dict[str, List[Dict[str, Any]]] = {}
+    if not args.no_siblings:
+        wanted = {(d.get('ingest') or {}).get('_id') for d in docs}
+        wanted.discard(None)
+        if wanted:
+            sib_index = _sibling_index(treatments, wanted)
+
+    written = 0
+    for doc in docs:
+        tid = doc['_id']
+        try:
+            ann_text = _attachment_text(coordinate_space(doc), server)
+        except Exception as exc:                     # noqa: BLE001
+            # A dossier without the .ann still shows the fields and the
+            # metrics, which beats refusing to render.
+            print(f'  {tid}: no annotation text ({exc})', file=sys.stderr)
+            ann_text = ''
+        src_id = (doc.get('ingest') or {}).get('_id')
+        source: Dict[str, Any] = {}
+        if src_id:
+            try:
+                source = dict(ingest[src_id])
+            except Exception:                        # noqa: BLE001
+                pass
+        status: Dict[str, Any] = {}
+        if status_db is not None:
+            try:
+                status = dict(status_db[tid])
+            except Exception:                        # noqa: BLE001
+                pass
+        siblings = [s for s in sib_index.get(src_id or '', [])
+                    if s['_id'] != tid]
+        view = build_view(doc, ann_text, source=source, status=status,
+                          siblings=siblings)
+        if out_dir is not None:
+            path = out_dir / f'{tid}.html'
+            path.write_text(render_html(view), encoding='utf-8')
+            print(f'  {path}', file=sys.stderr)
+        else:
+            print(render_text(view))
+        written += 1
+    print(f'{written} dossier(s)', file=sys.stderr)
+    return 0
+
+
+def _sibling_index(
+    treatments: Any, src_ids: Any,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Map each wanted source document to its treatments, in order.
+
+    One pass over the treatments DB for however many documents are
+    wanted.  The question "what else came out of this article, and in
+    what order" is what placed the Rhodoveronaea header in
+    taxon_fd50457a and identified the four treatments lost from rounds
+    2 and 3 -- but it is a full scan, so it happens once.
+    """
+    wanted = set(src_ids)
+    out: Dict[str, List[Dict[str, Any]]] = {s: [] for s in wanted}
+    for row in treatments.view('_all_docs', include_docs=True):
+        if row.id.startswith('_'):
+            continue
+        doc = row.doc or {}
+        src = (doc.get('ingest') or {}).get('_id')
+        if src not in wanted:
+            continue
+        paras = [
+            int(x['paragraph_number'])
+            for f in doc if f.endswith('_spans') and doc[f]
+            for x in doc[f]
+            if str(x.get('paragraph_number', '')).lstrip('-').isdigit()
+        ]
+        out[src].append({'_id': row.id,
+                         'treatment': doc.get('treatment'),
+                         'paragraph': min(paras) if paras else None})
+    for rows in out.values():
+        rows.sort(key=lambda d: (d['paragraph'] is None,
+                                 d['paragraph'] or 0))
+    return out
 
 
 if __name__ == '__main__':
