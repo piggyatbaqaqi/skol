@@ -25,10 +25,10 @@ time at all.
 permutations and shows the spread.
 
 See `docs/plans/annotation-activity-split.md` F1, F2 and T4.
-
-Skeleton only — implementation follows test confirmation (CLAUDE.md).
 """
 
+import collections
+import random
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 
@@ -41,7 +41,17 @@ def labels_by_treatment(
     ``canonicalizer`` maps drift forms to canonical ones, applied here
     so the raw and canonical curves differ only by this argument.
     """
-    raise NotImplementedError
+    out: Dict[str, Set[str]] = collections.defaultdict(set)
+    for ann in annotations:
+        tid = ann.get('treatment_id')
+        label = ann.get('feature_label')
+        if not tid or not label:
+            continue
+        text = str(label)
+        if canonicalizer is not None:
+            text = canonicalizer.get(text, text)
+        out[str(tid)].add(text)
+    return dict(out)
 
 
 def cumulative_curve(
@@ -57,13 +67,21 @@ def cumulative_curve(
     A treatment in ``order`` with no labels still advances x by one; it
     was sampled, and pretending otherwise would compress the curve.
     """
-    raise NotImplementedError
+    xs: List[int] = []
+    ys: List[int] = []
+    seen: Set[str] = set()
+    for i, tid in enumerate(order, start=1):
+        seen |= by_treatment.get(tid, set())
+        xs.append(i)
+        ys.append(len(seen))
+    return xs, ys
 
 
 def permutation_band(
     by_treatment: Dict[str, Set[str]],
     n_permutations: int = 200,
     seed: int = 20260826,
+    ids: Optional[Sequence[str]] = None,
 ) -> Tuple[List[int], List[float], List[float], List[float]]:
     """Average the curve over random orders.
 
@@ -74,8 +92,32 @@ def permutation_band(
     it.**  A curve plotted in one order — temporal, or the draw's own —
     carries an ordering artefact that averaging removes by
     construction.
+
+    ``ids`` is the population to permute.  It defaults to the
+    treatments that produced labels, but **pass the whole drawn set**
+    when you have it: a treatment that produced nothing was still
+    sampled, and omitting it shortens the x-axis and steepens the
+    curve.  Round 5 drew 1 000 and 877 produced labels.
     """
-    raise NotImplementedError
+    ids = list(ids) if ids is not None else sorted(by_treatment)
+    if not ids:
+        return [], [], [], []
+    rng = random.Random(seed)
+    runs: List[List[int]] = []
+    for _ in range(max(1, n_permutations)):
+        order = list(ids)
+        rng.shuffle(order)
+        runs.append(cumulative_curve(order, by_treatment)[1])
+    xs = list(range(1, len(ids) + 1))
+    mean: List[float] = []
+    lo: List[float] = []
+    hi: List[float] = []
+    for i in range(len(ids)):
+        col = sorted(run[i] for run in runs)
+        mean.append(sum(col) / len(col))
+        lo.append(float(col[int(0.025 * (len(col) - 1))]))
+        hi.append(float(col[int(0.975 * (len(col) - 1))]))
+    return xs, mean, lo, hi
 
 
 def timestamp_collisions(
@@ -86,7 +128,14 @@ def timestamp_collisions(
     Empty is the healthy answer.  Kept as a guard because the old
     curve's correctness silently depended on it, and nothing checked.
     """
-    raise NotImplementedError
+    by_ts: Dict[str, Set[str]] = collections.defaultdict(set)
+    for ann in annotations:
+        tid = ann.get('treatment_id')
+        ts = ann.get('created_at')
+        if not tid or not ts:
+            continue
+        by_ts[str(ts)].add(str(tid))
+    return {ts: tids for ts, tids in by_ts.items() if len(tids) > 1}
 
 
 __all__ = (

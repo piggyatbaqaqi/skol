@@ -846,6 +846,46 @@ In `jupyter/heaps_law_analysis.ipynb`:
 
 ---
 
+> ### T4 executed 2026-08-26 — F1 confirmed, and backwards
+>
+> The curve logic moved out of the notebook into
+> `treatments_to_structured/heaps.py` with 21 tests. A notebook cannot
+> be tested and this was exactly the logic that was wrong.
+>
+> **F1 is real and large.** The temporal curve lies **outside the 95 %
+> permutation band at 873 of 1 000 points**. But its stated mechanism
+> and direction are both wrong: F1 predicted *"label-poor treatments
+> cluster at the head, so the curve reads concave-up and β is
+> overestimated."* Measured, label-**rich** treatments cluster at the
+> head, the temporal curve sits **above** the band throughout, and β
+> temporal (0.624) is **lower** than the permutation estimate (0.641).
+> The fix was needed; the reasoning behind it was not right.
+>
+> **The draw-order curve is inside the band at every checkpoint**,
+> which is what a uniform draw should look like and is independent
+> evidence that round 5 was drawn correctly.
+>
+> **β ≈ 0.64**, with 957 raw labels from 1 000 treatments and **58 %
+> singletons**. Canonicalization collapses only 2.1 % (957 → 937), so
+> the drift map as it stands barely dents the tail — which is §12.1's
+> point, that much of that tail is *slots misfiled as features* rather
+> than vocabulary.
+>
+> **Two bugs found by running it, not by reasoning.** The old
+> `cumulative_distinct_curve` keyed on `created_at` and added labels
+> for *every* treatment sharing that string, so a collision both
+> mis-attributed and double-counted; measured, there are zero
+> collisions, so it was latent, and the new curve never keys on time.
+> And my own first `permutation_band` derived its population from the
+> treatments that produced labels, silently dropping the 123 that
+> produced none — shortening the x-axis and steepening the curve, the
+> exact flattery this exercise removes.
+>
+> **The manual canary leaked in.** `taxon_46ff7dde` is stamped round 5
+> with `provenance: manual` but is not in the draw, so it inflated the
+> vocabulary to 961. Filtering to the round file's 1 000 gives 957.
+> Population mixing, caught by the provenance field that T0e added.
+
 ## T5 — Review 50, and report it correctly
 
 Export → review → ingest the **first 50 lines** of the round file, using

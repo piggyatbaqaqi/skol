@@ -15,11 +15,6 @@ from treatments_to_structured.heaps import (  # noqa: E402
     timestamp_collisions,
 )
 
-pytestmark = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True,
-    reason='T4: implementation follows test confirmation',
-)
-
 
 def _ann(tid: str, label: str, ts: str = '2026-01-01T00:00:00') -> dict:
     return {'treatment_id': tid, 'feature_label': label,
@@ -130,10 +125,55 @@ class TestPermutationBand:
         assert a == b
 
     def test_a_different_seed_gives_a_different_band(self) -> None:
-        by = {c: {c.upper(), 'shared'} for c in 'abcdefghij'}
+        """The fixture has to make order *matter*.
+
+        One rich treatment holding the whole vocabulary and five poor
+        ones each repeating a piece of it: rich-first jumps straight to
+        5, rich-last climbs 1,2,3,4,5.  A fixture where every treatment
+        contributes exactly one new label produces the same curve under
+        every permutation, so the band is seed-independent and the test
+        would pass vacuously.
+        """
+        by = {'rich': {'A', 'B', 'C', 'D', 'E'},
+              'p1': {'A'}, 'p2': {'B'}, 'p3': {'C'},
+              'p4': {'D'}, 'p5': {'E'}}
         a = permutation_band(by, n_permutations=20, seed=1)
         b = permutation_band(by, n_permutations=20, seed=2)
         assert a[1] != b[1]
+
+    def test_order_is_irrelevant_when_every_treatment_is_novel(
+        self,
+    ) -> None:
+        """The converse, pinned so the fixture above is not mistaken
+        for arbitrary: if each treatment contributes exactly one new
+        label, every permutation gives the same curve and the band has
+        zero width.
+        """
+        by = {c: {c.upper()} for c in 'abcdef'}
+        _, mean, lo, hi = permutation_band(by, n_permutations=20)
+        assert lo == mean == hi
+
+    def test_the_drawn_population_can_be_given_explicitly(
+        self,
+    ) -> None:
+        """`cumulative_curve` counts a label-less treatment because it
+        was sampled; the band must agree, and it cannot know about one
+        that never reached `by_treatment`.
+
+        Round 5 makes this concrete: 1 000 drawn, 877 with labels.
+        Permuting only the 877 puts the curve's x-axis 123 short and
+        steepens it -- exactly the flattery this whole exercise is
+        meant to remove.
+        """
+        by = {'a': {'P'}, 'b': {'S'}}
+        xs, mean, lo, hi = permutation_band(
+            by, n_permutations=20, ids=['a', 'b', 'ghost1', 'ghost2'])
+        assert xs == [1, 2, 3, 4]
+        assert mean[-1] == lo[-1] == hi[-1] == 2
+
+    def test_ids_default_to_the_treatments_with_labels(self) -> None:
+        by = {'a': {'P'}, 'b': {'S'}}
+        assert permutation_band(by, n_permutations=5)[0] == [1, 2]
 
     def test_single_treatment(self) -> None:
         xs, mean, lo, hi = permutation_band({'a': {'P'}},
