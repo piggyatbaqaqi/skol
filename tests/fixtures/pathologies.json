@@ -442,6 +442,28 @@
       "expected_flags": [],
       "known_missed_flags": [],
       "notes": "Acarospora indistincta (MycoKeys 112).  Squamulose lichen, the second Acarospora after taxon_d7ffc349 and the opposite thallus habit -- squamules with epicortex/cortex/lower surface where the endolithic one has none.  Highest distinct-label count of any un-merged reviewed treatment (21 labels, no repeats), which is why it anchors the D7 confounder: distinct-label COUNT is not a merge signal, repetition is.  Seven prose fields, a genuine differential diagnosis, merge_metric 0, no OCR damage.  Memo SS0.5 and D7."
+    },
+    {
+      "id": "taxon_3b7a80bc4122063993613fac56d24ce15782ece8f8bdc5c01fd114281d34e321",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-26",
+      "captured_rev": "21-f50d3ea7c41f357aef610ae34a49ae1a",
+      "class": "poroid-polypore-dimitic",
+      "treatment": "Fomitiporia roseo-bubalina\n",
+      "description": "Description.Basidiomata annual to perennial, resupinate to pileate, inseparable, growing around bark fissures at the base of living trees in shelf-like, vertical assemblages of triquetrous pilei, without distinctive odor or taste when fresh, woody hard in consistency; pilei slightly ungulate, projecting up to 2.5 cm, 3 cm wide, and 0.5 cm thick at base; pileal surface grayish, glabrous; margin blunt. Pore surface pink buff when dry, glossy; sterile margin cream, up to 1 mm wide; pores circular to angular, 4–5 per mm; dissepiments thin, entire. Context very thin; tubes yellowish brown, paler than pore surface, woody hard, up to 2 mm long, annual layers indistinct.Hyphal structure. Hyphal system dimitic, generative hyphae simple septate; all hyphae IKI−, CB−; tissue becoming dark brown in KOH.Tubes. Generative hyphae pale yellowish, slightly thick-walled, rarely branched, frequently septate, 2.5–3.5 µm in diam; skeletal hyphae dominant, yellowish, thick-walled, unbranched, more or less straight, parallel along the tubes, 3.5–4.8 µm in diam. Hymenial setae absent; cystidia and cystidioles absent; basidia subglobose to clavate, with four sterigmata and a simple septum at the base, 10–18 × 6–9 µm; basidioles dominant in hymenium, in shape similar to basidia, but slightly smaller.Basidiospores globose, hyaline, thick-walled, smooth, IKI[+], CB+, (5−)5.3–6.7(−7.4) × (4.9−)5–6.2(−6.6) µm, L = 6.01 µm, W = 5.60 µm, Q = 1.07 (n = 30/1).Type of rot. White rot.\n",
+      "diagnosis": "Diagnosis.Fomitiporiaroseo-bubalina is related to F.ovoidospora Y.C. Dai & F. Wu, but F.ovoidospora differs from F.roseo-bubalina by perennial basidiocarps, the presence of fusoid cystidioles, smaller pores (9–10 per mm vs. 4–5 per mm), and smaller basidiospores (4.7–5.5 × 3.8–5 µm vs. 5.3–6.7 × 5–6.2 µm).\n",
+      "description_spans": [
+        {
+          "start_line": 39,
+          "end_line": 39
+        }
+      ],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [],
+      "notes": "Fomitiporia roseo-bubalina (MycoKeys 118), round 5.  Operator: 'looks perfect to me, even the diagnosis is correct.  The figure captions were correctly removed from the flow.'  Six spans, every one correctly labelled -- nomenclature, diagnosis, type_designation, etymology, description, notes -- merge_metric 0, no flags.  FIRST POROID POLYPORE in the set, and it brings vocabulary no other poster child has: the dimitic hyphal-system triad (Hyphal_system / Generative_hyphae / Skeletal_hyphae), Rot_type ('Type of rot. White rot.'), Hymenial_setae recorded as ABSENT -- a diagnostic negative in Hymenochaetaceae -- and Basidioles distinguished from Basidia.  Also the set's POSITIVE CONTROL for Figure-caption: both gaps are figure captions correctly kept out of the treatment, against the many D12 cases where that label swallowed content."
     }
   ],
   "pathologies": [

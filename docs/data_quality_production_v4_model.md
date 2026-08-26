@@ -2885,6 +2885,41 @@ tightening MUST NOT surface these as false positives.
   hand databases.  See §12.1 — it is arguably a *slot* on
   `Thallus` rather than a feature of its own.
 
+* **`taxon_3b7a80bc...`** — noted 2026-08-26 from round-5 T5
+  review.  *Fomitiporia roseo-bubalina* (*MycoKeys* 118).  Operator:
+  *"looks perfect to me, even the diagnosis is correct.  The figure
+  captions were correctly removed from the flow.  More like this one,
+  please."*
+
+  Six spans, every one correctly labelled — nomenclature, diagnosis,
+  type_designation, etymology, description, notes — `merge_metric` 0,
+  no flags, 14 well-formed annotations.  The diagnosis is genuinely
+  differential, comparing to *F. ovoidospora* with discriminating
+  measurements rather than a Notes block in the diagnosis slot.
+
+  **The first poroid polypore in the set**, and it brings vocabulary no
+  other poster child has:
+
+  1. **The dimitic hyphal-system triad** — `Hyphal_system` (*"dimitic,
+     generative hyphae simple septate"*) with `Generative_hyphae` and
+     `Skeletal_hyphae` as separate features.  Nothing else in the
+     fixture has this, and it is the central diagnostic axis for
+     polypores.
+  2. **`Rot_type`** — *"Type of rot. White rot."*  A feature that is
+     ecological rather than morphological, and unique here.
+  3. **`Hymenial_setae` recorded as ABSENT.**  In Hymenochaetaceae the
+     *absence* of setae is diagnostic, so this is a labelled negative
+     carrying real information — the same register as
+     `taxon_fa7f4de6`'s `Pycnidia not observed`.
+  4. **`Basidioles` distinguished from `Basidia`.**
+
+  **It is also the set's positive control for `Figure-caption`.** Both
+  of its gaps are figure captions, correctly kept out of the treatment.
+  Against §12.2's many cases where that same label swallowed a
+  nomenclature heading or a severed Notes, a case where it did its job
+  is worth pinning: the label is not broken, its *boundary decisions*
+  are.
+
 ## Notes for fix sequencing
 
 These issues are deferred — not blocking Phase 1 bootstrap-annotation
