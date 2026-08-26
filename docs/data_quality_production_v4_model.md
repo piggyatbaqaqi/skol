@@ -6516,6 +6516,50 @@ Facesoffungi, Fungal Names) **or specimen material** (GenBank). There
 is no interpretation step, and at 74.2 % base rate a detector barely
 needs to be careful.
 
+#### `Key` is a second catch-all, and only half of it is keys
+
+`taxon_134c7e0e` (*Thielavia* Zopf) lost its genus description tail to
+a `Key` block. The sentence is cut in half:
+
+> diagnosis ends `…The asexual morph has conidia`
+> `key` field holds `496 / are hyaline or brightly coloured and
+> produced as simple phialoconidia, aleurioconidia, or arthroconidia.`
+
+**That block contains zero numbered couplets**, which is the whole
+signature: a key has `1.` / `2.` markers, and a block labelled `Key`
+without any is not a key.
+
+Measuring it needed two corrections, both worth recording because the
+first number looked publishable:
+
+* **11 % of `Key` blocks are OCR-destroyed** — runs of U+FFFD where
+  couplet detection fails because the text is gone, not because it is
+  prose. Judging those is meaningless, so they are excluded.
+* The remainder is **not one class**. Decomposed over 400 documents:
+
+| legible `Key` block, no couplets | share | ≈ corpus |
+|---|---:|---:|
+| other (section headers, fragments) | 69.0 % | ~21 200 |
+| **prose continuation, opens mid-sentence** | **22.0 %** | **~6 700** |
+| registry identifier + name | 6.5 % | ~2 000 |
+| nomenclatural act | 2.6 % | ~800 |
+
+**Only about half of legible `Key` blocks are actually keys.** So
+`Key` is a *second* catch-all behind `Misc-exposition` — smaller at
+5.7 % of blocks against 35.4 %, but with a worse hit rate for
+containing something else.
+
+`taxon_134c7e0e`'s defect is the 22 % row, ~6 700 treatments' worth of
+description tail sitting in `Key`. The signature is precise — `Key`
+label, zero couplets, opens lower-case — and needs only the `.ann`.
+
+**A correction to the identifier rule above.** Those `registry
+identifier + name` rows read `MB 859229 Paracylindrosporium Scrace &
+Crous, gen. nov.` — a bare `MB` rather than the word `MycoBank`, which
+the 74.2 % measurement did not match. That figure is therefore a
+**lower bound**; the true identifier-mislabelling rate is higher, and
+the pattern reaches `Key` as well as `Misc-exposition`.
+
 #### And a fourth defect, invisible in brat
 
 `taxon_0ccf38da` also carries a **second `description` span at

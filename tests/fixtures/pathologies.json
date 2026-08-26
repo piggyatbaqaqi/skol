@@ -2388,6 +2388,26 @@
           "end_line": 3395
         }
       ]
+    },
+    {
+      "id": "taxon_134c7e0e4fcdee9392866cae1979da7905a47da8a1c2f5d2ce38002264679105",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-26",
+      "captured_rev": "21-f7032e2d0d1d30a6f032b4ddae6bbf9f",
+      "class": "§12-description-tail-in-Key-block",
+      "treatment": "Thielavia Zopf, Verh. bot. Ver. Prov. Brandenb. 18: 101 (1876)  \n",
+      "description": "",
+      "diagnosis": "Guarro 1988, Stchigel et al. 2002). Wang et al. (2016a, 2019b) confirmed Thielavia as a monotypic\ngenus in Chaetomiaceae. The genus is characterised by ascomata lacking ostioles and ascospores\nthat are unicellular, darkly pigmented with one or two germ pores. The asexual morph has conidia \n",
+      "description_spans": [],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [],
+      "known_missed_flags": [
+        "§12:prose_tail_in_key",
+        "§12:identifiers_in_misc"
+      ],
+      "notes": "Thielavia Zopf, Mycosphere 11.  Genus description truncated below by a Key block, found by the operator in T5 review.  The sentence is cut in half: diagnosis ends `The asexual morph has conidia`, the key field holds `are hyaline or brightly coloured and produced as simple phialoconidia, aleurioconidia, or arthroconidia.` plus the page number 496.  That block scores ZERO numbered couplets, which is the signature.  Also carries the identifier defect of taxon_0ccf38da -- `Index Fungorum number: IF5450` in a Misc-exposition -- and the diagnosis is head-clipped, opening mid-citation at `Guarro 1988, Stchigel et al. 2002)`.  Gates the Key-as-catch-all measurement in memo SS12.2."
     }
   ]
 }
