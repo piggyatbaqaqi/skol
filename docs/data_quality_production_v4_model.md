@@ -1132,10 +1132,63 @@ were data**. An abstract routed to `Diagnosis` is particularly bad: it
 is discursive summary in the field a consumer trusts most for
 differential characters.
 
-**Adding an `Abstract` tag is the fix**, and it is cheap in the sense
-that matters — abstracts are strongly marked, appear once per document
-near the front, and are usually literally labelled. What it costs is a
-classifier retrain, which is M5's territory.
+#### ~~Adding an `Abstract` tag is the fix~~ — narrowed 2026-08-26
+
+That is what this section said, and it was too broad. The operator:
+*"abstract is not part of a taxonomic treatment, but it IS a major part
+of an academic paper. The same can be said for author information,
+introductory and concluding remarks… Does it actually help us trying to
+detect treatments?"*
+
+**Mostly no, and the recommendation was ambiguous about which label
+space it meant.** The v4 segmenter is two-stage:
+
+* **Pass 1, `LayoutCRF`** — a linear-chain CRF over the whole document,
+  deciding which lines are layout artefacts.
+* **Pass 2, `crf_treatment`** — labels only the **non-layout
+  subsequence** with the 12 treatment categories.
+
+Abstract, author block, introduction and acknowledgements are all
+**Pass 1's** business and never reach Pass 2. Adding `Abstract` to
+Pass 2's twelve would be plainly wrong: it is not a treatment category.
+
+**And the direction of the dominant error is the opposite one.**
+Ranked by what has actually been measured:
+
+| Pass-1 error | direction | ≈ blocks |
+|---|---|---:|
+| self-labelling content → `Misc-exposition` (§12.2) | **content called artefact** | ~15 400 |
+| registry identifiers → non-content (§12.2) | **content called artefact** | ~2 600 |
+| abstracts → `Diagnosis` / `Notes` / `Biology` | artefact called content | ~840 |
+| abstracts → `Misc-exposition` | artefact correctly filtered | ~2 100 |
+
+**~18 000 blocks of real content are being discarded as artefact,
+against ~840 of abstract leaking in.** An `Abstract` class does not
+touch the large number, and the 2 100 that land in `Misc-exposition`
+are already being filtered correctly — they cost nothing.
+
+**The one argument that survives is about transitions, not naming.**
+Pass 1 is a linear chain, so it learns P(next state | current state).
+With everything before the taxonomy collapsed into one undifferentiated
+`Misc-exposition`, the model cannot represent *"the taxonomic section
+begins after Methods."* Distinct structural states would let it learn
+P(`Description` | `Abstract`) ≈ 0 — and boundaries are precisely what
+§12.2 keeps finding broken. Against that: more states means sparser
+data per state, and the canonical order fails for exactly the genres
+that fail worst — a checklist (§5.5) or an Outline (§5.5.1) has no
+Methods section.
+
+**Narrowed recommendation.** Add structural classes to **Pass 1 only**,
+and only if a prior test comes back positive: **do treatment-boundary
+errors cluster near paper-structure blocks?** If a treatment's first
+and last spans go wrong disproportionately often when adjacent to an
+abstract, introduction or acknowledgements, the transition argument
+holds. If boundary errors are spread uniformly through the taxonomy
+section, structural labels buy nothing and the effort belongs on the
+~18 000.
+
+That test needs only `ann_combined` and the stored spans. **No
+retraining, and it should precede any schema change.**
 
 **Also visible in this treatment: the title is shredded.** `ÉTUDE` in
 `Misc-exposition`, `DE` in **`Table`**, `QUALITATIVE.'` back in

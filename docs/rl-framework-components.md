@@ -162,6 +162,17 @@ pairwise matrix is the **entropy of what lands in each label**, which
 is what surfaces sinks: `Misc-exposition` at 35.4 % of all blocks
 (§12.2) is a sink, not a confusion.
 
+**But a sink is not automatically worth splitting**, and this is where
+a metric stops being able to advise you. §5.7 read the scattered
+abstracts as an argument for adding an `Abstract` class; narrowed
+2026-08-26, it mostly is not. The segmenter is two-stage, structural
+matter is Pass 1's business, and Pass 1's dominant error runs the other
+way — **~18 000 blocks of real content discarded as artefact against
+~840 of abstract leaking in**. High entropy in a sink tells you the
+label is doing many jobs; it does not tell you whether any of those
+jobs matter downstream. **Pair every sink measurement with the cost of
+what lands there.**
+
 ### 1.6 Where to start
 
 **1.4, then 1.1.** 1.4 needs nothing that is not already on disk,
