@@ -16,7 +16,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatment_dossier import (  # type: ignore[import]  # noqa: E402
-    DossierView,
     build_view,
     render_html,
     render_text,
@@ -195,14 +194,31 @@ class TestRenderHtml:
         A page that showed 5 and said nothing would misreport it as a
         small gap.
         """
-        from treatments_to_structured.dossier import Gap, SpanRef
-        view = DossierView(dossier=build_view(*_treatment()).dossier)
+        from treatments_to_structured.dossier import Gap
+        doc, ann = _treatment()
+        view = build_view(doc, ann)
         view.dossier.gaps = [Gap(
-            after=SpanRef('description', 0, 1),
-            before=SpanRef('notes', 900, 950),
+            after=view.dossier.spans[0],
+            before=view.dossier.spans[1],
             blocks=[], n_furniture=9, n_omitted=279)]
         html = render_html(view)
         assert '279' in html and '9' in html
+
+    def test_a_gap_not_anchored_to_a_span_is_still_shown(self) -> None:
+        """Gaps are now positioned by the span they follow, so one
+        whose `after` matches nothing would vanish from the page.
+
+        A diagnostic tool that silently drops a finding is worse than
+        one that shows it in the wrong place.
+        """
+        from treatments_to_structured.dossier import Gap, SpanRef
+        doc, ann = _treatment()
+        view = build_view(doc, ann)
+        view.dossier.gaps = [Gap(
+            after=SpanRef('nowhere', 99_000, 99_001),
+            before=SpanRef('nowhere', 99_100, 99_101),
+            blocks=[], n_furniture=0, n_omitted=42)]
+        assert '42' in render_html(view)
 
 
 # ---------------------------------------------------------------------------

@@ -34,9 +34,15 @@ class YeddaBlock:
     the current enum -- so ``label`` is a plain ``str`` and validation
     is the caller's business.
 
-    ``start``/``end`` bound the **inner text**, not the delimiters, so
-    they are directly comparable with the ``*_spans`` offsets stored on
-    treatment documents (memo section 16).
+    ``start``/``end`` bound the **inner text**, not the delimiters.
+
+    **They are NOT the same coordinates as a treatment's ``*_spans``**,
+    which bound the whole block including ``[@`` and ``#Label*]`` --
+    measured 2026-08-25 on taxon_fdbd1b53, where a stored nomenclature
+    span reads [563741:563901] while the block's inner text is
+    [563743:563885].  The two overlap heavily, so overlap tests behave,
+    but slicing the ``.ann`` at a stored span offset yields text with
+    the delimiters attached.  Use the block text for display.
     """
 
     index: int

@@ -215,9 +215,12 @@ class TestParseYeddaBlocks:
         assert got[0].text == "Pileus brown."
 
     def test_offsets_locate_the_stripped_text(self) -> None:
-        """New capability, and the reason for the extraction: stored
-        `*_spans` offsets point at block text, so a parser whose
-        offsets included the delimiters would never line up.
+        """New capability, and the reason for the extraction.
+
+        Note what this does NOT claim: a treatment's `*_spans` bound
+        the whole block, delimiters included, so these offsets are not
+        interchangeable with those.  They overlap, which is enough for
+        label lookup, but display must use the block text.
         """
         raw = "[@Pileus brown.#Description*]"
         b = parse_yedda_blocks(raw)[0]

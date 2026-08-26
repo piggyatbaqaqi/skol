@@ -77,6 +77,9 @@ class DossierView:
     siblings: List[Dict[str, Any]] = field(default_factory=list)
     merge_metric: Optional[int] = None
     flags: str = ''
+    #: The article.txt.ann text the spans index into, so the renderer
+    #: can show each span's own source on hover.
+    ann_text: str = ''
 
 
 def build_view(
@@ -105,6 +108,7 @@ def build_view(
         status=status or {},
         siblings=list(siblings or []),
         merge_metric=metric,
+        ann_text=ann_text,
     )
 
 
@@ -174,6 +178,17 @@ def render_text(view: DossierView) -> str:
     return '\n'.join(out) + '\n'
 
 
+def _span_text(d: Dossier, span: Any) -> str:
+    """The source text a span covers, taken from the blocks it overlaps.
+
+    NOT a raw slice of the ``.ann`` at the span's own offsets: those
+    bound the whole block, so slicing yields ``[@…#Label*]`` wrappers.
+    """
+    return '\n\n'.join(
+        b.text for b in d.blocks
+        if span.start < b.end and span.end > b.start)
+
+
 def _labels_of(d: Dossier, span: Any) -> List[str]:
     """Layout labels covering one span, from the assembled blocks."""
     return [b.label for b in d.blocks
@@ -188,29 +203,48 @@ def render_html(view: DossierView) -> str:
     """
     e = html.escape
     d = view.dossier
-    rows: List[str] = []
+    gap_by_after = {(g.after.start, g.after.end): g for g in d.gaps}
+
+    def _gap_html(gap: Any) -> str:
+        notes = []
+        if gap.blocks:
+            notes.append(f'{len(gap.blocks)} block(s): '
+                         + ', '.join(sorted({b.label for b in gap.blocks})))
+        if gap.n_furniture:
+            notes.append(f'{gap.n_furniture} furniture hidden')
+        if gap.n_omitted:
+            notes.append(f'{gap.n_omitted} further not shown')
+        items = ''.join(
+            f'<li><span class="lab">{e(b.label)}</span>'
+            f'<pre>{e(b.text[:4000])}</pre></li>' for b in gap.blocks)
+        return (
+            f'<details class="gap"><summary>&#9656; gap before '
+            f'{e(gap.before.field)}@{e(str(gap.before.paragraph))} '
+            f'&mdash; {e("; ".join(notes) or "empty")}</summary>'
+            f'<ul>{items}</ul></details>')
+
+    flow: List[str] = []
+    shown: set = set()
     for sp in d.spans:
         labels = ', '.join(_labels_of(d, sp)) or '?'
-        rows.append(
-            f'<tr><td>{e(sp.field)}</td><td>paragraph {e(str(sp.paragraph))}'
-            f'</td><td>{sp.start}:{sp.end}</td>'
-            f'<td class="lab">{e(labels)}</td></tr>')
-    gap_html: List[str] = []
-    for g in d.gaps:
-        notes = []
-        if g.n_furniture:
-            notes.append(f'{g.n_furniture} furniture block(s) hidden')
-        if g.n_omitted:
-            notes.append(f'{g.n_omitted} further block(s) not shown')
-        note = (f' <span class="muted">({e("; ".join(notes))})</span>'
-                if notes else '')
-        items = ''.join(
-            f'<li><span class="lab">{e(b.label)}</span> {e(b.head[:200])}</li>'
-            for b in g.blocks)
-        gap_html.append(
-            f'<div class="gap"><b>{e(g.after.field)}'
-            f'@{e(str(g.after.paragraph))} &rarr; {e(g.before.field)}'
-            f'@{e(str(g.before.paragraph))}</b>{note}<ul>{items}</ul></div>')
+        body = e(_span_text(d, sp))
+        flow.append(
+            f'<div class="span"><span class="fld">{e(sp.field)}</span>'
+            f'<span class="muted"> paragraph {e(str(sp.paragraph))} '
+            f'&nbsp; {sp.start}:{sp.end} &nbsp;</span>'
+            f'<span class="lab">{e(labels)}</span>'
+            f'<div class="txt">{body}</div></div>')
+        gap = gap_by_after.get((sp.start, sp.end))
+        if gap is None:
+            continue
+        shown.add(id(gap))
+        flow.append(_gap_html(gap))
+    # A gap whose `after` matched no span would otherwise disappear.
+    # Show it at the end rather than lose it.
+    for gap in d.gaps:
+        if id(gap) not in shown:
+            flow.append(_gap_html(gap))
+
     fields_html: List[str] = []
     for f in PROSE_FIELDS:
         val = view.treatment.get(f)
@@ -241,18 +275,28 @@ h1{{font-size:1.1rem;font-family:monospace}}
 table{{border-collapse:collapse;width:100%}}
 td{{border-bottom:1px solid #ddd;padding:.2rem .5rem;vertical-align:top}}
 .lab{{font-family:monospace;background:#eef;padding:0 .3rem}}
-.gap{{border-left:3px solid #c33;padding:.3rem .8rem;margin:.5rem 0;
+.fld{{font-weight:600}}
+.span{{position:relative;padding:.25rem .5rem;border-bottom:1px solid #eee}}
+.span:hover{{background:#f4f8ff}}
+.span .txt{{display:none}}
+.span:hover .txt{{display:block;position:absolute;left:1rem;top:1.7rem;
+z-index:9;max-width:52rem;max-height:20rem;overflow:auto;
+white-space:pre-wrap;background:#fffbe6;border:1px solid #ccb;
+padding:.5rem;box-shadow:0 2px 8px rgba(0,0,0,.2)}}
+.gap{{border-left:3px solid #c33;padding:.15rem .8rem;margin:.2rem 0 .2rem 1rem;
 background:#fff8f8}}
+.gap summary{{cursor:pointer;color:#a22}}
 .gap ul{{margin:.3rem 0;padding-left:1.2rem}}
+.gap pre{{margin:.2rem 0}}
 .muted{{color:#777;font-weight:normal}}
 pre{{white-space:pre-wrap;background:#f7f7f7;padding:.6rem;margin:.2rem 0}}
 </style></head><body>
 <h1>{e(d.treatment_id)}</h1>
 <p class="muted">{src_line}</p>
 <p>{e('   '.join(meta))}</p>
-<h2>Spans</h2><table>{''.join(rows) or '<tr><td>(none)</td></tr>'}</table>
-<h2>Gaps &mdash; blocks between consecutive spans</h2>
-{''.join(gap_html) or '<p class="muted">(none)</p>'}
+<h2>Spans <span class="muted">&mdash; hover for the source text;
+gaps open on click</span></h2>
+{''.join(flow) or '<p class="muted">(none)</p>'}
 <h2>Fields</h2>{''.join(fields_html)}
 {'<h2>Siblings</h2><ul>' + sibs + '</ul>' if sibs else ''}
 </body></html>
