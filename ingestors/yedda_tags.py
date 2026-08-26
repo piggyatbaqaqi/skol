@@ -2,11 +2,69 @@
 
 Provides the canonical Tag enum, TaggedBlock dataclass, and shared
 functions used by JATS annotation converters.
+
+This module owns the YEDDA on-disk format in both directions:
+``tagged_blocks_to_yedda`` writes it and ``parse_yedda_blocks`` reads
+it back.  Keeping the pair together is deliberate -- the block regex
+had been copied into three separate callers, which is how offsets
+drift apart between a writer and its readers.
 """
 
 import dataclasses
+import re
 from enum import Enum
 from typing import FrozenSet, List, Tuple
+
+# The one YEDDA block pattern.  Was duplicated verbatim in
+# bin/migrate_labels.py, fixes/merge_yedda.py and (briefly)
+# treatments_to_structured/dossier.py before being pulled here.
+YEDDA_BLOCK_RE = re.compile(
+    r"\[@\s*(.*?)\s*#([A-Za-z][A-Za-z0-9_-]{0,49})\*\]", re.DOTALL
+)
+
+
+@dataclasses.dataclass(frozen=True)
+class YeddaBlock:
+    """One ``[@text#Label*]`` block, with its position in the source.
+
+    Distinct from ``TaggedBlock``, which carries a validated ``Tag``
+    for material this project *writes*.  A block read back off disk
+    may carry any label string -- layout labels such as
+    ``Misc-exposition``, or a tag from a schema version that predates
+    the current enum -- so ``label`` is a plain ``str`` and validation
+    is the caller's business.
+
+    ``start``/``end`` bound the **inner text**, not the delimiters, so
+    they are directly comparable with the ``*_spans`` offsets stored on
+    treatment documents (memo section 16).
+    """
+
+    index: int
+    label: str
+    text: str
+    start: int
+    end: int
+
+    @property
+    def head(self) -> str:
+        """First non-blank line, for one-line display."""
+        for line in self.text.split("\n"):
+            if line.strip():
+                return line.strip()
+        return ""
+
+
+def parse_yedda_blocks(text: str) -> List["YeddaBlock"]:
+    """Read a YEDDA string back into blocks, with offsets.
+
+    The inverse of ``tagged_blocks_to_yedda``.  Text is stripped the
+    same way the regex has always stripped it, so existing callers see
+    no change; ``start``/``end`` locate the stripped text within
+    ``text``.
+
+    Skeleton -- implementation follows test confirmation (CLAUDE.md).
+    """
+    raise NotImplementedError
 
 
 class Tag(str, Enum):

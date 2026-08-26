@@ -9,6 +9,8 @@ from ingestors.yedda_tags import (
     DEPRECATED_TAGS,
     Tag,
     TaggedBlock,
+    YEDDA_BLOCK_RE,
+    parse_yedda_blocks,
     tagged_blocks_to_yedda,
 )
 
@@ -176,3 +178,94 @@ class TestActiveTags19:
         consumer that needs a stable iteration order (ordered
         class_weight dicts, serialised feature columns)."""
         assert isinstance(ACTIVE_TAGS_19, tuple)
+
+
+@pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                   reason="extraction follows test confirmation")
+class TestParseYeddaBlocks:
+    """The reader half of the format, pulled out of three callers.
+
+    ``bin/migrate_labels.py`` and ``fixes/merge_yedda.py`` each carried
+    a verbatim copy of the block regex, and
+    ``treatments_to_structured/dossier`` was about to make a third.
+    These tests pin the behaviour those callers already depend on, so
+    the extraction cannot change it silently.
+    """
+
+    def test_reads_text_and_label(self) -> None:
+        got = parse_yedda_blocks("[@Pileus brown.#Description*]")
+        assert (got[0].text, got[0].label) == ("Pileus brown.",
+                                               "Description")
+
+    def test_round_trips_with_the_writer(self) -> None:
+        """`tagged_blocks_to_yedda` is the inverse and lives beside it;
+        a reader that cannot read its own writer's output is broken.
+        """
+        blocks = [TaggedBlock(text="Pileus brown.", tag=Tag.DESCRIPTION),
+                  TaggedBlock(text="Notes here.", tag=Tag.NOTES)]
+        back = parse_yedda_blocks(tagged_blocks_to_yedda(blocks))
+        assert [(b.text, b.label) for b in back] == [
+            ("Pileus brown.", Tag.DESCRIPTION.value),
+            ("Notes here.", Tag.NOTES.value)]
+
+    def test_strips_surrounding_whitespace_as_the_regex_always_has(
+        self,
+    ) -> None:
+        """Both existing callers do `m.group(1).strip()`; the shared
+        parser must strip too or their output changes.
+        """
+        got = parse_yedda_blocks("[@   Pileus brown.   #Description*]")
+        assert got[0].text == "Pileus brown."
+
+    def test_offsets_locate_the_stripped_text(self) -> None:
+        """New capability, and the reason for the extraction: stored
+        `*_spans` offsets point at block text, so a parser whose
+        offsets included the delimiters would never line up.
+        """
+        raw = "[@Pileus brown.#Description*]"
+        b = parse_yedda_blocks(raw)[0]
+        assert raw[b.start:b.end] == "Pileus brown."
+
+    def test_offsets_survive_leading_whitespace(self) -> None:
+        raw = "[@   Pileus brown.#Description*]"
+        b = parse_yedda_blocks(raw)[0]
+        assert raw[b.start:b.end] == "Pileus brown."
+
+    def test_multiline_blocks_are_one_block(self) -> None:
+        """The regex is DOTALL in both existing copies."""
+        got = parse_yedda_blocks("[@line one\nline two#Description*]")
+        assert len(got) == 1 and "line two" in got[0].text
+
+    def test_blocks_are_indexed_in_document_order(self) -> None:
+        got = parse_yedda_blocks(
+            "[@A#Description*]\n\n[@B#Notes*]\n\n[@C#Table*]")
+        assert [b.index for b in got] == [0, 1, 2]
+        assert [b.label for b in got] == ["Description", "Notes", "Table"]
+
+    def test_head_is_the_first_non_blank_line(self) -> None:
+        got = parse_yedda_blocks(
+            "[@\n\nAsci clavate.\nSpores.#Description*]")
+        assert got[0].head == "Asci clavate."
+
+    def test_arbitrary_labels_are_accepted(self) -> None:
+        """A block read off disk may carry a layout label or a tag from
+        an older schema.  Validation is the caller's business, not the
+        parser's -- refusing here would make the dossier unable to show
+        exactly the blocks worth looking at.
+        """
+        got = parse_yedda_blocks(
+            "[@x#Misc-exposition*]\n\n[@y#Not-A-Tag*]")
+        assert [b.label for b in got] == ["Misc-exposition", "Not-A-Tag"]
+
+    def test_empty_input_yields_no_blocks(self) -> None:
+        assert parse_yedda_blocks("") == []
+
+    def test_untagged_text_is_ignored(self) -> None:
+        assert parse_yedda_blocks("plain text, no blocks") == []
+
+    def test_matches_the_regex_the_callers_used(self) -> None:
+        """Guard on the extraction itself: same groups, same order."""
+        raw = "[@A#Description*]\n\n[@B#Table*]"
+        assert [(m.group(1), m.group(2))
+                for m in YEDDA_BLOCK_RE.finditer(raw)] == [
+            (b.text, b.label) for b in parse_yedda_blocks(raw)]
