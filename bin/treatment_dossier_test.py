@@ -131,6 +131,65 @@ class TestRenderHtml:
         html = render_html(build_view(doc, ann))
         assert 'Figure-caption' in html and 'Fig. 1.' in html
 
+    def test_gaps_are_collapsed_disclosures_in_the_span_flow(
+        self,
+    ) -> None:
+        """Interleaved with the spans, not in a section of their own.
+
+        A gap only means something next to the boundary it fell
+        through, and 94.2 % of treatments have at least one -- so they
+        default to closed or the page is unreadable on arrival.
+        """
+        doc, ann = _treatment()
+        html = render_html(build_view(doc, ann))
+        assert '<details' in html and '<summary' in html
+        # no `open` attribute anywhere: every disclosure starts shut
+        assert '<details open' not in html
+        # the gap sits between the two spans it separates
+        first = html.index('description')
+        det = html.index('<details')
+        last = html.rindex('notes')
+        assert first < det < last
+
+    def test_the_summary_says_what_is_inside_before_you_open_it(
+        self,
+    ) -> None:
+        doc, ann = _treatment()
+        html = render_html(build_view(doc, ann))
+        summary = html[html.index('<summary'):html.index('</summary>')]
+        assert 'Figure-caption' in summary or '1' in summary
+
+    def test_each_span_carries_its_source_text_for_hover(self) -> None:
+        """The span's own text, sliced from the .ann at its offsets --
+        which is the thing a reviewer is checking the label against.
+        """
+        doc, ann = _treatment()
+        html = render_html(build_view(doc, ann))
+        assert 'Pileus brown.' in html and 'Notes here.' in html
+
+    def test_hover_text_is_escaped_like_everything_else(self) -> None:
+        """The hover panel is the one place raw .ann text reaches the
+        page verbatim, so it is the likeliest escaping hole.
+        """
+        ann = _ann(('spores <3 um & wide', 'Description'))
+        from treatments_to_structured.dossier import parse_blocks
+        b = parse_blocks(ann)
+        doc = {'_id': 'taxon_a',
+               'description_spans': [{'start_char': b[0].start,
+                                      'end_char': b[0].end}]}
+        html = render_html(build_view(doc, ann))
+        assert '&lt;3 um &amp; wide' in html
+        assert '<3 um' not in html
+
+    def test_hover_needs_no_javascript(self) -> None:
+        """Self-contained means CSS-only: <details> is native HTML and
+        the hover panel is a :hover rule.
+        """
+        doc, ann = _treatment()
+        html = render_html(build_view(doc, ann))
+        assert '<script' not in html
+        assert ':hover' in html
+
     def test_reports_suppressed_furniture_and_omissions(self) -> None:
         """taxon_ecb0124d's first gap holds 279 blocks beyond the cap.
         A page that showed 5 and said nothing would misreport it as a
