@@ -72,6 +72,11 @@ def _load_skol_env() -> Dict[str, str]:
     return _skol_env_cache
 
 
+from treatments_to_structured.merge_metric import (  # noqa: E402
+    DEFAULT_MERGE_THRESHOLD as _DEFAULT_MERGE_THRESHOLD,
+)
+
+
 def _get_env(key: str, default: str = '') -> str:
     """
     Get environment variable with fallback to .skol_env file.
@@ -337,7 +342,7 @@ def common_parser() -> argparse.ArgumentParser:
         parser.add_argument(arg_name, type=str, default=None, dest=key)
 
     # Integer arguments
-    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size', 'incremental_batch_size']:
+    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size', 'incremental_batch_size', 'merge_threshold']:
         arg_name = '--' + key.replace('_', '-')
         parser.add_argument(arg_name, type=int, default=None, dest=key)
 
@@ -485,6 +490,13 @@ def get_env_config(
         # through to two-pass defaults".
         'classifier_model_key_single': '',
         'classifier_model_expire': _get_env('MODEL_EXPIRE', ''),
+
+        # Merge-suspect cutoff.  The hardcoded tier is the constant
+        # treatments_to_structured.merge_metric defines, so the number
+        # lives in exactly one place.
+        'merge_threshold': int(
+            _get_env('MERGE_THRESHOLD', str(_DEFAULT_MERGE_THRESHOLD))
+        ),
 
         # Local gnservices (gnfinder + gnparser) — see v4 plan §1.A.
         # Defaults to the skol-gnservices.deb's localhost ports so v4

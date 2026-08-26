@@ -114,15 +114,29 @@ def treatment_merge_metric(
     return n_terms_above_k(text, k=k)
 
 
+#: The merge-suspect cutoff, and the last tier of CLAUDE.md's priority
+#: order -- CLI, then MERGE_THRESHOLD, then the config file, then this.
+#: ``bin/env_config`` imports it as its own fallback so the number
+#: exists once.
+#:
+#: Raised 10 -> 15 on 2026-08-26.  10 came from a 56-treatment sample
+#: in 2026-07-01; measured against 30 hand verdicts it ran at 51.7 %
+#: precision and wrongly excluded ~3 111 of the 7 632 treatments it
+#: flagged.  15 is the F1 optimum on those cases (68.2 -> 73.3).  See
+#: docs/data_quality_production_v4_model.md section 6.1.
+DEFAULT_MERGE_THRESHOLD = 15
+
+
 def is_suspected_merge(
     treatment: Dict[str, Any],
-    threshold: int = 10,
+    threshold: int = DEFAULT_MERGE_THRESHOLD,
     k: int = 5,
 ) -> bool:
     """Predicate: is this Treatment doc a suspected multi-species
     merge?
 
-    Threshold default 10 is calibrated from the 2026-07-01
+    Threshold default 15 is measured; see DEFAULT_MERGE_THRESHOLD.
+    The superseded 10 came from the 2026-07-01
     56-treatment sample.  Above threshold: 11 treatments with
     avg 48.6 annotations.  Below: 45 treatments with avg 9.5.
     """

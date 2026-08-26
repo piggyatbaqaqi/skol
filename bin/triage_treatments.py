@@ -348,14 +348,9 @@ def main() -> int:
         '--output', required=True, metavar='FILE',
         help='Path to write the triage CSV.',
     )
-    parser.add_argument(
-        '--merge-threshold', type=int, default=10,
-        help=(
-            'Metric threshold above which the merge_metric flag '
-            'fires in predicted_issues.  Default 10 (same as '
-            'bin/select_for_annotation).'
-        ),
-    )
+    # --merge-threshold comes from common_parser(): it is
+    # configuration, resolved CLI > MERGE_THRESHOLD > config file >
+    # merge_metric.DEFAULT_MERGE_THRESHOLD.
     parser.add_argument(
         '--include-skipped', action='store_true',
         help=(
@@ -524,7 +519,7 @@ def main() -> int:
             treatment_doc=treatment_doc,
             status_doc=status_doc,
             reviewed_hand_ids=reviewed_hand_ids,
-            merge_threshold=int(args.merge_threshold),
+            merge_threshold=int(config['merge_threshold']),
             authored_binomial=authored_binomial,
         ))
 

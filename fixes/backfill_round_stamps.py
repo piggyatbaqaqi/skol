@@ -301,10 +301,6 @@ def main() -> int:
     parser.add_argument(
         '--rounds-dir', default='data/annotation_rounds', metavar='DIR',
     )
-    parser.add_argument(
-        '--merge-threshold', type=int, default=10, metavar='N',
-        help='Merge-suspect cutoff defining the eligible population.',
-    )
     args = parser.parse_args()
     config = get_env_config(cli_args=args)
     dry_run = bool(config.get('dry_run', False))
@@ -339,7 +335,7 @@ def main() -> int:
         if row.id.startswith('_'):
             continue
         score = complexity_score(row.doc)
-        if score > 0 and treatment_merge_metric(row.doc) < args.merge_threshold:
+        if score > 0 and treatment_merge_metric(row.doc) < config['merge_threshold']:
             pop.append(score)
     pop.sort()
     total = len(pop)

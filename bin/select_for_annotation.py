@@ -447,16 +447,9 @@ def main() -> int:
             "passed (see --force behavior)."
         ),
     )
-    parser.add_argument(
-        '--merge-threshold', type=int, default=10, metavar='N',
-        help=(
-            'Treatments whose n_terms_above_5 metric is >= this '
-            'value are flagged as suspected merges when '
-            '--exclude-suspected-merges is on.  Default 10, '
-            'calibrated 2026-07-01 on the 56-treatment sample.  '
-            'Higher threshold = fewer flagged = more permissive.'
-        ),
-    )
+    # --merge-threshold now comes from common_parser(): it is
+    # configuration, resolved CLI > MERGE_THRESHOLD > config file >
+    # merge_metric.DEFAULT_MERGE_THRESHOLD.
     # --verbosity, --force, --experiment are provided by
     # common_parser().  --force here means: recompute the merge
     # metric fresh instead of trusting cached decisions from
@@ -640,7 +633,7 @@ def main() -> int:
 
         before = len(scored)
         scored, newly_flagged = apply_merge_filter(
-            scored, merge_metrics, args.merge_threshold,
+            scored, merge_metrics, config['merge_threshold'],
             already_flagged=already_flagged,
         )
         funnel.append(
@@ -657,7 +650,7 @@ def main() -> int:
             doc = make_skip_status_doc(
                 tid,
                 metric_value=metric_value,
-                threshold=args.merge_threshold,
+                threshold=config['merge_threshold'],
                 metric_name='n_terms_above_5',
                 decided_at=decided_at,
             )
@@ -674,7 +667,7 @@ def main() -> int:
         if verbosity >= 1:
             print(
                 f"  --exclude-suspected-merges "
-                f"(threshold={args.merge_threshold}, "
+                f"(threshold={config['merge_threshold']}, "
                 f"{'--force' if force_recompute else 'trust prior'}): "
                 f"dropped {before - len(scored)} treatments "
                 f"({len(already_flagged)} previously flagged; "
@@ -714,7 +707,7 @@ def main() -> int:
         band_specs=band_specs,
         band_rows=band_report(scored, band_specs),
         funnel=funnel,
-        merge_threshold=args.merge_threshold,
+        merge_threshold=config['merge_threshold'],
         force_recompute=bool(config.get('force', False)),
         selector_argv=list(sys.argv[1:]),
         drawn_at=_dt.now(_tz.utc).isoformat(),

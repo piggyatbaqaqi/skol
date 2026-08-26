@@ -245,8 +245,10 @@ class TestThresholdDefault:
                                   threshold=10) is True
 
     def test_scores_at_and_above_the_threshold_are_suspect(self) -> None:
+        # every term needs 3+ letters: _TOKEN_RE is [a-zA-Z]{3,}
         text = ' '.join(
             'alpha beta gamma delta epsilon zeta eta theta iota kappa '
-            'lambdaa mu nu xi omicron pi rho ' * 5 for _ in range(1))
+            'lambdaa omicron rho sigma tau upsilon phi chi psi ' * 5
+            for _ in range(1))
         assert treatment_merge_metric({'description': text}) >= 15
         assert is_suspected_merge({'description': text}) is True
