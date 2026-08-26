@@ -3982,6 +3982,26 @@ though it were morphology. A detector written only in D12's direction —
 "a `Table`/`ToC-entry`/`Bibliography` span whose text matches a
 nomenclature shape" — cannot see it at all.
 
+**Something looks for it now, and it is measurable.** A span covering
+more than one layout block has, by construction, absorbed material the
+layout pass had separated. Measured 2026-08-25: **0.7 % of treatments**
+contain such a span — rare, but every one is this defect.
+`bin/treatment_dossier` labels each covered block on hover, which
+surfaced two cases within seconds of the feature landing:
+
+* **`taxon_a2e93e8d`** — a **`description`** span covering **14
+  blocks**, alternating `Table` / `Misc-exposition`, holding
+  `Kotiranta 25567 / KP994354 / KP994387 / Russia / Volobuev et al.
+  (2015)`. A **phylogenetic accession table** read as a description.
+* **`taxon_bc384990`** — a **`materials_examined`** span covering
+  `Notes` + `Page-header` + `Misc-exposition`, opening `† ATCC:
+  American Type Culture Collection, Manassas, USA; BCC: BIOTEC Culture
+  Collection…`. A **table-footnote legend** read as specimen data.
+
+Both are `taxon_9446b102`'s shape, and the multi-block-span test is a
+cheap detector for the whole class: it needs only the `.ann` and the
+stored spans, both of which are already read.
+
 The cheap tell here is the inverse of D12's: not a nomenclature shape
 inside a non-content label, but **a `Description` block that looks like
 apparatus** — footnote markers (`1 `, `2 ` at line starts), a `Table N`
