@@ -1822,6 +1822,31 @@ again.
 3. **The real fix is D12.** The swallowed heading causes the merge;
    recover it and both the merge and its detector fall out.
 
+#### Executed 2026-08-26
+
+The threshold is now **configuration, defined once**:
+`treatments_to_structured.merge_metric.DEFAULT_MERGE_THRESHOLD = 15`,
+imported by `bin/env_config` as the last tier of CLI →
+`MERGE_THRESHOLD` → config file → constant. The literal `10` had been
+written out in **four** scripts; none declares its own flag now.
+
+`fixes/retire_merge_skips.py` deleted the stale skip docs: **2 112
+retired, 5 520 kept, 0 refused**, and a re-run retires nothing. p1 is
+**38 413 → 40 525**.
+
+**Why 2 112 and not the ~3 111 estimated above.** Those are different
+numbers and both are right. ~3 111 is how many of the 7 632 are *truly*
+not merges, summed across all three bands; 2 112 is what raising the
+threshold to 15 actually recovers, because the 15–50 band stays
+excluded despite its measured 40 % false-positive rate. That is the
+deliberate trade: recovering the other ~1 602 would cost more precision
+than it buys, and the honest route to them is D12, not a lower
+threshold.
+
+**Round 5 is unaffected and still reproducible.** It was drawn at
+threshold 10; `--merge-threshold 10` reproduces that population, and
+its sidecar records the value it used.
+
 ### 7. `key` field contains wrong-genus content
 
 **Symptom**: a Treatment for genus A contains a dichotomous key for
