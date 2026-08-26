@@ -1000,6 +1000,62 @@ annotator declining rather than being skipped.
   input price. ~5 000 of them is roughly **$25** of the round's
   spend on text that should never have reached the annotator.
 
+### 5.7 There is no `Abstract` label, so abstracts go somewhere else
+
+`taxon_3011c747` — one of §5.6's ten correct refusals — turned out to
+carry a second finding. The operator: *"an abstract in French and then
+English. The French abstract starts in the prior Misc-exposition
+block."*
+
+**The 22-tag schema has no `Abstract`.** `Nomenclature`, `Description`,
+`Diagnosis`, `Etymology`, `Materials-examined`,
+`Materials-and-methods`, `Type-designation`, `Biology`, `Phylogeny`,
+`New-combinations`, `Notes`, `Key`, `Figure-caption`, `Bibliography`,
+`Table`, `Index`, `ToC-entry`, `Misc-exposition`, `FIX`,
+`Page-header`, `Holotype`, `Distribution` — and every paper has an
+abstract.
+
+Measured over 400 documents, blocks opening on `Abstract`, `Résumé`,
+`Summary`, `Zusammenfassung`, `Riassunto` or `Resumen`: **58 blocks,
+~3 000 corpus-wide**, distributed across six labels:
+
+| landed in | share |
+|---|---:|
+| `Misc-exposition` | 70.7 % |
+| **`Diagnosis`** | **10.3 %** |
+| **`Notes`** | **8.6 %** |
+| **`Biology`** | 5.2 % |
+| **`Materials-examined`** | 3.4 % |
+| `Key` | 1.7 % |
+| `Description` | **0** |
+
+**A hypothesis this refutes.** The obvious reading of
+`taxon_3011c747` — whose `description` field holds French abstract
+prose — is that abstracts become descriptions. **They do not: zero of
+58.** What happens instead is the §12.2 asymmetry again. The block
+*carrying the `Résumé` header* is recognisable and goes to
+`Misc-exposition`; the **headerless continuation** is just prose, and
+that is what becomes `Description`. The operator's phrasing was exact:
+the abstract *starts* in the prior block.
+
+**But 27.6 % do reach content fields.** Sixteen of 58 land in
+`Diagnosis`, `Notes`, `Biology` or `Materials-examined` — roughly
+**840 abstract blocks corpus-wide entering treatments as though they
+were data**. An abstract routed to `Diagnosis` is particularly bad: it
+is discursive summary in the field a consumer trusts most for
+differential characters.
+
+**Adding an `Abstract` tag is the fix**, and it is cheap in the sense
+that matters — abstracts are strongly marked, appear once per document
+near the front, and are usually literally labelled. What it costs is a
+classifier retrain, which is M5's territory.
+
+**Also visible in this treatment: the title is shredded.** `ÉTUDE` in
+`Misc-exposition`, `DE` in **`Table`**, `QUALITATIVE.'` back in
+`Misc-exposition` — one title across three blocks and two labels, in a
+1985 *Cryptogamie, Mycologie* scan. Ordinary §9 damage, noted because
+it explains why the surrounding routing is so poor.
+
 ### 5.5 The annotated-checklist genre (T5)
 
 Found 2026-08-26 during T5 review. The operator's verdict on
