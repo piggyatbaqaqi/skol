@@ -6,8 +6,9 @@ Stratified draw of 30 from the 7,632 treatments filtered out by
 
 **The question for each: is this two or more treatments glued
 together?**  Fill the `verdict` column with `merge`, `single`, or
-`unsure`.  Dossiers: open `/tmp/p2a_dossiers/index.html` and click
-a name; hover any span there to read it.
+`unsure`.  Dossiers: open [`p2a_dossiers/index.html`](p2a_dossiers/index.html)
+and click a name, or click a name in the table below.  Hover any span
+in a dossier to read its text; click a gap triangle to open it.
 
 Deliverable once filled: precision of the metric as a function of
 score, and a recommended threshold.  If precision in the 10–14 band
@@ -16,36 +17,42 @@ a frame smaller than it should have been.
 
 | verdict | score | band | nom | desc | chars | binom | name |
 |---|---:|---|---:|---:|---:|---|---|
-|  | 398 | >50 | 1 | 114 | 111,153 | Y | [in temp.; DK (oo). -A&N 97:131, Cet 2387, M&J Collybia 1](taxon_25f858ca062272) |
-|  | 177 | >50 | 1 | 66 | 60,404 | Y | [Nomen ignotum](taxon_b11c4c982ff357) |
-|  | 69 | >50 | 1 | 7 | 12,058 |  | [Aspergillus asperescens Stolk, Antonie van Leeuwenhoek 2](taxon_fd8c414d27344f) |
-|  | 66 | >50 | 1 | 12 | 8,171 | Y | [Nomen ignotum](taxon_c44f9f2647791b) |
-|  | 65 | >50 | 1 | 10 | 16,725 | Y | [TRIANCUI.ARIA BAlofBUSM: (Beyma) .Bocdijn Trigonia bambu](taxon_d831b03b3443cf) |
-|  | 42 | 15-50 | 1 | 4 | 5,993 | Y | [Nomen ignotum](taxon_c9c812e46d84e8) |
-|  | 25 | 15-50 | 1 | 2 | 4,326 |  | [Amanita brunneoumbonata Thongbai, Raspé & K.D. Hyde, sp.](taxon_2d15ed00d380da) |
-|  | 25 | 15-50 | 1 | 5 | 7,250 |  | [Nomen ignotum](taxon_abadad5bf06ad0) |
-|  | 20 | 15-50 | 2 | 6 | 4,593 |  | [Mycetinis ignobilis (Berk. & Broome) Desjardin & B.A. Pe](taxon_426c764192c5a9) |
-|  | 20 | 15-50 | 1 | 3 | 4,594 | Y | [P. albostrigosa. 10. Pouzarella lasia (Berk. & Broome) L](taxon_bcbca6e26de10a) |
-|  | 20 | 15-50 | 1 | 4 | 2,391 | Y | [Nomen ignotum](taxon_760c7d895cb910) |
-|  | 18 | 15-50 | 2 | 1 | 790 |  | [Digitodochium anshunense K. Habib, Y.L. Ren & Q.R. Li, s](taxon_efe693a5ce0467) |
-|  | 17 | 15-50 | 1 | 2 | 2,363 | Y | [Gloeoporus variiformis Y.C. Dai, Chao G. Wang & Yuan Yua](taxon_7b37dc1dddccae) |
-|  | 17 | 15-50 | 1 | 11 | 4,100 | Y | [This is Boletus vinaceus Frost Ms.](taxon_18338ea5f11819) |
-|  | 15 | 15-50 | 1 | 6 | 4,695 | Y | [oleoides. Change manga, 25. III. 1950, Nr. 3129. — Auf d](taxon_fdc837ce7490cf) |
-|  | 14 | 10-14 | 1 | 4 | 2,664 | Y | [Nomen ignotum](taxon_25d9f5a1db9f1d) |
-|  | 14 | 10-14 | 1 | 1 | 2,014 |  | [Samson, comb. nov. MycoBank MB809553. Fig. 10. Basionym:](taxon_2f8232df55e350) |
-|  | 14 | 10-14 | 1 | 3 | 3,204 |  | [Boletellus emodensis (Berk.) Singer, Annls mycol. 40: 19](taxon_4ce09139816f88) |
-|  | 13 | 10-14 | 1 | 1 | 4,391 |  | [Pleonectria boothii Hirooka, Rossman & P. Chaverri, sp. ](taxon_229f912ec5ae00) |
-|  | 12 | 10-14 | 1 | 4 | 2,700 |  | [Phaeoramularia gomphrenicola CPC 23248. Phaeoramularia g](taxon_8a18aefbc93e56) |
-|  | 12 | 10-14 | 1 | 3 | 3,637 |  | [Ascobolus castaneus Teng, Sinensia 11: 109 (1940)](taxon_5aab72f2bc25a0) |
-|  | 12 | 10-14 | 1 | 2 | 2,950 |  | [Mallocybe from eastern North America](taxon_ab3cb249f5fe0d) |
-|  | 12 | 10-14 | 1 | 1 | 3,225 |  | [Sticta flakusiorum Ossowska, B. Moncada & Lücking sp. no](taxon_01d4b61b8b4fb5) |
-|  | 12 | 10-14 | 1 | 1 | 556 |  | [Sistotremastrales ord. nov. (Basidiomycota). Mycosphere ](taxon_a33e8dcbcc763f) |
-|  | 12 | 10-14 | 1 | 3 | 4,689 | Y | [The genus Tubakia s. lat.](taxon_19177a1cb6fa92) |
-|  | 11 | 10-14 | 1 | 2 | 2,970 |  | [Cladosporium mucilaginosum C.M. Pereira & R.W. Barreto, ](taxon_da1e42eb0998da) |
-|  | 11 | 10-14 | 1 | 2 | 3,085 |  | [Polysphondylium paniculoides Y. Li, P. Liu et Y. Zou, sp](taxon_8dd1330488e485) |
-|  | 11 | 10-14 | 1 | 6 | 3,665 |  | [Podonectria kuwanaspidis X.L. Xu & C.L. Yang sp. nov. (F](taxon_b160709fa5276e) |
-|  | 11 | 10-14 | 1 | 3 | 2,536 |  | [Nomen ignotum](taxon_710585339d9c59) |
-|  | 10 | 10-14 | 1 | 3 | 3,944 | Y | [Nomen ignotum](taxon_5ec11f486be4af) |
+|  | 398 | >50 | 1 | 114 | 111,153 | Y | [in temp.; DK (oo). -A&N 97:131, Cet 2387, M&J Collybia 1](p2a_dossiers/taxon_25f858ca062272dddb2165fcc0b31f21e0ad694984b8611e6aac8bf914500544.html) |
+|  | 177 | >50 | 1 | 66 | 60,404 | Y | [Nomen ignotum](p2a_dossiers/taxon_b11c4c982ff357c212477f318fed36298a6be239eabdd9a103fe03c2aa20b233.html) |
+|  | 69 | >50 | 1 | 7 | 12,058 |  | [Aspergillus asperescens Stolk, Antonie van Leeuwenhoek 2](p2a_dossiers/taxon_fd8c414d27344fd733392431d3b064af6f2caaf7d8ad8bdffc27017ee3da8703.html) |
+|  | 66 | >50 | 1 | 12 | 8,171 | Y | [Nomen ignotum](p2a_dossiers/taxon_c44f9f2647791b79a349b42080ca77259dcd8123c5ed0824281789a88a0afa21.html) |
+|  | 65 | >50 | 1 | 10 | 16,725 | Y | [TRIANCUI.ARIA BAlofBUSM: (Beyma) .Bocdijn Trigonia bambu](p2a_dossiers/taxon_d831b03b3443cf7e0bbc85e2fbddb3f6446f4c600859f19f6eeaec7b79f125b3.html) |
+|  | 42 | 15-50 | 1 | 4 | 5,993 | Y | [Nomen ignotum](p2a_dossiers/taxon_c9c812e46d84e8e5498e3cdf49ef610a0061ac2796da9c048e9e93ab9e1d7ead.html) |
+|  | 25 | 15-50 | 1 | 2 | 4,326 |  | [Amanita brunneoumbonata Thongbai, Raspé & K.D. Hyde, sp.](p2a_dossiers/taxon_2d15ed00d380da16f80ffd6009a70cc0dcb35aa6082e19636d73b0f08596b9cf.html) |
+|  | 25 | 15-50 | 1 | 5 | 7,250 |  | [Nomen ignotum](p2a_dossiers/taxon_abadad5bf06ad054e9afff4939f1093ce712790c8c2278a669612930408db280.html) |
+|  | 20 | 15-50 | 2 | 6 | 4,593 |  | [Mycetinis ignobilis (Berk. & Broome) Desjardin & B.A. Pe](p2a_dossiers/taxon_426c764192c5a9933702d35fc55b2d2db4fff549abb3cd8e0381759162038b59.html) |
+|  | 20 | 15-50 | 1 | 3 | 4,594 | Y | [P. albostrigosa. 10. Pouzarella lasia (Berk. & Broome) L](p2a_dossiers/taxon_bcbca6e26de10ac6892cbf5e1dec42d44a4ff4a1bea33968a0ef3cd25446532e.html) |
+|  | 20 | 15-50 | 1 | 4 | 2,391 | Y | [Nomen ignotum](p2a_dossiers/taxon_760c7d895cb910778f43e6723de1f3015b6b8169d97025de269559510b60599d.html) |
+|  | 18 | 15-50 | 2 | 1 | 790 |  | [Digitodochium anshunense K. Habib, Y.L. Ren & Q.R. Li, s](p2a_dossiers/taxon_efe693a5ce04678e4d21330cdeab8c9f28b7279f62461b7ac96a267ec810282c.html) |
+|  | 17 | 15-50 | 1 | 2 | 2,363 | Y | [Gloeoporus variiformis Y.C. Dai, Chao G. Wang & Yuan Yua](p2a_dossiers/taxon_7b37dc1dddccae35f8e4b97bf550fbc70d82a3ae6aff81d068bd54caed1fcc43.html) |
+|  | 17 | 15-50 | 1 | 11 | 4,100 | Y | [This is Boletus vinaceus Frost Ms.](p2a_dossiers/taxon_18338ea5f118197de83538c38109e260ddb27dd5562f3c9c35aa53f7a844e2d5.html) |
+|  | 15 | 15-50 | 1 | 6 | 4,695 | Y | [oleoides. Change manga, 25. III. 1950, Nr. 3129. — Auf d](p2a_dossiers/taxon_fdc837ce7490cf1d5d25f997933cdd74b1cb78ff1d5d974791b8f5b2eafa06ea.html) |
+|  | 14 | 10-14 | 1 | 4 | 2,664 | Y | [Nomen ignotum](p2a_dossiers/taxon_25d9f5a1db9f1d27703c6974e771da080d380625a775d78536f04299531bda64.html) |
+|  | 14 | 10-14 | 1 | 1 | 2,014 |  | [Samson, comb. nov. MycoBank MB809553. Fig. 10. Basionym:](p2a_dossiers/taxon_2f8232df55e35039f13118f7019a2fb0d5ea54161ca1b0e2172add84db759b5f.html) |
+|  | 14 | 10-14 | 1 | 3 | 3,204 |  | [Boletellus emodensis (Berk.) Singer, Annls mycol. 40: 19](p2a_dossiers/taxon_4ce09139816f889436030d0b1750c0f448a8e901f073aaef78368a80c282f6b0.html) |
+|  | 13 | 10-14 | 1 | 1 | 4,391 |  | [Pleonectria boothii Hirooka, Rossman & P. Chaverri, sp. ](p2a_dossiers/taxon_229f912ec5ae003a46e3c7cd7f01c1673a11ccfd6a8ded7b216b9d71a2c706b7.html) |
+|  | 12 | 10-14 | 1 | 4 | 2,700 |  | [Phaeoramularia gomphrenicola CPC 23248. Phaeoramularia g](p2a_dossiers/taxon_8a18aefbc93e5614478b3e91ec021840a1a901028f6e224bd38e64ccd785e6a1.html) |
+|  | 12 | 10-14 | 1 | 3 | 3,637 |  | [Ascobolus castaneus Teng, Sinensia 11: 109 (1940)](p2a_dossiers/taxon_5aab72f2bc25a0fd87a1cf302cba0021a9892cbaf3c9f57df9a3358d1955a547.html) |
+|  | 12 | 10-14 | 1 | 2 | 2,950 |  | [Mallocybe from eastern North America](p2a_dossiers/taxon_ab3cb249f5fe0d17c69a12a6a6aa7c5b5c4f74a93f912aa22205382a2de6e46f.html) |
+|  | 12 | 10-14 | 1 | 1 | 3,225 |  | [Sticta flakusiorum Ossowska, B. Moncada & Lücking sp. no](p2a_dossiers/taxon_01d4b61b8b4fb5ae7cd49b4837f6d660e74b033e27811ef66d12205cd090ad7e.html) |
+|  | 12 | 10-14 | 1 | 1 | 556 |  | [Sistotremastrales ord. nov. (Basidiomycota). Mycosphere ](p2a_dossiers/taxon_a33e8dcbcc763fc3cfffa33ae6d23004138059b44e75774c492a1e4d2f58d418.html) |
+|  | 12 | 10-14 | 1 | 3 | 4,689 | Y | [The genus Tubakia s. lat.](p2a_dossiers/taxon_19177a1cb6fa92fc9bce34cb96f3f4564f20a89b17ebabb67e11981d57f97b2e.html) |
+|  | 11 | 10-14 | 1 | 2 | 2,970 |  | [Cladosporium mucilaginosum C.M. Pereira & R.W. Barreto, ](p2a_dossiers/taxon_da1e42eb0998da5f75c9e0d7fd0b876fdcc4c1a2de5ee8a44588b9686b3193fb.html) |
+|  | 11 | 10-14 | 1 | 2 | 3,085 |  | [Polysphondylium paniculoides Y. Li, P. Liu et Y. Zou, sp](p2a_dossiers/taxon_8dd1330488e485be4db50455e47a135de0676f23eb8ab2fe66408caba0c34438.html) |
+|  | 11 | 10-14 | 1 | 6 | 3,665 |  | [Podonectria kuwanaspidis X.L. Xu & C.L. Yang sp. nov. (F](p2a_dossiers/taxon_b160709fa5276e459adc244390b21cd4f5d0d23fa99ad982de248d03a3fdb9f5.html) |
+|  | 11 | 10-14 | 1 | 3 | 2,536 |  | [Nomen ignotum](p2a_dossiers/taxon_710585339d9c5920ad6db067d2a98fbe0f7c18e80cac9b1f0f61483bf94c02dd.html) |
+|  | 10 | 10-14 | 1 | 3 | 3,944 | Y | [Nomen ignotum](p2a_dossiers/taxon_5ec11f486be4aff32053757948d45aa8a1482d2834770a5a59169600a0354357.html) |
+
+## How to record a verdict
+
+Edit **this file**.  Put `merge`, `single` or `unsure` in the empty
+first column of each row, and add a note after the name if the case is
+interesting.  Nothing else reads this file, so free text is fine.
 
 ## Column meanings
 
