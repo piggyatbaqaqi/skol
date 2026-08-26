@@ -3,6 +3,7 @@
 from typing import Any, Dict
 
 from treatments_to_structured.merge_metric import (
+    DEFAULT_MERGE_THRESHOLD,
     STOP_WORDS,
     is_suspected_merge,
     n_terms_above_k,
@@ -196,3 +197,56 @@ class TestStopWords:
         regardless of merge status."""
         for w in ('mm', 'wide', 'thick', 'cell', 'diam'):
             assert w in STOP_WORDS
+
+
+_TWELVE = ' '.join(
+    'alpha beta gamma delta epsilon zeta eta theta iota kappa '
+    'lambdaa mu ' * 5 for _ in range(1))
+"""Text scoring 12 on the metric -- inside the retired 10-14 band."""
+
+
+class TestThresholdDefault:
+    """One threshold, defined once, imported everywhere.
+
+    It had been written out as a literal `10` in three places:
+    `is_suspected_merge`, `bin/select_for_annotation`'s
+    `--merge-threshold`, and `fixes/backfill_round_stamps`.  Same
+    failure mode as the YEDDA regex before it was pulled into
+    `ingestors.yedda_tags` -- copies drift.
+
+    The value moved from 10 to 15 on 2026-08-26.  10 was calibrated on
+    a 56-treatment sample in 2026-07-01; measured against 30 hand
+    verdicts it ran at **51.7 % precision**, wrongly excluding roughly
+    3 111 of the 7 632 treatments it flagged.  15 is the F1 optimum on
+    those 29 labelled cases, 68.2 -> 73.3.  Memo section 6.1.
+    """
+
+    def test_the_constant_is_fifteen(self) -> None:
+        assert DEFAULT_MERGE_THRESHOLD == 15
+
+    def test_is_suspected_merge_uses_the_constant(self) -> None:
+        """Not a copy of the number -- the constant itself, so raising
+        it again needs one edit.
+        """
+        import inspect
+        sig = inspect.signature(is_suspected_merge)
+        assert sig.parameters['threshold'].default is DEFAULT_MERGE_THRESHOLD
+
+    def test_the_retired_band_is_no_longer_suspect(self) -> None:
+        doc = {'description': _TWELVE}
+        assert 10 <= treatment_merge_metric(doc) < 15
+        assert is_suspected_merge(doc) is False
+
+    def test_an_explicit_threshold_still_wins(self) -> None:
+        """Round 5 was drawn at 10, so reproducing that draw must stay
+        possible: the parameter is re-defaulted, not removed.
+        """
+        assert is_suspected_merge({'description': _TWELVE},
+                                  threshold=10) is True
+
+    def test_scores_at_and_above_the_threshold_are_suspect(self) -> None:
+        text = ' '.join(
+            'alpha beta gamma delta epsilon zeta eta theta iota kappa '
+            'lambdaa mu nu xi omicron pi rho ' * 5 for _ in range(1))
+        assert treatment_merge_metric({'description': text}) >= 15
+        assert is_suspected_merge({'description': text}) is True

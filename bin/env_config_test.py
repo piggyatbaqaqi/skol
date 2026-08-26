@@ -626,3 +626,53 @@ class TestGetEnvConfigCliArgs:
         cfg = get_env_config()
         assert isinstance(cfg, dict)
         assert 'couchdb_url' in cfg
+
+
+class TestMergeThreshold:
+    """The merge-suspect cutoff is configuration, not code.
+
+    It had been a literal `10` written out in three places --
+    `is_suspected_merge`, `bin/select_for_annotation`'s own
+    `--merge-threshold`, and `fixes/backfill_round_stamps` -- so
+    changing it meant three edits and hoping.  It now follows
+    CLAUDE.md's priority order: CLI, then MERGE_THRESHOLD, then the
+    config file, then one hardcoded default.
+
+    That default moved 10 -> 15 on 2026-08-26.  10 was calibrated on a
+    56-treatment sample; measured against 30 hand verdicts it ran at
+    51.7 % precision, wrongly excluding ~3 111 of the 7 632 treatments
+    it flagged.  Memo section 6.1.
+    """
+
+    def test_default_is_the_library_constant(self) -> None:
+        """Not a second copy of 15: env_config's fallback IS the
+        constant `merge_metric` defines, so raising it needs one edit.
+        """
+        from treatments_to_structured.merge_metric import (
+            DEFAULT_MERGE_THRESHOLD,
+        )
+        config = get_env_config()
+        assert config['merge_threshold'] == DEFAULT_MERGE_THRESHOLD
+
+    def test_environment_variable_overrides_the_default(
+        self, monkeypatch: Any,
+    ) -> None:
+        monkeypatch.setenv('MERGE_THRESHOLD', '22')
+        assert get_env_config()['merge_threshold'] == 22
+
+    def test_cli_overrides_the_environment(
+        self, monkeypatch: Any,
+    ) -> None:
+        """Round 5 was drawn at 10, so reproducing that draw has to
+        stay possible from the command line.
+        """
+        monkeypatch.setenv('MERGE_THRESHOLD', '22')
+        args = argparse.Namespace(merge_threshold=10)
+        assert get_env_config(cli_args=args)['merge_threshold'] == 10
+
+    def test_it_is_an_int_not_a_string(self) -> None:
+        """It is compared with `>=` against a metric value; a string
+        would compare as greater than every int on Python 2 and raise
+        on Python 3.
+        """
+        assert isinstance(get_env_config()['merge_threshold'], int)
