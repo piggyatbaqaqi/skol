@@ -681,6 +681,29 @@ distinct terms each appearing ≥ 5 times. That is almost certainly a
 flora-chapter slice of the `taxon_2b793602` kind, and it belongs in the
 fixture as the metric's high-end anchor.
 
+> ### T3a executed 2026-08-26 — the threshold is wrong
+>
+> 30 read by the operator through `bin/treatment_dossier`. Precision of
+> `n_terms_above_5 >= 10` is **51.7 %** pooled, and **28.6 %** in the
+> 10–14 decision zone against **100 %** above 50.
+>
+> **The plan's own conditional fired**: "If precision at 10–14 is poor,
+> p1 is larger than 38 413 and `select_for_annotation` has been
+> discarding good treatments." It is, and it has — by roughly **3 111
+> treatments**, so p1 is about **41 400** and every round since
+> 2026-07-01 sampled a frame ~7.5 % too small. The draws remain valid;
+> the population they describe was mis-stated.
+>
+> **Raise `--merge-threshold` to 15** — F1 68.2 → 73.3.
+>
+> Two things worth more than the threshold. The count of
+> `nomenclature_spans`, which I had called "close to decisive", is the
+> **worst** predictor tested (recall 6.7 %) — because the merge and the
+> swallowed heading are *the same event*, so the second name never
+> becomes a second span. And most false positives are genuinely damaged
+> treatments, just not merged ones: the metric is a damage detector
+> under a merge detector's name. Memo §6.1.
+
 **b. Layout-label queries — the highest-leverage of the four.**
 `skol_exp_production_v4_01_00_ann_combined` holds ~21 k annotated
 documents. D1–D15 are each described as a label-sequence signature;

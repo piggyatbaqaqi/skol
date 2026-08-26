@@ -1714,6 +1714,114 @@ blind-spot patterns must be caught by the reviewer (§0 rule 3:
 annotate first species only) rather than automatically
 quarantined.
 
+### 6.1 `n_terms_above_5` measured against 30 hand verdicts (T3a)
+
+The merge filter has excluded **7 632 treatments** from p1 since
+2026-07-01 on a threshold calibrated against a 56-treatment sample.
+Measured properly 2026-08-26: a stratified draw of 30, read by the
+operator through `bin/treatment_dossier`, verdict `merge` / `single` /
+`unsure` per treatment.
+
+| band | population | n | merge | single | precision | est. false positives |
+|---|---:|---:|---:|---:|---|---:|
+| 10–14 | 2 112 | 15 | 4 | 10 | **28.6 %** [11.7, 54.6] | ~1 509 |
+| 15–50 | 4 005 | 10 | 6 | 4 | 60.0 % [31.3, 83.2] | ~1 602 |
+| > 50 | 1 515 | 5 | 5 | 0 | **100 %** [56.6, 100] | 0 |
+| pooled | 7 632 | 30 | 15 | 14 | 51.7 % [34.4, 68.6] | **~3 111** |
+
+Wilson intervals; one `unsure` excluded.
+
+**The threshold is wrong, and p1 has been too small all along.**
+Roughly **3 111 of the 7 632** excluded treatments are not merges —
+so p1 is about **41 400, not 38 303**, and every round drawn since
+2026-07-01 sampled from a frame ~7.5 % smaller than it should have
+been. The draws stay valid (they were uniform over what they saw); the
+*population* they describe was mis-stated.
+
+**Threshold 15 is the F1 optimum**, on the same 29 labelled cases:
+
+| rule | precision | recall | F1 |
+|---|---:|---:|---:|
+| `>= 10` (current) | 51.7 % | 100 % | 68.2 |
+| **`>= 15`** | **73.3 %** | **73.3 %** | **73.3** |
+| `>= 20` | 72.7 % | 53.3 % | 61.5 |
+| `>= 50` | 100 % | 33.3 % | 50.0 |
+
+#### A claim of mine the data refuted
+
+The review index told the operator that the count of
+`nomenclature_spans` was "close to decisive: two names means two
+treatments." **It is the worst predictor tested** — precision 50 %,
+recall **6.7 %**, F1 11.8.
+
+The operator's own notes say why, repeatedly:
+
+> *"The nomenclature for the second one (Arnium hirtum) was lost to a
+> notes section."*
+> *"Taxonomic citations have been consistently absorbed by
+> Misc-exposition, Key, and Table blocks."*
+> *"The gap (Misc-exposition) between the first two nomenclatures
+> should have also been nomenclature."*
+
+**The merge and the swallowed name are the same event.** A treatment
+absorbs its neighbour precisely *because* the heading that would have
+separated them was labelled `Misc-exposition`, `Key` or `Table` — so
+the second name never becomes a second span, and counting spans cannot
+see it. That couples D12 to merge detection directly: **fix D12 and
+`nomenclature_spans` becomes the merge detector it looks like it should
+already be.**
+
+Every alternative tested, for the record:
+
+| rule | precision | recall | F1 |
+|---|---:|---:|---:|
+| `>= 4 description_spans` | 71.4 % | 66.7 % | **69.0** |
+| `>= 2 materials_examined_spans` | 71.4 % | 33.3 % | 45.5 |
+| `>= 2 type_designation_spans` | **100 %** | 13.3 % | 23.5 |
+| `>= 2 nomenclature_spans` | 50.0 % | 6.7 % | 11.8 |
+| `>=2 materials` OR `score >= 40` | 80.0 % | 53.3 % | 64.0 |
+
+`>= 2 type_designation_spans` is the only clean *rule-in*: two holotype
+designations means two taxa, no exceptions in this sample. Low recall,
+but a treatment it flags needs no second opinion.
+
+#### What the false positives actually are
+
+**The metric is a damage detector wearing a merge detector's name.**
+Almost every `single` verdict still describes a real defect — just not
+a merge:
+
+> *"Pieces are missing. The first Misc-exposition is the last line of
+> the etymology and the type designation."*
+> *"Part of the taxonomic citation … was consumed by a Figure-caption
+> block."*
+> *"Misc-exposition blocks have absorbed parts of adjacent blocks."*
+
+Only three of the fourteen singles are clean treatments. So excluding
+these from p1 was not arbitrary — they *are* unusual — but they are
+annotatable, and the annotator was never given the chance.
+
+**And some `merge` verdicts are a different class again: rank
+cascades.** `taxon_a33e8dcb` (`Sistotremastrales ord. nov.`) carries
+descriptions of the new order, its type family, type genus and type
+species; `taxon_710585339` is a genus redescription plus its unnamed
+type species. Taxonomically these belong together; for extraction they
+are separate treatments. A detector tuned on "two unrelated species"
+will not find them, and a fix that splits them must know which rank
+each description belongs to — which is §12's label-aware assembly
+again.
+
+#### Recommendation
+
+1. **Raise `--merge-threshold` from 10 to 15.** Recovers ~2 112
+   treatments of which ~71 % are annotatable, and takes precision from
+   51.7 % to 73.3 % at no recall cost worth the name.
+2. **Do not chase precision past that with this metric.** Every
+   threshold above 20 trades more recall than it gains, and the
+   population it is trying to describe is not really "merges."
+3. **The real fix is D12.** The swallowed heading causes the merge;
+   recover it and both the merge and its detector fall out.
+
 ### 7. `key` field contains wrong-genus content
 
 **Symptom**: a Treatment for genus A contains a dichotomous key for
