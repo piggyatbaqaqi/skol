@@ -212,6 +212,7 @@ def select_treatment_ids(
     doc_id_filter: Optional[List[str]],
     *,
     skip_unannotated: bool = False,
+    allow_unannotated: bool = False,
     treatments_db: Any = None,
     warn_stream: TextIO = sys.stderr,
 ) -> List[str]:
@@ -248,21 +249,33 @@ def select_treatment_ids(
                 "source DB has no annotations; nothing to export"
             )
         return all_ids
+    if skip_unannotated and allow_unannotated:
+        raise ValueError(
+            "--skip-unannotated and --allow-unannotated are mutually "
+            "exclusive: one drops treatments with no annotations, the "
+            "other keeps them"
+        )
+    if skip_unannotated and allow_unannotated:
+        raise ValueError(
+            "--skip-unannotated and --allow-unannotated are mutually "
+            "exclusive: one drops treatments with no annotations, the "
+            "other keeps them"
+        )
     all_set = set(all_ids)
     missing = [t for t in doc_id_filter if t not in all_set]
     if not missing:
         return [t for t in doc_id_filter]
 
-    if not skip_unannotated:
+    if not (skip_unannotated or allow_unannotated):
         raise ValueError(
             f"--doc-id {missing!r} have no annotations in the "
             f"source DB"
         )
     if treatments_db is None:
         raise ValueError(
-            "--skip-unannotated needs the treatments_prose DB to "
-            "tell a typo'd ID from a treatment that produced no "
-            "annotations; refusing to skip blindly"
+            "telling a typo'd ID from a treatment that produced no "
+            "annotations needs the treatments_prose DB; refusing to "
+            "guess"
         )
     # An ID present in treatments_prose is a real treatment that
     # simply yielded nothing; anything else is a typo.
@@ -272,6 +285,16 @@ def select_treatment_ids(
             f"--doc-id {unknown!r} are not treatments in the "
             f"treatments_prose DB (typo?)"
         )
+    if allow_unannotated:
+        # Kept deliberately: a treatment Claude returned nothing for is
+        # the most informative case in a recall review, and it can only
+        # be annotated in brat if it is exported.  Its .ann is empty.
+        print(
+            f"  --allow-unannotated: keeping {len(missing)} treatment(s) "
+            f"with no annotations (empty .ann): {', '.join(missing)}",
+            file=warn_stream,
+        )
+        return [t for t in doc_id_filter]
     print(
         f"  --skip-unannotated: dropped {len(missing)} treatment(s) "
         f"with no annotations: {', '.join(missing)}",
@@ -326,6 +349,17 @@ def main() -> int:
             'in brat gives a clean queue with no already-done '
             'work to skip past.  No-op when --source hand '
             '(everything would be excluded).'
+        ),
+    )
+    parser.add_argument(
+        '--allow-unannotated', action='store_true',
+        help=(
+            'Export treatments that have no annotations, with an empty '
+            '.ann, instead of refusing.  Use when reviewing what the '
+            'annotator MISSED: a treatment it returned no spans for is '
+            'the most informative case for recall, and can only be '
+            'annotated in brat if it is exported.  Mutually exclusive '
+            'with --skip-unannotated.'
         ),
     )
     parser.add_argument(
@@ -432,6 +466,7 @@ def main() -> int:
         treatment_ids = select_treatment_ids(
             source_db, doc_id_filter,
             skip_unannotated=args.skip_unannotated,
+            allow_unannotated=args.allow_unannotated,
             treatments_db=treatments_db,
         )
     except ValueError as exc:
