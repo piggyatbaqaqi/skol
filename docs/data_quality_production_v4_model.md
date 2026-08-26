@@ -6189,6 +6189,112 @@ part of the schema induction in T6, not after.
 current prompt and the baseline depends on it, exactly as
 with the six deferred `Spores`→`Ascospores` cases.
 
+### 12.2 The layout labels, measured (T3b)
+
+Until 2026-08-25 every claim in this memo about layout labels rested on
+individual treatments. This is the corpus view: **a random sample of
+500 of the 20 928 documents in `ann_combined`, 57 142 blocks.** Rates
+are ±~1 pp on the common labels; the extrapolations are point estimates
+on a 2.4 % sample and should be read as magnitudes, not counts.
+
+#### The inventory nobody had
+
+| label | % of blocks | % of documents |
+|---|---:|---:|
+| **`Misc-exposition`** | **35.4 %** | **85.2 %** |
+| `Page-header` | 14.2 % | 61.4 % |
+| `Table` | 11.9 % | 41.0 % |
+| `Key` | 5.7 % | 50.8 % |
+| `Description` | 5.5 % | 50.6 % |
+| `Figure-caption` | 5.1 % | 57.8 % |
+| `Bibliography` | 4.5 % | 56.6 % |
+| `Nomenclature` | 3.3 % | **38.8 %** |
+| `Notes` | 3.1 % | 46.2 % |
+| `Materials-examined` | 2.6 % | 37.4 % |
+| `Biology` | 2.0 % | 33.8 % |
+| `Diagnosis` | 1.6 % | 34.2 % |
+| `Phylogeny` | 1.5 % | 24.2 % |
+| `Materials-and-methods` | 1.3 % | 40.0 % |
+| `Type-designation` | 1.0 % | 23.8 % |
+| `Etymology` | 0.9 % | 25.0 % |
+| `ToC-entry` | 0.2 % | 6.2 % |
+| `Index` | 0.2 % | 8.2 % |
+
+18 labels, and **one of them is a third of the corpus.**
+`Misc-exposition` was described above as "the layout pass's catch-all,
+which makes it the first place to look." It is more than that: at
+**35.4 % of all blocks and present in 85.2 % of documents** it is the
+*default*, not a residue. Every D12 case where it swallowed content is
+drawn from a pool that large.
+
+Second observation, easy to miss: **`Nomenclature` appears in only
+38.8 % of documents while `Description` appears in 50.6 %.** More
+documents have descriptions than have names.
+
+#### Descriptions that no name precedes — two different faults
+
+Splitting every `Description` block by whether a `Nomenclature` block
+came before it in the same document:
+
+| situation | share | ≈ corpus |
+|---|---:|---:|
+| after the first `Nomenclature` — normal | 78.2 % | — |
+| **before** it, in a document that *has* one | 13.5 % | ~18 200 |
+| **orphaned** — document has *no* `Nomenclature` block at all | 8.3 % | ~11 100 |
+
+**14.4 % of documents contain `Description` blocks and zero
+`Nomenclature` blocks.** That is a different failure from
+mis-ordering: the classifier never labelled a name anywhere in them.
+Both routes feed `synthetic_nomenclature`, which runs at 39.6 %
+corpus-wide — and this is where much of it comes from.
+
+**Two confounds were tested rather than assumed.** Front matter would
+put these descriptions at the head of the document; the median sits at
+**0.36** of the way through, so that is not the explanation. And the
+orphaned/mis-ordered split above exists precisely because the pooled
+figure conflated "the name comes later" with "there is no name."
+
+Still uncontrolled: a genus description legitimately precedes the first
+*species* heading, so some of the 13.5 % is correct structure. Treat
+~18 200 as an upper bound.
+
+#### D12 and D18, as rates
+
+* **D12** — a non-content block opening on a nomenclatural act and
+  continuing into prose: **38 in sample → ~1 590 corpus-wide.** An
+  independent 200-document sample gave ~1 360, so the estimate is
+  stable. `Figure-caption` keeps recurring, as with `taxon_ecb0124d`.
+* **D18** — a `Description` block opening on a nomenclatural heading:
+  **13 → ~544.** The examples are a distinct genre — numbered monograph
+  entries like `2. Tulasnella pruinosa Bourd. & Galz. Bull. Soc. Myc.
+  Fr. 39: 264. 1924.` — which suggests D18 is concentrated in floras
+  rather than spread evenly.
+
+#### One number not to trust yet
+
+**Adjacent `Nomenclature` runs** — two or more in a row with no body
+between — extrapolate to **~6 100**, and the obvious reading is "a
+heading whose body was lost." Testing it, only **32 %** are
+synonym-shaped by an explicit-marker regex (`=`, `≡`, `syn. nov.`).
+But a basionym listed *without* a leading `=` is legitimate synonymy
+and reads as "not synonym" here, so **68 % is an upper bound and
+probably a bad one.** Recorded so the ~6 100 is not quoted as a defect
+count.
+
+#### What this says about fix order
+
+By magnitude, and independent of how hard each is:
+
+1. **`Misc-exposition` at 35 %** — not a bug in itself, but the pool
+   every swallowed-content case is drawn from. Splitting it into real
+   categories would shrink D12's search space more than any detector.
+2. **~29 000 descriptions with no name ahead of them** (~18 200
+   mis-ordered + ~11 100 orphaned) — the largest single structural
+   defect measured, and the direct source of much of the 39.6 %
+   synthetic-nomenclature rate.
+3. **~1 590 D12** and **~544 D18** — real, bounded, and small by
+   comparison. Worth detectors; not worth doing first.
+
 ### 13. Diagnosis segments may not be worth Claude annotation (operational note)
 
 **Observation** (operator, 2026-07-02): during hand-review of
