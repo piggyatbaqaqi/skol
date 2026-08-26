@@ -415,7 +415,9 @@ class TestEstimateTokens:
         assert stats['total_input_tokens'] == 1000
         # Output estimate is 1/2 of input — calibrated 2026-06-29
         # from measured 47.12% ratio in the live 6-treatment sample.
-        assert stats['est_output_tokens'] == 500
+        # Against the constant, not a literal: re-calibrating the
+        # ratio should not require editing this test again.
+        assert stats['est_output_tokens'] == int(1000 * OUTPUT_TOKEN_RATIO)
 
     def test_three_prompts_sum_tokens(self) -> None:
         client = _make_mock_count_tokens_client(500)
@@ -425,7 +427,7 @@ class TestEstimateTokens:
             'claude-opus-4-7',
         )
         assert stats['total_input_tokens'] == 1500
-        assert stats['est_output_tokens'] == 750
+        assert stats['est_output_tokens'] == int(1500 * OUTPUT_TOKEN_RATIO)
 
     def test_cost_calculated_from_pricing_table(self) -> None:
         client = _make_mock_count_tokens_client(1_000_000)
@@ -436,8 +438,10 @@ class TestEstimateTokens:
         # 1M input tokens × $5.00/1M = $5.00 input cost
         # 500k output tokens × $25.00/1M = $12.50 output cost
         assert stats['est_input_cost_usd'] == 5.00
-        assert stats['est_output_cost_usd'] == 12.50
-        assert stats['est_total_cost_usd'] == 17.50
+        assert stats['est_output_cost_usd'] == pytest.approx(
+            1_000_000 * OUTPUT_TOKEN_RATIO * 25.00 / 1_000_000)
+        assert stats['est_total_cost_usd'] == pytest.approx(
+            5.00 + 1_000_000 * OUTPUT_TOKEN_RATIO * 25.00 / 1_000_000)
 
     def test_unknown_model_raises_rather_than_guessing(self) -> None:
         """A cost estimate is the number an operator commits budget

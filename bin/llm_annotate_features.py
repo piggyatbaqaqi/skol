@@ -104,6 +104,17 @@ _DEFAULT_WORKERS = 5
 # pass --max-tokens.
 _DEFAULT_MAX_TOKENS = 16384
 
+#: Estimated output tokens per input token, for --estimate.
+#:
+#: Was 0.5 (``total_input // 2``), which over-predicted round 5's cost
+#: by 1.77x -- $38.86 priced against $26.76 actually spent.  Measured
+#: on that run: 2 220 583 input, 626 460 output.  ``count_tokens`` gets
+#: the input exactly right, so this ratio was the whole error.
+#:
+#: Re-calibrate from the notebook's metrics cell after each round; it
+#: prints the measured ratio next to this number.
+OUTPUT_TOKEN_RATIO = 0.28
+
 _SEEDS_DIR = (
     Path(__file__).resolve().parent.parent
     / 'treatments_to_structured'
@@ -429,7 +440,8 @@ def estimate_tokens(
     (1/4) was a guess from before the multi-feature pivot —
     annotations now greedily echo whole feature blocks as
     ``source_text``, so the output is much closer to the input size
-    than the old per-feature variant.  Re-calibrate from the
+    than the old per-feature variant.  The ratio itself is
+    ``OUTPUT_TOKEN_RATIO``, measured on round 5; re-calibrate from the
     notebook's metrics cell when the corpus grows.
     """
     total_input = 0
@@ -440,7 +452,7 @@ def estimate_tokens(
             messages=[{'role': 'user', 'content': user_prompt}],
         )
         total_input += result.input_tokens
-    est_output = total_input // 2
+    est_output = int(total_input * OUTPUT_TOKEN_RATIO)
     pricing = PRICING.for_model(model)
     input_cost = total_input * pricing.input / 1_000_000
     output_cost = est_output * pricing.output / 1_000_000
