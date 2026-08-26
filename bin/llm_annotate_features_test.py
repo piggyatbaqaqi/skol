@@ -25,6 +25,7 @@ from llm_annotate_features import (  # type: ignore[import]  # noqa: E402
     estimate_tokens,
     filter_already_annotated,
     load_seed,
+    OUTPUT_TOKEN_RATIO,
     iter_treatment_ids,
     read_treatment_ids,
     resolve_id_filter,
@@ -1036,3 +1037,43 @@ class TestResolveTreatmentInput:
         )
         assert ids == ['taxon_a', 'taxon_b']
         assert ident is not None and ident.round == 6
+
+
+class TestOutputTokenRatio:
+    """The estimator's output guess, calibrated against a real run.
+
+    It assumed **50 %** of input (`total_input // 2`).  Round 5
+    measured 2 220 583 input against 626 460 output -- **28.2 %** -- so
+    the estimate ran 1.77x high and turned a $27 run into a $39
+    decision.  `count_tokens` gets the *input* exactly right; only this
+    ratio was wrong.
+    """
+
+    def test_the_ratio_is_the_measured_one(self) -> None:
+        assert 0.27 <= OUTPUT_TOKEN_RATIO <= 0.29
+
+    def test_estimate_uses_the_constant(self) -> None:
+        """Not a literal: re-calibrating after the next round should be
+        one edit, and the notebook's metrics cell prints the number to
+        compare against.
+        """
+        client = MagicMock()
+        client.messages.count_tokens.return_value = MagicMock(
+            input_tokens=1000,
+        )
+        stats = estimate_tokens(client, [('t', 'prompt')], 'claude-opus-4-7')
+        assert stats['total_input_tokens'] == 1000
+        assert stats['est_output_tokens'] == int(1000 * OUTPUT_TOKEN_RATIO)
+
+    def test_cost_follows_the_estimate(self) -> None:
+        """Round 5's real invoice was $26.76 against $38.86 priced; the
+        corrected ratio should land an equivalent estimate close to
+        actual rather than half again over.
+        """
+        client = MagicMock()
+        client.messages.count_tokens.return_value = MagicMock(
+            input_tokens=2_220_583,
+        )
+        stats = estimate_tokens(client, [('t', 'p')], 'claude-opus-4-7')
+        # $5/1M in, $25/1M out
+        assert 26.0 <= stats['est_total_cost_usd'] <= 28.5
