@@ -515,3 +515,106 @@ class TestSelectTreatmentIdsSkipUnannotated:
                 warn_stream=io.StringIO(),
             )
         assert 'treatments' in str(exc.value).lower()
+
+
+class TestSelectTreatmentIdsAllowUnannotated:
+    """`--skip-unannotated` drops what has no annotations;
+    `--allow-unannotated` **keeps** it and exports an empty `.ann`.
+
+    They answer opposite questions and both are right sometimes.
+    Skipping suits a round where the annotations are the point and one
+    empty treatment would abort the export.  Keeping suits review of
+    what Claude *missed*, where a treatment it returned nothing for is
+    the most informative case in the sample.
+
+    T5 forced this.  Of round 5's first 50, **ten have prose and zero
+    annotations** — and all ten were genuinely asked: 17 output tokens
+    each, `stop_reason: end_turn`, i.e. Claude answering "no features
+    here" rather than failing.  That is 20 % of the review sample, and
+    `--skip-unannotated` would hide exactly the treatments that decide
+    the recall figure, making recall look better than it is.
+
+    Rejected once, in T3a, for a reason that held then: brat's only
+    advantage over `bin/treatment_dossier` is *editing*, and merge
+    suspects had nothing to edit.  Here there is — the labels Claude
+    missed.
+    """
+
+    def test_unannotated_ids_are_kept(self) -> None:
+        got = select_treatment_ids(
+            _FakeAnnDb([{'_id': 'taxon_a:Pileus:0'}]),
+            ['taxon_a', 'taxon_b'], allow_unannotated=True,
+            treatments_db=_FakeTreatmentsDb(['taxon_a', 'taxon_b']),
+            warn_stream=io.StringIO(),
+        )
+        assert got == ['taxon_a', 'taxon_b']
+
+    def test_works_when_nothing_is_annotated(self) -> None:
+        """`--skip-unannotated` raises 'nothing to export' here.  For a
+        recall review that is the interesting case, not an error.
+        """
+        got = select_treatment_ids(
+            _FakeAnnDb([]), ['taxon_a', 'taxon_b'],
+            allow_unannotated=True,
+            treatments_db=_FakeTreatmentsDb(['taxon_a', 'taxon_b']),
+            warn_stream=io.StringIO(),
+        )
+        assert got == ['taxon_a', 'taxon_b']
+
+    def test_order_is_preserved(self) -> None:
+        """The round file's order is the draw order, and T5's
+        'first 50' rule depends on it surviving the export.
+        """
+        got = select_treatment_ids(
+            _FakeAnnDb([{'_id': 'taxon_b:Pileus:0'}]),
+            ['taxon_c', 'taxon_a', 'taxon_b'], allow_unannotated=True,
+            treatments_db=_FakeTreatmentsDb(['taxon_a', 'taxon_b',
+                                             'taxon_c']),
+            warn_stream=io.StringIO(),
+        )
+        assert got == ['taxon_c', 'taxon_a', 'taxon_b']
+
+    def test_typos_are_still_caught(self) -> None:
+        """The relaxation must not surrender the original guarantee.
+        An id absent from treatments_prose is a typo in either mode,
+        and silently exporting nothing for it is how a review set
+        quietly comes up short.
+        """
+        with pytest.raises(ValueError, match='typo'):
+            select_treatment_ids(
+                _FakeAnnDb([{'_id': 'taxon_a:Pileus:0'}]),
+                ['taxon_a', 'taxon_nope'], allow_unannotated=True,
+                treatments_db=_FakeTreatmentsDb(['taxon_a']),
+                warn_stream=io.StringIO(),
+            )
+
+    def test_needs_the_treatments_db_to_tell_them_apart(self) -> None:
+        with pytest.raises(ValueError, match='treatments_prose'):
+            select_treatment_ids(
+                _FakeAnnDb([]), ['taxon_a'], allow_unannotated=True,
+                treatments_db=None, warn_stream=io.StringIO(),
+            )
+
+    def test_it_reports_what_it_kept(self) -> None:
+        """Silence would leave the operator unable to tell an empty
+        `.ann` from a broken export.
+        """
+        warn = io.StringIO()
+        select_treatment_ids(
+            _FakeAnnDb([]), ['taxon_a'], allow_unannotated=True,
+            treatments_db=_FakeTreatmentsDb(['taxon_a']),
+            warn_stream=warn,
+        )
+        assert 'taxon_a' in warn.getvalue()
+
+    def test_the_two_flags_are_mutually_exclusive(self) -> None:
+        """Skip and keep cannot both be honoured; asking for both is an
+        operator error, not something to settle by precedence.
+        """
+        with pytest.raises(ValueError, match='mutually exclusive'):
+            select_treatment_ids(
+                _FakeAnnDb([]), ['taxon_a'],
+                skip_unannotated=True, allow_unannotated=True,
+                treatments_db=_FakeTreatmentsDb(['taxon_a']),
+                warn_stream=io.StringIO(),
+            )
