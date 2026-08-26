@@ -948,6 +948,58 @@ to *regions within* taxonomic ones.
 not the fix p2b needs, and work aimed at one should not be expected to
 move the other.
 
+### 5.5 The annotated-checklist genre (T5)
+
+Found 2026-08-26 during T5 review. The operator's verdict on
+`taxon_1702e95b` was *"includes pieces of several different treatments,
+nearly every label is wrong"* — correct, and the cause is **genre
+rather than a per-treatment fault**.
+
+The source is **"The lichens of the Alps – an annotated checklist"**
+(*MycoKeys* 2018), and a checklist entry is not a treatment. It is a
+line of abbreviated codes:
+
+| field | contents |
+|---|---|
+| `description` | `Ge: OB. Sw: BE, GR, SZ, TI, UR, UW, VS. Fr: AMa.` — **distribution codes** |
+| a gap | `L – Subs.: cor, xyl – Alt.: 2–3 – Note: a mainly cool-temperate species…` — **coded ecology** |
+| a gap | `Cliostomum griffithii (Sm.) Coppins` — **a second species entirely** |
+
+`merge_metric` reads **0**: checklist entries are short and share no
+repeated terms, so the repetition metric cannot see a document that is
+nothing but adjacent entries. **That one document produced 293
+treatments.**
+
+**Measured corpus-wide**, taking documents whose *title* says
+checklist, check-list, catalogue or census — **126 documents, 1 157
+treatments**:
+
+| | n | share |
+|---|---:|---:|
+| no prose at all (p2b) | 928 | **80 %** |
+| synthetic nomenclature | 191 | 17 % |
+| coded `Subs.:` / `Alt.:` description | 79 | 7 % |
+
+**80 % against a corpus-wide p2b rate of 43.5 %** — 1.8× enriched.
+That is the same conclusion §5.4 reached from the other end:
+boundaries are generated inside stretches of non-descriptive material.
+A checklist is that condition holding for a whole document.
+
+**A second cheap signal for the §5 document gate.** §5 proposed a
+document-level "is this a taxonomic article" test using journal and
+title keywords, and estimated it would remove ~14 000 spurious
+treatments. This adds a sharper variant: *the title says checklist*.
+1 157 treatments is small beside 14 000, but the precision is far
+higher — a checklist genuinely is taxonomic, it simply does not
+contain treatments — and the rule is one regex over a field already
+stored.
+
+**Not proposed: deleting them.** A checklist carries real
+nomenclature, distribution and substrate data. It needs a *different
+parser*, not exclusion, and conflating "cannot be parsed as a
+treatment" with "not worth having" is how the Persoonia whole-volume
+scans were nearly written off in §5.2.
+
 ### 6. Multiple species merged into one treatment
 
 **Symptom**: one Treatment doc contains descriptive content for

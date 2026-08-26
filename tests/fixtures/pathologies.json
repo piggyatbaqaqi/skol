@@ -2408,6 +2408,39 @@
         "§12:identifiers_in_misc"
       ],
       "notes": "Thielavia Zopf, Mycosphere 11.  Genus description truncated below by a Key block, found by the operator in T5 review.  The sentence is cut in half: diagnosis ends `The asexual morph has conidia`, the key field holds `are hyaline or brightly coloured and produced as simple phialoconidia, aleurioconidia, or arthroconidia.` plus the page number 496.  That block scores ZERO numbered couplets, which is the signature.  Also carries the identifier defect of taxon_0ccf38da -- `Index Fungorum number: IF5450` in a Misc-exposition -- and the diagnosis is head-clipped, opening mid-citation at `Guarro 1988, Stchigel et al. 2002)`.  Gates the Key-as-catch-all measurement in memo SS12.2."
+    },
+    {
+      "id": "taxon_1702e95b2f00b9239b0fb5af5c19d471985e1bc9c218adbf92a4d705ddd95f28",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-26",
+      "captured_rev": "20-5f33100d75520896e037191559c54e00",
+      "class": "§5-annotated-checklist-genre",
+      "treatment": "Cliostomum corrugatum (Ach.) Fr.\nSyn.: Biatora ehrhartiana (Ach.) W. Mann, Biatorina ehrhartiana (Ach.) Mudd, Biatorina\ngraniformis (K.G. Hagen) A.L. Sm., Buellia cliostomoides A. Massal., Catillaria ehrhartiana (Ach.) Th. Fr., Catillaria graniformis (K.G. Hagen) Vain., Cliostomum graniforme\n(K.G. Hagen) Coppins, Lecanora ehrhartiana (Ach.) Fr., Lecidea corrugata Ach., Lecidea\nehrhartiana (Ach.) Ach., Limboria corrugata (Ach.) Ach., Rhytisma corrugatum (Ach.) Fr.\n",
+      "description": "Ge: OB. Sw: BE, GR, SZ, TI, UR, UW, VS. Fr: AMa. It: Ven, TAA, Lomb. Sl: SlA.\nCliostomum flavidulum Hafellner & Kalb\nSyn.: Lecanora navarrensis Etayo\nL – Subs.: cor – Alt.: 3 – Note: a species with a pale yellowish, sorediate thallus, occasionally fertile with biatorine, often pruinose apothecia, and 1-septate ascospores; on \n\nL – Subs.: cor – Alt.: 3 – Note: a species with a whitish grey to bluish grey, sorediate to\nleprose thallus, ascomata unknown, but conspicuous, black, semi-immersed pycnidia\nwith elongate cylindrical conidiogenous cells and narrowly ellipsoid conidia usually\npresent; on bark of trees in areas with a humid climate; so far only known from the\nEastern Alps (Austria). – Au: St.\nCliostomum leprosum (Räsänen) Holien & Tønsberg\nSyn.: Catillaria leprosa Räsänen\nL # – Subs.: cor – Alt.: 3 – Note: a species with a whitish, abundantly sorediate thallus,\nbiatorine apothecia (occasionally present) with yellowish discs, and conspicuous black \n",
+      "diagnosis": "",
+      "description_spans": [
+        {
+          "start_line": 7253,
+          "end_line": 7256
+        },
+        {
+          "start_line": 7275,
+          "end_line": 7283
+        }
+      ],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§10:tail_clip",
+        "§6:authored_binomial",
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§5:checklist_genre",
+        "§6:two_species_no_repeats"
+      ],
+      "notes": "Cliostomum corrugatum, from 'The lichens of the Alps - an annotated checklist' (MycoKeys 2018).  Operator: 'includes pieces of several different treatments, nearly every label is wrong', and that is right -- but the cause is GENRE, not a per-treatment fault.  The description field holds distribution codes (`Ge: OB. Sw: BE, GR, SZ...`), the gaps hold coded ecology (`L - Subs.: cor, xyl - Alt.: 2-3`) and a SECOND species name, Cliostomum griffithii.  merge_metric reads 0 because checklist entries are short and share no repeated terms.  That one document produced 293 treatments.  Gates the checklist measurement in memo SS5.5."
     }
   ]
 }
