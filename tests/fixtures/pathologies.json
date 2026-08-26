@@ -2357,6 +2357,37 @@
         "§12:etymology_in_misc"
       ],
       "notes": "Conidiobolus ramiconidiophorus, round 5.  THREE defects, only the first visible to a reviewer reading labels.  (1) The operator found a complete `Etymology - ramiconidiophorus (Lat.) refers to multiple-branched primary conidiophores.` labelled Misc-exposition, sitting in the gap between nomenclature@625 and materials_examined@629, so the treatment has no etymology field; bin/treatment_dossier shows it directly.  (2) The description/diagnosis boundary CUTS A SENTENCE IN HALF -- description ends `Zygospores formed`, diagnosis begins `in axial alignment with conjugating segments after 14 d` -- which is why both SS10 flags fire and why they are one defect seen from two sides.  (3) Consequently the diagnosis field is description-tail plus a `Notes -` section, not a diagnosis, which is D19's measured class.  Gates the section-header detector in memo SS12.2."
+    },
+    {
+      "id": "taxon_0ccf38da7ebabe1521ce8a0f4d6830c4aadf78e235acae2545f77e629d5fbf03",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-26",
+      "captured_rev": "21-4857883fc418a2614fa859d5134ff7b0",
+      "class": "§12-identifier-block-in-Misc-exposition",
+      "treatment": "Claviformispora phyllostachydis X.L. Xu & C.L. Yang, in Xu et al. MycoKeys 70, 8 (2020). Fig. 44 \n",
+      "description": "Saprobic on Nayariophyton zizyphifolium woody litter. Sexual morph: Stromata solitary,\nscattered or gregarious, well-developed, consisting of black, elliptical or circular spots, moderately\nraised through epidermis with slit-like openings on the host surface. Ascomata 311–524 μm high,\n430–607 μm diam. (x̅  = 455 × 527 μm, n = 10), perithecial, immersed, erumpent, globose to mostly\nsubglobose, ostiolate. Peridium 23–45 μm wide (x̅  = 36 μm, n = 20), outer layer composed of dark\nbrown textura angularis cells merging with the host tissues, inner layer composed of hyaline to subhyaline cells of textura angularis. Hamathecium comprises 1.8–3.6 μm diam. (x̅  = 2.6 μm, n = 30),\nwith abundant, compact, hyaline paraphyses, occasionally branched, septate, tapering towards the\napex. Asci 109–192 × 14–23 μm (x̅  = 155 × 17.7 μm, n = 20), unitunicate, 8-spored, cylindrical to\ncylindric-clavate, with short pedicel, rounded at the apex, with a doughnut-shaped, refractive, J-,\napical ring. Ascospores 42–55 × 6.3–9.6 μm (x̅  = 49.2 × 8.2 μm, n = 30), overlapping, uniseriate or\nmostly biseriate, aseptate, claviform with a narrow pedicel, hyaline, guttulate, straight or slightly\ncurved. Asexual morph: Undetermined.\nCulture characteristics – Ascospores germinated on PDA within 24 h and germ tubes emerged\nfrom one side. Colonies on PDA reaching 1–2 cm diam. after 14 days at room temperature (25–28\n°C), circular, with entire margin, dense, pigment diffusing in the agar with age, upper surface orange\nin center and yellowish-white at outer zone, from reverse dark brown and black. \n\nSexual morph of this family features perithecial ascomata, unitunicate, cylindrical-clavate, stipitate\nasci, and fusiform to fusiform-navicular, transversely multi-septate ascospores. In the asexual morph,\nconidiophores are micronematous, mononematous; conidiogenous cells blastic, cyathiform to\ndoliiform, and conidia brown, aseptate. \n",
+      "diagnosis": "",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§12:identifiers_in_misc",
+        "§6:family_description_absorbed"
+      ],
+      "notes": "Claviformispora phyllostachydis, round 5.  Operator found three defects during T5 review; the dossier showed a fourth.  (1) `Index Fungorum number: IF557396; Facesoffungi number: FoF14622` sits in a Misc-exposition between nomenclature and description, so the nomenclature is truncated at `Fig. 44`.  (2) `GenBank numbers - ITS = PQ800240, SSU = PV072619, tef1-a = PX739628.` likewise, out of materials_examined.  (3) Unlabelled phrases at the end.  (4) NOT visible in brat: a SECOND description span at paragraph 1137 holding a FAMILY description of Conioscyphaceae -- a different family -- absorbed after the notes, with merge_metric 0 blind to it because the two descriptions share few repeated terms.  Gates the identifier detector in memo SS12.2.",
+      "description_spans": [
+        {
+          "start_line": 3335,
+          "end_line": 3350
+        },
+        {
+          "start_line": 3392,
+          "end_line": 3395
+        }
+      ]
     }
   ]
 }

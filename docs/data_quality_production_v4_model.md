@@ -6473,6 +6473,68 @@ It also reinforces §12.2's ordering: `Misc-exposition` is 35.4 % of all
 blocks, and this is 15 400 pieces of labelled content sitting inside
 it. Splitting that label is the highest-leverage fix measured.
 
+#### Registry identifiers are mislabelled far more often than prose
+
+Found the same day, from `taxon_0ccf38da`. The operator reported three
+defects and the dossier showed a fourth:
+
+```
+gap nomenclature@1113 -> description@1117
+    [Misc-exposition] Index Fungorum number: IF557396;
+                      Facesoffungi number: FoF14622
+gap materials_examined@1119 -> notes@1123
+    [Misc-exposition] GenBank numbers – ITS = PQ800240,
+                      SSU = PV072619, tef1-α = PX739628.
+```
+
+The nomenclature is therefore truncated at `Fig. 44`, and the GenBank
+accessions are lost out of `materials_examined`.
+
+**Identifier lines are the worst-labelled content in the corpus.**
+Over the same 400 documents, blocks opening on a registry or accession
+name — `MycoBank`, `Index Fungorum`, `Facesoffungi`, `GenBank`,
+`Fungal Names` — number 66, and **49 of them (74.2 %) carry a
+non-content label**, roughly **2 563 corpus-wide**. `MycoBank` alone is
+33 of the 49.
+
+Compare the rates:
+
+| block opens on | mislabelled | ≈ corpus |
+|---|---:|---:|
+| a registry identifier | **74.2 %** | ~2 600 |
+| a named section header | 16.5 % | ~15 400 |
+
+**The mechanism is legible.** `MycoBank MB 847723.` is four tokens with
+no sentence structure, no anatomical vocabulary and no verb — nothing
+for a layout classifier trained on prose to grip. It falls to the
+catch-all almost every time. Section headers survive better precisely
+because prose follows them.
+
+That makes it the highest-precision rule available: **a block naming a
+registry is nomenclature material** (MycoBank, Index Fungorum,
+Facesoffungi, Fungal Names) **or specimen material** (GenBank). There
+is no interpretation step, and at 74.2 % base rate a detector barely
+needs to be careful.
+
+#### And a fourth defect, invisible in brat
+
+`taxon_0ccf38da` also carries a **second `description` span at
+paragraph 1137**, after its notes, holding
+
+> *"Sexual morph of this family features perithecial ascomata,
+> unitunicate, cylindrical-clavate, stipitate asci…"*
+
+— a **family description of Conioscyphaceae**, preceded by a
+`Misc-exposition` reading *"Réblová et al. (2016) established
+Conioscyphaceae with Conioscypha as the type genus."* The treatment is
+*Claviformispora phyllostachydis*, a different family.
+
+**`merge_metric` reads 0.** The two descriptions share almost no
+repeated terms — one is a species description, the other a family
+diagnosis — so the repetition metric is blind to exactly the kind of
+absorption §6.1 already showed it mis-measures. `§12:desc_span_gap`
+fires, which is the signal that actually catches it.
+
 #### The same treatment carried two defects the reviewer could not see
 
 `taxon_0b9a9bfe` looked otherwise fine in brat, and the fixture test
