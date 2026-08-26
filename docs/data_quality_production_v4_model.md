@@ -948,6 +948,57 @@ to *regions within* taxonomic ones.
 not the fix p2b needs, and work aimed at one should not be expected to
 move the other.
 
+### 5.5.1 The classification outline — 3 396 identical blocks, 17 labels
+
+`taxon_3888d38f`, another of §5.6's correct refusals. The operator:
+*"a list of fully cited higher taxa… both layers of label are pretty
+meaningless. I don't know what the parenthesized numbers are. This
+could be a table of contents?"*
+
+**It is not a table of contents; it is a classification outline**, and
+**the parenthesised number is the species count in that genus.** The
+shape is unmistakable once several are seen together:
+
+> `Nosematidae Tokarev, Huang, Solter, Malysh, Becnel & Vossbrinck`
+> `Nosema Nägeli (20)`  `Vairimorpha Pilley (15)`
+> `Encephalitozoonidae Voronin`
+> `Encephalitozoon Levaditi, Nicolau & Schoen (12)`
+
+Family, then its genera with how many species each holds. The source
+is *Outline of Fungi and fungus-like taxa*; three such documents in the
+corpus produce **565 treatments**, 47 % of them with no prose at all.
+
+**"Both layers of label are meaningless" is measurable, and it is
+worse than it sounds.** Within that one document, **3 396 blocks
+containing a `(N)` species count** — structurally identical entries —
+received **seventeen different labels**:
+
+| label | share |
+|---|---:|
+| `Key` | 31.9 % |
+| `Table` | 31.7 % |
+| `Nomenclature` | 13.6 % |
+| `Misc-exposition` | 12.6 % |
+| `Bibliography` | 4.0 % |
+| `Notes` | 3.7 % |
+| eleven others | < 1 % each |
+
+No label reaches a third. **On this genre the classifier is
+effectively assigning at random**, and that is the cleanest evidence
+in this memo that the failure is genre-level rather than a matter of
+tuning: identical inputs, seventeen outputs.
+
+It also partly explains §12.2's finding that `Key` is a second
+catch-all. **This single document contributes 1 085 `Key`-labelled
+blocks that are not keys** — roughly 3.5 % of the corpus-wide estimate,
+from one source.
+
+**Same conclusion as §5.5, reached from a second genre.** A checklist
+and a classification outline are both documents made of names rather
+than treatments. Neither should be parsed as a monograph, both carry
+real nomenclatural data, and both need a different parser rather than
+exclusion.
+
 ### 5.6 A treatment the annotator declines is usually not a treatment
 
 Round 5's first 50 contained **ten with prose and zero annotations**.
