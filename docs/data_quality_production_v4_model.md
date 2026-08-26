@@ -6755,6 +6755,38 @@ labels in brat answers "is this feature named correctly" and cannot
 answer "does this field begin where it should". The two reviews need
 different instruments and T5 supplies only the first.
 
+#### Gap *density* is not the signal — a failed detector
+
+`taxon_341b4bc0` (*Pucciniastrum*, *Mycosphere* 15) is the densest
+cascade reviewed: the operator enumerated **ten distinct boundary
+defects in one treatment** and every one checks out. `Fig. 95` and the
+index numbers lost to a `Misc-exposition` that also ate the etymology;
+the description truncated at `and minutely echinulate.`; the host
+absorbed by that same block; a phylogeny line labelled `Key`; a figure
+caption labelled `Key`; and **two `Key` blocks holding the nomenclature
+of a second species**, *Pucciniastrum boehmeriae*, plus its `Fig. 96`
+— whose description is this treatment's second description span. The
+nomenclature field itself stacks three ranks: family, genus, then the
+`sp. nov.`
+
+The obvious detector is **gap-block density**: a treatment whose spans
+are separated by many unclaimed blocks is a treatment in an incoherent
+region. Measured over 201 round-5 treatments with ≥ 2 spans, this one
+scores **1.25 gap-blocks per span against a median of 1.00** — rank 86
+of 201, entirely unremarkable.
+
+**It fails because the defects are small.** One block here, four there.
+The damage is in labels being *wrong*, not in the volume of unclaimed
+material, and a block count cannot see wrongness. What density does
+find is treatments whose spans bracket most of a document — the worst
+scores 3 182 blocks per span — which is the §5.6 / p2b population, a
+different problem.
+
+**What does catch it**: `§6:authored_binomial`, `§6:multi_description`
+and `§12:desc_span_gap` all fire. `merge_metric` reads **0**. That is
+§6.1's lesson again — the repetition metric is the weakest of the
+available signals, and the span-based ones do the work.
+
 #### One number not to trust yet
 
 **Adjacent `Nomenclature` runs** — two or more in a row with no body

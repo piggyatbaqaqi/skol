@@ -2441,6 +2441,41 @@
         "§6:two_species_no_repeats"
       ],
       "notes": "Cliostomum corrugatum, from 'The lichens of the Alps - an annotated checklist' (MycoKeys 2018).  Operator: 'includes pieces of several different treatments, nearly every label is wrong', and that is right -- but the cause is GENRE, not a per-treatment fault.  The description field holds distribution codes (`Ge: OB. Sw: BE, GR, SZ...`), the gaps hold coded ecology (`L - Subs.: cor, xyl - Alt.: 2-3`) and a SECOND species name, Cliostomum griffithii.  merge_metric reads 0 because checklist entries are short and share no repeated terms.  That one document produced 293 treatments.  Gates the checklist measurement in memo SS5.5."
+    },
+    {
+      "id": "taxon_341b4bc0807fc1fe9d7051d67670802e8b6745b23ea409d168cc713487a8ea92",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-26",
+      "captured_rev": "21-fa99c97c1c583f0a159f2d85a2f5b337",
+      "class": "§12-boundary-cascade",
+      "treatment": "Pucciniastraceae Gäum. ex Leppik, Annales Botanici Fennici 9 (3): 139 (1972)\nPucciniastrum G.H. Otth, Mitt. naturf. Ges. Bern 469-496: 71 (1861)  \n\nPucciniastrum anaphalise-sinicae J.E. Sun Yong Wang bis & K.D. Hyde, sp. nov. \n",
+      "description": "Description – Spermogonia, aecia and telia not observed. Uredinia hypophyllous,\npulverulent, yellow, distinct, scattered, nearly oval, surrounded by host epidermis, 2.0–6.0 mm\ndiam., on densely yellowish spot. Urediniospores globose, ellipsoidal or obovoid, 23–28 × 14–23\nµm (x̅  = 21.2 × 17.7 µm, n = 30), bright yellow or golden; wall 1.0–1.4 µm thick, colorless, densely \n\nDescription – Spermogonia, aecia and telia unknown. Uredinia hypophyllous, nearly oval,\npulverulent, surrounded by host epidermis, 1.0–2.0 mm diam., on densely yellowish spot, scattered. \n",
+      "diagnosis": "",
+      "description_spans": [
+        {
+          "start_line": 3711,
+          "end_line": 3714
+        },
+        {
+          "start_line": 3740,
+          "end_line": 3741
+        }
+      ],
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": true,
+      "expected_flags": [
+        "§6:authored_binomial",
+        "§6:multi_description",
+        "§12:desc_span_gap"
+      ],
+      "known_missed_flags": [
+        "§12:etymology_in_misc",
+        "§12:nomenclature_in_key",
+        "§12:figure_caption_in_key",
+        "§6:two_species"
+      ],
+      "notes": "Pucciniastrum, Mycosphere 15.  The densest cascade seen: the operator enumerated ~10 distinct boundary defects in ONE treatment and every one checks out.  Fig. 95 and the index numbers lost to a Misc-exposition that also ate the etymology; description truncated at `and minutely echinulate.`; the host/biology absorbed by the same block; a phylogeny line labelled Key; a figure caption labelled Key; and TWO Key blocks holding the nomenclature of a second species, Pucciniastrum boehmeriae, plus its Fig. 96 -- whose description is this treatment's second description span.  The nomenclature field itself stacks three ranks: family Pucciniastraceae, genus Pucciniastrum, then the sp. nov.  merge_metric reads 0, but THREE flags fire -- SS6:authored_binomial, SS6:multi_description and SS12:desc_span_gap, so the span-based detectors catch what the repetition metric cannot.  Gates the observation in memo SS12.2 that gap DENSITY is not the signal: this treatment measures 1.25 gap-blocks per span against a median of 1.00."
     }
   ]
 }
