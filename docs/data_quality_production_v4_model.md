@@ -868,6 +868,86 @@ detector; what it needs is calibration against the OCR-damaged true
 positives (`ThueJDeaella hirsuta`, a real name mangled) that currently
 inflate the rate.
 
+### 5.4 What the 35 482 empty treatments actually are (T3d)
+
+Measured 2026-08-25. **p2b** — the treatments with `complexity_score`
+0, i.e. no `description` and no `diagnosis` — is 35 482 of 81 527, and
+until now nothing had characterised it.
+
+Classifying every one into exactly one bucket, priority-ordered so the
+partition is total. The sum is the check, and it holds:
+
+| class | all-empty docs | mixed docs | total | degenerate anchor |
+|---|---:|---:|---:|---:|
+| A — no prose at all | 0 | 0 | **0** | 0 |
+| B — `key` only | 5 741 | 1 664 | 7 405 | 0 |
+| C — only `biology` / `figure_captions` | 2 747 | 5 588 | 8 335 | **5 594** |
+| D — specimens + a real name | 554 | 5 512 | 6 066 | 0 |
+| E — synthetic or unnamed | 2 781 | 4 801 | 7 582 | **7 433** |
+| F — other | 618 | 5 476 | 6 094 | 0 |
+| | | | **35 482** | 13 027 |
+
+**Class A is empty, which was not expected.** The predicted
+"extraction failure — all prose fields null, trace it to the layout
+CRF" class **does not occur**: every one of the 35 482 carries *some*
+prose. Whatever is wrong, it is not that the extractor produced
+nothing.
+
+**Roughly 45 % are legitimate.** `key`-only entries (7 405) are
+dichotomous keys and specimens-plus-a-real-name (6 066) are
+nomenclature-only entries — both are correct extractions of material
+that simply has no description to find.
+
+**The degenerate anchor is real, large, and perfectly segregated.**
+`line_number == 0` while the treatment's spans start well into the
+document is **13 027 treatments (36.7 %)** — and it occurs in classes
+C and E and **nowhere else**, at 67 % and 98 % of those classes
+respectively. Zero in B, D and F. A signal that clean on a partition
+built from unrelated fields is worth building on: it separates the two
+pathology classes from the three benign ones by itself.
+
+#### F4's test is vacuous, and the hypothesis fails on a valid one
+
+The plan proposed a free test: *compute `n_terms_above_5` over all
+35 482; if p2b's merge rate is elevated versus p1, merges are causing
+description loss, which unifies p2a and p2b into one root cause.*
+
+**It cannot work.** `treatment_merge_metric` reads `description` and
+`diagnosis` and nothing else — deliberately, per its own docstring —
+and p2b is *defined* as having neither. The measured "0.00 % versus
+p1's 16.60 %" is a tautology, not a refutation. Recorded because the
+number looks like a decisive result and is not one, the same shape as
+the vacuous gap test in `recover_bands` and the discarded
+`Asexual morph` detector.
+
+**The hypothesis is testable by adjacency instead**, and it fails.
+If a neighbour ate the description, that neighbour should look
+*more* merged than average:
+
+| group | n | median | ≥ 10 |
+|---|---:|---:|---:|
+| p1 in all-full documents (control) | 12 282 | 1 | 16.64 % |
+| p1 in mixed documents | 33 763 | 1 | 16.58 % |
+| …nearest neighbour of a p2b treatment | 23 041 | **0** | **9.50 %** |
+
+The control matters: at 16.64 % against 16.58 % there is **no
+document-class confound**, so the neighbour figure can be trusted. And
+it runs the *wrong way* — the p1 treatment closest to an empty one is
+barely half as merge-prone as a random one in the same document.
+
+**So p2a and p2b do not unify.** Descriptions are not being eaten by
+their neighbours; if anything, treatments beside empty ones are
+cleaner than average. The picture consistent with classes B and C is
+different and simpler: **boundaries are being generated inside
+stretches of non-descriptive material** — keys, captions, specimen
+lists — where there was never a description to lose. That extends the
+operator's non-taxonomic-article theory (§5) from whole documents down
+to *regions within* taxonomic ones.
+
+**Consequence for v5 sequencing**: the grouper fix that p2a needs is
+not the fix p2b needs, and work aimed at one should not be expected to
+move the other.
+
 ### 6. Multiple species merged into one treatment
 
 **Symptom**: one Treatment doc contains descriptive content for
