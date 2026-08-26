@@ -6423,6 +6423,72 @@ Still uncontrolled: a genus description legitimately precedes the first
   Fr. 39: 264. 1924.` — which suggests D18 is concentrated in floras
   rather than spread evenly.
 
+#### A far better D12 rule: the block names its own section
+
+Found 2026-08-26 during T5 review. The operator, reading round 5 in
+brat with `bin/treatment_dossier` open beside it, noticed that
+`taxon_0b9a9bfe`'s etymology had vanished. The dossier showed why in
+one line:
+
+```
+gap nomenclature@625 -> materials_examined@629
+    [Misc-exposition] Etymology – ramiconidiophorus (Lat.) refers to
+                      multiple-branched primary conidiophores.
+```
+
+A complete etymology clause **carrying its own `Etymology –`
+header**, labelled `Misc-exposition`, so the treatment has no
+`etymology` field at all.
+
+**That header generalises, and it is an order of magnitude better than
+the nomenclatural-act rule above.** Measured over 400 documents:
+**1 779 blocks open on a named section header** (`Etymology`, `Notes`,
+`Description`, `Diagnosis`, `Materials examined`, `Type`, `Habitat`,
+`Distribution`, `Ecology`, `Remarks`, `Comments`, terminated by dash,
+colon or period). **294 of them — 16.5 % — carry a non-content label**,
+extrapolating to roughly **15 400 corpus-wide**.
+
+| header | landed in | n |
+|---|---|---:|
+| `Notes` | `Misc-exposition` | 131 |
+| `Etymology` | `Misc-exposition` | 44 |
+| `Note` | `Misc-exposition` | 20 |
+| `Remarks` | `Misc-exposition` | 16 |
+| `Comments` | `Misc-exposition` | 12 |
+| `Type` / `Specimens examined` | `Misc-exposition` | 18 |
+| **`Diagnosis`** | `Misc-exposition` | 7 |
+| **`Description`** | `Misc-exposition` | 4 |
+
+The last two rows are whole descriptions and diagnoses lost —
+`Description: Basidiomata annual, pileate, sessile, gregarious…` sitting
+in `Misc-exposition`.
+
+**Why this beats the act-based rule.** That one needed three
+conditions to reach ~1 590 blocks at roughly three-quarters precision.
+This needs one, and the block *states what it is*: a block whose first
+line reads `Etymology –` is an etymology, whatever the layout pass
+called it. There is no inference step to get wrong.
+
+It also reinforces §12.2's ordering: `Misc-exposition` is 35.4 % of all
+blocks, and this is 15 400 pieces of labelled content sitting inside
+it. Splitting that label is the highest-leverage fix measured.
+
+#### The same treatment carried two defects the reviewer could not see
+
+`taxon_0b9a9bfe` looked otherwise fine in brat, and the fixture test
+disagreed — it fires `§10:tail_clip` and `§10:diag_head_clip`, and both
+are true positives. The description ends `…Zygospores formed` and the
+diagnosis begins `in axial alignment with conjugating segments after
+14 d`: **the field boundary cuts one sentence in half.** The two flags
+are one defect seen from either side, and the consequence is that the
+`diagnosis` field holds description-tail plus a `Notes –` section
+rather than a diagnosis — D19's measured class.
+
+Worth recording as a review-process point, not just a data one: reading
+labels in brat answers "is this feature named correctly" and cannot
+answer "does this field begin where it should". The two reviews need
+different instruments and T5 supplies only the first.
+
 #### One number not to trust yet
 
 **Adjacent `Nomenclature` runs** — two or more in a row with no body

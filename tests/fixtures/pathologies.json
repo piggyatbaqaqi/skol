@@ -2336,6 +2336,27 @@
         "§6:wrong_species_heading"
       ],
       "notes": "Mycotaxon 57, Crous & U. Braun.  ONE Table-labelled block causes both D12 symptoms at once: it holds the species heading `33. cocculi Stigmina Crous & U. Braun sp. nov.` AND the head of its Latin diagnosis (Maculae / Mycelium / Stromata / Conidiomata).  So the treatment is filed under the PREVIOUS species (#32 Pseudocercospora clutiicola, whose holotype PREM 32896 is also attached) while describing Stigmina cocculi, and its Latin block appears beheaded -- the operator's read, and the missing text is recoverable rather than lost to OCR.  Latin and English give identical measurements (25-80x4-8, 10-30x5-6, 17-70x5-7 um), which is what proves them one taxon.  Every text detector silent: merge_metric 1, no flags.  Gates the D12 detection rule.  Memo D12."
+    },
+    {
+      "id": "taxon_0b9a9bfe36ef72834319e93923fa46de42e9e3f249ece6a4ff0f12429dba1cc9",
+      "source_experiment": "production_v4",
+      "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+      "captured_at": "2026-08-26",
+      "captured_rev": "21-e37d0be34117e6dcc502d4f27dea9641",
+      "class": "§12-section-header-block-in-Misc-exposition",
+      "treatment": "Conidiobolus ramiconidiophorus B. Huang & Y. Nie, sp. nov.                                               Fig. 22\nMycoBank: MB857669; Facesoffungi: FoF17356 \n",
+      "description": "Description – Colonies on PDA at 21 °C for 3 d, white, reaching ca 12.0 mm in diameter.\nMycelia white, 6.5–15.0 μm wide, unbranched when young, branched moss-like when old. Primary\nconidiophores arising from hyphae, 88.0–265.0 × 7.5–15.0 μm, mostly unbranched and producing a\nsingle primary conidium, usually narrowing at the tip, sometimes branched at the base or tip and\nbearing two conidia at each branch, or digitally branched and bearing several conidia. Primary\nconidia forcibly discharged, globose, subglobose to obovoid, 31.0–45.0 × 25.0–38.0 μm. Papilla on\nprimary conidia, small, 7.5–16.0 × 3.0–7.0 μm. Secondary conidiophores arising from primary\nconidia, bearing single or two replicative conidium. Microconidia not observed. Zygospores formed \n",
+      "diagnosis": "in axial alignment with conjugating segments after 14 d, mature zygospores smooth, globose, 29.0–\n43.0 μm in diameter, with a 3.3–5.5 μm thick wall.\nNotes – Morphologically, the digitately branched conidiophores of Co. ramiconidiophorus\nresemble those of Co. polysporus, Co. polytocus, and Co. taihushanensis (Drechsler 1955c, Nie et\nal. 2020b, 2023). However, its primary conidia (31.0–45.0 × 25.0–38.0 μm) are larger than those of\nCo. polytocus (12.0–25.0 × 14.0–29.0 μm), smaller than those of Co. polysporus (42.0–55.0 ×\n33.0–45.0 μm), and comparable to Co. taihushanensis but with longer conidiophores and smaller\nzygospores. Phylogenetically, Co. ramiconidiophorus forms a distinct, fully supported lineage\n(100% ML, 1.00 BYPP) and is distant from the aforementioned species (Fig. 8). \n",
+      "synthetic_nomenclature": false,
+      "authored_binomial_in_desc": false,
+      "expected_flags": [
+        "§10:diag_head_clip",
+        "§10:tail_clip"
+      ],
+      "known_missed_flags": [
+        "§12:etymology_in_misc"
+      ],
+      "notes": "Conidiobolus ramiconidiophorus, round 5.  THREE defects, only the first visible to a reviewer reading labels.  (1) The operator found a complete `Etymology - ramiconidiophorus (Lat.) refers to multiple-branched primary conidiophores.` labelled Misc-exposition, sitting in the gap between nomenclature@625 and materials_examined@629, so the treatment has no etymology field; bin/treatment_dossier shows it directly.  (2) The description/diagnosis boundary CUTS A SENTENCE IN HALF -- description ends `Zygospores formed`, diagnosis begins `in axial alignment with conjugating segments after 14 d` -- which is why both SS10 flags fire and why they are one defect seen from two sides.  (3) Consequently the diagnosis field is description-tail plus a `Notes -` section, not a diagnosis, which is D19's measured class.  Gates the section-header detector in memo SS12.2."
     }
   ]
 }
