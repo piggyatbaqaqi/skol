@@ -20,11 +20,6 @@ from retire_merge_skips import (  # type: ignore[import]  # noqa: E402
     retire,
 )
 
-pytestmark = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True,
-    reason='retire: implementation follows test confirmation',
-)
-
 
 def _skip(tid: str, score: int) -> dict:
     return {'_id': tid, 'treatment_id': tid, 'status': STATUS_SKIPPED,

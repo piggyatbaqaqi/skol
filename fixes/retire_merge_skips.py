@@ -18,8 +18,6 @@ threshold, returning those treatments to p1.
 ``fixes/snapshot_merge_scores.py`` for exactly this reason (plan F3).
 The script refuses to run if a doc it would delete is missing from that
 snapshot.
-
-Skeleton only — implementation follows test confirmation.
 """
 
 import sys
@@ -34,7 +32,16 @@ STATUS_SKIPPED = 'skipped_merge_suspect'
 
 def load_snapshot(path: Path) -> Dict[str, int]:
     """Read ``(treatment_id, n_terms_above_5)`` from the T0a snapshot."""
-    raise NotImplementedError
+    out: Dict[str, int] = {}
+    for line in Path(path).read_text(encoding='utf-8').splitlines()[1:]:
+        if not line.strip():
+            continue
+        tid, _, score = line.partition('\t')
+        try:
+            out[tid.strip()] = int(score.strip())
+        except ValueError:
+            continue
+    return out
 
 
 def classify(
@@ -49,7 +56,14 @@ def classify(
     decision.  ``unsnapshotted`` is a refusal, not a verdict: deleting
     a score that exists nowhere else destroys evidence.
     """
-    raise NotImplementedError
+    if doc.get('status') != STATUS_SKIPPED:
+        return 'not-a-skip'
+    tid = doc.get('treatment_id') or doc.get('_id') or ''
+    if tid not in snapshot:
+        return 'unsnapshotted'
+    # The snapshot, not doc['metric_value']: it was taken before
+    # anything could overwrite the score.
+    return 'retire' if snapshot[tid] < threshold else 'keep'
 
 
 def retire(
@@ -64,7 +78,74 @@ def retire(
     Refusals are returned rather than raised so one unsnapshotted doc
     does not block the other 7 631; the caller decides.
     """
-    raise NotImplementedError
+    retired = kept = 0
+    refused: List[str] = []
+    doomed: List[Dict[str, Any]] = []
+    for row in status_db.view('_all_docs', include_docs=True).rows:
+        doc = row.doc
+        if not doc or row.id.startswith('_'):
+            continue
+        verdict = classify(doc, threshold, snapshot)
+        if verdict == 'retire':
+            retired += 1
+            doomed.append(doc)
+        elif verdict == 'keep':
+            kept += 1
+        elif verdict == 'unsnapshotted':
+            refused.append(row.id)
+    if not dry_run:
+        for doc in doomed:
+            status_db.delete(doc)
+    return retired, kept, refused
+
+
+def main() -> int:
+    import argparse
+    from env_config import common_parser, get_env_config
+
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        parents=[common_parser()],
+    )
+    parser.add_argument(
+        '--snapshot', default='data/merge_suspects_20260823.tsv',
+        metavar='TSV',
+        help='The T0a score snapshot.  Its scores are what survive the '
+             'deletion, so it is required, not optional.',
+    )
+    args = parser.parse_args()
+    config = get_env_config(cli_args=args)
+    threshold = int(config['merge_threshold'])
+    dry_run = bool(config.get('dry_run', False))
+    experiment = config.get('experiment_name')
+    if not experiment:
+        print('error: --experiment is required', file=sys.stderr)
+        return 2
+    snapshot = load_snapshot(Path(args.snapshot))
+    print(f'snapshot: {len(snapshot):,} scores from {args.snapshot}',
+          file=sys.stderr)
+
+    import couchdb  # type: ignore[import-untyped]
+    server = couchdb.Server(config['couchdb_url'])
+    server.resource.credentials = (
+        config['couchdb_username'], config['couchdb_password'],
+    )
+    dbs = server['skol_experiments'][experiment].get('databases') or {}
+    status_db = server[dbs['features_status']]
+    retired, kept, refused = retire(
+        status_db, threshold, snapshot, dry_run=dry_run,
+    )
+    verb = 'would retire' if dry_run else 'retired'
+    print(f'threshold {threshold}: {verb} {retired:,} skip doc(s), '
+          f'kept {kept:,}', file=sys.stderr)
+    if refused:
+        print(f'REFUSED {len(refused)} not in the snapshot '
+              f'(scores would be lost): {refused[:5]}', file=sys.stderr)
+    return 0
 
 
 __all__ = ('STATUS_SKIPPED', 'classify', 'load_snapshot', 'retire')
+
+
+if __name__ == '__main__':
+    sys.exit(main())
