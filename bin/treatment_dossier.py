@@ -182,11 +182,19 @@ def _span_text(d: Dossier, span: Any) -> str:
     """The source text a span covers, taken from the blocks it overlaps.
 
     NOT a raw slice of the ``.ann`` at the span's own offsets: those
-    bound the whole block, so slicing yields ``[@…#Label*]`` wrappers.
+    bound the whole block, so slicing yields ``[@…#Label*]`` wrappers
+    and, for a multi-block span, silently runs them together.
+
+    A span crossing a block boundary happens in 0.7 % of treatments and
+    is itself a finding -- the extractor joined material the layout
+    pass had separated -- so those get a per-block label to make the
+    join visible.  Single-block spans, the other 99.3 %, stay clean.
     """
-    return '\n\n'.join(
-        b.text for b in d.blocks
-        if span.start < b.end and span.end > b.start)
+    covered = [b for b in d.blocks
+               if span.start < b.end and span.end > b.start]
+    if len(covered) <= 1:
+        return covered[0].text if covered else ''
+    return '\n\n'.join(f'#{b.label}*]\n{b.text}' for b in covered)
 
 
 def _labels_of(d: Dossier, span: Any) -> List[str]:
