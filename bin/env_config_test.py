@@ -406,7 +406,6 @@ class TestGnservicesUrls:
         monkeypatch.delenv('GNFINDER_URL', raising=False)
         monkeypatch.delenv('GNPARSER_URL', raising=False)
         monkeypatch.setattr('sys.argv', ['envconfig_test'])
-        from env_config import get_env_config  # type: ignore[import]
         cfg = get_env_config()
         assert cfg['gnfinder_url'] == 'http://localhost:9080/api/v1/find'
         assert cfg['gnparser_url'] == 'http://localhost:9081/api/v1'
@@ -421,7 +420,6 @@ class TestGnservicesUrls:
             'GNPARSER_URL', 'http://prod-parser.example/api/v1',
         )
         monkeypatch.setattr('sys.argv', ['envconfig_test'])
-        from env_config import get_env_config  # type: ignore[import]
         cfg = get_env_config()
         assert cfg['gnfinder_url'] == 'http://prod-finder.example/api/v1/find'
         assert cfg['gnparser_url'] == 'http://prod-parser.example/api/v1'
@@ -440,7 +438,6 @@ class TestGnservicesUrls:
             '--gnfinder-url', 'http://cli-finder.example/api/v1/find',
             '--gnparser-url', 'http://cli-parser.example/api/v1',
         ])
-        from env_config import get_env_config  # type: ignore[import]
         cfg = get_env_config()
         assert cfg['gnfinder_url'] == 'http://cli-finder.example/api/v1/find'
         assert cfg['gnparser_url'] == 'http://cli-parser.example/api/v1'
@@ -467,7 +464,6 @@ class TestRedisClusterMode:
     def test_default_false(self, monkeypatch: Any) -> None:
         """With no env var set, default is False (single-node Redis)."""
         self._isolate(monkeypatch)
-        from env_config import get_env_config  # type: ignore[import]
         assert get_env_config()['redis_cluster_mode'] is False
 
     def test_truthy_values_enable(self, monkeypatch: Any) -> None:
@@ -476,7 +472,6 @@ class TestRedisClusterMode:
         for truthy in ('yes', 'YES', 'true', 'True', '1'):
             self._isolate(monkeypatch)
             monkeypatch.setenv('REDIS_CLUSTER_MODE', truthy)
-            from env_config import get_env_config  # type: ignore[import]
             assert get_env_config()['redis_cluster_mode'] is True, (
                 f'{truthy!r} should enable cluster mode'
             )
@@ -488,7 +483,6 @@ class TestRedisClusterMode:
         for falsy in ('', 'no', 'false', '0', 'off', 'cluster', 'on'):
             self._isolate(monkeypatch)
             monkeypatch.setenv('REDIS_CLUSTER_MODE', falsy)
-            from env_config import get_env_config  # type: ignore[import]
             assert get_env_config()['redis_cluster_mode'] is False, (
                 f'{falsy!r} should NOT enable cluster mode'
             )
@@ -533,6 +527,7 @@ class TestCreateRedisClientDispatch:
         monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
 
         captured: Dict[str, Any] = {}
+
         class MockRedisCluster:
             def __init__(self, **kwargs: Any) -> None:
                 captured.update(kwargs)
@@ -553,6 +548,7 @@ class TestCreateRedisClientDispatch:
         monkeypatch.setenv('REDIS_CLUSTER_MODE', 'yes')
 
         captured: Dict[str, Any] = {}
+
         class MockRedisCluster:
             def __init__(self, **kwargs: Any) -> None:
                 captured.update(kwargs)

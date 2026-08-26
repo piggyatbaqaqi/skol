@@ -209,12 +209,17 @@ def _apply_experiment(
         experiment.databases.training                -> training_database
         experiment.databases.annotations             -> annotations_db_name
         experiment.databases.annotations_eval        -> eval_annotations_db_name
-        experiment.databases.treatments_prose        -> treatments_db_name, source_db, treatments_prose_db_name
+        experiment.databases.treatments_prose  ->
+            treatments_db_name, source_db, treatments_prose_db_name
         experiment.databases.treatments_structured   -> dest_db, treatments_structured_db_name
-        experiment.databases.treatments              -> treatments_db_name, source_db    (deprecated alias)
-        experiment.databases.treatments_full         -> dest_db                          (deprecated alias)
-        experiment.databases.taxa                    -> treatments_db_name, source_db    (deprecated alias)
-        experiment.databases.taxa_full               -> dest_db                          (deprecated alias)
+        experiment.databases.treatments        ->
+            treatments_db_name, source_db          (deprecated alias)
+        experiment.databases.treatments_full   ->
+            dest_db                                (deprecated alias)
+        experiment.databases.taxa              ->
+            treatments_db_name, source_db          (deprecated alias)
+        experiment.databases.taxa_full         ->
+            dest_db                                (deprecated alias)
         experiment.databases.golden                  -> golden_db_name
         experiment.databases.golden_ann              -> golden_ann_db_name
         experiment.redis_keys.classifier_model       -> classifier_model_key
@@ -342,7 +347,11 @@ def common_parser() -> argparse.ArgumentParser:
         parser.add_argument(arg_name, type=str, default=None, dest=key)
 
     # Integer arguments
-    for key in ['redis_port', 'embedding_expire', 'prediction_batch_size', 'num_workers', 'cores', 'verbosity', 'union_batch_size', 'incremental_batch_size', 'merge_threshold']:
+    for key in [
+        'redis_port', 'embedding_expire', 'prediction_batch_size',
+        'num_workers', 'cores', 'verbosity', 'union_batch_size',
+        'incremental_batch_size', 'merge_threshold',
+    ]:
         arg_name = '--' + key.replace('_', '-')
         parser.add_argument(arg_name, type=int, default=None, dest=key)
 
@@ -359,7 +368,8 @@ def common_parser() -> argparse.ArgumentParser:
                         help='Process even if output already exists (overrides --skip-existing)')
     parser.add_argument('--incremental', action='store_true', default=None, dest='incremental',
                         help='Save each record as it completes (crash-resistant)')
-    parser.add_argument('--taxonomy-filter', action='store_true', default=None, dest='taxonomy_filter',
+    parser.add_argument('--taxonomy-filter', action='store_true',
+                        default=None, dest='taxonomy_filter',
                         help='Only process documents with taxonomy abbreviations')
     parser.add_argument('--skip-golden', action='store_true', default=None, dest='skip_golden',
                         help='Skip documents marked as part of the golden dataset')
@@ -370,7 +380,8 @@ def common_parser() -> argparse.ArgumentParser:
 
     # Experiment flag (resolves databases and Redis keys from experiment record)
     parser.add_argument('--experiment', type=str, default=None, dest='experiment_name',
-                        help='Experiment name — resolves databases and Redis keys from skol_experiments')
+                        help='Experiment name - resolves databases and '
+                             'Redis keys from skol_experiments')
 
     return parser
 
@@ -379,7 +390,8 @@ def get_env_config(
     cli_args: Optional[argparse.Namespace] = None,
 ) -> Dict[str, Any]:
     """
-    Get complete environment configuration from command-line args, environment variables, or defaults.
+    Get complete environment configuration from command-line args,
+    environment variables, or defaults.
 
     Command-line arguments take priority over experiment values, which take
     priority over environment variables, which take priority over defaults.
@@ -510,7 +522,9 @@ def get_env_config(
 
         # Embedding settings
         'embedding_name': _get_env('EMBEDDING_NAME', 'skol:embedding:v1.1'),
-        'embedding_expire': _parse_embedding_expire(_get_env('EMBEDDING_EXPIRE', '')),  # default: no expiry
+        # default: no expiry
+        'embedding_expire': _parse_embedding_expire(
+            _get_env('EMBEDDING_EXPIRE', '')),
 
         # Prediction settings
         'couchdb_pattern': _get_env('COUCHDB_PATTERN', '*.txt'),
@@ -528,8 +542,12 @@ def get_env_config(
         ).split(','),
 
         # Data paths
-        'annotated_path': Path(_get_env('ANNOTATED_PATH', str(Path.cwd().parent / "data" / "annotated"))),
-        'brat_data_dir': Path(_get_env('BRAT_DATA_DIR', '/data/piggy/src/github.com/piggyatbaqaqi/brat/data/skol')),
+        'annotated_path': Path(_get_env(
+            'ANNOTATED_PATH',
+            str(Path.cwd().parent / "data" / "annotated"))),
+        'brat_data_dir': Path(_get_env(
+            'BRAT_DATA_DIR',
+            '/data/piggy/src/github.com/piggyatbaqaqi/brat/data/skol')),
 
         # Spark settings.  Defaults sized for a 24-core / 96 GB-RAM box
         # — the local-mode JVM saturates ~16 cores before shuffle
@@ -538,7 +556,9 @@ def get_env_config(
         # SPARK_DRIVER_MEMORY / SPARK_EXECUTOR_MEMORY env vars on
         # smaller machines.
         'cores': int(_get_env('SPARK_CORES', '16')),
-        'bahir_package': _get_env('BAHIR_PACKAGE', 'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
+        'bahir_package': _get_env(
+            'BAHIR_PACKAGE',
+            'org.apache.bahir:spark-sql-cloudant_2.12:2.4.0'),
         'spark_driver_memory': _get_env('SPARK_DRIVER_MEMORY', '32g'),
         'spark_executor_memory': _get_env('SPARK_EXECUTOR_MEMORY', '16g'),
 
@@ -596,7 +616,8 @@ def get_env_config(
     # any config keys that were not explicitly set via CLI
     experiment_name = base_config.get('experiment_name', '')
     if experiment_name:
-        experiment_doc = _load_experiment(base_config, experiment_name)
+        experiment_doc = _load_experiment(
+            base_config, str(experiment_name))
         _apply_experiment(base_config, experiment_doc, cli_explicit_keys)
 
     return base_config
@@ -654,7 +675,9 @@ def get_spark_config() -> Dict[str, Any]:
     }
 
 
-def build_couchdb_url(host: Optional[str] = None, username: Optional[str] = None, password: Optional[str] = None) -> str:
+def build_couchdb_url(host: Optional[str] = None,
+                      username: Optional[str] = None,
+                      password: Optional[str] = None) -> str:
     """
     Build a CouchDB URL from components.
 
