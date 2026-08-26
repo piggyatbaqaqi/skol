@@ -259,6 +259,35 @@ signal but tells us nothing new about alternatives.
   the mean: a page of clean running text with one ruined block is the
   case that matters, and a mean hides it.
 
+## What a random draw costs, measured (T5, 2026-08-26)
+
+Round 5 drew 1 000 treatments uniformly from p1. **94 of them (9.4 %)
+come from works already on this list**, so roughly **$2.52 of the
+round's $26.76** was spent annotating text scheduled to be replaced.
+
+| | n | share |
+|---|---:|---:|
+| other tier-1 works (*Phaeocollybia*, Annales Mycologici, Sydowia, NY State Mus.) | 64 | 6.4 % |
+| Mycotaxon 3–31 | 23 | 2.3 % |
+| Persoonia 1–19 | 7 | 0.7 % |
+| **total on this list** | **94** | **9.4 %** |
+
+**That is not an argument for excluding them from draws.** A tenth of
+the annotatable corpus genuinely is this material, and a sample that
+skipped it would describe a corpus that does not exist. It is an
+argument about *sequencing*: every round drawn before the re-OCR
+lands pays this again, and the annotations it produces will not
+survive the re-source, because treatment ids are content hashes
+(see the caveat below).
+
+**The list is working.** The operator hit `taxon_32e3b240` during T5
+review and called it "an OCR disaster" without needing to look
+closely. It is **Mycotaxon 16** — already tier 1 here, and already
+named as one of the four worst volumes at 20.0 %. Its own document
+measures **23.3 % median rejoin** over 18 measurable siblings, and the
+treatment itself 25.0 %. A random draw landing on a flagged work and
+the flag being right is the check this list needed.
+
 ## Caveats worth carrying
 
 * **Re-sourcing changes treatment ids.**  They are content hashes
