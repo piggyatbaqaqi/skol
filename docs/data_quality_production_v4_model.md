@@ -999,6 +999,42 @@ than treatments. Neither should be parsed as a monograph, both carry
 real nomenclatural data, and both need a different parser rather than
 exclusion.
 
+#### The 2024 Outline is a hybrid, and it merges genus entries wholesale
+
+`taxon_395517e7` comes from **The 2024 Outline of Fungi and fungus-like
+taxa** — same series as `taxon_3888d38f` above, different structure.
+The 2024 edition interleaves the bare name lists with **numbered genus
+notes** carrying real descriptions:
+
+> `Note 722 Statesia` … `Entry by Maoqiang He, State Key Laboratory of
+> Mycology, Institute of Microbiology, Chinese …`
+
+The operator: *"a list of genera with remarks including descriptions.
+Most of the descriptions were identified as diagnosis or description,
+but by no means all."* Across the document's **306 treatments** the
+spans divide **722 `notes` / 319 `diagnosis` / 221 `description`** —
+so the "by no means all" is genus descriptions landing in `notes`.
+
+**The merge damage is the headline.** `taxon_395517e7` alone holds
+**four `diagnosis` spans and two `description` spans** — several genus
+entries in one treatment. Across the document:
+
+| | |
+|---|---|
+| treatments with > 1 `diagnosis` or `description` span | **104 of 306 (34 %)** |
+| `merge_metric` median | **0.0** |
+| flagged at the threshold of 15 | **6 (2 %)** |
+
+**A third of the document's treatments merge genus entries and the
+merge detector finds six of them.** The reason is §5.5's: each genus
+entry is short and they are *different* genera, so there are almost no
+repeated terms for a repetition metric to count. §6.1 measured that
+metric at 51.7 % precision on the population it does flag; this is the
+complementary failure, on a population it cannot flag at all.
+
+`>1 diagnosis span` would have caught 104 of them, needs no text
+analysis, and is already stored.
+
 ### 5.6 A treatment the annotator declines is usually not a treatment
 
 Round 5's first 50 contained **ten with prose and zero annotations**.
