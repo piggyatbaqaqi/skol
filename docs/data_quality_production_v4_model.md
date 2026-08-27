@@ -7238,6 +7238,52 @@ relationship — it is predominantly `Distribution` wearing a `Biology`
 label.**  45 % is geographic-only and only 20 % carries any host cue at
 all.  The collapse folded the *majority* class into the minority's name.
 
+#### Scoping the split — Trello #407
+
+Filed 2026-08-27 as *"Split Biology label in training data"*, estimated
+at **7 units on the assumption of a significant manual step**.  The
+residual was measured afterwards, and it argues the manual step is
+smaller than that assumption.
+
+Re-probing the 377 no-cue blocks with a second pass (place names,
+bare `on <Genus>`, trophic vocabulary, voucher, morphology, citation):
+
+| | n | of residual |
+|---|---:|---:|
+| trophic / ecology vocabulary | 156 | 41 % — genuine `Biology` |
+| bare country or place name | 91 | 24 % — more `Distribution` |
+| bare `on <Genus>` host | 24 | 6 % — genuine `Biology` |
+| voucher / morphology / citation | 13 | 3 % |
+| **nothing matched — needs eyes** | **144** | **38 %** |
+
+**Rolled up over all 1 237 `Biology` blocks:**
+
+| destination | share | how |
+|---|---:|---|
+| `Distribution` | **~52 %** | mechanical — gazetteer + the geographic phrase list |
+| `Biology` (host, substrate, trophic) | **~37 %** | mechanical — trophic lexicon |
+| **needs eyes** | **~12 %** | not separable by vocabulary |
+
+**And the manual 12 % is concentrated, not spread.**  Those 144 blocks
+sit in **39 of 300 documents**, and **80 % of them in just 13 documents
+(4.3 %)** — with a single document holding 62 blocks, 43 % of the whole
+residual on its own.
+
+That document is the tell: its blocks are *"Chaga conk grown on birch in
+sparse wood edge"*, *"Dead chaga conk collected from dead birch"*,
+*"Bark with phloem in cross-section of affected birch"* — 41–51
+characters, near-identical, repeated.  **These are figure captions
+mislabelled `Biology`**, which is not a `Biology`-split question at all
+but §12.3's `Figure-caption` boundary failure showing up in a second
+place.
+
+**Implication for the estimate.** The manual pass is **per-document and
+per-pattern, not per-block**: roughly 4 % of documents, most
+contributing one repeated artefact each.  The 7-unit estimate looks
+conservative — though deliberately so, and the two mechanical buckets
+still need their gazetteer and lexicon built and validated, which is
+where the real work sits.
+
 **Why this matters beyond tidiness.**
 `docs/segment-detector-scope.md:30,67` already draws the distinction the
 schema erased: `Distribution` is *"pure geographic NER — off-the-shelf
