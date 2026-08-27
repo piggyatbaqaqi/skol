@@ -100,7 +100,7 @@ Phylogeny, Biology}`, `Materials-examined ⊐ Type-designation`,
 | mechanism | n | defect? |
 |---|---:|---|
 | **refinement** (down the order) | 121 | **no** — the cue is coarser than the truth |
-| **coarsening** (up the order) | 139 | yes — a distinction is lost |
+| **coarsening** (up the order) | 139 | **only if the block has one referent** — see below |
 | **absorption** (into `Misc-exposition`) | 387 | yes — maximal coarsening |
 | **sibling swap** (unrelated) | 208 | yes — the only true confusion |
 
@@ -124,6 +124,18 @@ lexically separable siblings and a swap between them is a real error
 worth encoding; one that does not is two labels that should be
 distinguished.**  That makes lattice authoring a measurement loop rather
 than an ontology argument.
+
+**Direction on the lattice is necessary but not sufficient — block
+composition is the other half.**  A block containing *both* a type
+designation and an additional-material list has **no correct specific
+label**, so moving up to the covering label is right.  Measured: on such
+merged blocks the model chooses `Materials-examined` 66 % of the time
+against 6 % for `Type-designation`, and that is correct behaviour (memo
+§12.3.3).  **Scoring every upward move as an error therefore
+over-counts, exactly as scoring every downward move did.**  A usable
+reward needs both the order *and* a referent-count test on the block —
+which in practice means the segmentation and the labelling cannot be
+scored independently.
 
 **A label with no lattice relatives is a separate case.**
 `Figure-caption` has none — 0 refinements, 0 coarsenings, and 131 swaps

@@ -7196,6 +7196,67 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.3 Coarsening is a defect only when the block has one referent
+
+*Phyllosticta pterospermi*.  Operator: *"near perfect.  The type
+designation fell under materials-examined.  If we don't already mention
+it, we should observe that type designation is a specialization of
+materials-examined."*
+
+**We do** — `Materials-examined` ⊐ `Type-designation` is one of the three
+lattice edges recorded in §12.3, and it is the **largest single
+coarsening class**: 124 blocks, and the reason `Type-designation` is the
+worst-performing cued label at 48 % honored.  This treatment is a fresh
+instance of it:
+
+```
+[Materials-examined] Type. China, Hainan Province: Bawangling National…
+[Materials-examined] Additional specimen examined. China, Hainan…
+```
+
+**But testing the mechanism turned up a limit on that scoring.**  The
+obvious alternative explanation is segmentation: if the type *and* the
+additional material land in one block, only one label is possible, and
+the more general one is then **correct**.  Measured over 300 documents,
+splitting type-cued blocks by whether they also carry an
+additional-material cue:
+
+| | merged block | clean block |
+|---|---:|---:|
+| n | 282 (17 %) | 1 419 (83 %) |
+| → `Type-designation` | **6 %** | 25 % |
+| → `Materials-examined` | **66 %** | 15 % |
+
+**On merged blocks the model picks the covering label two-thirds of the
+time, and that is right, not wrong.**  A block containing both referents
+has no correct specific label.
+
+**So the lattice needs one more condition: coarsening counts as a defect
+only when the block has a single referent.**  Scoring every upward move
+as an error over-counts `Type-designation`'s defects by whatever share
+of its 124 coarsenings sit on merged blocks.  This is the mirror of the
+correction the operator forced earlier — there, downward moves were
+wrongly counted as errors; here, some upward moves are too.  **The
+direction on the lattice is necessary but not sufficient; block
+composition is the other half.**
+
+#### Two defects in my own cue, recorded so the numbers are not re-used naively
+
+* **An unanchored type cue matches figure captions.**  This run allowed
+  `Holotype` anywhere in the block, so it caught
+  `Figure 3. Phyllosticta pterospermi (holotype SAUCC210104)…` — 179
+  blocks, 13 % of the "clean" set, are captions legitimately *citing* a
+  type rather than designating one.  **The clean-block column above is
+  contaminated and should not be quoted.**  §12.3's cue is anchored at
+  block start with following punctuation and does not have this problem;
+  **that is the sound number.**
+* **The §12.3 cue misses bare `Type.`** — which is exactly the form in
+  this treatment.  The cue list is `Type material|Holotype|Typus`, so
+  `Type. China, Hainan…` was never counted at all.  §12.3's
+  `Type-designation` n of 378 is therefore an **undercount**, and its
+  48 % honor rate is measured on a subset that excludes one common house
+  style.
+
 ### 12.3.2 Three findings from `taxon_57698832` — a lexical handle, a schema gap, and an inconsistency
 
 *Cladoriella kinglakensis*, a **Fungal Planet description sheet**
