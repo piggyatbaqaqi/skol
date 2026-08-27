@@ -7087,13 +7087,82 @@ into non-content labels.
 | `Diagnosis` | 58 | **45 %** | |
 | `Notes` | 477 | **43 %** | shared/structural cue word |
 
-**The misses split into two mechanisms, and only one is confusion.**
+**Correction (2026-08-27): asymmetry alone does not identify a defect.**
+The first reading of this table called every asymmetric pair a "finer
+distinction collapsing into a coarser one".  Operator: *"Notes ->
+Diagnosis and Notes -> Phylogeny are both semantically valid
+restrictions of a section labeled Notes.  There's some subtlety here."*
+
+Correct.  `Notes` is a **superordinate** — a commentary section that
+legitimately *contains* diagnostic comparison, phylogenetic discussion
+and ecological remark.  Labelling a `Notes.`-cued block `Diagnosis` is a
+**refinement**, not an error.  `Type-designation` ->
+`Materials-examined` is the opposite: a type citation losing its type
+status.  **Both are asymmetric with near-zero reverse.**  Asymmetry says
+only that the direction is systematic; **what makes it a defect is the
+direction on the subsumption order**, which a flat confusion matrix
+cannot see.
+
+Assumed order (parent ⊐ child, child being the more specific):
+
+```
+Misc-exposition ⊐ everything            (the universal catch-all)
+Notes           ⊐ Diagnosis, Phylogeny, Biology
+Materials-examined ⊐ Type-designation
+Description     ⊐ Diagnosis
+```
+
+Two edges are judgement calls and are flagged as such: `Description` ⊐
+`Diagnosis` treats a diagnosis as a differential description, where
+some would call them siblings; and `Notes` ⊐ `Biology` assumes ecology
+remarks under Notes are normal.  Neither changes the conclusion below.
+
+**Re-scored against that order:**
+
+| cue | n | honored | refine | coarsen | absorbed | swap | **acceptable** |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `Figure-caption` | 680 | 446 | 0 | 0 | 103 | 131 | 66 % |
+| `Notes` | 477 | 204 | **109** | 0 | 134 | 30 | **43 → 66 %** |
+| `Materials-examined` | 414 | 327 | 12 | 0 | 68 | 7 | 82 % |
+| `Etymology` | 401 | 374 | 0 | 0 | 25 | 2 | 93 % |
+| `Type-designation` | 378 | 183 | 0 | **124** | 39 | 32 | **48 %** |
+| `Description` | 66 | 59 | 0 | 0 | 5 | 2 | 89 % |
+| `Diagnosis` | 58 | 26 | 0 | 15 | 13 | 4 | 45 % |
+| **ALL** | **2 474** | 1 619 | 121 | 139 | 387 | 208 | **65 → 70 %** |
+
+**~51 200 true defects corpus-wide**, revised down from ~59 600.
+
+**What this moves.** `Notes` is *not* a problem label — 40 % of its
+misses are valid refinements.  **`Type-designation` is**: every one of
+its 195 misses is a genuine defect, and 124 are coarsening into
+`Materials-examined`.  The first reading blamed the wrong label.
+
+**`Figure-caption` is a third mechanism again.**  It has **no lattice
+relatives** — 0 refinements, 0 coarsenings — so every miss is a defect,
+and its 131 swaps scatter across seven unrelated labels (`Description`
+29, `Nomenclature` 17, `Key` 17, `Materials-and-methods` 16, `Notes` 12,
+`Phylogeny` 9, `Materials-examined` 8).  That scatter is the signature
+of a **boundary/typographic** failure, not a semantic one — a caption is
+defined by where it sits on the page, not by what it says.  Part of it
+is also detector noise: the `Fig\.?\s*\d` cue matches in-text
+cross-references, which land in whatever section cites them.
+
+**The misses split into three mechanisms, and only one is confusion.**
 
 *Absorption* — 387 of 855 misses (45 %) go to `Misc-exposition`.  A block
 that literally announces its own field is swept into the catch-all.  This
 is §12.2's absorption class, now with a denominator.
 
-*Asymmetric pair collapse* — the rest are directional, not symmetric:
+*Coarsening* — 139 misses move **up** the order, losing a distinction
+the cue asserted.  `Type-designation` -> `Materials-examined` (124) is
+almost all of it.
+
+*Sibling swap* — 208 misses land on an unrelated label.  This is the
+only genuine confusion, and `Figure-caption` supplies 131 of it.
+
+The original directional table, retained because the counts are still
+the evidence — but read now against the order above, where the `Notes`
+rows are refinements and only the first is a defect:
 
 | cue says | model said | n | reverse |
 |---|---|---:|---:|

@@ -85,7 +85,46 @@ corpus-wide**.
 | `Diagnosis` | 58 | **45 %** |
 | `Notes` | 477 | **43 %** |
 
-**The failures are not noise — they are asymmetric pair collapses:**
+**The failures are not noise — but asymmetry alone does not make one a
+defect.** A flat confusion matrix cannot distinguish `Notes` ->
+`Diagnosis` (a **valid refinement** of a superordinate commentary
+section) from `Type-designation` -> `Materials-examined` (a type
+citation **losing its type status**).  Both are ~10:1 asymmetric.  **The
+matrix must be scored against a subsumption order**, or it will
+mis-assign blame — as the first version of this section did.
+
+Scored against `Misc-exposition ⊐ everything`, `Notes ⊐ {Diagnosis,
+Phylogeny, Biology}`, `Materials-examined ⊐ Type-designation`,
+`Description ⊐ Diagnosis`, the 855 misses decompose:
+
+| mechanism | n | defect? |
+|---|---:|---|
+| **refinement** (down the order) | 121 | **no** — the cue is coarser than the truth |
+| **coarsening** (up the order) | 139 | yes — a distinction is lost |
+| **absorption** (into `Misc-exposition`) | 387 | yes — maximal coarsening |
+| **sibling swap** (unrelated) | 208 | yes — the only true confusion |
+
+Honor rate 65 % becomes **70 % acceptable**.  Per-label, the correction
+is large and it changes the target: `Notes` goes 43 % -> **66 %** and is
+not a problem label, while `Type-designation` stays at **48 %** with
+every miss genuine.
+
+**This is the design requirement for section 1 as a whole.** Any of the
+five methods here will produce a matrix; **none of them knows which
+off-diagonal cells are errors.** A reward built on raw off-diagonal mass
+penalises correct refinements and rewards coarsening toward the
+catch-all — the exact opposite of what is wanted.  **The label
+subsumption order is a prerequisite input, not an afterthought**, and it
+has to be authored by hand: two of its four edges above are judgement
+calls (`Description` ⊐ `Diagnosis`; `Notes` ⊐ `Biology`).
+
+**A label with no lattice relatives is a separate case.**
+`Figure-caption` has none — 0 refinements, 0 coarsenings, and 131 swaps
+scattered across seven unrelated labels.  Scatter that wide is a
+**boundary/typographic** failure rather than a semantic one, and it will
+not respond to anything section 1 measures.
+
+The original directional counts, now read against the order:
 
 | cue says | model said | n | reverse |
 |---|---|---:|---:|
