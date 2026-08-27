@@ -183,6 +183,17 @@ changes.
 * **It cannot distinguish "wrong label" from "wrong place."** A
   correctly-labelled block that the *segmenter* put in the wrong
   sequence scores identically to a mislabelled one.
+* **Weight by mass, not block count.** The operator's formulation is
+  "lots of A, small B, lots of A", and the size asymmetry is the
+  signal — 6 093 characters of A around 245 of B. Counting blocks
+  throws that away. Measured at **2.0 % of interior blocks**,
+  ~50 000 corpus-wide (memo §12.2).
+* **Small enclosed blocks resist every content-based test.** A
+  20-character heading stranded between two large same-labelled blocks
+  is neither a severed sentence nor a self-labelling section, so
+  neither §12.2 mechanism reaches it. Section numbering was proposed
+  and **measured at zero**. Size alone is what remains, and it is
+  unmeasured.
 
 **As a reward: this is the most promising of the five, and still not
 safe alone.** It is self-supervised, needs no golden data, and rewards

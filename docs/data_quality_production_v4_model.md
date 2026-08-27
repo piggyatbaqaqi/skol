@@ -7115,6 +7115,55 @@ low-probability transitions** — self-supervised, no hand-tuning, and it
 adapts when the label set changes. Recorded as a component in
 `docs/rl-framework-components.md` §1.5.
 
+#### Mass, not block count — and one hypothesis that measured zero
+
+The operator refined the shape: *"lots of A, small Misc-exposition,
+small B, small Misc-exposition, lots of A. It seems likely that B
+should be A. In this case, the first Misc-exposition should also be A,
+but I don't see how to detect this."*
+
+**The refinement is right and my version missed it: I counted blocks,
+not mass.** `taxon_4cb3fcb6` shows why the asymmetry matters —
+
+| chars | label | |
+|---:|---|---|
+| 2 227 | `Materials-and-methods` | |
+| **20** | `Misc-exposition` | `2.4. Phenotype Assay` |
+| **245** | `Description` | the island |
+| 26 | `Page-header` | |
+| 29 | `Misc-exposition` | running head |
+| 3 866 | `Materials-and-methods` | |
+
+**6 093 chars of A flanking 245 chars of B**, with 75 chars of small
+matter between. Measured as "a block under an eighth the size of the
+smaller flanking block, between two same-labelled blocks":
+**717 of 35 339 interior blocks, 2.0 %, ~50 000 corpus-wide**, of which
+**31 % have `Misc-exposition` as the island**.
+
+**A hypothesis that failed, recorded because it was mine and it was
+confident.** The operator's *"I don't see how to detect this"* referred
+to the first `Misc-exposition`, `2.4. Phenotype Assay`. I proposed
+**hierarchical section numbering** — `2.4.` nests under the `2.
+Materials and Methods` block right above it, so numbering should
+identify it. Measured over the same 300 documents:
+
+* only **9 of 222** enclosed `Misc-exposition` blocks open with a
+  section number at all (4 %);
+* **zero** of those nest under the preceding block's number.
+
+**~0 corpus-wide.** Mycological papers largely do not number their
+sections, and `taxon_4cb3fcb6` is a *Journal of Fungi* paper following
+a house style that does. The operator's instinct was closer to right
+than my proposal.
+
+**What is left for that case.** Sentence continuity — the mechanism
+that caught `taxon_fdbd1b53`'s `Zygospores formed`, `taxon_134c7e0e`'s
+`The asexual morph has conidia` and the severed `Blume.` — **does not
+help either**, because a heading is not a severed sentence. The
+remaining signal is bare size: a 20-character block is a heading, and
+headings belong to the section they head. That is a rule, but a weak
+one, and it is not yet measured.
+
 **A caution the first two versions earn.** Furniture had to be skipped
 (page headers and bare page numbers sit between the block and its real
 neighbours), and OCR-destroyed blocks had to be excluded — the first
