@@ -7229,6 +7229,69 @@ measured the metric where it fires; it says nothing about where it
 cannot.  **A length-normalised or type-token variant is the obvious
 candidate**, and this treatment is its regression fixture.
 
+#### The structural reading, and a detector that failed twice
+
+Operator: *"this treatment has only distribution and biology.  I would
+generally expect more treatment components.  It's also kind of weird for
+two description blocks to be split by a biology."*
+
+**Both observations are one thing.**  *North American Flora* house style
+runs `<name heading> / Description / TYPE LOCALITY / HABITAT /
+DISTRIBUTION / ILLUSTRATIONS` per species.  Read against that, the
+treatment is the **tail of species A, all of A's metadata, and the head
+of species B**:
+
+```
+[Description ] becoming smoky-olivaceous…   <- TAIL of species A
+[Misc-exp    ] TYPE LOCALITY: England.       <- A's metadata
+[Biology     ] HABITAT… DISTRIBUTION…        <- A's metadata
+[Bibliography] ILLUSTRATIONS: Cooke…         <- A's metadata
+[Description ] Pileus thin, subconic…        <- HEAD of species B
+```
+
+**There is no `Nomenclature` block anywhere in it.**  The species-name
+headings were never detected, so the grouper had no boundary to cut on —
+which is why the component set is thin *and* why the descriptions
+interleave.  The thin component set is a **symptom of the missing
+`Nomenclature`**, not an independent defect.
+
+**Hypothesis: a `Description` returning after a record-closing component
+marks a straddled boundary.  Tested and refuted, twice.**
+
+| detector | fires | with `Nomenclature` | without |
+|---|---:|---:|---:|
+| terminal = {Biology, Bibliography, Type-designation, Materials-examined, Etymology} | **49 %** | 52 % | 33 % |
+| tightened to {Biology, Bibliography}, no intervening `Nomenclature` | **26 %** | 27 % | 21 % |
+
+Both fire at a base rate far too high to be a pathology, and both are
+**more** common when `Nomenclature` *is* present — the opposite of what a
+boundary-straddling signature predicts.
+
+**Why it fails, which is the part worth keeping: component order is
+genre-dependent, and the two genres invert.**
+
+* In *North American Flora*, `Bibliography` (`ILLUSTRATIONS: …`) **closes**
+  a species record.
+* In a modern journal, `Bibliography` is the **protologue citation** and
+  **opens** one — `Nomenclature > Misc-exposition > Bibliography > … >
+  Description` was the commonest firing pattern.
+
+Likewise `Description > Figure-caption > Description` ("Culture
+characteristics") is normal and appears in **both** of round 5's flawless
+treatments.
+
+**So no fixed component-order model can work corpus-wide.**  Ordering is
+a real signal, but it has to be conditioned on genre — which puts it
+behind §5.5's genre axis rather than beside it.  Recorded as a refuted
+hypothesis so it is not re-proposed.
+
+**What does survive is descriptive.**  Distinct content components per
+treatment, 347 sampled: 9 % have one, 23 % have two, **32 % have two or
+fewer**.  The operator's expectation of "more components" is right as an
+intuition, but a component count is not on its own a usable detector —
+untested against ground truth, and a legitimate nomenclature-only entry
+has exactly one.
+
 #### `Biology` blocks announce their own #407 split
 
 The operator's second observation generalises.  Self-declared headings,
