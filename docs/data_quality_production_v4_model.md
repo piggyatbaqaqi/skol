@@ -7196,6 +7196,101 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.2 Three findings from `taxon_57698832` — a lexical handle, a schema gap, and an inconsistency
+
+*Cladoriella kinglakensis*, a **Fungal Planet description sheet**
+(Persoonia 39, 2017) — a highly standardised one-page genre.  Operator:
+*"pretty good.  The only serious problems is that author frontmatter was
+identified as materials_examined, and the first description block looks
+to me like a misplaced figure caption.  The tell is 'scale bars'."*
+
+```
+[Materials-examined] Pedro W. Crous & Johannes Z. Groenewald, Westerdijk…
+[Misc-exposition   ] Michael J. Wingfield, Forestry and Agricultural…
+[Description       ] Colour illustrations. Symptomatic Eucalyptus leaves;
+                     conidiophores … scale bars …
+[Etymology         ] Etymology. Named after Kinglake National Park.
+[Misc-exposition   ] Classification — Cladoriellaceae, Cladoriellales,
+                     Dothideomycetes.
+```
+
+#### "scale bar" is a lexical handle for `Figure-caption` — the label that has no semantic one
+
+§12.3 found `Figure-caption` has **no lattice relatives**: every miss is
+a defect, and its 131 swaps scatter across seven unrelated labels
+because a caption is defined by page position, not content.  **A lexical
+cue is therefore worth more for this label than for any other.**
+
+Blocks containing `scale bar` or `bar = <n>` (300 documents):
+
+| label | n | |
+|---|---:|---:|
+| `Figure-caption` | **673** | **79 %** |
+| `Description` | 68 | 8 % — the operator's case |
+| `Key` | 36 | 4 % |
+| `Misc-exposition` | 25 | 3 % |
+| other | 55 | 6 % |
+
+**79 % precision from one phrase**, against a label with a 66 % honor
+rate and no semantic signal at all.  The 68 `Description` hits are the
+defect class named here, and they matter more than their count: a
+caption absorbed into `Description` contaminates the flagship
+morphological extraction with text about *illustrations*.
+
+#### Higher-taxon chains are homeless — a schema gap, not a defect
+
+Operator: *"The Misc-exposition block after the Etymology block perhaps
+points to a gap in our definition of Taxonomic treatment.  If the
+article gives a chain of higher taxa, it seems like a legitimate
+treatment component."*
+
+**Agreed, and the schema has no label for it.**  Blocks under 200
+characters naming two or more higher ranks (`-mycota`, `-mycetes`,
+`-ales`, `-aceae`, `-ineae`):
+
+| label | n | |
+|---|---:|---:|
+| `Table` | 268 | 34 % |
+| `Key` | 201 | 25 % |
+| **`Misc-exposition`** | **187** | **24 %** |
+| `Nomenclature` | 83 | 10 % |
+| other | 52 | 7 % |
+
+**`Table` and `Key` are mostly legitimate** — taxon lists and key entries
+naming families genuinely contain rank chains.  **The 187
+`Misc-exposition` blocks are the candidate class**: a
+`Classification — Cladoriellaceae, Cladoriellales, Dothideomycetes.`
+line is treatment content with nowhere to go, so it falls to the
+catch-all.  The 83 in `Nomenclature` are the same content given the
+nearest available label.
+
+This is a **T6 schema input**, and it is the second time this session
+that the schema — not the model — has been the limit: it joins §5.5's
+finding that a `Treatment` is implicitly *one taxon at one rank*, which
+is the same gap seen from the other side.  A chain of higher taxa is
+precisely the multi-rank information the flat schema cannot hold.
+
+#### Author frontmatter into `Materials-examined`, inconsistently
+
+Author affiliations look like specimen citations — personal names,
+institutions, cities, countries.  Blocks under 600 characters carrying
+an email, `Department of`, `University` or `Institute`:
+
+| label | n | |
+|---|---:|---:|
+| `Misc-exposition` | 605 | 80 % — the right answer |
+| **`Materials-examined`** | **54** | **7 %** |
+| other | 101 | 13 % |
+
+~3 800 corpus-wide — modest, and the model gets it right 80 % of the
+time.  **The interesting part is that it is inconsistent within a single
+document**: in this treatment two adjacent blocks of identical content
+type — one naming Crous & Groenewald, the next naming Wingfield — were
+split between `Materials-examined` and `Misc-exposition`.  Adjacent,
+same genre, same house style, different labels.  That is not a missing
+signal; it is an unstable decision boundary, and it will not respond to
+better features.
+
 ### 12.3.1 The `Biology` collapse has no recorded rationale — and it buried the majority class
 
 Operator, 2026-08-27: *"Biology is already a collapse of Host,

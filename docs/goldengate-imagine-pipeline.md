@@ -650,19 +650,12 @@ The naming convention comes straight from
 configuration. The `+` variants are a newer build's convention for
 app-plus-config.
 
-**Local mirror.** A copy of this directory lives at
+**Local mirror.** A complete copy of this directory lives at
 `~/www/http/tb.plazi.org/GgServer/Downloads/`, following the local mirror
 convention `~/www/<scheme>/<host>/<path>` (`https` is symlinked to `http`).
-`index.html` there is the saved server listing.
-
-One caveat, because it will bite: every asset is named `*.zip.html`. The
-server sends these with no usable content type, so `wget --adjust-extension`
-appended `.html`. **They are genuine ZIPs** — `Default.imagine.zip.html`
-verifies as `Zip archive data`, 748 files, `timestamp.txt` = 1706839301935 at
-its root, identical to the server copy. Rename before use:
-`getZipConfigurations()` only scans `Configurations/` for names ending in
-`.zip`, so a `.zip.html` is silently ignored rather than reported as
-malformed.
+`index.html` there is the saved server listing. Spot-checked against the
+server: `Default.imagine.zip` is `Zip archive data`, 748 files, with
+`timestamp.txt` = 1706839301935 at its root.
 
 ### 6.5 Installing a configuration from a ZIP (no network needed)
 
@@ -747,3 +740,172 @@ zip -qr Default.imagine.zip .             # -> drop into Configurations/
 Adding the `timestamp.txt` the server is missing is also exactly what would
 be needed to re-host the tree yourself and have 6.3's in-app download path
 work again.
+
+---
+
+## 7. What to take, what to leave
+
+The question this section answers: do we reimplement these analysers in
+Python, adapt SKOL to call them directly, or neither? Read the analysers
+before deciding — the answer changes once you see what they are made of.
+
+### 7.1 The treatment analysers are rule files, not models
+
+`TDS.TreatmentTaggerStyled.analyzer` is three lines — `CLASS`, `CLASS_PATH`,
+`DATA_PATH`. All the behaviour is in the data path:
+
+- **`treatmentTaggerRules.complex.txt` — 12 rules.** Eight are English
+  section headings (`Abstract`, `Introduction`, `References`, `Literature`,
+  `Bibliography`, `Acknowledg(e)ment(s)`, `Key`, `Materials` not followed by
+  `examined`). The two that do the real work:
+
+  ```
+  ./taxonomicName[./@START_INDEX < 3] and ./taxonomicNameLabel
+      ==> Start 'treatment' SubSection
+  ./taxonomicName[./@START_INDEX < 3] and not(./#[matches(., '[0-9]{4}')])
+      ==> Start 'treatment' SubSection
+  ```
+
+  A paragraph beginning with a taxonomic name in its first three tokens
+  starts a treatment — carrying a nomenclatural label, or at least not
+  looking like a citation year.
+
+- **`treatmentStructurerRules.txt` — 42 rules**, heading keyword to one of
+  the nine labels: `Remarks|Comments → discussion`,
+  `Measurements → description`, `Nests → biology_ecology`,
+  `holotype|paratype → materials_examined`, `Derivatio nominis → etymology`.
+
+- **`TERMS_<label>.csv` — empty.** Nominally per-label term lexicons.
+  `TERMS_etymology.csv` is a bare header row; `TERMS_description.csv` has
+  three entries, all runs of dots. Runtime caches that were never populated.
+  Do not go looking for a trained model here; there isn't one.
+
+`TreatmentTaggerOnline` and `TreatmentTaggerStyled` are the **same Java
+class** with different `DATA_PATH`s — the dual-path pattern of §1 surfacing
+as two separately invocable tools rather than a branch.
+
+**Conclusion: don't port and don't adapt.** SKOL's line classifier
+(precision 100 % / recall 99 % on the round-3 random sample) is
+categorically stronger than twelve keyword rules. Porting it is a downgrade;
+calling it over a JVM boundary is a downgrade with a subprocess attached.
+
+### 7.2 Plazi does not automate treatment sectioning at all
+
+`GgImagineBatch.cnfg` is their production chain, in order:
+
+```
+StructureDetector  MetaDataAdder  KeyHandler  ParseBibliography.imTool
+MarkBibRefCitations.imTool  MarkTaxonNames.imTool  TableAnnotCleaner
+RemoveDuplicateAnnots  TreatmentTaggerStyled.imTool
+ExtractMaterialsCitations.imTool  CheckAnnotNesting
+```
+
+`TreatmentStructurer` **does not appear**. They automate treatment
+*boundaries* and leave the *inner sectioning* to curators at the OK & Next
+dialog. That is precisely the step SKOL automates — so the capability we
+would most want to borrow is the one they never built. Useful calibration
+for how novel our own §2 Stage 7 equivalent actually is.
+
+### 7.3 Tier 1 — do not want
+
+- **TreatmentTagger / TreatmentStructurer** — see 7.1.
+- **MarkTaxonNames** — queries Catalogue of Life, GBIF and IPNI over the
+  network per document. We already run gnfinder and gnparser locally on
+  `localhost:9080/9081`, which is faster, offline, and not rate-limited.
+- **ParseBibliography / RefParse** — solves a problem we mostly do not have:
+  JATS and BioC hand us structured references already. Relevant only on the
+  PDF-only tail.
+
+### 7.4 Tier 2 — want the data, not the code
+
+Every analyser jar ships its full Java sources under **BSD 3-clause**
+(verified: `TreatmentTaggerOnline.java` carries the IPD Boehm / Universität
+Karlsruhe notice). Lifting data or porting logic is clean with attribution.
+
+| Asset | Size | Why |
+|---|---|---|
+| `TaxonomicDocumentStructurerStyledData/treatmentSectionTypeMappings.txt` | 63 lines | canonicalisation map for section-label variants and misspellings |
+| `MaterialsCitationTaggerData/collectionCodes.tsv.txt` | 775 KB | herbarium / collection code gazetteer |
+| `MultiListData/GrBio.CollectionCodes.txt.csv` | 975 KB | ditto, GrBio registry |
+| `MaterialsCitationTaggerData/countries.xml` | 606 KB | collecting country / region gazetteer |
+| `RefParseData/knownJournalsAndPublishers.txt` | 64 KB | journal-name lexicon |
+| `BibRefHandlerData/journalNameData.txt` | 683 KB | journal-name normalisation |
+| `OcrCheckerData/English.list.txt` | 1.3 MB | OCR-correction word list |
+| `MultiListData/EnvoTraitOntology.csv` | 459 KB | trait terms, for the TraitTagger idea |
+
+`treatmentSectionTypeMappings.txt` is the standout, because it is not a
+dictionary someone compiled — it is **harvested from what curators actually
+typed**:
+
+```
+mateirals_examined   -> materials_examined     disgnosis   -> diagnosis
+material_examined    -> materials_examined     etimologi   -> etymology
+materialsCitation    -> materials_examined     dicussion   -> discussion
+materials-examined   -> materials_examined     ditribution -> distribution
+habitat              -> biology_ecology        nomeclature -> nomenclature
+```
+
+That is a ready-made normalisation table for brat ingest, and an existence
+proof that free-text section labels drift far enough to need one.
+
+**Caveat before trusting any of it:** these lists are zoology- and
+botany-weighted (the ontologies are Hymenoptera and plants). Measure fungal
+coverage before wiring them in.
+
+### 7.5 Tier 3 — an adapter is defensible for exactly one thing
+
+**PDF → structured text.** `GgImagineBatch` is a clean headless CLI:
+
+```
+java -jar GgImagineBatch.jar \
+     DATA=<pdf | folder | list.txt>   # one file, a folder, or a list
+     DT=G                             # G generic / D born-digital / S scanned
+     FM=U                             # font handling: D decode, V verify, U un-mapped, R render
+     CONF=GgImagineBatch.cnfg         # names configName + imageMarkupTools + documentExporters
+     OUT=<dir> OT=D                   # D = folder storage, F = zipped IMF
+     LOG=DOC                          # one log per document, beside the IMF
+     [ST] [VC]                        # single-thread, verbose console
+```
+
+`imageMarkupTools` is an ordered space-separated list, so it can be trimmed
+to `StructureDetector` alone. Output is IMF — a zip of XML plus page images —
+which is one-directional and parseable in Python. No round-tripping, no
+shared state, no GUI.
+
+What we would get that we do not have: embedded-font decoding, OCR, column /
+block / paragraph detection, de-hyphenation, paragraph merging across column
+and page breaks, and caption/footnote/running-head routing out of the main
+text stream (§1). That is a decade of layout heuristics.
+
+**Worth prototyping against the Persoonia vols 1–19 whole-volume scans**
+(Trello #404), where we currently have no good answer. Probably not worth it
+beyond that: the corpus is overwhelmingly JATS and BioC, and only 17 of 190
+training documents have PDFs at all. Decide on the measurement, not on the
+appeal of the feature list.
+
+### 7.6 Two mechanics to know before adapting anything
+
+**How the same analyser runs both interactive and headless.** The batch
+runner calls `imts[imt].process(doc, null, null, pm)` — null annotation,
+**null markup panel**. `DpImageMarkupTool.process` only sets
+`DocumentProcessor.INTERACTIVE_PARAMETER` when a panel is present, so the
+feedback dialogs disable themselves. One null argument is the entire
+batch/interactive switch. This is why `TreatmentTaggerOnline` and
+`TreatmentTaggerStyled` can be the same class.
+
+**Preclusions fail silently in batch.** In `DpImageMarkupTool.process`, a
+fired preclusion reaches:
+
+```java
+if (idmp == null) return;
+int choice = DialogFactory.confirm(...)
+```
+
+With no panel, the tool **returns without running and without raising
+anything**. So a headless chain in the wrong order does not error — the step
+just quietly does not happen. That is why their batch chain runs
+`MarkTaxonNames.imTool` before `TreatmentTaggerStyled.imTool`: the tagger
+declares `PRECLUSION0FILTER = "not(./taxonomicName)"`, so with names unmarked
+it would silently no-op. Any adapter we write must assert on the
+`_runImtNames` attribute the batch records per document, rather than assume
+the chain ran.
