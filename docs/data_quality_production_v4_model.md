@@ -7201,6 +7201,80 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.6 Rogue `Key` is a document-level phenomenon — not language, not OCR
+
+Mycotaxon XIV(1), 1982: a French revision of Gabonese
+*Botryohypochnoideae*.  Operator: *"has poor OCR and is mostly in
+French.  I think we also have an unfamiliar genre.  The outer keys
+appear to be almost randomly assigned."*
+
+The document alternates two labels for its entire length:
+
+```
+[Key               ] 2282c  I) rcdCfinir l e genre Sotryohypochnus…
+[Materials-examined]  611c  paroi jaune, un peu Cpaissie, cyanophile…
+[Key               ]  957c  Botryohyfochnus isabelli.nus ; toutefois…
+[Materials-examined]  587c  li:t depuis rikoltli: au Gabon : LY 8581…
+[Key               ] 1249c  le rattacher au genre Hypochnicium…
+   …repeating for ~80 blocks…
+```
+
+**`Materials-examined` is largely correct** — `Récoltes: LY 8975, sur
+bois mort dans le "bush"` really are collection records.  **`Key` has
+swallowed every block of French descriptive prose**, 600–3 500
+characters each, and not one of them is a key.  This is §12.2's
+"`Key` is a second catch-all" at maximum intensity.
+
+#### Two hypotheses tested, both refuted
+
+**Language: no effect.**  Classifying 210 documents by French/English
+function-word ratio — French documents average **2.1 %** `Key` blocks
+against English **2.7 %**.  If anything lower.  (Only 8 French documents
+in the sample, so this rules out a large effect, not a small one.)
+
+**OCR damage: no effect, and in the wrong direction.**  Measuring word
+breakage as the rate of stray single-letter tokens, the top decile by
+`Key` share averages **5.4 %** breakage against **6.2 %** for everything
+else.  Rogue-`Key` documents are *cleaner* than average.
+
+*(A first attempt used the share of tokens ≤2 characters as an OCR
+proxy.  It put 207 of 210 documents in one band — ordinary short words
+dominate it.  Discarded, and recorded so it is not tried again.)*
+
+#### What does hold: concentration, length, and couplet absence
+
+| | median | top decile |
+|---|---:|---:|
+| per-document `Key` share | **0.0 %** | **19 %** |
+| median `Key` block length | 430 c | **868 c** |
+| `Key` blocks containing a numbered couplet | 12 % | 39 % |
+
+**The median document has no `Key` blocks at all** — the label is
+extremely concentrated, with individual documents reaching 81 %, 51 %
+and 25 %.
+
+**And the top decile is bimodal**, which is why its couplet rate looks
+*better* than average.  It mixes two unrelated populations:
+
+* **genuinely key-rich documents** — revisions and floras with many
+  keys: couplet rates of 88 %, 80 %, 100 %, blocks of normal length;
+* **rogue-`Key` documents** — couplet rates of 0 %, 3 %, 5 %, with
+  median `Key` block lengths of 3 244 and **8 956** characters.
+
+**So the discriminator is neither language nor scan quality but
+`couplet absence × block length`.**  A `Key` block over ~1 000
+characters with no numbered couplet is not a key.  That sharpens
+§12.2's block-level finding with a document-level one: **rogue `Key` is
+a property of the document, not of the block**, so it can be detected
+once per document and applied to all of its blocks — far cheaper, and
+far more reliable, than judging blocks individually.
+
+**The operator's third observation — "an unfamiliar genre" — is the
+one that survives all of this.**  A 1982 francophone regional revision
+is a genre the model has essentially never seen, and §5.5's genre axis
+predicts exactly this: not degraded performance, but a *different*
+catch-all being selected.
+
 ### 12.3.5 `Description` ⊐ `Diagnosis` restored — one rule, no special cases
 
 *Longistipes albus* (Fungal Diversity).  Operator: *"I think that last
