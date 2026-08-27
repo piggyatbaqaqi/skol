@@ -1035,6 +1035,68 @@ complementary failure, on a population it cannot flag at all.
 `>1 diagnosis span` would have caught 104 of them, needs no text
 analysis, and is already stored.
 
+### 5.5.2 The clade-organised revision — a rank the schema has no room for
+
+`taxon_4b567381`, from **"Phytophthora: taxonomic and phylogenetic
+revision of the genus"** (*Studies in Mycology* 106, 2023). The
+operator: *"mostly a table of species names… interspersed with
+cladistic commentary… the 'treatments' to be extracted here would be
+**the clade characterizations**."*
+
+That is the right reading, and it is a different failure from §5.5 and
+§5.5.1.
+
+**The document is organised by clade, not by species.** Each clade gets
+a membership list, a shared-character description, and ecological
+commentary:
+
+> `description` — *"Almost all species produce non-papillate,
+> non-caducous sporangia on unbranched sporangiophores (P. estuarina,
+> P. macrochlamydospora and…)"*
+> a gap — *"Subclade 1c contains Phytophthora infestans and closely
+> related species P. andina, P. betacei, P. ipomoeae…"*
+
+**What the extractor made of it.** One treatment spanning **56 338
+chars** over 22 spans — 15 `biology`, 4 `description`, 2 `notes` — with
+`nomenclature` reading `(Fig. 3).` Across the whole revision, **32
+treatments**, one of them **368 356 chars**. The natural units are
+roughly a dozen clades and a couple of hundred species; it produced
+neither.
+
+**The operator's other observation checks out**: the cladistic and
+environmental commentary *is* correctly landing in `biology`. The
+labels are not the problem here.
+
+**The 42 blocks naming a numbered clade scatter as usual** —
+`Phylogeny` 33 %, `Biology` 29 %, `Bibliography` 17 %,
+`Misc-exposition` 12 %, `Table` 7 % — no label above a third, the
+§5.5.1 signature again.
+
+#### The synthesis: the treatment abstraction assumes a single rank
+
+Three findings recorded separately are one finding:
+
+| where | what happened |
+|---|---|
+| §6.1 | "rank cascade" merges — `Sistotremastrales ord. nov.` carrying order, family, genus **and** species descriptions in one treatment |
+| §5.5.1 | the Outline's family → genus → species-count hierarchy flattened into undifferentiated blocks |
+| **§5.5.2** | **clade characterisations with nowhere to go at all** |
+
+**Taxonomic literature is inherently multi-rank, and a `Treatment` is
+implicitly one taxon at one rank.** Everything above species — genus
+diagnoses, family circumscriptions, clade characterisations — is
+either fused into a species treatment, scattered, or lost. §6.1's
+verdict that some "merges" are really rank cascades, and that splitting
+them requires knowing *which rank each description belongs to*, is the
+same requirement seen from a third angle.
+
+**This one is not a parser problem.** A checklist needs a different
+parser; a clade revision needs a **different target schema** — a unit
+that can hold "these species share these characters" without pretending
+to be a species. That is a v5 data-model question, not a
+classification one, and it should be settled before more effort goes
+into making the segmenter label these documents better.
+
 ### 5.6 A treatment the annotator declines is usually not a treatment
 
 Round 5's first 50 contained **ten with prose and zero annotations**.
