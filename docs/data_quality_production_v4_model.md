@@ -7196,6 +7196,80 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.4 The merge metric is length-blind — and `Biology` carries its own #407 ground truth
+
+*North American Flora*, Agaricaceae, 1924 — a whole-volume scan.
+Operator: *"looks like two unrelated descriptions.  Interestingly, the
+biology block correctly groups the HABITAT and DISTRIBUTION blocks."*
+
+```
+[Description   ] becoming smoky-olivaceous, the edges white-fimbriate; stipe…
+[Misc-exposition] TYPE LOCALITY: England.
+[Biology       ] HABITAT: On the ground in low woods.  DISTRIBUTION: Michigan;…
+[Bibliography  ] ILLUSTRATIONS: Cooke, Brit. Fungi pl. 398…
+[Description   ] Pileus thin, subconic to conic-campanulate, then expanded-umbo…
+```
+
+#### The merge scores **zero**
+
+`n_terms_above_5 = 0` against a threshold of 15.  **Two unrelated
+descriptions, and the merge detector is completely blind to them** — the
+treatment sits in p1 as a clean annotatable case.
+
+The mechanism is length.  The metric counts terms occurring **five or
+more times**; these two descriptions total about 1 500 characters, and
+almost nothing repeats five times in that span.  **The merge metric can
+only see merges in long treatments.**  Two short descriptions fused are
+structurally undetectable by it, at any threshold.
+
+That is a **false-negative mechanism for p1 contamination** independent
+of the 10 -> 15 threshold work: raising the threshold shrank p2a, but
+short merges were never in p2a to begin with.  The p2a precision review
+measured the metric where it fires; it says nothing about where it
+cannot.  **A length-normalised or type-token variant is the obvious
+candidate**, and this treatment is its regression fixture.
+
+#### `Biology` blocks announce their own #407 split
+
+The operator's second observation generalises.  Self-declared headings,
+300 documents:
+
+| cue | n | -> `Biology` | -> `Misc-exposition` | other |
+|---|---:|---:|---:|---:|
+| `DISTRIBUTION` | 87 | **74 (85 %)** | 10 | 3 |
+| `HABITAT` | 55 | 39 (71 %) | 9 | 7 |
+| `HOST` | 42 | 34 (81 %) | 3 | 5 |
+| `ECOLOGY` / `SUBSTRATE` | 7 | 6 | 1 | 0 |
+
+~13 300 cued blocks corpus-wide, and **`DISTRIBUTION` is 46 % of them —
+independently reproducing §12.3.1's 45 % geographic-only figure by a
+completely different method.**  Two unrelated measurements agreeing at a
+point is the strongest evidence yet that the split is real and sized
+correctly.
+
+**But this revises the #407 scoping, and in the direction the operator's
+7-unit estimate assumed.**  Classifying `Biology` blocks by which
+headings they carry:
+
+| | n | share | what #407 must do |
+|---|---:|---:|---|
+| distribution cue only | 407 | 33 % | **relabel** — trivial |
+| biology cue only | 80 | 6 % | **relabel** — trivial |
+| **both — one block, two referents** | **97** | **8 %** | **split the block** |
+| no explicit heading | 653 | 53 % | gazetteer + lexicon, then the ~12 % manual |
+
+**17 % of *cued* `Biology` blocks carry both referents**, and this
+treatment is one of them: `HABITAT: On the ground in low woods.
+DISTRIBUTION: Michigan;…` is a single 77-character block.  The operator
+is right that the grouping is *correct at block level* — and that is
+exactly why the split is not pure relabelling.  **Those 97 blocks need
+re-segmentation, which is a different and harder operation.**
+
+This is §12.3.3's referent-count problem arriving in a second place, and
+it is the same 17 % share.  **§12.3.1's "roughly 52 % / 37 %,
+mechanical" understated the work**: the *labels* are mechanical, the
+*boundaries* are not.
+
 ### 12.3.3 Coarsening is a defect only when the block has one referent
 
 *Phyllosticta pterospermi*.  Operator: *"near perfect.  The type
