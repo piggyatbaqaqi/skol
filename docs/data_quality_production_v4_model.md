@@ -7051,6 +7051,76 @@ block"** — which is where it came from on the page.
 **Even with the act, half are still lost**, and `Key` takes 101 of the
 430 — the second catch-all again.
 
+#### Self-declared labels: the cue is honored 65 % of the time
+
+`taxon_53dd1485` (*Xylodon daweishanensis*), operator: *"is perfect.  No
+defects, Figure-caption does its job."*  The second flawless treatment of
+round 5, after `taxon_3b7a80bc` — and **the two share one structural
+feature**: every block opens with its own field name.
+
+```
+[Nomenclature      ] Xylodon daweishanensis C.L. Zhao sp. nov. Figs 8, 9
+[Type-designation  ] Type material. Holotype. China. Yunnan Province…
+[Etymology         ] Etymology. Daweishanensis (Lat.): referring to…
+[Description       ] Description. Basidiomata annual, resupinate…
+[Figure-caption    ] Figure 8. Basidiomata of Xylodon daweishanensis…
+```
+
+The document labels itself and the model agreed.  **That is the same cue
+carried by the self-labelling blocks recorded above as mislabelled** — so
+the interesting question is not "why did this one work" but "how often is
+the cue honored at all".
+
+**Measured over 300 documents:** 2 474 blocks open with an explicit
+field-name cue; **1 619 (65 %) get the matching label**, leaving
+**~59 600 cued-but-ignored blocks corpus-wide** — four times the
+self-labelling estimate recorded earlier, which counted only absorption
+into non-content labels.
+
+| cue | n | honored | |
+|---|---:|---:|---|
+| `Etymology` | 401 | **93 %** | unique word, one meaning |
+| `Description` | 66 | 89 % | |
+| `Materials-examined` | 414 | 79 % | |
+| `Figure-caption` | 680 | 66 % | regex also catches cross-references |
+| `Type-designation` | 378 | **48 %** | |
+| `Diagnosis` | 58 | **45 %** | |
+| `Notes` | 477 | **43 %** | shared/structural cue word |
+
+**The misses split into two mechanisms, and only one is confusion.**
+
+*Absorption* — 387 of 855 misses (45 %) go to `Misc-exposition`.  A block
+that literally announces its own field is swept into the catch-all.  This
+is §12.2's absorption class, now with a denominator.
+
+*Asymmetric pair collapse* — the rest are directional, not symmetric:
+
+| cue says | model said | n | reverse |
+|---|---|---:|---:|
+| `Type-designation` | `Materials-examined` | 124 | **12** |
+| `Notes` | `Diagnosis` | 65 | 0 |
+| `Notes` | `Phylogeny` | 39 | 0 |
+| `Diagnosis` | `Description` | 15 | 0 |
+
+10:1 is a **finer distinction collapsing into a coarser one**.
+`Type-designation` → `Materials-examined` is a type losing its type
+status — the two are both specimen citations and only one is
+distinguished.  `Notes` → `Diagnosis` → `Description` is one gradient
+resolved inconsistently, and it is exactly the call the operator made by
+hand on `taxon_47c3b37d`: *"I would have called the notes section a
+diagnosis and not just notes."*  **When the human and the model disagree
+on that pair, the human is also choosing, not correcting.**
+
+**This answers the deferred pairwise-differentiation question** (asked
+2026-08-26, *"is this something we could get out of the model?"*): yes,
+and it does not need the model's posteriors or any hand annotation —
+the corpus supplies the labels.  Recorded as
+`docs/rl-framework-components.md` §1.1.1.
+
+**Caveat on the sample.** The cue is dense in MycoKeys-style journals and
+absent from older or OCR-damaged material, so these rates are an **upper
+bound**.  Both perfect treatments are from that well-formatted stratum.
+
 #### Page breaks: the highest-precision signal found so far
 
 `taxon_5180d088` (*Quercicola fusiformis*), operator: *"nearly

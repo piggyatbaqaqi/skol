@@ -59,6 +59,78 @@ few thousand labelled blocks and a model of any capacity, optimising
 this directly memorises them. Usable as a *held-out gate*, not as the
 objective.
 
+### 1.1.1 Confusion against *self-declared* labels — the same matrix, for free
+
+**This is 1.1 without the annotation cost, and it is roughly 200× the
+size of the hand-labelled set.**
+
+Taxonomic house style makes blocks announce their own field:
+`Description.`, `Etymology.`, `Diagnosis.`, `Type material. Holotype.`,
+`Additional specimens examined.`, `Figure 8.` A block opening with such
+a cue **states its own ground truth**, so every one is a free labelled
+example — and disagreement between the cue and the model's label is a
+confusion-matrix cell.
+
+**Measured over 300 documents** (memo §12.3): 2 474 cued blocks, of
+which **65 % are honored** — about **59 600 cued-but-ignored blocks
+corpus-wide**.
+
+| cue | n | honored |
+|---|---:|---:|
+| `Etymology` | 401 | **93 %** |
+| `Description` | 66 | 89 % |
+| `Materials-examined` | 414 | 79 % |
+| `Figure-caption` | 680 | 66 % |
+| `Type-designation` | 378 | **48 %** |
+| `Diagnosis` | 58 | **45 %** |
+| `Notes` | 477 | **43 %** |
+
+**The failures are not noise — they are asymmetric pair collapses:**
+
+| cue says | model said | n | reverse |
+|---|---|---:|---:|
+| `Type-designation` | `Materials-examined` | 124 | **12** |
+| `Notes` | `Diagnosis` | 65 | 0 |
+| `Notes` | `Phylogeny` | 39 | 0 |
+| `Diagnosis` | `Description` | 15 | 0 |
+| *(any)* | `Misc-exposition` | **387** | — 45 % of all misses |
+
+A 10:1 asymmetry is a **finer distinction collapsing into a coarser
+one**, not a symmetric mix-up. `Type-designation` → `Materials-examined`
+is one specimen citation losing its type status; `Notes` → `Diagnosis` →
+`Description` is a single gradient the model resolves inconsistently in
+one direction.
+
+**Why the rate varies so much: cue uniqueness.** `Etymology` scores
+93 % because the word appears once per treatment and means exactly one
+thing. `Notes`/`Remarks`, `Diagnosis` and `Holotype` score 43–48 %
+because the cue word is *shared or structural* — it names a section that
+genuinely overlaps its neighbours in content.
+
+**Caveats.**
+
+* **The cue is evidence, not gospel.** A block opening `Notes.` whose
+  content is comparative morphology arguably *is* a diagnosis — the
+  operator made exactly that call on `taxon_47c3b37d`. So a low honor
+  rate is a *differentiation* signal, not a straight error count, which
+  is precisely what §1 is asking for.
+* **House style is not universal.** The cue is dense in MycoKeys-style
+  journals and absent from older or OCR-damaged material, so the free
+  labelled set is **biased toward well-formatted sources** — the easy
+  cases. Rates measured here are an **upper bound** on general
+  performance.
+* **Regex cues have their own precision.** `Figure \d` matches in-text
+  cross-references, not only captions; part of that 66 % is the detector,
+  not the model.
+
+**As a reward: usable, and the most usable in this section** — the
+target comes from the input text, so it cannot be gamed by collapsing
+labels. Its degenerate solution is **cue-matching as a policy**: a model
+that learns "emit the label the first word names" scores perfectly on
+cued blocks and learns nothing about the ~90 % of blocks with no cue.
+Mitigate by **holding out cued blocks from the loss and scoring on them
+only**, treating them as a validation set rather than a training target.
+
 ### 1.2 From the model's own posteriors
 
 **What it measures.** For each block, the model's probability
