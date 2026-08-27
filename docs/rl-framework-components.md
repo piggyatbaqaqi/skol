@@ -116,11 +116,14 @@ penalises correct refinements and rewards coarsening toward the
 catch-all — the exact opposite of what is wanted.  **The label
 subsumption order is a prerequisite input, not an afterthought**, and it
 has to be authored by hand — but its edges are **testable, not merely
-asserted**.  `Description` ⊐ `Diagnosis` was proposed and then
-**removed on measurement**: comparative language appears in 55 % of
-`Diagnosis` blocks against 8 % of `Description` blocks, so they are
-lexically separable siblings and a swap between them is a real error
-(memo §12.3.1).  **An edge that survives a separability test is an edge
+asserted**.  `Description` ⊐ `Diagnosis` was removed on
+measurement and then **restored**: comparative language appears in 55 %
+of `Diagnosis` blocks against 8 % of `Description` blocks, so coarsening
+along that edge is never excusable — but that is a fact about **block
+composition**, not about the ontology, and the referent test above
+already expresses it.  Deleting the edge encoded the right verdict in
+the wrong place and created a special case (memo §12.3.5).  **Remove an
+edge only when the subsumption does not hold.**  **An edge that survives a separability test is an edge
 worth encoding; one that does not is two labels that should be
 distinguished.**  That makes lattice authoring a measurement loop rather
 than an ontology argument.

@@ -7109,10 +7109,15 @@ Assumed order (parent ⊐ child, child being the more specific):
 Misc-exposition ⊐ everything            (the universal catch-all)
 Notes           ⊐ Diagnosis, Phylogeny, Biology
 Materials-examined ⊐ Type-designation
+Description     ⊐ Diagnosis             (restored — see §12.3.5)
 ```
 
-**`Description` ⊐ `Diagnosis` was proposed and then removed** — see
-§12.3.1.  Operator: *"I agree that Diagnosis can be considered a
+**`Description` ⊐ `Diagnosis` was removed and then restored** — see
+§12.3.5.  Removing it was a workaround for a rule not yet found; §12.3.3's
+referent test does the job properly, so the edge is back and the lattice
+has no special cases.  The original reasoning is kept here because the
+separability measurement it rests on is still what makes coarsening along
+this edge inexcusable:  Operator: *"I agree that Diagnosis can be considered a
 special kind of Description, but it seems unlikely to be in a block
 labeled 'Description', and it has comparative language, so should be
 semantically differentiable."*  Measured, and correct: comparative
@@ -7195,6 +7200,74 @@ the corpus supplies the labels.  Recorded as
 **Caveat on the sample.** The cue is dense in MycoKeys-style journals and
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
+
+### 12.3.5 `Description` ⊐ `Diagnosis` restored — one rule, no special cases
+
+*Longistipes albus* (Fungal Diversity).  Operator: *"I think that last
+block should be diagnosis.  This looks like a case where the diagnosis
+did indeed get classified with its superclass."*
+
+**Confirmed, and the signal was sitting in the block:**
+
+```
+ 9  254c [Materials-examined] Rhododendron sp., 9℃-13℃, 23 July 2022…
+10   94c [Misc-exposition   ] study, with a high ML bootstrap support of 96%…
+11  563c [Description       ] a Bayesian probability of 1.0 … Longistipes…
+                              ^ contains "distinguished" AND "however"
+```
+
+Block 11 carries two comparative markers and was labelled `Description`
+anyway — a single-referent block, the signal present, unused.  This is
+the concrete instance of §12.3's finding that comparative language runs
+55 % in `Diagnosis` against 8 % in `Description`.
+
+#### The edge comes back
+
+§12.3 removed `Description` ⊐ `Diagnosis` on the operator's objection
+that the two are lexically separable.  **That was the right verdict
+reached by the wrong mechanism.**  The concern was that scoring the miss
+as *benign coarsening* would excuse it — but §12.3.3, derived
+afterwards, established that **coarsening is a defect unless the block
+has more than one referent**.  With that rule in place the edge is safe:
+block 11 has one referent, so the coarsening is a defect, exactly as the
+operator says.
+
+**Restoring it removes a special case rather than adding one.**  Both
+subsumption edges now behave identically under one rule:
+
+| edge | coarsening on a **single**-referent block | on a **multi**-referent block |
+|---|---|---|
+| `Materials-examined` ⊐ `Type-designation` | defect | **correct** — no specific label covers both (§12.3.3) |
+| `Description` ⊐ `Diagnosis` | **defect** — separable at 55 % vs 8 % | correct, same reasoning |
+
+**Net effect on the counts:** the 15 `Diagnosis` -> `Description` misses
+move from *swap* back to *coarsening*, and are then defects or not
+according to the referent test.  The acceptable rate is unchanged at
+70 % either way; what changes is that the framework now states one rule
+instead of two, and the ontology is no longer distorted to make the
+scoring come out right.
+
+**The general lesson, recorded because it nearly went the other way.**
+An edge should be removed only when the subsumption *does not hold*.  If
+it holds but coarsening along it is unacceptable, that is a statement
+about **block composition**, not about the ontology — and encoding it by
+deleting the edge loses real structure and creates a special case that
+has to be remembered.
+
+#### Two other defects in this treatment, both already-recorded classes
+
+* **A page-break split that worked.**  Blocks 6-9 are one
+  `Material examined` citation interrupted by a `Page-header` and the
+  page number `4770` labelled `Key` — the third instance of §12.2's
+  furniture pattern and the second of a page number wearing `Key`.
+  **This one kept `Materials-examined` on both sides**, so it belongs
+  with the 37 % that survive rather than the 63 % that split.
+* **Line-level mis-cuts.**  The operator reports the first
+  `Misc-exposition` belonging to the preceding `Nomenclature`, the second
+  to the following `Description`, and one line of the second
+  `Materials-examined` belonging to the two blocks after it.  These are
+  block *boundaries* drawn mid-record, not label errors — Pass 1, not
+  Pass 2, and the same mechanism as §12.3.4's re-segmentation problem.
 
 ### 12.3.4 The merge metric is length-blind — and `Biology` carries its own #407 ground truth
 
