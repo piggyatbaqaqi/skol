@@ -7002,6 +7002,77 @@ the severed-authorship case is **not yet measured**; only the
 mechanism is validated. And a repair pass mutates extraction output,
 so it needs the same fixture-gated treatment as any detector here.
 
+#### What actually decides whether an identifier survives: the `nov.` act
+
+`taxon_4d851975` (*Botryotrichum geniculatum*, *Studies in Mycology*
+101) is the counterexample that explains the rule. The operator:
+*"nearly perfect… the nomenclature picked up the MycoBank reference and
+the defining figure number."* Its nomenclature field reads
+
+> `Botryotrichum geniculatum X.Wei Wang, P.J. Han & F.Y. Bai, sp.`
+> `nov. MycoBank MB 840127. Fig. 20.`
+
+— identifier and figure both retained, against the ~74 % that are lost.
+
+**Two hypotheses, both refuted by measurement.**
+
+*Segmentation.* The obvious reading is that an identifier survives when
+it shares a block with the name and is lost when it stands alone.
+**Backwards**: over 300 documents, a block that is *essentially just*
+the identifier is labelled `Nomenclature` **53.0 %** of the time, while
+one where the identifier is *embedded in longer text* manages only
+**20.5 %**.
+
+*The name.* Next guess: the classifier keys on the binomial. **Barely
+matters** — see the table.
+
+**What does decide it is the nomenclatural act:**
+
+| block contains | n | → `Nomenclature` |
+|---|---:|---:|
+| binomial + `sp./gen. nov.` | 430 | **47.2 %** |
+| binomial, no act | 218 | **15.1 %** |
+| no binomial, act present | 24 | 50.0 % |
+| neither | 105 | 19.0 % |
+
+**The act roughly triples the odds; the binomial moves them by three
+points.** And it explains both observed cases exactly:
+
+* `taxon_4d851975` — `… sp. nov. MycoBank MB 840127.` **has the act**,
+  and survives.
+* `taxon_47c3b37d` — `Index Fungorum number: IF556440; Facesoffungi
+  number: FoF 05781` **has no act**, and goes to `Misc-exposition`.
+
+**This sharpens the repair pass proposed above.** The rule is not
+"reattach identifier blocks" in general but the narrower, better-founded
+**"reattach an act-less identifier block to the preceding act-bearing
+block"** — which is where it came from on the page.
+
+**Even with the act, half are still lost**, and `Key` takes 101 of the
+430 — the second catch-all again.
+
+#### Two mechanisms that demonstrably work
+
+Worth recording against the weight of failures above, because both are
+things D12 fixes must not break.
+
+**Span reconstruction across interruptions works.** The same treatment
+has its diagnosis split over paragraphs 685 and 697, with `Wang et
+al.`, a full `Fig. 20` caption and the page number `165` in between —
+and the `diagnosis` field is correctly reassembled from both. **The
+joining machinery is not the problem.** D12's cases fail because
+mislabelled blocks are never *candidates* for joining, not because
+joining cannot span a gap.
+
+**`Figure-caption` continues to do its job when the boundary is right**
+— as in `taxon_3b7a80bc` (§0.5). The label is sound; its boundary
+decisions are what fail.
+
+The one defect here: the etymology is split between a
+`Misc-exposition` (`Etymology: The name refers to its ascomatal hairs,
+which are`) and the first line of the description — the §12.2
+self-labelling-block class, mid-sentence.
+
 #### And a fourth defect, invisible in brat
 
 `taxon_0ccf38da` also carries a **second `description` span at
