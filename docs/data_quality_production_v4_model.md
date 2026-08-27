@@ -7051,6 +7051,66 @@ block"** — which is where it came from on the page.
 **Even with the act, half are still lost**, and `Key` takes 101 of the
 430 — the second catch-all again.
 
+#### Page breaks: the highest-precision signal found so far
+
+`taxon_5180d088` (*Quercicola fusiformis*), operator: *"nearly
+perfect. The first line of the description was eaten by a
+Misc-exposition that comes before the page number (which is encoded as
+a Key block)."*
+
+```
+[Etymology       ] Etymology – Referring to the prominent guttule…
+[Misc-exposition ] Saprobic on fruit of Fagaceae plant. Sexual morph:
+                   Ascomata 275–300 μm            <<< lost
+[Page-header     ] --- PDF Page 33 Label 33 ---
+[Key             ] 33                             <<< 2-char page number
+[Description     ] μm diam. (x = 290 × 340 μm; n = 10), gregarious…
+```
+
+Worse than "first line lost": `Ascomata 275–300 μm` and `μm diam.` are
+**one measurement torn in half**. The `description` field begins
+mid-unit.
+
+**Measured over 300 documents:**
+
+| | n | |
+|---|---:|---|
+| page breaks examined | 5 937 | |
+| …where the text **clearly continues** across the break | 327 | 6 % |
+| …of those, **same label either side** | 122 | 37 % — correctly kept together |
+| …of those, **different label** | **205** | **63 % — the split** |
+
+**~14 300 corpus-wide**, comparable in size to the self-labelling
+blocks (~15 400), and **higher precision than any of them**: if the
+text is demonstrably one sentence, the two halves belong to the same
+field. There is no judgement call, no domain knowledge, and no
+threshold to tune.
+
+Examples from the sample, all mid-sentence:
+
+* `Materials-and-methods` → `Misc-exposition`:
+  *"…and here the rocks are generally" | "not covered with weathered
+  sedimen…"*
+* `Notes` → `Type-designation`: *"…these genera have affinity with the"
+  | "extant Hypoxylon of the family Xyl…"*
+* `Materials-examined` → `Notes`: *"…Notes: Pluricellaesporites" |
+  "mexicanus Kalgutkar & Janson. 2000…"*
+
+**Why it stayed hidden.** Only **6 %** of page breaks have continuing
+text — most fall at paragraph boundaries, where a label change is
+legitimate. The signal is confined to a small, precisely identifiable
+subset, which is exactly why a per-block metric never surfaces it.
+
+**The repair is unambiguous too.** Both halves take one label; mass
+decides which, and §12.2's mass-weighted island work already supplies
+that rule.
+
+**Also: the page number `33` is a two-character `Key` block.** More
+evidence for `Key` as a second catch-all, and a note for the furniture
+sets used throughout this section — they exclude `Page-header` but not
+tiny `Key` blocks, so page furniture can still interrupt a gap
+calculation.
+
 #### Two mechanisms that demonstrably work
 
 Worth recording against the weight of failures above, because both are

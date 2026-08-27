@@ -650,6 +650,20 @@ The naming convention comes straight from
 configuration. The `+` variants are a newer build's convention for
 app-plus-config.
 
+**Local mirror.** A copy of this directory lives at
+`~/www/http/tb.plazi.org/GgServer/Downloads/`, following the local mirror
+convention `~/www/<scheme>/<host>/<path>` (`https` is symlinked to `http`).
+`index.html` there is the saved server listing.
+
+One caveat, because it will bite: every asset is named `*.zip.html`. The
+server sends these with no usable content type, so `wget --adjust-extension`
+appended `.html`. **They are genuine ZIPs** — `Default.imagine.zip.html`
+verifies as `Zip archive data`, 748 files, `timestamp.txt` = 1706839301935 at
+its root, identical to the server copy. Rename before use:
+`getZipConfigurations()` only scans `Configurations/` for names ending in
+`.zip`, so a `.zip.html` is silently ignored rather than reported as
+malformed.
+
 ### 6.5 Installing a configuration from a ZIP (no network needed)
 
 `ConfigurationUtils.getZipConfigurations()` scans `<install>/Configurations/`
@@ -657,7 +671,7 @@ for any `*.zip` containing a `timestamp.txt` at its **root**, and lists it in
 the selector under the host label **"Local ZIP"**. Downloaded and verified:
 
 ```
-Default.imagine.zip  ->  19,664,645 bytes, 750 entries
+Default.imagine.zip  ->  19,664,645 bytes, 748 files
 root:  timestamp.txt (1706839301935 = 2024-02-02)
        configuration.xml  files.txt  GoldenGATE.cnfg
        GgImagine.menus.cnfg  GgImagine.contextMenu.cnfg  README.txt
@@ -676,7 +690,7 @@ enough.
 
 ### 6.6 What is inside `Default.imagine`
 
-750 files. By extension: 184 `.txt` (word lists, gazetteers, regex lists),
+748 files. By extension: 184 `.txt` (word lists, gazetteers, regex lists),
 118 `.jar` (analyser code), 83 `.xml`, 45 `.cnfg`, 30 `.analyzer`, 29 `.csv`,
 **25 `.imTool`**, 20 `.annotator`, 19 `.markupConverter`, **18 `.pipeline`**,
 13 `.regEx`, 11 `.gScript`, 8 `.errorCheckList`, 5 `.gPath`,

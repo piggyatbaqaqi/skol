@@ -204,6 +204,38 @@ ever improbable. Pair it with a term that keeps transitions
 *informative* (entropy of the transition distribution), or hold the
 plausibility table fixed and external while the emission model trains.
 
+### 1.5.1 Continuity across page breaks — the cleanest variant
+
+A special case of 1.5 that deserves separate billing because its
+precision comes from the *text*, not from a plausibility table.
+
+**What it measures.** Where a sentence demonstrably continues across a
+page break — the block before ends without terminal punctuation, the
+block after opens lower-case or mid-token — the two blocks must carry
+the same label. **63 % of the time they do not** (memo §12.2), which is
+~14 300 blocks corpus-wide.
+
+**Why it is the strongest of these.** No domain table, no threshold, no
+labelled data. The premise is checkable from the characters alone, and
+the conclusion follows: one sentence, one field.
+
+**Caveats.**
+
+* **Only 6 % of page breaks qualify.** Most fall at paragraph
+  boundaries where a label change is legitimate. This is a
+  high-precision, low-coverage signal and should not be asked to carry
+  a whole objective.
+* **Furniture definitions matter.** Page numbers turn up labelled
+  `Key`, two characters long. A furniture set that excludes them breaks
+  the adjacency test.
+
+**As a reward: the safest of the five, and still bounded.** Its
+degenerate solution — label every block identically — is blocked by
+the 6 % coverage, since a collapsed model gains nothing on the other
+94 %. But optimising a signal that touches 6 % of page breaks will not
+move general accuracy either. **Use it as a constraint or an auxiliary
+loss, not as the objective.**
+
 ### 1.6 Two properties any such metric must have
 
 **It must be asymmetric.** P(pred = `Notes` | true = `Diagnosis`) is
