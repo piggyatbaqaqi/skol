@@ -7109,13 +7109,19 @@ Assumed order (parent ⊐ child, child being the more specific):
 Misc-exposition ⊐ everything            (the universal catch-all)
 Notes           ⊐ Diagnosis, Phylogeny, Biology
 Materials-examined ⊐ Type-designation
-Description     ⊐ Diagnosis
 ```
 
-Two edges are judgement calls and are flagged as such: `Description` ⊐
-`Diagnosis` treats a diagnosis as a differential description, where
-some would call them siblings; and `Notes` ⊐ `Biology` assumes ecology
-remarks under Notes are normal.  Neither changes the conclusion below.
+**`Description` ⊐ `Diagnosis` was proposed and then removed** — see
+§12.3.1.  Operator: *"I agree that Diagnosis can be considered a
+special kind of Description, but it seems unlikely to be in a block
+labeled 'Description', and it has comparative language, so should be
+semantically differentiable."*  Measured, and correct: comparative
+language appears in **55 % of `Diagnosis` blocks against 8 % of
+`Description` blocks**, a 7:1 separation.  They are lexically
+distinguishable siblings, so a `Diagnosis` -> `Description` miss is a
+**genuine swap**, not benign coarsening.  This moves 15 blocks from
+coarsening to swap and leaves the acceptable rate at 70 %, but it
+changes the fix: the signal exists and is unused.
 
 **Re-scored against that order:**
 
@@ -7189,6 +7195,68 @@ the corpus supplies the labels.  Recorded as
 **Caveat on the sample.** The cue is dense in MycoKeys-style journals and
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
+
+### 12.3.1 The `Biology` collapse has no recorded rationale — and it buried the majority class
+
+Operator, 2026-08-27: *"Biology is already a collapse of Host,
+Distribution, and trophic relationship.  I can certainly imagine
+sections labeled 'Notes' that contain one or more of those.  Is there a
+record of why I collapsed these into a single label?"*
+
+**Searched: no.** Every artefact records the *fact*; none records the
+reason.
+
+| date | commit | what it says |
+|---|---|---|
+| 2026-03-30 | `c7b2c21` | `Distribution` **added as a peer** of `Biology`. `sec_type_to_tag` maps `distribution/habitat` -> `Distribution`, `biology/ecology/host` -> `Biology` |
+| 2026-05-16 | `b2e6c55` | docs sync **reports** the fold as already-existing fact |
+| 2026-05-20 | `95b8d91` | `DEPRECATED_TAGS` formalises it; reason given as *"folds into BIOLOGY"* — a restatement |
+
+They were deliberately separate at birth, seven weeks earlier.  **The
+likely actual cause is empirical, not ontological**:
+`docs/v3_buildout.md:133` records *"Distribution field never populated —
+v3_hand model omits the label."*  The label was dead in the model, and
+the fold ratified that rather than deciding it.
+
+**And `b2e6c55` explicitly left the question open** — *"whether to keep
+a separate Distribution embedding is a design decision worth its own
+pass, not a search-and-replace."*  **That pass never happened.**
+
+**Measured composition of `Biology`** (300 documents, 1 237 blocks over
+40 characters):
+
+| content | n | |
+|---|---:|---:|
+| geographic cue only — no host, no phenology | **554** | **45 %** |
+| no cue matched | 377 | 30 % |
+| geographic + host | 159 | 13 % |
+| host only | 77 | 6 % |
+| everything else (phenology combinations) | 70 | 6 % |
+
+**`Biology` is not a balanced mixture of host, distribution and trophic
+relationship — it is predominantly `Distribution` wearing a `Biology`
+label.**  45 % is geographic-only and only 20 % carries any host cue at
+all.  The collapse folded the *majority* class into the minority's name.
+
+**Why this matters beyond tidiness.**
+`docs/segment-detector-scope.md:30,67` already draws the distinction the
+schema erased: `Distribution` is *"pure geographic NER — off-the-shelf
+tools apply"*, while `Biology` is *"mixed prose… semantic topic tagging,
+not segment extraction."*  **Those are different tools**, and merging
+the labels guarantees that whichever is built will be trained on 55 %
+material it cannot handle.  Un-collapsing is a **T6 input**, and 45 % is
+the size of the recoverable class.
+
+**The `Notes` ⊐ `Biology` edge stands, with a sharper reading.**  Given
+the composition above, "a `Notes` section containing biological
+material" is in practice "a `Notes` section containing *distribution*",
+which is exactly the operator's intuition.
+
+**Corroboration for `Notes` ⊐ `Diagnosis`.** Comparative language
+appears in 45 % of `Notes` blocks — between `Diagnosis` (55 %) and
+`Description` (8 %).  `Notes` genuinely carries diagnostic content
+roughly half the time, which is why `Notes` -> `Diagnosis` runs 65 with
+zero reverse and is a refinement rather than an error.
 
 #### Page breaks: the highest-precision signal found so far
 

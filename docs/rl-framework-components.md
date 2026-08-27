@@ -115,8 +115,15 @@ off-diagonal cells are errors.** A reward built on raw off-diagonal mass
 penalises correct refinements and rewards coarsening toward the
 catch-all — the exact opposite of what is wanted.  **The label
 subsumption order is a prerequisite input, not an afterthought**, and it
-has to be authored by hand: two of its four edges above are judgement
-calls (`Description` ⊐ `Diagnosis`; `Notes` ⊐ `Biology`).
+has to be authored by hand — but its edges are **testable, not merely
+asserted**.  `Description` ⊐ `Diagnosis` was proposed and then
+**removed on measurement**: comparative language appears in 55 % of
+`Diagnosis` blocks against 8 % of `Description` blocks, so they are
+lexically separable siblings and a swap between them is a real error
+(memo §12.3.1).  **An edge that survives a separability test is an edge
+worth encoding; one that does not is two labels that should be
+distinguished.**  That makes lattice authoring a measurement loop rather
+than an ontology argument.
 
 **A label with no lattice relatives is a separate case.**
 `Figure-caption` has none — 0 refinements, 0 coarsenings, and 131 swaps
