@@ -145,7 +145,55 @@ all it must be paired with a term that rewards *using* the label space
 — and at that point you are hand-designing a balance, which is where
 reward hacking lives. **Consistency is not correctness.**
 
-### 1.5 Two properties any such metric must have
+### 1.5 Transition implausibility
+
+**What it measures.** Not whether two labels are confusable in
+isolation, but whether a label makes sense **where it appears**. A
+`Description` stranded inside a run of `Materials-and-methods` is wrong
+for a reason no per-block metric can see: nothing about the block is
+odd, only its position.
+
+**Cost.** Low. Needs `ann_combined` and, in the better form, the CRF's
+learned transition weights — which exist already, since Pass 1 is a
+linear chain.
+
+**Measured, and it took two failures to get right** (memo §12.2):
+
+| definition | rate | verdict |
+|---|---:|---|
+| label differs from both neighbours | 37.8 % | base rate — `Misc-exposition` is 35 % of blocks |
+| …restricted to content labels | 13.4 % | normal monograph alternation |
+| …restricted to *implausible* pairs | **1.10 %** | usable, ~4 464 corpus-wide |
+
+**The lesson in those two failures is the component's main caveat.**
+The third version works only because it carries a table of which
+transitions are plausible — and hand-coding that table is re-deriving,
+badly, what the CRF's transition matrix already contains. **The right
+form reads the model's own transition weights and flags low-probability
+transitions**, which needs no hand-tuning and adapts when the label set
+changes.
+
+**Other caveats.**
+
+* **Furniture must be skipped.** Page headers and bare page numbers sit
+  between a block and its real neighbours; without skipping them the
+  signal disappears.
+* **OCR-destroyed blocks must be excluded**, or they dominate — the
+  first run's examples were all U+FFFD runs.
+* **It cannot distinguish "wrong label" from "wrong place."** A
+  correctly-labelled block that the *segmenter* put in the wrong
+  sequence scores identically to a mislabelled one.
+
+**As a reward: this is the most promising of the five, and still not
+safe alone.** It is self-supervised, needs no golden data, and rewards
+exactly what §12.2 keeps finding broken. But if it reads the model's
+own transitions, the model can satisfy it by **flattening its
+transition matrix** — making everything equally likely, so nothing is
+ever improbable. Pair it with a term that keeps transitions
+*informative* (entropy of the transition distribution), or hold the
+plausibility table fixed and external while the emission model trains.
+
+### 1.6 Two properties any such metric must have
 
 **It must be asymmetric.** P(pred = `Notes` | true = `Diagnosis`) is
 not P(pred = `Diagnosis` | true = `Notes`), and both directions occur
@@ -173,7 +221,7 @@ label is doing many jobs; it does not tell you whether any of those
 jobs matter downstream. **Pair every sink measurement with the cost of
 what lands there.**
 
-### 1.6 Where to start
+### 1.7 Where to start
 
 **1.4, then 1.1.** 1.4 needs nothing that is not already on disk,
 directly measures the failure the round-5 review kept hitting, and its

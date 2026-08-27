@@ -7069,6 +7069,58 @@ and `§12:desc_span_gap` all fire. `merge_metric` reads **0**. That is
 §6.1's lesson again — the repetition metric is the weakest of the
 available signals, and the span-based ones do the work.
 
+#### Label islands: a detector that took two failures to find
+
+`taxon_4cb3fcb6` is one of §5.6's ten correct refusals, and the
+operator added the detail that matters: *"the sole surviving
+description block is from the middle of a (mostly correctly
+identified) materials and methods section."*
+
+```
+[Materials-and-methods ] 2. Materials and Methods  2.1. Fungal Strains…
+[Misc-exposition       ] 2.4. Phenotype Assay
+[Description           ] Growth rate and conidiation were detected …   <<<
+[Page-header           ] --- PDF Page 3 Label 3 ---
+[Materials-and-methods ] after 3, 7, and 10 d for quantity determination…
+```
+
+A single `Description` stranded in a methods run. **The obvious
+detector — a block whose label differs from both neighbours — took two
+refinements to become usable, and both failures are instructive.**
+
+| version | rate | why it failed |
+|---|---:|---|
+| any label differing from both neighbours | **37.8 %** | `Misc-exposition` is 35.4 % of blocks, so "surrounded by Misc-exposition" *is* the base rate |
+| restricted to content labels | **13.4 %** | `Materials-examined` between two `Description`s is the **normal alternation of a monograph**, not an anomaly |
+| **restricted to implausible pairs** | **1.10 %** | usable — **~4 464 corpus-wide** |
+
+"Implausible" means taxon content (`Description`, `Diagnosis`,
+`Nomenclature`, `Etymology`, `Type-designation`, `Materials-examined`)
+stranded inside an apparatus run (`Materials-and-methods`,
+`Phylogeny`), or the reverse:
+
+| island | inside a run of | n |
+|---|---|---:|
+| `Phylogeny` | `Etymology` | 12 |
+| **`Description`** | **`Materials-and-methods`** | **10** |
+| `Phylogeny` | `Description` | 7 |
+| `Description` | `Phylogeny` | 6 |
+| `Diagnosis` | `Phylogeny` | 5 |
+
+**Note what the third version needed: a table of which transitions are
+plausible.** That is exactly what a linear-chain CRF's transition
+matrix already encodes. Hand-coding the table works, but the better
+form is to **read the model's own learned transition weights and flag
+low-probability transitions** — self-supervised, no hand-tuning, and it
+adapts when the label set changes. Recorded as a component in
+`docs/rl-framework-components.md` §1.5.
+
+**A caution the first two versions earn.** Furniture had to be skipped
+(page headers and bare page numbers sit between the block and its real
+neighbours), and OCR-destroyed blocks had to be excluded — the first
+run's `Description` examples were all U+FFFD runs. Neither exclusion is
+optional.
+
 #### One number not to trust yet
 
 **Adjacent `Nomenclature` runs** — two or more in a row with no body
