@@ -519,6 +519,105 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
         self.assertIsNotNone(row["distribution"])
         self.assertIsNotNone(row["biology"])
 
+    @unittest.expectedFailure
+    def test_phylogeny_is_captured_as_a_section(self):
+        """Phylogeny reaches the treatment as prose.
+
+        `treatment.py` had no `Phylogeny` entry in `_LABEL_TO_FIELD`,
+        `_LABEL_TO_SPANS_FIELD` *or* `_TREATMENT_SECTION_LABELS`, so
+        every Phylogeny block hit the ``else: continue  # Unknown
+        label`` arm and was discarded during assembly -- measured at
+        ~39 300 blocks corpus-wide, 26 % more text than Diagnosis.
+        """
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@Pileus 5 cm.#Description*]
+        [@Sister to A. muscaria with 98% ML support.#Phylogeny*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1)
+        row = taxa[0].as_row()
+        self.assertIsNotNone(row["phylogeny"])
+        self.assertIn("98% ML support", row["phylogeny"])
+
+    @unittest.expectedFailure
+    def test_phylogeny_spans_are_emitted(self):
+        """Spans travel with the prose, as for every other section."""
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@Pileus 5 cm.#Description*]
+        [@Sister to A. muscaria.#Phylogeny*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa[0].as_row()["phylogeny_spans"]), 1)
+
+    def test_phylogeny_alone_does_not_open_a_treatment(self):
+        """**The safety test** -- a regression guard, not a new feature.
+
+        This passes *today* only because `Phylogeny` is an unknown
+        label and is skipped wholesale.  It must keep passing once
+        Phylogeny becomes a section label, which is the entire reason
+        `_TREATMENT_OPENING_LABELS` is split out from
+        `_TREATMENT_SECTION_LABELS`.
+
+        Most Phylogeny prose is *article*-scoped -- one ML/BI tree
+        covering every new taxon in the paper -- and sits outside any
+        treatment.  Adding Phylogeny to the set that opens a treatment
+        would spawn a synthetic-Nomenclature treatment for each such
+        block, worsening the pathology that already marks 54.7 % of
+        empty treatments.  Phylogeny may *continue* a treatment; it may
+        never *start* one.
+        """
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@A combined ITS+LSU tree was inferred.#Phylogeny*]
+        [@Nodes with >70% support are shown.#Phylogeny*]
+        """
+            ).split("\n")
+        )
+        self.assertEqual(
+            list(group_paragraphs(parse_annotated(test_data))), []
+        )
+
+    @unittest.expectedFailure
+    def test_phylogeny_resets_the_misc_gap(self):
+        """Recorded as a deliberate consequence, not an accident.
+
+        Phylogeny was previously *transparent* to grouping -- it
+        neither incremented nor reset the gap counter.  Becoming a
+        section label makes it reset, so a treatment that used to close
+        may now stay open.  That changes `description` text and hence
+        `taxon_id`, which is why re-extraction is gated on round 5's
+        statistics being final.
+        """
+        Treatment.MISC_GAP_LIMIT = 3
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@desc1#Description*]
+        [@filler1#Misc-exposition*]
+        [@filler2#Misc-exposition*]
+        [@Sister to A. muscaria.#Phylogeny*]
+        [@filler3#Misc-exposition*]
+        [@filler4#Misc-exposition*]
+        [@desc2#Description*]
+        """
+            ).split("\n")
+        )
+        taxa = list(group_paragraphs(parse_annotated(test_data)))
+        self.assertEqual(len(taxa), 1)
+        self.assertIn("desc2", taxa[0].as_row()["description"])
+
     def test_misc_gap_limit_terminates_treatment(self):
         """More than MISC_GAP_LIMIT consecutive Misc-exposition ends the treatment."""
         test_data = lineify(
