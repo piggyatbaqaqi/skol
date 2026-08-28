@@ -7201,6 +7201,98 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.9 Article boundaries are a missing structural level — and §12.3.8's gate needs them
+
+`taxon_686f39e0`, a French whole-volume scan with heavy OCR damage.
+Operator: *"We start with front matter of an issue — mostly a table of
+contents which is correctly labeled Misc-exposition.  **I'm thinking
+that detecting the start and end of an article would be helpful.**"*
+Plus: the first two `Materials-examined` blocks are not materials
+examined; the `Notes` block looks like an abstract; the bulk of the
+descriptive text lands in `Key`; **and the promised key at the end of
+the article was dropped entirely.**
+
+#### The inversion is worth stating on its own
+
+**Real descriptive prose was labelled `Key`, and the real key was
+lost.**  Whatever `Key` is selecting on in these documents, it is
+anti-correlated with actually being a key — consistent with §12.3.6's
+finding that the discriminator is couplet absence × block length, and a
+reminder that the label's failures are not merely noisy but inverted.
+
+#### Two more hypotheses tested; both fail to predict rogue `Key`
+
+**Language, retested with a better detector** (24 discriminative French
+function words, normalised against English):
+
+| | docs | mean `Key` | median | >10 % |
+|---|---:|---:|---:|---:|
+| mostly French (>50 %) | 5 | 1.7 % | **0.0 %** | **0 %** |
+| some French (20-50 %) | 5 | 5.1 % | 3.8 % | 20 % |
+| mostly English | 200 | 2.7 % | 0.0 % | 7 % |
+
+**The refutation holds** — French documents are not *uniformly* rogue;
+their median `Key` share is zero and none exceeds 10 %.  **But state the
+limit precisely: 5 mostly-French documents in 210 cannot resolve a
+moderate effect**, and both rogue cases the operator has surfaced happen
+to be French.  What is ruled out is French *causing* it; what is not
+ruled out is French material being over-represented among whatever does.
+
+**Whole-volume scale — a weak gradient, not a predictor:**
+
+| | docs | mean `Key` | median |
+|---|---:|---:|---:|
+| ≥200 page markers | 10 | 5.4 % | 3.8 % |
+| 60-199 | 10 | 3.4 % | 2.4 % |
+| 20-59 | 41 | 3.1 % | 0.7 % |
+| <20 | 149 | 2.4 % | 0.0 % |
+
+Monotone but shallow, on 10 documents at the top.  `ToC-entry` presence
+gives 3.2 % against 2.7 % — nothing.
+
+**So there is still no predictor of which documents go rogue.**  §12.3.6's
+*description* of rogue `Key` stands; a *cause* remains unfound, and three
+candidate covariates (language, OCR damage, document scale) are now
+recorded as tested and insufficient.
+
+#### The proposal: article start/end detection
+
+The operator's suggestion is a **missing structural level**, and this
+memo has now hit it from four directions:
+
+* front matter and tables of contents treated as document content (here);
+* treatments straddling a **species** boundary because no boundary
+  existed to cut on (§12.3.4, 1924 *North American Flora*);
+* whole-volume Persoonia (Trello #404) — 771 treatments from volumes
+  with no per-article title or DOI;
+* and most sharply, **§12.3.8's document-level taxonomic-article gate**.
+
+**That last one is a correction to what §12.3.8 endorsed.**  A
+document-level gate is sound for an FDA leaflet, which *is* one document
+and one non-article.  **It is unsound for a whole-volume scan**, where a
+single PDF holds twenty articles of which some are taxonomic and some —
+like Korf's memorial notice on Marcelle Le Gal in this very volume — are
+not.  A document-level decision there either admits the volume whole or
+discards it whole, and both are wrong.
+
+**So article segmentation is a prerequisite for the gate on exactly the
+material where the gate matters most.**  Recorded as a design
+dependency, not a validated design: no article-boundary detector has
+been built or measured, and its feasibility on OCR-damaged multi-column
+scans is unknown.
+
+#### The operator's remaining observations, filed to existing classes
+
+* **First two `Materials-examined` blocks are not materials examined** —
+  a further instance of that label absorbing frontmatter-like content
+  (§12.3.2, ~3 800 corpus-wide).
+* **The `Notes` block looks like an abstract** — §5.7: the schema has no
+  `Abstract` tag, so abstracts distribute across whatever is nearest.
+* **Later `Materials-examined` and `Figure-caption` blocks are valid**,
+  and the `Description` blocks are genuine excerpts — so the damage is
+  *localised*, not a whole-document failure, which is consistent with
+  rogue `Key` being a competing catch-all rather than a collapse.
+
 ### 12.3.8 `Description` is a register detector — which is both the generalisation and the bug
 
 `taxon_65cf0058`.  Operator: *"I feel like I've been pranked.  This is
