@@ -7201,6 +7201,59 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.18 The third flawless treatment — and a "wrong" label that saved the data
+
+`taxon_8dc658f0` (*Aquapteridospora linzhiensis*).  Operator: *"such a
+relief… this beautiful example of a perfect treatment extraction.  OK,
+if I were really picky I could say that the notes block should be
+phylogeny."*
+
+**Every block is self-labelled** — `Etymology.`, `Holotype.`,
+`Description.`, `Figure 2.`, `Culture characteristics.`, `Material
+examined.`, `Notes.` — and every cue is honored.
+
+**That is 3 for 3.**  All three flawless treatments of round 5
+(`taxon_3b7a80bc`, `taxon_53dd1485`, this one) are documents that label
+themselves throughout.  §12.3 measured cue-honoring at 65 % overall;
+these are the documents where it reaches 100 %, and they are the
+documents that come out clean.  **On the evidence so far, complete
+self-labelling is not merely correlated with flawless extraction — it is
+the only condition under which it has been observed.**
+
+#### The picky observation is a live instance of §12.3.12
+
+The block is **cued `Notes.`** and its content is phylogenetic —
+`Notes.Phylogenetic analyses show that Aquapteridospora…`, carrying six
+distinct phylogeny markers.  So:
+
+* by §12.3's measure the model was **right**: it honored the document's
+  own declared label;
+* by content the operator is **right**: it is `Phylogeny`;
+* and under the grouper as it stood before commit `8c0148d`, labelling
+  it `Phylogeny` **would have deleted all 667 characters.**
+
+**The model's "error" is what preserved the data.**  That is §12.3.12's
+perverse incentive caught in the act, in a treatment the operator rates
+as perfect.  The fix removes the incentive; the case is kept as its
+clearest illustration.
+
+#### Both phylogeny scopes appear in this one treatment
+
+§12.3.12 left open whether `Phylogeny` is article-scoped or
+treatment-scoped.  Here it is visibly **both**:
+
+| block | label | scope |
+|---|---|---|
+| 1 528 c `Phylogenetic analysesThe concatenated sequence…` | `Misc-exposition` | **article** — the paper's analysis section |
+| 667 c `Notes.Phylogenetic analyses show that Aquapteridospora…` | `Notes` | **treatment** — this taxon's placement |
+
+The article-level section is a third again larger than the
+treatment-level one and carries a different label.  **Any `phylogeny`
+field must distinguish them**, or the paper's shared analysis will be
+copied into every sibling treatment.  *(Note also `analysesThe` — the
+lost-newline defect of §12.3.13, in a document that is otherwise
+perfect.)*
+
 ### 12.3.17 A hard case for the §12.3.8 gate — and the gate cannot see the field it needs
 
 `taxon_88431ff4`.  Operator: *"is not a taxonomic article."*
