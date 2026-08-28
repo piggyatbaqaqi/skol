@@ -7201,6 +7201,76 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.8 `Description` is a register detector — which is both the generalisation and the bug
+
+`taxon_65cf0058`.  Operator: *"I feel like I've been pranked.  This is
+not a taxonomic article at all.  I'm weirdly proud that the two
+description blocks really do describe the drug.  Does this suggest that
+description will generalize well to other taxa?"*
+
+The document is an **FDA prescribing-information leaflet for BREXAFEMME
+(ibrexafungerp)**, an antifungal drug.  `treatment` is `Nomen ignotum`,
+`synthetic_nomenclature` is `true`, the title is empty — **all three of
+§T3d's pathology signatures firing at once**.  And the `Description`
+blocks are genuinely descriptions:
+
+```
+[Description] BREXAFEMME tablet for oral administration is a purple, oval…
+[Description] BREXAFEMME (ibrexafungerp tablets) are purple, oval, biconvex…
+[Description] What are the ingredients in BREXAFEMME?  Active ingredient…
+```
+
+#### The measurement: register beats vocabulary 2.75 to 1
+
+Classifying every block over 150 characters by whether it carries the
+**descriptive register** (a dimensioned measurement *and* a
+morphological adjective — colour, shape, texture, wall) and separately
+whether it carries **fungal vocabulary** (`hypha`, `conidi-`,
+`ascospor-`, `pileus`, `asci`, …):
+
+| register | fungal vocabulary | n | -> `Description` |
+|---|---|---:|---:|
+| yes | yes | 1 972 | **67 %** |
+| **yes** | **no** | 160 | **44 %** |
+| no | yes | 6 078 | **16 %** |
+| no | no | 14 946 | 2 % |
+
+**Register without any fungal vocabulary reaches 44 %; fungal
+vocabulary without the register reaches 16 %.**  The register is
+necessary and nearly sufficient; taxonomic vocabulary is a modest
+booster on top of it.
+
+#### The answer: yes, and that is precisely why it misfires
+
+**`Description` will transfer to other taxa**, because it was never
+keyed on fungal vocabulary in the first place.  It recognises
+dimensioned, morphologically-adjectival prose.  Plants, insects,
+minerals — anything described in that register should carry over
+without retraining.
+
+**But the generalisation and the false-positive generation are the same
+behaviour.**  The reason it labelled a tablet correctly is the reason it
+builds treatments out of pharmacology leaflets.  There is no version of
+this model that describes *Amanita* and other genera well while
+declining to describe a purple biconvex tablet — the two cases are
+indistinguishable at block level, because at block level they genuinely
+are the same kind of text.
+
+**So this cannot be fixed inside the labeller, and should not be
+attempted there.**  It is the strongest single argument yet for the
+**document-level "is this a taxonomic article" gate** already proposed
+in this memo's empty-description section, which estimated ~14 000
+spurious treatments removable ahead of extraction.  This document is
+that gate's ideal specimen: it needs no block-level judgement at all —
+an FDA drug label is identifiable from its first 200 characters.
+
+**A corollary worth keeping.**  The 16 % row says the converse risk is
+real: **fungal text lacking the register is under-detected.**  A
+qualitative description with no dimensions scores like ordinary prose no
+matter how taxonomic its vocabulary — which is a plausible mechanism
+behind §12.3.6's older and non-anglophone material, and a reason not to
+"fix" the register dependence by leaning on it harder.
+
 ### 12.3.7 Every lattice edge has now been named independently by the operator
 
 *Leptographium olivaceapini* (a modern mycological revision).  Operator:
