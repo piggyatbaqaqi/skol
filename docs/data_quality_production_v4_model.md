@@ -7201,6 +7201,77 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.7 Every lattice edge has now been named independently by the operator
+
+*Leptographium olivaceapini* (a modern mycological revision).  Operator:
+*"extracted all components more or less correctly… I could argue that
+the first notes block should be biology (eventually ecology).  The second
+notes block concludes with what should be a second materials_examined
+block.  The first materials_examined block is a type specification."*
+
+**All four claims confirmed:**
+
+```
+  537c [Materials-examined] Type. USA, New Mexico, Santa Fe, from Pinus…
+  137c [Description       ] Descriptions. Davidson (1971, pp 7–10, figs…
+   28c [Biology           ] Host trees. Pinus ponderosa.
+   32c [Notes             ] Insect vectors. Dendroctonus sp.
+   18c [Biology           ] Distribution. USA.
+ 1046c [Notes             ] Notes. No living culture associated with the
+                            holotype… <- ends in a specimen citation
+```
+
+* The `Description` block is a **pointer to descriptions published
+  elsewhere**, not a description — so carrying no API labels is correct,
+  not a miss.
+* `Type. USA, New Mexico…` under `Materials-examined` is **coarsening**
+  along `Materials-examined` ⊐ `Type-designation` (§12.3.3), the third
+  instance this session.  **And it uses the bare `Type.` cue** that
+  §12.3.3 recorded as missing from §12.3's cue list — confirmed in the
+  wild, and further reason that label's n = 378 is an undercount.
+* The 1 046-character `Notes` block ends in a specimen citation: a
+  **line-level mis-cut** (§12.3.5), Pass 1 rather than Pass 2.
+* `Insect vectors. Dendroctonus sp.` is a **textbook island** — 32
+  characters of `Notes` sandwiched between two correct `Biology` blocks
+  of 28 and 18 characters.  §12.2's island work applies directly.
+
+#### The meta-observation: hand review and the confusion matrix agree
+
+Across round 5 the operator has volunteered five label corrections
+without reference to the lattice.  **Every one of them is a lattice
+edge, and together they name all four:**
+
+| treatment | operator's words | edge |
+|---|---|---|
+| `taxon_47c3b37d` | *"I would have called the notes section a diagnosis"* | `Notes` ⊐ `Diagnosis` |
+| `taxon_57e92419` | *"the type designation fell under materials-examined"* | `Materials-examined` ⊐ `Type-designation` |
+| `taxon_5c661438` | *"the diagnosis did indeed get classified with its superclass"* | `Description` ⊐ `Diagnosis` |
+| `taxon_62ffeff0` | *"the first notes block should be biology"* | `Notes` ⊐ `Biology` |
+| `taxon_62ffeff0` | *"the first materials_examined block is a type specification"* | `Materials-examined` ⊐ `Type-designation` |
+
+The lattice was derived from the **cued-block confusion matrix**
+(§12.3), an entirely mechanical source.  That a human reviewer,
+proceeding case by case with no sight of those counts, lands on exactly
+the same four pairs is **independent confirmation that the lattice
+captures the real confusion structure** — and it means the same
+structure was recoverable from either source alone.
+
+**This raises confidence in the §1.1.1 programme specifically**, since
+its whole premise is that the corpus can supply what would otherwise
+need hand annotation.  Here the two methods were run separately and
+agreed.
+
+#### A note for #407: the operator's "eventually ecology"
+
+This document declares **three** distinct headings that all currently
+land in or near `Biology` — `Host trees.`, `Insect vectors.`,
+`Distribution.`  §12.3.1 scoped #407 as a two-way split
+(`Distribution` / `Biology`); this argues the residual `Biology` will
+itself want subdividing into ecology, host and vector.  **Not a reason
+to widen #407** — the two-way split is the measurable, high-volume
+win — but a reason to keep the new `Biology` definition explicitly
+provisional rather than treating it as the terminal category.
+
 ### 12.3.6 Rogue `Key` is a document-level phenomenon — not language, not OCR
 
 Mycotaxon XIV(1), 1982: a French revision of Gabonese
