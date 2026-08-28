@@ -7201,6 +7201,99 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.16 `Description` does not survive translation — German scores 1 %
+
+`taxon_871bb4ea` (Sydow, *Phyllachora*, a German-language paper with
+Latin diagnoses).  Operator: *"The German description blocks were
+thoroughly misclassified — **description identification does not
+generalize well to German.**"*
+
+**Confirmed, and the size of the effect is not a degradation but a
+collapse.**  Holding the descriptive register constant — every block
+carries a dimensioned measurement, is over 200 characters, and is
+language-classified by function words:
+
+| language | blocks | -> `Description` |
+|---|---:|---:|
+| English | 1 150 | **52 %** |
+| **Latin** | 55 | **53 %** |
+| French | 28 | 21 % |
+| **German** | **396** | **1 %** — three blocks |
+
+Where the 396 German blocks actually go:
+
+| label | n | |
+|---|---:|---:|
+| `Table` | 163 | **41 %** |
+| `Misc-exposition` | 99 | 25 % |
+| `Key` | 55 | 14 % |
+| `Bibliography` | 50 | 13 % |
+| `Description` | **3** | **1 %** |
+
+#### This corrects §12.3.8, and explains why it read the way it did
+
+§12.3.8 concluded that `Description` is a **register** detector rather
+than a vocabulary detector, on the evidence that it labelled a drug
+tablet correctly.  **That conclusion was measured with an English
+morphological-adjective lexicon**, so what it actually established was
+"not keyed to *fungal* vocabulary" — not "not keyed to vocabulary".
+
+**Latin at 53 % is the tell.**  Latin diagnoses share their descriptive
+roots with English scientific prose — *hyalinus/hyaline*,
+*ellipsoideus/ellipsoid*, *cylindricus/cylindric*, *fuscus/fuscous*.
+German uses native Germanic terms instead — *glatt*, *braun*,
+*eiförmig*, *walzenförmig* — and scores 1 %.
+
+**So the register is real but it is lexical: it is Latinate
+morphological vocabulary.**  That reconciles every observation:
+
+* it transfers to a **purple, oval, biconvex tablet** and to an
+  **amoeba** (§12.3.13), because both are described in Latinate English;
+* it transfers to **Latin**, by cognacy;
+* it does **not** transfer to German, and only partly to French.
+
+§12.3.8's answer to *"will description generalize to other taxa?"*
+stands — **across taxa, yes; across languages, no.**
+
+#### Where the German content goes is the same story again
+
+`Table` 41 %, `Key` 14 %, `Misc-exposition` 25 % — **the layout labels
+absorb it.**  §12.3.15 showed `Table` tracks short mean line length and
+§12.3.6 showed rogue `Key` tracks long couplet-free blocks; neither
+reads content.  **When the content signal fails, the typographic labels
+are all that remain**, so the text is partitioned by page geometry
+alone.
+
+This is the unifying account for three separate cases now: French
+rogue-`Key` (§12.3.6), the francophone whole-volume scan (§12.3.10), and
+German here.  **Non-Latinate or damaged text is not merely labelled
+worse — it is labelled by a different mechanism entirely.**
+
+#### Scale, and a caveat on it
+
+German measured blocks appeared in **13 of 680 documents** scanned.  So
+this is a small stratum — but within it, extraction is close to total
+loss, and the 1 % is measured on 396 blocks rather than a handful.
+**The stratum size is the uncertain number here, not the failure rate.**
+
+#### The operator's other four observations
+
+* **"Both of the Latin descriptions start with the taxonomic citations,
+  so we appear to have missed them with the Nomenclature detector."** —
+  embedded `Nomenclature` at the head of a `Description` block: the same
+  **Pass-1 missed split** as §12.3.13's embedded figure captions, in a
+  different label.
+* **"Phyllachora leptasca Syd. nov. spec. starts in the middle of a
+  Table block."** — §12.3.15 exactly: a short-line nomenclatural citation
+  swallowed by `Table`, here with a language switch at the same point.
+* **"The Latin description had its middle pulled out as a
+  Misc-exposition followed by a Table."** — §12.3.11 boundary theft
+  compounded by the `Table` mechanism.
+* **"I have no idea how that block of German description got classified
+  as a type_designation."** — `Type-designation` takes 2 % of German
+  measured blocks.  With the content signal absent, the assignment is
+  close to arbitrary; there is no semantic explanation to find.
+
 ### 12.3.15 `Table` is a short-line detector — confirming the operator's mechanism
 
 `taxon_7d321149` (Cooke & Massee material, *Grevillea* 18 — an old
@@ -7795,6 +7888,11 @@ necessary and nearly sufficient; taxonomic vocabulary is a modest
 booster on top of it.
 
 #### The answer: yes, and that is precisely why it misfires
+
+> **Qualified 2026-08-28 by §12.3.16: it generalises across *taxa* but
+> not across *languages*.  German scores 1 %.  The "register" is
+> Latinate morphological vocabulary, which English and Latin share and
+> German does not.**
 
 **`Description` will transfer to other taxa**, because it was never
 keyed on fungal vocabulary in the first place.  It recognises
