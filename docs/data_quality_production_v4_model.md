@@ -7201,6 +7201,84 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.12 The grouper silently drops `Phylogeny` — and improving the classifier makes it worse
+
+Operator: *"Does our grouper not pull out phylogeny as a treatment
+component?  That seems like a significant oversight."*
+
+**Correct.**  `treatment.py`'s `_LABEL_TO_FIELD` and
+`_LABEL_TO_SPANS_FIELD` have **no `Phylogeny` entry in either map**, so
+every block the Pass-2 classifier labels `Phylogeny` is discarded during
+assembly.
+
+#### The full audit of the two maps
+
+| | label | status |
+|---|---|---|
+| **dropped** | `Phylogeny` | Pass-2 label, no field, no spans field |
+| **dropped** | `Materials-and-methods` | ditto — arguably correct, not treatment content |
+| **dropped** | `New-combinations` | ditto — but **never emitted**: 0 blocks in 300 documents |
+| **orphan** | `Distribution` | field *and* spans field exist for a **deprecated** tag no active model emits — 0 blocks |
+| inconsistent | `Key` | text field, no spans field |
+| inconsistent | `Nomenclature` | spans field, no text field (by design — the name lives in `treatment`) |
+
+**`Distribution` and `Phylogeny` are exact mirror images**, and both
+trace to the same 2026-05 schema churn (§12.3.1): a field kept for a
+label that died, and no field for a label that lived.
+
+#### The volume
+
+Over 300 documents:
+
+| label | blocks | characters | corpus-wide blocks |
+|---|---:|---:|---:|
+| `Phylogeny` | 564 | **665 995** | **~39 300** |
+| `Materials-and-methods` | 504 | 666 092 | ~35 200 |
+| *(captured, for scale)* `Diagnosis` | 790 | 529 330 | — |
+| *(captured, for scale)* `Notes` | 2 016 | 1 628 363 | — |
+
+**`Phylogeny` carries 26 % more text than `Diagnosis`**, a field that is
+captured and that the whole extraction pipeline treats as first-class.
+
+#### The perverse incentive — the part that matters most
+
+`Notes` **is** captured; `Phylogeny` is not.  Phylogenetic discussion
+that the classifier files under `Notes` therefore survives into the
+treatment, while the same content correctly labelled `Phylogeny` is
+thrown away.
+
+**So improving Pass-2's `Phylogeny` recall actively reduces the content
+captured per treatment.**  The pipeline currently rewards the classifier
+for getting this label *wrong*.  That is a structural defect, not a
+tuning problem, and it silently taxes exactly the work §12.3 is
+measuring — every point of `Notes` -> `Phylogeny` refinement recorded
+there as *correct* (39 blocks in the cued sample) is content the grouper
+then discards.
+
+#### Whether `Phylogeny` should be a treatment field at all
+
+There is a real design question underneath, and it is **scope**:
+
+* **Article-scoped** — one ML/BI tree covers every new taxon in the
+  paper.  Attaching it per-treatment duplicates it across siblings, and
+  is plausibly why it was dropped.
+* **Treatment-scoped** — the placement discussion for *this* taxon.
+  `taxon_6e02ee31` is exactly that case: the operator found a phylogeny
+  section that *"should have been identified for the 2nd notes block"*,
+  i.e. attached to a specific treatment.
+
+**Both exist, and the current design serves neither.**  Resolving it
+needs the article/treatment scope distinction from §12.3.9 — the same
+missing structural level, arriving for a fourth time.
+
+**Recommendation, and its limit.**  Adding `phylogeny` /
+`phylogeny_spans` to both maps is a small change that stops the silent
+loss and removes the perverse incentive.  It does **not** resolve the
+scope question, and it would duplicate article-level trees across
+sibling treatments until that is resolved.  Retiring the orphan
+`Distribution` field should wait for Trello #407, which will want that
+name.
+
 ### 12.3.11 `Misc-exposition` boundary theft — the most-reported defect, quantified
 
 `taxon_6e02ee31`.  Operator: *"a Misc-exposition that consumed 2 lines
