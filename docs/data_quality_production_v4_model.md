@@ -7201,6 +7201,69 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.14 "Did our extraction remove it?" — a conservation audit says no
+
+`taxon_7b742390` (Visagie et al., *Fungal Systematics and Evolution*, a
+multi-species paper).  Operator: *"an article that should have a LOT of
+descriptions as indicated in the Abstract… The intermediate blocks end
+abruptly with "species concept for most fungal groups has led", a clear
+fragment… I can't tell if it was missing in the original source.  It
+seems more likely our extraction process removed it."*
+
+**It did not.  The accounting closes exactly:**
+
+| | |
+|---|---:|
+| `Description` blocks in the `.ann` | 29 blocks, **25 323 chars** |
+| captured across all 34 sibling treatments | **25 807 chars** |
+
+Over 100 %, because `*_spans` offsets bound the whole block **including
+the `[@` … `#Label*]` markup** (§ coordinate spaces).  **Every
+description in the article was extracted.**  They went to the other 33
+treatments — *Bisifusarium solicola*, *Talaromyces podocarpi*,
+*Penicillium dabashanicum*, *Ophiocordyceps kuchinaraiensis*, and so on.
+
+#### What actually went wrong, twice
+
+**The fragment is a page-break split, not missing text.**  *"species
+concept for most fungal groups has led"* sits at char 5 347 of 210 376 —
+**2.5 % through the document**, in the *introduction*, not a
+description.  What follows it in the `.ann` is a page header, a
+copyright line and the journal's editor block.  §12.2's class exactly:
+the sentence resumes after the furniture.
+
+**The treatment itself is a synthetic stub.**  `Nomen ignotum`,
+`synthetic_nomenclature: true`, 579 characters — the tail of the
+*Cadophorella* genus description, orphaned from its `Nomenclature`
+heading, so `group_paragraphs` synthesised a placeholder around it.  The
+operator's instinct that this *"looks like the end of the description of
+the genus Cadophorella"* is exactly right, and the missing head went to
+whichever sibling the boundary landed in.  **11 of the 34 siblings have
+empty descriptions.**
+
+#### The generalisable part: a conservation audit
+
+The check used here is cheap and reusable, and answers a question that
+has now been raised more than once:
+
+> For a source document, does `sum(len(block))` over blocks of label *L*
+> in the `.ann` equal `sum(span length)` over field *L* across **all**
+> treatments derived from that document?
+
+**Text conservation and text placement are separable, and only the
+second is broken here.**  A corpus-wide run would settle "is extraction
+losing material" as a class — replacing per-treatment suspicion with a
+number — and would isolate any document where the sums genuinely
+disagree.  Not built; recorded as the method, with the markup-overcount
+caveat that makes the ratio slightly exceed 1.
+
+**Why the distinction matters operationally.**  Loss and misplacement
+have different fixes and different costs.  Misplacement is recoverable
+from data already in CouchDB — the blocks are there, correctly
+labelled, merely attached to the wrong treatment.  Loss would require
+re-ingesting from the PDF.  Establishing which one is in play should
+precede any repair work.
+
 ### 12.3.13 Embedded figure captions: a Pass-1 missed split, distinct from a Pass-2 mislabel
 
 `taxon_7a36746e`, a **Protosteloid amoeba** (*Schizoplasmodiopsis
