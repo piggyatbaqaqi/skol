@@ -7232,14 +7232,31 @@ description.  What follows it in the `.ann` is a page header, a
 copyright line and the journal's editor block.  §12.2's class exactly:
 the sentence resumes after the furniture.
 
-**The treatment itself is a synthetic stub.**  `Nomen ignotum`,
-`synthetic_nomenclature: true`, 579 characters — the tail of the
-*Cadophorella* genus description, orphaned from its `Nomenclature`
-heading, so `group_paragraphs` synthesised a placeholder around it.  The
-operator's instinct that this *"looks like the end of the description of
-the genus Cadophorella"* is exactly right, and the missing head went to
-whichever sibling the boundary landed in.  **11 of the 34 siblings have
-empty descriptions.**
+**The treatment itself is a synthetic stub, and it is a *rank* split.**
+`Nomen ignotum`, `synthetic_nomenclature: true`, 579 characters.  The
+operator first read it as *Cadophorella* and then corrected that to
+**Neosatchmopsis** — which is right, and makes the case far more
+diagnostic than a stray orphan:
+
+| | span | content |
+|---|---|---|
+| **stub treatment** | 110 148 – 110 727 | *"…resembling Satchmopsis, but conidiomata lack lateral walls and are sporodochial…"* — the **genus** description |
+| `Neosatchmopsis ogrovei` | 111 042 – 112 745 | the **species** description |
+
+**315 characters apart.**  The genus description and the species
+description of the same taxon sat adjacent in the source; the species
+kept its `Nomenclature` heading and became a proper treatment, the genus
+did not and was wrapped in a synthetic stub.
+
+**This is §5.5's finding arriving from a third direction: a `Treatment`
+is implicitly one taxon at one rank**, and taxonomic papers routinely
+describe a genus and its type species back to back.  It joins §12.3.7's
+higher-taxon chains and §5.5's own genre cases.  The structural defect
+is not that a description was orphaned but that **the schema has no way
+to say "this description belongs to the genus of the treatment that
+follows."**
+
+**11 of the 34 siblings have empty descriptions.**
 
 #### The generalisable part: a conservation audit
 
