@@ -7201,6 +7201,67 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.17 A hard case for the §12.3.8 gate — and the gate cannot see the field it needs
+
+`taxon_88431ff4`.  Operator: *"is not a taxonomic article."*
+
+The document opens:
+
+```
+HAyoO^ ^iy V / ie^ REPORT OF THE BOTANIST-
+Hon. David Murray, LL. D., Secretary of the Board of Regents of the
+Universitij : Sir — Since the date of my last report, specimens…
+```
+
+A **19th-century State Botanist's annual report** to a Board of
+Regents — administratively framed, OCR-damaged, and correctly flagged
+as not an article in the modern sense.  `Nomen ignotum`,
+`synthetic_nomenclature: true`, no title.
+
+**But it carries 27 `Description` blocks out of 392**, and the genre is
+not incidental: New York State Botanist reports are a **canonical source
+of North American fungal taxonomy**, describing hundreds of new species
+inside exactly this administrative wrapper.
+
+#### This is a false-negative risk for the document-level gate
+
+§12.3.8 recommended a document-level *"is this a taxonomic article"*
+gate, on the strength of an FDA drug leaflet.  §12.3.9 already
+qualified it for whole-volume scans.  **This adds a second
+qualification, and a sharper one:** the memo's own first-cut signal was
+*journal + title keyword*, and a title of "Report of the Botanist"
+matches nothing taxonomic while the document is genuinely full of new
+taxa.
+
+**A keyword gate would discard high-value historical material.**  The
+FDA leaflet and this report look alike from the outside — no
+taxonomic title, synthetic nomenclature, non-article framing — and are
+opposite cases.  Whatever the gate keys on, it cannot be the title
+alone.
+
+#### And the gate cannot currently be evaluated from the treatments DB
+
+`treatment.py:95` projects the source `ingest` down to
+`_ESSENTIAL_INGEST_KEYS = {_id, url, pdf_url, xml_url, db_name, doi}` —
+**no `title`, no `journal`.**  Measured over 1 500 description-bearing
+treatments: **1 500 of 1 500 have no title**, not because the sources
+lack one but because it is slimmed away at assembly.
+
+So any title- or journal-based gate needs a **join back to `skol_dev`
+via `ingest._id`**, which is a per-document lookup rather than a field
+read.  That is a real implementation cost for the §12.3.8 proposal and
+should be priced before the gate is scoped.  *(The `_slim_ingest`
+docstring says "four keys" while the constant lists six — harmless, but
+noted since it was read for this.)*
+
+#### One number worth keeping
+
+Of 1 500 treatments **that have a description** — i.e. p1-like, the
+annotatable population — **22 % carry `synthetic_nomenclature`.**  That
+is the population being sampled for annotation rounds, so roughly one
+treatment in five drawn has an invented boundary rather than a real
+nomenclatural heading.
+
 ### 12.3.16 `Description` does not survive translation — German scores 1 %
 
 `taxon_871bb4ea` (Sydow, *Phyllachora*, a German-language paper with
