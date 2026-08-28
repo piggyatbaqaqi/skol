@@ -7201,6 +7201,86 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.15 `Table` is a short-line detector — confirming the operator's mechanism
+
+`taxon_7d321149` (Cooke & Massee material, *Grevillea* 18 — an old
+two-column Australian bolete paper).  Operator: *"appears to be
+fragments of 3 different species glued together… The nomenclature blocks
+for the other two species were consumed by Table blocks.  I observe that
+both species taxonomic citations are fairly short lines, **which may be
+what the Table recognizer is latching on to.**"*
+
+**Confirmed, and the proof is inside the treatment:**
+
+```
+121c  mean-line 14c  [Table]  Boletus | ananaeceps | Berk. Linn., Soc. Lond. | …
+189c  mean-line 26c  [Table]  With | this | scanty documentation, it seems to be…
+```
+
+The first is a **nomenclatural citation** line-wrapped into fragments;
+the second is **ordinary prose** line-wrapped the same way.  Neither is
+a table.  Both carry `Table`.
+
+#### Mean line length orders the whole label set
+
+| label | blocks | median mean-line |
+|---|---:|---:|
+| **`Table`** | 6 284 | **14 c** |
+| `Index` | 81 | 18 c |
+| `Page-header` | 4 409 | 28 c |
+| `Misc-exposition` | 9 566 | 38 c |
+| `Key` | 1 176 | 42 c |
+| **`Nomenclature`** | 800 | **46 c** |
+| `Bibliography` | 1 501 | 61 c |
+| `Materials-examined` | 821 | 71 c |
+| `Description` | 1 420 | 72 c |
+| `Diagnosis` | 458 | 75 c |
+| `Notes` | 990 | 81 c |
+
+**`Table` sits 24 characters below the next label and 32 below
+`Nomenclature`.**  Short-line-ness is not merely *correlated* with
+`Table` — it is nearly the whole signal, and `Nomenclature` is the
+content label closest to it.
+
+#### What is actually inside `Table` blocks
+
+| | n | |
+|---|---:|---:|
+| all `Table` blocks | 6 284 | 100 % |
+| contains a binomial | 4 182 | **67 %** |
+| binomial **+ authority string** | 828 | 13 % |
+| contains a nomenclatural act (`sp. nov.` etc.) | 45 | 1 % |
+
+The 67 % is suggestive but not decisive — genuine taxonomic tables list
+binomials.  **The 13 % carrying a binomial *and* an authority is the
+harder number**: an authority is a mark of *citation*, not of tabulation.
+~3 100 `Table` blocks corpus-wide carry an outright nomenclatural act.
+
+#### The general shape: layout labels selected by surface form
+
+This is **§12.3.6's rogue `Key` with a different feature.**  Both `Table`
+and `Key` are layout labels with no semantic handle, and both latch onto
+a typographic property:
+
+| label | feature it tracks | what that swallows |
+|---|---|---|
+| `Table` | **short** mean line length | column-wrapped citations and prose |
+| `Key` | long, couplet-free blocks | descriptive prose (§12.3.6) |
+
+**Neither is reading content.**  So the failure is systematic in exactly
+the material where line geometry is unreliable — OCR of multi-column
+scans, which is where both of these cases come from.  A repair that
+gives these labels *any* content signal would move both at once.
+
+#### And a third consecutive undetected merge
+
+`n_terms_above_5 = 0` against a threshold of 15, on a treatment the
+operator reads as **three** species fused.  With `taxon_5bdbc707` (0) and
+`taxon_6e02ee31` (4), the merge metric has now missed three merges in a
+row, all in short treatments.  §12.3.4's length-blindness is not an edge
+case; **on this evidence the metric does not detect merges in the size
+range where the operator is finding them.**
+
 ### 12.3.14 "Did our extraction remove it?" — a conservation audit says no
 
 `taxon_7b742390` (Visagie et al., *Fungal Systematics and Evolution*, a
