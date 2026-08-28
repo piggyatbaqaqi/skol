@@ -7201,6 +7201,78 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.13 Embedded figure captions: a Pass-1 missed split, distinct from a Pass-2 mislabel
+
+`taxon_7a36746e`, a **Protosteloid amoeba** (*Schizoplasmodiopsis
+micropunctata*).  Operator: *"This document has several paragraphs that
+run up against their preceding paragraphs, e.g. "Fig. 1 – Light
+micrographs of Schizoplasmodiopsis micropunctata YIP-40." in the second
+description block should be the start of a figure-caption.  Fig. 2
+caption is later in the same block."*
+
+**This is a different failure from every `Figure-caption` finding so
+far.**  §12.3.2 measured captions that were *mislabelled*; here the
+caption was never made into a block at all.  Two captions live inside
+one 2 655-character `Description` block.  **Pass 1 missed the boundary,
+so Pass 2 never had a chance to label it.**
+
+#### The two modes separate cleanly
+
+Counting line-initial caption openers (`Fig. 3 –`, `Figure 2.`) by
+position and host label, 300 documents:
+
+| | in `Figure-caption` | elsewhere |
+|---|---:|---:|
+| **block-initial** | 618 | **217** — Pass-2 **mislabel** |
+| **embedded (mid-block)** | 209 | **195** — Pass-1 **missed split** |
+
+**~13 600 missed splits corpus-wide.**  The block-initial/elsewhere cell
+(217) is the class §12.3.2 already measures; the embedded/elsewhere cell
+(195) is new and needs a different fix — segmentation, not
+classification.
+
+Which blocks swallow them:
+
+| host label | n | |
+|---|---:|---:|
+| `Misc-exposition` | 83 | 43 % |
+| `Key` | 26 | 13 % |
+| `Materials-and-methods` | 23 | 12 % |
+| `Phylogeny` | 14 | 7 % |
+| `Description` | 10 | 5 % |
+| `Materials-examined` | 9 | 5 % |
+
+#### The detector undercounts, and this document is why
+
+**The regex is line-anchored, and this treatment has lost its line
+breaks.**  Its blocks read `3. Results and Discussion3.1.
+Identification of…` and `…µm.These morphological features…` — headings
+and sentences run together with no separator.  So the operator's own
+example is **not** counted by the measurement above: `Fig. 1 –` sits
+mid-line, not line-initial.
+
+That is the operator's first observation — *"paragraphs that run up
+against their preceding paragraphs"* — and it is a **third**, upstream
+defect: the newline structure was destroyed before Pass 1 ran, which
+denies the layout CRF the strongest boundary cue it has.  **195 is
+therefore a floor**, and the true count is higher by however much of the
+corpus has suffered the same loss.  Relaxing the anchor was not done
+here: without it the pattern collides with in-text cross-references,
+which §12.3.2 already recorded as a contamination source.
+
+#### Two incidental notes
+
+* **A non-fungal taxon, processed normally.**  Amoebozoa, not Fungi —
+  and the pipeline produced ordinary `Description`, `Phylogeny` and
+  `Materials-and-methods` blocks.  That is a live confirmation of
+  §12.3.8's claim that `Description` is a **register** detector rather
+  than a fungal-vocabulary one: it generalises to other taxa because it
+  was never keyed to this one.
+* **This document is Phylogeny-heavy** — five `Phylogeny` blocks
+  totalling ~5 100 characters against three `Description` blocks.  Under
+  the grouper as it stood before commit `8c0148d`, **all of it was
+  discarded**.  It is a useful regression fixture for that fix.
+
 ### 12.3.12 The grouper silently drops `Phylogeny` — and improving the classifier makes it worse
 
 Operator: *"Does our grouper not pull out phylogeny as a treatment
