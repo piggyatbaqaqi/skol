@@ -7201,6 +7201,82 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.10 Did English-model OCR destroy the French text? Plausible, and my test cannot settle it
+
+Operator hypothesis: *"French documents are coming out with poor OCR
+because the OCR thought it was processing English text."*
+
+**The direct evidence in the affected documents is strong.**  Every
+corruption in the Mycotaxon XIV(1) blocks is an accented character
+replaced by an ASCII lookalike:
+
+| observed | intended | substitution |
+|---|---|---|
+| `d!gle de prioritl!` | *règle de priorité* | è→`!`, é→`!` |
+| `caractCdsCe` | *caractérisée* | é→`C` |
+| `dEcembre`, `Cpaissie` | *décembre*, *épaissie* | é→`E`, é→`C` |
+| `£amille` | *famille* | f→`£` |
+| `arachn!en`, `l!tat` | *arachnéen*, *l'état* | é→`!` |
+
+That is exactly the failure mode of an engine whose character model has
+no French: it picks the nearest ASCII glyph.
+
+#### The population test, and why it inverts
+
+Predicting that French documents should show **few accents** and **many
+mid-word capitals**, measured per 1 000 characters over 207 documents:
+
+| | docs | accents | mid-word CAP | punct-in-word |
+|---|---:|---:|---:|---:|
+| French (>50 % FR function words) | 5 | **18.02** | **0.00** | 0.00 |
+| mixed (20-50 %) | 5 | 7.82 | 0.18 | 0.00 |
+| English | 197 | 0.17 | 0.31 | 0.03 |
+
+*(clean French prose runs ~25-30 accents per 1 000 characters)*
+
+**Both predictions come out backwards.**  Documents classified as French
+*retain* their accents at 18 per 1 000 and have **zero** mid-word
+capitals — cleaner than the English documents.
+
+#### But the test is confounded by the very phenomenon it tests
+
+**A destroyed French document stops looking French.**  The classifier
+counts French function words, and the two damage mechanisms both attack
+them:
+
+* **accent substitution** — `été` survives, but `règle` becomes `d!gle`;
+* **word splitting** — the same documents show `l es`, `l arges`,
+  `spor es`, and `les` split into `l` + `es` matches nothing.
+
+So the worse the damage, the less French the document scores, and the
+**"French" band selects for documents the hypothesis predicts are
+undamaged.**  The per-document table shows the survivors of that
+selection: the two lowest-accent documents in the French+mixed set score
+only 21 % and 31 % French-ness with **0.00 and 2.06** accents and the
+highest mid-word capital rate in the sample — precisely the profile
+predicted, sitting just outside the band that was measured as French.
+
+**Verdict: not refuted, not confirmed, and not testable this way.**
+Recorded because the confound is instructive — **the measurement used
+the signal that the hypothesised mechanism destroys**, which is a
+failure mode worth recognising before it is repeated.
+
+#### The test that would work
+
+Identify French-language documents by a **damage-independent** channel —
+source metadata: journal title and publisher (*Bulletin de la Société
+Mycologique de France*, *Revue de Mycologie*, *Cryptogamie*, and the
+francophone papers in *Mycotaxon*) — then measure accent rate within
+that set.  Language is then established from the container rather than
+from the text being assessed, and the circularity disappears.
+
+**If it confirms, the payoff is concrete and unusual for this memo: it
+is repairable.**  Accent destruction is a *scanning* defect, not a model
+defect, so the affected documents can be re-OCR'd with a French model
+and recovered — feeding `data/ocr_rescan_targets.md` rather than any
+classifier work.  That would make it the first pathology recorded here
+with a fix that does not involve retraining anything.
+
 ### 12.3.9 Article boundaries are a missing structural level — and §12.3.8's gate needs them
 
 `taxon_686f39e0`, a French whole-volume scan with heavy OCR damage.
