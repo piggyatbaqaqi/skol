@@ -7201,6 +7201,82 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.11 `Misc-exposition` boundary theft — the most-reported defect, quantified
+
+`taxon_6e02ee31`.  Operator: *"a Misc-exposition that consumed 2 lines
+of the nomenclature block… the materials_examined block had its last
+line consumed by a Misc-exposition."*
+
+**This is the single most frequently reported defect of round 5.**  The
+operator has now named it in at least seven treatments — `taxon_0b9a9bfe`
+(Etymology), `taxon_0ccf38da` (identifiers, then GenBank numbers),
+`taxon_47c3b37d` (*"Misc-exposition stealing"*), `taxon_5180d088` (first
+line of a description), `taxon_5c661438` (two blocks), `taxon_57698832`,
+and here twice.  It had never been measured.
+
+#### Measured
+
+A `Misc-exposition` block **steals** when the text runs continuously
+across its boundary: the neighbouring content block ends without
+terminal punctuation and the other side resumes lower-case or mid-token.
+
+| | n | of all `Misc-exposition` |
+|---|---:|---:|
+| stole the **tail** of the previous block | 2 424 | 14.1 % |
+| stole the **head** of the next block | 2 370 | 13.7 % |
+| **bridges both — pure interpolation** | **428** | **2.5 %** |
+| either | 4 366 | **25.3 %** |
+
+over 17 249 `Misc-exposition` blocks in 300 documents.  **Median length
+of a thieving block: 102 characters** — matching the operator's "two
+lines" exactly.
+
+#### Which number to trust
+
+**The 2.5 % "bridges both" figure is the defensible core — ~29 800
+corpus-wide.**  There the sentence runs *into* the block and *out of*
+it, so the block is demonstrably an interpolation inside a single
+sentence.  That is very hard to satisfy by accident.
+
+**The 25.3 % figure should be treated as an upper bound.**  One-sided
+continuation has legitimate causes — hard line-wrapping in the source, a
+genuine paragraph that happens to begin lower-case — and this has not
+been hand-verified against operator judgement.  The corpus-wide
+extrapolation of ~305 000 is therefore **not** quoted as a defect count.
+
+#### Its relation to the page-break class
+
+§12.2 measured continuity across **page breaks** and found a 63 % label
+change.  This is the same test **without requiring furniture to
+intervene**, which makes the page-break class a special case of this
+one: there the interpolated material is a running head or page number,
+here it is any block the model could not place.  **The general
+mechanism is that `Misc-exposition` absorbs whatever interrupts a
+sentence**, and page furniture is merely its commonest cause.
+
+#### A second merge invisible to the detector
+
+`n_terms_above_5 = 4` against a threshold of 15, on a treatment the
+operator describes as having *"a second (related) species glued onto the
+end"*.  **That is the second consecutive undetected merge**, after
+`taxon_5bdbc707` scored 0.  Both are short.  §12.3.4's length-blindness
+finding now has two independent instances and should be treated as
+established rather than provisional.
+
+#### The operator's remaining observations
+
+* **First `Notes` compares two genera rather than the treatment
+  species**, and **starts a phylogeny section that belongs to the second
+  `Notes`** — `Notes` ⊐ `Phylogeny` (§12.3), with the boundary drawn in
+  the wrong place.
+* **Third `Notes` is a diagnosis, "which we figure out after the page
+  number"** — `Notes` ⊐ `Diagnosis` **plus** a page break, i.e. §12.2 and
+  §12.3 co-occurring in one block.
+* **The second treatment starts with the erroneous `Type-designation`
+  block** — the merge boundary lands one block early.
+* **The final `Figure-caption` is the start of a bibliography** — within
+  §12.3.2's `Figure-caption` swap scatter, which has no semantic handle.
+
 ### 12.3.10 Did English-model OCR destroy the French text? Plausible, and my test cannot settle it
 
 Operator hypothesis: *"French documents are coming out with poor OCR
