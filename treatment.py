@@ -63,6 +63,7 @@ _LABEL_TO_FIELD: Dict[str, str] = {
     "Notes": "notes",
     "Key": "key",
     "Figure-caption": "figure_captions",
+    "Phylogeny": "phylogeny",
 }
 
 # Maps YEDDA tag string → spans field name in as_row() output.
@@ -77,6 +78,7 @@ _LABEL_TO_SPANS_FIELD: Dict[str, str] = {
     "Biology": "biology_spans",
     "Notes": "notes_spans",
     "Figure-caption": "figure_caption_spans",
+    "Phylogeny": "phylogeny_spans",
 }
 
 
@@ -302,13 +304,13 @@ class Treatment(object):
         Flat section fields (None when absent):
           description, diagnosis, etymology, distribution,
           materials_examined, type_designation, biology, notes, key,
-          figure_captions
+          figure_captions, phylogeny
 
         Span fields (empty list when absent):
           nomenclature_spans, description_spans, diagnosis_spans,
           etymology_spans, distribution_spans, materials_examined_spans,
           type_designation_spans, biology_spans, notes_spans,
-          figure_caption_spans
+          figure_caption_spans, phylogeny_spans
         """
 
         def span_to_string_dict(span_dict: Dict[str, Any]) -> Dict[str, str]:
@@ -379,8 +381,18 @@ class Treatment(object):
 # Treatment-section label set
 # ---------------------------------------------------------------------------
 
-# All label strings that keep a treatment open (do not increment the gap).
-_TREATMENT_SECTION_LABELS: frozenset = frozenset(
+# Label strings that may *open* a treatment, synthesising a stub
+# Nomenclature when none has been seen yet.
+#
+# Phylogeny is deliberately absent.  Most Phylogeny prose is
+# *article*-scoped -- a single ML/BI tree covering every new taxon in
+# the paper -- and sits outside any treatment.  Letting it open one
+# would synthesise a stub Nomenclature per block and inflate the
+# synthetic-nomenclature population, which already accounts for 54.7 %
+# of empty treatments.  Phylogeny may continue a treatment; never start
+# one.  Pinned by
+# ``test_phylogeny_alone_does_not_open_a_treatment``.
+_TREATMENT_OPENING_LABELS: frozenset = frozenset(
     {
         "Description",
         "Diagnosis",
@@ -394,6 +406,12 @@ _TREATMENT_SECTION_LABELS: frozenset = frozenset(
         "Figure-caption",
     }
 )
+
+# All label strings that keep a treatment open (do not increment the
+# gap) and are stored as sections.  A superset of the opening labels.
+_TREATMENT_SECTION_LABELS: frozenset = _TREATMENT_OPENING_LABELS | {
+    "Phylogeny",
+}
 
 
 def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Treatment]:
@@ -435,7 +453,7 @@ def group_paragraphs(paragraphs: Iterable[Paragraph]) -> Iterator[Treatment]:
                 misc_gap = 0
                 continue
 
-            if label_str in _TREATMENT_SECTION_LABELS:
+            if label_str in _TREATMENT_OPENING_LABELS:
                 if not treatment.has_nomenclature():
                     stub_line = Line(SYNTHETIC_NOMENCLATURE_TEXT)
                     stub_paragraph = Paragraph(

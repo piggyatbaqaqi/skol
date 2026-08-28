@@ -356,3 +356,41 @@ class TestIterTaxpubTreatments(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestCanonicalIdFieldsAreFrozen(unittest.TestCase):
+    """`_CANONICAL_FIELDS` is an identity contract, not a field list.
+
+    Every entry feeds the sha256 that names the document, so adding one
+    renames every treatment in the corpus and orphans every round file,
+    annotation and review that references an id.  `phylogeny` was added
+    to the output schema deliberately *without* being added here.
+    """
+
+    def test_canonical_id_fields_are_frozen(self):
+        """A phylogeny value must not perturb the document id."""
+        base = {
+            'treatment': 'Amanita muscaria L.',
+            'description': 'Pileus 5 cm.',
+            'diagnosis': None, 'etymology': None, 'distribution': None,
+            'materials_examined': None, 'type_designation': None,
+            'biology': None, 'notes': None, 'key': None,
+            'figure_captions': None,
+        }
+        with_phylo = dict(base, phylogeny='Sister to A. caesarea, 98% ML.')
+        self.assertEqual(
+            generate_taxon_doc_id(base), generate_taxon_doc_id(with_phylo)
+        )
+
+    def test_a_captured_field_does_still_perturb_the_id(self):
+        """The guard above is meaningful only if the hash is live.
+
+        Without this, deleting the whole hash body would leave
+        `test_canonical_id_fields_are_frozen` passing vacuously.
+        """
+        base = {'treatment': 'Amanita muscaria L.',
+                'description': 'Pileus 5 cm.'}
+        self.assertNotEqual(
+            generate_taxon_doc_id(base),
+            generate_taxon_doc_id(dict(base, notes='Common in birch woods.')),
+        )

@@ -71,6 +71,7 @@ EXTRACT_SCHEMA = StructType([
     StructField("notes", StringType(), True),
     StructField("key", StringType(), True),
     StructField("figure_captions", StringType(), True),
+    StructField("phylogeny", StringType(), True),
     StructField("ingest", MapType(StringType(), StringType(),
                                   valueContainsNull=True), True),
     StructField("line_number", IntegerType(), True),
@@ -89,6 +90,7 @@ EXTRACT_SCHEMA = StructType([
     StructField("biology_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("notes_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     StructField("figure_caption_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
+    StructField("phylogeny_spans", ArrayType(_SPAN_MAP_SCHEMA), True),
     # Trello #401 Phase 1 Commit A: polymorphic source-anchor list.
     # Each dict has a "kind" discriminator; payload keys vary per kind.
     # Values are stringified for MapType(String, String) compatibility.
@@ -186,6 +188,15 @@ def generate_taxon_doc_id(taxon_dict: Dict[str, Any]) -> str:
     Returns:
         Deterministic document ID as 'taxon_<sha256_hex>'
     """
+    # FROZEN.  This tuple is an *identity contract*, not a field list:
+    # every entry feeds the sha256 that names the document, so adding
+    # one renames every treatment in the corpus and orphans every
+    # round file, annotation and review that references an id.
+    #
+    # `phylogeny` is deliberately excluded for exactly that reason --
+    # it is a new output field, not a new identity component.  Do not
+    # "sync" this with the schema above.  Pinned by
+    # ``test_canonical_id_fields_are_frozen``.
     _CANONICAL_FIELDS = (
         'treatment', 'description', 'diagnosis', 'etymology', 'distribution',
         'materials_examined', 'type_designation', 'biology', 'notes',

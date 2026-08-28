@@ -519,7 +519,6 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
         self.assertIsNotNone(row["distribution"])
         self.assertIsNotNone(row["biology"])
 
-    @unittest.expectedFailure
     def test_phylogeny_is_captured_as_a_section(self):
         """Phylogeny reaches the treatment as prose.
 
@@ -544,7 +543,6 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
         self.assertIsNotNone(row["phylogeny"])
         self.assertIn("98% ML support", row["phylogeny"])
 
-    @unittest.expectedFailure
     def test_phylogeny_spans_are_emitted(self):
         """Spans travel with the prose, as for every other section."""
         test_data = lineify(
@@ -588,7 +586,6 @@ class TestGroupParagraphsNewLabels(unittest.TestCase):
             list(group_paragraphs(parse_annotated(test_data))), []
         )
 
-    @unittest.expectedFailure
     def test_phylogeny_resets_the_misc_gap(self):
         """Recorded as a deliberate consequence, not an accident.
 
