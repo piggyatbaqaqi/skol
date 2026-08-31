@@ -7201,6 +7201,78 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.24 Type-designation vocabulary is rank-dependent, and only the species-level forms are recognised
+
+`taxon_a21ae068` (*Borikeniomycota* — an article erecting a new phylum
+and class).  Operator: *"The phylum is defined phylogenetically.  **The
+type designation for the Phylum was misclassed as notes despite very
+clear labeling.**  The class description is correctly not in this
+treatment."*
+
+**Confirmed on every point:**
+
+```
+description       -            <- correct; the phylum is defined phylogenetically
+diagnosis      384c  "Diagnosis.Distinguishable from other fungi based on a di…"
+notes          518c  "Type class.Borikeniomycetes Tedersoo.\n\nNotes.Recognized…"
+type_designation  -                    ^^^^^^^^^^^ the type designation, inside notes
+```
+
+**The absent `description` is correct behaviour, not a defect.**  A
+phylum erected on phylogenetic grounds has no morphology to describe,
+and §12.3.16 explains why nothing fired: `Description` responds to
+Latinate *morphological* register, which a phylogenetic circumscription
+does not contain.  Likewise the operator's *"class description is
+correctly not in this treatment"* — the grouper kept two ranks apart,
+which is worth recording as a **success** given §5.5's multi-rank
+problems elsewhere.
+
+#### A third missing cue form, on the worst-performing label
+
+§12.3's cue for `Type-designation` is `Type material|Holotype|Typus`.
+It has now been shown to miss:
+
+| form | first seen |
+|---|---|
+| bare `Type.` | §12.3.3 (`taxon_57e92419`) |
+| `Type.` again | §12.3.7 (`taxon_62ffeff0`) |
+| **`Type class.`** | here |
+
+And by obvious extension `Type genus.`, `Type family.`, `Type species.`
+— **the higher-rank forms as a family.**  `Type-designation` is already
+the worst-performing cued label at **48 %** honored, and that figure is
+measured on a cue list that excludes at least three real forms.  **Its
+n = 378 is an undercount and its 48 % rests on a biased subset**, in the
+direction of flattering the result.
+
+#### The rank gradient
+
+Field presence by rank over 2 600 named treatments (phylum, subphylum
+and class had n < 25 and are not reported):
+
+| rank | n | `description` | `diagnosis` | `notes` | `type_designation` | `biology` |
+|---|---:|---:|---:|---:|---:|---:|
+| order | 41 | 44 % | 34 % | 54 % | **10 %** | 15 % |
+| family | 56 | 50 % | 25 % | 57 % | 32 % | 12 % |
+| genus/species | 2 474 | **69 %** | 29 % | 53 % | 31 % | 29 % |
+
+Two gradients, and they are different phenomena:
+
+* **`description` falls with rank** — 69 % → 50 % → 44 %.  Partly
+  correct (higher taxa are diagnosed, not described) and partly
+  §12.3.16 (no morphological register to detect).  Directionally clear,
+  but n = 41 and n = 56 are thin.
+* **`type_designation` collapses at order level** — 31 % and 32 % at
+  genus/species and family, but **10 %** at order.  That is not
+  taxonomic practice: orders do have type families.  **It is the missing
+  cue vocabulary**, and `Type class.` landing in `notes` here is the
+  mechanism caught in the act.
+
+**The fix is small and well-defined**: recognise `Type <rank>.` as a
+`Type-designation` opener alongside `Holotype`/`Typus`.  It is a T6
+input, and it should be made before `Type-designation`'s honor rate is
+quoted again — the current 48 % measures a cue list, not the model.
+
 ### 12.3.23 Treatments built from a taxonomic paper's front matter
 
 `taxon_99094ada`.  Operator: *"appears to be the introductory material
