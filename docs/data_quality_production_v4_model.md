@@ -7201,6 +7201,76 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.23 Treatments built from a taxonomic paper's front matter
+
+`taxon_99094ada`.  Operator: *"appears to be the introductory material
+on a taxonomic article.  The description certainly is taxonomic
+description vocabulary, but two lines earlier in the preceding
+Misc-exposition we see that **we are in the Introduction to the paper**…
+In that last Misc-exposition we see that **we are only at the Materials
+and methods section**."*
+
+**This is a new class, distinct from §12.3.8.**  There the *article* was
+not taxonomic (an FDA leaflet).  Here the article is a perfectly good
+taxonomic paper and the **wrong part of it** was harvested.  This
+treatment begins at **char 0** of a document whose `Results` heading is
+at char 21 076.
+
+#### Measured
+
+Locating `Introduction`, `Materials and methods` and
+`Results`/`Taxonomy` headings, then asking where each treatment's first
+span begins:
+
+| | n | |
+|---|---:|---:|
+| **before `Materials and methods`** | 40 | **18 %** |
+| between M&M and `Results`/`Taxonomy` | 70 | 32 % |
+| after `Results`/`Taxonomy` (expected) | 110 | 50 % |
+
+**The 18 % is the hard number** — a treatment starting before the
+methods section sits in the title, abstract or introduction, and cannot
+be a real treatment.  **The 50 % should be treated as softer**: some
+papers place taxonomy without a `Results` heading, and `Discussion`
+appears in the pattern, so the middle band mixes genuine and spurious
+cases.
+
+**Caveats that run in the conservative direction.**  Only the *first*
+occurrence of each heading is used, so in a whole-volume scan (§12.3.9)
+every treatment after article one is scored "after Results" regardless
+of where it truly sits.  **The measurement therefore understates front
+matter harvesting on exactly the material where it is likeliest.**
+
+#### Why the introduction reads as a description — §12.3.16 already answered this
+
+§12.3.16 established that `Description` fires on **Latinate
+morphological register**, not on being a description.  **A taxonomic
+paper's introduction is written in precisely that register** — it
+discusses conidiophores, ascospores, septation and dimensions while
+reviewing prior work.  The operator's own phrasing captures it exactly:
+*"the description certainly is taxonomic description vocabulary."*
+
+**It is the same root cause as the FDA tablet.**  Register, not context.
+The model has no representation of *where in a paper it is*, so text
+that reads like a description is labelled one, whether it appears in a
+protologue, an introduction, or a drug leaflet.
+
+**And it is a second argument for §12.3.9's structural level.**  A
+document-level gate cannot help — the document passes.  What is missing
+is **intra-article position**: knowing that char 0-21 076 is front
+matter would remove this class outright, and the headings needed to know
+it are already detectable, since this measurement used them.
+
+#### The operator's other observations
+
+* *"The biology clauses… should be one block — the intervening
+  Misc-exposition ate the linking text."*  This is §12.3.11's
+  **bridges-both** case, the 2.5 % high-confidence core where a sentence
+  runs into the interloper and out of it.
+* *"The second biology block lost its last line to the next
+  Misc-exposition."*  §12.3.11, head-theft variant.
+* *"The materials-examined block was mislabeled."*  §12.3.2.
+
 ### 12.3.22 `MISC_GAP_LIMIT` does not bound treatment extent
 
 `taxon_910039ca`.  Operator: *"describes an order, and maybe a family,
