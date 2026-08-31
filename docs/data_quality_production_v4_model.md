@@ -7340,6 +7340,54 @@ here, Davidson 1971 in `taxon_62ffeff0`).  This looks like a **genre
 convention of monographic revisions that cite prior descriptions instead
 of redescribing**, not a general phenomenon.
 
+#### Addendum: vector information has no home either
+
+Operator, on the same treatment: *"The first notes section should have
+been biology (vector)."*
+
+**Second instance.**  The same call was made on `taxon_62ffeff0`, where
+`Insect vectors. Dendroctonus sp.` carried `Notes` between two correct
+`Biology` blocks (§12.3.7).  **Both come from ophiostomatoid
+bark-beetle literature** — the same genre as the reference-only
+descriptions above, and one in which vectoring is a standard treatment
+component with its own conventional heading.
+
+Measured over 300 documents, blocks mentioning vectoring or naming a
+vector beetle genus:
+
+| label | n | |
+|---|---:|---:|
+| `Misc-exposition` | 16 | 33 % |
+| `Key` | 11 | 23 % |
+| `Materials-and-methods` | 8 | 17 % |
+| `Notes` | 6 | 12 % |
+| **`Biology`** | **2** | **4 %** |
+| other | 5 | 11 % |
+
+**Vector content reaches `Biology` 4 % of the time.**
+
+**Two caveats, both real.**  The pattern catches any *mention* of
+vectoring — an isolation protocol citing beetle galleries lands in
+`Materials-and-methods` legitimately — so most of these 48 are
+incidental references rather than vector statements.  And **zero blocks
+in the sample open with an explicit vector cue**, so the honoring rate
+cannot be measured here at all; both known instances fall outside a
+300-document draw.  The genre is thinly represented.
+
+**The diagnosis is a schema gap, not a labelling error.**  `Biology` is
+reached through a narrow cue set — `Habitat`, `Host`, `Distribution`
+(§12.3.4) — and **`Insect vectors.` is not in it.**  A conventional
+heading with no field behind it lands in the catch-all, which is exactly
+the shape of §12.3.7's higher-taxon chains and §12.3.12's `Phylogeny`.
+
+**This is a third named sub-component for Trello #407.**  §12.3.7
+already recorded `Host trees.` / `Insect vectors.` / `Distribution.`
+appearing as three separate headings in one document, and the operator's
+*"eventually ecology"*.  **Vector is now named twice.**  It does not
+widen the ticket — the `Distribution` split remains the measurable,
+high-volume win — but it strengthens the recorded position that the
+post-split `Biology` must stay explicitly provisional.
+
 #### Why it matters despite being rare
 
 **The label is correct.**  The document says `Descriptions.` and the
