@@ -7201,6 +7201,80 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.25 Sizing the LOTE problem — severe, but 2 % of documents
+
+`taxon_a58b3756`.  Operator: *"starts with the introduction to a French
+article introducing a new family and genus, and then **leaps into the
+middle of a German article**.  The Latin description of* Asterina
+orthosticha *Syd. nov. spec. is buried in a Key and a Table block, with
+only part of it in a description… **LOTE and LOTL are clearly a
+problem.**"*
+
+§12.3.16 established the severity — `Description` fires at 52 % on
+English, 53 % on Latin, 21 % on French and **1 %** on German.  What was
+missing is the **volume**, without which the finding cannot be
+prioritised.
+
+#### Corpus share
+
+| dominant language | docs | share | treatments/doc | `Description` share of blocks |
+|---|---:|---:|---:|---:|
+| English | 655 | **98 %** | 3.5 | 5.7 % |
+| German | 8 | 1 % | **14.6** | 3.9 % |
+| French | 5 | 1 % | 1.2 | 3.7 % |
+| Spanish | 1 | 0 % | 1.0 | 8.0 % |
+
+**Non-English-dominant documents are 2 % of the corpus.**  They punch
+above that in treatments — the German documents average **14.6
+treatments each against 3.5** for English, being large old volume scans
+— so they are roughly **5 % of treatments**.
+
+**So the LOTE failure is severe but bounded.**  A near-total extraction
+loss over 2 % of documents is a real defect and a poor use of ingest
+effort, but it is not what is limiting corpus-wide quality.  It should
+be ranked accordingly against §12.3.11's boundary theft (~4 400 blocks
+in a 300-document sample) or §12.3.23's front-matter harvesting (18 %
+of treatments).
+
+**Caveat, and it is a serious one: n = 8 German and n = 5 French
+documents.**  The share is reliable to about a percentage point; the
+per-language yields are not.
+
+#### "LOTL" is a category error, and a useful one
+
+**No document classified as Latin-dominant.**  Latin in this corpus is
+not a document language — it is a **within-document register**, the
+diagnosis embedded in an English or German paper.  That is why
+§12.3.16 measured Latin per *block* and found 53 %, and why it cannot
+be measured per document at all.
+
+**The practical consequence is favourable**: Latin needs no separate
+handling, because it already succeeds at the English rate wherever it
+appears.  The problem is **LOTE alone**.
+
+#### A language switch is an article-boundary cue
+
+This treatment *"starts with the introduction to a French article… and
+then leaps into the middle of a German article."*  §12.3.9 recorded
+article-boundary detection as a missing structural level with no
+proposed mechanism.  **A change of dominant language across adjacent
+blocks is one** — cheap, computable from the text alone, and robust to
+OCR damage since it rests on function-word frequencies rather than exact
+strings.
+
+It is obviously partial: it fires only where a volume mixes languages,
+which is a minority even of the 2 %.  Recorded as a candidate signal for
+that detector, not as a solution to it.
+
+#### The operator's specific case
+
+*"The Latin description… buried in a Key and a Table block, with only
+part of it in a description."*  §12.3.6 and §12.3.15 exactly: in a
+document where the content signal fails, `Key` and `Table` absorb the
+prose by page geometry.  The Latin **would** have been detected at 53 %
+had it been in a document where the surrounding labelling was working —
+the failure here is the German context, not the Latin.
+
 ### 12.3.24 Type-designation vocabulary is rank-dependent, and only the species-level forms are recognised
 
 `taxon_a21ae068` (*Borikeniomycota* — an article erecting a new phylum
