@@ -7277,6 +7277,87 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.29 Reference-only descriptions — a real class, and a rare one
+
+`taxon_e4150d1a`.  Operator: *"darn close to a poster child, but the
+type designation got labeled "materials_examined"… **It's a special kind
+of description block that I don't know we've cataloged yet — it's all
+references to other descriptions.**"*
+
+#### The type designation: a fourth `Type.`
+
+```
+[Materials-examined] Type. SWEDEN, Hällnäs, Västerbotten, from the galleries
+                     of Acanthocinus aedilis in pine wood, A. Mathiesen-Käärik,
+                     lectotype designated here…
+```
+
+The bare **`Type.`** cue again — §12.3.3, §12.3.7, §12.3.24, and now
+here.  **Four instances of the same missing cue form**, each producing a
+`Materials-examined` coarsening on the worst-performing cued label.  The
+`Type <rank>.` fix proposed in §12.3.24 would have caught all four.
+
+#### The new class
+
+```
+Descriptions. Mathiesen-Käärik (1950, p. 298); Mathiesen-Käärik (1951,
+pp 212–215, fig. 2); Hunt (1956, pp 29–30); Griffin (1968, pp 707–708,
+figs 49–52, 82); Olchowecki and Reid (1974, pp 1699–1700, Pl. XIII fig.
+262); Upadhyay (1981, pp 52–54, figs 116–121); Mouton et al. (1993…)
+```
+
+**A `Description` whose entire content is bibliographic pointers to
+descriptions published elsewhere.**  The operator is right that it was
+not catalogued — though it has appeared once before, in `taxon_62ffeff0`
+(*"Descriptions. Davidson (1971, pp 7–10, figs 2, 12…)"*), where it was
+noted in passing as *"a pointer to descriptions published elsewhere"*
+and not pursued.  **Two instances is a class.**
+
+#### Measured — and it is rare
+
+A first detector (≥2 citations, no measurement, no morphology) returned
+9 blocks, **but its hits were wrong**: extrolite lists and ordinary prose
+that happens to cite literature.  Recorded as discarded.
+
+The refined test asks for **citation *coverage*** rather than count —
+three or more `Author (year, pp N–M, figs …)` pointers occupying ≥45 %
+of the block:
+
+| | |
+|---|---:|
+| `Description` blocks examined | 2 523 |
+| reference-only | **0** |
+| citation-dominated (25–45 %) | 0 |
+| fires on the operator's block | **yes** — 3 pointers, 52 % coverage |
+
+**Zero in 2 523 blocks**, against a detector verified to fire on a known
+positive.  That bounds the class at roughly **0.1 % of `Description`
+blocks** — under ~100 corpus-wide.
+
+**Both known instances come from the same specialist literature** —
+ophiostomatoid fungi associated with bark beetles (Mathiesen-Käärik
+here, Davidson 1971 in `taxon_62ffeff0`).  This looks like a **genre
+convention of monographic revisions that cite prior descriptions instead
+of redescribing**, not a general phenomenon.
+
+#### Why it matters despite being rare
+
+**The label is correct.**  The document says `Descriptions.` and the
+model honored it, so this block is a *success* by every measure in
+§12.3 — cue honored, boundaries clean, no theft.
+
+**But it contains no morphological characters at all.**  Downstream, a
+treatment carrying this description looks fully populated while offering
+the flagship character extraction nothing.  **It is invisible to
+labelling-accuracy metrics by construction**, which is precisely why it
+had to be found by reading rather than by measuring, and why the
+operator found it and the memo had not.
+
+That makes it a small member of an important family: **defects where the
+label is right and the content is not what the consumer expects.**  The
+front-matter descriptions of §12.3.23 are the large member of the same
+family.
+
 ### 12.3.28 A poster child that survives every detector
 
 `taxon_c7fdca00` (*Macrophomina vaccinii*).  Operator: *"is a poster
