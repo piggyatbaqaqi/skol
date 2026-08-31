@@ -7201,6 +7201,89 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.21 Nomenclature blocks are captured 95 % of the time — so the yield problem is about *sections*
+
+`taxon_8f4ac1f5` (Tian, Hyde & Maharachchikumbura — a large multi-family
+paper, 74 treatments).  Operator, among eight observations: *"**Weirdly,
+the next block is correctly labeled Nomenclature but did not get pulled
+into the nomenclature.**"*
+
+**Traced, and it is an outright loss rather than a boundary choice:**
+
+```
+IN    59c [Nomenclature]     Dictyosporium Corda, Weitenweber's Beitr. Nat. 1: 87…
+     584c [Misc-exposition]  MycoBank number: MB8001; Facesoffungi number: FoF0…
+IN    69c [Nomenclature]     Dictyosporium cycadicola W.H. Tian, K.D. Hyde & Ma…
+      64c [Nomenclature]     Fig. 5  MycoBank number: MB854679; Facesoffungi…   <- LOST
+IN    22c [Type-designation] Holotype – HKAS 134909
+IN   646c [Description]      …
+```
+
+The block is absent from this treatment's `nomenclature_spans` **and
+did not start a sibling** — the next treatment begins at char 34 597,
+well past it.  The blocks *after* it belong to this treatment, so the
+grouper did not close and reopen.  **The paragraph was simply skipped.**
+The mechanism is not established; it warrants a targeted trace rather
+than a guess.
+
+#### How often does this happen
+
+Applying §12.3.14's conservation audit to `Nomenclature`, over 97
+documents holding at least three treatments:
+
+| | |
+|---|---:|
+| `Nomenclature` blocks in the `.ann` | 3 083 |
+| captured into some treatment | 2 938 — **95 %** |
+| **lost** | 145 — **5 %** |
+
+| per-document capture | |
+|---|---:|
+| p10 | 67 % |
+| p25 | 97 % |
+| median | **100 %** |
+| p90 | 100 % |
+
+**The median document loses no names at all.**  Loss is real but modest
+and concentrated in a tail.  This document sits at **90 %** — ten names
+lost of 101.
+
+#### The contrast with §12.3.20 is the finding
+
+| | |
+|---|---:|
+| `Nomenclature` blocks captured | **95 %** |
+| documents yielding ~1 treatment per name (§12.3.20) | **38 %** |
+
+**Names are found.  Treatments are not built around them.**  That
+sharpens §12.3.20's hypothesis considerably: since the grouper needs
+`has_nomenclature() and has_section()` and the nomenclature half is
+succeeding 95 % of the time, **the failure is overwhelmingly on the
+section side** — prose that should have become `Description` or
+`Diagnosis` carrying `Table`, `Key`, `Misc-exposition` or `Bibliography`
+instead (§12.3.16).
+
+This does not prove the two populations coincide, but it removes the
+competing explanation: **name detection is not the bottleneck.**
+
+#### The operator's other observations
+
+Six of the eight are instances of recorded classes — identifiers and a
+Notes section absorbed into `Misc-exposition` (§12.3.11); a clearly
+cued `Etymology` labelled `Misc-exposition` (§12.3, the 7 % that miss);
+a well-formed `Material examined` block likewise; `Notes` that should be
+`Phylogeny` (§12.3's lattice, and §12.3.12's field); two `Notes` blocks
+that are one diagnosis split by a correctly-identified page number
+(§12.2); and a `Figure-caption` losing its tail across a page break
+(§12.2 again).
+
+One is worth quoting: on the description losing its first line, *"it
+looks like **proper sentence identification** would fix this particular
+instance."*  **That is exactly the mechanism §12.3.11's detector uses**,
+arrived at independently — and §12.3.19 measured that detector at 100 %
+precision against operator judgement.  Operator intuition and the
+measurement have converged on the same repair.
+
 ### 12.3.20 Treatment yield per `Nomenclature` block — bimodal, and 43 % under-produce
 
 `taxon_8eab0272`.  Operator: *"an older article with descriptions of
