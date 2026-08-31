@@ -7229,12 +7229,14 @@ above that in treatments — the German documents average **14.6
 treatments each against 3.5** for English, being large old volume scans
 — so they are roughly **5 % of treatments**.
 
-**So the LOTE failure is severe but bounded.**  A near-total extraction
+**The 2 % is a curation decision, not a property of the literature —
+see §12.3.26.  The ranking implication below is withdrawn.**
+
+~~So the LOTE failure is severe but bounded.  A near-total extraction
 loss over 2 % of documents is a real defect and a poor use of ingest
 effort, but it is not what is limiting corpus-wide quality.  It should
-be ranked accordingly against §12.3.11's boundary theft (~4 400 blocks
-in a 300-document sample) or §12.3.23's front-matter harvesting (18 %
-of treatments).
+be ranked accordingly against §12.3.11's boundary theft or §12.3.23's
+front-matter harvesting.~~
 
 **Caveat, and it is a serious one: n = 8 German and n = 5 French
 documents.**  The share is reliable to about a percentage point; the
@@ -7274,6 +7276,92 @@ document where the content signal fails, `Key` and `Table` absorb the
 prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
+
+### 12.3.26 The 2 % is curation, and the Latin detector is the suffix channel
+
+Operator, correcting §12.3.25: *"I have **deliberately left out major
+journals in LOTE** (other than Sydowia).  These numbers will be much
+higher in the future.  Also, **all the early literature in mycology is
+entirely in Latin** and I have not included any of that.  I suspect that
+parts of the current system implements an **implicit Latin detector**."*
+
+#### The prioritisation in §12.3.25 is withdrawn
+
+That section measured LOTE at 2 % of documents and concluded it should
+rank below boundary theft and front-matter harvesting.  **That reasoning
+is invalid**: the 2 % is the result of a deliberate exclusion, and the
+exclusion is going to be reversed.
+
+**The correct inference runs the other way.**  Ingesting LOTE material
+into the pipeline as it stands would produce near-zero extraction —
+German descriptions are detected at **1 %** (§12.3.16) — so the ingest
+cost would be spent to produce unextractable documents, and the corpus
+would gain a stratum that has to be reprocessed later.  **LOTE handling
+should therefore precede LOTE ingest, not follow it.**  It is a
+prerequisite for a planned corpus expansion rather than a repair of the
+current one.
+
+#### The implicit Latin detector, located
+
+**Confirmed, and it is the suffix channel.**
+`skol_classifier/feature_extraction.py:36` declares
+`suffix_vocab_size: int = 200` — a TF-IDF over word **suffixes**,
+learned from training data, 200 features wide, alongside 800 word
+features.
+
+That is precisely a language-morphology detector:
+
+* Latin descriptive vocabulary carries a distinctive suffix inventory —
+  *-atus*, *-ata*, *-oideus*, *-formis*, *-inus*, *-escens*, *-icus*;
+* English scientific Latinate terms **share it** — *-oid*, *-ate*,
+  *-ose*, *-escent*, *-iform*;
+* German morphological adjectives do **not** — *-ig*, *-lich*,
+  *-förmig*, *-artig*.
+
+**This explains §12.3.16's numbers precisely.**  Latin 53 % and English
+52 % are one detector firing on a shared suffix inventory; German 1 % is
+that inventory being absent; French 21 % is partial overlap.  §12.3.16
+attributed the effect to "Latinate morphological vocabulary" from the
+outside; this identifies the actual channel.
+
+#### And there is dormant *explicit* Latin machinery
+
+Built, tested, and never wired into the v4 pipeline:
+
+| asset | state |
+|---|---|
+| `paragraph.py:159-189` — `latinate` reinterpretation rewriting Latin-suffixed words to a ` PLATINATE ` token | **`--reinterpret latinate` appears only in `paragraph_test.py`** — no production path enables it |
+| `data/botanical_latin_wordlist.txt` — 5 679 entries | read only by `bin/corpus_vocabulary.py` and `treatments_to_structured/ocr_damage.py` — **OCR damage detection, not classification** |
+| `data/systematic_names_wordlist.txt` — 849 entries | read only by its own test |
+| `data/dcc/greek-core-wordlist.txt` — 873 entries | **nothing reads it** |
+
+So the system contains a deliberate Latin feature that is switched off,
+and a learned one that is doing the work.
+
+#### What this predicts for the early Latin literature
+
+**Favourably.**  The suffix channel is language-appropriate for Latin
+and already performs at the English rate, so wholly-Latin early
+literature should not fail the way German does.
+
+**Two caveats worth stating before relying on that.**  The 53 % was
+measured on Latin **diagnoses embedded in modern papers** — short,
+formulaic, and stereotyped.  Early literature is **narrative** Latin,
+with different sentence structure and a wider vocabulary, and it has not
+been tested.  And that material carries the OCR and layout problems of
+§12.3.6, §12.3.15 and §12.3.22, which are independent of language and
+were the dominant failure in every historical document reviewed in round
+5.
+
+#### The concrete lever for LOTE
+
+The mechanism is already in place and is **per-language by
+construction**: a suffix vocabulary learned from German training data
+would give German what Latin already has.  That reframes LOTE support
+from "a new capability" to **"training data in the target language, plus
+possibly a larger `suffix_vocab_size`"** — and makes the dormant
+`PLATINATE` machinery worth revisiting, since an explicit
+language-morphology feature would not need to be re-learned per corpus.
 
 ### 12.3.24 Type-designation vocabulary is rank-dependent, and only the species-level forms are recognised
 
