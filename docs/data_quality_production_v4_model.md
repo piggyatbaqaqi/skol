@@ -7201,6 +7201,86 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.20 Treatment yield per `Nomenclature` block — bimodal, and 43 % under-produce
+
+`taxon_8eab0272`.  Operator: *"an older article with descriptions of
+many species… **The boundaries are all messed up.**  The description
+blocks seem to be partial blocks of descriptions, and the biology blocks
+actually contain biology information.  Everything else seems pretty
+random."*
+
+*"Boundaries are all messed up"* is measurable as a ratio: **how many
+treatments did a document yield per `Nomenclature` block it contains?**
+One apiece is the intended behaviour.
+
+#### A measurement error, recorded
+
+The first attempt built the treatment counts with
+`tp.view('_all_docs', include_docs=True, limit=20000)` against a
+**81 527-document** database.  It reported a median ratio of **0.24** —
+which is `20000 / 81527`.  **The statistic measured the sampling
+fraction, not the corpus.**  Caught only because that coincidence is
+recognisable; recorded because a plausible-looking ratio with an
+off-by-a-limit cause would otherwise have entered the memo as fact.
+
+#### The real distribution
+
+Full scan: 81 527 treatments over 17 645 source documents.  Over 60
+sampled documents holding at least three `Nomenclature` blocks:
+
+| | ratio |
+|---|---:|
+| p10 | **0.00** |
+| p25 | **0.03** |
+| median | **1.00** |
+| p75 | 1.05 |
+| p90 | 1.33 |
+
+| | docs | |
+|---|---:|---:|
+| under-producing (< 0.75) | 26 | **43 %** |
+| about right (0.75-1.25) | 23 | 38 % |
+| over-producing (> 1.25) | 11 | 18 % |
+
+**The median document behaves exactly as designed — one treatment per
+name.**  The distribution around it does not: it is **bimodal**, with a
+large tail producing almost nothing.  **p25 = 0.03 means a quarter of
+these documents yield roughly three treatments per hundred nomenclatural
+headings**, and p10 = 0.00 means some yield none at all *despite having
+names detected*.
+
+This document sits at **0.55** (37th percentile), 18 treatments from 33
+names, six of them synthetic.
+
+#### A mechanism, offered as hypothesis not measurement
+
+`group_paragraphs` yields a treatment only when
+`has_nomenclature() and has_section()` both hold.  A document can
+therefore have its names detected and still produce nothing, if the
+prose that should have become sections was labelled something that is
+not a section.
+
+**§12.3.16 showed exactly that happening**: when the content signal
+fails, `Table`, `Key`, `Misc-exposition` and `Bibliography` absorb the
+descriptive text.  **This document is a case in point** — 77 % of its
+675 blocks carry those four labels (`Misc-exposition` 267, `Table` 116,
+`Page-header` 87, `Bibliography` 47), against **31** `Description`
+blocks for an article describing many species.
+
+So the under-producing tail and the layout-label-dominated documents may
+be **the same population**.  That is a testable claim and it has not been
+tested; recorded as the next measurement rather than as a finding.
+
+#### The operator's partial-success reading
+
+*"the biology blocks actually contain biology information… everything
+else seems pretty random"* matches §12.3.16's account.  `Biology` has
+strong, short lexical cues — `Habitat`, `Host`, `Distribution` — which
+survive where longer-range descriptive structure does not.  **The labels
+that keep working under degradation are the ones anchored to a small
+fixed vocabulary**, and the ones that fail are those needing the text to
+read as a particular register.
+
 ### 12.3.19 Calibrating boundary theft against the operator's own verdicts
 
 `taxon_8e97ffe3`.  Operator: *"Other than the first Misc-exposition
