@@ -7201,6 +7201,72 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.19 Calibrating boundary theft against the operator's own verdicts
+
+`taxon_8e97ffe3`.  Operator: *"Other than the first Misc-exposition
+eating the start of the description, this nearly worked as designed."*
+
+Round 5's review has by now produced **eight treatments the operator
+identified as `Misc-exposition` boundary theft and three called
+flawless** — enough to calibrate §12.3.11's detector against human
+judgement, which that section explicitly recorded as not yet done.
+
+| treatment | operator | detector | |
+|---|---|---|---|
+| `taxon_8e97ffe3` | theft | **THEFT** | this one |
+| `taxon_0ccf38da` | theft | **THEFT** | identifiers, GenBank numbers |
+| `taxon_47c3b37d` | theft | **THEFT** | *"Misc-exposition stealing"* |
+| `taxon_5c661438` | theft | **THEFT** | two blocks |
+| `taxon_6e02ee31` | theft | **THEFT** | two lines of nomenclature |
+| `taxon_0b9a9bfe` | theft | clean | **miss** |
+| `taxon_5180d088` | theft | clean | **miss** |
+| `taxon_57698832` | theft | clean | **miss** |
+| `taxon_3b7a80bc` | clean | clean | flawless |
+| `taxon_53dd1485` | clean | clean | flawless |
+| `taxon_8dc658f0` | clean | clean | flawless |
+
+**Precision 100 %, recall 62 %.**
+
+#### The caution in §12.3.11 ran the wrong way
+
+That section warned the 25.3 % might over-report, since one-sided
+continuation has innocent causes.  **It did not fire once on the three
+treatments the operator called perfect** — the hardest available
+negatives — and every firing was confirmed.  The detector's problem is
+the opposite one.
+
+**All three misses have identifiable causes, and two are already covered
+elsewhere:**
+
+* `taxon_5180d088` — the thieving `Misc-exposition` is separated from
+  the `Description` by a `Page-header` **and** a `Key`-labelled page
+  number.  The detector inspects **immediate** neighbours, so
+  intervening furniture defeats it.  **This is §12.2's page-break class,
+  which measures exactly that configuration** — the two detectors are
+  complementary, and neither alone covers the field.
+* `taxon_57698832` — author frontmatter absorbed into
+  `Materials-examined`, which is §12.3.2's class, not continuation theft
+  at all.
+* `taxon_0b9a9bfe` — *"the Etymology clause disappeared into the first
+  Misc-exposition"*.  A complete clause ending in a full stop leaves **no
+  continuation signal**.  This is the genuine residual: theft of
+  well-formed sentences is invisible to a continuity test, and no
+  refinement of that test will reach it.
+
+#### The methodological point
+
+**Treatment-by-treatment review is a validation set, not only a source
+of findings.**  Eleven operator verdicts converted a number this memo had
+flagged as unusable into a calibrated one, at zero additional cost —
+the judgements had already been made for other reasons.
+
+The obvious caveat: **n = 11, of which 5 positive firings.**  A 100 %
+precision on five cases is consistent with a true rate well below that,
+and these treatments were selected by the operator's attention rather
+than at random, so they are not a sample of the detector's corpus-wide
+firings. **What is established is that the detector does not fire on
+clean treatments, not that every one of its 4 366 firings is a defect.**
+
 ### 12.3.18 The third flawless treatment — and a "wrong" label that saved the data
 
 `taxon_8dc658f0` (*Aquapteridospora linzhiensis*).  Operator: *"such a
@@ -7755,11 +7821,14 @@ corpus-wide.**  There the sentence runs *into* the block and *out of*
 it, so the block is demonstrably an interpolation inside a single
 sentence.  That is very hard to satisfy by accident.
 
-**The 25.3 % figure should be treated as an upper bound.**  One-sided
-continuation has legitimate causes — hard line-wrapping in the source, a
-genuine paragraph that happens to begin lower-case — and this has not
-been hand-verified against operator judgement.  The corpus-wide
-extrapolation of ~305 000 is therefore **not** quoted as a defect count.
+**The 25.3 % figure was recorded as an upper bound, unverified.  It has
+since been calibrated (§12.3.19) and the caution ran the wrong way:**
+precision against operator judgement is 100 % and recall 62 %, so the
+detector under-reports rather than over-reports.  The corpus-wide
+extrapolation of ~305 000 is still not quoted as a defect count, because
+per-firing precision over *random* blocks remains untested — but the
+concern that one-sided continuation would fire spuriously on clean
+treatments did not materialise.
 
 #### Its relation to the page-break class
 
