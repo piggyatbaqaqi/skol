@@ -7277,6 +7277,96 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.27 Cues protect the boundary they mark — and nothing marks a block's end
+
+`taxon_bb02abc4` (*Nectriopsis violacea*).  Operator: *"nearly a poster
+child… The description is missing its first line, eaten by the
+Misc-exposition.  **The three intervening blocks are correctly
+identified and the description continues in the last block.**"*
+
+**The contrast inside one treatment is the diagnostic.**
+
+```
+IN   725c [Nomenclature]     Nectriopsis violacea (J.C. Schmidt ex Fr.) Mai…
+      58c [Misc-exposition]  Description based on ex-epitype culture CBS 91…   <- STOLEN HEAD
+IN  2059c [Description]      morph: perithecia immersed in mycelium, becomi…
+      32c [Page-header]      --- PDF Page 88 Label 88 --- 110
+      10c [Misc-exposition]  Hou et al.
+     296c [Figure-caption]   Fig. 41. Nectriopsis violacea (ex-epitype cult…
+      32c [Page-header]      --- PDF Page 89 Label 89 --- 111
+      79c [Misc-exposition]  www.studiesinmycology.org Redisposition of acr…
+IN   290c [Description]      luteous at periphery, with white radial lines;…   <- RESUMES
+```
+
+The description **reassembles correctly across five intervening
+blocks** — two page headers, a running head, a figure caption and a URL
+line — and **loses its first line to one**.  So the failure is not an
+inability to handle interruptions; §12.3's span-reconstruction success
+is working here at full strength.  It is specifically a **head-boundary**
+failure.
+
+**And the stolen fragment is the cue itself.**  `Description based on
+ex-epitype culture CBS 91…` carries the word that marks where the
+description begins.  **The theft removes the very signal that would have
+protected the boundary.**
+
+#### Position bias, measured
+
+The operator has now reported lost *first* lines four times
+(`taxon_5180d088`, `taxon_5c661438`, `taxon_8f4ac1f5`, here) and lost
+*last* lines twice.  Testing that over 14 940 content blocks:
+
+| label | blocks | HEAD stolen | TAIL stolen | head/tail |
+|---|---:|---:|---:|---:|
+| `Biology` | 559 | **31.7 %** | 27.0 % | 1.17 |
+| `Notes` | 2 190 | 24.4 % | 22.5 % | 1.09 |
+| `Diagnosis` | 892 | 24.2 % | 21.7 % | 1.11 |
+| `Description` | 2 541 | **23.7 %** | 15.9 % | **1.48** |
+| `Figure-caption` | 1 937 | 13.8 % | 13.0 % | 1.06 |
+| `Materials-examined` | 1 440 | 5.8 % | **17.4 %** | **0.33** |
+| `Type-designation` | 488 | 4.1 % | 12.3 % | **0.33** |
+| `Etymology` | 529 | **2.3 %** | **48.2 %** | **0.05** |
+| **all** | **14 940** | 14.5 % | 15.5 % | 0.94 |
+
+**There is no global position bias** — head and tail theft are within a
+percentage point of each other overall, and the "descriptions lose their
+first line" intuition does not generalise across labels.
+
+**But the per-label spread is enormous and it tracks §12.3's cues
+exactly:**
+
+| | head/tail | cue honored (§12.3) |
+|---|---:|---:|
+| `Etymology` | 0.05 | **93 %** |
+| `Materials-examined` | 0.33 | 79 % |
+| `Type-designation` | 0.33 | 48 %\* |
+| `Description` | 1.48 | 89 %\* |
+
+*\*both measured on cue lists later shown incomplete — §12.3.3, §12.3.24.*
+
+**The generalisation: a self-declaring cue protects the boundary it
+marks, and only that boundary.**  `Etymology.` states where an etymology
+*begins*; **nothing in the house style states where it ends**, so the
+tail bleeds into whatever follows — 48.2 % of the time, the highest
+single figure in the table.  Labels whose openings are not conventionally
+announced (`Biology`, `Notes`, `Diagnosis`, and `Description` when its
+cue is absent or stolen) lose their heads instead.
+
+**This is a structural asymmetry in the source material, not a model
+defect**, and it predicts where repair effort pays: head boundaries are
+recoverable from cues that already exist, while **tail boundaries have
+no signal at all** and need the continuity test of §12.3.11 — which is
+precisely the detector §12.3.19 measured at 100 % precision.
+
+#### One caution on the `Description` row
+
+`Description`'s 1.48 sits between the two groups because it is
+*sometimes* cued (`Description.`) and sometimes not.  **This treatment
+shows the mechanism that moves it**: when the cue-bearing fragment is
+itself stolen, a cued description becomes an uncued one, and the ratio
+reflects a mixture of the two regimes rather than a property of the
+label.
+
 ### 12.3.26 The 2 % is curation, and the Latin detector is the suffix channel
 
 Operator, correcting §12.3.25: *"I have **deliberately left out major
