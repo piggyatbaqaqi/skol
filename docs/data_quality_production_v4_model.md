@@ -7277,6 +7277,65 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.28 A poster child that survives every detector
+
+`taxon_c7fdca00` (*Macrophomina vaccinii*).  Operator: *"is a poster
+child.  Fight me!"*
+
+**No fight available.**  Every detector developed across §12.2 and
+§12.3 was run against it:
+
+| check | result |
+|---|---|
+| merge metric `n_terms_above_5` | 0 |
+| `synthetic_nomenclature` | false |
+| cue-honoring (§12.3) | **all cues honored** |
+| head boundary theft (§12.3.11) | none |
+| tail boundary theft (§12.3.27) | none |
+| embedded caption openers (§12.3.13) | 0 |
+| lost newlines (§12.3.13) | 0 |
+| front-matter position (§12.3.23) | after the taxonomy section |
+
+```
+IN    62c [Nomenclature]       Macrophomina vaccinii Y. Zhang ter & L. Zh…
+IN   238c [Type-designation]   Holotype. CHINA, Fujian province, Nanping…
+IN    60c [Etymology]          Etymology. from "Vaccinium", in reference…
+IN  1070c [Description]        Description. Sexual stage not observed. As…
+     260c [Figure-caption]     Figure 2. Macrophomina vaccinii (from ex-t…
+IN   263c [Description]        Culture characteristics. Colonies on MEA a…
+IN   311c [Materials-examined] Additional specimens examined. CHINA, Fuji…
+IN   605c [Notes]              Note. Based on phylogenetic analysis, M. v…
+    2325c [Misc-exposition]    Pathogenicity test All the three isolates…
+```
+
+Both figure captions and the trailing pathogenicity-test section are
+correctly **excluded**, and `Culture characteristics.` is correctly a
+second `Description` rather than a new treatment.
+
+**4 for 4 on self-labelling.**  Every flawless treatment of round 5 is a
+document that labels itself throughout.  §12.3 measured cue-honoring at
+65 % corpus-wide; these are the documents where it reaches 100 %.
+
+#### The one honest caveat, and it is not a defect
+
+The `Note.` block is phylogenetic — *"Based on phylogenetic analysis,
+M. vaccinii…"*.  By §12.3's measure the model is **right**: the document
+declares `Note.` and the cue is honored.  By the lattice it is a valid
+**refinement** direction (`Notes` ⊐ `Phylogeny`), so it is benign in the
+scoring either way.
+
+**It is now also an opportunity rather than a loss.**  Before commit
+`8c0148d` a `Phylogeny` label here would have discarded the 605
+characters (§12.3.12).  With the grouper fixed, this is exactly the
+block that a `Notes` -> `Phylogeny` refinement would now place in its own
+field — the same observation the operator made on `taxon_8dc658f0`,
+arriving for the second time in a flawless treatment.
+
+**A caveat on the merge metric line above**: `n_terms_above_5 = 0` is
+uninformative here, since §12.3.4 established the metric is blind to
+merges in short treatments.  It is recorded for completeness, not as
+evidence.
+
 ### 12.3.27 Cues protect the boundary they mark — and nothing marks a block's end
 
 `taxon_bb02abc4` (*Nectriopsis violacea*).  Operator: *"nearly a poster
@@ -7920,9 +7979,9 @@ phylogeny."*
 `Description.`, `Figure 2.`, `Culture characteristics.`, `Material
 examined.`, `Notes.` — and every cue is honored.
 
-**That is 3 for 3.**  All three flawless treatments of round 5
-(`taxon_3b7a80bc`, `taxon_53dd1485`, this one) are documents that label
-themselves throughout.  §12.3 measured cue-honoring at 65 % overall;
+**That is 4 for 4** (with `taxon_c7fdca00`, §12.3.28).  Every flawless
+treatment of round 5 — `taxon_3b7a80bc`, `taxon_53dd1485`, this one and
+`taxon_c7fdca00` — is a document that labels itself throughout.  §12.3 measured cue-honoring at 65 % overall;
 these are the documents where it reaches 100 %, and they are the
 documents that come out clean.  **On the evidence so far, complete
 self-labelling is not merely correlated with flawless extraction — it is
