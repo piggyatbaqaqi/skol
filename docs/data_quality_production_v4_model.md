@@ -7201,6 +7201,91 @@ the corpus supplies the labels.  Recorded as
 absent from older or OCR-damaged material, so these rates are an **upper
 bound**.  Both perfect treatments are from that well-formatted stratum.
 
+### 12.3.22 `MISC_GAP_LIMIT` does not bound treatment extent
+
+`taxon_910039ca`.  Operator: *"describes an order, and maybe a family,
+and a genus.  I notice that **there are 50 lines between the Order
+nomenclature and the first description** — but that description does
+appear to be correct… There is another large gap to the final
+description which appears to be a genus."*
+
+`Treatment.MISC_GAP_LIMIT = 4` reads as a bound on how far a treatment
+may stretch.  **It is not one.**  The counter increments on
+`Misc-exposition` only, and the label set divides three ways:
+
+| behaviour | labels |
+|---|---|
+| **resets** the counter (and is stored as a section) | `Description`, `Diagnosis`, `Etymology`, `Biology`, `Notes`, `Type-designation`, `Materials-examined`, `Figure-caption`, `Key`, `Phylogeny`, `Distribution` |
+| **increments** it | `Misc-exposition` |
+| **transparent** — neither | `Table`, `Page-header`, `Bibliography`, `Index`, `ToC-entry`, `Materials-and-methods`, `New-combinations` |
+
+*(`Nomenclature` is handled explicitly by the state machine and is in
+none of these three.)*
+
+#### Measured gap between a treatment's `Nomenclature` and its first `Description`
+
+| | blocks |
+|---|---:|
+| median | 4 |
+| p75 | 11 |
+| p90 | **39** |
+| p99 | **2 345** |
+| max | **7 449** |
+
+**27 % of treatments have a gap of 10 blocks or more.**  A limit of 4
+coexisting with a p99 of 2 345 is not a limit.
+
+What fills those large gaps — 28 466 blocks:
+
+| label | share | effect on the counter |
+|---|---:|---|
+| `Misc-exposition` | 40 % | increments |
+| `Table` | 16 % | **transparent** |
+| `Page-header` | 15 % | **transparent** |
+| `Description` | 5 % | **resets** |
+| `Figure-caption` | 4 % | **resets** |
+| `Key` | 4 % | **resets** |
+| `Bibliography` | 3 % | **transparent** |
+| `Materials-examined` | 2 % | **resets** |
+
+**37 % of the blocking material is transparent to the counter**, and a
+further ~15 % actively *resets* it.  So the extreme tail is not one long
+run of `Misc-exposition` — it is `Misc-exposition` **punctuated** by
+material that either exerts no pressure or cancels what has accumulated.
+
+#### The compounding link to rogue `Key` and `Table`
+
+`Key` is a **section** label, so it resets the counter *and* is stored
+as treatment content.  §12.3.6 showed rogue `Key` absorbs descriptive
+prose in whole documents.  **Those two facts multiply**: in a
+rogue-`Key` document, the mislabelled prose does not merely go to the
+wrong field — it **holds the treatment open indefinitely**, resetting the
+gap every time it appears.
+
+`Table` is the mirror case.  §12.3.15 showed it swallows short-line
+citations and prose in OCR'd multi-column scans; being transparent, it
+lets a treatment stretch across arbitrarily much of that material
+without ever registering as a gap.
+
+**So the same two labels that §12.3.6 and §12.3.15 identified as
+content-blind are also the ones defeating the only mechanism that limits
+treatment extent.**
+
+#### A note on units, and on this treatment
+
+The operator counted **lines**; this measurement counts **blocks**.  For
+`taxon_910039ca` the nomenclature-to-first-description gap is only two
+blocks, one of which is a large `Misc-exposition` — consistent with ~50
+lines.  **Block counts understate what a reader experiences**, and the
+p99 above should be read with that in mind.
+
+The operator's remaining observations are recorded classes: an order,
+family and genus in one treatment (§5.5's multi-rank problem, and the
+fourth route to it); `Notes` that *"look suspiciously like a diagnosis"*
+(`Notes` ⊐ `Diagnosis`); and a second description that *"should have
+continued into the Table and Misc-exposition that follows"* — §12.3.15
+and §12.3.11 compounded.
+
 ### 12.3.21 Nomenclature blocks are captured 95 % of the time — so the yield problem is about *sections*
 
 `taxon_8f4ac1f5` (Tian, Hyde & Maharachchikumbura — a large multi-family
