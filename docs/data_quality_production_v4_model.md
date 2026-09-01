@@ -7334,10 +7334,9 @@ reviewed so far, the operator has flagged **three** as not taxonomic
 articles — `taxon_65cf0058` (FDA drug leaflet), `taxon_88431ff4`
 (19th-century botanist's report) and this one.
 
-**≈ 6 % of p1, on n = 3.**  The interval is wide — roughly 1–17 % — but
-it is the **first estimate from a random sample** rather than from
-targeted queries, and it sizes §12.3.8's gate: a gate removing ~6 % of
-the annotatable pool would pay for itself in annotation cost alone.
+**≈ 6 % of p1, on n = 3** — revised to **≈ 8 % on n = 4** by §12.3.40.
+The interval is wide, but it is the **first estimate from a random
+sample** rather than from targeted queries.
 
 #### The shared signature is not a gate
 
@@ -7420,6 +7419,72 @@ time it can be checked.  **Until a name-based linker exists, a
 downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
+
+### 12.3.40 Non-taxonomic documents are prolific — which is good news for the gate
+
+`taxon_fc47df1e`.  Operator: *"is not a taxonomic article."*  It is the
+**IAS 2021 Abstract Book** — the International AIDS Society conference
+proceedings, **2 443 blocks**.
+
+**A second entry route.**  §12.3.39 found the clinical review entered p1
+through the `Diagnosis` homograph.  This one entered through
+`description` (862 characters), as did the FDA leaflet and the
+botanist's report.  **Three of four came in via `Description`, one via
+`Diagnosis`** — consistent with §12.3.16: register-based labelling has
+no notion of document context, so any text in the right register
+qualifies.
+
+#### The blast radius
+
+| document | treatments | synthetic | p1-eligible |
+|---|---:|---:|---:|
+| FDA leaflet | 2 | 2 | 2 |
+| Botanist report | 7 | 6 | 6 |
+| Clinical review | 5 | 5 | 4 |
+| **IAS abstract book** | **67** | **67** | 23 |
+| **total** | **81** | 80 | **35** |
+
+**Median treatments per source document corpus-wide: 1.**  These four
+average twenty, and the abstract book sits at the **99th percentile**.
+
+**Non-taxonomic documents are far more prolific than typical ones**, and
+the reason is structural: they are long, contain no real nomenclature,
+and so the grouper synthesises a stub every time a section-labelled
+block appears with no name ahead of it.  **All 67 abstract-book
+treatments are synthetic.**
+
+#### This substantially improves the case for a document-level gate
+
+The contamination estimate is **treatment-level** — the operator reviewed
+treatments, and four of roughly 49 came from non-taxonomic documents, so
+**≈ 8 %**.  But because these documents are prolific, the corresponding
+**document-level** rate is far lower: four documents produced 81
+treatments against a corpus average near 4.6.
+
+**So a gate operating on documents removes ~8 % of treatments by
+rejecting ~2 % of documents.**  That leverage was not visible from
+§12.3.8, which argued the gate on data quality, or §12.3.39, which
+argued it on annotation cost.  **It is a better intervention than either
+framing suggested**, and it acts before extraction rather than after.
+
+#### A candidate gate feature that is not the one already rejected
+
+§12.3.39 rejected `synthetic_nomenclature` as a gate: 22 % of
+description-bearing treatments carry it, so gating on the flag would
+discard one in five to remove one in sixteen.
+
+**But that is the per-*treatment* flag.**  Every one of the abstract
+book's 67 treatments is synthetic — a **per-document synthetic fraction
+of 100 %**, against a corpus base rate of 22 % per treatment.  **The
+fraction may separate where the flag does not**, and it is computable
+from data already in CouchDB without the title or journal that
+`_slim_ingest` discards (§12.3.17).
+
+**Untested** — recorded as the next measurement rather than a
+recommendation.  The obvious risk is that legitimate whole-volume scans
+(§12.3.9) also lose their nomenclature and would score high; the test
+must therefore separate "no names because it is not taxonomic" from "no
+names because the layout defeated us".
 
 ### 12.3.38 Only 41 % of `Figure-caption` blocks open like a caption
 
