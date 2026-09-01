@@ -7277,6 +7277,76 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.37 Figure captions should be catalogued separately and linked by name
+
+`taxon_f6fa698e`.  Operator: *"The figure-caption (Figure 53) is for a
+third taxon, Diaporthe middletonii"* — while the treatment is *Diaporthe
+sojae* — and: *"**adding illustrations to treatments is going to be
+challenging, as the figures are not necessarily contiguous with the
+treatment.  Maybe catalog the illustrations separately and try to put
+binomials on them?**"*
+
+**The proposal is well-founded, and the current behaviour is worse than
+the operator suspected.**
+
+#### Measured
+
+Over 846 `Figure-caption` spans attached to 320 treatments:
+
+| | n | |
+|---|---:|---:|
+| caption **names a taxon** | 514 | **61 %** |
+| no binomial in the caption | 332 | 39 % |
+| …**matches** the treatment it is attached to | 28 | **3 %** |
+| …same genus, different species | 60 | 7 % |
+| …different taxon entirely | 426 | 50 % |
+
+**Of the captions that name a taxon, only 5 % name the treatment they
+are attached to.**  The operator's *Diaporthe middletonii* case is the
+norm, not the exception — **proximity-based attachment is wrong roughly
+19 times in 20.**
+
+#### Both halves of the proposal are supported
+
+* **Catalogue separately** — because position does not carry the
+  linkage.  Figures are laid out to fit pages, and §12.3.9's whole-volume
+  material makes this worse, but even in single modern articles the
+  figure block for one species routinely sits inside a neighbour's
+  treatment.
+* **Link by binomial** — because **61 % of captions name their taxon**,
+  and the abbreviated form (`D. sojae`) is common enough to require
+  handling alongside the full one.  That 61 % is the **ceiling on recall**
+  for a name-based linker; the remaining 39 % carry no name and need
+  another route — figure-number cross-references from the treatment text
+  (`Figs 8, 9` appears in `Nomenclature` blocks throughout this review)
+  being the obvious candidate.
+
+#### Two caveats, one of which limits the number
+
+**A selection effect.**  Correct behaviour in the flawless treatments
+(§12.3.18, §12.3.28) *excluded* their captions from the treatment
+entirely — `Figure 8. Basidiomata of Xylodon daweishanensis` sits beside
+its treatment without being attached to it.  So **treatments that have
+attached captions are disproportionately those where attachment went
+wrong**, and the 5 % is not an estimate of "how often the right caption
+reaches the right treatment" across the corpus.  What it does establish
+is that **the attachments which exist are almost never right**, which is
+the claim that matters for the design.
+
+**Binomial extraction is noisy** — §12.3.32 showed `Mycelium
+amphigenum` parses as a name.  That inflates the "different taxon
+entirely" bucket but **cannot produce false mismatches**: a caption
+naming its own treatment's taxon is still detected, so the 5 % match
+rate is robust to it.
+
+#### Where this leaves `figure_caption_spans`
+
+The field is currently populated by proximity and is wrong 95 % of the
+time it can be checked.  **Until a name-based linker exists, a
+downstream consumer treating `figure_caption_spans` as "this treatment's
+illustrations" is being misled**, and that is worth stating plainly
+because the field looks authoritative.
+
 ### 12.3.36 Block *extent* is a separate axis from block *label*
 
 `taxon_ecfa2e69` (*Taeniolella vermicularis*).  Operator: *"The
