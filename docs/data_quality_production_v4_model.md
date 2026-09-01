@@ -7420,6 +7420,78 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.41 Boundary theft is a document property — and so is almost everything else
+
+`taxon_fcaca7fe`.  Operator: *"The Nomenclature… lost 2 lines to a
+Misc-exposition.  The type_designation… loses its last line to a
+Misc-exposition.  Etymology loses its last line to a Misc-exposition…
+The biology block loses its last line to a Misc-exposition."*
+
+**Four tail thefts in one treatment**, against §12.3.27's corpus rate of
+15.5 %.  That is not plausible as four independent events.
+
+#### Measured
+
+Over 126 documents with at least five theft opportunities (a content
+block immediately followed by `Misc-exposition`):
+
+| per-document theft **rate** | |
+|---|---:|
+| p10 | **0 %** |
+| p25 | 19 % |
+| median | **38 %** |
+| p75 | 48 % |
+| p90 | **60 %** |
+
+**10 % of documents have no theft at all; the top 10 % hold 57 % of
+every theft in the sample.**
+
+**A caveat on my own statistic.**  The raw count dispersion
+(variance/mean) is **59.7**, which reads as extreme clustering — but it
+is inflated by document length, since long documents have more
+opportunities *and* more thefts.  **The rate distribution above is the
+fair measure**, and it shows real but less dramatic concentration: a
+band from 0 % to 60 % rather than a two-population split.
+
+#### The cross-cutting pattern this review keeps producing
+
+**This is the third independent finding of the same shape**, and it is
+probably the most actionable structural result in §12.3:
+
+| finding | concentration |
+|---|---|
+| §12.3.1 — #407's manual residual | **80 % of the work sits in 4 % of documents** |
+| §12.3.6 — rogue `Key` | a **document**-level property; the median document has none |
+| §12.3.41 — boundary theft | top **10 %** of documents hold **57 %** of thefts |
+
+Add §12.3.40's non-taxonomic documents — 4 documents producing 81
+treatments against a median of 1 — and the pattern is consistent:
+**defects concentrate in documents, not across blocks.**
+
+**The strategic consequence.**  Every remedy discussed in this section
+has been framed as a model or schema change — better cues, a subsumption
+lattice, sub-line labelling, reflow.  **The measurements keep saying the
+cheaper lever is document triage**: identify the bad documents, and
+either repair them upstream (re-OCR, reflow, re-ingest) or exclude them,
+rather than teaching the model to cope with material that is broken
+before it arrives.
+
+That does not retire the model work — the median document still has a
+38 % theft rate, so this is concentration rather than a clean
+two-population split, and §12.3.27's structural asymmetry (cues protect
+heads, nothing protects tails) applies everywhere. **But it does say
+where the first dollar goes.**
+
+#### The operator's other two observations
+
+* *"The type_designation eats a short diagnosis"* — over-extension
+  (§12.3.36), in the same treatment as four thefts.  **Extent errors run
+  in both directions within one document**, which argues the cause is
+  segmentation quality rather than a directional bias.
+* *"The final two notes sections belong together and the intervening
+  page header was correctly identified"* — span reconstruction working
+  (§12.2's 37 % that survive), and the fifth such success recorded.
+
 ### 12.3.40 Non-taxonomic documents are prolific — which is good news for the gate
 
 `taxon_fc47df1e`.  Operator: *"is not a taxonomic article."*  It is the
