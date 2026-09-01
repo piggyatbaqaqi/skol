@@ -7277,6 +7277,78 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.39 The `Diagnosis` homograph is how non-taxonomic articles reach p1
+
+`taxon_f94b9c84`.  Operator: *"is not a taxonomic article."*  It is
+**"Immunologic Diagnosis of Endemic Mycoses"** (Almeida-Paes et al.), a
+clinical immunology review.  `Nomen ignotum`, `synthetic_nomenclature`
+true, no DOI, **zero description characters** — and **ten `Diagnosis`
+blocks**:
+
+```
+"The diagnosis of cryptococcosis, regardless of the causative species (C. n…"
+"Antibody detection has been used as the principal coccidioidomycosis diagn…"
+"immunologic tests as a tool for sporotrichosis diagnosis.  For this mycosis…"
+"178. Imwidthaya, P.; Sekhon, A.S.; Mastro, T.D.…"        <- a bibliography entry
+```
+
+**Taxonomic *Diagnosis* — a differential description — and clinical
+*diagnosis* — identifying a disease — are the same word.**
+
+#### Measured
+
+| | n | |
+|---|---:|---:|
+| morphology only — genuinely taxonomic | 357 | **78.1 %** |
+| **clinical vocabulary, no morphology** | 12 | **2.6 %** |
+| both | 5 | 1.1 % |
+| neither | 83 | 18.2 % |
+
+~837 clinical-diagnosis blocks corpus-wide.  **A modest rate with an
+outsized consequence.**
+
+#### Why 2.6 % matters more than it looks
+
+`select_for_annotation` computes complexity from **description *or*
+diagnosis** presence.  This treatment has **no description at all** —
+its complexity is entirely supplied by clinical `Diagnosis` blocks.
+
+**So a 2.6 % labelling error is not merely a mislabel: it decides
+population membership.**  It moved a clinical review into **p1**, the
+annotatable pool, where it consumed an annotation slot in round 5 and an
+operator's reading time.  §12.3.8 framed the taxonomic-article gate as a
+data-quality question; this is the same problem seen from the **cost**
+side.
+
+**§12.3.16 explains why `Diagnosis` is uniquely exposed.**
+`Description` is protected by requiring Latinate *morphological*
+register — which is why it failed on German and fired on a drug tablet.
+**`Diagnosis` carries no such requirement**: the cue word alone suffices,
+and the word is shared with clinical medicine, a field that overlaps
+mycology heavily.
+
+#### A first contamination estimate for p1
+
+Round 5 is a **random draw from p1**.  Across roughly 48 treatments
+reviewed so far, the operator has flagged **three** as not taxonomic
+articles — `taxon_65cf0058` (FDA drug leaflet), `taxon_88431ff4`
+(19th-century botanist's report) and this one.
+
+**≈ 6 % of p1, on n = 3.**  The interval is wide — roughly 1–17 % — but
+it is the **first estimate from a random sample** rather than from
+targeted queries, and it sizes §12.3.8's gate: a gate removing ~6 % of
+the annotatable pool would pay for itself in annotation cost alone.
+
+#### The shared signature is not a gate
+
+All three carry `synthetic_nomenclature: true`, `Nomen ignotum` and no
+DOI.  **Tempting, and insufficient**: §12.3.17 measured
+`synthetic_nomenclature` at **22 %** of description-bearing treatments.
+A gate on that signature would discard roughly one treatment in five to
+remove one in sixteen.  **The signature is close to necessary and
+nowhere near sufficient**, which is consistent with §12.3.17's finding
+that the fields a real gate needs are stripped by `_slim_ingest`.
+
 ### 12.3.37 Figure captions should be catalogued separately and linked by name
 
 `taxon_f6fa698e`.  Operator: *"The figure-caption (Figure 53) is for a
