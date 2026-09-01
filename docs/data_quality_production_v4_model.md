@@ -7277,6 +7277,83 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.36 Block *extent* is a separate axis from block *label*
+
+`taxon_ecfa2e69` (*Taeniolella vermicularis*).  Operator: *"The
+type-designation starts OK, but then **runs into a Habitat (biology)
+block, and a Notes block**.  Admittedly, the Notes block starts with a
+discussion of the type specimen."*
+
+That is **over-extension** — the mirror of §12.3.11's theft.  There a
+block loses material to a neighbour; here it keeps going and swallows
+whole following sections.  Confirmed in the treatment: its 578-character
+`Type-designation` block contains an embedded `Notes` cue.
+
+#### Generalising §12.3.13's test to every label
+
+§12.3.13 counted `Fig. 3 –` openers appearing mid-block as missed
+splits.  **The same test applies to every self-declaring cue**: a
+`Habitat.`, `Notes.` or `Holotype.` appearing past the opening of a
+block marks a boundary the segmenter did not draw.
+
+| host label | blocks | over-extended | rate |
+|---|---:|---:|---:|
+| **`Biology`** | 580 | 89 | **15 %** |
+| **`Notes`** | 911 | 104 | **11 %** |
+| `Materials-examined` | 613 | 44 | 7 % |
+| `Key` | 980 | 62 | 6 % |
+| `Phylogeny` | 302 | 17 | 6 % |
+| `Description` | 1 548 | 81 | 5 % |
+| `Type-designation` | 282 | 13 | 5 % |
+| `Misc-exposition` | 4 814 | 224 | 5 % |
+| `Figure-caption` | 1 053 | 9 | **1 %** |
+| **all** | **14 878** | **762** | **5 %** |
+
+#### This is a different axis from cue-honoring, and they are independent
+
+§12.3 measures whether a block's **label** is right — 65 % corpus-wide.
+This measures whether its **extent** is right.  **A block can honor its
+own opening cue perfectly and still swallow the next three sections**,
+which is exactly what happened here: the `Type-designation` block opens
+`Lectotype (designated here, MycoBank MBT…` — correctly cued, correctly
+labelled — and runs on through a habitat statement into the notes.
+
+**5 % of blocks are labelled right and bounded wrong.**  Any accuracy
+metric computed per block will score them as successes.
+
+#### The `Notes` ↔ `Biology` boundary is genuinely fuzzy
+
+| pair | n |
+|---|---:|
+| `Notes` swallowed `Biology` | 85 |
+| `Biology` swallowed `Notes` | **78** |
+
+**Near-perfect symmetry.**  A directional collapse (§12.3's
+`Type-designation` → `Materials-examined` at 124 against 12) indicates a
+distinction being lost; **symmetry indicates a boundary nobody draws
+consistently** — including the operator, whose *"admittedly, the Notes
+block starts with a discussion of the type specimen"* is the same
+hesitation measured from the inside.
+
+That places `Notes`/`Biology` with the pairs recorded in §12.3.30 where
+**the reviewer is choosing rather than correcting**, and it is the
+strongest case yet: the two directions are within 8 % of each other.
+
+#### An independent confirmation, and a success
+
+`Misc-exposition` swallowed `Figure-caption` **76** times — §12.3.13
+measured the same class at 195 with a stricter pattern over all hosts.
+Two routes, consistent magnitudes.
+
+And the operator's closing observation is a success worth recording:
+*"The Notes section continues in a notes block.  We correctly classify
+intermediate material and conclude the Notes section with another notes
+block."*  The two `Notes` blocks are separated by **seven** intervening
+blocks — two page headers, two copyright lines, two editor blocks and a
+figure caption — all correctly labelled, with the notes reassembled
+across them.  **Span reconstruction at its best**, in the same treatment
+as a five-section over-extension.
+
 ### 12.3.35 Reflow versus `Table` detection — the tension is smaller than it looks
 
 Operator: *"I'm wondering about the interaction between Table detection
