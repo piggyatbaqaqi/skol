@@ -7313,13 +7313,15 @@ norm, not the exception — **proximity-based attachment is wrong roughly
   material makes this worse, but even in single modern articles the
   figure block for one species routinely sits inside a neighbour's
   treatment.
-* **Link by binomial** — because **61 % of captions name their taxon**,
-  and the abbreviated form (`D. sojae`) is common enough to require
-  handling alongside the full one.  That 61 % is the **ceiling on recall**
-  for a name-based linker; the remaining 39 % carry no name and need
-  another route — figure-number cross-references from the treatment text
-  (`Figs 8, 9` appears in `Nomenclature` blocks throughout this review)
-  being the obvious candidate.
+* **Link by binomial** — because captions name their taxon.  The
+  headline rate is 61 %, **but §12.3.38 shows that is dragged down by
+  non-caption content: restricted to blocks that actually open with
+  `Figure N`, the naming rate is 95 %.**  The abbreviated form
+  (`D. sojae`) is common enough to require handling alongside the full
+  one.  The residual needs another route — figure-number
+  cross-references from the treatment text (`Figs 8, 9` appears in
+  `Nomenclature` blocks throughout this review) being the obvious
+  candidate.
 
 #### Two caveats, one of which limits the number
 
@@ -7346,6 +7348,69 @@ time it can be checked.  **Until a name-based linker exists, a
 downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
+
+### 12.3.38 Only 41 % of `Figure-caption` blocks open like a caption
+
+`taxon_f6fa698e`, operator follow-up: *"The figure_caption block is
+really a **continuation of a Figure-caption on the previous page**."*
+
+**Confirmed as a mechanism, and it is a small one.**  Of 1 253
+`Figure-caption` blocks:
+
+| | n | |
+|---|---:|---:|
+| opens with `Figure N` | 512 | **41 %** |
+| no opener | 741 | **59 %** |
+| …preceded by another `Figure-caption` across furniture | 50 | 4 % |
+| …**with page furniture between — a split caption** | 41 | **3 %** |
+
+The operator's case is real and measurable at ~3 %, and it is §12.2's
+page-break class applied to a label that had not been checked for it.
+
+#### But the no-opener population is mostly not captions at all
+
+The examples are decisive:
+
+```
+'DiscussionBacteria and fungi are among the m…'
+'ConclusionIn conclusion, to the best of our …'
+'Table 7 GenBank accession numbers of species…'
+```
+
+Section prose and a table header, labelled `Figure-caption`.  **59 % of
+blocks carrying this label do not begin like a caption**, and only a
+twelfth of that is explained by page splits.
+
+**Read together with §12.3, this pins the label from both sides:**
+
+| direction | measure |
+|---|---|
+| blocks **cued** `Fig N` that get the label | **66 %** (§12.3) |
+| blocks **labelled** `Figure-caption` that are cued | **41 %** |
+
+**Neither precise nor complete.**  That is consistent with §12.3.2's
+finding that `Figure-caption` has no semantic handle and its 131 errors
+scatter across seven unrelated labels — a caption is defined by page
+position, and without layout the label drifts in both directions.
+
+#### The practical consequence improves §12.3.37's recommendation
+
+**Naming rate splits sharply**: blocks that open with `Figure N` name a
+taxon **95 %** of the time; those that do not, **67 %**.
+
+So §12.3.37's *"61 % of captions name their taxon"* understates what a
+name-based linker can reach, because that 61 % was computed over a
+population **59 % of which is not caption text**.
+
+**Restricting the linker to caption openers gives 95 % naming coverage
+rather than 61 %** — and it simultaneously filters out the Discussion,
+Conclusion and Table prose that would otherwise be catalogued as
+illustrations.  **The opener test is doing double duty: a caption
+detector and a name-availability filter in one.**
+
+The 3 % split captions must be rejoined *before* that filter is applied,
+or their names — which sit in the opener on the previous page — are lost
+with them.
 
 ### 12.3.36 Block *extent* is a separate axis from block *label*
 
