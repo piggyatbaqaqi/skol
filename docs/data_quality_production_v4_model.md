@@ -7513,6 +7513,48 @@ The alternative — re-extracting in place — requires **first** adding a
 deletion pass to the writer, which is a change to production extraction
 made in order to run an experiment.  **Wrong order.**
 
+#### What was created (2026-09-01)
+
+**`production_v4_1`**, status `draft`.  Deliberately **not**
+`production_v5`: v5 is triggered by M3 of
+`docs/plans/production-v5-execution.md`, when a change needs a fresh
+pipeline container.  This needs no such thing — **it is a
+re-*grouping*, not a re-classification.**
+
+| database | |
+|---|---|
+| `ingest` | `skol_dev` — **shared** |
+| `training` | `skol_training_v3_combined_no_golden` — **shared** |
+| `annotations` / `spans` | `skol_exp_production_v4_01_00_ann_combined` — **shared** |
+| `treatments_prose` | `skol_exp_production_v4_1_02_00_treatments_prose` — **new** |
+| `features_candidate` | `skol_exp_production_v4_1_02_50_features_candidate` — **new, empty** |
+
+**Sharing the annotations DB is the point.**  Commit `8c0148d` changed
+`treatment.py`, not the classifier: Pass 1 and Pass 2 output is
+byte-identical, so the expensive half of the pipeline does not re-run.
+Only `extract_treatments_to_couchdb` does.
+
+**One correction after creation:** `manage_experiment create` derived
+`spans` as `skol_exp_production_v4_1_01_00_ann`, a database that does
+not exist.  In `production_v4` that key mirrors `annotations`, and it
+was set to match — otherwise span resolution would have pointed at
+nothing.  Worth knowing before the next experiment is created this way.
+
+**The comparison this enables**, and the reason it was worth a separate
+database:
+
+1. **the orphan list is free** — ids in `production_v4` and absent in
+   `production_v4_1` *are* the orphans, no re-derivation needed;
+2. **the fix is verifiable** — does `phylogeny` actually populate, and
+   at the ~39 300 blocks §12.3.12 measured?
+3. **the side effect is measurable** — treatment count fell 568 → 564
+   in simulation, so §12.3.22's unbounded-extent concern can be checked
+   directly rather than assumed;
+4. **nothing citable breaks** — the memo's 176 ids, the fixtures' 136,
+   the round files' 1 000 and the annotation DBs all still address v4.
+
+
+
 ### 12.3.41 Boundary theft is a document property — and so is almost everything else
 
 `taxon_fcaca7fe`.  Operator: *"The Nomenclature… lost 2 lines to a
