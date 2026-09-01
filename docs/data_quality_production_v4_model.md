@@ -7277,6 +7277,86 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.33 A dry-run of two pending changes against a clean treatment
+
+`taxon_e9ece99e` (*Pseudochaetosphaeronema lincangensis*).  Operator:
+*"looks like a poster child.  I could quibble with the last two notes.
+I think we are contemplating changes which would reclassify the first as
+Nomenclature, and the second as Phylogeny."*
+
+**Fifth flawless treatment, and 5 for 5 on self-labelling** —
+`Etymology.`, `Holotype.`, `Description.`, `Culture characteristics.`,
+`Material examined.`, `Figure 5.`, `Notes.` all cued and all honored, no
+boundary theft either side.
+
+Because the only outstanding items are two *pending changes*, this is a
+usable dry-run of both.
+
+#### Prediction 1 — first note → `Nomenclature`: **not supported**
+
+```
+[Notes] GenBank numbers. ZHKUCC 23–0800 = ITS: OR853095, LSU: OR922336,
+        SSU: OR922342, tef1-α: OR966290;
+```
+
+| test | result |
+|---|---|
+| gnfinder names found | **0** |
+| authority string | **none** |
+
+**§12.3.32's splitter would not touch this block.**  It fires on
+taxonomic citations, and there is no name here at all.
+
+**The distinction worth recording**: these are **sequence** accessions,
+not **nomenclatural registry** identifiers.  MycoBank and Facesoffungi
+numbers register the *name* and belong with `Nomenclature` — that is the
+class §12.3 measured at 74.2 % mislabelled, and which the operator
+flagged on `taxon_8f4ac1f5`.  GenBank/ITS/LSU accessions register
+*sequences* and are voucher-linked.  **Grouping them under
+`Nomenclature` would conflate two different identifier classes**, and
+the change under contemplation does not do it.
+
+#### Prediction 2 — second note → `Phylogeny`: supported by content, but not by the landed fix
+
+```
+[Notes] Notes. In the phylogenetic analyses, Pseudochaetosphaeronema
+        lincangensis clusters distinctly, sister to…
+```
+
+Nine distinct phylogeny markers (`phylogenetic`, `analyses`, `sister`,
+`support`, `ITS`, `LSU`, `SSU`, `phylogeny`).  **The content reading is
+clearly right.**
+
+**But commit `8c0148d` does not cause this reclassification.**  It
+removes the *penalty* — before it, a `Phylogeny` label here would have
+discarded all 1 053 characters (§12.3.12).  **It does not change what
+the model labels.**  Relabelling requires the model to prefer the
+content signal over the document's declared `Notes.` cue.
+
+**And that is in direct tension with the strongest positive finding in
+this section.**  Cue-honoring is what distinguishes the five flawless
+treatments — 5 for 5, against 65 % corpus-wide.  A change that teaches
+the model to override declared cues risks the mechanism that makes these
+documents work.
+
+**The lattice already resolves it, and the resolution is "neither is an
+error."**  `Notes` ⊐ `Phylogeny` makes the refinement *permitted*, not
+*required*; honoring the cue is correct by §12.3's measure and refining
+is correct by content.  **The choice is a product decision** — a
+`phylogeny` field is more useful downstream than a `notes` field for
+this content — **not a correctness fix**, and it should be argued on
+that basis rather than as a defect repair.
+
+#### §12.3.32's trap, confirmed in the wild
+
+gnfinder found **15 names** in that second `Notes` block — it is
+comparative discussion naming congeners (`P. magnoliae` at 6.87,
+`P. siamensis` at 6.31).  **A splitter run naively over `Notes` blocks
+would shred it into fragments.**  This is the same failure mode as
+§12.3.32's `Mycelium amphigenum`, in a different label, and it confirms
+that the splitter must be **scoped to block types and positions where a
+citation is expected** rather than applied wherever a name is found.
+
 ### 12.3.32 Two design directions for the next model, with feasibility evidence
 
 Operator: *"two things to account for in the next model: **(1) We can
@@ -8347,9 +8427,9 @@ phylogeny."*
 `Description.`, `Figure 2.`, `Culture characteristics.`, `Material
 examined.`, `Notes.` — and every cue is honored.
 
-**That is 4 for 4** (with `taxon_c7fdca00`, §12.3.28).  Every flawless
-treatment of round 5 — `taxon_3b7a80bc`, `taxon_53dd1485`, this one and
-`taxon_c7fdca00` — is a document that labels itself throughout.  §12.3 measured cue-honoring at 65 % overall;
+**That is 5 for 5** (with `taxon_c7fdca00` §12.3.28 and `taxon_e9ece99e`
+§12.3.33).  Every flawless treatment of round 5 is a document that
+labels itself throughout.  §12.3 measured cue-honoring at 65 % overall;
 these are the documents where it reaches 100 %, and they are the
 documents that come out clean.  **On the evidence so far, complete
 self-labelling is not merely correlated with flawless extraction — it is
