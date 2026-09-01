@@ -244,8 +244,24 @@ def taxpub_doc_admitted(
     only_doc_ids: Optional[Set[str]] = None,
     skip_doc_ids: Optional[Set[str]] = None,
 ) -> bool:
-    """Not implemented yet."""
-    raise NotImplementedError
+    """Whether the G.1 taxpub sweep should process this ingest doc.
+
+    ``only_doc_ids`` is the ``--doc-id`` scope.  **``None`` means
+    unfiltered; an empty set means nothing.**  Conflating the two is
+    how a scoped run silently becomes a full-database sweep — which is
+    what this function exists to prevent.
+
+    ``skip_doc_ids`` is ``--skip-existing`` and wins: a document both
+    named and already extracted is skipped, because the flag is about
+    not redoing work.
+    """
+    if skip_doc_ids is not None and doc_id in skip_doc_ids:
+        return False
+    if only_doc_ids is not None and doc_id not in only_doc_ids:
+        return False
+    if not doc.get("is_taxpub"):
+        return False
+    return "article.xml" in (doc.get("_attachments") or {})
 
 
 def iter_taxpub_treatments(
@@ -691,6 +707,8 @@ class TreatmentExtractor:
     def _extract_taxpub_treatments(
         self,
         skip_doc_ids: Optional[Set[str]] = None,
+        only_doc_ids: Optional[Set[str]] = None,
+        limit: Optional[int] = None,
     ) -> Iterator[Treatment]:
         """Iterate ``is_taxpub=True`` docs in the ingest DB and yield
         Treatment objects via the dispatcher's ``taxpub_treatment_extractor``
@@ -715,17 +733,22 @@ class TreatmentExtractor:
 
         def _yield_docs() -> Iterator[Tuple[Dict[str, Any], bytes]]:
             count = 0
-            for doc_id in db:
-                if skip_doc_ids is not None and doc_id in skip_doc_ids:
-                    continue
+            # --doc-id / --limit must bound this sweep too.  Without
+            # it a single-document request rewrote 7642 treatments
+            # (memo 12.3.42).
+            candidates = (
+                sorted(only_doc_ids) if only_doc_ids is not None else db
+            )
+            for doc_id in candidates:
+                if limit is not None and count >= limit:
+                    break
                 try:
                     doc = db[doc_id]
                 except Exception:
                     continue
-                if not doc.get("is_taxpub"):
-                    continue
-                atts = doc.get("_attachments") or {}
-                if "article.xml" not in atts:
+                if not taxpub_doc_admitted(
+                    doc_id, doc, only_doc_ids, skip_doc_ids,
+                ):
                     continue
                 try:
                     xml_bytes = db.get_attachment(doc_id, "article.xml").read()
@@ -1203,7 +1226,11 @@ class TreatmentExtractor:
             self.get_existing_ingest_doc_ids() if skip_existing else None
         )
         taxpub_treatments = list(
-            self._extract_taxpub_treatments(skip_doc_ids=skip_ids)
+            self._extract_taxpub_treatments(
+                skip_doc_ids=skip_ids,
+                only_doc_ids=set(doc_ids) if doc_ids else None,
+                limit=limit,
+            )
         )
         if taxpub_treatments:
             taxpub_rows = list(convert_taxa_to_rows(iter(taxpub_treatments)))
