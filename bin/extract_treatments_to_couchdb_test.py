@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from extract_treatments_to_couchdb import (
+    taxpub_doc_admitted,
     EXTRACT_SCHEMA, convert_taxa_to_rows, generate_taxon_doc_id,
     iter_taxpub_treatments,
 )
@@ -394,3 +395,59 @@ class TestCanonicalIdFieldsAreFrozen(unittest.TestCase):
             generate_taxon_doc_id(base),
             generate_taxon_doc_id(dict(base, notes='Common in birch woods.')),
         )
+
+
+class TestTaxpubDocAdmitted(unittest.TestCase):
+    """The G.1 taxpub sweep ignored --doc-id and --limit.
+
+    Measured 2026-09-01: a single-document request produced 7683
+    treatments, because the sweep scans the whole ingest DB.  That is
+    the same silently-unapplied-flag class as T0f's --dry-run, and it
+    is worse here: a --doc-id run would rewrite 7642 treatments the
+    operator did not ask about.
+    """
+
+    DOC = {'is_taxpub': True, '_attachments': {'article.xml': {}}}
+
+    def test_admits_a_taxpub_doc_with_xml(self):
+        self.assertTrue(taxpub_doc_admitted('d1', self.DOC))
+
+    def test_rejects_non_taxpub(self):
+        self.assertFalse(taxpub_doc_admitted(
+            'd1', {'_attachments': {'article.xml': {}}}))
+
+    def test_rejects_taxpub_without_xml(self):
+        self.assertFalse(taxpub_doc_admitted(
+            'd1', {'is_taxpub': True, '_attachments': {}}))
+
+    def test_only_doc_ids_scopes_the_sweep(self):
+        """--doc-id must bound this path, not just the Spark half."""
+        self.assertTrue(taxpub_doc_admitted(
+            'd1', self.DOC, only_doc_ids={'d1', 'd2'}))
+        self.assertFalse(taxpub_doc_admitted(
+            'd9', self.DOC, only_doc_ids={'d1', 'd2'}))
+
+    def test_empty_only_doc_ids_admits_nothing(self):
+        """An empty explicit set means 'no documents', not 'all of
+        them'.  `None` is the sentinel for unfiltered; conflating the
+        two is how a scoped run becomes a full sweep.
+        """
+        self.assertFalse(taxpub_doc_admitted('d1', self.DOC,
+                                             only_doc_ids=set()))
+
+    def test_none_means_unfiltered(self):
+        self.assertTrue(taxpub_doc_admitted('d1', self.DOC,
+                                            only_doc_ids=None))
+
+    def test_skip_doc_ids_still_applies(self):
+        """Regression guard: --skip-existing must keep working."""
+        self.assertFalse(taxpub_doc_admitted('d1', self.DOC,
+                                             skip_doc_ids={'d1'}))
+
+    def test_skip_wins_over_only(self):
+        """A doc both requested and already-extracted is skipped:
+        --skip-existing is about not redoing work, and it should not
+        be overridden by naming the document.
+        """
+        self.assertFalse(taxpub_doc_admitted(
+            'd1', self.DOC, only_doc_ids={'d1'}, skip_doc_ids={'d1'}))

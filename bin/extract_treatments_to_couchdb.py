@@ -238,6 +238,16 @@ def _row_to_dispatcher_doc(row: Row) -> Dict[str, Any]:
     return doc
 
 
+def taxpub_doc_admitted(
+    doc_id: str,
+    doc: Dict[str, Any],
+    only_doc_ids: Optional[Set[str]] = None,
+    skip_doc_ids: Optional[Set[str]] = None,
+) -> bool:
+    """Not implemented yet."""
+    raise NotImplementedError
+
+
 def iter_taxpub_treatments(
     docs: Iterable[Tuple[Dict[str, Any], bytes]],
     ingest_db_name: str = "",
