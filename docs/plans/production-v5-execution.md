@@ -198,6 +198,49 @@ gets created** — the segment classifier's output becomes
 a new column in the treatments_prose pipeline, requiring
 a fresh experiment container.
 
+> ### ⚠️ M4 now competes with Experiment 6 — see the evidence below
+>
+> **Added 2026-09-01.**  The round-5 dossier review generated
+> §12.3.1–12.3.42 of
+> [the v4 memo](../data_quality_production_v4_model.md), and much of
+> it bears on whether M4's *incremental* bet is the right one.
+>
+> M4's hypothesis is that **adding a per-line section-shape signal**
+> reduces the §10 and §12 failures.  The review found repeatedly that
+> those failures are **not per-line and not semantic**:
+>
+> | finding | why a per-line feature cannot reach it |
+> |---|---|
+> | §12.3.15 — `Table` tracks **mean line length**, not content; `Nomenclature` is the nearest content label to it | the signal is page geometry, absent from the text |
+> | §12.3.6 — rogue `Key` is a **document**-level property | per-line features see one line |
+> | §12.3.31 — a citation and a description opening **share a line** | the label boundary is *inside* the unit being labelled |
+> | §12.3.13 / §12.3.34 — lost newlines and 2-character micro-fragments | the line itself is the corrupted unit |
+> | §12.3.23 — 18 % of treatments start **before Materials-and-methods** | requires intra-article position |
+> | §12.3.35 — every failure is *"inferring layout from text after
+>   layout was discarded"* | the discarded information is not recoverable per line |
+>
+> **[experiment_6_design_and_implementation_plan.md](experiment_6_design_and_implementation_plan.md)
+> proposes exactly the decomposition these findings argue for**, and its
+> phasing maps onto them:
+>
+> | Exp-6 phase | review evidence |
+> |---|---|
+> | 1. Layout filter | §12.3.35, §12.3.15, §12.3.13 |
+> | 3. Span grouper | §12.3.11 (25 % of `Misc-exposition` steals a boundary), §12.3.27, §12.3.34 |
+> | 4. Article segmenter | §12.3.9, §12.3.23, §12.3.40 |
+>
+> **This is not a decision to abandon M4.**  Two things genuinely
+> favour it: it is far cheaper, and §12.3.41's finding that defects
+> **concentrate in a document minority** (top 10 % of documents hold
+> 57 % of boundary theft) means a modest improvement plus document
+> triage may capture much of the value.  **But the "not later" argument
+> in the timing summary below assumed M4's gains compound; if the
+> failures are architectural, they do not**, and M4's cost is then spent
+> against a ceiling.
+>
+> **Recorded so the choice is made deliberately rather than by
+> default.**
+
 ### M4: production_v5 — segment-classifier-informed section CRF
 
 **Scope**: retrain the v4 layout / section CRF with
@@ -439,6 +482,21 @@ Reasons to revise this plan:
 
 ## Change log
 
+* **2026-09-01** — **M4's premise flagged as contested.**  The
+  round-5 dossier review (memo §12.3.1–12.3.42) found the
+  §10/§12 failures to be architectural rather than
+  per-line-tunable: `Table` and `Key` track page geometry
+  rather than content, label boundaries fall *inside* lines,
+  and 18 % of treatments are harvested from article front
+  matter.  Experiment 6 proposes the matching decomposition.
+  M4 is not withdrawn — it is much cheaper, and §12.3.41's
+  document-concentration finding may let it plus triage
+  capture most of the value — but the "gains compound"
+  argument for doing it before Exp 6 no longer holds
+  unexamined.  Cross-reference added above M4.  Also recorded:
+  `production_v4_1` was created rather than `production_v5`,
+  since re-extraction is a v4 re-**grouping** and does not
+  trigger the M3 container.
 * **2026-08-23** — **Track A's premise corrected.**  Its
   200-250 target was justified by the Heaps' Law vocabulary
   curve, but that curve is computed from `features_candidate`
