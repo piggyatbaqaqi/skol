@@ -226,6 +226,7 @@ class Treatment(object):
         self._nomenclatures = []
         self._section_paragraphs = []
         self._sections = {}
+        self._extractor = None
         self._taxpub_anchor_bundle = None
 
     def add_nomenclature(self, pp: Paragraph) -> None:
@@ -239,6 +240,17 @@ class Treatment(object):
         for the contract.  Stores the bundle for later consumption
         by ``_build_source_anchors``."""
         self._taxpub_anchor_bundle = bundle
+
+    def set_extractor(self, name: Optional[str]) -> None:
+        """Record which dispatcher component produced this Treatment.
+
+        Two paths reach ``as_row``: the Spark flow via the ``.ann``
+        attachment, and the G.1 sweep via ``article.xml``.  Nothing
+        distinguished them in stored data before this
+        (``attachment_name`` is a constant), which made comparing two
+        extractions impossible — see the memo's re-extraction section.
+        """
+        self._extractor = name
 
     def add_section(self, label: str, pp: Paragraph) -> None:
         """Add a treatment-section paragraph under the given label string."""
@@ -355,6 +367,7 @@ class Treatment(object):
             ]
 
         retval: Dict[str, Any] = {
+            "extractor": self._extractor,
             "treatment": "\n".join(str(p) for p in self._nomenclatures),
             "ingest": _slim_ingest(ingest),
             "line_number": first_line.line_number,

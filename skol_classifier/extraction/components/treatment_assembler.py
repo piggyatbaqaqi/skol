@@ -91,6 +91,9 @@ class TreatmentAssemblerInstance(ComponentInstance):
         # the winning contribution is not taxpub (e.g. the
         # classifier_logistic_v3 path), taxpub_treatment_anchors is
         # empty and this loop is a no-op.
+        source = state.winning_label_source()
+        for treatment in treatments:
+            treatment.set_extractor(source)
         for i, treatment in enumerate(treatments):
             if i < len(state.taxpub_treatment_anchors):
                 treatment.set_taxpub_anchors(

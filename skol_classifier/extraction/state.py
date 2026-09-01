@@ -297,6 +297,21 @@ class PipelineState:
         winner = max(self._label_contributions, key=lambda c: c.priority)
         return winner.to_yedda_text()
 
+    def winning_label_source(self) -> Optional[str]:
+        """Name of the component whose labels ``merged_ann_text`` used.
+
+        **Selected identically to ``merged_ann_text``** — same
+        ``max(..., key=priority)`` over the same list, so the recorded
+        provenance always describes the text that was actually
+        consumed, including on ties.  Computing it independently would
+        let the two disagree.
+        """
+        if not self._label_contributions:
+            return None
+        return max(
+            self._label_contributions, key=lambda c: c.priority
+        ).source
+
     def merged_spans(self) -> List[Span]:
         """Return all span contributions concatenated.
 

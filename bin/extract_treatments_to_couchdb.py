@@ -72,6 +72,9 @@ EXTRACT_SCHEMA = StructType([
     StructField("key", StringType(), True),
     StructField("figure_captions", StringType(), True),
     StructField("phylogeny", StringType(), True),
+    # Which dispatcher component produced this Treatment.  NOT in
+    # _CANONICAL_FIELDS: provenance, not identity.
+    StructField("extractor", StringType(), True),
     StructField("ingest", MapType(StringType(), StringType(),
                                   valueContainsNull=True), True),
     StructField("line_number", IntegerType(), True),

@@ -7652,10 +7652,26 @@ above, but now for the right reason.
    both paths contribute, and today's code reproduces it once the sweep
    is scoped.  The `v4_1` run's 9 was an artefact of the unscoped sweep,
    not of any code change.
-2. **Treatments need a provenance field** recording which extractor
-   produced them.  Without it neither this comparison nor any future
-   one can be conditioned, and §12.3.14's conservation audit cannot
-   tell a missing treatment from a differently-routed one.
+2. ~~Treatments need a provenance field~~ — **fixed 2026-09-01.**
+   `Treatment.set_extractor` / `as_row()['extractor']`, fed by
+   `PipelineState.winning_label_source()`, which selects **identically
+   to `merged_ann_text`** (same `max` over the same list) so the
+   recorded provenance always names the contribution whose text was
+   actually used, ties included.  Added to `EXTRACT_SCHEMA` and
+   deliberately **not** to `_CANONICAL_FIELDS` — provenance, not
+   identity.
+
+   Verified on the document that exposed the problem:
+
+   | path | treatments | `extractor` |
+   |---|---:|---|
+   | `.ann` (Spark flow) | 41 | `classifier_logistic_v3` |
+   | `article.xml` (G.1 sweep) | 9 | `taxpub_treatment_extractor` |
+
+   **41 + 9 = 50 = what `production_v4` holds.**  The two routes are now
+   distinguishable in stored data, so a v4/v4_1 diff can be conditioned
+   on route and §12.3.14's conservation audit can tell a missing
+   treatment from a differently-routed one.
 3. **The routing rule needs stating.**  For a document reachable both
    ways, which wins, and why?  9 versus 41 is not a rounding
    difference.

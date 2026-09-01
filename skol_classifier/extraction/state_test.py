@@ -252,8 +252,8 @@ class TestWinningLabelSource:
 
     def test_reports_the_source_of_the_winning_contribution(self):
         st = PipelineState(doc={'_id': 'd'})
-        st.contribute_ann_text(text='[@a#Notes*]', source='low', priority=4)
-        st.contribute_ann_text(text='[@b#Notes*]', source='high', priority=10)
+        st.add_ann_text(text='[@a#Notes*]', source='low', priority=4)
+        st.add_ann_text(text='[@b#Notes*]', source='high', priority=10)
         assert st.winning_label_source() == 'high'
 
     def test_the_source_matches_the_text_actually_used(self):
@@ -263,9 +263,9 @@ class TestWinningLabelSource:
         would be a lie rather than a gap.
         """
         st = PipelineState(doc={'_id': 'd'})
-        st.contribute_ann_text(text='[@low#Notes*]', source='low',
+        st.add_ann_text(text='[@low#Notes*]', source='low',
                                priority=4)
-        st.contribute_ann_text(text='[@high#Notes*]', source='high',
+        st.add_ann_text(text='[@high#Notes*]', source='high',
                                priority=10)
         assert 'high' in st.merged_ann_text()
         assert st.winning_label_source() == 'high'
@@ -275,9 +275,9 @@ class TestWinningLabelSource:
         different contributions.
         """
         st = PipelineState(doc={'_id': 'd'})
-        st.contribute_ann_text(text='[@first#Notes*]', source='first',
+        st.add_ann_text(text='[@first#Notes*]', source='first',
                                priority=5)
-        st.contribute_ann_text(text='[@second#Notes*]', source='second',
+        st.add_ann_text(text='[@second#Notes*]', source='second',
                                priority=5)
         won = st.winning_label_source()
         assert won in ('first', 'second')
