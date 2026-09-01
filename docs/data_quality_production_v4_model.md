@@ -7420,6 +7420,99 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.42 Re-extraction: 98.8 % of ids survive, but the writer never deletes
+
+Operator, 2026-09-01: *"What consequences would we see to reextracting?
+Could we orphan treatments?  I'm trying to decide if I need to create a
+new experiment, 5.1, with a new database."*
+
+#### Simulated, not estimated
+
+`group_paragraphs` is pure, so the old and new groupers can be run over
+the same `.ann` text and their `taxon_id`s diffed directly.  Over 120
+documents:
+
+| | |
+|---|---:|
+| treatments, old grouper | 568 |
+| treatments, new grouper | 564 |
+| **ids stable** | **561 — 98.77 %** |
+| ids only in old — **orphaned** | 7 |
+| ids only in new — created | 3 |
+| documents affected | **2 of 120 (1.7 %)** |
+
+**`phylogeny` is not in `_CANONICAL_FIELDS`**, so the new field alone
+cannot move an id.  The churn comes from the second half of commit
+`8c0148d`: `Phylogeny` joining `_TREATMENT_SECTION_LABELS` **resets
+`misc_gap`**, so a treatment that used to close may stay open and absorb
+more text — which does change `description`, which is hashed.
+
+Extrapolated to 81 527 treatments: **~1 000 ids would change.**
+
+**Note the direction.**  Treatment count *falls* (568 → 564): the fix
+makes treatments longer.  That is the intended behaviour, but it
+marginally worsens §12.3.22's finding that nothing bounds treatment
+extent.
+
+#### The decisive fact is the write semantics
+
+`bin/extract_treatments_to_couchdb.py:961-971` **upserts and never
+deletes**:
+
+```python
+existing_doc = db[doc_id]
+taxon_doc['_rev'] = existing_doc['_rev']
+db.save(taxon_doc)
+```
+
+So an in-place re-extraction would update the 98.8 %, create the new
+ones, and **leave ~1 000 orphans alive in the database** — carrying
+valid-looking content, indistinguishable from current treatments, and
+detectable only by re-deriving every id.
+
+**This is the same defect T6 already warns about one layer up**: the
+plan notes that `annotation_doc_id` has no deletion pass, so re-running
+the annotator into the same DB yields *"the union of two prompts'
+vocabularies — worse than useless for a before/after comparison"*.  The
+treatment writer has the identical shape.
+
+**And an in-place run is not reversible.**  The upsert overwrites
+`_rev`; the previous treatment content is gone.
+
+#### What references a `taxon_id`
+
+| artefact | distinct ids |
+|---|---:|
+| `data/annotation_rounds/production_v4_round5.txt` | 1 000 |
+| this memo | 176 |
+| `tests/fixtures/pathologies.json` | 136 |
+| `data/merge_review_p2a_20260825.md` | 31 |
+| `data/p2a_dossiers/index.html` | 30 |
+| `features_candidate` / `_hand` / `_status` | 9 068 / 2 244 / 6 637 docs, keyed `<tid>:<label>:<start>` |
+
+At 1.23 % churn the *expected* damage is small — roughly 12 of round
+5's 1 000, 2 of the memo's 176, 2 of the fixtures' 136 — **but a
+dangling id fails silently**, and the annotation DBs would keep rows
+pointing at treatments that no longer exist.
+
+#### Recommendation: a new database, and the reason is the upsert
+
+**Not because the churn is large — it is not — but because an in-place
+run is unverifiable and unreversible.**  A separate target gives:
+
+* **a diff**, which is the only way to confirm the fix did what
+  `8c0148d` intends: that `Phylogeny` content is now captured, and that
+  boundaries moved only where predicted;
+* **orphan detection for free** — ids present in v4 and absent in the
+  new DB *are* the orphan list, rather than something to reconstruct;
+* **the whole evidence base stays valid.**  The memo, the fixtures, the
+  round files and the dossiers all address v4 ids; leaving v4 untouched
+  keeps 100 % of that citable while the new extraction is evaluated.
+
+The alternative — re-extracting in place — requires **first** adding a
+deletion pass to the writer, which is a change to production extraction
+made in order to run an experiment.  **Wrong order.**
+
 ### 12.3.41 Boundary theft is a document property — and so is almost everything else
 
 `taxon_fcaca7fe`.  Operator: *"The Nomenclature… lost 2 lines to a
