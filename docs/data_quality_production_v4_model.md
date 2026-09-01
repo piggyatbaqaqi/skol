@@ -7534,7 +7534,48 @@ re-*grouping*, not a re-classification.**
 byte-identical, so the expensive half of the pipeline does not re-run.
 Only `extract_treatments_to_couchdb` does.
 
-**One correction after creation:** `manage_experiment create` derived
+#### Two configuration defects at creation — the second invalidated a run
+
+**`manage_experiment create` does not copy the CRF model keys.**
+`production_v4` carries `classifier_model_pass1`,
+`classifier_model_pass2` and `classifier_model_single` pointing at
+`v4_layout`, `v4_pass2_combined` and `v4_single_combined`.  A new
+experiment gets **none of them** unless `--redis-key-pass1/pass2/single`
+are passed explicitly, and they were not.
+
+**That is not cosmetic, because extraction re-labels.**
+`extract_treatments_to_couchdb` imports `group_paragraphs` but never
+calls it.  The real path is
+`Dispatcher.extract` -> `treatment_assembler`, whose input is
+**`state.merged_ann_text()`** — the merged output of whichever labeler
+the dispatcher selected — and only then
+`parse_annotated -> remove_interstitials -> group_paragraphs`.
+
+**So "re-grouping, not re-classification" was wrong.**  The stored
+`.ann` attachment seeds the labeler; it is not used directly.  With the
+CRF keys absent the run labelled with a fallback, and its output is not
+comparable to `production_v4`.
+
+**Evidence that caught it.**  The worst-affected document
+(`028539777b275cdeaa17e0416aa4b54f`, 557 `Nomenclature` blocks) has
+**zero `Phylogeny` blocks**, so commit `8c0148d` provably cannot change
+it — yet it went 50 treatments to 9.  Running today's grouper directly
+on its attachment gives **41 either way**, with or without
+`remove_interstitials`.  Three different numbers for one document is
+the signature of a different labeling, not a different grouping.
+
+**Everything measured from that run is withdrawn** — the 95.57 % id
+stability, the 9 006 -> 8 622 treatment delta, the 121 phylogeny-bearing
+treatments, and the reading that the worst document's consolidation was
+an improvement.  The keys were added afterwards; the run must be redone.
+
+**And the simulation in §12.3.42 was measured on the wrong path too.**
+It called `group_paragraphs` on the attachment, skipping the labeler,
+`CouchDBFile.read_line` and `remove_interstitials`.  **Its 98.77 %
+id-stability figure does not model the pipeline** and should not be
+quoted; a corrected number requires a run with the CRF keys in place.
+
+**The first defect:** `manage_experiment create` derived
 `spans` as `skol_exp_production_v4_1_01_00_ann`, a database that does
 not exist.  In `production_v4` that key mirrors `annotations`, and it
 was set to match — otherwise span resolution would have pointed at
