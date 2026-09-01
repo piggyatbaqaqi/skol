@@ -7277,6 +7277,85 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.31 A label boundary inside a line cannot be represented at all
+
+Operator, on `taxon_e59c0add`: *"a formatting issue that I think is
+likely to be a problem for other older literature: **The taxonomic
+citation is on the same line as the start of the description.  A
+line-based solution can not cope with this case.**"*
+
+**Correct, and it is categorical rather than statistical.**  Both v4
+passes label **per line** (`docs/extraction_pipeline.md`: *"per-line
+treatment labels"*).  A line holding a nomenclatural citation followed
+by the opening of a description can receive exactly one label, so
+**one of the two is destroyed by construction** — whichever loses, the
+loss is not a model error and no amount of training will fix it.
+
+The two outcomes are both observed in this review:
+
+* labelled `Description` → the citation is buried, and
+  `Nomenclature` capture drops (§12.3.21 measured 5 % of names lost);
+* labelled `Nomenclature` → the description's first line is lost, which
+  is §12.3.27's head-theft signature arriving from a different cause.
+
+#### It corrects a filing in §12.3.16
+
+`taxon_871bb4ea`'s *"Latin descriptions start with the taxonomic
+citations"* was recorded there as **the same Pass-1 missed split as
+§12.3.13's embedded figure captions.**  That was wrong.  An embedded
+caption sits **between** lines and *is* splittable — the segmenter
+simply failed to split it.  A run-on citation sits **within** a line and
+is **not** splittable at the current granularity.  **Same symptom,
+incompatible fixes**: one needs a better segmenter, the other needs
+sub-line labelling.
+
+#### And it unifies with the lost-newline defect
+
+§12.3.13 found `taxon_7a36746e` had **lost its line breaks** — blocks
+reading `3. Results and Discussion3.1. Identification of…` — which put
+its figure-caption boundary mid-line and made the line-anchored detector
+blind to it.
+
+**Those are the same failure reached by two routes:**
+
+| route | cause | result |
+|---|---|---|
+| run-on citation (here) | source typography — older literature sets the name inline | boundary inside a line |
+| lost newlines (§12.3.13) | text extraction discards line structure | boundary inside a line |
+
+**The second is the more troubling**, because it *manufactures*
+unrepresentable boundaries out of documents that had representable ones.
+Whatever fraction of the corpus has lost its newlines has been moved
+into this class by our own pipeline.
+
+#### Prevalence: a floor of 0.3 %, and a failed era test
+
+Lines of 70+ characters inside `Description`, `Diagnosis` or
+`Nomenclature` blocks, containing a binomial with authority followed by
+40+ characters of morphological prose:
+
+| | |
+|---|---:|
+| lines examined | 12 395 |
+| name + description on one line | 32 — **0.3 %** |
+
+**A floor, not an estimate.**  The pattern demands a full authority
+string in a recognisable shape; run-on lines with abbreviated or
+OCR-damaged authorities are missed.
+
+**The "older literature" association could not be tested.**  Using
+`ingest.doi` as an age proxy, the sample yielded **144 lines** from
+DOI-bearing documents against 12 251 without — far too lopsided to
+compare, and the ratio it produced is noise.  **It is not recorded.**
+Testing the operator's hypothesis needs a real publication-date field,
+which is not among the six keys `_slim_ingest` retains (§12.3.17).
+
+**The architectural point does not depend on the frequency.**  A 0.3 %
+floor still describes a class the current design cannot represent, and
+one whose true size is unknown in exactly the material — older, scanned,
+newline-damaged — where the review has found every other structural
+defect.
+
 ### 12.3.30 How much weight German observations carry — and one that is not German at all
 
 `taxon_e59c0add`, a German article.  Operator: *"**I don't know how much
@@ -8364,9 +8443,9 @@ loss, and the 1 % is measured on 396 blocks rather than a handful.
 
 * **"Both of the Latin descriptions start with the taxonomic citations,
   so we appear to have missed them with the Nomenclature detector."** —
-  embedded `Nomenclature` at the head of a `Description` block: the same
-  **Pass-1 missed split** as §12.3.13's embedded figure captions, in a
-  different label.
+  filed here as a Pass-1 missed split, **which §12.3.31 corrects**: the
+  boundary falls *inside a line*, so it is not a missed split but an
+  **unrepresentable** one.
 * **"Phyllachora leptasca Syd. nov. spec. starts in the middle of a
   Table block."** — §12.3.15 exactly: a short-line nomenclatural citation
   swallowed by `Table`, here with a language switch at the same point.
