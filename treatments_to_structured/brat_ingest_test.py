@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 import pytest
 
 from treatments_to_structured.brat_ingest import (
+    round_fields_for_treatment,
     AnnotationKey,
     DiffResult,
     annotation_key,
@@ -409,3 +410,112 @@ class TestNestedSpansSurviveTheDiff:
         a, b = _ann('Ascomata', 21, 274), _ann('Subiculum', 21, 274)
         result = diff_annotations([a, b], [a, b])
         assert len(result.kept) == 2
+
+
+class TestRoundStamping:
+    """`features_hand` carried no `round` field on any of its 2 244
+    docs (measured 2026-09-01), so T0e's round stamping reached the
+    candidate side only.  The T5 statistics had to join through the
+    round *file* instead, and the DB-side round query T0e exists to
+    enable does not work.
+    """
+
+    @pytest.mark.xfail(strict=True, reason='round stamping not implemented')
+    def test_kept_inherits_the_round_from_its_candidate(self):
+        ann = {'feature_label': 'Pileus', 'field': 'description',
+               'start': 10, 'end': 20}
+        cand = {'model': 'claude-opus-4-7', 'created_at': 'T0',
+                'round': 5, 'round_file': 'production_v4_round5',
+                'round_provenance': 'selector'}
+        got = make_reviewed_doc(
+            ann, treatment_id='t', doc_id='d', reviewer='r',
+            reviewed_at='T1', action='kept', candidate_match=cand)
+        assert got['round'] == 5
+        assert got['round_file'] == 'production_v4_round5'
+        assert got['round_provenance'] == 'selector'
+
+    @pytest.mark.xfail(strict=True, reason='round stamping not implemented')
+    def test_added_is_stamped_from_the_treatment_not_the_annotation(self):
+        """An `added` annotation has no candidate to inherit from --
+        that is what makes it an addition.  But it belongs to a
+        treatment that *was* drawn in a round, so the caller supplies
+        the round explicitly.  Without this, additions would be the
+        only unstamped docs, and additions are exactly what the recall
+        distribution is computed from.
+        """
+        ann = {'feature_label': 'Stipe', 'field': 'description',
+               'start': 30, 'end': 40}
+        got = make_reviewed_doc(
+            ann, treatment_id='t', doc_id='d', reviewer='r',
+            reviewed_at='T1', action='added', candidate_match=None,
+            round_fields={'round': 5, 'round_file': 'production_v4_round5',
+                          'round_provenance': 'selector'})
+        assert got['round'] == 5
+
+    @pytest.mark.xfail(strict=True, reason='round stamping not implemented')
+    def test_explicit_round_fields_win_over_the_candidate(self):
+        """The caller knows the treatment's round; a candidate doc
+        may be stale if the treatment was re-annotated.
+        """
+        ann = {'feature_label': 'Pileus', 'field': 'description',
+               'start': 10, 'end': 20}
+        got = make_reviewed_doc(
+            ann, treatment_id='t', doc_id='d', reviewer='r',
+            reviewed_at='T1', action='kept',
+            candidate_match={'round': 2, 'round_file': 'old'},
+            round_fields={'round': 5, 'round_file': 'production_v4_round5'})
+        assert got['round'] == 5
+        assert got['round_file'] == 'production_v4_round5'
+
+    def test_no_round_information_writes_no_round_keys(self):
+        """Absent, not null.  A `round: None` would satisfy a
+        `doc.get('round')` check and silently re-create the problem
+        this fixes, and it would break `round_fields_for_treatment`'s
+        max().
+        """
+        ann = {'feature_label': 'Pileus', 'field': 'description',
+               'start': 10, 'end': 20}
+        got = make_reviewed_doc(
+            ann, treatment_id='t', doc_id='d', reviewer='r',
+            reviewed_at='T1', action='added', candidate_match=None)
+        assert 'round' not in got
+        assert 'round_file' not in got
+
+    def test_existing_provenance_still_flows_through(self):
+        """Regression guard: the bootstrap model and timestamp must
+        keep coming from the candidate.
+        """
+        ann = {'feature_label': 'Pileus', 'field': 'description',
+               'start': 10, 'end': 20}
+        got = make_reviewed_doc(
+            ann, treatment_id='t', doc_id='d', reviewer='r',
+            reviewed_at='T1', action='kept',
+            candidate_match={'model': 'm', 'created_at': 'T0'})
+        assert got['model'] == 'm' and got['created_at'] == 'T0'
+
+
+class TestRoundFieldsForTreatment:
+    @pytest.mark.xfail(strict=True, reason='helper not implemented')
+    def test_reads_the_round_off_any_candidate(self):
+        got = round_fields_for_treatment([
+            {'round': 5, 'round_file': 'f', 'round_provenance': 'selector'}])
+        assert got == {'round': 5, 'round_file': 'f',
+                       'round_provenance': 'selector'}
+
+    @pytest.mark.xfail(strict=True, reason='helper not implemented')
+    def test_disagreement_takes_the_highest_round(self):
+        """A treatment re-annotated in a later round has its candidate
+        docs rewritten in place, so a mixture means partial
+        re-annotation.  The review being ingested is of the current
+        state, so the latest round is the honest stamp.
+        """
+        got = round_fields_for_treatment([
+            {'round': 2, 'round_file': 'old'},
+            {'round': 5, 'round_file': 'new'},
+        ])
+        assert got['round'] == 5 and got['round_file'] == 'new'
+
+    @pytest.mark.xfail(strict=True, reason='helper not implemented')
+    def test_no_candidates_or_no_rounds_gives_empty(self):
+        assert round_fields_for_treatment([]) == {}
+        assert round_fields_for_treatment([{'model': 'm'}]) == {}

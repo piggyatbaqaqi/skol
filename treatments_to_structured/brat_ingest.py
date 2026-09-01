@@ -27,7 +27,7 @@ The CLI (``bin/brat_ingest.py``) wires this with CouchDB I/O.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -130,6 +130,7 @@ def make_reviewed_doc(
     action: str,
     *,
     candidate_match: Optional[Dict[str, Any]] = None,
+    round_fields: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Build a reviewed-DB annotation doc from a kept-or-added
     annotation.
@@ -186,6 +187,13 @@ def make_reviewed_doc(
     }
 
 
+def round_fields_for_treatment(
+    candidates: Iterable[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Not implemented yet."""
+    raise NotImplementedError
+
+
 def treatment_id_from_ann_filename(path: str) -> str:
     """Convention: brat .ann file is named ``<treatment_id>.ann``.
 
@@ -203,6 +211,7 @@ def treatment_id_from_ann_filename(path: str) -> str:
 
 
 __all__ = (
+    'round_fields_for_treatment',
     'AnnotationKey',
     'annotation_key',
     'DiffResult',
