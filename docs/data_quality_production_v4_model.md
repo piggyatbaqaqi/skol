@@ -7277,6 +7277,80 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.30 How much weight German observations carry — and one that is not German at all
+
+`taxon_e59c0add`, a German article.  Operator: *"**I don't know how much
+weight to put on my comments given what we've already learned about
+German language articles.**"*
+
+#### The answer: do not pool them
+
+§12.3.16 established German as a **separate regime** — `Description`
+fires at 1 % against 52 % on English.  Pooling German observations with
+English ones would repeat precisely the error §12.3 was written to
+prevent, and would make the English pipeline look worse than it is.
+
+**The right disposition is that German observations are high-information
+for one purpose and uninformative for another.**  They are direct
+evidence for the LOTE work that §12.3.26 moved *ahead* of LOTE ingest;
+they say nothing about the 98 % of the corpus that is English-dominant.
+Both of the operator's first two observations here — nomenclature
+over-extending into German prose, and a single `Description` block
+holding the taxonomic citation, the whole Latin description and the
+first line of the German one — are consistent with §12.3.16's account
+and are recorded as **LOTE evidence, not corpus evidence**.
+
+#### The third observation is language-independent, and it is a judgement boundary
+
+*"the materials-examined block really does discuss the materials
+examined, though **I probably would have classified it as "biology"**
+because it describes the location and host and lacks fungarium
+references."*
+
+That is a schema question, not a German one: **what separates
+`Materials-examined` from `Biology` when there is no voucher?**  Measured
+over 668 `Materials-examined` blocks:
+
+| | n | |
+|---|---:|---:|
+| has a voucher, herbarium code or collector | 451 | **67.5 %** |
+| author frontmatter — not materials at all (§12.3.2) | 21 | 3.1 % |
+| **no voucher** | 196 | 29.3 % |
+| …host/habitat, **no date** → reads as `Biology` | 11 | **1.6 %** |
+| …host/habitat **+ date** → collection record without a voucher | 52 | 7.8 % |
+| …neither | 133 | 19.9 % |
+
+**The operator's exact test — host and location, no fungarium reference
+— matches 1.6 %, about 767 blocks corpus-wide.**  A real class, and a
+small one.
+
+**It belongs with `Notes`/`Diagnosis` and
+`Type-designation`/`Materials-examined` as a pair where the operator is
+*choosing* rather than correcting** (§12.3).  A collection record
+stripped of its voucher genuinely reads as habitat information; both
+labels are defensible, and the lattice has no edge between them because
+neither subsumes the other.
+
+#### Two defects in my own measurement, recorded
+
+* **The voucher pattern was case-sensitive**, so it missed `Coll. C. H.
+  Peck` in its own first example.  Fixing it moved "has voucher" from
+  58.7 % to **67.5 %** and the Biology-reading bucket from 2.4 % to
+  1.6 %.  **The uncorrected figures were never recorded**; this note
+  exists so the correction is not re-derived.
+* **It still under-detects.**  Single-letter and spaced herbarium codes
+  — `BRY C21898`, `K(M)`, `NY` — do not match `[A-Z]{2,6}[- ]?\d{3,}`.
+  **So 67.5 % is a floor and 29.3 % "no voucher" is a ceiling**, and the
+  1.6 % is an upper bound on the operator's class.
+
+#### An incidental confirmation
+
+**3.1 % of `Materials-examined` blocks are author frontmatter** —
+`Department of`, `University`, an email address.  §12.3.2 measured that
+absorption from the other direction (7 % of frontmatter-cued blocks land
+in `Materials-examined`).  Two independent samples, consistent
+magnitudes.
+
 ### 12.3.29 Reference-only descriptions — a real class, and a rare one
 
 `taxon_e4150d1a`.  Operator: *"darn close to a poster child, but the
