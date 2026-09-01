@@ -7594,6 +7594,14 @@ Running the extractor for **one** document produced this:
 [DRY RUN] Would save 7683 treatments
 ```
 
+**`--limit` was never at fault.**  It does exactly what it says —
+`annotated_df.select("doc_id").distinct().limit(limit)` bounds distinct
+input documents from the annotations DB, and the log confirms
+`Limited to 200 documents: 200 attachment(s)`.  The 1 936 documents the
+run covered is **200 (Spark) + 1 779 (unscoped sweep) − 43 overlap**.
+**The whole anomaly was the sweep**, and `--limit` was only ever
+suspicious by association.
+
 **7 683 treatments from a single-document request.**
 `iter_taxpub_treatments` — the "Phase G.1 non-Spark sweep" — scans the
 whole of `skol_dev` for `is_taxpub` documents carrying `article.xml` and
