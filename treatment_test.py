@@ -1296,3 +1296,43 @@ class TestTaxpubAnchorEmission(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestExtractorProvenance(unittest.TestCase):
+    """as_row() must carry the producing extractor (memo 12.3.42)."""
+
+    def _treatment(self):
+        test_data = lineify(
+            textwrap.dedent(
+                """\
+        [@nom1#Nomenclature*]
+        [@Pileus 5 cm.#Description*]
+        """
+            ).split("\n")
+        )
+        return list(group_paragraphs(parse_annotated(test_data)))[0]
+
+    def test_extractor_defaults_to_none(self):
+        self.assertIsNone(self._treatment().as_row()['extractor'])
+
+    def test_extractor_round_trips(self):
+        t = self._treatment()
+        t.set_extractor('taxpub_treatment_extractor')
+        self.assertEqual(t.as_row()['extractor'],
+                         'taxpub_treatment_extractor')
+
+    def test_extractor_is_not_an_identity_component(self):
+        """It must not change the document id.  `_CANONICAL_FIELDS` is
+        an identity contract (memo 12.3.42); adding provenance to it
+        would rename every treatment in the corpus.
+        """
+        import sys as _s
+        from pathlib import Path as _P
+        _s.path.insert(0, str(_P(__file__).resolve().parent / 'bin'))
+        from extract_treatments_to_couchdb import generate_taxon_doc_id
+        base = {'treatment': 'Amanita muscaria L.',
+                'description': 'Pileus 5 cm.'}
+        self.assertEqual(
+            generate_taxon_doc_id(base),
+            generate_taxon_doc_id(dict(base, extractor='taxpub')),
+        )

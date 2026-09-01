@@ -237,3 +237,51 @@ class TestAnnTextContributions(TestCase):
         state = PipelineState()
         state.add_ann_text("classifier", "[@x#Y*]", priority=4)
         self.assertEqual(state.merged_section_labels(), [])
+
+
+class TestWinningLabelSource:
+    """Treatments record which extractor produced them.
+
+    Measured 2026-09-01: `treatment_assembler` hard-codes
+    `attachment_name` to a constant, so all 8 622 treatments of a
+    `production_v4_1` run claimed `article.txt.ann` — including the
+    ones derived from `article.xml` by the G.1 taxpub sweep.  The two
+    extraction paths were indistinguishable in stored data, which made
+    a v4/v4_1 comparison uninterpretable (memo §12.3.42).
+    """
+
+    def test_reports_the_source_of_the_winning_contribution(self):
+        st = PipelineState(doc={'_id': 'd'})
+        st.contribute_ann_text(text='[@a#Notes*]', source='low', priority=4)
+        st.contribute_ann_text(text='[@b#Notes*]', source='high', priority=10)
+        assert st.winning_label_source() == 'high'
+
+    def test_the_source_matches_the_text_actually_used(self):
+        """**The property that makes the field trustworthy.**  If the
+        recorded source were computed independently of
+        `merged_ann_text`, the two could disagree and the provenance
+        would be a lie rather than a gap.
+        """
+        st = PipelineState(doc={'_id': 'd'})
+        st.contribute_ann_text(text='[@low#Notes*]', source='low',
+                               priority=4)
+        st.contribute_ann_text(text='[@high#Notes*]', source='high',
+                               priority=10)
+        assert 'high' in st.merged_ann_text()
+        assert st.winning_label_source() == 'high'
+
+    def test_ties_resolve_the_same_way_as_the_text(self):
+        """Equal priorities must not let the source and the text pick
+        different contributions.
+        """
+        st = PipelineState(doc={'_id': 'd'})
+        st.contribute_ann_text(text='[@first#Notes*]', source='first',
+                               priority=5)
+        st.contribute_ann_text(text='[@second#Notes*]', source='second',
+                               priority=5)
+        won = st.winning_label_source()
+        assert won in ('first', 'second')
+        assert won in st.merged_ann_text()
+
+    def test_no_contributions_gives_none(self):
+        assert PipelineState(doc={'_id': 'd'}).winning_label_source() is None
