@@ -48,7 +48,36 @@ def per_treatment_counts(
     candidate: Iterable[Dict[str, object]],
     treatment_ids: Sequence[str],
 ) -> List[TreatmentCounts]:
-    raise NotImplementedError
+    """Tally each reviewed treatment.
+
+    ``treatment_ids`` is the **reviewed set**, and every one of them
+    appears in the result even if it produced nothing: a treatment that
+    was read and needed no change is evidence, and dropping it would
+    remove the zeros that dominate the recall distribution.
+    """
+    wanted = list(treatment_ids)
+    keep: Dict[str, int] = {t: 0 for t in wanted}
+    add: Dict[str, int] = {t: 0 for t in wanted}
+    cand: Dict[str, int] = {t: 0 for t in wanted}
+    for ann in hand:
+        tid = ann.get('treatment_id')
+        action = ann.get('reviewer_action')
+        if action not in _VALID_ACTIONS:
+            raise ValueError(
+                f'unrecognised reviewer_action {action!r}; expected one '
+                f'of {_VALID_ACTIONS}'
+            )
+        if tid in keep:
+            (keep if action == 'kept' else add)[str(tid)] += 1
+    for ann in candidate:
+        tid = ann.get('treatment_id')
+        if tid in cand:
+            cand[str(tid)] += 1
+    return [
+        TreatmentCounts(treatment_id=t, kept=keep[t], added=add[t],
+                        candidates=cand[t])
+        for t in wanted
+    ]
 
 
 def precision_bootstrap(
@@ -56,13 +85,66 @@ def precision_bootstrap(
     n_resamples: int = 2000,
     seed: int = 20260901,
 ) -> Optional[Tuple[float, float, float]]:
-    raise NotImplementedError
+    """Pooled precision with a **treatment-level** bootstrap interval.
+
+    Returns ``(point, lo, hi)`` at the 2.5th and 97.5th percentiles, or
+    ``None`` when no treatment carried a candidate.
+
+    **The resampling unit is the treatment, not the annotation.**  An
+    annotation-level interval treats a treatment's annotations as
+    independent, which they are not, and comes out roughly six times too
+    narrow.
+    """
+    pool = [c for c in counts if c.candidates > 0]
+    if not pool:
+        return None
+    total_c = sum(c.candidates for c in pool)
+    point = sum(c.kept for c in pool) / total_c
+    rng = random.Random(seed)
+    draws: List[float] = []
+    n = len(pool)
+    for _ in range(max(1, n_resamples)):
+        sample = [pool[rng.randrange(n)] for _ in range(n)]
+        denom = sum(c.candidates for c in sample)
+        if denom:
+            draws.append(sum(c.kept for c in sample) / denom)
+    if not draws:
+        return point, point, point
+    draws.sort()
+    lo = draws[int(0.025 * (len(draws) - 1))]
+    hi = draws[int(0.975 * (len(draws) - 1))]
+    return point, lo, hi
 
 
 def recall_distribution(
     counts: Sequence[TreatmentCounts],
 ) -> Dict[str, object]:
-    raise NotImplementedError
+    """Recall as a **distribution**, deliberately without an interval.
+
+    The pooled ratio is returned as ``pooled_recall`` alongside its raw
+    numerator and denominator so it can be quoted with its own scale,
+    but **no confidence interval is offered for it** -- at these sample
+    sizes one would span 68-98 % and mislead.  What is robust is the
+    shape: how many treatments needed nothing, and how concentrated the
+    additions are.
+    """
+    adds = sorted((c.added for c in counts), reverse=True)
+    total_add = sum(adds)
+    kept = sum(c.kept for c in counts)
+    denom = kept + total_add
+    return {
+        'treatments': len(counts),
+        'kept': kept,
+        'added': total_add,
+        'pooled_recall': (kept / denom) if denom else None,
+        'median_additions': statistics.median(adds) if adds else 0,
+        'fraction_needing_additions': (
+            sum(1 for a in adds if a) / len(adds) if adds else 0.0
+        ),
+        'top_1_share': (adds[0] / total_add) if total_add else 0.0,
+        'top_5_share': (sum(adds[:5]) / total_add) if total_add else 0.0,
+        'max_additions': adds[0] if adds else 0,
+    }
 
 
 __all__ = (
