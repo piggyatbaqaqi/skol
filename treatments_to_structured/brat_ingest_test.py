@@ -420,7 +420,6 @@ class TestRoundStamping:
     enable does not work.
     """
 
-    @pytest.mark.xfail(strict=True, reason='round stamping not implemented')
     def test_kept_inherits_the_round_from_its_candidate(self):
         ann = {'feature_label': 'Pileus', 'field': 'description',
                'start': 10, 'end': 20}
@@ -434,7 +433,6 @@ class TestRoundStamping:
         assert got['round_file'] == 'production_v4_round5'
         assert got['round_provenance'] == 'selector'
 
-    @pytest.mark.xfail(strict=True, reason='round stamping not implemented')
     def test_added_is_stamped_from_the_treatment_not_the_annotation(self):
         """An `added` annotation has no candidate to inherit from --
         that is what makes it an addition.  But it belongs to a
@@ -452,7 +450,6 @@ class TestRoundStamping:
                           'round_provenance': 'selector'})
         assert got['round'] == 5
 
-    @pytest.mark.xfail(strict=True, reason='round stamping not implemented')
     def test_explicit_round_fields_win_over_the_candidate(self):
         """The caller knows the treatment's round; a candidate doc
         may be stale if the treatment was re-annotated.
@@ -495,14 +492,12 @@ class TestRoundStamping:
 
 
 class TestRoundFieldsForTreatment:
-    @pytest.mark.xfail(strict=True, reason='helper not implemented')
     def test_reads_the_round_off_any_candidate(self):
         got = round_fields_for_treatment([
             {'round': 5, 'round_file': 'f', 'round_provenance': 'selector'}])
         assert got == {'round': 5, 'round_file': 'f',
                        'round_provenance': 'selector'}
 
-    @pytest.mark.xfail(strict=True, reason='helper not implemented')
     def test_disagreement_takes_the_highest_round(self):
         """A treatment re-annotated in a later round has its candidate
         docs rewritten in place, so a mixture means partial
@@ -515,7 +510,6 @@ class TestRoundFieldsForTreatment:
         ])
         assert got['round'] == 5 and got['round_file'] == 'new'
 
-    @pytest.mark.xfail(strict=True, reason='helper not implemented')
     def test_no_candidates_or_no_rounds_gives_empty(self):
         assert round_fields_for_treatment([]) == {}
         assert round_fields_for_treatment([{'model': 'm'}]) == {}

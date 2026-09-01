@@ -77,6 +77,7 @@ from treatments_to_structured.brat_ingest import (  # noqa: E402
     DiffResult,
     diff_annotations,
     make_reviewed_doc,
+    round_fields_for_treatment,
     treatment_id_from_ann_filename,
 )
 from treatments_to_structured.brat_render import (  # noqa: E402
@@ -551,11 +552,18 @@ def main() -> int:
                         f"{doc['_id']}: {exc}",
                         file=sys.stderr,
                     )
+            # One stamp per treatment, shared by kept and added.
+            # `added` annotations have no candidate to inherit from,
+            # and they are what the recall distribution is computed
+            # from, so they must be stamped too.
+            round_fields = round_fields_for_treatment(
+                candidates_by_key.values()
+            )
             for r in result.kept:
                 rd = make_reviewed_doc(
                     r, treatment_id=tid, doc_id=doc_id,
                     reviewer=reviewer, reviewed_at=reviewed_at,
-                    action='kept',
+                    action='kept', round_fields=round_fields,
                     candidate_match=candidates_by_key.get(
                         annotation_key(r),
                     ),
@@ -575,6 +583,7 @@ def main() -> int:
                     reviewer=reviewer, reviewed_at=reviewed_at,
                     action='added',
                     candidate_match=None,
+                    round_fields=round_fields,
                 )
                 if rd['_id'] in hand_db:
                     rd['_rev'] = hand_db[rd['_id']]['_rev']

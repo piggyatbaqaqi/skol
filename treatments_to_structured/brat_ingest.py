@@ -144,6 +144,10 @@ def make_reviewed_doc(
         reviewer: Free-form identifier (user@host, name, etc.).
         reviewed_at: ISO-8601 timestamp.
         action: ``'kept'`` or ``'added'``.
+        round_fields: Round provenance for the treatment, as
+            returned by ``round_fields_for_treatment``.  Wins over
+            ``candidate_match``.  ``added`` annotations have no
+            candidate, so this is the only way they get stamped.
         candidate_match: For ``kept``, the original candidate doc
             so its ``model`` and ``created_at`` (provenance of the
             bootstrap) flow through.  None for ``added`` (no
@@ -169,7 +173,7 @@ def make_reviewed_doc(
     else:
         bootstrap_model = None
         bootstrap_created_at = None
-    return {
+    doc: Dict[str, Any] = {
         '_id': doc_id_str,
         'feature_label': ann['feature_label'],
         'field': ann['field'],
@@ -185,13 +189,51 @@ def make_reviewed_doc(
         'reviewer': reviewer,
         'reviewer_action': action,
     }
+    # Round provenance.  Explicit `round_fields` wins: the caller knows
+    # the treatment's round, while a matched candidate may be stale if
+    # the treatment was re-annotated.  Keys are omitted rather than set
+    # to None when nothing is known — see
+    # `test_no_round_information_writes_no_round_keys`.
+    stamp: Dict[str, Any] = {}
+    if candidate_match is not None:
+        stamp.update(
+            {k: candidate_match[k] for k in _ROUND_KEYS
+             if candidate_match.get(k) is not None}
+        )
+    if round_fields:
+        stamp.update(
+            {k: v for k, v in round_fields.items() if v is not None}
+        )
+    doc.update(stamp)
+    return doc
+
+
+_ROUND_KEYS = ('round', 'round_file', 'round_provenance')
 
 
 def round_fields_for_treatment(
     candidates: Iterable[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Not implemented yet."""
-    raise NotImplementedError
+    """The round a treatment was drawn in, from its candidate docs.
+
+    Returns ``{}`` when no candidate carries round information, so the
+    caller can pass the result straight through without writing nulls.
+
+    **When candidates disagree, the highest round wins.**  Candidate
+    ``_id``s are ``<tid>:<label>:<start>``, so re-annotating a treatment
+    rewrites its docs in place; a mixture therefore means *partial*
+    re-annotation.  The review being ingested is of the current state,
+    which is the later round.
+    """
+    best: Optional[Dict[str, Any]] = None
+    for cand in candidates:
+        rnd = cand.get('round')
+        if not isinstance(rnd, int):
+            continue
+        if best is None or rnd > best['round']:
+            best = {k: cand[k] for k in _ROUND_KEYS if k in cand}
+            best['round'] = rnd
+    return best or {}
 
 
 def treatment_id_from_ann_filename(path: str) -> str:
