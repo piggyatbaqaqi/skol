@@ -7277,6 +7277,88 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.34 Micro-fragments shatter descriptions — and a mid-line citation *causes* a merge
+
+`taxon_ec570d25` (*Teratosphaeria viscida*).  Operator: *"The first two
+description blocks are separated by **three blocks of very short lines
+which are clearly part of the description**… The type-designation… should
+include the material in the following Misc-exposition.  **The trailing
+description is a completely different organism.**"*
+
+#### The micro-fragments
+
+```
+IN  209c  mean-line 52  [Description]     Diagnosis: Leaf spots circular to irregular,
+      2c  mean-line  2  [Misc-exposition] to
+     11c  mean-line  5  [Table]           pale | brown,
+     21c  mean-line 10  [Misc-exposition] slightly | verruculose,
+IN  210c  mean-line 69  [Description]     cylindrical, straight to variously curved,
+```
+
+The interrupting "blocks" are the words **`to`**, **`pale brown,`** and
+**`slightly verruculose,`** — one sentence of a description shattered by
+column layout into fragments of 2, 11 and 21 characters.  This is
+§12.3.15's short-line mechanism at its limit: a **two-character** mean
+line length.
+
+**Measured over 844 description-to-description gaps in 300 documents:**
+
+| interrupting label | n | share | short-lined (≤30 c) |
+|---|---:|---:|---:|
+| `Misc-exposition` | 926 | 44 % | 553 — **60 %** |
+| `Page-header` | 368 | 17 % | 340 — 92 % |
+| `Biology` | 157 | 7 % | 7 — 4 % |
+| `Figure-caption` | 94 | 4 % | 20 — 21 % |
+| `Table` | 76 | 4 % | 72 — **95 %** |
+
+**49 % of everything interrupting a description is short-lined.**  So
+the dominant cause of a fractured description is not a genuine
+intervening section but **layout fragments**, and §12.3.11's boundary
+theft and §12.3.15's `Table` capture are two views of the same
+underlying failure: **the segmenter emits column debris as blocks, and
+the labeller must then assign it something.**
+
+#### The trailing organism: §12.3.31 is a *merge cause*, not only a loss
+
+```
+IN  724c [Description] Teratosphaericola Quaedvl. & Crous, Persoonia…
+```
+
+**A `Description` block opening with the nomenclatural citation of a
+different genus** — `Teratosphaericola`, against the treatment's
+`Teratosphaeria`.  That is §12.3.31's run-on citation, and here its
+consequence is not merely a buried name.
+
+**`group_paragraphs` closes a treatment when it sees a `Nomenclature`
+block.**  Because this citation is *inside* a `Description` block, **no
+such block exists**, so the treatment never closed and absorbed a second
+organism.
+
+**This upgrades §12.3.31 from a content-loss class to a merge
+mechanism.**  A mid-line label boundary does not just destroy one of two
+labels — when the destroyed label is `Nomenclature`, it removes the only
+signal that ends a treatment.  It is a concrete causal path from the
+line-based architecture to the merges the operator keeps finding, and it
+ties §12.3.31 to §12.3.20's under-production and §12.3.22's unbounded
+extent.
+
+#### A fourth consecutive undetected merge
+
+`n_terms_above_5 = 1` against a threshold of 15, on a treatment holding
+two different genera.  With `taxon_5bdbc707` (0), `taxon_6e02ee31` (4)
+and `taxon_7d321149` (0), **the merge metric has now missed four in a
+row.**  §12.3.4's length-blindness is compounded here: the second
+organism contributes only 724 characters, far below any repetition
+threshold.
+
+#### And the type-designation
+
+*"should include the material in the following Misc-exposition"* —
+`BRIP 49804, culture ex-type CBS 12…`, mean line length 9.  **Tail theft
+on `Type-designation`**, which §12.3.27 measured at 12.3 %, and the
+thief is itself a short-line fragment.  The same mechanism, twice in one
+treatment.
+
 ### 12.3.33 A dry-run of two pending changes against a clean treatment
 
 `taxon_e9ece99e` (*Pseudochaetosphaeronema lincangensis*).  Operator:
