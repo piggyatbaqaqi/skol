@@ -7631,11 +7631,27 @@ above, but now for the right reason.
 
 **Three defects to fix before re-running:**
 
-1. **`--doc-id` and `--limit` must scope the taxpub sweep**, or the
-   flags should be rejected when it is enabled.  A single-document
-   request that rewrites 7 642 treatments is dangerous, not merely
-   surprising — and this one was only caught because it ran under
-   `--dry-run`.
+1. ~~`--doc-id` and `--limit` must scope the taxpub sweep~~ — **fixed
+   2026-09-01** (`835171a`).  `taxpub_doc_admitted` applies
+   `skip_doc_ids` first, then `only_doc_ids`, then the `is_taxpub` and
+   `article.xml` requirements, with `None` meaning unfiltered and an
+   empty set meaning nothing.  When `--doc-id` is given the sweep
+   iterates that set instead of the whole database, so it costs one
+   lookup rather than a full scan.
+
+   **Verified end to end**, and the verification settled the routing
+   question too:
+
+   ```
+   before:  Scanned 1779 is_taxpub docs   Added 7642   Would save 7683
+   after:   Scanned    1 is_taxpub doc    Added    9   Would save   50
+   ```
+
+   **50 = 41 (`.ann` path) + 9 (taxpub path)** — **exactly what
+   `production_v4` holds for this document.**  So v4's 50 was correct,
+   both paths contribute, and today's code reproduces it once the sweep
+   is scoped.  The `v4_1` run's 9 was an artefact of the unscoped sweep,
+   not of any code change.
 2. **Treatments need a provenance field** recording which extractor
    produced them.  Without it neither this comparison nor any future
    one can be conditioned, and §12.3.14's conservation audit cannot
