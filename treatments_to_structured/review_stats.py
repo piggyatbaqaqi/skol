@@ -95,7 +95,12 @@ def precision_bootstrap(
     independent, which they are not, and comes out roughly six times too
     narrow.
     """
-    pool = [c for c in counts if c.candidates > 0]
+    # Sorted so the statistic does not depend on the order the caller
+    # happened to supply.  The resampler indexes into this sequence, so
+    # an unsorted pool gives different intervals for identical data —
+    # see `test_is_independent_of_input_order`.
+    pool = sorted((c for c in counts if c.candidates > 0),
+                  key=lambda c: c.treatment_id)
     if not pool:
         return None
     total_c = sum(c.candidates for c in pool)

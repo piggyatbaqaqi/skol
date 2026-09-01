@@ -85,6 +85,22 @@ class TestPrecisionBootstrap:
         point, _, _ = precision_bootstrap(counts, n_resamples=50, seed=1)
         assert point == 1.0
 
+    def test_is_independent_of_input_order(self):
+        """Same data, same answer.
+
+        Found 2026-09-01: recomputing round 5 from the database rather
+        than the round file changed the interval from [99.10, 100.00]
+        to [99.06, 100.00] — same treatments, different order, because
+        the resampler indexes into the caller's sequence.  A statistic
+        that moves when its input is shuffled is not reproducible.
+        """
+        counts = [_c('b', kept=3, added=0, candidates=4),
+                  _c('a', kept=5, added=0, candidates=5),
+                  _c('c', kept=9, added=0, candidates=10)]
+        assert (precision_bootstrap(counts, n_resamples=300, seed=3)
+                == precision_bootstrap(list(reversed(counts)),
+                                       n_resamples=300, seed=3))
+
     def test_is_reproducible_from_the_seed(self):
         counts = [_c(f't{i}', kept=i, added=0, candidates=i + 1)
                   for i in range(8)]

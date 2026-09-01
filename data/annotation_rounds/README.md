@@ -53,7 +53,7 @@ populations in one round file.**
 
 ## Round 5 — label validation, settled
 
-**Precision 99.74 %, treatment-level bootstrap [99.10, 100.00]**
+**Precision 99.74 %, treatment-level bootstrap [99.06, 100.00]**
 (5 000 resamples, seed 20260901), over **39 reviewed treatments**
 and **382 candidate annotations**, of which **381 were retained and
 one rejected**.
@@ -101,6 +101,26 @@ quoted as "extraction quality".
 Computed by
 [`treatments_to_structured/review_stats.py`](../../treatments_to_structured/review_stats.py),
 which refuses to emit a recall interval by design.
+
+**Reproducible from the database alone.** `features_hand` had no
+`round` field until it was backfilled (2026-09-01,
+[`fixes/backfill_hand_round_stamps.py`](../../fixes/backfill_hand_round_stamps.py));
+this table previously had to be joined through the round *file*.
+Selecting `round == 5` from both feature DBs now reproduces it
+exactly. The per-round hand tallies that join makes available:
+
+| round | kept | added |
+|---|---:|---:|
+| 1 | 81 | **142** |
+| 2 | 854 | 104 |
+| 3 | 95 | **1** |
+| 4 | 516 | 23 |
+| 5 | 381 | 47 |
+
+Round 1's 142 additions against 81 kept, and round 3's single
+addition against 95 kept, are the two rounds' recall figures visible
+directly in the counts — no interval needed, and the contrast is
+the selection bias rather than a change in model quality.
 
 ## Only round 3 is a random sample
 
