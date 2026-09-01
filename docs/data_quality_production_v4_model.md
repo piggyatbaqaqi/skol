@@ -7543,7 +7543,16 @@ Only `extract_treatments_to_couchdb` does.
 experiment gets **none of them** unless `--redis-key-pass1/pass2/single`
 are passed explicitly, and they were not.
 
-**That is not cosmetic, because extraction re-labels.**
+**Superseded — the CRF keys were not the cause.**  See "The actual
+cause" below.  `classifier_logistic_v3`'s docstring states plainly that
+it *"does not re-run the classifier; it consumes the existing
+attachment"*, contributing the YEDDA verbatim.  The keys were missing
+and adding them is right for consistency, but they cannot have changed
+this run.  Recorded rather than deleted because the reasoning was wrong
+in an instructive way: **the component was never read before the theory
+was formed.**
+
+~~That is not cosmetic, because extraction re-labels.~~
 `extract_treatments_to_couchdb` imports `group_paragraphs` but never
 calls it.  The real path is
 `Dispatcher.extract` -> `treatment_assembler`, whose input is
@@ -7574,6 +7583,66 @@ It called `group_paragraphs` on the attachment, skipping the labeler,
 `CouchDBFile.read_line` and `remove_interstitials`.  **Its 98.77 %
 id-stability figure does not model the pipeline** and should not be
 quoted; a corrected number requires a run with the CRF keys in place.
+
+#### The actual cause: a second extraction path that ignores `--doc-id`
+
+Running the extractor for **one** document produced this:
+
+```
+[G.1] Scanned skol_dev: 1779 is_taxpub docs with article.xml
+[G.1] Added 7642 taxpub treatments from skol_dev
+[DRY RUN] Would save 7683 treatments
+```
+
+**7 683 treatments from a single-document request.**
+`iter_taxpub_treatments` — the "Phase G.1 non-Spark sweep" — scans the
+whole of `skol_dev` for `is_taxpub` documents carrying `article.xml` and
+extracts from the **XML**, bypassing the `.ann` entirely.  **It honours
+neither `--doc-id` nor `--limit`.**
+
+That is the T0f class again: a flag accepted and silently not applied.
+`--doc-id` reads as "process this document"; it scopes only the Spark
+half.
+
+**And the anomalous document is `is_taxpub: true`.**  Its `skol_dev`
+attachments are `article.xml`, `article.txt`,
+`article.page-headers.json` and `article.spans.v4.json` — **no `.ann` at
+all**; the `.ann` lives in the annotations DB.  So it is reachable by
+*both* routes, which disagree:
+
+| route | treatments |
+|---|---:|
+| `.ann` via the Spark path (today's code, verified locally) | **41** |
+| `article.xml` via the taxpub sweep | **9** — what `v4_1` stored |
+| whatever `production_v4` used on 2026-08-11 | **50** |
+
+**Nothing records which route produced a treatment.**
+`treatment_assembler` hard-codes
+`attachment_name=_DEFAULT_ATTACHMENT_NAME`, so **all 8 622 `v4_1`
+treatments claim `article.txt.ann`** including the XML-derived ones.
+The two paths are indistinguishable in the stored data.
+
+#### What this means for the comparison
+
+**The v4 / v4_1 diff was never interpretable.**  It compares documents
+that may have been extracted by different routes in each run, with no
+field to condition on.  Every number from it is withdrawn — as recorded
+above, but now for the right reason.
+
+**Three defects to fix before re-running:**
+
+1. **`--doc-id` and `--limit` must scope the taxpub sweep**, or the
+   flags should be rejected when it is enabled.  A single-document
+   request that rewrites 7 642 treatments is dangerous, not merely
+   surprising — and this one was only caught because it ran under
+   `--dry-run`.
+2. **Treatments need a provenance field** recording which extractor
+   produced them.  Without it neither this comparison nor any future
+   one can be conditioned, and §12.3.14's conservation audit cannot
+   tell a missing treatment from a differently-routed one.
+3. **The routing rule needs stating.**  For a document reachable both
+   ways, which wins, and why?  9 versus 41 is not a rounding
+   difference.
 
 **The first defect:** `manage_experiment create` derived
 `spans` as `skol_exp_production_v4_1_01_00_ann`, a database that does
