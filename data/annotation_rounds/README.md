@@ -35,7 +35,7 @@ what a round actually covered.
 | 2 | 51 | p1 | **biased** | pathology | reconstructed 2026-08-20, +3 on 2026-08-25 | 47 on 2026-07-03 |
 | 3 | 10 | p1 | **random** | label validation | reconstructed 2026-08-20, +1 on 2026-08-25 | 9 on 2026-07-07 |
 | 4 | 50 | p1 | **biased**, 3 bands 5/15/30 | pathology | captured from the selector, 2026-08-14 | 47 of 50 on 2026-08-25 |
-| 5 | 1000 | p1 | **random**, uniform | Heaps baseline + label validation | **selector, 2026-08-25** | pending — first 50 only |
+| 5 | 1000 | p1 | **random**, uniform | Heaps baseline + label validation | **selector, 2026-08-25** | **39 of the first 50, 2026-08-26 → 09-01** |
 | 5 | +1 | p1 | manual | canary | hand-picked 2026-08-23 | 1 on 2026-08-24 |
 
 **Round 5 is the first round whose provenance was written by the
@@ -50,6 +50,57 @@ The `population` column uses the partition in
 [docs/plans/annotation-activity-split.md](../../docs/plans/annotation-activity-split.md):
 `p1` is complexity > 0 and not a merge suspect. **Never mix
 populations in one round file.**
+
+## Round 5 — label validation, settled
+
+**Precision 99.74 %, treatment-level bootstrap [99.10, 100.00]**
+(5 000 resamples, seed 20260901), over **39 reviewed treatments**
+and **382 candidate annotations**, of which **381 were retained and
+one rejected**.
+
+**This retires label validation.** The plan noted that round 3's
+100 % rested on only 9 treatments and was suggestive rather than
+conclusive; round 5 is a second random sample, four times larger,
+and lands in the same place with an interval that excludes any
+reading below 99 %.
+
+### Recall — reported as a distribution, per the plan
+
+**No interval is given, deliberately.** At a 38.8× design effect a
+pooled recall CI at this n spans roughly 68–98 % and supports no
+conclusion. What is robust is the shape:
+
+| | |
+|---|---:|
+| pooled ratio *(for scale only)* | 89.0 % = 381 kept / 428 hand |
+| **median additions per treatment** | **0** |
+| treatments needing ≥ 1 addition | 28 % (11 of 39) |
+| top-1 share of all additions | 21 % (max 10 in one treatment) |
+| **top-5 share of all additions** | **79 %** |
+| total additions | 47 |
+
+**28 treatments needed nothing at all**, and five treatments supply
+79 % of every addition. This is the same heavy-tailed, zero-inflated
+shape that made round 1's 36.3 % recall a single document — which is
+why the ratio is quoted only for scale.
+
+### The two quality layers are independent
+
+Three of the treatments the operator judged **flawless** in the
+dossier review still took additions — `taxon_8dc658f0` (6),
+`taxon_c7fdca00` (3), `taxon_e9ece99e` (2).
+
+**That is not a contradiction.** The dossier review assessed
+*segmentation and block labelling*; these annotations are *feature
+labels inside a description*. A treatment can be perfectly
+segmented and still have a `Pileus` or `Ascospores` span the model
+did not propose. **Round 5 measured both layers, and they do not
+correlate** — which is worth remembering before either number is
+quoted as "extraction quality".
+
+Computed by
+[`treatments_to_structured/review_stats.py`](../../treatments_to_structured/review_stats.py),
+which refuses to emit a recall interval by design.
 
 ## Only round 3 is a random sample
 
@@ -87,7 +138,11 @@ character has not rejected the label:
 | 2 | biased | 47 | 881 | 98.52 % [97.1, 99.4] | 96.94 % [93.4, 99.0] |
 | **3** | **random** | 9 | 96 | **100 %** — see below | 98.96 % [95.8, 100] |
 | 4 | biased | 47 | 523 | 99.04 % [98.1, 99.8] | 98.66 % [97.7, 99.5] |
+| **5** | **random** | **39** | **382** | **99.74 % [99.1, 100]** | see §Round 5 |
 | — | pooled | 109 | 1582 | 98.80 % [98.0, 99.4] | 97.72 % [96.0, 98.9] |
+
+*(The pooled row covers rounds 1–4 only and is retained for
+continuity; it describes the selection, not the corpus.)*
 
 **Treatment-level bootstrap intervals**, 20 000 resamples,
 seed 20260825 — *not* the annotation-level Wilson intervals
