@@ -7277,6 +7277,86 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.35 Reflow versus `Table` detection — the tension is smaller than it looks
+
+Operator: *"I'm wondering about the interaction between Table detection
+and reflow.  Both of the short-line fragments here could have been
+avoided if we reflowed the document before detecting Nomenclature and
+Description blocks.  **OTOH, Table detection does require line length as
+an input.  Reflow and Table should each emit a quality metric** to help
+us decide which case we are looking at.  I'm also thinking about
+investigating an **OCR solution that extracts non-text cues**."*
+
+#### A discriminator was tried and failed
+
+The natural quality metric is **column alignment**: a real table has
+regular columns and therefore low variance in line length, while
+shattered prose has arbitrary fragment lengths and high variance.
+Measured as the coefficient of variation over line lengths, restricted
+to short-lined blocks:
+
+| group | n | median CV | CV < 0.35 |
+|---|---:|---:|---:|
+| `Table` (short-lined) | 2 384 | 0.59 | 19 % |
+| debris between two `Description` blocks | 216 | 0.67 | 12 % |
+
+**Barely separable, and both are high.**  The hypothesis is refuted.
+
+**The reason matters more than the result: the test was contaminated by
+the phenomenon it was testing.**  §12.3.15 established that `Table` is a
+short-line detector, not a table detector — 67 % of `Table` blocks
+contain a binomial and ~3 100 carry an outright nomenclatural act.  So
+the comparison set on the left is *also* mostly debris.  **There is no
+ground-truth set of real tables in this corpus to calibrate a metric
+against.**
+
+#### Which reframes the tension
+
+The concern was that reflow destroys an input `Table` detection needs.
+**But that input is not currently producing table information.** The
+cost of destroying it is therefore much lower than it appears:
+
+| | |
+|---|---|
+| what reflow would break | a signal that already mislabels citations and prose as `Table` (§12.3.15) and lets treatments over-extend (§12.3.22, `Table` is transparent to `MISC_GAP_LIMIT`) |
+| what reflow would fix | micro-fragment shattering (§12.3.34, 49 % of description interruptions), mid-line boundaries where newlines were lost (§12.3.13, §12.3.31), and the short-line citations `Table` swallows |
+
+**So reflow-before-detection is the stronger ordering on current
+evidence** — and the quality metric the operator asks for cannot be
+built from the existing `Table` label in any case, because that label
+does not mark real tables.  **Building it requires table ground truth
+first**, which is a small annotation task and a prerequisite rather than
+a side effect.
+
+*(Existing machinery: `pdf_section_extractor.py` already contains
+reflow-adjacent code.  Not audited here.)*
+
+#### The OCR direction addresses the root cause of five recorded classes
+
+*"an OCR solution that extracts non-text cues"* is the instrument this
+section has been circling without naming.  Every failure above is an
+attempt to **infer layout from text after layout was discarded**:
+
+| class | what it is really inferring |
+|---|---|
+| §12.3.15 `Table` as short-line detector | column boundaries, from line length |
+| §12.3.6 rogue `Key` | block role, from block length |
+| §12.3.13 lost newlines | line structure, after it was thrown away |
+| §12.3.34 micro-fragments | paragraph continuity, across column breaks |
+| §12.3.31 mid-line boundaries | where a name ends and prose begins |
+
+**Font size, weight, indentation, ruling lines and column boxes would
+supply four of these five directly**, without inference — a real table
+is identified by its ruling and cell geometry, not by its line lengths.
+**And §12.3.13's lost newlines are a pure artefact of text-only
+extraction**, so they would not arise at all.
+
+This does not resolve §12.3.31's mid-line boundary, which is a
+*labelling granularity* question rather than a layout one, and it does
+nothing for §12.3.16's LOTE failure.  **But it is the single change on
+the table that would retire the most recorded classes at once**, and it
+targets causes rather than symptoms.
+
 ### 12.3.34 Micro-fragments shatter descriptions — and a mid-line citation *causes* a merge
 
 `taxon_ec570d25` (*Teratosphaeria viscida*).  Operator: *"The first two
