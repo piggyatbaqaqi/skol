@@ -7277,6 +7277,92 @@ prose by page geometry.  The Latin **would** have been detected at 53 %
 had it been in a document where the surrounding labelling was working —
 the failure here is the German context, not the Latin.
 
+### 12.3.32 Two design directions for the next model, with feasibility evidence
+
+Operator: *"two things to account for in the next model: **(1) We can
+use gnfinder to locate taxonomic citations inside other blocks**… look
+for nomenclature inside Description blocks and split off a Nomenclature
+block if we find it.  **(2) We need an issue front-matter detector that
+can extract publication information.**"*
+
+#### 1. gnfinder as a sub-line splitter — tested, feasible, with one trap
+
+gnfinder is installed locally (`~/bin/gnfinder`, service on
+`localhost:9080`) and returns **character offsets** plus an
+`AnnotNomenType` for nomenclatural acts — precisely what §12.3.31's
+unrepresentable mid-line boundary needs.
+
+Tested against the five degraded shapes this review produced:
+
+| case | source | result |
+|---|---|---|
+| run-on citation + Latin description | §12.3.31 | **found**, 0-20 |
+| citation broken across newlines | §12.3.15 `Boletus\nananaeceps` | **found**, spans the break |
+| OCR-damaged French | §12.3.6 `Botryohyooc.hnus h~belocutosoorus` | **found**, and `SP_NOV` detected |
+| German article, Latin diagnosis | §12.3.16 | **found** |
+| run-together, lost newline | §12.3.27 `…Maire.Description based on…` | **found** |
+
+**It works on exactly the material where citations are currently being
+swallowed** — line-broken, OCR-damaged and newline-stripped text all
+parse.
+
+**The trap: Latin descriptive prose parses as binomials.**  In the
+run-on case gnfinder returned *two* names — the real
+`Asterina orthosticha` at **10.64** log-odds, and
+**`Mycelium amphigenum` at 8.13**, which is Latin description opening
+*"Mycelium amphigenous, thin, of brown septate hyphae…"*.
+
+**And the false positive outscores a genuine name**: the OCR-damaged
+`Botryohyooc.hnus h~belocutosoorus` scored **3.54**.  **A confidence
+threshold cannot separate them** — any cut admitting the real damaged
+name admits the Latin noun-phrase, and any cut excluding the noun-phrase
+discards the damaged name.
+
+**Consequence for the design.**  A naive "split wherever gnfinder finds
+a name" would **fragment Latin descriptions**, which are currently among
+the *working* cases (§12.3.16: Latin 53 %, at the English rate).  The
+splitter needs a discriminator that is not confidence:
+
+* `AnnotNomenType` — but three of the five real citations above are
+  `NO_ANNOT`, so acts are necessary-if-present, not sufficient;
+* **position** — a citation opens a treatment; a Latin noun-phrase sits
+  mid-sentence;
+* **a following authority string** — `Syd.`, `(J.C. Schmidt ex Fr.)
+  Maire` — which `Mycelium amphigenum` lacks.
+
+The authority test looks strongest and is independently motivated:
+§12.3.15 found `binomial + authority` the discriminating signal for
+`Table`-swallowed citations, at 13 % against a 67 % bare-binomial rate.
+**The same feature separates both cases.**
+
+#### 2. An issue front-matter detector unblocks four recorded items
+
+Recorded here because the dependency is larger than it looks.  A
+detector extracting publication metadata — journal, volume, year, and
+per-article title and boundaries — would unblock:
+
+| item | what it needs |
+|---|---|
+| §12.3.8 taxonomic-article gate | journal + title, **and** §12.3.17 found these are stripped by `_slim_ingest`, which keeps only `_id, url, pdf_url, xml_url, db_name, doi` |
+| §12.3.9 / §12.3.25 article boundaries | per-article extents in whole-volume scans |
+| §12.3.31 "older literature" hypothesis | a **publication date** — the era test failed for want of one |
+| §12.3.17 false-negative risk | a "Report of the Botanist" is only distinguishable from an FDA leaflet **with** publication context |
+
+**The operator's second sentence is the cheaper half**: *"Article
+extraction may also have publication information that we can use."*
+Running heads carry journal, volume and page on nearly every page —
+`Persoonia – Volume 39, 2017`, `MYCOTAXON Vol. XIV, No. 1… January-March
+1982`, both quoted verbatim in §12.3.9 and §12.3.6 — and the corpus
+already labels them `Page-header` at 4 409 blocks per 300 documents.
+**The publication metadata is already segmented; it has simply never
+been parsed.**
+
+That is a materially smaller task than a front-matter detector, and it
+would supply the date §12.3.31 needed and the journal §12.3.8 needs,
+without touching ingest.  **The volume-level front matter remains
+necessary for per-article titles and boundaries**, which running heads
+do not carry.
+
 ### 12.3.31 A label boundary inside a line cannot be represented at all
 
 Operator, on `taxon_e59c0add`: *"a formatting issue that I think is
