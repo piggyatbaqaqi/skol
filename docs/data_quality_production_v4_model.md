@@ -7420,6 +7420,64 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.43 The re-run, conditioned on route — and what that separates
+
+`production_v4_1`, re-run 2026-09-01 with the scoping fix (`835171a`)
+and the provenance field (`deea058`) in place.
+
+**The scoping holds:** `Scanned skol_dev: 200 is_taxpub docs` against
+1 779 before, 948 taxpub treatments against 7 642.  1 928 treatments,
+**0 failed saves**, and three `file_exists` lines — the benign worker
+race on `db.create`.
+
+#### The provenance field earned itself on its first use
+
+| | treatments |
+|---|---:|
+| `classifier_logistic_v3` (the `.ann` route) | 980 |
+| `taxpub_treatment_extractor` (the `article.xml` route) | 948 |
+
+**359 comparable documents** (200 Spark + 200 taxpub − 41 overlap),
+v4 2 087 -> v4_1 1 928, **91.66 % of ids stable**.  Pooled, that number
+is uninterpretable — exactly the problem §12.3.42 recorded.  **Split by
+route it separates cleanly:**
+
+| route | docs | v4 | v4_1 | ids stable |
+|---|---:|---:|---:|---:|
+| `classifier_logistic_v3` | 159 | 970 | 959 | **97.3 %** |
+| `taxpub_treatment_extractor` | 196 | 1 074 | 926 | **86.2 %** |
+
+**Only the first row speaks to commit `8c0148d`.**  It is the route the
+`Phylogeny` fix touches, it moves 970 -> 959 (−1.1 %), and 97.3 %
+stability is close to what a grouper change of that size should
+produce.
+
+**The second row is not attributable to the fix and needs its own
+explanation.**  The taxpub route carries **1 of 948** phylogeny-bearing
+treatments, so `Phylogeny` barely reaches it — yet it is the *less*
+stable route by 11 points.  The likeliest cause is simply that
+`production_v4` was extracted **2026-08-11**, and the taxpub path has
+changed since (Trello #401's source-anchor work lands squarely on it).
+**Untested**, and recorded as the next question rather than a
+conclusion.
+
+#### The fix does what it was meant to
+
+**120 treatments now carry a populated `phylogeny` field, 268 834
+characters — 119 of them on the classifier route.**  Content that
+commit `8c0148d` was written to stop discarding is being retained, on
+the route it targets.
+
+#### What this vindicates
+
+§12.3.42 recommended a separate database on the grounds that an
+in-place run would be unverifiable.  **The re-run demonstrates the
+sharper version of that argument**: without the `extractor` field the
+only available number was 91.66 %, which conflates a 97.3 % route with
+an 86.2 % one and would have been read as a single verdict on
+`8c0148d`.  **The provenance field, added because a comparison demanded
+it, changed the conclusion on its first use.**
+
 ### 12.3.42 Re-extraction: 98.8 % of ids survive, but the writer never deletes
 
 Operator, 2026-09-01: *"What consequences would we see to reextracting?
