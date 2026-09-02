@@ -7420,6 +7420,112 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.44 The taxpub route did not move: 86.2 % was a coverage artefact
+
+§12.3.43 left one question open — why the `taxpub_treatment_extractor`
+route showed 86.2 % id stability against the classifier route's 97.3 %,
+when the `Phylogeny` fix barely reaches it.  The recorded guess was that
+the taxpub path had changed since `production_v4` was extracted on
+2026-08-11, with Trello #401's source-anchor work the likely mover.
+**Tested 2026-09-01.  The guess is wrong, and so was the metric.**
+
+#### The direction of the measurement hid the answer
+
+The 86.2 % counts **v4 ids that survive into v4_1**.  Measured the other
+way — v4_1 ids that already existed in v4 — the taxpub route scores
+**948 / 948 = 100 %**.  The route invented nothing; it only failed to
+reproduce some of what v4 held.  A content change moves ids in *both*
+directions, so zero new ids already falsifies "the taxpub path changed".
+
+| | v4 | v4_1 | v4 ids surviving | v4_1 ids that are new |
+|---|---:|---:|---:|---:|
+| `classifier_logistic_v3` | 1 013 | 980 | 97.4 % | 15 |
+| `taxpub_treatment_extractor` | 1 117 | 948 | 86.7 % | **0** |
+
+#### All 148 losses sit on 18 documents, and none of them are taxpub's
+
+Of 196 taxpub-only documents, **18 account for every lost treatment**.
+On those 18, the split is absolute — classified by `source_anchors`
+kind, which independently labels the route in v4 data that predates the
+`extractor` field:
+
+* **every treatment kept: taxpub-anchored** (`arpha` / `jats_section` /
+  `mycobank` / `plazi`), 98 of them;
+* **every treatment lost: `pdf`-anchored or unanchored** — the `.ann`
+  route's shape — 148 of them.
+
+Not one taxpub-anchored treatment was lost.
+
+#### Re-extracting those 18 documents settles it
+
+`skol_scratch_route_test`, today's code, `--doc-id` scoped to exactly
+those 18 documents, both passes allowed to run:
+
+| | treatments |
+|---|---:|
+| v4 holds for these 18 documents | 246 |
+| v4_1 produced | 98 |
+| **today's re-run produced** | **246 — 100 % of v4's ids, 0 new** |
+
+148 `classifier_logistic_v3` + 98 `taxpub_treatment_extractor` = 246,
+reproduced **id for id**.  The taxpub extractor is bit-stable against a
+three-week-old corpus; today's code reproduces v4 exactly on the very
+documents that looked least stable.
+
+**The cause is pass scoping, not code.**  The `.ann` pass and the G.1
+taxpub sweep select documents independently.  These 18 documents entered
+the sweep's 200 but not the Spark pass's `--limit 200`, so v4_1 holds
+their taxpub half against v4's whole.  The largest is
+`028539777b275cdeaa17e0416aa4b54f` — the same 41 + 9 = 50 document
+`85c0188` used to verify the scoping fix.  Its 41 were never *lost*;
+they were never *attempted*.
+
+The git history agrees: the last behavioural change anywhere in the
+taxpub call graph (`taxpub_treatment_extractor.py`,
+`ingestors/jats_to_yedda.py`, `treatment_assembler.py`, `state.py`) is
+**`70706d4`, 2026-07-22** — #401 Commit B, already in the code that
+produced v4 on 2026-08-11.  Everything after it is scoping (`835171a`)
+or provenance (`deea058`), neither of which touches `_CANONICAL_FIELDS`.
+
+#### The corrected comparison
+
+Dropping the 18 half-covered documents leaves **341 documents where
+both runs attempted the same passes**:
+
+| route | docs | v4 | v4_1 | v4 ids surviving | new |
+|---|---:|---:|---:|---:|---:|
+| `classifier_logistic_v3` | 159 | 970 | 959 | **97.3 %** | 15 |
+| `taxpub_treatment_extractor` | 178 | 828 | 828 | **100.0 %** | 0 |
+| overall | 341 | 1 841 | 1 830 | 98.6 % | 15 |
+
+**The whole of the v4 -> v4_1 movement is the classifier route, and the
+whole of that is `8c0148d`.**  Twelve of the fourteen changed documents
+show the same signature — **two treatments lost, one gained, and the
+gained one carries a populated `phylogeny` field**.  On
+`0c40d56b485351eba5eddc2c1535a7a6` the arithmetic is visible: two
+`Nomen ignotum` stubs with `figure_captions` of 88 and 1 113 characters
+become one with 1 202 (the join adds a newline), every other canonical
+field identical, plus 12 524 characters of retained `phylogeny`.  That
+is precisely what moving `Phylogeny` out of MISC and into the
+treatment-continuing set should do: a block that used to run the gap up
+and split a treatment now holds it open.
+
+#### What to carry forward
+
+* **A stability figure computed across passes with different document
+  scopes measures the scoping, not the code.**  Restrict to documents
+  both passes attempted, or report the two directions separately — one
+  direction alone cannot distinguish a rename from an absence.
+* **`source_anchors` kind is a usable route discriminator for
+  pre-`deea058` data** — 99.7 % agreement with `extractor` on the 1 928
+  treatments where both are available (the residue is 6 unanchored
+  taxpub treatments).  The conservation audit in §12.3.14 can use it to
+  route-label v4 retroactively without a re-extraction.
+* §12.3.43's closing claim stands, and now stands twice over: without
+  the `extractor` field this would have read as a single 91.66 % verdict
+  on `8c0148d`.  With it, the fix's true footprint is 15 treatments on
+  14 documents, and the other 148 differences are not the fix at all.
+
 ### 12.3.43 The re-run, conditioned on route — and what that separates
 
 `production_v4_1`, re-run 2026-09-01 with the scoping fix (`835171a`)
@@ -7460,6 +7566,12 @@ stable route by 11 points.  The likeliest cause is simply that
 changed since (Trello #401's source-anchor work lands squarely on it).
 **Untested**, and recorded as the next question rather than a
 conclusion.
+
+**Tested and wrong — see §12.3.44 (2026-09-01).**  The taxpub path has
+not changed since v4; the 86.2 % is a coverage artefact of 18 documents
+that the sweep reached and the Spark pass did not.  Measured in the
+other direction the route scores 100 %, and a re-extraction of those 18
+documents reproduces v4 id for id.
 
 #### The fix does what it was meant to
 
