@@ -120,6 +120,20 @@ def permutation_band(
     return xs, mean, lo, hi
 
 
+def fit_beta(
+    xs: Sequence[int],
+    ys: Sequence[float],
+    *,
+    min_n: int = 200,
+) -> Tuple[float, float]:
+    """Least-squares ``(K, beta)`` for ``V = K n**beta``, fitted over
+    ``n >= min_n``.
+
+    Skeleton: see the xfailed tests in ``heaps_test.py``.
+    """
+    raise NotImplementedError
+
+
 def timestamp_collisions(
     annotations: Iterable[Dict[str, object]],
 ) -> Dict[str, Set[str]]:

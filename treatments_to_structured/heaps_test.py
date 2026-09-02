@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from treatments_to_structured.heaps import (  # noqa: E402
     cumulative_curve,
+    fit_beta,
     labels_by_treatment,
     permutation_band,
     timestamp_collisions,
@@ -209,3 +210,81 @@ class TestTimestampCollisions:
 
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-v']))
+
+
+class TestCallableCanonicalizer:
+    """A dict cannot express a *rule*.
+
+    ``feature_label_rules.canonicalize`` settles whole families —
+    the sexual/asexual head noun, for one — that no finite map
+    enumerates, so the curve has to be able to take a function.
+    """
+
+    @pytest.mark.xfail(strict=True,
+                       reason='labels_by_treatment takes a Mapping only')
+    def test_callable_is_applied_to_every_label(self) -> None:
+        got = labels_by_treatment(
+            [_ann('a', 'Sexual state'), _ann('a', 'Sexual morph')],
+            canonicalizer=lambda label: label.replace('state', 'morph'),
+        )
+        assert got == {'a': {'Sexual morph'}}
+
+    def test_a_mapping_still_works(self) -> None:
+        """The dict form is what the notebook and every existing
+        caller pass; it must not regress."""
+        got = labels_by_treatment(
+            [_ann('a', 'Colonies'), _ann('a', 'Colony')],
+            canonicalizer={'Colonies': 'Colony'},
+        )
+        assert got == {'a': {'Colony'}}
+
+    @pytest.mark.xfail(strict=True,
+                       reason='labels_by_treatment takes a Mapping only')
+    def test_identity_callable_changes_nothing(self) -> None:
+        got = labels_by_treatment(
+            [_ann('a', 'Pileus')], canonicalizer=lambda label: label,
+        )
+        assert got == {'a': {'Pileus'}}
+
+
+@pytest.mark.xfail(strict=True, reason='fit_beta is a skeleton')
+class TestFitBeta:
+    """Heaps' exponent, fitted where the power law actually holds.
+
+    The head of a vocabulary curve is not Heaps: at n=1 every label
+    is new, so V tracks n and the slope approaches 1.  Fitting from
+    n=1 therefore reports a steeper beta than the corpus has --
+    measured 0.645 against 0.601 on round 5.  ``min_n`` is the
+    window, and it is the whole point of the function.
+    """
+
+    def _power_law(self, k: float, beta: float, n: int = 1000):
+        xs = list(range(1, n + 1))
+        return xs, [k * x ** beta for x in xs]
+
+    def test_recovers_an_exact_power_law(self) -> None:
+        xs, ys = self._power_law(15.2, 0.601)
+        k, beta = fit_beta(xs, ys, min_n=200)
+        assert abs(beta - 0.601) < 1e-6
+        assert abs(k - 15.2) < 1e-6
+
+    def test_the_window_excludes_the_head(self) -> None:
+        """A curve that is linear up to n=50 and Heaps-like after.
+        Fitting from n=1 must report the steeper slope; that is the
+        defect this window exists to avoid."""
+        xs = list(range(1, 1001))
+        ys = [float(x) if x <= 50 else 50 * (x / 50) ** 0.6 for x in xs]
+        _, from_head = fit_beta(xs, ys, min_n=1)
+        _, from_tail = fit_beta(xs, ys, min_n=200)
+        assert from_head > from_tail
+        assert abs(from_tail - 0.6) < 1e-6
+
+    def test_non_positive_and_short_curves_are_dropped(self) -> None:
+        xs, ys = self._power_law(10.0, 0.5, n=300)
+        ys[0] = 0.0  # a leading zero must not reach the logarithm
+        k, beta = fit_beta(xs, ys, min_n=200)
+        assert abs(beta - 0.5) < 1e-6
+
+    def test_too_few_points_raises(self) -> None:
+        with pytest.raises(ValueError):
+            fit_beta([1, 2, 3], [1.0, 2.0, 3.0], min_n=200)
