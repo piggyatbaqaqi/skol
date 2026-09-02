@@ -533,6 +533,16 @@ points for ~$29**.  **On coverage grounds the case is now weak**: the
 curve has visibly flattened and 98 % remains out of reach of the whole
 eligible population.
 
+**Audited 2026-09-02 — see
+[feature_label_singletons.md](../feature_label_singletons.md).**  Of a
+50-label random sample of the 854 singletons, **56 % are genuine rare
+traits and ~44 % are consolidatable** (260–500 of the tail, ±14
+points at n=50).  A quarter of the tail matches five mechanical
+shapes, and **39 singletons were minted from spans saying the
+structure is absent** — a prompt defect that manufactures both
+singletons and compounds.  Consolidating first makes the next
+thousand worth more; it does not make it urgent.
+
 **The support set is the better reason to keep going, if there is
 one.**  Labels with df ≥ 20 went 47 → 92 across this doubling; another
 thousand would put it near 130.  Whether that matters depends on what
@@ -673,6 +683,23 @@ Reasons to revise this plan:
   — Phase 1 context for the bootstrap annotator.
 
 ## Change log
+
+* **2026-09-02** — **The singleton tail audited; the label schema, not
+  the sampling, is the open question.**  854 of 1 480 canonical labels
+  appear once.  A 50-label sample classifies 56 % as genuine rare
+  traits (rusts, smuts, slime moulds, lichens — rare because the taxa
+  are), 20 % as collapsible drift and 24 % as not-a-trait
+  (property-of-trait, compounds, artifacts).  Counting shapes across
+  the whole tail: 73 are `<established> + property`, 59 compounds, 46
+  base+growth-condition, 39 minted from *absence* statements, 36
+  case-only duplicates — 221 distinct, 26 % of the tail, reachable
+  without judgment.  Ranked follow-ups in
+  [feature_label_singletons.md](../feature_label_singletons.md); the
+  prompt fix for absence statements is first because it is the only
+  one that stops the tail growing.  Also landed: the out-of-sample
+  coverage measure moved into `treatments_to_structured.heaps` with
+  tests and a notebook cell, so the round-6 validation is reproducible
+  rather than a scratchpad result.
 
 * **2026-09-01 (later)** — **Round 6 run; the coverage model was
   tested out of sample and held.**  1 000 treatments, $28.64, 25
