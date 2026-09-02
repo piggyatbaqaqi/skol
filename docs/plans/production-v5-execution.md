@@ -427,6 +427,9 @@ treatments; 98 % is out of reach of the entire eligible population.
 set (183 labels at n=1 000; df ≥ 10 gives 90, df ≥ 20 gives 47).
 Past that the marginal label costs more than it is worth.
 
+*(Executed as round 6, 2026-09-01 — coverage landed at 94.1 %, df ≥ 5
+at 288.  See "Round 6" below for the out-of-sample validation.)*
+
 ### The growth is corpus breadth, not annotator drift
 
 The obvious worry — that an LLM emitting free text inflates β with
@@ -459,6 +462,99 @@ invented phrasings — was tested and does not hold.
 a small-n transient — those curves are still fed by the singleton pool
 and must asymptotically share V₁'s exponent.  Only the β = 0.601
 estimate, corroborated by the hapax fraction, is safe to project.
+
+### Round 6: the model was tested out of sample and held
+
+Drawn and annotated 2026-09-01, 1 000 treatments, seed 20260901.
+**958 success, 34 partial, 8 error; 8 145 annotations; $28.64; 25
+minutes at 5 workers** (round 5: $26.79).
+
+**The headline is the out-of-sample test.**  The 91.7 % coverage
+figure above was an *in-sample* permutation estimate — it asked what
+round 5's own treatments looked like to a vocabulary built from the
+rest of round 5.  Round 6 is 1 000 treatments that vocabulary has
+never seen:
+
+| | predicted (in-sample, round 5) | observed (out-of-sample, round 6) |
+|---|---:|---:|
+| distinct labels already known | 91.5 % | **90.9 %** |
+| annotation instances already known | 91.7 % | **91.3 %** (90.6 % pooled) |
+
+**The estimator was optimistic by well under a point.**  That is the
+validation the whole method needed, and it arrived despite round 6
+drawing from a slightly *broader* population (see below), which
+should if anything have depressed coverage.
+
+**The power law extrapolated correctly across a doubling.**
+
+| | round 5 alone | rounds 5+6 |
+|---|---:|---:|
+| β (fit on n ≥ 200) | 0.604 | **0.595** |
+| hapax fraction (should track β) | 0.586 | 0.577 |
+| V, canonical | 938 | **1 480** — the fit predicted 1 429 |
+| Good–Turing missing mass | 8.3 % | **6.1 %** |
+
+Coverage rose **91.6 % → 94.1 %** over the doubling, **+2.4 points**,
+inside the +2–3 predicted.  Round 6 contributed 542 labels new to
+round 5's 938.
+
+**The support set is where the round paid off most:**
+
+| | n=1 000 | n=2 000 |
+|---|---:|---:|
+| labels with df ≥ 2 | 402 | 626 |
+| df ≥ 5 | 183 | **288** |
+| df ≥ 10 | 90 | **163** |
+| df ≥ 20 | 47 | **92** |
+
+#### The population is not identical to round 5's, deliberately
+
+Round 5 ran the merge filter at `--merge-threshold 10`; the default is
+now **15** (`2612ab9`), after 10 measured at **51.7 % precision**
+against 30 hand verdicts — wrongly excluding roughly 3 111 of the
+7 632 treatments it flagged.  Round 6 was left at 15 rather than
+forced back to 10, for two reasons: 10 is the worse filter, and a
+threshold-10 run would write `features_status` skip docs for ~2 112
+legitimate treatments, decisions that every later draw *trusts as
+prior*.  A bad filter's mistakes would have become sticky.
+
+**Consequence:** round 6's pool is 39 539 against round 5's 38 303, so
+about 5 % of round 6's pool is treatments round 5 excluded.  A naively
+pooled Heaps curve is therefore contestable — which is why the
+headline measurement above is the **out-of-sample coverage test**, not
+a pooled curve extension.  The pooled figures are reported because
+they agree, not because they are load-bearing.
+
+#### What a third thousand would buy
+
+Projecting the missing mass (which scales as n^(β−1)): 6.1 % at
+n=2 000 becomes ~5.2 % at n=3 000, so coverage ~94.8 % — **about +0.9
+points for ~$29**.  **On coverage grounds the case is now weak**: the
+curve has visibly flattened and 98 % remains out of reach of the whole
+eligible population.
+
+**The support set is the better reason to keep going, if there is
+one.**  Labels with df ≥ 20 went 47 → 92 across this doubling; another
+thousand would put it near 130.  Whether that matters depends on what
+M5 needs to train and validate against — a coverage target does not
+answer it.  **Decide against the support curve, not the coverage
+curve.**
+
+#### Two operational findings
+
+* **The dropped-span recovery script does not exist.**  Every run
+  prints *"run an offline-recovery script against …features_status to
+  retry dropped spans"*, and `llm_annotate_features` records the
+  `dropped_spans` payload for exactly that purpose, but nothing in
+  `fixes/` or `bin/` reads it.  **89 spans are waiting** (round 6: 48,
+  round 5: 37, rounds 2 and 4: 4), 83 of them the recoverable kind —
+  *text not found in synthetic doc* — which the recorded payload was
+  designed to retry with NFKD and dash normalisation **at no API
+  cost**.  The other 6 crossed a field boundary and need a human.
+* **No new drift appeared.**  Of round 6's 1 041 raw label forms, 16
+  were moved by the hand map and **0 by the rules** — a thousand fresh
+  treatments produced no new `sexual`/`asexual` head-noun variant.
+  The rules remain preventive, as designed.
 
 ### Notebook status
 
@@ -577,6 +673,24 @@ Reasons to revise this plan:
   — Phase 1 context for the bootstrap annotator.
 
 ## Change log
+
+* **2026-09-01 (later)** — **Round 6 run; the coverage model was
+  tested out of sample and held.**  1 000 treatments, $28.64, 25
+  minutes.  A vocabulary built from round 5 covered **91.3 %** of a
+  fresh round-6 treatment's annotation instances against the 91.7 %
+  in-sample prediction — optimistic by well under a point, and
+  measured on a slightly broader population.  β moved 0.604 → 0.595
+  across the doubling and V landed at 1 480 against a predicted 1 429,
+  so the power law extrapolates.  Coverage 91.6 % → 94.1 %, missing
+  mass 8.3 % → 6.1 %, df ≥ 20 support 47 → 92.  Round 6 kept the
+  current `--merge-threshold 15` rather than reproducing round 5's 10,
+  so the populations differ by ~5 % and the out-of-sample test, not a
+  pooled curve, is the load-bearing measurement.  **A third thousand
+  buys ~+0.9 coverage points for ~$29 — decide it on the support
+  curve, not the coverage curve.**  Two operational findings: the
+  dropped-span recovery script every run advertises does not exist
+  (89 spans waiting, 83 recoverable at no API cost), and a thousand
+  fresh treatments produced no new drift the rules would catch.
 
 * **2026-09-01** — **The Heaps' Law curve was measured, and the
   section rewritten from estimate to result.**  β = 0.601 on
