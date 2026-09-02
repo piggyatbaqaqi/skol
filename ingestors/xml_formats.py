@@ -37,6 +37,9 @@ TAXPUB = 'taxpub'
 # for no signal.
 _HEADER_BYTES = 2000
 
+# Matches <tp:taxon-treatment> and sec-type="taxon-treatment" alike.
+_TAXPUB_TREATMENT_MARKER = b'taxon-treatment'
+
 
 def _is_taxpub_header(header: str) -> bool:
     """The TaxPub namespace, which no plain JATS document carries."""
@@ -135,13 +138,34 @@ def is_taxpub(xml_format: Optional[str]) -> bool:
 
 
 def has_taxpub_treatments(content: bytes) -> bool:
-    """Skeleton: see the xfailed tests."""
-    raise NotImplementedError
+    """True when the document body carries taxon-treatment markup.
+
+    One substring covers both spellings: Pensoft's
+    ``<tp:taxon-treatment>`` elements and the JATS
+    ``sec-type="taxon-treatment"`` pattern that ``d309fe9`` broadened
+    detection to.
+
+    Unlike :func:`detect`, the **whole** document is searched.
+    Treatments live in the body, arbitrarily far in, so a header
+    window would miss them.
+    """
+    return _TAXPUB_TREATMENT_MARKER in content
 
 
 def is_taxpub_document(
     xml_format: Optional[str],
     content: Optional[bytes] = None,
 ) -> bool:
-    """Skeleton: see the xfailed tests."""
-    raise NotImplementedError
+    """True when this document should carry the ``is_taxpub`` flag.
+
+    Two sources, either sufficient: the format *declares* TaxPub, or
+    the body carries treatment markup while declaring something else.
+
+    ``content`` is optional because not every caller has fetched the
+    attachment.  **Absent content is not evidence**: omitting it gives
+    the answer the format name alone supports, never a ``False`` that
+    reads as "checked the body and found nothing".
+    """
+    if is_taxpub(xml_format):
+        return True
+    return content is not None and has_taxpub_treatments(content)

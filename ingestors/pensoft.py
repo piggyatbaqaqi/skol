@@ -875,8 +875,9 @@ class PensoftIngestor(Ingestor):
                                     xml_formats.is_jats_family(xml_fmt)
                                 )
                                 doc['is_taxpub'] = (
-                                    xml_fmt == 'taxpub'
-                                    or b'taxon-treatment' in resp.content
+                                    xml_formats.is_taxpub_document(
+                                        xml_fmt, resp.content,
+                                    )
                                 )
                             self.db.save(doc)
                             doc = self.db[doc_id]

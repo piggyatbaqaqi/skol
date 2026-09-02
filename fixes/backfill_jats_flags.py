@@ -37,7 +37,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config
-from ingestors.xml_formats import is_jats_family  # noqa: E402
+from ingestors.xml_formats import (  # noqa: E402
+    has_taxpub_treatments,
+    is_jats_family,
+    is_plain_jats,
+    is_taxpub_document,
+)
 
 
 def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
@@ -80,18 +85,18 @@ def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
         # For plain-JATS docs, check whether the XML content uses TaxPub
         # treatment elements (sec-type="taxon-treatment") even without the
         # TaxPub namespace declaration.
-        if xml_fmt == 'jats':
+        if is_plain_jats(xml_fmt):
             try:
                 attachment = db.get_attachment(doc_id, 'article.xml')
                 if attachment is not None:
                     content = attachment.read()
-                    is_taxpub = b'taxon-treatment' in content
+                    is_taxpub = has_taxpub_treatments(content)
                 else:
                     is_taxpub = False
             except Exception:
                 is_taxpub = False
         else:
-            is_taxpub = xml_fmt == 'taxpub'
+            is_taxpub = is_taxpub_document(xml_fmt)
 
         # Skip if flags already set correctly
         if (doc.get('is_jats') == is_jats

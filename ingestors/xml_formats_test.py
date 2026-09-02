@@ -152,7 +152,6 @@ class TestRegistry:
             assert isinstance(fmt.jats_family, bool)
 
 
-@pytest.mark.xfail(strict=True, reason='taxpub-document rule not written')
 class TestTaxpubDocument:
     """The *second* rule with two homes.
 
