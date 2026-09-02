@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for ``treatments_to_structured.heaps``."""
 
+import collections
 import sys
 from pathlib import Path
 
@@ -11,7 +12,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from treatments_to_structured.heaps import (  # noqa: E402
     cumulative_curve,
     fit_beta,
+    instances_by_treatment,
     labels_by_treatment,
+    out_of_sample_coverage,
     permutation_band,
     timestamp_collisions,
 )
@@ -283,3 +286,130 @@ class TestFitBeta:
     def test_too_few_points_raises(self) -> None:
         with pytest.raises(ValueError):
             fit_beta([1, 2, 3], [1.0, 2.0, 3.0], min_n=200)
+
+
+@pytest.mark.xfail(strict=True, reason='coverage measure is a skeleton')
+class TestInstancesByTreatment:
+    """Like ``labels_by_treatment`` but counting, not collapsing.
+
+    The coverage measure needs both: distinct labels answer "does this
+    treatment use vocabulary we have seen", instance counts answer
+    "how much of what it says do we already understand", and the two
+    differ whenever a treatment repeats a label.
+    """
+
+    def test_repeats_are_counted_not_collapsed(self) -> None:
+        got = instances_by_treatment([_ann('a', 'Pileus')] * 3
+                                     + [_ann('a', 'Stipe')])
+        assert got == {'a': collections.Counter({'Pileus': 3, 'Stipe': 1})}
+
+    def test_canonicalizer_applies(self) -> None:
+        got = instances_by_treatment(
+            [_ann('a', 'Colonies'), _ann('a', 'Colony')],
+            canonicalizer={'Colonies': 'Colony'},
+        )
+        assert got == {'a': collections.Counter({'Colony': 2})}
+
+    def test_callable_canonicalizer_applies(self) -> None:
+        got = instances_by_treatment(
+            [_ann('a', 'Sexual state')],
+            canonicalizer=lambda label: label.replace('state', 'morph'),
+        )
+        assert got == {'a': collections.Counter({'Sexual morph': 1})}
+
+
+@pytest.mark.xfail(strict=True, reason='coverage measure is a skeleton')
+class TestOutOfSampleCoverage:
+    """The measurement that validated the method.
+
+    Every earlier coverage number was **in-sample** — a permutation
+    over one round, asking what its own treatments look like to a
+    vocabulary built from the rest of that round.  This asks the
+    honest question instead: given the vocabulary learned from one
+    round, how much of a *different* round does it already cover?
+
+    Round 6 answered 91.3 % against an in-sample prediction of 91.7 %.
+    """
+
+    def _held_out(self):
+        return {
+            'a': {'Pileus', 'Stipe'},        # both known
+            'b': {'Pileus', 'Basidia'},      # half known
+            'c': {'Cystidia'},               # unknown
+            'd': set(),                      # sampled, produced nothing
+        }
+
+    def _instances(self):
+        return {
+            'a': collections.Counter({'Pileus': 3, 'Stipe': 1}),
+            'b': collections.Counter({'Pileus': 1, 'Basidia': 9}),
+            'c': collections.Counter({'Cystidia': 2}),
+        }
+
+    def test_everything_known_is_full_coverage(self) -> None:
+        got = out_of_sample_coverage(
+            {'Pileus', 'Stipe'}, {'a': {'Pileus', 'Stipe'}},
+            {'a': collections.Counter({'Pileus': 2})},
+        )
+        assert got.type_coverage == 1.0
+        assert got.instance_coverage == 1.0
+        assert got.pooled_instance_coverage == 1.0
+        assert got.novel_labels == frozenset()
+
+    def test_nothing_known_is_zero_coverage(self) -> None:
+        got = out_of_sample_coverage(set(), {'a': {'Pileus'}},
+                                     {'a': collections.Counter({'Pileus': 1})})
+        assert got.type_coverage == 0.0
+        assert got.pooled_instance_coverage == 0.0
+        assert got.novel_labels == frozenset({'Pileus'})
+
+    def test_mean_over_treatments_differs_from_pooled(self) -> None:
+        """**The reason both are reported.**  Treatment `b` carries 10
+        instances to `a`'s 4, so pooling weights it more heavily than
+        the per-treatment mean does.  Reporting one number invites the
+        reader to assume it is the other."""
+        got = out_of_sample_coverage(
+            {'Pileus', 'Stipe'}, self._held_out(), self._instances(),
+        )
+        # per-treatment: a=1.0, b=1/10, c=0.0  -> mean 0.3667
+        assert abs(got.instance_coverage - (1.0 + 0.1 + 0.0) / 3) < 1e-9
+        # pooled: (4 + 1 + 0) known of 16 total
+        assert abs(got.pooled_instance_coverage - 5 / 16) < 1e-9
+        assert got.instance_coverage != got.pooled_instance_coverage
+
+    def test_type_coverage_is_the_mean_over_treatments(self) -> None:
+        got = out_of_sample_coverage(
+            {'Pileus', 'Stipe'}, self._held_out(), self._instances(),
+        )
+        assert abs(got.type_coverage - (1.0 + 0.5 + 0.0) / 3) < 1e-9
+
+    def test_label_less_treatments_are_excluded_not_scored_zero(
+            self) -> None:
+        """Treatment `d` was sampled and produced nothing.  It carries
+        no evidence about coverage; scoring it 0 would understate, and
+        scoring it 1 would overstate."""
+        got = out_of_sample_coverage(
+            {'Pileus', 'Stipe'}, self._held_out(), self._instances(),
+        )
+        assert got.treatments == 3
+        assert got.instances == 16
+
+    def test_novel_labels_are_reported(self) -> None:
+        got = out_of_sample_coverage(
+            {'Pileus', 'Stipe'}, self._held_out(), self._instances(),
+        )
+        assert got.novel_labels == frozenset({'Basidia', 'Cystidia'})
+
+    def test_instances_are_optional(self) -> None:
+        """A caller with only distinct labels still gets the type
+        measure; the instance fields say None rather than lying."""
+        got = out_of_sample_coverage({'Pileus'}, {'a': {'Pileus'}})
+        assert got.type_coverage == 1.0
+        assert got.instance_coverage is None
+        assert got.pooled_instance_coverage is None
+        assert got.instances == 0
+
+    def test_empty_held_out_set_does_not_divide_by_zero(self) -> None:
+        got = out_of_sample_coverage({'Pileus'}, {})
+        assert got.treatments == 0
+        assert got.type_coverage is None

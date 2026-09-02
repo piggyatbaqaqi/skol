@@ -30,8 +30,10 @@ See `docs/plans/annotation-activity-split.md` F1, F2 and T4.
 import collections
 import math
 import random
+from dataclasses import dataclass
 from typing import (
     Callable,
+    FrozenSet,
     Dict,
     Iterable,
     List,
@@ -180,6 +182,40 @@ def fit_beta(
     beta = (n * sum_xy - sum_x * sum_y) / denominator
     intercept = (sum_y - beta * sum_x) / n
     return math.exp(intercept), beta
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """Result of :func:`out_of_sample_coverage`.
+
+    Skeleton: see the xfailed tests in ``heaps_test.py``.
+    """
+
+    treatments: int
+    instances: int
+    type_coverage: Optional[float]
+    instance_coverage: Optional[float]
+    pooled_instance_coverage: Optional[float]
+    novel_labels: FrozenSet[str]
+
+
+def instances_by_treatment(
+    annotations: Iterable[Dict[str, object]],
+    canonicalizer: Optional[
+        Union[Mapping[str, str], Callable[[str], str]]
+    ] = None,
+) -> Dict[str, 'collections.Counter[str]']:
+    """Skeleton: see the xfailed tests in ``heaps_test.py``."""
+    raise NotImplementedError
+
+
+def out_of_sample_coverage(
+    known: Set[str],
+    by_treatment: Dict[str, Set[str]],
+    instances: Optional[Dict[str, 'collections.Counter[str]']] = None,
+) -> Coverage:
+    """Skeleton: see the xfailed tests in ``heaps_test.py``."""
+    raise NotImplementedError
 
 
 def timestamp_collisions(
