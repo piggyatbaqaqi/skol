@@ -42,11 +42,7 @@ from ingestors.extract_plaintext import (
     plaintext_from_yedda,
 )
 from ingestors.jats_to_yedda import jats_xml_to_yedda
-# `is_plain_jats`, not `is_jats_family`: this preserves the behaviour
-# that predates ingestors.xml_formats, in which TaxPub documents are
-# NOT treated as JATS here.  Whether that is right is an open
-# question -- TaxPub is JATS and plaintext_from_jats handles it.
-from ingestors.xml_formats import is_plain_jats
+from ingestors.xml_formats import is_jats_family
 
 
 # ---------------------------------------------------------------------------
@@ -361,7 +357,7 @@ def obtain_plaintext(
                     )
 
     # 3. JATS XML
-    if doc.get("xml_available") and is_plain_jats(doc.get("xml_format")):
+    if doc.get("xml_available") and is_jats_family(doc.get("xml_format")):
         att = training_db.get_attachment(doc_id, "article.xml")
         if att:
             try:
@@ -412,7 +408,8 @@ def select_jats_docs(
 ) -> List[Dict[str, Any]]:
     """Select JATS articles from skol_dev for the golden dataset.
 
-    Filters: xml_available=True, xml_format="jats", not in exclude_ids.
+    Filters: xml_available=True, a JATS-family xml_format
+    (TaxPub included -- it is a JATS profile), not in exclude_ids.
     Tries to span multiple journals for diversity.
 
     Args:
@@ -435,7 +432,7 @@ def select_jats_docs(
             continue
 
         doc = row.doc
-        if not (doc.get("xml_available") and is_plain_jats(doc.get("xml_format"))):
+        if not (doc.get("xml_available") and is_jats_family(doc.get("xml_format"))):
             continue
 
         # Must have article.xml attachment
@@ -689,7 +686,7 @@ def populate_golden_databases(
         jats_ann = 0
         for sel in training_selections:
             doc = sel["doc"]
-            if doc.get("xml_available") and is_plain_jats(doc.get("xml_format")):
+            if doc.get("xml_available") and is_jats_family(doc.get("xml_format")):
                 jats_ann += 1
         for sel in jats_selections:
             jats_ann += 1  # All JATS selections have JATS XML
@@ -725,7 +722,7 @@ def populate_golden_databases(
             "hand_annotated": True,
             "jats_available": bool(
                 doc.get("xml_available")
-                and is_plain_jats(doc.get("xml_format"))
+                and is_jats_family(doc.get("xml_format"))
             ),
             "has_pdf": "article.pdf" in doc.get("_attachments", {}),
             "pmcid": doc.get("pmcid"),

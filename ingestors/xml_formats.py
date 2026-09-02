@@ -11,8 +11,18 @@ in ``pensoft_test`` asserted that a TaxPub document detects as
 
 This module owns that taxonomy.  :data:`FORMATS` is the registry;
 :func:`detect` names the format of a document header;
-:func:`is_jats_family`, :func:`is_plain_jats` and :func:`is_taxpub`
-answer membership.  Callers ask, they do not restate.
+:func:`is_jats_family` and :func:`is_taxpub` answer membership.
+Callers ask, they do not restate.
+
+**There is no narrow "plain JATS" predicate, deliberately.**  One
+existed briefly, to preserve the behaviour of five call sites that
+read ``xml_format == 'jats'`` and so excluded TaxPub from plaintext
+extraction and golden-dataset selection.  Reviewed 2026-09-01 and
+withdrawn: TaxPub is a JATS profile, ``plaintext_from_jats`` handles
+it, and no document in the corpus even carries the ``taxpub`` format
+name -- all 7 677 XML documents in ``skol_dev`` declare ``jats``, and
+the 1 740 TaxPub ones are recognised by their treatment markup.  The
+exclusion was a latent bug with no present effect, and it is gone.
 
 **Adding a format is one entry.**  BITS (JATS for books) and NISO STS
 (JATS for standards) are the obvious next ones: each would be an
@@ -118,18 +128,6 @@ def is_jats_family(xml_format: Optional[str]) -> bool:
     """
     fmt = _BY_NAME.get(xml_format or '')
     return fmt is not None and fmt.jats_family
-
-
-def is_plain_jats(xml_format: Optional[str]) -> bool:
-    """True for JATS and nothing else — **not** TaxPub.
-
-    Distinct from :func:`is_jats_family` on purpose.  Some callers do
-    mean the narrow thing (a converter that only handles unprofiled
-    JATS); they should say so by name rather than by writing
-    ``== 'jats'`` and leaving the reader to guess whether TaxPub was
-    considered.
-    """
-    return xml_format == JATS
 
 
 def is_taxpub(xml_format: Optional[str]) -> bool:

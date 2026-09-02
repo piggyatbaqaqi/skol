@@ -137,7 +137,7 @@ class TestJatsDetection(unittest.TestCase):
         """
         self.assertTrue(xml_formats.is_jats_family('taxpub'))
         self.assertTrue(xml_formats.is_jats_family('jats'))
-        self.assertFalse(xml_formats.is_plain_jats('taxpub'))
+        self.assertFalse(xml_formats.is_jats_family('docbook'))
 
 
 class TestDownloadFlags(unittest.TestCase):

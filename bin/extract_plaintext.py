@@ -39,11 +39,7 @@ from ingestors.extract_plaintext import (
     plaintext_from_jats,
     plaintext_from_pdf,
 )
-# `is_plain_jats`, not `is_jats_family`: this preserves the behaviour
-# that predates ingestors.xml_formats, in which TaxPub documents are
-# NOT treated as JATS here.  Whether that is right is an open
-# question -- TaxPub is JATS and plaintext_from_jats handles it.
-from ingestors.xml_formats import is_plain_jats
+from ingestors.xml_formats import is_jats_family
 
 # Source priority for --source auto (highest to lowest).
 _AUTO_SOURCES = ["efetch", "pdf", "jats"]
@@ -100,7 +96,7 @@ def _extract_from_source(
             return None
 
     if source == "jats":
-        if not (doc.get("xml_available") and is_plain_jats(doc.get("xml_format"))):
+        if not (doc.get("xml_available") and is_jats_family(doc.get("xml_format"))):
             if verbosity >= 2:
                 print(f"  {doc_id}: no JATS XML", file=sys.stderr)
             return None

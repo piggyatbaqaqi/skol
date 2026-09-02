@@ -28,7 +28,6 @@ from ingestors.xml_formats import (  # noqa: E402
     detect,
     has_taxpub_treatments,
     is_jats_family,
-    is_plain_jats,
     is_taxpub,
     is_taxpub_document,
 )
@@ -119,12 +118,6 @@ class TestMembership:
         JATS-family, this passes without editing."""
         for fmt in FORMATS:
             assert is_jats_family(fmt.name) is fmt.jats_family
-
-    def test_plain_jats_excludes_taxpub(self) -> None:
-        """The four `== 'jats'` sites mean this, and saying so is the
-        point -- whether they *should* is a separate question."""
-        assert is_plain_jats(JATS) is True
-        assert is_plain_jats(TAXPUB) is False
 
     def test_is_taxpub_is_exact(self) -> None:
         assert is_taxpub(TAXPUB) is True

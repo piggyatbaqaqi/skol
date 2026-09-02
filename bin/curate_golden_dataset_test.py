@@ -330,8 +330,6 @@ class TestSelectJatsDocs:
         )
         return {sel["doc"]["_id"] for sel in got}
 
-    @pytest.mark.xfail(strict=True,
-                       reason="select_jats_docs still asks is_plain_jats")
     def test_taxpub_is_selected(self) -> None:
         assert "profiled" in self._selected()
 

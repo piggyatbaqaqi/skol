@@ -31,6 +31,7 @@ Usage:
 
 import argparse
 import sys
+from typing import Optional
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -38,9 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config
 from ingestors.xml_formats import (  # noqa: E402
-    has_taxpub_treatments,
     is_jats_family,
-    is_plain_jats,
     is_taxpub_document,
 )
 
@@ -82,21 +81,19 @@ def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
 
         is_jats = is_jats_family(xml_fmt)
 
-        # For plain-JATS docs, check whether the XML content uses TaxPub
-        # treatment elements (sec-type="taxon-treatment") even without the
-        # TaxPub namespace declaration.
-        if is_plain_jats(xml_fmt):
+        # A document can be TaxPub in substance while declaring plain
+        # JATS (sec-type="taxon-treatment" with no TaxPub namespace), so
+        # the body decides -- unless the format name already has, in
+        # which case there is nothing to read the attachment for.
+        content: Optional[bytes] = None
+        if is_jats_family(xml_fmt) and not is_taxpub_document(xml_fmt):
             try:
                 attachment = db.get_attachment(doc_id, 'article.xml')
                 if attachment is not None:
                     content = attachment.read()
-                    is_taxpub = has_taxpub_treatments(content)
-                else:
-                    is_taxpub = False
             except Exception:
-                is_taxpub = False
-        else:
-            is_taxpub = is_taxpub_document(xml_fmt)
+                content = None
+        is_taxpub = is_taxpub_document(xml_fmt, content)
 
         # Skip if flags already set correctly
         if (doc.get('is_jats') == is_jats
