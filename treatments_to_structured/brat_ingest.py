@@ -27,7 +27,7 @@ The CLI (``bin/brat_ingest.py``) wires this with CouchDB I/O.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 from treatments_to_structured.feature_label_rules import (
     split_medium_context,

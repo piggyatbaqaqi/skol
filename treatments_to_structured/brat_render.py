@@ -297,6 +297,7 @@ def _parse_brat_offsets(offsets_str: str) -> Tuple[int, int]:
     ends = [int(e) for _, e in segments]
     return min(starts), max(ends)
 
+
 # Brat's storage regex for entity types: '^[a-zA-Z0-9_-]*$'.
 # Anything else gets auto-mangled by brat (with a startup warning),
 # and the mangled form is what gets saved when the reviewer hits

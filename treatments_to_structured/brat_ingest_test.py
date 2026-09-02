@@ -7,7 +7,6 @@ import pytest
 from treatments_to_structured.brat_ingest import (
     round_fields_for_treatment,
     AnnotationKey,
-    DiffResult,
     annotation_key,
     diff_annotations,
     make_reviewed_doc,
@@ -297,10 +296,9 @@ class TestMakeReviewedDoc:
         produce new source_text."""
         reviewed_ann = _ann('Pileus', 48, 280)
         reviewed_ann['source_text'] = 'Pileus ... extended.'
-        candidate = _ann('Pileus', 48, 253, extras={
-            'source_text': 'Pileus ... original.',
-            'model': 'claude-opus-4-7',
-        })
+        # The candidate this reviewed annotation replaced read
+        # 'Pileus ... original.' -- the contrast the assertion below
+        # is about.
         doc = make_reviewed_doc(
             reviewed_ann, treatment_id='taxon_abc',
             doc_id='d', reviewer='r', reviewed_at='t',

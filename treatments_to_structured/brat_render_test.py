@@ -10,8 +10,6 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from treatments_to_structured.brat_render import (
-    FieldExtent,
-    SpanMap,
     annotations_to_brat,
     brat_safe_type,
     parse_brat_ann,

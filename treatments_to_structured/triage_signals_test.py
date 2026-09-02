@@ -1,6 +1,5 @@
 """Tests for treatments_to_structured.triage_signals."""
 
-import pytest
 
 from treatments_to_structured.triage_signals import (
     count_description_headers,

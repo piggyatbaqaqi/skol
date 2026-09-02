@@ -6,7 +6,6 @@ integration behaviour on live services is verified end-to-end
 via the triage CLI's live regression check.
 """
 
-import io
 import json
 import urllib.error
 from typing import Any, Dict, List
