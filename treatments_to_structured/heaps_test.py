@@ -288,7 +288,6 @@ class TestFitBeta:
             fit_beta([1, 2, 3], [1.0, 2.0, 3.0], min_n=200)
 
 
-@pytest.mark.xfail(strict=True, reason='coverage measure is a skeleton')
 class TestInstancesByTreatment:
     """Like ``labels_by_treatment`` but counting, not collapsing.
 
@@ -318,7 +317,6 @@ class TestInstancesByTreatment:
         assert got == {'a': collections.Counter({'Sexual morph': 1})}
 
 
-@pytest.mark.xfail(strict=True, reason='coverage measure is a skeleton')
 class TestOutOfSampleCoverage:
     """The measurement that validated the method.
 
