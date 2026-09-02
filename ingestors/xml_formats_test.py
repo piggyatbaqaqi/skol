@@ -47,7 +47,6 @@ TAXPUB_HEADER = (
 )
 
 
-@pytest.mark.xfail(strict=True, reason='xml_formats is a skeleton')
 class TestDetect:
     """Every rule that was in ``PensoftIngestor._detect_xml_format``,
     preserved exactly — including the ones that look accidental."""
@@ -95,7 +94,6 @@ class TestDetect:
             assert got is None or got in names
 
 
-@pytest.mark.xfail(strict=True, reason='xml_formats is a skeleton')
 class TestMembership:
     """The one question the codebase kept answering three ways."""
 

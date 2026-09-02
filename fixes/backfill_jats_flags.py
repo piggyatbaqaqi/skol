@@ -7,7 +7,8 @@ the ingest database(s) to set the flags on documents ingested before the
 flag was introduced.
 
 Logic:
-  - is_jats   = True when xml_format in ('jats', 'taxpub')
+  - is_jats   = True when ingestors.xml_formats.is_jats_family()
+                says so -- that module owns the format taxonomy
   - is_taxpub = True when xml_format == 'taxpub'
                    OR when xml_format == 'jats' and the article.xml
                       attachment contains 'taxon-treatment' (covers Pensoft
@@ -36,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'bin'))
 
 from env_config import get_env_config
+from ingestors.xml_formats import is_jats_family  # noqa: E402
 
 
 def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
@@ -73,7 +75,7 @@ def backfill(database: str, dry_run: bool = True, verbosity: int = 1) -> None:
             skipped += 1
             continue
 
-        is_jats = xml_fmt in ('jats', 'taxpub')
+        is_jats = is_jats_family(xml_fmt)
 
         # For plain-JATS docs, check whether the XML content uses TaxPub
         # treatment elements (sec-type="taxon-treatment") even without the

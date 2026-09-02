@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 from .ingestor import Ingestor
 from .timestamps import set_timestamps
+from . import xml_formats
 
 
 class PensoftIngestor(Ingestor):
@@ -671,29 +672,18 @@ class PensoftIngestor(Ingestor):
                 print(f"  Plaintext extraction error: {e}")
 
     def _detect_xml_format(self, content: bytes) -> Optional[str]:
-        """
-        Detect if XML content is JATS or JATS/TaxPub format.
+        """Detect the XML format of ``content``.
 
-        Args:
-            content: Raw XML bytes
+        Delegates to :mod:`ingestors.xml_formats`, which owns the
+        format taxonomy.  Kept as a method because callers and tests
+        reach it through the ingestor.
 
         Returns:
-            'taxpub' if TaxPub namespace detected, 'jats' if plain JATS,
-            None if neither is detected
+            'taxpub' for TaxPub, 'jats' for plain JATS, None otherwise.
+            TaxPub is a JATS profile, so ``is_jats_family`` is what
+            callers want when they mean "can I parse this as JATS".
         """
-        header = content[:2000].decode('utf-8', errors='ignore')
-        # TaxPub is a JATS profile — check for it first
-        if 'www.plazi.org/taxpub' in header:
-            return 'taxpub'
-        if 'JATS' in header:
-            return 'jats'
-        if 'journalpublishing' in header.lower():
-            return 'jats'
-        if '<article' in header and (
-            'dtd' in header.lower() or 'xmlns' in header
-        ):
-            return 'jats'
-        return None
+        return xml_formats.detect(content)
 
     def _ingest_documents(
         self,
@@ -881,7 +871,9 @@ class PensoftIngestor(Ingestor):
                             doc['xml_available'] = True
                             if xml_fmt:
                                 doc['xml_format'] = xml_fmt
-                                doc['is_jats'] = xml_fmt in ('jats', 'taxpub')
+                                doc['is_jats'] = (
+                                    xml_formats.is_jats_family(xml_fmt)
+                                )
                                 doc['is_taxpub'] = (
                                     xml_fmt == 'taxpub'
                                     or b'taxon-treatment' in resp.content

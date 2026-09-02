@@ -15,6 +15,7 @@ from uuid import uuid5, NAMESPACE_URL
 from bs4 import BeautifulSoup
 
 from .pensoft import PensoftIngestor
+from ingestors import xml_formats
 
 
 def _make_ingestor(**overrides):
@@ -121,7 +122,21 @@ class TestJatsDetection(unittest.TestCase):
             b'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
             b'xmlns:tp="http://www.plazi.org/taxpub">\n'
         )
-        self.assertEqual(self.ing._detect_xml_format(xml), 'jats')
+        self.assertEqual(self.ing._detect_xml_format(xml), 'taxpub')
+
+    def test_taxpub_is_still_jats(self):
+        """The specific answer does not cost the general one.
+
+        This test asserted 'jats' until 2026-09-01 and had been failing
+        since d309fe9 made detection return the more specific name.
+        The fix is not to weaken detection: TaxPub *is* a JATS profile,
+        and callers that mean "can I parse this as JATS" ask
+        xml_formats.is_jats_family, which is now the only place that
+        rule is written down.
+        """
+        self.assertTrue(xml_formats.is_jats_family('taxpub'))
+        self.assertTrue(xml_formats.is_jats_family('jats'))
+        self.assertFalse(xml_formats.is_plain_jats('taxpub'))
 
 
 class TestDownloadFlags(unittest.TestCase):
