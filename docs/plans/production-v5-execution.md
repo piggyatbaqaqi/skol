@@ -378,6 +378,11 @@ with `permutation_band` over 200 permutations of the full drawn set.
 Rounds 1, 2 and 4 are selection-biased toward suspected problems and
 **must not be pooled** into this.
 
+*(The notebook reports 7 480 annotations, V = 957 and 555 hapax
+against the 7 486 / 961 / 559 quoted here: it also drops the
+hand-picked canary `taxon_46ff7dde`, which carries the round-5 stamp
+but was not drawn.  β is 0.601 either way.)*
+
 | | |
 |---|---|
 | distinct labels `V` at n=1 000 | **961** |

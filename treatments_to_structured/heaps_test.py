@@ -220,8 +220,6 @@ class TestCallableCanonicalizer:
     enumerates, so the curve has to be able to take a function.
     """
 
-    @pytest.mark.xfail(strict=True,
-                       reason='labels_by_treatment takes a Mapping only')
     def test_callable_is_applied_to_every_label(self) -> None:
         got = labels_by_treatment(
             [_ann('a', 'Sexual state'), _ann('a', 'Sexual morph')],
@@ -238,8 +236,6 @@ class TestCallableCanonicalizer:
         )
         assert got == {'a': {'Colony'}}
 
-    @pytest.mark.xfail(strict=True,
-                       reason='labels_by_treatment takes a Mapping only')
     def test_identity_callable_changes_nothing(self) -> None:
         got = labels_by_treatment(
             [_ann('a', 'Pileus')], canonicalizer=lambda label: label,
@@ -247,7 +243,6 @@ class TestCallableCanonicalizer:
         assert got == {'a': {'Pileus'}}
 
 
-@pytest.mark.xfail(strict=True, reason='fit_beta is a skeleton')
 class TestFitBeta:
     """Heaps' exponent, fitted where the power law actually holds.
 

@@ -28,18 +28,35 @@ See `docs/plans/annotation-activity-split.md` F1, F2 and T4.
 """
 
 import collections
+import math
 import random
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 
 def labels_by_treatment(
     annotations: Iterable[Dict[str, object]],
-    canonicalizer: Optional[Dict[str, str]] = None,
+    canonicalizer: Optional[
+        Union[Mapping[str, str], Callable[[str], str]]
+    ] = None,
 ) -> Dict[str, Set[str]]:
     """Group each treatment's distinct labels.
 
     ``canonicalizer`` maps drift forms to canonical ones, applied here
-    so the raw and canonical curves differ only by this argument.
+    so the raw and canonical curves differ only by this argument.  A
+    **Mapping** covers the hand map; a **callable** covers the rules
+    in ``feature_label_rules``, which settle whole families that no
+    finite map enumerates.
     """
     out: Dict[str, Set[str]] = collections.defaultdict(set)
     for ann in annotations:
@@ -48,7 +65,9 @@ def labels_by_treatment(
         if not tid or not label:
             continue
         text = str(label)
-        if canonicalizer is not None:
+        if callable(canonicalizer):
+            text = canonicalizer(text)
+        elif canonicalizer is not None:
             text = canonicalizer.get(text, text)
         out[str(tid)].add(text)
     return dict(out)
@@ -129,9 +148,38 @@ def fit_beta(
     """Least-squares ``(K, beta)`` for ``V = K n**beta``, fitted over
     ``n >= min_n``.
 
-    Skeleton: see the xfailed tests in ``heaps_test.py``.
+    **The window is the point.**  The head of a vocabulary curve is
+    not Heaps: at n=1 every label is new, so V tracks n and the slope
+    approaches 1.  Fitting from the origin therefore reports a
+    steeper exponent than the corpus has -- 0.645 against 0.601 on
+    round 5 -- in the direction that demands more sampling than is
+    needed.  ``min_n`` says where the power law is believed to hold.
+
+    Points with ``n < min_n`` or a non-positive ``V`` are dropped;
+    fewer than two survivors is a ``ValueError`` rather than a
+    silently meaningless fit.
     """
-    raise NotImplementedError
+    points = [
+        (math.log(x), math.log(y))
+        for x, y in zip(xs, ys)
+        if x >= max(1, min_n) and x > 0 and y > 0
+    ]
+    if len(points) < 2:
+        raise ValueError(
+            f'need at least 2 points with n >= {min_n} and V > 0; '
+            f'got {len(points)}'
+        )
+    n = len(points)
+    sum_x = sum(p[0] for p in points)
+    sum_y = sum(p[1] for p in points)
+    sum_xx = sum(p[0] * p[0] for p in points)
+    sum_xy = sum(p[0] * p[1] for p in points)
+    denominator = n * sum_xx - sum_x * sum_x
+    if denominator == 0:
+        raise ValueError('degenerate fit: every point shares one n')
+    beta = (n * sum_xy - sum_x * sum_y) / denominator
+    intercept = (sum_y - beta * sum_x) / n
+    return math.exp(intercept), beta
 
 
 def timestamp_collisions(
