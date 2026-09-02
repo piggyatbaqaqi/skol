@@ -24,6 +24,9 @@ import json
 import re
 from typing import Any, Dict, List, Tuple
 
+from treatments_to_structured.feature_label_rules import (
+    split_medium_context,
+)
 from treatments_to_structured.brat_render import (
     SpanMap,
     _field_relative_to_source_spans,
@@ -360,7 +363,7 @@ def parse_claude_response(
         # (U+202F, U+00A0, newlines).  Downstream brat rendering
         # uses source_text to lay out spans against the actual
         # plaintext attachment, so source bytes must win.
-        annotations.append({
+        annotation = {
             'feature_label': feature_label,
             'field': field,
             'start': fr_start,
@@ -371,7 +374,15 @@ def parse_claude_response(
             'created_at': created_at,
             'treatment_id': treatment_id,
             'doc_id': doc_id,
-        })
+        }
+        # The growth condition gets its own field.  `feature_label`
+        # is left exactly as emitted: it keys this doc, so splitting
+        # the label here would re-key the annotation.  See
+        # feature_label_rules.split_medium_context.
+        _, context = split_medium_context(feature_label)
+        if context is not None:
+            annotation['context'] = context
+        annotations.append(annotation)
     return annotations, dropped_spans
 
 

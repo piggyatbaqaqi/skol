@@ -29,10 +29,9 @@ the qualifier, merge into the base label — is exactly what the
 non-synonyms doc forbids: *"the medium is the entire point of the
 observation … never collapse this family"*.  The same doc names the
 fix, which is what this function implements: *"a separate `context`
-field, not a longer label"*.  Until that field exists,
-``canonicalize`` does **not** call this — dropping the medium would
-lose the observation, and a label that has moved off canonical can
-never be normalised later.
+field, not a longer label"*.  The writers call it to populate that
+field; ``canonicalize`` does **not**, because it returns a label and
+a label that dropped its medium would have lost the observation.
 """
 
 import json
@@ -98,6 +97,11 @@ def split_medium_context(label: str) -> Tuple[str, Optional[str]]:
     if not match:
         return label, None
     context = match.group('on') or match.group('in_')
+    # `in vitro` / `in situ` are fixed Latin phrases; the bare second
+    # word is not a term anyone uses, and a stored context of `vitro`
+    # reads as a parsing bug.  Media keep just their code.
+    if context in ('vitro', 'situ'):
+        context = f'in {context}'
     return label[:match.start()].rstrip(), context
 
 

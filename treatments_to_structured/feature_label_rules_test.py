@@ -125,6 +125,15 @@ class TestSplitMediumContext:
             self, label: str, base: str, context: str) -> None:
         assert split_medium_context(label) == (base, context)
 
+    @pytest.mark.parametrize('label,context', [
+        ('Conidia in vitro', 'in vitro'),
+        ('Ascomata in situ', 'in situ'),
+    ])
+    def test_latin_phrases_keep_their_preposition(
+            self, label: str, context: str) -> None:
+        """A stored context of `vitro` reads as a parsing bug."""
+        assert split_medium_context(label)[1] == context
+
     def test_labels_without_a_condition_are_unchanged(self) -> None:
         assert split_medium_context('Colony') == ('Colony', None)
         assert split_medium_context('Pileus') == ('Pileus', None)

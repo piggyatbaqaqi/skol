@@ -29,6 +29,10 @@ The CLI (``bin/brat_ingest.py``) wires this with CouchDB I/O.
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from treatments_to_structured.feature_label_rules import (
+    split_medium_context,
+)
+
 
 @dataclass(frozen=True)
 class AnnotationKey:
@@ -189,6 +193,14 @@ def make_reviewed_doc(
         'reviewer': reviewer,
         'reviewer_action': action,
     }
+    # Growth condition.  Derived when the annotation lacks it: .ann
+    # files exported before the field existed parse without one, and
+    # the hand DB should not be the single store missing the medium.
+    context = ann.get('context')
+    if context is None:
+        _, context = split_medium_context(ann['feature_label'])
+    if context is not None:
+        doc['context'] = context
     # Round provenance.  Explicit `round_fields` wins: the caller knows
     # the treatment's round, while a matched candidate may be stale if
     # the treatment was re-annotated.  Keys are omitted rather than set
