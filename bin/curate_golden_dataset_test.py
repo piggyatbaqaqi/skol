@@ -8,6 +8,7 @@ resolution, and the v1 → v2 ID inheritance selector.
 import io
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, Optional
 from unittest.mock import MagicMock
 
@@ -18,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from curate_golden_dataset import (  # type: ignore[import]  # noqa: E402
     compute_output_db_names,
     resolve_hand_source_db,
+    select_jats_docs,
     select_via_reuse_ids,
 )
 
@@ -108,6 +110,14 @@ class _FakeDb:
     def get_attachment(self, doc_id: str, name: str):
         data = self.attachments.get(doc_id, {}).get(name)
         return _FakeAttachment(data) if data is not None else None
+
+    def view(self, name: str, include_docs: bool = False):
+        """Only ``_all_docs`` is needed, and only with the docs."""
+        assert name == "_all_docs", name
+        return [
+            SimpleNamespace(id=doc_id, doc=dict(doc))
+            for doc_id, doc in self.docs.items()
+        ]
 
 
 def _make_server(dbs: Dict[str, _FakeDb]) -> MagicMock:
@@ -279,3 +289,57 @@ class TestSelectViaReuseIds:
 
 def _fallback(n):  # pragma: no cover - test helper only
     raise KeyError(n)
+
+
+# ---------------------------------------------------------------------------
+# select_jats_docs — which formats count as "has JATS XML"
+# ---------------------------------------------------------------------------
+
+
+class TestSelectJatsDocs:
+    """The golden set selects documents it can parse as JATS.
+
+    TaxPub is a JATS profile and ``plaintext_from_jats`` handles it, so
+    excluding it was never a decision -- it was ``xml_format == "jats"``
+    written at five call sites before
+    ``ingestors.xml_formats.is_jats_family`` existed to be asked.
+    """
+
+    def _server(self) -> MagicMock:
+        docs = {
+            "plain": {"_id": "plain", "title": "Plain", "journal": "J1",
+                      "xml_available": True, "xml_format": "jats",
+                      "_attachments": {"article.xml": {}}},
+            "profiled": {"_id": "profiled", "title": "Profiled",
+                         "journal": "J2",
+                         "xml_available": True, "xml_format": "taxpub",
+                         "_attachments": {"article.xml": {}}},
+            "other": {"_id": "other", "title": "Other", "journal": "J3",
+                      "xml_available": True, "xml_format": "docbook",
+                      "_attachments": {"article.xml": {}}},
+            "no_format": {"_id": "no_format", "title": "None",
+                          "journal": "J4", "xml_available": True,
+                          "_attachments": {"article.xml": {}}},
+        }
+        return _make_server({"skol_dev": _FakeDb(docs=docs)})
+
+    def _selected(self) -> set:
+        got = select_jats_docs(
+            self._server(), "skol_dev", exclude_ids=set(),
+            jats_limit=10, verbosity=0,
+        )
+        return {sel["doc"]["_id"] for sel in got}
+
+    @pytest.mark.xfail(strict=True,
+                       reason="select_jats_docs still asks is_plain_jats")
+    def test_taxpub_is_selected(self) -> None:
+        assert "profiled" in self._selected()
+
+    def test_plain_jats_is_selected(self) -> None:
+        assert "plain" in self._selected()
+
+    def test_non_jats_formats_are_not_selected(self) -> None:
+        """Widening to the JATS family must not widen to everything."""
+        selected = self._selected()
+        assert "other" not in selected
+        assert "no_format" not in selected
