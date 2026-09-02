@@ -700,3 +700,74 @@ class TestAnnotationDocId:
         first = annotation_doc_id('taxon_x', 'Pileus', 42)
         second = annotation_doc_id('taxon_x', 'Pileus', 42)
         assert first == second
+
+
+# ---------------------------------------------------------------------------
+# Growth-condition context
+# ---------------------------------------------------------------------------
+
+
+class TestGrowthConditionContext:
+    """`Colony on MEA` carries two facts in one string: the feature
+    and the medium it was observed on.
+
+    docs/feature_label_non_synonyms.md refuses to collapse that family
+    -- "the medium is the entire point of the observation" -- and
+    names the fix: "a separate `context` field, not a longer label".
+    This is that field.  It is **additive**: `feature_label` keys both
+    the candidate doc and the hand doc
+    (`<treatment_id>:<feature_label>:<start>`), so rewriting it here
+    would re-key every affected annotation and read as delete+add
+    against every existing export.
+    """
+
+    def _span_map(self, description: str):
+        treatment = _make_treatment(
+            description=description,
+            description_spans=[
+                {'start_char': 0, 'end_char': len(description)},
+            ],
+        )
+        _, span_map = render(treatment)
+        return span_map
+
+    def _parse(self, description: str, label: str):
+        span_map = self._span_map(description)
+        response = json.dumps({
+            'spans': [{'text': description, 'feature_label': label}],
+        })
+        anns, _ = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts',
+        )
+        return anns
+
+    def test_medium_is_split_into_its_own_field(self) -> None:
+        anns = self._parse(
+            'Colonies on MEA reaching 40 mm diam in 7 days.',
+            'Colony on MEA',
+        )
+        assert anns[0]['context'] == 'MEA'
+
+    def test_in_culture_is_a_condition_too(self) -> None:
+        anns = self._parse(
+            'Conidia in culture narrower than on the host.',
+            'Conidia in culture',
+        )
+        assert anns[0]['context'] == 'culture'
+
+    def test_the_label_itself_is_not_rewritten(self) -> None:
+        """Identity does not move.  The decomposition is available to
+        consumers through treatments_to_structured.feature_label_rules
+        when they want the base form."""
+        anns = self._parse(
+            'Colonies on MEA reaching 40 mm diam in 7 days.',
+            'Colony on MEA',
+        )
+        assert anns[0]['feature_label'] == 'Colony on MEA'
+
+    def test_labels_without_a_condition_omit_the_key(self) -> None:
+        """Keys are omitted rather than set to None when nothing is
+        known -- the convention brat_ingest already uses for round
+        provenance."""
+        anns = self._parse('Pileus brown 3 cm wide.', 'Pileus')
+        assert 'context' not in anns[0]

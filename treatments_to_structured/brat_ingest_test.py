@@ -513,3 +513,45 @@ class TestRoundFieldsForTreatment:
     def test_no_candidates_or_no_rounds_gives_empty(self):
         assert round_fields_for_treatment([]) == {}
         assert round_fields_for_treatment([{'model': 'm'}]) == {}
+
+
+class TestReviewedDocContext:
+    """``context`` rides along onto the hand doc.
+
+    Derived when absent, because ``.ann`` files exported before the
+    field existed produce annotations without it and the hand DB
+    should not end up the only store missing the medium."""
+
+    def test_context_is_carried_onto_the_hand_doc(self) -> None:
+        ann = _ann('Colony on MEA', 0, 30,
+                   extras={'context': 'MEA'})
+        doc = make_reviewed_doc(
+            ann, treatment_id='taxon_abc', doc_id='d',
+            reviewer='r', reviewed_at='t', action='added',
+        )
+        assert doc['context'] == 'MEA'
+
+    def test_context_is_derived_when_the_annotation_lacks_it(
+            self) -> None:
+        doc = make_reviewed_doc(
+            _ann('Colony on MEA', 0, 30), treatment_id='taxon_abc',
+            doc_id='d', reviewer='r', reviewed_at='t', action='added',
+        )
+        assert doc['context'] == 'MEA'
+
+    def test_the_id_is_unchanged_by_the_new_field(self) -> None:
+        """The medium stays in the key because it stays in the label.
+        Re-keying is a separate migration that has to move the round
+        files and existing exports with it."""
+        doc = make_reviewed_doc(
+            _ann('Colony on MEA', 0, 30), treatment_id='taxon_abc',
+            doc_id='d', reviewer='r', reviewed_at='t', action='added',
+        )
+        assert doc['_id'] == 'taxon_abc:Colony on MEA:0'
+
+    def test_plain_labels_omit_the_key(self) -> None:
+        doc = make_reviewed_doc(
+            _ann('Pileus', 48, 253), treatment_id='taxon_abc',
+            doc_id='d', reviewer='r', reviewed_at='t', action='added',
+        )
+        assert 'context' not in doc
