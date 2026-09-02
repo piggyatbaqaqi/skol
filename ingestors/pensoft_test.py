@@ -6,10 +6,8 @@ download_pdf / download_xml flag behavior.
 """
 
 import unittest
-from io import BytesIO
 from typing import Dict
-from types import SimpleNamespace
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 from uuid import uuid5, NAMESPACE_URL
 
 from bs4 import BeautifulSoup
@@ -86,11 +84,13 @@ class TestJatsDetection(unittest.TestCase):
         self.ing = _make_ingestor()
 
     def test_jats_keyword_in_doctype(self):
-        xml = b'<?xml version="1.0"?>\n<!DOCTYPE article PUBLIC "-//NLM//DTD JATS v1.2//EN">\n<article>...'
+        xml = (b'<?xml version="1.0"?>\n<!DOCTYPE article PUBLIC '
+               b'"-//NLM//DTD JATS v1.2//EN">\n<article>...')
         self.assertEqual(self.ing._detect_xml_format(xml), 'jats')
 
     def test_journalpublishing_dtd(self):
-        xml = b'<?xml version="1.0"?>\n<!DOCTYPE article PUBLIC "-//NLM//DTD JournalPublishing v3.0//EN">\n<article>...'
+        xml = (b'<?xml version="1.0"?>\n<!DOCTYPE article PUBLIC '
+               b'"-//NLM//DTD JournalPublishing v3.0//EN">\n<article>...')
         self.assertEqual(self.ing._detect_xml_format(xml), 'jats')
 
     def test_article_with_xmlns(self):
@@ -114,7 +114,8 @@ class TestJatsDetection(unittest.TestCase):
             b'<?xml version="1.0" encoding="UTF-8"?>\n'
             b'<!DOCTYPE article PUBLIC "-//TaxPub//DTD Taxonomic Treatment '
             b'Publishing DTD v1.0 20180101//EN" '
-            b'"https://raw.githubusercontent.com/plazi/TaxPub/TaxPubJATS/tax-treatment-NS0-v1.dtd">\n'
+            b'"https://raw.githubusercontent.com/plazi/TaxPub/'
+            b'TaxPubJATS/tax-treatment-NS0-v1.dtd">\n'
             b'<article article-type="research-article" '
             b'dtd-version="3.0" xml:lang="en" '
             b'xmlns:mml="http://www.w3.org/1998/Math/MathML" '
@@ -564,6 +565,7 @@ class TestArticleFilter(unittest.TestCase):
         article_page = BeautifulSoup(html, 'html.parser')
 
         call_count = [0]
+
         def fake_fetch(url):
             call_count[0] += 1
             if call_count[0] == 1:
@@ -610,6 +612,7 @@ class TestArticleFilter(unittest.TestCase):
         article_page = BeautifulSoup(html, 'html.parser')
 
         call_count = [0]
+
         def fake_fetch(url):
             call_count[0] += 1
             if call_count[0] == 1:

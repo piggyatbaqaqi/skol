@@ -498,9 +498,11 @@ class PensoftIngestor(Ingestor):
             if page_num == 0:
                 page_soup = issues_soup
             else:
-                page_url = (f'{self.base_url}/browse_journal_issues.php?'
-                          f'journal_name={self.journal_name}&lang=&'
-                          f'journal_id={self.journal_id}&p={page_num}')
+                page_url = (
+                    f'{self.base_url}/browse_journal_issues.php?'
+                    f'journal_name={self.journal_name}&lang=&'
+                    f'journal_id={self.journal_id}&p={page_num}'
+                )
 
                 if self.verbosity >= 3:
                     print(f"  Fetching issues page {page_num + 1}")
@@ -568,9 +570,14 @@ class PensoftIngestor(Ingestor):
 
                 for page_num in range(issue_pages):
                     if page_num > 0:  # Already have first page
-                        page_url = (f'{self.base_url}/browse_journal_issue_documents.php?'
-                                  f'journal_name={self.journal_name}&issue_id={issue_info["issue_id"]}&'
-                                  f'lang=&journal_id={self.journal_id}&p={page_num}')
+                        page_url = (
+                            f'{self.base_url}'
+                            f'/browse_journal_issue_documents.php?'
+                            f'journal_name={self.journal_name}'
+                            f'&issue_id={issue_info["issue_id"]}&'
+                            f'lang=&journal_id={self.journal_id}'
+                            f'&p={page_num}'
+                        )
 
                         page_soup = self._fetch_page(page_url)
                         if not page_soup:
