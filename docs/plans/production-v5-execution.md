@@ -366,34 +366,125 @@ generation, ready for search-product integration.
 
 ## Heaps' Law dependency
 
-`jupyter/heaps_law_analysis.ipynb` estimates the
-vocabulary-coverage growth.
+**Measured 2026-09-01 on round 5.  The curve is no longer a
+dependency to be waited on — it has been fitted, cross-checked and
+read.**  What follows replaces the estimate this section used to
+describe; the notebook defects it warned about are fixed.
 
-**Corrected 2026-08-23 — two claims were conflated here.**
+### The fit, and why it is trustworthy
 
-* **The vocabulary curve does not gate on hand review.**  It is
-  computed from `features_candidate` alone, so it is bought with
-  **API volume**.  The plan to establish it — a 1 000-treatment
-  random draw, annotated but *not* reviewed — is
-  [annotation-activity-split.md](annotation-activity-split.md).
-* **M5 does gate on verified volume**, because retraining the
-  segment classifier on verified data needs verified data.  That
-  is the surviving half of the original claim.
+Round 5 alone — 1 000 drawn, 877 producing labels, 7 486 annotations —
+with `permutation_band` over 200 permutations of the full drawn set.
+Rounds 1, 2 and 4 are selection-biased toward suspected problems and
+**must not be pooled** into this.
 
-Two further cautions on reading the curve, both verified
-2026-08-23 and fixed as part of the companion plan:
+| | |
+|---|---|
+| distinct labels `V` at n=1 000 | **961** |
+| **β**, fitted on n ∈ [200, 1 000] | **0.601** (band 0.54–0.66) |
+| `K` | 15.2 |
+| β fitted from n=1 | 0.645 — head-inflated |
 
-* The notebook orders treatments by `created_at`, which
-  `bin/llm_annotate_features` stamps **after** the API call
-  returns.  With 5 workers that is completion order ≈ latency ≈
-  output length, so label-poor treatments cluster at the head and
-  **β is overestimated** — the analysis would demand more samples
-  than are actually needed.  Use round-file order plus a
-  permutation-averaged band.
-* The notebook loads the whole candidate DB, so a new draw would
-  be pooled with the biased rounds 1/2/4.  It needs a round filter.
+Two independent cross-checks say this is a real power law rather than
+a curve that merely fits:
 
-**How this interacts with the milestones**:
+* **Hapax fraction.**  559 of 961 types (58.2 %) appear in exactly one
+  treatment.  For a Zipf/Heaps process the singleton fraction
+  converges to β: observed **0.582** against fitted **0.601**.
+* **Good–Turing against held-out measurement.**  Singleton labels
+  carry 621 of 7 486 instances = **8.3 %** missing mass.  Measured by
+  permutation, an unseen treatment has **91.7 %** of its annotation
+  instances already covered — 8.3 % uncovered.  Two estimators, no
+  shared assumptions, the same number.
+
+### `V(n)` is the wrong target; coverage is the right one
+
+β = 0.6 means **each doubling of the vocabulary costs 3.17× the
+samples**: 1.25× V needs n≈1 450, 1.5× needs 1 960, 2× needs 3 170,
+and annotating all 38 303 eligible treatments reaches V≈8 600 while
+still adding 0.13 labels per treatment.  The vocabulary never
+saturates, so "how many for a complete vocabulary" has no answer.
+
+The measured coverage curve does, and assumes no functional form:
+
+| after n | distinct labels of an unseen treatment already known | its annotation instances |
+|---:|---:|---:|
+| 100 | 79.6 % | 80.3 % |
+| 250 | 85.9 % | 86.4 % |
+| 500 | 88.1 % | 88.3 % |
+| 1 000 | 91.5 % | **91.7 %** |
+
+Roughly **+2–3 points per doubling**.  95 % costs another ~2 000–3 000
+treatments; 98 % is out of reach of the entire eligible population.
+
+**Recommendation: one further round of 1 000–2 000**, targeting
+~94–95 % instance coverage and roughly doubling the df ≥ 5 support
+set (183 labels at n=1 000; df ≥ 10 gives 90, df ≥ 20 gives 47).
+Past that the marginal label costs more than it is worth.
+
+### The growth is corpus breadth, not annotator drift
+
+The obvious worry — that an LLM emitting free text inflates β with
+invented phrasings — was tested and does not hold.
+
+* The canonicalization map collapses **20 of 961** forms; raw and
+  canonicalized curves are indistinguishable (β 0.601 vs 0.604).
+* Of the 559 hapax labels, **58.5 % have no string neighbour at all**
+  among the 183 labels with df ≥ 5, and inspection shows real
+  structures from taxonomically distant groups — `Interfacial
+  envelope`, `Mycelial pellicle`, `Base of endoperidial body`,
+  `Capitate hyphopodia`, `Spot Tests`.  The corpus spans lichens,
+  myxomycetes, hyphomycetes and coelomycetes, each with its own organ
+  vocabulary.
+* **String similarity is not a classifier here** and must never be
+  used as one.  35.6 % of hapax labels get a "loose" match (0.70–0.88)
+  and the matches are mostly false: `Pycnidiospores → conidiophores`,
+  `Apothecium → hypothecium`, `Mitochondria → microconidia`,
+  `Asterocystidia → pleurocystidia`.  Mycological morphology is built
+  from a small set of morphemes, so string proximity says little about
+  biological identity.  This is the hazard
+  `docs/feature_label_non_synonyms.md` exists to record; a similarity
+  sweep is a candidate *generator*, never a decider.
+* OCR damage reaches the spans (`Pyenidiospores`, `Lo wER SURFACE`)
+  but **zero** hapax labels look OCR-damaged — the annotator repairs
+  OCR silently when emitting a label.
+
+**Do not extrapolate the support-thresholded curves.**  df ≥ 2, 3, 5,
+10 and 20 fit β of 0.69–0.87 at n ≤ 1 000, *higher* than V₁'s.  That is
+a small-n transient — those curves are still fed by the singleton pool
+and must asymptotically share V₁'s exponent.  Only the β = 0.601
+estimate, corroborated by the hapax fraction, is safe to project.
+
+### Notebook status
+
+`jupyter/heaps_law_analysis.ipynb` **no longer carries the two defects
+this section used to warn about.**  Both were fixed by extracting the
+logic into `treatments_to_structured/heaps.py` with tests:
+
+* **F1, the latency-ordered x-axis** — the estimator is now
+  `permutation_band` over 200 random orders; completion order survives
+  only as a second panel explicitly labelled "the ordering artefact,
+  not the curve".
+* **F2, the unfiltered whole-DB load** — cell 4 filters on the stamped
+  `round` field (`ROUND = 5`, 9 068 → 7 480 annotations) and plots
+  against the *drawn* population from the round file, so treatments
+  that yielded nothing still advance the x-axis.
+* A third, latent defect is guarded rather than assumed away: the old
+  curve keyed on `created_at`, so a shared timestamp both
+  mis-attributed and double-counted.  `timestamp_collisions` asserts
+  zero on every run.
+
+**One live defect remains.**  The notebook's `heaps_beta` fits over
+the whole range including n < 200, which reports 0.645 where the
+tail-fitted estimate is 0.601 — the head, where nearly every label is
+new, inflates the slope.  Fit the upper range, or report both and say
+which is the estimate.  A second, smaller improvement: cell 8 carries
+its own copy of the canonicalization loader, so it misses the
+rule-shaped forms `treatments_to_structured.feature_label_rules`
+handles; `labels_by_treatment` would need to accept a callable as well
+as a mapping.
+
+### How this interacts with the milestones
 
 * Milestones 1, 2, 3 don't gate on hand-annotation
   volume — they use existing data.
@@ -481,6 +572,27 @@ Reasons to revise this plan:
   — Phase 1 context for the bootstrap annotator.
 
 ## Change log
+
+* **2026-09-01** — **The Heaps' Law curve was measured, and the
+  section rewritten from estimate to result.**  β = 0.601 on
+  n ∈ [200, 1 000], cross-checked two ways: the hapax fraction
+  implies 0.582, and Good–Turing missing mass (8.3 %) matches the
+  measured held-out coverage (91.7 %) exactly.  The decision-relevant
+  reading is the coverage curve, not `V(n)`: +2–3 points per
+  doubling, so one further round of 1 000–2 000 buys ~94–95 % and
+  98 % is unreachable.  The drift worry was tested and dismissed —
+  the canonicalization map moves 20 of 961 forms, 58.5 % of hapax
+  labels have no string neighbour at all, and the singletons are real
+  structures from taxonomically distant clades.  Recorded with it:
+  string similarity must never decide a merge here (35.6 % of hapax
+  get a loose match and the matches are mostly false), and the
+  support-thresholded curves are small-n transients that must not be
+  extrapolated.  **Both notebook defects this section warned about
+  are fixed** — `permutation_band` replaced the latency-ordered
+  x-axis and cell 4 filters on the stamped `round` — leaving one
+  live defect (`heaps_beta` fits from n=1 and reports 0.645) and one
+  improvement (cell 8's private canonicalization loader misses the
+  rule-shaped forms).
 
 * **2026-09-01** — **M4's premise flagged as contested.**  The
   round-5 dossier review (memo §12.3.1–12.3.42) found the
