@@ -26,9 +26,11 @@ from ingestors.xml_formats import (  # noqa: E402
     JATS,
     TAXPUB,
     detect,
+    has_taxpub_treatments,
     is_jats_family,
     is_plain_jats,
     is_taxpub,
+    is_taxpub_document,
 )
 
 
@@ -148,3 +150,56 @@ class TestRegistry:
     def test_every_format_declares_its_family(self) -> None:
         for fmt in FORMATS:
             assert isinstance(fmt.jats_family, bool)
+
+
+@pytest.mark.xfail(strict=True, reason='taxpub-document rule not written')
+class TestTaxpubDocument:
+    """The *second* rule with two homes.
+
+    ``is_taxpub`` on an ingest doc is not the same question as "is the
+    format called taxpub".  Since d309fe9 it is also true for a plain
+    JATS document that carries ``taxon-treatment`` markup — Pensoft's
+    ``<tp:taxon-treatment>`` elements and the JATS
+    ``sec-type="taxon-treatment"`` pattern both match the same
+    substring.  ``ingestors/pensoft.py`` ORs the two sources inline and
+    ``fixes/backfill_jats_flags.py`` writes the same rule differently,
+    which is exactly the duplication this module exists to end.
+    """
+
+    TAXPUB_SEC = b'<sec sec-type="taxon-treatment"><title>Taxonomy'
+    TP_ELEMENT = b'<tp:taxon-treatment><tp:nomenclature>'
+
+    def test_declared_taxpub_needs_no_content(self) -> None:
+        assert is_taxpub_document(TAXPUB) is True
+        assert is_taxpub_document(TAXPUB, None) is True
+
+    def test_jats_carrying_treatment_markup_counts(self) -> None:
+        """The d309fe9 broadening: a document can be TaxPub in
+        substance while declaring itself plain JATS."""
+        assert is_taxpub_document(JATS, self.TAXPUB_SEC) is True
+        assert is_taxpub_document(JATS, self.TP_ELEMENT) is True
+
+    def test_jats_without_treatment_markup_does_not(self) -> None:
+        assert is_taxpub_document(JATS, b'<article><body>text') is False
+
+    def test_absent_content_is_not_evidence(self) -> None:
+        """Callers that have not fetched the attachment must not get a
+        False that reads as 'checked and no'.  It is the same answer
+        the format name alone supports."""
+        assert is_taxpub_document(JATS) is False
+
+    def test_unknown_format_with_markup_still_counts(self) -> None:
+        """The content is the stronger evidence of the two."""
+        assert is_taxpub_document(None, self.TP_ELEMENT) is True
+
+    def test_marker_is_matched_anywhere_not_just_the_header(self) -> None:
+        """Unlike detect(), which reads 2 000 bytes: treatments live in
+        the body, arbitrarily far in."""
+        content = b'<article>' + b'x' * 50000 + self.TP_ELEMENT
+        assert has_taxpub_treatments(content) is True
+
+    def test_has_taxpub_treatments_is_exposed_on_its_own(self) -> None:
+        """fixes/backfill_jats_flags only consults content for docs it
+        already knows are JATS, so it needs the content half alone."""
+        assert has_taxpub_treatments(self.TAXPUB_SEC) is True
+        assert has_taxpub_treatments(b'<article/>') is False

@@ -132,3 +132,16 @@ def is_plain_jats(xml_format: Optional[str]) -> bool:
 def is_taxpub(xml_format: Optional[str]) -> bool:
     """True for TaxPub exactly."""
     return xml_format == TAXPUB
+
+
+def has_taxpub_treatments(content: bytes) -> bool:
+    """Skeleton: see the xfailed tests."""
+    raise NotImplementedError
+
+
+def is_taxpub_document(
+    xml_format: Optional[str],
+    content: Optional[bytes] = None,
+) -> bool:
+    """Skeleton: see the xfailed tests."""
+    raise NotImplementedError
