@@ -565,6 +565,39 @@ class TestTheMapIsConsulted:
                            transforms=('sub_attribute',))]
 
 
+@pytest.mark.xfail(strict=True, reason='the map is consulted once, on the raw label')
+class TestTheMapAppliesToIntermediateForms:
+    """The map has to be consulted again after a dimension comes off.
+
+    `Colonies on OA` splits to base `Colonies`, which the map renames
+    to `Colony` -- but only if something looks.  Consulting the map on
+    the raw label alone left 19 records under `Colonies` beside 464
+    under `Colony`, which is the same drift the map exists to remove,
+    reintroduced one rule later.
+    """
+
+    PATHS = {'Colonies': ('Colony',), 'Odor': ('Odour',)}
+
+    def _run(self, label: str):
+        return canonicalize_label(
+            label, known=KNOWN, established=ESTABLISHED,
+            protected=frozenset(), paths=self.PATHS)
+
+    def test_the_base_of_a_condition_split_is_mapped(self) -> None:
+        got = self._run('Colonies on MEA')
+        assert got[0].label == 'Colony'
+        assert got[0].media == ('MEA',)
+
+    def test_the_parts_of_a_compound_are_mapped(self) -> None:
+        got = self._run('Odor and Colonies')
+        assert [c.label for c in got] == ['Odour', 'Colony']
+
+    def test_a_mapped_raw_label_still_short_circuits(self) -> None:
+        """The terminal case must not regress into a two-step path."""
+        assert self._run('Colonies') == [CanonicalLabel(
+            path=('Colony',), transforms=('map',))]
+
+
 class TestMapParameterIsOptional:
     def test_no_map_means_the_rules_alone(self) -> None:
         """The parameter is optional so every existing caller and test
