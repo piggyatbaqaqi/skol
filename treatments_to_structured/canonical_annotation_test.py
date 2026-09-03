@@ -2,19 +2,29 @@
 """Tests for ``treatments_to_structured.canonical_annotation``.
 
 The transform that turns a raw bootstrap annotation into one or more
-canonical ones: a top-level feature label plus named sub-attributes,
-per the schema decision of 2026-09-02 (see
+canonical ones: a top-level feature label plus a **path** into the
+attribute tree, per the schema decision of 2026-09-02/03 (see
 ``docs/feature_label_singletons.md``).
 
-**Every rule here is deterministic and guarded.**  The alternative
-considered and rejected was prompt instructions — the annotator sees 9
-seed labels and is told to invent names, so it cannot know whether a
-label is new, and the prompt already carries a "one feature per span"
-rule that the compounds violate.
+**Deterministic, and that was the operator's call.**  The alternative
+was prompt instructions, and it cannot work: the annotator sees 9 seed
+labels and rule 2 tells it to *invent* names, so it has no way to know
+a label is new — and the prompt's rule 3 already asks for one feature
+per span, which the compounds violate.
 
-Both control sets from ``feature_label_rules_test`` apply again at the
-end of this file: no rule may contradict the hand map, and no rule may
-collapse a recorded non-synonym.
+**A path, not a flat sub-attribute.**  ``build_vocab_tree.add_json``
+already represents position as ``path + [key]`` at arbitrary depth, so
+``['Peridium', 'hyphae', 'width']`` needs no schema change where a flat
+field would need a second one.  The path applies to the *whole clause*,
+which is why it lives on the span record rather than inside the label
+string.
+
+**Map-wins precedence.**  A label that is itself a hand-map target is
+returned whole, so the fixed-point property holds by construction
+rather than by accident of whether its head clears the support guard.
+
+Both control sets run at the end of this file: no rule may contradict
+the hand map, and no rule may collapse a recorded non-synonym.
 """
 
 import sys
@@ -34,6 +44,7 @@ from treatments_to_structured.canonical_annotation import (  # noqa: E402
     split_compound,
     split_condition,
     strip_sub_attribute,
+    vocabulary_index,
 )
 
 
@@ -56,6 +67,8 @@ KNOWN: Dict[str, str] = {
     'biofilm': 'Biofilm',
     'generative hyphae': 'Generative hyphae',
     'megaconidia': 'Megaconidia',
+    'partial veil': 'Partial veil',
+    'partial veil microscopic': 'Partial veil microscopic',
 }
 ESTABLISHED: Dict[str, str] = {
     'colony': 'Colony',
@@ -67,7 +80,13 @@ ESTABLISHED: Dict[str, str] = {
     'basidia': 'Basidia',
     'cheilocystidia': 'Cheilocystidia',
     'lower surface': 'Lower surface',
+    'partial veil': 'Partial veil',
 }
+
+# Hand-map targets: decisions a human already made.
+PROTECTED = frozenset({'partial veil microscopic'})
+
+SOURCE_DB = 'skol_exp_production_v4_02_50_features_candidate'
 
 
 def _ann(label: str, **over: object) -> Dict[str, object]:
@@ -88,7 +107,25 @@ def _ann(label: str, **over: object) -> Dict[str, object]:
     return base
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
+def _canon(label: str, protected=frozenset()):
+    return canonicalize_label(
+        label, known=KNOWN, established=ESTABLISHED, protected=protected)
+
+
+def _records(annotation, protected=frozenset()):
+    return canonical_records(
+        annotation, known=KNOWN, established=ESTABLISHED,
+        protected=protected, source_db=SOURCE_DB)
+
+
+class TestCanonicalLabel:
+    def test_label_is_the_head_of_the_path(self) -> None:
+        assert CanonicalLabel(path=('Ascomata', 'height')).label == 'Ascomata'
+
+    def test_a_depth_one_path_is_still_a_path(self) -> None:
+        assert CanonicalLabel(path=('Ascomata',)).label == 'Ascomata'
+
+
 class TestFoldCase:
     @pytest.mark.parametrize('label,expected', [
         ('Lower Surface', 'Lower surface'),
@@ -105,7 +142,6 @@ class TestFoldCase:
         assert fold_case('Venae Externae', KNOWN) == 'Venae Externae'
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
 class TestSplitCondition:
     @pytest.mark.parametrize('label,base,media,condition', [
         ('Colony on MEA', 'Colony', ('MEA',), None),
@@ -125,22 +161,20 @@ class TestSplitCondition:
         assert split_condition(label) == (base, media, condition)
 
     def test_two_media_stay_two_values(self) -> None:
-        """`Colony on OA and PCA` is one feature observed on two
-        media, not two features.  It must never reach the compound
-        splitter."""
+        """`Colony on OA and PCA` is one feature observed on two media,
+        not two features.  It must never reach the compound splitter."""
         base, media, _ = split_condition('Colony on OA and PCA')
         assert base == 'Colony' and len(media) == 2
 
     def test_the_mycological_sense_of_context_is_untouched(self) -> None:
-        """`Pileus context` is flesh, not a growth condition.  The
-        field this replaces was named `context`, which collided with
+        """`Pileus context` is flesh, not a growth condition.  The field
+        this replaces was named `context`, which collided with
         `context_color` in schemas/pileus.json -- the reason for the
-        rename."""
+        rename to medium/condition."""
         assert split_condition('Pileus context') == (
             'Pileus context', (), None)
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
 class TestStripSubAttribute:
     @pytest.mark.parametrize('label,base,sub', [
         ('Ascomata height', 'Ascomata', 'height'),
@@ -153,15 +187,15 @@ class TestStripSubAttribute:
 
     def test_a_rare_head_is_not_promoted_to_a_parent(self) -> None:
         """`Biofilm` has df 1 in the real corpus.  Stripping
-        `Biofilm Architecture` onto it would invent a hierarchy from
-        two equally rare labels."""
+        `Biofilm Architecture` onto it would invent a hierarchy from two
+        equally rare labels."""
         assert strip_sub_attribute('Biofilm Architecture', ESTABLISHED) == (
             'Biofilm Architecture', None)
 
     def test_a_head_that_is_not_a_label_at_all_is_left_alone(self) -> None:
-        """The case that protects the hyphal-system family:
-        `Generative` is not a feature, so `Generative hyphae` survives
-        whole -- which docs/feature_label_non_synonyms.md requires."""
+        """The case that protects the hyphal-system family: `Generative`
+        is not a feature, so `Generative hyphae` survives whole -- which
+        docs/feature_label_non_synonyms.md requires."""
         assert strip_sub_attribute('Generative hyphae', ESTABLISHED) == (
             'Generative hyphae', None)
 
@@ -170,7 +204,6 @@ class TestStripSubAttribute:
             'Ascomata', None)
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
 class TestSplitCompound:
     @pytest.mark.parametrize('label,parts', [
         ('Basidia and cheilocystidia', ['Basidia', 'Cheilocystidia']),
@@ -196,7 +229,6 @@ class TestSplitCompound:
         assert split_compound('Ascomata', KNOWN) is None
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
 class TestPresenceFromSpan:
     @pytest.mark.parametrize('text', [
         'gamma and beta conidia are not observed',
@@ -215,110 +247,163 @@ class TestPresenceFromSpan:
             'Colonies on MEA reaching 40 mm in 7 days.') is None
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
 class TestCanonicalizeLabel:
     """The pipeline, where order is the whole design."""
-
-    def _run(self, label: str):
-        return canonicalize_label(
-            label, known=KNOWN, established=ESTABLISHED)
 
     def test_condition_is_taken_before_compound_splitting(self) -> None:
         """`Colony on OA and PCA` must come out as ONE label with two
         media.  If the compound splitter saw the "and" first it would
-        try to make two features out of one observation."""
-        got = self._run('Colony on OA and PCA')
-        assert got == [CanonicalLabel(
-            label='Colony', media=('OA', 'PCA'),
+        make two features out of one observation."""
+        assert _canon('Colony on OA and PCA') == [CanonicalLabel(
+            path=('Colony',), media=('OA', 'PCA'),
             transforms=('condition',))]
 
     def test_a_compound_becomes_several_labels(self) -> None:
-        got = self._run('Gamma and beta conidia')
+        got = _canon('Gamma and beta conidia')
         assert [c.label for c in got] == ['Gamma conidia', 'Beta conidia']
         assert all('compound' in c.transforms for c in got)
 
-    def test_sub_attribute_survives_the_pipeline(self) -> None:
-        got = self._run('Ascomata height')
-        assert got == [CanonicalLabel(
-            label='Ascomata', sub_attribute='height',
-            transforms=('sub_attribute',))]
+    def test_a_sub_attribute_becomes_a_two_step_path(self) -> None:
+        assert _canon('Ascomata height') == [CanonicalLabel(
+            path=('Ascomata', 'height'), transforms=('sub_attribute',))]
 
     def test_case_folding_runs_first(self) -> None:
-        """`Colony Reverse` folds to `Colony reverse`, which then
-        strips to `Colony` + `reverse`.  Folding after stripping would
-        have missed it."""
-        got = self._run('Colony Reverse')
-        assert got == [CanonicalLabel(
-            label='Colony', sub_attribute='reverse',
+        """`Colony Reverse` folds to `Colony reverse`, which then strips
+        to a path.  Folding after stripping would have missed it."""
+        assert _canon('Colony Reverse') == [CanonicalLabel(
+            path=('Colony', 'reverse'),
             transforms=('case_fold', 'sub_attribute'))]
 
     def test_an_untouched_label_records_no_transforms(self) -> None:
-        assert self._run('Ascomata') == [CanonicalLabel(label='Ascomata')]
+        assert _canon('Ascomata') == [CanonicalLabel(path=('Ascomata',))]
 
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
+class TestMapWinsPrecedence:
+    """A hand-map target is a decision already made.
+
+    Without this, `Partial veil microscopic` survives only because
+    `Partial veil` sits at df 3 -- an accident of support, not a design.
+    Step 2 of the plan rewrites those targets as paths deliberately;
+    until then no rule may touch them.
+    """
+
+    def test_a_protected_target_is_not_decomposed(self) -> None:
+        assert _canon('Partial veil microscopic', PROTECTED) == [
+            CanonicalLabel(path=('Partial veil microscopic',))]
+
+    def test_the_same_label_decomposes_when_unprotected(self) -> None:
+        """The guard is doing real work here, not nothing."""
+        assert _canon('Partial veil microscopic') == [CanonicalLabel(
+            path=('Partial veil', 'microscopic'),
+            transforms=('sub_attribute',))]
+
+    def test_protection_is_case_insensitive(self) -> None:
+        assert _canon('PARTIAL VEIL MICROSCOPIC', PROTECTED)[0].label == (
+            'Partial veil microscopic')
+
+
 class TestCanonicalRecords:
     def test_passthrough_fields_survive(self) -> None:
-        rec, = canonical_records(
-            _ann('Colony on MEA'), known=KNOWN, established=ESTABLISHED)
+        rec, = _records(_ann('Colony on MEA'))
         for key in ('field', 'start', 'end', 'source_text',
                     'source_spans', 'treatment_id', 'doc_id', 'model',
                     'created_at', 'round'):
             assert key in rec
 
     def test_id_follows_the_candidate_scheme(self) -> None:
-        rec, = canonical_records(
-            _ann('Colony on MEA'), known=KNOWN, established=ESTABLISHED)
+        rec, = _records(_ann('Colony on MEA'))
         assert rec['_id'] == 'taxon_abc:Colony:48'
 
-    def test_raw_label_is_kept_for_traceability(self) -> None:
-        """The derived DB has to be diffable against the candidate DB
-        -- that is the whole argument for deriving instead of
-        mutating."""
-        rec, = canonical_records(
-            _ann('Colony on MEA'), known=KNOWN, established=ESTABLISHED)
+    def test_raw_label_and_source_are_kept_for_traceability(self) -> None:
+        """The derived DB has to be diffable against the raw one -- that
+        is the whole argument for deriving instead of mutating."""
+        rec, = _records(_ann('Colony on MEA'))
         assert rec['raw_label'] == 'Colony on MEA'
+        assert rec['source_db'] == SOURCE_DB
         assert rec['feature_label'] == 'Colony'
         assert rec['medium'] == ['MEA']
 
+    def test_attribute_path_is_always_present(self) -> None:
+        """Including at depth 1.  A consumer walking paths should not
+        need a special case at the root."""
+        plain, = _records(_ann('Ascomata'))
+        assert plain['attribute_path'] == ['Ascomata']
+        deep, = _records(_ann('Ascomata height'))
+        assert deep['attribute_path'] == ['Ascomata', 'height']
+
     def test_a_compound_annotation_becomes_two_records(self) -> None:
-        recs = canonical_records(
-            _ann('Gamma and beta conidia',
-                 source_text='gamma and beta conidia are not observed'),
-            known=KNOWN, established=ESTABLISHED)
+        recs = _records(_ann(
+            'Gamma and beta conidia',
+            source_text='gamma and beta conidia are not observed'))
         assert len(recs) == 2
         assert {r['feature_label'] for r in recs} == {
             'Gamma conidia', 'Beta conidia'}
         assert {r['_id'] for r in recs} == {
             'taxon_abc:Gamma conidia:48', 'taxon_abc:Beta conidia:48'}
 
-    def test_absence_is_recorded_as_a_value_not_a_suppression(
-            self) -> None:
-        """Absence is diagnostic -- operator, 2026-09-03.  It becomes
-        a value on the label, never a reason to drop it."""
-        recs = canonical_records(
-            _ann('Gamma and beta conidia',
-                 source_text='gamma and beta conidia are not observed'),
-            known=KNOWN, established=ESTABLISHED)
+    def test_both_records_of_a_compound_share_the_span(self) -> None:
+        """One clause, two features.  The path applies to the whole
+        clause, so the span is not divided."""
+        recs = _records(_ann(
+            'Gamma and beta conidia',
+            source_text='gamma and beta conidia are not observed'))
+        assert {r['start'] for r in recs} == {48}
+        assert {r['end'] for r in recs} == {96}
+
+    def test_absence_is_recorded_as_a_value_not_a_suppression(self) -> None:
+        """Absence is diagnostic -- operator, 2026-09-03.  It becomes a
+        value on the label, never a reason to drop it."""
+        recs = _records(_ann(
+            'Gamma and beta conidia',
+            source_text='gamma and beta conidia are not observed'))
         assert all(r['presence'] == 'absent' for r in recs)
 
     def test_absent_dimensions_omit_their_keys(self) -> None:
-        rec, = canonical_records(
-            _ann('Ascomata'), known=KNOWN, established=ESTABLISHED)
-        for key in ('medium', 'condition', 'sub_attribute', 'presence',
-                    'raw_label'):
+        rec, = _records(_ann('Ascomata'))
+        for key in ('medium', 'condition', 'presence', 'raw_label',
+                    'transforms'):
             assert key not in rec, key
 
     def test_transforms_are_recorded_when_anything_fired(self) -> None:
-        rec, = canonical_records(
-            _ann('Colony Reverse'), known=KNOWN, established=ESTABLISHED)
+        rec, = _records(_ann('Colony Reverse'))
         assert rec['transforms'] == ['case_fold', 'sub_attribute']
 
+    def test_an_empty_label_yields_nothing(self) -> None:
+        assert _records(_ann('   ')) == []
 
-@pytest.mark.xfail(strict=True, reason='canonical_annotation is a skeleton')
+
+class TestVocabularyIndex:
+    """Support is *treatment* frequency, the unit corpus_vocabulary uses
+    and for the same reason: forty repeats inside one document are one
+    piece of evidence."""
+
+    def _anns(self):
+        return [
+            {'treatment_id': 't1', 'feature_label': 'Pileus'},
+            {'treatment_id': 't1', 'feature_label': 'Pileus'},
+            {'treatment_id': 't2', 'feature_label': 'Pileus'},
+            {'treatment_id': 't3', 'feature_label': 'Stipe'},
+        ]
+
+    def test_indexes_by_lower_case(self) -> None:
+        assert vocabulary_index(self._anns())['pileus'] == 'Pileus'
+
+    def test_repeats_within_one_treatment_count_once(self) -> None:
+        assert vocabulary_index(self._anns(), min_df=2) == {
+            'pileus': 'Pileus'}
+
+    def test_min_df_filters(self) -> None:
+        assert vocabulary_index(self._anns(), min_df=3) == {}
+
+    def test_canonicalizer_applies_before_counting(self) -> None:
+        got = vocabulary_index(
+            self._anns(), canonicalizer={'Stipe': 'Pileus'}, min_df=3)
+        assert got == {'pileus': 'Pileus'}
+
+
 class TestControlSets:
-    """The refusals, again, against the real map and the real
-    non-synonym list rather than the miniature vocabulary."""
+    """The refusals, against the real map and the real non-synonym list
+    rather than the miniature vocabulary."""
 
     def _real(self):
         from treatments_to_structured.feature_label_rules import (
@@ -335,7 +420,8 @@ class TestControlSets:
                 'Basidiospores', 'Ascospores', 'Basidiomata', 'Ascomata',
             )
         })
-        return mapping, known
+        protected = frozenset(v.lower() for v in mapping.values())
+        return mapping, known, protected
 
     @pytest.mark.parametrize('group', [
         ('Sexual morph', 'Asexual morph'),
@@ -348,19 +434,20 @@ class TestControlSets:
         ('Basidiomata', 'Ascomata'),
     ])
     def test_no_recorded_non_synonym_collapses(self, group) -> None:
-        _, known = self._real()
+        _, known, protected = self._real()
         out = []
         for label in group:
-            got = canonicalize_label(label, known=known, established=known)
+            got = canonicalize_label(
+                label, known=known, established=known, protected=protected)
             assert len(got) == 1, (label, got)
             out.append(got[0].label)
         assert len(set(out)) == len(group), out
 
     def test_every_hand_map_target_is_a_fixed_point(self) -> None:
-        """A canonical label must survive the pipeline unchanged, or
-        repeated passes would drift."""
-        mapping, known = self._real()
+        """Holds **by construction** under map-wins precedence, not by
+        accident of whether a head clears the support guard."""
+        mapping, known, protected = self._real()
         for target in set(mapping.values()):
             got = canonicalize_label(
-                target, known=known, established=known)
+                target, known=known, established=known, protected=protected)
             assert [c.label for c in got] == [target], (target, got)
