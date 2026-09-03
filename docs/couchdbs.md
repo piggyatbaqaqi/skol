@@ -215,6 +215,21 @@ to two sibling DBs per experiment:
   Deleted annotations (rejected by the reviewer) are simply absent
   from the hand DB.  Naming-convention fallback when unset:
   `skol_exp_<experiment>_02_55_features_hand`.
+- **`features_canonical`** — one doc per *canonical* annotation,
+  derived from `features_candidate` by `bin/build_canonical_labels`.
+  Same `_id` scheme, so it joins to the raw DB.  Carries the
+  top-level `feature_label`, an `attribute_path` into the ragged
+  attribute tree (`['Ascomata', 'height']`), and the named dimensions
+  taken out of the label string: `medium` (a list — `Colony on OA and
+  PCA` is one observation on two media), `condition` (`in culture` /
+  `in vitro` / `in vivo` / `on host`), and `presence` (`absent` when
+  the span says the structure was not found).  Provenance:
+  `raw_label`, `source_db`, and `transforms` naming which rules fired.
+  **Derived, never mutating** — the candidate DB keeps every label as
+  the annotator emitted it, so the two are diffable.  Naming-convention
+  fallback when unset:
+  `skol_exp_<experiment>_02_57_features_canonical`.  Rules and guards
+  in `treatments_to_structured/canonical_annotation.py`.
 
 The status DB is queryable: `partial` treatments are the offline-
 recovery script's input, `error` treatments are the retry queue,
@@ -223,9 +238,9 @@ the discussion in `docs/data_quality_production_v4_model.md` and
 the `llm_annotate_features --force` / `--skip-existing` flags for
 the operator controls.
 
-| Experiment | features_candidate | features_status | features_hand |
-|---|---|---|---|
-| `production_v4` | `skol_exp_production_v4_02_50_features_candidate` | _(naming-convention fallback)_ | _(naming-convention fallback)_ |
+| Experiment | features_candidate | features_status | features_hand | features_canonical |
+|---|---|---|---|---|
+| `production_v4` | `skol_exp_production_v4_02_50_features_candidate` | _(naming-convention fallback)_ | _(naming-convention fallback)_ | `skol_exp_production_v4_02_57_features_canonical` |
 
 ## Lineage graph
 

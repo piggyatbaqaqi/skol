@@ -101,6 +101,18 @@ real, the span is a caption.
 
 ### (c) not a trait — 12
 
+**Corrected 2026-09-02 by the operator.**  Calling the property family
+"not a trait" was wrong.  `Ascomata` is the top-level feature and
+`height` is a **sub-attribute**, whose numerical value the structured
+pass extracts — `schemas/pileus.json` already models exactly that,
+with `size_mm` an object beside a plain-string `color`.  So these are
+features with a sub-attribute glued onto the name, and the annotator's
+choice of `height` is a free supervision label for the JSON-building
+component rather than noise to delete.  The compound and artifact
+groups below stand as written; the property group is now handled by
+`canonical_annotation.strip_sub_attribute`, which turns it into
+`attribute_path: ['Ascomata', 'height']`.
+
 * **Attribute of an established trait** (5): `Ascomata height`,
   `Sporangial dimensions`, `Pileipellis pigmentation`, `Sporangial
   vacuoles`, `Conidiophore cells`\*. The label names a *property* of
@@ -134,37 +146,73 @@ sample:
 So a quarter of the tail is reachable without any judgment call at
 all, and the hand sample says roughly another 18 % needs a human.
 
-### The absence-statement class is a prompt defect, not a data defect
+### The absence-statement class is a compound problem, not an absence problem
+
+**Corrected 2026-09-03 by the operator: absence labelling stays.**
+Knowing that a structure was looked for and not found is diagnostic,
+and an earlier draft of this section proposed suppressing it, which
+would have thrown information away.
 
 **39 singleton labels were minted from spans saying the structure is
 absent** — `Micro- or macropycnidia not seen`, `gamma and beta conidia
-are not observed`, `Microconidiation, chlamydospores and sexual morph
-not observed`. The annotator is labelling the *mention* of a
-structure, and a negation mentions it.
+are not observed`. The defect is not that absence gets a label; it is
+that an absence sentence **names several structures at once**, which
+is where the compounds come from. 19 of the 48 splittable compounds
+are absence spans.
 
-This is the cheapest fix on the list and the only one that stops the
-tail growing: a prompt instruction that absence statements do not mint
-labels. It also explains the compound class — an absence sentence is
-where several structures get named at once, which is why `Gamma and
-beta conidia` exists and `Gamma conidia` (df 5+) already did.
+So absence is a **value**, exactly as `height` is a sub-attribute:
+`Gamma conidia` + `presence: absent`, `Beta conidia` + `presence:
+absent`. Splitting the compound and recording the presence keeps
+strictly more information than the raw label carried.
 
 ## What follows
 
-1. **Fix the prompt first.** Absence statements minting labels
-   accounts for 39 singletons and manufactures compounds. It costs a
-   prompt edit and it changes every future round.
+1. **Split the compounds and record presence as a value** — 48 of 74
+   compounds resolve deterministically, 19 of them absence spans.
 2. **Case folding is free.** 36 singletons are case-only duplicates of
-   labels that already exist, the same class the hand map already
-   handles one entry at a time. This is rule-shaped, like the
-   sexual/asexual family in `feature_label_rules`.
-3. **The growth-condition family already has its mechanism** — the
-   `context` field, built and backfilled 2026-09-01. 46 singletons are
-   waiting for a consumer to use it.
-4. **Property-of-trait and compound labels need a schema decision**,
-   not a rule: is `Ascomata height` a label, an attribute of
-   `Ascomata`, or nothing? 132 singletons hang on that answer, and it
-   is the same base+context conflation the non-synonyms doc identified
-   for media.
+   labels that already exist, the same class the hand map handles one
+   entry at a time. Rule-shaped, like the sexual/asexual family in
+   `feature_label_rules`.
+3. **The growth-condition family gets named dimensions** — `medium`
+   (a list) and `condition`, replacing the `context` field built on
+   2026-09-01, whose name collided with `context_color` in
+   `schemas/pileus.json`; in mycology *context* is the flesh.
+4. **Property-of-trait labels become paths.** `Ascomata height` is
+   `attribute_path: ['Ascomata', 'height']`, and the annotator's
+   choice of `height` is supervision for the structured pass rather
+   than noise. 132 singletons were waiting on that decision.
+### Outcome, 2026-09-03
+
+Five deterministic rules, guarded and controlled, now run as
+`bin/build_canonical_labels` into `features_canonical` (17 288 records
+from 17 213 annotations).  A prompt change was considered and rejected:
+the annotator sees nine seed labels and is *told to invent* names, so
+it cannot know a label is new — and the prompt's rule 3 already asks
+for one feature per span.
+
+Over rounds 5+6, distinct labels touched per rule, against the
+predictions above:
+
+| rule | labels | predicted |
+|---|---:|---:|
+| `sub_attribute` | 121 | 99 |
+| `condition` | 93 | 100 |
+| `compound` | 51 | 48 |
+| `case_fold` | 42 | 36 |
+
+**Vocabulary 1 480 → 1 231 (−16.8 %); hapax 854 → 665 (57.7 % →
+54.0 %).**  The part worth noticing: **df ≥ 5 barely moved (288 → 284)
+and df ≥ 20 not at all (92 → 92)**.  The rules took tail noise out
+without touching the supported vocabulary, which is the outcome a
+consolidation pass should have and the one a careless one would not.
+
+β falls **0.597 → 0.562**, and that drop *is* the measurement of how
+much of the growth was schema noise rather than corpus breadth.
+
+Coverage rises 91.3 % → 93.3 % **mechanically** — a compound span that
+was one unknown label becomes two known ones — so the two figures are
+reported together and never substituted for each other.
+
 5. **Then decide on more annotation.** The coverage curve says a third
    thousand buys ~+0.9 points. This audit says the vocabulary it would
    extend is ~44 % consolidatable. Consolidating first makes the next
