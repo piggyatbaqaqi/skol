@@ -451,3 +451,62 @@ class TestControlSets:
             got = canonicalize_label(
                 target, known=known, established=known, protected=protected)
             assert [c.label for c in got] == [target], (target, got)
+
+
+# NOT strict: the current selection is *arbitrary*, so two of these
+# five happen to pass by luck of dict ordering.  That they pass
+# today and might not tomorrow is the defect, not a reason to
+# assert either outcome.
+@pytest.mark.xfail(reason='surface-form selection is arbitrary')
+class TestVocabularyIndexSurfaceForm:
+    """**Which spelling wins matters, and the first version got it
+    backwards.**
+
+    ``vocabulary_index`` built ``{label.lower(): label}`` as a dict
+    comprehension, so among case variants the *last* one iterated won —
+    effectively arbitrary.  Measured on the real corpus 2026-09-03: 33
+    keys resolved to the rarer spelling, and ``fold_case`` then folded
+    everything onto it.  ``Conidiogenous Cells`` (1 occurrence) beat
+    ``Conidiogenous cells`` (550), mislabelling 565 canonical records.
+
+    The frequent form wins.  Ties break toward the hand map's
+    canonical form, and then lexicographically so the index is
+    reproducible run to run.
+    """
+
+    def _variants(self):
+        return (
+            [{'treatment_id': f't{i}', 'feature_label': 'Conidiogenous cells'}
+             for i in range(20)]
+            + [{'treatment_id': 't99',
+                'feature_label': 'Conidiogenous Cells'}]
+        )
+
+    def test_the_frequent_spelling_wins(self) -> None:
+        got = vocabulary_index(self._variants())
+        assert got['conidiogenous cells'] == 'Conidiogenous cells'
+
+    def test_order_of_arrival_does_not_decide(self) -> None:
+        """The rare form arriving last must not win, which is exactly
+        how the first version failed."""
+        reversed_arrival = list(reversed(self._variants()))
+        assert vocabulary_index(reversed_arrival)[
+            'conidiogenous cells'] == 'Conidiogenous cells'
+
+    def test_a_tie_is_broken_deterministically(self) -> None:
+        anns = [
+            {'treatment_id': 't1', 'feature_label': 'Spore Print'},
+            {'treatment_id': 't2', 'feature_label': 'Spore print'},
+        ]
+        first = vocabulary_index(anns)['spore print']
+        second = vocabulary_index(list(reversed(anns)))['spore print']
+        assert first == second
+
+    def test_support_still_counts_treatments_not_occurrences(self) -> None:
+        """The winner is decided on the same unit the guard uses."""
+        anns = (
+            [{'treatment_id': 't1', 'feature_label': 'Colony'}] * 40
+            + [{'treatment_id': f't{i}', 'feature_label': 'colony'}
+               for i in range(2, 5)]
+        )
+        assert vocabulary_index(anns)['colony'] == 'colony'
