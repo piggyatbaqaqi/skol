@@ -55,7 +55,6 @@ def _run(annotations):
         protected=PROTECTED, source_db=SOURCE)
 
 
-@pytest.mark.xfail(strict=True, reason='canonicalize_all is a skeleton')
 class TestCanonicalizeAll:
     def test_counts_inputs_and_outputs_separately(self) -> None:
         """A compound turns one raw annotation into two records, so the
