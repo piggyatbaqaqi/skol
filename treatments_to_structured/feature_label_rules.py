@@ -37,7 +37,7 @@ a label that dropped its medium would have lost the observation.
 import json
 import re
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple  # noqa: F401
 
 _MAP_PATH = (
     Path(__file__).resolve().parent.parent
@@ -103,6 +103,14 @@ def split_medium_context(label: str) -> Tuple[str, Optional[str]]:
     if context in ('vitro', 'situ'):
         context = f'in {context}'
     return label[:match.start()].rstrip(), context
+
+
+def canonical_path(
+        label: str,
+        mapping: Optional[Dict[str, Tuple[str, ...]]] = None,
+) -> Tuple[str, ...]:
+    """Skeleton: see the xfailed tests."""
+    raise NotImplementedError
 
 
 def canonicalize(

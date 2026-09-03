@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from treatments_to_structured.feature_label_rules import (  # noqa: E402
     canonical_morph,
+    canonical_path,
     canonicalize,
     load_canonicalization,
     split_medium_context,
@@ -211,3 +212,56 @@ class TestLoadCanonicalization:
             raw = json.load(handle)
         expected = {k: v for k, v in raw.items() if not k.startswith('_')}
         assert load_canonicalization() == expected
+
+
+@pytest.mark.xfail(strict=True, reason='the map is still label-valued')
+class TestPathValuedMap:
+    """**Step 2, 2026-09-03: the map's values are paths.**
+
+    Four target families encoded the pre-2026-09-02 schema, packing a
+    view (`microscopic`) and a location (`on pileus`) into a label
+    name.  Under the attribute-tree model those are path elements, so
+    the map now records `['Pileus', 'context', 'microscopic']` rather
+    than the string `Pileus context microscopic`.
+
+    ``canonicalize`` keeps its string contract — it returns the head —
+    so ``heaps.labels_by_treatment`` and the notebook cell that call it
+    do not change.  ``canonical_path`` is the widened one.
+    """
+
+    def test_every_value_is_a_path(self) -> None:
+        for raw, path in load_canonicalization().items():
+            assert isinstance(path, tuple), raw
+            assert path and all(isinstance(step, str) for step in path)
+
+    def test_a_simple_entry_is_a_one_step_path(self) -> None:
+        assert load_canonicalization()['Anamorph'] == ('Asexual morph',)
+
+    @pytest.mark.parametrize('raw,path', [
+        ('Partial veil (microscopic)', ('Partial veil', 'microscopic')),
+        ('Pileus context microstructure',
+         ('Pileus', 'context', 'microscopic')),
+        ('Stipe_context_(microscopic)',
+         ('Stipe', 'context', 'microscopic')),
+    ])
+    def test_the_migrated_families_record_their_depth(
+            self, raw: str, path: tuple) -> None:
+        """`Pileus context microscopic` is depth 3 because context is a
+        part of the pileus and microscopic is a view of that part --
+        schemas/pileus.json already models it as `context_color`."""
+        assert load_canonicalization()[raw] == path
+
+    def test_canonicalize_still_returns_a_string(self) -> None:
+        """The string contract heaps and the notebook depend on."""
+        got = canonicalize('Pileus context microstructure')
+        assert got == 'Pileus'
+
+    def test_canonical_path_returns_the_whole_path(self) -> None:
+        assert canonical_path('Pileus context microstructure') == (
+            'Pileus', 'context', 'microscopic')
+
+    def test_an_unmapped_label_is_a_one_step_path(self) -> None:
+        assert canonical_path('Pileus') == ('Pileus',)
+
+    def test_the_morph_rule_still_reaches_unmapped_forms(self) -> None:
+        assert canonical_path('Sexual phase') == ('Sexual morph',)
