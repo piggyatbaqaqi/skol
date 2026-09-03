@@ -123,10 +123,8 @@ def main() -> int:
              'features_canonical, else the naming-convention fallback '
              'skol_exp_<experiment>_02_57_features_canonical.',
     )
-    parser.add_argument(
-        '--dry-run', action='store_true',
-        help='report the tally and write nothing',
-    )
+    # --dry-run comes from common_parser(): it is a shared work-control
+    # flag, and redeclaring it is an argparse conflict.
     args = parser.parse_args()
     config = get_env_config(cli_args=args)
 
@@ -179,7 +177,7 @@ def main() -> int:
     labels_after = len({r['feature_label'] for r in records})
     print(f'\n  distinct labels: {labels_before:,} -> {labels_after:,}')
 
-    if args.dry_run:
+    if config.get('dry_run'):
         print('\n  --dry-run: nothing written.')
         return 0
 
