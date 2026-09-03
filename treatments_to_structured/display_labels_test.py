@@ -38,7 +38,6 @@ from treatments_to_structured.display_labels import (  # noqa: E402
 )
 
 
-@pytest.mark.xfail(strict=True, reason='display_labels is a skeleton')
 class TestRecoverDisplayLabel:
     @pytest.mark.parametrize('label,span,expected', [
         ('Sch ffer s reaction',
@@ -116,7 +115,6 @@ class TestRecoverDisplayLabel:
             'Spore deposit white, and the print taken overnight') is None
 
 
-@pytest.mark.xfail(strict=True, reason='display_labels is a skeleton')
 class TestRecoveryIsIdempotent:
     def test_an_already_rich_label_recovers_nothing(self) -> None:
         """Running the backfill twice must not churn."""
