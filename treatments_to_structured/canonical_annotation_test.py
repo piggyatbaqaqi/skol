@@ -565,7 +565,6 @@ class TestTheMapIsConsulted:
                            transforms=('sub_attribute',))]
 
 
-@pytest.mark.xfail(strict=True, reason='the map is consulted once, on the raw label')
 class TestTheMapAppliesToIntermediateForms:
     """The map has to be consulted again after a dimension comes off.
 
@@ -592,13 +591,16 @@ class TestTheMapAppliesToIntermediateForms:
         got = self._run('Odor and Colonies')
         assert [c.label for c in got] == ['Odour', 'Colony']
 
-    def test_a_mapped_raw_label_still_short_circuits(self) -> None:
-        """The terminal case must not regress into a two-step path."""
-        assert self._run('Colonies') == [CanonicalLabel(
-            path=('Colony',), transforms=('map',))]
-
 
 class TestMapParameterIsOptional:
+    def test_a_mapped_raw_label_short_circuits(self) -> None:
+        """The terminal case, pinned so the intermediate-form fix
+        cannot regress it into a two-step path."""
+        assert canonicalize_label(
+            'Colonies', known=KNOWN, established=ESTABLISHED,
+            protected=frozenset(), paths={'Colonies': ('Colony',)},
+        ) == [CanonicalLabel(path=('Colony',), transforms=('map',))]
+
     def test_no_map_means_the_rules_alone(self) -> None:
         """The parameter is optional so every existing caller and test
         keeps its meaning."""

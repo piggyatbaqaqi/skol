@@ -94,15 +94,27 @@ class CanonicalLabel:
         return self.path[0]
 
 
-def _resolve(text: str, index: Mapping[str, str]) -> Optional[str]:
+def _resolve(
+    text: str,
+    index: Mapping[str, str],
+    paths: Optional[Mapping[str, Tuple[str, ...]]] = None,
+) -> Optional[str]:
     """Look ``text`` up allowing the corpus's plural drift.
 
     ``Ascoma``/``Ascomata`` and ``Colonies``/``Colony`` both occur; a
     strict lookup would refuse pairs the vocabulary really does hold.
+
+    The hand map is tried too, so a compound part that is a map key
+    resolves through it — ``Odor and Colonies`` splits only because
+    both halves reach ``Odour`` and ``Colony``.
     """
     key = text.strip().lower()
     if not key:
         return None
+    if paths is not None:
+        mapped_path = paths.get(text.strip())
+        if mapped_path:
+            return mapped_path[0]
     for candidate in (key, key + 's', key.rstrip('s'),
                       re.sub(r'a$', 'ae', key), re.sub(r'um$', 'a', key)):
         if candidate in index:
@@ -194,6 +206,7 @@ def strip_sub_attribute(
 def split_compound(
     label: str,
     known: Mapping[str, str],
+    paths: Optional[Mapping[str, Tuple[str, ...]]] = None,
 ) -> Optional[List[str]]:
     """Split ``X and Y`` into its features, or ``None`` to refuse.
 
@@ -213,8 +226,8 @@ def split_compound(
         prefix, tail = elided.group(1), elided.group(2)
         for cut in range(2, len(tail)):
             noun = tail[cut:]
-            first, second = (_resolve(prefix + noun, known),
-                             _resolve(tail, known))
+            first, second = (_resolve(prefix + noun, known, paths),
+                             _resolve(tail, known, paths))
             if first and second:
                 return [first, second]
         return None
@@ -223,7 +236,7 @@ def split_compound(
     if len(parts) < 2:
         return None
 
-    whole = [_resolve(p, known) for p in parts]
+    whole = [_resolve(p, known, paths) for p in parts]
     if all(whole):
         return [w for w in whole if w]
 
@@ -233,10 +246,11 @@ def split_compound(
     if len(tail_words) >= 2:
         noun = tail_words[-1]
         borrowed = [
-            _resolve(p if len(p.split()) > 1 else f'{p} {noun}', known)
+            _resolve(p if len(p.split()) > 1 else f'{p} {noun}',
+                     known, paths)
             for p in parts[:-1]
         ]
-        last = _resolve(parts[-1], known)
+        last = _resolve(parts[-1], known, paths)
         if last and all(borrowed):
             return [b for b in borrowed if b] + [last]
     return None
@@ -285,9 +299,14 @@ def canonicalize_label(
     3. ``split_compound``, then
     4. ``strip_sub_attribute`` on each resulting part.
     """
+    def mapped(text: str) -> Optional[Tuple[str, ...]]:
+        """The map's path for ``text``, if it has one."""
+        return paths.get(text) if paths else None
+
     stripped = label.strip()
-    if paths and stripped in paths:
-        return [CanonicalLabel(path=paths[stripped], transforms=('map',))]
+    terminal = mapped(stripped)
+    if terminal:
+        return [CanonicalLabel(path=terminal, transforms=('map',))]
 
     key = stripped.lower()
     if key in protected:
@@ -302,8 +321,15 @@ def canonicalize_label(
     base, media, condition = split_condition(folded)
     if media or condition:
         transforms.append('condition')
+        # The map has to be asked again: `Colonies on MEA` reaches this
+        # point as `Colonies`, which is a map key.  Consulting it only
+        # on the raw label reintroduces the drift one rule later.
+        rebased = mapped(base)
+        if rebased:
+            base = rebased[0]
+            transforms.append('map')
 
-    parts = split_compound(base, known)
+    parts = split_compound(base, known, paths)
     if parts:
         transforms.append('compound')
     else:
@@ -311,6 +337,11 @@ def canonicalize_label(
 
     out: List[CanonicalLabel] = []
     for part in parts:
+        remapped = mapped(part)
+        if remapped and remapped[0] != part:
+            part = remapped[0]
+            if 'map' not in transforms:
+                transforms = transforms + ['map']
         head, sub = strip_sub_attribute(part, established)
         marks = tuple(transforms + (['sub_attribute'] if sub else []))
         out.append(CanonicalLabel(
