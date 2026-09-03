@@ -106,8 +106,19 @@ def canonicalize_all(
 
 
 def orphaned_ids(existing: Any, produced: Any) -> List[str]:
-    """Skeleton: see the xfailed tests."""
-    raise NotImplementedError
+    """Documents in the DB that this build did not write.
+
+    A derived DB owns its contents: anything the current build did not
+    produce is stale and would otherwise sit beside the current record
+    with no way for a reader to tell them apart.  Safe because every
+    document here is reproducible from the candidate DB.
+
+    Design documents are exempt — views belong to whoever made them.
+    """
+    return sorted(
+        doc_id for doc_id in set(existing) - set(produced)
+        if not str(doc_id).startswith('_design/')
+    )
 
 
 def main() -> int:
@@ -196,6 +207,18 @@ def main() -> int:
             record['_rev'] = existing['_rev']
     database.update(records)
     print(f'  wrote {len(records):,} docs to {canonical_db}')
+
+    stale = orphaned_ids(
+        (row.id for row in database.view('_all_docs')),
+        {record['_id'] for record in records},
+    )
+    if stale:
+        database.update([
+            {'_id': doc_id, '_rev': database[doc_id]['_rev'],
+             '_deleted': True}
+            for doc_id in stale
+        ])
+        print(f'  deleted {len(stale):,} stale docs a previous build left')
     return 0
 
 

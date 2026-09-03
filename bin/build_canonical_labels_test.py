@@ -114,7 +114,6 @@ class TestCanonicalizeAll:
         assert tally['duplicate'] == 1
 
 
-@pytest.mark.xfail(strict=True, reason='orphaned_ids is unwritten')
 class TestOrphanedIds:
     """A derived DB must own its contents.
 
