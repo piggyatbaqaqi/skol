@@ -265,7 +265,13 @@ def parse_claude_response(
         # and what parse_brat_ann produces on the inverse direction.
         # See treatments_to_structured.brat_render.brat_safe_type for
         # the sanitization rules.
-        wire_form = brat_safe_type(feature_label.strip())
+        # The pre-sanitization string, kept because brat_safe_type is
+        # lossy in ways that matter to a reader: `Schäffer's reaction`
+        # becomes `Sch ffer s reaction`, losing a diacritic and an
+        # apostrophe from a person's name.  The sanitized form stays
+        # the identity; this is the form fit to display.
+        display_label = feature_label.strip()
+        wire_form = brat_safe_type(display_label)
         if not wire_form:
             raise ClaudeResponseError(
                 f"spans[{i}].feature_label sanitized to empty "
@@ -379,6 +385,8 @@ def parse_claude_response(
         # is left exactly as emitted: it keys this doc, so splitting
         # the label here would re-key the annotation.  See
         # feature_label_rules.split_medium_context.
+        if display_label != feature_label:
+            annotation['display_label'] = display_label
         _, context = split_medium_context(feature_label)
         if context is not None:
             annotation['context'] = context

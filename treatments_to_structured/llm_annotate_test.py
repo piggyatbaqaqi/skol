@@ -773,7 +773,6 @@ class TestGrowthConditionContext:
         assert 'context' not in anns[0]
 
 
-@pytest.mark.xfail(strict=True, reason='the original is discarded at parse time')
 class TestDisplayLabelCapture:
     """**Where the loss actually happens.**
 

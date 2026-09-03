@@ -553,3 +553,38 @@ class TestReviewedDocContext:
             doc_id='d', reviewer='r', reviewed_at='t', action='added',
         )
         assert 'context' not in doc
+
+
+@pytest.mark.xfail(strict=True, reason='make_reviewed_doc drops the display form')
+class TestDisplayLabelSurvivesReview:
+    """brat carries only the entity type, so a reviewed annotation
+    cannot bring its display form back through the .ann file.  The
+    candidate doc is the only witness, which is exactly the role
+    `model` and `created_at` already play for a kept annotation."""
+
+    def test_a_kept_annotation_inherits_the_display_form(self) -> None:
+        candidate = _ann('Sch ffer s reaction', 0, 30, extras={
+            'display_label': 'Schäffer’s reaction',
+            'model': 'claude-opus-4-7',
+        })
+        doc = make_reviewed_doc(
+            _ann('Sch ffer s reaction', 0, 30), treatment_id='taxon_abc',
+            doc_id='d', reviewer='r', reviewed_at='t', action='kept',
+            candidate_match=candidate,
+        )
+        assert doc['display_label'] == 'Schäffer’s reaction'
+
+    def test_an_annotation_that_carries_its_own_wins(self) -> None:
+        doc = make_reviewed_doc(
+            _ann('Sch ffer s reaction', 0, 30,
+                 extras={'display_label': 'Schäffer’s reaction'}),
+            treatment_id='taxon_abc', doc_id='d', reviewer='r',
+            reviewed_at='t', action='added',
+        )
+        assert doc['display_label'] == 'Schäffer’s reaction'
+
+    def test_no_display_form_anywhere_omits_the_key(self) -> None:
+        doc = make_reviewed_doc(
+            _ann('Pileus', 48, 253), treatment_id='taxon_abc',
+            doc_id='d', reviewer='r', reviewed_at='t', action='added')
+        assert 'display_label' not in doc
