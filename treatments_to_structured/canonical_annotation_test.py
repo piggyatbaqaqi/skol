@@ -511,3 +511,64 @@ class TestVocabularyIndexSurfaceForm:
                for i in range(2, 5)]
         )
         assert vocabulary_index(anns)['colony'] == 'colony'
+
+
+@pytest.mark.xfail(strict=True, reason='canonicalize_label ignores the map')
+class TestTheMapIsConsulted:
+    """**The map must be applied to the raw label, terminally.**
+
+    Found 2026-09-03 by rebuilding after the path migration:
+    `canonicalize_label` never consulted the map at all.  It reached
+    the map's effect only by accident, because ``known`` is built from
+    map-canonicalized labels and ``fold_case`` looks up there — which
+    reproduces a *case* rename and nothing else.
+
+    So every non-case entry was bypassed: `Colonies` stayed `Colonies`
+    beside `Colony` (127 annotations), `Odor` stayed `Odor` (18),
+    `Stroma` stayed `Stroma` (34), and `Culture characteristics` was
+    *stripped* to `('Culture', 'characteristics')` (343) because its
+    head is established — the rules overruling a human decision, which
+    is the one thing map-wins exists to prevent.  674 annotations in
+    all.
+    """
+
+    PATHS = {
+        'Colonies': ('Colony',),
+        'Culture characteristics': ('Cultural characteristics',),
+        'Pileus context microstructure': ('Pileus', 'context',
+                                          'microscopic'),
+    }
+
+    def _canon_mapped(self, label: str):
+        return canonicalize_label(
+            label, known=KNOWN, established=ESTABLISHED,
+            protected=frozenset(), paths=self.PATHS)
+
+    def test_a_mapped_label_takes_the_map_path(self) -> None:
+        assert self._canon_mapped('Colonies') == [
+            CanonicalLabel(path=('Colony',), transforms=('map',))]
+
+    def test_the_map_beats_the_strip_rule(self) -> None:
+        """`Culture` is established, so the strip rule would decompose
+        this.  The map says otherwise and the map is a human decision."""
+        assert self._canon_mapped('Culture characteristics') == [
+            CanonicalLabel(path=('Cultural characteristics',),
+                           transforms=('map',))]
+
+    def test_a_multi_step_map_path_is_taken_whole(self) -> None:
+        assert self._canon_mapped('Pileus context microstructure') == [
+            CanonicalLabel(path=('Pileus', 'context', 'microscopic'),
+                           transforms=('map',))]
+
+    def test_an_unmapped_label_still_reaches_the_rules(self) -> None:
+        assert self._canon_mapped('Ascomata height') == [
+            CanonicalLabel(path=('Ascomata', 'height'),
+                           transforms=('sub_attribute',))]
+
+
+class TestMapParameterIsOptional:
+    def test_no_map_means_the_rules_alone(self) -> None:
+        """The parameter is optional so every existing caller and test
+        keeps its meaning."""
+        assert _canon('Ascomata height') == [CanonicalLabel(
+            path=('Ascomata', 'height'), transforms=('sub_attribute',))]
