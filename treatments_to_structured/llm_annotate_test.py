@@ -771,3 +771,58 @@ class TestGrowthConditionContext:
         provenance."""
         anns = self._parse('Pileus brown 3 cm wide.', 'Pileus')
         assert 'context' not in anns[0]
+
+
+@pytest.mark.xfail(strict=True, reason='the original is discarded at parse time')
+class TestDisplayLabelCapture:
+    """**Where the loss actually happens.**
+
+    brat_safe_type runs at parse time and the pre-sanitization string
+    is discarded, so extending brat's regex or HTML-encoding the wire
+    form would not help: by the time brat sees anything, the original
+    is already gone.  Capturing it here is what makes
+    `Schäffer's reaction` recoverable without consulting the span.
+    """
+
+    def _parse(self, description: str, label: str):
+        treatment = _make_treatment(
+            description=description,
+            description_spans=[
+                {'start_char': 0, 'end_char': len(description)}],
+        )
+        _, span_map = render(treatment)
+        response = json.dumps({
+            'spans': [{'text': description, 'feature_label': label}],
+        })
+        anns, _ = parse_claude_response(
+            response, span_map, 'm', 'tid', 'did', 'ts')
+        return anns
+
+    def test_the_original_is_kept_when_sanitizing_changes_it(self) -> None:
+        anns = self._parse('Schäffer’s reaction: positive.',
+                           'Schäffer’s reaction')
+        assert anns[0]['display_label'] == 'Schäffer’s reaction'
+        assert anns[0]['feature_label'] == 'Sch ffer s reaction'
+
+    def test_the_identity_field_is_still_the_sanitized_form(self) -> None:
+        """feature_label keys the document and must not move; the
+        display form rides alongside."""
+        anns = self._parse('conidium length/width ratio was 3.2',
+                           'Conidium length/width ratio')
+        assert anns[0]['feature_label'] == 'Conidium length width ratio'
+        assert anns[0]['display_label'] == 'Conidium length/width ratio'
+
+
+class TestUnharmedLabelsCarryNoDisplayForm:
+    def test_an_unharmed_label_omits_the_key(self) -> None:
+        """Most labels survive sanitizing untouched, and a display form
+        equal to the label would be noise on every annotation."""
+        treatment = _make_treatment(
+            description='Pileus brown 3 cm wide.',
+            description_spans=[{'start_char': 0, 'end_char': 23}])
+        _, span_map = render(treatment)
+        anns, _ = parse_claude_response(
+            json.dumps({'spans': [{'text': 'Pileus brown 3 cm wide.',
+                                   'feature_label': 'Pileus'}]}),
+            span_map, 'm', 'tid', 'did', 'ts')
+        assert 'display_label' not in anns[0]
