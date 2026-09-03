@@ -398,7 +398,20 @@ def vocabulary_index(
     counts: 'collections.Counter[str]' = collections.Counter(
         label for labels in by_treatment.values() for label in labels
     )
-    return {
-        label.lower(): label
-        for label, count in counts.items() if count >= min_df
-    }
+
+    # **The frequent spelling wins.**  Building this as
+    # ``{label.lower(): label for ...}`` lets the last variant iterated
+    # win, which is arbitrary -- and measured on the real corpus it put
+    # the *rarer* spelling in charge of 33 keys, so ``fold_case`` folded
+    # 550 occurrences of `Conidiogenous cells` onto one occurrence of
+    # `Conidiogenous Cells`.  Ties break lexicographically so the index
+    # is reproducible run to run.
+    index: Dict[str, str] = {}
+    for label, count in sorted(counts.items()):
+        if count < min_df:
+            continue
+        key = label.lower()
+        incumbent = index.get(key)
+        if incumbent is None or count > counts[incumbent]:
+            index[key] = label
+    return index

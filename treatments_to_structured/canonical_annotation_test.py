@@ -453,11 +453,6 @@ class TestControlSets:
             assert [c.label for c in got] == [target], (target, got)
 
 
-# NOT strict: the current selection is *arbitrary*, so two of these
-# five happen to pass by luck of dict ordering.  That they pass
-# today and might not tomorrow is the defect, not a reason to
-# assert either outcome.
-@pytest.mark.xfail(reason='surface-form selection is arbitrary')
 class TestVocabularyIndexSurfaceForm:
     """**Which spelling wins matters, and the first version got it
     backwards.**
