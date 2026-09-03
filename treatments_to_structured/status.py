@@ -25,9 +25,11 @@ Status values:
   * ``partial`` — Claude returned at least one span we couldn't
     recover (whitespace-normalization too aggressive, span
     crossed a field boundary, etc.).  ``dropped_spans`` lists
-    them with a ``reason``; the offline-recovery fixes/ script
-    consumes this as a queue.  Some spans may have been stored
-    successfully — they live in the candidate DB.
+    them with a ``reason``, as a queue for a recovery pass.  **No
+    such pass exists**: measured 2026-09-03, Unicode normalisation
+    recovers 27 of 83 recoverable-class spans and the other 56 are
+    text the model never quoted verbatim.  Some spans may have been
+    stored successfully — they live in the candidate DB.
   * ``error`` — catastrophic failure before any spans could be
     parsed.  Invalid JSON from Claude, envelope-shape violations,
     network errors, etc.  No annotations were stored.

@@ -161,9 +161,10 @@ def parse_claude_response(
     Per-span isolation: a span that fails offset recovery or
     field-boundary translation is collected into ``dropped_spans``
     rather than raising — the surviving spans still get stored.
-    This trades atomic-success semantics for partial-storage +
-    offline-recovery semantics (see ``status.py`` and the
-    fixes/-side recovery script).
+    This trades atomic-success semantics for partial-storage plus a
+    recorded queue (see ``status.py``).  No recovery pass consumes
+    that queue today, and measurement says one would be marginal:
+    normalisation reaches about a third of it.
 
     Envelope-level failures (invalid JSON, missing ``spans`` key,
     spans not a list) still raise — those are catastrophic, not
@@ -320,10 +321,10 @@ def parse_claude_response(
                 m = fuzzy_re.search(synth)
             if m is None:
                 # Per-span recovery failure → drop and continue.
-                # Offline ``fixes/`` script reads dropped_spans to
-                # retry with more aggressive normalization
-                # (NFKD, dash unification, etc.) without a new
-                # API call.
+                # dropped_spans records the payload; measured
+                # 2026-09-03, NFKD plus quote/dash unification would
+                # recover about a third of these, and the rest are
+                # text the model did not quote verbatim.
                 dropped_spans.append({
                     'feature_label': feature_label,
                     'claude_text': wanted,

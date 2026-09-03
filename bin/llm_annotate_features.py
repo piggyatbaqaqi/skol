@@ -390,7 +390,7 @@ def filter_already_annotated(
     Three modes (mapped from CLI flags):
 
       * ``'default'`` — skip treatments with status ``success``.
-        Retry ``error`` and ``partial`` (the offline-recovery
+        Retry ``error`` and ``partial`` (the recovery
         script might have updated them, or a re-run with fresh
         prompt might succeed).
       * ``'skip_existing'`` — skip treatments with ANY status
@@ -486,7 +486,7 @@ def annotate_one_treatment(
       * ``partial`` — Claude returned at least one span we
         couldn't recover (e.g., unicode normalization too
         aggressive, span crossed a field boundary).
-        ``dropped_spans`` lists them for the offline-recovery
+        ``dropped_spans`` records them for a future recovery
         fixes/ script.  ``annotations`` may also be non-empty
         with the spans that DID recover.
       * ``error`` — catastrophic failure before any spans could
@@ -1060,8 +1060,11 @@ def main() -> int:
                 }) + '\n')
 
     # End-of-run summary (always printed, even at verbosity=0).
-    # The dropped-span line is the operator's signal that an
-    # offline-recovery fixes/ script run is worthwhile.
+    # The dropped-span line used to promise a recovery script.  There
+    # is none, and measuring 2026-09-03 showed why one is marginal:
+    # of 83 recoverable-class dropped spans, NFKD plus quote and dash
+    # unification finds 27.  The other 56 are text the model did not
+    # quote verbatim, which no normalisation reaches.
     print(
         f"\nDone: {counts[STATUS_SUCCESS]} success, "
         f"{counts[STATUS_PARTIAL]} partial, "
@@ -1073,8 +1076,9 @@ def main() -> int:
     )
     if total_spans_dropped > 0:
         print(
-            f"      (run an offline-recovery script against "
-            f"{status_db_name} to retry dropped spans)"
+            f"      (recorded in {status_db_name}; no recovery script "
+            f"exists -- measured 2026-09-03, Unicode normalisation "
+            f"recovers about a third, the rest were never verbatim)"
         )
     print(f"Log: {log_path}")
     return 0 if counts[STATUS_ERROR] == 0 else 1

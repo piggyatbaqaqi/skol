@@ -7420,6 +7420,41 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.45 The dropped-span recovery script does not exist, and is marginal
+
+Every `bin/llm_annotate_features` run printed *"run an offline-recovery
+script against …features_status to retry dropped spans"*, and
+`llm_annotate` records the `dropped_spans` payload for exactly that.
+**Nothing in `fixes/` or `bin/` reads it.**  The message was corrected
+2026-09-03 rather than the script written, because measuring settled
+the question.
+
+**89 spans are queued** — round 6: 48, round 5: 37, rounds 2 and 4: 4 —
+of which **83 are the recoverable class**, `text not found in synthetic
+doc (exact and whitespace-tolerant search both failed)`.  The other 6
+crossed a field boundary and need a human.
+
+Applying the repair the payload was designed for — NFKD, quote
+unification, dash unification, whitespace collapse — to all 83:
+
+| | |
+|---|---:|
+| recovered | **27 (33 %)** |
+| still not found | 56 (67 %) |
+
+So two-thirds are **not** a normalisation failure.  They are text the
+model echoed without quoting verbatim — a paraphrase, or a span
+boundary it moved.  That is worth knowing on its own: **the instrument
+is lossy, not wrong.**  A span only stores if its text is found, so
+every *stored* span is verbatim-correct by construction; the dropped
+ones are lost, never mislocated.
+
+**Disposition: no script.**  27 annotations out of 15 631 is 0.17 %,
+and the same normalisation belongs at the *matching* step in
+`llm_annotate` if anywhere, where it would prevent the recoverable
+third rather than chase it afterwards.  The log line now says what is
+true.
+
 ### 12.3.44 The taxpub route did not move: 86.2 % was a coverage artefact
 
 §12.3.43 left one question open — why the `taxpub_treatment_extractor`
