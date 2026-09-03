@@ -12,8 +12,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-import pytest
-
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
@@ -32,7 +30,6 @@ def _ann(label: str, text: str, doc_id: str = 'd1') -> Dict[str, Any]:
     return {'_id': doc_id, 'feature_label': label, 'source_text': text}
 
 
-@pytest.mark.xfail(strict=True, reason='choose_display_labels is a skeleton')
 class TestChooseDisplayLabels:
     def test_a_single_witness_is_enough(self) -> None:
         got = choose_display_labels([
