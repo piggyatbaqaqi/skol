@@ -707,21 +707,22 @@ class TestAnnotationDocId:
 # ---------------------------------------------------------------------------
 
 
-class TestGrowthConditionContext:
-    """`Colony on MEA` carries two facts in one string: the feature
-    and the medium it was observed on.
+class TestNoContextFieldIsWritten:
+    """The `context` field is retired as of 2026-09-03.
 
-    docs/feature_label_non_synonyms.md refuses to collapse that family
-    -- "the medium is the entire point of the observation" -- and
-    names the fix: "a separate `context` field, not a longer label".
-    This is that field.  It is **additive**: `feature_label` keys both
-    the candidate doc and the hand doc
-    (`<treatment_id>:<feature_label>:<start>`), so rewriting it here
-    would re-key every affected annotation and read as delete+add
-    against every existing export.
+    It was added on 2026-09-01 to hold a growth condition, and named
+    badly: in mycology *context* is the flesh — `pileal context` — and
+    `schemas/pileus.json` already uses `context_color` in that sense.
+    It also conflated two dimensions, storing `Asci in culture MEA` as
+    the uninterpretable string `'culture MEA'`.
+
+    Both jobs now belong to the canonical layer, where they are named:
+    `medium` (a list, because `Colony on OA and PCA` is one
+    observation on two media) and `condition`.  The raw annotation
+    stays raw.
     """
 
-    def _span_map(self, description: str):
+    def _parse(self, description: str, label: str):
         treatment = _make_treatment(
             description=description,
             description_spans=[
@@ -729,10 +730,6 @@ class TestGrowthConditionContext:
             ],
         )
         _, span_map = render(treatment)
-        return span_map
-
-    def _parse(self, description: str, label: str):
-        span_map = self._span_map(description)
         response = json.dumps({
             'spans': [{'text': description, 'feature_label': label}],
         })
@@ -741,36 +738,22 @@ class TestGrowthConditionContext:
         )
         return anns
 
-    def test_medium_is_split_into_its_own_field(self) -> None:
+    def test_a_medium_bearing_label_gets_no_context_field(self) -> None:
         anns = self._parse(
             'Colonies on MEA reaching 40 mm diam in 7 days.',
             'Colony on MEA',
         )
-        assert anns[0]['context'] == 'MEA'
+        assert 'context' not in anns[0]
 
-    def test_in_culture_is_a_condition_too(self) -> None:
-        anns = self._parse(
-            'Conidia in culture narrower than on the host.',
-            'Conidia in culture',
-        )
-        assert anns[0]['context'] == 'culture'
-
-    def test_the_label_itself_is_not_rewritten(self) -> None:
-        """Identity does not move.  The decomposition is available to
-        consumers through treatments_to_structured.feature_label_rules
-        when they want the base form."""
+    def test_the_label_is_still_stored_whole(self) -> None:
+        """Retiring the field changes nothing about identity: the raw
+        label is what it always was, and the canonical layer does the
+        decomposition."""
         anns = self._parse(
             'Colonies on MEA reaching 40 mm diam in 7 days.',
             'Colony on MEA',
         )
         assert anns[0]['feature_label'] == 'Colony on MEA'
-
-    def test_labels_without_a_condition_omit_the_key(self) -> None:
-        """Keys are omitted rather than set to None when nothing is
-        known -- the convention brat_ingest already uses for round
-        provenance."""
-        anns = self._parse('Pileus brown 3 cm wide.', 'Pileus')
-        assert 'context' not in anns[0]
 
 
 class TestDisplayLabelCapture:

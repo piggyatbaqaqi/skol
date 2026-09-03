@@ -692,13 +692,9 @@ class TestRoundTrip:
         ]
 
 
-class TestGrowthConditionContextOnRead:
-    """The brat wire format carries only the entity type, so an
-    ``.ann`` file cannot transport the ``context`` field.  Re-deriving
-    it on read is what keeps ingest idempotent: an export written
-    before the field existed comes back carrying it, and a reviewer
-    who retypes ``Colony_on_MEA`` gets the same record as the
-    bootstrap wrote."""
+class TestNoContextFieldOnRead:
+    """`context` is retired; parse_brat_ann re-derived it on read and
+    no longer does.  The canonical layer names the dimensions."""
 
     def _span_map(self):
         return render(_make_treatment(
@@ -706,7 +702,7 @@ class TestGrowthConditionContextOnRead:
             description_spans=[{'start_char': 0, 'end_char': 30}],
         ))[1]
 
-    def test_context_is_recovered_from_the_type(self) -> None:
+    def test_no_context_is_derived(self) -> None:
         span_map = self._span_map()
         ann_text = annotations_to_brat([{
             'feature_label': 'Colony on MEA',
@@ -715,13 +711,4 @@ class TestGrowthConditionContextOnRead:
         }], span_map)
         got = parse_brat_ann(ann_text, span_map)
         assert got[0]['feature_label'] == 'Colony on MEA'
-        assert got[0]['context'] == 'MEA'
-
-    def test_plain_labels_omit_the_key(self) -> None:
-        span_map = self._span_map()
-        ann_text = annotations_to_brat([{
-            'feature_label': 'Colony',
-            'field': 'description',
-            'start': 0, 'end': 30,
-        }], span_map)
-        assert 'context' not in parse_brat_ann(ann_text, span_map)[0]
+        assert 'context' not in got[0]
