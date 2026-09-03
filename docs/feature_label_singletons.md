@@ -195,18 +195,23 @@ predictions above:
 
 | rule | labels | predicted |
 |---|---:|---:|
-| `sub_attribute` | 121 | 99 |
+| `sub_attribute` | 105 | 99 |
 | `condition` | 93 | 100 |
-| `compound` | 51 | 48 |
-| `case_fold` | 42 | 36 |
+| `compound` | 53 | 48 |
+| `case_fold` | 40 | 36 |
 
-**Vocabulary 1 480 → 1 231 (−16.8 %); hapax 854 → 665 (57.7 % →
-54.0 %).**  The part worth noticing: **df ≥ 5 barely moved (288 → 284)
+*(Figures from the 2026-09-03 rebuild, after three defects found by
+rebuilding: an arbitrary surface form winning the vocabulary index, a
+derived DB that kept stale documents, and the hand map never being
+consulted inside the pipeline at all.)*
+
+**Vocabulary 1 480 → 1 206 (−18.5 %); hapax 854 → 657 (57.7 % →
+54.5 %).**  The part worth noticing: **df ≥ 5 barely moved (288 → 274)
 and df ≥ 20 not at all (92 → 92)**.  The rules took tail noise out
 without touching the supported vocabulary, which is the outcome a
 consolidation pass should have and the one a careless one would not.
 
-β falls **0.597 → 0.562**, and that drop *is* the measurement of how
+β falls **0.597 → 0.563**, and that drop *is* the measurement of how
 much of the growth was schema noise rather than corpus breadth.
 
 Coverage rises 91.3 % → 93.3 % **mechanically** — a compound span that
