@@ -122,7 +122,6 @@ class TestRecoveryIsIdempotent:
             'Spore-print', 'Spore-print white to cream.') is None
 
 
-@pytest.mark.xfail(strict=True, reason='separator policy unwritten')
 class TestSeparatorsAreRealAndClean:
     """Two cases the live corpus produced that the fixtures did not.
 

@@ -55,19 +55,34 @@ def recover_display_label(label: str, source_text: str) -> Optional[str]:
     if match is None:
         return None
 
-    # Splice: the label's words, the span's separators.
+    # Splice: the label's words, the span's separators.  A separator
+    # is collapsed to a single space where it is whitespace, so a
+    # hyphen broken across a line comes back as `Clamp-connections`
+    # rather than carrying the newline into a display string.
     spliced: List[str] = []
     position = match.start()
     for index, word in enumerate(words):
         found = re.compile(re.escape(word), re.IGNORECASE).search(
             source_text, position)
-        if found is None:              # pragma: no cover - regex already matched
+        if found is None:          # pragma: no cover - regex already matched
             return None
         if index:
-            spliced.append(source_text[position:found.start()])
+            separator = source_text[position:found.start()]
+            # A hyphen before a line break is hyphenation: the word was
+            # split and rejoins with no space.  Any other punctuation
+            # before a break is an ordinary wrap, where the newline
+            # stands for a space.
+            separator = re.sub(r'-\s+', '-', separator)
+            separator = re.sub(r'\s+', ' ', separator)
+            if not separator:
+                # `Clampconnections` deletes the label's space rather
+                # than restoring anything: extraction damage, not
+                # punctuation coming back.
+                return None
+            spliced.append(separator)
         spliced.append(word)
         position = found.end()
-    recovered = ''.join(spliced)
+    recovered = ''.join(spliced).strip()
 
     # Only punctuation counts.  Collapsing whitespace first means a
     # doubled space or a non-breaking one is not mistaken for a find.
