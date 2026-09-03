@@ -23,15 +23,12 @@ similarity, the highest in the corpus, and
 ``docs/feature_label_non_synonyms.md`` names them the most dangerous
 pair on record.
 
-``split_medium_context`` decomposes ``Colony on MEA`` into
-``('Colony', 'MEA')``.  It exists because the obvious rule — strip
-the qualifier, merge into the base label — is exactly what the
-non-synonyms doc forbids: *"the medium is the entire point of the
-observation … never collapse this family"*.  The same doc names the
-fix, which is what this function implements: *"a separate `context`
-field, not a longer label"*.  The writers call it to populate that
-field; ``canonicalize`` does **not**, because it returns a label and
-a label that dropped its medium would have lost the observation.
+The growth-condition rule that used to live here moved to
+``canonical_annotation.split_condition`` on 2026-09-03, which names
+its dimensions (``medium``, a list, and ``condition``) instead of
+returning one opaque string.  The field it fed was called ``context``,
+which collided with the mycological sense of the word — *pileal
+context* is the flesh — and is retired.
 """
 
 import json
@@ -95,26 +92,6 @@ def canonical_morph(label: str) -> Optional[str]:
     return f'{modifier.capitalize()} morph'
 
 
-def split_medium_context(label: str) -> Tuple[str, Optional[str]]:
-    """Split a growth-condition qualifier off a label.
-
-    Returns ``(base_label, context)`` with ``context`` ``None`` when
-    the label carries no condition.  **The context is returned, never
-    discarded** — two media yield two different pairs, so this cannot
-    collapse the family the non-synonyms doc protects.
-    """
-    match = _CONTEXT_RE.search(label)
-    if not match:
-        return label, None
-    context = match.group('on') or match.group('in_')
-    # `in vitro` / `in situ` are fixed Latin phrases; the bare second
-    # word is not a term anyone uses, and a stored context of `vitro`
-    # reads as a parsing bug.  Media keep just their code.
-    if context in ('vitro', 'situ'):
-        context = f'in {context}'
-    return label[:match.start()].rstrip(), context
-
-
 def canonical_path(
         label: str,
         mapping: Optional[Dict[str, Tuple[str, ...]]] = None,
@@ -141,6 +118,5 @@ def canonicalize(
     Kept as a string on purpose: ``heaps.labels_by_treatment`` takes a
     canonicalizer that returns one label, and a vocabulary curve counts
     features, not paths.  Callers that need the depth ask for the path.
-    ``split_medium_context`` is deliberately not applied here.
     """
     return canonical_path(label, mapping)[0]

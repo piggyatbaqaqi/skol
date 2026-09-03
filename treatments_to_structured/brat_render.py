@@ -29,10 +29,6 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
-from treatments_to_structured.feature_label_rules import (
-    split_medium_context,
-)
-
 
 # Fields we annotate in Phase 1.  Order matters: drives the section
 # order in the synthetic doc.
@@ -464,13 +460,6 @@ def parse_brat_ann(
             'source_text': source_text,
             'source_spans': source_spans,
         }
-        # brat carries only the entity type, so the context field
-        # cannot ride the wire -- re-derive it here.  That keeps
-        # ingest idempotent: an .ann exported before the field
-        # existed comes back carrying it.
-        _, context = split_medium_context(feature_label)
-        if context is not None:
-            annotation['context'] = context
         annotations.append(annotation)
     return annotations
 

@@ -24,9 +24,6 @@ import json
 import re
 from typing import Any, Dict, List, Tuple
 
-from treatments_to_structured.feature_label_rules import (
-    split_medium_context,
-)
 from treatments_to_structured.brat_render import (
     SpanMap,
     _field_relative_to_source_spans,
@@ -388,9 +385,6 @@ def parse_claude_response(
         # feature_label_rules.split_medium_context.
         if display_label != feature_label:
             annotation['display_label'] = display_label
-        _, context = split_medium_context(feature_label)
-        if context is not None:
-            annotation['context'] = context
         annotations.append(annotation)
     return annotations, dropped_spans
 

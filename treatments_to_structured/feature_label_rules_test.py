@@ -30,7 +30,6 @@ from treatments_to_structured.feature_label_rules import (  # noqa: E402
     canonical_path,
     canonicalize,
     load_canonicalization,
-    split_medium_context,
 )
 
 
@@ -105,50 +104,6 @@ class TestCanonicalMorph:
         assert canonical_morph('Pileus') is None
 
 
-class TestSplitMediumContext:
-    """Decomposition, never a merge.
-
-    docs/feature_label_non_synonyms.md forbids collapsing the
-    medium family and names the fix: "a separate `context` field,
-    not a longer label".  This function performs that split and
-    nothing else -- the medium survives in the second element.
-    """
-
-    @pytest.mark.parametrize('label,base,context', [
-        ('Colony on MEA', 'Colony', 'MEA'),
-        ('Colonies on SNA', 'Colonies', 'SNA'),
-        ('Colony morphology on PDA', 'Colony morphology', 'PDA'),
-        ('Conidia in culture', 'Conidia', 'culture'),
-        ('Asci in culture MEA', 'Asci', 'culture MEA'),
-        ('Colony in culture', 'Colony', 'culture'),
-    ])
-    def test_splits_the_condition_out(
-            self, label: str, base: str, context: str) -> None:
-        assert split_medium_context(label) == (base, context)
-
-    @pytest.mark.parametrize('label,context', [
-        ('Conidia in vitro', 'in vitro'),
-        ('Ascomata in situ', 'in situ'),
-    ])
-    def test_latin_phrases_keep_their_preposition(
-            self, label: str, context: str) -> None:
-        """A stored context of `vitro` reads as a parsing bug."""
-        assert split_medium_context(label)[1] == context
-
-    def test_labels_without_a_condition_are_unchanged(self) -> None:
-        assert split_medium_context('Colony') == ('Colony', None)
-        assert split_medium_context('Pileus') == ('Pileus', None)
-
-    def test_different_media_never_become_the_same_pair(self) -> None:
-        """The whole objection to a strip-and-merge rule."""
-        assert (split_medium_context('Colony on MEA')
-                != split_medium_context('Colony on OA'))
-
-    def test_conidiogenous_cells_keeps_its_head(self) -> None:
-        assert split_medium_context('Conidiogenous cells in culture') == (
-            'Conidiogenous cells', 'culture')
-
-
 class TestCanonicalizeAgainstTheHandMap:
     """Positive controls: the hand map is the record of decisions
     already made, so no rule may disagree with one."""
@@ -195,9 +150,9 @@ class TestCanonicalizeAgainstTheNonSynonyms:
 
     def test_the_medium_family_is_not_collapsed_by_canonicalize(
             self) -> None:
-        """`canonicalize` must not reach for `split_medium_context`:
-        until the `context` field exists, dropping the medium loses
-        the observation."""
+        """`canonicalize` returns a label, and a label that dropped its
+        medium would have lost the observation.  The decomposition
+        belongs to canonical_annotation.split_condition."""
         mapping = load_canonicalization()
         assert canonicalize('Colony on MEA', mapping) == 'Colony on MEA'
 

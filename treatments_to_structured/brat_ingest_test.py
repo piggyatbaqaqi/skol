@@ -513,7 +513,6 @@ class TestRoundFieldsForTreatment:
         assert round_fields_for_treatment([{'model': 'm'}]) == {}
 
 
-
 class TestNoContextOnTheReviewedDoc:
     """`context` is retired; make_reviewed_doc carried and derived it
     and no longer does."""
@@ -532,6 +531,7 @@ class TestNoContextOnTheReviewedDoc:
             doc_id='d', reviewer='r', reviewed_at='t', action='added',
         )
         assert 'context' not in doc
+
 
 class TestDisplayLabelSurvivesReview:
     """brat carries only the entity type, so a reviewed annotation
