@@ -120,3 +120,36 @@ class TestRecoveryIsIdempotent:
         """Running the backfill twice must not churn."""
         assert recover_display_label(
             'Spore-print', 'Spore-print white to cream.') is None
+
+
+@pytest.mark.xfail(strict=True, reason='separator policy unwritten')
+class TestSeparatorsAreRealAndClean:
+    """Two cases the live corpus produced that the fixtures did not.
+
+    `Clamp connections` matched three different spans: `Clamp-
+    connections` broken across a line, `Clamp-connections`, and
+    `Clampconnections` — the last from a span where the plaintext
+    extractor had already removed a hyphen and its line break.  A
+    display form must not contain a newline, and it must not be the
+    label with a space *deleted*: that is extraction damage, not
+    punctuation coming back.
+    """
+
+    def test_a_line_break_inside_the_separator_is_collapsed(self) -> None:
+        assert recover_display_label(
+            'Clamp connections', 'Clamp-\nconnections present.'
+        ) == 'Clamp-connections'
+
+    def test_a_wrapped_slash_becomes_a_space(self) -> None:
+        assert recover_display_label(
+            'Velum Cortina', 'Velum/\nCortina absent.'
+        ) == 'Velum/ Cortina'
+
+    def test_a_deleted_space_is_not_a_recovery(self) -> None:
+        """`Clampconnections` restores nothing; it loses a space."""
+        assert recover_display_label(
+            'Clamp connections', 'Clampconnections present.') is None
+
+    def test_a_recovery_still_needs_one_real_character(self) -> None:
+        assert recover_display_label(
+            'Hulle cells', 'Hullecells are thick-walled.') is None
