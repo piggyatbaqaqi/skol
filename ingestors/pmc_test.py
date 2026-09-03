@@ -6,8 +6,10 @@ via OAI-PMH, metadata extraction from JATS front matter, DOI-based
 enrichment of existing documents, and skip-existing logic.
 """
 
+import os
 import unittest
 from typing import Any, Dict, List, Optional
+from unittest import mock
 from unittest.mock import MagicMock
 from uuid import uuid5, NAMESPACE_URL
 
@@ -481,15 +483,46 @@ class TestDocIdsFlag(unittest.TestCase):
 
 
 class TestRateLimitConfig(unittest.TestCase):
-    """Test rate limit configuration based on API key presence."""
+    """Test rate limit configuration based on API key presence.
+
+    Stubbing ``_skol_env_cache`` is not enough on its own.
+    ``env_config._get_env`` checks ``os.environ`` **first** and only
+    then the ``.skol_env`` file — the priority order CLAUDE.md
+    specifies — so an operator who has sourced ``.skol_env`` into
+    their shell hands these tests a real ``NCBI_API_KEY`` that
+    outranks the stub, and both of them fail.  Which they did: green
+    in a clean shell, red in a working one, for anyone running the
+    suite after touching production.
+    """
 
     def setUp(self) -> None:
         import bin.env_config as env_config_module
         self._env_config_module = env_config_module
         self._orig_cache = env_config_module._skol_env_cache
 
+        # Snapshot os.environ for the duration, then remove the one
+        # variable that would outrank the stub.  patch.dict restores
+        # whatever was there on stop, including its absence.
+        patcher = mock.patch.dict(os.environ)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        os.environ.pop('NCBI_API_KEY', None)
+
     def tearDown(self) -> None:
         self._env_config_module._skol_env_cache = self._orig_cache
+
+    def test_a_real_env_var_cannot_reach_these_tests(self) -> None:
+        """The isolation itself, pinned.  Without it the two tests
+        below pass or fail according to the operator's shell."""
+        os.environ['NCBI_API_KEY'] = 'from_the_operators_shell'
+        self._env_config_module._skol_env_cache = {
+            'NCBI_API_KEY': 'test_key_12345',
+        }
+        self.addCleanup(os.environ.pop, 'NCBI_API_KEY', None)
+        # The env var wins by design; the point is that setUp removed
+        # the operator's, so only what a test sets can be seen here.
+        ing = _make_ingestor(rate_limit_min_ms=100)
+        self.assertEqual(ing.ncbi_api_key, 'from_the_operators_shell')
 
     def test_rate_limit_with_api_key(self) -> None:
         """With API key in .skol_env, rate limit allows 10 rps."""
