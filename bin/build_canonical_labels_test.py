@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build_canonical_labels import (  # type: ignore[import]  # noqa: E402
     canonicalize_all,
+    orphaned_ids,
 )
 
 
@@ -111,3 +112,38 @@ class TestCanonicalizeAll:
         ])
         assert len(records) == 1
         assert tally['duplicate'] == 1
+
+
+@pytest.mark.xfail(strict=True, reason='orphaned_ids is unwritten')
+class TestOrphanedIds:
+    """A derived DB must own its contents.
+
+    The first build wrote `Conidiogenous Cells`; the fix made the
+    frequent spelling win, so the second build wrote
+    `Conidiogenous cells` under a different `_id` and left 961 stale
+    documents behind — both spellings live in the DB, and a reader
+    cannot tell which is current.  A rebuild has to delete what it did
+    not write.
+
+    This is safe here precisely *because* the DB is derived: nothing is
+    lost that `bin/build_canonical_labels` cannot reproduce from the
+    candidate DB.
+    """
+
+    def test_stale_documents_are_named_for_deletion(self) -> None:
+        assert orphaned_ids(
+            existing={'a', 'b', 'stale'}, produced={'a', 'b'},
+        ) == ['stale']
+
+    def test_a_clean_rebuild_deletes_nothing(self) -> None:
+        assert orphaned_ids(existing={'a'}, produced={'a', 'b'}) == []
+
+    def test_design_documents_are_never_deleted(self) -> None:
+        """Views belong to whoever created them, not to the build."""
+        assert orphaned_ids(
+            existing={'_design/by_label', 'stale'}, produced=set(),
+        ) == ['stale']
+
+    def test_the_order_is_deterministic(self) -> None:
+        assert orphaned_ids(
+            existing={'c', 'a', 'b'}, produced=set()) == ['a', 'b', 'c']

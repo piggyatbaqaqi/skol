@@ -105,6 +105,11 @@ def canonicalize_all(
     return records, tally
 
 
+def orphaned_ids(existing: Any, produced: Any) -> List[str]:
+    """Skeleton: see the xfailed tests."""
+    raise NotImplementedError
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
