@@ -7420,6 +7420,69 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.46 TaxPub detection is not dormant; it never ran on this corpus
+
+Recorded 2026-09-03, testing the suspicion raised on 2026-09-02 that
+`xml_formats._is_taxpub_header` might never fire on a real file —
+every `is_taxpub` flag having apparently come from the
+`taxon-treatment` content marker, and **no document in `skol_dev`
+carrying `xml_format = 'taxpub'`** (all 7 677 say `jats`).
+
+**The detector works.**  Fetching the real `article.xml` bytes for 40
+randomly sampled `is_taxpub` documents and running `detect()` on them:
+
+| | |
+|---|---:|
+| detect as `taxpub` — the plazi namespace is there | **17** |
+| detect as `jats` — namespace absent from the first 60 KB | 23 |
+| namespace present but beyond the 2 000-byte window | **0** |
+
+Where the namespace appears it sits at byte **337–360**, comfortably
+inside the header window.  So the branch fires, and the window is not
+too small.
+
+**The explanation is provenance, not detection.**  These are MycoKeys
+articles (1 694 of the 1 740 `is_taxpub` documents; the rest are IMA
+Fungus), and they did not arrive through the Pensoft ingestor that
+owns format detection.  They came from **PMC** — `source: 'pmc'` on
+6 706 of the 7 677, and `ingestors/pmc.py:509` writes
+
+```python
+doc["xml_format"] = "jats"
+doc["is_jats"] = True
+doc["is_taxpub"] = False
+```
+
+unconditionally, because NCBI efetch always returns JATS for the PMC
+database.  Detection never ran on this corpus at all.  The `is_taxpub`
+flags that are correct were written later by
+`fixes/backfill_jats_flags.py` from the content marker — which is why
+the G.1 taxpub sweep has been finding the right documents.
+
+**Consequences.**
+
+* **`production_v4_1` is not gated by this.**  The sweep selects on
+  `is_taxpub`, which the content marker sets correctly and
+  completely.  Its taxpub coverage is right.
+* **`xml_format` is unreliable as a *format* claim** on any
+  PMC-sourced document: it records the ingestor's assumption, not an
+  inspection.  42 % of the sampled TaxPub documents would detect
+  otherwise.  Nothing reads it for a format decision today — every
+  consumer asks `is_jats_family`, which is True either way — but a
+  future consumer that distinguishes the two must re-detect rather
+  than trust the field.
+* **The 2026-09-03 collapse of `is_plain_jats` into `is_jats_family`
+  turns out to have been protective.**  Had the narrow predicate
+  stayed, re-running detection and storing the honest answer would
+  have silently dropped those 17-in-40 MycoKeys articles out of
+  plaintext extraction and golden-dataset selection — a change with
+  no visible cause, triggered by an unrelated repair.
+
+**Not done:** re-detecting and correcting `xml_format` corpus-wide.
+It would make the field honest and change no behaviour, so it is
+cheap and not urgent; the reason to do it is that a stored field
+claiming something no one verified is a trap for the next reader.
+
 ### 12.3.45 The dropped-span recovery script does not exist, and is marginal
 
 Every `bin/llm_annotate_features` run printed *"run an offline-recovery
