@@ -555,7 +555,6 @@ class TestReviewedDocContext:
         assert 'context' not in doc
 
 
-@pytest.mark.xfail(strict=True, reason='make_reviewed_doc drops the display form')
 class TestDisplayLabelSurvivesReview:
     """brat carries only the entity type, so a reviewed annotation
     cannot bring its display form back through the .ann file.  The
@@ -583,6 +582,8 @@ class TestDisplayLabelSurvivesReview:
         )
         assert doc['display_label'] == 'Schäffer’s reaction'
 
+
+class TestNoDisplayFormMeansNoKey:
     def test_no_display_form_anywhere_omits_the_key(self) -> None:
         doc = make_reviewed_doc(
             _ann('Pileus', 48, 253), treatment_id='taxon_abc',

@@ -193,6 +193,16 @@ def make_reviewed_doc(
         'reviewer': reviewer,
         'reviewer_action': action,
     }
+    # Display form.  brat carries only the entity type, so a reviewed
+    # annotation cannot bring one back through the .ann file; the
+    # candidate doc is the only witness, exactly as it is for `model`
+    # and `created_at` on a kept annotation.
+    display_label = ann.get('display_label')
+    if display_label is None and candidate_match is not None:
+        display_label = candidate_match.get('display_label')
+    if display_label:
+        doc['display_label'] = display_label
+
     # Growth condition.  Derived when the annotation lacks it: .ann
     # files exported before the field existed parse without one, and
     # the hand DB should not be the single store missing the medium.
