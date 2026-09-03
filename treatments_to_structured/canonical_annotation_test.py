@@ -513,7 +513,6 @@ class TestVocabularyIndexSurfaceForm:
         assert vocabulary_index(anns)['colony'] == 'colony'
 
 
-@pytest.mark.xfail(strict=True, reason='canonicalize_label ignores the map')
 class TestTheMapIsConsulted:
     """**The map must be applied to the raw label, terminally.**
 

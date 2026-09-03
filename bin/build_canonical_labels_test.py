@@ -50,10 +50,13 @@ def _ann(label: str, tid: str = 't1', start: int = 0,
     }
 
 
+PATHS = {'Colonies': ('Colony',)}
+
+
 def _run(annotations):
     return canonicalize_all(
         annotations, known=KNOWN, established=ESTABLISHED,
-        protected=PROTECTED, source_db=SOURCE)
+        protected=PROTECTED, paths=PATHS, source_db=SOURCE)
 
 
 class TestCanonicalizeAll:

@@ -258,12 +258,20 @@ def canonicalize_label(
     known: Mapping[str, str],
     established: Mapping[str, str],
     protected: Container[str] = frozenset(),
+    paths: Optional[Mapping[str, Tuple[str, ...]]] = None,
 ) -> List[CanonicalLabel]:
     """Apply the rules in order; return one label or several.
 
     **The order is load-bearing.**
 
-    0. ``protected`` first — a label that is itself a hand-map target
+    0. ``paths`` first — the hand map, applied to the *raw* label and
+       **terminal** when it hits.  Reaching the map only through the
+       vocabulary index (which is what an earlier version did)
+       reproduces case renames and silently drops every other entry,
+       and lets the strip rule decompose a human decision:
+       ``Culture characteristics`` became ``Culture > characteristics``
+       for 343 annotations because ``Culture`` is established.
+    0b. ``protected`` next — a label that is itself a hand-map target
        is a decision a human already made, and is returned whole.
        Without this, ``Partial veil microscopic`` survives only because
        ``Partial veil`` happens to sit below the support guard, which
@@ -277,7 +285,11 @@ def canonicalize_label(
     3. ``split_compound``, then
     4. ``strip_sub_attribute`` on each resulting part.
     """
-    key = label.strip().lower()
+    stripped = label.strip()
+    if paths and stripped in paths:
+        return [CanonicalLabel(path=paths[stripped], transforms=('map',))]
+
+    key = stripped.lower()
     if key in protected:
         return [CanonicalLabel(path=(known.get(key, label.strip()),))]
 
@@ -322,6 +334,7 @@ def canonical_records(
     known: Mapping[str, str],
     established: Mapping[str, str],
     protected: Container[str] = frozenset(),
+    paths: Optional[Mapping[str, Tuple[str, ...]]] = None,
     source_db: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """One raw annotation to one or more canonical records.
@@ -343,7 +356,7 @@ def canonical_records(
     presence = presence_from_span(str(annotation.get('source_text') or ''))
     for canonical in canonicalize_label(
             label, known=known, established=established,
-            protected=protected):
+            protected=protected, paths=paths):
         record: Dict[str, Any] = {
             key: annotation[key]
             for key in _PASSTHROUGH if key in annotation

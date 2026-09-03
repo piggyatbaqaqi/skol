@@ -51,7 +51,8 @@ from treatments_to_structured.feature_label_rules import (  # noqa: E402
 _ESTABLISHED_MIN_DF = 5
 
 # Order matters only for readability of the report.
-_RULES = ('case_fold', 'condition', 'compound', 'sub_attribute')
+_RULES = ('map', 'case_fold', 'condition', 'compound',
+          'sub_attribute')
 
 
 def canonicalize_all(
@@ -60,6 +61,7 @@ def canonicalize_all(
     known: Mapping[str, str],
     established: Mapping[str, str],
     protected: Container[str],
+    paths: Mapping[str, Tuple[str, ...]],
     source_db: str,
 ) -> Tuple[List[Dict[str, Any]], 'collections.Counter[str]']:
     """Fan the transform out over annotations; return records + tally.
@@ -80,7 +82,7 @@ def canonicalize_all(
         tally['raw'] += 1
         produced = canonical_records(
             annotation, known=known, established=established,
-            protected=protected, source_db=source_db,
+            protected=protected, paths=paths, source_db=source_db,
         )
         if not produced:
             tally['dropped'] += 1
@@ -185,7 +187,7 @@ def main() -> int:
 
     records, tally = canonicalize_all(
         annotations, known=known, established=established,
-        protected=protected, source_db=source_db)
+        protected=protected, paths=mapping, source_db=source_db)
 
     print(f'\n  {"raw annotations":<22}{tally["raw"]:>8,}')
     print(f'  {"canonical records":<22}{tally["records"]:>8,}')
