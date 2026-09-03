@@ -181,6 +181,30 @@ strictly more information than the raw label carried.
    `attribute_path: ['Ascomata', 'height']`, and the annotator's
    choice of `height` is supervision for the structured pass rather
    than noise. 132 singletons were waiting on that decision.
+### Three personal names that cannot be recovered
+
+Recorded 2026-09-03 so the question is not re-derived.
+`brat_safe_type` strips apostrophes and diacritics, and
+`fixes/backfill_display_labels.py` recovers them from the span — but
+only when the span still has them.  For three labels it does not,
+because OCR destroyed the apostrophe before any label existed:
+
+| stored label | what the span itself says |
+|---|---|
+| `Colony Sabouraud s dextrose medium` | `Sabouraud ' s dextrose medium` |
+| `Colony Leonian s medium` | `modified Leonian •s medium` |
+| `Colony Weitzman and Silva-Hutner s medium` | `Silva-Hutner' s medium` |
+
+Raymond Sabouraud, Leonian, Irene Weitzman and Margarita
+Silva-Hutner.  The labels report their spans faithfully; the damage is
+upstream, and repairing it is §9 OCR work rather than vocabulary
+hygiene.  **Do not "fix" these by pattern**: a capitalised word
+followed by a naked `s` scores 0 correct out of 7 on this corpus — six
+are OCR word-splitting (`The s pecies`, `Hyphae s traight`) and one is
+`sensu stricto` — and it is blind to owners whose name already ends in
+s, of which `Gams'` is in the corpus and `Fries'` is the field's
+foundational name.
+
 ### Outcome, 2026-09-03
 
 Five deterministic rules, guarded and controlled, now run as

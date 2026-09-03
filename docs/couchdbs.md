@@ -215,6 +215,18 @@ to two sibling DBs per experiment:
   Deleted annotations (rejected by the reviewer) are simply absent
   from the hand DB.  Naming-convention fallback when unset:
   `skol_exp_<experiment>_02_55_features_hand`.
+Every annotation DB above may carry **`display_label`**: the label as
+it was written before `brat_render.brat_safe_type` replaced everything
+outside `[A-Za-z0-9_-]` with an underscore for brat's storage regex.
+`feature_label` stays the identity and the wire form; `display_label`
+is the form fit to show a reader — `Schäffer's reaction` where the
+identity says `Sch ffer s reaction`, `Conidium length/width ratio`
+where it says `Conidium length width ratio`.  Captured at parse time by
+`llm_annotate`, carried through review by `brat_ingest`, and
+backfilled for older annotations from their own spans by
+`fixes/backfill_display_labels.py`.  Absent when sanitizing changed
+nothing, which is the overwhelming majority.
+
 - **`features_canonical`** — one doc per *canonical* annotation,
   derived from `features_candidate` by `bin/build_canonical_labels`.
   Same `_id` scheme, so it joins to the raw DB.  Carries the
