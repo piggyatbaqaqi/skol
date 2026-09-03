@@ -410,7 +410,8 @@ class TestControlSets:
             load_canonicalization,
         )
         mapping = load_canonicalization()
-        known = {v.lower(): v for v in mapping.values()}
+        # Values are paths as of step 2; the head is the label.
+        known = {path[0].lower(): path[0] for path in mapping.values()}
         known.update({
             name.lower(): name for name in (
                 'Sexual morph', 'Asexual morph', 'Macroconidia',
@@ -420,7 +421,11 @@ class TestControlSets:
                 'Basidiospores', 'Ascospores', 'Basidiomata', 'Ascomata',
             )
         })
-        protected = frozenset(v.lower() for v in mapping.values())
+        # Only ATOMIC targets need protection: a multi-step path is
+        # already what the rules would produce.
+        protected = frozenset(
+            path[0].lower() for path in mapping.values() if len(path) == 1
+        )
         return mapping, known, protected
 
     @pytest.mark.parametrize('group', [
@@ -447,10 +452,11 @@ class TestControlSets:
         """Holds **by construction** under map-wins precedence, not by
         accident of whether a head clears the support guard."""
         mapping, known, protected = self._real()
-        for target in set(mapping.values()):
+        for path in set(mapping.values()):
             got = canonicalize_label(
-                target, known=known, established=known, protected=protected)
-            assert [c.label for c in got] == [target], (target, got)
+                path[0], known=known, established=known,
+                protected=protected)
+            assert [c.label for c in got] == [path[0]], (path, got)
 
 
 class TestVocabularyIndexSurfaceForm:

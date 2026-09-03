@@ -37,7 +37,7 @@ a label that dropped its medium would have lost the observation.
 import json
 import re
 from pathlib import Path
-from typing import Dict, Optional, Tuple  # noqa: F401
+from typing import Dict, Optional, Tuple
 
 _MAP_PATH = (
     Path(__file__).resolve().parent.parent
@@ -64,11 +64,21 @@ _CONTEXT_RE = re.compile(
 
 
 def load_canonicalization(
-        path: Optional[Path] = None) -> Dict[str, str]:
-    """Read the hand map, dropping its ``_comment`` / ``_note`` keys."""
+        path: Optional[Path] = None) -> Dict[str, Tuple[str, ...]]:
+    """Read the hand map, dropping its ``_comment`` / ``_note`` keys.
+
+    **Values are paths** as of 2026-09-03, not label strings:
+    ``('Pileus', 'context', 'microscopic')`` is the pileus, its context
+    (flesh), viewed microscopically.  A one-step path is an ordinary
+    rename.  Consumers that need only a label call
+    :func:`canonicalize`, which returns the head.
+    """
     with (path or _MAP_PATH).open(encoding='utf-8') as handle:
         raw = json.load(handle)
-    return {k: v for k, v in raw.items() if not k.startswith('_')}
+    return {
+        key: tuple(value) if isinstance(value, list) else (value,)
+        for key, value in raw.items() if not key.startswith('_')
+    }
 
 
 def canonical_morph(label: str) -> Optional[str]:
@@ -109,21 +119,28 @@ def canonical_path(
         label: str,
         mapping: Optional[Dict[str, Tuple[str, ...]]] = None,
 ) -> Tuple[str, ...]:
-    """Skeleton: see the xfailed tests."""
-    raise NotImplementedError
-
-
-def canonicalize(
-        label: str,
-        mapping: Optional[Dict[str, str]] = None) -> str:
-    """Canonical label: the hand map first, then the rules.
+    """Canonical **path** for a label: the hand map first, then rules.
 
     The map wins because it records decisions a human made about
-    specific forms.  Rules only see what the map has no opinion on.
-    ``split_medium_context`` is deliberately not applied here.
+    specific forms; rules only see what it has no opinion on.  An
+    unmapped label with no rule of its own is a one-step path, which is
+    the honest statement that nothing is known about its depth.
     """
     if mapping is None:
         mapping = load_canonicalization()
     if label in mapping:
         return mapping[label]
-    return canonical_morph(label) or label
+    return (canonical_morph(label) or label,)
+
+
+def canonicalize(
+        label: str,
+        mapping: Optional[Dict[str, Tuple[str, ...]]] = None) -> str:
+    """Canonical **label** — the head of :func:`canonical_path`.
+
+    Kept as a string on purpose: ``heaps.labels_by_treatment`` takes a
+    canonicalizer that returns one label, and a vocabulary curve counts
+    features, not paths.  Callers that need the depth ask for the path.
+    ``split_medium_context`` is deliberately not applied here.
+    """
+    return canonical_path(label, mapping)[0]

@@ -154,16 +154,18 @@ class TestCanonicalizeAgainstTheHandMap:
     already made, so no rule may disagree with one."""
 
     def test_every_map_entry_survives_canonicalize(self) -> None:
+        """The head of the recorded path, since values are paths."""
         mapping = load_canonicalization()
-        for raw, canonical in mapping.items():
-            assert canonicalize(raw, mapping) == canonical, raw
+        for raw, path in mapping.items():
+            assert canonicalize(raw, mapping) == path[0], raw
 
     def test_every_map_target_is_a_fixed_point(self) -> None:
         """Applying the rules to an already-canonical label must not
-        move it, or repeated passes would drift."""
+        move it, or repeated passes would drift.  A multi-step path's
+        head is the label, and re-canonicalizing it is a no-op."""
         mapping = load_canonicalization()
-        for canonical in set(mapping.values()):
-            assert canonicalize(canonical, mapping) == canonical
+        for path in set(mapping.values()):
+            assert canonicalize(path[0], mapping) == path[0]
 
     def test_the_map_carries_the_forms_the_corpus_actually_has(
             self) -> None:
@@ -179,7 +181,7 @@ class TestCanonicalizeAgainstTheHandMap:
             ('Asexual stage', 'Asexual morph'),
             ('AsexualMorph', 'Asexual morph'),
         ):
-            assert mapping.get(raw) == canonical, raw
+            assert mapping.get(raw) == (canonical,), raw
 
 
 class TestCanonicalizeAgainstTheNonSynonyms:
@@ -206,15 +208,18 @@ class TestLoadCanonicalization:
         assert not [k for k in mapping if k.startswith('_')]
 
     def test_reads_the_repo_map_by_default(self) -> None:
+        """Every JSON value becomes a tuple, list-valued or not."""
         path = (Path(__file__).resolve().parent.parent / 'docs'
                 / 'feature_label_canonicalization.json')
         with path.open() as handle:
             raw = json.load(handle)
-        expected = {k: v for k, v in raw.items() if not k.startswith('_')}
+        expected = {
+            key: tuple(value) if isinstance(value, list) else (value,)
+            for key, value in raw.items() if not key.startswith('_')
+        }
         assert load_canonicalization() == expected
 
 
-@pytest.mark.xfail(strict=True, reason='the map is still label-valued')
 class TestPathValuedMap:
     """**Step 2, 2026-09-03: the map's values are paths.**
 

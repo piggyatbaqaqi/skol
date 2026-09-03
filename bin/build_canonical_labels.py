@@ -173,7 +173,12 @@ def main() -> int:
     known = vocabulary_index(annotations, canonicalizer=canon, min_df=1)
     established = vocabulary_index(
         annotations, canonicalizer=canon, min_df=_ESTABLISHED_MIN_DF)
-    protected = frozenset(value.lower() for value in mapping.values())
+    # Only ATOMIC targets need protection.  A multi-step path is
+    # already the decomposition the rules would produce, so protecting
+    # it would be protecting them from agreeing with the map.
+    protected = frozenset(
+        path[0].lower() for path in mapping.values() if len(path) == 1
+    )
     print(f'  vocabulary: {len(known):,} labels, '
           f'{len(established):,} established (df >= '
           f'{_ESTABLISHED_MIN_DF}), {len(protected):,} protected')
