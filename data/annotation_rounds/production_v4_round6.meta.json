@@ -1,0 +1,51 @@
+{
+  "round": 6,
+  "provenance": "selector",
+  "experiment": "production_v4",
+  "selector_argv": [
+    "--experiment",
+    "production_v4",
+    "--n",
+    "1000",
+    "--exclude-annotated",
+    "--seed",
+    "20260901"
+  ],
+  "seed": 20260901,
+  "seed_generated": false,
+  "n_requested": 1000,
+  "n_selected": 1000,
+  "selection": "uniform",
+  "output_order": "uniform",
+  "bands": null,
+  "band_slices": [
+    {
+      "name": "all",
+      "quota": 1000,
+      "slice_n": 39539,
+      "score_min": 1.0,
+      "score_max": 2148.0
+    }
+  ],
+  "population_funnel": [
+    {
+      "stage": "all_treatments",
+      "n": 81527
+    },
+    {
+      "stage": "complexity_gt_0",
+      "n": 46045
+    },
+    {
+      "stage": "not_already_annotated",
+      "n": 45059
+    },
+    {
+      "stage": "not_merge_suspect",
+      "n": 39539
+    }
+  ],
+  "merge_threshold": 15,
+  "force_recompute": false,
+  "drawn_at": "2026-09-02T03:29:36.856201+00:00"
+}
