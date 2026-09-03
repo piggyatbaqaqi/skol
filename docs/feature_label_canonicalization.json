@@ -109,7 +109,8 @@
     "Perithecia"
   ],
   "Pileal trama": [
-    "Pileus trama"
+    "Pileus",
+    "trama"
   ],
   "Pileus_context_microstructure": [
     "Pileus",
@@ -170,28 +171,48 @@
     "Stromata"
   ],
   "Universal_veil_microstructure_on_pileus": [
-    "Universal veil microscopic on pileus"
+    "Pileus",
+    "universal veil",
+    "microscopic"
   ],
   "Universal veil microstructure on pileus": [
-    "Universal veil microscopic on pileus"
+    "Pileus",
+    "universal veil",
+    "microscopic"
   ],
   "Universal_veil_(microscopic,_on_pileus)": [
-    "Universal veil microscopic on pileus"
+    "Pileus",
+    "universal veil",
+    "microscopic"
   ],
   "Universal veil (microscopic, on pileus)": [
-    "Universal veil microscopic on pileus"
+    "Pileus",
+    "universal veil",
+    "microscopic"
   ],
   "Universal_veil_microstructure_on_stipe_base": [
-    "Universal veil microscopic on stipe base"
+    "Stipe",
+    "base",
+    "universal veil",
+    "microscopic"
   ],
   "Universal veil microstructure on stipe base": [
-    "Universal veil microscopic on stipe base"
+    "Stipe",
+    "base",
+    "universal veil",
+    "microscopic"
   ],
   "Universal_veil_(microscopic,_on_stipe_base)": [
-    "Universal veil microscopic on stipe base"
+    "Stipe",
+    "base",
+    "universal veil",
+    "microscopic"
   ],
   "Universal veil (microscopic, on stipe base)": [
-    "Universal veil microscopic on stipe base"
+    "Stipe",
+    "base",
+    "universal veil",
+    "microscopic"
   ],
   "_note_paths": "Values are PATHS into the attribute tree as of 2026-09-03, not label strings: [\"Pileus\", \"context\", \"microscopic\"] is the pileus, its context (flesh), viewed microscopically -- the shape schemas/pileus.json already uses for context_color.  A one-step path is an ordinary rename.  Consumers that need only a label take path[0] via feature_label_rules.canonicalize; canonical_path returns the whole path.  Branches are deliberately ragged: a sibling may be an internal node (Peridium hyphae, which has its own width and septation) or a leaf (Peridium colour, which has only values)."
 }
