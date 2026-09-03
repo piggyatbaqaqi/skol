@@ -415,7 +415,6 @@ class TestOutOfSampleCoverage:
         assert got.type_coverage is None
 
 
-@pytest.mark.xfail(strict=True, reason='prequential curve is a skeleton')
 class TestPrequentialCurve:
     """A causal vocabulary curve.
 
@@ -490,7 +489,6 @@ class TestPrequentialCurve:
         assert ys == [1, 1, 2]
 
 
-@pytest.mark.xfail(strict=True, reason='prequential curve is a skeleton')
 class TestPrequentialBand:
     def _identity(self, label, known, established):
         return [label]

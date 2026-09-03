@@ -318,8 +318,50 @@ def prequential_curve(
     *,
     min_df: int = 5,
 ) -> Tuple[List[int], List[float]]:
-    """Skeleton: see the xfailed tests in ``heaps_test.py``."""
-    raise NotImplementedError
+    """Cumulative canonical vocabulary, canonicalized **causally**.
+
+    ``transform(label, known, established)`` returns the canonical
+    label or labels for one raw label.  Both indices map a lower-cased
+    label to its canonical form and are rebuilt as the walk proceeds
+    from the treatments **already seen** — so the point at position
+    *n* is what an operator would have had after *n* treatments, not
+    what hindsight would give them.
+
+    Contrast :func:`permutation_band` over pre-canonicalized labels,
+    where the canonicalizer saw the whole corpus: that curve is fine
+    to describe and unsafe to extrapolate, because its early points
+    know their own future.
+
+    At ``n=1`` both indices are empty, so no rule can fire.  That is
+    the honest answer, not a defect: a vocabulary of one treatment
+    supports no consolidation.
+    """
+    seen_vocabulary: Dict[str, str] = {}
+    treatment_frequency: 'collections.Counter[str]' = collections.Counter()
+    accumulated: Set[str] = set()
+    xs: List[int] = []
+    ys: List[float] = []
+
+    for position, treatment_id in enumerate(order, start=1):
+        established = {
+            key: label
+            for key, label in seen_vocabulary.items()
+            if treatment_frequency[label] >= min_df
+        }
+        produced: Set[str] = set()
+        for raw in raw_by_treatment.get(treatment_id, ()):
+            for canonical in transform(raw, seen_vocabulary, established):
+                produced.add(canonical)
+
+        accumulated |= produced
+        # The indices grow only after this treatment has been scored.
+        for label in produced:
+            seen_vocabulary.setdefault(label.lower(), label)
+            treatment_frequency[label] += 1
+
+        xs.append(position)
+        ys.append(len(accumulated))
+    return xs, ys
 
 
 def prequential_band(
@@ -332,8 +374,36 @@ def prequential_band(
     seed: int = 20260903,
     min_df: int = 5,
 ) -> Tuple[List[int], List[float], List[float], List[float]]:
-    """Skeleton: see the xfailed tests in ``heaps_test.py``."""
-    raise NotImplementedError
+    """Average :func:`prequential_curve` over random orders.
+
+    Returns ``(xs, mean, lo, hi)`` with lo/hi the 2.5th and 97.5th
+    percentiles, matching :func:`permutation_band`'s shape.  One
+    ordering is one draw from the estimator; averaging is what removes
+    the ordering artefact, and here it does double duty, since the
+    causal index makes a single order's answer genuinely
+    order-dependent.
+    """
+    population = list(ids)
+    if not population:
+        return [], [], [], []
+    rng = random.Random(seed)
+    runs: List[List[float]] = []
+    for _ in range(max(1, n_permutations)):
+        shuffled = list(population)
+        rng.shuffle(shuffled)
+        runs.append(prequential_curve(
+            raw_by_treatment, shuffled, transform, min_df=min_df)[1])
+
+    xs = list(range(1, len(population) + 1))
+    mean: List[float] = []
+    lo: List[float] = []
+    hi: List[float] = []
+    for index in range(len(population)):
+        column = sorted(run[index] for run in runs)
+        mean.append(sum(column) / len(column))
+        lo.append(float(column[int(0.025 * (len(column) - 1))]))
+        hi.append(float(column[int(0.975 * (len(column) - 1))]))
+    return xs, mean, lo, hi
 
 
 def timestamp_collisions(
