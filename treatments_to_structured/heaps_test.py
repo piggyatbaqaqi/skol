@@ -15,6 +15,8 @@ from treatments_to_structured.heaps import (  # noqa: E402
     instances_by_treatment,
     labels_by_treatment,
     out_of_sample_coverage,
+    prequential_band,
+    prequential_curve,
     permutation_band,
     timestamp_collisions,
 )
@@ -411,3 +413,119 @@ class TestOutOfSampleCoverage:
         got = out_of_sample_coverage({'Pileus'}, {})
         assert got.treatments == 0
         assert got.type_coverage is None
+
+
+@pytest.mark.xfail(strict=True, reason='prequential curve is a skeleton')
+class TestPrequentialCurve:
+    """A causal vocabulary curve.
+
+    The corpus-wide canonicalizer leaks the future: a V(n) point at
+    n=100 built with an index over all 2 000 treatments has been
+    canonicalized using labels only visible later, which flattens the
+    curve in the optimistic direction.  Here the index at position *n*
+    is built from the first *n* treatments of that permutation and
+    nothing else -- so the curve is what an operator would actually
+    have had after *n* treatments.  Operator decision, 2026-09-03.
+    """
+
+    def _identity(self, label, known, established):
+        return [label]
+
+    def _strip_if_established(self, label, known, established):
+        """Strip a trailing word when the head is already established
+        -- the real rule's shape, small enough to reason about."""
+        parts = label.split()
+        if len(parts) > 1 and ' '.join(parts[:-1]).lower() in established:
+            return [established[' '.join(parts[:-1]).lower()]]
+        return [label]
+
+    def test_identity_transform_reproduces_the_raw_curve(self) -> None:
+        """The anchor: with no canonicalization the prequential curve
+        must be exactly cumulative_curve."""
+        raw = {'a': ['Pileus'], 'b': ['Stipe'], 'c': ['Pileus', 'Volva']}
+        order = ['a', 'b', 'c']
+        xs, ys = prequential_curve(raw, order, self._identity)
+        want_x, want_y = cumulative_curve(
+            order, {k: set(v) for k, v in raw.items()})
+        assert (xs, ys) == (want_x, want_y)
+
+    def test_a_collapsing_transform_flattens_the_curve(self) -> None:
+        raw = {'a': ['Pileus'], 'b': ['Stipe'], 'c': ['Volva']}
+        _, ys = prequential_curve(
+            raw, ['a', 'b', 'c'], lambda label, k, e: ['One'])
+        assert ys == [1, 1, 1]
+
+    def test_the_index_is_causal_so_order_changes_the_answer(
+            self) -> None:
+        """`Colony reverse` strips to `Colony` only once `Colony` has
+        cleared df >= 5.  Seen first it cannot; seen last it does.  An
+        order-dependent result is the proof that no future label was
+        consulted."""
+        raw = {'first': ['Colony reverse']}
+        for i in range(5):
+            raw[f't{i}'] = ['Colony']
+        early = ['first'] + [f't{i}' for i in range(5)]
+        late = [f't{i}' for i in range(5)] + ['first']
+
+        _, ys_early = prequential_curve(
+            raw, early, self._strip_if_established, min_df=5)
+        _, ys_late = prequential_curve(
+            raw, late, self._strip_if_established, min_df=5)
+        assert ys_early[-1] == 2   # 'Colony reverse' survived
+        assert ys_late[-1] == 1    # it stripped onto 'Colony'
+
+    def test_min_df_gates_the_established_index(self) -> None:
+        raw = {'first': ['Colony reverse'], 't0': ['Colony']}
+        _, strict = prequential_curve(
+            raw, ['t0', 'first'], self._strip_if_established, min_df=5)
+        _, loose = prequential_curve(
+            raw, ['t0', 'first'], self._strip_if_established, min_df=1)
+        assert strict[-1] == 2
+        assert loose[-1] == 1
+
+    def test_treatments_with_no_labels_still_advance_x(self) -> None:
+        raw = {'a': ['Pileus'], 'b': [], 'c': ['Stipe']}
+        xs, ys = prequential_curve(raw, ['a', 'b', 'c'], self._identity)
+        assert xs == [1, 2, 3]
+        assert ys == [1, 1, 2]
+
+
+@pytest.mark.xfail(strict=True, reason='prequential curve is a skeleton')
+class TestPrequentialBand:
+    def _identity(self, label, known, established):
+        return [label]
+
+    def _raw(self):
+        return {
+            'a': ['Pileus'], 'b': ['Stipe'], 'c': ['Pileus', 'Volva'],
+            'd': ['Basidia'], 'e': [],
+        }
+
+    def test_shape_matches_the_population(self) -> None:
+        ids = list(self._raw())
+        xs, mean, lo, hi = prequential_band(
+            self._raw(), ids, self._identity, n_permutations=20)
+        assert xs == list(range(1, len(ids) + 1))
+        assert len(mean) == len(lo) == len(hi) == len(ids)
+
+    def test_the_band_contains_its_mean(self) -> None:
+        ids = list(self._raw())
+        _, mean, lo, hi = prequential_band(
+            self._raw(), ids, self._identity, n_permutations=20)
+        for i in range(len(ids)):
+            assert lo[i] <= mean[i] <= hi[i]
+
+    def test_the_mean_is_non_decreasing(self) -> None:
+        """A vocabulary curve cannot shrink."""
+        ids = list(self._raw())
+        _, mean, _, _ = prequential_band(
+            self._raw(), ids, self._identity, n_permutations=20)
+        assert all(mean[i] <= mean[i + 1] for i in range(len(mean) - 1))
+
+    def test_it_is_deterministic_under_a_seed(self) -> None:
+        ids = list(self._raw())
+        first = prequential_band(
+            self._raw(), ids, self._identity, n_permutations=10, seed=7)
+        second = prequential_band(
+            self._raw(), ids, self._identity, n_permutations=10, seed=7)
+        assert first == second

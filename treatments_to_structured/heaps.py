@@ -310,6 +310,32 @@ def out_of_sample_coverage(
     )
 
 
+def prequential_curve(
+    raw_by_treatment: Mapping[str, Sequence[str]],
+    order: Sequence[str],
+    transform: Callable[
+        [str, Mapping[str, str], Mapping[str, str]], Sequence[str]],
+    *,
+    min_df: int = 5,
+) -> Tuple[List[int], List[float]]:
+    """Skeleton: see the xfailed tests in ``heaps_test.py``."""
+    raise NotImplementedError
+
+
+def prequential_band(
+    raw_by_treatment: Mapping[str, Sequence[str]],
+    ids: Sequence[str],
+    transform: Callable[
+        [str, Mapping[str, str], Mapping[str, str]], Sequence[str]],
+    *,
+    n_permutations: int = 200,
+    seed: int = 20260903,
+    min_df: int = 5,
+) -> Tuple[List[int], List[float], List[float], List[float]]:
+    """Skeleton: see the xfailed tests in ``heaps_test.py``."""
+    raise NotImplementedError
+
+
 def timestamp_collisions(
     annotations: Iterable[Dict[str, object]],
 ) -> Dict[str, Set[str]]:
