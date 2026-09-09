@@ -2647,6 +2647,54 @@
     "§5:nomenclature_repeats_in_document"
    ],
    "notes": "Tryblidiopsis sp. nov., round 7 review. Operator: \"a bare genus followed by 'sp. nov.'. This makes me think that it might be extracted from a page header or some other decoration.\" Confirmed outright: the string occurs 3 times in article.txt and every one sits immediately after a page marker, between the copyright line and the masthead -- '--- Page 20 Label 20 --- | (c) 2019 Westerdijk Fungal Biodiversity Institute | Tryblidiopsis sp. nov. | Editor-in-Chief | Prof. dr P.W. Crous'. A verso running head, harvested 3 times into 3 separate treatments. The source document's title is 'Full Issue', so page furniture is dense; the real names in it are Tryblidiopsis magnesii, T. pinastri, T. sichuanensis and T. sinensis. The operator's two other observations also hold: the description opens mid-sentence with the tail of the PREVIOUS cultural description ('um, SE = 0.1 um, 95 % CI = 0.16), germination not observed on CMA, MEA, OA, or WA.'), and the Misc-exposition blocks interrupting it are of two kinds -- the same masthead furniture, and genuine description fragments broken by column layout ('enveloping ascoma, sometimes thinner'). See §12.3.51."
+  },
+  {
+   "id": "taxon_12ba8b485aceb2b482f778f92f37c3af6a4401356cbdc1bf771d4adabc4f17a2",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-09",
+   "captured_rev": "21-20f4837ced9a7da7787a7fb3a546e8ea",
+   "class": "§11-three-taxa-in-one-treatment",
+   "treatment": "circinata (see below).\nPeyronellaea calorpreferens (Boerema, Gruyter &\nNoordel.) Aveskamp, Gruyter & Verkley, comb. nov.\nMycoBank MB515602.\nBasionym: Phoma pomorum var. calorpreferens Boerema, Gruyter \n",
+   "description": "Conidiomata pycnidial, solitary or confluent, partially or completely\nimmersed in the agar, (sub-)globose or irregular due to the presence \n\nof 1(–4) slightly papillate ostioles, measuring (70–)100–200(–250)\nμm diam. Pycnidial wall pseudoparenchymatous, composed of\nisodiametric cells, 2–5 layers thick, with many hyphal outgrows,\nsome setae-like. Conidiogenous cells phialidic, hyaline, simple,\nsmooth, flask-shaped, ca. 3–5.5 × 3–6.5 μm. Conidia broadly\nellipsoidal to ovoid to cylindrical, thin-walled, smooth, hyaline, (3.5–)4–\n8.5(–12) × 2–3.5(–4.5) μm, aseptate, with (1–)2–5(–8) polar guttules.\nConidial matrix pale pink. Chlamydospores highly variable in shape\nand size, mostly unicellular but also multicellular. Where unicellular, pale\nbrown to brown, guttulate, intercalary, solitary or in chains, globose,\n7.5–19(–26) μm, thick-walled and often with a distinct \"envelope\".\nWhere multicellular dictyosporous alternarioid or botryoid, brown to\nblack, terminal or occasionally intercalary in chains of unicellular\nchlamydospores, measuring ca. (16–)21–55 × (7–)12–30(–33) μm.\n",
+   "diagnosis": "",
+   "materials_examined": "Specimens examined: The Netherlands, from undefined food material, 1973, G.H.\nBoerema, holotype L 990.290.418, ex-holotype culture CBS 109.92 = PD 73/1405.\nU.S.A., Florida, Gainesville, from eggs of Heterodera glycines from greenhouse soil,\nCBS 630.97 = ATCC 96683 = IMI 361196 = PD 96/2022; from indoor environment,\n1993, CBS 875.97 = PD 93/1503.\nNotes: Peyronellaea calorpreferens is a taxon that was recently \n",
+   "type_designation": "Specimens examined: Ethiopia, from Coffea arabica, 1984, M.M.J. Dorenbosch,\nholotype CBS H-20143, ex-holotype culture CBS 123380 = PD 84/1013; from \n",
+   "treatment_notes": "(Aveskamp et al. 2009a). Due to its morphological and genetical\nsimilarity with Ph. heteroderae, it is concluded that both taxa are\nactually one and the same species. According to the International\ncode of Botanical Nomenclature (McNeal et al. 2006) the epithet\ncalorpreferens has priority, as its basionym Ph. pomorum var.\ncalorpreferens was published earlier.\nThe type of Peyronellaea calorpreferens has been recovered\nfrom food materials, but Boerema (1993) hypothesises about the\nplurivorous nature of this taxon, and mainly records it as a worldwide occurring soil- and seedborne opportunist, whereas Chen et\nal. (1996) record this species (as Ph. heteroderae) from eggs of a\ncyst nematode, Heterodera glycines. \n",
+   "description_spans": [
+    {
+     "paragraph_number": 509,
+     "start_line": 5731,
+     "end_line": 5732,
+     "start_char": 168668,
+     "end_char": 168824,
+     "pdf_page": 31,
+     "pdf_label": "31",
+     "empirical_page": null,
+     "head": "[@Conidiomata pycnidial, solitary or con"
+    },
+    {
+     "paragraph_number": 515,
+     "start_line": 5739,
+     "end_line": 5752,
+     "start_char": 168912,
+     "end_char": 169883,
+     "pdf_page": 32,
+     "pdf_label": "32",
+     "empirical_page": null,
+     "head": "[@of 1(–4) slightly papillate ostioles, "
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [],
+   "known_missed_flags": [
+    "§11:foreign_section_heading_in_field",
+    "§5:nomenclatural_act_labeled_misc",
+    "§5:nomenclature_head_absorption",
+    "§10:tail_clip_outside_description"
+   ],
+   "notes": "Peyronellaea calorpreferens, Aveskamp et al. 2010, round-7 review.  All five operator claims confirmed against paragraphs 251-263 of the annotation stream.  (1) The nomenclature opens 'circinata (see below).' -- a bare infraspecific epithet whose genus is in the PRECEDING Misc-exposition ('...synonymised with Pey. pomorum var.'), so a sentence tail was absorbed as the head of a nomenclature.  (2) The two description blocks (254, 257) do belong together: 254 ends '...due to the presence' and 257 opens 'of 1(-4) slightly papillate ostioles' across a page break, and the §15 join correctly stepped over the Page-header and the running head '32 | Aveskamp et al.' -- the operator's 'Yay'.  (3) The Notes section is split three ways: line 1 into materials_examined ('Notes: ... was recently'), line 2 into a Misc-exposition ('elevated from variety level to species rank, as Phoma calorpreferens'), lines 3+ into notes, which does end correctly.  (4) Paragraph 261 is a COMPLETE nomenclatural act for the next species -- 'Peyronellaea coffeae-arabicae ... comb. nov. MycoBank MB515603. Basionym: ...' -- labelled Misc-exposition, which is why (5) the type_designation (para 262) belongs to coffeae-arabicae rather than to this taxon and is truncated at a dangling 'from ', its remainder in para 263.  No detector fires on any of it: expected_flags is empty.  See §12.3.52."
   }
  ]
 }

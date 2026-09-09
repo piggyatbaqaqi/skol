@@ -7477,6 +7477,140 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.52 The document says where the boundary was — 11.7 % of treatments quote the heading they ignored
+
+Operator, round-7 review of `taxon_12ba8b48` (*Peyronellaea
+calorpreferens*, Aveskamp *et al.* 2010): *"pieces of at least 3
+treatments … The nomenclature starts with a bare species epithet (no
+genus) … The 2 description blocks do indeed belong together.  Yay for
+detecting header matter correctly! … The materials_examined picked up
+the first line of a Notes section.  The 2nd line of the Notes section
+ended up in a Misc-exposition … the notes block appears to end
+correctly.  The Misc-exposition then perfectly engulfs a taxonomic
+citation.  The type-designation appears to be truncated below."*
+
+**All five claims confirmed**, paragraph by paragraph, and exactly
+three taxa are represented.  **No detector fires on any of it** —
+`expected_flags` is empty.
+
+| ¶ | label | content | verdict |
+|---:|---|---|---|
+| 251 | Misc-exposition | `…synonymised with Pey. pomorum var.` | sentence broken here |
+| **252** | **Nomenclature** | **`circinata (see below).` + *P. calorpreferens* comb. nov.** | head absorbed |
+| 254 | Description | `…due to the presence` | |
+| 255–256 | Page-header, Misc-exposition | `--- PDF Page 32 ---`, `32 | Aveskamp et al.` | **correctly skipped** |
+| **257** | **Description** | `of 1(–4) slightly papillate ostioles…` | **joined correctly** |
+| **258** | **Materials-examined** | specimens… + `Notes: … was recently` | Notes line 1 |
+| **259** | **Misc-exposition** | `elevated from variety level to species rank…` | Notes line 2 |
+| 260 | Notes | `(Aveskamp et al. 2009a). Due to…` | ends correctly |
+| **261** | **Misc-exposition** | ***P. coffeae-arabicae* comb. nov. MycoBank MB515603. Basionym:…** | a whole act |
+| **262** | **Type-designation** | `…holotype CBS H-20143 … ; from ` | wrong taxon, clipped |
+| 263 | Misc-exposition | `Coffea arabica, 1984 … PD 84/1014.` | the remainder |
+
+The praise is earned and worth recording as such: **¶254→¶257 is the
+§15 gap-spanning join working exactly as designed**, stepping over a
+page marker *and* a recto running head to rejoin a sentence split
+across a page break.  It is the same running-head text that §12.3.51
+saw harvested as a Nomenclature; here it was labelled `Misc-exposition`
+and correctly ignored.  The join is not the weak link.
+
+#### Signal 1: the heading is in the text, naming the section that should have started
+
+`materials_examined` ends `Notes: Peyronellaea calorpreferens is a
+taxon that was recently`.  The word `Notes:` is *present, capitalised
+and colon-terminated* inside a field that is not notes.  The document
+is telling us where the boundary was.
+
+Scanning ten prose fields corpus-wide for a section heading occurring
+past character 40 and naming a section other than the field's own:
+
+| | |
+|---|---:|
+| treatments with a foreign section heading mid-field | **9 526** |
+| share of the 81 527 treatments | **11.7 %** |
+
+| field | n | | field ← intruding heading | n |
+|---|---:|---|---|---:|
+| `description` | 9 254 | | `biology` ← `Distribution` | **4 536** |
+| `key` | 8 016 | | `description` ← `Culture characteristics` | 4 495 |
+| `biology` | 5 766 | | `key` ← `Notes` | 1 662 |
+| `materials_examined` | 2 550 | | `key` ← `Typus` | 975 |
+| `diagnosis` | 1 719 | | `diagnosis` ← `Notes` | 971 |
+| `type_designation` | 1 051 | | **`materials_examined` ← `Notes`** | **856** |
+| `notes` | 705 | | `description` ← `Remarks` | 936 |
+
+Three of these rows are independent confirmations of findings this
+memo reached by other routes:
+
+* **`biology` ← `Distribution`, 4 536.**  Trello #407 and §12.3.1
+  argue the `Biology` collapse buried a `Distribution` majority, from
+  label statistics.  Here 4 536 `biology` fields *contain the literal
+  word* `Distribution:` mid-field.  Two unrelated measurements, the
+  same conclusion.
+* **`key` ← everything, 8 016.**  §12.3.6's rogue `Key`, seen from
+  inside: a runaway `Key` swallows the headings of whatever follows.
+* **`description`/`key` ← `Typus`, 1 720.**  More type-status loss, on
+  top of §12.3.48's `materials_examined` route.
+
+**`Culture characteristics` (4 495) is new** and is not a boundary miss
+in the same sense — it is a section type with no label of its own, so
+`Description` is the only place for it to go.  That is a schema
+question, not a segmentation bug, and it is the largest single row
+here after `Distribution`.
+
+This is a **zero-cost detector**: a regex over fields already in the
+treatments database, no attachments, no model.  It does not merely
+flag a treatment, it names the section that was dropped and the offset
+where it began — enough to *split* the field, not just report it.
+
+#### Signal 2: one nomenclatural act in three is not labelled `Nomenclature`
+
+¶261 is a complete act — name, authority, `comb. nov.`, MycoBank
+number, basionym, place of publication — filed as `Misc-exposition`,
+and that single mislabel is what welded a third taxon's type
+designation onto this treatment.
+
+Sampling 400 documents (every 52nd by `_id` of 20 928) and counting
+blocks that *are* a nomenclatural heading — under 500 characters,
+opening with a binomial, carrying `comb./sp./gen. nov.`, `MycoBank
+MB…` or `Basionym`:
+
+| label | n | share |
+|---|---:|---:|
+| `Nomenclature` | 394 | **67.0 %** |
+| `Misc-exposition` | 115 | **19.6 %** |
+| `Type-designation` | 24 | 4.1 % |
+| `Bibliography` | 19 | 3.2 % |
+| `Table` | 13 | 2.2 % |
+| other | 23 | 3.9 % |
+
+and the misses are not marginal calls:
+
+> `Schizothecium ditetrasporum Silar sp. nov.  Fig. 7` — `Misc-exposition`
+> `Oculimacula acuformis (Nirenberg) Y. Marín & Crous, Stud. Mycol. 92: 99. 2018. Basionym: …` — `Bibliography`
+
+**This does not contradict §12.3.21's 95 %.**  That figure is *of
+blocks labelled `Nomenclature`, how many reach a treatment* — a
+delivery rate.  This is *of nomenclatural acts, how many get the
+label* — a recognition rate.  The pipeline delivers 95 % of what it
+recognises and recognises 67 % of what is there, and the second number
+is the one that bounds treatment count.
+
+#### Signal 3, unmeasured
+
+The nomenclature's head absorption (`circinata (see below).`) is the
+§12.3.11 boundary-theft class already quantified, and the truncated
+`type_designation` is a tail clip in a field `§10:tail_clip` does not
+inspect — it is scoped to `description`.  Widening it is cheap;
+`known_missed_flags` records it as
+`§10:tail_clip_outside_description`.
+
+Fixture: `taxon_12ba8b48…`, class `§11-three-taxa-in-one-treatment`,
+`expected_flags: []`, `known_missed_flags`
+`["§11:foreign_section_heading_in_field",
+"§5:nomenclatural_act_labeled_misc", "§5:nomenclature_head_absorption",
+"§10:tail_clip_outside_description"]`.
+
 ### 12.3.51 A nomenclature that repeats in its document is furniture
 
 Operator, round-7 review of `taxon_084205aa`: *"The weirdness of the
