@@ -7420,6 +7420,75 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.48 The element join costs the type cue 16 points
+
+Operator, round-7 review of `taxon_0150308d` (*Curvularia colbranii*):
+*"so close to being a picture child.  The type designation is
+identified by the more general materials_examined."*
+
+The treatment is otherwise clean — `Description.`, `Etymology.`,
+`Notes.` all correctly labelled and self-headed, **no detector fires**
+— and its `materials_examined` holds
+
+> `Type.Australia, Queensland, Brisbane, from leaf spot on Crinum
+> zeylanicum, 11 Oct. 1976, R.C. Colbran (holotype BRIP 13066,
+> includes ex-type culture).`
+
+a holotype, an ex-type culture, a type locality and a collector, filed
+under the general label.  That is §12.3's largest coarsening row —
+`Type-designation` → `Materials-examined`, 124 against 12 reverse —
+and this is the cleanest exemplar of it available, because the one
+defect is the only variable.
+
+**Two things the cue analysis did not say.**
+
+**The class is far larger than 124.**  That figure is scoped to the
+300-document cue sample.  Corpus-wide, 3 975 treatments have a
+`materials_examined` that *opens* with a type cue (`Type`, `Holotype`,
+`Typus`, `Type material`), and in **3 443 of them nothing else in the
+treatment records the type at all** — no `type_designation` field, so
+the type status is not merely misfiled, it is absent.
+
+**The §15 element join measurably damages the cue.**  This treatment's
+cue reads `Type.Australia` — heading welded to the following word with
+no space, the same artifact the non-synonyms doc recorded for
+`basidia.Spores.`, where a heading became invisible by reading as part
+of the preceding sentence.  Scoring every cued block in the corpus by
+where it landed:
+
+| cue separation | honored | coarsened | honor rate |
+|---|---:|---:|---:|
+| `Type material Holotype …` (no punctuation) | 1 909 | 474 | **80.1 %** |
+| `Type. Australia` (spaced) | 5 669 | 2 649 | **68.2 %** |
+| **`Type.Australia` (joined)** | **943** | **859** | **52.3 %** |
+| all | 8 521 | 3 982 | 68.2 % |
+
+**A joined cue is honored barely better than a coin flip**, 16 points
+below a spaced one and 28 below an unpunctuated one.  1 802 blocks
+carry a joined cue; at the spaced rate they would yield ~1 229 honored
+instead of 943, so **roughly 286 treatments lose their type status to
+the join specifically**.
+
+**This points upstream of the classifier.**  The cue is a real signal —
+honored 80 % of the time when the join leaves it alone — and the join
+is a preprocessing artifact of §15's element concatenation, not a
+modelling limitation.  Repairing the join is a text fix with a
+measurable target; retraining against a damaged cue is not.
+
+**Not done:** confirming that the cue *detector* also misses the joined
+form.  The 124 came from a one-off script over 300 documents and the
+regex is not in the tree, so whether joined cues were counted as misses
+or never counted at all is unresolved — and it decides whether 124 is
+an undercount or a sample.  The measurement above sidesteps it by
+scoring outcomes rather than detections.
+
+Fixture: `taxon_0150308d…` in `tests/fixtures/pathologies.json`, class
+`§12-type-designation-coarsened-into-materials-examined`, with empty
+`expected_flags` and `known_missed_flags:
+["§12:type_designation_coarsened"]` — a clean treatment no detector
+objects to, which is what makes it gate the proposed detector rather
+than merely illustrate the class.
+
 ### 12.3.47 The annotator's one refusal in round 7 was correct, and it is a free detector
 
 Recorded 2026-09-09 while closing out round 7.  Of 994 attempted
