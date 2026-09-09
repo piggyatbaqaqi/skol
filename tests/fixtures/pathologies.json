@@ -2559,6 +2559,38 @@
      "head": "[@Pileus 5–25 mm broad, conical, broadly"
     }
    ]
+  },
+  {
+   "id": "taxon_06bd03e1c60e6da67a475f58878946508f2977ffe86296a3e2bea5b3abe54102",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-09",
+   "captured_rev": "21-b8a591c552fd5ee19fe7aa8498099dce",
+   "class": "§9-euro-sign-for-a-dropped-diacritic",
+   "description": "India. Symptoms include numerous small spots that are scattered or grouped to form larger patches on leaves; elongated,\nclosely grouped to form crusts by coalescence on young shoots.\nThis fungus is characterised by hyaline, unicellular, ovoid to\noblong conidia (1.5–3 μm diam). In culture (PDA), also according to the original description, it produces heaped crustose\ncolonies of ashy white aerial mycelium centrally with deep fawn\nmargins and reddish brown reverse; the colonies are composed\nof profusely branched mycelium and abundant chlamydospore\n",
+   "diagnosis": "",
+   "description_spans": [
+    {
+     "paragraph_number": 427,
+     "start_line": 2341,
+     "end_line": 2347,
+     "start_char": 80809,
+     "end_char": 81375,
+     "pdf_page": 21,
+     "pdf_label": "21",
+     "empirical_page": null,
+     "head": "[@India. Symptoms include numerous small"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§10:tail_clip"
+   ],
+   "known_missed_flags": [
+    "§9:euro_sign_diacritic"
+   ],
+   "notes": "Elsinoe flacourtiae, round 7 review. Operator: \"'Elsino€e flacourtiae' is consistently rendered with the Euro sign -- most probably a character encoding error. I see that all the siblings have the same error.\" Correct, and the siblings are exact: 9 treatments carry Elsino€e in the nomenclature, all from source document 81e706c372425c9ab0d974f96239f6d5. The genus is Elsinoë, so the euro sign stands in for a diaeresis that precedes its base letter -- the same shape as Starb€ack (Starbäck), Gr€afenha (Gräfenhan) and €Osterr (Österr). Corpus-wide: 197 treatments over 102 source documents, 60 of them corrupt inside a taxon name, and 57 of 58 resolvable sources are PDF-only with no XML, so the fault is in PDF text extraction rather than ingest. No detector sees it; the only flag here is an unrelated tail clip. See §9 Mode C."
   }
  ]
 }

@@ -5308,7 +5308,7 @@ What this captures is "issues that exist", not "issues that
 dominate."  The next round of sample-then-review (Phase 1
 deliverable 6+) will expand the visible surface; revisit the
 severity ordering and corpus-rate guesses then.
-### 9. Corrupt OCR text (two modes)
+### 9. Corrupt OCR text (three modes)
 
 **Mode A — U+FFFD runs** (the original observation).
 
@@ -5510,6 +5510,63 @@ remove cause 1 entirely, at no risk to the text — a lone
 backslash in a mycological description is always OCR damage,
 never content.  Cheaper than losing 0.8 % of every future run,
 and it also repairs the *measurement*: `\7` should read `×`.
+
+**Mode C — a euro sign standing in for a dropped diacritic.**
+
+Operator, round-7 review of `taxon_06bd03e1`: *"'Elsino€e flacourtiae'
+is consistently rendered with the Euro sign — most probably a character
+encoding error.  I see that all the siblings have the same error."*
+Both halves correct, and the siblings are exact: **9 treatments carry
+`Elsino€e` in the nomenclature, every one of them from source document
+`81e706c372425c9ab0d974f96239f6d5`.**
+
+The genus is *Elsinoë*, and the pattern generalises — `Starb€ack` is
+*Starbäck*, `Gr€afenha` is *Gräfenhan*, `K€ann.` is *Känn.*, `€Osterr`
+is *Österr* — so the euro sign is a **diaeresis that has lost its base
+letter and sits in front of it**, not a substitution for `ë`.
+
+**Scale and provenance.**  197 treatments across 102 source documents,
+301 euro signs, **60 treatments corrupted inside a taxon name**.  Of 58
+resolvable source documents, **57 are PDF-only with no XML** — so this
+is PDF text extraction, not ingest decoding, and the single XML case is
+worth looking at separately.
+
+**Unlike Modes A and B, this one is lossless.**  U+FFFD destroys the
+byte and space-displacement scrambles the word, but here the accent
+survives as the wrong code point in the wrong position.
+`€` + vowel → the vowel with a diaeresis repairs **50 of the 60**
+name-corrupted treatments.
+
+**Do not apply that rule globally.**  The remaining cases show the euro
+sign is a *per-document catch-all* for whatever the extractor could not
+map, and it means different things in different files:
+
+| corrupt | intended | what `€` is doing |
+|---|---|---|
+| `Elsino€e`, `Starb€ack` | *Elsinoë*, *Starbäck* | diaeresis **before** its letter |
+| `Ho€hn.` | *Höhn.* | diaeresis **after** its letter |
+| `myc€lium`, `mat€riel` | *mycélium*, *matériel* | replaces `é` outright (French) |
+| `prop€ basim` | *prope basim* | replaces a plain `e` |
+| `s€1.!! t o be set` | — | OCR wreckage, Mode B |
+
+Only the vowel-following case is safely mechanical; the rest wants
+per-document handling, which is what a font-encoding fault implies.
+
+**The cost is name resolution, not name detection.**  gnfinder finds a
+name either way, but returns `Elsino�e flacourtiae` — so the string
+reaching any reference index is wrong, and 60 treatments carry a taxon
+name that cannot match.
+
+**Repairing this changes treatment ids.**  `treatment` is one of the
+`_CANONICAL_FIELDS` feeding the content hash, so fixing the text
+renames the document.  It therefore belongs to a re-extraction rather
+than a backfill — the same constraint §12.3.42 established for the
+`Phylogeny` fix.
+
+Fixture: `taxon_06bd03e1…`, class `§9-euro-sign-for-a-dropped-diacritic`,
+`known_missed_flags: ["§9:euro_sign_diacritic"]`.  No detector sees it;
+its only flag is an unrelated tail clip.
+
 
 ### 10. Description starts mid-sentence
 
