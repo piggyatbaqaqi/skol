@@ -323,8 +323,42 @@ def run_dossier_export(
     dry_run: bool,
     render: Any = None,
 ) -> int:
-    """Skeleton: see the xfailed tests in brat_export_test.py."""
-    raise NotImplementedError
+    """Render dossiers for the treatments this run actually exported.
+
+    **The exported set, not the requested one.**  ``--skip-unannotated``
+    drops treatments that returned no spans, and a dossier for a
+    treatment brat does not have is a page the reviewer cannot act on.
+    Round 7's surfaces were cut separately and had to be reconciled
+    afterwards by reading ids back out of the brat directory; this flag
+    exists so that is structural rather than remembered.
+
+    ``render`` is injected for testing; production passes
+    ``treatment_dossier.render_dossiers``.
+    """
+    if not dossier_dir or dry_run or not exported:
+        if dossier_dir and dry_run:
+            print(
+                f"  [dry-run] would render {len(exported)} dossier(s) "
+                f"into {dossier_dir}",
+                file=sys.stderr,
+            )
+        return 0
+
+    if render is None:
+        from treatment_dossier import render_dossiers as render
+
+    dropped = [tid for tid in requested if tid not in set(exported)]
+    if dropped:
+        print(
+            f"  {len(dropped)} requested treatment(s) were not exported "
+            f"and get no dossier",
+            file=sys.stderr,
+        )
+    os.makedirs(dossier_dir, exist_ok=True)
+    return render(
+        exported, server=server, experiment=experiment,
+        out_dir=Path(dossier_dir), siblings=True,
+    )
 
 
 def main() -> int:
@@ -374,6 +408,18 @@ def main() -> int:
             'the most informative case for recall, and can only be '
             'annotated in brat if it is exported.  Mutually exclusive '
             'with --skip-unannotated.'
+        ),
+    )
+    parser.add_argument(
+        '--dossier-dir', default=None, metavar='DIR',
+        help=(
+            'Also render one HTML dossier per exported treatment into '
+            'DIR -- the diagnostic context brat withholds (layout '
+            'labels, paragraph numbers, the blocks BETWEEN spans, '
+            'merge_metric, triage flags, source document, siblings).  '
+            'Cut from the treatments actually exported, so the two '
+            'review surfaces cannot drift apart.  Read-only; writes '
+            'nothing to CouchDB.'
         ),
     )
     parser.add_argument(
@@ -562,6 +608,7 @@ def main() -> int:
 
     # Per-treatment fetch + render + write
     annotations_by_treatment: Dict[str, List[Dict[str, Any]]] = {}
+    exported_ids: List[str] = []
     errors = 0
     written = 0
     skipped = 0
@@ -628,6 +675,7 @@ def main() -> int:
                     file=sys.stderr,
                 )
             written += 1
+            exported_ids.append(tid)
             continue
 
         with open(txt_path, 'w') as f:
@@ -640,6 +688,7 @@ def main() -> int:
                 file=sys.stderr,
             )
         written += 1
+        exported_ids.append(tid)
 
     # Write annotation.conf
     entity_types = collect_entity_types(annotations_by_treatment)
@@ -648,12 +697,23 @@ def main() -> int:
         with open(conf_path, 'w') as f:
             f.write(render_annotation_conf(entity_types))
 
+    dossiers = run_dossier_export(
+        exported_ids,
+        requested=list(treatment_ids),
+        dossier_dir=args.dossier_dir,
+        server=server,
+        experiment=experiment,
+        dry_run=dry_run,
+    )
+
     # End-of-run summary
     print(
         f"\nDone: {written} written, {skipped} skipped, "
         f"{errors} errors  ({len(entity_types)} distinct "
         f"entity types in annotation.conf)"
     )
+    if dossiers:
+        print(f"{dossiers} dossier(s) in:  {args.dossier_dir}")
     if written > 0 and not dry_run:
         print(f"Open in brat at:  {args.output_dir}")
     return 0 if errors == 0 else 1

@@ -621,7 +621,6 @@ class TestSelectTreatmentIdsAllowUnannotated:
             )
 
 
-@pytest.mark.xfail(strict=True, reason='--dossier-dir does not exist yet')
 class TestDossierDir:
     """`--dossier-dir` cuts the second review surface from the same id
     list as the first.

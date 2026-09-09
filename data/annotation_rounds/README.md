@@ -582,13 +582,17 @@ REVIEW=data/annotation_rounds/production_v4_roundN_review50.txt
 
 bin/brat_export --experiment production_v4 \
     --output-dir .../skol_segments/production_v4_roundN/ \
+    --dossier-dir ~/dossiers/production_v4_roundN \
     --skip-unannotated \
     --doc-id "$(paste -sd, "$REVIEW")"
-
-bin/treatment_dossier --experiment production_v4 \
-    --format html --output-dir ~/dossiers/production_v4_roundN \
-    --doc-id "$(paste -sd, "$REVIEW")"
 ```
+
+`--dossier-dir` renders for the treatments **actually exported**, not
+the ones requested — `--skip-unannotated` drops the ones that returned
+no spans, and a dossier for a treatment brat does not have is a page
+the reviewer cannot act on.  It reports how many requested ids got no
+dossier and why.  `bin/treatment_dossier` still runs standalone for a
+one-off treatment or for `--format text`.
 
 **Write the review set to a file first.**  Round 5 did
 (`production_v4_round5_review50.txt`); round 7's was reconstructed on
