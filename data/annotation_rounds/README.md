@@ -38,7 +38,7 @@ what a round actually covered.
 | 5 | 1000 | p1 | **random**, uniform | Heaps baseline + label validation | **selector, 2026-08-25** | **39 of the first 50, 2026-08-26 → 09-01** |
 | 5 | +1 | p1 | manual | canary | hand-picked 2026-08-23 | 1 on 2026-08-24 |
 | 6 | 1000 | p1 | **random**, uniform | Heaps volume | **selector, 2026-09-01** | none |
-| 7 | 1000 drawn / **994 realized** | p1 | **random**, uniform | Heaps volume + label validation | **selector, 2026-09-03** | 45 of the first 50 exported to brat 2026-09-09; review pending |
+| 7 | 1000 drawn / **994 realized** | p1 | **random**, uniform | Heaps volume + label validation | **selector, 2026-09-03** | 45 of the first 50 exported to brat 2026-09-09, recorded as `_review50.txt` and dossiers rendered 2026-09-09; review pending |
 
 **Round 7 drew 1 000 and covered 994.** Six of its ids had already
 been annotated in rounds 5 and 6 and were skipped by the annotator's own
@@ -562,6 +562,46 @@ legitimately returned no spans for — round 4 has 3 of the latter, and
 they were failing the whole batch. With the flag, an ID that is a real
 treatment but unannotated is dropped with a warning; an ID that is not
 a treatment at all still errors out, so typos are still caught.
+
+### The dossier is the other half of a review export
+
+`brat_export` gives the reviewer the label surface.  It deliberately
+does **not** give them the layout label each span carried, the
+paragraph numbers, the blocks that fell *between* spans,
+`merge_metric`, the triage flags, the source document or the sibling
+treatments — and every pathology diagnosed during round-4 review came
+from exactly that missing context, which is why findings cost ~20
+minutes each.
+
+`bin/treatment_dossier` renders it, read-only, one HTML page per
+treatment.  Cut both artifacts from the **same id list** so the two
+surfaces cover the same treatments:
+
+```sh
+REVIEW=data/annotation_rounds/production_v4_roundN_review50.txt
+
+bin/brat_export --experiment production_v4 \
+    --output-dir .../skol_segments/production_v4_roundN/ \
+    --skip-unannotated \
+    --doc-id "$(paste -sd, "$REVIEW")"
+
+bin/treatment_dossier --experiment production_v4 \
+    --format html --output-dir ~/dossiers/production_v4_roundN \
+    --doc-id "$(paste -sd, "$REVIEW")"
+```
+
+**Write the review set to a file first.**  Round 5 did
+(`production_v4_round5_review50.txt`); round 7's was reconstructed on
+2026-09-09 by reading the ids back out of the brat directory, which
+worked only because nothing had been added to it since.  The dossiers
+are ~1.1 MB for 45 treatments and take about 13 seconds with the
+sibling lookup on; `--no-siblings` skips the treatments-DB scan, at the
+cost of the view that makes boundary theft visible.
+
+The dossier writes nothing to CouchDB, and it leaves the brat `.txt`
+alone: `brat_export` and `brat_ingest` both re-render that file to
+translate offsets, so changing its format would shift every offset and
+invalidate existing `.ann` files.
 
 ## Manual additions
 
