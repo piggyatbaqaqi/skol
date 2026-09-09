@@ -7477,6 +7477,93 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.51 A nomenclature that repeats in its document is furniture
+
+Operator, round-7 review of `taxon_084205aa`: *"The weirdness of the
+Nomenclature is that it is a bare genus followed by 'sp. nov.'.  This
+makes me think that it might be extracted from a page header or some
+other decoration."*
+
+**Confirmed outright.**  `Tryblidiopsis sp. nov.` occurs three times in
+`article.txt`, and every one sits immediately after a page marker:
+
+```
+--- Page 20 Label 20 ---
+© 2019 Westerdijk Fungal Biodiversity Institute
+Tryblidiopsis sp. nov.
+
+Editor-in-Chief
+Prof. dr P.W. Crous, Westerdijk Fungal Biod
+```
+
+A verso running head, on pages 20, 22 and 24 — **harvested three times
+into three separate treatments.**  The document's title is *Full
+Issue*, so the furniture is dense, and the real names in it are
+*Tryblidiopsis magnesii*, *T. pinastri*, *T. sichuanensis* and
+*T. sinensis*.  The `Editor-in-Chief … p.crous@westerdijkinstitute.nl`
+block that interrupts the description is the same furniture, harvested
+again.
+
+The operator's other two observations hold as well.  The description
+opens **mid-sentence with the previous treatment's cultural
+description** — `μm, SE = 0.1 μm, 95 % CI = 0.16), germination not
+observed on CMA, MEA, OA, or WA.` — and the interrupting
+`Misc-exposition` blocks are of two kinds: that masthead, and **genuine
+description fragments broken by column layout**
+(`enveloping | ascoma, | sometimes | thinner`).  Only the first kind is
+furniture; the second belongs in the description, as the operator said.
+
+#### The general signal, and it needs no attachments
+
+The exact pattern — bare genus plus `sp. nov.` — catches only **5**
+treatments corpus-wide.  But furniture has a property real names do
+not: **it repeats.**  A species heading appears once in a paper; a
+running head appears on every other page.
+
+Grouping treatments by (source document, nomenclature text) and
+dropping the synthetic `Nomen ignotum` stubs, which repeat for the
+unrelated §5 reason:
+
+| | |
+|---|---:|
+| nomenclature strings naming >1 treatment in one document | **172** |
+| treatments involved | **555** |
+| documents involved | 137 |
+
+and the top of the list needs no interpretation:
+
+| ×n | nomenclature |
+|---:|---|
+| 38 | `Статистички годишњак Републике Србије 2024.` |
+| 29 | `Japanese species of Alternaria` |
+| 21 | `The genus Tubakia s. lat.` |
+| 15 | `Mallocybe from eastern North America` |
+| 11 | `This page intentionally left blank` |
+| 7 | `Takashima et al. IMA Fungus (2023) 14:24` |
+| 6 | `Two new Curvularia spp. from Sri Lanka` |
+
+Running titles verbatim, one literal page-furniture string, and a
+Serbian statistical yearbook that has no business in a mycological
+corpus at all.  `H.ohiense` ×9 and `H.mississippiensis` ×8 are the
+§12.3.50 abbreviated-head class showing up in the same measurement.
+
+**This is the cheapest detector proposed so far**: it needs no
+attachment fetch, no model and no name resolution — only a group-by
+over the treatments database, which the extractor could run at write
+time.  555 treatments, and the review treatment is in a group of 3.
+
+**Why the existing machinery missed it.**  The source document *has*
+`article.page-headers.json` with six detected regions, but their
+confidence is 0.417, and nothing suppresses a Nomenclature on the
+strength of it.  The header detector found the furniture; the
+extractor harvested it anyway.
+
+Fixture: `taxon_084205aa…`, class
+`§5-nomenclature-harvested-from-a-running-head`, `expected_flags`
+`["§10:mid_sentence", "§10:tail_clip"]` — the mid-sentence opening is
+caught, the fabricated name is not — with
+`known_missed_flags: ["§5:nomenclature_repeats_in_document"]`.
+
 ### 12.3.50 An abbreviated genus cannot open a nomenclature
 
 Operator, round-7 review of `taxon_06bd03e1`: *"looks like a very poor

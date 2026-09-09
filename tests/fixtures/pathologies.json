@@ -2592,6 +2592,61 @@
     "§6:absorbed_abbreviated_head"
    ],
    "notes": "Elsinoe flacourtiae, round 7 review. Operator: \"'Elsino€e flacourtiae' is consistently rendered with the Euro sign -- most probably a character encoding error. I see that all the siblings have the same error.\" Correct, and the siblings are exact: 9 treatments carry Elsino€e in the nomenclature, all from source document 81e706c372425c9ab0d974f96239f6d5. The genus is Elsinoë, so the euro sign stands in for a diaeresis that precedes its base letter -- the same shape as Starb€ack (Starbäck), Gr€afenha (Gräfenhan) and €Osterr (Österr). Corpus-wide: 197 treatments over 102 source documents, 60 of them corrupt inside a taxon name, and 57 of 58 resolvable sources are PDF-only with no XML, so the fault is in PDF text extraction rather than ingest. No detector sees it; the only flag here is an unrelated tail clip. See §9 Mode C. Round-7 review, second pass: the nomenclature also opens 'E. mimosae.' -- the previous treatment's tail absorbed into this head -- the Misc-exposition holds a cued 'Material examined:' block plus the head of a 'Notes:' block, and the description is that Notes continuing ('This fungus is characterised by...'), which is diagnosis language. The two recorded defects interact: € is not a letter, so the abbreviated-head detector cannot find the full binomial after it and misses this treatment until the Mode C repair runs. See §12.3.50."
+  },
+  {
+   "id": "taxon_084205aa90d13190e061aa0c56596dd27f07d4f2b08aa19611f015eef9c9072b",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-09",
+   "captured_rev": "21-811f691e261dd195aa61f37ab14f2408",
+   "class": "§5-nomenclature-harvested-from-a-running-head",
+   "description": "μm, SE = 0.1 μm, 95 % CI = 0.16), germination\nnot observed on CMA, MEA, OA, or WA.\nAscomata on dead, often brittle, twigs and\nbranches still attached to living stem of host,\nusually found in lower crown where selfpruning occurs. External appearance: outline\ncircular to slightly undulate when viewed\nfrom above, pseudostipitate, black, matte\nto slightly glossy, texture leathery to pebbly,\nerumpent from bark, occurring singly to\ngregariously; young ascomata spherical to\npeg-shaped, becoming urceolate to discoid\nwith maturity; 1.25–2 mm diam when mature\nand fresh or rehydrated, up to 1.3 mm tall,\npedicel up to 350 μm tall and more evident\nin young ascomata. Covering stroma often\nopening first by slit then 3–6(–9) irregular\nradial fissures in humid conditions with\noutline appearing stellate and revealing discshaped, pale orange to orange grey (5A3–\n5B2) hymenium, subsequently retracting and\ncovering the hymenium in dry conditions and\nreopening when humid conditions arise, (40–)\n46–75(–90) μm thick, +/- consistent thickness \n\ntowards base, composed of three distinct\nlayers: (1) outer layer carbonaceous, textura\nangularis, 13.5–23 µm wide, composed of\n(1–)2–3(–4) rows of dark brown (6F6) to black,\nmelanized, thick-walled (1–2 μm), globose to\nangular cells, (4.5–)6.5–11(–12) × (4.5–)6–9(–\n9.5) µm; (2) middle layer textura angularis,\n12–26 µm wide, composed of (4–)5–6(–7)\nrows of hyaline, thin- to thick-walled (1 μm),\nglobose to angular cells, (4.5–)5.5–9(–10.5)\n× (4–)4.5–7.5(–9) µm, embedded in gel; (3)\ninner layer textura angularis, 9–34 µm wide,\ncomposed of 2–4 rows of brown (5F8) thin-\nto thick-walled (1 µm), globose to angular\ncells, (4.5–)5–8(–8.5) × (4–)5–6.5(–7.5) µm.\nBasal stroma well developed, 500–700 μm\ndeep, comprised of hyaline branching hyphae\nembedded in gelatinous substrate, crystalline\nmaterial often present, especially towards\nbase. Subhymenium 18–30 μm thick, hyaline,\ntextura intricata. Paraphyses exceeding length\nof asci, 1–2 μm wide, thin-walled, hyaline,\nfiliform, unbranched, septate, apices rounded\nto clavate or occasionally ossiform, 3–4.5(–5)\nμm wide, frequently linked near the base by\nhyphal bridges. Asci arising from croziers, \n\n(–165) × (12–)13–15.5(–17) μm, cylindricalclavate, apex obtuse to rounded, thin-walled,\ninamyloid, eight-spored. Ascospores biseriate,\nsometime uniseriate towards base, (22–)25–\n30(–31) × (4.5–)5–6(–6.5) μm (length: n =\n30, x̄ = 27.5 μm, SD = 2.4 μm, SE = 0.4 μm,\n95  % CI = 0.86; width: n = 30, x̄ = 5.4 μm,\nSD = 0.4 μm, SE = 0.1 μm, 95 % CI = 0.15),\nellipsoidal-fusiform to fusiform-clavate, apical \n",
+   "diagnosis": "",
+   "description_spans": [
+    {
+     "paragraph_number": 323,
+     "start_line": 1736,
+     "end_line": 1757,
+     "start_char": 75457,
+     "end_char": 76526,
+     "pdf_page": 20,
+     "pdf_label": "20",
+     "empirical_page": "46",
+     "head": "[@μm, SE = 0.1 μm, 95 % CI = 0.16), germ"
+    },
+    {
+     "paragraph_number": 327,
+     "start_line": 1764,
+     "end_line": 1789,
+     "start_char": 76590,
+     "end_char": 77778,
+     "pdf_page": 20,
+     "pdf_label": "20",
+     "empirical_page": null,
+     "head": "[@towards base, composed of three distin"
+    },
+    {
+     "paragraph_number": 331,
+     "start_line": 1795,
+     "end_line": 1802,
+     "start_char": 77841,
+     "end_char": 78264,
+     "pdf_page": 20,
+     "pdf_label": "20",
+     "empirical_page": null,
+     "head": "[@(–165) × (12–)13–15.5(–17) μm, cylindr"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§10:mid_sentence",
+    "§10:tail_clip"
+   ],
+   "known_missed_flags": [
+    "§5:nomenclature_repeats_in_document"
+   ],
+   "notes": "Tryblidiopsis sp. nov., round 7 review. Operator: \"a bare genus followed by 'sp. nov.'. This makes me think that it might be extracted from a page header or some other decoration.\" Confirmed outright: the string occurs 3 times in article.txt and every one sits immediately after a page marker, between the copyright line and the masthead -- '--- Page 20 Label 20 --- | (c) 2019 Westerdijk Fungal Biodiversity Institute | Tryblidiopsis sp. nov. | Editor-in-Chief | Prof. dr P.W. Crous'. A verso running head, harvested 3 times into 3 separate treatments. The source document's title is 'Full Issue', so page furniture is dense; the real names in it are Tryblidiopsis magnesii, T. pinastri, T. sichuanensis and T. sinensis. The operator's two other observations also hold: the description opens mid-sentence with the tail of the PREVIOUS cultural description ('um, SE = 0.1 um, 95 % CI = 0.16), germination not observed on CMA, MEA, OA, or WA.'), and the Misc-exposition blocks interrupting it are of two kinds -- the same masthead furniture, and genuine description fragments broken by column layout ('enveloping ascoma, sometimes thinner'). See §12.3.51."
   }
  ]
 }
