@@ -20,6 +20,7 @@ from brat_export import (  # type: ignore[import]  # noqa: E402
     list_annotated_treatment_ids,
     fetch_reviewer_touched_ids,
     render_annotation_conf,
+    run_dossier_export,
     select_treatment_ids,
 )
 
@@ -618,3 +619,67 @@ class TestSelectTreatmentIdsAllowUnannotated:
                 treatments_db=_FakeTreatmentsDb(['taxon_a']),
                 warn_stream=io.StringIO(),
             )
+
+
+@pytest.mark.xfail(strict=True, reason='--dossier-dir does not exist yet')
+class TestDossierDir:
+    """`--dossier-dir` cuts the second review surface from the same id
+    list as the first.
+
+    Round 7's two surfaces were not: the brat export happened on
+    09-09 and the dossiers on 09-09 from a review-set file
+    reconstructed by reading ids back out of the brat directory.  That
+    worked only because nothing had been added to it since, which is
+    luck rather than method.
+    """
+
+    def test_dossiers_cover_the_exported_set_not_the_requested_one(
+            self) -> None:
+        """The load-bearing property.  --skip-unannotated drops
+        treatments that returned no spans -- 5 of round 7's first 50 --
+        and a dossier for a treatment brat does not have is a page the
+        reviewer cannot act on."""
+        rendered = []
+        exported = ['taxon_a', 'taxon_b']
+        requested = ['taxon_a', 'taxon_b', 'taxon_unannotated']
+
+        def fake_render(ids, **kwargs):
+            rendered.extend(ids)
+            return len(ids)
+
+        run_dossier_export(
+            exported, requested=requested, dossier_dir='/tmp/x',
+            server=None, experiment='production_v4', dry_run=False,
+            render=fake_render,
+        )
+        assert rendered == exported
+        assert 'taxon_unannotated' not in rendered
+
+    def test_dry_run_renders_nothing(self) -> None:
+        called = []
+        run_dossier_export(
+            ['taxon_a'], requested=['taxon_a'], dossier_dir='/tmp/x',
+            server=None, experiment='production_v4', dry_run=True,
+            render=lambda ids, **kw: called.append(ids) or len(ids),
+        )
+        assert called == []
+
+    def test_no_flag_means_no_dossiers(self) -> None:
+        called = []
+        run_dossier_export(
+            ['taxon_a'], requested=['taxon_a'], dossier_dir=None,
+            server=None, experiment='production_v4', dry_run=False,
+            render=lambda ids, **kw: called.append(ids) or len(ids),
+        )
+        assert called == []
+
+    def test_an_empty_export_renders_nothing(self) -> None:
+        """Nothing was written to brat, so there is nothing to sit
+        beside."""
+        called = []
+        run_dossier_export(
+            [], requested=['taxon_a'], dossier_dir='/tmp/x',
+            server=None, experiment='production_v4', dry_run=False,
+            render=lambda ids, **kw: called.append(ids) or len(ids),
+        )
+        assert called == []

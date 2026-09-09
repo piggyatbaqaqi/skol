@@ -313,6 +313,20 @@ def select_treatment_ids(
 # ---------------------------------------------------------------------------
 
 
+def run_dossier_export(
+    exported: List[str],
+    *,
+    requested: List[str],
+    dossier_dir: Optional[str],
+    server: Any,
+    experiment: str,
+    dry_run: bool,
+    render: Any = None,
+) -> int:
+    """Skeleton: see the xfailed tests in brat_export_test.py."""
+    raise NotImplementedError
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
