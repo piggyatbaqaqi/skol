@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatment_dossier import (  # type: ignore[import]  # noqa: E402
     build_view,
+    render_dossiers,
     render_html,
     render_text,
 )
@@ -247,3 +248,67 @@ class TestRenderText:
 
 if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-v']))
+
+
+@pytest.mark.xfail(strict=True, reason='render_dossiers is not extracted yet')
+class TestRenderDossiers:
+    """The assembly loop, extracted so `brat_export --dossier-dir` can
+    call it instead of copying it.
+
+    The module docstring for `treatments_to_structured.dossier` says
+    why: *"the same assembly backs the HTML page, T3a's merge-suspect
+    table and T3d's cross-tab rather than each getting its own
+    throwaway script."*  A second copy inside brat_export is exactly
+    the drift that warns against.
+    """
+
+    def _server(self, treatments, ingest=None, status=None):
+        return {
+            'skol_experiments': {'production_v4': {'databases': {
+                'treatments_prose': 'T', 'ingest': 'I',
+                'features_status': 'S',
+            }}},
+            'T': treatments,
+            'I': ingest or {},
+            'S': status or {},
+        }
+
+    def test_writes_one_file_per_treatment(self, tmp_path) -> None:
+        treatments = {'taxon_a': _treatment(_id='taxon_a'),
+                      'taxon_b': _treatment(_id='taxon_b')}
+        n = render_dossiers(
+            ['taxon_a', 'taxon_b'], server=self._server(treatments),
+            experiment='production_v4', out_dir=tmp_path, siblings=False)
+        assert n == 2
+        assert sorted(p.name for p in tmp_path.glob('*.html')) == [
+            'taxon_a.html', 'taxon_b.html']
+
+    def test_a_missing_treatment_is_skipped_not_fatal(
+            self, tmp_path) -> None:
+        """A review set can name a treatment the DB no longer has; one
+        bad id must not cost the other forty-four."""
+        treatments = {'taxon_a': _treatment(_id='taxon_a')}
+        n = render_dossiers(
+            ['taxon_a', 'taxon_gone'], server=self._server(treatments),
+            experiment='production_v4', out_dir=tmp_path, siblings=False)
+        assert n == 1
+        assert [p.name for p in tmp_path.glob('*.html')] == ['taxon_a.html']
+
+    def test_an_empty_id_list_writes_nothing(self, tmp_path) -> None:
+        n = render_dossiers(
+            [], server=self._server({}), experiment='production_v4',
+            out_dir=tmp_path, siblings=False)
+        assert n == 0
+        assert list(tmp_path.glob('*')) == []
+
+    def test_a_treatment_with_no_annotation_text_still_renders(
+            self, tmp_path) -> None:
+        """A dossier without the .ann still shows the fields and the
+        metrics, which beats refusing to render -- and the treatments
+        worth looking at are the ones missing the most."""
+        treatments = {'taxon_a': _treatment(_id='taxon_a')}
+        n = render_dossiers(
+            ['taxon_a'], server=self._server(treatments),
+            experiment='production_v4', out_dir=tmp_path, siblings=False)
+        assert n == 1
+        assert (tmp_path / 'taxon_a.html').read_text()

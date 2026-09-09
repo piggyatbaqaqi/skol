@@ -311,6 +311,18 @@ gaps open on click</span></h2>
 """
 
 
+def render_dossiers(
+    ids: List[str],
+    *,
+    server: Any,
+    experiment: str,
+    out_dir: Optional[Path],
+    siblings: bool = True,
+) -> int:
+    """Skeleton: see the xfailed tests in treatment_dossier_test.py."""
+    raise NotImplementedError
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
