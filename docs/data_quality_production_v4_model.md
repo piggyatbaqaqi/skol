@@ -7420,6 +7420,94 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.49 A merge the metric misses, and the cue that would catch it
+
+Operator, round-7 review of `taxon_023582f5` (*Entoloma
+percoelestinum*): *"two fairly good treatments joined at the hip."*
+Five observations, all confirmed against the data, and one of them is
+a detector proposal.
+
+**The merge is plain and the metric does not see it.**  The span
+sequence cycles three times —
+
+```
+nomenclature, etymology, diagnosis, materials_examined, description, biology, biology,
+                         diagnosis, materials_examined, description, biology, biology,
+                         diagnosis, materials_examined
+```
+
+— and `biology` holds two `Habitat` / `Known distribution` pairs.
+**`merge_metric` scores 10 against a threshold of 15**, so the merge
+detector stays silent on a treatment that is visibly a merge.  §12.3.44
+raised the threshold from 10 to 15 on measured precision, and this is
+what that costs: the metric counts repeated anatomical terms, and two
+*Entoloma* species share too little vocabulary to trip it.
+
+**The operator's cue.**  *"The absorbed line at the end of the
+diagnosis starts with a sequence number which might be recognized if
+we tried to extract the article structure."*  This treatment's own
+nomenclature opens `12.\t Entoloma percoelestinum` — the article
+numbers its species, so the stolen heading is number 13, and a
+numbered heading inside a content field is a boundary that was not
+honored.
+
+**Measured.**  1 732 treatments across 241 source documents open with
+a numbered binomial, so the convention is common.  A numbered line
+*inside* `description`, `notes` or `diagnosis` occurs in **1 816
+treatments** — but the naive pattern is only about half right, because
+a key lead looks identical:
+
+```
+ 3. Galerina subceracea Smith & Singer, Mycologia 47: 559. 1955.   <- heading
+ 3. Spores irregular, smooth to finely punctate . . . .            <- key lead
+```
+
+**The discriminator is already in the tree.**  `gn_client` asks
+gnparser whether a string is an *authored binomial*; a species heading
+is, a key lead is not.  On a 60-line random sample it accepts **26
+(43 %)**, and the accepted lines are headings —
+`Russula atrata Shaffer, sp. nov.`,
+`Cladorrhinum brunnescens W. Gams, sp. nov. -Fig. 7.`,
+`Cerrena stereoides (Fries) Murrill.` — including OCR-damaged ones
+(`Phyllactinia mall`, `Stemonitis her batica`).  The rejects are key
+leads and ordinary prose.  Projected over the 1 816 candidates, that
+is roughly **780 treatments carrying a swallowed species heading**.
+
+**Known false negative:** `Sorosporlum apludae-arlstatae sp. nov.` is
+a heading OCR corrupted past recognition, so gnparser declines it.  The
+detector under-fires on damaged names, which is the population §9 is
+already about.
+
+**The other three observations**, confirmed and worth recording as
+company rather than as separate classes:
+
+* **A type designation under `materials_examined`** — the §12.3.48
+  class again, in the next treatment reviewed.  Here the block opens
+  `Holotype. Spain, Osona…` and continues into
+  `Additional specimens examined.`, so one block genuinely holds both
+  and only the general label survived.
+* **A fungarium catalog number orphaned into `Misc-exposition`** —
+  the gap blocks are `25`, `1130925-24.` and
+  `(Vila & Caballero 2007)).`  The operator: *"the 1 line
+  Misc-exposition belongs to the real materials_examined block before
+  it."*
+* **The rest of the nomenclature in another `Misc-exposition`** —
+  `460. 1982. — Fig. 23f, g, 26 Syn.: Leptonia lepidissima Svrček,
+  Czech Mycol. 18: 205. 1964…`, a protologue citation with synonymy.
+* **A comparison table labelled `Key`** (columns `Specimen | Spores
+  size | Q | Spores form | Cheilocystidia | Lamellae colour`).
+  Operator: *"It was dropped from the flow of the treatment, so it
+  worked out."*  Correct — the Key blocks fell into gaps, so the
+  mislabel cost nothing here.  It is the §12.3 Table/Key confusion
+  being harmless by luck of position, not by handling.
+
+Fixture: `taxon_023582f5…`, class
+`§6-merge-at-a-numbered-species-heading`, `expected_flags`
+`["§12:desc_span_gap", "§6:merge_metric"]`, `known_missed_flags`
+`["§6:swallowed_numbered_heading"]`.  It carries its
+`description_spans` because the gap between them is part of the
+pathology.
+
 ### 12.3.48 The element join costs the type cue 16 points
 
 Operator, round-7 review of `taxon_0150308d` (*Curvularia colbranii*):

@@ -2515,6 +2515,50 @@
     "§12:type_designation_coarsened"
    ],
    "notes": "Curvularia colbranii, round 7 review. Operator: \"so close to being a poster child. The type designation is identified by the more general materials_examined.\" Every other block is correctly labelled and self-headed -- Description., Etymology., Notes. -- and no detector fires, which is what makes this the cleanest available exemplar of the coarsening class: the one defect is the only variable. materials_examined holds \"Type.Australia, Queensland, Brisbane, from leaf spot on Crinum zeylanicum, 11 Oct. 1976, R.C. Colbran (holotype BRIP 13066, includes ex-type culture).\" -- a holotype, an ex-type culture, a type locality and a collector, under the general label. The cue is present AND welded to the following word by the §15 element join (Type.Australia), which measurement shows costs 16 points of honor rate. See §12.3.48."
+  },
+  {
+   "id": "taxon_023582f5aefe81a0afacb27fe3e64d6215f80dfd1c2468bf170db7dba1e3c94f",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-09",
+   "captured_rev": "21-d9670a64ad4c5821b31b30e39a8ee448",
+   "class": "§6-merge-at-a-numbered-species-heading",
+   "description": "Pileus 5–12 mm broad, conical or hemispherical with umbo, not\nhygrophanous, not translucently striate, with straight margin,\nradially fibrillose, squamulose at centre, uniformly dark blue,\nblackish blue or black. Lamellae moderately distant, adnateemarginate, ventricose, white, becoming pinkish, with entire con-\ncolorous edge. Stipe 20–40 × 1–2 mm, cylindrical, longitudinally\nfibrillose-striate or almost smooth, concolourous with pileus,\nwhitely tomentose at base. Context thin, concolorous with the\nsurface. Smell indistinct or fungoid, taste not reported. Spores\n6.5–8.5(–9.0) × 5.0–6.5 μm, Q = 1.3–1.5(–1.7), heterodiametrical, with 7–9 blunt angles in side-view, almost nodulose.\nBasidia 27.9–37.0(–45.4) × 8.1–9.6(–13.7) μm, 4-spored,\nnarrowly clavate to subcylindrical, clamped. Lamellae edge\nfertile. Cheilocystidia absent. Pileipellis a plagiotrichoderm of\ncylindrical to slightly inflated hyphae 10–20 μm wide with blue\nintracellular pigment. Clamp-connections present.\n\nPileus 5–25 mm broad, conical, broadly conical, hemispherical\nto convex with small umbo, not hygrophanous, not translucently striate, with straight margin, radially fibrillose to slightly\nsquamulose at centre, deep blue to blackish blue, sometimes\ndiscolouring to greyish violet. Lamellae moderately distant,\nadnate-emarginate or almost free, ventricose, bluish, greyish\nblue or bluish violaceous, becoming greyish pink, with entire\nconcolorous or paler edge. Stipe 20–60 × 1–3 mm, cylindrical,\nlongitudinally fibrillose-striate or almost smooth, concolourous\nwith pileus, white tomentose at base. Context concolorous with\nthe surface. Smell indistinct, taste not reported. Spores 7.5–11.0\n× 6.0–8.0 μm, Q = 1.3–1.6(–1.7), heterodiametrical, with 6–8\nangles in side-view. Basidia 27.9–37.0(–45.4) × 8.1–9.6(–13.7)\nμm, 4-spored, narrowly clavate to subcylindrical, clamped.\nLamellae edge fertile or heterogeneous. Cheilocysti­dia cylindrical, lageniform or narrowly clavate, intermixed with basidia,\nsometimes rare or absent. Pileipellis a plagiotrichoderm of\ncylindrical to slightly inflated hyphae 10–20 μm wide, with swollen terminal elements and blue intracellular pigment. Clamp-\nconnections present.\n",
+   "diagnosis": "Diagnosis. The new species is close to E. coelestinum from which it differs\nby almost nodulose spores and a longitudinally fibrillose-striate stipe.\n\nNotes — In the boreal-temperate Eurasia several species\nwith small blue or blackish blue basidiomata are recognized.\nEntoloma percoelestinum differs from E. coelestinum by almost\nnodulose spores and a longitudinally fibrillose-striate stipe,\nfrom E. chytrophilum by the smaller spores and conical, hardly\nexpanding pileus, and from E. lepidissimum by the smaller\nspores and lack of the blue tinge in young lamellae. Entoloma\nklofacianum is characterized by the isodiametrical spores. North\nAmerican Leptonia subcoelestina is also close but it differs by\nthe larger spores and by the pileipellis which lacks clamps and\nis composed of submoniliform cells.\n13.\t Entoloma lepidissimum (Svrček) Noordel., Persoonia 11: \n\nNotes — Entoloma lepidissimum is recognized by the dark\nblue basidiomata with bluish lamellae. Microscopically the\nscattered cheilocystidia also can be distinctive. Despite the\nfact that the blue tinge of the lamellae was not mentioned in\nthe protologue, all studied specimens are characterized by\nbluish lamellae. Molecular data support their identity with the\nholotype. The similar species E. coelestinum is distinguished\nby the white lamellae, smaller spores and more conical pileus.\nEntoloma chytrophilum possesses white lamellae, nodulose\nspores and a more applanate pileus.\n",
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§12:desc_span_gap",
+    "§6:merge_metric"
+   ],
+   "known_missed_flags": [
+    "§6:swallowed_numbered_heading"
+   ],
+   "notes": "Entoloma percoelestinum, round 7 review. Operator: \"two fairly good treatments joined at the hip... The diagnosis is complete but absorbs the first line of the next Nomenclature. The rest of the Nomenclature is in a Misc-exposition. I note that the absorbed line at the end of the diagnosis starts with a sequence number which might be recognized if we tried to extract the article structure.\" The span sequence repeats materials_examined -> diagnosis -> description -> biology, biology three times; biology holds two Habitat/Known distribution pairs. Its own nomenclature opens \"12.\\t Entoloma percoelestinum\", so the article numbers its species and the stolen heading is the next number. merge_metric scores 10 against a threshold of 15, so the merge detector does NOT fire on a treatment that is plainly a merge -- which is why the numbered-heading cue is worth having. Also present: a type designation under materials_examined (the §12.3.48 class), a fungarium catalog number '1130925-24.' orphaned into Misc-exposition, the rest of the nomenclature ('460. 1982. - Fig. 23f, g, 26 Syn.: Leptonia lepidissima Svrcek...') in another, and a comparison table labelled Key -- the last harmless, because it fell into a gap and left the treatment flow. See §12.3.49. description_spans is carried on this entry, as on taxon_adcb2fcc, because the gap between them IS part of the pathology -- the description is split across the merge, and an entry without them cannot fire §12:desc_span_gap.",
+   "description_spans": [
+    {
+     "paragraph_number": 679,
+     "start_line": 3002,
+     "end_line": 3015,
+     "start_char": 128477,
+     "end_char": 129488,
+     "pdf_page": 27,
+     "pdf_label": "27",
+     "empirical_page": null,
+     "head": "[@Pileus 5–12 mm broad, conical or hemis"
+    },
+    {
+     "paragraph_number": 725,
+     "start_line": 3116,
+     "end_line": 3132,
+     "start_char": 132770,
+     "end_char": 134006,
+     "pdf_page": 28,
+     "pdf_label": "28",
+     "empirical_page": null,
+     "head": "[@Pileus 5–25 mm broad, conical, broadly"
+    }
+   ]
   }
  ]
 }
