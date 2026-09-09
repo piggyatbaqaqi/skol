@@ -577,9 +577,20 @@ def annotate_one_treatment(
                     f'Claude returned empty content '
                     f'(stop_reason={stop_reason!r}, '
                     f'output_tokens={metrics.get("output_tokens")}). '
-                    f'Often signals an input the model refused — '
-                    f'check the treatment for corrupt text '
-                    f'(replacement chars, OCR gibberish).'
+                    + (
+                        'A refusal is a judgement about the input, not a '
+                        'transport failure: read the treatment before '
+                        'retrying. Measured 2026-09-09 (§12.3.47), the '
+                        'one refusal in round 7 was correct — the text '
+                        'was a Materials-and-Methods protocol, not a '
+                        'description, and the model declined to extract '
+                        'morphology from it. Corrupt OCR is a possible '
+                        'cause but was not the cause there.'
+                        if stop_reason == 'refusal' else
+                        'Check the treatment for corrupt text '
+                        '(replacement chars, OCR gibberish) and for an '
+                        'input that is not a description at all.'
+                    )
                 ),
                 metrics=metrics,
             )

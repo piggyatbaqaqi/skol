@@ -7420,6 +7420,57 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.47 The annotator's one refusal in round 7 was correct, and it is a free detector
+
+Recorded 2026-09-09 while closing out round 7.  Of 994 attempted
+treatments, exactly one ended in `status: error` from a model refusal —
+`taxon_2f5f823f`, which returned `stop_reason='refusal'` with zero
+output tokens on **both** attempts in the run.  The error message
+guesses at the cause: *"often signals an input the model refused —
+check the treatment for corrupt text (replacement chars, OCR
+gibberish)."*
+
+**The text is not corrupt.  It is not a treatment.**  Its
+`description` field, in full, is Materials-and-Methods prose from a
+plant-pathology paper:
+
+> *...Once the water turned milky from presence of suspended conidia,
+> we collected the conidia solution with a micropipette and transferred
+> it to a 2 mL tube.  Fresh urediniospores of* P. polysora *infecting
+> corn plants in the greenhouse were also harvested for the interaction
+> test... The viability of the conidia and urediniospores was checked
+> with Trypan Blue.  We used ≥ 80 % viable spores as the threshold for
+> the interaction test.*
+
+`diagnosis` is empty.  This is a spore-suspension protocol — first
+person, past tense, describing what the authors did rather than what
+the fungus is.  Asked to extract morphological features from it, the
+model declined, which is the right answer.
+
+**Why this matters beyond one treatment.**  §12.3.40 measured that
+non-taxonomic documents are prolific and §12.3.39 showed the
+`Diagnosis` homograph as one route by which they reach `p1`.  This is a
+second route and a cheaper signal: the annotator itself distinguishes
+*"a treatment with no features"* (11 % of every round — `status:
+success`, `annotation_count: 0`) from *"this is not the kind of text
+you asked about"* (a refusal).  The refusal costs nothing, is already
+recorded in `features_status`, and needs no new model.
+
+At n = 994 there is exactly one, so this is a **high-precision,
+very-low-recall** signal — a confirmation instrument for the
+document-level taxonomic-article gate, not a substitute for it.  The
+actionable part is smaller and certain: **the error message's
+"corrupt text" guess sent the reader in the wrong direction**, and a
+refusal should be reported as what it is rather than diagnosed as OCR
+damage.
+
+The round's other two logged errors need no gate.  One was a JSON
+`Invalid \escape` — the model emitted `\'` inside a string while
+transcribing heavily OCR-damaged Latin (`I'ileus` for *Pileus*, `cni`
+for `cm`) — and the in-run retry recovered it to `partial` with 20
+annotations.  The other jsonl `error` line is the same refusal logged
+twice, once per run file.
+
 ### 12.3.46 TaxPub detection is not dormant; it never ran on this corpus
 
 Recorded 2026-09-03, testing the suspicion raised on 2026-09-02 that
