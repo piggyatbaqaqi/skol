@@ -319,8 +319,77 @@ def render_dossiers(
     out_dir: Optional[Path],
     siblings: bool = True,
 ) -> int:
-    """Skeleton: see the xfailed tests in treatment_dossier_test.py."""
-    raise NotImplementedError
+    """Assemble and render a dossier per id; return how many were made.
+
+    Extracted from :func:`main` so ``brat_export --dossier-dir`` renders
+    through the same assembly rather than a second copy of it.  When
+    ``out_dir`` is ``None`` the text form goes to stdout, which is what
+    ``--format text`` wants.
+
+    Tolerant by design at every step: a treatment the DB no longer has
+    is skipped with a message rather than aborting the batch, and a
+    treatment whose annotation text cannot be fetched still renders --
+    the fields and the metrics beat refusing, and the treatments worth
+    looking at are the ones missing the most.
+    """
+    exp = server['skol_experiments'][experiment]
+    dbs = exp.get('databases') or {}
+    treatments = server[dbs['treatments_prose']]
+    ingest_name = dbs.get('ingest')
+    ingest = server[ingest_name] if ingest_name else {}
+    status_name = dbs.get('features_status')
+    status_db = (server[status_name]
+                 if status_name and status_name in server else None)
+
+    # Fetch every requested treatment first, so the sibling index costs
+    # ONE scan for the whole run rather than one per treatment.
+    docs: List[Dict[str, Any]] = []
+    for tid in ids:
+        try:
+            docs.append(dict(treatments[tid]))
+        except Exception as exc:                     # noqa: BLE001
+            print(f'  skipping {tid}: {exc}', file=sys.stderr)
+
+    sib_index: Dict[str, List[Dict[str, Any]]] = {}
+    if siblings:
+        wanted = {(d.get('ingest') or {}).get('_id') for d in docs}
+        wanted.discard(None)
+        if wanted:
+            sib_index = _sibling_index(treatments, wanted)
+
+    written = 0
+    for doc in docs:
+        tid = doc['_id']
+        try:
+            ann_text = _attachment_text(coordinate_space(doc), server)
+        except Exception as exc:                     # noqa: BLE001
+            print(f'  {tid}: no annotation text ({exc})', file=sys.stderr)
+            ann_text = ''
+        src_id = (doc.get('ingest') or {}).get('_id')
+        source: Dict[str, Any] = {}
+        if src_id:
+            try:
+                source = dict(ingest[src_id])
+            except Exception:                        # noqa: BLE001
+                pass
+        status: Dict[str, Any] = {}
+        if status_db is not None:
+            try:
+                status = dict(status_db[tid])
+            except Exception:                        # noqa: BLE001
+                pass
+        sibling_docs = [s for s in sib_index.get(src_id or '', [])
+                        if s['_id'] != tid]
+        view = build_view(doc, ann_text, source=source, status=status,
+                          siblings=sibling_docs)
+        if out_dir is not None:
+            path = out_dir / f'{tid}.html'
+            path.write_text(render_html(view), encoding='utf-8')
+            print(f'  {path}', file=sys.stderr)
+        else:
+            print(render_text(view))
+        written += 1
+    return written
 
 
 def main() -> int:
@@ -371,65 +440,10 @@ def main() -> int:
     server.resource.credentials = (
         config['couchdb_username'], config['couchdb_password'],
     )
-    exp = server['skol_experiments'][experiment]
-    dbs = exp.get('databases') or {}
-    treatments = server[dbs['treatments_prose']]
-    ingest = server[dbs.get('ingest') or config['ingest_db_name']]
-    status_name = dbs.get('features_status')
-    status_db = (server[status_name]
-                 if status_name and status_name in server else None)
-
-    # Fetch every requested treatment first, so the sibling index costs
-    # ONE scan for the whole run rather than one per treatment.  At
-    # ~11 s a scan that is the difference between 11 s and 5.5 min for
-    # T3a's 30-treatment table.
-    docs: List[Dict[str, Any]] = []
-    for tid in ids:
-        try:
-            docs.append(dict(treatments[tid]))
-        except Exception as exc:                     # noqa: BLE001
-            print(f'  skipping {tid}: {exc}', file=sys.stderr)
-    sib_index: Dict[str, List[Dict[str, Any]]] = {}
-    if not args.no_siblings:
-        wanted = {(d.get('ingest') or {}).get('_id') for d in docs}
-        wanted.discard(None)
-        if wanted:
-            sib_index = _sibling_index(treatments, wanted)
-
-    written = 0
-    for doc in docs:
-        tid = doc['_id']
-        try:
-            ann_text = _attachment_text(coordinate_space(doc), server)
-        except Exception as exc:                     # noqa: BLE001
-            # A dossier without the .ann still shows the fields and the
-            # metrics, which beats refusing to render.
-            print(f'  {tid}: no annotation text ({exc})', file=sys.stderr)
-            ann_text = ''
-        src_id = (doc.get('ingest') or {}).get('_id')
-        source: Dict[str, Any] = {}
-        if src_id:
-            try:
-                source = dict(ingest[src_id])
-            except Exception:                        # noqa: BLE001
-                pass
-        status: Dict[str, Any] = {}
-        if status_db is not None:
-            try:
-                status = dict(status_db[tid])
-            except Exception:                        # noqa: BLE001
-                pass
-        siblings = [s for s in sib_index.get(src_id or '', [])
-                    if s['_id'] != tid]
-        view = build_view(doc, ann_text, source=source, status=status,
-                          siblings=siblings)
-        if out_dir is not None:
-            path = out_dir / f'{tid}.html'
-            path.write_text(render_html(view), encoding='utf-8')
-            print(f'  {path}', file=sys.stderr)
-        else:
-            print(render_text(view))
-        written += 1
+    written = render_dossiers(
+        ids, server=server, experiment=experiment,
+        out_dir=out_dir, siblings=not args.no_siblings,
+    )
     print(f'{written} dossier(s)', file=sys.stderr)
     return 0
 

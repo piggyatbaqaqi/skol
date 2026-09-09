@@ -250,7 +250,6 @@ if __name__ == '__main__':
     sys.exit(pytest.main([__file__, '-v']))
 
 
-@pytest.mark.xfail(strict=True, reason='render_dossiers is not extracted yet')
 class TestRenderDossiers:
     """The assembly loop, extracted so `brat_export --dossier-dir` can
     call it instead of copying it.
@@ -274,8 +273,8 @@ class TestRenderDossiers:
         }
 
     def test_writes_one_file_per_treatment(self, tmp_path) -> None:
-        treatments = {'taxon_a': _treatment(_id='taxon_a'),
-                      'taxon_b': _treatment(_id='taxon_b')}
+        treatments = {'taxon_a': _treatment(_id='taxon_a')[0],
+                      'taxon_b': _treatment(_id='taxon_b')[0]}
         n = render_dossiers(
             ['taxon_a', 'taxon_b'], server=self._server(treatments),
             experiment='production_v4', out_dir=tmp_path, siblings=False)
@@ -287,7 +286,7 @@ class TestRenderDossiers:
             self, tmp_path) -> None:
         """A review set can name a treatment the DB no longer has; one
         bad id must not cost the other forty-four."""
-        treatments = {'taxon_a': _treatment(_id='taxon_a')}
+        treatments = {'taxon_a': _treatment(_id='taxon_a')[0]}
         n = render_dossiers(
             ['taxon_a', 'taxon_gone'], server=self._server(treatments),
             experiment='production_v4', out_dir=tmp_path, siblings=False)
@@ -306,7 +305,7 @@ class TestRenderDossiers:
         """A dossier without the .ann still shows the fields and the
         metrics, which beats refusing to render -- and the treatments
         worth looking at are the ones missing the most."""
-        treatments = {'taxon_a': _treatment(_id='taxon_a')}
+        treatments = {'taxon_a': _treatment(_id='taxon_a')[0]}
         n = render_dossiers(
             ['taxon_a'], server=self._server(treatments),
             experiment='production_v4', out_dir=tmp_path, siblings=False)
