@@ -1189,3 +1189,88 @@ made to that document:
 5. **Note the non-taxonomic-article finding** as an input to M3/M4 — a
    document-level taxonomic-article gate is a candidate v5 pipeline
    change, independent of the segment classifier.
+
+---
+
+## Amendment 2026-09-09 — the Heaps activity has met its purpose; the review activity has not
+
+Recorded after closing out round 7.  Full numbers in the
+[v5 change log](production-v5-execution.md); this section records what
+they mean for the three-activity split this document set up.
+
+### The Heaps activity is done for now, and it ends on the support curve
+
+The split gave the vocabulary activity a deliberately cheap
+instrument — `features_candidate` only, **no review** — precisely so
+volume could be bought without operator hours.  Three rounds of 1 000
+later that bet has paid out and the curve has said what it can:
+
+* `df ≥ 10` support: 85 → 162 → **214** across n = 1 000/2 000/3 000,
+  against the ~210 the round-7 draw projected.  The projection held.
+* Out-of-sample coverage is **94.4 %** and the Good–Turing estimator
+  has now been validated twice, optimistic by 0.3 then 0.7 points.
+* A fourth thousand is worth roughly +40–50 labels at `df ≥ 10` and
+  under a point of coverage, for ~$29.
+
+That is still a positive return, and **round 7 argues sampling has not
+saturated**: it is richer than either round before it on every
+diversity statistic, contributed 392 labels unseen in 2 000 prior
+treatments, and the extra breadth is diffuse rather than concentrated
+in odd documents.  The vocabulary is genuinely still arriving.
+
+**It is not, however, the binding constraint any more.**
+
+### The population table, three rounds on
+
+The exact partition this plan verified (`p1` 38 413, `p2a` 7 632,
+`p2b` 35 482) still holds, but one number inside `p1` has become
+load-bearing and was not called out then: **about 11 % of every drawn
+round produces no annotations at all** — 876, 885 and 887 treatments
+with labels out of 1 000 drawn in rounds 5, 6 and 7.  These are
+`p1`-eligible by complexity score and empty in practice.
+
+That population is the one the selector was silently re-offering.
+`--exclude-annotated` asked the candidate DB for treatments with *at
+least one annotation*, so a treatment attempted with zero yield left no
+trace it could see.  334 treatments were in that class at round 7 and
+it grows by ~110 a round; round 7 re-drew six of them, which is the
+expected rate rather than an accident.  Fixed 2026-09-09 by consulting
+`features_status`, which is the record of **attempts**.  Two
+consequences for this document's accounting:
+
+* **Round 7's realized n is 994, not 1 000.**  The round file remains
+  the durable record of what was *drawn*; it is no longer the record
+  of what was *covered*, and the two should be reported separately.
+* The `p2b` hypothesis in §T3d is still free and still untested, and
+  the empty-yield 11 % inside `p1` is closely related evidence — these
+  are complexity-scored-positive treatments with nothing to annotate,
+  which is the same shape as the non-taxonomic-article finding that
+  M4's candidate gate targets.
+
+### T5 is the activity that is now behind
+
+The split priced label validation at "brat review of 50, operator
+time" and that was right.  What has happened since is that the *other*
+two activities ran three times and T5 ran once:
+
+| | rounds covered | volume |
+|---|---|---:|
+| Heaps sampling (API only) | 5, 6, 7 | 24 160 annotations |
+| Hand review (operator) | 1–5 | 147 treatments, 2 244 annotations |
+
+**Rounds 6 and 7 are entirely unreviewed.**  16 674 candidate
+annotations have never had a precision check, and none of the label
+schema has been reviewed since the five canonicalization rules landed
+on 2026-09-03 — so the rules' *precision* is unmeasured even though
+their *generalization* now is (they fire at 1.13–1.69× rate on
+unseen data).
+
+This does not overturn the plan's finding that round 3 already
+answered the nominal question at precision 100 % / recall 99 %.  It
+says the question has changed: the thing now unvalidated is not the
+annotator's labels but the consolidation applied on top of them.
+
+**Recommendation: run T5 against round 7 before drawing round 8.**  It
+is the cheaper of the two activities in dollars, the more expensive in
+hours, and it is the one holding up M5's 200–250 target — 147 of which
+are in hand.

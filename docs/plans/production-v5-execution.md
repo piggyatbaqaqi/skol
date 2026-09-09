@@ -684,6 +684,102 @@ Reasons to revise this plan:
 
 ## Change log
 
+* **2026-09-09** — **Round 7 read: the support projection held, the
+  coverage argument stayed marginal, and the round is richer than the
+  two before it.**  Round 7 ran 2026-09-03 and sat unread for six days.
+  Reading it required rebuilding `features_canonical` first — the
+  09-03 build ran before the round finished writing and was 49 records
+  short, leaving 30 round-7 annotations with no canonical record.  The
+  rebuild moved round 7 only (V 901 → 909); rounds 5 and 6 were
+  untouched, so the baseline comparison is clean.
+
+  **The support curve, which is why the round was drawn.**  Measured on
+  the drawn population, canonical labels, permutation estimator:
+
+  | | n=1 000 (r5) | n=2 000 (r5+6) | n=3 000 (r5+6+7) |
+  |---|---:|---:|---:|
+  | df ≥ 5 | 169 | 274 | 347 |
+  | df ≥ 10 | 85 | 162 | **214** |
+  | df ≥ 20 | 50 | 91 | 127 |
+
+  The round-7 commit projected **~210 at n = 3 000** for df ≥ 10.  It
+  landed at **214**.  Gains per thousand are decelerating but not
+  flattening: df ≥ 10 added 77 in the second thousand and 52 in the
+  third, df ≥ 20 added 41 then 36.
+
+  **Coverage behaved as predicted, and the estimator is optimistic in
+  the same direction twice.**  Vocabulary from rounds 5+6 (1 199
+  canonical labels) against held-out round 7: predicted 95.3 %
+  (Good–Turing), observed **94.4 % pooled / 94.6 % mean**.  Optimistic
+  by 0.7 points, against 0.3 points on the round 5 → round 6 test.  Two
+  consecutive out-of-sample validations; the model is usable and
+  slightly generous, and the generosity grows as the held-out round
+  gets richer.
+
+  **Round 7 is measurably richer than 5 and 6, and that is the finding
+  worth keeping.**  V 909 against 795 and 835; hapax 60.5 % against
+  55.6 % and 53.3 %; β 0.610 against 0.575 and 0.560; missing mass
+  7.5 % against 6.6 % and 6.2 %.  It contributed **392 labels unseen in
+  2 000 prior treatments**.  Two explanations were tested and both
+  fail: the document mix is identical (1.26 treatments per source
+  document, the same as round 6), and the novelty is **diffuse** — 202
+  documents carry it and the top 10 % hold only 31 % of the mass,
+  against the 57 % concentration §12.3.41 found for boundary theft.
+  So the pooled curve understates how much vocabulary is still
+  arriving, and **β for the pooled 3 000 (0.569) is above the pooled
+  2 000 (0.559)** rather than below it.
+
+  **The five canonicalization rules generalize.**  They were derived
+  from rounds 5+6; on round 7 they fire at 1.13× (`map`) to 1.69×
+  (`condition`) the per-1 000-annotation rate they achieve on their
+  own derivation set, with `sub_attribute` at 1.62× and `case_fold` at
+  1.53×.  They are structural, not fitted to the strings they were
+  built from.
+
+  **A latent selector defect surfaced and is fixed.**
+  `--exclude-annotated` read only the candidate DB — "treatments with
+  at least one annotation" — so a treatment the annotator ran and got
+  *nothing* from left no candidate document and stayed drawable
+  forever.  Round 7 re-drew **six** such treatments from rounds 5 and 6.
+  No API money was lost (the annotator's own status filter skipped
+  them) but the round file over-claims: realized n is 994.  The leaking
+  population is exactly the empty-description class — about 11 % of
+  every round, 334 treatments at round 7, growing ~110 per round — so
+  the leak is biased toward the treatments worth sampling least, and
+  its rate grows.  Round 6 drew 0 against an expectation of ~3; round 7
+  drew 6 against ~5.8, which is the expected rate, not bad luck.
+  `fetch_attempted_treatment_ids` now consults `features_status`;
+  exclusion goes 1 871 → 3 111.  Merge-suspect skips are deliberately
+  excluded from *this* filter so lowering `--merge-threshold` can still
+  reach them.
+
+  **The notebook was reporting a vocabulary a fifth too large.**  Cell 8
+  claimed to canonicalize "through the same entry point the writers
+  use", but called `canonicalize(label, map)` context-free.  Four of
+  the five rules need the `known` and `established` indices
+  `build_canonical_labels` supplies, so only the hand map fired: 1 480
+  labels for rounds 5+6 where the pipeline says 1 199, and 418 labels
+  over-counted at n = 3 000, with β inflated to match.  The canonical
+  curve now reads `features_canonical` directly.  Two consequences
+  recorded in the cells: this is *hindsight* canonicalization (the
+  builder's indices saw the whole corpus, so early points know their
+  future — `heaps.prequential_band` is the causal counterpart, and the
+  notebook still does not use it), and cell 12's drift heuristic
+  changed meaning, since drift now measures what the rules **removed**
+  rather than what is outstanding.  Its replacement reports the
+  residual canonical singleton fraction: **550/909, 61 % for round 7**.
+
+  **Round 8 is not drawn, and the reason is Track A, not the curve.**
+  A fourth thousand buys perhaps +40–50 labels at df ≥ 10 and under a
+  point of coverage for ~$29 — still positive, and round 7's richness
+  argues sampling has not saturated.  But 3 000 treatments of candidate
+  annotation now stand against **147 hand-reviewed treatments**, and
+  **rounds 6 and 7 are entirely unreviewed** — 16 674 candidate
+  annotations whose precision has never been checked, and none of it
+  tested since the canonicalization rules landed.  The binding
+  constraint has moved from vocabulary volume to knowing what the
+  volume is worth.  See the amendment to the annotation-activity split.
+
 * **2026-09-02** — **The singleton tail audited; the label schema, not
   the sampling, is the open question.**  854 of 1 480 canonical labels
   appear once.  A 50-label sample classifies 56 % as genuine rare

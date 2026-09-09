@@ -246,3 +246,36 @@ reported together and never substituted for each other.
    thousand buys ~+0.9 points. This audit says the vocabulary it would
    extend is ~44 % consolidatable. Consolidating first makes the next
    thousand worth more; it does not make it urgent.
+
+### The third thousand, measured — 2026-09-09
+
+Round 7 ran on 2026-09-03 and was read on 2026-09-09.  Consolidation
+had happened first, as recommended above, so this is the clean test of
+whether it made the next thousand worth more.
+
+**The rules generalized.**  Derived from rounds 5+6, they fire on
+round 7 at **1.13× (`map`) to 1.69× (`condition`)** the
+per-1 000-annotation rate they achieve on their own derivation set —
+`sub_attribute` 1.62×, `case_fold` 1.53×, `compound` 1.29×.  They are
+structural rather than fitted to the strings that suggested them,
+which is what a rule was supposed to buy over a map entry.
+
+**The tail did not shrink.**  Round 7's canonical vocabulary is 909
+labels of which **550 (61 %) are singletons** — against 55.6 % for
+round 5 and 53.3 % for round 6, measured the same way.  Round 7 is
+the *most* singleton-heavy round of the three, and it contributed 392
+labels unseen in the 2 000 treatments before it.
+
+That is not a failure of the consolidation.  The 2026-09-02 audit
+predicted it: **56 % of the tail is genuine rare traits**, rare
+because the taxa are, and no amount of rule-writing reaches those.
+What the rules removed was the other kind, and the residual is what
+the audit said would remain.
+
+**The consequence for sampling.**  The tail is now closer to its
+irreducible composition, so the "~44 % consolidatable" discount no
+longer applies to a fresh thousand at anything like full strength.  A
+fourth thousand would buy roughly +40–50 labels at `df ≥ 10` for
+~$29 — worth having, and no longer the constraint.  The constraint is
+that rounds 6 and 7 have never been hand-reviewed, so the precision of
+this consolidation is unmeasured even though its reach now is.

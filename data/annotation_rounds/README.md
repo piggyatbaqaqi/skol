@@ -37,6 +37,30 @@ what a round actually covered.
 | 4 | 50 | p1 | **biased**, 3 bands 5/15/30 | pathology | captured from the selector, 2026-08-14 | 47 of 50 on 2026-08-25 |
 | 5 | 1000 | p1 | **random**, uniform | Heaps baseline + label validation | **selector, 2026-08-25** | **39 of the first 50, 2026-08-26 → 09-01** |
 | 5 | +1 | p1 | manual | canary | hand-picked 2026-08-23 | 1 on 2026-08-24 |
+| 6 | 1000 | p1 | **random**, uniform | Heaps volume | **selector, 2026-09-01** | none |
+| 7 | 1000 drawn / **994 realized** | p1 | **random**, uniform | Heaps volume + label validation | **selector, 2026-09-03** | 45 of the first 50 exported to brat 2026-09-09; review pending |
+
+**Round 7 drew 1 000 and covered 994.** Six of its ids had already
+been annotated in rounds 5 and 6 and were skipped by the annotator's own
+status filter, so no API budget was spent on them — but the round file
+lists them. The cause was `--exclude-annotated` consulting only
+`features_candidate`, which knows about *results*: a treatment attempted
+with **zero** annotations leaves no candidate document and stayed
+drawable forever. That population is the ~11 % of every round that
+yields nothing (876, 885 and 887 of 1 000 produced labels in rounds 5, 6
+and 7), it stood at 334 treatments and grew ~110 a round, and it is
+exactly the empty-description class — so the leak was biased toward the
+treatments worth sampling least. Fixed 2026-09-09 by also consulting
+`features_status`, the record of **attempts**; round 6 drew 0 re-draws
+against an expectation of ~3 and round 7 drew 6 against ~5.8, so this
+was the expected rate rather than an accident.
+
+**Rounds 6 and 7 have not been hand-reviewed at all** — 16 674
+candidate annotations with no precision check, and none of the label
+schema reviewed since the five canonicalization rules landed on
+2026-09-03. Round 7's first 50 are exported and queued; the five
+dropped at export were `success` with zero annotations, which is the
+same 10–11 % empty-yield rate.
 
 **Round 5 is the first round whose provenance was written by the
 selector rather than reconstructed afterwards.** Its
