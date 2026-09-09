@@ -31,8 +31,8 @@ The same IDs are ALSO written to
 ``--output``).  That file is the durable record of what a round
 covered — necessary because a selection stops being reproducible
 from ``--seed`` as soon as the annotator runs: ``--exclude-annotated``
-reads the candidate DB live, so the same command afterwards returns a
-different set.
+reads the status and candidate DBs live, so the same command afterwards
+returns a different set.
 """
 
 import argparse
@@ -63,7 +63,10 @@ from treatments_to_structured.round_provenance import (  # noqa: E402
     round_identity,
 )
 from treatments_to_structured.status import (  # noqa: E402
+    STATUS_ERROR,
+    STATUS_PARTIAL,
     STATUS_SKIPPED_MERGE_SUSPECT,
+    STATUS_SUCCESS,
     make_skip_status_doc,
     status_doc_id,
 )
@@ -143,6 +146,42 @@ def fetch_annotated_treatment_ids(candidate_db: Any) -> Set[str]:
         if not key or ':' not in key or key.startswith('_design/'):
             continue
         ids.add(key.split(':', 1)[0])
+    return ids
+
+
+def fetch_attempted_treatment_ids(status_db: Any) -> Set[str]:
+    """Return the treatment IDs the annotator has already **attempted**.
+
+    :func:`fetch_annotated_treatment_ids` asks the candidate DB which
+    treatments have at least one annotation.  That is the record of
+    *results*, and it is blind to a treatment the annotator ran and got
+    nothing from: no annotation, no candidate document, no exclusion.
+    Such a treatment stays in the pool and can be drawn again in every
+    later round.
+
+    Measured 2026-09-09: 334 treatments were in that class, and round 7
+    re-drew six of them.  The class is exactly the empty-description
+    population, so the leak is biased toward the treatments worth
+    sampling least, and it grows by roughly 110 per 1 000-treatment
+    round.
+
+    ``skipped_merge_suspect`` is deliberately **not** an attempt: that
+    is the selector's own decision and nothing was sent to the
+    annotator.  It stays under ``--exclude-suspected-merges`` and
+    :func:`fetch_prior_merge_skip_ids`, so lowering ``--merge-threshold``
+    can still reach those treatments.  Folding it in here would make the
+    threshold silently irreversible.
+    """
+    attempted = {STATUS_SUCCESS, STATUS_PARTIAL, STATUS_ERROR}
+    ids: Set[str] = set()
+    for row in status_db.view('_all_docs', include_docs=True).rows:
+        if row.doc is None:
+            continue
+        if row.doc.get('status') not in attempted:
+            continue
+        tid = row.doc.get('treatment_id')
+        if tid:
+            ids.add(tid)
     return ids
 
 
@@ -280,8 +319,8 @@ def resolve_seed(seed: Optional[int]) -> Tuple[int, bool]:
     reproducibility".
 
     Note a recorded seed alone does **not** reproduce a draw:
-    ``--exclude-annotated`` reads the candidate DB live, so the
-    surviving population moves as soon as the annotator runs.  Seed
+    ``--exclude-annotated`` reads the status and candidate DBs live, so
+    the surviving population moves as soon as the annotator runs.  Seed
     *and* funnel are both needed, which is why the sidecar carries
     both, and why the round file stays the only durable record of
     actual membership.
@@ -422,12 +461,21 @@ def main() -> int:
     parser.add_argument(
         '--exclude-annotated', action='store_true',
         help=(
-            'Skip treatments that already have annotations in the '
-            "experiment's features_candidate DB.  Use when extending "
-            'an existing selection — guarantees the --n count is N '
-            'NEW treatments, not N including repeats of work in '
-            'progress.  Requires --experiment (so the candidate DB '
-            'can be resolved).'
+            'Skip treatments the annotator has already been run on: '
+            "anything with a terminal status in the experiment's "
+            'features_status DB (success, partial or error), union '
+            'anything holding annotations in features_candidate.  '
+            'Attempts count, not just yields — a treatment that '
+            'returned zero annotations has still been annotated, and '
+            'excluding only the ones that produced output re-offers '
+            'the empty-description population in every later round.  '
+            'Merge-suspect skips are NOT excluded here; they stay '
+            'under --exclude-suspected-merges so lowering '
+            '--merge-threshold can still reach them.  Use when '
+            'extending an existing selection — guarantees the --n '
+            'count is N NEW treatments, not N including repeats of '
+            'work in progress.  Requires --experiment (so the DB '
+            'names can be resolved).'
         ),
     )
     # Multi-species-merge filter.  Default ON: hand-inspected
@@ -539,18 +587,52 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 2
-        # Reuse the candidate-DB resolver from bin/llm_annotate_features
-        # so the fallback naming convention stays in one place.
+        # Reuse the candidate- and status-DB resolvers from
+        # bin/llm_annotate_features so the fallback naming convention
+        # stays in one place.
         from llm_annotate_features import (  # noqa: E402
             resolve_candidate_db_name,
+            resolve_status_db_name,
         )
         candidate_db_name = resolve_candidate_db_name(
             experiment, exp_doc, verbosity=verbosity,
         )
-        if candidate_db_name in server:
-            excluded_ids = fetch_annotated_treatment_ids(
-                server[candidate_db_name],
+        # Two DBs answer two different questions and the exclusion is
+        # their union.  The candidate DB knows which treatments produced
+        # annotations; the status DB knows which were ATTEMPTED, and it
+        # is the only witness for a treatment that yielded nothing.
+        # Asking only the first re-offers the empty-description
+        # population every round; see fetch_attempted_treatment_ids.
+        #
+        # Measured 2026-09-09: the status DB is currently a strict
+        # superset -- all 2 758 annotated treatments have a status doc,
+        # so the candidate scan contributes nothing.  It is kept as a
+        # second witness rather than removed, because the reverse
+        # containment is the one that matters and nothing enforces it:
+        # a status doc lost or never written would silently re-open a
+        # treatment for redrawing.  The log line reports the union's
+        # split so a divergence is visible rather than assumed.
+        status_db_name = resolve_status_db_name(
+            experiment, exp_doc, verbosity=verbosity,
+        )
+        attempted_ids: Set[str] = set()
+        if status_db_name in server:
+            attempted_ids = fetch_attempted_treatment_ids(
+                server[status_db_name],
             )
+        elif verbosity >= 1:
+            print(
+                f"  --exclude-annotated: status DB "
+                f"{status_db_name!r} does not exist yet; "
+                f"zero-annotation attempts cannot be excluded",
+                file=sys.stderr,
+            )
+        if candidate_db_name in server or attempted_ids:
+            excluded_ids = attempted_ids
+            if candidate_db_name in server:
+                excluded_ids = excluded_ids | fetch_annotated_treatment_ids(
+                    server[candidate_db_name],
+                )
             before = len(scored)
             scored = filter_excluded(scored, excluded_ids)
             funnel.append(
@@ -561,7 +643,10 @@ def main() -> int:
                     f"  --exclude-annotated: dropped "
                     f"{before - len(scored)} already-annotated "
                     f"treatments from the selection pool "
-                    f"({len(excluded_ids)} in candidate DB; "
+                    f"({len(excluded_ids)} excluded: "
+                    f"{len(attempted_ids)} attempted per the status DB, "
+                    f"union {len(excluded_ids) - len(attempted_ids)} more "
+                    f"with annotations but no status doc; "
                     f"{len(scored)} remain to sample from)",
                     file=sys.stderr,
                 )
