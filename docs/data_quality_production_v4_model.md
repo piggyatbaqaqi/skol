@@ -7477,6 +7477,92 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.50 An abbreviated genus cannot open a nomenclature
+
+Operator, round-7 review of `taxon_06bd03e1`: *"looks like a very poor
+treatment extraction… The nomenclature looks like it absorbed
+something from the preceding block which happened to be an abbreviated
+binomial — adjacent Nomenclature lines that are unrelated."*  All three
+of the observations check out.
+
+**The nomenclature holds two unrelated names:**
+
+```
+E. mimosae.
+Elsinoë flacourtiae (Thirum. & Naras.) Fan & Crous, comb. nov.
+```
+
+**The Misc-exposition holds two whole blocks:** `Material examined:
+India, Maharashtra, Poona… (ex-type culture CBS 474.62 = ATCC 14654 =
+HACC 131 = IMI 092305).` followed immediately by `Notes: Elsinoë fl…`
+— a cued materials-examined block and the head of a Notes block, both
+absorbed.
+
+**And the description is the Notes continuing.**  It opens `India.
+Symptoms include numerous small spots…` and runs into `This fungus is
+characterised by hyaline, unicellular, ovoid to oblong conidia` —
+characterising language, which is why the operator's inference that the
+Notes block should be a `Diagnosis` is the right reading.  §12.3
+measured comparative language at 55 % of `Diagnosis` blocks against 8 %
+of `Description`; this is that signal, unused.
+
+#### The rule the first observation implies
+
+**An abbreviation is anaphoric.**  `E. mimosae` refers back to a name
+already given, so a nomenclature *opening* with one is evidence of
+text absorbed from what came before — a new name is never introduced
+in abbreviated form.
+
+Measured over 81 527 treatments:
+
+| | n |
+|---|---:|
+| nomenclature opens with an abbreviated genus | **792** |
+| …and a full binomial follows on a later line | 231 |
+| …**and the initial matches that genus** | **113** |
+
+The last row is the high-confidence signal, and it is self-verifying:
+`T. ramulosus.` before `Talaromyces cinnabarinus`, `A. fruticulosus and
+A. navahoensis.` before `Aspergillus filifer`, `C. lutescens (p. 190)`
+before `Calostoma cinnabarina`.  The abbreviation names a **sibling
+species of the same genus** — which is exactly the previous treatment
+in a paper that treats a genus.
+
+The 62 with a differing initial are mixed: some are absorption from a
+different discussion, some are legitimate comparative lines, and
+`M. gliricidiae Sydow, Ann. Mycol. 12: 550, 1914.` is a perfectly
+ordinary heading in a paper that established the genus earlier.  The
+rule wants the matching-initial form, not the bare abbreviation.
+
+#### Two corrections to my own measurement, both worth keeping
+
+**ASCII-only character classes undercount by a fifth.**  The first pass
+used `[a-z]`, which does not match `ë`, `ä` or `ö`, so every
+diacritic-bearing genus was invisible: 626 heads rather than 792, and
+105 confident cases rather than 113.  The bias is systematic — it
+falls on exactly the Scandinavian- and German-authored names §9 Mode C
+also damages.  Any detector reading taxon names needs `[^\W\d_]`.
+
+**And Mode C hides this treatment from this detector.**  With the
+Unicode-aware pattern, `Elsinoë flacourtiae` is found and the case is
+caught — but the stored text says `Elsino€e`, and `€` is not a letter,
+so the full binomial never matches:
+
+```
+corrupt          head=True   full=(none)
+Mode-C repaired  head=True   full=Elsinoë flacourtiae
+```
+
+**The treatment that motivated the detector is one the detector cannot
+see, because a second defect in the same treatment masks the first.**
+That is an argument for ordering: the §9 Mode C repair has to run
+before this detector is scored, or its recall is measured against text
+that hides its targets.
+
+Fixture: the existing `taxon_06bd03e1…` entry gains
+`§6:absorbed_abbreviated_head` in `known_missed_flags` — one taxon, two
+recorded pathologies, and the interaction between them is the point.
+
 ### 12.3.49 A merge the metric misses, and the cue that would catch it
 
 Operator, round-7 review of `taxon_023582f5` (*Entoloma

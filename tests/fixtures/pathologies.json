@@ -2588,9 +2588,10 @@
     "§10:tail_clip"
    ],
    "known_missed_flags": [
-    "§9:euro_sign_diacritic"
+    "§9:euro_sign_diacritic",
+    "§6:absorbed_abbreviated_head"
    ],
-   "notes": "Elsinoe flacourtiae, round 7 review. Operator: \"'Elsino€e flacourtiae' is consistently rendered with the Euro sign -- most probably a character encoding error. I see that all the siblings have the same error.\" Correct, and the siblings are exact: 9 treatments carry Elsino€e in the nomenclature, all from source document 81e706c372425c9ab0d974f96239f6d5. The genus is Elsinoë, so the euro sign stands in for a diaeresis that precedes its base letter -- the same shape as Starb€ack (Starbäck), Gr€afenha (Gräfenhan) and €Osterr (Österr). Corpus-wide: 197 treatments over 102 source documents, 60 of them corrupt inside a taxon name, and 57 of 58 resolvable sources are PDF-only with no XML, so the fault is in PDF text extraction rather than ingest. No detector sees it; the only flag here is an unrelated tail clip. See §9 Mode C."
+   "notes": "Elsinoe flacourtiae, round 7 review. Operator: \"'Elsino€e flacourtiae' is consistently rendered with the Euro sign -- most probably a character encoding error. I see that all the siblings have the same error.\" Correct, and the siblings are exact: 9 treatments carry Elsino€e in the nomenclature, all from source document 81e706c372425c9ab0d974f96239f6d5. The genus is Elsinoë, so the euro sign stands in for a diaeresis that precedes its base letter -- the same shape as Starb€ack (Starbäck), Gr€afenha (Gräfenhan) and €Osterr (Österr). Corpus-wide: 197 treatments over 102 source documents, 60 of them corrupt inside a taxon name, and 57 of 58 resolvable sources are PDF-only with no XML, so the fault is in PDF text extraction rather than ingest. No detector sees it; the only flag here is an unrelated tail clip. See §9 Mode C. Round-7 review, second pass: the nomenclature also opens 'E. mimosae.' -- the previous treatment's tail absorbed into this head -- the Misc-exposition holds a cued 'Material examined:' block plus the head of a 'Notes:' block, and the description is that Notes continuing ('This fungus is characterised by...'), which is diagnosis language. The two recorded defects interact: € is not a letter, so the abbreviated-head detector cannot find the full binomial after it and misses this treatment until the Mode C repair runs. See §12.3.50."
   }
  ]
 }
