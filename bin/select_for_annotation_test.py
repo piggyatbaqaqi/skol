@@ -24,12 +24,14 @@ from select_for_annotation import (  # type: ignore[import]  # noqa: E402
     _resolve_band_specs,
     apply_merge_filter,
     fetch_annotated_treatment_ids,
+    fetch_attempted_treatment_ids,
     fetch_prior_merge_skip_ids,
     filter_excluded,
     score_treatments_in_db,
 )
 from treatments_to_structured.status import (  # noqa: E402
     STATUS_ERROR,
+    STATUS_PARTIAL,
     STATUS_SKIPPED_MERGE_SUSPECT,
     STATUS_SUCCESS,
 )
@@ -366,6 +368,108 @@ class TestFetchPriorMergeSkipIds:
 
     def test_empty_db_returns_empty_set(self) -> None:
         assert fetch_prior_merge_skip_ids(_FakeStatusDb([])) == set()
+
+
+# ---------------------------------------------------------------------------
+# fetch_attempted_treatment_ids — the record of ATTEMPTS, which is the
+# status DB, not the record of RESULTS, which is the candidate DB.
+#
+# Measured 2026-09-09 while closing out round 7: six of its thousand
+# drawn treatments had already been annotated in rounds 5 and 6, and
+# --exclude-annotated did not stop them.  All six had been attempted
+# and returned zero annotations, so they left no candidate document
+# and fetch_annotated_treatment_ids -- which asks the candidate DB for
+# "at least one annotation" -- could not see them.
+#
+# The leaking population is exactly the empty-description class, so the
+# leak is biased toward the least informative treatments, and it grows:
+# 334 treatments were in it at round 7, about 110 more per round.
+# Round 6 drew zero of them against an expectation of ~3; round 7 drew
+# 6 against an expectation of ~5.8.  Latent, not new.
+# ---------------------------------------------------------------------------
+
+
+class TestFetchAttemptedTreatmentIds:
+    def test_zero_annotation_success_is_still_an_attempt(self) -> None:
+        """The defect, stated directly.  A treatment the annotator ran
+        and got nothing from is *annotated* -- it just has nothing to
+        show for it.  Re-offering it to the selector spends a draw slot
+        to re-learn that it is empty."""
+        db = _FakeStatusDb([
+            {'treatment_id': 'taxon_empty', 'status': STATUS_SUCCESS,
+             'annotation_count': 0},
+        ])
+        assert fetch_attempted_treatment_ids(db) == {'taxon_empty'}
+
+    def test_success_partial_and_error_all_count_as_attempted(
+        self,
+    ) -> None:
+        """Every terminal annotator outcome is an attempt.  An error is
+        as much a "we have been here" as a success: retrying it is the
+        annotator's job (its own status filter retries error and
+        partial), not a reason to re-draw it into a fresh round."""
+        db = _FakeStatusDb([
+            {'treatment_id': 'taxon_a', 'status': STATUS_SUCCESS},
+            {'treatment_id': 'taxon_b', 'status': STATUS_PARTIAL},
+            {'treatment_id': 'taxon_c', 'status': STATUS_ERROR},
+        ])
+        assert fetch_attempted_treatment_ids(db) == {
+            'taxon_a', 'taxon_b', 'taxon_c',
+        }
+
+    def test_merge_skips_are_not_attempts(self) -> None:
+        """A merge-suspect skip is the *selector's* decision, not the
+        annotator's outcome -- nothing was ever sent.  It stays under
+        --exclude-suspected-merges and fetch_prior_merge_skip_ids so
+        that lowering --merge-threshold can still reach it.  Folding it
+        in here would make the merge threshold silently irreversible."""
+        db = _FakeStatusDb([
+            {'treatment_id': 'taxon_a', 'status': STATUS_SUCCESS},
+            {'treatment_id': 'taxon_m',
+             'status': STATUS_SKIPPED_MERGE_SUSPECT},
+        ])
+        assert fetch_attempted_treatment_ids(db) == {'taxon_a'}
+
+    def test_skips_none_doc_rows(self) -> None:
+        """Defensive, matching fetch_prior_merge_skip_ids: couchdb-python
+        can yield a row with doc=None for a deleted doc."""
+        class _Row:
+            doc = None
+        db = _FakeStatusDb([])
+        db.view = lambda *_, **__: _FakeStatusView([_Row()])
+        assert fetch_attempted_treatment_ids(db) == set()
+
+    def test_doc_without_treatment_id_is_skipped(self) -> None:
+        """A status doc missing treatment_id must not raise."""
+        db = _FakeStatusDb([
+            {'status': STATUS_SUCCESS},
+            {'treatment_id': 'taxon_a', 'status': STATUS_SUCCESS},
+        ])
+        assert fetch_attempted_treatment_ids(db) == {'taxon_a'}
+
+    def test_empty_db_returns_empty_set(self) -> None:
+        assert fetch_attempted_treatment_ids(_FakeStatusDb([])) == set()
+
+    def test_complements_rather_than_replaces_the_candidate_scan(
+        self,
+    ) -> None:
+        """The two sets answer different questions and the union is the
+        exclusion.  A treatment with annotations but no status doc is
+        visible only in the candidate DB; one attempted with no yield is
+        visible only in the status DB.
+
+        Measured 2026-09-09, the first case is empty on this corpus --
+        all 2 758 annotated treatments have a status doc.  The union is
+        kept anyway: nothing enforces that containment, and a missing
+        status doc would silently re-open a treatment for redrawing."""
+        status = _FakeStatusDb([
+            {'treatment_id': 'taxon_empty', 'status': STATUS_SUCCESS,
+             'annotation_count': 0},
+        ])
+        candidate = _FakeCandidateDb(['taxon_old:Pileus:0'])
+        exclusion = (fetch_annotated_treatment_ids(candidate)
+                     | fetch_attempted_treatment_ids(status))
+        assert exclusion == {'taxon_old', 'taxon_empty'}
 
 
 # ---------------------------------------------------------------------------
