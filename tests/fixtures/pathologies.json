@@ -2902,6 +2902,54 @@
     "§8:register_detector_on_front_matter"
    ],
    "notes": "Reblova & Nekvindova, Studies in Mycology 106 (2023), inside a bound volume. Round-7 review.  Operator: 'front matter to an article.  It looks like the block labels are almost random.'  Confirmed, and the stub STRADDLES AN ARTICLE BOUNDARY: paragraph 1666, labelled Type-designation, is 'Zeng NK, Tang LP, Yang ZL (2011). Type studies on two species of' -- a reference from the PREVIOUS article's bibliography, taken because its title contains 'Type studies'.  Paragraphs 1673-1682 are the next article's opening apparatus.  Five labels, five sections, none correct: 1666 Type-designation = a bibliography entry; 1674 Notes = the Abstract; 1676 Figure-caption = 'Key words:' + 'Taxonomic novelties:'; 1680 Description = the Introduction; 1682 Nomenclature = a run of genus names inside an introduction sentence.  Not random though -- each is a register detector firing correctly on the wrong kind of text (§12.3.8).  This treatment also exposed a hole in §12.3.56's positional front-matter test: it sits AFTER the first real treatment of its document, because earlier articles in the volume produced real treatments, so the positional test cannot see it.  See §12.3.58."
+  },
+  {
+   "id": "taxon_39ee20f54915945c4a22ed8696cdde18dae63378279f2803a613268cd1ffe39c",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "21-b71b0c65f97537406a9bbafc425a9ded",
+   "class": "§10-description-head-left-behind-across-a-figure",
+   "treatment": "Requienella fraxini Jaklitsch & Voglmayr, sp. nov. — MycoBank MB814828; Fig. 8\n",
+   "description": "above the host surface, solitary or aggregated in small numbers,\n0.5–1.1 mm high, 0.45–1 mm diam, conical with rounded base\nor more or less globose with a prominent, conical, more or less\nacute, shiny black, apically 26–160 µm wide papilla, circular in\ntransverse section, black; often surrounded by white amorphous\ntissue containing some hyaline 2–6 µm wide hyphae; tissue\nsometimes turning black by ejected ascospores. Peridium\n15–30 µm wide at the base, thickened to 150 µm and hard in\nupper regions, dark brown, consisting of small pseudoparenchymatous cells. Hamathecium complex, consisting of 2–5\nµm wide, apically free paraphyses containing oil drops when\nvital, and similarly long as the asci, superposed by masses of\nlong, sparcely branched, 1–2.5 wide, apically free ‘pseudotrabeculae’ nearly reaching the ostiolum and variously curved\nperiphyses of same width in the ostiolum, all immersed in a gel\nmatrix. Asci 153–206 × 20–30(–33) µm (n = 10), bitunicate,\nfissitunicate, oblong to narrowly clavate, with thick-walled apex,\nwide ocular chamber comprising a slightly refractive, inversely\nfunnel-shaped dome 9–11 µm long, 6.5–9.5 µm wide at the\nbase, turning reddish in Congo Red, demarcated by a basal\nplate, with short simple stipe, containing 8 uni- to biseriately\narranged ascospores. Ascospores (23.3–)26.7–31.5(–36) ×\n(8.0–)9.5–12(–14.5) µm, l/w (2.1–)2.4–3.1(–3.9) (n = 100),\nellipsoid, oblong to fusiform, first hyaline, 1-celled, with narrow sheath, becoming septate and yellow, finally brown with\nlighter ends, 3(–5)-distoseptate, with large lumina and faintly\npunctate perispore.\n\nCulture characteristics — Growth of cultures extremely slow,\nonly somewhat enhanced by overlay of sterile water; colonies\nwhite. No asexual morph observed.\n",
+   "diagnosis": "Notes — Prior to the recent recollection of Requienella seminuda on Olea europaea we identified R. fraxini as R. seminuda, following Boise (1986). However, molecular data clearly\nseparate these two species. Moreover, the description of R. se-\n­minuda by Boise (1986), Aptroot (1991) and Barr (1990b) as\nhaving regularly 3–6-, or 3–7-septate ascospores suggested\nthat the different septations occur at comparable frequencies.\nThis is, however, not the case, as ascospores of R. seminuda\nare regularly 5-septate and those of R. fraxini 3-septate. In each\nspecies only a very small fraction may have deviant numbers of\nsepta. This is also supported by the description of ascospores \n",
+   "biology": "Habitat — In bark of living trunks of old trees of Fraxinus ex-\ncelsior.\n\nDistribution — Northern and Western Europe (France, Norway, Sweden), probably North America.\n\ngeographical distribution, R. fraxini in northern humid regions,\nR. seminuda in southern mediterranean regions of Europe, with\nsouthern France as an overlapping zone. Requienella fraxini\nappears to be confined to old trees in areas of high humidity\nand is therefore much rarer than its host. It may be in decline\nand endangered due to ash dieback. Nordén & Jordal (2014)\ngave an account of R. fraxini under the name R. seminuda, i.e.\nbefore we collected R. seminuda on Olea.\nSporocadaceae Corda (as ‘Sporocadeae’), Icon. Fungorum\n(Prague) 5: 34. 1842\n",
+   "type_designation": "Holotype. Norway, Akershus, Bærum kommune, Jonsrudtjern, UTM 32:\n0580011/6649407, at the steep slope of the small lake, soc. Navicella pileata,\n18 Sept. 2012, B. Norden (WU 33561, ex-type culture RS3 = CBS 140475).\n",
+   "description_spans": [
+    {
+     "paragraph_number": 361,
+     "start_line": 1840,
+     "end_line": 1863,
+     "start_char": 66282,
+     "end_char": 67922,
+     "pdf_page": 15,
+     "pdf_label": "15",
+     "empirical_page": null,
+     "head": "[@above the host surface, solitary or ag"
+    },
+    {
+     "paragraph_number": 363,
+     "start_line": 1865,
+     "end_line": 1867,
+     "start_char": 67924,
+     "end_char": 68097,
+     "pdf_page": 15,
+     "pdf_label": "15",
+     "empirical_page": null,
+     "head": "[@Culture characteristics — Growth of cu"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§10:mid_sentence"
+   ],
+   "known_missed_flags": [
+    "§10:description_head_absorbed",
+    "§8:register_detector_on_a_notes_continuation",
+    "§5:nomenclatural_act_labeled_biology"
+   ],
+   "notes": "Requienella fraxini Jaklitsch & Voglmayr, Persoonia 37 (2016).  Round-7 review.  Operator: 'pretty good.  The first Misc-exposition should have started the description blocks.  The biology block is not entirely wrong, but is clearly part of the preceding Notes section, which was correctly identified as diagnosis.'  Both confirmed.  Paragraph 176, Misc-exposition, is 'Ascomata perithecioid, immersed, with the ostiolum, often including an upper part of the ascoma, erumpent to 0.2-0.9 mm' and paragraph 180, Description, opens 'above the host surface, solitary or aggregated in small numbers' -- one sentence, with a Figure-caption (177), a Page-header (178) and the running head 'Persoonia - Volume 37, 2016' (179) between them.  The description's canonical opener, the word 'Ascomata', is the part that was lost.  Paragraphs 185 Diagnosis -> 186 Misc-exposition -> 187 Biology are one continuous sentence: '...different hosts (Olea vs Fraxinus) and the' + 'geographical distribution, R. fraxini in northern humid regions'.  Biology is 'not entirely wrong' precisely because the register IS distribution -- §12.3.8's register detector again.  187 also engulfs a family-level act at its tail, 'Sporocadaceae Corda (as Sporocadeae), Icon. Fungorum (Prague) 5: 34. 1842'.  The operator's aside that the Notes section 'was correctly identified as diagnosis' produced the heading-override measurement in §12.3.59.  See §12.3.59."
   }
  ]
 }

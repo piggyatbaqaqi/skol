@@ -7477,6 +7477,102 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.59 The paper's heading is not the right label — and the classifier already knows
+
+Operator, round-7 review of `taxon_39ee20f5` (*Requienella fraxini*,
+*Persoonia* 37): *"pretty good.  The first Misc-exposition should have
+started the description blocks.  The biology block is not entirely
+wrong, but is clearly part of the preceding Notes section, which was
+correctly identified as diagnosis."*
+
+Both confirmed, and the aside in the last clause turns out to be the
+most consequential thing in the treatment.
+
+#### The description's head was left behind across a figure
+
+| ¶ | label | content |
+|---:|---|---|
+| 176 | **Misc-exposition** | `Ascomata perithecioid, immersed, with the ostiolum, often including an upper part of the ascoma, erumpent to 0.2–0.9 mm` |
+| 177 | Figure-caption | `Fig. 8 Requienella fraxini. a–d. Ascomata in face and lateral views…` |
+| 178 | Page-header | `--- PDF Page 15 Label 15 ---` |
+| 179 | Misc-exposition | `Persoonia – Volume 37, 2016` |
+| 180 | **Description** | `above the host surface, solitary or aggregated in small numbers…` |
+
+`erumpent to 0.2–0.9 mm` + `above the host surface` is one sentence,
+and **the word that was lost is `Ascomata`** — the canonical opener the
+whole description hangs from.  A full-page figure caption, a page
+break and a running head separate the two halves, so this is not a
+`Misc-exposition` reaching out to steal; it is a 120-character orphan
+stranded by page layout and swept into the catch-all.
+
+Corpus-wide, over the 41 033 descriptions longer than 120 characters:
+
+| | n | share |
+|---|---:|---:|
+| opens with a **lower-case** word — head absorbed | **9 250** | **22.5 %** |
+| opens with a canonical anatomical term (`Ascomata`, `Basidiomata`, `Colonies`, `Pileus`, …) | 13 695 | 33.4 % |
+| neither | 18 088 | 44.1 % |
+
+**More than a fifth of all descriptions begin mid-sentence.**  Only a
+third begin the way a description should.
+
+#### The heading override, and why it matters for every heading-based detector
+
+¶185 `Diagnosis` → ¶186 `Misc-exposition` → ¶187 `Biology` is one
+continuous sentence: `…Distinction criteria other than ascospore
+septation are different hosts (Olea vs Fraxinus) and the` +
+`geographical distribution, R. fraxini in northern humid regions…`.
+`Biology` is *"not entirely wrong"* exactly as the operator says,
+because the register genuinely is distribution — §12.3.8's register
+detector again, and the same mechanism as §12.3.58.  (¶187 also
+engulfs a family act at its tail: `Sporocadaceae Corda (as
+'Sporocadeae'), Icon. Fungorum (Prague) 5: 34. 1842`.)
+
+But ¶185 is headed **`Notes —`** in the paper and the classifier called
+it **`Diagnosis`** — and it is right: the block distinguishes
+*R. fraxini* from *R. seminuda* by ascospore septation, which is what a
+diagnosis is.  **The classifier overrode the document's own heading and
+was correct.**
+
+That is not a one-off:
+
+| | n | share of diagnosis fields |
+|---|---:|---:|
+| `diagnosis` headed **`Notes`/`Remarks`** | **3 109** | **16.5 %** |
+| `diagnosis` headed `Diagnosis` | 2 666 | 14.2 % |
+
+**A `Diagnosis` field is more often headed `Notes` than `Diagnosis`.**
+And the override is justified — scoring each population for the
+comparative language that *defines* a diagnosis (`differs from`,
+`distinguished from`, `unlike`, `in contrast to`):
+
+| | n | carries comparative language |
+|---|---:|---:|
+| `diagnosis` headed `Notes`/`Remarks` | 3 109 | **68.3 %** |
+| `diagnosis` headed `Diagnosis` | 2 666 | **67.2 %** |
+| `diagnosis` headed otherwise | 13 012 | 52.6 % |
+| plain `notes` field, no diagnosis present *(baseline)* | 23 336 | **33.5 %** |
+
+**Indistinguishable from the ones the paper labelled `Diagnosis`, and
+double the baseline.**  The classifier is selecting diagnostic content
+by what it says, not by what it is called, and that is the correct
+behaviour.
+
+**This is a direct caution for §12.3.52's Signal 1 and §12.3.54's
+own-heading test.**  Both read a section heading as evidence of where a
+boundary belongs, and both are sound *for boundaries*.  Neither
+licenses reading a heading as evidence of the *label*: a detector that
+"corrected" these 3 109 fields to `Notes` on the strength of their
+heading would destroy the best-populated diagnosis evidence in the
+corpus.  Headings locate sections; they do not name them.
+
+Fixture: `taxon_39ee20f5…`, class
+`§10-description-head-left-behind-across-a-figure`, `expected_flags`
+`["§10:mid_sentence"]`, `known_missed_flags`
+`["§10:description_head_absorbed",
+"§8:register_detector_on_a_notes_continuation",
+"§5:nomenclatural_act_labeled_biology"]`.
+
 ### 12.3.58 "Almost random" is five register detectors firing on the wrong kind of text
 
 Operator, round-7 review of `taxon_3870f370`: *"front matter to an
