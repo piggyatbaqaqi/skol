@@ -2998,6 +2998,70 @@
     "§5:nomenclature_is_a_type_species_line"
    ],
    "notes": "Zymoseptoria Quaedvlieg & Crous, Persoonia 26 (2011).  Round-7 review.  Operator: 'starts with a type designation of a species for a genus that was undoubtedly introduced earlier.'  Confirmed: this treatment's nomenclature is paragraph 121, 'Type species. Zymoseptoria tritici (Desm.) Quaedvlieg & Crous.' -- a type-species designation, not an act.  The genus act is one block earlier at 119, labelled Misc-exposition and sharing the block with the running head: '64 | Persoonia - Volume 26, 2011 | Zymoseptoria Quaedvlieg & Crous, gen. nov. - MycoBank MB517922'.  Paragraph 120, the genus's Latin diagnosis, went to Description.  The genus's three-block apparatus was scattered before the treatment began.  Second claim also confirmed and it is praise: description 123 ends 'Type I conidia solitary, hyaline, smooth, guttulate, narrowly' and 128 opens 'cylindrical to subulate' -- the §15 join bridged a 419-char Phylogeny block, a 1 061-char Table of strain codes, a Page-header and the running head '65 | W. Quaedvlieg et al.' to rejoin one word.  Third claim: 124 is 'Fig. 4  The first of 810 equally most parsimonious trees...' labelled Phylogeny.  It is phylogenetic AND it is a figure caption, and the operator is right that the structural fact is the useful one.  Labelled Phylogeny it is silently dropped by the grouper (§12.3.12) -- the phylogeny field is None here even though the block sits between two description spans.  See §12.3.60."
+  },
+  {
+   "id": "taxon_52a16a4d51d4ac1cc0b90ef497e4bd0e8ab5473511dabeed10d8c73ba2e3a751",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "24-a8aa1593e8af06025bab8caacc5b4401",
+   "class": "§5-whole-taxonomic-paper-as-one-nameless-stub",
+   "treatment": "Nomen ignotum\n",
+   "description": "brown verruculose conidiophores and oblong to cylindrical 0–12-heteroseptate (but mostly\n1-septate) brown conidia.\n\nerect or funiculose, branched, pigmented conidiophores and blastocatenate,\nunicellular or septate, pigmented conidia produced on polytretic conidiogenous \n\nthe Latin, -septatum, referring to the septa.\nConidiophores distinct, single or grouped to profusely fasciculate, erect,\nunbranched or rarely branched, straight or flexuous, septate, verrucose or\nverruculose below, smooth toward the apex, brown, 120–300 × 4.5–9 µm.\nConidiogenous cell polytretic, integrated, terminal, smooth, brown.\nConidia blastocatenate, ellipsoid to oblong or cylindrical, rounded at the ends,\n0–12-septate, but mostly 1-septate, constricted at the somewhat thickened\nsepta, smooth, brown, concolorous, 10–77 × 6–10 µm.\nAdditional specimens examined: BRAZIL, Bahia, Serra da Jibóia, on bark of an\nunidentified plant, 27.III.2007, coll. T.S. Santa-Izabel (HUEFS 210428; 210429; 210430;\n210430); 9.IV.2007, coll. T.S. Santa-Izabel (HUEFS 210431).\nNote: Diplococcium heteroseptatum also differs from all other Diplococcium\nspecies by its profusely fasciculate, verrucose or verruculose conidiophores and\nthe random number of conidial septa observed.\n",
+   "diagnosis": "",
+   "type_designation": "Type: Brazil, Bahia State, Pindobaçu, Serra da Fumaça, on bark of an unidentified plant,\n20.XI.2008, coll. D.A.C. Almeida (Holotype: HUEFS 210432).\n",
+   "materials_examined": "Samples of bark were collected from March 2007 to November 2008 at Serra\nda Fumaça (10°74′S 40°36′W) and Serra da Jibóia (12°50′S 39°28′W), Bahia state.\nMethods for specimen collection, isolation, and morphological examination are\nprovided in Almeida et al. (2014). Holotype and additional specimens were deposited\nin the Herbarium of the State University of Feira de Santana, Bahia, Brazil (HUEFS).\n",
+   "description_spans": [
+    {
+     "paragraph_number": 11,
+     "start_line": 27,
+     "end_line": 28,
+     "start_char": 1188,
+     "end_char": 1319,
+     "pdf_page": 1,
+     "pdf_label": "1",
+     "empirical_page": "1",
+     "head": "[@brown verruculose conidiophores and ob"
+    },
+    {
+     "paragraph_number": 15,
+     "start_line": 37,
+     "end_line": 38,
+     "start_char": 1726,
+     "end_char": 1897,
+     "pdf_page": 1,
+     "pdf_label": "1",
+     "empirical_page": null,
+     "head": "[@erect or funiculose, branched, pigment"
+    },
+    {
+     "paragraph_number": 35,
+     "start_line": 72,
+     "end_line": 85,
+     "start_char": 3317,
+     "end_char": 4310,
+     "pdf_page": 3,
+     "pdf_label": "3",
+     "empirical_page": null,
+     "head": "[@the Latin, -septatum, referring to the"
+    }
+   ],
+   "source_anchors": [],
+   "synthetic_nomenclature": true,
+   "authored_binomial_in_desc": true,
+   "expected_flags": [
+    "§2:synth_nomen",
+    "§6:authored_binomial",
+    "§10:mid_sentence",
+    "§12:desc_span_gap",
+    "§13:no_source_anchor"
+   ],
+   "known_missed_flags": [
+    "§5:act_and_diagnosis_in_one_misc_block",
+    "§11:misc_block_holds_multiple_section_starts",
+    "§5:whole_paper_one_stub"
+   ],
+   "notes": "Almeida et al., Mycotaxon 130: 495-498 (2015), Diplococcium heteroseptatum. Round-7 review.  A 23-paragraph paper that produced exactly ONE treatment: a Nomen ignotum stub spanning paragraphs 5-17.  All seven operator claims confirmed.  5 Description = the abstract's tail.  6 Misc-exposition holds 'Key words- biodiversity, taxonomy, tropical microfungi' then 'Introduction' then the introduction body, which continues into 7 Description.  8 Misc-exposition holds a sentence tail plus the header 'Materials & methods', whose body is 9, labelled Materials-examined.  14 Misc-exposition holds FOUR things: the running head, the 'Taxonomy' header, the complete act ('Diplococcium heteroseptatum D.A.C. Almeida, T.S. Santa Izabel, R.F. Castaneda & Gusmao, sp. nov. Figs 1, 2 MycoBank MB810699') and the English diagnosis ('Differs from all other Diplococcium spp. by the wide range of conidial septation.').  15 Type-designation is correct.  16 Misc-exposition takes the etymology's first line and 17 Description its second ('the Latin, -septatum, referring to the septa.'), then also absorbs the additional specimens and the diagnostic Note.  The paper is a complete and valid taxonomic paper; it produced no named treatment solely because its act landed in a Misc-exposition.  That refutes, for a quarter of the class, the guess recorded in §12.3.56 that stub-only documents are mostly non-taxonomic.  See §12.3.61."
   }
  ]
 }

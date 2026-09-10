@@ -7477,6 +7477,91 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.61 A complete taxonomic paper that produced no named treatment
+
+Operator, round-7 review of `taxon_52a16a4d` (Almeida *et al.*,
+*Mycotaxon* 130: 495–498, *Diplococcium heteroseptatum*).  Seven
+claims, all confirmed:
+
+| ¶ | label | what it is |
+|---:|---|---|
+| 5 | Description | **the abstract's tail** |
+| 6 | Misc-exposition | `Key words— …` **+** `Introduction` **+** the introduction body |
+| 7 | Description | the introduction, continued |
+| 8 | Misc-exposition | a sentence tail **+** the header `Materials & methods` |
+| 9 | **Materials-examined** | the Materials & Methods **body** |
+| 14 | Misc-exposition | running head **+** `Taxonomy` **+ the complete act +** the English diagnosis |
+| 15 | Type-designation | **correct** |
+| 16 | Misc-exposition | the etymology's **first** line |
+| 17 | Description | the etymology's **second** line, the description, the additional specimens, and the diagnostic `Note:` |
+
+¶14 is the one to look at:
+
+```
+Diplococcium heteroseptatum sp. nov. (Brazil) ... 497
+Taxonomy
+Diplococcium heteroseptatum D.A.C. Almeida, T.S. Santa Izabel,
+  R.F. Castañeda & Gusmão, sp. nov.
+Figs 1, 2
+MycoBank MB810699
+Differs from all other Diplococcium spp. by the wide range of conidial septation.
+```
+
+**A running head, a section header, a complete nomenclatural act and a
+diagnosis, in one `Misc-exposition`.**  The catch-all is not absorbing
+a stray line here; it is holding four distinct structural elements, one
+of which is the only thing that could have named this treatment.
+
+#### The whole paper became one nameless stub
+
+This document is 23 paragraphs — a four-page species description — and
+it produced **exactly one treatment**, a `Nomen ignotum` stub spanning
+¶5–¶17.  It has a valid act, a MycoBank number, an English diagnosis, a
+holotype, a full description, an etymology and additional specimens.
+**Nothing is missing from the paper.**  It yielded no named treatment
+solely because ¶14 was labelled `Misc-exposition`.
+
+#### Testing what §12.3.56 guessed
+
+§12.3.56 recorded 16 757 stubs in documents with no real treatment and
+guessed *"many are probably papers that should not have been ingested
+as taxonomic treatments in the first place."*  This treatment is a
+counter-example, so the guess is worth testing.
+
+Those 16 757 stubs come from **11 486 documents**.  Sampling 150 at
+random (seed 20260910) and asking whether the *document text* carries a
+nomenclatural act — `sp./comb./gen./nom. nov.`, `MycoBank MB…`, `Index
+Fungorum IF…` — together with a binomial:
+
+| | n | share |
+|---|---:|---:|
+| stub-only documents sampled | 150 | |
+| **carry a nomenclatural act** | **36** | **24.0 %** |
+| extrapolated to the 11 486 | | **~2 757 documents** |
+
+> `Apophysomyces thailandensis S. Khuna, N. Suwannarach & S. Lumyong sp. nov.`
+> `Glaciozyma gen. nov., Glaciozyma martinii sp. nov.`
+> `Ionaspis aptrootii Poengs. & Lumbsch, nom. nov., MB 835127`
+
+**The guess is right for about three quarters and wrong for the rest.**
+Roughly 2 757 documents are taxonomic papers that named new taxa and
+delivered nothing — not mis-ingested material but a **recovery
+opportunity**, sharing its cause with §12.3.52 Signal 2 (33 % of acts
+not labelled `Nomenclature`) and §12.3.60's self-declaration family.
+
+*(A first pass put this at 27.3 % using a looser `nov*` pattern, which
+matched `Nova Hedwigia` in bibliographies — 5 of its 41 hits.  The
+strict figure above is the one to use.)*
+
+Fixture: `taxon_52a16a4d…`, class
+`§5-whole-taxonomic-paper-as-one-nameless-stub`, `expected_flags`
+`["§2:synth_nomen", "§6:authored_binomial", "§10:mid_sentence",
+"§12:desc_span_gap", "§13:no_source_anchor"]` — five fire, so this one
+is loudly caught — with `known_missed_flags`
+`["§5:act_and_diagnosis_in_one_misc_block",
+"§11:misc_block_holds_multiple_section_starts",
+"§5:whole_paper_one_stub"]`.
+
 ### 12.3.60 A figure caption about phylogeny is first a figure — structure should outrank topic
 
 Operator, round-7 review of `taxon_48ab8e87` (*Zymoseptoria*
@@ -7946,10 +8031,18 @@ taxonomic paper is a treatment.
 > the first article in a bound volume.  Front matter of later articles
 > in the same volume sits after a real treatment and is invisible to
 > it; 13 such stubs are directly demonstrable and the true count is
-> not estimated.  The 16 757 from documents with no
-named treatment at all are a larger and different question — many are
-probably papers that should not have been ingested as taxonomic
-treatments in the first place — and are not addressed here.
+> not estimated.
+
+The 16 757 from documents with no named treatment at all are a larger
+and different question — many are probably papers that should not have
+been ingested as taxonomic treatments in the first place.
+
+> **Tested in §12.3.61, and the guess is only three-quarters right.**
+> Those 16 757 stubs come from 11 486 documents; in a random sample of
+> 150, **24.0 % contain a nomenclatural act** in their text.  Roughly
+> 2 757 of them are taxonomic papers that named new taxa and delivered
+> nothing, because the act was not labelled `Nomenclature`.  That part
+> of the class is a recovery opportunity, not an ingestion error.
 
 This also settles the caveat left in §12.3.51: `Nomen ignotum` swamped
 the first repeat-nomenclature measurement because it is 37.4 % of the
