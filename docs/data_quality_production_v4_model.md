@@ -7477,6 +7477,104 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.57 The type cue fails in documents where every other cue is perfect — §12.3.48's join attribution corrected
+
+Operator, round-7 review of `taxon_30c6b27d` (*Colletotrichum
+actinidicola*, Plazi-sourced): *"nearly a poster child.  Only the type
+designation is slightly wrong, being labeled as the more general
+materials-examined."*
+
+Confirmed — `materials_examined` holds two sections, type first:
+
+> `Type.China • Guizhou Province, Tongren, … (dried culture, HGUP 25-0043, holotype), ex-type living culture GUCC 25-0036.`
+> `Material examined.China • Guizhou Province, Tongren, … GUCC 25-0058.`
+
+That is §12.3.54's detector (A) class (1 531 treatments) and
+§12.3.48's coarsening, and it is the **second clean exemplar** after
+`taxon_0150308d`: the coarsening is the only defect in the treatment.
+
+#### The observation that made it worth measuring
+
+**Every heading in this treatment is joined** — `Description.Isolated`,
+`Culture characteristics.Colonies`, `Type.China`, `Material
+examined.China`, `Etymology.The`, `Notes.Based` — the §15 element
+artifact §12.3.48 blamed for the type loss.  **Five of the six were
+honoured anyway.**  Only `Type.` failed.  If the join were the cause,
+it should have damaged the other five equally.
+
+#### Separator style is a document constant, so §12.3.48's comparison was between-document
+
+Scoring block-initial cues across the 400-document sample by separator:
+
+| | documents | cues |
+|---|---:|---:|
+| pure-**joined** | 17 | 413 |
+| pure-**spaced** | 109 | 1 941 |
+| **mixed** | **3** | |
+
+**126 of 129 documents use exactly one style**, and one document
+supplies 205 of the 413 joined cues.  Separator style is a property of
+the publisher's typesetting, not of the block — so any joined-vs-spaced
+comparison compares *documents*, and no within-document test is
+available because the variable does not vary within a document.
+
+**This invalidates §12.3.48's causal claim.**  That section reported
+joined cues honoured at 52.3 % against 68.2 % spaced and concluded
+*"roughly 286 treatments lose their type status to the join
+specifically"*, recommending the join repair as *"a text fix with a
+measurable target"* over retraining.  The 16-point gap is real as a
+correlation and unsupported as a cause: the joined documents differ from
+the spaced ones in every way a publisher can differ.
+
+#### Holding the document style constant instead
+
+The right comparison is *across cues within one stratum*, which does
+control for document:
+
+| cue asks for | pure-**joined** docs | | pure-**spaced** docs | |
+|---|---:|---:|---:|---:|
+| | n | honored | n | honored |
+| `Description` | 121 | **100.0 %** | 188 | 81.4 % |
+| `Notes` | 120 | **98.3 %** | 376 | 32.7 % |
+| `Etymology` | 62 | **100.0 %** | 357 | 84.0 % |
+| `Diagnosis` | 49 | **100.0 %** | 42 | 26.2 % |
+| `Materials-examined` | 10 | **100.0 %** | 253 | 86.6 % |
+| **`Type-designation`** | 43 | **46.5 %** | 551 | **51.9 %** |
+
+**In the 17 documents where the classifier honours every other cue at
+98–100 %, it honours the type cue 46.5 %.**  Same documents, same
+typesetting, same join.  And the spaced stratum puts it at 51.9 % — so
+the separator moves the type cue about five points, not sixteen, and
+even those five are not causally attributable.
+
+**The type cue is weak everywhere, and only the type cue is.**
+
+#### What that leaves as the mechanism
+
+§12.3.54's narrowing relation, refined.  `Type-designation` ⊂
+`Materials-examined`, so a correct superlabel is always available — but
+`Diagnosis` ⊂ `Description` too, and `Diagnosis` scores 100 % in the
+joined stratum.  The narrowing relation alone does not predict the
+failure.  What separates them is the **body**: a diagnosis reads as
+comparative morphological prose, distinguishable from a description,
+while a type designation's body is *verbatim indistinguishable* from a
+materials citation — same countries, same collectors, same herbarium
+codes.  The cue is the only signal, and the superlabel is a correct
+reading of everything after it.
+
+**This reverses §12.3.48's recommendation.**  Repairing the join is now
+the *low*-value fix — worth at most five points, and possibly none.
+The lever is making the type cue override the materials reading, which
+is a lattice-and-training question, precisely what §12.3.48 argued
+against.  §12.3.48's measurements stand as recorded; its causal
+attribution and its recommendation do not.
+
+Fixture: `taxon_30c6b27d…`, class
+`§5-type-coarsened-to-materials-examined`, `expected_flags`
+`["§6:authored_binomial"]`, `known_missed_flags`
+`["§5:type_coarsened_to_materials"]`.  (`Culture characteristics.`
+staying inside `description` is correct, per the §12.3.52 correction.)
+
 ### 12.3.56 Every article header is present and 79 % are buried — the structure argument, measured
 
 Operator, round-7 review of `taxon_29a4cfe6` (Telagathoti *et al.*,
@@ -8439,6 +8537,16 @@ honored 80 % of the time when the join leaves it alone — and the join
 is a preprocessing artifact of §15's element concatenation, not a
 modelling limitation.  Repairing the join is a text fix with a
 measurable target; retraining against a damaged cue is not.
+
+> **CORRECTED by §12.3.57.**  Separator style is a document constant —
+> 126 of 129 sampled documents use exactly one — so the table above is
+> a between-document comparison and cannot carry a causal claim.
+> Holding document style constant, the type cue is honored 46.5 % in
+> documents where every other cue scores 98–100 %, and 51.9 % in
+> spaced documents: the join is worth about five points, not sixteen.
+> The ~286-treatment attribution and the recommendation in this
+> paragraph are withdrawn.  The measurements stand; the causal reading
+> does not.
 
 **Not done:** confirming that the cue *detector* also misses the joined
 form.  The 124 came from a one-off script over 300 documents and the

@@ -2814,6 +2814,52 @@
    ],
    "notes": "Telagathoti et al., Studies in Mycology 103 (2022), Mortierellaceae.  Round-7 review.  Operator: 'almost completely wrong, but an approach which extracts article structure would probably do much better.'  A Nomen ignotum stub assembled entirely from front matter, and every claim confirmed against paragraphs 0-16 of the annotation stream.  The notes field is the tail of the abstract (it opens mid-sentence, 'isolates representing 13 new species'), and closes with 'Key words:' and 'Taxonomic novelties: new genus: Tyroliella Telagathoti, Probst & Peintner; New species: Entomortierella galaxiae Telagathoti' -- a heading not previously recorded, and a machine-readable manifest of the paper's new names.  The introduction runs continuously through SIX labels: 5 Misc-exposition (holding the INTRODUCTION header) -> 6 Diagnosis -> 7 Misc-exposition -> 8 Biology -> 9 Misc-exposition -> 11 Misc-exposition -> first line of 12 Materials-and-methods ('from isolates in pure culture.').  Paragraph 11 carries the page furniture '26 | Telagathoti et al.' that the Page-header block 10 did not take -- the operator's illustration of Misc-exposition overuse.  The two Materials-and-methods blocks (12, 15) are indeed the only correctly identified components, and they are the only ones the schema discards: Materials-and-methods has no entry in treatment.py's _LABEL_TO_FIELD.  Even 15 opens with the recto running title 'Mortierellaceae from subalpine and alpine habitats'.  See §12.3.56.",
    "source_anchors": []
+  },
+  {
+   "id": "taxon_30c6b27d2155e526f6ab393272b49c2ddc8a6533b559295eb5d34aab9dc904c3",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "20-45efce610fba9f91526a8cdb8e07806a",
+   "class": "§5-type-coarsened-to-materials-examined",
+   "treatment": "Colletotrichum actinidicola\n",
+   "description": "Description.Isolated from leaf spot of Actinidia chinensis L. Sexual morph: undetermined. Asexual morph: Conidiomata pycnidial, globose, dark brown, superficial on PDA, releasing conidia in a yellow mass, slimy, globose. Conidiophores produce conidiogenous cells either directly from hyphae or from a cushion of spherical hyaline cells, septate, branched. Conidiogenous cells hyaline, cylindrical to clavate, straight to flask-shaped, (13.5–)14–40(–41) × (3–)3.3–5(–5.2) μm (mean ± SD = 22 ± 0.7 × 4 ± 0.4 μm). Setae not observed. Conidia (10–)14–16(–18) × (5–)5.5–6(–7.2) μm (mean ± SD = 16 ± 1 × 6 ± 1 μm), n = 35, L/W ratio = 2.1, hyaline, aseptate, smooth-walled, ellipsoidal to cylindrical, one end rounded and one end acute or both ends rounded, guttulate, granular. Appressoria single in short chains, pale brown, thick-walled, entire edge, rarely lobate, smooth-walled.\n\nCulture characteristics.Colonies on MEA reach 7–9 cm in diameter after 7 days at room temperature (±25 °C), exposed to 12 hours of light and 12 hours of darkness. The colonies are rhizoid to filamentous, dense, with a flat or raised surface and a filiform margin. After 14 days, the colony appears white from above, producing grouped pycnidia with an orange ring conidial mass in the center and a white to yellow reverse (Fig. 3a, b).\n",
+   "diagnosis": "",
+   "materials_examined": "Type.China • Guizhou Province, Tongren, Symptomatic leaves of Actinidia chinensis (Actinidiaceae), 2024.03.02, coll. Wang Jiaping, TRM2-1/GZ24/GZ24-2 (dried culture, HGUP 25-0043, holotype), ex-type living culture GUCC 25-0036.\n\nMaterial examined.China • Guizhou Province, Tongren, Symptomatic leaves of Actinidia chinensis (Actinidiaceae), 22024.03.02, coll. Wang Jiaping, TRM2-1/GZ24/GZ24-2 (dried culture, HGUP 25-0043, holotype), ex-type living culture GUCC 25-0036, GUCC 25-0058.\n",
+   "etymology": "Etymology.The epithet refers to “dweller on Actinidia,” utilizing the Latin suffix -cola, meaning “inhabitant” or “dweller.”\n",
+   "description_spans": [
+    {
+     "paragraph_number": 13,
+     "start_line": 13,
+     "end_line": 13,
+     "start_char": 24649,
+     "end_char": 25542,
+     "pdf_page": 0,
+     "pdf_label": null,
+     "empirical_page": null,
+     "head": "[@Description.Isolated from leaf spot of"
+    },
+    {
+     "paragraph_number": 15,
+     "start_line": 15,
+     "end_line": 15,
+     "start_char": 25544,
+     "end_char": 25994,
+     "pdf_page": 0,
+     "pdf_label": null,
+     "empirical_page": null,
+     "head": "[@Culture characteristics.Colonies on ME"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": true,
+   "expected_flags": [
+    "§6:authored_binomial"
+   ],
+   "known_missed_flags": [
+    "§5:type_coarsened_to_materials"
+   ],
+   "notes": "Colletotrichum actinidicola, Plazi-sourced.  Round-7 review.  Operator: 'nearly a poster child.  Only the type designation is slightly wrong, being labeled as the more general materials-examined.'  Confirmed: materials_examined holds BOTH 'Type.China - Guizhou ... (dried culture, HGUP 25-0043, holotype), ex-type living culture GUCC 25-0036.' AND 'Material examined.China - ...' -- two sections, type first, which is §12.3.54's detector (A) class (1 531 treatments) and §12.3.48's coarsening.  A second clean exemplar after taxon_0150308d: the coarsening is the ONLY defect.  Every heading in this treatment is joined -- 'Description.Isolated', 'Culture characteristics.Colonies', 'Type.China', 'Material examined.China', 'Etymology.The', 'Notes.Based' -- and five of the six were honoured; only Type. failed.  That observation produced the controlled measurement in §12.3.57 which corrects §12.3.48's causal attribution of the loss to the §15 element join.  'Culture characteristics.' staying inside description is correct, per the §12.3.52 correction.  See §12.3.57."
   }
  ]
 }
