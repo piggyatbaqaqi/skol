@@ -20,6 +20,23 @@ grep -o 'taxon_[0-9a-f]\{64\}' data/annotation_rounds/production_v4_round7.txt |
 ls data/production_v4/dossiers/production_v4_round7/ | grep '<prefix>'
 ```
 
+Dossiers live at the repo-relative `data/production_v4/dossiers/<round>/`.
+`/home/piggy/src/github.com/piggyatbaqaqi/skol` and
+`/data/piggy/src/github.com/piggyatbaqaqi/skol` are the **same directory**
+(same inode) — the operator writes the first form, the session's working
+directory is the second. Never copy or re-render across them.
+
+To regenerate after a renderer change, pipe ids on stdin and **omit**
+`--doc-id`; the flag takes a literal id list, so `--doc-id -` asks for a
+treatment named `-` and exits 0 having written nothing:
+
+```bash
+grep -o 'taxon_[0-9a-f]\{64\}' \
+    data/annotation_rounds/production_v4_round7_review50.txt | sort -u \
+  | python bin/treatment_dossier.py --experiment production_v4 \
+      --output-dir data/production_v4/dossiers/production_v4_round7
+```
+
 If it 404s, the dossier filename is authoritative. If the id resolves but the
 content does not match the description, the operator has quoted a neighbouring
 id — find the intended one in the round file, **confirm it against every claim
