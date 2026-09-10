@@ -7477,6 +7477,80 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.64 "Not worth the effort" — verifiable on the instance, unmeasurable on the class
+
+Operator, round-7 review of `taxon_67aa0203` (Kobayashi & Nagasawa,
+*Inocybe* subgen. *Leptocybe*): *"OCR is pretty poor.  There is
+recoverable information here, but I don't think this treatment is worth
+the effort."*
+
+**The judgment is correct on inspection.**  Two damage kinds, both
+pervasive:
+
+| kind | as printed |
+|---|---|
+| intra-word spacing | `Qu ere us acutissima` (*Quercus acutissima*), `s nuff brown`, `pap ill a`, `fi bril lose`, `tra ns lu cent-stria te`, `Lamel lae adn exed to al mos t free` |
+| l/1/I glyph confusion | `lnocybe`, `J.casimiri` (*I. casimiri*), `llyme11ialibus` (*hymenialibus*), `11UI/is` (*nullis*), `rom` (mm), `11m`/`flm` (µm), `em` (cm) |
+
+It is compounded: the treatment is a synthetic `Nomen ignotum` stub
+spanning ¶5567–5767, so it is a multi-treatment blob as well as a
+damaged one.  **Six detectors fire** — `§2:synth_nomen`,
+`§6:authored_binomial`, `§6:latin_ele`, `§10:tail_clip`,
+`§12:desc_span_gap`, `§13:no_source_anchor` — so nothing about it is
+hidden.  The operator's decision is a *triage* judgment, and the
+question worth answering is how many treatments deserve the same one.
+
+#### Four attempts, four false-positive families
+
+The obvious metric is a short-token rate: OCR spacing shatters words,
+so count 1–2 letter alphabetic tokens outside a stoplist. Each
+refinement fixed one contaminant and exposed another.
+
+| attempt | what the tail turned out to be |
+|---|---|
+| raw short-token rate | **U+FFFD encoding damage** — §12.3.55's class, `et al.����U����u�u��` at 0.85 |
+| …excluding U+FFFD | **tables and NMR shift lists** — `Table 2. Cont. [76] [b] [c]`, `(C-9), 72.2 (C-8)` |
+| …plus a numeric-density gate | **author-initial name lists** — `alpinum B.K. Cui, J.H. Xing & Y.F. Sun`, presence/absence grids `Y Y`, herbarium codes `(PH)` |
+| …lower-case fragments only, no adjacent period | **French** — `à`, `le`, `un`, `du`, `ni` are ordinary words, and the top five are all francophone papers |
+
+The last refinement also destroyed the signal it was built for: this
+treatment scores 0.0004 on it, because its fragments sit *beside other
+fragments* (`fi bril lose`) rather than alone between whole words.
+
+**What survives is an instance-level check, not a class count.**  On
+the third metric the treatment scores **0.141 against a median of
+0.028** and clean controls at 0.017 (Plazi *Colletotrichum*), 0.032
+(*Claviceps litoralis*) and 0.033 (*Diaporthe schini*) — the 98th
+percentile.  That is enough to confirm the operator's reading of *this*
+treatment and not enough to publish a corpus count, because the decile
+above it is mostly not OCR damage.  **No number is recorded here for
+the size of the class.**
+
+#### The pipeline discards the signal that would settle it
+
+The ingest document for this paper carries `article.pdf`,
+`article.txt`, `article.spans.v4.json` and `article.page-headers.json`,
+and its fields are bibliographic only — `journal`, `volume`, `issn`,
+`pdf_url`, `taxonomy`.  **There is no OCR engine, no confidence, no
+language.**  Nothing records how `article.txt` was produced or how well.
+
+That is the fix worth making, and it is cheap at ingest and impossible
+afterwards: an engine name, a mean per-page confidence and a detected
+language would make "is this worth the effort" a stored field rather
+than a heuristic argued from token shapes.  The PDF is retained, so
+re-OCR remains possible for any treatment; what is missing is the
+basis for deciding *which*.
+
+**A dictionary-based check would also work** — the fraction of tokens
+absent from a Latin/English/mycological lexicon — and is the obvious
+next attempt, but it is a different kind of tool from the regexes used
+elsewhere in §12.3 and is not built here.
+
+Fixture: `taxon_67aa0203…`, class
+`§16-ocr-damage-beyond-economic-repair`, `expected_flags` the six that
+fire, `known_missed_flags` `["§16:ocr_intra_word_spacing",
+"§16:ocr_glyph_confusion"]`.
+
 ### 12.3.63 A defect whose damage lands in the next treatment — and treatment-level review cannot see it
 
 Operator, round-7 review of `taxon_66bf946b` (*Diaporthe schini*, Gomes
