@@ -7477,6 +7477,109 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.60 A figure caption about phylogeny is first a figure — structure should outrank topic
+
+Operator, round-7 review of `taxon_48ab8e87` (*Zymoseptoria*
+Quaedvlieg & Crous, *Persoonia* 26): *"starts with a type designation
+of a species for a genus that was undoubtedly introduced earlier.  The
+description is correctly identified, even with a substantial two block
+interstitial.  The Figure caption is indeed phylogenetic.  From a
+document structure perspective it's probably more important to
+recognize it as a figure."*
+
+All three confirmed.
+
+#### The genus's apparatus was scattered before the treatment began
+
+| ¶ | label | content |
+|---:|---|---|
+| 119 | **Misc-exposition** | `64 | Persoonia – Volume 26, 2011` **`Zymoseptoria Quaedvlieg & Crous, gen. nov. — MycoBank MB517922`** |
+| 120 | **Description** | `Septoriae similis, sed adaucto fermentoide…` *(the genus's Latin diagnosis)* |
+| 121 | **Nomenclature** | `Type species. Zymoseptoria tritici (Desm.) Quaedvlieg & Crous.` ← **the treatment starts here** |
+
+The treatment's `nomenclature` is a **type-species designation, not an
+act**.  The act is one block earlier, sharing a `Misc-exposition` with
+the running head — §12.3.52 Signal 2 again, and here it is the direct
+cause of where the treatment begins.  The Latin diagnosis went to
+`Description`, so all three parts of the genus protologue landed in
+three different places and only the least important of them opened the
+treatment.
+
+#### The join earned its keep
+
+`¶123` ends `Type I conidia solitary, hyaline, smooth, guttulate,
+narrowly` and `¶128` opens `cylindrical to subulate, tapering towards
+acutely rounded apex`.  Between them:
+
+| ¶ | label | size |
+|---:|---|---:|
+| 124 | Phylogeny | 419 ch |
+| 125 | Table (strain codes) | 1 061 ch |
+| 126 | Page-header | 26 ch |
+| 127 | Misc-exposition (running head) | 48 ch |
+
+**~1 550 characters and four blocks, to rejoin one word.**  Recorded as
+praise, with §12.3.54's: the §15 gap-spanning join is not the weak
+link.
+
+#### Structure should outrank topic
+
+¶124 is `Fig. 4   The first of 810 equally most parsimonious trees
+obtained from a heuristic search with 1 000 random taxon additions…`,
+labelled **`Phylogeny`**.  It *is* phylogenetic.  It is also, and more
+usefully, **a figure caption** — and the operator's point is the right
+one: `Figure-caption` is a *structural* fact that tells a consumer how
+to handle the block, while `Phylogeny` is a *topic* that does not.
+
+Over the 400-document sample, blocks that **open with a figure marker**
+(`Fig. 4`, `Figure 2`, `FIG. 1`):
+
+| label | n | share |
+|---|---:|---:|
+| `Figure-caption` | 1 181 | 73.3 % |
+| `Misc-exposition` | 236 | 14.6 % |
+| **`Description`** | **44** | 2.7 % |
+| `Key` | 32 | 2.0 % |
+| `Materials-and-methods` | 26 | 1.6 % |
+| `Notes` | 24 | 1.5 % |
+| `Nomenclature` | 18 | 1.1 % |
+| `Phylogeny` | 16 | 1.0 % |
+
+**430 of 1 611 (26.7 %) are not labelled `Figure-caption`** — including
+`Figure 2. Tylopilus sultanii (holotype, LAH0806). a, b. Sporocarps, in
+situ.` as `Description` and `Fig. 8. Collybiopsis californica…
+Cheilocystidia.` as `Diagnosis`.  **The 44 that land in `Description`
+are the harmful ones**: they enter a treatment's description text.
+`Phylogeny` at least gets dropped — §12.3.12's silent drop, visible
+here as this treatment's `phylogeny` field being `None` despite ¶124
+sitting between two of its description spans.
+
+#### Three self-declaration channels, all measured, all ignored
+
+This is the third block type in this review series that **names its own
+kind in its first token** and is overruled by register:
+
+| self-declaration | not given the matching label | recorded |
+|---|---:|---|
+| `Key to …` heading | **70.5 %** | §12.3.55 |
+| `Fig. N` / `Figure N` opener | **26.7 %** | here |
+| a nomenclatural act (`comb. nov.`, `MycoBank MB…`) | **33.0 %** | §12.3.52 Signal 2 |
+
+The classifiers read register, and register is exactly what these three
+block types do not reliably have — a figure caption about morphology
+reads as a description, a key reads as a table, a nomenclatural act
+reads as a bibliography.  **The self-declaration is the signal the
+register cannot supply, it is present, and nothing consults it.**  Of
+everything proposed in §§12.3.51–12.3.60 this is the cheapest family of
+corrections and the one with the clearest precedence rule: *a block
+that says what it is outranks what it sounds like.*
+
+Fixture: `taxon_48ab8e87…`, class
+`§6-figure-caption-given-a-topical-label`, `expected_flags`
+`["§10:tail_clip", "§12:desc_span_gap"]`, `known_missed_flags`
+`["§5:genus_act_labeled_misc", "§6:figure_caption_labeled_phylogeny",
+"§5:nomenclature_is_a_type_species_line"]`.
+
 ### 12.3.59 The paper's heading is not the right label — and the classifier already knows
 
 Operator, round-7 review of `taxon_39ee20f5` (*Requienella fraxini*,

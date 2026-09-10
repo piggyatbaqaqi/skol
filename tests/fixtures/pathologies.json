@@ -2950,6 +2950,54 @@
     "§5:nomenclatural_act_labeled_biology"
    ],
    "notes": "Requienella fraxini Jaklitsch & Voglmayr, Persoonia 37 (2016).  Round-7 review.  Operator: 'pretty good.  The first Misc-exposition should have started the description blocks.  The biology block is not entirely wrong, but is clearly part of the preceding Notes section, which was correctly identified as diagnosis.'  Both confirmed.  Paragraph 176, Misc-exposition, is 'Ascomata perithecioid, immersed, with the ostiolum, often including an upper part of the ascoma, erumpent to 0.2-0.9 mm' and paragraph 180, Description, opens 'above the host surface, solitary or aggregated in small numbers' -- one sentence, with a Figure-caption (177), a Page-header (178) and the running head 'Persoonia - Volume 37, 2016' (179) between them.  The description's canonical opener, the word 'Ascomata', is the part that was lost.  Paragraphs 185 Diagnosis -> 186 Misc-exposition -> 187 Biology are one continuous sentence: '...different hosts (Olea vs Fraxinus) and the' + 'geographical distribution, R. fraxini in northern humid regions'.  Biology is 'not entirely wrong' precisely because the register IS distribution -- §12.3.8's register detector again.  187 also engulfs a family-level act at its tail, 'Sporocadaceae Corda (as Sporocadeae), Icon. Fungorum (Prague) 5: 34. 1842'.  The operator's aside that the Notes section 'was correctly identified as diagnosis' produced the heading-override measurement in §12.3.59.  See §12.3.59."
+  },
+  {
+   "id": "taxon_48ab8e87d3407cd09e4d35c9329c90620b64c7382246ed4671b156c4f61e5b9f",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "21-175a75057d70a538d534e4f7160e53a2",
+   "class": "§6-figure-caption-given-a-topical-label",
+   "treatment": "Type species. Zymoseptoria tritici (Desm.) Quaedvlieg & Crous.\n",
+   "description": "Conidiomata pycnidial, semi-immersed to erumpent, dark brown\nto black, subglobose, with central ostiole; wall of 3–4 layers\nof brown textura angularis. Conidiophores hyaline, smooth,\n1–2-septate, or reduced to conidiogenous cells, lining the inner\ncavity. Conidiogenous cells tightly aggregated, ampulliform to\ndoliiform or subcylindrical, phialidic with periclinal thickening,\nor with 2–3 inconspicuous, percurrent proliferations at apex.\nType I conidia solitary, hyaline, smooth, guttulate, narrowly \n\ncylindrical to subulate, tapering towards acutely rounded apex,\nwith bluntly rounded to truncate base, transversely euseptate;\nhila not thickened nor darkened. On OA and PDA aerial hyphae\ndisarticulate into phragmospores (Type II conidia), that again\ngive rise to Type I conidia via microcyclic conidiation; yeast-like\ngrowth and microcyclic conidiation (Type III conidia) common \n",
+   "diagnosis": "",
+   "etymology": "Etymology. Zymo = yeast-like growth; Septoria = Septoria-like in morphology.\n",
+   "description_spans": [
+    {
+     "paragraph_number": 247,
+     "start_line": 2171,
+     "end_line": 2178,
+     "start_char": 42860,
+     "end_char": 43385,
+     "pdf_page": 8,
+     "pdf_label": "8",
+     "empirical_page": null,
+     "head": "[@Conidiomata pycnidial, semi-immersed t"
+    },
+    {
+     "paragraph_number": 257,
+     "start_line": 2286,
+     "end_line": 2291,
+     "start_char": 44813,
+     "end_char": 45214,
+     "pdf_page": 9,
+     "pdf_label": "9",
+     "empirical_page": null,
+     "head": "[@cylindrical to subulate, tapering towa"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§10:tail_clip",
+    "§12:desc_span_gap"
+   ],
+   "known_missed_flags": [
+    "§5:genus_act_labeled_misc",
+    "§6:figure_caption_labeled_phylogeny",
+    "§5:nomenclature_is_a_type_species_line"
+   ],
+   "notes": "Zymoseptoria Quaedvlieg & Crous, Persoonia 26 (2011).  Round-7 review.  Operator: 'starts with a type designation of a species for a genus that was undoubtedly introduced earlier.'  Confirmed: this treatment's nomenclature is paragraph 121, 'Type species. Zymoseptoria tritici (Desm.) Quaedvlieg & Crous.' -- a type-species designation, not an act.  The genus act is one block earlier at 119, labelled Misc-exposition and sharing the block with the running head: '64 | Persoonia - Volume 26, 2011 | Zymoseptoria Quaedvlieg & Crous, gen. nov. - MycoBank MB517922'.  Paragraph 120, the genus's Latin diagnosis, went to Description.  The genus's three-block apparatus was scattered before the treatment began.  Second claim also confirmed and it is praise: description 123 ends 'Type I conidia solitary, hyaline, smooth, guttulate, narrowly' and 128 opens 'cylindrical to subulate' -- the §15 join bridged a 419-char Phylogeny block, a 1 061-char Table of strain codes, a Page-header and the running head '65 | W. Quaedvlieg et al.' to rejoin one word.  Third claim: 124 is 'Fig. 4  The first of 810 equally most parsimonious trees...' labelled Phylogeny.  It is phylogenetic AND it is a figure caption, and the operator is right that the structural fact is the useful one.  Labelled Phylogeny it is silently dropped by the grouper (§12.3.12) -- the phylogeny field is None here even though the block sits between two description spans.  See §12.3.60."
   }
  ]
 }
