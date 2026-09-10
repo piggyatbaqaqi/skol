@@ -192,12 +192,10 @@ class TestPlanArms:
                 Workload('clause_seq', ['a', 'b'], 1),
                 Workload('clause_batch', ['a', 'b'], 8)]
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_a_second_whole_arm_is_added(self) -> None:
         assert [w.arm for w in plan_arms(self._base())] == [
             'whole', 'whole_512', 'clause_seq', 'clause_batch']
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_both_whole_arms_carry_identical_items(self) -> None:
         """They must differ only in the cap, or the comparison measures
         two things at once -- the same rule as clause_seq vs
@@ -219,7 +217,6 @@ class TestPlanArms:
         assert ARM_CAPS['clause_seq'] < ARM_CAPS['whole']
         assert ARM_CAPS['clause_batch'] == ARM_CAPS['clause_seq']
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_an_absent_whole_arm_is_not_invented(self) -> None:
         """A treatment with no description contributes no whole work;
         duplicating an empty arm would add a row that scores 0 seconds
@@ -232,17 +229,14 @@ class TestPlanArms:
 class TestCapHitRate:
     """The number that decides whether the cap is the cost."""
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_a_generation_that_reaches_the_cap_is_counted(self) -> None:
         tok = _FakeTokenizer()
         assert cap_hit_rate(['x' * 64], tok, cap=64) == pytest.approx(1.0)
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_a_generation_that_stopped_early_is_not(self) -> None:
         tok = _FakeTokenizer()
         assert cap_hit_rate(['x' * 10], tok, cap=64) == pytest.approx(0.0)
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_the_rate_is_over_generations_that_happened(self) -> None:
         """None marks a call that failed. Scoring it as "did not hit the
         cap" would make a broken run look like a well-behaved one."""
@@ -250,7 +244,6 @@ class TestCapHitRate:
         r = cap_hit_rate(['x' * 64, None, 'x' * 8], tok, cap=64)
         assert r == pytest.approx(0.5)
 
-    @pytest.mark.xfail(strict=True, reason="R1 plan_arms/cap_hit_rate not implemented")
     def test_no_generations_gives_none_not_zero(self) -> None:
         """Zero would read as "nothing hit the cap", which is a finding.
         Nothing ran is not."""
