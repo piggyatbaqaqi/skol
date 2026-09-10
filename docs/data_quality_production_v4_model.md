@@ -7477,7 +7477,7 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
-### 12.3.52 The document says where the boundary was — 11.7 % of treatments quote the heading they ignored
+### 12.3.52 The document says where the boundary was — 7.4 % of treatments quote the heading they ignored
 
 Operator, round-7 review of `taxon_12ba8b48` (*Peyronellaea
 calorpreferens*, Aveskamp *et al.* 2010): *"pieces of at least 3
@@ -7522,41 +7522,64 @@ and colon-terminated* inside a field that is not notes.  The document
 is telling us where the boundary was.
 
 Scanning ten prose fields corpus-wide for a section heading occurring
-past character 40 and naming a section other than the field's own:
+past character 40 and naming a section other than the field's own —
+**partitioned**, because not every foreign heading is a missed
+boundary:
 
-| | |
-|---|---:|
-| treatments with a foreign section heading mid-field | **9 526** |
-| share of the 81 527 treatments | **11.7 %** |
+| | occurrences | treatments | share |
+|---|---:|---:|---:|
+| **boundary miss** — the heading names a section the schema has and that should have opened a block | 20 453 | **6 038** | **7.4 %** |
+| legitimate sub-heading — belongs where it sits | 9 031 | 4 948 | 6.1 % |
 
-| field | n | | field ← intruding heading | n |
+| boundary miss: field ← heading | n | | legitimate: field ← heading | n |
 |---|---:|---|---|---:|
-| `description` | 9 254 | | `biology` ← `Distribution` | **4 536** |
-| `key` | 8 016 | | `description` ← `Culture characteristics` | 4 495 |
-| `biology` | 5 766 | | `key` ← `Notes` | 1 662 |
-| `materials_examined` | 2 550 | | `key` ← `Typus` | 975 |
-| `diagnosis` | 1 719 | | `diagnosis` ← `Notes` | 971 |
-| `type_designation` | 1 051 | | **`materials_examined` ← `Notes`** | **856** |
-| `notes` | 705 | | `description` ← `Remarks` | 936 |
+| `key` ← `Notes` | 1 662 | | `biology` ← `Distribution` | 4 536 |
+| `key` ← `Typus` | 975 | | `description` ← `Culture characteristics` | 4 495 |
+| `diagnosis` ← `Notes` | 971 | | | |
+| `description` ← `Remarks` | 936 | | | |
+| **`materials_examined` ← `Notes`** | **856** | | | |
+| `key` ← `Description` | 799 | | | |
+| `description` ← `Distribution` | 757 | | | |
+| `key` ← `Diagnosis` | 748 | | | |
+| `description` ← `Typus` | 745 | | | |
+| `key` ← `Etymology` | 625 | | | |
 
-Three of these rows are independent confirmations of findings this
-memo reached by other routes:
+**The partition is the operator's correction, and it cost this section
+its two largest rows.**  A first pass reported the union — 9 526
+treatments, 11.7 % — as boundary misses.  Operator: *"'Culture
+characteristics' is a perfectly legitimate label in a description."*
+Correct, and checkable two ways: `Cultural characteristics` already has
+a canonical home at the feature level, with four surface forms mapping
+to it in `docs/feature_label_canonicalization.json`; and at the segment
+level `Description` is not a fallback for in-vitro morphology but its
+right home — colony diameter, colour, reverse and growth rate on media
+are description, of the cultured state rather than the collected one.
+`biology` ← `Distribution` falls the same way for a different reason:
+the 19-tag set has **no** `Distribution` tag, so `Biology` is where
+distribution must go by construction.  Neither is a segmentation
+defect. **The real figure is 6 038 treatments, 7.4 %.**
 
-* **`biology` ← `Distribution`, 4 536.**  Trello #407 and §12.3.1
-  argue the `Biology` collapse buried a `Distribution` majority, from
-  label statistics.  Here 4 536 `biology` fields *contain the literal
-  word* `Distribution:` mid-field.  Two unrelated measurements, the
-  same conclusion.
-* **`key` ← everything, 8 016.**  §12.3.6's rogue `Key`, seen from
-  inside: a runaway `Key` swallows the headings of whatever follows.
+The lesson generalises past this section: *a heading inside a field is
+evidence of a boundary only where the schema could have honoured it.*
+A detector built on this signal needs the legitimate-pair list as
+part of its definition, not as a post-hoc filter.
+
+Two rows do independently confirm findings this memo reached by other
+routes:
+
+* **`key` ← everything, 4 809 across six headings.**  §12.3.6's rogue
+  `Key`, seen from inside: a runaway `Key` swallows the headings of
+  whatever follows.
 * **`description`/`key` ← `Typus`, 1 720.**  More type-status loss, on
   top of §12.3.48's `materials_examined` route.
 
-**`Culture characteristics` (4 495) is new** and is not a boundary miss
-in the same sense — it is a section type with no label of its own, so
-`Description` is the only place for it to go.  That is a schema
-question, not a segmentation bug, and it is the largest single row
-here after `Distribution`.
+And one confirms a finding without being a defect: **`biology` ←
+`Distribution`, 4 536.**  Trello #407 and §12.3.1 argue from label
+statistics that the `Biology` collapse buried a `Distribution`
+majority; here 4 536 `biology` fields *contain the literal word*
+`Distribution:`.  Two unrelated measurements, the same conclusion —
+but the conclusion is about the schema, not the segmenter, which is
+exactly what #407 says.
 
 This is a **zero-cost detector**: a regex over fields already in the
 treatments database, no attachments, no model.  It does not merely
