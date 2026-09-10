@@ -95,7 +95,6 @@ class TestBuildView:
 
 
 class TestNeighbours:
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_next_is_the_nearest_sibling_after_this_one(self) -> None:
         doc, ann = _treatment()          # spans at paragraphs 11 and 15
         sibs = [{'_id': 'taxon_before', 'treatment': 'Boletus edulis',
@@ -108,7 +107,6 @@ class TestNeighbours:
         assert view.next_treatment is not None
         assert view.next_treatment['_id'] == 'taxon_next'
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_prev_is_the_nearest_sibling_before_this_one(self) -> None:
         """Symmetric, because a treatment can be the victim as easily
         as the donor and the reviewer needs to know which side."""
@@ -186,7 +184,6 @@ class TestNeighboursAreRendered:
         i = html.index(self.NEIGH_HTML)
         return html[i:html.index('</div>', i)]
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_text_section_names_both_neighbours(self) -> None:
         doc, ann = _treatment()
         sec = self._section_text(
@@ -195,7 +192,6 @@ class TestNeighboursAreRendered:
         assert 'Basionym. Phomopsis sclerotioides' in sec
         assert 'taxon_prev' in sec and 'taxon_next' in sec
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_html_section_names_both_neighbours(self) -> None:
         doc, ann = _treatment()
         sec = self._section_html(
@@ -203,7 +199,6 @@ class TestNeighboursAreRendered:
         assert 'Diaporthe schini' in sec
         assert 'Basionym. Phomopsis sclerotioides' in sec
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_the_subordinate_marker_survives_truncation(self) -> None:
         """The whole point is spotting `Basionym.` / `Type species.` /
         `Synonym.` at the START of a neighbour's nomenclature, so
@@ -217,7 +212,6 @@ class TestNeighboursAreRendered:
         assert 'Type species.' in self._section_text(render_text(view))
         assert 'Type species.' in self._section_html(render_html(view))
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_a_multiline_nomenclature_renders_on_one_line(self) -> None:
         """`treatment` is stored with the PDF's line breaks in it.  A
         neighbour line that wraps is not scannable."""
@@ -230,7 +224,6 @@ class TestNeighboursAreRendered:
         line = next(x for x in sec.splitlines() if 'taxon_next' in x)
         assert 'Basionym. Phomopsis sclerotioides' in line
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_html_escapes_a_neighbour_name(self) -> None:
         """Same adversary as everywhere else in this file: the corpus
         contains `<`, `&` and `"` in real nomenclature strings."""
@@ -243,7 +236,6 @@ class TestNeighboursAreRendered:
         assert '<i>Phomopsis</i>' not in sec
         assert '&lt;i&gt;' in sec
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
     def test_neighbours_appear_before_the_fields(self) -> None:
         """A reviewer reads top-down and stops when the treatment looks
         clean.  The sibling list at the foot is where this information

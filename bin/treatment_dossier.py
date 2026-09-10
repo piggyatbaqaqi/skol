@@ -78,7 +78,9 @@ class DossierView:
     #: The treatments immediately before and after this one in the
     #: source document, by paragraph.  §12.3.63: a nomenclature can be
     #: stolen by the block ahead of it, and neither treatment shows the
-    #: theft alone.  Skeleton -- not yet populated.
+    #: theft alone -- the donor's trailing citation reads as a
+    #: reference and the victim reads as a paper that opened with a
+    #: basionym.  Derived from ``siblings``; no extra I/O.
     prev_treatment: Optional[Dict[str, Any]] = None
     next_treatment: Optional[Dict[str, Any]] = None
     merge_metric: Optional[int] = None
@@ -86,6 +88,49 @@ class DossierView:
     #: The article.txt.ann text the spans index into, so the renderer
     #: can show each span's own source on hover.
     ann_text: str = ''
+
+
+def _min_paragraph(doc: Dict[str, Any]) -> Optional[int]:
+    """The treatment's position in its document: the lowest paragraph
+    number any of its spans carries.
+
+    Computed the same way :func:`_sibling_index` computes ``paragraph``
+    for the siblings, so the two are comparable.  Falls back to the
+    top-level ``paragraph_number`` for treatments whose spans carry
+    none, and returns ``None`` when nothing places the treatment at
+    all -- unordered is not the same as adjacent.
+    """
+    paras = [
+        int(x['paragraph_number'])
+        for f in doc if f.endswith('_spans') and doc[f]
+        for x in doc[f]
+        if str(x.get('paragraph_number', '')).lstrip('-').isdigit()
+    ]
+    if paras:
+        return min(paras)
+    top = doc.get('paragraph_number')
+    return int(top) if isinstance(top, int) else None
+
+
+def _neighbours(
+    treatment: Dict[str, Any], siblings: List[Dict[str, Any]],
+) -> tuple:
+    """The nearest placed sibling on each side, or ``None``.
+
+    Ties are excluded deliberately: two treatments reporting the same
+    minimum paragraph are *unordered*, not adjacent, and offering one
+    as "the next treatment" would invite exactly the misreading this
+    section exists to prevent.
+    """
+    here = _min_paragraph(treatment)
+    if here is None:
+        return None, None
+    placed = [(s.get('paragraph'), s) for s in siblings
+              if isinstance(s.get('paragraph'), int)]
+    before = [(p, s) for p, s in placed if p < here]
+    after = [(p, s) for p, s in placed if p > here]
+    return (max(before, key=lambda x: x[0])[1] if before else None,
+            min(after, key=lambda x: x[0])[1] if after else None)
 
 
 def build_view(
@@ -107,15 +152,36 @@ def build_view(
         metric: Optional[int] = treatment_merge_metric(treatment)
     except Exception:              # noqa: BLE001 - a view must render
         metric = None
+    prev, nxt = _neighbours(treatment, list(siblings or []))
     return DossierView(
         dossier=build_dossier(treatment, ann_text),
         treatment=treatment,
         source=source or {},
         status=status or {},
         siblings=list(siblings or []),
+        prev_treatment=prev,
+        next_treatment=nxt,
         merge_metric=metric,
         ann_text=ann_text,
     )
+
+
+#: Enough of a neighbour's nomenclature to read the head and a little
+#: context.  Truncation is from the RIGHT because the signal --
+#: ``Basionym.``, ``Type species.``, ``Synonym.`` -- is at the front.
+NEIGHBOUR_CHARS = 110
+
+
+def _neighbour_line(doc: Dict[str, Any]) -> str:
+    """``taxon_id  nomenclature`` on one line, whitespace collapsed.
+
+    ``treatment`` is stored with the PDF's own line breaks in it, and a
+    neighbour entry that wraps is not scannable.
+    """
+    name = ' '.join(str(doc.get('treatment') or '').split())
+    if len(name) > NEIGHBOUR_CHARS:
+        name = name[:NEIGHBOUR_CHARS - 1] + '…'
+    return f"{str(doc.get('_id'))[:22]}  {name}"
 
 
 def render_text(view: DossierView) -> str:
@@ -166,6 +232,14 @@ def render_text(view: DossierView) -> str:
             out.append(f'      [{b.label}] {b.head[:96]}')
     if not d.gaps:
         out.append('  (none)')
+
+    if view.prev_treatment or view.next_treatment:
+        out.append('')
+        out.append('--- neighbours in the source document ---')
+        if view.prev_treatment:
+            out.append('  prev  ' + _neighbour_line(view.prev_treatment))
+        if view.next_treatment:
+            out.append('  next  ' + _neighbour_line(view.next_treatment))
 
     out.append('')
     out.append('--- fields ---')
@@ -266,6 +340,15 @@ def render_html(view: DossierView) -> str:
             fields_html.append(
                 f'<h3>{e(f)} <span class="muted">({len(str(val))} '
                 f'chars)</span></h3><pre>{e(str(val).strip())}</pre>')
+    # Rows are <span>+<br>, not nested <div>s: the section is sliced
+    # by its own closing tag downstream, and a nested div would close
+    # it early -- which is exactly how the test caught this.
+    neigh_rows = ''.join(
+        f'<br><span class="muted">{side}</span> {e(_neighbour_line(doc))}'
+        for side, doc in (('prev', view.prev_treatment),
+                          ('next', view.next_treatment)) if doc)
+    neigh = (f'<div class="neighbours"><b>Neighbours in the source '
+             f'document</b>{neigh_rows}</div>') if neigh_rows else ''
     sibs = ''.join(
         f'<li>{e(str(s.get("_id"))[:22])} '
         f'{e(str(s.get("treatment") or "").strip()[:80])}</li>'
@@ -303,11 +386,14 @@ background:#fff8f8}}
 .gap ul{{margin:.3rem 0;padding-left:1.2rem}}
 .gap pre{{margin:.2rem 0}}
 .muted{{color:#777;font-weight:normal}}
+.neighbours{{border-left:3px solid #77a;background:#f4f6ff;
+padding:.4rem .8rem;margin:.6rem 0;font-family:monospace;font-size:13px}}
 pre{{white-space:pre-wrap;background:#f7f7f7;padding:.6rem;margin:.2rem 0}}
 </style></head><body>
 <h1>{e(d.treatment_id)}</h1>
 <p class="muted">{src_line}</p>
 <p>{e('   '.join(meta))}</p>
+{neigh}
 <h2>Spans <span class="muted">&mdash; hover for the source text;
 gaps open on click</span></h2>
 {''.join(flow) or '<p class="muted">(none)</p>'}
