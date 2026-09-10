@@ -76,7 +76,6 @@ class _FakeGen:
 
 
 class TestBuildWorkloads:
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_three_arms_not_two(self) -> None:
         """The card said two.  87.1 % of descriptions are already one
         call, so a sequential per-clause arm cannot be the lever; the
@@ -84,12 +83,10 @@ class TestBuildWorkloads:
         w = build_workloads(_treatment(), _spans(9))
         assert [x.arm for x in w] == ['whole', 'clause_seq', 'clause_batch']
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_the_whole_arm_is_one_item_per_description(self) -> None:
         w = {x.arm: x for x in build_workloads(_treatment(), _spans(9))}
         assert len(w['whole'].items) == 1
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_both_clause_arms_carry_the_same_items(self) -> None:
         """B and C differ only in batch size.  If they differed in
         content the comparison would measure two things at once."""
@@ -97,7 +94,6 @@ class TestBuildWorkloads:
         assert w['clause_seq'].items == w['clause_batch'].items
         assert len(w['clause_seq'].items) == 9
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_only_the_batch_arm_batches(self) -> None:
         w = {x.arm: x for x in build_workloads(_treatment(), _spans(9),
                                                batch_size=8)}
@@ -105,7 +101,6 @@ class TestBuildWorkloads:
         assert w['clause_seq'].batch_size == 1
         assert w['clause_batch'].batch_size == 8
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_the_clause_prompt_carries_its_label(self) -> None:
         """Phase 1 supplies the key -- attribute_path is depth 1 on
         98 % of spans -- so the clause prompt must say which organ it
@@ -113,7 +108,6 @@ class TestBuildWorkloads:
         w = {x.arm: x for x in build_workloads(_treatment(), _spans(2))}
         assert any('Organ0' in it for it in w['clause_seq'].items)
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_a_treatment_with_no_spans_yields_no_clause_work(self) -> None:
         """3.4 % coverage: most treatments have no Claude-labelled
         spans at all, and a benchmark that silently scored them as
@@ -122,7 +116,6 @@ class TestBuildWorkloads:
         assert w['clause_seq'].items == []
         assert w['whole'].items != []
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_an_empty_description_yields_no_whole_work(self) -> None:
         w = {x.arm: x for x in build_workloads({'_id': 'taxon_a'},
                                                _spans(3))}
@@ -130,39 +123,33 @@ class TestBuildWorkloads:
 
 
 class TestRunWorkload:
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_sequential_makes_one_call_per_item(self) -> None:
         gen = _FakeGen()
         run_workload(Workload('clause_seq', ['a'] * 9, batch_size=1), gen)
         assert gen.calls == 9 and gen.max_batch == 1
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_batched_makes_ceil_calls(self) -> None:
         gen = _FakeGen()
         run_workload(Workload('clause_batch', ['a'] * 9, batch_size=4), gen)
         assert gen.calls == 3 and gen.max_batch == 4
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_a_partial_final_batch_is_not_dropped(self) -> None:
         gen = _FakeGen()
         run_workload(Workload('clause_batch', ['a'] * 9, batch_size=4), gen)
         assert gen.items == 9
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_timing_records_items_and_calls(self) -> None:
         t = run_workload(Workload('clause_batch', ['a'] * 9, 4), _FakeGen())
         assert t.arm == 'clause_batch'
         assert t.items == 9 and t.calls == 3
         assert t.seconds > 0
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_an_empty_workload_costs_nothing_and_does_not_divide_by_zero(
             self) -> None:
         t = run_workload(Workload('clause_seq', [], 1), _FakeGen())
         assert t.items == 0 and t.calls == 0
         assert t.seconds == 0.0
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_a_failing_generation_is_counted_not_fatal(self) -> None:
         """A benchmark that aborts on one bad prompt reports nothing.
         Failures must land in the timing so the arm is comparable."""
@@ -171,7 +158,6 @@ class TestRunWorkload:
         t = run_workload(Workload('clause_batch', ['a'] * 4, 2), boom)
         assert t.failures == 2 and t.items == 0
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_output_tokens_are_recorded(self) -> None:
         """Output tokens are what an autoregressive decode actually
         costs, so the report must be able to normalise by them rather
@@ -190,7 +176,6 @@ class TestSummarize:
                 Timing('clause_batch', items=470, calls=59, seconds=20.0,
                        output_chars=21000, failures=0)]
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_speedup_is_against_the_whole_arm(self) -> None:
         """`whole` is the incumbent that was called prohibitively slow,
         so it is the denominator."""
@@ -198,13 +183,11 @@ class TestSummarize:
         assert r['whole']['speedup'] == pytest.approx(1.0)
         assert r['clause_batch']['speedup'] == pytest.approx(5.0)
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_the_verdict_uses_the_cards_3x_kill_criterion(self) -> None:
         r = summarize(self._timings())
         assert r['clause_batch']['passes'] is True
         assert r['clause_seq']['passes'] is False
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_seconds_per_treatment_is_reported_not_per_item(self) -> None:
         """Per-item would flatter the clause arms 9.4-fold for free.
         The comparable unit is one treatment processed end to end."""
@@ -212,7 +195,6 @@ class TestSummarize:
         assert r['clause_batch']['seconds_per_treatment'] == pytest.approx(0.4)
         assert r['whole']['seconds_per_treatment'] == pytest.approx(2.0)
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_an_arm_with_failures_is_flagged_not_silently_ranked(
             self) -> None:
         t = self._timings()
@@ -221,7 +203,6 @@ class TestSummarize:
         assert r['clause_batch']['failures'] == 70
         assert r['clause_batch']['passes'] is False
 
-    @pytest.mark.xfail(strict=True, reason="R1 granularity bench not implemented")
     def test_a_zero_second_baseline_does_not_divide_by_zero(self) -> None:
         r = summarize([Timing('whole', 0, 0, 0.0, 0, 0),
                        Timing('clause_batch', 9, 2, 1.0, 100, 0)])

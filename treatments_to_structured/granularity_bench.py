@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """R1: is Mistral-per-clause faster than Mistral-per-description?
 
-Skeleton.  See ``granularity_bench_test.py`` for the design and the
-measurements that produced it.
+See ``granularity_bench_test.py`` for the design and the measurements
+that produced it.
 
 Three arms, because the two the card proposed cannot separate the
 mechanism from the granularity:
@@ -11,9 +11,18 @@ mechanism from the granularity:
   * ``clause_seq``   — one call per clause, sequential
   * ``clause_batch`` — one call per batch of clauses
 
+``clause_seq`` is expected to *lose*.  87.1 % of descriptions are
+already exactly one model call, and per-clause emits roughly the same
+total output tokens (9.4 clauses × ~45 against ~540 for a description),
+so granularity on its own has nothing to give.  What batching gives is
+one decode loop shared across many short sequences — which uniform
+clause prompts permit and one long description does not.  Running the
+losing arm is what lets the result say *which* of the two it was.
+
 Generation is injected so the arithmetic is testable without a GPU.
 """
 
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
@@ -44,6 +53,10 @@ class Timing:
     """What one arm cost.  ``failures`` is carried rather than raised so
     a bad prompt does not cost the whole run."""
 
+    #: ``items`` counts prompts that SUCCEEDED and ``failures`` counts
+    #: model calls that raised — a failed call drops its whole batch, so
+    #: prompts lost is ``len(workload.items) - items`` rather than
+    #: anything derivable from ``failures`` alone.
     arm: str
     items: int = 0
     calls: int = 0
@@ -58,17 +71,67 @@ def build_workloads(
     *,
     batch_size: int = 8,
 ) -> List[Workload]:
-    """Assemble the three arms for one treatment."""
-    raise NotImplementedError
+    """Assemble the three arms for one treatment.
+
+    The two clause arms are given the *same* item list deliberately.
+    They differ only in ``batch_size``, so any difference between them
+    is attributable to batching and to nothing else.
+
+    A treatment with no spans contributes no clause work rather than
+    zero-cost clause work: only 3.4 % of the corpus carries
+    Claude-labelled spans, and scoring the remainder as instant would
+    flatter the clause arms precisely where the corpus is thinnest.
+    """
+    description = str(treatment.get('description') or '').strip()
+    whole: List[str] = [description] if description else []
+
+    clauses: List[str] = []
+    for span in spans:
+        text = str(span.get('source_text') or '').strip()
+        if not text:
+            continue
+        label = str(span.get('feature_label') or '').strip() or 'this feature'
+        clauses.append(CLAUSE_PROMPT.format(label=label, text=text))
+
+    return [
+        Workload('whole', whole, 1),
+        Workload('clause_seq', list(clauses), 1),
+        Workload('clause_batch', list(clauses), batch_size),
+    ]
 
 
 def run_workload(
     workload: Workload,
     generate_fn: Callable[[List[str]], List[str]],
 ) -> Timing:
-    """Run one arm, timing it.  ``generate_fn`` takes a list of prompts
-    and returns a list of decoded strings."""
-    raise NotImplementedError
+    """Run one arm, timing it.
+
+    ``generate_fn`` takes a list of prompts and returns a list of
+    decoded strings.  A batch that raises is counted into ``failures``
+    and the run continues: a benchmark that aborts on one bad prompt
+    reports nothing, and the arms have to stay comparable.
+    """
+    size = max(1, workload.batch_size)
+    items = list(workload.items)
+    if not items:
+        return Timing(workload.arm)
+
+    calls = done = failures = chars = 0
+    started = time.perf_counter()
+    for i in range(0, len(items), size):
+        batch = items[i:i + size]
+        calls += 1
+        try:
+            out = generate_fn(batch)
+        except Exception:                    # noqa: BLE001 - see docstring
+            failures += 1
+            continue
+        done += len(batch)
+        chars += sum(len(str(o)) for o in out)
+    seconds = time.perf_counter() - started
+
+    return Timing(workload.arm, items=done, calls=calls, seconds=seconds,
+                  output_chars=chars, failures=failures)
 
 
 def summarize(
@@ -76,5 +139,37 @@ def summarize(
     *,
     treatments: Optional[int] = None,
 ) -> Dict[str, Dict[str, Any]]:
-    """Report per arm, normalised against the ``whole`` incumbent."""
-    raise NotImplementedError
+    """Report per arm, normalised against the ``whole`` incumbent.
+
+    ``whole`` is the denominator because it is the path that was called
+    prohibitively slow; the question is whether anything beats *it*.
+
+    ``seconds_per_treatment`` is reported rather than per item, because
+    per item would flatter the clause arms 9.4-fold for nothing — a
+    treatment processed end to end is the only comparable unit.
+    """
+    by_arm = {t.arm: t for t in timings}
+    base = by_arm.get('whole')
+    baseline = base.seconds if base and base.seconds > 0 else None
+
+    report: Dict[str, Dict[str, Any]] = {}
+    for t in timings:
+        speedup = (baseline / t.seconds
+                   if baseline is not None and t.seconds > 0 else None)
+        row: Dict[str, Any] = {
+            'items': t.items,
+            'calls': t.calls,
+            'seconds': t.seconds,
+            'output_chars': t.output_chars,
+            'failures': t.failures,
+            'speedup': speedup,
+            # An arm that dropped work has not earned a verdict, however
+            # fast the surviving prompts were.
+            'passes': (speedup is not None
+                       and speedup >= KILL_SPEEDUP
+                       and t.failures == 0),
+        }
+        if treatments:
+            row['seconds_per_treatment'] = t.seconds / treatments
+        report[t.arm] = row
+    return report
