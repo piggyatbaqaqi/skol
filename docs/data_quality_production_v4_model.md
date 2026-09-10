@@ -7477,6 +7477,101 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.58 "Almost random" is five register detectors firing on the wrong kind of text
+
+Operator, round-7 review of `taxon_3870f370`: *"front matter to an
+article.  It looks like the block labels are almost random."*
+
+Confirmed — and the stub does not merely sit in front matter, it
+**straddles an article boundary.**  The document is a bound volume;
+this is *Studies in Mycology* **106** (Réblová & Nekvindová 2023,
+pp. 199–258) beginning where the previous paper's reference list ends
+on p. 197.
+
+| ¶ | label | what it actually is | what triggered the label |
+|---:|---|---|---|
+| 1666 | **Type-designation** | a reference from the **previous article's** bibliography — `Zeng NK, Tang LP, Yang ZL (2011). Type studies on two species of` | the words `Type studies` |
+| 1674 | **Notes** | the **Abstract** | discursive prose |
+| 1676 | **Figure-caption** | `Key words: …` + `Taxonomic novelties: New genera: Caliciastrum Réblová, …` | a dense list of names |
+| 1680 | **Description** | the **Introduction** | morphological register — `phialidic dematiaceous hyphomycetes … conidia hyaline or pale brown, aseptate, ellipsoidal` |
+| 1682 | **Nomenclature** | a clause inside an introduction sentence | a run of capitalised genus names |
+
+**Five labels, five sections, none correct.**  But *not* random:
+**every one is a register detector firing correctly on the wrong kind
+of text.**  §12.3.8 established that `Description` is a register
+detector rather than a section detector, and this treatment shows the
+generalisation — an introduction that reviews a genus's morphology
+*is* morphological prose; a keywords line *is* a dense name list; a
+reference titled "Type studies on…" *does* contain the type cue.  The
+labels are exactly as good as the text warrants and exactly as wrong as
+the missing article boundary makes them.
+
+#### "Almost random", measured
+
+Comparing field occupancy for the 6 008 front-matter stubs against the
+51 007 real treatments:
+
+| field | front matter | real | ratio |
+|---|---:|---:|---:|
+| `figure_captions` | 40.3 % | 22.3 % | **1.81×** |
+| `key` | 29.9 % | 19.9 % | **1.50×** |
+| `biology` | 30.6 % | 28.3 % | 1.08× |
+| `notes` | 44.6 % | 48.2 % | 0.93× |
+| `diagnosis` | 25.6 % | 27.0 % | 0.95× |
+| `materials_examined` | 30.6 % | 52.0 % | 0.59× |
+| `description` | 36.1 % | 64.5 % | 0.56× |
+| `type_designation` | 8.8 % | 26.4 % | 0.33× |
+| `etymology` | 6.8 % | 26.2 % | 0.26× |
+
+**54.7 % of front-matter stubs carry at least one field that cannot
+occur in front matter** — `type_designation`, `materials_examined`,
+`etymology` or `key`.  Front matter has no specimens, no types and no
+etymologies, and more than half of these stubs claim one.  The profile
+is not uniform — `figure_captions` and `key` are *over*-represented,
+the specimen-bearing fields under-represented — so "almost random" is
+better read as *"the labels track register, and front-matter register
+overlaps treatment register almost everywhere."*
+
+#### A hole in §12.3.56's positional test
+
+**This treatment is not among the 6 008.**  Its `paragraph_number` is
+3 333, well *after* the first real treatment in its document — because
+earlier articles in the same bound volume produced real treatments.
+The positional test (a stub preceding every real treatment in its
+document) can only ever see the front matter of a volume's **first**
+article.
+
+Sizing that hole honestly is harder than it looks.  A lexical test for
+article apparatus (`Abstract:`, `Key words:`, `Citation:`,
+`Corresponding editor`, `Received:`) fires on 90 mid-body stubs — but
+the marker fires on only **253 of the 6 008 known front-matter stubs
+(4.2 %)**, because most front-matter apparatus lands in
+`Misc-exposition`, which is not stored.  Dividing 90 by that
+sensitivity suggests ~2 100 missed stubs, **and that estimate is
+wrong**: spot-checking the 90 shows most are methods text, Latin
+diagnoses and morphology that merely *contain* the phrase somewhere.
+
+Requiring the marker to **open** a field leaves **13 mid-body stubs**,
+and all 13 are genuine — `Abstract: In this study, we investigated…`,
+`Keywords: rice leaf blight: China`, `Abstract. On the basis of
+numerous records the identity of Suillus umbon…`.  So the class is
+real and demonstrable at n = 13; its true size is **not** estimated
+here, because the only marker available has 4.2 % sensitivity and no
+better one is in hand.
+
+**§12.3.56's 6 008 is therefore a lower bound for a second reason**:
+beyond counting only stubs, it structurally cannot see any article
+after the first in a bound volume — and bound volumes are exactly the
+documents §12.3.9 is about.
+
+Fixture: `taxon_3870f370…`, class
+`§9-front-matter-of-a-later-article-in-a-bound-volume`,
+`expected_flags` `["§2:synth_nomen", "§10:mid_sentence",
+"§10:tail_clip", "§13:no_source_anchor"]` — four fire — with
+`known_missed_flags` `["§9:article_boundary_straddled",
+"§9:front_matter_after_first_treatment",
+"§8:register_detector_on_front_matter"]`.
+
 ### 12.3.57 The type cue fails in documents where every other cue is perfect — §12.3.48's join attribution corrected
 
 Operator, round-7 review of `taxon_30c6b27d` (*Colletotrichum
@@ -7645,7 +7740,14 @@ the cost attached.
 **Better than a third of the corpus is a nameless stub.**  The 6 008
 front-matter stubs are precisely what an article-structure pass would
 delete, at no risk: nothing before the first nomenclatural act in a
-taxonomic paper is a treatment.  The 16 757 from documents with no
+taxonomic paper is a treatment.
+
+> **Lower bound, per §12.3.58.**  The positional test used here — a
+> stub preceding *every* real treatment in its document — can only see
+> the first article in a bound volume.  Front matter of later articles
+> in the same volume sits after a real treatment and is invisible to
+> it; 13 such stubs are directly demonstrable and the true count is
+> not estimated.  The 16 757 from documents with no
 named treatment at all are a larger and different question — many are
 probably papers that should not have been ingested as taxonomic
 treatments in the first place — and are not addressed here.

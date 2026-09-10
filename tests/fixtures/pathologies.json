@@ -2860,6 +2860,48 @@
     "§5:type_coarsened_to_materials"
    ],
    "notes": "Colletotrichum actinidicola, Plazi-sourced.  Round-7 review.  Operator: 'nearly a poster child.  Only the type designation is slightly wrong, being labeled as the more general materials-examined.'  Confirmed: materials_examined holds BOTH 'Type.China - Guizhou ... (dried culture, HGUP 25-0043, holotype), ex-type living culture GUCC 25-0036.' AND 'Material examined.China - ...' -- two sections, type first, which is §12.3.54's detector (A) class (1 531 treatments) and §12.3.48's coarsening.  A second clean exemplar after taxon_0150308d: the coarsening is the ONLY defect.  Every heading in this treatment is joined -- 'Description.Isolated', 'Culture characteristics.Colonies', 'Type.China', 'Material examined.China', 'Etymology.The', 'Notes.Based' -- and five of the six were honoured; only Type. failed.  That observation produced the controlled measurement in §12.3.57 which corrects §12.3.48's causal attribution of the loss to the §15 element join.  'Culture characteristics.' staying inside description is correct, per the §12.3.52 correction.  See §12.3.57."
+  },
+  {
+   "id": "taxon_3870f370bc582fd7846d3eb70f139b9c7e64bf109fb35ec00212998a10dc9c16",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "24-5604e05e2bd55ba5995ea37708b70561",
+   "class": "§9-front-matter-of-a-later-article-in-a-bound-volume",
+   "treatment": "Nomen ignotum\n",
+   "description": "polythetic genus divided into eight sections. Chloridium is delimited\nto phialidic dematiaceous hyphomycetes that produce conidia on\nmultiple conidiogenous loci in sympodial manner on a central dome\nwithin the collarette. Conidia are hyaline or pale brown, aseptate,\nellipsoidal, subglobose, obclavate, occasionally deltoid, adhering\nin slimy heads or cirrhi. They also produce mononematous,\npigmented, simple, sometimes setose or penicillately branched\nconidiophores, 1-septate hyaline ascospores that fragment into\npart spores and many species form chlamydospores in vitro.\nThe family Chaetosphaeriaceae consists of numerous asexual\nmorphotypes, among which the simplest form is represented\nby Chloridium sect. Chloridium. This group is characterized by\nunbranched conidiophores with a terminal phialide that produces\nminute, ellipsoidal, subglobose to obclavate conidia (Gams &\nHolubová-Jechová 1976, Réblová et al. 2022). In the past, the \n",
+   "diagnosis": "",
+   "type_designation": "Zeng NK, Tang LP, Yang ZL (2011). Type studies on two species of \n",
+   "treatment_notes": "Abstract: In this study, we investigated the morphological and genetic variability of selected species belonging to the genus Chloridium sensu lato, some\nalso referred to as chloridium-like asexual morphs and other undescribed morphologically similar fungi. These species do not conform to the revised generic\nconcept and thus necessitate a re-evaluation in terms of taxonomy and phylogeny. The family Chaetosphaeriaceae (Chaetosphaeriales) encompasses a\nwide range of asexual morphotypes, and among them, the simplest form is represented by Chloridium sect. Chloridium. The morphological simplicity of the\nChloridium morphotype has historically led to the amalgamation of numerous unrelated species, thereby creating a heterogeneous genus. By conducting\nphylogenetic reconstruction of four DNA loci and examining a set of 71 strains, including all available ex-type and other non-type strains as well as holotypes\nand other herbarium material, we were able to gain new insights into the relationships between these taxa. Phylogenetic analyses revealed that the\nstudied species are distantly related to Chloridium sensu stricto and can be grouped into two orders in the Sordariomycetes. Within the Chaetosphaeriales,\nthey formed nine well-separated genera in four clades, such as Cacumisporium, Caliciastrum gen. nov., Caligospora gen. nov., Capillisphaeria gen. nov.,\nCurvichaeta, Fusichloridium, Geniculoseta gen. nov., Papillospora gen. nov., and Spicatispora gen. nov. We also established Chloridiopsiella gen. nov. and\nChloridiopsis gen. nov. in Vermiculariopsiellales. Four new species and eight new combinations are proposed in these genera. Our study provides a clearer \n",
+   "figure_captions": "Key words: conidiogenesis, Chaetosphaeria, lignicolous fungi, multi-locus, new taxa, phialide\nTaxonomic novelties: New genera: Caliciastrum Réblová, Caligospora Réblová, Capillisphaeria Réblová, Chloridiopsiella Réblová, Chloridiopsis\nRéblová, Geniculoseta Réblová, Papillospora Réblová, Spicatispora Réblová; New species: Caliciastrum bicolor Réblová, Caligospora pannosa Réblová,\nChloridiopsis syzygii Réblová, Gongromerizella silvana Réblová; New combinations: Caligospora dilabens (Réblová & W. Gams) Réblová, Capillisphaeria\ncrustacea (Sacc.) Réblová, Chloridiopsiella preussii (W. Gams & Hol.-Jech.) Réblová, Chloridiopsis constrictospora (Crous et al.) Réblová, Geniculoseta\npreussii (W. Gams & Hol.-Jech.) Réblová, Papillospora hebetiseta (Réblová & W. Gams) Réblová, Spicatispora carpatica (Hol.-Jech. & Révay) Réblová,\nSpicatispora fennica (P. Karst.) Réblová; Epitypifications (basionyms): Chaetosphaeria dilabens Réblová & W. Gams, Chloridium cylindrosporum W. \n",
+   "description_spans": [
+    {
+     "paragraph_number": 3361,
+     "start_line": 19736,
+     "end_line": 19750,
+     "start_char": 754573,
+     "end_char": 755545,
+     "pdf_page": 204,
+     "pdf_label": "204",
+     "empirical_page": null,
+     "head": "[@polythetic genus divided into eight se"
+    }
+   ],
+   "source_anchors": [],
+   "synthetic_nomenclature": true,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§2:synth_nomen",
+    "§10:mid_sentence",
+    "§10:tail_clip",
+    "§13:no_source_anchor"
+   ],
+   "known_missed_flags": [
+    "§9:article_boundary_straddled",
+    "§9:front_matter_after_first_treatment",
+    "§8:register_detector_on_front_matter"
+   ],
+   "notes": "Reblova & Nekvindova, Studies in Mycology 106 (2023), inside a bound volume. Round-7 review.  Operator: 'front matter to an article.  It looks like the block labels are almost random.'  Confirmed, and the stub STRADDLES AN ARTICLE BOUNDARY: paragraph 1666, labelled Type-designation, is 'Zeng NK, Tang LP, Yang ZL (2011). Type studies on two species of' -- a reference from the PREVIOUS article's bibliography, taken because its title contains 'Type studies'.  Paragraphs 1673-1682 are the next article's opening apparatus.  Five labels, five sections, none correct: 1666 Type-designation = a bibliography entry; 1674 Notes = the Abstract; 1676 Figure-caption = 'Key words:' + 'Taxonomic novelties:'; 1680 Description = the Introduction; 1682 Nomenclature = a run of genus names inside an introduction sentence.  Not random though -- each is a register detector firing correctly on the wrong kind of text (§12.3.8).  This treatment also exposed a hole in §12.3.56's positional front-matter test: it sits AFTER the first real treatment of its document, because earlier articles in the volume produced real treatments, so the positional test cannot see it.  See §12.3.58."
   }
  ]
 }
