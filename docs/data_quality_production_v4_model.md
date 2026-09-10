@@ -7477,6 +7477,125 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.56 Every article header is present and 79 % are buried — the structure argument, measured
+
+Operator, round-7 review of `taxon_29a4cfe6` (Telagathoti *et al.*,
+*Studies in Mycology* 103, Mortierellaceae): *"almost completely wrong,
+but an approach which extracts article structure would probably do much
+better."*
+
+**Confirmed in every particular, and the structure argument now has a
+number.**  The treatment is a `Nomen ignotum` stub assembled entirely
+from a paper's front matter — no name, because there is no name in the
+text it was built from.
+
+#### The introduction is one prose section wearing six labels
+
+| ¶ | label | content |
+|---:|---|---|
+| 5 | Misc-exposition | `Corresponding editor: Robert A. Samson` **`INTRODUCTION`** `The family Mortierellaceae belongs to…With almost 100` |
+| 6 | **Diagnosis** | `described species, Mortierella represents a comparatively species-rich genus…` |
+| 7 | Misc-exposition | `important saprobic organisms living on organic matter and many` |
+| 8 | **Biology** | `other substrates (Linnemann 1941). Members of the family have a…` |
+| 9 | Misc-exposition | `produce polyunsaturated fatty acids and arachidonic acid…` |
+| 10 | Page-header | `--- PDF Page 2 Label 2 ---` |
+| 11 | Misc-exposition | **`26 | Telagathoti et al.`** `& Ward 1997) such as biofuel production…` |
+| 12 | Materials-and-methods | `from isolates in pure culture.` **`MATERIALS AND METHODS`** … |
+
+Every arrow is a mid-sentence continuation: `…With almost 100` →
+`described species`, `…and many` → `other substrates`.  **One
+continuous introduction, chopped into six labels**, of which
+`Diagnosis` and `Biology` then became treatment fields.  ¶12's first
+line is the last clause of the introduction, exactly as the operator
+said.
+
+**¶11 is the operator's illustration of `Misc-exposition` overuse, and
+it is a good one**: it carries `26 | Telagathoti et al.` — the page
+number and running head — which ¶10's `Page-header` block did not take.
+The furniture detector fired on the synthetic page marker and missed
+the actual furniture two lines later, and `Misc-exposition` absorbed
+both it and the body text around it.
+
+#### The headers are all there
+
+`INTRODUCTION` sits inside ¶5.  `MATERIALS AND METHODS` sits inside
+¶12.  `RESULTS` and `Taxonomy` sit inside ¶16.  Not one of them opens
+its block.  Over the 400-document sample, counting article-level
+headers (`INTRODUCTION`, `MATERIALS AND METHODS`, `RESULTS`,
+`DISCUSSION`, `ACKNOWLEDGEMENTS`, `REFERENCES`, `TAXONOMY`, …):
+
+| | n | share |
+|---|---:|---:|
+| **buried mid-block** | **280** | **79.3 %** |
+| block-initial | 73 | 20.7 % |
+
+and of the 280 buried, **240 are inside `Misc-exposition`**.  The
+signal an article-structure pass would need is not missing from the
+text; it is present and swallowed, four times in five.  This is
+§12.3.9's *"article boundaries are a missing structural level"* with
+the cost attached.
+
+#### What that costs: the `Nomen ignotum` population
+
+| | n | share |
+|---|---:|---:|
+| **synthetic `Nomen ignotum` stubs** | **30 520** | **37.4 % of all treatments** |
+| …in documents that produced **no** real treatment at all | **16 757** | 54.9 % of stubs |
+| …preceding every real treatment — **front matter** | **6 008** | 19.7 % of stubs |
+| …after the first real treatment — mid-body orphans | 7 755 | 25.4 % of stubs |
+
+**Better than a third of the corpus is a nameless stub.**  The 6 008
+front-matter stubs are precisely what an article-structure pass would
+delete, at no risk: nothing before the first nomenclatural act in a
+taxonomic paper is a treatment.  The 16 757 from documents with no
+named treatment at all are a larger and different question — many are
+probably papers that should not have been ingested as taxonomic
+treatments in the first place — and are not addressed here.
+
+This also settles the caveat left in §12.3.51: `Nomen ignotum` swamped
+the first repeat-nomenclature measurement because it is 37.4 % of the
+corpus.
+
+#### `Taxonomic novelties:` — a manifest, and a narrow one
+
+The `notes` field is the tail of the abstract (it opens mid-sentence,
+`isolates representing 13 new species`) and closes with two headings:
+
+> `Key words: Mucoromycota systematics and taxonomy, multi-gene phylogeny, new taxa, systematics.`
+> `Taxonomic novelties: new genus: Tyroliella Telagathoti, Probst & Peintner; New species: Entomortierella galaxiae Telagathoti…`
+
+`Taxonomic novelties:` had not been seen before, and it is **a
+machine-readable manifest of every new name the paper introduces** —
+in principle a ground truth against which §12.3.52's 67 % act-
+recognition rate could be scored per document.  In practice the reach
+is small: 89 treatments across **80 documents** carry it, and `Key
+words:` 263 across 187.  It is a house style of a few journals, not a
+general lever.  (Both are lower bounds — only text that reached a
+stored field is searchable, so manifests swallowed by `Misc-exposition`
+are invisible to this count.)
+
+#### The only correct components are the only discarded ones
+
+The operator: *"The two Materials-and-methods blocks are about the only
+correctly identified components in this treatment."*  True — ¶12 and
+¶15 — and `Materials-and-methods` has **no entry in
+`treatment.py`'s `_LABEL_TO_FIELD`**, so both are dropped on the way to
+`as_row()`.  The two blocks the classifier got right are the two the
+schema throws away.  (¶15 is not quite clean either: it opens with the
+recto running title `Mortierellaceae from subalpine and alpine
+habitats`.)
+
+**This treatment is caught**, unlike the last four:
+`§2:synth_nomen|§10:diag_head_clip|§13:no_source_anchor` all fire.  The
+synthetic-nomenclature signal is doing its job — the gap is that
+nothing acts on it.
+
+Fixture: `taxon_29a4cfe6…`, class
+`§5-front-matter-stub-article-structure-missing`, `expected_flags`
+`["§2:synth_nomen", "§10:diag_head_clip", "§13:no_source_anchor"]`,
+`known_missed_flags` `["§9:article_header_buried_mid_block",
+"§5:front_matter_stub", "§11:materials_and_methods_has_no_field"]`.
+
 ### 12.3.55 A type designation nested inside the nomenclatural act — no partition can hold it
 
 Operator, round-7 review of `taxon_1b612514` (*Cercospora victorialis*,
