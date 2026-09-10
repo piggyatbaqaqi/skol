@@ -27,8 +27,10 @@ Usage::
     bin/treatment_dossier --experiment production_v4 --format text \\
         --doc-id taxon_a,taxon_b
 
-    # streaming, per T0d
-    bin/treatment_dossier --experiment production_v4 --doc-id - \\
+    # streaming, per T0d.  OMIT --doc-id entirely: stdin is read only
+    # when the flag is absent, so `--doc-id -` asks CouchDB for a
+    # treatment literally named `-` and reports it missing.
+    bin/treatment_dossier --experiment production_v4 \\
         --format text < ids.txt
 
 Writes nothing to CouchDB.  Ever.
