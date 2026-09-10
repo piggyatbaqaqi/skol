@@ -186,6 +186,21 @@ def _neighbour_line(doc: Dict[str, Any]) -> str:
     return f"{str(doc.get('_id'))[:22]}  {name}"
 
 
+#: Per-field cap, matching ``_gap_html``'s per-block cap.  A neighbour
+#: must not be able to make the page unusable.
+NEIGHBOUR_FIELD_CHARS = 4000
+
+
+def _neighbour_fields(doc: Dict[str, Any]) -> List[tuple]:
+    """``(field, text)`` for every prose field the neighbour has.
+
+    ``treatment`` leads, because a nomenclature that opens with
+    ``Basionym.`` or ``Type species.`` is the thing being looked for.
+    """
+    return [(f, str(doc[f]).strip()[:NEIGHBOUR_FIELD_CHARS])
+            for f in PROSE_FIELDS if str(doc.get(f) or '').strip()]
+
+
 def render_text(view: DossierView) -> str:
     """Plain-text rendering, for the terminal and for piping.
 
@@ -210,14 +225,24 @@ def render_text(view: DossierView) -> str:
         meta.append(f'flags={view.flags}')
     out.append('  '.join(meta))
 
+    def _neighbour_text(side: str, doc: Dict[str, Any]) -> None:
+        out.append(f'  {side} treatment  {_neighbour_line(doc)}')
+        for f, val in _neighbour_fields(doc):
+            out.append(f'      {f} ({len(val)}):')
+            out.append('        ' + val.replace('\n', '\n        '))
+
     out.append('')
     out.append('--- spans (paragraph, offsets, layout label) ---')
+    if view.prev_treatment:
+        _neighbour_text('prev', view.prev_treatment)
     for sp in d.spans:
         labels = ','.join(_labels_of(d, sp)) or '?'
         out.append(f'  {sp.field:<20} para {sp.paragraph}  '
                    f'[{sp.start}:{sp.end}]  <{labels}>')
     if not d.spans:
         out.append('  (none)')
+    if view.next_treatment:
+        _neighbour_text('next', view.next_treatment)
 
     out.append('')
     out.append('--- gaps: blocks between consecutive spans ---')
@@ -234,14 +259,6 @@ def render_text(view: DossierView) -> str:
             out.append(f'      [{b.label}] {b.head[:96]}')
     if not d.gaps:
         out.append('  (none)')
-
-    if view.prev_treatment or view.next_treatment:
-        out.append('')
-        out.append('--- neighbours in the source document ---')
-        if view.prev_treatment:
-            out.append('  prev  ' + _neighbour_line(view.prev_treatment))
-        if view.next_treatment:
-            out.append('  next  ' + _neighbour_line(view.next_treatment))
 
     out.append('')
     out.append('--- fields ---')
@@ -313,7 +330,18 @@ def render_html(view: DossierView) -> str:
             f'&mdash; {e("; ".join(notes) or "empty")}</summary>'
             f'<ul>{items}</ul></details>')
 
+    def _neighbour_html(side: str, doc: Dict[str, Any]) -> str:
+        items = ''.join(
+            f'<li><span class="lab">{e(f)}</span><pre>{e(val)}</pre></li>'
+            for f, val in _neighbour_fields(doc))
+        return (
+            f'<details class="neighbour"><summary>&#9656; {e(side)} '
+            f'treatment &mdash; {e(_neighbour_line(doc))}</summary>'
+            f'<ul>{items or "<li>(no prose fields)</li>"}</ul></details>')
+
     flow: List[str] = []
+    if view.prev_treatment:
+        flow.append(_neighbour_html('prev', view.prev_treatment))
     shown: set = set()
     for sp in d.spans:
         labels = ', '.join(_labels_of(d, sp)) or '?'
@@ -334,6 +362,8 @@ def render_html(view: DossierView) -> str:
     for gap in d.gaps:
         if id(gap) not in shown:
             flow.append(_gap_html(gap))
+    if view.next_treatment:
+        flow.append(_neighbour_html('next', view.next_treatment))
 
     fields_html: List[str] = []
     for f in PROSE_FIELDS:
@@ -345,12 +375,6 @@ def render_html(view: DossierView) -> str:
     # Rows are <span>+<br>, not nested <div>s: the section is sliced
     # by its own closing tag downstream, and a nested div would close
     # it early -- which is exactly how the test caught this.
-    neigh_rows = ''.join(
-        f'<br><span class="muted">{side}</span> {e(_neighbour_line(doc))}'
-        for side, doc in (('prev', view.prev_treatment),
-                          ('next', view.next_treatment)) if doc)
-    neigh = (f'<div class="neighbours"><b>Neighbours in the source '
-             f'document</b>{neigh_rows}</div>') if neigh_rows else ''
     sibs = ''.join(
         f'<li>{e(str(s.get("_id"))[:22])} '
         f'{e(str(s.get("treatment") or "").strip()[:80])}</li>'
@@ -388,14 +412,16 @@ background:#fff8f8}}
 .gap ul{{margin:.3rem 0;padding-left:1.2rem}}
 .gap pre{{margin:.2rem 0}}
 .muted{{color:#777;font-weight:normal}}
-.neighbours{{border-left:3px solid #77a;background:#f4f6ff;
-padding:.4rem .8rem;margin:.6rem 0;font-family:monospace;font-size:13px}}
+.neighbour{{border-left:3px solid #77a;padding:.15rem .8rem;
+margin:.2rem 0;background:#f4f6ff}}
+.neighbour summary{{cursor:pointer;color:#33a}}
+.neighbour ul{{margin:.3rem 0;padding-left:1.2rem}}
+.neighbour pre{{margin:.2rem 0}}
 pre{{white-space:pre-wrap;background:#f7f7f7;padding:.6rem;margin:.2rem 0}}
 </style></head><body>
 <h1>{e(d.treatment_id)}</h1>
 <p class="muted">{src_line}</p>
 <p>{e('   '.join(meta))}</p>
-{neigh}
 <h2>Spans <span class="muted">&mdash; hover for the source text;
 gaps open on click</span></h2>
 {''.join(flow) or '<p class="muted">(none)</p>'}
@@ -568,9 +594,17 @@ def _sibling_index(
             for x in doc[f]
             if str(x.get('paragraph_number', '')).lstrip('-').isdigit()
         ]
-        out[src].append({'_id': row.id,
-                         'treatment': doc.get('treatment'),
-                         'paragraph': min(paras) if paras else None})
+        entry: Dict[str, Any] = {'_id': row.id,
+                                 'paragraph': min(paras) if paras else None}
+        # Keep the prose fields, not just the name: §12.3.63's theft is
+        # visible in the neighbour's *content* -- a materials block
+        # continuing this treatment's sentence, a notes block opening
+        # with its tail.  The scan already has the whole document, so
+        # this keeps more of what was fetched rather than fetching more.
+        for f in PROSE_FIELDS:
+            if doc.get(f):
+                entry[f] = doc[f]
+        out[src].append(entry)
     for rows in out.values():
         rows.sort(key=lambda d: (d['paragraph'] is None,
                                  d['paragraph'] or 0))

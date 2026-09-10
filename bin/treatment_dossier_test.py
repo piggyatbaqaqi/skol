@@ -179,7 +179,6 @@ class TestSiblingIndexCarriesContent:
                     self.id, self.doc = i, d
             return [_Row(i, d) for i, d in self._docs.items()]
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_prose_fields_reach_the_index(self) -> None:
         doc, _ = _treatment(_id='taxon_b', notes='Notes - kept.')
         idx = _sibling_index(self._Db({'taxon_b': doc}), {'src1'})
@@ -223,26 +222,22 @@ class TestNeighboursAreRendered:
         i = text.index('--- spans (')
         return text[i:text.index('\n--- ', i + 10)]
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_html_puts_prev_above_the_first_span(self) -> None:
         doc, ann = _treatment()
         html = render_html(build_view(doc, ann, siblings=self._sibs()))
         assert html.index(self.NEIGH) < html.index(self.SPAN)
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_html_puts_next_below_the_last_span(self) -> None:
         doc, ann = _treatment()
         html = render_html(build_view(doc, ann, siblings=self._sibs()))
         assert html.rindex(self.NEIGH) > html.rindex(self.SPAN)
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_html_has_no_separate_neighbours_block(self) -> None:
         """The standalone box is replaced, not supplemented."""
         doc, ann = _treatment()
         html = render_html(build_view(doc, ann, siblings=self._sibs()))
         assert '<div class="neighbours">' not in html
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_the_summary_is_the_one_line_form(self) -> None:
         """`treatment` carries the PDF's own line breaks, and a
         summary that wraps is not scannable."""
@@ -255,7 +250,6 @@ class TestNeighboursAreRendered:
         summary = html[i:html.index('</summary>', i)]
         assert 'Basionym. Phomopsis sclerotioides' in summary
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_the_body_carries_the_whole_neighbour_treatment(self) -> None:
         """Not just the nomenclature.  What reveals a cross-treatment
         theft is the neighbour's *content* -- a materials block that
@@ -272,7 +266,6 @@ class TestNeighboursAreRendered:
         assert 'Specimens examined. Netherlands' in block
         assert 'the cause of black root rot' in block
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_each_field_in_the_body_is_labelled(self) -> None:
         """Unlabelled prose from two fields run together reads as one
         block, which is the confusion this is meant to resolve."""
@@ -282,7 +275,6 @@ class TestNeighboursAreRendered:
         block = _details(render_html(build_view(doc, ann, siblings=sibs)))
         assert 'notes' in block
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_a_long_field_is_capped_in_the_body(self) -> None:
         """Same cap as a gap block: a neighbour must not be able to
         make the page unusable."""
@@ -292,7 +284,6 @@ class TestNeighboursAreRendered:
         block = _details(render_html(build_view(doc, ann, siblings=sibs)))
         assert len(block) < 20000
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_the_body_uses_the_same_disclosure_as_a_gap(self) -> None:
         """`<details>` plus the &#9656; marker, so the two kinds of
         collapsed context look and behave alike."""
@@ -301,7 +292,6 @@ class TestNeighboursAreRendered:
         i = html.index(self.NEIGH)
         assert '&#9656;' in html[i:html.index('</summary>', i)]
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_html_escapes_a_neighbour_name(self) -> None:
         """The corpus contains `<`, `&` and `"` in real nomenclature."""
         doc, ann = _treatment()
@@ -313,7 +303,6 @@ class TestNeighboursAreRendered:
         assert '<i>Phomopsis</i>' not in block
         assert '&lt;i&gt;' in block
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_text_puts_both_inside_the_spans_section(self) -> None:
         doc, ann = _treatment()
         sec = self._spans_section(
@@ -322,7 +311,6 @@ class TestNeighboursAreRendered:
         assert sec.index('taxon_prev') < sec.index('description')
         assert sec.index('taxon_next') > sec.index('taxon_prev')
 
-    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_text_carries_the_whole_neighbour_treatment(self) -> None:
         """No triangle in the terminal, so the body is indented under
         its heading rather than hidden."""
