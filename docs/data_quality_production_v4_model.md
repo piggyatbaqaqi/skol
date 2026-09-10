@@ -7477,6 +7477,151 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.55 A type designation nested inside the nomenclatural act — no partition can hold it
+
+Operator, round-7 review of `taxon_1b612514` (*Cercospora victorialis*,
+Braun *et al.*, *IMA Fungus*): *"The nomenclature and type-designation
+here are an interesting puzzle.  I contend that the nomenclatural act
+continues through the 2 Misc-exposition blocks.  The nomenclatural act
+specifically mentions a holotype (first line absorbed by nomenclature),
+so we arguably should have overlapping labels here."*
+
+**Confirmed, and the puzzle is representational rather than
+statistical.**  Reassembling ¶162–164:
+
+```
+Cercospora victorialis Thüm., Hedwigia 21: 172 (1882).
+Synonyms: Cladosporium alliicola H.D. Shin & U. Braun,
+  Korean J. Mycol. 23: 141 (1995) [holotype: Korea: Suwon, on
+  Allium victorialis, 3 Sep. 1993, H.D. Shin (KUS 12597);
+  isotype: HAL 1533 F.]
+Cladosporium victorialis (Thüm.) U. Braun & H.D. Shin, in
+  Braun & Mel'nik, Trudy Bot. Inst. im. V.L. Komarova 20: 101 (1997).
+```
+
+`¶162` breaks at `[holotype: Korea:`, `¶163` carries the citation and
+opens the next synonym, `¶164` (`101 (1997).`) closes it.  **The type
+designation is a bracketed clause inside a synonym entry.**
+`Nomenclature` and `Type-designation` are *both* correct for the same
+characters, and a segmentation that assigns each character to exactly
+one label cannot say so.  That is a different failure from §12.3.54:
+there the labels stood in a subset relation over *kinds* and
+coalescence welded two adjacent sections; here the containment is over
+*text*, and no choice of boundary is right.
+
+Two further details sharpen it.  The nested type is the **synonym's**
+type — the accepted name's type is the `Lectotype` in ¶167 — so this
+treatment holds two type designations of different nomenclatural
+status, one of them syntactically subordinate to a name it is not the
+type of.  And of the operator's two `Misc-exposition` blocks, **¶164
+does continue the act; ¶166 does not** — its first line completes the
+`Literature:` list from ¶165 and its second opens `Illustrations`,
+which are separate fields of Braun's monograph format.
+
+| | n | share |
+|---|---:|---:|
+| nomenclature containing a bracketed type citation | 42 | 0.05 % |
+| …with no `type_designation` field at all | 21 | 50 % |
+| nomenclature clipped inside an unclosed `[` | **258** | 0.32 % |
+
+A small class — but frequency is the wrong measure for it.  The 258
+unclosed brackets are the visible residue; the phenomenon is only
+detectable when the clip happens to leave the opening bracket behind.
+
+#### The damage is an encoding loss, not OCR
+
+Operator: *"There appears to be OCR damage here."*  There is damage,
+and it is worth naming precisely, because the two have different
+remedies.  The source attachment **decodes as strict UTF-8** and
+contains **82 225 U+FFFD REPLACEMENT CHARACTERs — 11.38 % of its
+722 321 characters**, in 1 939 runs with a median length of 50 and a
+longest of 158.  A decode failure happened upstream and was *persisted*
+as well-formed UTF-8.  Re-OCR would fix an OCR error; nothing recovers
+these bytes from this artifact, because they are no longer in it.
+
+| | n | share |
+|---|---:|---:|
+| treatments carrying U+FFFD | **2 333** | 2.9 % |
+| replacement characters in treatment text | 2 748 384 | 0.53 % |
+| source documents with >2 % of their treatment text destroyed | **221** | |
+| worst documents | 86.6 %, 85.6 %, 84.4 %, 84.0 %, 83.0 % | |
+
+**The distribution is bimodal**: median damage in an affected treatment
+is 1.1 %, the 90th percentile 41.7 %.  Most affected treatments lose a
+character here and there; a few hundred documents are effectively
+destroyed and should be re-ingested from source rather than repaired.
+This is the same family as the `Elsino€e` euro-sign substitution
+recorded from `taxon_023582f5` — character-level corruption surviving
+intact into the artifact — but far more severe, since a substitution
+preserves information and U+FFFD does not.
+
+#### The `Biology` block is a type designation plus one line — twice
+
+Operator: *"The first line of the biology block should be
+type-designation block.  The last line of the biology block was lost to
+a Misc-exposition … Only the last line of the biology should be
+biology.  The first few lines are a type designation."*
+
+Both true, and stated twice because it **happens twice**:
+
+| ¶ | opens with | its one biology line | truncated into |
+|---:|---|---|---|
+| 167 | `Lectotype (designated by Braun…): Russia: West Siberia, Mt Kerlygan… Isolectotype: LE 404552.` | `Host range and distribution: … Asia (Japan, Korea, Russia) South America` | ¶168 `(Brazil).` |
+| 173 | `Holotype: India: Odisha: Bhubaneswar … (HCIO 32865).` | `Host range and distribution: Only known from the type` | ¶174 `collection.` |
+
+This is §12.3.52 Signal 1's `biology` row (1 166 treatments) and
+§12.3.54's narrowing weld arriving together — but the coarse label here
+is `Biology`, not `Materials-examined`, so the type status is lost down
+a *third* route on top of §12.3.48's.
+
+#### The `Table` says it is a key
+
+Operator: *"The Table block is clearly the remnants of a Key (it says
+so on the 2nd line)."*  ¶169 line 2 is `Key to Pseudocercospora species
+on Amaryllidaceae`, with dot leaders and `……… P. indica` below it.
+
+Over the 400-document sample, blocks carrying a `Key to …` **heading on
+its own line**:
+
+| label | n | share |
+|---|---:|---:|
+| `Misc-exposition` | 25 | 41.0 % |
+| `Key` | 18 | 29.5 % |
+| `Diagnosis` | 8 | 13.1 % |
+| `Bibliography` | 3 | 4.9 % |
+| `Notes` | 3 | 4.9 % |
+| `Table` | 2 | 3.3 % |
+
+**70.5 % of self-declared keys are not labelled `Key`** — `Table: KEY TO
+WISCONSIN SPECIES OF FOMES`, `Misc-exposition: Key to the treated
+Linnemannia species`.  (The `Bibliography` row is partly paper titles
+containing the phrase, so read 70.5 % as slightly high.)  A block that
+names its own type in a heading is the cheapest correction available
+anywhere in this memo, and it runs in the opposite direction from
+§12.3.6's rogue `Key`: keys are both over- and under-assigned, which is
+consistent with `Key` being decided by line shape rather than content.
+
+#### One more, unnamed by the operator
+
+The nomenclatural act for the *next* species sits at the tail of ¶170,
+**labelled `Bibliography`** — `Pseudocercospora indica D. Gupta, Padhi
+& Chowdhry, Sci. Cult. 48: 112 (1982).` — with `(Fig. 9)` in ¶171 as
+its figure reference.  The operator read ¶171 plus ¶172's opening line
+as *"the damaged remnant of a nomenclatural act"*, which is right in
+substance: the act is scattered.  It is scattered one block earlier
+than that, and ¶172's `Illustration: Gupta et al…` is a distinct field
+of the monograph format.  §12.3.52 Signal 2 again, at 3.2 % to
+`Bibliography`.  ¶175 completes the inversion: labelled `Nomenclature`,
+opening `Notes:`, and carrying a genuine `nom. nov.`
+
+Fixture: `taxon_1b612514…`, class
+`§5-type-nested-in-the-nomenclatural-act`, `expected_flags`
+`["§6:mid_body_desc"]` — the only one that fires — with
+`known_missed_flags` `["§5:type_nested_in_act",
+"§16:encoding_loss_u_fffd", "§11:own_heading_mid_field",
+"§6:table_declares_itself_a_key",
+"§5:nomenclatural_act_labeled_bibliography"]`.
+
 ### 12.3.54 A narrowing relation erases its own boundary — and one name can hold three circumscriptions
 
 Operator, round-7 review of `taxon_1834418a` (*Phaeocyphellopsis

@@ -2746,6 +2746,46 @@
     "§5:nomenclatural_act_labeled_notes"
    ],
    "notes": "Phaeocyphellopsis ochracea, W.B. Cooke's cyphellaceous monograph, round-7 review.  Operator: 'starts well but the wheels come off'.  Every claim confirmed against paragraphs 1143-1156.  The nomenclatural act (1143) and description (1144) are clean.  1145 'Habitat: On rotting wood and litter, especially of species of:' + 1146 Table 'Alnus, Benzoin, ... Ulmus.' are one Biology block split by §12.3.15's short-line Table detector firing on a comma-separated host list.  1147 Misc-exposition 'Type specimen examined: Cyphella mellea Burt: Louisiana:' is a type designation ending on a dangling colon; its completion is line 1 of 1148 ('Bohemia, Dec. 23, 1886, Coll. A.B. Langlois 864A. (FH).' -- Bohemia is in Plaquemines Parish, Louisiana, and Langlois collected there, so the join is certain).  1148 line 2 'Specimens examined from: Austria' is the real materials head and continues into 1149 '(2), Czechoslovakia (15), France (5)...'.  So one Materials-examined block spans a type/general boundary that the classifier could not see, because Type-designation is a NARROWING of Materials-examined and the coarse label is a correct label for the fine block -- distinct from §12.3.53, where two same-labelled lines had unrelated referents.  1150 Description and 1152 Key are both 'As above, but ...' variant circumscriptions of the same species, each with its own Habitat and specimen count; 1153 Notes opens with the third variant's material ('Specimen examined from Colorado (1).') and closes by engulfing a genus act ('Phaeosolenia Speg., Anal. Mus. Nac. Buenos Aires 8: 53. 1902.').  The Notes are mildly diagnostic as the operator said -- 'will usually separate specimens of this species from Cyphellopsis anomala'. See §12.3.54."
+  },
+  {
+   "id": "taxon_1b6125145b2237d4e92445e83d29047980bf06951cbb328c0d02fb9cf36a1082",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-09",
+   "captured_rev": "21-7240fab48d0c20ec5939d572d78b150d",
+   "class": "§5-type-nested-in-the-nomenclatural-act",
+   "treatment": "Cercospora victorialis Thüm., Hedwigia 21: 172\n(1882).\nSynonyms: Cladosporium alliicola H.D. Shin & U. Braun,\nKorean J. Mycol. 23: 141 (1995) [holotype: Korea: \n",
+   "description": "Illustration: Gupta et al�����������������������\nDescription: Leaf spots amphigenous, linear, starting\nat the tip, proceeding downwards, extending to 10–65\nmm in length, yellowish brown, margin black. Caespituli\nhypophyllous, punctiform, dark. Mycelium internal. Stromata\nwell-developed, large, immersed, subglobose to globose,\n45–75 μm diam, dark brown. Conidiophores numerous,\nin dense fascicles, almost sporodochial, arising from\nstromata, erect, straight, subcylindrical, barely geniculate,\n�����������������������������������������������\nbrown, 0–2-septate, thin-walled, smooth; conidiogenous\ncells integrated, terminal or conidiophores reduced to\nconidiogenous cells, conidiogenous loci inconspicuous,\nunthickened, not darkened. Conidia solitary, obclavate���������������������������������������������������������������\n2–3.5 μm, 2–5-septate, pale to medium olivaceous-brown,\nthin-walled, smooth, apex obtuse, base short obconically\ntruncate, hila unthickened, not darkened.\n",
+   "diagnosis": "",
+   "type_designation": "Suwon, on Allium victorialis, 3 Sep. 1993, H. D. Shin\n(KUS 12597); isotype: HAL 1533 F.\nCladosporium victorialis (Thüm.) U. Braun & H.D. Shin, in\nBraun & Mel’nik,Trudy Bot. Inst. im. V.L. Komarova 20: \n",
+   "biology": "���������������������������������������������������������������\n�����������������et al�������������������������������\nLectotype (designated by Braun, in Braun & Mel’nik 1997):\nRussia: West Siberia, Mt Kerlygan, on Allium victorialis,\nMartjanov (LE 404551). Isolectotype: LE 404552.\nHost range and distribution: On Allium (cepa, sativum,\nvictorialis [ochotense]), Amaryllidaceae (Allioideae, syn.\nAlliaceae), Asia (Japan, Korea, Russia) South America \n\nHolotype: India: Odisha: Bhubaneswar, botanical garden of\nthe Utkal University, on Zephyranthes rosea, Amaryllidaceae,\n26 Feb. 1978, D. Gupta (HCIO 32865).\nHost range and distribution: Only known from the type \n",
+   "description_spans": [
+    {
+     "paragraph_number": 345,
+     "start_line": 1009,
+     "end_line": 1025,
+     "start_char": 45502,
+     "end_char": 46511,
+     "pdf_page": 11,
+     "pdf_label": "11",
+     "empirical_page": null,
+     "head": "[@Illustration: Gupta et al�������������"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "replacement_chars": 295,
+   "expected_flags": [
+    "§6:mid_body_desc"
+   ],
+   "known_missed_flags": [
+    "§5:type_nested_in_act",
+    "§16:encoding_loss_u_fffd",
+    "§11:own_heading_mid_field",
+    "§6:table_declares_itself_a_key",
+    "§5:nomenclatural_act_labeled_bibliography"
+   ],
+   "notes": "Cercospora victorialis, Braun et al., IMA Fungus.  Round-7 review, paragraphs 162-175.  Operator: 'The nomenclature and type-designation here are an interesting puzzle.'  Confirmed and it is a representational one: the act reads 'Synonyms: Cladosporium alliicola H.D. Shin & U. Braun, Korean J. Mycol. 23: 141 (1995) [holotype: Korea: Suwon, on Allium victorialis, 3 Sep. 1993, H.D. Shin (KUS 12597); isotype: HAL 1533 F.]' -- the type designation is a BRACKETED CLAUSE INSIDE a synonym entry, so Nomenclature and Type-designation are both correct for the same characters and no partition into disjoint spans can hold it.  It designates the SYNONYM's type; the accepted name's type is the Lectotype in 167.  The act demonstrably continues 162->163->164 ('101 (1997).' completes the Trudy citation); of the operator's two Misc-exposition blocks, 164 continues the act but 166's first line completes the Literature list from 165.  Encoding loss confirmed and it is not OCR: 11.38 % of the source attachment is U+FFFD, stored and strict-UTF-8-valid, 295 in this treatment's fields.  Biology 167 and 173 are each a type citation plus one 'Host range and distribution:' line, both truncated into a following Misc-exposition ('(Brazil).', 'collection.') -- the operator named this twice because it happens twice.  Table 169's second line is literally 'Key to Pseudocercospora species on Amaryllidaceae'.  The act for P. indica is at the tail of 170, labelled Bibliography, with '(Fig. 9)' in 171 as its figure reference; 172's 'Illustration:' opening line is a distinct field of Braun's monograph format, not part of the act.  175 is labelled Nomenclature and opens 'Notes:', carrying a genuine nom. nov.  See §12.3.55."
   }
  ]
 }
