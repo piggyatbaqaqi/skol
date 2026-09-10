@@ -1,8 +1,18 @@
 # Action plan: three activities, one draw, four populations
 
-> ## STATUS: COMPLETE — 2026-09-10
+> ## STATUS: T0–T4 COMPLETE, **T5 OUTSTANDING** — 2026-09-10
 >
-> **T0–T5 are done.**  Rounds 5, 6 and 7 were drawn, run and read; the
+> *Corrected 2026-09-10, same day.  An earlier version of this block
+> said COMPLETE and "T0–T5 are done".  That was wrong and it hid the
+> one thing this plan is still holding: **T5 has never been run against
+> rounds 6 or 7.**  `production-v5-execution.md` states it directly —
+> "rounds 6 and 7 are entirely unreviewed — 16 674 candidate
+> annotations whose precision has never been checked, and none of it
+> tested since the canonicalization rules landed."  The plan's own
+> closing recommendation is "**run T5 against round 7 before drawing
+> round 8**".*
+>
+> **T0–T4 are done.**  Rounds 5, 6 and 7 were drawn, run and read; the
 > support projection was validated out of sample twice (round 7
 > predicted ~210 at n = 3 000 for df ≥ 10, landed at 214), and the
 > round-file convention this document introduced is in force.  The
@@ -14,6 +24,30 @@
 > `docs/feature_label_canonicalization.json` to any database today"*.
 > `bin/build_canonical_labels.py` does, into
 > `skol_exp_production_v4_02_57_features_canonical` (25 882 records).
+>
+> **T5 is the binding constraint, and its apparatus is ready.**
+> 147 treatments are hand-reviewed against M5's 200–250 target, all
+> from round 5.  The round-7 review draw is
+> `data/annotation_rounds/production_v4_round7_review50.txt` (45 ids);
+> brat data is at
+> `~/src/github.com/piggyatbaqaqi/brat/data/skol_segments/production_v4_round7`
+> and the 45 dossiers were regenerated 2026-09-10 against the current
+> renderer.  **Nothing blocks starting it.**  What it produces is the
+> precision number on the *canonicalized* schema — which is what
+> changed since round 5 was reviewed, and why the old number does not
+> transfer.
+>
+> **Round 8 is gated on it**, not on the vocabulary curve: a fourth
+> thousand buys ~+40–50 labels at df ≥ 10 for ~$29, and the binding
+> constraint has moved from vocabulary volume to knowing what the
+> volume is worth.
+>
+> **The pathology activity has been consuming the same draw
+> separately.**  This plan's title — *three activities, one draw* — is
+> why that is not a contradiction.  §§12.3.51–12.3.64 and fixtures
+> 70–83 in `tests/fixtures/pathologies.json` came out of round 7
+> between 2026-09-09 and 2026-09-10; that is the pathology activity,
+> and it does **not** substitute for T5's label review.
 >
 > **T6's actual subject is handed on, not dropped.**  The label-schema
 > fix — a label string carrying a qualifier the schema should carry

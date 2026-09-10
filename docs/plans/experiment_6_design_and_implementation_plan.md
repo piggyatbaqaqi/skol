@@ -240,6 +240,11 @@ Merging §7 with the above:
 | 8 | Multi-model pipeline integration (8.2) | §7 phase 6 |
 | 9 | Supervised framework (8.4) | last; needs 3 |
 
+**Blocking neither, but blocking round 8 and M5:** T5 of
+[annotation-activity-split.md](annotation-activity-split.md) — the
+label review of round 7, 45 treatments, apparatus ready.  It is the
+only outstanding item from that plan and it gates the next draw.
+
 **Not in Experiment 6, and deliberately parallel to it:** M6's
 structured-JSON work, the two user-visible increments recorded in the
 production_v5 change log (surfacing `predicted_issues`, harvesting the
