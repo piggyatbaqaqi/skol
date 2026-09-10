@@ -20,6 +20,19 @@ the harness measures A (whole, as-is), B (per-clause, sequential) and
 C (per-clause, batched), and B exists precisely to show that
 granularity alone is not the lever.
 
+**B and C must be compared, not assumed equal.**  Greedy decoding is
+mathematically deterministic, but batching changes cuBLAS kernel
+selection, reductions run in a different order, and at a step where the
+top two logits are nearly tied that flips the argmax — after which the
+continuation diverges.  Arm C claims "the same work, faster"; if the
+work is not the same, part of the speed-up is an unpriced quality
+change, and R4c will score only one of these paths.  So the outputs are
+retained and compared.
+
+**Comparison is exact-then-structural, not edit distance.**  Edit
+distance would score reordered JSON keys (harmless — same object) and a
+changed value (serious) on the same scale.
+
 **Generation is injected.**  Everything here is exercised against a
 fake generator with a controllable cost model, so the arithmetic, the
 report and the failure handling are testable without a GPU — and the
@@ -37,6 +50,7 @@ from treatments_to_structured.granularity_bench import (  # noqa: E402
     Timing,
     Workload,
     build_workloads,
+    compare_arms,
     run_workload,
     summarize,
 )
@@ -207,3 +221,132 @@ class TestSummarize:
         r = summarize([Timing('whole', 0, 0, 0.0, 0, 0),
                        Timing('clause_batch', 9, 2, 1.0, 100, 0)])
         assert r['clause_batch']['speedup'] is None
+
+
+class TestOutputsAreRetained:
+    """`output_chars` alone made a B-vs-C comparison impossible by
+    construction.  The outputs themselves are ~94 KB for 470 clauses."""
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_outputs_come_back_in_order(self) -> None:
+        out = run_workload(Workload('clause_seq', ['a', 'b', 'c'], 1),
+                           lambda p: [x.upper() for x in p])
+        assert out.outputs == ('A', 'B', 'C')
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_outputs_stay_aligned_across_batches(self) -> None:
+        """Position is the join key between B and C, so batching must
+        not reorder or regroup them."""
+        out = run_workload(Workload('clause_batch', list('abcde'), 2),
+                           lambda p: [x.upper() for x in p])
+        assert out.outputs == ('A', 'B', 'C', 'D', 'E')
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_a_failed_batch_leaves_None_placeholders(self) -> None:
+        """Dropping the failures instead would shift every later output
+        left by one and silently compare unrelated clauses."""
+        calls = {'n': 0}
+
+        def flaky(prompts: list) -> list:
+            calls['n'] += 1
+            if calls['n'] == 2:
+                raise RuntimeError('cuda oom')
+            return [x.upper() for x in prompts]
+
+        out = run_workload(Workload('clause_batch', list('abcdef'), 2), flaky)
+        assert out.outputs == ('A', 'B', None, None, 'E', 'F')
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_outputs_length_always_matches_the_workload(self) -> None:
+        def boom(prompts: list) -> list:
+            raise RuntimeError('nope')
+        out = run_workload(Workload('clause_seq', list('abc'), 1), boom)
+        assert len(out.outputs) == 3
+
+    def test_an_empty_workload_has_no_outputs(self) -> None:
+        assert run_workload(Workload('clause_seq', [], 1),
+                            lambda p: []).outputs == ()
+
+
+class TestCompareArms:
+    """Exact match first, structural agreement second, and the genuine
+    disagreements kept apart from the unparseable ones."""
+
+    def _t(self, arm: str, outputs: tuple) -> Timing:
+        return Timing(arm, items=len(outputs), calls=len(outputs),
+                      seconds=1.0, output_chars=0, outputs=outputs)
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_identical_outputs_are_all_exact(self) -> None:
+        a = self._t('clause_seq', ('{"a": 1}', '{"b": 2}'))
+        r = compare_arms(a, self._t('clause_batch', ('{"a": 1}', '{"b": 2}')))
+        assert r['n'] == 2 and r['exact'] == 2
+        assert r['exact_rate'] == pytest.approx(1.0)
+        assert r['differ'] == 0
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_key_order_and_whitespace_agree_structurally(self) -> None:
+        """Same object, different serialisation.  Edit distance would
+        call this a difference; it is not one."""
+        a = self._t('clause_seq', ('{"a": 1, "b": 2}',))
+        b = self._t('clause_batch', ('{"b":2,\n "a":1}',))
+        r = compare_arms(a, b)
+        assert r['exact'] == 0
+        assert r['structural'] == 1
+        assert r['agree_rate'] == pytest.approx(1.0)
+        assert r['differ'] == 0
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_a_changed_value_is_a_real_disagreement(self) -> None:
+        r = compare_arms(self._t('clause_seq', ('{"a": 1}',)),
+                         self._t('clause_batch', ('{"a": 2}',)))
+        assert r['differ'] == 1 and r['structural'] == 0
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_a_missing_key_is_a_real_disagreement(self) -> None:
+        r = compare_arms(self._t('clause_seq', ('{"a": 1, "b": 2}',)),
+                         self._t('clause_batch', ('{"a": 1}',)))
+        assert r['differ'] == 1
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_unparseable_output_is_not_scored_as_disagreement(self) -> None:
+        """A model that emitted prose is a different problem from a
+        model that emitted different JSON, and blending them would hide
+        whichever is rarer."""
+        r = compare_arms(self._t('clause_seq', ('{"a": 1}',)),
+                         self._t('clause_batch', ('sorry, I cannot',)))
+        assert r['unparseable'] == 1
+        assert r['differ'] == 0 and r['structural'] == 0
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_positions_either_side_failed_are_excluded_and_counted(
+            self) -> None:
+        a = self._t('clause_seq', ('{"a": 1}', None, '{"c": 3}'))
+        b = self._t('clause_batch', ('{"a": 1}', '{"b": 2}', None))
+        r = compare_arms(a, b)
+        assert r['n'] == 1
+        assert r['incomparable'] == 2
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_misaligned_lengths_are_refused_not_zipped(self) -> None:
+        """zip() would truncate silently and compare clause i against
+        clause i for a prefix, reporting a clean result on a broken
+        run."""
+        with pytest.raises(ValueError):
+            compare_arms(self._t('clause_seq', ('{}', '{}')),
+                         self._t('clause_batch', ('{}',)))
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_no_comparable_positions_does_not_divide_by_zero(self) -> None:
+        r = compare_arms(self._t('clause_seq', (None,)),
+                         self._t('clause_batch', (None,)))
+        assert r['n'] == 0
+        assert r['exact_rate'] is None and r['agree_rate'] is None
+
+    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
+    def test_the_arms_compared_are_named_in_the_result(self) -> None:
+        """The result gets read months later; which pair it describes
+        must not depend on argument order being remembered."""
+        r = compare_arms(self._t('clause_seq', ('{}',)),
+                         self._t('clause_batch', ('{}',)))
+        assert r['left'] == 'clause_seq' and r['right'] == 'clause_batch'

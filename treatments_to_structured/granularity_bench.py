@@ -24,7 +24,8 @@ Generation is injected so the arithmetic is testable without a GPU.
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
+from typing import (Any, Callable, Dict, List, Mapping, Optional, Sequence,
+                    Tuple)
 
 #: Prompt scaffold for one clause.  Phase 1 already supplies the key
 #: (``attribute_path`` is depth 1 on 98 % of spans), so the clause arm
@@ -63,6 +64,13 @@ class Timing:
     seconds: float = 0.0
     output_chars: int = 0
     failures: int = 0
+    #: One entry per prompt in the workload, positionally aligned with
+    #: it -- ``None`` where the call that carried it failed.  Retained
+    #: so ``clause_seq`` and ``clause_batch`` can be compared: batching
+    #: changes cuBLAS kernel selection, which can flip an argmax at a
+    #: near-tie, so identical output is expected but not guaranteed and
+    #: has to be measured rather than assumed.
+    outputs: Tuple[Optional[str], ...] = ()
 
 
 def build_workloads(
@@ -173,3 +181,17 @@ def summarize(
             row['seconds_per_treatment'] = t.seconds / treatments
         report[t.arm] = row
     return report
+
+
+def compare_arms(
+    left: Timing,
+    right: Timing,
+) -> Dict[str, Any]:
+    """Compare two arms' outputs position by position.
+
+    Only meaningful for ``clause_seq`` vs ``clause_batch``: they are
+    built from the same items, so a difference is attributable to
+    batching.  ``whole`` differs by construction and is not comparable
+    this way.
+    """
+    raise NotImplementedError
