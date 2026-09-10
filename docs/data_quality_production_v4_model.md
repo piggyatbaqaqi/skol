@@ -7477,6 +7477,140 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.54 A narrowing relation erases its own boundary — and one name can hold three circumscriptions
+
+Operator, round-7 review of `taxon_1834418a` (*Phaeocyphellopsis
+ochracea*, W.B. Cooke's cyphellaceous monograph): *"starts well but
+the wheels come off."*  Every claim confirmed against ¶1143–1156.
+
+| ¶ | label | content | verdict |
+|---:|---|---|---|
+| 1143 | Nomenclature | *P. ochracea* comb. nov. + full synonymy | **clean** |
+| 1144 | Description | receptacles, hairs, basidia, spores | **clean** |
+| 1145 | Misc-exposition | `Habitat: On rotting wood and litter, especially of species of:` | → Biology |
+| 1146 | **Table** | `Alnus, Benzoin, Betula, … Ulex and Ulmus.` | → Biology |
+| 1147 | Misc-exposition | `Type specimen examined: Cyphella mellea Burt: Louisiana:` | → Type-designation |
+| 1148 | Materials-examined | `Bohemia, Dec. 23, 1886, Coll. A.B. Langlois 864A. (FH).` **+** `Specimens examined from: Austria` | **two sections** |
+| 1149 | Misc-exposition | `(2), Czechoslovakia (15), France (5)…` | → Materials-examined |
+| 1150 | Description | `As above, but all structures … reduced to resting spores` | variant 2 |
+| 1152 | **Key** | `As above but chlamydospores verrucose … 9—10 x 6—7 u.` | variant 3 |
+| 1153 | Notes | `Specimen examined from Colorado (1).` + notes + a genus act | 3 things |
+
+The `Habitat:`/`Table` split is §12.3.15's short-line detector firing
+on a comma-separated host list; the two blocks are one `Biology`
+section, as the operator says.  **¶1147's join to ¶1148 is certain, not
+inferred**: Bohemia is in Plaquemines Parish, Louisiana, and Langlois
+collected there, so `Louisiana:` + `Bohemia, Dec. 23, 1886, Coll. A.B.
+Langlois 864A. (FH).` is one sentence.
+
+#### A narrowing relation is invisible to a label
+
+Operator: *"we have observed that type-designation is a narrowing of
+materials-examined, so we have a similar case to the adjacent
+nomenclatural lines from the previous treatment, but slightly different
+because one is a narrowing of the other."*
+
+**That difference is the whole mechanism, and it is sharper than
+§12.3.53.**  There, two adjacent lines shared a label and had unrelated
+referents — the label was right for each line and wrong for the pair.
+Here, `Materials-examined` is *correct* for the type citation.  Every
+type designation **is** a specimen citation; `Type-designation` is the
+proper subset.  So the classifier cannot be said to have erred at all,
+and `_coalesce_blocks` — which splits only on label change — has no
+label change to split on, **because the correct coarse label spans both
+sections**.
+
+A supertype label does not merely lose specificity.  **It dissolves the
+boundary with its own subtype.**  That is a structural consequence of
+the label lattice, not a modelling failure, and it applies to every
+narrowing pair in the schema.
+
+**§12.3.48 measured the labelling loss** — 3 975 `materials_examined`
+opening with a type cue, 3 443 of them with no type recorded anywhere.
+The *boundary* loss had not been measured:
+
+| | n | share |
+|---|---:|---:|
+| `materials_examined` holding a type cue **before** a general cue — two welded sections | **1 531** | 1.9 % |
+| …with a separate `type_designation` field as well | 250 | 16.3 % |
+| …with **no** `type_designation` at all — boundary *and* status lost | **1 281** | 83.7 % |
+
+**This detector does not fire on the review treatment**, and the reason
+is instructive: its type cue never reached the field.  ¶1147 kept the
+cue and `Misc-exposition`; only the citation *tail* was eaten.  The
+signature there is the mirror of §12.3.52's — **a field whose own
+section heading appears mid-field**, since the heading marks the true
+start and anything before it was absorbed:
+
+| field | n | | | |
+|---|---:|---|---|---:|
+| `notes` | 2 989 | | `type_designation` | 418 |
+| `materials_examined` | 1 205 | | `diagnosis` | 119 |
+| `biology` | 1 166 | | `etymology` | 17 |
+| `description` | 605 | | **distinct treatments** | **5 877 (7.2 %)** |
+
+1 071 further occurrences were excluded as legitimate repeat-sections —
+a field that opens with its own heading and carries a second one is a
+multi-part materials block, not an absorbed head.  Per-firing precision
+is untested; read 5 877 as an upper bound, as §12.3.11's 25.3 % was.
+
+#### One name, three circumscriptions
+
+Operator: *"The description and Key obviously should be one block.  It's
+less obvious what that block should be … Do we have descriptions of
+multiple collections of the same purported species?"*
+
+**Yes, and this treatment has three.**  ¶1144 is the main
+circumscription; ¶1150 opens `A small group of specimens has the
+following characteristics: As above, but…`; ¶1152 opens `As above but
+chlamydospores verrucose…`.  Each carries its own `Habitat:` and its
+own specimen count — Salix/Tilia, Louisiana (1) for the second; rotten
+wood, Colorado (1) for the third, that last line absorbed into ¶1153's
+`Notes`.  Three (description, habitat, material) triplets under one
+name.
+
+| | n | share |
+|---|---:|---:|
+| more than one `Habitat:` cycle in a single treatment | **833** | 1.0 % |
+| an explicit `As above, but …` variant description | **640** | 0.8 % |
+| both | 37 | |
+
+**The answer to "what should that block be" is `Description` — and that
+is not sufficient.**  The schema already tolerates several description
+paragraphs: this treatment's `description` field *is* ¶1144 + ¶1150
+concatenated, and the only labelling error is that ¶1152 got `Key`.
+Fixing that label would put all three variants in one field and **still
+lose the structure**, because concatenation flattens three
+circumscriptions into one and strands their habitats and materials in
+the shared `biology` and `materials_examined` fields.  A correct
+representation needs the variant to be a level, which the 19-tag
+segment vocabulary cannot express — the *segment labels → assembly*
+question again, and here it is the schema and not the classifier that
+is short.
+
+#### Confirmations in passing
+
+* **Rogue `Key`.**  ¶1140 holds the genus protologue, ¶1152 a variant
+  description, ¶1156 a genus description — none are keys.  The document
+  is 6.3 % `Key` against a 2.4 % pooled and 0.0 % median rate over 167
+  sampled documents, above the 90th percentile (5.4 %) — §12.3.6's
+  document-level rogue `Key`, with a named document.
+* **An engulfed genus act.**  ¶1153 ends `Phaeosolenia Speg., Anal.
+  Mus. Nac. Buenos Aires 8: 53. 1902.` — §12.3.52 Signal 2's
+  act-not-labelled-`Nomenclature` class, arriving via `Notes`.
+* **The notes are diagnostic**, as the operator said, mildly: *"will
+  usually separate specimens of this species from Cyphellopsis
+  anomala"* is a diagnosis by definition — distinguishing characters
+  against a named sister taxon.  §12.3.5's `Description` ⊐ `Diagnosis`
+  lattice, seen from `Notes`.
+
+Fixture: `taxon_1834418a…`, class
+`§5-narrowing-relation-weld-and-multiple-circumscriptions`,
+`expected_flags` `["§10:tail_clip", "§12:desc_span_gap"]` — the two
+that do fire — with `known_missed_flags`
+`["§5:narrowing_relation_weld", "§11:own_heading_mid_field",
+"§11:multiple_circumscriptions", "§5:nomenclatural_act_labeled_notes"]`.
+
 ### 12.3.53 The line label was right and the block is still wrong — `_coalesce_blocks` has no split criterion
 
 Operator, on the `circinata` head absorption in §12.3.52: *"I don't

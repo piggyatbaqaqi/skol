@@ -2695,6 +2695,57 @@
     "§10:tail_clip_outside_description"
    ],
    "notes": "Peyronellaea calorpreferens, Aveskamp et al. 2010, round-7 review.  All five operator claims confirmed against paragraphs 251-263 of the annotation stream.  (1) The nomenclature opens 'circinata (see below).' -- a bare infraspecific epithet whose genus is in the PRECEDING Misc-exposition ('...synonymised with Pey. pomorum var.'), so a sentence tail was absorbed as the head of a nomenclature.  (2) The two description blocks (254, 257) do belong together: 254 ends '...due to the presence' and 257 opens 'of 1(-4) slightly papillate ostioles' across a page break, and the §15 join correctly stepped over the Page-header and the running head '32 | Aveskamp et al.' -- the operator's 'Yay'.  (3) The Notes section is split three ways: line 1 into materials_examined ('Notes: ... was recently'), line 2 into a Misc-exposition ('elevated from variety level to species rank, as Phoma calorpreferens'), lines 3+ into notes, which does end correctly.  (4) Paragraph 261 is a COMPLETE nomenclatural act for the next species -- 'Peyronellaea coffeae-arabicae ... comb. nov. MycoBank MB515603. Basionym: ...' -- labelled Misc-exposition, which is why (5) the type_designation (para 262) belongs to coffeae-arabicae rather than to this taxon and is truncated at a dangling 'from ', its remainder in para 263.  No detector fires on any of it: expected_flags is empty.  See §12.3.52; the head absorption specifically is §12.3.53, a _coalesce_blocks same-label merge, NOT the §12.3.11 Misc-exposition theft class -- the line label was defensible and the block is still wrong."
+  },
+  {
+   "id": "taxon_1834418aaf965b2d7fe1d77b8d180d201f63cd76e755ce537c4727f17ba60091",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-09",
+   "captured_rev": "20-e0e5934689364b68a0d2c5f872ed371f",
+   "class": "§5-narrowing-relation-weld-and-multiple-circumscriptions",
+   "treatment": "Phaeocyphellopsis ochracea (Hoffm. ex Pers.) comb. nov.\nPeziza hoffmannii Sprengl. Sept. Veg. ed. 1 b(4)(1): 516. 1827. —\nSolenia ochracea Hoffm. ex Pers., Myc. eur.\n1: 334. 1822, —\nHenningsomyces ochraceus (Hoffm.) O. Kuntze, Rev. Gen. 3(2):\n483. 1898. — Cyphella mellea Burt, Ann. Mo. Bot. Gard. 1: 372.\n1914. — Solenia anomala var. ochracea (Hoffm. ex Pers.) Berk.\nin Rea, Brit. Basid. 702, 1922. \n",
+   "description": "Receptacles sessile to short-stipitate, honey-yellow to brown in\ncolor, scattered to closely gregarious, 0,5—3 mm. high, 200—600 u\nin diameter, broadly tubular to narrowly cup-shaped; surface hairs\nstraight, brown, appressed, smooth below, granule-incrusted on outer\nhalf to two-third of length, tapered to a point, 50—150x38—6 u;\nbasidia 13,5—24 x 5—7\nyp, 4-sterigmate; hymenium cream to yellowish;\nspores at first hyaline, becoming brown, in some collections more than\nhalf the spores brown, in others very few brown, ovate, smooth, api-\nculate, (5)—6—8—(10,5)x3—5,5\nu, contents granular, giving the\nappearance of a rough wall at lower magnifications, usually abundant;\nwithin many collections the range of spore size is large; in some collec-\ntions spore size is fairly constant. The brown color of the spores is\napparently not developed before spore discharge. \n\nA small group of specimens has the following characteristics:\nAs above, but all structures except the surface hairs appear to have\nbeen reduced\nto resting spores or chlamydospores:\nthick-walled,\nsmooth, regular to irregular, more or less like basidiospores, apiculate\nto symmetrical, yellow-brown, wall 1—2 u thick, contents stain red\nin phloxine, rarely becoming two-celled, 6—10 x 10,5— 18,5 u.\nHabitat: On very rotten wood of Salix and Tilia.\nSpecimen examined from: Louisiana (1).\n120 \n",
+   "diagnosis": "",
+   "materials_examined": "Bohemia, Dec. 23, 1886, Coll. A. B. Langlois 864A. (FH).\nSpecimens examined from: Austria \n",
+   "key": "As above but chlamydospores verrucose, brown, ovate to sub-\nglobose, 9—10 x 6—7 u.\nHabitat: On rotten wood. \n",
+   "treatment_notes": "Specimen examined from Colorado (1).\nSpecimens assigned to this species in this treatment have usually\nbeen identified as Solenia anomala or S. ochracea in herbaria. In\nestablishing Cyphella mellea and relegating S. ochracea to synonymy\nunder S. anomala, Burt indicated unfamiliarity with authentic material\nof S. ochracea. Authentic material from Sweden sent by Seth Lundell\ncleared up this problem and indicated that all material previously\nassigned to S. mellea belongs here. The presence of the colored spores\nwith granular contents and ovate shape, together with the (usually)\nlighter color of the receptacles and somewhat differently shaped\nsurface hairs, will usually separate specimens of this species from\nCyphellopsis anomala. A further source of confusion in this group was\nthe assumption on Burt’s part that there was little if any difference\nbetween C. anomala and C. fasciculata. Examination of the authentic\nmaterial of S. ochracea cleared up this problem also.\nA specimen at Kew in the M. C. Cooke herbarium is labeled\n“ex Fries ipse”. This is probably an authentic specimen and agrees\nwith the material on which the description above was based.\nPhaeosolenia Speg., Anal. Mus. Nac. Buenos Aires 8: 53. 1902. \n",
+   "description_spans": [
+    {
+     "paragraph_number": 2289,
+     "start_line": 9502,
+     "end_line": 9516,
+     "start_char": 362856,
+     "end_char": 363751,
+     "pdf_page": 140,
+     "pdf_label": "120",
+     "empirical_page": null,
+     "head": "[@Receptacles sessile to short-stipitate"
+    },
+    {
+     "paragraph_number": 2301,
+     "start_line": 9548,
+     "end_line": 9558,
+     "start_char": 364926,
+     "end_char": 365441,
+     "pdf_page": 140,
+     "pdf_label": "120",
+     "empirical_page": "120",
+     "head": "[@A small group of specimens has the fol"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§10:tail_clip",
+    "§12:desc_span_gap"
+   ],
+   "known_missed_flags": [
+    "§5:narrowing_relation_weld",
+    "§11:own_heading_mid_field",
+    "§11:multiple_circumscriptions",
+    "§5:nomenclatural_act_labeled_notes"
+   ],
+   "notes": "Phaeocyphellopsis ochracea, W.B. Cooke's cyphellaceous monograph, round-7 review.  Operator: 'starts well but the wheels come off'.  Every claim confirmed against paragraphs 1143-1156.  The nomenclatural act (1143) and description (1144) are clean.  1145 'Habitat: On rotting wood and litter, especially of species of:' + 1146 Table 'Alnus, Benzoin, ... Ulmus.' are one Biology block split by §12.3.15's short-line Table detector firing on a comma-separated host list.  1147 Misc-exposition 'Type specimen examined: Cyphella mellea Burt: Louisiana:' is a type designation ending on a dangling colon; its completion is line 1 of 1148 ('Bohemia, Dec. 23, 1886, Coll. A.B. Langlois 864A. (FH).' -- Bohemia is in Plaquemines Parish, Louisiana, and Langlois collected there, so the join is certain).  1148 line 2 'Specimens examined from: Austria' is the real materials head and continues into 1149 '(2), Czechoslovakia (15), France (5)...'.  So one Materials-examined block spans a type/general boundary that the classifier could not see, because Type-designation is a NARROWING of Materials-examined and the coarse label is a correct label for the fine block -- distinct from §12.3.53, where two same-labelled lines had unrelated referents.  1150 Description and 1152 Key are both 'As above, but ...' variant circumscriptions of the same species, each with its own Habitat and specimen count; 1153 Notes opens with the third variant's material ('Specimen examined from Colorado (1).') and closes by engulfing a genus act ('Phaeosolenia Speg., Anal. Mus. Nac. Buenos Aires 8: 53. 1902.').  The Notes are mildly diagnostic as the operator said -- 'will usually separate specimens of this species from Cyphellopsis anomala'. See §12.3.54."
   }
  ]
 }
