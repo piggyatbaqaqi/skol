@@ -7477,6 +7477,123 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.62 The tail-clip predicate already exists and is wired to one field
+
+Operator, round-7 review of `taxon_52d4ca98` (*Claviceps litoralis*,
+Tanaka *et al.*, *"The genus Claviceps in Japan"*): *"The nomenclature
+looks fine.  The type designation starts fine and loses its list of
+gene sequences to the next Misc-exposition.  That same block ate the
+first line of the description. … The next Misc-exposition should have
+been two biology blocks — this is another good argument for
+distinguishing distribution and host.  The materials-examined is
+perfect.  The notes are fine."*  Then, a minute later: *"the note block
+might be truncated — it is not properly punctuated at the end."*
+
+All confirmed, and **no detector fires on any of it** —
+`expected_flags` is empty.
+
+#### One `Misc-exposition`, two victims
+
+```
+¶105  Type-designation  …ex-neotype culture MAFF 247555 = CBS 150011); Gene
+¶106  Misc-exposition   sequences LC681715 (ITS-LSU), LC684162 (TEF-1α),
+                        LC684581 (Mcm7), LC684620 (TUB2), LC684655 (RPB2).
+                        Description supplement to the original description by Kawatani
+¶107  Description       (1946): Sclerotia cylindrical, somewhat curved…
+```
+
+`¶106` holds the **tail** of the type designation and the **head** of
+the description, and nothing else.  It is not boundary theft in either
+direction — it is a single block sitting exactly on two boundaries at
+once, which is why widening either neighbour would not fix it.
+
+#### The operator found the detector we already have
+
+`¶113 Notes` ends `…could infect and form sclerotia on some species`
+and `¶114 Misc-exposition` holds `of Aegilops, Bromus, Elymus, Festuca,
+Hordeum, Milium, Poa and Secale by artificial inoculation.`  The
+operator identified this from the missing full stop alone.
+
+**`tail_clipped()` in `treatments_to_structured/triage_signals.py`
+implements exactly that test** — *"after stripping trailing whitespace,
+the last non-whitespace character is neither `.` nor `?` nor `!` nor
+`…`"* — and `treatment_signals` calls it on `desc` and nothing else.
+This is the gap §12.3.54 recorded as
+`§10:tail_clip_outside_description`; the operator has now found it
+independently, on a different field.
+
+Applying the existing predicate to every field:
+
+| field | populated | clipped | rate |
+|---|---:|---:|---:|
+| `diagnosis` | 18 781 | 9 220 | 49.1 % |
+| `key` | 21 178 | 10 362 | 48.9 % |
+| `biology` | 20 918 | 9 340 | 44.7 % |
+| `notes` | 33 723 | 14 137 | 41.9 % |
+| `type_designation` | 14 632 | 5 828 | 39.8 % |
+| `etymology` | 14 646 | 5 492 | 37.5 % |
+| `description` *(today)* | 41 843 | 15 443 | 36.9 % |
+| `materials_examined` | 33 199 | 12 160 | 36.6 % |
+| `treatment` | 42 655 | 21 046 | **49.3 %** |
+
+**Do not widen it to all of them.**  Sampling the tails shows the
+predicate's precision is structural, not uniform:
+
+* **`notes` — high.**  `…collections of the South American taxon can
+  settle the`, `…recently found on decaying submerged`, `…have
+  3-4-septate ellipsoidal or subcylindrical,`.  Prose that stops
+  mid-sentence.
+* **`treatment` — low.**  `…Aliso 4: 376 (1959)`, `…MycoBank MB 19269`,
+  `(Fig. 21)`.  **3 846 of the 21 046 end on `)`**, and a nomenclature
+  ending in a citation, a figure reference or an accession number is
+  *complete*.  Sentence-final punctuation is not the norm for this
+  field.
+* **`materials_examined`, `type_designation` — mixed.**  `…Ceredigion,
+  Aberystwyth,` is clipped; `…culture ex-type CGMCC 3.20068` is not.
+
+The predicate assumes prose, so it should be widened to the fields that
+**are** prose:
+
+| | treatments |
+|---|---:|
+| flagged today (`description`) | 15 443 |
+| **+ `diagnosis`, `notes`, `biology`, `etymology`** | **+20 453** *(total 35 896, +132 %)* |
+| + citation-shaped fields | +19 490 — **not recommended** |
+
+#### Host is a third axis, and the documents draw it
+
+`¶108` is one `Misc-exposition` containing two self-labelled
+sub-sections:
+
+> `Known geographical distribution: Coastal sand dunes in northern Japan (Hokkaido, Aomori) and in the Russian Far East.`
+> `Known host: Leymus mollis.`
+
+Both collapse to `Biology`.  Trello #407 and §12.3.1 argue for
+splitting `Distribution` out of `Biology`; the operator's point here is
+that **host is a third thing**, and the corpus agrees:
+
+| self-labelled sub-section | treatments | share |
+|---|---:|---:|
+| `Distribution:` | 4 196 | 5.1 % |
+| `Habitat:` | 2 308 | 2.8 % |
+| `Host:` / `Known host:` | 813 | 1.0 % |
+| **both host *and* distribution, separately labelled** | **476** | 0.6 % |
+
+813 treatments name a host section explicitly and **476 distinguish it
+from distribution in the same treatment** — the papers are drawing a
+line the schema cannot represent.  Smaller than the `Distribution`
+case, and independent of it.
+
+Fixture: `taxon_52d4ca98…`, class
+`§10-tail-clip-outside-the-description`, `expected_flags: []`,
+`known_missed_flags` `["§10:tail_clip_outside_description",
+"§11:misc_block_holds_a_tail_and_a_head",
+"§4:host_distinct_from_distribution"]`.
+
+*(The operator quoted the previous treatment's id; this is the
+treatment described.  Identified from the round-7 list and confirmed
+against all six claims before proceeding.)*
+
 ### 12.3.61 A complete taxonomic paper that produced no named treatment
 
 Operator, round-7 review of `taxon_52a16a4d` (Almeida *et al.*,

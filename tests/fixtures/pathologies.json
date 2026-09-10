@@ -3062,6 +3062,42 @@
     "§5:whole_paper_one_stub"
    ],
    "notes": "Almeida et al., Mycotaxon 130: 495-498 (2015), Diplococcium heteroseptatum. Round-7 review.  A 23-paragraph paper that produced exactly ONE treatment: a Nomen ignotum stub spanning paragraphs 5-17.  All seven operator claims confirmed.  5 Description = the abstract's tail.  6 Misc-exposition holds 'Key words- biodiversity, taxonomy, tropical microfungi' then 'Introduction' then the introduction body, which continues into 7 Description.  8 Misc-exposition holds a sentence tail plus the header 'Materials & methods', whose body is 9, labelled Materials-examined.  14 Misc-exposition holds FOUR things: the running head, the 'Taxonomy' header, the complete act ('Diplococcium heteroseptatum D.A.C. Almeida, T.S. Santa Izabel, R.F. Castaneda & Gusmao, sp. nov. Figs 1, 2 MycoBank MB810699') and the English diagnosis ('Differs from all other Diplococcium spp. by the wide range of conidial septation.').  15 Type-designation is correct.  16 Misc-exposition takes the etymology's first line and 17 Description its second ('the Latin, -septatum, referring to the septa.'), then also absorbs the additional specimens and the diagnostic Note.  The paper is a complete and valid taxonomic paper; it produced no named treatment solely because its act landed in a Misc-exposition.  That refutes, for a quarter of the class, the guess recorded in §12.3.56 that stub-only documents are mostly non-taxonomic.  See §12.3.61."
+  },
+  {
+   "id": "taxon_52d4ca98ae565e8011f55913204ca2cfaf32a20b6fb855d74a0e447c277aa113",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "24-5dd3b731fe8fca62b4138a994ce0e2d4",
+   "class": "§10-tail-clip-outside-the-description",
+   "treatment": "Claviceps litoralis Kawat., Bot. Mag. Tokyo 59: 90. 1946. emend.\nFig. 5.\n",
+   "description": "(1946): Sclerotia cylindrical, somewhat curved, brownish purple\nto blackish brown, 3.1–36.5 × 1.2–6.0 mm. Ascostromata 5–60\nper sclerotium; stipes cylindrical, glabrous, light reddish brown to\ndark purple, 1–25 × 0.4–1.3 mm; capitula subglobose or depressed\nglobose, light orange or light reddish brown, 0.4–2.6 × 0.8–2.5 mm;\nperithecia immersed, obpyriform or ovoid, slightly protruding from\nthe surface of the capitulum, 132–250 × 68–150 µm; asci hyaline,\neight-spored, 75–160 × 2.1–4.3 µm; ascospores hyaline, filiform,\naseptate, 61–140 µm in length. Conidia hyaline, one-celled,\noblong, ovoid, ellipsoid, 2.8–18.5 × 2.1–7.6 µm, L/W ratio 2.0–2.3.\n",
+   "diagnosis": "",
+   "type_designation": "Typus: Japan, Hokkaido Pref., Nemuro, Nosappu, on Leymus mollis, 25\nJul. 1970, T. Yasunaga (lost neotype TUAMH-EM006); Hokkaido Pref.,\nShibetsu, Kunbetsu (43°47’52”N 145°03’45”E), on L. mollis, T. Asanuma,\nSep. 2013 (replacement neotype designated here TNS-F-96439; MBT\n10010968; ex-neotype culture MAFF 247555 = CBS 150011); Gene \n",
+   "materials_examined": "Specimens examined: Japan, Hokkaido Pref., Kushiro, 8 Aug. 1919,\n(TNS-F-228908); Hokkaido Pref., on L. mollis, 23 Jul. 1921, Nakayama\n(TNS-F-184957); Hokkaido Pref., Nemuro, on L. mollis, 19 Jul. 1924,\nN. Hiratzuka (TNS-F-184955); Hokkaido Pref., Kushiro, on L. mollis, 19\nSep. 1933, Y. Tokunaga (TNS-F-184956); Hokkaido Pref., Nemuro, on\nL. mollis, 2 Aug. 1940, T. Maekawa (TNS-F-184953); Hokkaido Pref.,\nShibetsu, Kunbetsu (43°47’52”N 145°03’45”E), on L. mollis, Sep. 2013,\nT. Asanuma (neotype TNS-F-96439; MBT 10010968; ex-neotype culture\nMAFF 247555 = CBS 150011). Russia, Sakhalin, Noda (present address\nSakahalinskaya, Chekhov), on L. mollis, 1 Aug. 1928, T. Mutsui (HHUF\n714); Sakhalin, on L. mollis, Aug. 1940, U. Kimoto (TNS-F-184954);\nKamchatka, on L. mollis, 14 Sep. 1940 (TNS-F-184952).\n",
+   "treatment_notes": "Notes: This study confirmed that C. litoralis is a distinct species.\nThis species was considered by Langdon (1952) as C. purpurea.\nFurthermore, Pažoutová et al. (2015) referred to this species as a\ndoubtful name and thought that this species was either C. purpurea\nor C. bavariensis (as C. humidiphila). They also showed that ergot\nspecimens on L. mollis on the Pacific coast of Canada belonged to\nC. purpurea. The host L. mollis (Pooideae, Hordeeae) is indigenous\nto Japan, and distributed along the coast from Northeast Asia\nto North America, but the distribution of parasitic fungus may be\ndifferent.\nAlthough the original description of Kawatani (1946) did not\nspecify any type materials or illustration, this taxon name was\nvalidly published (Art. 40.1). Kawatani (1946) published this taxon\nwith a Latin description based on a specimen from Japan. Later,\nTanda & Kawatani (1980b) designated TUAMH-EM006 as neotype,\nbut the neotype was lost. Therefore, we designated a replacement\nneotype which was collected about 75 km away from the original\nlocality. This species forms abundant fruiting bodies from a single\nsclerotium. We emended the original description based on the\nreplacement neotype, since the sclerotia size of replacement\nneotype are larger than that of previous description. No conidia\nwere found on our specimens. Tanda & Kawatani (1980b) reported\nthat this species could infect and form sclerotia on some species \n",
+   "description_spans": [
+    {
+     "paragraph_number": 215,
+     "start_line": 3179,
+     "end_line": 3188,
+     "start_char": 65470,
+     "end_char": 66145,
+     "pdf_page": 16,
+     "pdf_label": "16",
+     "empirical_page": null,
+     "head": "[@(1946): Sclerotia cylindrical, somewha"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [],
+   "known_missed_flags": [
+    "§10:tail_clip_outside_description",
+    "§11:misc_block_holds_a_tail_and_a_head",
+    "§4:host_distinct_from_distribution"
+   ],
+   "notes": "Claviceps litoralis Kawat., Tanaka et al., Studies in Mycology, 'The genus Claviceps in Japan'.  Round-7 review; the operator quoted the previous treatment's id, and this is the treatment described.  NO detector fires -- expected_flags is empty -- yet three defects are present, all the same shape: a Misc-exposition holding a tail and a head.  105 Type-designation ends '...ex-neotype culture MAFF 247555 = CBS 150011); Gene' and 106 Misc-exposition opens 'sequences LC681715 (ITS-LSU), LC684162 (TEF-1a), LC684581 (Mcm7), LC684620 (TUB2), LC684655 (RPB2).' then continues 'Description supplement to the original description by Kawatani', whose completion is 107 Description opening '(1946): Sclerotia cylindrical'.  One block, two victims.  108 Misc-exposition is 'Known geographical distribution: Coastal sand dunes in northern Japan (Hokkaido, Aomori) and in the Russian Far East.' + 'Known host: Leymus mollis.' -- two self-labelled sub-sections that both collapse to Biology, which is the operator's argument for separating host from distribution.  109 Materials-examined is perfect.  113 Notes ends '...could infect and form sclerotia on some species' with no terminal punctuation and 114 Misc-exposition holds the rest, 'of Aegilops, Bromus, Elymus, Festuca, Hordeum, Milium, Poa and Secale by artificial inoculation.'  The operator spotted that unpunctuated tail unaided; tail_clipped() already implements exactly that test but triage_signals.py wires it only to description.  See §12.3.62."
   }
  ]
 }
