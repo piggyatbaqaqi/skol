@@ -7477,6 +7477,95 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.53 The line label was right and the block is still wrong — `_coalesce_blocks` has no split criterion
+
+Operator, on the `circinata` head absorption in §12.3.52: *"I don't
+think the head absorption of `circinata` by a nomenclature block is at
+all the same thing as a `Misc-exposition` thieving a line from the
+preceding block (§12.3.11).  The hypothesised mechanism for
+`Misc-exposition` theft is that it's a junk label and will happily
+consume anything.  In this case, we likely have an actual species
+epithet (ends in `-ata`), which could quite reasonably be classified as
+a `Nomenclature` line.  The problem is that we have a `Nomenclature`
+line that really belongs to a different block which is adjacent to a
+nomenclatural act.  The rule of combining lines that have the same
+label into a contiguous block fails here."*
+
+**Correct on every point, and §12.3.11 excludes this case by its own
+definition** — it measures `Misc-exposition` blocks, and its mechanism
+is label promiscuity: the catch-all absorbs whatever abuts it.  Here
+nothing was mislabelled.  `circinata` is a Latin feminine adjectival
+epithet, and a line classifier seeing it beside `(see below).` has no
+reason to withhold `Nomenclature`.
+
+**The failure is downstream of every label**, at
+`skol_classifier/v4/predictor.py:322`, whose docstring states the whole
+rule:
+
+> break runs on label change OR blank line (after strip)
+
+That is the only split criterion there is.  Two adjacent
+`Nomenclature` lines are one block by construction, whatever sits
+between them semantically.  **No improvement in classification can fix
+this**, because the classifier was not wrong — which makes it a
+different remediation target from every mislabelling class in §12.3.
+
+#### The split signal is nomenclatural, not statistical
+
+The ICN gives `Nomenclature` a hard contract no other label has: **a
+genus is always capitalised and an epithet never is.**  So a
+`Nomenclature` block opening with a lower-case word cannot be the start
+of a name — it is the tail of the preceding line, whatever label that
+line carried.  The exception is the small closed set of connecting
+terms that legitimately open a continuation (`var.`, `subsp.`, `f.`,
+`ex`, `apud`, `sensu`, `non`, `p.p.`), and excluding them is what turns
+the observation into a rule.
+
+Over the 51 007 non-synthetic nomenclature blocks:
+
+| | n | share |
+|---|---:|---:|
+| opens with a lower-case word that is **not** a connecting term | **4 279** | **8.39 %** |
+| opens with a connecting term — legitimate, correctly excluded | 329 | 0.65 % |
+| …of the 4 279, a later line opens with a capitalised genus | **2 413** | 56.4 % |
+| …and the block also carries a nomenclatural act | 538 | 12.6 % |
+
+**56.4 % carry their own split point.**  The rule does not merely flag
+the block, it says where the knife goes — the first line that opens
+with a capitalised genus:
+
+| welded head | should have started at |
+|---|---|
+| `fix the application of C. delicatulum and agre…` | `Cladosporium domesticum Bensch & Samson, sp. nov.` |
+| `therefore proposed here as Hymenopleella endop…` | `Hymenopleella lakefuxianensis (L. Cai et al.) F. Liu` |
+| `gymnosporangii Fusarium Jaap, Ann. Mycol. 14:` | `Nectria gymnosporangii (Jaap) Rossman, Mycotaxon 8:` |
+| `relative Clavispora s.str. (Table S5).` | `Sungouiella akabanensis (Nakase et al.) Q.M. Wang…` |
+| `on Smilax spp. in Asia ……………………` | `Passalora species on Smilacaceae` |
+
+The last is a key line, dot leaders and all, welded onto a nomenclature
+— §12.3.6's rogue `Key` arriving by this route instead.
+
+**The 329 connecting-term openers are the control.**  A rule that fired
+on every lower-case opening would take them too, and they are correct:
+`var. circinata Boerema` on its own line *is* a continuation and *is*
+nomenclature.  That the exclusion list is closed, short and drawn from
+the ICN rather than fitted to the data is what makes the remaining
+8.39 % worth acting on.
+
+#### Why this matters for sequencing
+
+This is the concrete case for the standing idea recorded as *segment
+labels → assembly*: `_coalesce_blocks` throws away everything except
+the label before assembly runs, so any split rule must be given a
+channel that survives it.  A `Nomenclature`-specific capitalisation
+test is the cheapest possible such channel — one regex, one closed word
+list, no model, no attachments — and it is nomenclature-specific for a
+principled reason rather than a convenient one: no other label has a
+capitalisation contract to appeal to.
+
+Fixture: `taxon_12ba8b48…` carries `§5:nomenclature_head_absorption` in
+`known_missed_flags`; it is in the 538.
+
 ### 12.3.52 The document says where the boundary was — 7.4 % of treatments quote the heading they ignored
 
 Operator, round-7 review of `taxon_12ba8b48` (*Peyronellaea
@@ -7619,13 +7708,16 @@ label* — a recognition rate.  The pipeline delivers 95 % of what it
 recognises and recognises 67 % of what is there, and the second number
 is the one that bounds treatment count.
 
-#### Signal 3, unmeasured
+#### Signal 3
 
-The nomenclature's head absorption (`circinata (see below).`) is the
-§12.3.11 boundary-theft class already quantified, and the truncated
-`type_designation` is a tail clip in a field `§10:tail_clip` does not
-inspect — it is scoped to `description`.  Widening it is cheap;
-`known_missed_flags` records it as
+The nomenclature's head absorption (`circinata (see below).`) is **not**
+the §12.3.11 boundary-theft class — that section is scoped to
+`Misc-exposition` blocks and to a different mechanism.  It is a
+same-label coalescence failure, and it gets its own section: §12.3.53.
+
+The truncated `type_designation` is a tail clip in a field
+`§10:tail_clip` does not inspect — it is scoped to `description`.
+Widening it is cheap; `known_missed_flags` records it as
 `§10:tail_clip_outside_description`.
 
 Fixture: `taxon_12ba8b48…`, class `§11-three-taxa-in-one-treatment`,
