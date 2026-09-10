@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatment_dossier import (  # type: ignore[import]  # noqa: E402
+    _sibling_index,
     build_view,
     render_dossiers,
     render_html,
@@ -155,18 +156,61 @@ class TestNeighbours:
         assert view.next_treatment is None
 
 
-class TestNeighboursAreRendered:
-    """Asserting on the *neighbour section*, not on the page as a whole.
+def _details(html: str) -> str:
+    """The first neighbour ``<details>`` element, whole."""
+    i = html.index('<details class="neighbour">')
+    return html[i:html.index('</details>', i)]
 
-    The sibling list at the foot already prints every sibling's id and
-    nomenclature, so `'Basionym.' in html` was true before any of this
-    was written -- strict xfail caught five such tests passing against
-    the old renderer.  A test that cannot fail against the thing being
-    replaced is not testing the replacement.
+
+class TestSiblingIndexCarriesContent:
+    """`_sibling_index` kept only ``_id``/``treatment``/``paragraph``.
+    A neighbour body needs the prose fields, and the scan already has
+    the whole document in hand -- so this is a matter of keeping more
+    of what was fetched, not of fetching more.
     """
 
-    NEIGH_TEXT = '--- neighbours in the source document ---'
-    NEIGH_HTML = '<div class="neighbours">'
+    class _Db:
+        def __init__(self, docs):
+            self._docs = docs
+
+        def view(self, _name, include_docs=False):
+            class _Row:
+                def __init__(self, i, d):
+                    self.id, self.doc = i, d
+            return [_Row(i, d) for i, d in self._docs.items()]
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_prose_fields_reach_the_index(self) -> None:
+        doc, _ = _treatment(_id='taxon_b', notes='Notes - kept.')
+        idx = _sibling_index(self._Db({'taxon_b': doc}), {'src1'})
+        assert idx['src1'][0]['notes'] == 'Notes - kept.'
+
+    def test_design_documents_are_still_skipped(self) -> None:
+        doc, _ = _treatment(_id='taxon_b')
+        idx = _sibling_index(
+            self._Db({'_design/x': {}, 'taxon_b': doc}), {'src1'})
+        assert [r['_id'] for r in idx['src1']] == ['taxon_b']
+
+
+class TestNeighboursAreRendered:
+    """Neighbours belong *in the span flow*, at the positions they
+    occupy in the document: the previous treatment above the first
+    span, the next below the last.
+
+    A separate block above the spans said "here is some context"; in
+    the flow it says "this is what the document does immediately
+    before and after the material below", which is the claim §12.3.63
+    needs the reviewer to evaluate.  They expand like gaps, because
+    the truncated nomenclature is exactly what hides a long synonymy.
+
+    Asserting on the neighbour elements themselves, not on the page:
+    the sibling list at the foot already prints every sibling's id and
+    nomenclature, and strict xfail caught five earlier tests passing
+    against that.
+    """
+
+    NEIGH = '<details class="neighbour">'
+    SPAN = '<div class="span">'
 
     def _sibs(self) -> list:
         return [{'_id': 'taxon_prev', 'treatment': 'Diaporthe schini '
@@ -175,79 +219,126 @@ class TestNeighboursAreRendered:
                  'sclerotioides Kesteren, Neth. Jl. Pl. Path. 73: 115. 1967.',
                  'paragraph': 19}]
 
-    def _section_text(self, text: str) -> str:
-        i = text.index(self.NEIGH_TEXT)
-        j = text.index('\n--- ', i + len(self.NEIGH_TEXT))
-        return text[i:j]
+    def _spans_section(self, text: str) -> str:
+        i = text.index('--- spans (')
+        return text[i:text.index('\n--- ', i + 10)]
 
-    def _section_html(self, html: str) -> str:
-        i = html.index(self.NEIGH_HTML)
-        return html[i:html.index('</div>', i)]
-
-    def test_text_section_names_both_neighbours(self) -> None:
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_html_puts_prev_above_the_first_span(self) -> None:
         doc, ann = _treatment()
-        sec = self._section_text(
-            render_text(build_view(doc, ann, siblings=self._sibs())))
-        assert 'Diaporthe schini' in sec
-        assert 'Basionym. Phomopsis sclerotioides' in sec
-        assert 'taxon_prev' in sec and 'taxon_next' in sec
+        html = render_html(build_view(doc, ann, siblings=self._sibs()))
+        assert html.index(self.NEIGH) < html.index(self.SPAN)
 
-    def test_html_section_names_both_neighbours(self) -> None:
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_html_puts_next_below_the_last_span(self) -> None:
         doc, ann = _treatment()
-        sec = self._section_html(
-            render_html(build_view(doc, ann, siblings=self._sibs())))
-        assert 'Diaporthe schini' in sec
-        assert 'Basionym. Phomopsis sclerotioides' in sec
+        html = render_html(build_view(doc, ann, siblings=self._sibs()))
+        assert html.rindex(self.NEIGH) > html.rindex(self.SPAN)
 
-    def test_the_subordinate_marker_survives_truncation(self) -> None:
-        """The whole point is spotting `Basionym.` / `Type species.` /
-        `Synonym.` at the START of a neighbour's nomenclature, so
-        whatever truncation the renderer applies must keep the opening
-        intact."""
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_html_has_no_separate_neighbours_block(self) -> None:
+        """The standalone box is replaced, not supplemented."""
         doc, ann = _treatment()
-        sibs = [{'_id': 'taxon_next',
-                 'treatment': 'Type species. ' + 'Xylaria longissima ' * 40,
-                 'paragraph': 19}]
-        view = build_view(doc, ann, siblings=sibs)
-        assert 'Type species.' in self._section_text(render_text(view))
-        assert 'Type species.' in self._section_html(render_html(view))
+        html = render_html(build_view(doc, ann, siblings=self._sibs()))
+        assert '<div class="neighbours">' not in html
 
-    def test_a_multiline_nomenclature_renders_on_one_line(self) -> None:
-        """`treatment` is stored with the PDF's line breaks in it.  A
-        neighbour line that wraps is not scannable."""
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_the_summary_is_the_one_line_form(self) -> None:
+        """`treatment` carries the PDF's own line breaks, and a
+        summary that wraps is not scannable."""
         doc, ann = _treatment()
         sibs = [{'_id': 'taxon_next',
                  'treatment': 'Basionym. Phomopsis\nsclerotioides Kesteren,',
                  'paragraph': 19}]
-        sec = self._section_text(
-            render_text(build_view(doc, ann, siblings=sibs)))
-        line = next(x for x in sec.splitlines() if 'taxon_next' in x)
-        assert 'Basionym. Phomopsis sclerotioides' in line
+        html = render_html(build_view(doc, ann, siblings=sibs))
+        i = html.index('<summary>', html.index(self.NEIGH))
+        summary = html[i:html.index('</summary>', i)]
+        assert 'Basionym. Phomopsis sclerotioides' in summary
 
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_the_body_carries_the_whole_neighbour_treatment(self) -> None:
+        """Not just the nomenclature.  What reveals a cross-treatment
+        theft is the neighbour's *content* -- a materials block that
+        continues this treatment's sentence, a notes block that opens
+        with this treatment's tail."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_next',
+                 'treatment': 'Basionym. Phomopsis sclerotioides Kesteren,',
+                 'materials_examined': 'Specimens examined. Netherlands, '
+                                       'Maarssen, on root of Cucumis.',
+                 'notes': 'Notes - the cause of black root rot.',
+                 'paragraph': 19}]
+        block = _details(render_html(build_view(doc, ann, siblings=sibs)))
+        assert 'Specimens examined. Netherlands' in block
+        assert 'the cause of black root rot' in block
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_each_field_in_the_body_is_labelled(self) -> None:
+        """Unlabelled prose from two fields run together reads as one
+        block, which is the confusion this is meant to resolve."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_next', 'treatment': 'X sp. nov.',
+                 'notes': 'Notes - something.', 'paragraph': 19}]
+        block = _details(render_html(build_view(doc, ann, siblings=sibs)))
+        assert 'notes' in block
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_a_long_field_is_capped_in_the_body(self) -> None:
+        """Same cap as a gap block: a neighbour must not be able to
+        make the page unusable."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_next', 'treatment': 'X sp. nov.',
+                 'description': 'Pileus. ' * 3000, 'paragraph': 19}]
+        block = _details(render_html(build_view(doc, ann, siblings=sibs)))
+        assert len(block) < 20000
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_the_body_uses_the_same_disclosure_as_a_gap(self) -> None:
+        """`<details>` plus the &#9656; marker, so the two kinds of
+        collapsed context look and behave alike."""
+        doc, ann = _treatment()
+        html = render_html(build_view(doc, ann, siblings=self._sibs()))
+        i = html.index(self.NEIGH)
+        assert '&#9656;' in html[i:html.index('</summary>', i)]
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
     def test_html_escapes_a_neighbour_name(self) -> None:
-        """Same adversary as everywhere else in this file: the corpus
-        contains `<`, `&` and `"` in real nomenclature strings."""
+        """The corpus contains `<`, `&` and `"` in real nomenclature."""
         doc, ann = _treatment()
         sibs = [{'_id': 'taxon_next',
                  'treatment': 'Basionym. <i>Phomopsis</i> & "x"',
                  'paragraph': 19}]
-        sec = self._section_html(
-            render_html(build_view(doc, ann, siblings=sibs)))
-        assert '<i>Phomopsis</i>' not in sec
-        assert '&lt;i&gt;' in sec
+        html = render_html(build_view(doc, ann, siblings=sibs))
+        block = html[html.index(self.NEIGH):]
+        assert '<i>Phomopsis</i>' not in block
+        assert '&lt;i&gt;' in block
 
-    def test_neighbours_appear_before_the_fields(self) -> None:
-        """A reviewer reads top-down and stops when the treatment looks
-        clean.  The sibling list at the foot is where this information
-        already was, and it was not seen."""
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_text_puts_both_inside_the_spans_section(self) -> None:
         doc, ann = _treatment()
-        text = render_text(build_view(doc, ann, siblings=self._sibs()))
-        assert text.index(self.NEIGH_TEXT) < text.index('--- fields ---')
+        sec = self._spans_section(
+            render_text(build_view(doc, ann, siblings=self._sibs())))
+        assert 'taxon_prev' in sec and 'taxon_next' in sec
+        assert sec.index('taxon_prev') < sec.index('description')
+        assert sec.index('taxon_next') > sec.index('taxon_prev')
 
-    def test_no_neighbour_section_when_there_are_none(self) -> None:
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours in the span flow")
+    def test_text_carries_the_whole_neighbour_treatment(self) -> None:
+        """No triangle in the terminal, so the body is indented under
+        its heading rather than hidden."""
         doc, ann = _treatment()
-        text = render_text(build_view(doc, ann))
-        assert 'neighbour' not in text.lower()
+        sibs = [{'_id': 'taxon_next', 'treatment': 'X sp. nov.',
+                 'notes': 'Notes - the cause of black root rot.',
+                 'paragraph': 19}]
+        sec = self._spans_section(
+            render_text(build_view(doc, ann, siblings=sibs)))
+        assert 'the cause of black root rot' in sec
+
+    def test_no_neighbour_entries_when_there_are_none(self) -> None:
+        doc, ann = _treatment()
+        view = build_view(doc, ann)
+        assert 'neighbour' not in render_text(view).lower()
+        assert self.NEIGH not in render_html(view)
 
 
 # ---------------------------------------------------------------------------
