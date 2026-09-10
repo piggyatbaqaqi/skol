@@ -7477,6 +7477,92 @@ downstream consumer treating `figure_caption_spans` as "this treatment's
 illustrations" is being misled**, and that is worth stating plainly
 because the field looks authoritative.
 
+### 12.3.63 A defect whose damage lands in the next treatment — and treatment-level review cannot see it
+
+Operator, round-7 review of `taxon_66bf946b` (*Diaporthe schini*, Gomes
+*et al.*): *"Wow!  Only 1 error.  The etymology lost its second line to
+a Misc-exposition.  Everything else looks textbook to me."*
+
+**The etymology loss is confirmed and it is the smallest instance of
+the class on record:**
+
+```
+¶768  Etymology        Etymology. Named after the host genus from which it was isolated,
+¶769  Misc-exposition  Schinus.
+```
+
+**Eight characters** — one word and a full stop — against §12.3.11's
+102-character median thieving block.  The rest is genuinely textbook,
+including a §15 join that carried the description across a
+`Figure-caption`, a `Page-header` and the running head `33 | R.R. Gomes
+et al.: Diaporthe` (¶770 + ¶771 + ¶775).
+
+#### There is a second error, and it is invisible from here
+
+`¶777 Notes` ends:
+
+> `…but these are morphologically different and cluster in clades 5 and 9 (D. endophytica and D. terebinthifolii).`
+> **`Diaporthe sclerotioides (Kesteren) Udayanga, Crous & K.D. Hyde, Fung. Diversity 56: 166. 2012`**
+
+That last line is the **accepted-name line of the next species**.  Its
+victim is `taxon_9def2f7d`, whose entire nomenclature is now:
+
+> `Basionym. Phomopsis sclerotioides Kesteren, Neth. Jl. Pl. Path. 73: 115. 1967.`
+
+**Neither treatment shows the defect on its own.**  The donor looks
+textbook — a stray citation at the end of a `Notes` block reads as a
+reference.  The victim looks like a paper that opened with a basionym.
+The error is only visible in the *pair*, which is precisely what
+treatment-level review does not present.  **This is a systematic
+under-report in the review method itself**, not in the operator's
+attention: "only 1 error" was the correct reading of the evidence
+supplied.
+
+#### Both sides, measured
+
+| | n | share of 51 007 non-synthetic |
+|---|---:|---:|
+| **victim side** — nomenclature opens with a subordinate marker | **1 102** | **2.2 %** |
+| **donor side** — `notes` ends in a nomenclatural act | 292 | 0.6 % |
+
+| marker the victim opens with | n |
+|---|---:|
+| `Type species` | 361 |
+| `Basionym` | 310 |
+| `Notes` | 128 |
+| `Synonym(s)` | 126 |
+| `Type genus` | 45 |
+| `≡` | 30 |
+| `Anamorph` / `Teleomorph` | 29 |
+
+The victim side is the larger number because the donor can be any
+field, not only `notes` — 292 is the `notes`-only slice.  `Type
+species` at 361 is §12.3.60's class (`taxon_48ab8e87`) counted from the
+other end, which makes these one family: **a nomenclature that opens
+with something subordinate has lost its head to the block before it.**
+
+**The victim-side test is the useful one.**  It needs one field and one
+regex, it names the damaged treatment rather than the donor, and at
+2.2 % it is small enough to review exhaustively.  It also fires where
+no current detector does: `taxon_9def2f7d`'s `expected_flags` is empty.
+
+#### A note on the dossier
+
+`bin/treatment_dossier.py` already renders siblings, and the sibling
+here would have shown `Basionym. Phomopsis sclerotioides…` immediately
+below.  Surfacing the **next treatment's nomenclature line** in the
+focal treatment's header — rather than only in the sibling section —
+would put both halves of this class in front of the reviewer at once.
+
+Fixtures: `taxon_66bf946b…` (donor), class
+`§11-donor-of-a-cross-treatment-nomenclature-theft`, `expected_flags`
+`["§12:desc_span_gap"]`, `known_missed_flags`
+`["§11:etymology_tail_to_misc", "§5:notes_engulf_next_nomenclature"]`;
+and `taxon_9def2f7d…` (victim), class
+`§11-victim-of-a-cross-treatment-nomenclature-theft`, `expected_flags:
+[]`, `known_missed_flags`
+`["§5:nomenclature_opens_with_subordinate_marker"]`.
+
 ### 12.3.62 The tail-clip predicate already exists and is wired to one field
 
 Operator, round-7 review of `taxon_52d4ca98` (*Claviceps litoralis*,

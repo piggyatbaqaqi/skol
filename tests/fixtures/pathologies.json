@@ -3098,6 +3098,86 @@
     "§4:host_distinct_from_distribution"
    ],
    "notes": "Claviceps litoralis Kawat., Tanaka et al., Studies in Mycology, 'The genus Claviceps in Japan'.  Round-7 review; the operator quoted the previous treatment's id, and this is the treatment described.  NO detector fires -- expected_flags is empty -- yet three defects are present, all the same shape: a Misc-exposition holding a tail and a head.  105 Type-designation ends '...ex-neotype culture MAFF 247555 = CBS 150011); Gene' and 106 Misc-exposition opens 'sequences LC681715 (ITS-LSU), LC684162 (TEF-1a), LC684581 (Mcm7), LC684620 (TUB2), LC684655 (RPB2).' then continues 'Description supplement to the original description by Kawatani', whose completion is 107 Description opening '(1946): Sclerotia cylindrical'.  One block, two victims.  108 Misc-exposition is 'Known geographical distribution: Coastal sand dunes in northern Japan (Hokkaido, Aomori) and in the Russian Far East.' + 'Known host: Leymus mollis.' -- two self-labelled sub-sections that both collapse to Biology, which is the operator's argument for separating host from distribution.  109 Materials-examined is perfect.  113 Notes ends '...could infect and form sclerotia on some species' with no terminal punctuation and 114 Misc-exposition holds the rest, 'of Aegilops, Bromus, Elymus, Festuca, Hordeum, Milium, Poa and Secale by artificial inoculation.'  The operator spotted that unpunctuated tail unaided; tail_clipped() already implements exactly that test but triage_signals.py wires it only to description.  See §12.3.62."
+  },
+  {
+   "id": "taxon_66bf946bff5f59763e6d7c34e8ad5d1f0321503890c0d695ef6f5fe328aa34a8",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "20-529c87d00486745fd51359fda3512b06",
+   "class": "§11-donor-of-a-cross-treatment-nomenclature-theft",
+   "treatment": "Diaporthe schini R.R. Gomes, C. Glienke & Crous, sp. nov. —\nMycoBank MB802949; Fig. 21\n",
+   "description": "Conidiomata pycnidial, eustromatic, multilocular, immersed\nto erumpent, ostiolate, dark brown to black, scattered or aggregated, 80–270 μm wide, 70–240 μm tall, prominent necks\n70–220 μm long, outer surface covered with hyphae; pycnidal\nwall consisting of brown, thick-walled cells of textura angularis;\nconidial mass globose, pale-luteous to cream. Conidiophores\nhyaline, subcylindrical, filiform, rarely branched, tapering towards the apex, 0–1-septate, (11–)12–17(–20) × (2–)3(–4)\nμm. Conidiogenous cells hyaline, subcylindrical and filiform,\nstraight, tapering towards the apex, collarette not observed,\nwith prominent periclinal thickening 5–6(–7) × (1–)2 μm. Beta\nconidia hyaline, smooth, curved or hamate (14–)22–28(–30)\n× (1–)2 μm. Alpha and gamma conidia not observed.\n\nCulture characteristics — Colonies on PDA flat, with a lobate margin, surface mycelium sparse, felty and appressed,\nbuff, honey to isabelline; colonies reaching 30 mm diam after\n2 wk at 25 °C; reverse greyish sepia, smoke-grey. On OA\nwith a lobate margin, surface mycelium flat, sparse, felty and\nappressed, smoke-grey, olivaceous-grey, or olivaceous buff;\ncolonies reaching 21 mm diam; reverse pale mouse-grey to \n\nolivaceous-grey or buff. On MEA with a lobate margin, surface\nmycelium flat, dense, felty and appressed, buff with umber\npatches; colonies reaching 30 mm diam; reverse dark mousegrey, umber, with patches of isabelline or luteous.\n",
+   "diagnosis": "",
+   "etymology": "Etymology. Named after the host genus from which it was isolated, \n",
+   "materials_examined": "Specimen examined. Brazil, Paraná, Curitiba, endophytic species isolated\nfrom leaf of Schinus terebinthifolius (popular name Aroeira), July 2007, J. Lima\n(holotype CBS H-21093, culture ex-type CBS 133181 = LGMF 921 = CPC\n20297); same collection details (LGMF 910).\n",
+   "treatment_notes": "Notes — Other than D. schini (clade 11), additional endophytic isolates were also obtained from Schinus terebinthifolius\nin Brazil, but these are morphologically different and cluster in\nclades 5 and 9 (D. endophytica and D. terebinthifolii).\nDiaporthe sclerotioides (Kesteren) Udayanga, Crous & K.D.\nHyde, Fung. Diversity 56: 166. 2012\n",
+   "description_spans": [
+    {
+     "paragraph_number": 1541,
+     "start_line": 6099,
+     "end_line": 6109,
+     "start_char": 189704,
+     "end_char": 190507,
+     "pdf_page": 32,
+     "pdf_label": "32",
+     "empirical_page": null,
+     "head": "[@Conidiomata pycnidial, eustromatic, mu"
+    },
+    {
+     "paragraph_number": 1543,
+     "start_line": 6111,
+     "end_line": 6116,
+     "start_char": 190509,
+     "end_char": 190944,
+     "pdf_page": 32,
+     "pdf_label": "32",
+     "empirical_page": null,
+     "head": "[@Culture characteristics — Colonies on "
+    },
+    {
+     "paragraph_number": 1551,
+     "start_line": 6126,
+     "end_line": 6128,
+     "start_char": 191305,
+     "end_char": 191552,
+     "pdf_page": 33,
+     "pdf_label": "33",
+     "empirical_page": null,
+     "head": "[@olivaceous-grey or buff. On MEA with a"
+    }
+   ],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [
+    "§12:desc_span_gap"
+   ],
+   "known_missed_flags": [
+    "§11:etymology_tail_to_misc",
+    "§5:notes_engulf_next_nomenclature"
+   ],
+   "notes": "Diaporthe schini R.R. Gomes, C. Glienke & Crous, Gomes et al., Persoonia.  Round-7 review.  Operator: 'Wow!  Only 1 error.  The etymology lost its second line to a Misc-exposition.  Everything else looks textbook to me.'  The etymology loss is confirmed and it is the smallest instance of the class on record: paragraph 768 is 'Etymology. Named after the host genus from which it was isolated,' and paragraph 769, a Misc-exposition, is the single word 'Schinus.' -- 8 characters, against §12.3.11's 102-character median thieving block.  The rest is genuinely textbook, including a §15 join that carried the description across a Figure-caption, a Page-header and the running head '33 | R.R. Gomes et al.: Diaporthe' (770+771+775).  But there is a SECOND error, invisible from this treatment's dossier because its damage lands in the next treatment: 777 Notes ends by engulfing 'Diaporthe sclerotioides (Kesteren) Udayanga, Crous & K.D. Hyde, Fung. Diversity 56: 166. 2012', the accepted-name line of the following species.  Its victim is taxon_9def2f7d, whose nomenclature is now only 'Basionym. Phomopsis sclerotioides Kesteren, Neth. Jl. Pl. Path. 73: 115. 1967.'  See §12.3.63."
+  },
+  {
+   "id": "taxon_9def2f7de1b1cc7d0aeeb04e8e3708e333773c25dfe8132b26efb48e3b8b54f9",
+   "source_experiment": "production_v4",
+   "source_db": "skol_exp_production_v4_02_00_treatments_prose",
+   "captured_at": "2026-09-10",
+   "captured_rev": "20-cd48141af3b9978d3d7e5cf908fc6be9",
+   "class": "§11-victim-of-a-cross-treatment-nomenclature-theft",
+   "treatment": "Basionym. Phomopsis sclerotioides Kesteren, Neth. Jl. Pl. Path. 73: 115.\n1967.\n",
+   "description": "",
+   "diagnosis": "",
+   "materials_examined": "Specimens examined. Netherlands, Maarssen, on root of Cucumis sativus, June 1967, H.A. van der Kesteren (ex-type culture CBS 296.67 = ATCC\n18585 = IMI 151828 = PD 68/690); Roermond, on root of C. sativus, Dec.\n1976 (CBS 710.76 = PD 76/674).\n",
+   "treatment_notes": "Notes — Diaporthe sclerotioides (clade 28) was originally described from roots of Cucumis sativus in the Netherlands. This\nspecies has subsequently been reported to cause black root\nrot of Citrullus lanatus, Cucurmis sativus, C. ficifolia, C. maxi-\nma and C. moschata in various countries in the world (Udayanga et al. 2011).\nDiaporthe scobina Nitschke, Pyrenomycetes Germanici 2: \n",
+   "description_spans": [],
+   "synthetic_nomenclature": false,
+   "authored_binomial_in_desc": false,
+   "expected_flags": [],
+   "known_missed_flags": [
+    "§5:nomenclature_opens_with_subordinate_marker"
+   ],
+   "notes": "Diaporthe sclerotioides, the treatment immediately following taxon_66bf946b in the same document.  Its nomenclature is 'Basionym. Phomopsis sclerotioides Kesteren, Neth. Jl. Pl. Path. 73: 115. 1967.' -- the basionym alone, because its accepted-name line was engulfed by the previous treatment's Notes.  NO detector fires.  The pair is the record of a defect that a treatment-level review cannot see from either side: the donor looks textbook and the victim looks like a paper that opened with a basionym.  1 102 treatments (2.2 %) open their nomenclature with a subordinate marker.  See §12.3.63."
   }
  ]
 }
