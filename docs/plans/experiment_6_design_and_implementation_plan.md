@@ -184,6 +184,34 @@ projection rules as a dated, loadable object rather than module
 constants, with v4 and experiment 6 side by side.  It is small, and it
 is what lets 8.3 land without a flag day.
 
+**Bind the version to the model that uses it** (operator, 2026-09-10).
+A global "current label set" reintroduces the coupling under a new
+name.  Instead every model artifact — a CRF checkpoint, an SBERT
+cache, a fine-tuned SLM, a prompt seed file — **declares the label-set
+version it was built against**, and the pipeline refuses a mismatch
+rather than silently projecting one vocabulary through a model trained
+on another.  That makes the 8.3 split a *data* change: train a new
+model against label set v6, leave the v4 model pinned to v4, and run
+both.
+
+Three places where the missing declaration has already cost something,
+as the evidence that this is the right shape:
+
+* `skol_exp_production_v4_03_00_treatments_structured` records no
+  `model` field, so nothing on 1 285 documents says which model or
+  which input granularity produced them — see M6 in
+  [production-v5-execution.md](production-v5-execution.md), where that
+  gap produced a wrong reading.
+* The candidate annotations *do* carry `model: claude-opus-4-7` on all
+  25 742, which is why the Claude side of the same question was
+  answerable in one query.  The difference between those two databases
+  is the whole argument.
+* T6 in [annotation-activity-split.md](annotation-activity-split.md):
+  `annotation_doc_id` has no deletion pass, so re-running a changed
+  prompt into the same database yields the **union** of two
+  vocabularies.  A declared version turns that silent corruption into
+  a refusal.
+
 ### 8.6 Relationship to production_v5
 
 There is no experiment 5.  `production_v5` in

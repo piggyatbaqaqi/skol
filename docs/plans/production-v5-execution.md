@@ -349,14 +349,10 @@ vocabulary does not exist yet (322 labels, 54 % singletons), and
 "Mistral did poorly" was measured on *entire descriptions* —
 the problem phase 1 removes.  Re-run it on labelled spans first.
 
-> **2026-09-10 — the second premise is settled, and it settles the
-> fine-tuning question with it.**  The re-run this paragraph asks for
-> has already happened and was never read.
-> `skol_exp_production_v4_03_00_treatments_structured` holds **1 285
-> records at 100 % `json_valid`**, produced by the existing
-> `bin/treatments_to_json.py` (1 126 lines: `--limit`, `--checkpoint`,
-> base-Mistral fallback, coverage and graceful-degradation analysis
-> already built).  A representative output:
+> **2026-09-10 — read, then corrected 2026-09-10 after operator
+> review.**  `skol_exp_production_v4_03_00_treatments_structured` holds
+> **1 285 records at 100 % `json_valid`**, produced by
+> `bin/treatments_to_json.py`.  A representative output:
 >
 > > `Ascomata are solitary and immersed, brown to black, coriaceous texture, and subglobose to depressed globose, ostiolate and clypeate`
 >
@@ -366,37 +362,73 @@ the problem phase 1 removes.  Re-run it on labelled spans first.
 >               "Aperture": {"Type": ["Ostiolate"], "Accessory": ["Clypeate"]}}}
 > ```
 >
-> That is the ragged attribute tree the schema calls for, generated
-> from prose.  **"Mistral did poorly" is not true of the current
-> harness.**
+> **These are NOT the per-span re-run this paragraph asks for.**  Per
+> the operator: stock Mistral, run on **whole descriptions** — the very
+> configuration the paragraph above says was measured.  The re-run on
+> labelled spans **has still not been done**, and it remains the next
+> step.  *(An earlier version of this note claimed otherwise.  The
+> structured database records no `model` field, so nothing on the
+> documents distinguishes stock from fine-tuned or span from whole
+> description; the operator's recollection is the only provenance.
+> **Record a `model` and `input_granularity` field on the next run** —
+> this ambiguity cost a wrong reading.)*
 >
-> **`json_valid` means parseable, not consistent, and the gap is
-> exactly the slot vocabulary.**  Top-level keys over 400 valid
-> records: `Species` 41 / `species` 27, `Genus` 39 / `genus` 13,
-> `Family` 27, and the taxonomy ranks (`Kingdom`, `Phylum`, `Class`,
-> `Order`, 59 between them) sitting at the same level as `Conidia` and
-> `Conidiophores`.  Case drift on the commonest keys and no separation
-> of rank from morphology.
+> **What the 1 285 records do settle: the objection was speed, not
+> quality.**  "Mistral did poorly" is not supported by its own output —
+> 100 % parseable, and the tree above is the shape the schema calls
+> for.  The path was abandoned because whole-description inference was
+> **prohibitively slow** for the application.  That reframes the
+> re-run: per-phrase with constraints attacks throughput directly
+> (short inputs, constrained decoding, batching), and it is being tried
+> for speed with quality already evidenced, rather than the other way
+> round.
 >
-> **So the vocabulary work is not misdirected — it is mis-sequenced.**
-> It is currently a *post-hoc canonicalization* of whatever the model
-> emits.  The same vocabulary used as a **constraint at decode time**
-> is the whole remaining distance between valid and consistent, and
+> **`json_valid` means parseable, not consistent.**  Top-level keys
+> over 400 valid records: `Species` 41 / `species` 27, `Genus` 39 /
+> `genus` 13, `Family` 27, and the taxonomy ranks (`Kingdom`, `Phylum`,
+> `Class`, `Order`, 59 between them) level with `Conidia` and
+> `Conidiophores`.  Case drift on the commonest keys, no separation of
+> rank from morphology — and this is exactly what a decode-time
+> vocabulary constraint fixes.  **The vocabulary work is not
+> misdirected; it is currently applied post-hoc where it needs to be
+> applied as a constraint.**
 > `docs/schema_constrained_pipeline.md` already designs that: Pass A
 > induction → freeze the canonical schema → Pass B constrained
-> extraction.  25 882 canonical annotations and 2 396 hand-verified
-> ones are available to build the constraint from.
->
-> **Order of work, revised:** put the canonical vocabulary in the
-> prompt and re-measure *key consistency* (not validity) on ~50
-> records.  Fine-tuning is a decision to take **after** that number
-> exists, not before — it costs weeks where the prompt change costs a
-> day.
->
-> **One provenance question left open:** whether the 1 285-record run
-> used `--checkpoint` or base Mistral is not recorded on the documents.
-> If base, the position is stronger than stated here.  Worth
-> establishing before the fine-tuning decision, and cheap.
+> extraction, with 25 882 canonical and 2 396 hand-verified annotations
+> available to build the constraint from.
+
+### M6a: phrase labelling has no local path — 2026-09-10
+
+Raised by the operator: *"how do we do the phrase labelling locally
+that we've been using Claude API for?"*  **We do not.**  All **25 742**
+candidate annotations in `…_02_50_features_candidate` carry
+`model: claude-opus-4-7`.  `bin/llm_annotate_features.py` constructs
+`anthropic.Anthropic(...)` and calls `client.messages.create` directly;
+there is no local implementation and no interface behind which to put
+one.
+
+And: *"I don't remember any work on a per-phrase application of a local
+SLM."*  Confirmed — there is none.  The only SLM code in the tree is
+`bin/treatments_to_json.py` (whole descriptions) and
+`bin/embed_lines.py` (SBERT, an encoder, not generative).
+
+**The seam already exists, which makes this cheaper than it looks.**
+`treatments_to_structured/llm_annotate.py` is already pure:
+`build_user_prompt(synth_txt, seed) -> str` and
+`parse_claude_response(text, model_name) -> annotations`.  Only the two
+client call sites in `bin/llm_annotate_features.py`
+(`client.messages.create`, `client.messages.count_tokens`) are
+Anthropic-specific.  A local backend is: define the interface those two
+calls imply, keep prompt-building and parsing untouched.
+
+**Why it matters beyond cost.**  The platform is permanently
+free-access (`docs/structure_ocr.md` §1), so a per-treatment paid API
+call in the production path is a standing liability.  It also blocks
+the fine-tuning question from ever being answered locally.
+
+**Not scheduled here.**  It shares its target with the per-phrase
+Mistral re-run above — both are "run a small local model on a short
+span" — and should be decided together, not separately.
 
 **M6 is the "full JSON representations of the descriptions" goal**
 named in the 2026-09-10 planning session.  It is one of two active
