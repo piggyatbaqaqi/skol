@@ -75,6 +75,12 @@ class DossierView:
     source: Dict[str, Any] = field(default_factory=dict)
     status: Dict[str, Any] = field(default_factory=dict)
     siblings: List[Dict[str, Any]] = field(default_factory=list)
+    #: The treatments immediately before and after this one in the
+    #: source document, by paragraph.  §12.3.63: a nomenclature can be
+    #: stolen by the block ahead of it, and neither treatment shows the
+    #: theft alone.  Skeleton -- not yet populated.
+    prev_treatment: Optional[Dict[str, Any]] = None
+    next_treatment: Optional[Dict[str, Any]] = None
     merge_metric: Optional[int] = None
     flags: str = ''
     #: The article.txt.ann text the spans index into, so the renderer

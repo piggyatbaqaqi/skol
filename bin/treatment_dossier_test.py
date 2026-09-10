@@ -83,6 +83,182 @@ class TestBuildView:
 
 
 # ---------------------------------------------------------------------------
+# Neighbours — §12.3.63.  A treatment's nomenclature can be stolen by the
+# block that precedes it, and the theft is invisible from either treatment
+# alone: the donor's trailing citation reads as a reference, and the victim
+# reads as a paper that opened with a basionym.  1 102 treatments (2.2 %)
+# open their nomenclature with a subordinate marker.  Putting the immediate
+# neighbours' nomenclature lines in front of the reviewer is what makes the
+# pair visible; the sibling list at the foot of the page did not, because it
+# is sorted, long, and does not say which entries are adjacent.
+# ---------------------------------------------------------------------------
+
+
+class TestNeighbours:
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_next_is_the_nearest_sibling_after_this_one(self) -> None:
+        doc, ann = _treatment()          # spans at paragraphs 11 and 15
+        sibs = [{'_id': 'taxon_before', 'treatment': 'Boletus edulis',
+                 'paragraph': 5},
+                {'_id': 'taxon_next', 'treatment': 'Basionym. Phomopsis x.',
+                 'paragraph': 19},
+                {'_id': 'taxon_later', 'treatment': 'Russula emetica',
+                 'paragraph': 31}]
+        view = build_view(doc, ann, siblings=sibs)
+        assert view.next_treatment is not None
+        assert view.next_treatment['_id'] == 'taxon_next'
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_prev_is_the_nearest_sibling_before_this_one(self) -> None:
+        """Symmetric, because a treatment can be the victim as easily
+        as the donor and the reviewer needs to know which side."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_far', 'treatment': 'Boletus edulis',
+                 'paragraph': 1},
+                {'_id': 'taxon_prev', 'treatment': 'Diaporthe schini',
+                 'paragraph': 7},
+                {'_id': 'taxon_next', 'treatment': 'Russula emetica',
+                 'paragraph': 19}]
+        view = build_view(doc, ann, siblings=sibs)
+        assert view.prev_treatment is not None
+        assert view.prev_treatment['_id'] == 'taxon_prev'
+
+    def test_no_siblings_means_no_neighbours(self) -> None:
+        doc, ann = _treatment()
+        view = build_view(doc, ann)
+        assert view.prev_treatment is None
+        assert view.next_treatment is None
+
+    def test_a_sibling_with_no_paragraph_cannot_be_ordered(self) -> None:
+        """`_sibling_index` yields ``paragraph: None`` for treatments
+        whose spans carry no usable paragraph number.  Unordered is not
+        the same as adjacent, so those are not offered as neighbours."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_x', 'treatment': 'Unplaceable',
+                 'paragraph': None}]
+        view = build_view(doc, ann, siblings=sibs)
+        assert view.prev_treatment is None
+        assert view.next_treatment is None
+
+    def test_a_focal_treatment_with_no_paragraph_has_no_neighbours(
+            self) -> None:
+        doc, ann = _treatment(description_spans=[], notes_spans=[])
+        sibs = [{'_id': 'taxon_next', 'treatment': 'X', 'paragraph': 19}]
+        view = build_view(doc, ann, siblings=sibs)
+        assert view.next_treatment is None
+
+    def test_a_sibling_sharing_our_paragraph_is_not_a_neighbour(self) -> None:
+        """Two treatments can report the same minimum paragraph.  That
+        makes their order unknown, not adjacent."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_same', 'treatment': 'X', 'paragraph': 11}]
+        view = build_view(doc, ann, siblings=sibs)
+        assert view.prev_treatment is None
+        assert view.next_treatment is None
+
+
+class TestNeighboursAreRendered:
+    """Asserting on the *neighbour section*, not on the page as a whole.
+
+    The sibling list at the foot already prints every sibling's id and
+    nomenclature, so `'Basionym.' in html` was true before any of this
+    was written -- strict xfail caught five such tests passing against
+    the old renderer.  A test that cannot fail against the thing being
+    replaced is not testing the replacement.
+    """
+
+    NEIGH_TEXT = '--- neighbours in the source document ---'
+    NEIGH_HTML = '<div class="neighbours">'
+
+    def _sibs(self) -> list:
+        return [{'_id': 'taxon_prev', 'treatment': 'Diaporthe schini '
+                 'R.R. Gomes, C. Glienke & Crous, sp. nov.', 'paragraph': 7},
+                {'_id': 'taxon_next', 'treatment': 'Basionym. Phomopsis '
+                 'sclerotioides Kesteren, Neth. Jl. Pl. Path. 73: 115. 1967.',
+                 'paragraph': 19}]
+
+    def _section_text(self, text: str) -> str:
+        i = text.index(self.NEIGH_TEXT)
+        j = text.index('\n--- ', i + len(self.NEIGH_TEXT))
+        return text[i:j]
+
+    def _section_html(self, html: str) -> str:
+        i = html.index(self.NEIGH_HTML)
+        return html[i:html.index('</div>', i)]
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_text_section_names_both_neighbours(self) -> None:
+        doc, ann = _treatment()
+        sec = self._section_text(
+            render_text(build_view(doc, ann, siblings=self._sibs())))
+        assert 'Diaporthe schini' in sec
+        assert 'Basionym. Phomopsis sclerotioides' in sec
+        assert 'taxon_prev' in sec and 'taxon_next' in sec
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_html_section_names_both_neighbours(self) -> None:
+        doc, ann = _treatment()
+        sec = self._section_html(
+            render_html(build_view(doc, ann, siblings=self._sibs())))
+        assert 'Diaporthe schini' in sec
+        assert 'Basionym. Phomopsis sclerotioides' in sec
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_the_subordinate_marker_survives_truncation(self) -> None:
+        """The whole point is spotting `Basionym.` / `Type species.` /
+        `Synonym.` at the START of a neighbour's nomenclature, so
+        whatever truncation the renderer applies must keep the opening
+        intact."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_next',
+                 'treatment': 'Type species. ' + 'Xylaria longissima ' * 40,
+                 'paragraph': 19}]
+        view = build_view(doc, ann, siblings=sibs)
+        assert 'Type species.' in self._section_text(render_text(view))
+        assert 'Type species.' in self._section_html(render_html(view))
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_a_multiline_nomenclature_renders_on_one_line(self) -> None:
+        """`treatment` is stored with the PDF's line breaks in it.  A
+        neighbour line that wraps is not scannable."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_next',
+                 'treatment': 'Basionym. Phomopsis\nsclerotioides Kesteren,',
+                 'paragraph': 19}]
+        sec = self._section_text(
+            render_text(build_view(doc, ann, siblings=sibs)))
+        line = next(x for x in sec.splitlines() if 'taxon_next' in x)
+        assert 'Basionym. Phomopsis sclerotioides' in line
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_html_escapes_a_neighbour_name(self) -> None:
+        """Same adversary as everywhere else in this file: the corpus
+        contains `<`, `&` and `"` in real nomenclature strings."""
+        doc, ann = _treatment()
+        sibs = [{'_id': 'taxon_next',
+                 'treatment': 'Basionym. <i>Phomopsis</i> & "x"',
+                 'paragraph': 19}]
+        sec = self._section_html(
+            render_html(build_view(doc, ann, siblings=sibs)))
+        assert '<i>Phomopsis</i>' not in sec
+        assert '&lt;i&gt;' in sec
+
+    @pytest.mark.xfail(strict=True, reason="§12.3.63 neighbours not implemented yet")
+    def test_neighbours_appear_before_the_fields(self) -> None:
+        """A reviewer reads top-down and stops when the treatment looks
+        clean.  The sibling list at the foot is where this information
+        already was, and it was not seen."""
+        doc, ann = _treatment()
+        text = render_text(build_view(doc, ann, siblings=self._sibs()))
+        assert text.index(self.NEIGH_TEXT) < text.index('--- fields ---')
+
+    def test_no_neighbour_section_when_there_are_none(self) -> None:
+        doc, ann = _treatment()
+        text = render_text(build_view(doc, ann))
+        assert 'neighbour' not in text.lower()
+
+
+# ---------------------------------------------------------------------------
 # render_html — the corpus's own text is the adversary
 # ---------------------------------------------------------------------------
 
