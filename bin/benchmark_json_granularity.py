@@ -23,7 +23,9 @@ Writes nothing to CouchDB.
 
 import sys
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
+
+from treatments_to_structured.granularity_bench import Workload
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -33,6 +35,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 #: this is a parameter and not a constant.
 DEFAULT_MAX_NEW_TOKENS = 1024
 CLAUSE_MAX_NEW_TOKENS = 128
+
+#: Per-arm generation cap.  ``whole`` keeps the pipeline's 1 024 because
+#: it is the incumbent and ``summarize`` uses it as the denominator;
+#: ``whole_512`` is the same work at half the budget.  The stored
+#: outputs are median 294 / mean 439 tokens, but those are the
+#: *extracted* JSON -- ``generate_json`` runs ``_extract_json_object``
+#: over the decoded text -- so they do not say how much was generated.
+#: If the model emits its JSON and then talks to the cap, arm A's cost
+#: is the cap, and the fix is a stop condition rather than a pipeline.
+ARM_CAPS: Dict[str, int] = {
+    'whole': DEFAULT_MAX_NEW_TOKENS,
+    'whole_512': 512,
+    'clause_seq': CLAUSE_MAX_NEW_TOKENS,
+    'clause_batch': CLAUSE_MAX_NEW_TOKENS,
+}
 
 
 def batched_generate(
@@ -98,3 +115,18 @@ def batched_generate(
 
     return [tokenizer.decode(row[prompt_width:], skip_special_tokens=True)
             for row in output]
+
+
+def plan_arms(workloads: Sequence[Workload]) -> List[Workload]:
+    """Insert the second ``whole`` arm, at half the generation budget."""
+    raise NotImplementedError
+
+
+def cap_hit_rate(
+    outputs: Sequence[Optional[str]],
+    tokenizer: Any,
+    *,
+    cap: int,
+) -> Optional[float]:
+    """Share of generations that ran to ``cap`` rather than stopping."""
+    raise NotImplementedError
