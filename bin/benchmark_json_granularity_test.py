@@ -91,13 +91,11 @@ class _FakeModel:
 
 
 class TestBatchedGenerate:
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_returns_one_string_per_prompt_in_order(self) -> None:
         tok, model = _FakeTokenizer(), _FakeModel()
         out = batched_generate(model, tok, ['abc', 'de', 'fghi'], device='cpu')
         assert len(out) == 3
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_padding_is_left_not_right(self) -> None:
         """Right padding makes a decoder-only model continue from PAD.
         The benchmark would still produce timings, and they would be
@@ -106,7 +104,6 @@ class TestBatchedGenerate:
         batched_generate(model, tok, ['abc', 'de'], device='cpu')
         assert tok.padding_side == 'left'
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_the_attention_mask_reaches_the_model(self) -> None:
         """Without it the shorter prompts attend to padding and decode
         differently in a batch than alone, so arm C would not be
@@ -115,7 +112,6 @@ class TestBatchedGenerate:
         batched_generate(model, tok, ['abc', 'de'], device='cpu')
         assert model.saw_kwargs['attention_mask'] is not None
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_only_the_continuation_is_returned_not_the_prompt(self) -> None:
         """`output_chars` normalises the report, so it has to measure
         generated length, not prompt length."""
@@ -123,7 +119,6 @@ class TestBatchedGenerate:
         out = batched_generate(model, tok, ['abcdefgh'], device='cpu')
         assert out == ['XY']
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_each_sequence_is_sliced_from_its_own_prompt(self) -> None:
         """With left padding every row is the same width, so a single
         shared offset happens to work -- but it must be derived, not
@@ -132,19 +127,16 @@ class TestBatchedGenerate:
         out = batched_generate(model, tok, ['a', 'bbbbbb'], device='cpu')
         assert out == ['Z', 'Z']
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_a_batch_of_one_still_works(self) -> None:
         tok, model = _FakeTokenizer(), _FakeModel()
         assert len(batched_generate(model, tok, ['solo'], device='cpu')) == 1
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_an_empty_batch_returns_empty_without_calling_the_model(
             self) -> None:
         tok, model = _FakeTokenizer(), _FakeModel()
         assert batched_generate(model, tok, [], device='cpu') == []
         assert model.saw_kwargs is None
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_a_pad_token_is_set_when_the_tokenizer_lacks_one(self) -> None:
         """Mistral ships without a pad token; batching needs one or the
         tokenizer raises. The existing pipeline sets it to EOS."""
@@ -152,7 +144,6 @@ class TestBatchedGenerate:
         batched_generate(model, tok, ['a', 'bb'], device='cpu')
         assert tok.pad_token == tok.eos_token
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_generation_is_deterministic(self) -> None:
         """`do_sample=False`, matching `_raw_generate`. A benchmark that
         sampled would vary output length run to run, and output length
@@ -161,7 +152,6 @@ class TestBatchedGenerate:
         batched_generate(model, tok, ['a'], device='cpu')
         assert model.saw_kwargs['do_sample'] is False
 
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_max_new_tokens_is_passed_through(self) -> None:
         """Arm A inherits the pipeline's 1024. Arm B and C need a much
         smaller cap or they measure the cap, not the content -- so it
@@ -171,7 +161,6 @@ class TestBatchedGenerate:
         assert model.saw_kwargs['max_new_tokens'] == 64
 
     @pytest.mark.parametrize('n', [1, 2, 8])
-    @pytest.mark.xfail(strict=True, reason="R1 batched_generate not implemented")
     def test_padding_is_requested_for_every_batch_size(self, n: int) -> None:
         tok, model = _FakeTokenizer(), _FakeModel()
         batched_generate(model, tok, ['x' * (i + 1) for i in range(n)],

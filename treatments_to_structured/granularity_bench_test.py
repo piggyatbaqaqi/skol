@@ -227,13 +227,11 @@ class TestOutputsAreRetained:
     """`output_chars` alone made a B-vs-C comparison impossible by
     construction.  The outputs themselves are ~94 KB for 470 clauses."""
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_outputs_come_back_in_order(self) -> None:
         out = run_workload(Workload('clause_seq', ['a', 'b', 'c'], 1),
                            lambda p: [x.upper() for x in p])
         assert out.outputs == ('A', 'B', 'C')
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_outputs_stay_aligned_across_batches(self) -> None:
         """Position is the join key between B and C, so batching must
         not reorder or regroup them."""
@@ -241,7 +239,6 @@ class TestOutputsAreRetained:
                            lambda p: [x.upper() for x in p])
         assert out.outputs == ('A', 'B', 'C', 'D', 'E')
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_a_failed_batch_leaves_None_placeholders(self) -> None:
         """Dropping the failures instead would shift every later output
         left by one and silently compare unrelated clauses."""
@@ -256,7 +253,6 @@ class TestOutputsAreRetained:
         out = run_workload(Workload('clause_batch', list('abcdef'), 2), flaky)
         assert out.outputs == ('A', 'B', None, None, 'E', 'F')
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_outputs_length_always_matches_the_workload(self) -> None:
         def boom(prompts: list) -> list:
             raise RuntimeError('nope')
@@ -276,7 +272,6 @@ class TestCompareArms:
         return Timing(arm, items=len(outputs), calls=len(outputs),
                       seconds=1.0, output_chars=0, outputs=outputs)
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_identical_outputs_are_all_exact(self) -> None:
         a = self._t('clause_seq', ('{"a": 1}', '{"b": 2}'))
         r = compare_arms(a, self._t('clause_batch', ('{"a": 1}', '{"b": 2}')))
@@ -284,7 +279,6 @@ class TestCompareArms:
         assert r['exact_rate'] == pytest.approx(1.0)
         assert r['differ'] == 0
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_key_order_and_whitespace_agree_structurally(self) -> None:
         """Same object, different serialisation.  Edit distance would
         call this a difference; it is not one."""
@@ -296,19 +290,16 @@ class TestCompareArms:
         assert r['agree_rate'] == pytest.approx(1.0)
         assert r['differ'] == 0
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_a_changed_value_is_a_real_disagreement(self) -> None:
         r = compare_arms(self._t('clause_seq', ('{"a": 1}',)),
                          self._t('clause_batch', ('{"a": 2}',)))
         assert r['differ'] == 1 and r['structural'] == 0
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_a_missing_key_is_a_real_disagreement(self) -> None:
         r = compare_arms(self._t('clause_seq', ('{"a": 1, "b": 2}',)),
                          self._t('clause_batch', ('{"a": 1}',)))
         assert r['differ'] == 1
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_unparseable_output_is_not_scored_as_disagreement(self) -> None:
         """A model that emitted prose is a different problem from a
         model that emitted different JSON, and blending them would hide
@@ -318,7 +309,6 @@ class TestCompareArms:
         assert r['unparseable'] == 1
         assert r['differ'] == 0 and r['structural'] == 0
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_positions_either_side_failed_are_excluded_and_counted(
             self) -> None:
         a = self._t('clause_seq', ('{"a": 1}', None, '{"c": 3}'))
@@ -327,7 +317,6 @@ class TestCompareArms:
         assert r['n'] == 1
         assert r['incomparable'] == 2
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_misaligned_lengths_are_refused_not_zipped(self) -> None:
         """zip() would truncate silently and compare clause i against
         clause i for a prefix, reporting a clean result on a broken
@@ -336,14 +325,12 @@ class TestCompareArms:
             compare_arms(self._t('clause_seq', ('{}', '{}')),
                          self._t('clause_batch', ('{}',)))
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_no_comparable_positions_does_not_divide_by_zero(self) -> None:
         r = compare_arms(self._t('clause_seq', (None,)),
                          self._t('clause_batch', (None,)))
         assert r['n'] == 0
         assert r['exact_rate'] is None and r['agree_rate'] is None
 
-    @pytest.mark.xfail(strict=True, reason="R1 outputs/compare_arms not implemented")
     def test_the_arms_compared_are_named_in_the_result(self) -> None:
         """The result gets read months later; which pair it describes
         must not depend on argument order being remembered."""

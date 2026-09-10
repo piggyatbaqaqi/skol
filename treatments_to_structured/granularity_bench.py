@@ -22,6 +22,7 @@ losing arm is what lets the result say *which* of the two it was.
 Generation is injected so the arithmetic is testable without a GPU.
 """
 
+import json
 import time
 from dataclasses import dataclass, field
 from typing import (Any, Callable, Dict, List, Mapping, Optional, Sequence,
@@ -125,6 +126,7 @@ def run_workload(
         return Timing(workload.arm)
 
     calls = done = failures = chars = 0
+    outputs: List[Optional[str]] = []
     started = time.perf_counter()
     for i in range(0, len(items), size):
         batch = items[i:i + size]
@@ -133,13 +135,20 @@ def run_workload(
             out = generate_fn(batch)
         except Exception:                    # noqa: BLE001 - see docstring
             failures += 1
+            # Placeholders, not omissions: position is the join key
+            # between clause_seq and clause_batch, so a dropped entry
+            # would shift every later output left and compare unrelated
+            # clauses while looking clean.
+            outputs.extend([None] * len(batch))
             continue
         done += len(batch)
         chars += sum(len(str(o)) for o in out)
+        outputs.extend(str(o) for o in out)
     seconds = time.perf_counter() - started
 
     return Timing(workload.arm, items=done, calls=calls, seconds=seconds,
-                  output_chars=chars, failures=failures)
+                  output_chars=chars, failures=failures,
+                  outputs=tuple(outputs))
 
 
 def summarize(
@@ -193,5 +202,52 @@ def compare_arms(
     built from the same items, so a difference is attributable to
     batching.  ``whole`` differs by construction and is not comparable
     this way.
+
+    Three rungs, deliberately not one edit distance: **exact** (byte
+    identical), **structural** (parses to the same object — reordered
+    keys and whitespace are the same JSON, and an edit distance would
+    have scored that alongside a changed value), and **differ**.  Two
+    populations are kept out of ``differ`` so neither hides the other:
+    ``unparseable``, where a side emitted something that is not JSON,
+    and ``incomparable``, where a side's call failed.
     """
-    raise NotImplementedError
+    if len(left.outputs) != len(right.outputs):
+        raise ValueError(
+            f'arms are not aligned: {left.arm} has {len(left.outputs)} '
+            f'outputs, {right.arm} has {len(right.outputs)}.  Comparing '
+            f'them would silently pair unrelated clauses.')
+
+    n = exact = structural = differ = unparseable = incomparable = 0
+    for a, b in zip(left.outputs, right.outputs):
+        if a is None or b is None:
+            incomparable += 1
+            continue
+        n += 1
+        if a == b:
+            exact += 1
+            continue
+        try:
+            pa, pb = json.loads(a), json.loads(b)
+        except (ValueError, TypeError):
+            unparseable += 1
+            continue
+        if pa == pb:
+            structural += 1
+        else:
+            differ += 1
+
+    return {
+        'left': left.arm,
+        'right': right.arm,
+        'n': n,
+        'exact': exact,
+        'structural': structural,
+        'differ': differ,
+        'unparseable': unparseable,
+        'incomparable': incomparable,
+        'exact_rate': (exact / n) if n else None,
+        # The number that answers "is C doing the same work as B".  A
+        # low exact rate with a high agree rate is benign: kernel
+        # non-determinism reordered the serialisation, not the content.
+        'agree_rate': ((exact + structural) / n) if n else None,
+    }
