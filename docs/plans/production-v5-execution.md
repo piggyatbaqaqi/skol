@@ -349,6 +349,62 @@ vocabulary does not exist yet (322 labels, 54 % singletons), and
 "Mistral did poorly" was measured on *entire descriptions* —
 the problem phase 1 removes.  Re-run it on labelled spans first.
 
+> **2026-09-10 — the second premise is settled, and it settles the
+> fine-tuning question with it.**  The re-run this paragraph asks for
+> has already happened and was never read.
+> `skol_exp_production_v4_03_00_treatments_structured` holds **1 285
+> records at 100 % `json_valid`**, produced by the existing
+> `bin/treatments_to_json.py` (1 126 lines: `--limit`, `--checkpoint`,
+> base-Mistral fallback, coverage and graceful-degradation analysis
+> already built).  A representative output:
+>
+> > `Ascomata are solitary and immersed, brown to black, coriaceous texture, and subglobose to depressed globose, ostiolate and clypeate`
+>
+> ```json
+> {"Ascomata": {"Form": ["Solitary","Immersed"], "Color": ["Brown","Black"],
+>               "Texture": ["Coriaceous"], "Shape": ["Subglobose","Depressed Globose"],
+>               "Aperture": {"Type": ["Ostiolate"], "Accessory": ["Clypeate"]}}}
+> ```
+>
+> That is the ragged attribute tree the schema calls for, generated
+> from prose.  **"Mistral did poorly" is not true of the current
+> harness.**
+>
+> **`json_valid` means parseable, not consistent, and the gap is
+> exactly the slot vocabulary.**  Top-level keys over 400 valid
+> records: `Species` 41 / `species` 27, `Genus` 39 / `genus` 13,
+> `Family` 27, and the taxonomy ranks (`Kingdom`, `Phylum`, `Class`,
+> `Order`, 59 between them) sitting at the same level as `Conidia` and
+> `Conidiophores`.  Case drift on the commonest keys and no separation
+> of rank from morphology.
+>
+> **So the vocabulary work is not misdirected — it is mis-sequenced.**
+> It is currently a *post-hoc canonicalization* of whatever the model
+> emits.  The same vocabulary used as a **constraint at decode time**
+> is the whole remaining distance between valid and consistent, and
+> `docs/schema_constrained_pipeline.md` already designs that: Pass A
+> induction → freeze the canonical schema → Pass B constrained
+> extraction.  25 882 canonical annotations and 2 396 hand-verified
+> ones are available to build the constraint from.
+>
+> **Order of work, revised:** put the canonical vocabulary in the
+> prompt and re-measure *key consistency* (not validity) on ~50
+> records.  Fine-tuning is a decision to take **after** that number
+> exists, not before — it costs weeks where the prompt change costs a
+> day.
+>
+> **One provenance question left open:** whether the 1 285-record run
+> used `--checkpoint` or base Mistral is not recorded on the documents.
+> If base, the position is stronger than stated here.  Worth
+> establishing before the fine-tuning decision, and cheap.
+
+**M6 is the "full JSON representations of the descriptions" goal**
+named in the 2026-09-10 planning session.  It is one of two active
+goals; the other is Experiment 6, planned in
+[experiment_6_design_and_implementation_plan.md](experiment_6_design_and_implementation_plan.md).
+The two do **not** serialise: M6 runs on v4 data with today's
+pipeline and needs nothing from Experiment 6.
+
 **Deliverable**: faster / cheaper structured-form
 generation, ready for search-product integration.
 
@@ -683,6 +739,30 @@ Reasons to revise this plan:
   — Phase 1 context for the bootstrap annotator.
 
 ## Change log
+
+* **2026-09-10** — **Planning session: two active goals, and the
+  relationship between v5 and Experiment 6 stated.**  The operator's
+  two goals are M6 (full JSON descriptions) and Experiment 6 (pipeline
+  rewrite).  There is no experiment 5; `production_v5` in this document
+  is the next *extraction run* of the current architecture, while
+  Experiment 6 is a *replacement* architecture — different axes, not
+  successive versions.  **M4/M5 are therefore at risk of being
+  overtaken**: if Experiment 6's layered pipeline lands, a v5 run of
+  the single-CRF architecture buys little.  Not cancelled here, but
+  flagged — the decision belongs with the Experiment 6 phasing.
+  M1–M3 (detector work on v4) are unaffected and still pay.
+
+  **What was recorded in M6 above**: the Mistral re-run this plan asked
+  for has already happened — 1 285 records, 100 % `json_valid` — so the
+  fine-tuning question turns on key *consistency*, not capability.
+
+  **Two increments identified that turn §12.3 into user-visible value**,
+  neither needing a pipeline change and neither previously scheduled:
+  surfacing `predicted_issues` in the Django UI, and harvesting the
+  ~2 757 documents from §12.3.61 that named new taxa and produced no
+  named treatment because the act landed in `Misc-exposition`.  The
+  second is corpus growth on v4 with existing infrastructure and is the
+  largest business-value increment available without the rewrite.
 
 * **2026-09-09** — **Round 7 read: the support projection held, the
   coverage argument stayed marginal, and the round is richer than the

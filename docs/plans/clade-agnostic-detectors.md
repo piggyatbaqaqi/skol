@@ -5,6 +5,17 @@
 so the fungi-specific vocabulary we're shipping in M2/M2 doesn't
 become architectural debt.*
 
+> ## STATUS: DISTANT FUTURE — architectural guidance, not a work item
+>
+> Reaffirmed 2026-09-10.  Nothing here is scheduled and nothing should
+> be, but the constraint it states is **binding on Experiment 6**: any
+> hand-curated, fungi-specific watchlist added to a new pipeline layer
+> is debt this document has already priced.  Consult it when Experiment
+> 6's layout filter and treatment detector reach for a vocabulary —
+> that is the moment the guidance applies, and the moment it is
+> cheapest to honour.  `docs/schema_constrained_pipeline.md` is
+> deliberately taxon-agnostic for the same reason.
+
 ## Motivation
 
 M2 Group A's `count_repeated_section_headers` and M2 Group B's

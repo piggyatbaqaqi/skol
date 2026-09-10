@@ -1,5 +1,35 @@
 # Action plan: three activities, one draw, four populations
 
+> ## STATUS: COMPLETE — 2026-09-10
+>
+> **T0–T5 are done.**  Rounds 5, 6 and 7 were drawn, run and read; the
+> support projection was validated out of sample twice (round 7
+> predicted ~210 at n = 3 000 for df ≥ 10, landed at 214), and the
+> round-file convention this document introduced is in force.  The
+> question the rounds were set up to answer — are the Claude API
+> feature labels trustworthy — is answered: **round 3, the only random
+> sample, reads precision 100 % / recall 99.0 %.**
+>
+> **T6's missing tool now exists.**  T6 recorded that *"nothing applies
+> `docs/feature_label_canonicalization.json` to any database today"*.
+> `bin/build_canonical_labels.py` does, into
+> `skol_exp_production_v4_02_57_features_canonical` (25 882 records).
+>
+> **T6's actual subject is handed on, not dropped.**  The label-schema
+> fix — a label string carrying a qualifier the schema should carry
+> structurally (`Asci in culture MEA`, `Squamules`) — is the same
+> problem as the `Biology` split, and both are now scheduled in
+> [experiment_6_design_and_implementation_plan.md](experiment_6_design_and_implementation_plan.md).
+> The `attribute_path` field added in
+> `treatments_to_structured/canonical_annotation.py` is the first half
+> of it.  **The two traps T6 records still apply** to whoever does that
+> work: `annotation_doc_id` has no deletion pass, so a re-run must
+> target a **new** candidate DB; and the re-run must re-use the same
+> round file with `--force`, never a fresh selection.
+>
+> Superseded working copy: `~/.claude/plans/tranquil-juggling-pony.md`
+> is an August ancestor of this file and carries nothing unique.
+
 ## Context
 
 Bootstrap annotation rounds were set up to validate Claude API feature

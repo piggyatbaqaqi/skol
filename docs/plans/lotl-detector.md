@@ -3,6 +3,27 @@
 *Trello: https://trello.com/c/1rNUBhdR/395-lotl-detector*
 *Created 2026-07-05.  Planning doc only — not scheduled.*
 
+> ## STATUS: MEDIUM TERM — after Experiment 6
+>
+> Scheduled 2026-09-10, deliberately behind Experiment 6 rather than
+> beside it.  Two reasons, both new since this document was written:
+>
+> * **Experiment 6 changes the input.**  Structural OCR to markdown
+>   (`docs/structure_ocr.md`) is upstream of every language decision,
+>   and a language detector tuned on the current OCR's output would be
+>   retuned immediately.
+> * **The corpus supplies the case, and it is bigger than `_latin_ratio`.**
+>   §12.3.64 found that **no OCR engine, confidence or language is
+>   recorded at ingest at all** — the ingest document carries
+>   bibliographic fields only.  A language field belongs there, written
+>   once at ingest, rather than being recomputed per treatment forever.
+>   §12.3.64's fourth metric attempt also failed *because* it could not
+>   tell French from OCR damage, which is this detector's job.
+>
+> So the shape changes: not "replace `_latin_ratio`" but "record
+> language at ingest, and let `_latin_ratio` read it."  The library
+> comparison and the concerns in this document survive that change.
+
 ## Motivation
 
 `treatments_to_structured.triage_signals._latin_ratio` is a
