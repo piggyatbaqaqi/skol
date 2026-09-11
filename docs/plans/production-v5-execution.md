@@ -397,6 +397,74 @@ the problem phase 1 removes.  Re-run it on labelled spans first.
 > extraction, with 25 882 canonical and 2 396 hand-verified annotations
 > available to build the constraint from.
 
+### M6 R1 result: per-clause is 2.9x SLOWER — 2026-09-11
+
+**Measured.**  20 treatments, seed 20260910, stock
+`mistralai/Mistral-7B-Instruct-v0.3`, 4-bit, RTX 5090 Laptop.
+`bin/benchmark_json_granularity.py`; report in the session scratchpad.
+
+| arm | s/treatment | speedup | calls | cap-hits |
+|---|---:|---:|---:|---:|
+| `whole` @1024 *(incumbent)* | 54.46 | 1.00x | 20 | 0.30 |
+| `whole_512` | **37.88** | **1.44x** | 20 | 0.60 |
+| `clause_seq` @384 | 157.02 | **0.35x** | 171 | 0.13 |
+| `clause_batch` @384, batch 8 | 238.66 | **0.23x** | 29 | 0.13 |
+
+**The per-clause premise fails, and not narrowly** — the kill criterion
+was ≥3x faster and the result is 2.9x *slower*.
+
+**Batching made it worse, which is the finding worth keeping.**  A
+batch decodes until its *longest* member finishes; `model.generate` has
+no per-sequence early exit.  Cap-hits is 0.135, so clauses individually
+stop early — but in a batch of 8 every sequence pays for the slowest.
+Per call: `clause_batch` 164 s for ~6 items against `clause_seq` 18.4 s
+for 1.  That penalty more than cancels the dequantisation amortised
+across the batch.  **Arm B is what made this visible**; with only the
+two arms the card proposed, the conclusion would have been "clauses are
+slow" and the reason would have been missed.
+
+**The parameter hypothesis is half right and the right half is not
+free.**  `whole_512` is genuinely 1.44x.  But cap-hits goes 0.30 →
+0.60: at 1 024 a third of generations run to the cap, at 512 two
+thirds.  That speed is bought by truncating more outputs.  The free
+version is **a stop condition on the closing brace** — 30 % of
+generations run to the full 1 024 while the extracted JSON is ~294
+tokens, so the model emits its JSON and then keeps going.
+
+#### What this actually says: the runtime is the problem, not the granularity
+
+54.46 s/treatment x 81 527 treatments = **51 days**.  `whole_512` is 36
+days.  Neither ships, so re-cutting the input was never going to be
+enough.  `model.generate` on a 4-bit HF model — no continuous batching,
+no early exit, no paged attention — is the wrong engine.  **The next
+attempt belongs in the runtime** (vLLM or llama.cpp), and R5's
+constrained decoding should be built against whatever that turns out to
+be rather than against `transformers`.
+
+`outlines` being already installed argued for staying on
+`transformers`; this result outweighs that.
+
+#### Two caveats on the instrument, both recorded rather than buried
+
+* **`agree_rate` 0.655 is a lower bound and the comparison was
+  flawed.**  `batched_generate` returns the raw continuation, but the
+  pipeline extracts JSON with `_extract_json_object`.  Comparing raw
+  generations made `json.loads` fail on everything not byte-identical,
+  so `structural` is 0 and all 59 disagreements landed in
+  `unparseable`.  Real agreement is probably much higher.  It cannot be
+  recomputed: the report does not persist outputs.  **112 of 171
+  clauses were byte-identical between the sequential and batched arms,
+  with 0 genuine disagreements**, which is the reassuring direction.
+* **The right-padding warnings are a false positive**, verified by
+  re-encoding and inspecting the mask: padding *is* left.  HF's
+  detector tests whether the last token equals `pad_token_id`, and
+  `add_eos_token=True` with `pad_token = eos_token` trips it on every
+  sequence.  Both arms share the tokenizer, so the comparison stands.
+
+**Scope note:** 20 treatments, not the 50 the card specified.  At 54
+s/treatment across four arms, 50 would have been a 5.5-hour benchmark,
+and 20 separates a 3x effect comfortably.
+
 ### M6a: phrase labelling has no local path — 2026-09-10
 
 Raised by the operator: *"how do we do the phrase labelling locally
@@ -771,6 +839,17 @@ Reasons to revise this plan:
   — Phase 1 context for the bootstrap annotator.
 
 ## Change log
+
+* **2026-09-11** — **R1 ran: per-clause is 2.9x slower, and the runtime
+  is the real constraint.**  Full table in the M6 R1 result section
+  above.  Three things change because of it.  **R5's constrained
+  decoding should target the new runtime**, not `transformers` —
+  `outlines` being pre-installed argued for staying put and this
+  outweighs it.  **R3/R4 are unaffected**: the measurement parser and
+  the gold set are runtime-independent and still pay.  And **a stop
+  condition on the closing brace is now the cheapest available win** —
+  30 % of generations run to the full 1 024-token cap while the
+  extracted JSON is ~294 tokens.
 
 * **2026-09-10** — **Planning session: two active goals, and the
   relationship between v5 and Experiment 6 stated.**  The operator's
