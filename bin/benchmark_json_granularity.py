@@ -139,8 +139,34 @@ def batched_generate(
 def extract_json_outputs(
     outputs: Sequence[Optional[str]],
 ) -> tuple:
-    """Map raw generations to the JSON the pipeline would have stored."""
-    raise NotImplementedError
+    """Map raw generations to the JSON the pipeline would have stored.
+
+    ``batched_generate`` returns what the model said; the pipeline
+    stores what ``_extract_json_object`` finds inside it.  Comparing the
+    former answers "did batching change the generation", the latter
+    "did it change the result" — and only the second decides whether
+    arm C is doing the same work.
+
+    ``None`` for a position that carries no JSON, rather than ``""``:
+    an empty string would be scored a disagreement, when the honest
+    answer is that there is nothing there to compare.  A ``None`` in
+    means a call that failed and stays ``None`` out, so it is never
+    promoted to a comparable value.
+    """
+    # Lazy: treatments_json_translator pulls in torch and pyspark, which
+    # the tests have no use for.
+    from treatments_json_translator import (       # noqa: PLC0415
+        _extract_json_object,
+    )
+    out: List[Optional[str]] = []
+    for text in outputs:
+        if text is None:
+            out.append(None)
+            continue
+        obj = _extract_json_object(text)
+        out.append(None if obj is None
+                   else json.dumps(obj, ensure_ascii=False))
+    return tuple(out)
 
 
 def plan_arms(workloads: Sequence[Workload]) -> List[Workload]:
@@ -297,8 +323,16 @@ def main() -> int:
                      for t in timings},
     }
     if 'clause_seq' in merged and 'clause_batch' in merged:
-        report['seq_vs_batch'] = compare_arms(merged['clause_seq'],
-                                              merged['clause_batch'])
+        seq, bat = merged['clause_seq'], merged['clause_batch']
+        report['seq_vs_batch_raw'] = compare_arms(seq, bat)
+        # The comparison that decides whether arm C did the same work:
+        # raw generations differ on prose the pipeline never stores.
+        report['seq_vs_batch_json'] = compare_arms(
+            Timing(seq.arm, outputs=extract_json_outputs(seq.outputs)),
+            Timing(bat.arm, outputs=extract_json_outputs(bat.outputs)))
+    # Persist the generations.  Not having them is why R1's own
+    # agree_rate could not be recomputed after the fact.
+    report['outputs'] = {t.arm: list(t.outputs) for t in timings}
     for arm in ARM_CAPS:
         if arm not in report['arms']:
             continue
