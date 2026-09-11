@@ -39,6 +39,7 @@ from benchmark_json_granularity import (  # type: ignore[import]  # noqa: E402
     ARM_CAPS,
     batched_generate,
     cap_hit_rate,
+    extract_json_outputs,
     plan_arms,
 )
 
@@ -248,3 +249,59 @@ class TestCapHitRate:
         """Zero would read as "nothing hit the cap", which is a finding.
         Nothing ran is not."""
         assert cap_hit_rate([None, None], _FakeTokenizer(), cap=64) is None
+
+
+class TestExtractJsonOutputs:
+    """R1 defect 1, found by reading its own result.
+
+    ``batched_generate`` returns the raw continuation, but the pipeline
+    stores what ``_extract_json_object`` pulls out of it.  Comparing raw
+    generations made ``json.loads`` fail on everything that was not
+    byte-identical, so ``structural`` came back 0 and all 59
+    disagreements landed in ``unparseable`` — making ``agree_rate``
+    0.655 a lower bound of unknown looseness.
+
+    The arms are compared twice instead: once raw (did batching change
+    what the model *said*) and once extracted (did it change the
+    *result*).  Those are different questions and the second is the one
+    that matters.
+    """
+
+    @pytest.mark.xfail(strict=True, reason="R1 extract_json_outputs not implemented")
+    def test_json_is_pulled_out_of_surrounding_prose(self) -> None:
+        out = extract_json_outputs(['Sure! Here it is: {"a": 1} Hope that helps.'])
+        assert out == ('{"a": 1}',)
+
+    @pytest.mark.xfail(strict=True, reason="R1 extract_json_outputs not implemented")
+    def test_bare_json_survives_unchanged_in_meaning(self) -> None:
+        import json as _json
+        out = extract_json_outputs(['{"a": 1}'])
+        assert _json.loads(out[0]) == {'a': 1}
+
+    @pytest.mark.xfail(strict=True, reason="R1 extract_json_outputs not implemented")
+    def test_output_with_no_json_becomes_None(self) -> None:
+        """Not the empty string: an empty string parses as nothing and
+        would be scored a disagreement, when the honest answer is that
+        this position carries no result to compare."""
+        assert extract_json_outputs(['I cannot help with that.']) == (None,)
+
+    @pytest.mark.xfail(strict=True, reason="R1 extract_json_outputs not implemented")
+    def test_None_stays_None(self) -> None:
+        """A failed call must not be promoted to a comparable value."""
+        assert extract_json_outputs([None]) == (None,)
+
+    @pytest.mark.xfail(strict=True, reason="R1 extract_json_outputs not implemented")
+    def test_length_and_order_are_preserved(self) -> None:
+        """Position is the join key between the arms."""
+        out = extract_json_outputs(['{"a": 1}', 'nope', None, '{"b": 2}'])
+        assert len(out) == 4
+        assert out[0] is not None and out[1] is None and out[2] is None
+
+    @pytest.mark.xfail(strict=True, reason="R1 extract_json_outputs not implemented")
+    def test_two_serialisations_of_one_object_both_extract(self) -> None:
+        """The point of extracting: these then compare structurally
+        equal, where raw they were an unparseable disagreement."""
+        import json as _json
+        a, b = extract_json_outputs(['x {"a": 1, "b": 2} y',
+                                     'z {"b":2,\n"a":1} w'])
+        assert _json.loads(a) == _json.loads(b)

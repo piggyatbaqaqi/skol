@@ -136,6 +136,13 @@ def batched_generate(
             for row in output]
 
 
+def extract_json_outputs(
+    outputs: Sequence[Optional[str]],
+) -> tuple:
+    """Map raw generations to the JSON the pipeline would have stored."""
+    raise NotImplementedError
+
+
 def plan_arms(workloads: Sequence[Workload]) -> List[Workload]:
     """Insert the second ``whole`` arm, at half the generation budget.
 
