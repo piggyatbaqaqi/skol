@@ -483,6 +483,50 @@ configured correctly; the fault is upstream, and
 from, wrong for generation — leaves Qwen at a turn boundary with no
 assistant cue.
 
+#### The GPU is nearly idle at batch 1 — 2026-09-14
+
+Operator, watching the Mistral run: *"the mistral-7B model is only
+using 7G of RAM on the GPU. Is there a way to take advantage of the
+other 2/3rds?  I'm assuming the answer is no because we're keeping the
+GPU utilization at 100%."*
+
+**`utilization.gpu` does not mean what it appears to.**  It reports
+that *at least one kernel was resident* during the sample, not that the
+card is working.  Measured with `nvidia-smi dmon` over 8 samples on the
+live run:
+
+| | |
+|---|---|
+| SM "utilization" | **99 %** |
+| memory controller active | **11 %** |
+| SM clock | **225 MHz** — the idle clock; this part boosts past 2 000 |
+| power draw | **82 W** |
+| VRAM | 7.4 of 24.5 GB |
+
+A card running flat out sits near its boost clock and near its power
+limit.  **This one is at its idle clock drawing 82 W.**
+
+**Why:** batch-1 autoregressive decode is *latency*-bound.  Each token
+depends on the one before it, so there is no parallelism to exploit;
+the kernels are small, they serialise on a dependency chain, and the
+card never has enough concurrent work to justify ramping clocks.  99 %
+utilisation at an idle clock is the signature of exactly that.
+
+**This is the strongest argument yet for the runtime change.**  The
+spare memory is only usable as *concurrent sequences*, and
+`model.generate` cannot exploit them because a batch runs until its
+longest member finishes — which is the penalty R1 measured directly.
+Continuous batching and a paged KV cache exist to fix precisely that.
+
+**Second, cheaper lever, queued 2026-09-14:** stop quantising the 7Bs.
+bnb-4bit dequantises to bf16 on every matmul and its kernels are not
+fast; the pipeline uses it presumably for a smaller card.  With 17 GB
+spare there is no reason to pay that tax.  Which way it goes is
+genuinely open — 4-bit reads a quarter as many weight bytes, bf16 skips
+the dequant — so a bf16 Mistral-7B run is queued behind the four-model
+comparison, same 20 treatments and seed, isolating quantisation as a
+single variable.
+
 #### Model candidates are licence-constrained — 2026-09-14
 
 **SKOL will not accept the Llama licence.**  Operator's decision, and a
