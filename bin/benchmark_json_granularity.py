@@ -211,21 +211,33 @@ def cap_hit_rate(
     return hits / len(done)
 
 
-def _load_model(base_model_id: str, device: str):
-    """Load tokenizer and 4-bit model, matching the pipeline's setup."""
+def _load_model(base_model_id: str, device: str, load_in_4bit: bool = True):
+    """Load tokenizer and model, matching the pipeline's setup.
+
+    ``load_in_4bit`` defaults on because that is what the pipeline does
+    and what R1 measured.  It is a flag because bnb-4bit is a *memory*
+    optimisation, not a speed one: the dequantisation kernel dominates
+    at small batch, so a 1.5 B model in bf16 is typically faster than
+    the same model in 4-bit and fits the card easily.  Comparing a
+    small model only at 4-bit would understate it.
+    """
     import torch                                    # noqa: PLC0415
     from transformers import (                      # noqa: PLC0415
         AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
     )
     tok = AutoTokenizer.from_pretrained(
         base_model_id, padding_side='left', add_eos_token=True)
-    tok.pad_token = tok.eos_token
-    bnb = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type='nf4', bnb_4bit_compute_dtype=torch.bfloat16)
-    model = AutoModelForCausalLM.from_pretrained(
-        base_model_id, quantization_config=bnb, device_map='auto',
-        trust_remote_code=True)
+    if tok.pad_token is None:
+        tok.pad_token = tok.eos_token
+    kwargs: Dict[str, Any] = {'device_map': 'auto', 'trust_remote_code': True}
+    if load_in_4bit:
+        kwargs['quantization_config'] = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type='nf4',
+            bnb_4bit_compute_dtype=torch.bfloat16)
+    else:
+        kwargs['dtype'] = torch.bfloat16
+    model = AutoModelForCausalLM.from_pretrained(base_model_id, **kwargs)
     model.eval()
     return tok, model
 
@@ -274,6 +286,9 @@ def main() -> int:
     parser.add_argument('--seed', type=int, default=20260910)
     parser.add_argument('--base-model', default=BASE_MODEL_ID)
     parser.add_argument('--report', help='write the JSON report here')
+    parser.add_argument('--no-4bit', action='store_true',
+                        help='load in bf16 instead of bnb-4bit; fairer for '
+                             'small models, where dequantisation dominates')
     args = parser.parse_args()
     config = get_env_config(cli_args=args)
 
@@ -291,7 +306,8 @@ def main() -> int:
     print(f'{len(pairs)} treatments, '
           f'{sum(len(s) for _, s in pairs)} clauses', file=sys.stderr)
 
-    tok, model = _load_model(args.base_model, 'cuda')
+    tok, model = _load_model(args.base_model, 'cuda',
+                             load_in_4bit=not args.no_4bit)
 
     merged: Dict[str, Timing] = {}
     for treatment, spans in pairs:
@@ -318,6 +334,7 @@ def main() -> int:
         'batch_size': args.batch_size,
         'seed': args.seed,
         'model': args.base_model,
+        'quantization': '4bit' if not args.no_4bit else 'bf16',
         'arms': summarize(timings, treatments=len(pairs)),
         'cap_hits': {t.arm: cap_hit_rate(t.outputs, tok, cap=ARM_CAPS[t.arm])
                      for t in timings},
