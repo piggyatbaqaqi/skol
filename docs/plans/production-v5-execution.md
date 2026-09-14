@@ -483,6 +483,33 @@ configured correctly; the fault is upstream, and
 from, wrong for generation — leaves Qwen at a turn boundary with no
 assistant cue.
 
+#### Model candidates are licence-constrained — 2026-09-14
+
+**SKOL will not accept the Llama licence.**  Operator's decision, and a
+project constraint rather than a preference: it is not OSI-approved and
+its **geographic restrictions would exclude a European SKOL
+instance**, which is inconsistent with a permanently free-access,
+GPL-3.0 project ([structure_ocr.md](../structure_ocr.md) §1).
+
+**Licences are not uniform within a family, so check per size.**  I
+proposed `Qwen2.5-3B-Instruct` as the third model and it is
+disqualified on the same grounds — `license: other`, the Qwen Research
+licence, non-commercial — while `0.5B`, `1.5B` and `7B` are all
+Apache-2.0.  Verified from HF model-card tags:
+
+| licence-clean | |
+|---|---|
+| Apache-2.0 | `Mistral-7B-Instruct-v0.3`, `Qwen2.5-0.5B/1.5B/7B-Instruct`, `SmolLM2-1.7B-Instruct`, `granite-3.1-2b-instruct` |
+| MIT | `Phi-3.5-mini-instruct` |
+| **disqualified** | `Qwen2.5-3B` (Qwen Research), `Llama-3.2-*` (Meta; 403 `GatedRepoError`), `gemma-2-*` (Gemma, gated) |
+
+**Open weights vs OSAID is unresolved** and does not block anything.
+The practical consequence: **OSAID 1.0 requires "data information"** —
+enough detail about training data to recreate a comparable system — and
+none of the models above meet it, Apache-2.0 included.  A strict OSAID
+filter selects nothing runnable today; the weights licence is the
+filter that actually selects, and is what the list above applies.
+
 #### Qwen2.5-1.5B against Mistral-7B — 2026-09-14
 
 Same 20 treatments and seed, Qwen in bf16 (bnb-4bit is a memory
