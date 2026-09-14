@@ -211,6 +211,37 @@ def cap_hit_rate(
     return hits / len(done)
 
 
+def chat_format_fn(tokenizer: Any) -> Any:
+    """A ``format_fn`` applying *this model's own* instruction format.
+
+    Each family draws its instruction boundary differently — Mistral
+    ``<s>[INST]…[/INST]``, Qwen ``<|im_start|>user…<|im_end|>``, Phi
+    ``<|user|>…<|end|><|assistant|>`` — and every one of them ships the
+    correct template in its tokenizer.  Using ``apply_chat_template``
+    rather than a hand-written wrapper is what keeps a fourth model
+    from needing a fourth branch, and is the fix for R1's defect: the
+    benchmark previously sent bare text and the pipeline's own
+    ``_build_prompt`` hardcodes Mistral's format.
+
+    ``add_generation_prompt=True`` is the part that matters — it opens
+    the assistant turn, without which the model sits at a turn boundary
+    with no cue and simply keeps writing.
+    """
+    def fmt(task: str, body: str) -> str:
+        content = f'{task}\n\n{body}'.strip()
+        try:
+            return tokenizer.apply_chat_template(
+                [{'role': 'user', 'content': content}],
+                tokenize=False, add_generation_prompt=True)
+        except Exception:                            # noqa: BLE001
+            # No template shipped: better a bare prompt than a crash,
+            # but say so, because the run is then not comparable.
+            print('  WARNING: no chat template; sending bare text',
+                  file=sys.stderr)
+            return content
+    return fmt
+
+
 def _load_model(base_model_id: str, device: str, load_in_4bit: bool = True):
     """Load tokenizer and model, matching the pipeline's setup.
 
@@ -225,8 +256,11 @@ def _load_model(base_model_id: str, device: str, load_in_4bit: bool = True):
     from transformers import (                      # noqa: PLC0415
         AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
     )
+    # add_eos_token=False: appending EOS to a PROMPT is a fine-tuning
+    # convention, and the pipeline's tokenizer setup carries it.  For
+    # generation it closes the turn before the model has spoken.
     tok = AutoTokenizer.from_pretrained(
-        base_model_id, padding_side='left', add_eos_token=True)
+        base_model_id, padding_side='left', add_eos_token=False)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
     kwargs: Dict[str, Any] = {'device_map': 'auto', 'trust_remote_code': True}
@@ -308,11 +342,19 @@ def main() -> int:
 
     tok, model = _load_model(args.base_model, 'cuda',
                              load_in_4bit=not args.no_4bit)
+    fmt = chat_format_fn(tok)
+    # The incumbent arm must carry the pipeline's own task text, or it
+    # measures a variant of the pipeline rather than the pipeline.
+    from treatments_json_translator import (         # noqa: PLC0415
+        TreatmentsJSONTranslator,
+    )
+    whole_task = TreatmentsJSONTranslator.DEFAULT_PROMPT
 
     merged: Dict[str, Timing] = {}
     for treatment, spans in pairs:
-        for w in plan_arms(build_workloads(treatment, spans,
-                                           batch_size=args.batch_size)):
+        for w in plan_arms(build_workloads(
+                treatment, spans, batch_size=args.batch_size,
+                format_fn=fmt, whole_task=whole_task)):
             cap = ARM_CAPS[w.arm]
 
             def gen(prompts: List[str], _cap: int = cap) -> List[str]:
@@ -335,6 +377,7 @@ def main() -> int:
         'seed': args.seed,
         'model': args.base_model,
         'quantization': '4bit' if not args.no_4bit else 'bf16',
+        'prompting': 'chat_template+DEFAULT_PROMPT',
         'arms': summarize(timings, treatments=len(pairs)),
         'cap_hits': {t.arm: cap_hit_rate(t.outputs, tok, cap=ARM_CAPS[t.arm])
                      for t in timings},
