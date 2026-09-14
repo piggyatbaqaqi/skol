@@ -372,7 +372,6 @@ class TestPromptsCarryAnInstruction:
             _treatment(), _spans(2), format_fn=self._fmt)}
         assert all(i.startswith('<<') for i in w['clause_seq'].items)
 
-    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
     def test_the_clause_task_names_the_label(self) -> None:
         """Phase 1 supplies the key, so the instruction must say which
         slot is being filled -- otherwise the clause arm is not testing
