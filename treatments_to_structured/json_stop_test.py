@@ -46,7 +46,6 @@ class TestJsonIsComplete:
         '{"a": {"b": 2}}',
         '[{"a": 1}]',
     ])
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_a_closed_object_is_complete(self, text: str) -> None:
         assert json_is_complete(text) is True
 
@@ -56,43 +55,36 @@ class TestJsonIsComplete:
         '{"a": {"b": 2}',
         '{"a": [1, 2',
     ])
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_an_unclosed_object_is_not(self, text: str) -> None:
         assert json_is_complete(text) is False
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_nesting_is_tracked_not_just_the_first_brace(self) -> None:
         """`stop_strings=["}"]` would fire here after `"b": 2}` and
         truncate the object.  This is the whole reason for the module."""
         assert json_is_complete('{"Aperture": {"Type": ["Ostiolate"]}') is False
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_a_preamble_before_the_open_brace_is_skipped(self) -> None:
         """Depth is zero before the first `{`, which must not read as
         finished. Mistral opens with prose."""
         assert json_is_complete('Sure! Here it is: ') is False
         assert json_is_complete('Sure! Here it is: {"a": 1}') is True
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_trailing_prose_after_the_close_still_reads_complete(
             self) -> None:
         """The criterion fires the step the object closes, but the
         predicate must stay true if it is called again."""
         assert json_is_complete('{"a": 1} Hope that helps!') is True
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_a_brace_inside_a_string_does_not_count(self) -> None:
         """Taxonomic prose carries brackets, and a value is a verbatim
         source phrase per docs/structured-form-schema.md."""
         assert json_is_complete('{"note": "shaped like a }"') is False
         assert json_is_complete('{"note": "shaped like a }"}') is True
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_an_open_brace_inside_a_string_does_not_open_depth(
             self) -> None:
         assert json_is_complete('{"note": "a { here"}') is True
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_an_escaped_quote_does_not_end_the_string(self) -> None:
         r"""``"a \" b"`` is one string. Reading the escaped quote as a
         terminator would put the scanner back in object context and the
@@ -100,23 +92,19 @@ class TestJsonIsComplete:
         assert json_is_complete('{"n": "a \\" }"') is False
         assert json_is_complete('{"n": "a \\" }"}') is True
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_an_escaped_backslash_does_not_escape_the_next_quote(
             self) -> None:
         r"""``"a\\"`` ends the string: the backslash is escaped, not the
         quote."""
         assert json_is_complete('{"n": "a\\\\"}') is True
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_empty_text_is_not_complete(self) -> None:
         assert json_is_complete('') is False
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_a_bare_array_closes(self) -> None:
         assert json_is_complete('[1, 2]') is True
         assert json_is_complete('[1, 2') is False
 
-    @pytest.mark.xfail(strict=True, reason="json_is_complete not implemented")
     def test_a_close_without_an_open_is_not_complete(self) -> None:
         """Garbage must not be reported as finished, or generation stops
         on the first stray brace the model emits."""
