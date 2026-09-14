@@ -446,6 +446,29 @@ be rather than against `transformers`.
 
 #### Two caveats on the instrument, both recorded rather than buried
 
+* **Batching changes the ANSWER, not just the timing — 5 of 19.**
+  Measured 2026-09-11 after the instrument was fixed, on a 3-treatment
+  run: comparing *extracted* JSON rather than raw generations gives
+  n = 19, 14 exact, **5 genuinely different**, 4 incomparable (no JSON
+  on one side).  Every raw difference that yielded parseable JSON on
+  both sides was a real content difference — 5 for 5.  The raw
+  comparison had said **0 differ**, because everything non-identical
+  fell into `unparseable`; had the instrument not been fixed this would
+  have been recorded as clean.
+
+  **No change to the generation path follows** — the batched arm is
+  already dead on speed, so nothing depends on it.  What follows is a
+  **provenance requirement**: the same model and prompt give different
+  answers at different batch sizes, so `batch_size` joins `model` and
+  `input_granularity` as a field R6 must record, and **R4's gold set
+  and R4c's scorer must fix and record the batch configuration** — a
+  score obtained at one batch size does not transfer to another.  The
+  production config has to be the config that was scored.
+
+  It also **does not generalise to a new runtime by assumption**.  vLLM
+  and llama.cpp batch differently; if either is adopted, this has to be
+  re-measured, not inherited.
+
 * **`agree_rate` 0.655 is a lower bound and the comparison was
   flawed.**  `batched_generate` returns the raw continuation, but the
   pipeline extracts JSON with `_extract_json_object`.  Comparing raw
@@ -845,7 +868,12 @@ Reasons to revise this plan:
   above.  Three things change because of it.  **R5's constrained
   decoding should target the new runtime**, not `transformers` —
   `outlines` being pre-installed argued for staying put and this
-  outweighs it.  **R3/R4 are unaffected**: the measurement parser and
+  outweighs it.  To be precise about what changed: **R1 measured
+  nothing about `outlines` itself.**  Constrained decoding is not an
+  independent choice — it is provided *by* a runtime (`outlines` for
+  `transformers`, guided decoding for vLLM, GBNF for llama.cpp) — so
+  "we already have `outlines`" was only ever an argument for staying on
+  `transformers`, and R1 removed the grounds for staying.  **R3/R4 are unaffected**: the measurement parser and
   the gold set are runtime-independent and still pay.  And **a stop
   condition on the closing brace is now the cheapest available win** —
   30 % of generations run to the full 1 024-token cap while the
