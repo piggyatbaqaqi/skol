@@ -20,5 +20,5 @@
 * Prompt me about writing a skill if you see the same basic procedure happening at least 3 times.
 * Detector work: pathology + poster-child cases live in `tests/fixtures/pathologies.json` with prose narrative in `docs/data_quality_production_v4_model.md`. Every taxon referenced in the memo needs a fixture entry. Conventions and walkthrough in `tests/fixtures/README.md`.
 * Fix preexisting mypy and flake8 fixes when you find them. Make sure the fixes are in their own commit.
-* State the disposition of every finding: what was recorded (class or identifier), where (file and section), and the commit. A hash alone is not a disposition.
+* State the disposition of every finding: what was recorded (class or identifier), where (file and section), and the commit. A git hash alone is not a disposition.
 * The disposition covers everything reported in that response. Name anything you chose not to record, with the rationale.
