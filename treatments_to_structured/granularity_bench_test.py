@@ -47,6 +47,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from treatments_to_structured.granularity_bench import (  # noqa: E402
+    CLAUSE_TASK,
     Timing,
     Workload,
     build_workloads,
@@ -337,3 +338,68 @@ class TestCompareArms:
         r = compare_arms(self._t('clause_seq', ('{}',)),
                          self._t('clause_batch', ('{}',)))
         assert r['left'] == 'clause_seq' and r['right'] == 'clause_batch'
+
+
+class TestPromptsCarryAnInstruction:
+    """R1's defect, found 2026-09-14 and fixed here.
+
+    Every arm fed the model bare text: the raw ``description`` for
+    ``whole``, a bare ``CLAUSE_PROMPT`` for the clause arms.  The
+    pipeline does not — ``_build_prompt`` wraps ``DEFAULT_PROMPT`` in
+    the model's instruction format.  An instruction-tuned model given a
+    species description and no instruction has no defined task, which
+    is why Qwen ran to the 1 024-token cap 65 % of the time.
+
+    The fix is a ``format_fn`` the caller supplies, because the
+    instruction format is **model-specific**: Mistral wants
+    ``<s>[INST]…[/INST]``, Qwen wants ``<|im_start|>``.  Hard-coding
+    either into the harness is what produced the defect.
+    """
+
+    def _fmt(self, task: str, body: str) -> str:
+        return f'<<{task}||{body}>>'
+
+    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
+    def test_the_whole_arm_is_formatted_not_raw(self) -> None:
+        w = {x.arm: x for x in build_workloads(
+            _treatment(), _spans(2), format_fn=self._fmt)}
+        assert w['whole'].items[0].startswith('<<')
+        assert 'yyy' in w['whole'].items[0]
+
+    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
+    def test_the_clause_arms_are_formatted_too(self) -> None:
+        w = {x.arm: x for x in build_workloads(
+            _treatment(), _spans(2), format_fn=self._fmt)}
+        assert all(i.startswith('<<') for i in w['clause_seq'].items)
+
+    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
+    def test_the_clause_task_names_the_label(self) -> None:
+        """Phase 1 supplies the key, so the instruction must say which
+        slot is being filled -- otherwise the clause arm is not testing
+        the proposal."""
+        w = {x.arm: x for x in build_workloads(
+            _treatment(), _spans(1), format_fn=self._fmt)}
+        task = w['clause_seq'].items[0].split('||')[0]
+        assert 'Organ0' in task
+
+    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
+    def test_the_whole_arm_uses_the_pipelines_task(self) -> None:
+        """The incumbent has to be the incumbent.  Whatever task text
+        the caller passes for `whole` is what the pipeline sends, so
+        the arm measures the pipeline rather than a variant of it."""
+        w = {x.arm: x for x in build_workloads(
+            _treatment(), _spans(1), format_fn=self._fmt,
+            whole_task='PIPELINE TASK')}
+        assert w['whole'].items[0].split('||')[0] == 'PIPELINE TASK'
+
+    def test_without_a_format_fn_nothing_changes(self) -> None:
+        """Back-compatible: the approved arm-construction tests pass
+        raw text and must keep passing."""
+        w = {x.arm: x for x in build_workloads(_treatment(), _spans(2))}
+        assert w['whole'].items[0].startswith('yyy')
+
+    def test_the_clause_task_is_module_level_and_reusable(self) -> None:
+        """It is the thing a future runtime's grammar constrains, so it
+        cannot be buried in a function body."""
+        assert 'sub-attributes' in CLAUSE_TASK.lower()
+        assert '{label}' in CLAUSE_TASK

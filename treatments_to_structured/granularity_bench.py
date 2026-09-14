@@ -36,6 +36,14 @@ CLAUSE_PROMPT = (
     '{text}'
 )
 
+#: Instruction for one clause.  Module level because it is the thing a
+#: future runtime's grammar constrains (R5b), and because R1's defect
+#: was precisely that no instruction reached the model at all.
+CLAUSE_TASK = (
+    'Extract the sub-attributes of {label} from the following phrase '
+    'and return them as JSON. Return only JSON.'
+)
+
 #: The card's go/no-go: under this multiple of the incumbent, the
 #: per-clause premise fails.
 KILL_SPEEDUP = 3.0
@@ -79,6 +87,8 @@ def build_workloads(
     spans: Sequence[Mapping[str, Any]],
     *,
     batch_size: int = 8,
+    format_fn: Optional[Callable[[str, str], str]] = None,
+    whole_task: str = '',
 ) -> List[Workload]:
     """Assemble the three arms for one treatment.
 
