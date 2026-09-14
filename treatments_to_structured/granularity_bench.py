@@ -28,14 +28,6 @@ from dataclasses import dataclass, field
 from typing import (Any, Callable, Dict, List, Mapping, Optional, Sequence,
                     Tuple)
 
-#: Prompt scaffold for one clause.  Phase 1 already supplies the key
-#: (``attribute_path`` is depth 1 on 98 % of spans), so the clause arm
-#: asks the model to fill a slot rather than to parse a description.
-CLAUSE_PROMPT = (
-    'Extract the sub-attributes of {label} from this phrase as JSON.\n'
-    '{text}'
-)
-
 #: Instruction for one clause.  Module level because it is the thing a
 #: future runtime's grammar constrains (R5b), and because R1's defect
 #: was precisely that no instruction reached the model at all.
@@ -96,13 +88,28 @@ def build_workloads(
     They differ only in ``batch_size``, so any difference between them
     is attributable to batching and to nothing else.
 
+    ``format_fn(task, body)`` applies the model's own instruction
+    format.  It is supplied by the caller because that format is
+    model-specific — Mistral wants ``<s>[INST]…[/INST]``, Qwen
+    ``<|im_start|>``, Phi ``<|user|>`` — and hard-coding one into the
+    harness is what produced R1's defect: every arm fed the model bare
+    text, so an instruction-tuned model had no defined task and ran to
+    the token cap.  Omitting it joins task and body with a newline,
+    which keeps the arm-construction tests honest.
+
+    ``whole_task`` carries the pipeline's own ``DEFAULT_PROMPT``, so
+    the incumbent arm measures the incumbent rather than a variant.
+
     A treatment with no spans contributes no clause work rather than
     zero-cost clause work: only 3.4 % of the corpus carries
     Claude-labelled spans, and scoring the remainder as instant would
     flatter the clause arms precisely where the corpus is thinnest.
     """
+    def wrap(task: str, body: str) -> str:
+        return format_fn(task, body) if format_fn else f'{task}\n{body}'.strip()
+
     description = str(treatment.get('description') or '').strip()
-    whole: List[str] = [description] if description else []
+    whole: List[str] = [wrap(whole_task, description)] if description else []
 
     clauses: List[str] = []
     for span in spans:
@@ -110,7 +117,7 @@ def build_workloads(
         if not text:
             continue
         label = str(span.get('feature_label') or '').strip() or 'this feature'
-        clauses.append(CLAUSE_PROMPT.format(label=label, text=text))
+        clauses.append(wrap(CLAUSE_TASK.format(label=label), text))
 
     return [
         Workload('whole', whole, 1),

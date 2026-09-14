@@ -344,7 +344,7 @@ class TestPromptsCarryAnInstruction:
     """R1's defect, found 2026-09-14 and fixed here.
 
     Every arm fed the model bare text: the raw ``description`` for
-    ``whole``, a bare ``CLAUSE_PROMPT`` for the clause arms.  The
+    ``whole``, a bare clause scaffold for the clause arms.  The
     pipeline does not — ``_build_prompt`` wraps ``DEFAULT_PROMPT`` in
     the model's instruction format.  An instruction-tuned model given a
     species description and no instruction has no defined task, which
@@ -359,14 +359,12 @@ class TestPromptsCarryAnInstruction:
     def _fmt(self, task: str, body: str) -> str:
         return f'<<{task}||{body}>>'
 
-    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
     def test_the_whole_arm_is_formatted_not_raw(self) -> None:
         w = {x.arm: x for x in build_workloads(
             _treatment(), _spans(2), format_fn=self._fmt)}
         assert w['whole'].items[0].startswith('<<')
         assert 'yyy' in w['whole'].items[0]
 
-    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
     def test_the_clause_arms_are_formatted_too(self) -> None:
         w = {x.arm: x for x in build_workloads(
             _treatment(), _spans(2), format_fn=self._fmt)}
@@ -381,7 +379,6 @@ class TestPromptsCarryAnInstruction:
         task = w['clause_seq'].items[0].split('||')[0]
         assert 'Organ0' in task
 
-    @pytest.mark.xfail(strict=True, reason="R1 prompt fix not implemented")
     def test_the_whole_arm_uses_the_pipelines_task(self) -> None:
         """The incumbent has to be the incumbent.  Whatever task text
         the caller passes for `whole` is what the pipeline sends, so
@@ -389,7 +386,7 @@ class TestPromptsCarryAnInstruction:
         w = {x.arm: x for x in build_workloads(
             _treatment(), _spans(1), format_fn=self._fmt,
             whole_task='PIPELINE TASK')}
-        assert w['whole'].items[0].split('||')[0] == 'PIPELINE TASK'
+        assert w['whole'].items[0].split('||')[0].lstrip('<') == 'PIPELINE TASK'
 
     def test_without_a_format_fn_nothing_changes(self) -> None:
         """Back-compatible: the approved arm-construction tests pass
