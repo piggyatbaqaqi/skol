@@ -444,6 +444,72 @@ be rather than against `transformers`.
 `outlines` being already installed argued for staying on
 `transformers`; this result outweighs that.
 
+#### CAVEAT ADDED 2026-09-14: no arm used an instruction prompt
+
+**Found while investigating a Qwen anomaly, and it is a defect in the
+instrument.**  `_build_prompt` in `treatments_json_translator.py` wraps
+the pipeline's task prompt (`DEFAULT_PROMPT`) in Mistral's
+`<s>[INST]…[/INST]` format.  **`bin/benchmark_json_granularity.py`
+never calls it.**  `build_workloads` puts the raw `description` string
+in the `whole` arm and a bare `CLAUSE_PROMPT` in the clause arms, and
+`batched_generate` tokenizes those directly — so a bare species
+description was handed to an instruction-tuned model with no
+instruction and no chat template.
+
+**What survives.**  All four arms were treated identically and both
+models were mis-prompted identically, so every *relative* comparison
+holds: per-clause loses, batching hurts on Mistral, and Qwen-1.5B is
+2.0x Mistral-7B.
+
+**What does not.**  The **51-day figure was never the pipeline's
+cost** — the real pipeline prepends a long instruction prompt, which
+changes prefill and stopping behaviour in ways this run cannot
+predict.  Treat it as "the incumbent is far too slow", not as a
+number.  And **every quality figure is uninterpretable**: a model told
+nothing has no stable behaviour to diverge from, which is why Qwen's
+`seq_vs_batch_json` shows 85 of 159 differing against Mistral's 5 of
+19.  The cap-hit comparison against the stored 1 285 records was also
+apples to oranges for the same reason.
+
+**Unexplained and not asserted.**  `clause_seq` and `clause_batch` run
+identical prompts, yet Qwen's cap-hit rates are 0.053 and 0.626.  Too
+large for padding artifacts, but not worth a claim from a mis-prompted
+run.
+
+**Ruled out, not assumed:** the EOS hypothesis.  Qwen's `eos_token` is
+`<|im_end|>` (151645) and matches its config, so stopping was
+configured correctly; the fault is upstream, and
+`add_eos_token=True` — correct for the fine-tuning setup it was copied
+from, wrong for generation — leaves Qwen at a turn boundary with no
+assistant cue.
+
+#### Qwen2.5-1.5B against Mistral-7B — 2026-09-14
+
+Same 20 treatments and seed, Qwen in bf16 (bnb-4bit is a memory
+optimisation; at 1.5 B the dequantisation kernel would dominate).
+**Subject to the caveat above.**
+
+| arm | Qwen 1.5B bf16 | Mistral 7B 4-bit | ratio |
+|---|---:|---:|---:|
+| `whole` | **27.07** | 54.46 | **2.01x** |
+| `whole_512` | 14.93 | 37.88 | 2.54x |
+| `clause_seq` | 41.01 | 157.02 | 3.83x |
+| `clause_batch` | 33.42 | 238.66 | 7.14x |
+
+25 days over the corpus against 51.  Better, still not shippable.
+
+**Batching reverses between the models, which is why the batched arms
+are kept.**  On Mistral, `clause_batch` is *slower* than `clause_seq`
+(238.66 against 157.02).  On Qwen it is **faster** (33.42 against
+41.01).  The penalty mechanism — a batch decodes until its longest
+member finishes — scales with output-length variance, and
+mis-prompting inflates exactly that.  So "batching hurts" is not a
+settled property; it is a Mistral-at-this-prompt property.
+
+**The untested configuration** is batching *whole descriptions across
+treatments*.  `whole` carries one item per treatment at batch size 1,
+so the incumbent has never been batched at all.
+
 #### Two caveats on the instrument, both recorded rather than buried
 
 * **Batching changes the ANSWER, not just the timing — 5 of 19.**
