@@ -483,6 +483,77 @@ configured correctly; the fault is upstream, and
 from, wrong for generation — leaves Qwen at a turn boundary with no
 assistant cue.
 
+#### R2: the re-run with proper prompting OVERTURNS R1 — 2026-09-14
+
+Same 20 treatments, seed 20260910, now with each model's own chat
+template and the pipeline's `DEFAULT_PROMPT` on the `whole` arm.
+
+| model | quant | whole | whole_512 | clause_seq | clause_batch | cap-hits |
+|---|---|---:|---:|---:|---:|---:|
+| Mistral-7B | 4-bit | 64.25 | 42.50 | 79.46 | 141.04 | 0.20 |
+| Mistral-7B | **bf16** | 56.00 | 38.92 | 69.77 | **35.65** | 0.20 |
+| Qwen2.5-1.5B | bf16 | **17.10** | **13.04** | 30.61 | 16.47 | 0.10 |
+| Qwen2.5-7B | 4-bit | 54.79 | 38.60 | 78.88 | 121.58 | 0.20 |
+| Phi-3.5-mini | bf16 | — | — | — | — | **20/20 failed** |
+
+**1. The incumbent is slower than R1 said.**  54.46 → **64.25
+s/treatment**, because `DEFAULT_PROMPT` adds real prefill that the bare
+description did not.  The honest baseline is **60.6 days**, not 51.
+R1's figure flattered the incumbent.
+
+**2. Per-clause batched WINS on bf16 — R1's headline is reversed.**
+35.65 against 56.00 for `whole`, **1.57x faster**.  On 4-bit the same
+arm is catastrophic (141.04).  So *"batching hurts"* was never a
+property of batching; it was a property of **bnb-4bit**.  R1 measured
+one quantisation and generalised.
+
+**3. bf16 beats 4-bit — R8 answered.**  1.15x on `whole`, **4x** on
+`clause_batch`.  The 17 GB left idle was costing throughput, exactly as
+the near-idle-GPU measurement suggested.
+
+**4. Size beats family.**  Qwen2.5-7B (54.79) ≈ Mistral-7B (64.25) at
+the same quantisation, while Qwen2.5-1.5B is **3.8x the incumbent**.
+Best configuration measured so far is **Qwen2.5-1.5B bf16 at
+`whole_512`: 13.04 s/treatment ≈ 12 days** — still not shippable, but
+five times better than where R1 left it.
+
+**Independent evidence the prompt fix worked:** cap-hits fell from
+0.30–0.65 to **0.10–0.20**.  Models now stop on their own instead of
+running to the cap, which is what an instruction-tuned model does when
+it is actually given an instruction.
+
+**Phi-3.5-mini failed all 20 generations** and is excluded pending
+diagnosis.  The harness swallowed the exceptions by design — a bad
+prompt must not kill a run — but it records `failures` without the
+*reason*, and that gap cost a whole model's data.  Worth fixing.
+
+#### R9a: vLLM works on this Blackwell card — 2026-09-14
+
+Built from source into `skol-vllm312`: **vllm 0.29.1rc1.dev91**, torch
+2.13.0+cu130, CUDA 13.1, sm_120, conda-forge g++-14 as CUDA host
+compiler.  Loads Mistral-7B in bf16, captures CUDA graphs, generates.
+Load 501 s (mostly one-time graph capture), generate 2.29 s.
+
+Four blockers on the way, each of which would have been a silent trap:
+the torch pin (2.13.0 against `skol3.14`'s 2.12.0, which would have
+been swapped under a running benchmark); a user-global pip config
+pointing at a dead `pypi.ngc.nvidia.com` and a **cu129** index on a
+cu130 box; and the host compiler — CUDA 12.9 refuses gcc > 14 outright,
+CUDA 13.1 with gcc-15 hits an `rsqrt` exception-specification clash in
+the glibc headers, and the distro ships `gcc-14` with **no matching
+`g++-14`**.
+
+*A fourth was misdiagnosed and is recorded for honesty: I attributed an
+early failure to Python 3.14 via `mistral_common`, reading pip's
+backtracking through versions 1.6–1.8 as the cause.  `mistral_common`
+is at 1.11.7 with `requires_python <3.15`, and vLLM requires >= 1.11.6,
+so 3.14 was never excluded.  Both failures were the compiler.  The
+separate env is still right — because of **torch**, not Python.*
+
+**Note for R9b:** a hand-formatted `<s>[INST]…` string gets a second
+BOS from vLLM.  Formatting belongs to the server's chat endpoint, not
+to us.
+
 #### The GPU is nearly idle at batch 1 — 2026-09-14
 
 Operator, watching the Mistral run: *"the mistral-7B model is only
