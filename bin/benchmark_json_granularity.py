@@ -94,6 +94,9 @@ def batched_generate(
       attend to padding and decode differently than they would alone,
       which would make ``clause_batch``'s outputs incomparable to
       ``clause_seq``'s while appearing to differ only in speed.
+    * **Optional JSON stopping.**  ``stop_on_json`` is OFF by default:
+      R1, R2 and R8 were all measured without it, and changing what the
+      incumbent means would make the series incomparable.
     * **A per-sequence slice.**  Left padding makes every row the same
       width so one shared offset happens to work, but it is derived
       from the encoded width rather than assumed, so a change of
@@ -124,6 +127,18 @@ def batched_generate(
     pad_id = getattr(tokenizer, 'pad_token_id', None)
     if pad_id is not None:
         kwargs['pad_token_id'] = pad_id
+
+    if stop_on_json:
+        # A FRESH criterion per call: prompt_width differs between
+        # batches, and a reused one would slice at the wrong offset --
+        # silently, and only for batches whose prompts differ in length.
+        from transformers import StoppingCriteriaList  # noqa: PLC0415
+
+        from treatments_to_structured.json_stop import (  # noqa: PLC0415
+            JsonComplete,
+        )
+        kwargs['stopping_criteria'] = StoppingCriteriaList(
+            [JsonComplete(tokenizer, prompt_width)])
 
     import torch                                    # noqa: PLC0415
     with torch.no_grad():
@@ -333,6 +348,9 @@ def main() -> int:
     parser.add_argument('--seed', type=int, default=20260910)
     parser.add_argument('--base-model', default=BASE_MODEL_ID)
     parser.add_argument('--report', help='write the JSON report here')
+    parser.add_argument('--stop-on-json', action='store_true',
+                        help='stop each sequence once its JSON closes; off '
+                             'by default so earlier runs stay comparable')
     parser.add_argument('--trust-remote-code', action='store_true',
                         help='run the model repo\'s own modeling code; off by '
                              'default because it goes stale against newer '
@@ -377,7 +395,8 @@ def main() -> int:
 
             def gen(prompts: List[str], _cap: int = cap) -> List[str]:
                 return batched_generate(model, tok, prompts,
-                                        device='cuda', max_new_tokens=_cap)
+                                        device='cuda', max_new_tokens=_cap,
+                                        stop_on_json=args.stop_on_json)
 
             t = run_workload(w, gen)
             prev = merged.get(w.arm)
@@ -396,6 +415,7 @@ def main() -> int:
         'model': args.base_model,
         'quantization': '4bit' if not args.no_4bit else 'bf16',
         'prompting': 'chat_template+DEFAULT_PROMPT',
+        'stop_on_json': bool(args.stop_on_json),
         'arms': summarize(timings, treatments=len(pairs)),
         'cap_hits': {t.arm: cap_hit_rate(t.outputs, tok, cap=ARM_CAPS[t.arm])
                      for t in timings},

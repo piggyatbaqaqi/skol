@@ -329,14 +329,12 @@ class TestStopOnJson:
         batched_generate(model, tok, ['abc'], device='cpu')
         assert model.saw_stopping is None
 
-    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
     def test_enabling_it_passes_criteria(self) -> None:
         tok, model = _FakeTokenizer(), _FakeModel()
         batched_generate(model, tok, ['abc'], device='cpu',
                          stop_on_json=True)
         assert model.saw_stopping is not None
 
-    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
     def test_the_criterion_is_given_the_encoded_prompt_width(self) -> None:
         """A different layer from `json_stop_test`'s
         `test_json_in_the_prompt_does_not_satisfy_it`: that one asserts
@@ -350,7 +348,6 @@ class TestStopOnJson:
         crit = model.saw_stopping[0]
         assert crit.prompt_width == len('{"example": 1}')
 
-    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
     def test_a_fresh_criterion_per_call(self) -> None:
         """Prompt width differs between batches, so a criterion reused
         across calls would slice at the wrong offset — silently, and
