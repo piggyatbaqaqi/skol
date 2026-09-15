@@ -427,7 +427,6 @@ class TestFailuresRecordTheirReason:
         t = run_workload(Workload('whole', ['a'], 1), lambda p: ['{}'])
         assert t.failure_reasons == ()
 
-    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
     def test_the_type_and_message_are_both_kept(self) -> None:
         """The type alone would not have identified Phi's problem, and
         the message alone would not say it was an AttributeError."""
@@ -437,14 +436,12 @@ class TestFailuresRecordTheirReason:
         assert 'AttributeError' in t.failure_reasons[0]
         assert 'seen_tokens' in t.failure_reasons[0]
 
-    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
     def test_one_cause_failing_many_times_is_recorded_once(self) -> None:
         t = run_workload(Workload('clause_seq', ['a'] * 20, 1),
                          self._boom(RuntimeError('cuda oom')))
         assert t.failures == 20
         assert len(t.failure_reasons) == 1
 
-    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
     def test_distinct_causes_are_all_kept(self) -> None:
         """A run that fails two ways is a different problem from one
         that fails one way, and the count cannot tell them apart."""
@@ -459,7 +456,6 @@ class TestFailuresRecordTheirReason:
         assert t.failures == 6
         assert len(t.failure_reasons) == 2
 
-    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
     def test_a_huge_message_is_truncated(self) -> None:
         """Some libraries put a whole traceback in the message. The
         report has to stay readable."""
@@ -467,7 +463,6 @@ class TestFailuresRecordTheirReason:
                          self._boom(RuntimeError('x' * 5000)))
         assert len(t.failure_reasons[0]) < 600
 
-    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
     def test_the_reason_reaches_the_report(self) -> None:
         """Keeping it on the Timing but not in summarize would leave the
         JSON exactly as uninformative as it was."""

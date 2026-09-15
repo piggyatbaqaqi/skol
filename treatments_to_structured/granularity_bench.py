@@ -40,6 +40,10 @@ CLAUSE_TASK = (
 #: per-clause premise fails.
 KILL_SPEEDUP = 3.0
 
+#: Cap on one recorded failure message.  Some libraries put a whole
+#: traceback in the exception text and the report has to stay readable.
+REASON_CHARS = 400
+
 
 @dataclass(frozen=True)
 class Workload:
@@ -75,7 +79,7 @@ class Timing:
     #: Distinct ``Type: message`` strings for the calls that raised.
     #: Distinct rather than one-per-call: ``failures`` already carries
     #: the count, and 4 096 identical strings is the same information
-    #: at 4 096 times the size.  Skeleton -- not yet populated.
+    #: at 4 096 times the size.
     failure_reasons: Tuple[str, ...] = ()
 
 
@@ -149,14 +153,21 @@ def run_workload(
 
     calls = done = failures = chars = 0
     outputs: List[Optional[str]] = []
+    reasons: List[str] = []
     started = time.perf_counter()
     for i in range(0, len(items), size):
         batch = items[i:i + size]
         calls += 1
         try:
             out = generate_fn(batch)
-        except Exception:                    # noqa: BLE001 - see docstring
+        except Exception as exc:             # noqa: BLE001 - see docstring
             failures += 1
+            # Type AND message: the type alone would not have named
+            # Phi-3.5's stale vendored modeling code, and the message
+            # alone would not have said it was an AttributeError.
+            reason = f'{type(exc).__name__}: {exc}'[:REASON_CHARS]
+            if reason not in reasons:
+                reasons.append(reason)
             # Placeholders, not omissions: position is the join key
             # between clause_seq and clause_batch, so a dropped entry
             # would shift every later output left and compare unrelated
@@ -170,7 +181,7 @@ def run_workload(
 
     return Timing(workload.arm, items=done, calls=calls, seconds=seconds,
                   output_chars=chars, failures=failures,
-                  outputs=tuple(outputs))
+                  outputs=tuple(outputs), failure_reasons=tuple(reasons))
 
 
 def summarize(
@@ -201,6 +212,9 @@ def summarize(
             'seconds': t.seconds,
             'output_chars': t.output_chars,
             'failures': t.failures,
+            # Without this the JSON is as uninformative as the report
+            # that said Phi-3.5 failed 20 times and nothing else.
+            'failure_reasons': list(t.failure_reasons),
             'speedup': speedup,
             # An arm that dropped work has not earned a verdict, however
             # fast the surviving prompts were.

@@ -54,11 +54,32 @@ def json_is_complete(text: str) -> bool:
 
 class JsonComplete:
     """``transformers`` stopping criterion wrapping
-    :func:`json_is_complete`.  Skeleton."""
+    :func:`json_is_complete`.
+
+    Construct with the tokenizer and the width of the encoded prompt,
+    then pass in ``stopping_criteria``.
+
+    **Decodes only the continuation.**  The prompt carries the
+    pipeline's ``DEFAULT_PROMPT``, which contains JSON examples, so
+    scoring the whole row would satisfy the criterion before the model
+    had written a token and every generation would come back empty.
+
+    **Answers per sequence.**  ``transformers`` accepts a bool tensor,
+    one entry per row.  A scalar would stop the whole batch the moment
+    any member closed, truncating the rest mid-object — the same
+    run-to-the-slowest coupling that made the batched arm useless, but
+    in the opposite direction.
+    """
 
     def __init__(self, tokenizer: Any, prompt_width: int):
         self.tokenizer = tokenizer
         self.prompt_width = prompt_width
 
     def __call__(self, input_ids: Any, scores: Any, **kwargs: Any) -> Any:
-        raise NotImplementedError
+        import torch                                  # noqa: PLC0415
+        done = [
+            json_is_complete(self.tokenizer.decode(
+                row[self.prompt_width:], skip_special_tokens=True))
+            for row in input_ids
+        ]
+        return torch.tensor(done, dtype=torch.bool, device=input_ids.device)
