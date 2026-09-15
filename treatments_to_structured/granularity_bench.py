@@ -72,6 +72,11 @@ class Timing:
     #: near-tie, so identical output is expected but not guaranteed and
     #: has to be measured rather than assumed.
     outputs: Tuple[Optional[str], ...] = ()
+    #: Distinct ``Type: message`` strings for the calls that raised.
+    #: Distinct rather than one-per-call: ``failures`` already carries
+    #: the count, and 4 096 identical strings is the same information
+    #: at 4 096 times the size.  Skeleton -- not yet populated.
+    failure_reasons: Tuple[str, ...] = ()
 
 
 def build_workloads(

@@ -35,6 +35,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from treatments_to_structured.json_stop import (  # noqa: E402
+    JsonComplete,
     json_is_complete,
 )
 
@@ -110,3 +111,72 @@ class TestJsonIsComplete:
         on the first stray brace the model emits."""
         assert json_is_complete('}') is False
         assert json_is_complete('oh dear }') is False
+
+
+class _FakeTok:
+    """Decodes one character per token id, ignoring ids below 32."""
+
+    def decode(self, row, skip_special_tokens=True):
+        return ''.join(chr(int(t)) for t in row if int(t) >= 32)
+
+
+def _ids(*rows: str):
+    import torch
+    width = max(len(r) for r in rows)
+    return torch.tensor([[ord(c) for c in r.ljust(width, ' ')] for r in rows])
+
+
+class TestJsonCompleteCriterion:
+    """The ``transformers`` wrapper around :func:`json_is_complete`.
+
+    Two things it must get right, and both are silent when wrong:
+
+    * **Decode only the continuation.**  The prompt now carries
+      ``DEFAULT_PROMPT``, which contains JSON examples — scoring the
+      whole row would satisfy the criterion before the model has
+      written a single token, and every generation would return empty.
+    * **Answer per sequence.**  ``transformers`` takes a bool tensor,
+      one entry per row.  Returning a scalar would stop the whole batch
+      as soon as any member finished and truncate the rest.
+    """
+
+    @pytest.mark.xfail(strict=True, reason="JsonComplete not implemented")
+    def test_a_finished_row_reports_true(self) -> None:
+        ids = _ids('PROMPT{"a": 1}')
+        assert bool(JsonComplete(_FakeTok(), 6)(ids, None)[0]) is True
+
+    @pytest.mark.xfail(strict=True, reason="JsonComplete not implemented")
+    def test_an_unfinished_row_reports_false(self) -> None:
+        ids = _ids('PROMPT{"a": 1')
+        assert bool(JsonComplete(_FakeTok(), 6)(ids, None)[0]) is False
+
+    @pytest.mark.xfail(strict=True, reason="JsonComplete not implemented")
+    def test_json_in_the_prompt_does_not_satisfy_it(self) -> None:
+        """DEFAULT_PROMPT contains JSON examples. Scoring the whole row
+        would stop generation at step one, every time."""
+        ids = _ids('{"example": 1}')
+        assert bool(JsonComplete(_FakeTok(), 14)(ids, None)[0]) is False
+
+    @pytest.mark.xfail(strict=True, reason="JsonComplete not implemented")
+    def test_the_answer_is_per_sequence_not_a_scalar(self) -> None:
+        """A scalar would stop the whole batch when any member closed,
+        truncating the others mid-object."""
+        ids = _ids('PROMPT{"a": 1}', 'PROMPT{"b": 2')
+        out = JsonComplete(_FakeTok(), 6)(ids, None)
+        assert len(out) == 2
+        assert bool(out[0]) is True and bool(out[1]) is False
+
+    @pytest.mark.xfail(strict=True, reason="JsonComplete not implemented")
+    def test_an_empty_continuation_is_not_complete(self) -> None:
+        ids = _ids('PROMPT')
+        assert bool(JsonComplete(_FakeTok(), 6)(ids, None)[0]) is False
+
+    @pytest.mark.xfail(strict=True, reason="JsonComplete not implemented")
+    def test_the_result_is_a_bool_tensor_on_the_input_device(self) -> None:
+        """`transformers` indexes it against the running batch, so a
+        list or a float tensor is not interchangeable."""
+        import torch
+        ids = _ids('PROMPT{}')
+        out = JsonComplete(_FakeTok(), 6)(ids, None)
+        assert out.dtype == torch.bool
+        assert out.device == ids.device

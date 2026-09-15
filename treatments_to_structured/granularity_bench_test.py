@@ -399,3 +399,79 @@ class TestPromptsCarryAnInstruction:
         cannot be buried in a function body."""
         assert 'sub-attributes' in CLAUSE_TASK.lower()
         assert '{label}' in CLAUSE_TASK
+
+
+class TestFailuresRecordTheirReason:
+    """Phi-3.5 recorded 20/20 failures on 2026-09-14 and the report said
+    only "20".  Recovering the cause took loading the model by hand and
+    reproducing it; the answer was
+    ``AttributeError: 'DynamicCache' object has no attribute
+    'seen_tokens'`` — Phi's vendored modeling code against a newer
+    transformers, fixed by dropping ``trust_remote_code``.
+
+    Swallowing the exception is right: one bad prompt must not kill a
+    run, and the arms have to stay comparable.  Swallowing the *reason*
+    is not.
+
+    Reasons are kept **distinct**, not one per call: 4 096 identical
+    strings would be the same information at 4 096 times the size, and
+    ``failures`` already carries the count.
+    """
+
+    def _boom(self, exc: Exception):
+        def gen(prompts: list) -> list:
+            raise exc
+        return gen
+
+    def test_a_clean_run_records_none(self) -> None:
+        t = run_workload(Workload('whole', ['a'], 1), lambda p: ['{}'])
+        assert t.failure_reasons == ()
+
+    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
+    def test_the_type_and_message_are_both_kept(self) -> None:
+        """The type alone would not have identified Phi's problem, and
+        the message alone would not say it was an AttributeError."""
+        t = run_workload(Workload('whole', ['a'], 1),
+                         self._boom(AttributeError('no attribute seen_tokens')))
+        assert len(t.failure_reasons) == 1
+        assert 'AttributeError' in t.failure_reasons[0]
+        assert 'seen_tokens' in t.failure_reasons[0]
+
+    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
+    def test_one_cause_failing_many_times_is_recorded_once(self) -> None:
+        t = run_workload(Workload('clause_seq', ['a'] * 20, 1),
+                         self._boom(RuntimeError('cuda oom')))
+        assert t.failures == 20
+        assert len(t.failure_reasons) == 1
+
+    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
+    def test_distinct_causes_are_all_kept(self) -> None:
+        """A run that fails two ways is a different problem from one
+        that fails one way, and the count cannot tell them apart."""
+        seen = {'n': 0}
+
+        def flaky(prompts: list) -> list:
+            seen['n'] += 1
+            raise (RuntimeError('cuda oom') if seen['n'] % 2
+                   else ValueError('bad prompt'))
+
+        t = run_workload(Workload('clause_seq', ['a'] * 6, 1), flaky)
+        assert t.failures == 6
+        assert len(t.failure_reasons) == 2
+
+    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
+    def test_a_huge_message_is_truncated(self) -> None:
+        """Some libraries put a whole traceback in the message. The
+        report has to stay readable."""
+        t = run_workload(Workload('whole', ['a'], 1),
+                         self._boom(RuntimeError('x' * 5000)))
+        assert len(t.failure_reasons[0]) < 600
+
+    @pytest.mark.xfail(strict=True, reason="failure_reasons not implemented")
+    def test_the_reason_reaches_the_report(self) -> None:
+        """Keeping it on the Timing but not in summarize would leave the
+        JSON exactly as uninformative as it was."""
+        t = run_workload(Workload('whole', ['a'], 1),
+                         self._boom(AttributeError('seen_tokens')))
+        row = summarize([t])['whole']
+        assert any('seen_tokens' in r for r in row['failure_reasons'])

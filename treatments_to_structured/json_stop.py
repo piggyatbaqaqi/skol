@@ -30,6 +30,7 @@ gating on a trailing brace would also have to be wrong about
 """
 
 import json
+from typing import Any
 
 _DECODER = json.JSONDecoder()
 
@@ -49,3 +50,15 @@ def json_is_complete(text: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+class JsonComplete:
+    """``transformers`` stopping criterion wrapping
+    :func:`json_is_complete`.  Skeleton."""
+
+    def __init__(self, tokenizer: Any, prompt_width: int):
+        self.tokenizer = tokenizer
+        self.prompt_width = prompt_width
+
+    def __call__(self, input_ids: Any, scores: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError
