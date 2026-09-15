@@ -78,6 +78,7 @@ def batched_generate(
     *,
     device: str = 'cuda',
     max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+    stop_on_json: bool = False,
 ) -> List[Optional[str]]:
     """Generate continuations for a batch of prompts.
 

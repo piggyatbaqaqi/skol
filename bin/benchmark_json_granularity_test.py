@@ -90,10 +90,12 @@ class _FakeModel:
     def __init__(self, continuation='JSON'):
         self.continuation = continuation
         self.saw_kwargs = None
+        self.saw_stopping = None
 
     def generate(self, input_ids=None, attention_mask=None, **kwargs):
         self.saw_kwargs = dict(kwargs)
         self.saw_kwargs['attention_mask'] = attention_mask
+        self.saw_stopping = kwargs.get('stopping_criteria')
         tail = [ord(c) for c in self.continuation]
         return [list(row) + tail for row in input_ids]
 
@@ -299,3 +301,67 @@ class TestExtractJsonOutputs:
         a, b = extract_json_outputs(['x {"a": 1, "b": 2} y',
                                      'z {"b":2,\n"a":1} w'])
         assert _json.loads(a) == _json.loads(b)
+
+
+class TestStopOnJson:
+    """R7's last step: wire the criterion into generation.
+
+    R1 measured 30 % of `whole` generations running to the full
+    1 024-token cap while the extracted JSON is ~294 tokens — the model
+    emits its JSON and keeps talking.  Lowering the cap buys 1.44x by
+    truncating twice as many outputs; stopping when the object closes
+    truncates nothing.
+
+    Off by default, because every number recorded so far — R1, R2, R8 —
+    was measured without it, and silently changing what the incumbent
+    means would make the whole series incomparable.
+
+    Scope: this class covers the WIRING only.  The criterion's own
+    behaviour is `json_stop_test.TestJsonCompleteCriterion`, and the
+    continuation slicing is `TestBatchedGenerate` above — a test here
+    for either would pass whether or not this feature worked.
+    """
+
+    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
+    def test_off_by_default_passes_no_criteria(self) -> None:
+        """Back-compatibility is the point: R2's table has to stay
+        reproducible from the same code path."""
+        tok, model = _FakeTokenizer(), _FakeModel()
+        batched_generate(model, tok, ['abc'], device='cpu')
+        assert model.saw_stopping is None
+
+    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
+    def test_enabling_it_passes_criteria(self) -> None:
+        tok, model = _FakeTokenizer(), _FakeModel()
+        batched_generate(model, tok, ['abc'], device='cpu',
+                         stop_on_json=True)
+        assert model.saw_stopping is not None
+
+    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
+    def test_the_criterion_is_given_the_encoded_prompt_width(self) -> None:
+        """A different layer from `json_stop_test`'s
+        `test_json_in_the_prompt_does_not_satisfy_it`: that one asserts
+        the criterion behaves correctly GIVEN a width, this one asserts
+        the caller SUPPLIES the right width.  Get it wrong and the
+        prompt's own JSON examples satisfy the criterion at step one,
+        so every generation returns empty — for every prompt, silently."""
+        tok, model = _FakeTokenizer(), _FakeModel()
+        batched_generate(model, tok, ['{"example": 1}'], device='cpu',
+                         stop_on_json=True)
+        crit = model.saw_stopping[0]
+        assert crit.prompt_width == len('{"example": 1}')
+
+    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
+    def test_a_fresh_criterion_per_call(self) -> None:
+        """Prompt width differs between batches, so a criterion reused
+        across calls would slice at the wrong offset — silently, and
+        only for the batches whose prompts are a different length."""
+        tok, model = _FakeTokenizer(), _FakeModel()
+        batched_generate(model, tok, ['short'], device='cpu',
+                         stop_on_json=True)
+        first = model.saw_stopping[0]
+        batched_generate(model, tok, ['a much longer prompt'], device='cpu',
+                         stop_on_json=True)
+        second = model.saw_stopping[0]
+        assert first is not second
+        assert first.prompt_width != second.prompt_width
