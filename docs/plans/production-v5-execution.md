@@ -483,6 +483,75 @@ configured correctly; the fault is upstream, and
 from, wrong for generation — leaves Qwen at a turn boundary with no
 assistant cue.
 
+#### What a grammar can and cannot fix — 2026-09-15
+
+Operator, reading the model outputs: *"If a model gives `thin, whitish
+or yellow, hyphal or subiculum-like` instead of breaking those into
+separate features `{"thickness": "thin", "color": ["whitish",
+"yellow"], "composition": ["hyphal", "subiculum-like"]}` — is that
+something a grammar could fix?  Or is it a model issue?"*
+
+**Both halves have different answers, and the binding constraint is
+neither.**
+
+**Structure: a grammar fixes it outright.**  If the schema declares
+`Subiculum → {thickness, color: [], composition: []}`, constrained
+decoding makes emitting one blob *impossible* — the token sequence
+cannot match the grammar.  A hard guarantee, not a nudge.
+
+**Assignment: the grammar cannot decide it.**  Whether `thin` lands in
+`thickness` is semantic.  But forcing the slots changes the task from
+"describe this" to "what is the thickness?", and models are markedly
+better at slot-filling than at open description, so assignment tends to
+improve as a side effect — indirectly, not by construction.
+
+**What actually blocks it: there are no slots to enforce.**  Measured
+on `…_02_57_features_canonical`:
+
+| | |
+|---|---:|
+| canonical spans | 25 882 |
+| `attribute_path` **depth 1** | **25 373 (98.0 %)** |
+| depth 2 | 509 |
+| spans containing a comma | 19 946 (77 %) |
+| spans containing " or " | 5 257 (20 %) |
+
+Phase 1 labels `Subiculum` and stops.  There is no
+`Subiculum → {thickness, color, composition}` anywhere to compile a
+grammar *from*, while the decomposable structure sits in the source
+text unlabelled — 77 % of spans carry a comma.  The operator's example
+is real rather than hypothetical; here is a live span:
+
+> `Context` — `"thin, rigid context, reddish brown color"`
+
+**Point a grammar at today's schema and it will faithfully enforce
+`Subiculum → one string` — the blob — forever.**
+
+**So the ordering is R5a → R5b → model, and R5a carries the weight.**
+If Pass A induces the slots, the grammar enforces them mechanically.
+If it does not, R5b compiles a grammar that blesses the current
+behaviour.
+
+**A trap to design for now, not later.**  Required slots are what force
+decomposition; optional slots let the model blob again.  But a required
+`color` on a clause that never mentions colour invites invention.  The
+primitive is already settled in this project: **absence is a *value*
+(`presence: absent`), not a suppression.**  An explicit "not stated"
+makes required slots safe.
+
+Decomposition is compatible with
+[structured-form-schema.md](../structured-form-schema.md)'s
+verbatim-values decision — `thin`, `whitish`, `yellow`, `hyphal`,
+`subiculum-like` are all verbatim substrings.  It is splitting, not
+paraphrasing.
+
+**Same problem as T6, seen from the other side.**  T6 of the annotation
+plan requires partitioning labels into organ-names and property-names
+before trusting the singleton rate.  `thickness` and `color` are
+properties with nowhere to live, so they are absorbed into the organ's
+text — which is why the vocabulary looks flat and why the singleton
+rate is hard to read.
+
 #### R7: the stop condition is a no-op, because R2 already won it — 2026-09-15
 
 Mistral-7B bf16, 20 treatments, seed 20260910, `--stop-on-json` the
