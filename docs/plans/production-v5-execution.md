@@ -483,6 +483,55 @@ configured correctly; the fault is upstream, and
 from, wrong for generation — leaves Qwen at a turn boundary with no
 assistant cue.
 
+#### R7: the stop condition is a no-op, because R2 already won it — 2026-09-15
+
+Mistral-7B bf16, 20 treatments, seed 20260910, `--stop-on-json` the
+only difference between the two runs.
+
+| arm | flag off | flag on |
+|---|---:|---:|
+| `whole` | 56.00 | 56.12 |
+| `whole_512` | 38.91 | 39.01 |
+| `clause_seq` | 69.79 | 68.80 |
+| `clause_batch` | 35.66 | 35.62 |
+
+Cap-hits identical to three decimals in every arm; **18 of 20 `whole`
+outputs byte-identical**, the other two differing by ~4 characters,
+which is kernel nondeterminism rather than the criterion.
+
+**Not a bug — there is nothing to cut.**  Binary-searching each
+persisted output for the point where its JSON first parses:
+
+| arm | n | never closes | JSON closes at (median) | tokens after the close |
+|---|---:|---:|---:|---:|
+| `whole` | 20 | 7 | **100 %** of the output | 0 % median, 0 % max |
+| `clause_seq` | 171 | 6 | **100 %** | 0 % median, 83 % max |
+
+**The model closes its JSON at the very end of what it generates.**
+
+**The premise was invalidated by the prompt fix, and I did not
+re-derive it.**  R7 was justified by R1's *"30 % of generations run to
+the full 1 024-token cap while the extracted JSON is ~294 tokens — the
+model emits its JSON and then keeps talking"*.  That came from the
+**mis-prompted** run: a model given a bare description with no
+instruction has no reason to stop.  Given a real instruction it stops
+on its own.  The corroborating figure is in the same reports —
+**clause-arm cap-hits fell from 0.13 to 0.006**.
+
+The caveat recorded on 2026-09-14 said in terms that R1's absolutes did
+not survive R2.  R7 was then built on one of those absolutes without
+re-checking it against R2, which was one query over data already on
+disk.  Cost: ~2 cu and two hours of GPU.
+
+**What survives:** `json_is_complete` is sound and tested; the flag is
+off by default and harmless; it may still earn its place under vLLM,
+where per-sequence stop strings are native, or on a model that does
+ramble.
+
+**A quality finding falls out of the same table and is NOT a speed
+issue: 7 of 20 whole-description outputs (35 %) never produce a
+complete JSON object at all.**  Worth carrying into R4.
+
 #### R2: the re-run with proper prompting OVERTURNS R1 — 2026-09-14
 
 Same 20 treatments, seed 20260910, now with each model's own chat
