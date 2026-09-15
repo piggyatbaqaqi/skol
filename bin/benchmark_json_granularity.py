@@ -242,7 +242,8 @@ def chat_format_fn(tokenizer: Any) -> Any:
     return fmt
 
 
-def _load_model(base_model_id: str, device: str, load_in_4bit: bool = True):
+def _load_model(base_model_id: str, device: str, load_in_4bit: bool = True,
+                trust_remote_code: bool = False):
     """Load tokenizer and model, matching the pipeline's setup.
 
     ``load_in_4bit`` defaults on because that is what the pipeline does
@@ -263,7 +264,18 @@ def _load_model(base_model_id: str, device: str, load_in_4bit: bool = True):
         base_model_id, padding_side='left', add_eos_token=False)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    kwargs: Dict[str, Any] = {'device_map': 'auto', 'trust_remote_code': True}
+    # trust_remote_code is OFF by default.  It makes HF run the model
+    # repo's own modeling code instead of transformers' maintained
+    # implementation, and that code goes stale: Phi-3.5-mini's
+    # modeling_phi3.py calls `DynamicCache.seen_tokens`, removed in
+    # newer transformers, so every generation raised
+    # `AttributeError: 'DynamicCache' object has no attribute
+    # 'seen_tokens'` and the 2026-09-14 run recorded 20/20 failures.
+    # Without it the built-in Phi3ForCausalLM loads and works.  It also
+    # executes arbitrary code from the Hub, which is a reason to opt in
+    # rather than out.
+    kwargs: Dict[str, Any] = {'device_map': 'auto',
+                              'trust_remote_code': trust_remote_code}
     if load_in_4bit:
         kwargs['quantization_config'] = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_use_double_quant=True,
@@ -320,6 +332,10 @@ def main() -> int:
     parser.add_argument('--seed', type=int, default=20260910)
     parser.add_argument('--base-model', default=BASE_MODEL_ID)
     parser.add_argument('--report', help='write the JSON report here')
+    parser.add_argument('--trust-remote-code', action='store_true',
+                        help='run the model repo\'s own modeling code; off by '
+                             'default because it goes stale against newer '
+                             'transformers and executes Hub code')
     parser.add_argument('--no-4bit', action='store_true',
                         help='load in bf16 instead of bnb-4bit; fairer for '
                              'small models, where dequantisation dominates')
@@ -341,7 +357,8 @@ def main() -> int:
           f'{sum(len(s) for _, s in pairs)} clauses', file=sys.stderr)
 
     tok, model = _load_model(args.base_model, 'cuda',
-                             load_in_4bit=not args.no_4bit)
+                             load_in_4bit=not args.no_4bit,
+                             trust_remote_code=args.trust_remote_code)
     fmt = chat_format_fn(tok)
     # The incumbent arm must carry the pipeline's own task text, or it
     # measures a variant of the pipeline rather than the pipeline.
