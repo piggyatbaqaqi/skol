@@ -322,7 +322,6 @@ class TestStopOnJson:
     for either would pass whether or not this feature worked.
     """
 
-    @pytest.mark.xfail(strict=True, reason="stop_on_json not implemented")
     def test_off_by_default_passes_no_criteria(self) -> None:
         """Back-compatibility is the point: R2's table has to stay
         reproducible from the same code path."""
