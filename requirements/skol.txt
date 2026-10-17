@@ -1,6 +1,6 @@
 CouchDB>=1.2
 accelerate>=1.12.0
-huggingface-hub>=0.35.3
+huggingface-hub>=0.35.3,<1.0
 jupyterlab
 mcp>=1.22.0
 neo4j

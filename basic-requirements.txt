@@ -1,7 +1,7 @@
 nvidia-pyindex
 CouchDB
 accelerate
-huggingface-hub
+huggingface-hub<1.0
 jupyterlab
 mcp
 neo4j
