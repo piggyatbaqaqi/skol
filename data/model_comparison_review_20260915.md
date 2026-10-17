@@ -16,11 +16,11 @@ Conflating them makes a model with good extraction and idiosyncratic keys look w
 ## Speed
 
 | model | whole | whole_512 | clause_seq | clause_batch | cap-hits | failures |
-|---|---:|---:|---:|---:|---:|---:|
-| Mistral-7B 4-bit | 64.25 | 42.50 | 79.46 | 141.04 | 0.20 | 0 |
-| Mistral-7B bf16 | 56.00 | 38.92 | 69.77 | 35.65 | 0.20 | 0 |
+|---                |---:|---:|---:|---:|---:|---:|
+| Mistral-7B 4-bit  | 64.25 | 42.50 | 79.46 | 141.04 | 0.20 | 0 |
+| Mistral-7B bf16   | 56.00 | 38.92 | 69.77 | 35.65 | 0.20 | 0 |
 | Qwen2.5-1.5B bf16 | 17.10 | 13.04 | 30.61 | 16.47 | 0.10 | 0 |
-| Qwen2.5-7B 4-bit | 54.79 | 38.60 | 78.88 | 121.58 | 0.20 | 0 |
+| Qwen2.5-7B 4-bit  | 54.79 | 38.60 | 78.88 | 121.58 | 0.20 | 0 |
 | Phi-3.5-mini bf16 | 38.85 | 27.51 | 55.02 | 29.48 | 0.10 | 0 |
 
 Seconds per treatment. Lower is better. 81 527 treatments in the corpus, so 1 s/treatment ≈ 0.94 days.
@@ -128,16 +128,19 @@ Each model saw exactly the same description. Outputs are the *extracted* JSON (w
 ```
 
 **Qwen2.5-1.5B bf16**
+*poor*
 ```json
 {"species": {"name": "Stylonectria applanata", "author": "Höhn. 1915"}, "stroma": ["thin", "whitish or yellow", "hyphal or subiculum-like"], "perithecia": ["gregarious in groups of up to 20", "subglobose", "pyriform to subcylindrical", "with a rounded or broad, circular, flat disc on a venterlike neck", "sometimes laterally collapsing when dry", "pale yellow", "orange-red", "orange-brown", "or pale to dark red", "KOH+ dark red to purple", "yellow in lactic acid", "smooth", "usually shiny", "slightly iridescent", "150–250(–350) μm high"], "perithecial_wall": ["two regions", "inner region of hyaline, thin-walled, compressed, elongate cells", "outer region of distinct, isodiametric to oblong, a
 ```
 
 **Qwen2.5-7B 4-bit**
+*bad*
 ```json
 {"Type species": {"Stylonectria applanata": {"Höhn.": ["1915"], "Stroma": {"description": ["thin, whitish or yellow, hyphal or subiculum-like"]}, "Perithecia": {"description": ["gregarious in groups of up to 20, subglobose, pyriform to subcylindrical, with a rounded or broad, circular, flat disc on a venterlike neck, sometimes laterally collapsing when dry", "pale yellow, orange-red, orange-brown, or pale to dark red", "KOH+ dark red to purple, yellow in lactic acid", "smooth, usually shiny, slightly iridescent", "150–250(–350) μm high"], "wall": {"regions": [{"inner": ["hyaline, thin-walled, compressed, elongate cells"], "outer": ["distinct, isodiametric to oblong, angular or globose, thick
 ```
 
 **Phi-3.5-mini bf16**
+*good*
 ```json
 {"Species": "Stylonectria applanata", "YearOfDescription": "1915", "TaxonomicFeatures": {"Stroma": {"Color": ["thin", "whitish", "yellow"], "Texture": ["hyphal", "subiculum-like"]}, "Perithecia": {"Grouping": ["gregarious"], "Shape": ["subglobose", "pyriform", "subcylindrical"], "Venter": ["rounded", "circular", "flat"], "DryState": ["laterally collapsing"], "Color": ["pale yellow", "orange-red", "orange-brown", "pale to dark red", "KOH+ dark red to purple", "yellow in lactic acid"]}, "PerithecialWall": {"InnerRegion": ["hyaline", "thin-walled", "compressed", "elongate"], "OuterRegion": ["distinct", "isodiametric", "oblong", "angular", "globose", "thick-walled"]}, "Asci": {"Shape": ["cylindr
 ```
@@ -147,6 +150,7 @@ Each model saw exactly the same description. Outputs are the *extracted* JSON (w
 **Description** (1294 chars) — Saprobic on submerged decaying wood. Asexual morph: Colonies superficial, effuse, hairy, scattered, dark brown, with subhyaline, fusiform conidia on the apex of conidiophores. Mycelium mostly immersed, composed of septate, pale brown, smooth hyphae. Conidiophores (70–) 130–230× 3.2–8.4 µm (x̅ = 153.4 × 4.9 µm, n = 15), mononematous, macronematous, erect, unbranched, cylindrical, straight or slightly flexuous, septate, smooth, thick-walled, dark brown at the base, and gradually paler towards the apex. Conidiogenous cells polyblastic, integrated, terminal, sympodially proliferating, subhyaline to pale brown. Conidia (10–) 25–50 × 3–8.5 µm (x̅ = 38.5 × 5.6 µm, n = 40), acrogenous, mostly fusifo
 
 **Mistral-7B 4-bit**
+*excellent*
 ```json
 {"Species": [{"Saprobic_on": ["submerged decaying wood"], "Asexual_morph": {"Colonies": ["superficial", "effuse", "hairy", "scattered", "dark brown"], "Conidia": ["10–25–50 × 3–8.5 µm (x̅ = 38.5 × 5.6 µm, n = 40)", "acrogenous", "fusiform", "clavate", "solitary", "straight or slightly curved", "7–8-septate when mature", "septum darker", "smooth", "subhyaline to pale brown", "with a hilum at the base"], "Mycelium": {"Composition": ["septate", "pale brown", "smooth hyphae"], "Immersed": true}, "Conidiophores": ["70–130–230×3.2–8.4 µm (x̅ = 153.4 × 4.9 µm, n = 15)", "mononematous", "macronematous", "erect", "unbranched", "cylindrical", "straight or slightly flexuous", "septate", "smooth", "thic
 ```
@@ -157,16 +161,19 @@ Each model saw exactly the same description. Outputs are the *extracted* JSON (w
 ```
 
 **Qwen2.5-1.5B bf16**
+*bad*
 ```json
 {"type": "Colonies superficial, effuse, hairy, scattered, dark brown, with subhyaline, fusiform conidia on the apex of conidiophores."}
 ```
 
 **Qwen2.5-7B 4-bit**
+*good*
 ```json
 {"Taxonomic Features": {"Morphology": {"Colonies": {"Description": ["superficial", "effuse", "hairy", "scattered", "dark brown"]}, "Conidia": {"Description": ["subhyaline", "fusiform"], "Dimensions": ["(10–) 25–50 × 3–8.5 µm (x̅ = 38.5 × 5.6 µm, n = 40)"], "Shape": ["acrogenous", "mostly fusiform", "sometimes clavate"], "Position": ["solitary", "straight or slightly curved"], "Septation": ["7–8-septate when mature", "septum darker, sometimes slightly constricted at the septum"], "Surface": ["smooth", "subhyaline to pale brown"], "Hilum": ["with a hilum at the base"]}, "Conidiophores": {"Dimensions": ["(70–) 130–230×3.2–8.4 µm (x̅ = 153.4 × 4.9 µm, n = 15)"], "Structure": ["mononematous", "ma
 ```
 
 **Phi-3.5-mini bf16**
+*bad*
 ```json
 {"Type": "Polyblastic", "Location": "Terminal", "Proliferation": "Sympodially"}
 ```
@@ -176,26 +183,31 @@ Each model saw exactly the same description. Outputs are the *extracted* JSON (w
 **Description** (553 chars) — Type. Geastrum hungaricum Hollós. Diagnosis — Exoperidium more or less saccate to arched when hydrated, strongly hygrometric (pseudoparenchymatous layer with thick-walled cells). Mycelial layer encrusting debris, doublelayered. Endoperidial body sessile. Endoperidial surface gla- brous and covered by a well-developed mesoperidium, composed by generative hyphae and abundant crystalline aggregates of COM, with scarce bipyramidal crystals of COD. Peristome fibrillose and distinctly delimited. Geastrum hungaricum Hollós, Math. Termeszettud. Ertes. 19:
 
 **Mistral-7B 4-bit**
+*ok*
 ```json
 {"Type": {"ScientificName": ["Geastrum hungaricum", "Hollós"], "CommonName": []}, "Diagnosis": {"Exoperidium": {"Description": ["more or less saccate to arched when hydrated", "strongly hygrometric (pseudoparenchymatous layer with thick-walled cells)"]}, "MycelialLayer": {"Description": ["Mycelial layer encrusting debris", "double-layered"]}, "EndoperidialBody": {"Position": ["sessile"]}, "EndoperidialSurface": {"Texture": ["glabrous"], "Coverage": ["covered by a well-developed mesoperidium"], "Components": {"GenerativeHyphae": [], "CrystallineAggregates": ["COM"], "BipyramidalCrystals": ["COD"], "ScarceCrystals": []}}, "Peristome": {"Texture": ["fibrillose"], "Delimitation": ["distinctly de
 ```
 
 **Mistral-7B bf16**
+*bad*
 ```json
 (no JSON extracted)
 ```
 
 **Qwen2.5-1.5B bf16**
+*poor*
 ```json
 {"species": {"name": "Geastrum hungaricum", "author": "Hollós"}, "features": [{"type": "exoperidium", "description": "more or less saccate to arched when hydrated, strongly hygrometric (pseudoparenchymatous layer with thick-walled cells)"}, {"type": "mucoraceous mycelial layer", "description": "encrusting debris, double-layered"}, {"type": "endoperidial body", "description": "sessile"}, {"type": "endoperidial surface", "description": "glabrous and covered by a well-developed mesoperidium, composed by generative hyphae and abundant crystalline aggregates of COM, with scarce bipyramidal crystals of COD."}, {"type": "peristome", "description": "fibrillose and distinctly delimited"}]}
 ```
 
 **Qwen2.5-7B 4-bit**
+*poor*
 ```json
 {"Type": ["Geastrum hungaricum Hollós"], "Diagnosis": {"Exoperidium": ["more or less saccate to arched when hydrated, strongly hygrometric (pseudoparenchymatous layer with thick-walled cells)"], "Mycelial layer": ["encrusting debris, double-layered"], "Endoperidial body": ["sessile"], "Endoperidial surface": ["gla-brous and covered by a well-developed mesoperidium, composed by generative hyphae and abundant crystalline aggregates of COM, with scarce bipyramidal crystals of COD"]}, "Peristome": ["fibrillose and distinctly delimited"]}
 ```
 
 **Phi-3.5-mini bf16**
+*ok*
 ```json
 {"Species": "Geastrum hungaricum", "Author": "Hollós", "Publication": "Termeszettud. Ertes.", "Year": "19", "TaxonomicFeatures": {"Exoperidium": {"Description": "more or less saccate to arched when hydrated", "Characteristics": {"Hygrometric": "strongly", "CellStructure": "pseudoparenchymatous layer with thick-walled cells"}}, "MycelialLayer": {"Description": "encrusting debris, doublelayered"}, "EndoperidialBody": {"Description": "sessile"}, "EndoperidialSurface": {"Description": "gla-grous"}, "Mesoperidium": {"Description": "composed by generative hyphae and abundant crystalline aggregates of COM, with scarce bipyramidal crystals of COD", "Components": {"GenerativeHyphae": "abundant", "COM
 ```
@@ -215,6 +227,7 @@ Each model saw exactly the same description. Outputs are the *extracted* JSON (w
 ```
 
 **Qwen2.5-1.5B bf16**
+*bad*
 ```json
 (no JSON extracted)
 ```
