@@ -242,14 +242,14 @@ def partition_untranslatable_descriptions(
     kept: List[Dict[str, Any]] = []
     dropped: List[str] = []
     for item in items:
-        if _is_translatable(item.get('description') or ''):
+        if is_translatable(item.get('description') or ''):
             kept.append(item)
         else:
             dropped.append(item['_id'])
     return kept, dropped
 
 
-def _is_translatable(text: str) -> bool:
+def is_translatable(text: str) -> bool:
     """True when ``text`` has letters and is less than half U+FFFD."""
     visible = ''.join(text.split())
     if not any(ch.isalpha() for ch in visible):
