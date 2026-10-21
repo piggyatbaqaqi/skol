@@ -22,7 +22,9 @@ Constrained Decoding Support:
 import json
 import multiprocessing as mp
 import os
-from typing import Optional, Dict, Any, Callable, List, Tuple
+from typing import (
+    Any, Callable, Dict, List, Literal, Optional, Tuple, cast, overload,
+)
 
 import torch
 from transformers import (
@@ -34,8 +36,6 @@ from peft import PeftModel
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
-
-from treatment import get_ingest_field
 
 
 def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
@@ -77,7 +77,7 @@ def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
                 if depth == 0:
                     candidate = text[start:i + 1]
                     try:
-                        return json.loads(candidate)
+                        return cast(Dict[str, Any], json.loads(candidate))
                     except json.JSONDecodeError:
                         break  # malformed; try next '{'
         # Either unbalanced (truncated) or malformed; advance to next '{'
@@ -277,7 +277,7 @@ def _raw_generate(model, tokenizer, prompt_template: str, description: str,
             temperature=None,
             top_p=None,
         )
-    return tokenizer.decode(output[0], skip_special_tokens=True)
+    return cast(str, tokenizer.decode(output[0], skip_special_tokens=True))
 
 
 def _translate_description(description: str, translate_chunk_fn, max_length: int) -> str:
@@ -460,7 +460,8 @@ def _inference_worker(descriptions, model_config, batch_size, result_queue, stre
         result_queue.put(('error', str(e) + "\n" + traceback.format_exc()))
 
 
-def _constrained_inference_worker(descriptions, model_config, batch_size, result_queue, streaming=False):
+def _constrained_inference_worker(descriptions, model_config, batch_size,
+                                  result_queue, streaming=False):
     """
     Worker function that runs constrained model inference in an isolated subprocess.
 
@@ -730,24 +731,25 @@ and their values from the provided species description and format them as struct
         self._tokenizer = None
 
         # Track last loaded database for save_taxa default
-        self._last_loaded_db_name = None
+        self._last_loaded_db_name: Optional[str] = None
 
         # Ontology context builder (lazy loaded)
         self._ontology_registry = None
         self._ontology_context_builder = None
 
-        print(f"TreatmentsJSONTranslator initialized")
+        print("TreatmentsJSONTranslator initialized")
         print(f"  CouchDB URL: {couchdb_url}")
         print(f"  Base model: {base_model_id}")
         print(f"  Checkpoint: {checkpoint_path or 'None (using base model)'}")
         print(f"  Device: {device}")
         print(f"  4-bit quantization: {load_in_4bit}")
         if use_constrained_decoding:
-            print(f"  Constrained decoding: ENABLED (schema depth {schema_min_depth}-{schema_max_depth})")
+            print(f"  Constrained decoding: ENABLED "
+                  f"(schema depth {schema_min_depth}-{schema_max_depth})")
         else:
-            print(f"  Constrained decoding: disabled")
+            print("  Constrained decoding: disabled")
         if use_ontology_context:
-            print(f"  Ontology context: ENABLED")
+            print("  Ontology context: ENABLED")
         if max_description_tokens is not None:
             print(f"  Max description tokens: {max_description_tokens}")
 
@@ -845,13 +847,13 @@ and their values from the provided species description and format them as struct
         if builder is None:
             return ""
 
-        return builder.build_context(
+        return cast(str, builder.build_context(
             description,
             anatomy_ontology="fao",
             quality_ontology="pato",
             top_k_per_ontology=15,
             max_context_chars=2000
-        )
+        ))
 
     def _add_ontology_context_to_descriptions(self, descriptions: list) -> list:
         """
@@ -934,7 +936,11 @@ and their values from the provided species description and format them as struct
             StructField("_id", StringType(), False),
             StructField("treatment", StringType(), False),
             StructField("description", StringType(), True),
-            StructField("ingest", MapType(StringType(), StringType(), valueContainsNull=True), True),
+            StructField(
+                "ingest",
+                MapType(StringType(), StringType(), valueContainsNull=True),
+                True,
+            ),
             StructField("line_number", IntegerType(), True),
             StructField("paragraph_number", IntegerType(), True),
             StructField("page_number", IntegerType(), True),
@@ -942,7 +948,9 @@ and their values from the provided species description and format them as struct
         ])
 
         # Use CouchDBConnection to load data
-        conn = CouchDBConnection(self.couchdb_url, db_name, username=self.username, password=self.password)
+        conn = CouchDBConnection(self.couchdb_url, db_name,
+                                 username=self.username,
+                                 password=self.password)
 
         # Get matching document IDs
         doc_ids = conn.get_all_doc_ids(pattern)
@@ -1169,7 +1177,7 @@ and their values from the provided species description and format them as struct
             >>> enriched_df = translator.translate_descriptions(taxa_df)
             >>> enriched_df.select("treatment", "features_json").show(truncate=50)
         """
-        print(f"Translating descriptions to JSON...")
+        print("Translating descriptions to JSON...")
         print(f"  Input column: {description_col}")
         print(f"  Output column: {output_col}")
 
@@ -1218,7 +1226,7 @@ and their values from the provided species description and format them as struct
             ...     taxa_df, batch_size=20
             ... )
         """
-        print(f"Translating descriptions to JSON (batch mode)...")
+        print("Translating descriptions to JSON (batch mode)...")
         print(f"  Input column: {description_col}")
         print(f"  Output column: {output_col}")
         print(f"  Batch size: {batch_size}")
@@ -1278,12 +1286,28 @@ and their values from the provided species description and format them as struct
 
         return enriched_df
 
+    @overload
+    def _run_inference_subprocess(
+        self,
+        descriptions: list,
+        batch_size: int,
+        streaming: Literal[False] = False,
+    ) -> Dict[str, str]: ...
+
+    @overload
+    def _run_inference_subprocess(
+        self,
+        descriptions: list,
+        batch_size: int,
+        streaming: Literal[True],
+    ) -> Tuple[Any, Any]: ...
+
     def _run_inference_subprocess(
         self,
         descriptions: list,
         batch_size: int,
         streaming: bool = False
-    ) -> dict:
+    ) -> Any:
         """
         Run model inference in a subprocess isolated from Spark.
 
@@ -1350,7 +1374,7 @@ and their values from the provided species description and format them as struct
         if status == 'error':
             raise RuntimeError(f"Model inference failed: {result}")
 
-        return result
+        return cast(Dict[str, str], result)
 
     def translate_and_save_streaming(
         self,
@@ -1448,7 +1472,7 @@ and their values from the provided species description and format them as struct
 
         # Step 2: Connect to CouchDB
         if verbosity >= 1:
-            print(f"  Connecting to CouchDB...")
+            print("  Connecting to CouchDB...")
         server = couchdb.Server(self.couchdb_url)
         if self.username and self.password:
             server.resource.credentials = (self.username, self.password)
@@ -1472,7 +1496,7 @@ and their values from the provided species description and format them as struct
             try:
                 obj = json.loads(json_str)
                 return isinstance(obj, dict) and len(obj) > 0
-            except:
+            except (TypeError, ValueError):
                 return False
 
         # Step 3: Start subprocess with streaming=True
@@ -1495,9 +1519,14 @@ and their values from the provided species description and format them as struct
             print("    - Insufficient GPU memory")
             print("    - CUDA/GPU driver issues")
             print("    - Model not found or download failed")
-            print("\n    Try running with verbose output or check the constrained_decoder directly:")
-            print("    python -c 'from skol.constrained_decoder import ConstrainedDecoder; print(\"OK\")'")
-            return 0, len(descriptions)
+            print("\n    Try running with verbose output or check the "
+                  "constrained_decoder directly:")
+            print("    python -c 'from skol.constrained_decoder import "
+                  "ConstrainedDecoder; print(\"OK\")'")
+            # Same shape as the normal return; it used to be a tuple.
+            return {'success_count': 0, 'failure_count': total,
+                    'validation_failures': 0, 'restart_count': 0,
+                    'total': total}
 
         # Step 5: Process results as they arrive
         success_count = 0
@@ -1633,10 +1662,6 @@ and their values from the provided species description and format them as struct
                     # Process and save this record
                     try:
                         ingest = data.get('ingest', {})
-                        ingest_doc_id = str(
-                            ingest.get('_id', 'unknown')
-                        )
-                        ingest_url = ingest.get('url')
                         line_number = data.get('line_number')
 
                         doc_id = generate_taxon_doc_id(
@@ -1784,7 +1809,7 @@ and their values from the provided species description and format them as struct
             >>> print(features.keys())
         """
         json_str = self.generate_json(description)
-        return json.loads(json_str)
+        return cast(Dict[str, Any], json.loads(json_str))
 
     def save_taxa(
         self,
@@ -1828,7 +1853,8 @@ and their values from the provided species description and format them as struct
         if db_name is None:
             if self._last_loaded_db_name is None:
                 raise ValueError(
-                    "db_name must be specified when no database has been loaded via load_treatments()"
+                    "db_name must be specified when no database has been "
+                    "loaded via load_treatments()"
                 )
             db_name = self._last_loaded_db_name
             print(f"Using database from last load_treatments(): {db_name}")
@@ -1881,12 +1907,8 @@ and their values from the provided species description and format them as struct
                     doc_id = "unknown"
 
                     try:
-                        # Convert row to dict for get_ingest_field()
+                        # Convert row to dict
                         row_dict = row.asDict()
-                        # Use ingest field names via get_ingest_field()
-                        source_doc_id = str(get_ingest_field(row_dict, '_id', default='unknown'))
-                        source_url = get_ingest_field(row_dict, 'url')
-                        line_number = row.line_number if hasattr(row, 'line_number') else 0
 
                         # Generate deterministic document ID
                         doc_id = generate_taxon_doc_id(
@@ -1905,7 +1927,8 @@ and their values from the provided species description and format them as struct
                                     # Parse JSON string to dict for storage
                                     taxon_doc['json_annotated'] = json.loads(json_str)
                                 except json.JSONDecodeError:
-                                    print(f"Warning: Invalid JSON in {json_annotated_col} for doc {doc_id}")
+                                    print(f"Warning: Invalid JSON in "
+                                          f"{json_annotated_col} for doc {doc_id}")
                                     taxon_doc['json_annotated'] = {}
                             else:
                                 # Already a dict, just rename the field
@@ -1954,7 +1977,7 @@ and their values from the provided species description and format them as struct
         successes = results_df.filter("success = true").count()
         failures = total - successes
 
-        print(f"✓ Save complete:")
+        print("✓ Save complete:")
         print(f"  Total: {total}")
         print(f"  Successful: {successes}")
         print(f"  Failed: {failures}")
@@ -2019,7 +2042,7 @@ and their values from the provided species description and format them as struct
             try:
                 obj = json.loads(json_str)
                 return isinstance(obj, dict) and len(obj) > 0
-            except:
+            except (TypeError, ValueError):
                 return False
 
         validate_udf = udf(is_valid_json, StringType())
@@ -2033,7 +2056,7 @@ and their values from the provided species description and format them as struct
         valid = validated_df.filter("json_valid = true").count()
         invalid = total - valid
 
-        print(f"JSON Validation Results:")
+        print("JSON Validation Results:")
         print(f"  Total: {total}")
         print(f"  Valid: {valid} ({100*valid/total:.1f}%)")
         print(f"  Invalid: {invalid} ({100*invalid/total:.1f}%)")

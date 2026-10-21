@@ -12,7 +12,8 @@ Usage:
                            [--verbosity LEVEL] [--incremental]
 
 Example:
-    # Default: load from skol_exp_<experiment>_02_00_treatments_prose, save to skol_exp_<experiment>_03_00_treatments_structured
+    # Default: load from skol_exp_<experiment>_02_00_treatments_prose,
+    # save to skol_exp_<experiment>_03_00_treatments_structured
     python treatments_to_json.py
 
     # Specify databases
@@ -49,9 +50,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # Python 3.11+ compatibility: Apply formatargspec shim before importing ML libraries
-import skol_compat  # noqa: F401 (imported for side effects)
+import skol_compat  # noqa: E402,F401 (imported for side effects)
 
-from env_config import common_parser, get_env_config
+from env_config import common_parser, get_env_config  # noqa: E402
 
 
 # ============================================================================
@@ -143,7 +144,7 @@ def translate_treatments_to_json(
     password = config['couchdb_password']
 
     print(f"\n{'='*70}")
-    print(f"Treatments to JSON Translation")
+    print("Treatments to JSON Translation")
     print(f"{'='*70}")
     print(f"CouchDB: {couchdb_url}")
     print(f"Source database: {source_db}")
@@ -155,15 +156,15 @@ def translate_treatments_to_json(
     if checkpoint_path:
         print(f"Model checkpoint: {checkpoint_path}")
     else:
-        print(f"Model checkpoint: None (using base Mistral model)")
+        print("Model checkpoint: None (using base Mistral model)")
     if dry_run:
-        print(f"Mode: DRY RUN (no changes will be saved)")
+        print("Mode: DRY RUN (no changes will be saved)")
     if incremental:
-        print(f"Mode: INCREMENTAL (save each record immediately)")
+        print("Mode: INCREMENTAL (save each record immediately)")
     if skip_existing and not force:
-        print(f"Mode: SKIP EXISTING (skip records already in destination)")
+        print("Mode: SKIP EXISTING (skip records already in destination)")
     if force:
-        print(f"Mode: FORCE (process even if output exists)")
+        print("Mode: FORCE (process even if output exists)")
     if doc_ids:
         print(f"Processing specific doc_ids: {len(doc_ids)} documents")
     if recompute_invalid:
@@ -176,11 +177,11 @@ def translate_treatments_to_json(
     if normalize_vocabulary:
         print(f"Vocabulary normalization: ENABLED (threshold={normalization_threshold})")
     if analyze_coverage:
-        print(f"Coverage analysis: ENABLED")
+        print("Coverage analysis: ENABLED")
     if graceful_degradation:
         print(f"Graceful degradation: ENABLED (preserve_threshold={preserve_threshold})")
         if include_annotations:
-            print(f"  Include annotations: YES")
+            print("  Include annotations: YES")
     print()
 
     # Initialize Spark
@@ -256,7 +257,7 @@ def translate_treatments_to_json(
             loaded_count = filtered_count
 
             if loaded_count == 0:
-                print(f"\n⚠ No taxa found for specified doc_ids")
+                print("\n⚠ No taxa found for specified doc_ids")
                 return
 
         # Filter to only invalid records if recompute_invalid is set
@@ -280,7 +281,8 @@ def translate_treatments_to_json(
                         doc = dest_db_conn[doc_id]
                         json_annotated = doc.get('json_annotated')
                         json_valid = doc.get('json_valid')
-                        # Invalid if: no json_annotated, empty json_annotated, or explicitly marked invalid
+                        # Invalid if: no or empty json_annotated, or
+                        # explicitly marked invalid
                         if not json_annotated or json_valid == 'false':
                             invalid_ids.add(doc_id)
                     except Exception:
@@ -314,7 +316,7 @@ def translate_treatments_to_json(
             loaded_count = filtered_count
 
             if loaded_count == 0:
-                print(f"\n⚠ No matching taxa found in source for invalid records")
+                print("\n⚠ No matching taxa found in source for invalid records")
                 return
 
         # Skip existing records if requested (unless --force)
@@ -391,14 +393,16 @@ def translate_treatments_to_json(
             print("\nSample taxa:")
             sample_rows = taxa_df.select("_id", "treatment").limit(3).collect()
             for row in sample_rows:
-                treatment_preview = row['treatment'][:80] + '...' if len(row['treatment']) > 80 else row['treatment']
+                treatment_preview = (
+                    row['treatment'][:80] + '...'
+                    if len(row['treatment']) > 80 else row['treatment'])
                 print(f"  {row['_id']}: {treatment_preview}")
 
         # Handle dry run
         if dry_run:
             print(f"\n[DRY RUN] Would process {total_count} taxa")
             print(f"[DRY RUN] Source: {source_db} -> Destination: {dest_db}")
-            print(f"[DRY RUN] No changes have been made")
+            print("[DRY RUN] No changes have been made")
             return
 
         # Process based on mode
@@ -407,7 +411,7 @@ def translate_treatments_to_json(
             if verbosity >= 1:
                 print(f"\nTranslating and saving {total_count} descriptions incrementally...")
 
-            results = translator.translate_and_save_streaming(
+            translator.translate_and_save_streaming(
                 taxa_df,
                 db_name=dest_db,
                 description_col="description",
@@ -446,7 +450,9 @@ def translate_treatments_to_json(
                     print(f"⚠ {invalid_count} descriptions produced invalid JSON")
                     if verbosity >= 2:
                         print("\nInvalid entries:")
-                        invalid_rows = validated_df.filter("json_valid = 'false'").select("_id", "treatment").limit(5).collect()
+                        invalid_rows = (
+                            validated_df.filter("json_valid = 'false'")
+                            .select("_id", "treatment").limit(5).collect())
                         for row in invalid_rows:
                             print(f"  - {row['_id']}")
             else:
@@ -475,7 +481,9 @@ def translate_treatments_to_json(
 
                 if verbosity >= 2:
                     print("\nFailed entries:")
-                    failed_rows = results_df.filter("success = false").select("doc_id", "error_message").limit(5).collect()
+                    failed_rows = (
+                        results_df.filter("success = false")
+                        .select("doc_id", "error_message").limit(5).collect())
                     for row in failed_rows:
                         print(f"  - {row['doc_id']}: {row['error_message']}")
 
@@ -543,7 +551,6 @@ def run_coverage_analysis(
         limit: Maximum number of documents to analyze
         verbosity: Verbosity level
     """
-    import json
     import couchdb
 
     from skol.ontology import (
@@ -692,7 +699,6 @@ def run_graceful_degradation_analysis(
         limit: Maximum number of documents to analyze
         verbosity: Verbosity level
     """
-    import json
     import couchdb
 
     from skol.ontology import (
@@ -806,10 +812,11 @@ def run_graceful_degradation_analysis(
 
         aggregate_summary = pipeline.degradation_handler.summarize(all_terms)
         print(f"Total terms across all documents: {aggregate_summary['total']}")
-        print(f"  HIGH:   {aggregate_summary['high']['count']:5d} ({aggregate_summary['high']['percent']:.1f}%)")
-        print(f"  MEDIUM: {aggregate_summary['medium']['count']:5d} ({aggregate_summary['medium']['percent']:.1f}%)")
-        print(f"  LOW:    {aggregate_summary['low']['count']:5d} ({aggregate_summary['low']['percent']:.1f}%)")
-        print(f"  NOVEL:  {aggregate_summary['novel']['count']:5d} ({aggregate_summary['novel']['percent']:.1f}%)")
+        for level in ('high', 'medium', 'low', 'novel'):
+            bucket = aggregate_summary[level]
+            label = f"{level.upper()}:"
+            print(f"  {label:<7} {bucket['count']:5d} "
+                  f"({bucket['percent']:.1f}%)")
 
 
 # ============================================================================
@@ -850,7 +857,8 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
         parents=[common_parser()],
-        description='Convert taxa descriptions to structured JSON using a fine-tuned Mistral model',
+        description=('Convert taxa descriptions to structured JSON using a '
+                     'fine-tuned Mistral model'),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Work Control Options (from env_config):
@@ -945,7 +953,8 @@ Examples:
         type=str,
         default=os.environ.get('SKOL_BASE_MODEL'),
         metavar='MODEL_ID',
-        help='HuggingFace model ID (default: mistralai/Mistral-7B-Instruct-v0.3, or $SKOL_BASE_MODEL)'
+        help=('HuggingFace model ID (default: '
+              'mistralai/Mistral-7B-Instruct-v0.3, or $SKOL_BASE_MODEL)')
     )
 
     parser.add_argument(
@@ -964,15 +973,11 @@ Examples:
         help=f'Number of descriptions per batch (default: {DEFAULT_BATCH_SIZE})'
     )
 
-
     parser.add_argument(
         '--no-validate',
         action='store_true',
         help='Skip JSON validation step'
     )
-
-
-
 
     parser.add_argument(
         '--recompute-invalid',
@@ -1015,7 +1020,8 @@ Examples:
         type=str,
         default=None,
         metavar='PATH',
-        help='Directory containing pato.obo and fao.obo (default: $ONTOLOGY_DIR or /opt/skol/data/ontologies/)'
+        help=('Directory containing pato.obo and fao.obo (default: '
+              '$ONTOLOGY_DIR or /opt/skol/data/ontologies/)')
     )
 
     parser.add_argument(
@@ -1084,7 +1090,6 @@ Examples:
               'higher N picks them up (default: $MAX_DESCRIPTION_TOKENS or '
               'no limit)')
     )
-
 
     args = parser.parse_args()
 
