@@ -15,7 +15,7 @@ from unittest import mock
 # Add skol directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from skol.constrained_decoder import (
+from skol.constrained_decoder import (  # noqa: E402
     TaxonomySchema,
     ConstrainedDecoder,
     GenerationTruncatedError,
@@ -458,8 +458,8 @@ class TestVocabularyNormalizerWithDependencies(unittest.TestCase):
     def setUpClass(cls):
         """Check for required dependencies."""
         try:
-            from sentence_transformers import SentenceTransformer
-            from sklearn.cluster import AgglomerativeClustering
+            import sentence_transformers  # noqa: F401 (availability probe)
+            import sklearn.cluster  # noqa: F401 (availability probe)
             cls.has_dependencies = True
         except ImportError:
             cls.has_dependencies = False
@@ -487,6 +487,7 @@ class TestVocabularyNormalizerWithDependencies(unittest.TestCase):
 
         # "cap shape" should be canonical (most frequent in its cluster)
         self.assertIn("cap shape", canonical_terms)
+
 
 VALID_FEATURES = {"pileus": {"shape": ["convex"]}}
 

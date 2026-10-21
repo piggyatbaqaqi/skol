@@ -27,7 +27,7 @@ Example:
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, cast
 
 
 @dataclass
@@ -310,7 +310,7 @@ class OutlinesBackend(DecoderBackend):
 
     def is_available(self) -> bool:
         try:
-            import outlines
+            import outlines  # noqa: F401 (availability probe)
             return True
         except ImportError:
             return False
@@ -399,7 +399,7 @@ class OutlinesBackend(DecoderBackend):
 class MockBackend(DecoderBackend):
     """Mock backend for testing without GPU/model dependencies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._loaded = False
         self._mock_responses: List[Dict[str, Any]] = []
         self._response_index = 0
@@ -555,7 +555,7 @@ Values should be descriptive terms, not measurements."""
                 parts.append(f"Output: {example['output']}")
             parts.append("")
 
-        parts.append(f"Extract features from this description:")
+        parts.append("Extract features from this description:")
         parts.append(f"\n{description}")
         parts.append("\nOutput:")
 
