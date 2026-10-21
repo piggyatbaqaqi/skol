@@ -254,6 +254,22 @@ the operator controls.
 |---|---|---|---|---|
 | `production_v4` | `skol_exp_production_v4_02_50_features_candidate` | _(naming-convention fallback)_ | _(naming-convention fallback)_ | `skol_exp_production_v4_02_57_features_canonical` |
 
+### Treatment quality verdicts (`databases.treatment_quality`)
+
+- **`treatment_quality`** — one doc per prose treatment, `_id` = the
+  treatment's `_id`, written by `bin/assess_treatments` (pipeline step
+  `assess_treatments`, right after `extract_treatments`).  Shape:
+  `{clean, flags, usable_text, gn_evaluated, checks_version,
+  checked_at}`.  `flags` is the detector suite's `predicted_issues`
+  (`triage_signals` + `merge_metric`) split on `|`, values kept.
+  `clean` = no flags AND usable text AND the gnfinder check ran; it
+  means no *known* pathology, not perfect.  `checks_version` hashes
+  the detector sources, so adding a detector makes old verdicts stale
+  and the next run reassesses them.  Convention:
+  `skol_exp_<experiment>_02_70_treatment_quality`; no dev default.
+  `manage_experiment create` writes it and a bare `update` backfills
+  it.
+
 ## Lineage graph
 
 ```

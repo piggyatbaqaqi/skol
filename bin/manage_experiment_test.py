@@ -11,8 +11,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -1231,22 +1229,16 @@ class TestCmdUpdateFeaturesCandidateSelfRepair:
 # treatment_quality DB key on the experiment doc (bin/assess_treatments)
 # ---------------------------------------------------------------------------
 
-_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="treatment_quality DB not implemented yet")
-
-
 class TestTreatmentQualityDb:
     """``databases.treatment_quality`` holds bin/assess_treatments'
     verdicts.  Convention: ``skol_exp_<name>_02_70_treatment_quality``
     -- computed from the 02_00 prose treatments, sorting after the
     02_5x feature DBs and before 03_00 structured output."""
 
-    @_NOT_YET
     def test_canonical_template(self) -> None:
         assert _CANONICAL_DB_TEMPLATES['treatment_quality'] == (
             'skol_exp_{name}_02_70_treatment_quality')
 
-    @_NOT_YET
     def test_create_writes_treatment_quality(self) -> None:
         db = _FakeExperimentsDb()
         cmd_create(db, _create_args(name='production_v4'))
@@ -1254,7 +1246,6 @@ class TestTreatmentQualityDb:
             'treatment_quality'
         ] == 'skol_exp_production_v4_02_70_treatment_quality'
 
-    @_NOT_YET
     def test_update_backfills_missing_field(self) -> None:
         db = _FakeExperimentsDb()
         db.docs['legacy'] = {

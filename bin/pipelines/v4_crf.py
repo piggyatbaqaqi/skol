@@ -69,6 +69,11 @@ PIPELINE = (
         args=('--experiment', '{experiment}', '--skip-existing'),
     ),
     PipelineStep(
+        name='assess_treatments',
+        script='assess_treatments',
+        args=('--experiment', '{experiment}'),
+    ),
+    PipelineStep(
         name='embed',
         script='embed_treatments',
         args=(

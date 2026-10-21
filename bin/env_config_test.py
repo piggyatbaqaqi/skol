@@ -678,8 +678,6 @@ class TestApplyExperimentTreatmentQualityMapping:
     """databases.treatment_quality -> treatment_quality_db_name, read by
     bin/assess_treatments."""
 
-    @pytest.mark.xfail(
-        strict=True, reason="treatment_quality DB not implemented yet")
     def test_field_propagates(self) -> None:
         config: Dict[str, Any] = {'treatment_quality_db_name': ''}
         exp = {'databases': {

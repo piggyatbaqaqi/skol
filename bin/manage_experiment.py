@@ -170,6 +170,8 @@ _CANONICAL_DB_TEMPLATES: Dict[str, str] = {
         'skol_exp_{name}_02_50_features_status',
     'features_hand':
         'skol_exp_{name}_02_55_features_hand',
+    'treatment_quality':
+        'skol_exp_{name}_02_70_treatment_quality',
     'treatments_structured':
         'skol_exp_{name}_03_00_treatments_structured',
     'treatments_structured_eval':
@@ -257,6 +259,8 @@ def _default_experiment(
     features_candidate_db = (
         f"skol_exp_{name}_02_50_features_candidate"
     )
+    # 02_70: bin/assess_treatments verdicts, computed from the prose.
+    quality_db = f"skol_exp_{name}_02_70_treatment_quality"
     structured_db = f"skol_exp_{name}_03_00_treatments_structured"
     return {
         "_id": name,
@@ -278,6 +282,7 @@ def _default_experiment(
             "treatments_prose": prose_db,
             "treatments_prose_eval": f"{prose_db}_eval",
             "features_candidate": features_candidate_db,
+            "treatment_quality": quality_db,
             "treatments_structured": structured_db,
             "treatments_structured_eval": f"{structured_db}_eval",
         },
@@ -598,6 +603,11 @@ def cmd_update(db, args, server: Any = None) -> None:
     if not databases.get("features_candidate"):
         databases["features_candidate"] = (
             f"skol_exp_{args.name}_02_50_features_candidate"
+        )
+        changed = True
+    if not databases.get("treatment_quality"):
+        databases["treatment_quality"] = (
+            f"skol_exp_{args.name}_02_70_treatment_quality"
         )
         changed = True
 

@@ -29,9 +29,6 @@ from assess_treatments import (  # type: ignore[import]  # noqa: E402
     verdict_doc,
 )
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="assess_treatments not implemented yet")
-
 FIXTURE = json.loads(
     (Path(__file__).resolve().parent.parent / 'tests' / 'fixtures'
      / 'pathologies.json').read_text())
@@ -93,13 +90,11 @@ class TestChecksVersion:
         assert names == {'triage_signals.py', 'merge_metric.py'}
         assert all(p.exists() for p in DETECTOR_SOURCES)
 
-    @NOT_YET
     def test_is_a_stable_hex_string(self) -> None:
         version = checks_version()
         assert version == checks_version()
         int(version, 16)
 
-    @NOT_YET
     def test_changes_when_a_detector_changes(self, tmp_path: Path) -> None:
         a, b = tmp_path / 'a.py', tmp_path / 'b.py'
         a.write_text('x = 1\n')
@@ -114,7 +109,6 @@ class TestChecksVersion:
 # ---------------------------------------------------------------------------
 
 
-@NOT_YET
 @pytest.mark.parametrize(
     'entry', FIXTURE['poster_children'],
     ids=[e['id'][:22] for e in FIXTURE['poster_children']])
@@ -124,7 +118,6 @@ def test_poster_children_are_clean(entry: Dict[str, Any]) -> None:
                        'gn_evaluated': True}
 
 
-@NOT_YET
 @pytest.mark.parametrize(
     'entry', [e for e in FIXTURE['pathologies'] if e.get('expected_flags')],
     ids=[e['id'][:22] for e in FIXTURE['pathologies']
@@ -138,7 +131,6 @@ def test_pathologies_carry_their_expected_flags(
     assert prefixes(verdict['flags']) == set(entry['expected_flags'])
 
 
-@NOT_YET
 class TestAssessGates:
 
     def poster_child(self) -> Dict[str, Any]:
@@ -180,7 +172,6 @@ class TestAssessGates:
 # ---------------------------------------------------------------------------
 
 
-@NOT_YET
 class TestVerdictDoc:
 
     def test_shape(self) -> None:
@@ -194,7 +185,6 @@ class TestVerdictDoc:
         }
 
 
-@NOT_YET
 class TestNeedsAssessment:
 
     def test_missing_verdict(self) -> None:
@@ -211,7 +201,6 @@ class TestNeedsAssessment:
                                 force=True) is True
 
 
-@NOT_YET
 class TestQualityDbName:
 
     def test_from_experiment_record(self) -> None:
@@ -230,7 +219,6 @@ class TestQualityDbName:
 # ---------------------------------------------------------------------------
 
 
-@NOT_YET
 class TestAssessAll:
 
     def test_saves_one_verdict_per_treatment(self) -> None:

@@ -17,7 +17,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -94,8 +93,6 @@ class TestV4CRFPipeline(unittest.TestCase):
         idx = cmd.index('--max-new-tokens')
         self.assertEqual(cmd[idx + 1], '3072')
 
-    @pytest.mark.xfail(
-        strict=True, reason="assess_treatments step not added yet")
     def test_assess_treatments_runs_right_after_extract_treatments(self):
         names = [s.name for s in self.pipeline]
         idx = names.index('extract_treatments')

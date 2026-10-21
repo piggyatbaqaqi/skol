@@ -272,6 +272,8 @@ def _apply_experiment(
         # values set in get_env_config(); v1 experiments stay correct.
         ('golden', ['golden_db_name']),
         ('golden_ann', ['golden_ann_db_name']),
+        # bin/assess_treatments verdicts.
+        ('treatment_quality', ['treatment_quality_db_name']),
     ]
     for exp_field, config_keys in db_mapping:
         value = databases.get(exp_field)
@@ -459,6 +461,10 @@ def get_env_config(
         ),
         'treatments_structured_db_name': _get_env(
             'TREATMENTS_STRUCTURED_DB_NAME', '',
+        ),
+        # No default: verdicts belong to an experiment.
+        'treatment_quality_db_name': _get_env(
+            'TREATMENT_QUALITY_DB_NAME', '',
         ),
 
         # Golden evaluation set wiring.  Defaults are v1 names so any
