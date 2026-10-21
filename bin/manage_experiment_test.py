@@ -11,10 +11,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from manage_experiment import (  # type: ignore[import]  # noqa: E402
+    _CANONICAL_DB_TEMPLATES,
     _ensure_pipeline,
     _render_pipeline_step,
     cmd_approve,
@@ -1197,6 +1200,7 @@ class TestCmdUpdateFeaturesCandidateSelfRepair:
             'databases': {
                 'ingest': 'skol_dev',
                 'features_candidate': 'my_special_features_db',
+                'treatment_quality': 'my_quality_db',
             },
         }
         saves_before = db.saves
@@ -1221,3 +1225,59 @@ class TestCmdUpdateFeaturesCandidateSelfRepair:
         assert db.docs['bare']['databases'][
             'features_candidate'
         ] == 'skol_exp_bare_02_50_features_candidate'
+
+
+# ---------------------------------------------------------------------------
+# treatment_quality DB key on the experiment doc (bin/assess_treatments)
+# ---------------------------------------------------------------------------
+
+_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="treatment_quality DB not implemented yet")
+
+
+class TestTreatmentQualityDb:
+    """``databases.treatment_quality`` holds bin/assess_treatments'
+    verdicts.  Convention: ``skol_exp_<name>_02_70_treatment_quality``
+    -- computed from the 02_00 prose treatments, sorting after the
+    02_5x feature DBs and before 03_00 structured output."""
+
+    @_NOT_YET
+    def test_canonical_template(self) -> None:
+        assert _CANONICAL_DB_TEMPLATES['treatment_quality'] == (
+            'skol_exp_{name}_02_70_treatment_quality')
+
+    @_NOT_YET
+    def test_create_writes_treatment_quality(self) -> None:
+        db = _FakeExperimentsDb()
+        cmd_create(db, _create_args(name='production_v4'))
+        assert db.docs['production_v4']['databases'][
+            'treatment_quality'
+        ] == 'skol_exp_production_v4_02_70_treatment_quality'
+
+    @_NOT_YET
+    def test_update_backfills_missing_field(self) -> None:
+        db = _FakeExperimentsDb()
+        db.docs['legacy'] = {
+            '_id': 'legacy',
+            'pipeline': 'v4_crf',
+            'pipeline_state': {'current_step': 0, 'steps': []},
+            'databases': {'features_candidate': 'x'},
+        }
+        cmd_update(db, _update_args(name='legacy'))
+        assert db.docs['legacy']['databases'][
+            'treatment_quality'
+        ] == 'skol_exp_legacy_02_70_treatment_quality'
+
+    def test_update_preserves_existing_custom_value(self) -> None:
+        db = _FakeExperimentsDb()
+        db.docs['custom'] = {
+            '_id': 'custom',
+            'pipeline': 'v4_crf',
+            'pipeline_state': {'current_step': 0, 'steps': []},
+            'databases': {'features_candidate': 'x',
+                          'treatment_quality': 'my_quality_db'},
+        }
+        cmd_update(db, _update_args(name='custom'))
+        assert db.docs['custom']['databases'][
+            'treatment_quality'
+        ] == 'my_quality_db'

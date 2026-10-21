@@ -17,6 +17,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from bin.pipelines import load  # noqa: E402
@@ -91,6 +93,21 @@ class TestV4CRFPipeline(unittest.TestCase):
         self.assertIn('--max-new-tokens', cmd)
         idx = cmd.index('--max-new-tokens')
         self.assertEqual(cmd[idx + 1], '3072')
+
+    @pytest.mark.xfail(
+        strict=True, reason="assess_treatments step not added yet")
+    def test_assess_treatments_runs_right_after_extract_treatments(self):
+        names = [s.name for s in self.pipeline]
+        idx = names.index('extract_treatments')
+        self.assertEqual(names[idx + 1], 'assess_treatments')
+        step = self.pipeline[idx + 1]
+        cmd = render_step(
+            step,
+            build_variables('production_v4', {'ingest_db_name': 'skol_dev'}),
+            force=False,
+        )
+        self.assertTrue(cmd[1].endswith('bin/assess_treatments.py'))
+        self.assertEqual(cmd[cmd.index('--experiment') + 1], 'production_v4')
 
     def test_train_step_renders_to_train_crf_single_with_source_db(self):
         step = next(s for s in self.pipeline if s.name == 'train')

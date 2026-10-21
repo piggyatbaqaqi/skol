@@ -672,3 +672,19 @@ class TestMergeThreshold:
         on Python 3.
         """
         assert isinstance(get_env_config()['merge_threshold'], int)
+
+
+class TestApplyExperimentTreatmentQualityMapping:
+    """databases.treatment_quality -> treatment_quality_db_name, read by
+    bin/assess_treatments."""
+
+    @pytest.mark.xfail(
+        strict=True, reason="treatment_quality DB not implemented yet")
+    def test_field_propagates(self) -> None:
+        config: Dict[str, Any] = {'treatment_quality_db_name': ''}
+        exp = {'databases': {
+            'treatment_quality': 'skol_exp_x_02_70_treatment_quality',
+        }}
+        _apply_experiment(config, exp, cli_explicit_keys=set())
+        assert (config['treatment_quality_db_name']
+                == 'skol_exp_x_02_70_treatment_quality')
