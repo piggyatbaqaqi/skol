@@ -100,6 +100,7 @@ def translate_treatments_to_json(
     timeout: int = 600,
     max_restarts: int = 3,
     max_description_tokens: Optional[int] = None,
+    max_new_tokens: int = 1024,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -133,6 +134,7 @@ def translate_treatments_to_json(
         include_annotations: If True, include confidence annotations in output
         max_description_tokens: Skip descriptions longer than this many
             tokens; nothing is saved for them (None: no limit)
+        max_new_tokens: Cap on tokens generated per description
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -227,6 +229,7 @@ def translate_treatments_to_json(
             'use_ontology_context': use_ontology_context,
             'ontology_dir': ontology_dir,
             'max_description_tokens': max_description_tokens,
+            'max_new_tokens': max_new_tokens,
         }
         if base_model_id:
             translator_kwargs['base_model_id'] = base_model_id
@@ -835,21 +838,8 @@ def resolve_max_description_tokens(
     Raises:
         ValueError: If the resolved value is not a positive integer.
     """
-    value: Optional[int] = cli_value
-    if value is None:
-        raw = environ.get('MAX_DESCRIPTION_TOKENS', '').strip()
-        if not raw:
-            return None
-        try:
-            value = int(raw)
-        except ValueError:
-            raise ValueError(
-                f"MAX_DESCRIPTION_TOKENS must be an integer, got {raw!r}"
-            ) from None
-    if value < 1:
-        raise ValueError(
-            f"max description tokens must be at least 1, got {value}")
-    return value
+    return _resolve_positive_int(
+        cli_value, environ, 'MAX_DESCRIPTION_TOKENS')
 
 
 def resolve_max_new_tokens(
@@ -865,7 +855,37 @@ def resolve_max_new_tokens(
     Raises:
         ValueError: If the resolved value is not a positive integer.
     """
-    raise NotImplementedError
+    from treatments_json_translator import TreatmentsJSONTranslator
+
+    value = _resolve_positive_int(cli_value, environ, 'MAX_NEW_TOKENS')
+    if value is None:
+        return TreatmentsJSONTranslator.DEFAULT_MAX_NEW_TOKENS
+    return value
+
+
+def _resolve_positive_int(
+    cli_value: Optional[int],
+    environ: Mapping[str, str],
+    env_name: str,
+) -> Optional[int]:
+    """CLI value, else integer ``environ[env_name]``, else None.
+
+    Raises:
+        ValueError: If the resolved value is not a positive integer.
+    """
+    value: Optional[int] = cli_value
+    if value is None:
+        raw = environ.get(env_name, '').strip()
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except ValueError:
+            raise ValueError(
+                f"{env_name} must be an integer, got {raw!r}") from None
+    if value < 1:
+        raise ValueError(f"{env_name} must be at least 1, got {value}")
+    return value
 
 
 def main():
@@ -887,6 +907,7 @@ Work Control Options (from env_config):
   --recompute-invalid        Only process records with invalid JSON
   --use-constrained-decoding Use Outlines for guaranteed valid JSON output
   --max-description-tokens N Skip descriptions over N tokens (not saved)
+  --max-new-tokens N         Cap on tokens generated per description
 
 Environment Variables:
   DRY_RUN=1             Same as --dry-run
@@ -896,6 +917,7 @@ Environment Variables:
   DOC_IDS=id1,id2,...   Same as --doc-id
   INCREMENTAL=1         Same as --incremental
   MAX_DESCRIPTION_TOKENS=N  Same as --max-description-tokens N
+  MAX_NEW_TOKENS=N      Same as --max-new-tokens N
   COUCHDB_URL           CouchDB URL (default: http://localhost:5984)
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
@@ -1107,6 +1129,15 @@ Examples:
               'no limit)')
     )
 
+    parser.add_argument(
+        '--max-new-tokens',
+        type=int,
+        default=None,
+        metavar='N',
+        help=('Cap on tokens generated per description; output cut off '
+              'at the cap is saved as {} (default: $MAX_NEW_TOKENS or 1024)')
+    )
+
     args = parser.parse_args()
 
     # Get configuration from environment
@@ -1144,6 +1175,8 @@ Examples:
     try:
         max_description_tokens = resolve_max_description_tokens(
             args.max_description_tokens, os.environ)
+        max_new_tokens = resolve_max_new_tokens(
+            args.max_new_tokens, os.environ)
     except ValueError as e:
         parser.error(str(e))
 
@@ -1186,6 +1219,7 @@ Examples:
             timeout=timeout,
             max_restarts=max_restarts,
             max_description_tokens=max_description_tokens,
+            max_new_tokens=max_new_tokens,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

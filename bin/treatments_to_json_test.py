@@ -14,8 +14,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import pytest
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -28,9 +26,6 @@ from treatments_to_json import (  # type: ignore[import]  # noqa: E402
 from treatments_json_translator import (  # noqa: E402
     TreatmentsJSONTranslator,
 )
-
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="generation token cap not implemented yet")
 
 
 SCRIPT = Path(__file__).resolve().parent / "treatments_to_json.py"
@@ -90,7 +85,6 @@ class TestFlagWiring(unittest.TestCase):
         self.assertIsNone(params["max_description_tokens"].default)
 
 
-@NOT_YET
 class TestResolveMaxNewTokens(unittest.TestCase):
 
     def test_unset_means_translator_default(self):
@@ -126,7 +120,6 @@ class TestResolveMaxNewTokens(unittest.TestCase):
             resolve_max_new_tokens(None, {"MAX_NEW_TOKENS": "3k"})
 
 
-@NOT_YET
 class TestMaxNewTokensWiring(unittest.TestCase):
 
     def test_help_lists_the_flag(self):

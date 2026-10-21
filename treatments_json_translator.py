@@ -239,7 +239,22 @@ def partition_untranslatable_descriptions(
         ``(kept, dropped_ids)``: the kept items in their original order,
         and the ``_id`` of each dropped item.
     """
-    raise NotImplementedError
+    kept: List[Dict[str, Any]] = []
+    dropped: List[str] = []
+    for item in items:
+        if _is_translatable(item.get('description') or ''):
+            kept.append(item)
+        else:
+            dropped.append(item['_id'])
+    return kept, dropped
+
+
+def _is_translatable(text: str) -> bool:
+    """True when ``text`` has letters and is less than half U+FFFD."""
+    visible = ''.join(text.split())
+    if not any(ch.isalpha() for ch in visible):
+        return False
+    return visible.count('\ufffd') * 2 < len(visible)
 
 
 def partition_by_token_budget(
@@ -519,7 +534,8 @@ def _constrained_inference_worker(descriptions, model_config, batch_size,
             backend=backend,
             schema=schema,
             device=model_config['device'],
-            system_prompt=model_config.get('prompt', '')
+            system_prompt=model_config.get('prompt', ''),
+            max_tokens=model_config.get('max_new_tokens'),
         )
 
         # Load model
@@ -781,7 +797,12 @@ and their values from the provided species description and format them as struct
         Dropped records are reported and never reach inference, so
         nothing is saved for them.
         """
-        raise NotImplementedError
+        kept, dropped = partition_untranslatable_descriptions(descriptions)
+        if dropped:
+            print(f"  Dropped {len(dropped)} of {len(descriptions)} "
+                  f"descriptions with no usable text "
+                  f"(empty, no letters, or OCR noise)")
+        return kept
 
     def _drop_oversized_descriptions(
         self, descriptions: List[Dict[str, Any]]
@@ -1272,10 +1293,12 @@ and their values from the provided species description and format them as struct
         ]
         print(f"  ✓ Collected {len(descriptions)} descriptions")
 
-        # Step 1a: Drop oversized descriptions.  They must leave taxa_df
-        # too: the lookup below fills "{}" for any id without a result,
-        # and saving those would make --skip-existing skip them forever.
+        # Step 1a: Drop untranslatable and oversized descriptions.  They
+        # must leave taxa_df too: the lookup below fills "{}" for any id
+        # without a result, and saving those would make --skip-existing
+        # skip them forever.
         n_collected = len(descriptions)
+        descriptions = self._drop_untranslatable_descriptions(descriptions)
         descriptions = self._drop_oversized_descriptions(descriptions)
         if len(descriptions) < n_collected:
             from pyspark.sql.functions import udf, col
@@ -1488,7 +1511,9 @@ and their values from the provided species description and format them as struct
         if verbosity >= 1:
             print(f"  ✓ Collected {len(descriptions)} descriptions")
 
-        # Step 1a: Drop oversized descriptions; nothing is saved for them.
+        # Step 1a: Drop untranslatable and oversized descriptions;
+        # nothing is saved for them.
+        descriptions = self._drop_untranslatable_descriptions(descriptions)
         descriptions = self._drop_oversized_descriptions(descriptions)
         total = len(descriptions)
         if total == 0:

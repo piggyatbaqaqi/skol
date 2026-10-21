@@ -27,7 +27,7 @@ Example:
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 
 @dataclass
@@ -383,9 +383,17 @@ class OutlinesBackend(DecoderBackend):
         # Outlines requires JSON Schema as a string, not a dictionary
         schema_str = json.dumps(schema)
         generator = outlines.generate.json(self._model, schema_str)
-        result = generator(prompt, **kwargs)
+        try:
+            result = generator(prompt, **kwargs)
+        except json.JSONDecodeError as exc:
+            # The grammar only admits schema-valid JSON, so unparseable
+            # output means generation stopped at max_tokens mid-object.
+            raise GenerationTruncatedError(
+                f"generation stopped at max_tokens="
+                f"{kwargs.get('max_tokens')} before the JSON was complete"
+            ) from exc
 
-        return result
+        return cast(Dict[str, Any], result)
 
 
 class MockBackend(DecoderBackend):
@@ -523,6 +531,7 @@ Values should be descriptive terms, not measurements."""
         # Use inlined schema to avoid Outlines $ref recursion limit
         json_schema = self.schema.to_json_schema_inlined()
 
+        kwargs.setdefault('max_tokens', self.max_tokens)
         backend = self._get_backend()
         result = backend.generate(prompt, json_schema, **kwargs)
 

@@ -87,6 +87,8 @@ PIPELINE = (
             # 4800 description tokens + the 406-token prompt + ~3k of
             # output fits an 8k context; drops ~1.4 % of production_v4_1.
             '--max-description-tokens', '4800',
+            # production_v4 output: median 426 tokens, p99 2659.
+            '--max-new-tokens', '3072',
         ),
     ),
     PipelineStep(

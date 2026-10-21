@@ -27,7 +27,6 @@ import types
 from typing import Any, Dict, List
 from unittest import mock
 
-import pytest
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -38,9 +37,6 @@ from treatments_json_translator import (
     partition_by_token_budget,
     partition_untranslatable_descriptions,
 )
-
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="empty-skip / generation cap not implemented yet")
 
 
 class TestBuildLlmInputText(unittest.TestCase):
@@ -334,7 +330,6 @@ class TestDropOversizedDescriptions(unittest.TestCase):
 REPLACEMENT = "\ufffd"
 
 
-@NOT_YET
 class TestPartitionUntranslatableDescriptions(unittest.TestCase):
     """43 % of production_v4_1 has no description or diagnosis text; the
     model invents a taxon for each (a frog, for one Nomen ignotum)."""
@@ -354,7 +349,7 @@ class TestPartitionUntranslatableDescriptions(unittest.TestCase):
         self.assertEqual(self.kept_ids(
             item("dots", "... .. ."),
             item("rule", "~" + "-" * 60),
-            item("numbers", "2.5-4 x 0.5-0.8 (14.0)"),
+            item("numbers", "2.5-4 \u00d7 0.5-0.8 (14.0)"),  # × not x
         ), [])
 
     def test_one_letter_is_enough(self):
@@ -397,7 +392,6 @@ class TestPartitionUntranslatableDescriptions(unittest.TestCase):
             partition_untranslatable_descriptions([]), ([], []))
 
 
-@NOT_YET
 class TestDropUntranslatableDescriptions(unittest.TestCase):
 
     def run_drop(self, translator: TreatmentsJSONTranslator,
@@ -477,7 +471,6 @@ class TestConstrainedWorkerGenerationCap(unittest.TestCase):
                 [item("t", "Pileus convex.")], model_config, 10, results)
         return results.get_nowait()
 
-    @NOT_YET
     def test_decoder_is_capped_at_max_new_tokens(self):
         status, _ = self.run_worker(3072)
         self.assertEqual(status, 'success')

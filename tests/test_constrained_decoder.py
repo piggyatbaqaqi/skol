@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 from unittest import mock
 
-import pytest
 
 # Add skol directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -489,10 +488,6 @@ class TestVocabularyNormalizerWithDependencies(unittest.TestCase):
         # "cap shape" should be canonical (most frequent in its cluster)
         self.assertIn("cap shape", canonical_terms)
 
-
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="generation token cap not implemented yet")
-
 VALID_FEATURES = {"pileus": {"shape": ["convex"]}}
 
 
@@ -525,7 +520,6 @@ class TestGenerationTokenCap(unittest.TestCase):
     def test_max_tokens_defaults_to_unbounded(self):
         self.assertIsNone(ConstrainedDecoder().max_tokens)
 
-    @NOT_YET
     def test_decoder_cap_reaches_the_backend(self):
         backend = RecordingBackend()
         self.decoder_with(backend, max_tokens=3072).extract_features(
@@ -551,7 +545,6 @@ class TestGenerationTokenCap(unittest.TestCase):
             backend.generate("prompt", {"type": "object"}, max_tokens=5)
         generator.assert_called_once_with("prompt", max_tokens=5)
 
-    @NOT_YET
     def test_outlines_truncation_raises_generation_truncated(self):
         """Outlines parses the generated text with json.loads, so output
         cut off at max_tokens surfaces as JSONDecodeError."""
