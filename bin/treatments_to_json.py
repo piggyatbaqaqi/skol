@@ -40,7 +40,7 @@ Example:
 import argparse
 import os
 import sys
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Mapping, Optional
 from pathlib import Path
 
 # Add parent directory to path for skol modules
@@ -811,6 +811,21 @@ def run_graceful_degradation_analysis(
 # ============================================================================
 # Main Program
 # ============================================================================
+
+def resolve_max_description_tokens(
+    cli_value: Optional[int],
+    environ: Mapping[str, str],
+) -> Optional[int]:
+    """Resolve the description token threshold.
+
+    Priority: ``--max-description-tokens``, then the
+    ``MAX_DESCRIPTION_TOKENS`` environment variable, then no threshold.
+
+    Raises:
+        ValueError: If the resolved value is not a positive integer.
+    """
+    raise NotImplementedError
+
 
 def main():
     """Main entry point for the taxa to JSON translation program."""

@@ -22,7 +22,7 @@ Constrained Decoding Support:
 import json
 import multiprocessing as mp
 import os
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, Callable, List, Tuple
 
 import torch
 from transformers import (
@@ -200,6 +200,44 @@ def _chunk_budget_chars(max_length: int) -> int:
     tokens at max_length=2048.
     """
     return max(1000, int((max_length - 768) * 3.0))
+
+
+TokenCounter = Callable[[List[str]], List[int]]
+
+
+def make_token_counter(tokenizer: Any) -> TokenCounter:
+    """Return a callable that counts the tokens in each of a list of texts.
+
+    Counts with ``add_special_tokens=False`` so the number is the
+    description's own cost, not the BOS/EOS framing.  The whole list is
+    tokenized in one call: batching keeps the 80k-description corpus at
+    a few seconds.
+    """
+    raise NotImplementedError
+
+
+def partition_by_token_budget(
+    items: List[Dict[str, Any]],
+    count_tokens: TokenCounter,
+    max_tokens: Optional[int],
+) -> Tuple[List[Dict[str, Any]], List[Tuple[str, int]]]:
+    """Split description items into those within budget and those over it.
+
+    Args:
+        items: Dicts with at least ``_id`` and ``description``.  A
+            ``None`` description counts as the empty string.
+        count_tokens: Counts tokens for a list of texts, in order.
+        max_tokens: Largest description, in tokens, that is kept.  None
+            disables the threshold.
+
+    Returns:
+        ``(kept, dropped)``: the kept items in their original order, and
+        ``(_id, token_count)`` for each dropped item.
+
+    Raises:
+        ValueError: If ``max_tokens`` is not None and is less than 1.
+    """
+    raise NotImplementedError
 
 
 def _raw_generate(model, tokenizer, prompt_template: str, description: str,
@@ -613,7 +651,9 @@ and their values from the provided species description and format them as struct
         schema_max_depth: int = 4,
         schema_min_depth: int = 2,
         use_ontology_context: bool = False,
-        ontology_dir: Optional[str] = None
+        ontology_dir: Optional[str] = None,
+        max_description_tokens: Optional[int] = None,
+        token_counter: Optional[TokenCounter] = None,
     ):
         """
         Initialize the TreatmentsJSONTranslator.
@@ -655,6 +695,9 @@ and their values from the provided species description and format them as struct
         self.schema_min_depth = schema_min_depth
         self.use_ontology_context = use_ontology_context
         self.ontology_dir = ontology_dir
+        self.max_description_tokens = max_description_tokens
+        # Built lazily from base_model_id's tokenizer when None.
+        self._token_counter = token_counter
 
         # Model and tokenizer (lazy loaded)
         self._model = None
@@ -679,6 +722,17 @@ and their values from the provided species description and format them as struct
             print(f"  Constrained decoding: disabled")
         if use_ontology_context:
             print(f"  Ontology context: ENABLED")
+
+    def _drop_oversized_descriptions(
+        self, descriptions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Remove descriptions longer than ``max_description_tokens``.
+
+        Dropped records are reported and never reach inference, so
+        nothing is saved for them and a later run with a higher
+        threshold picks them up under ``--skip-existing``.
+        """
+        raise NotImplementedError
 
     def _get_ontology_context_builder(self):
         """
