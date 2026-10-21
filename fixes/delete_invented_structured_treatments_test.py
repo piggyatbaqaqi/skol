@@ -12,7 +12,6 @@ import unittest
 from pathlib import Path
 from typing import Any, Dict, Iterator, List
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -22,10 +21,6 @@ from delete_invented_structured_treatments import (  # noqa: E402
     is_invented,
     target_db_name,
 )
-
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="delete_invented_structured_treatments not "
-                        "implemented yet")
 
 REPLACEMENT = "�"
 FEATURES = {"pileus": {"shape": ["convex"]}}
@@ -58,7 +53,6 @@ class FakeDB:
         del self.docs[document["_id"]]
 
 
-@NOT_YET
 class TestIsInvented(unittest.TestCase):
 
     def test_untranslatable_descriptions_are_invented(self):
@@ -87,7 +81,6 @@ class TestIsInvented(unittest.TestCase):
                                          json_annotated={})))
 
 
-@NOT_YET
 class TestTargetDbName(unittest.TestCase):
 
     CONFIG = {"treatments_structured_db_name":
@@ -109,7 +102,6 @@ class TestTargetDbName(unittest.TestCase):
             target_db_name(None, None, self.CONFIG)
 
 
-@NOT_YET
 class TestDeleteInvented(unittest.TestCase):
 
     def run_fix(self, db: FakeDB, **kwargs: Any) -> Dict[str, int]:
