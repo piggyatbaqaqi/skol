@@ -98,6 +98,7 @@ def translate_treatments_to_json(
     include_annotations: bool = False,
     timeout: int = 600,
     max_restarts: int = 3,
+    max_description_tokens: Optional[int] = None,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -129,6 +130,8 @@ def translate_treatments_to_json(
         graceful_degradation: If True, enable graceful degradation for novel terms
         preserve_threshold: Threshold below which to preserve original terms
         include_annotations: If True, include confidence annotations in output
+        max_description_tokens: Skip descriptions longer than this many
+            tokens; nothing is saved for them (None: no limit)
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -222,6 +225,7 @@ def translate_treatments_to_json(
             'schema_min_depth': schema_min_depth,
             'use_ontology_context': use_ontology_context,
             'ontology_dir': ontology_dir,
+            'max_description_tokens': max_description_tokens,
         }
         if base_model_id:
             translator_kwargs['base_model_id'] = base_model_id
@@ -824,7 +828,21 @@ def resolve_max_description_tokens(
     Raises:
         ValueError: If the resolved value is not a positive integer.
     """
-    raise NotImplementedError
+    value: Optional[int] = cli_value
+    if value is None:
+        raw = environ.get('MAX_DESCRIPTION_TOKENS', '').strip()
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except ValueError:
+            raise ValueError(
+                f"MAX_DESCRIPTION_TOKENS must be an integer, got {raw!r}"
+            ) from None
+    if value < 1:
+        raise ValueError(
+            f"max description tokens must be at least 1, got {value}")
+    return value
 
 
 def main():
@@ -844,6 +862,7 @@ Work Control Options (from env_config):
   --incremental              Save each record immediately (crash-resistant)
   --recompute-invalid        Only process records with invalid JSON
   --use-constrained-decoding Use Outlines for guaranteed valid JSON output
+  --max-description-tokens N Skip descriptions over N tokens (not saved)
 
 Environment Variables:
   DRY_RUN=1             Same as --dry-run
@@ -852,6 +871,7 @@ Environment Variables:
   LIMIT=N               Same as --limit N
   DOC_IDS=id1,id2,...   Same as --doc-id
   INCREMENTAL=1         Same as --incremental
+  MAX_DESCRIPTION_TOKENS=N  Same as --max-description-tokens N
   COUCHDB_URL           CouchDB URL (default: http://localhost:5984)
   COUCHDB_HOST          CouchDB host (default: 127.0.0.1:5984)
   COUCHDB_USER          CouchDB username (default: admin)
@@ -1054,6 +1074,17 @@ Examples:
         help='Max consecutive subprocess restarts without a result before giving up (default: 3)'
     )
 
+    parser.add_argument(
+        '--max-description-tokens',
+        type=int,
+        default=None,
+        metavar='N',
+        help=('Skip descriptions longer than N tokens of the base model\'s '
+              'tokenizer; nothing is saved for them, so a later run with a '
+              'higher N picks them up (default: $MAX_DESCRIPTION_TOKENS or '
+              'no limit)')
+    )
+
 
     args = parser.parse_args()
 
@@ -1089,6 +1120,11 @@ Examples:
     include_annotations = args.include_annotations
     timeout = args.timeout
     max_restarts = args.max_restarts
+    try:
+        max_description_tokens = resolve_max_description_tokens(
+            args.max_description_tokens, os.environ)
+    except ValueError as e:
+        parser.error(str(e))
 
     # Validate schema depth parameters
     if schema_min_depth > schema_max_depth:
@@ -1128,6 +1164,7 @@ Examples:
             include_annotations=include_annotations,
             timeout=timeout,
             max_restarts=max_restarts,
+            max_description_tokens=max_description_tokens,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

@@ -213,7 +213,13 @@ def make_token_counter(tokenizer: Any) -> TokenCounter:
     tokenized in one call: batching keeps the 80k-description corpus at
     a few seconds.
     """
-    raise NotImplementedError
+    def count_tokens(texts: List[str]) -> List[int]:
+        if not texts:
+            return []
+        encoded = tokenizer(list(texts), add_special_tokens=False)
+        return [len(ids) for ids in encoded['input_ids']]
+
+    return count_tokens
 
 
 def partition_by_token_budget(
@@ -237,7 +243,22 @@ def partition_by_token_budget(
     Raises:
         ValueError: If ``max_tokens`` is not None and is less than 1.
     """
-    raise NotImplementedError
+    if max_tokens is None:
+        return list(items), []
+    if max_tokens < 1:
+        raise ValueError(f"max_tokens must be at least 1, got {max_tokens}")
+    if not items:
+        return [], []
+
+    counts = count_tokens([item.get('description') or '' for item in items])
+    kept: List[Dict[str, Any]] = []
+    dropped: List[Tuple[str, int]] = []
+    for item, n_tokens in zip(items, counts):
+        if n_tokens > max_tokens:
+            dropped.append((item['_id'], n_tokens))
+        else:
+            kept.append(item)
+    return kept, dropped
 
 
 def _raw_generate(model, tokenizer, prompt_template: str, description: str,
@@ -677,6 +698,11 @@ and their values from the provided species description and format them as struct
             schema_min_depth: Minimum nesting depth for constrained decoding (default 2)
             use_ontology_context: If True, inject PATO/FAO ontology context into prompts
             ontology_dir: Directory containing pato.obo and fao.obo files
+            max_description_tokens: Skip descriptions longer than this many
+                                    tokens of base_model_id's tokenizer
+                                    (None: no limit)
+            token_counter: Token counter to use instead of loading
+                           base_model_id's tokenizer (for tests)
         """
         self.spark = spark
         self.couchdb_url = couchdb_url
@@ -722,6 +748,8 @@ and their values from the provided species description and format them as struct
             print(f"  Constrained decoding: disabled")
         if use_ontology_context:
             print(f"  Ontology context: ENABLED")
+        if max_description_tokens is not None:
+            print(f"  Max description tokens: {max_description_tokens}")
 
     def _drop_oversized_descriptions(
         self, descriptions: List[Dict[str, Any]]
@@ -732,7 +760,20 @@ and their values from the provided species description and format them as struct
         nothing is saved for them and a later run with a higher
         threshold picks them up under ``--skip-existing``.
         """
-        raise NotImplementedError
+        if self.max_description_tokens is None:
+            return descriptions
+        if self._token_counter is None:
+            self._token_counter = make_token_counter(
+                AutoTokenizer.from_pretrained(self.base_model_id))
+
+        kept, dropped = partition_by_token_budget(
+            descriptions, self._token_counter, self.max_description_tokens)
+        if dropped:
+            print(f"  Dropped {len(dropped)} of {len(descriptions)} "
+                  f"descriptions over {self.max_description_tokens} tokens:")
+            for doc_id, n_tokens in dropped:
+                print(f"    {doc_id}: {n_tokens} tokens")
+        return kept
 
     def _get_ontology_context_builder(self):
         """
@@ -1191,8 +1232,22 @@ and their values from the provided species description and format them as struct
             {'_id': row['_id'], 'treatment': row['treatment'], 'description': row[description_col]}
             for row in rows
         ]
+        print(f"  ✓ Collected {len(descriptions)} descriptions")
+
+        # Step 1a: Drop oversized descriptions.  They must leave taxa_df
+        # too: the lookup below fills "{}" for any id without a result,
+        # and saving those would make --skip-existing skip them forever.
+        n_collected = len(descriptions)
+        descriptions = self._drop_oversized_descriptions(descriptions)
+        if len(descriptions) < n_collected:
+            from pyspark.sql.functions import udf, col
+            from pyspark.sql.types import BooleanType
+            kept_ids = self.spark.sparkContext.broadcast(
+                {d['_id'] for d in descriptions})
+            in_kept = udf(lambda doc_id: doc_id in kept_ids.value,
+                          BooleanType())
+            taxa_df = taxa_df.filter(in_kept(col("_id")))
         total = len(descriptions)
-        print(f"  ✓ Collected {total} descriptions")
 
         # Step 1b: Add ontology context if enabled
         descriptions = self._add_ontology_context_to_descriptions(descriptions)
@@ -1376,9 +1431,17 @@ and their values from the provided species description and format them as struct
             }
             descriptions.append(item)
 
-        total = len(descriptions)
         if verbosity >= 1:
-            print(f"  ✓ Collected {total} descriptions")
+            print(f"  ✓ Collected {len(descriptions)} descriptions")
+
+        # Step 1a: Drop oversized descriptions; nothing is saved for them.
+        descriptions = self._drop_oversized_descriptions(descriptions)
+        total = len(descriptions)
+        if total == 0:
+            print("  Nothing left to translate; not loading the model.")
+            return {'success_count': 0, 'failure_count': 0,
+                    'validation_failures': 0, 'restart_count': 0,
+                    'total': 0}
 
         # Step 1b: Add ontology context if enabled
         descriptions = self._add_ontology_context_to_descriptions(descriptions)

@@ -84,6 +84,9 @@ PIPELINE = (
             '--incremental', '--skip-existing',
             '--use-constrained-decoding', '--graceful-degradation',
             '--timeout', '1200',
+            # 4800 description tokens + the 406-token prompt + ~3k of
+            # output fits an 8k context; drops ~1.4 % of production_v4_1.
+            '--max-description-tokens', '4800',
         ),
     ),
     PipelineStep(

@@ -13,7 +13,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -23,13 +22,10 @@ from treatments_to_json import (  # type: ignore[import]  # noqa: E402
     translate_treatments_to_json,
 )
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="description token threshold not implemented yet")
 
 SCRIPT = Path(__file__).resolve().parent / "treatments_to_json.py"
 
 
-@NOT_YET
 class TestResolveMaxDescriptionTokens(unittest.TestCase):
 
     def test_unset_means_no_threshold(self):
@@ -69,7 +65,6 @@ class TestResolveMaxDescriptionTokens(unittest.TestCase):
                 None, {"MAX_DESCRIPTION_TOKENS": "4.8k"})
 
 
-@NOT_YET
 class TestFlagWiring(unittest.TestCase):
 
     def test_help_lists_the_flag(self):

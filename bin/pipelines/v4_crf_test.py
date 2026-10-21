@@ -17,8 +17,6 @@ import sys
 import unittest
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from bin.pipelines import load  # noqa: E402
@@ -68,9 +66,6 @@ class TestV4CRFPipeline(unittest.TestCase):
         sm_idx = cmd.index('--sbert-model')
         self.assertEqual(cmd[sm_idx + 1], 'mpnet')
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="description token threshold not implemented yet")
     def test_treatments_to_json_drops_descriptions_over_4800_tokens(self):
         """4800 description tokens + the 406-token prompt + ~3k of output
         fits an 8k context; it drops ~1.4 % of production_v4_1."""

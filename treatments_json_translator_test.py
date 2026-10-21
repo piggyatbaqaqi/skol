@@ -21,7 +21,6 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 
-import pytest
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -30,9 +29,6 @@ from treatments_json_translator import (
     make_token_counter,
     partition_by_token_budget,
 )
-
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="description token threshold not implemented yet")
 
 
 class TestBuildLlmInputText(unittest.TestCase):
@@ -170,7 +166,6 @@ def item(doc_id: str, description: Any) -> Dict[str, Any]:
             "description": description}
 
 
-@NOT_YET
 class TestMakeTokenCounter(unittest.TestCase):
 
     def test_counts_each_text_in_order(self):
@@ -195,7 +190,6 @@ class TestMakeTokenCounter(unittest.TestCase):
         self.assertEqual(make_token_counter(FakeTokenizer())([]), [])
 
 
-@NOT_YET
 class TestPartitionByTokenBudget(unittest.TestCase):
 
     def test_none_threshold_keeps_everything_without_counting(self):
@@ -267,7 +261,6 @@ def make_translator(**kwargs: Any) -> TreatmentsJSONTranslator:
             base_model_id="example/model", **kwargs)
 
 
-@NOT_YET
 class TestDropOversizedDescriptions(unittest.TestCase):
 
     def run_drop(self, translator: TreatmentsJSONTranslator,
