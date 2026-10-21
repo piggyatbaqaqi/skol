@@ -278,6 +278,10 @@ def generate_variable_depth_schema(max_depth: int) -> Dict[str, Any]:
     return schema
 
 
+class GenerationTruncatedError(ValueError):
+    """Generation stopped at ``max_tokens`` before the JSON was complete."""
+
+
 class DecoderBackend(ABC):
     """Abstract base class for decoder backends."""
 
@@ -451,6 +455,8 @@ class ConstrainedDecoder:
     schema: TaxonomySchema = field(default_factory=TaxonomySchema)
     device: Optional[str] = None
     system_prompt: str = field(default="")
+    # Cap on generated tokens; None leaves generation unbounded.
+    max_tokens: Optional[int] = None
 
     _backend_instance: Optional[DecoderBackend] = field(
         default=None, init=False, repr=False

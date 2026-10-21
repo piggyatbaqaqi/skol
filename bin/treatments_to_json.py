@@ -852,6 +852,22 @@ def resolve_max_description_tokens(
     return value
 
 
+def resolve_max_new_tokens(
+    cli_value: Optional[int],
+    environ: Mapping[str, str],
+) -> int:
+    """Resolve the cap on tokens generated per description.
+
+    Priority: ``--max-new-tokens``, then the ``MAX_NEW_TOKENS``
+    environment variable, then
+    ``TreatmentsJSONTranslator.DEFAULT_MAX_NEW_TOKENS``.
+
+    Raises:
+        ValueError: If the resolved value is not a positive integer.
+    """
+    raise NotImplementedError
+
+
 def main():
     """Main entry point for the taxa to JSON translation program."""
     # Parse command-line arguments

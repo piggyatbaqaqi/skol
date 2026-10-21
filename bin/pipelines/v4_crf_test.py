@@ -17,6 +17,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from bin.pipelines import load  # noqa: E402
@@ -78,6 +80,21 @@ class TestV4CRFPipeline(unittest.TestCase):
         self.assertIn('--max-description-tokens', cmd)
         idx = cmd.index('--max-description-tokens')
         self.assertEqual(cmd[idx + 1], '4800')
+
+    @pytest.mark.xfail(
+        strict=True, reason="generation token cap not implemented yet")
+    def test_treatments_to_json_caps_generation_at_3072_tokens(self):
+        """production_v4 outputs: median 426 tokens, p99 2659; 3072
+        stops runaways without truncating ordinary output."""
+        step = next(s for s in self.pipeline if s.name == 'treatments_to_json')
+        cmd = render_step(
+            step,
+            build_variables('production_v4', {'ingest_db_name': 'skol_dev'}),
+            force=False,
+        )
+        self.assertIn('--max-new-tokens', cmd)
+        idx = cmd.index('--max-new-tokens')
+        self.assertEqual(cmd[idx + 1], '3072')
 
     def test_train_step_renders_to_train_crf_single_with_source_db(self):
         step = next(s for s in self.pipeline if s.name == 'train')

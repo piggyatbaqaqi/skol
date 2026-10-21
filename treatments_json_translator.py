@@ -222,6 +222,26 @@ def make_token_counter(tokenizer: Any) -> TokenCounter:
     return count_tokens
 
 
+def partition_untranslatable_descriptions(
+    items: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Split description items into translatable and untranslatable.
+
+    A description is untranslatable when it gives the model nothing to
+    extract, so the model would invent a taxon instead:
+
+    - ``None``, empty or whitespace-only;
+    - no letters at all (punctuation, digits, rules of dashes);
+    - OCR noise: at least half of its non-space characters are U+FFFD,
+      the replacement character left where PDF text extraction failed.
+
+    Returns:
+        ``(kept, dropped_ids)``: the kept items in their original order,
+        and the ``_id`` of each dropped item.
+    """
+    raise NotImplementedError
+
+
 def partition_by_token_budget(
     items: List[Dict[str, Any]],
     count_tokens: TokenCounter,
@@ -752,6 +772,16 @@ and their values from the provided species description and format them as struct
             print("  Ontology context: ENABLED")
         if max_description_tokens is not None:
             print(f"  Max description tokens: {max_description_tokens}")
+
+    def _drop_untranslatable_descriptions(
+        self, descriptions: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Remove descriptions with no usable text.  Always on.
+
+        Dropped records are reported and never reach inference, so
+        nothing is saved for them.
+        """
+        raise NotImplementedError
 
     def _drop_oversized_descriptions(
         self, descriptions: List[Dict[str, Any]]

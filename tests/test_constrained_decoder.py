@@ -8,6 +8,10 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from typing import Any, Dict, List
+from unittest import mock
+
+import pytest
 
 # Add skol directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -15,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from skol.constrained_decoder import (
     TaxonomySchema,
     ConstrainedDecoder,
+    GenerationTruncatedError,
+    OutlinesBackend,
     MockBackend,
     VocabularyNormalizer,
     generate_variable_depth_schema,
@@ -482,6 +488,85 @@ class TestVocabularyNormalizerWithDependencies(unittest.TestCase):
 
         # "cap shape" should be canonical (most frequent in its cluster)
         self.assertIn("cap shape", canonical_terms)
+
+
+NOT_YET = pytest.mark.xfail(
+    strict=True, reason="generation token cap not implemented yet")
+
+VALID_FEATURES = {"pileus": {"shape": ["convex"]}}
+
+
+class RecordingBackend:
+    """Backend stand-in that records the generation kwargs it receives."""
+
+    def __init__(self) -> None:
+        self.calls: List[Dict[str, Any]] = []
+
+    def generate(self, prompt: str, schema: Dict[str, Any],
+                 **kwargs: Any) -> Dict[str, Any]:
+        self.calls.append(kwargs)
+        return VALID_FEATURES
+
+
+class TestGenerationTokenCap(unittest.TestCase):
+    """Constrained generation must stop at a token cap.
+
+    Without one, Outlines generates until the JSON closes; schema-valid
+    output can grow without end, and production_v4_1 lost an hour per
+    stuck record to three 1200 s timeouts.
+    """
+
+    def decoder_with(self, backend: RecordingBackend,
+                     **kwargs: Any) -> ConstrainedDecoder:
+        decoder = ConstrainedDecoder(**kwargs)
+        decoder._backend_instance = backend  # type: ignore[assignment]
+        return decoder
+
+    def test_max_tokens_defaults_to_unbounded(self):
+        self.assertIsNone(ConstrainedDecoder().max_tokens)
+
+    @NOT_YET
+    def test_decoder_cap_reaches_the_backend(self):
+        backend = RecordingBackend()
+        self.decoder_with(backend, max_tokens=3072).extract_features(
+            "Pileus convex.")
+        self.assertEqual(backend.calls[0].get("max_tokens"), 3072)
+
+    def test_unbounded_decoder_passes_no_cap(self):
+        backend = RecordingBackend()
+        self.decoder_with(backend).extract_features("Pileus convex.")
+        self.assertIsNone(backend.calls[0].get("max_tokens"))
+
+    def test_per_call_cap_overrides_decoder_cap(self):
+        backend = RecordingBackend()
+        self.decoder_with(backend, max_tokens=3072).extract_features(
+            "Pileus convex.", max_tokens=10)
+        self.assertEqual(backend.calls[0].get("max_tokens"), 10)
+
+    def test_outlines_backend_forwards_max_tokens(self):
+        backend = OutlinesBackend()
+        backend._model = object()
+        generator = mock.Mock(return_value=VALID_FEATURES)
+        with mock.patch("outlines.generate.json", return_value=generator):
+            backend.generate("prompt", {"type": "object"}, max_tokens=5)
+        generator.assert_called_once_with("prompt", max_tokens=5)
+
+    @NOT_YET
+    def test_outlines_truncation_raises_generation_truncated(self):
+        """Outlines parses the generated text with json.loads, so output
+        cut off at max_tokens surfaces as JSONDecodeError."""
+        backend = OutlinesBackend()
+        backend._model = object()
+        cut = json.JSONDecodeError("Expecting value", '{"pileus": {', 12)
+        generator = mock.Mock(side_effect=cut)
+        with mock.patch("outlines.generate.json", return_value=generator):
+            with self.assertRaises(GenerationTruncatedError) as caught:
+                backend.generate("prompt", {"type": "object"}, max_tokens=5)
+        self.assertIn("5", str(caught.exception))
+        self.assertIs(caught.exception.__cause__, cut)
+
+    def test_generation_truncated_is_a_value_error(self):
+        self.assertTrue(issubclass(GenerationTruncatedError, ValueError))
 
 
 if __name__ == '__main__':

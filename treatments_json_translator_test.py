@@ -9,7 +9,10 @@ carries.
 
 Also covers the description token threshold: ``make_token_counter``,
 ``partition_by_token_budget`` and
-``TreatmentsJSONTranslator._drop_oversized_descriptions``.
+``TreatmentsJSONTranslator._drop_oversized_descriptions``; skipping
+untranslatable descriptions (``partition_untranslatable_descriptions``,
+``TreatmentsJSONTranslator._drop_untranslatable_descriptions``); and the
+generation token cap in ``_constrained_inference_worker``.
 
 Run with: python -m pytest treatments_json_translator_test.py -v
 """
@@ -18,17 +21,26 @@ import contextlib
 import io
 import math
 import unittest
+import queue
+import sys
+import types
 from typing import Any, Dict, List
 from unittest import mock
 
+import pytest
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
     _chunk_budget_chars,
+    _constrained_inference_worker,
     build_llm_input_text,
     make_token_counter,
     partition_by_token_budget,
+    partition_untranslatable_descriptions,
 )
+
+NOT_YET = pytest.mark.xfail(
+    strict=True, reason="empty-skip / generation cap not implemented yet")
 
 
 class TestBuildLlmInputText(unittest.TestCase):
@@ -317,6 +329,165 @@ class TestDropOversizedDescriptions(unittest.TestCase):
         tok.from_pretrained.assert_called_once()
         self.assertEqual(
             tok.from_pretrained.call_args.args[0], "example/model")
+
+
+REPLACEMENT = "\ufffd"
+
+
+@NOT_YET
+class TestPartitionUntranslatableDescriptions(unittest.TestCase):
+    """43 % of production_v4_1 has no description or diagnosis text; the
+    model invents a taxon for each (a frog, for one Nomen ignotum)."""
+
+    def kept_ids(self, *items: Dict[str, Any]) -> List[str]:
+        kept, _ = partition_untranslatable_descriptions(list(items))
+        return [i["_id"] for i in kept]
+
+    def test_none_empty_and_whitespace_are_dropped(self):
+        items = [item("none", None), item("empty", ""),
+                 item("blank", "  \n\t "), item("text", "Pileus convex.")]
+        kept, dropped = partition_untranslatable_descriptions(items)
+        self.assertEqual([i["_id"] for i in kept], ["text"])
+        self.assertEqual(dropped, ["none", "empty", "blank"])
+
+    def test_text_without_letters_is_dropped(self):
+        self.assertEqual(self.kept_ids(
+            item("dots", "... .. ."),
+            item("rule", "~" + "-" * 60),
+            item("numbers", "2.5-4 x 0.5-0.8 (14.0)"),
+        ), [])
+
+    def test_one_letter_is_enough(self):
+        """A measurement with a unit has letters: µ and m both count."""
+        self.assertEqual(self.kept_ids(item("mu", "2.5-4 µm")), ["mu"])
+
+    def test_replacement_characters_are_not_letters(self):
+        self.assertEqual(
+            self.kept_ids(item("ocr", REPLACEMENT * 40 + " 53 " +
+                               REPLACEMENT * 10)), [])
+
+    def test_mostly_replacement_characters_is_ocr_noise(self):
+        """>= 50 % U+FFFD of non-space characters: bibliography shreds
+        with 'et al.' surviving, nothing to extract."""
+        noisy = REPLACEMENT * 30 + "et al." + REPLACEMENT * 30
+        self.assertEqual(self.kept_ids(item("noisy", noisy)), [])
+
+    def test_threshold_is_half_of_non_space_characters(self):
+        half = REPLACEMENT * 10 + "abcdefghij"        # exactly 50 %
+        under = REPLACEMENT * 9 + "abcdefghij" + " " * 20  # 9 of 19
+        self.assertEqual(
+            self.kept_ids(item("half", half), item("under", under)),
+            ["under"])
+
+    def test_partly_garbled_description_is_kept(self):
+        """10-50 % U+FFFD is typical of readable descriptions with a few
+        unextractable glyphs (μ, ×, ligatures)."""
+        text = ("Basidiomes" + REPLACEMENT * 5 + " separable, gelatinous, "
+                "hygrophanous, soft when fresh" + REPLACEMENT * 5)
+        self.assertEqual(self.kept_ids(item("ok", text)), ["ok"])
+
+    def test_kept_items_keep_their_order_and_identity(self):
+        items = [item("a", "x"), item("e", ""), item("b", "y")]
+        kept, _ = partition_untranslatable_descriptions(items)
+        self.assertEqual([i["_id"] for i in kept], ["a", "b"])
+        self.assertIs(kept[0], items[0])
+
+    def test_empty_input(self):
+        self.assertEqual(
+            partition_untranslatable_descriptions([]), ([], []))
+
+
+@NOT_YET
+class TestDropUntranslatableDescriptions(unittest.TestCase):
+
+    def run_drop(self, translator: TreatmentsJSONTranslator,
+                 items: List[Dict[str, Any]]):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            kept = translator._drop_untranslatable_descriptions(items)
+        return kept, out.getvalue()
+
+    def test_drops_empty_even_without_a_token_threshold(self):
+        translator = make_translator()
+        kept, _ = self.run_drop(
+            translator, [item("e", ""), item("t", "Pileus convex.")])
+        self.assertEqual([i["_id"] for i in kept], ["t"])
+
+    def test_needs_no_tokenizer(self):
+        translator = make_translator(max_description_tokens=5)
+        with mock.patch("treatments_json_translator.AutoTokenizer") as tok:
+            self.run_drop(translator, [item("e", ""), item("t", "x")])
+        tok.from_pretrained.assert_not_called()
+
+    def test_logs_a_summary_not_every_id(self):
+        """Tens of thousands of empties would flood the log."""
+        translator = make_translator()
+        _, log = self.run_drop(translator, [
+            item("taxon_e1", ""), item("taxon_e2", "..."),
+            item("taxon_t", "x")])
+        self.assertRegex(log, r"[Dd]ropp?ed 2 of 3 ")
+        self.assertNotIn("taxon_e1", log)
+
+    def test_silent_when_nothing_is_dropped(self):
+        _, log = self.run_drop(make_translator(), [item("t", "x")])
+        self.assertNotRegex(log, r"[Dd]ropp?ed")
+
+
+class FakeConstrainedDecoder:
+    """Stands in for skol.constrained_decoder.ConstrainedDecoder."""
+
+    instances: List["FakeConstrainedDecoder"] = []
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.kwargs = kwargs
+        FakeConstrainedDecoder.instances.append(self)
+
+    def load_model(self, **kwargs: Any) -> None:
+        pass
+
+    def extract_features(self, description: str,
+                         **kwargs: Any) -> Dict[str, Any]:
+        return {"pileus": {"shape": ["convex"]}}
+
+
+def fake_decoder_module() -> types.ModuleType:
+    """What the worker's ``from skol.constrained_decoder import ...``
+    finds.  Under pytest ``skol`` is the repo-root package, so the real
+    submodule cannot be patched by name."""
+    module = types.ModuleType("skol.constrained_decoder")
+    module.ConstrainedDecoder = FakeConstrainedDecoder  # type: ignore[attr-defined]
+    module.TaxonomySchema = mock.Mock()  # type: ignore[attr-defined]
+    return module
+
+
+class TestConstrainedWorkerGenerationCap(unittest.TestCase):
+
+    def run_worker(self, max_new_tokens: int):
+        FakeConstrainedDecoder.instances = []
+        model_config = {
+            'base_model_id': 'example/model', 'device': 'cpu',
+            'load_in_4bit': False, 'prompt': '',
+            'max_new_tokens': max_new_tokens,
+        }
+        results: "queue.Queue[Any]" = queue.Queue()
+        with mock.patch.dict(sys.modules, {
+                "skol.constrained_decoder": fake_decoder_module()}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            _constrained_inference_worker(
+                [item("t", "Pileus convex.")], model_config, 10, results)
+        return results.get_nowait()
+
+    @NOT_YET
+    def test_decoder_is_capped_at_max_new_tokens(self):
+        status, _ = self.run_worker(3072)
+        self.assertEqual(status, 'success')
+        decoder = FakeConstrainedDecoder.instances[0]
+        self.assertEqual(decoder.kwargs.get('max_tokens'), 3072)
+
+    def test_worker_still_returns_results(self):
+        status, results = self.run_worker(3072)
+        self.assertEqual(status, 'success')
+        self.assertIn('"pileus"', results['t'])
 
 
 if __name__ == "__main__":
