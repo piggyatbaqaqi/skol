@@ -54,7 +54,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 # Allow running as a script or as a module.
 if __name__ == "__main__" and __package__ is None:
@@ -120,7 +120,7 @@ def _pipeline_for(doc_or_config: Dict[str, Any]) -> tuple:
             f"Available pipelines: {', '.join(pipelines.available())}"
         )
     try:
-        return pipelines.load(name)
+        return cast(Tuple[Any, ...], pipelines.load(name))
     except ValueError as exc:
         raise ValueError(
             f"{exc!s}\n"
@@ -358,7 +358,7 @@ def _connect_experiments_db(config: Dict[str, Any]):
 def _get_experiment(db, name: str) -> Optional[Dict[str, Any]]:
     """Get an experiment document by name, or None."""
     try:
-        return db[name]
+        return cast(Dict[str, Any], db[name])
     except Exception:
         return None
 
@@ -872,7 +872,7 @@ def _render_pipeline_step(
             f"{', '.join(names)}",
         )
     variables = build_variables(experiment_name, config)
-    return render_step(step, variables, force=force)
+    return cast(List[str], render_step(step, variables, force=force))
 
 
 def _split_passthrough_args(

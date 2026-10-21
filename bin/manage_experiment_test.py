@@ -1068,7 +1068,6 @@ class TestCmdApprove:
         import argparse
         db = _FakeExperimentsDb()
         cmd_create(db, _create_args(name='exp1', pipeline='v3_logistic'))
-        prior = db.docs['exp1'].get('updated_at', '')
         cmd_approve(db, argparse.Namespace(name='exp1'))
         assert db.docs['exp1']['updated_at'] != ''
         # We don't assert > prior because both timestamps may be the
@@ -1169,7 +1168,6 @@ class TestCmdUpdateFeaturesCandidateSelfRepair:
     def test_update_backfills_missing_field(self) -> None:
         """Legacy doc with no features_candidate field gets it
         populated on the next bare ``update <name>``."""
-        import argparse
         db = _FakeExperimentsDb()
         # Hand-craft a legacy doc shape (no features_candidate)
         db.docs['legacy'] = {
@@ -1189,7 +1187,6 @@ class TestCmdUpdateFeaturesCandidateSelfRepair:
     def test_update_preserves_existing_custom_value(self) -> None:
         """Operator-set custom name is left alone — repair only
         when missing."""
-        import argparse
         db = _FakeExperimentsDb()
         db.docs['custom'] = {
             '_id': 'custom',
@@ -1212,7 +1209,6 @@ class TestCmdUpdateFeaturesCandidateSelfRepair:
     def test_update_creates_databases_block_if_absent(self) -> None:
         """A doc with no 'databases' key at all should still get
         the field populated (defensive setdefault)."""
-        import argparse
         db = _FakeExperimentsDb()
         db.docs['bare'] = {
             '_id': 'bare',
