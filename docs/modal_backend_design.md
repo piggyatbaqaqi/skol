@@ -102,8 +102,8 @@ code, with the date they were read.
 
 **Calibration** runs about 50 records drawn from the real distribution
 on a chosen GPU, records tokens/second, cut-off rate and per-container
-overhead, and stores the result (e.g. in `skol_experiments` or a small
-JSON file) for `--dry-run` to read.  Each calibration costs on the
+overhead, and stores the result in a JSON file in the repo (see
+Calibration storage) for `--dry-run` to read.  Each calibration costs on the
 order of a dollar or two.
 
 ## Provenance
@@ -153,17 +153,59 @@ saved as `{}`.
 - Description text from published articles, including non-open-access
   journals, is sent to Modal for processing.  Operator accepts this.
 
+## Pricing estimate (2026-10-22)
+
+**Workload** (production_v4_1, measured 2026-10-22 against the
+structured DB's 2,613 docs): 42,410 records left after the
+untranslatable-text and 4,800-token filters; **50.2 M input tokens**
+(mean 1,183 including the 406-token prompt), exact; **21.6 M output
+tokens**, estimated from production_v4's 982 outputs (mean 509 capped
+at 3,072; median 426, p90 1,009).
+
+**Prices** (<https://modal.com/pricing>, read 2026-10-22; preemptible,
+no region selection; region selection costs 1.15-1.75x, non-preemptible
+3x).  Starter plan: $30/month free credits.  CPU $0.0000131/core/s,
+memory $0.00000222/GiB/s; assumed 2 cores + 16 GiB per container.
+
+**Throughput is estimated, not measured**: aggregate vLLM tokens/s for
+Mistral-7B bf16 with continuous batching and guided JSON, as a
+low/high range.  T4 is excluded: 14.5 GB of bf16 weights leave no KV
+cache on 16 GB.  Costs add decode and prefill time (pessimistic: no
+overlap) plus 4 minutes of start-up, load and idle per container.
+
+| GPU | $/s | est. decode tok/s | GPU-hours | cost |
+|---|---:|---:|---:|---:|
+| H100 | 0.001097 | 2,500-5,000 | 1.5-3.1 | $7-13 |
+| A100 40 GB | 0.000583 | 1,200-2,500 | 3.1-6.4 | $7-15 |
+| A100 80 GB | 0.000694 | 1,500-3,000 | 2.7-5.4 | $8-15 |
+| L40S | 0.000542 | 1,000-2,000 | 3.9-7.7 | $9-17 |
+| A10 | 0.000306 | 400-900 | 9.0-19.6 | $12-26 |
+| L4 | 0.000222 | 250-600 | 12.8-30.9 | $13-32 |
+
+Faster GPUs are cheaper overall: per-token cost falls faster than the
+hourly price rises, and each container's CPU and memory bill by the
+second too.  Every option fits the $42.50 workspace limit and finishes
+in hours, not weeks, so the deadline stops being the constraint.
+
+**Plan:** calibrate on H100 and A100 40 GB (about $1-2 each), then run
+on whichever is cheaper per record, with `--gpus 1` or `2`.
+
+## Calibration storage
+
+Measured throughput goes in a JSON file in the repo, one entry per GPU
+type, keyed by what it depends on: engine and version, model revision,
+dtype, `max_tokens`, and the image's pins.  Throughput does not depend
+on Modal's prices, which live in a separate dated table in the code.
+So a price change means editing that table, not recalibrating; an
+engine, model or image change means recalibrating.
+
 ## Open items
 
-1. **Pricing task:** most cost-effective GPU type and count for ~41,700
-   records by 2026-11-17, within the budget.
-2. **Greedy vs sampling.**  Proposal: greedy (temperature 0) with the
+1. **Packaging:** `modal` joins `requirements.txt`; `vllm` lives only
+   in the Modal image.
+2. **Greedy decoding** (accepted 2026-10-22): temperature 0 with the
    `max_tokens` cap; calibration reports the cut-off rate, and a high
    rate reopens the question.
-3. **Calibration storage:** `skol_experiments` document vs a JSON file
-   in the repo.
-4. **Packaging:** `modal` joins `requirements.txt`; `vllm` lives only
-   in the Modal image.
 
 ## Testing
 
