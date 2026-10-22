@@ -23,9 +23,6 @@ from treatments_to_structured.modal_models import (  # noqa: E402
     MODEL_REVISION,
 )
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="prepare_modal_models not implemented yet")
-
 
 class FakeRemote:
     """Records calls; stands in for the Modal functions."""
@@ -66,7 +63,6 @@ class TestParser:
             parse('--chek')
 
 
-@NOT_YET
 class TestValidateRevision:
 
     def test_full_commit(self) -> None:
@@ -78,7 +74,6 @@ class TestValidateRevision:
                 validate_revision(rev)
 
 
-@NOT_YET
 class TestRun:
 
     def test_check_does_not_prepare(self, capsys: Any) -> None:

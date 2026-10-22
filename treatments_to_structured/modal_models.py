@@ -14,6 +14,7 @@ download never counts as prepared.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -57,18 +58,30 @@ Downloader = Callable[[str, str, Path, List[str]], None]
 
 def model_dir(root: Path, model_id: str, revision: str) -> Path:
     """Directory holding ``model_id`` at ``revision`` under ``root``."""
-    raise NotImplementedError
+    return Path(root) / 'models' / model_id.replace('/', '--') / revision
 
 
 def read_marker(directory: Path) -> Optional[Dict[str, Any]]:
     """The preparation marker in ``directory``, or None."""
-    raise NotImplementedError
+    try:
+        marker = json.loads((Path(directory) / MARKER_NAME).read_text())
+    except (OSError, ValueError):
+        return None
+    return marker if isinstance(marker, dict) else None
 
 
 def is_prepared(root: Path, model_id: str, revision: str) -> bool:
     """True when the marker exists, names this model and revision, and
     every file it lists is present."""
-    raise NotImplementedError
+    directory = model_dir(root, model_id, revision)
+    marker = read_marker(directory)
+    if marker is None:
+        return False
+    if (marker.get('model_id') != model_id
+            or marker.get('revision') != revision):
+        return False
+    files = marker.get('files') or []
+    return bool(files) and all((directory / f).is_file() for f in files)
 
 
 def prepare(
@@ -85,9 +98,27 @@ def prepare(
     returns; if it raises, no marker is written and the error
     propagates.
     """
-    raise NotImplementedError
+    if is_prepared(root, model_id, revision):
+        return 'present'
+    directory = model_dir(root, model_id, revision)
+    directory.mkdir(parents=True, exist_ok=True)
+    download(model_id, revision, directory, list(ALLOW_PATTERNS))
+    files = sorted(
+        str(p.relative_to(directory)) for p in directory.rglob('*')
+        if p.is_file() and p.name != MARKER_NAME
+        and not any(part.startswith('.') for part in
+                    p.relative_to(directory).parts))
+    marker = {'model_id': model_id, 'revision': revision,
+              'prepared_at': now, 'files': files}
+    (directory / MARKER_NAME).write_text(json.dumps(marker, indent=1))
+    return 'downloaded'
 
 
 def check(root: Path, model_id: str, revision: str) -> Dict[str, Any]:
     """Report ``{model_id, revision, path, prepared}`` without downloading."""
-    raise NotImplementedError
+    return {
+        'model_id': model_id,
+        'revision': revision,
+        'path': str(model_dir(root, model_id, revision)),
+        'prepared': is_prepared(root, model_id, revision),
+    }

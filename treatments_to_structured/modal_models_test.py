@@ -25,9 +25,6 @@ from treatments_to_structured.modal_models import (
     read_marker,
 )
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="modal_models not implemented yet")
-
 NOW = '2026-10-22T00:00:00+00:00'
 REV = 'c170c708c41dac9275d15a8fff4eca08d52bab71'
 OTHER_REV = '0' * 40
@@ -98,7 +95,6 @@ class TestConstants:
 # ---------------------------------------------------------------------------
 
 
-@NOT_YET
 class TestModelDir:
 
     def test_layout(self, tmp_path: Path) -> None:
@@ -112,7 +108,6 @@ class TestModelDir:
                 != model_dir(tmp_path, MODEL_ID, OTHER_REV))
 
 
-@NOT_YET
 class TestPrepare:
 
     def test_downloads_when_absent_and_writes_marker(
@@ -155,7 +150,6 @@ class TestPrepare:
         assert len(download.calls) == 1
 
 
-@NOT_YET
 class TestIsPrepared:
 
     def test_nothing_there(self, tmp_path: Path) -> None:
@@ -188,7 +182,6 @@ class TestIsPrepared:
         assert is_prepared(tmp_path, MODEL_ID, REV) is False
 
 
-@NOT_YET
 class TestCheck:
 
     def test_reports_without_downloading(self, tmp_path: Path) -> None:

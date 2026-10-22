@@ -3,6 +3,8 @@ accelerate>=1.12.0
 huggingface-hub>=0.36.2,<1.0
 jupyterlab>=4.5.2
 mcp>=1.25.0
+# Modal backend for treatments_to_json (docs/modal_backend_design.md).
+modal==1.6.2
 neo4j>=6.1.0
 numpy>=2.2.6
 nvidia-cuda-runtime-cu12>=12.9.79
