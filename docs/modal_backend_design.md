@@ -207,6 +207,42 @@ engine, model or image change means recalibrating.
    `max_tokens` cap; calibration reports the cut-off rate, and a high
    rate reopens the question.
 
+## Implementation plan
+
+Five tranches, each one test-first cycle (tests, operator review,
+commit with xfail, implement).  Ordered so the first spending run comes
+early and costs pennies, and the spending guard exists before any large
+run.
+
+**Setup (once, operator):** install `modal` in `skol3.14` (pinned in
+`requirements.txt` in tranche 1); create the Modal Secret holding the
+Hugging Face token; confirm the Mistral licence is accepted on that HF
+account; optionally set a Modal workspace spend limit below $42.50.
+The Modal token already exists (`~/.modal.toml`).
+
+1. **App shell and model preparation.**  Container image with pinned
+   vLLM/torch, the model Volume, a CPU-only `prepare_models` function,
+   `bin/prepare_modal_models` (`--check`).  Real run: download the
+   pinned weights on CPU (cents).
+2. **Inference and spending guard.**  The vLLM GPU class
+   (schema-guided, greedy, `max_tokens`); `treatments_to_json
+   --backend modal` submitting batches and saving results as they
+   arrive; cut-off or invalid output saved as `{}`, failed batches not
+   saved; provenance on local and Modal records; `--max-cost` required
+   and enforced as elapsed time x GPUs x price (a safe upper bound that
+   needs no calibration).  Real run: `--limit 5` (pennies), compared
+   with local output.
+3. **Calibration.**  `--calibrate N` writes the JSON file keyed by
+   engine, model revision, dtype, `max_tokens` and image pins; stale
+   entries detected.  Real runs: H100 and A100 40 GB (~$1-2 each).
+4. **`--dry-run` estimate.**  Calibration plus the dated price table:
+   records, tokens, GPU-hours, wall-clock at `--gpus N`, dollars;
+   refuses without calibration for the GPU.  Real run: free.
+5. **Production run.**  No new code: stop the local job, dry-run, run
+   with `--max-cost` from the estimate, then `assess_treatments`.
+
+Expected: about four working sessions; the production run takes hours.
+
 ## Testing
 
 Test-first as usual, with Modal mocked: prompt construction matches the
