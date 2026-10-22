@@ -250,6 +250,13 @@ ignore = ["E501"]  # Line too long - handled by formatter
 
 [tool.mypy]
 python_version = "3.14"
+# The repo root has an __init__.py, so without explicit bases mypy names
+# e.g. treatments_to_structured/x.py both "skol.treatments_to_structured.x"
+# and "treatments_to_structured.x" and stops with "Source file found
+# twice under different module names".  Module paths start at the repo
+# root, as the code imports them.
+explicit_package_bases = true
+mypy_path = "$MYPY_CONFIG_FILE_DIR"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
