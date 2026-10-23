@@ -374,9 +374,6 @@ class TestCacheEnv:
 # Decoding: greedy, with whitespace runs capped in the JSON grammar
 # ---------------------------------------------------------------------------
 
-DECODING_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="json_grammar / sampling_options not implemented")
-
 SCHEMA = {"type": "object", "properties": {}, "additionalProperties": True}
 
 
@@ -410,7 +407,6 @@ def test_whitespace_cap() -> None:
     assert MAX_WHITESPACE_CNT == 20
 
 
-@DECODING_NOT_YET
 class TestJsonGrammar:
 
     def test_builds_from_our_schema_with_the_cap(self) -> None:
@@ -432,7 +428,6 @@ class TestJsonGrammar:
         assert json_grammar(SCHEMA, FakeXgrammar()) == 'root ::= "{" "}"'
 
 
-@DECODING_NOT_YET
 class TestSamplingOptions:
 
     def test_greedy_with_explicit_max_tokens(self) -> None:
@@ -449,7 +444,6 @@ class TestSamplingOptions:
                 sampling_options(bad)
 
 
-@DECODING_NOT_YET
 def test_provenance_names_the_whitespace_cap() -> None:
     assert 'greedy' in DECODING
     assert str(MAX_WHITESPACE_CNT) in DECODING
@@ -459,7 +453,6 @@ class TestRealXgrammar:
     """The cap's effect with the real library; skipped where xgrammar is
     not installed (it is in the GPU image and the skol-vllm312 env)."""
 
-    @DECODING_NOT_YET
     def test_accepts_indented_json_and_rejects_a_whitespace_run(
             self) -> None:
         xgr = pytest.importorskip('xgrammar')

@@ -25,7 +25,9 @@ from treatments_to_structured.modal_inference import (
     DTYPE,
     VLLM_VERSION,
     cache_env,
+    json_grammar,
     raw_from_vllm,
+    sampling_options,
 )
 from treatments_to_structured.modal_models import (
     MODEL_ID,
@@ -135,18 +137,29 @@ class JsonTranslator:
                        gpu_memory_utilization=0.90, seed=0)
         # Keep what this start-up compiled for the next container.
         cache_volume.commit()
+        self.grammars: Dict[str, str] = {}
 
     @modal.method()
     def translate(self, batch: List[Dict[str, Any]], schema: Dict[str, Any],
                   max_tokens: int) -> List[Dict[str, Any]]:
-        """One raw result per ``{_id, prompt}`` in ``batch``, in order."""
+        """One raw result per ``{_id, prompt}`` in ``batch``, in order.
+
+        Greedy, with the JSON grammar's whitespace runs capped
+        (modal_inference.MAX_WHITESPACE_CNT); see json_grammar.
+        """
+        import json
+
+        import xgrammar
         from vllm import SamplingParams
         from vllm.sampling_params import StructuredOutputsParams
 
-        # max_tokens must always be set: vLLM's default is 16.
+        key = json.dumps(schema, sort_keys=True)
+        if key not in self.grammars:
+            self.grammars[key] = json_grammar(schema, xgrammar)
         params = SamplingParams(
-            temperature=0.0, max_tokens=max_tokens,
-            structured_outputs=StructuredOutputsParams(json=schema))
+            **sampling_options(max_tokens),
+            structured_outputs=StructuredOutputsParams(
+                grammar=self.grammars[key]))
         outputs = self.llm.generate([b['prompt'] for b in batch], params,
                                     use_tqdm=False)
         return [raw_from_vllm(b['_id'], output)

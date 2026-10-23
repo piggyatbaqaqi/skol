@@ -33,13 +33,13 @@ MEMORY_PRICE_PER_GIB_SECOND = 0.00000222
 ENGINE = 'vllm'
 VLLM_VERSION = '0.32.0'
 DTYPE = 'bfloat16'
-DECODING = 'greedy'
 # Longest run of whitespace the JSON grammar allows.  Without a cap,
 # xgrammar's JSON grammar permits unlimited whitespace and Mistral can run
 # into it until max_tokens: 25 of 200 outputs in the 2026-10-23
 # comparison, every cut-off.  Four-space indentation at the schema's
 # maximum depth needs at most 17.
 MAX_WHITESPACE_CNT = 20
+DECODING = f'greedy, max_whitespace_cnt={MAX_WHITESPACE_CNT}'
 
 # Compile and kernel caches live on their own Volume, so containers after
 # the first skip torch.compile and FlashInfer's JIT build (~2.5 of the
@@ -122,7 +122,9 @@ def json_grammar(schema: Dict[str, Any], xgr: Any) -> str:
     ``xgr`` is the ``xgrammar`` module, passed in because it exists only
     in the GPU image.
     """
-    raise NotImplementedError
+    grammar = xgr.Grammar.from_json_schema(
+        json.dumps(schema), max_whitespace_cnt=MAX_WHITESPACE_CNT)
+    return str(grammar)
 
 
 def sampling_options(max_tokens: int) -> Dict[str, Any]:
@@ -132,7 +134,9 @@ def sampling_options(max_tokens: int) -> Dict[str, Any]:
     Raises:
         ValueError: If ``max_tokens`` is less than 1.
     """
-    raise NotImplementedError
+    if max_tokens < 1:
+        raise ValueError(f'max_tokens must be at least 1, got {max_tokens}')
+    return {'temperature': 0.0, 'max_tokens': max_tokens}
 
 
 def make_batches(items: Sequence[Item], size: int) -> List[List[Item]]:
