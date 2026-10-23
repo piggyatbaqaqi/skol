@@ -1,0 +1,101 @@
+{
+ "_schema_version": 1,
+ "entries": [
+  {
+   "configs": [
+    {
+     "batch_size": 64,
+     "cut_off_rate": 0.01171875,
+     "elapsed_s": 135.16167355049402,
+     "mean_input_tokens": 1163.44140625,
+     "mean_output_tokens": 638.95703125,
+     "output_tokens_per_s": 1210.2025352541377,
+     "records": 256,
+     "records_per_s": 1.894028042678555
+    },
+    {
+     "batch_size": 128,
+     "cut_off_rate": 0.0078125,
+     "elapsed_s": 109.83611605223268,
+     "mean_input_tokens": 1168.81640625,
+     "mean_output_tokens": 590.39453125,
+     "output_tokens_per_s": 1376.0592183369333,
+     "records": 256,
+     "records_per_s": 2.3307451974927713
+    },
+    {
+     "batch_size": 256,
+     "cut_off_rate": 0.015625,
+     "elapsed_s": 110.26739298459142,
+     "mean_input_tokens": 1175.36328125,
+     "mean_output_tokens": 671.03515625,
+     "output_tokens_per_s": 1557.8948168658067,
+     "records": 256,
+     "records_per_s": 2.3216292057958876
+    }
+   ],
+   "gpu": "A100-40GB",
+   "key": {
+    "decoding": "greedy, max_whitespace_cnt=20",
+    "dtype": "bfloat16",
+    "engine": "vllm",
+    "engine_version": "0.32.0",
+    "image": "nvidia/cuda:12.8.1-devel-ubuntu22.04",
+    "max_model_len": 10240,
+    "max_tokens": 3072,
+    "model": "mistralai/Mistral-7B-Instruct-v0.3",
+    "model_revision": "c170c708c41dac9275d15a8fff4eca08d52bab71"
+   },
+   "measured_at": "2026-10-23T05:20:02.302414+00:00",
+   "startup_s": 68.9984455704689
+  },
+  {
+   "configs": [
+    {
+     "batch_size": 64,
+     "cut_off_rate": 0.01171875,
+     "elapsed_s": 60.67087361216545,
+     "mean_input_tokens": 1155.8671875,
+     "mean_output_tokens": 649.51171875,
+     "output_tokens_per_s": 2740.6066552280413,
+     "records": 256,
+     "records_per_s": 4.219487618333355
+    },
+    {
+     "batch_size": 128,
+     "cut_off_rate": 0.00390625,
+     "elapsed_s": 45.683708739466965,
+     "mean_input_tokens": 1160.96484375,
+     "mean_output_tokens": 631.28125,
+     "output_tokens_per_s": 3537.541159839853,
+     "records": 256,
+     "records_per_s": 5.603748186469744
+    },
+    {
+     "batch_size": 256,
+     "cut_off_rate": 0.00390625,
+     "elapsed_s": 41.54366550035775,
+     "mean_input_tokens": 1167.7890625,
+     "mean_output_tokens": 623.97265625,
+     "output_tokens_per_s": 3845.0386617575778,
+     "records": 256,
+     "records_per_s": 6.162190960202958
+    }
+   ],
+   "gpu": "H100",
+   "key": {
+    "decoding": "greedy, max_whitespace_cnt=20",
+    "dtype": "bfloat16",
+    "engine": "vllm",
+    "engine_version": "0.32.0",
+    "image": "nvidia/cuda:12.8.1-devel-ubuntu22.04",
+    "max_model_len": 10240,
+    "max_tokens": 3072,
+    "model": "mistralai/Mistral-7B-Instruct-v0.3",
+    "model_revision": "c170c708c41dac9275d15a8fff4eca08d52bab71"
+   },
+   "measured_at": "2026-10-23T05:27:20.737121+00:00",
+   "startup_s": 146.11305285338312
+  }
+ ]
+}
