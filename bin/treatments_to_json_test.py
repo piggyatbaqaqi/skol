@@ -16,8 +16,6 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -142,10 +140,6 @@ class TestMaxNewTokensWiring(unittest.TestCase):
             TreatmentsJSONTranslator.DEFAULT_MAX_NEW_TOKENS)
 
 
-MODAL_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="Modal backend flags not implemented yet")
-
-
 def backend_args(**overrides: Any) -> SimpleNamespace:
     base = dict(backend='modal', gpu='H100', gpus=1, max_cost=5.0,
                 modal_batch_size=64, dry_run=False,
@@ -154,7 +148,6 @@ def backend_args(**overrides: Any) -> SimpleNamespace:
     return SimpleNamespace(**base)
 
 
-@MODAL_NOT_YET
 class TestValidateBackendArgs(unittest.TestCase):
 
     def test_complete_modal_args(self):
@@ -197,7 +190,6 @@ class TestValidateBackendArgs(unittest.TestCase):
                     validate_backend_args(args)
 
 
-@MODAL_NOT_YET
 class TestModalFlagWiring(unittest.TestCase):
 
     def test_help_lists_the_flags(self):

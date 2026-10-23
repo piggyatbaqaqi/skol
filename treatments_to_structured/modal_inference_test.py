@@ -26,9 +26,6 @@ from treatments_to_structured.modal_inference import (
     taxon_doc_id,
 )
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="modal_inference not implemented yet")
-
 FEATURES = {"pileus": {"shape": ["convex"]}}
 
 
@@ -65,18 +62,15 @@ class TestPrices:
         assert set(GPU_PRICES) == {'H100', 'A100-80GB', 'A100-40GB', 'L40S',
                                    'A10G', 'L4'}
 
-    @NOT_YET
     def test_rate_adds_cpu_and_memory(self) -> None:
         cpu_mem = 2 * 0.0000131 + 16 * 0.00000222
         assert rate_per_second('H100') == pytest.approx(0.001097 + cpu_mem)
 
-    @NOT_YET
     def test_unknown_gpu(self) -> None:
         with pytest.raises(ValueError):
             rate_per_second('T4')
 
 
-@NOT_YET
 class TestSpendGuard:
 
     def test_nothing_spent_before_start(self) -> None:
@@ -116,7 +110,6 @@ class TestSpendGuard:
 # ---------------------------------------------------------------------------
 
 
-@NOT_YET
 class TestMakeBatches:
 
     def test_consecutive_batches(self) -> None:
@@ -133,7 +126,6 @@ class TestMakeBatches:
             make_batches([{"_id": "a"}], 0)
 
 
-@NOT_YET
 class TestRawFromVllm:
 
     def test_fields(self) -> None:
@@ -147,7 +139,6 @@ class TestRawFromVllm:
             'finish_reason': 'stop', 'tokens_in': 3, 'tokens_out': 2}
 
 
-@NOT_YET
 class TestInterpretOutput:
 
     def test_ok(self) -> None:
@@ -225,7 +216,6 @@ def echo(batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             for item in batch]
 
 
-@NOT_YET
 class TestRunBatches:
 
     def test_every_batch_reaches_on_batch(self) -> None:
@@ -294,7 +284,6 @@ class TestRunBatches:
 # ---------------------------------------------------------------------------
 
 
-@NOT_YET
 class TestProvenance:
 
     def test_fields(self) -> None:
@@ -308,7 +297,6 @@ class TestProvenance:
         }
 
 
-@NOT_YET
 class TestStructuredDoc:
 
     def test_id_matches_the_local_path(self) -> None:

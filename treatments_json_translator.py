@@ -830,7 +830,46 @@ and their values from the provided species description and format them as struct
 
     def _local_provenance(self) -> Dict[str, Any]:
         """The ``provenance`` field for records made on the local GPU."""
-        raise NotImplementedError
+        import transformers
+        from treatments_to_structured.modal_inference import provenance
+
+        constrained = self.use_constrained_decoding
+        return provenance(
+            backend='local',
+            engine='transformers+outlines' if constrained else 'transformers',
+            engine_version=transformers.__version__,
+            gpu=None,
+            model=self.base_model_id,
+            model_revision=None,
+            dtype='4bit' if self.load_in_4bit else 'float16',
+            # Outlines samples by default; the unconstrained path is greedy.
+            decoding='sampling' if constrained else 'greedy',
+            max_tokens=self.max_new_tokens,
+        )
+
+    def collect_items(
+        self, taxa_df: DataFrame, description_col: str = 'description',
+    ) -> List[Dict[str, Any]]:
+        """The rows of ``taxa_df`` as plain dicts, as the streaming path
+        collects them."""
+        rows = taxa_df.select(
+            '_id', 'treatment', description_col, 'ingest', 'line_number',
+            'paragraph_number', 'page_number', 'empirical_page_number',
+        ).collect()
+        items = []
+        for row in rows:
+            ingest_val = getattr(row, 'ingest', None)
+            items.append({
+                '_id': row['_id'],
+                'treatment': row['treatment'],
+                'description': row[description_col],
+                'ingest': dict(ingest_val) if ingest_val else {},
+                'line_number': row['line_number'],
+                'paragraph_number': row['paragraph_number'],
+                'page_number': row['page_number'],
+                'empirical_page_number': row['empirical_page_number'],
+            })
+        return items
 
     def translate_items_modal(
         self,
@@ -857,7 +896,73 @@ and their values from the provided species description and format them as struct
         Returns ``{records, ok, cut_off, invalid, failed_records,
         not_submitted_records, spent_upper_bound}``.
         """
-        raise NotImplementedError
+        from skol.constrained_decoder import ConstrainedDecoder, TaxonomySchema
+        from treatments_to_structured.modal_inference import (
+            DECODING, DTYPE, ENGINE, VLLM_VERSION, interpret_output,
+            make_batches, provenance, run_batches, structured_doc,
+        )
+        from treatments_to_structured.modal_models import (
+            MODEL_ID, MODEL_REVISION,
+        )
+
+        items = self._drop_untranslatable_descriptions(items)
+        items = self._drop_oversized_descriptions(items)
+        decoder = ConstrainedDecoder(system_prompt=self.prompt)
+        schema = TaxonomySchema(max_depth=self.schema_max_depth,
+                                min_depth=self.schema_min_depth)
+        schema_json = schema.to_json_schema_inlined()
+        # Modal serves the model prepared on its Volume, so provenance
+        # names that, not --base-model.
+        prov = provenance('modal', ENGINE, VLLM_VERSION, gpu, MODEL_ID,
+                          MODEL_REVISION, DTYPE, DECODING,
+                          self.max_new_tokens)
+        by_id = {item['_id']: item for item in items}
+        batches = make_batches(
+            [{'_id': item['_id'],
+              'prompt': decoder._build_prompt(item['description'])}
+             for item in items],
+            modal_batch_size)
+        counts: Dict[str, Any] = {
+            'records': len(items), 'ok': 0, 'cut_off': 0, 'invalid': 0,
+            'failed_records': 0, 'not_submitted_records': 0,
+        }
+
+        def on_batch(batch: List[Dict[str, Any]],
+                     results: List[Dict[str, Any]]) -> None:
+            for raw in results:
+                result = interpret_output(raw, schema.validate)
+                doc = structured_doc(by_id[raw['_id']], result['features'],
+                                     result['json_valid'], prov)
+                existing = db.get(doc['_id'])
+                if existing is not None and existing.get('_rev'):
+                    doc['_rev'] = existing['_rev']
+                db.save(doc)
+                counts[result['outcome']] += 1
+            if verbosity >= 1:
+                done = counts['ok'] + counts['cut_off'] + counts['invalid']
+                print(f"  ✓ {done}/{counts['records']} saved "
+                      f"(cut off {counts['cut_off']}, invalid "
+                      f"{counts['invalid']}); spent at most "
+                      f"${guard.spent_upper_bound():.2f}")
+
+        def on_failure(batch: List[Dict[str, Any]],
+                       exc: BaseException) -> None:
+            counts['failed_records'] += len(batch)
+            print(f"  ✗ batch of {len(batch)} failed, not saved: {exc}")
+
+        guard.start()
+        batch_counts = run_batches(
+            batches,
+            lambda batch: call(batch, schema_json, self.max_new_tokens),
+            guard, on_batch, on_failure, max_in_flight)
+        skipped = batch_counts['not_submitted']
+        if skipped:
+            counts['not_submitted_records'] = sum(
+                len(b) for b in batches[len(batches) - skipped:])
+            print(f"  Stopped at --max-cost: "
+                  f"{counts['not_submitted_records']} records not sent")
+        counts['spent_upper_bound'] = guard.spent_upper_bound()
+        return counts
 
     def _get_ontology_context_builder(self):
         """
@@ -1542,6 +1647,8 @@ and their values from the provided species description and format them as struct
         if verbosity >= 1:
             print(f"  ✓ Collected {len(descriptions)} descriptions")
 
+        local_provenance = self._local_provenance()
+
         # Step 1a: Drop untranslatable and oversized descriptions;
         # nothing is saved for them.
         descriptions = self._drop_untranslatable_descriptions(descriptions)
@@ -1790,7 +1897,8 @@ and their values from the provided species description and format them as struct
                                 'empirical_page_number'
                             ),
                             'json_annotated': json_annotated,
-                            'json_valid': json_valid
+                            'json_valid': json_valid,
+                            'provenance': local_provenance,
                         }
 
                         if doc_id in db:

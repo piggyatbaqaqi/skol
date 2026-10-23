@@ -27,8 +27,6 @@ import types
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
-import pytest
-
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -492,10 +490,6 @@ class TestConstrainedWorkerGenerationCap(unittest.TestCase):
 # Modal backend: translate_items_modal and local provenance
 # ---------------------------------------------------------------------------
 
-MODAL_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="translate_items_modal not implemented yet")
-
-
 class PromptDecoder:
     """Stands in for ConstrainedDecoder: records its system prompt."""
 
@@ -550,6 +544,9 @@ class Allow:
     def __init__(self, n: int = 10 ** 6) -> None:
         self.left = n
 
+    def start(self) -> None:
+        pass
+
     def allows_more(self) -> bool:
         self.left -= 1
         return self.left >= 0
@@ -594,7 +591,6 @@ class FakeModalCall:
         return out
 
 
-@MODAL_NOT_YET
 class TestTranslateItemsModal:
 
     def run_modal(self, items: List[Dict[str, Any]], call: FakeModalCall,
@@ -697,7 +693,6 @@ class TestTranslateItemsModal:
         assert counts['spent_upper_bound'] == 0.25
 
 
-@MODAL_NOT_YET
 class TestLocalProvenance:
 
     def test_constrained_4bit(self) -> None:

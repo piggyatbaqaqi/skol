@@ -101,6 +101,11 @@ def translate_treatments_to_json(
     max_restarts: int = 3,
     max_description_tokens: Optional[int] = None,
     max_new_tokens: int = 1024,
+    backend: str = 'local',
+    gpu: Optional[str] = None,
+    gpus: int = 1,
+    max_cost: Optional[float] = None,
+    modal_batch_size: int = 64,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -135,6 +140,12 @@ def translate_treatments_to_json(
         max_description_tokens: Skip descriptions longer than this many
             tokens; nothing is saved for them (None: no limit)
         max_new_tokens: Cap on tokens generated per description
+        backend: 'local' (this machine's GPU) or 'modal'
+        gpu: Modal GPU type (backend 'modal')
+        gpus: Maximum Modal GPU containers at once
+        max_cost: Stop sending work once this many dollars may have
+            been spent (backend 'modal')
+        modal_batch_size: Descriptions per Modal call
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -406,6 +417,14 @@ def translate_treatments_to_json(
             print(f"\n[DRY RUN] Would process {total_count} taxa")
             print(f"[DRY RUN] Source: {source_db} -> Destination: {dest_db}")
             print("[DRY RUN] No changes have been made")
+            return
+
+        if backend == 'modal':
+            if gpu is None or max_cost is None:
+                raise ValueError('backend modal needs gpu and max_cost')
+            _translate_on_modal(
+                translator, taxa_df, dest_db, couchdb_url, username,
+                password, gpu, gpus, max_cost, modal_batch_size, verbosity)
             return
 
         # Process based on mode
@@ -863,6 +882,47 @@ def resolve_max_new_tokens(
     return value
 
 
+def _translate_on_modal(
+    translator: Any,
+    taxa_df: Any,
+    dest_db: str,
+    couchdb_url: str,
+    username: Optional[str],
+    password: Optional[str],
+    gpu: str,
+    gpus: int,
+    max_cost: float,
+    modal_batch_size: int,
+    verbosity: int,
+) -> None:
+    """Translate on Modal GPUs and save to ``dest_db`` as results arrive."""
+    import couchdb
+    from treatments_to_structured import modal_app
+    from treatments_to_structured.modal_inference import (
+        SpendGuard, rate_per_second,
+    )
+
+    server = couchdb.Server(couchdb_url)
+    if username and password:
+        server.resource.credentials = (username, password)
+    if dest_db not in server:
+        server.create(dest_db)
+    items = translator.collect_items(taxa_df)
+    guard = SpendGuard(max_cost, gpu, gpus)
+    if verbosity >= 1:
+        print(f"\nModal: {gpus} x {gpu} at ${rate_per_second(gpu) * 3600:.2f}"
+              f"/hour each; stopping new work at ${max_cost:.2f}")
+    with modal_app.run_translator(gpu, gpus) as call:
+        counts = translator.translate_items_modal(
+            items, server[dest_db], call, guard, gpu,
+            modal_batch_size=modal_batch_size, max_in_flight=2 * gpus,
+            verbosity=verbosity)
+    print(f"\nModal: {counts['ok']} ok, {counts['cut_off']} cut off, "
+          f"{counts['invalid']} invalid, {counts['failed_records']} failed "
+          f"(not saved), {counts['not_submitted_records']} not sent; "
+          f"spent at most ${counts['spent_upper_bound']:.2f}")
+
+
 def validate_backend_args(args: Any) -> None:
     """Check the backend flags fit together.
 
@@ -874,7 +934,32 @@ def validate_backend_args(args: Any) -> None:
     Raises:
         ValueError: Naming the offending flag.
     """
-    raise NotImplementedError
+    if args.backend == 'local':
+        if args.gpu is not None:
+            raise ValueError('--gpu needs --backend modal')
+        if args.max_cost is not None:
+            raise ValueError('--max-cost needs --backend modal')
+        return
+    if args.gpu is None:
+        raise ValueError('--backend modal needs --gpu')
+    if args.max_cost is None and not args.dry_run:
+        raise ValueError('--backend modal needs --max-cost (dollars) '
+                         'unless --dry-run')
+    if args.max_cost is not None and args.max_cost <= 0:
+        raise ValueError(f'--max-cost must be positive, got {args.max_cost}')
+    if args.gpus < 1:
+        raise ValueError(f'--gpus must be at least 1, got {args.gpus}')
+    if args.modal_batch_size < 1:
+        raise ValueError('--modal-batch-size must be at least 1, got '
+                         f'{args.modal_batch_size}')
+    if args.use_ontology_context:
+        raise ValueError('--use-ontology-context is not supported with '
+                         '--backend modal')
+    from treatments_to_structured.modal_models import MODEL_ID
+    base_model = getattr(args, 'base_model', None)
+    if base_model and base_model != MODEL_ID:
+        raise ValueError(f'--backend modal serves {MODEL_ID} (prepared on '
+                         f'its Volume), not --base-model {base_model}')
 
 
 def _resolve_positive_int(
@@ -1143,6 +1228,49 @@ Examples:
               'no limit)')
     )
 
+    from treatments_to_structured.modal_inference import GPU_PRICES
+
+    parser.add_argument(
+        '--backend',
+        choices=['local', 'modal'],
+        default='local',
+        help='Where to run the model: this machine\'s GPU, or Modal '
+             '(docs/modal_backend_design.md) (default: local)'
+    )
+
+    parser.add_argument(
+        '--gpu',
+        choices=sorted(GPU_PRICES),
+        default=None,
+        help='Modal GPU type (needs --backend modal)'
+    )
+
+    parser.add_argument(
+        '--gpus',
+        type=int,
+        default=1,
+        metavar='N',
+        help='Maximum Modal GPU containers at once (default: 1)'
+    )
+
+    parser.add_argument(
+        '--max-cost',
+        type=float,
+        default=None,
+        metavar='DOLLARS',
+        help='Stop sending work to Modal once this much may have been '
+             'spent (elapsed time x GPUs x price, an upper bound); '
+             'required with --backend modal unless --dry-run'
+    )
+
+    parser.add_argument(
+        '--modal-batch-size',
+        type=int,
+        default=64,
+        metavar='N',
+        help='Descriptions per Modal call (default: 64)'
+    )
+
     parser.add_argument(
         '--max-new-tokens',
         type=int,
@@ -1187,6 +1315,7 @@ Examples:
     timeout = args.timeout
     max_restarts = args.max_restarts
     try:
+        validate_backend_args(args)
         max_description_tokens = resolve_max_description_tokens(
             args.max_description_tokens, os.environ)
         max_new_tokens = resolve_max_new_tokens(
@@ -1234,6 +1363,11 @@ Examples:
             max_restarts=max_restarts,
             max_description_tokens=max_description_tokens,
             max_new_tokens=max_new_tokens,
+            backend=args.backend,
+            gpu=args.gpu,
+            gpus=args.gpus,
+            max_cost=args.max_cost,
+            modal_batch_size=args.modal_batch_size,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

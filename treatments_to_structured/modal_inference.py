@@ -6,7 +6,10 @@ docs/modal_backend_design.md (tranche 2).
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import time
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 # Modal list prices, $/second, read from https://modal.com/pricing on
@@ -42,7 +45,12 @@ def rate_per_second(gpu: str) -> float:
     Raises:
         ValueError: For a GPU not in ``GPU_PRICES``.
     """
-    raise NotImplementedError
+    if gpu not in GPU_PRICES:
+        raise ValueError(
+            f'unknown GPU {gpu!r}; choose from {", ".join(GPU_PRICES)}')
+    return (GPU_PRICES[gpu]
+            + CONTAINER_CORES * CPU_PRICE_PER_CORE_SECOND
+            + CONTAINER_MEMORY_GIB * MEMORY_PRICE_PER_GIB_SECOND)
 
 
 class SpendGuard:
@@ -54,29 +62,49 @@ class SpendGuard:
 
     def __init__(self, max_cost: float, gpu: str, gpus: int,
                  clock: Callable[[], float] = time.monotonic) -> None:
-        raise NotImplementedError
+        if max_cost <= 0:
+            raise ValueError(f'max_cost must be positive, got {max_cost}')
+        if gpus < 1:
+            raise ValueError(f'gpus must be at least 1, got {gpus}')
+        self.max_cost = max_cost
+        self.gpus = gpus
+        self.rate = rate_per_second(gpu)
+        self._clock = clock
+        self._started: Optional[float] = None
 
     def start(self) -> None:
         """Begin timing.  Before ``start`` nothing has been spent."""
-        raise NotImplementedError
+        self._started = self._clock()
 
     def spent_upper_bound(self) -> float:
-        raise NotImplementedError
+        """Dollars spent at most so far."""
+        if self._started is None:
+            return 0.0
+        return (self._clock() - self._started) * self.gpus * self.rate
 
     def allows_more(self) -> bool:
         """True while the bound is below ``max_cost``."""
-        raise NotImplementedError
+        return self.spent_upper_bound() < self.max_cost
 
 
 def make_batches(items: Sequence[Item], size: int) -> List[List[Item]]:
     """Consecutive batches of at most ``size`` items."""
-    raise NotImplementedError
+    if size < 1:
+        raise ValueError(f'batch size must be at least 1, got {size}')
+    return [list(items[i:i + size]) for i in range(0, len(items), size)]
 
 
 def raw_from_vllm(doc_id: str, output: Any) -> Raw:
     """One vLLM ``RequestOutput`` as ``{_id, text, finish_reason,
     tokens_in, tokens_out}``."""
-    raise NotImplementedError
+    completion = output.outputs[0]
+    return {
+        '_id': doc_id,
+        'text': completion.text,
+        'finish_reason': completion.finish_reason,
+        'tokens_in': len(output.prompt_token_ids or []),
+        'tokens_out': len(completion.token_ids or []),
+    }
 
 
 def interpret_output(
@@ -91,7 +119,23 @@ def interpret_output(
     ``ok`` keeps the features; the others save ``{}``, as on the local
     path.
     """
-    raise NotImplementedError
+    def rejected(outcome: str) -> Dict[str, Any]:
+        return {'features': {}, 'json_valid': False, 'outcome': outcome}
+
+    if raw.get('finish_reason') == 'length':
+        return rejected('cut_off')
+    try:
+        features = json.loads(raw.get('text') or '')
+    except ValueError:
+        return rejected('invalid')
+    if not isinstance(features, dict) or not features:
+        return rejected('invalid')
+    try:
+        if validate(features) is False:
+            return rejected('invalid')
+    except ValueError:
+        return rejected('invalid')
+    return {'features': features, 'json_valid': True, 'outcome': 'ok'}
 
 
 def run_batches(
@@ -110,7 +154,38 @@ def run_batches(
 
     Returns ``{submitted, completed, failed, not_submitted}``.
     """
-    raise NotImplementedError
+    counts = {'submitted': 0, 'completed': 0, 'failed': 0,
+              'not_submitted': 0}
+    pending = list(batches)
+    in_flight: Dict[Future, List[Item]] = {}
+    stopped = False
+    with ThreadPoolExecutor(max_workers=max(1, max_in_flight)) as pool:
+        while pending or in_flight:
+            while (pending and not stopped
+                   and len(in_flight) < max_in_flight):
+                if not guard.allows_more():
+                    stopped = True
+                    break
+                batch = pending.pop(0)
+                in_flight[pool.submit(call, batch)] = batch
+                counts['submitted'] += 1
+            if stopped:
+                counts['not_submitted'] += len(pending)
+                pending = []
+            if not in_flight:
+                break
+            done, _ = wait(list(in_flight), return_when=FIRST_COMPLETED)
+            for future in done:
+                batch = in_flight.pop(future)
+                try:
+                    results = future.result()
+                except Exception as exc:
+                    counts['failed'] += 1
+                    on_failure(batch, exc)
+                    continue
+                counts['completed'] += 1
+                on_batch(batch, results)
+    return counts
 
 
 def provenance(
@@ -125,12 +200,23 @@ def provenance(
     max_tokens: int,
 ) -> Dict[str, Any]:
     """The ``provenance`` field stored on every structured treatment."""
-    raise NotImplementedError
+    return {
+        'backend': backend,
+        'engine': engine,
+        'engine_version': engine_version,
+        'gpu': gpu,
+        'model': model,
+        'model_revision': model_revision,
+        'dtype': dtype,
+        'decoding': decoding,
+        'max_tokens': max_tokens,
+    }
 
 
 def taxon_doc_id(treatment: str, description: str) -> str:
     """Deterministic structured-treatment id, as the local path makes it."""
-    raise NotImplementedError
+    content = (treatment or '').strip() + ':' + (description or '').strip()
+    return 'taxon_' + hashlib.sha256(content.encode('utf-8')).hexdigest()
 
 
 def structured_doc(
@@ -140,4 +226,17 @@ def structured_doc(
     prov: Dict[str, Any],
 ) -> Dict[str, Any]:
     """The CouchDB document for one translated treatment."""
-    raise NotImplementedError
+    return {
+        '_id': taxon_doc_id(item.get('treatment', ''),
+                            item.get('description', '')),
+        'treatment': item.get('treatment', ''),
+        'description': item.get('description', ''),
+        'ingest': item.get('ingest') or {},
+        'line_number': item.get('line_number'),
+        'paragraph_number': item.get('paragraph_number'),
+        'page_number': item.get('page_number'),
+        'empirical_page_number': item.get('empirical_page_number'),
+        'json_annotated': features,
+        'json_valid': json_valid,
+        'provenance': prov,
+    }
