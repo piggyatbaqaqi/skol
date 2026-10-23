@@ -36,6 +36,8 @@ VLLM_BASE_IMAGE = 'nvidia/cuda:12.8.1-devel-ubuntu22.04'
 # Longest prompt (4,800 description tokens + the 406-token instructions)
 # plus the 3,072-token output cap, with headroom.
 MAX_MODEL_LEN = 10240
+# How long an idle GPU container stays up (and bills) before Modal stops it.
+SCALEDOWN_WINDOW_S = 120
 DTYPE = 'bfloat16'
 # Longest run of whitespace the JSON grammar allows.  Without a cap,
 # xgrammar's JSON grammar permits unlimited whitespace and Mistral can run

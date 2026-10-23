@@ -24,6 +24,7 @@ from treatments_to_structured.modal_inference import (
     CONTAINER_MEMORY_GIB,
     DTYPE,
     MAX_MODEL_LEN,
+    SCALEDOWN_WINDOW_S,
     VLLM_BASE_IMAGE,
     VLLM_VERSION,
     cache_env,
@@ -116,7 +117,7 @@ vllm_image = (
     memory=CONTAINER_MEMORY_GIB * 1024,
     timeout=BATCH_TIMEOUT_S,
     startup_timeout=20 * 60,
-    scaledown_window=120,
+    scaledown_window=SCALEDOWN_WINDOW_S,
     retries=1,            # one retry, e.g. after preemption
 )
 class JsonTranslator:

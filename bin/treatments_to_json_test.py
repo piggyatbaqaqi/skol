@@ -16,6 +16,8 @@ import unittest
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -204,13 +206,17 @@ class TestModalFlagWiring(unittest.TestCase):
         for gpu in ('H100', 'A100-40GB', 'L4'):
             self.assertIn(gpu, result.stdout)
 
+    @pytest.mark.xfail(strict=True,
+                       reason="modal_batch_size default None not yet")
     def test_translate_accepts_the_backend_settings(self):
         params = inspect.signature(translate_treatments_to_json).parameters
         self.assertEqual(params['backend'].default, 'local')
         self.assertIsNone(params['gpu'].default)
         self.assertEqual(params['gpus'].default, 1)
         self.assertIsNone(params['max_cost'].default)
-        self.assertEqual(params['modal_batch_size'].default, 64)
+        # None: the calibrated best batch size for the GPU, else 64
+        # (tranche 4; was a flat 64).
+        self.assertIsNone(params['modal_batch_size'].default)
 
 
 class TestParseBatchSizes(unittest.TestCase):
@@ -271,6 +277,26 @@ class TestCalibrateFlagWiring(unittest.TestCase):
         self.assertEqual(params['calibrate_batch_sizes'].default,
                          (64, 128, 256))
         self.assertIsNone(params['calibration_file'].default)
+
+
+ESTIMATE_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="--dry-run estimate not implemented yet")
+
+
+class TestDryRunArgs(unittest.TestCase):
+
+    @ESTIMATE_NOT_YET
+    def test_dry_run_without_gpu_compares_all(self):
+        validate_backend_args(backend_args(gpu=None, max_cost=None,
+                                           dry_run=True))
+
+    def test_spending_run_still_needs_a_gpu(self):
+        with self.assertRaisesRegex(ValueError, '--gpu'):
+            validate_backend_args(backend_args(gpu=None))
+
+    @ESTIMATE_NOT_YET
+    def test_batch_size_may_be_left_to_calibration(self):
+        validate_backend_args(backend_args(modal_batch_size=None))
 
 
 if __name__ == "__main__":

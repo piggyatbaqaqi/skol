@@ -970,6 +970,15 @@ and their values from the provided species description and format them as struct
         counts['spent_upper_bound'] = guard.spent_upper_bound()
         return counts
 
+    def plan_modal(self, items: List[Dict[str, Any]]) -> Dict[str, int]:
+        """What a Modal run over ``items`` would send, without sending.
+
+        Applies the same untranslatable-text and token-threshold drops
+        as ``translate_items_modal``.  Returns ``{records,
+        description_tokens}``.
+        """
+        raise NotImplementedError
+
     def calibrate_modal(
         self,
         items: List[Dict[str, Any]],

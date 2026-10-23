@@ -27,6 +27,8 @@ import types
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
+import pytest
+
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -809,6 +811,20 @@ class TestCalibrateModal(unittest.TestCase):
                     batch_sizes=(2, 4), records_per_config=4,
                     clock=lambda: clock[0])
         assert call.batches == []
+
+
+class TestPlanModal(unittest.TestCase):
+
+    @pytest.mark.xfail(strict=True, reason="plan_modal not implemented yet")
+    def test_counts_what_would_be_sent(self) -> None:
+        translator = make_translator(max_description_tokens=3,
+                                     token_counter=word_counter)
+        items = [modal_item('a', 'one two'), modal_item('b', 'x y z'),
+                 modal_item('e', ''), modal_item('n', '...'),
+                 modal_item('long', 'a b c d e')]
+        with contextlib.redirect_stdout(io.StringIO()):
+            plan = translator.plan_modal(items)
+        self.assertEqual(plan, {'records': 2, 'description_tokens': 5})
 
 
 if __name__ == "__main__":

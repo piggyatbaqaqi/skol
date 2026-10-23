@@ -31,6 +31,8 @@ CALIBRATION_FILE = Path(__file__).resolve().parent / 'modal_calibration.json'
 SCHEMA_VERSION = 1
 DEFAULT_BATCH_SIZES: Tuple[int, ...] = (64, 128, 256)
 DEFAULT_RECORDS_PER_CONFIG = 256
+FALLBACK_BATCH_SIZE = 64
+MAX_COST_HEADROOM = 1.25
 
 Entry = Dict[str, Any]
 
@@ -170,6 +172,50 @@ def find_calibration(
         if entry['gpu'] == gpu:
             return ('ok' if entry['key'] == key else 'stale'), entry
     return 'missing', None
+
+
+def estimate(
+    records: int,
+    gpu: str,
+    gpus: int,
+    entry: Entry,
+) -> Dict[str, Any]:
+    """Cost and time to translate ``records`` on ``gpus`` x ``gpu``.
+
+    Uses the entry's best config.  Work takes records / records_per_s
+    GPU-seconds; each container also bills its start-up and Modal's
+    scale-down window.  Wall-clock is work / gpus plus one start-up.
+
+    Returns ``{records, gpu, gpus, batch_size, records_per_s, gpu_hours,
+    wall_hours, cost, expected_cut_offs, suggested_max_cost,
+    measured_at, prices_read_on}``; ``suggested_max_cost`` is
+    ``cost`` x 1.25 rounded up to a whole dollar.
+
+    Raises:
+        ValueError: For an unknown GPU or ``gpus`` below 1.
+    """
+    raise NotImplementedError
+
+
+def compare_gpus(
+    records: int,
+    gpus: int,
+    entries: Sequence[Entry],
+    key: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """``estimate`` for every calibrated GPU, cheapest first, each with
+    ``status`` ``'ok'`` or ``'stale'``."""
+    raise NotImplementedError
+
+
+def resolve_batch_size(
+    cli_value: Optional[int],
+    status: str,
+    entry: Optional[Entry],
+) -> int:
+    """``--modal-batch-size`` if given, else the calibrated best for the
+    GPU (ok or stale), else ``FALLBACK_BATCH_SIZE``."""
+    raise NotImplementedError
 
 
 def best_config(entry: Entry) -> Dict[str, Any]:
