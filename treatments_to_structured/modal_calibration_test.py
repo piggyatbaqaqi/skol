@@ -25,9 +25,6 @@ from treatments_to_structured.modal_calibration import (
 )
 from treatments_to_structured.modal_models import MODEL_ID, MODEL_REVISION
 
-NOT_YET = pytest.mark.xfail(
-    strict=True, reason="modal_calibration not implemented yet")
-
 
 def raw(tokens_in: int, tokens_out: int,
         finish: str = 'stop') -> Dict[str, Any]:
@@ -50,7 +47,6 @@ class TestConstants:
         assert DEFAULT_BATCH_SIZES == (64, 128, 256)
 
 
-@NOT_YET
 class TestCalibrationKey:
 
     def test_names_what_speed_depends_on(self) -> None:
@@ -66,7 +62,6 @@ class TestCalibrationKey:
         assert calibration_key(3072) != calibration_key(1024)
 
 
-@NOT_YET
 class TestSampleStratified:
 
     ITEMS = [{'_id': f'i{n:03}'} for n in range(100)]
@@ -98,7 +93,6 @@ class TestSampleStratified:
         assert sample_stratified(self.ITEMS, 0, self.COUNTS, seed=0) == []
 
 
-@NOT_YET
 class TestSummarize:
 
     def test_metrics(self) -> None:
@@ -119,7 +113,6 @@ class TestSummarize:
                 summarize([raw(1, 1)], elapsed_s=bad, batch_size=64)
 
 
-@NOT_YET
 class TestFile:
 
     def test_missing_file_is_empty(self, tmp_path: Path) -> None:
@@ -156,7 +149,6 @@ class TestFile:
             load_calibrations(path)
 
 
-@NOT_YET
 class TestFindCalibration:
 
     ENTRIES = [entry('H100', {'k': 1}), entry('L4', {'k': 1})]
@@ -175,7 +167,6 @@ class TestFindCalibration:
             'missing', None)
 
 
-@NOT_YET
 class TestBestConfig:
 
     def test_most_records_per_second(self) -> None:

@@ -89,8 +89,10 @@ class SpendGuard:
         self._started: Optional[float] = None
 
     def start(self) -> None:
-        """Begin timing.  Before ``start`` nothing has been spent."""
-        self._started = self._clock()
+        """Begin timing.  Before ``start`` nothing has been spent; later
+        calls keep the first start."""
+        if self._started is None:
+            self._started = self._clock()
 
     def spent_upper_bound(self) -> float:
         """Dollars spent at most so far."""

@@ -106,6 +106,10 @@ def translate_treatments_to_json(
     gpus: int = 1,
     max_cost: Optional[float] = None,
     modal_batch_size: int = 64,
+    calibrate: bool = False,
+    calibrate_records: int = 256,
+    calibrate_batch_sizes: Tuple[int, ...] = (64, 128, 256),
+    calibration_file: Optional[str] = None,
 ) -> None:
     """
     Load taxa from source database, translate to JSON, and save to destination.
@@ -146,6 +150,12 @@ def translate_treatments_to_json(
         max_cost: Stop sending work once this many dollars may have
             been spent (backend 'modal')
         modal_batch_size: Descriptions per Modal call
+        calibrate: Measure the GPU at calibrate_batch_sizes instead of a
+            plain run (results are still saved)
+        calibrate_records: Records per batch size when calibrating
+        calibrate_batch_sizes: Batch sizes to measure
+        calibration_file: Where to record the measurement (default:
+            treatments_to_structured/modal_calibration.json)
     """
     # Import here to avoid slow startup for --help
     from pyspark.sql import SparkSession
@@ -424,7 +434,10 @@ def translate_treatments_to_json(
                 raise ValueError('backend modal needs gpu and max_cost')
             _translate_on_modal(
                 translator, taxa_df, dest_db, couchdb_url, username,
-                password, gpu, gpus, max_cost, modal_batch_size, verbosity)
+                password, gpu, gpus, max_cost, modal_batch_size, verbosity,
+                calibrate=calibrate, calibrate_records=calibrate_records,
+                calibrate_batch_sizes=calibrate_batch_sizes,
+                calibration_file=calibration_file)
             return
 
         # Process based on mode
@@ -894,8 +907,16 @@ def _translate_on_modal(
     max_cost: float,
     modal_batch_size: int,
     verbosity: int,
+    calibrate: bool = False,
+    calibrate_records: int = 256,
+    calibrate_batch_sizes: Tuple[int, ...] = (64, 128, 256),
+    calibration_file: Optional[str] = None,
 ) -> None:
-    """Translate on Modal GPUs and save to ``dest_db`` as results arrive."""
+    """Translate on Modal GPUs and save to ``dest_db`` as results arrive.
+
+    With ``calibrate``, measure ``calibrate_batch_sizes`` instead and
+    record the result in the calibration file.
+    """
     import couchdb
     from treatments_to_structured import modal_app
     from treatments_to_structured.modal_inference import (
@@ -912,6 +933,27 @@ def _translate_on_modal(
     if verbosity >= 1:
         print(f"\nModal: {gpus} x {gpu} at ${rate_per_second(gpu) * 3600:.2f}"
               f"/hour each; stopping new work at ${max_cost:.2f}")
+    if calibrate:
+        from pathlib import Path as _Path
+        from treatments_to_structured.modal_calibration import (
+            CALIBRATION_FILE, best_config, save_calibration,
+        )
+        target = _Path(calibration_file) if calibration_file else (
+            CALIBRATION_FILE)
+        with modal_app.run_translator(gpu, gpus) as call:
+            entry = translator.calibrate_modal(
+                items, server[dest_db], call, guard, gpu,
+                batch_sizes=calibrate_batch_sizes,
+                records_per_config=calibrate_records, verbosity=verbosity)
+        save_calibration(entry, target)
+        best = best_config(entry)
+        print(f"\nCalibrated {gpu}: start-up {entry['startup_s']:.0f}s; "
+              f"best batch {best['batch_size']} at "
+              f"{best['records_per_s']:.2f} records/s "
+              f"({best['output_tokens_per_s']:.0f} output tokens/s); "
+              f"spent at most ${guard.spent_upper_bound():.2f}")
+        print(f"Recorded in {target}; commit it so --dry-run can use it.")
+        return
     with modal_app.run_translator(gpu, gpus) as call:
         counts = translator.translate_items_modal(
             items, server[dest_db], call, guard, gpu,
@@ -929,7 +971,15 @@ def parse_batch_sizes(text: str) -> Tuple[int, ...]:
     Raises:
         ValueError: For an empty list, a non-integer, or a value below 1.
     """
-    raise NotImplementedError
+    sizes = []
+    for part in text.split(','):
+        part = part.strip()
+        if not part.isdigit() or int(part) < 1:
+            raise ValueError(
+                f'--calibrate-batch-sizes: {part!r} is not a positive '
+                f'integer (expected e.g. 64,128,256)')
+        sizes.append(int(part))
+    return tuple(sizes)
 
 
 def validate_backend_args(args: Any) -> None:
@@ -943,7 +993,10 @@ def validate_backend_args(args: Any) -> None:
     Raises:
         ValueError: Naming the offending flag.
     """
+    calibrate = getattr(args, 'calibrate', False)
     if args.backend == 'local':
+        if calibrate:
+            raise ValueError('--calibrate needs --backend modal')
         if args.gpu is not None:
             raise ValueError('--gpu needs --backend modal')
         if args.max_cost is not None:
@@ -951,6 +1004,12 @@ def validate_backend_args(args: Any) -> None:
         return
     if args.gpu is None:
         raise ValueError('--backend modal needs --gpu')
+    if calibrate:
+        if args.dry_run:
+            raise ValueError('--calibrate spends money; it cannot be '
+                             'combined with --dry-run')
+        if getattr(args, 'calibrate_records', 1) < 1:
+            raise ValueError('--calibrate-records must be at least 1')
     if args.max_cost is None and not args.dry_run:
         raise ValueError('--backend modal needs --max-cost (dollars) '
                          'unless --dry-run')
@@ -1281,6 +1340,37 @@ Examples:
     )
 
     parser.add_argument(
+        '--calibrate',
+        action='store_true',
+        help='Measure --gpu at --calibrate-batch-sizes on real records '
+             '(saved as usual) and record the speed for --dry-run '
+             'estimates; needs --backend modal and --max-cost'
+    )
+
+    parser.add_argument(
+        '--calibrate-records',
+        type=int,
+        default=256,
+        metavar='N',
+        help='Records per batch size when calibrating (default: 256)'
+    )
+
+    parser.add_argument(
+        '--calibrate-batch-sizes',
+        default='64,128,256',
+        metavar='LIST',
+        help='Comma-separated batch sizes to measure (default: 64,128,256)'
+    )
+
+    parser.add_argument(
+        '--calibration-file',
+        default=None,
+        metavar='PATH',
+        help='Calibration file to update (default: '
+             'treatments_to_structured/modal_calibration.json)'
+    )
+
+    parser.add_argument(
         '--max-new-tokens',
         type=int,
         default=None,
@@ -1324,6 +1414,7 @@ Examples:
     timeout = args.timeout
     max_restarts = args.max_restarts
     try:
+        calibrate_batch_sizes = parse_batch_sizes(args.calibrate_batch_sizes)
         validate_backend_args(args)
         max_description_tokens = resolve_max_description_tokens(
             args.max_description_tokens, os.environ)
@@ -1377,6 +1468,10 @@ Examples:
             gpus=args.gpus,
             max_cost=args.max_cost,
             modal_batch_size=args.modal_batch_size,
+            calibrate=args.calibrate,
+            calibrate_records=args.calibrate_records,
+            calibrate_batch_sizes=calibrate_batch_sizes,
+            calibration_file=args.calibration_file,
         )
     except KeyboardInterrupt:
         print("\n\n✗ Translation interrupted by user")

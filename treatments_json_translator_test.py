@@ -27,8 +27,6 @@ import types
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
-import pytest
-
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -720,10 +718,6 @@ class TestLocalProvenance:
 # Modal calibration
 # ---------------------------------------------------------------------------
 
-CALIBRATE_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="calibrate_modal not implemented yet")
-
-
 class ClockedCall(FakeModalCall):
     """FakeModalCall that advances a fake clock by one second per call."""
 
@@ -743,7 +737,6 @@ def varied_items(n: int) -> List[Dict[str, Any]]:
             for k in range(n)]
 
 
-@CALIBRATE_NOT_YET
 class TestCalibrateModal(unittest.TestCase):
 
     def run_calibration(self, items: List[Dict[str, Any]],

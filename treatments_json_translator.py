@@ -790,6 +790,14 @@ and their values from the provided species description and format them as struct
         if max_description_tokens is not None:
             print(f"  Max description tokens: {max_description_tokens}")
 
+    def _ensure_token_counter(self) -> TokenCounter:
+        """The token counter, built from base_model_id's tokenizer on
+        first use."""
+        if self._token_counter is None:
+            self._token_counter = make_token_counter(
+                AutoTokenizer.from_pretrained(self.base_model_id))
+        return self._token_counter
+
     def _drop_untranslatable_descriptions(
         self, descriptions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
@@ -816,12 +824,9 @@ and their values from the provided species description and format them as struct
         """
         if self.max_description_tokens is None:
             return descriptions
-        if self._token_counter is None:
-            self._token_counter = make_token_counter(
-                AutoTokenizer.from_pretrained(self.base_model_id))
-
         kept, dropped = partition_by_token_budget(
-            descriptions, self._token_counter, self.max_description_tokens)
+            descriptions, self._ensure_token_counter(),
+            self.max_description_tokens)
         if dropped:
             print(f"  Dropped {len(dropped)} of {len(descriptions)} "
                   f"descriptions over {self.max_description_tokens} tokens:")
@@ -992,7 +997,62 @@ and their values from the provided species description and format them as struct
             ValueError: With fewer than ``1 + records_per_config *
                 len(batch_sizes)`` usable records; nothing is sent.
         """
-        raise NotImplementedError
+        from datetime import datetime, timezone
+        from treatments_to_structured.modal_calibration import (
+            calibration_key, sample_stratified, summarize,
+        )
+
+        items = self._drop_untranslatable_descriptions(items)
+        items = self._drop_oversized_descriptions(items)
+        needed = 1 + records_per_config * len(batch_sizes)
+        if len(items) < needed:
+            raise ValueError(
+                f'calibration needs {needed} usable records (1 + '
+                f'{records_per_config} x {len(batch_sizes)} batch sizes); '
+                f'only {len(items)} are left')
+        counts = self._ensure_token_counter()(
+            [item.get('description') or '' for item in items])
+        sample = sample_stratified(items, needed, counts, seed)
+        # sample is sorted by length: the shortest record times start-up,
+        # and each slice takes every k-th of the rest, so every slice
+        # spans the whole length range.
+        warm_up, rest = sample[:1], sample[1:]
+        slices = [rest[k::len(batch_sizes)] for k in range(len(batch_sizes))]
+
+        def run(batch: List[Dict[str, Any]], size: int,
+                raws: List[Dict[str, Any]]) -> float:
+            def recording(b: List[Dict[str, Any]], schema: Dict[str, Any],
+                          max_tokens: int) -> List[Dict[str, Any]]:
+                results = call(b, schema, max_tokens)
+                raws.extend(results)
+                return results
+
+            started = clock()
+            self.translate_items_modal(
+                batch, db, recording, guard, gpu, modal_batch_size=size,
+                max_in_flight=2, verbosity=verbosity)
+            return clock() - started
+
+        startup_s = run(warm_up, 1, [])
+        if verbosity >= 1:
+            print(f"  Calibration start-up: {startup_s:.1f}s")
+        configs = []
+        for size, records in zip(batch_sizes, slices):
+            raws: List[Dict[str, Any]] = []
+            elapsed = run(records, size, raws)
+            configs.append(summarize(raws, elapsed, size))
+            if verbosity >= 1:
+                c = configs[-1]
+                print(f"  batch {size}: {c['records_per_s']:.2f} records/s, "
+                      f"{c['output_tokens_per_s']:.0f} output tokens/s, "
+                      f"cut off {c['cut_off_rate']:.0%}")
+        return {
+            'gpu': gpu,
+            'key': calibration_key(self.max_new_tokens),
+            'measured_at': datetime.now(timezone.utc).isoformat(),
+            'startup_s': startup_s,
+            'configs': configs,
+        }
 
     def _get_ontology_context_builder(self):
         """

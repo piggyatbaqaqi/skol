@@ -104,8 +104,6 @@ class TestSpendGuard:
         clock.now += 2
         assert guard.allows_more() is False
 
-    @pytest.mark.xfail(strict=True,
-                       reason="SpendGuard.start not idempotent yet")
     def test_starting_again_keeps_the_first_start(self) -> None:
         """Calibration runs translate_items_modal several times, each of
         which calls start(); restarting would undercount spend."""

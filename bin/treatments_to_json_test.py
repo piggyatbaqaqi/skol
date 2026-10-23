@@ -16,8 +16,6 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -215,11 +213,6 @@ class TestModalFlagWiring(unittest.TestCase):
         self.assertEqual(params['modal_batch_size'].default, 64)
 
 
-CALIBRATE_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="--calibrate not implemented yet")
-
-
-@CALIBRATE_NOT_YET
 class TestParseBatchSizes(unittest.TestCase):
 
     def test_list(self):
@@ -242,28 +235,24 @@ class TestValidateCalibrateArgs(unittest.TestCase):
         validate_backend_args(backend_args(calibrate=True,
                                            calibrate_records=256))
 
-    @CALIBRATE_NOT_YET
     def test_calibrate_needs_modal(self):
         with self.assertRaisesRegex(ValueError, '--calibrate'):
             validate_backend_args(backend_args(
                 backend='local', gpu=None, max_cost=None, calibrate=True,
                 calibrate_records=256))
 
-    @CALIBRATE_NOT_YET
     def test_calibrate_spends_so_no_dry_run(self):
         with self.assertRaisesRegex(ValueError, '--dry-run'):
             validate_backend_args(backend_args(
                 calibrate=True, calibrate_records=256, dry_run=True,
                 max_cost=None))
 
-    @CALIBRATE_NOT_YET
     def test_calibrate_records_positive(self):
         with self.assertRaises(ValueError):
             validate_backend_args(backend_args(calibrate=True,
                                                calibrate_records=0))
 
 
-@CALIBRATE_NOT_YET
 class TestCalibrateFlagWiring(unittest.TestCase):
 
     def test_help_lists_the_flags(self):
