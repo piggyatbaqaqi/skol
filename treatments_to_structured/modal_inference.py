@@ -35,6 +35,12 @@ VLLM_VERSION = '0.32.0'
 DTYPE = 'bfloat16'
 DECODING = 'greedy'
 
+# Compile and kernel caches live on their own Volume, so containers after
+# the first skip torch.compile and FlashInfer's JIT build (~2.5 of the
+# ~4 minutes the first smoke run spent starting up).
+CACHE_VOLUME_NAME = 'skol-vllm-cache'
+CACHE_MOUNT = '/cache'
+
 Raw = Dict[str, Any]          # one record's result from the GPU class
 Item = Dict[str, Any]         # one record to translate, with 'prompt'
 
@@ -85,6 +91,17 @@ class SpendGuard:
     def allows_more(self) -> bool:
         """True while the bound is below ``max_cost``."""
         return self.spent_upper_bound() < self.max_cost
+
+
+def cache_env(mount: str, vllm_version: str) -> Dict[str, str]:
+    """Environment variables pointing vLLM's and FlashInfer's caches at
+    ``mount``, under a directory named for ``vllm_version`` so an
+    upgrade starts a fresh cache rather than mixing versions.
+
+    vLLM routes the Inductor and Triton caches under ``VLLM_CACHE_ROOT``
+    itself.
+    """
+    raise NotImplementedError
 
 
 def make_batches(items: Sequence[Item], size: int) -> List[List[Item]]:

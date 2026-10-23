@@ -14,8 +14,10 @@ from typing import Any, Dict, List
 import pytest
 
 from treatments_to_structured.modal_inference import (
+    CACHE_MOUNT,
     GPU_PRICES,
     SpendGuard,
+    cache_env,
     interpret_output,
     make_batches,
     provenance,
@@ -330,3 +332,40 @@ class TestStructuredDoc:
         assert doc['ingest'] == {}
         assert doc['line_number'] is None
         assert 'prompt' not in doc
+
+
+# ---------------------------------------------------------------------------
+# Compile and kernel caches on a Volume
+# ---------------------------------------------------------------------------
+
+CACHE_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="cache_env not implemented yet")
+
+
+def test_cache_volume_mount() -> None:
+    assert CACHE_MOUNT == '/cache'
+
+
+@CACHE_NOT_YET
+class TestCacheEnv:
+
+    def test_sets_the_three_caches(self) -> None:
+        env = cache_env('/cache', '0.32.0')
+        assert set(env) == {'VLLM_CACHE_ROOT', 'FLASHINFER_WORKSPACE_BASE',
+                            'VLLM_FLASHINFER_AUTOTUNE_CACHE_DIR'}
+
+    def test_all_under_a_version_directory_on_the_mount(self) -> None:
+        for path in cache_env('/cache', '0.32.0').values():
+            assert path.startswith('/cache/vllm-0.32.0/')
+
+    def test_caches_do_not_share_a_directory(self) -> None:
+        paths = list(cache_env('/cache', '0.32.0').values())
+        assert len(set(paths)) == len(paths)
+        for a in paths:
+            for b in paths:
+                assert a == b or not b.startswith(a + '/')
+
+    def test_an_upgrade_gets_fresh_directories(self) -> None:
+        old = set(cache_env('/cache', '0.32.0').values())
+        new = set(cache_env('/cache', '0.33.0').values())
+        assert old.isdisjoint(new)
