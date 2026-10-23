@@ -338,15 +338,10 @@ class TestStructuredDoc:
 # Compile and kernel caches on a Volume
 # ---------------------------------------------------------------------------
 
-CACHE_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="cache_env not implemented yet")
-
-
 def test_cache_volume_mount() -> None:
     assert CACHE_MOUNT == '/cache'
 
 
-@CACHE_NOT_YET
 class TestCacheEnv:
 
     def test_sets_the_three_caches(self) -> None:

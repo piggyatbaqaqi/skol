@@ -101,7 +101,12 @@ def cache_env(mount: str, vllm_version: str) -> Dict[str, str]:
     vLLM routes the Inductor and Triton caches under ``VLLM_CACHE_ROOT``
     itself.
     """
-    raise NotImplementedError
+    root = f'{mount.rstrip("/")}/vllm-{vllm_version}'
+    return {
+        'VLLM_CACHE_ROOT': f'{root}/vllm',
+        'FLASHINFER_WORKSPACE_BASE': f'{root}/flashinfer',
+        'VLLM_FLASHINFER_AUTOTUNE_CACHE_DIR': f'{root}/flashinfer-autotune',
+    }
 
 
 def make_batches(items: Sequence[Item], size: int) -> List[List[Item]]:

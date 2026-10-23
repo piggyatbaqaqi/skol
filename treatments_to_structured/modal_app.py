@@ -13,15 +13,18 @@ from __future__ import annotations
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
 import modal
 
 from treatments_to_structured.modal_inference import (
+    CACHE_MOUNT,
+    CACHE_VOLUME_NAME,
     CONTAINER_CORES,
     CONTAINER_MEMORY_GIB,
     DTYPE,
     VLLM_VERSION,
+    cache_env,
     raw_from_vllm,
 )
 from treatments_to_structured.modal_models import (
@@ -90,6 +93,11 @@ MAX_MODEL_LEN = 10240
 # means something is wrong.
 BATCH_TIMEOUT_S = 30 * 60
 
+cache_volume = modal.Volume.from_name(
+    CACHE_VOLUME_NAME, create_if_missing=True)
+CACHE_ENV: Dict[str, Optional[str]] = dict(
+    cache_env(CACHE_MOUNT, VLLM_VERSION))
+
 vllm_image = (
     modal.Image.from_registry('nvidia/cuda:12.8.1-devel-ubuntu22.04',
                               add_python='3.12')
@@ -102,7 +110,8 @@ vllm_image = (
 @app.cls(
     image=vllm_image,
     gpu='H100',           # replaced per run by run_translator
-    volumes={VOLUME_MOUNT: volume},
+    volumes={VOLUME_MOUNT: volume, CACHE_MOUNT: cache_volume},
+    env=CACHE_ENV,
     cpu=CONTAINER_CORES,
     memory=CONTAINER_MEMORY_GIB * 1024,
     timeout=BATCH_TIMEOUT_S,
@@ -124,6 +133,8 @@ class JsonTranslator:
         self.llm = LLM(model=str(model_dir(root, MODEL_ID, MODEL_REVISION)),
                        dtype=DTYPE, max_model_len=MAX_MODEL_LEN,
                        gpu_memory_utilization=0.90, seed=0)
+        # Keep what this start-up compiled for the next container.
+        cache_volume.commit()
 
     @modal.method()
     def translate(self, batch: List[Dict[str, Any]], schema: Dict[str, Any],
