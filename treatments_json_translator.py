@@ -828,6 +828,37 @@ and their values from the provided species description and format them as struct
                 print(f"    {doc_id}: {n_tokens} tokens")
         return kept
 
+    def _local_provenance(self) -> Dict[str, Any]:
+        """The ``provenance`` field for records made on the local GPU."""
+        raise NotImplementedError
+
+    def translate_items_modal(
+        self,
+        items: List[Dict[str, Any]],
+        db: Any,
+        call: Callable[[List[Dict[str, Any]], Dict[str, Any], int],
+                       List[Dict[str, Any]]],
+        guard: Any,
+        gpu: str,
+        modal_batch_size: int = 64,
+        max_in_flight: int = 2,
+        verbosity: int = 1,
+    ) -> Dict[str, Any]:
+        """Translate collected ``items`` on Modal and save each result.
+
+        Drops untranslatable and oversized descriptions, builds each
+        prompt exactly as the local constrained path does, sends
+        ``{_id, prompt}`` batches through ``call(batch, schema,
+        max_tokens)``, and saves every returned record to ``db`` with
+        Modal provenance.  A failed batch saves nothing, so a later
+        ``--skip-existing`` run retries it.  ``guard`` (a
+        ``modal_inference.SpendGuard``) stops new submissions.
+
+        Returns ``{records, ok, cut_off, invalid, failed_records,
+        not_submitted_records, spent_upper_bound}``.
+        """
+        raise NotImplementedError
+
     def _get_ontology_context_builder(self):
         """
         Get or lazily initialize the ontology context builder.

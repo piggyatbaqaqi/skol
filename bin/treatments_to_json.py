@@ -863,6 +863,20 @@ def resolve_max_new_tokens(
     return value
 
 
+def validate_backend_args(args: Any) -> None:
+    """Check the backend flags fit together.
+
+    ``--backend modal`` needs ``--gpu`` and, unless ``--dry-run``, a
+    positive ``--max-cost``; ``--gpus`` and ``--modal-batch-size`` must
+    be positive; ontology context is local-only.  Modal-only flags with
+    the local backend are refused rather than silently ignored.
+
+    Raises:
+        ValueError: Naming the offending flag.
+    """
+    raise NotImplementedError
+
+
 def _resolve_positive_int(
     cli_value: Optional[int],
     environ: Mapping[str, str],

@@ -10,15 +10,20 @@ Run with: python -m pytest bin/treatments_to_json_test.py -v
 
 import inspect
 import subprocess
+from types import SimpleNamespace
 import sys
 import unittest
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from treatments_to_json import (  # type: ignore[import]  # noqa: E402
+    validate_backend_args,
     resolve_max_description_tokens,
     resolve_max_new_tokens,
     translate_treatments_to_json,
@@ -135,6 +140,84 @@ class TestMaxNewTokensWiring(unittest.TestCase):
         self.assertEqual(
             params["max_new_tokens"].default,
             TreatmentsJSONTranslator.DEFAULT_MAX_NEW_TOKENS)
+
+
+MODAL_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="Modal backend flags not implemented yet")
+
+
+def backend_args(**overrides: Any) -> SimpleNamespace:
+    base = dict(backend='modal', gpu='H100', gpus=1, max_cost=5.0,
+                modal_batch_size=64, dry_run=False,
+                use_ontology_context=False)
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+@MODAL_NOT_YET
+class TestValidateBackendArgs(unittest.TestCase):
+
+    def test_complete_modal_args(self):
+        validate_backend_args(backend_args())
+
+    def test_local_defaults(self):
+        validate_backend_args(backend_args(backend='local', gpu=None,
+                                           max_cost=None))
+
+    def test_modal_needs_a_gpu(self):
+        with self.assertRaisesRegex(ValueError, '--gpu'):
+            validate_backend_args(backend_args(gpu=None))
+
+    def test_modal_needs_max_cost_to_spend(self):
+        with self.assertRaisesRegex(ValueError, '--max-cost'):
+            validate_backend_args(backend_args(max_cost=None))
+
+    def test_dry_run_needs_no_max_cost(self):
+        validate_backend_args(backend_args(max_cost=None, dry_run=True))
+
+    def test_positive_values(self):
+        for bad in (dict(max_cost=0.0), dict(max_cost=-1.0), dict(gpus=0),
+                    dict(modal_batch_size=0)):
+            with self.subTest(**bad):
+                with self.assertRaises(ValueError):
+                    validate_backend_args(backend_args(**bad))
+
+    def test_ontology_context_is_local_only(self):
+        with self.assertRaisesRegex(ValueError, 'ontology'):
+            validate_backend_args(backend_args(use_ontology_context=True))
+
+    def test_modal_flags_refused_with_local_backend(self):
+        for flag in (dict(gpu='H100'), dict(max_cost=5.0)):
+            with self.subTest(**flag):
+                args = backend_args(backend='local', gpu=None,
+                                    max_cost=None)
+                for key, value in flag.items():
+                    setattr(args, key, value)
+                with self.assertRaises(ValueError):
+                    validate_backend_args(args)
+
+
+@MODAL_NOT_YET
+class TestModalFlagWiring(unittest.TestCase):
+
+    def test_help_lists_the_flags(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, text=True, timeout=180, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for flag in ('--backend', '--gpu', '--gpus', '--max-cost',
+                     '--modal-batch-size'):
+            self.assertIn(flag, result.stdout)
+        for gpu in ('H100', 'A100-40GB', 'L4'):
+            self.assertIn(gpu, result.stdout)
+
+    def test_translate_accepts_the_backend_settings(self):
+        params = inspect.signature(translate_treatments_to_json).parameters
+        self.assertEqual(params['backend'].default, 'local')
+        self.assertIsNone(params['gpu'].default)
+        self.assertEqual(params['gpus'].default, 1)
+        self.assertIsNone(params['max_cost'].default)
+        self.assertEqual(params['modal_batch_size'].default, 64)
 
 
 if __name__ == "__main__":

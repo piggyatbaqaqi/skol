@@ -24,8 +24,10 @@ import unittest
 import queue
 import sys
 import types
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from unittest import mock
+
+import pytest
 
 
 from treatments_json_translator import (
@@ -36,6 +38,9 @@ from treatments_json_translator import (
     make_token_counter,
     partition_by_token_budget,
     partition_untranslatable_descriptions,
+)
+from treatments_to_structured.modal_inference import (
+    taxon_doc_id,
 )
 
 
@@ -481,6 +486,236 @@ class TestConstrainedWorkerGenerationCap(unittest.TestCase):
         status, results = self.run_worker(3072)
         self.assertEqual(status, 'success')
         self.assertIn('"pileus"', results['t'])
+
+
+# ---------------------------------------------------------------------------
+# Modal backend: translate_items_modal and local provenance
+# ---------------------------------------------------------------------------
+
+MODAL_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="translate_items_modal not implemented yet")
+
+
+class PromptDecoder:
+    """Stands in for ConstrainedDecoder: records its system prompt."""
+
+    def __init__(self, system_prompt: str = '', **kwargs: Any) -> None:
+        self.system_prompt = system_prompt
+
+    def _build_prompt(self, description: str) -> str:
+        return f'[{self.system_prompt}]::{description}'
+
+
+class StubSchema:
+    """Stands in for TaxonomySchema: rejects features holding 'bad'."""
+
+    def __init__(self, max_depth: int = 4, min_depth: int = 2) -> None:
+        self.max_depth, self.min_depth = max_depth, min_depth
+
+    def to_json_schema_inlined(self) -> Dict[str, Any]:
+        return {'type': 'object', 'max_depth': self.max_depth}
+
+    def validate(self, data: Dict[str, Any]) -> bool:
+        if 'bad' in data:
+            raise ValueError('schema says no')
+        return True
+
+
+def prompt_decoder_module() -> types.ModuleType:
+    module = types.ModuleType("skol.constrained_decoder")
+    module.ConstrainedDecoder = PromptDecoder  # type: ignore[attr-defined]
+    module.TaxonomySchema = StubSchema  # type: ignore[attr-defined]
+    return module
+
+
+class ModalDB:
+    """The slice of couchdb.Database translate_items_modal uses."""
+
+    def __init__(self, docs: Optional[List[Dict[str, Any]]] = None) -> None:
+        self.docs = {d['_id']: d for d in docs or []}
+        self.saved: List[Dict[str, Any]] = []
+
+    def __contains__(self, doc_id: str) -> bool:
+        return doc_id in self.docs
+
+    def get(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        return self.docs.get(doc_id)
+
+    def save(self, doc: Dict[str, Any]) -> None:
+        self.saved.append(dict(doc))
+        self.docs[doc['_id']] = dict(doc)
+
+
+class Allow:
+    def __init__(self, n: int = 10 ** 6) -> None:
+        self.left = n
+
+    def allows_more(self) -> bool:
+        self.left -= 1
+        return self.left >= 0
+
+    def spent_upper_bound(self) -> float:
+        return 0.25
+
+
+def modal_item(doc_id: str, description: str = 'Pileus convex.',
+               treatment: Optional[str] = None) -> Dict[str, Any]:
+    return {'_id': doc_id, 'treatment': treatment or f'T {doc_id}',
+            'description': description, 'ingest': {}, 'line_number': 1,
+            'paragraph_number': 1, 'page_number': '1',
+            'empirical_page_number': '1'}
+
+
+class FakeModalCall:
+    """Answers each prompt; ``outcomes`` maps _id to a canned reply."""
+
+    def __init__(self, outcomes: Optional[Dict[str, Any]] = None,
+                 fail_ids: Optional[set] = None) -> None:
+        self.outcomes = outcomes or {}
+        self.fail_ids = fail_ids or set()
+        self.batches: List[List[Dict[str, Any]]] = []
+        self.schemas: List[Dict[str, Any]] = []
+        self.max_tokens: List[int] = []
+
+    def __call__(self, batch: List[Dict[str, Any]], schema: Dict[str, Any],
+                 max_tokens: int) -> List[Dict[str, Any]]:
+        self.batches.append(batch)
+        self.schemas.append(schema)
+        self.max_tokens.append(max_tokens)
+        if any(b['_id'] in self.fail_ids for b in batch):
+            raise RuntimeError('container preempted')
+        out = []
+        for b in batch:
+            text, reason = self.outcomes.get(
+                b['_id'], ('{"pileus": {"shape": ["convex"]}}', 'stop'))
+            out.append({'_id': b['_id'], 'text': text,
+                        'finish_reason': reason, 'tokens_in': 9,
+                        'tokens_out': 4})
+        return out
+
+
+@MODAL_NOT_YET
+class TestTranslateItemsModal:
+
+    def run_modal(self, items: List[Dict[str, Any]], call: FakeModalCall,
+                  db: Optional[ModalDB] = None, guard: Any = None,
+                  **kwargs: Any) -> Any:
+        translator = make_translator(**kwargs.pop('translator', {}))
+        db = db if db is not None else ModalDB()
+        with mock.patch.dict(sys.modules, {
+                "skol.constrained_decoder": prompt_decoder_module()}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            counts = translator.translate_items_modal(
+                items, db, call, guard or Allow(), gpu='H100', **kwargs)
+        return translator, db, counts
+
+    def sent_ids(self, call: FakeModalCall) -> List[str]:
+        return [b['_id'] for batch in call.batches for b in batch]
+
+    def test_untranslatable_descriptions_are_never_sent(self) -> None:
+        call = FakeModalCall()
+        _, db, _ = self.run_modal(
+            [modal_item('a'), modal_item('e', description=''),
+             modal_item('n', description='... --')], call)
+        assert self.sent_ids(call) == ['a']
+        assert len(db.saved) == 1
+
+    def test_oversized_descriptions_are_never_sent(self) -> None:
+        call = FakeModalCall()
+        self.run_modal(
+            [modal_item('short', 'a b'), modal_item('long', 'a b c d e')],
+            call, translator={'max_description_tokens': 3,
+                              'token_counter': word_counter})
+        assert self.sent_ids(call) == ['short']
+
+    def test_prompts_are_built_as_on_the_local_path(self) -> None:
+        call = FakeModalCall()
+        translator, _, _ = self.run_modal(
+            [modal_item('a', 'Pileus convex.')], call)
+        assert call.batches[0] == [
+            {'_id': 'a', 'prompt': f'[{translator.prompt}]::Pileus convex.'}]
+
+    def test_sends_schema_and_max_new_tokens(self) -> None:
+        call = FakeModalCall()
+        translator, _, _ = self.run_modal(
+            [modal_item('a')], call, translator={'schema_max_depth': 3})
+        assert call.schemas[0] == {'type': 'object', 'max_depth': 3}
+        assert call.max_tokens[0] == translator.max_new_tokens
+
+    def test_batches_have_the_requested_size(self) -> None:
+        call = FakeModalCall()
+        self.run_modal([modal_item(f'i{n}') for n in range(5)], call,
+                       modal_batch_size=2)
+        assert [len(b) for b in call.batches] == [2, 2, 1]
+
+    def test_saves_ok_results_with_modal_provenance(self) -> None:
+        call = FakeModalCall()
+        item = modal_item('a', 'Pileus convex.', treatment='Russula x')
+        _, db, counts = self.run_modal([item], call)
+        doc = db.saved[0]
+        assert doc['_id'] == taxon_doc_id('Russula x', 'Pileus convex.')
+        assert doc['json_annotated'] == {'pileus': {'shape': ['convex']}}
+        assert doc['json_valid'] is True
+        assert doc['provenance']['backend'] == 'modal'
+        assert doc['provenance']['gpu'] == 'H100'
+        assert doc['provenance']['engine'] == 'vllm'
+        assert counts['ok'] == 1
+
+    def test_cut_off_and_invalid_are_saved_as_empty(self) -> None:
+        call = FakeModalCall({'cut': ('{"pileus": {', 'length'),
+                              'bad': ('{"bad": ["x"]}', 'stop')})
+        _, db, counts = self.run_modal(
+            [modal_item('cut'), modal_item('bad')], call)
+        assert [d['json_annotated'] for d in db.saved] == [{}, {}]
+        assert all(d['json_valid'] is False for d in db.saved)
+        assert counts['cut_off'] == 1 and counts['invalid'] == 1
+
+    def test_failed_batch_saves_nothing(self) -> None:
+        call = FakeModalCall(fail_ids={'b'})
+        _, db, counts = self.run_modal(
+            [modal_item('a'), modal_item('b'), modal_item('c')], call,
+            modal_batch_size=1)
+        saved = {d['treatment'] for d in db.saved}
+        assert saved == {'T a', 'T c'}
+        assert counts['failed_records'] == 1
+
+    def test_update_keeps_the_revision(self) -> None:
+        item = modal_item('a', 'Pileus convex.', treatment='Russula x')
+        doc_id = taxon_doc_id('Russula x', 'Pileus convex.')
+        db = ModalDB([{'_id': doc_id, '_rev': '2-b'}])
+        _, db, _ = self.run_modal([item], FakeModalCall(), db=db)
+        assert db.saved[0]['_rev'] == '2-b'
+
+    def test_guard_stops_submission(self) -> None:
+        call = FakeModalCall()
+        _, db, counts = self.run_modal(
+            [modal_item(f'i{n}') for n in range(4)], call,
+            guard=Allow(1), modal_batch_size=1, max_in_flight=1)
+        assert len(call.batches) == 1
+        assert len(db.saved) == 1
+        assert counts['not_submitted_records'] == 3
+        assert counts['spent_upper_bound'] == 0.25
+
+
+@MODAL_NOT_YET
+class TestLocalProvenance:
+
+    def test_constrained_4bit(self) -> None:
+        translator = make_translator(use_constrained_decoding=True,
+                                     load_in_4bit=True)
+        prov = translator._local_provenance()
+        assert prov['backend'] == 'local'
+        assert prov['engine'] == 'transformers+outlines'
+        assert prov['dtype'] == '4bit'
+        assert prov['gpu'] is None
+        assert prov['model'] == 'example/model'
+        assert prov['max_tokens'] == translator.max_new_tokens
+
+    def test_unconstrained(self) -> None:
+        prov = make_translator(use_constrained_decoding=False,
+                               load_in_4bit=False)._local_provenance()
+        assert prov['engine'] == 'transformers'
+        assert prov['dtype'] == 'float16'
 
 
 if __name__ == "__main__":
