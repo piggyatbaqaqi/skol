@@ -27,8 +27,6 @@ import types
 from typing import Any, Dict, List, Optional
 from unittest import mock
 
-import pytest
-
 
 from treatments_json_translator import (
     TreatmentsJSONTranslator,
@@ -815,7 +813,6 @@ class TestCalibrateModal(unittest.TestCase):
 
 class TestPlanModal(unittest.TestCase):
 
-    @pytest.mark.xfail(strict=True, reason="plan_modal not implemented yet")
     def test_counts_what_would_be_sent(self) -> None:
         translator = make_translator(max_description_tokens=3,
                                      token_counter=word_counter)

@@ -977,7 +977,11 @@ and their values from the provided species description and format them as struct
         as ``translate_items_modal``.  Returns ``{records,
         description_tokens}``.
         """
-        raise NotImplementedError
+        items = self._drop_untranslatable_descriptions(items)
+        items = self._drop_oversized_descriptions(items)
+        counts = self._ensure_token_counter()(
+            [item.get('description') or '' for item in items])
+        return {'records': len(items), 'description_tokens': sum(counts)}
 
     def calibrate_modal(
         self,

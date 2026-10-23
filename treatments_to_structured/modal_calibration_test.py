@@ -196,11 +196,6 @@ class TestBestConfig:
 # Tranche 4: estimates for --dry-run
 # ---------------------------------------------------------------------------
 
-ESTIMATE_NOT_YET = pytest.mark.xfail(
-    strict=True, reason="estimate / compare_gpus / resolve_batch_size "
-                        "not implemented yet")
-
-
 def measured(gpu: str, key: Dict[str, Any], startup_s: float = 100.0,
              best_rps: float = 5.0) -> Dict[str, Any]:
     return entry(gpu, key, startup_s=startup_s, configs=[
@@ -210,7 +205,6 @@ def measured(gpu: str, key: Dict[str, Any], startup_s: float = 100.0,
          'cut_off_rate': 0.01}])
 
 
-@ESTIMATE_NOT_YET
 class TestEstimate:
 
     def test_arithmetic(self) -> None:
@@ -250,7 +244,6 @@ class TestEstimate:
             estimate(100, 'H100', 0, measured('H100', {'k': 1}))
 
 
-@ESTIMATE_NOT_YET
 class TestCompareGpus:
 
     def test_cheapest_first_with_status(self) -> None:
@@ -270,7 +263,6 @@ class TestCompareGpus:
         assert compare_gpus(100, 1, [], {'k': 1}) == []
 
 
-@ESTIMATE_NOT_YET
 class TestResolveBatchSize:
 
     def test_command_line_wins(self) -> None:

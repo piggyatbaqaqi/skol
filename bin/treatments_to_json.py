@@ -105,7 +105,7 @@ def translate_treatments_to_json(
     gpu: Optional[str] = None,
     gpus: int = 1,
     max_cost: Optional[float] = None,
-    modal_batch_size: int = 64,
+    modal_batch_size: Optional[int] = None,
     calibrate: bool = False,
     calibrate_records: int = 256,
     calibrate_batch_sizes: Tuple[int, ...] = (64, 128, 256),
@@ -149,7 +149,8 @@ def translate_treatments_to_json(
         gpus: Maximum Modal GPU containers at once
         max_cost: Stop sending work once this many dollars may have
             been spent (backend 'modal')
-        modal_batch_size: Descriptions per Modal call
+        modal_batch_size: Descriptions per Modal call (None: the
+            calibrated best for the GPU, else 64)
         calibrate: Measure the GPU at calibrate_batch_sizes instead of a
             plain run (results are still saved)
         calibrate_records: Records per batch size when calibrating
@@ -423,6 +424,9 @@ def translate_treatments_to_json(
                 print(f"  {row['_id']}: {treatment_preview}")
 
         # Handle dry run
+        if dry_run and backend == 'modal':
+            _estimate_on_modal(translator, taxa_df, gpu, gpus)
+            return
         if dry_run:
             print(f"\n[DRY RUN] Would process {total_count} taxa")
             print(f"[DRY RUN] Source: {source_db} -> Destination: {dest_db}")
@@ -895,6 +899,57 @@ def resolve_max_new_tokens(
     return value
 
 
+def _estimate_on_modal(
+    translator: Any, taxa_df: Any, gpu: Optional[str], gpus: int,
+) -> None:
+    """--dry-run with --backend modal: what would be sent, and its cost.
+
+    Spends nothing: no Modal call and no database write.
+    """
+    from treatments_to_structured.modal_calibration import (
+        CALIBRATION_FILE, calibration_key, compare_gpus, estimate,
+        find_calibration, load_calibrations,
+    )
+
+    plan = translator.plan_modal(translator.collect_items(taxa_df))
+    print(f"\n[DRY RUN] Modal would translate {plan['records']} records "
+          f"({plan['description_tokens']:,} description tokens)")
+    entries = load_calibrations()
+    key = calibration_key(translator.max_new_tokens)
+
+    def show(est: Dict[str, Any], status: str) -> None:
+        stale = ('  [STALE calibration: measured under other settings]'
+                 if status == 'stale' else '')
+        print(f"  {est['gpus']} x {est['gpu']}: ${est['cost']:.2f}, "
+              f"{est['gpu_hours']:.1f} GPU-hours, "
+              f"{est['wall_hours']:.1f} h wall-clock at batch "
+              f"{est['batch_size']}; ~{est['expected_cut_offs']:.0f} "
+              f"cut-offs; suggested --max-cost {est['suggested_max_cost']}"
+              f"{stale}")
+
+    if gpu is not None:
+        status, entry = find_calibration(entries, gpu, key)
+        if entry is None:
+            print(f"  No calibration for {gpu} in {CALIBRATION_FILE}; run "
+                  f"--calibrate with --gpu {gpu} first.")
+            return
+        show(estimate(plan['records'], gpu, gpus, entry), status)
+    else:
+        rows = compare_gpus(plan['records'], gpus, entries, key)
+        if not rows:
+            print(f"  No calibrated GPUs in {CALIBRATION_FILE}; run "
+                  f"--calibrate first.")
+            return
+        print("  Calibrated GPUs, cheapest first:")
+        for row in rows:
+            show(row, row['status'])
+    if entries:
+        dates = sorted({e.get('measured_at', '')[:10] for e in entries})
+        from treatments_to_structured.modal_inference import PRICES_READ_ON
+        print(f"  Prices read {PRICES_READ_ON}; calibrations measured "
+              f"{', '.join(dates)}.")
+
+
 def _translate_on_modal(
     translator: Any,
     taxa_df: Any,
@@ -905,7 +960,7 @@ def _translate_on_modal(
     gpu: str,
     gpus: int,
     max_cost: float,
-    modal_batch_size: int,
+    modal_batch_size: Optional[int],
     verbosity: int,
     calibrate: bool = False,
     calibrate_records: int = 256,
@@ -954,10 +1009,21 @@ def _translate_on_modal(
               f"spent at most ${guard.spent_upper_bound():.2f}")
         print(f"Recorded in {target}; commit it so --dry-run can use it.")
         return
+    from treatments_to_structured.modal_calibration import (
+        calibration_key, find_calibration, load_calibrations,
+        resolve_batch_size,
+    )
+    status, entry = find_calibration(
+        load_calibrations(), gpu, calibration_key(translator.max_new_tokens))
+    batch_size = resolve_batch_size(modal_batch_size, status, entry)
+    if verbosity >= 1:
+        origin = ('--modal-batch-size' if modal_batch_size is not None
+                  else f'calibration ({status})' if entry else 'default')
+        print(f"Modal batch size: {batch_size} (from {origin})")
     with modal_app.run_translator(gpu, gpus) as call:
         counts = translator.translate_items_modal(
             items, server[dest_db], call, guard, gpu,
-            modal_batch_size=modal_batch_size, max_in_flight=2 * gpus,
+            modal_batch_size=batch_size, max_in_flight=2 * gpus,
             verbosity=verbosity)
     print(f"\nModal: {counts['ok']} ok, {counts['cut_off']} cut off, "
           f"{counts['invalid']} invalid, {counts['failed_records']} failed "
@@ -1002,8 +1068,9 @@ def validate_backend_args(args: Any) -> None:
         if args.max_cost is not None:
             raise ValueError('--max-cost needs --backend modal')
         return
-    if args.gpu is None:
-        raise ValueError('--backend modal needs --gpu')
+    if args.gpu is None and not args.dry_run:
+        raise ValueError('--backend modal needs --gpu (a --dry-run without '
+                         '--gpu compares every calibrated GPU)')
     if calibrate:
         if args.dry_run:
             raise ValueError('--calibrate spends money; it cannot be '
@@ -1017,7 +1084,7 @@ def validate_backend_args(args: Any) -> None:
         raise ValueError(f'--max-cost must be positive, got {args.max_cost}')
     if args.gpus < 1:
         raise ValueError(f'--gpus must be at least 1, got {args.gpus}')
-    if args.modal_batch_size < 1:
+    if args.modal_batch_size is not None and args.modal_batch_size < 1:
         raise ValueError('--modal-batch-size must be at least 1, got '
                          f'{args.modal_batch_size}')
     if args.use_ontology_context:
@@ -1334,9 +1401,10 @@ Examples:
     parser.add_argument(
         '--modal-batch-size',
         type=int,
-        default=64,
+        default=None,
         metavar='N',
-        help='Descriptions per Modal call (default: 64)'
+        help='Descriptions per Modal call (default: the calibrated best '
+             'for --gpu, else 64)'
     )
 
     parser.add_argument(

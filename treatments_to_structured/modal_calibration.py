@@ -21,6 +21,7 @@ live in modal_inference.GPU_PRICES.
 from __future__ import annotations
 
 import json
+import math
 import os
 import random
 import tempfile
@@ -194,7 +195,33 @@ def estimate(
     Raises:
         ValueError: For an unknown GPU or ``gpus`` below 1.
     """
-    raise NotImplementedError
+    from treatments_to_structured import modal_inference as mi
+
+    if gpus < 1:
+        raise ValueError(f'gpus must be at least 1, got {gpus}')
+    rate = mi.rate_per_second(gpu)
+    best = best_config(entry)
+    if records > 0:
+        work_s = records / best['records_per_s']
+        gpu_s = work_s + gpus * (entry['startup_s'] + mi.SCALEDOWN_WINDOW_S)
+        wall_s = work_s / gpus + entry['startup_s']
+    else:
+        gpu_s = wall_s = 0.0
+    cost = gpu_s * rate
+    return {
+        'records': records,
+        'gpu': gpu,
+        'gpus': gpus,
+        'batch_size': best['batch_size'],
+        'records_per_s': best['records_per_s'],
+        'gpu_hours': gpu_s / 3600,
+        'wall_hours': wall_s / 3600,
+        'cost': cost,
+        'expected_cut_offs': records * best.get('cut_off_rate', 0.0),
+        'suggested_max_cost': math.ceil(cost * MAX_COST_HEADROOM),
+        'measured_at': entry.get('measured_at'),
+        'prices_read_on': mi.PRICES_READ_ON,
+    }
 
 
 def compare_gpus(
@@ -205,7 +232,17 @@ def compare_gpus(
 ) -> List[Dict[str, Any]]:
     """``estimate`` for every calibrated GPU, cheapest first, each with
     ``status`` ``'ok'`` or ``'stale'``."""
-    raise NotImplementedError
+    from treatments_to_structured.modal_inference import GPU_PRICES
+
+    rows = []
+    for entry in entries:
+        if entry['gpu'] not in GPU_PRICES or not entry.get('configs'):
+            continue
+        row = estimate(records, entry['gpu'], gpus, entry)
+        row['status'] = 'ok' if entry['key'] == key else 'stale'
+        rows.append(row)
+    rows.sort(key=lambda r: r['cost'])
+    return rows
 
 
 def resolve_batch_size(
@@ -215,7 +252,12 @@ def resolve_batch_size(
 ) -> int:
     """``--modal-batch-size`` if given, else the calibrated best for the
     GPU (ok or stale), else ``FALLBACK_BATCH_SIZE``."""
-    raise NotImplementedError
+    if cli_value is not None:
+        return cli_value
+    if entry is not None and status in ('ok', 'stale') and entry.get(
+            'configs'):
+        return int(best_config(entry)['batch_size'])
+    return FALLBACK_BATCH_SIZE
 
 
 def best_config(entry: Entry) -> Dict[str, Any]:
