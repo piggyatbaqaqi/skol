@@ -15,15 +15,19 @@ import pytest
 
 from treatments_to_structured.modal_inference import (
     CACHE_MOUNT,
+    DECODING,
     GPU_PRICES,
+    MAX_WHITESPACE_CNT,
     SpendGuard,
     cache_env,
     interpret_output,
+    json_grammar,
     make_batches,
     provenance,
     rate_per_second,
     raw_from_vllm,
     run_batches,
+    sampling_options,
     structured_doc,
     taxon_doc_id,
 )
@@ -364,3 +368,111 @@ class TestCacheEnv:
         old = set(cache_env('/cache', '0.32.0').values())
         new = set(cache_env('/cache', '0.33.0').values())
         assert old.isdisjoint(new)
+
+
+# ---------------------------------------------------------------------------
+# Decoding: greedy, with whitespace runs capped in the JSON grammar
+# ---------------------------------------------------------------------------
+
+DECODING_NOT_YET = pytest.mark.xfail(
+    strict=True, reason="json_grammar / sampling_options not implemented")
+
+SCHEMA = {"type": "object", "properties": {}, "additionalProperties": True}
+
+
+class FakeGrammar:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+    def __str__(self) -> str:
+        return self.text
+
+
+class FakeXgrammar:
+    """Stands in for the xgrammar module; records from_json_schema calls."""
+
+    def __init__(self) -> None:
+        self.calls: List[Dict[str, Any]] = []
+        outer = self
+
+        class Grammar:
+            @staticmethod
+            def from_json_schema(schema: Any, **kwargs: Any) -> FakeGrammar:
+                outer.calls.append({'schema': schema, **kwargs})
+                return FakeGrammar('root ::= "{" "}"')
+
+        self.Grammar = Grammar
+
+
+def test_whitespace_cap() -> None:
+    """2026-10-23: 20 removed every whitespace cut-off and still allows
+    four-space indentation at the schema's maximum depth (17)."""
+    assert MAX_WHITESPACE_CNT == 20
+
+
+@DECODING_NOT_YET
+class TestJsonGrammar:
+
+    def test_builds_from_our_schema_with_the_cap(self) -> None:
+        xgr = FakeXgrammar()
+        json_grammar(SCHEMA, xgr)
+        call = xgr.calls[0]
+        assert json.loads(call['schema']) == SCHEMA
+        assert call['max_whitespace_cnt'] == MAX_WHITESPACE_CNT
+
+    def test_keeps_flexible_whitespace_otherwise(self) -> None:
+        """Forcing compact separators degraded Mistral's output
+        (2026-10-23), so only the run length is capped."""
+        xgr = FakeXgrammar()
+        json_grammar(SCHEMA, xgr)
+        call_kwargs = set(xgr.calls[0]) - {'schema'}
+        assert call_kwargs == {'max_whitespace_cnt'}
+
+    def test_returns_the_grammar_text(self) -> None:
+        assert json_grammar(SCHEMA, FakeXgrammar()) == 'root ::= "{" "}"'
+
+
+@DECODING_NOT_YET
+class TestSamplingOptions:
+
+    def test_greedy_with_explicit_max_tokens(self) -> None:
+        assert sampling_options(3072) == {'temperature': 0.0,
+                                          'max_tokens': 3072}
+
+    def test_no_repetition_penalty(self) -> None:
+        """It made formatting odd and failed at 1.10 (2026-10-23)."""
+        assert 'repetition_penalty' not in sampling_options(3072)
+
+    def test_rejects_non_positive_max_tokens(self) -> None:
+        for bad in (0, -1):
+            with pytest.raises(ValueError):
+                sampling_options(bad)
+
+
+@DECODING_NOT_YET
+def test_provenance_names_the_whitespace_cap() -> None:
+    assert 'greedy' in DECODING
+    assert str(MAX_WHITESPACE_CNT) in DECODING
+
+
+class TestRealXgrammar:
+    """The cap's effect with the real library; skipped where xgrammar is
+    not installed (it is in the GPU image and the skol-vllm312 env)."""
+
+    @DECODING_NOT_YET
+    def test_accepts_indented_json_and_rejects_a_whitespace_run(
+            self) -> None:
+        xgr = pytest.importorskip('xgrammar')
+        grammar = xgr.Grammar.from_ebnf(json_grammar(SCHEMA, xgr))
+        compiled = xgr.GrammarCompiler(
+            xgr.TokenizerInfo([f'<{i}>' for i in range(8)])
+        ).compile_grammar(grammar)
+
+        def complete(text: str) -> bool:
+            matcher = xgr.GrammarMatcher(compiled)
+            return bool(matcher.accept_string(text)
+                        and matcher.is_completed())
+
+        assert complete('{\n    "Pileus": {"Shape": ["convex"]}\n}')
+        assert not complete('{"Pileus": {"Shape": ["convex"]}'
+                            + '\t' * 300 + '}')

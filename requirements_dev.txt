@@ -7,3 +7,7 @@ build==1.4.0
 stdeb==0.11.0
 debhelper==0.3.0
 anthropic==0.87.0
+# Test-only: treatments_to_structured/modal_inference_test.py checks the
+# whitespace-capped JSON grammar with the real library.  Keep equal to the
+# version vLLM installs in the Modal GPU image (vLLM 0.32.0 -> 0.2.8).
+xgrammar==0.2.8
