@@ -643,7 +643,8 @@ class TestTranslateItemsModal:
         call = FakeModalCall()
         self.run_modal([modal_item(f'i{n}') for n in range(5)], call,
                        modal_batch_size=2)
-        assert [len(b) for b in call.batches] == [2, 2, 1]
+        # Batches run two at a time in threads, so arrival order varies.
+        assert sorted(len(b) for b in call.batches) == [1, 2, 2]
 
     def test_saves_ok_results_with_modal_provenance(self) -> None:
         call = FakeModalCall()
